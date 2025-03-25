@@ -45,6 +45,7 @@ The code is tested in tests/test_lib_smsprovider
 from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider, SMSError)
 from privacyidea.lib import _
 import requests
+import json
 from urllib.parse import urlparse
 import logging
 
@@ -81,7 +82,13 @@ class HttpSMSProvider(ISMSProvider):
             for k, v in self.smsgateway.option_dict.items():
                 if k not in self.parameters().get("parameters"):
                     # This is an additional option
-                    parameter[k] = v.format(otp=message, phone=phone)
+                    # We can not do .format() due to curly brackets in JSON
+                    v = v.replace("{otp}", message)
+                    v = v.replace("{phone}", phone)
+                    try:
+                        parameter[k] = json.loads(v)
+                    except json.decoder.JSONDecodeError:
+                        parameter[k] = v
             headers = self.smsgateway.header_dict
         else:
             phone = self._mangle_phone(phone, self.config)

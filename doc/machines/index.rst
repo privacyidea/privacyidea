@@ -27,7 +27,7 @@ which is defined in
 You need to attach a token via an application to a client machine or service. Each application type
 can work with certain token types and each application type can use additional parameters.
 
-.. note:: Not all tokentypes work well with all applications!
+.. note:: Not all token types work well with all applications!
 
 .. _application_ssh:
 
@@ -83,8 +83,8 @@ The Python script however expects a configuration file
 In this example the SSH keys that are attached to the service_id "webservers" are fetched from the
 privacyIDEA server.
 
-managing in WebUI
-.................
+Managing in the WebUI
+.....................
 
 The administrator can view all SSH keys attached to service in the WebUI at *Tokens -> Token Applications*. There the
 administrator can filter for service_ids., to find all SSH keys that are attached e.g. to webservers.
@@ -124,29 +124,56 @@ For more information please see the man page of this tool.
 Offline
 -------
 
-Currently working token types: HOTP.
+Currently working token types: HOTP, WebAuthn/Passkey.
 
 Parameters:
 
 ``user`` The local user, who should authenticate. (Only needed when calling
 machine/get_auth_items)
 
-``count`` The number of OTP values passed to the client.
+``count`` The number of OTP values passed to the client. This is specific to HOTP token.
 
-The offline application also triggers when the client calls a /validate/check.
+The offline application triggers when the client calls a /validate/check.
 If the user authenticates successfully with the correct token (serial number)
-and this very token is attached to the machine with an offline application
-the response to validate/check is enriched with a "auth_items" tree
-containing the salted SHA512 hashes of the next OTP values.
+and this very token is attached to the machine with an offline application,
+the response to validate/check is extended with a "auth_items" object.
 
-The client can cache these values to enable offline authentication.
-The caching is implemented in the privacyIDEA PAM module.
+HOTP
+....
+For HOTP token that is a list containing the hashes of the next OTP values.
+The number of values is defined by the "count" parameter.
 
-The server increases the counter to the last offline cached OTP value, so
-that it will not be possible to authenticate with those OTP values available
-offline on the client side.
+.. warning:: Once these values are returned by the server, the counter of the token on the server side is increased by the number of values returned, which effectively makes the token unusable for online authentication.
 
-managing in WebUI
-.................
+The client that receives these values should store them locally and is then able to verify OTP values with that list.
+An entry looks like this:
+
+``4:'$pbkdf2-sha512$6549$uDeGMMYYw5jTWg$5Sp.vdpfOw2PMEr.r5PxA/DD4A8QZNs0hPslY.yHt8DgW2BXuEfrOfPjs1na4iNUoSixvkl.2YTsZMCLNEwL3A'``
+
+It represents the OTP of the HOTP token with counter 4. The hash is stored in the format of the passlib library.
+The format has 4 parts: the algorithm, the number of iterations, the salt and the hash, each separated by a $.
+After a successful verification, clients should remove all values from the list between the first counter and the one
+that matches the input.
+
+WebAuthn/Passkey
+................
+For WebAuthn/Passkey token, the auth_items object contains the parameters ``rpId``, ``pubKey`` and ``credentialId``.
+These can be used by a client to verify a FIDO2 assertion locally.
+Because WebAuthn/Passkey token can have their credentials offline on multiple machines, the client has to identify itself via the UserAgent in the headers.
+By default, the UserAgent is checked for the following keys (in order): ["ComputerName", "Hostname", "MachineName", "Windows", "Linux", "Mac"].
+If the UserAgent does not contain any of these keys, there will be no offline data returned!
+The list of keys to check can be extended by setting OFFLINE_MACHINE_KEYS = ["key1", "key2", ...] in pi.cfg. These keys will appended to the default list and will be checked after them, the order is preserved.
+
+Refill
+......
+If a client with offline HOTP values runs out of OTP values, it can request a refill of the list.
+This is done using :http:post:`/validate/offlinerefill`
+
+If that endpoints returns an error, it indicates that the token has been unmarked for offline use, or the refilltoken
+is out of sync. Therefore, clients managing WebAuthn/Passkey offline data should also call this endpoint regularly.
+
+
+Managing in the WebUI
+.....................
 
 The administrator can view all offline tokens in the WebUI at *Tokens -> Token Applications*.

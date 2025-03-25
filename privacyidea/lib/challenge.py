@@ -27,10 +27,9 @@ The method is tested in test_lib_challenges
 
 import logging
 from .log import log_with
-from ..models import Challenge
+from ..models import Challenge, db
 
 log = logging.getLogger(__name__)
-
 
 
 @log_with(log)
@@ -46,16 +45,12 @@ def get_challenges(serial=None, transaction_id=None, challenge=None):
     sql_query = Challenge.query
 
     if serial is not None:
-        # filter for serial
         sql_query = sql_query.filter(Challenge.serial == serial)
 
     if transaction_id is not None:
-        # filter for transaction id
-        sql_query = sql_query.filter(Challenge.transaction_id ==
-                                     transaction_id)
+        sql_query = sql_query.filter(Challenge.transaction_id == transaction_id)
 
     if challenge is not None:
-        # filter for this challenge
         sql_query = sql_query.filter(Challenge.challenge == challenge)
 
     challenges = sql_query.all()
@@ -99,15 +94,14 @@ def get_challenges_paginate(serial=None, transaction_id=None,
     else:
         sql_query = sql_query.order_by(sortby.asc())
 
-    pagination = sql_query.paginate(page, per_page=psize,
-                                    error_out=False)
+    pagination = db.paginate(sql_query, page=page, per_page=psize, error_out=False)
     challenges = pagination.items
     prev = None
     if pagination.has_prev:
-        prev = page-1
-    next = None
+        prev = page - 1
+    next_page = None
     if pagination.has_next:
-        next = page + 1
+        next_page = page + 1
     challenge_list = []
     for challenge in challenges:
         challenge_dict = challenge.get()
@@ -115,7 +109,7 @@ def get_challenges_paginate(serial=None, transaction_id=None,
 
     ret = {"challenges": challenge_list,
            "prev": prev,
-           "next": next,
+           "next": next_page,
            "current": page,
            "count": pagination.total}
     return ret
@@ -144,7 +138,7 @@ def _create_challenge_query(serial=None, transaction_id=None):
             # match with "like"
             sql_query = sql_query.filter(Challenge.transaction_id.like(
                 transaction_id.replace(
-                "*", "%")))
+                    "*", "%")))
         else:
             # exact match
             sql_query = sql_query.filter(Challenge.transaction_id == transaction_id)
@@ -168,3 +162,17 @@ def extract_answered_challenges(challenges):
             if status is True:
                 answered_challenges.append(challenge)
     return answered_challenges
+
+
+def delete_challenges(serial: str = None, transaction_id: str = None) -> int:
+    """
+    This function deletes challenges from the database.
+
+    :param serial: challenges for this very serial number
+    :param transaction_id: challenges with this very transaction id
+    :return: number of deleted challenges
+    """
+    challenges = get_challenges(serial=serial, transaction_id=transaction_id)
+    for challenge in challenges:
+        challenge.delete()
+    return len(challenges)

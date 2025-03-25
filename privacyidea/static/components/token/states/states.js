@@ -72,7 +72,8 @@ angular.module('privacyideaApp.tokenStates', ['ui.router', 'privacyideaApp.versi
                 .state('token.rollover', {
                     url: "/rollover/:tokenType/:tokenSerial",
                     templateUrl: tokenPath + "token.enroll.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "tokenEnrollController"
+                    controller: "tokenEnrollController",
+                    params: {containerSerial: null}
                 })
                 .state('token.wizard', {
                     url: "/wizard",
@@ -109,5 +110,24 @@ angular.module('privacyideaApp.tokenStates', ['ui.router', 'privacyideaApp.versi
                     url: "/container/details/:containerSerial",
                     templateUrl: tokenPath + "token.containerdetails.html" + versioningSuffixProviderProvider.$get().$get(),
                     controller: "containerDetailsController"
+                })
+                .state('token.containertemplates', {
+                    url: "/container/templates",
+                    controller: "containerTemplateController"
+                })
+                .state('token.containertemplates.list', {
+                    url: "/list",
+                    templateUrl: tokenPath + "token.containertemplates.list.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "containerTemplateListController"
+                })
+                .state('token.containertemplates.create', {
+                    url: "/create",
+                    templateUrl: tokenPath + "token.containertemplates.create.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "containerTemplateCreateController"
+                })
+                .state('token.containertemplates.edit', {
+                    url: "/edit/:templateName",
+                    templateUrl: tokenPath + "token.containertemplates.edit.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "containerTemplateEditController"
                 })
         }]);

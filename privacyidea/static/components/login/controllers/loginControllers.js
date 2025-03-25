@@ -182,11 +182,6 @@ angular.module("privacyideaApp")
                     $scope.lock_screen();
                 }
             });
-            /*
-             $rootScope.$on('Keepalive', function() {
-                $scope.logoutWarning = false;
-            });
-            */
 
             // helper function
             $scope.isChecked = function (val) {
@@ -223,7 +218,53 @@ angular.module("privacyideaApp")
                 $scope.unlocking = false;
                 $scope.authenticate();
             };
-
+            // PASSKEY LOGIN
+            $scope.bytesToBase64 = function (bytes) {
+                const binString = Array.from(bytes, (byte) =>
+                    String.fromCodePoint(byte),).join("");
+                return btoa(binString);
+            };
+            $scope.passkeyLogin = function () {
+                $http.post(validateUrl + "/initialize", {"type": "passkey"}).then(function (response) {
+                        let data = response.data.detail.passkey;
+                        // TODO for the webui, userVerification is always required so that is a 2FA
+                        let userVerification = "required";
+                        //console.log(data);
+                        navigator.credentials.get({
+                            publicKey: {
+                                challenge: Uint8Array.from(data.challenge, c => c.charCodeAt(0)),
+                                rpId: data.rpId,
+                                userVerification: userVerification,
+                            },
+                        }).then(credential => {
+                            //console.log(credential);
+                            let params = {
+                                transaction_id: data.transaction_id,
+                                credential_id: credential.id,
+                                authenticatorData: $scope.bytesToBase64(
+                                    new Uint8Array(credential.response.authenticatorData)),
+                                clientDataJSON: $scope.bytesToBase64(new Uint8Array(credential.response.clientDataJSON)),
+                                signature: $scope.bytesToBase64(new Uint8Array(credential.response.signature)),
+                                userHandle: $scope.bytesToBase64(new Uint8Array(credential.response.userHandle)),
+                            };
+                            $http.post(authUrl, params, {}).then(function (response) {
+                                let data = response.data;
+                                //console.log(data);
+                                if (data.result.value) {
+                                    $scope.do_login_stuff(response.data);
+                                } else {
+                                    AuthFactory.authError(response.data);
+                                }
+                            }, function (error) {
+                                AuthFactory.authError(error.data);
+                            });
+                        }, function (error) {
+                            AuthFactory.authError(error.data);
+                        });
+                    }
+                );
+            };
+            // END PASSKEY LOGIN
             $scope.authenticate = function () {
                 $scope.polling = false;
                 $scope.image = false;
@@ -430,6 +471,7 @@ angular.module("privacyideaApp")
                 if ($scope.dialogNoToken) {
                     $('#dialogNoToken').modal("show");
                 }
+                $scope.container_wizard = data.result.value.container_wizard;
                 $scope.qr_images = [];
                 if (data.result.value.qr_image_android) {
                     $scope.qr_images.push({
@@ -461,14 +503,18 @@ angular.module("privacyideaApp")
                 $scope.user_page_size = data.result.value.user_page_size;
                 $scope.user_details_in_tokenlist = data.result.value.user_details;
                 $scope.default_tokentype = data.result.value.default_tokentype;
+                $scope.default_container_type = data.result.value.default_container_type;
                 $scope.timeout_action = data.result.value.timeout_action;
                 $scope.admin_dashboard = data.result.value.admin_dashboard;
                 if ($scope.admin_dashboard) {
                     $scope.startRoute = "/dashboard";
+                } else if ($scope.container_wizard["enabled"] && !$scope.token_wizard) {
+                    $scope.startRoute = "/token/container";
                 } else {
                     $scope.startRoute = "/token";
                 }
                 $scope.logout_redirect_url = data.result.value.logout_redirect_url;
+                $scope.rss_age = data.result.value.rss_age;
                 $scope.hide_welcome = data.result.value.hide_welcome;
                 $scope.hide_buttons = data.result.value.hide_buttons;
                 $scope.deletion_confirmation = data.result.value.deletion_confirmation;
@@ -649,7 +695,6 @@ angular.module("privacyideaApp")
                 // emit a signal to the scope, that just listens
                 $scope.$broadcast("piReload");
             };
-
         }]);
 
 angular.module("privacyideaApp")

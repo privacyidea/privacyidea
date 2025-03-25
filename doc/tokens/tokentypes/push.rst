@@ -22,52 +22,10 @@ in the privacyIDEA server. The application checks for this mark and
 logs the user in automatically. For an example of how the components in a
 typical deployment of push tokens interact reference the following diagram.
 
-.. uml::
-  :width: 500
-  :caption: A typical push token deployment
+.. figure:: images/push_token_deployment.svg
+   :width: 500
 
-  rectangle "On Prem" {
-    card SAML {
-      node "Service Provider" as SP
-      node "Identity Provider" as IDP
-    }
-    card "1st Factor" {
-      database LDAP
-    }
-    card "2nd Factor" {
-      node privacyIDEA as PI
-      file "User Resolver" as Users
-    }
-  }
-
-  together {
-    actor User
-    node iPhone
-    node Client
-  }
-
-  cloud Cloud {
-    node Firebase
-    node APN
-  }
-
-  User ~~> iPhone
-  User ~~> Client
-
-  Client -- SP
-  SP -- IDP
-  SP ..> Client : Require Auth
-
-  Client --> IDP : Request Auth
-  IDP -- LDAP
-  IDP -- PI
-
-  PI -- Users
-
-  PI --> Firebase : Push Token
-  Firebase --> APN
-  APN --> iPhone
-  iPhone --> PI : Confirm Token
+   A typical push token deployment
 
 To allow privacyIDEA to send push notifications, a Firebase service
 needs to be configured. To do so see :ref:`firebase_provider`.

@@ -27,6 +27,7 @@ Now you can take a look at the several REST endpoints.
    api/user
    api/policy
    api/event
+   api/healthcheck
    api/machineresolver
    api/machines
    api/privacyideaserver

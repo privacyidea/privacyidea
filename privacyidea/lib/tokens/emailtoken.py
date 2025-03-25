@@ -47,7 +47,7 @@ The following config entries are used:
 The identifier points to a system wide SMTP server configuration.
 See :ref:`rest_smtpserver`.
 
-The system wide SMTP server configuration was introduced in version 2.10.
+The system-wide SMTP server configuration was introduced in version 2.10.
 In privacyIDEA up to version 2.9 the following config entries were used:
 
  * email.validtime
@@ -72,7 +72,8 @@ from privacyidea.lib.tokenclass import CHALLENGE_SESSION, AUTHENTICATIONMODE
 from privacyidea.lib.config import get_from_config, get_email_validators
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.utils import is_true, create_tag_dict
-from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
+from privacyidea.lib.policy import (SCOPE, ACTION, GROUP, comma_escape_text,
+                                    get_action_values_from_options)
 from privacyidea.lib.policy import Match
 from privacyidea.lib.error import ValidateError
 from privacyidea.lib.log import log_with
@@ -166,7 +167,9 @@ class EmailTokenClass(HotpTokenClass):
                                  'an EMail-token. Several tags like {otp} and '
                                  '{serial} can be used as parameters. You may '
                                  'also specify a filename as email template '
-                                 'starting with "file:".')},
+                                 'starting with "file:".')
+                               + " " + comma_escape_text
+                   },
                    EMAILACTION.EMAILSUBJECT: {
                        'type': 'str',
                        'desc': _('The subject of the EMail for '
@@ -183,6 +186,7 @@ class EmailTokenClass(HotpTokenClass):
                                  'user to enter the code from the e-mail. You can also '
                                  'use tags for automated replacement. Check out the documentation '
                                  'for more details.')
+                               + " " + comma_escape_text
                    },
                },
                    SCOPE.ENROLL: {
@@ -276,6 +280,9 @@ class EmailTokenClass(HotpTokenClass):
                                                         "{0!s}_{1!s}".format(self.get_class_type(),
                                                                              ACTION.CHALLENGETEXT),
                                                         options) or _("Enter the OTP from the Email")
+
+        return_message = return_message.replace(r'\,', ',')
+
         reply_dict = {'attributes': {'state': transactionid}}
         validity = int(get_from_config("email.validtime", 120))
 
@@ -386,6 +393,8 @@ class EmailTokenClass(HotpTokenClass):
                 .action_values(unique=True, allow_white_space_in_action=True)
             if len(messages) == 1:
                 message = list(messages)[0]
+
+        message = message.replace(r'\,', ',')
 
         if message.startswith("file:"):
             # We read the template from the file.

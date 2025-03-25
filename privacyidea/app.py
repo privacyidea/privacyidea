@@ -26,7 +26,7 @@ import sys
 import uuid
 
 import yaml
-from flask import Flask, request, Response
+from flask import Flask
 from flask_babel import Babel
 from flask_migrate import Migrate
 from flaskext.versioned import Versioned
@@ -36,6 +36,7 @@ import sqlalchemy as sa
 # noinspection PyUnresolvedReferences
 import privacyidea.api.before_after  # noqa: F401
 from privacyidea.api.container import container_blueprint
+from privacyidea.api.healthcheck import healthz_blueprint
 from privacyidea.api.validate import validate_blueprint
 from privacyidea.api.token import token_blueprint
 from privacyidea.api.system import system_blueprint
@@ -66,6 +67,7 @@ from privacyidea.api.subscriptions import subscriptions_blueprint
 from privacyidea.api.monitoring import monitoring_blueprint
 from privacyidea.api.tokengroup import tokengroup_blueprint
 from privacyidea.api.serviceid import serviceid_blueprint
+from privacyidea.api.info import info_blueprint
 from privacyidea.lib import queue
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG
 from privacyidea.config import config
@@ -78,23 +80,6 @@ ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
 DEFAULT_UUID_FILE = "/etc/privacyidea/uuid.txt"
 
 migrate = Migrate()
-
-
-class PiResponseClass(Response):
-    """Custom Response class overwriting the flask.Response.
-    To avoid caching problems with the json property in the Response class,
-    the property is overwritten using a non-caching approach.
-    """
-    @property
-    def json(self):
-        """This will contain the parsed JSON data if the mimetype indicates
-        JSON (:mimetype:`application/json`, see :meth:`is_json`), otherwise it
-        will be ``None``.
-        Caching of the json data is disabled.
-        """
-        return self.get_json(cache=False)
-
-    default_mimetype = 'application/json'
 
 
 def create_app(config_name="development",
@@ -129,6 +114,7 @@ def create_app(config_name="development",
               "from the file {0!s}".format(config_file))
     app = Flask(__name__, static_folder="static",
                 template_folder="static/templates")
+    app.config['APP_READY'] = False
     if config_name:
         app.config.from_object(config[config_name])
 
@@ -184,6 +170,8 @@ def create_app(config_name="development",
     app.register_blueprint(tokengroup_blueprint, url_prefix='/tokengroup')
     app.register_blueprint(serviceid_blueprint, url_prefix='/serviceid')
     app.register_blueprint(container_blueprint, url_prefix='/container')
+    app.register_blueprint(healthz_blueprint, url_prefix='/healthz')
+    app.register_blueprint(info_blueprint, url_prefix='/info')
 
     # Set up Plug-Ins
     db.init_app(app)
@@ -191,14 +179,7 @@ def create_app(config_name="development",
 
     Versioned(app, format='%(path)s?v=%(version)s')
 
-    babel = Babel()
-    babel.init_app(app)
-
-    @babel.localeselector
-    def get_locale():
-        return get_accepted_language(request)
-
-    app.response_class = PiResponseClass
+    Babel(app, locale_selector=get_accepted_language)
 
     # Setup logging
     log_read_func = {
@@ -293,5 +274,6 @@ def create_app(config_name="development",
 
     log.debug(f"Reading application from the static folder {app.static_folder} "
               f"and the template folder {app.template_folder}")
+    app.config['APP_READY'] = True
 
     return app

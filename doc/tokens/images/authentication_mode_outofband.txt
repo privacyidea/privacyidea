@@ -1,0 +1,34 @@
+@startuml
+  alt with pin
+
+    Service -> privacyIDEA: POST /validate/check
+    Service <-- privacyIDEA: transaction_id
+
+  else without pin
+
+    Service -> privacyIDEA: POST /validate/triggerchallenge
+    Service <-- privacyIDEA: transaction_id
+
+  end
+
+  privacyIDEA -> Firebase: PUSH Notification
+  Firebase -> Phone: PUSH Notification
+  loop until confirmed
+
+    Service -> privacyIDEA: GET /validate/polltransaction
+    Service <-- privacyIDEA: false
+
+  end
+
+  ...User confirms sign in on phone...
+
+  Phone -> privacyIDEA: POST /ttype/push
+
+  Service -> privacyIDEA: GET /validate/polltransaction
+  Service <-- privacyIDEA: true
+
+  |||
+
+  Service -> privacyIDEA: POST /validate/check
+  Service <-- privacyIDEA
+@enduml

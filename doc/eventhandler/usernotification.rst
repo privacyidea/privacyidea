@@ -57,18 +57,24 @@ Possible mime types are:
   * html
 
 You can choose if the email should be sent as plain text or HTML. If the
-email is sent as HTML, you can do the following::
+email is sent as HTML, you can use the following text::
 
    <a href={googleurl_value}>Your new token</a>
 
-Which will create a clickable link. Clicked on the smartphone, the token will
-be imported to the smartphone app.
+to create a clickable link with the token data. When clicked on the smartphone,
+the token will be imported to the smartphone app.
 
 You can also do this::
 
   <img src={googleurl_img}>
 
 This will add the QR Code as an inline data image into the HTML email.
+
+Alternatively, if this event is triggered by enrolling a :ref:`push-token`, the
+tags are called ``pushurl_value`` and ``pushurl_img``.
+
+If the event is triggered by registering or rolling over a container, the tags are called ``container_url_value`` and
+``container_url_img``.
 
 .. warning:: The KEY URI and the QR Code contain the secret OTP key in plain
    text. Everyone who receives this data has a detailed copy of this token.
@@ -166,6 +172,10 @@ The body may contain the following tags
   * {recipient_surname} the surname of the recipient.
   * {googleurl_value} is the KEY URI for a google authenticator.
   * {googleurl_img} is the data image source of the google authenticator QR code.
+  * {pushurl_value} is the KEY URI from a push token for enrolled in a authenticator app.
+  * {pushurl_img} is the data image source of a push token qr code for enrolled in a authenticator app.
+  * {container_url_value} is the KEY URI for a token container registration.
+  * {container_url_img} is the data image source of the token container qr code.
   * {time} the current server time in the format HH:MM:SS.
   * {date} the current server date in the format YYYY-MM-DD
   * {client_ip} the client IP of the client, which issued the original request.
@@ -173,6 +183,9 @@ The body may contain the following tags
   * {ua_string} the complete user agent string (including version number), which issued the original request.
   * {pin} the PIN of the token when set with ``/token/setrandompin``. You can remove the
     PIN from the response using the *response mangler*.
+  * {container_serial} the serial number of the container.
+  * {container_url} the url for the registration of the container.
+  * {container_qr} the qr code for the registration of the container.
 
 
 Code

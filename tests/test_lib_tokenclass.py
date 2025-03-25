@@ -3,14 +3,14 @@ This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
+from privacyidea.lib.token import init_token
 from .base import MyTestCase, FakeFlaskG
 from privacyidea.lib.resolver import (save_resolver, delete_resolver)
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.policy import ACTION
-from privacyidea.lib.tokenclass import (TokenClass, DATE_FORMAT)
-from privacyidea.lib.config import (set_privacyidea_config,
-                                    delete_privacyidea_config)
+from privacyidea.lib.tokenclass import (TokenClass, DATE_FORMAT, AUTH_DATE_FORMAT)
+from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.utils import hexlify_and_unicode, to_unicode
 from privacyidea.lib.error import TokenAdminError
@@ -21,6 +21,7 @@ import datetime
 from dateutil.tz import tzlocal
 
 PWFILE = "tests/testdata/passwords"
+
 
 class TokenBaseTestCase(MyTestCase):
     '''
@@ -122,8 +123,7 @@ class TokenBaseTestCase(MyTestCase):
         self.assertEqual(c[2], transaction_id)
 
         # Now there should be two entries with the same transaction_id
-        r = Challenge.query.filter(
-            Challenge.transaction_id==transaction_id).all()
+        r = Challenge.query.filter(Challenge.transaction_id == transaction_id).all()
         self.assertEqual(len(r), 2)
 
         # set the description
@@ -758,8 +758,16 @@ class TokenBaseTestCase(MyTestCase):
                          resolver=resolver, realm=realm)
         db_token.save()
         token_obj = TokenClass(db_token)
+        # testing for default exception
         orph = token_obj.is_orphaned()
         self.assertTrue(orph)
+        # testing for exception_default=True
+        orph = token_obj.is_orphaned(orphaned_on_error=True)
+        self.assertTrue(orph)
+        # testing for exception_default=False
+        orph = token_obj.is_orphaned(orphaned_on_error=False)
+        self.assertFalse(orph)
+
         # clean up token
         token_obj.delete_token()
 
@@ -785,32 +793,41 @@ class TokenBaseTestCase(MyTestCase):
         token_obj.delete_token()
 
     def test_38_last_auth(self):
-        db_token = Token("lastauth001", tokentype="spass", userid=1000)
-        db_token.save()
-        token_obj = TokenClass(db_token)
+        token = init_token({"type": "hotp", "genkey": True},
+                           user=User(login="root", realm=self.realm1, resolver=self.resolvername1))
+
+        # set last auth and check correct format
+        last_auth = datetime.datetime(year=2025, month=3, day=21, hour=7, minute=24, second=12, microsecond=164578,
+                                      tzinfo=datetime.timezone.utc)
+        token.add_tokeninfo(ACTION.LASTAUTH, last_auth.strftime(AUTH_DATE_FORMAT))
+        self.assertEqual("2025-03-21 07:24:12.164578+0000", token.get_tokeninfo(ACTION.LASTAUTH))
+        # microseconds are also included if they are 0
+        last_auth = datetime.datetime(year=2025, month=3, day=21, hour=16, minute=3, second=8, microsecond=0,
+                                      tzinfo=datetime.timezone.utc)
+        token.add_tokeninfo(ACTION.LASTAUTH, last_auth.strftime(AUTH_DATE_FORMAT))
+        self.assertEqual("2025-03-21 16:03:08.000000+0000", token.get_tokeninfo(ACTION.LASTAUTH))
+
         tdelta = datetime.timedelta(days=1)
-        token_obj.add_tokeninfo(ACTION.LASTAUTH,
-                                datetime.datetime.now(tzlocal())-tdelta)
-        r = token_obj.check_last_auth_newer("10h")
+        token.add_tokeninfo(ACTION.LASTAUTH, datetime.datetime.now(tzlocal()) - tdelta)
+        r = token.check_last_auth_newer("10h")
         self.assertFalse(r)
-        r = token_obj.check_last_auth_newer("2d")
+        r = token.check_last_auth_newer("2d")
         self.assertTrue(r)
 
         # Old time format
         # lastauth_alt = datetime.datetime.utcnow().isoformat()
-        token_obj.add_tokeninfo(ACTION.LASTAUTH,
-                                datetime.datetime.utcnow() - tdelta)
-        r = token_obj.check_last_auth_newer("10h")
+        token.add_tokeninfo(ACTION.LASTAUTH, datetime.datetime.now(datetime.timezone.utc) - tdelta)
+        r = token.check_last_auth_newer("10h")
         self.assertFalse(r)
-        r = token_obj.check_last_auth_newer("2d")
+        r = token.check_last_auth_newer("2d")
         self.assertTrue(r)
 
-        # Test a fault last_auth entry does not computer to True
-        token_obj.add_tokeninfo(ACTION.LASTAUTH, "faulty format")
-        r = token_obj.check_last_auth_newer("10h")
+        # Test a fault last_auth entry does not compute to True
+        token.add_tokeninfo(ACTION.LASTAUTH, "faulty format")
+        r = token.check_last_auth_newer("10h")
         self.assertFalse(r)
 
-        token_obj.delete_token()
+        token.delete_token()
 
     def test_39_generate_sym_key(self):
         db_token = Token("symkey", tokentype="no_matter", userid=1000)

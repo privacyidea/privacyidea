@@ -1,10 +1,10 @@
-# -*- coding: utf-8 -*-
-from privacyidea.lib.container import init_container, add_token_to_container
+from privacyidea.lib.container import init_container, add_token_to_container, find_container_by_serial
 from .base import MyApiTestCase, PWFILE2
 import json
 import datetime
 import codecs
 from mock import mock
+import pytest
 import requests
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, ACTION,
                                     enable_policy,
@@ -12,7 +12,7 @@ from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, ACTION,
 from privacyidea.lib.token import (get_tokens, remove_token,
                                    get_tokens_from_serial_or_user, enable_token,
                                    check_serial_pass, unassign_token, init_token,
-                                   assign_token, token_exist, add_tokeninfo)
+                                   assign_token, token_exist, add_tokeninfo, get_one_token)
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
@@ -160,6 +160,28 @@ XZp8nprZvJuk6/QIRpadjRkv4NElZ2oNu6a8mtaO38xxnfQm4FEMbm5p+4tM
 
 class API000TokenAdminRealmList(MyApiTestCase):
 
+    def request_denied_assert_403(self, url, data: dict, auth_token, method='POST'):
+        with self.app.test_request_context(url,
+                                           method=method,
+                                           data=data if method == 'POST' else None,
+                                           query_string=data if method == 'GET' else None,
+                                           headers={'Authorization': auth_token}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code, res.json)
+            self.assertEqual(res.json["result"]["error"]["code"], 303)
+            return res.json
+
+    def request_assert_200(self, url, data: dict, auth_token, method='POST'):
+        with self.app.test_request_context(url,
+                                           method=method,
+                                           data=data if method == 'POST' else None,
+                                           query_string=data if method == 'GET' else None,
+                                           headers={'Authorization': auth_token}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertTrue(res.json["result"]["status"])
+            return res.json
+
     def test_000_setup_realms(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
@@ -233,6 +255,7 @@ class API000TokenAdminRealmList(MyApiTestCase):
 
     def test_02_two_resolver_in_realm_policy_condition(self):
         self.setUp_user_realms()
+        self.setUp_user_realm2()
         # add a second resolver to the realm
         save_resolver({"resolver": self.resolvername2,
                        "type": "passwdresolver",
@@ -258,6 +281,8 @@ class API000TokenAdminRealmList(MyApiTestCase):
                                                      resolver=self.resolvername2,
                                                      realm=self.realm1))
         t2 = init_token({'type': 'spass'})
+        token_no_user = init_token({'type': 'spass'})
+        token_only_realm = init_token({'type': 'spass', 'realm': self.realm2})
 
         # assigning a token to a user from resolver2 should fail
         with self.app.test_request_context('/token/assign',
@@ -294,6 +319,23 @@ class API000TokenAdminRealmList(MyApiTestCase):
         self.assertIn('pol-reso1', entry['policies'], entry)
 
         remove_token(t2.token.serial)
+
+        # assigning a token from another realm to a user from my resolver should fail
+        with self.app.test_request_context('/token/assign',
+                                           method='POST',
+                                           data={"serial": token_only_realm.get_serial(),
+                                                 "user": "nönäscii",
+                                                 "realm": self.realm1},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code, res.data)
+            result = res.json.get("result")
+            self.assertEqual(303, result.get('error').get('code'), result)
+            self.assertIsNone(token_only_realm.token.first_owner, token_only_realm.token.first_owner)
+        # check the audit log for a failed entry
+        entry = self.find_most_recent_audit_entry(action='*/token/assign')
+        self.assertFalse(entry['success'], entry)
+        self.assertIn('Admin actions are defined, but the action assign', entry['info'], entry)
 
         # unassign a token from a user in resolver2 should fail
         with self.app.test_request_context('/token/unassign',
@@ -347,6 +389,16 @@ class API000TokenAdminRealmList(MyApiTestCase):
 
         remove_token(t2.token.serial)
 
+        # disabling an active token from no user should fail
+        with self.app.test_request_context('/token/disable/{0!s}'.format(token_no_user.token.serial),
+                                           method='POST',
+                                           data={},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403, res)
+            result = res.json.get("result")
+            self.assertEqual(result.get('error').get('code'), 303, result)
+
         # enable an inactive token from a user from resolver2 should fail
         t1.enable(enable=False)
         with self.app.test_request_context('/token/enable/{0!s}'.format(t1.token.serial),
@@ -373,6 +425,17 @@ class API000TokenAdminRealmList(MyApiTestCase):
             self.assertTrue(result.get('value'), result)
             self.assertTrue(t2.is_active())
 
+        # enable an inactive token from no user should fail
+        token_no_user.enable(enable=False)
+        with self.app.test_request_context('/token/enable/{0!s}'.format(token_no_user.token.serial),
+                                           method='POST',
+                                           data={},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403, res)
+            result = res.json.get("result")
+            self.assertEqual(result.get('error').get('code'), 303, result)
+
         # token delete should fail for a token assigned to a user from resolver2
         with self.app.test_request_context('/token/{0!s}'.format(t1.token.serial),
                                            method='DELETE',
@@ -392,9 +455,91 @@ class API000TokenAdminRealmList(MyApiTestCase):
             self.assertTrue(result.get('value'), result)
             self.assertFalse(token_exist(t2.token.serial))
 
+        # token delete should fail for a token assigned to no user
+        with self.app.test_request_context('/token/{0!s}'.format(token_no_user.token.serial),
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403, res)
+            result = res.json.get("result")
+            self.assertEqual(result.get('error').get('code'), 303, result)
+
         # cleanup
         remove_token(t1.token.serial)
         delete_policy("pol-reso1")
+
+    def test_03_helpdesk_realm_condition(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        self.setUp_user_realm3()
+
+        # create token policy for "testadmin" on realm1 and realm3
+        set_policy(name="pol-reso1",
+                   scope=SCOPE.ADMIN,
+                   action=','.join([ACTION.DELETE, ACTION.ASSIGN, ACTION.UNASSIGN,
+                                    ACTION.DISABLE, ACTION.ENABLE, ACTION.TOKENREALMS]),
+                   adminuser=self.testadmin,
+                   realm=[self.realm1, self.realm3])
+
+        # create tokens
+        t1 = init_token({'type': 'spass'}, user=User(login='nönäscii',
+                                                     realm=self.realm1))
+        t2 = init_token({'type': 'spass'}, user=User(login='hans',
+                                                     realm=self.realm2))
+        t3 = init_token({'type': 'spass'})
+
+        # disable token from realm1 should work
+        self.request_assert_200(f"/token/disable/{t1.get_serial()}", {}, self.at, 'POST')
+
+        # disable token from realm2 should fail
+        self.request_denied_assert_403(f"/token/disable/{t2.get_serial()}", {}, self.at, 'POST')
+
+        # assign user from realm1 should work
+        data = {"serial": t3.get_serial(), "user": "nönäscii", "realm": self.realm1}
+        self.request_assert_200("/token/assign", data, self.at, 'POST')
+        # unassign user from realm1 should work
+        self.request_assert_200("/token/unassign", {"serial": t3.get_serial()}, self.at, 'POST')
+        t3.set_realms([], add=False)
+
+        # assign / unassign user from realm2 should fail
+        self.request_denied_assert_403("/token/unassign", {"serial": t2.get_serial()}, self.at, 'POST')
+        # unassign user from t2
+        unassign_token(t2.get_serial())
+        data = {"serial": t2.get_serial(), "user": "hans", "realm": self.realm2}
+        self.request_denied_assert_403("/token/assign", data, self.at, 'POST')
+        # assign user again
+        assign_token(t2.get_serial(), user=User(login='hans', realm=self.realm2))
+
+        # set realm1 to token in another realm shall fail (no exception)
+        self.request_denied_assert_403(f"/token/realm/{t2.get_serial()}", {"realms": [self.realm1]}, self.at, 'POST')
+        t2_realms = t2.get_realms()
+        self.assertNotIn(self.realm1, t2_realms)
+        self.assertIn(self.realm2, t2_realms)
+
+        # set realm2 to a token in no realm shall not work
+        self.request_denied_assert_403(f"/token/realm/{t3.get_serial()}", {"realms": [self.realm2]}, self.at,
+                                       'POST')
+        # check realm is not set
+        t3_realms = t3.get_realms()
+        self.assertEqual(0, len(t3_realms))
+        self.assertNotIn(self.realm2, t3_realms)
+
+        # set realm1 to token without realm shall not work
+        self.request_denied_assert_403(f"/token/realm/{t3.get_serial()}", {"realms": [self.realm1, self.realm3]},
+                                       self.at, 'POST')
+        t3_realms = t3.get_realms()
+        self.assertEqual(0, len(t3_realms))
+
+        # set realm3 to a token in realm1 shall work
+        self.request_assert_200(f"/token/realm/{t1.get_serial()}", {"realms": [self.realm3, self.realm1]}, self.at,
+                                'POST')
+
+        # set realm2 to a token in realm 1 shall fail (no exception)
+        self.request_assert_200(f"/token/realm/{t1.get_serial()}", {"realms": [self.realm2]}, self.at, 'POST')
+        # check realm is not set
+        t1_realms = t1.get_realms()
+        self.assertIn(self.realm1, t1_realms)
+        self.assertNotIn(self.realm2, t1_realms)
 
 
 class APIAttestationTestCase(MyApiTestCase):
@@ -541,7 +686,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue("OATH" in serial, detail)
             remove_token(serial)
 
-        container_serial = init_container({"type": "generic"})
+        container_serial = init_container({"type": "generic"})["container_serial"]
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"type": "HOTP",
@@ -565,6 +710,8 @@ class APITokenTestCase(MyApiTestCase):
 
     def test_01_list_tokens(self):
         init_token({"otpkey": self.otpkey}, tokenkind="hotp")
+
+        # Get all tokens
         with self.app.test_request_context('/token/',
                                            method='GET',
                                            headers={'Authorization': self.at}):
@@ -692,7 +839,7 @@ class APITokenTestCase(MyApiTestCase):
         token_serials = ",".join([hotp_token.get_serial(), totp_token.get_serial()])
         with self.app.test_request_context('/token/',
                                            method='GET',
-                                           data={
+                                           query_string={
                                                "serial": token_serials},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -704,7 +851,7 @@ class APITokenTestCase(MyApiTestCase):
         spass_token = init_token({"type": "spass"})
         with self.app.test_request_context('/token/',
                                            method='GET',
-                                           data={"type_list": "hotp,totp"},
+                                           query_string={"type_list": "hotp,totp"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
@@ -715,6 +862,26 @@ class APITokenTestCase(MyApiTestCase):
         remove_token(hotp_token.get_serial())
         remove_token(totp_token.get_serial())
         remove_token(spass_token.get_serial())
+
+        # create token in container
+        container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
+        token_in_container = init_token({"otpkey": self.otpkey}, tokenkind="hotp")
+        container = find_container_by_serial(container_serial)
+        container.add_token(token_in_container)
+        # get tokens for container
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           query_string={"container_serial": container.serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            tokens = result.get("value").get("tokens")
+            self.assertEqual(1, len(tokens))
+            self.assertEqual(token_in_container.get_serial(), tokens[0]["serial"])
+            self.assertEqual(container.serial, tokens[0]["container_serial"])
+        remove_token(token_in_container.get_serial())
+        container.delete()
 
     def test_02_list_tokens_csv(self):
         with self.app.test_request_context('/token/',
@@ -780,11 +947,15 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(count == 2, count)
 
     def test_04_assign_unassign_token(self):
+        # Create a new token instead of using tokens from previous tests, otherwise this test fails
+        token = init_token({"type": "hotp", "genkey": True})
+        serial = token.get_serial()
+
         with self.app.test_request_context('/token/assign',
                                            method='POST',
                                            data={"user": "cornelius",
                                                  "realm": self.realm1,
-                                                 "serial": "S1",
+                                                 "serial": serial,
                                                  "pin": "test"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -797,7 +968,7 @@ class APITokenTestCase(MyApiTestCase):
                                            method='POST',
                                            data={"user": "shadow",
                                                  "realm": self.realm1,
-                                                 "serial": "S1"},
+                                                 "serial": serial},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
@@ -826,7 +997,7 @@ class APITokenTestCase(MyApiTestCase):
 
         with self.app.test_request_context('/token/assign',
                                            method='POST',
-                                           data={"serial": "S1"},
+                                           data={"serial": serial},
                                            headers={'Authorization': self.at_user}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
@@ -850,7 +1021,7 @@ class APITokenTestCase(MyApiTestCase):
                                            method='POST',
                                            data={"user": "shadow",
                                                  "realm": self.realm1,
-                                                 "serial": "S1"},
+                                                 "serial": serial},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -931,8 +1102,8 @@ class APITokenTestCase(MyApiTestCase):
 
         # disable an assigned token
         r = assign_token("EToken", User("hans", self.realm1))
-        container_serial = init_container({"type": "generic"})
-        add_token_to_container(container_serial, "EToken", user=User(), user_role="admin")
+        container_serial = init_container({"type": "generic"})["container_serial"]
+        add_token_to_container(container_serial, "EToken")
         self.assertTrue(r)
         with self.app.test_request_context('/token/disable/EToken',
                                            method='POST',
@@ -946,7 +1117,7 @@ class APITokenTestCase(MyApiTestCase):
         # Check for the disabled token in the audit log, that also the user object and container are added
         with self.app.test_request_context('/audit/',
                                            method='GET',
-                                           data={'action': "*disable*", "serial": "EToken"},
+                                           query_string={'action': "*disable*", "serial": "EToken"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200, res)
@@ -1067,9 +1238,9 @@ class APITokenTestCase(MyApiTestCase):
         # check that we have a failed request in the audit log
         with self.app.test_request_context('/audit/',
                                            method='GET',
-                                           data={'action': "POST /token/resync/<serial>",
-                                                 'serial': 'Resync01',
-                                                 'success': '0'},
+                                           query_string={'action': "POST /token/resync/<serial>",
+                                                         'serial': 'Resync01',
+                                                         'success': '0'},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200, res)
@@ -1091,9 +1262,9 @@ class APITokenTestCase(MyApiTestCase):
         # Check for a successful request in the audit log
         with self.app.test_request_context('/audit/',
                                            method='GET',
-                                           data={'action': "POST /token/resync",
-                                                 'serial': 'Resync01',
-                                                 'success': '1'},
+                                           query_string={'action': "POST /token/resync",
+                                                         'serial': 'Resync01',
+                                                         'success': '1'},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200, res)
@@ -1323,6 +1494,12 @@ class APITokenTestCase(MyApiTestCase):
         delete_policy("dumm01")
 
         # Load GPG encrypted OATH CSV
+        # Skip if the gpg-binary isn't installed
+        try:
+            import gnupg
+            gnupg.GPG()
+        except OSError as _e:
+            pytest.skip("No gpg binary found.")
         with self.app.test_request_context('/token/load/import.oath.asc',
                                            method="POST",
                                            data={"type": "oathcsv",
@@ -1617,7 +1794,8 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             value = result.get("value")
-            self.assertEqual(value.get("count"), 25)
+            # Up to this test we have at least 21 tokens
+            self.assertGreater(value.get("count"), 20)
             self.assertEqual(value.get("serial"), None)
 
         # multiple tokens are matching!
@@ -1886,7 +2064,7 @@ class APITokenTestCase(MyApiTestCase):
 
         # Now we only ask for the first transation id. This should return only ONE challenge
         with self.app.test_request_context('/token/challenges/',
-                                           data={"transaction_id": transaction_ids[0]},
+                                           query_string={"transaction_id": transaction_ids[0]},
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -2147,90 +2325,71 @@ class APITokenTestCase(MyApiTestCase):
             self.assertNotIn('key1', tokeninfo)
 
     def test_25_user_init_defaults(self):
-        self.setUp_user_realms()
+        """
+        Test the token init endpoint without passing the required enrollment parameters for TOTP tokens.
+        Test that the correct system defaults are used for the token and in the enroll url.
+        There are three possibilities for the hashlib and time step: Use the system default (sha1, 30 seconds), set the
+        defaults in the configurations, or use a user/admin policy to enforce a specific hashlib and time step. The
+        policies take precedence over the system defaults.
+        """
         self.authenticate_selfservice_user()
-        # Now this user is authenticated as selfservice@realm1
+        set_policy("user_enroll", SCOPE.USER, "enrollTOTP")
+        set_policy("admin_enroll", SCOPE.ADMIN, "enrollTOTP")
 
-        # first test with system configuration
-        set_privacyidea_config('totp.hashlib', 'sha512')
-        with self.app.test_request_context('/token/init',
-                                           method='POST',
-                                           data={
-                                               "type": "totp",
-                                               "genkey": 1,
-                                               "user": "selfservice",
-                                               "realm": "realm1"},
-                                           headers={'Authorization': self.at_user}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            self.assertTrue(res.json.get('result').get("value"))
-            detail = res.json.get("detail")
-            googleurl = detail.get("googleurl")
-            # TODO: The google URL states no hashlib (which means sha1) but the
-            #       actual hashlib is sha512 since no hashlib parameter was
-            #       send in the request.
-            #       This is wrong and needs to be fixed in hotptoken.py:253
-            self.assertFalse("sha1" in googleurl.get("value"))
-            serial = detail.get("serial")
-            token = get_tokens(serial=serial)[0]
-            self.assertEqual(token.hashlib, "sha512")
-            self.assertEqual(token.timestep, 30)
-            self.assertEqual(token.token.otplen, 6)
-            remove_token(serial)
+        def check_token_init(hashlib, time_step, otp_len=6, auth_header=self.at_user):
+            with self.app.test_request_context('/token/init',
+                                               method='POST',
+                                               data={"type": "totp",
+                                                     "genkey": True,
+                                                     "user": "selfservice",
+                                                     "realm": self.realm1},
+                                               headers={'Authorization': auth_header}):
+                res = self.app.full_dispatch_request()
+                data = res.json
+                self.assertTrue(res.status_code == 200, res)
+                result = data.get("result")
+                detail = data.get("detail")
+                self.assertTrue(result.get("status"), result)
+                self.assertTrue(result.get("value"), result)
 
-        # Now create policy for sha256, overwriting the system config
-        set_policy(name="init_details",
-                   scope=SCOPE.USER,
-                   action="totp_otplen=8,totp_hashlib=sha256,"
-                          "totp_timestep=60,enrollTOTP")
+                # check enroll url
+                enroll_url = detail.get("googleurl", {}).get("value")
+                if hashlib == "sha1":
+                    self.assertNotIn("&algorithm", enroll_url)
+                else:
+                    self.assertIn(f"&algorithm={hashlib.upper()}", enroll_url)
+                self.assertIn(f"&period={time_step}", enroll_url)
 
-        with self.app.test_request_context('/token/init',
-                                           method='POST',
-                                           data={
-                                               "type": "totp",
-                                               "totp.hashlib": "sha1",
-                                               "hashlib": "sha1",
-                                               "genkey": 1,
-                                               "user": "selfservice",
-                                               "realm": "realm1"},
-                                           headers={'Authorization': self.at_user}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            self.assertTrue(result.get("value"))
-            detail = res.json.get("detail")
-            googleurl = detail.get("googleurl")
-            self.assertTrue("SHA256" in googleurl.get("value"))
-            serial = detail.get("serial")
-            token = get_tokens(serial=serial)[0]
-            self.assertEqual(token.hashlib, "sha256")
-            self.assertEqual(token.token.otplen, 8)
+                # check token info
+                serial = detail.get("serial")
+                token = get_tokens(serial=serial)[0]
+                self.assertEqual(hashlib, token.hashlib)
+                self.assertEqual(time_step, token.timestep)
+                self.assertEqual(otp_len, token.token.otplen)
 
-        delete_policy("init_details")
-        remove_token(serial)
+        # ---- hashlib and time step ----
+        # System default
+        check_token_init("sha1", 30)
 
+        # Set system default to sha256 and 60 seconds
+        set_privacyidea_config("totp.hashlib", "sha256", "public", "")
+        set_privacyidea_config("totp.timeStep", "60", "public", "")
+        check_token_init("sha256", 60)
+
+        # Set user policy
+        set_policy("user_policy", SCOPE.USER, {"totp_hashlib": "sha512", "totp_timestep": "30"})
+        check_token_init("sha512", 30)
+        delete_policy("user_policy")
+
+        # Set admin policy
+        set_policy("admin_policy", SCOPE.ADMIN, {"totp_hashlib": "sha512", "totp_timestep": "30"})
+        check_token_init("sha512", 30, auth_header=self.at)
+        delete_policy("admin_policy")
+
+        # ---- OTP len ----
         # Set OTP len using the system wide default
         set_privacyidea_config("DefaultOtpLen", 8)
-        with self.app.test_request_context('/token/init',
-                                           method='POST',
-                                           data={
-                                               "type": "totp",
-                                               "totp.hashlib": "sha1",
-                                               "hashlib": "sha1",
-                                               "genkey": 1,
-                                               "user": "selfservice",
-                                               "realm": "realm1"},
-                                           headers={'Authorization': self.at_user}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            self.assertTrue(result.get("value"))
-            detail = res.json.get("detail")
-            serial = detail.get("serial")
-            token = get_tokens(serial=serial)[0]
-            self.assertEqual(token.token.otplen, 8)
-
-        remove_token(serial)
+        check_token_init("sha256", 60, 8)
 
         # override the DefaultOtpLen
         with self.app.test_request_context('/token/init',
@@ -2255,6 +2414,8 @@ class APITokenTestCase(MyApiTestCase):
 
         remove_token(serial)
         delete_privacyidea_config("DefaultOtpLen")
+        delete_policy("user_enroll")
+        delete_policy("admin_enroll")
 
     def test_26_supply_key_size(self):
         with self.app.test_request_context('/token/init',
@@ -2350,7 +2511,7 @@ class APITokenTestCase(MyApiTestCase):
         # check the description of the token
         with self.app.test_request_context('/token/',
                                            method='GET',
-                                           data={"serial": "SETDESC01"},
+                                           query_string={"serial": "SETDESC01"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -2499,7 +2660,7 @@ class APITokenTestCase(MyApiTestCase):
         # check that the admin user can see all tokeninfo
         with self.app.test_request_context('/token/',
                                            method='GET',
-                                           data={'serial': t.token.serial},
+                                           query_string={'serial': t.token.serial},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
@@ -2523,7 +2684,7 @@ class APITokenTestCase(MyApiTestCase):
             user_token = result.get("value").get("token")
         with self.app.test_request_context('/token/',
                                            method='GET',
-                                           data={'serial': t.token.serial},
+                                           query_string={'serial': t.token.serial},
                                            headers={'Authorization': user_token}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
@@ -2550,7 +2711,7 @@ class APITokenTestCase(MyApiTestCase):
         # check that the admin user can't see the tokenkind info
         with self.app.test_request_context('/token/',
                                            method='GET',
-                                           data={'serial': t.token.serial},
+                                           query_string={'serial': t.token.serial},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
@@ -3045,7 +3206,7 @@ class API00TokenPerformance(MyApiTestCase):
         # The GET /token returns a wildcard 100 tokens
         with self.app.test_request_context('/token/',
                                            method='GET',
-                                           data={"serial": "perf*"},
+                                           query_string={"serial": "perf*"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -3059,7 +3220,7 @@ class API00TokenPerformance(MyApiTestCase):
         # Request tokens in tokenrealm
         with self.app.test_request_context('/token/',
                                            method='GET',
-                                           data={"tokenrealm": "**"},
+                                           query_string={"tokenrealm": "**"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -3069,7 +3230,7 @@ class API00TokenPerformance(MyApiTestCase):
 
         with self.app.test_request_context('/token/',
                                            method='GET',
-                                           data={"tokenrealm": "*alm1*"},
+                                           query_string={"tokenrealm": "*alm1*"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -3082,7 +3243,7 @@ class API00TokenPerformance(MyApiTestCase):
         # Run GET challenges
         with self.app.test_request_context('/token/challenges/*',
                                            method='GET',
-                                           data={"serial": "perf*"},
+                                           query_string={"serial": "perf*"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -3399,7 +3560,7 @@ class APIRolloutState(MyApiTestCase):
         # Only one token in the rollout state client_wait
         with self.app.test_request_context('/token/',
                                            method='GET',
-                                           data={"rollout_state": ROLLOUTSTATE.CLIENTWAIT},
+                                           query_string={"rollout_state": ROLLOUTSTATE.CLIENTWAIT},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -3421,7 +3582,7 @@ class APIRolloutState(MyApiTestCase):
         # Find rollout state "cliEntwait" and "spEcial"
         with self.app.test_request_context('/token/',
                                            method='GET',
-                                           data={"rollout_state": "*e*"},
+                                           query_string={"rollout_state": "*e*"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)

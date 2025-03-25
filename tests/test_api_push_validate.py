@@ -428,12 +428,15 @@ class PushAPITestCase(MyApiTestCase):
             # Check, that multi_challenge is also contained.
             self.assertEqual(CLIENTMODE.POLL, detail.get("multi_challenge")[0].get("client_mode"))
             self.assertIn("image", detail)
+            self.assertIn("link", detail)
+            link = detail.get("link")
+            self.assertTrue(link.startswith("otpauth://pipush"))
             serial = detail.get("serial")
 
         # The Application starts polling, if the token is enrolled
         with self.app.test_request_context('/validate/polltransaction',
                                            method='GET',
-                                           data={"transaction_id": transaction_id}):
+                                           query_string={"transaction_id": transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
@@ -482,7 +485,7 @@ class PushAPITestCase(MyApiTestCase):
         # The Application polls, if the token is readily enrolled
         with self.app.test_request_context('/validate/polltransaction',
                                            method='GET',
-                                           data={"transaction_id": transaction_id}):
+                                           query_string={"transaction_id": transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")

@@ -290,8 +290,8 @@
                         <input type="checkbox"
                                ng-model="opts[optionname]"
                                ng-show="option.type==='bool' && !option.value">
-                        <p class="help help-block">
-                            {{ option.description }}
+                        <p class="help help-block"
+                            ng-bind-html="option.description">
                         </p>
                     </td>
                 </tr>

@@ -39,7 +39,7 @@ class CONTENT_TYPE(object):
     Allowed type off content
     """
     JSON = "json"
-    URLENCODED = "urlendcode"
+    URLENCODED = "urlencoded"
 
 
 class ACTION_TYPE(object):
@@ -58,7 +58,7 @@ class WebHookHandler(BaseEventHandler):
     description = "This eventhandler can post webhooks"
 
     @property
-    def allowed_positions(cls):
+    def allowed_positions(self):
         """
         This returns the allowed positions of the event handler definition.
 
@@ -67,7 +67,7 @@ class WebHookHandler(BaseEventHandler):
         return ["post", "pre"]
 
     @property
-    def actions(cls):
+    def actions(self):
         """
         This method returns a dictionary of allowed actions and possible
         options in this handler module.
@@ -166,8 +166,10 @@ class WebHookHandler(BaseEventHandler):
                 else:
                     # Content Type URLENCODED, simple format
                     webhook_text = webhook_text.format(**attributes)
-            except(ValueError, KeyError) as err:
+            except KeyError as err:
                 log.warning(f"Unable to replace placeholder: ({err})! Please check the webhooks data option.")
+            except ValueError as err:
+                log.warning(f"Unable to parse JSON string '{webhook_text}': {err}")
 
         # Send the request
         if action.lower() == ACTION_TYPE.POST_WEBHOOK:

@@ -132,7 +132,7 @@ class APIMachinesTestCase(MyApiTestCase):
         # Get the token
         with self.app.test_request_context('/machine/token',
                                            method='GET',
-                                           data={"serial": serial},
+                                           query_string={"serial": serial},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -670,7 +670,7 @@ class APIMachinesTestCase(MyApiTestCase):
         # Get the token
         with self.app.test_request_context('/machine/token',
                                            method='GET',
-                                           data={"serial": serial},
+                                           query_string={"serial": serial},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)

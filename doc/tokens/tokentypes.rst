@@ -10,6 +10,7 @@ The following list is an overview of the supported token types.
 For more details, consult the respective description listed in :ref:`tokens`.
 Some token require prior configuration as described in :ref:`tokentypes_details`.
 
+* :ref:`passkey` FIDO2 credential that is tied to an application or domain. Allows easy use via fingerprint, face scan, or PIN.
 * :ref:`four_eyes_token` - Meta token that can be used to create a
   `Two Man Rule <https://en.wikipedia.org/wiki/Two-man_rule>`_.
 * :ref:`certificate_token` - A token that represents a client

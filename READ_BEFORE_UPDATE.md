@@ -1,5 +1,18 @@
 # Update Notes
 
+## Update from 3.10 to 3.11
+* To improve consistency of conditions for policies and eventhandlers, tokens that are not in any realm will not be
+  listed for users with access restricted to a realm (i.e. helpdesk admins). The user with access restricted to a realm
+  will now only be able to see the token that are in that realm. Users whose access is not restricted to any realm, will
+  still see all tokens. This restriction is currently for all token and container operations except for the user
+  assignment. So for example a helpdesk admin of realm A can still assign a token without a realm to a user in realm A,
+  but the serial of the token is required.
+* The webauthn JavaScript submodule was removed and replaced with a static file.
+  When using a Git-Checkout you probably need to remove the directory/submodule before updating.
+* Deprecation of `/validate/samlcheck`: The endpoint will be removed in the future version **3.12**.
+  If you are using that endpoint for one of your applications, please start using `validate/check` with the policies
+  `add_user_in_response` and/or `add_resolver_in_response`.
+
 ## Update from 3.9 to 3.10
 
 * Due to stability and performance reasons, unanswered challenges will remain in the database table
