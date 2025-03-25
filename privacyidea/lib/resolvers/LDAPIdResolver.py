@@ -456,24 +456,27 @@ class IdResolver(UserIdResolver):
                 uid = attributes.get(uidtype)[0]
             else:
                 uid = attributes.get(uidtype)
-            if uidtype.lower() == "objectguid":
-                # For ldap3 versions <= 2.4.1, objectGUID attribute values are returned as UUID strings.
-                # For versions greater than 2.4.1, they are returned in the curly-braced string
-                # representation, i.e. objectGUID := "{" UUID "}"
-                # In order to ensure backwards compatibility for user mappings,
-                # we strip the curly braces from objectGUID values.
-                # If we are using ldap3 <= 2.4.1, there are no curly braces and we leave the value unchanged.
-                try:
-                    uid = convert_column_to_unicode(uid).strip("{").strip("}")
-                except UnicodeDecodeError as e:
-                    # in some weird cases we sometimes get a byte-array here
-                    # which resembles an uuid. So we just convert it to one...
-                    log.warning('Found a byte-array as uid ({0!s}), trying to '
-                                'convert it to a UUID. ({1!s})'.format(binascii.hexlify(uid),
-                                                                       e))
-                    log.debug(traceback.format_exc())
-                    uid = str(uuid.UUID(bytes_le=uid))
-        return convert_column_to_unicode(uid)
+
+        try:
+            uid = convert_column_to_unicode(uid)
+        except UnicodeDecodeError as e:
+            # in some cases ldap3 fails to decode the uid and return it as a byte-array
+            # if the utf-8 decoding fails, we try the UUID little endian conversion
+            log.warning(f"Found a byte-array as uid ({binascii.hexlify(uid)}), trying to "
+                        f"convert it to a UUID. ({e})")
+            log.debug(traceback.format_exc())
+            uid = str(uuid.UUID(bytes_le=uid))
+
+        if uidtype.lower() == "objectguid":
+            # For ldap3 versions <= 2.4.1, objectGUID attribute values are returned as UUID strings.
+            # For versions greater than 2.4.1, they are returned in the curly-braced string
+            # representation, i.e. objectGUID := "{" UUID "}"
+            # In order to ensure backwards compatibility for user mappings,
+            # we strip the curly braces from objectGUID values.
+            # If we are using ldap3 <= 2.4.1, there are no curly braces and we leave the value unchanged.
+            uid = uid.strip("{").strip("}")
+
+        return uid
 
     def _trim_user_id(self, user_id):
         """
