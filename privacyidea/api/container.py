@@ -74,21 +74,26 @@ def list_containers():
     at once.
 
     :query user: Username of a user assigned to the containers
-    :query container_serial: Serial of a single container
-    :query type: Type of the containers to return
-    :query token_serial: Serial of a token assigned to the container
-    :query template: Name of the template the container is created from
+    :query container_serial: Serial of a single container (case-insensitive, can contain '*' as wildcards)
+    :query type: Type of the containers to return (case-insensitive, can contain '*' as wildcards)
+    :query token_serial: Serial of a token assigned to the container (case-insensitive, can contain '*' as wildcards)
+    :query template: Name of the template the container is created from (case-sensitive, can contain '*' as wildcards)
+    :query container_realm: Name of the realm the container is assigned to (case-insensitive, can contain '*' as
+        wildcards)
+    :query description: Description of the container (case-insensitive, can contain '*' as wildcards)
     :query sortby: Sort by a container attribute (serial or type)
     :query sortdir: Sort direction (asc or desc)
     :query pagesize: Number of containers per page
     :query page: Page number
-    :jsonparam no_token: no_token=1: Do not return tokens assigned to the container
+    :query no_token: no_token=1: Do not return tokens assigned to the container
     """
     param = request.all_data
     user = request.User
     cserial = getParam(param, "container_serial", optional=True)
     ctype = getParam(param, "type", optional=True)
     token_serial = getParam(param, "token_serial", optional=True)
+    realm = getParam(param, "container_realm", optional=True)
+    description = getParam(param, "description", optional=True)
     sortby = getParam(param, "sortby", optional=True, default="serial")
     sortdir = getParam(param, "sortdir", optional=True, default="asc")
     psize = int(getParam(param, "pagesize", optional=True) or 0)
@@ -101,8 +106,8 @@ def list_containers():
     hide_token_info = getParam(param, "hidden_tokeninfo", optional=True)
 
     result = get_all_containers(user=user, serial=cserial, ctype=ctype, token_serial=token_serial,
-                                realms=allowed_container_realms, template=template,
-                                sortby=sortby, sortdir=sortdir,
+                                realm=realm, allowed_realms=allowed_container_realms, template=template,
+                                description=description, sortby=sortby, sortdir=sortdir,
                                 pagesize=psize, page=page)
 
     containers = create_container_dict(result["containers"], no_token, user, logged_in_user_role, allowed_token_realms,

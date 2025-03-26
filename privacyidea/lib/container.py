@@ -159,17 +159,21 @@ def find_container_by_serial(serial: str) -> TokenContainerClass:
 
 
 def _create_container_query(user: User = None, serial: str = None, ctype: str = None, token_serial: str = None,
-                            realms: list[str] = None, template: str = None, sortby: str = 'serial',
-                            sortdir: str = 'asc') -> Query:
+                            realm: str = None, allowed_realms: list[str] = None, template: str = None,
+                            description: str = None, sortby: str = 'serial', sortdir: str = 'asc') -> Query:
     """
     Generates a sql query to filter containers by the given parameters.
 
     :param user: container owner, optional
-    :param serial: container serial, optional
-    :param ctype: container type, optional
-    :param token_serial: serial of a token which is assigned to the container, optional
-    :param realms: list of realms to filter by, optional
-    :param template: The name of the template the container was created with, optional
+    :param serial: container serial (case-insensitive and allows '*' as wildcard), optional
+    :param ctype: container type (case-insensitive and allows '*' as wildcard), optional
+    :param token_serial: serial of a token which is assigned to the container (case-insensitive and allows '*' as wildcard), optional
+    :param realm: realm name to filter by (case-insensitive and allows '*' as wildcard), optional
+    :param allowed_realms: list of realms the user is allowed to see (None if all realms are allowed), optional
+        If realms and allowed_realms are given, the intersection of both lists is used. If there is no intersection, no
+        container is returned.
+    :param template: The name of the template the container was created with (case-sensitive and allows '*' as wildcard), optional
+    :param description: The description of the container (case-insensitive and allows '*' as wildcard), optional
     :param sortby: column to sort by, default is the container serial
     :param sortdir: sort direction, default is ascending
     :return: sql query
@@ -179,19 +183,45 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
         sql_query = sql_query.join(TokenContainer.owners).filter(TokenContainerOwner.user_id == user.uid)
 
     if serial:
-        sql_query = sql_query.filter(func.upper(TokenContainer.serial) == serial.upper())
+        if "*" in serial:
+            sql_query = sql_query.filter(TokenContainer.serial.ilike(serial.replace("*", "%")))
+        else:
+            sql_query = sql_query.filter(func.upper(TokenContainer.serial) == serial.upper())
 
     if ctype:
-        sql_query = sql_query.filter(TokenContainer.type == ctype)
+        if "*" in ctype:
+            sql_query = sql_query.filter(TokenContainer.type.ilike(ctype.replace("*", "%")))
+        else:
+            sql_query = sql_query.filter(func.upper(TokenContainer.type) == ctype.upper())
 
     if token_serial:
-        sql_query = sql_query.join(TokenContainer.tokens).filter(Token.serial == token_serial)
+        if "*" in token_serial:
+            sql_query = sql_query.filter(TokenContainer.tokens.any(Token.serial.ilike(token_serial.replace("*", "%"))))
+        else:
+            sql_query = sql_query.outerjoin(TokenContainer.tokens).filter(func.upper(Token.serial) == token_serial.upper())
 
-    if realms:
-        sql_query = sql_query.join(TokenContainer.realms).filter(Realm.name.in_(realms))
+    if realm:
+        if "*" in realm:
+            sql_query = sql_query.outerjoin(TokenContainer.realms).filter(Realm.name.ilike(realm.replace("*", "%")))
+        else:
+            sql_query = sql_query.outerjoin(TokenContainer.realms).filter(func.lower(Realm.name) == realm.lower())
+
+    if allowed_realms:
+        allowed_realms = [realm.lower() for realm in allowed_realms]
+        sql_query = sql_query.outerjoin(TokenContainer.realms).filter(func.lower(Realm.name).in_(allowed_realms))
 
     if template:
-        sql_query = sql_query.join(TokenContainer.template).filter(TokenContainerTemplate.name == template)
+        if "*" in template:
+            sql_query = sql_query.filter(TokenContainer.template.has(
+                TokenContainerTemplate.name.like(template.replace("*", "%"))))
+        else:
+            sql_query = sql_query.filter(TokenContainer.template.has(TokenContainerTemplate.name == template))
+
+    if description:
+        if "*" in description:
+            sql_query = sql_query.filter(TokenContainer.description.ilike(description.replace("*", "%")))
+        else:
+            sql_query = sql_query.filter(func.lower(TokenContainer.description) == description.lower())
 
     if isinstance(sortby, str):
         # Check that the sort column exists and convert it to a container column
@@ -211,7 +241,8 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
 
 
 def get_all_containers(user: User = None, serial: str = None, ctype: str = None, token_serial: str = None,
-                       realms: list[str] = None, sortby: str = 'serial', sortdir: str = 'asc', template: str = None,
+                       realm: str = None, allowed_realms: list[str] = None, sortby: str = 'serial', sortdir: str = 'asc',
+                       template: str = None, description: str = None,
                        page: int = 0, pagesize: int = 0) -> dict[str, Union[int, None, list[TokenContainerClass]]]:
     """
     This function is used to retrieve a container list, that can be displayed in
@@ -221,20 +252,27 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
     The containers are filtered by the given parameters.
 
     :param user: container owner, optional
-    :param serial: container serial, optional
-    :param ctype: container type, optional
-    :param token_serial: serial of a token which is assigned to the container, optional
-    :param realms: list of realms the container is assigned to, optional
+    :param serial: container serial (case-insensitive and allows '*' as wildcard), optional
+    :param ctype: container type (case-insensitive and allows '*' as wildcard), optional
+    :param token_serial: serial of a token which is assigned to the container (case-insensitive and allows '*'
+        as wildcard), optional
+    :param realm: name of the realm the container is assigned to (case-insensitive and allows '*' as wildcard), optional
+    :param allowed_realms: list of realms the user is allowed to see (None if all realms are allowed), optional
+        If realms and allowed_realms are given, the intersection of both lists is used. If there is no intersection, no
+        container is returned.
     :param sortby: column to sort by, default is the container serial
     :param sortdir: sort direction, default is ascending
-    :param template: The name of the template the container was created with, optional
+    :param template: The name of the template the container was created with (case-sensitive and allows '*' as wildcard)
+        , optional
+    :param description: The description of the container (case-insensitive and allows '*' as wildcard), optional
     :param page: The number of the page to view. Starts with 1 ;-)
     :param pagesize: The size of the page
     :returns: A dictionary with a list of containers at the key 'containers' and optionally pagination entries ('prev',
               'next', 'current', 'count')
     """
-    sql_query = _create_container_query(user=user, serial=serial, ctype=ctype, token_serial=token_serial, realms=realms,
-                                        template=template, sortby=sortby, sortdir=sortdir)
+    sql_query = _create_container_query(user=user, serial=serial, ctype=ctype, token_serial=token_serial, realm=realm,
+                                        allowed_realms=allowed_realms, template=template, description=description,
+                                        sortby=sortby, sortdir=sortdir)
     ret = {}
     # Paginate if requested
     if page > 0 or pagesize > 0:
@@ -434,7 +472,6 @@ def init_container(params: dict[str, any]) -> dict[str, Union[str, list]]:
             template_tokens = template_options.get("tokens", [])
         else:
             log.warning(f"Template {template_name} is not of type {ctype}, create container without template.")
-
 
     user = params.get("user")
     realm = params.get("realm")
