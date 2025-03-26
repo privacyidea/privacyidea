@@ -13,53 +13,9 @@ import {
 import { LocalService } from '../local/local.service';
 import { Sort } from '@angular/material/sort';
 import { TableUtilsService } from '../table-utils/table-utils.service';
-import { TokenType } from '../../components/token/token.component';
 import { environment } from '../../../environments/environment';
 import { catchError } from 'rxjs/operators';
 import { NotificationService } from '../notification/notification.service';
-
-export interface EnrollmentOptions {
-  type: TokenType;
-  description: string;
-  tokenSerial: string;
-  user: string;
-  container_serial: string;
-  validity_period_start: string;
-  validity_period_end: string;
-  pin: string;
-  generateOnServer?: boolean;
-  otpLength?: number;
-  otpKey?: string;
-  hashAlgorithm?: string;
-  timeStep?: number;
-  motpPin?: string;
-  remoteServer?: { url: string; id: string };
-  remoteSerial?: string;
-  remoteUser?: string;
-  remoteRealm?: string;
-  remoteResolver?: string;
-  checkPinLocally?: boolean;
-  sshPublicKey?: string;
-  yubicoIdentifier?: string;
-  radiusServerConfiguration?: string;
-  radiusUser?: string;
-  smsGateway?: string;
-  phoneNumber?: string;
-  readNumberDynamically?: boolean;
-  separator?: string;
-  requiredTokenOfRealms?: { realm: string; tokens: number }[];
-  serviceId?: string;
-  caConnector?: string;
-  certTemplate?: string;
-  pem?: string;
-  emailAddress?: string;
-  readEmailDynamically?: boolean;
-  answers?: Record<string, string>;
-  vascoSerial?: string;
-  useVascoSerial?: boolean;
-  onlyAddToRealm?: boolean;
-  userRealm?: string;
-}
 
 @Injectable({
   providedIn: 'root',
@@ -507,7 +463,7 @@ export class TokenService {
       );
   }
 
-  enrollToken(options: EnrollmentOptions) {
+  enrollToken(options: any): Observable<any> {
     const headers = this.localService.getHeaders();
 
     const payload: any = {
@@ -593,7 +549,7 @@ export class TokenService {
     if (options.type === '4eyes') {
       payload.separator = options.separator;
       payload['4eyes'] = options.requiredTokenOfRealms?.reduce(
-        (acc, curr) => {
+        (acc: any, curr: any) => {
           acc[curr.realm] = {
             count: curr.tokens,
             selected: true,
@@ -706,9 +662,9 @@ export class TokenService {
         }
       });
       /* global filtering is missing in api
-            if (remainingFilterText) {
-              params = params.set('globalfilter', `*${remainingFilterText}*`);
-            } */
+        if (remainingFilterText) {
+          params = params.set('globalfilter', `*${remainingFilterText}*`);
+        } */
     }
 
     return this.http
