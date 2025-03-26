@@ -2489,6 +2489,14 @@ class APIContainer(APIContainerTest):
         for container in result["result"]["value"]["containers"]:
             self.assertEqual(container["type"], "generic")
 
+        # filter for realm the admin is not allowed to manage
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_LIST, realm=self.realm1)
+        result = self.request_assert_success('/container/',
+                                             {"container_realm": self.realm2, "pagesize": 15},
+                                             self.at, 'GET')
+        self.assertEqual(0, result["result"]["value"]["count"])
+        delete_policy("policy")
+
         # Filter for token serial
         result = self.request_assert_success('/container/',
                                              {"token_serial": token_serial, "pagesize": 15},
