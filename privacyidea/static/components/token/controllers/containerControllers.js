@@ -430,6 +430,7 @@ myApp.controller("containerListController", ['$scope', '$http', '$q', 'Container
         $scope.loggedInUser = AuthFactory.getUser();
         $scope.params = {sortdir: "asc"};
         $scope.containerdata = [];
+        $scope.filter = {serial: "", type: "", realm: "", description: ""}
 
         // Change the pagination
         $scope.pageChanged = function () {
@@ -439,6 +440,12 @@ myApp.controller("containerListController", ['$scope', '$http', '$q', 'Container
         // Get all containers
         $scope.get = function () {
             $scope.expandedRows = [];
+
+            $scope.params.container_serial = "*" + $scope.filter.serial + "*";
+            $scope.params.container_realm = "*" + $scope.filter.realm + "*";
+            $scope.params.type = "*" + $scope.filter.type + "*";
+            $scope.params.description = "*" + $scope.filter.description + "*";
+
             $scope.params.sortby = $scope.sortby;
             if ($scope.reverse) {
                 $scope.params.sortdir = "desc";
