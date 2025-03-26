@@ -1,4 +1,4 @@
-import { Component, Inject, Input, WritableSignal } from '@angular/core';
+import { Component, Inject, WritableSignal } from '@angular/core';
 import { MatButton } from '@angular/material/button';
 import {
   MAT_DIALOG_DATA,
@@ -24,7 +24,6 @@ import { TokenService } from '../../../../services/token/token.service';
   styleUrl: './token-enrollment-first-step-dialog.component.scss',
 })
 export class TokenEnrollmentFirstStepDialogComponent {
-  @Input() regenerateToken!: WritableSignal<boolean>;
   protected readonly Object = Object;
 
   constructor(

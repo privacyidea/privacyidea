@@ -6,6 +6,7 @@ import { TokenComponent } from '../../token.component';
 import { NotificationService } from '../../../../services/notification/notification.service';
 import { Base64Service } from '../../../../services/base64/base64.service';
 import { Observable } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-enroll-webauthn',
@@ -17,6 +18,8 @@ export class EnrollWebauthnComponent {
   text = TokenComponent.tokenTypes.find((type) => type.key === 'webauthn')
     ?.text;
   @Input() description!: WritableSignal<string>;
+  @Input() response!: WritableSignal<any>;
+  @Input() firstDialog!: MatDialog;
 
   constructor(
     private notificationService: NotificationService,
@@ -82,10 +85,12 @@ export class EnrollWebauthnComponent {
                 ),
               },
             };
-            subscriber.next(result);
+            subscriber.next();
             subscriber.complete();
           })
           .catch((error: any) => {
+            this.response.set(null);
+            this.firstDialog.closeAll();
             const errMsg = `Error during WebAuthn registration: ${error.message || error}`;
             this.notificationService.openSnackBar(errMsg);
             subscriber.error(error);

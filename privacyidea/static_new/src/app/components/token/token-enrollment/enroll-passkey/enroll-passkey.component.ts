@@ -19,6 +19,8 @@ import { MatDialog } from '@angular/material/dialog';
 export class EnrollPasskeyComponent {
   text = TokenComponent.tokenTypes.find((type) => type.key === 'passkey')?.text;
   @Input() description!: WritableSignal<string>;
+  @Input() response!: WritableSignal<any>;
+  @Input() firstDialog!: MatDialog;
 
   constructor(
     private notificationService: NotificationService,
@@ -26,7 +28,7 @@ export class EnrollPasskeyComponent {
     private base64Service: Base64Service,
   ) {}
 
-  registerPasskey(detail: any, firstDialog: MatDialog): Observable<any> {
+  registerPasskey(detail: any): Observable<any> {
     const options = detail.passkey_registration;
 
     const excludedCredentials = options.excludeCredentials.map((cred: any) => ({
@@ -91,7 +93,8 @@ export class EnrollPasskeyComponent {
         );
         return from(this.tokenService.deleteToken(detail.serial)).pipe(
           switchMap(() => {
-            firstDialog.closeAll();
+            this.response.set(null);
+            this.firstDialog.closeAll();
             this.notificationService.openSnackBar(
               `Token ${detail.serial} deleted successfully.`,
             );

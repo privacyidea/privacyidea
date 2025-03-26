@@ -164,10 +164,14 @@
                         [description]="description" />
     }
     @case ("webauthn") {
-      <app-enroll-webauthn [description]="description" />
+      <app-enroll-webauthn [firstDialog]="firstDialog"
+                           [response]="response"
+                           [description]="description" />
     }
     @case ("passkey") {
-      <app-enroll-passkey [description]="description" />
+      <app-enroll-passkey [firstDialog]="firstDialog"
+                          [response]="response"
+                          [description]="description" />
     }
   }
   <div class="flex-row gap-1">
@@ -192,6 +196,7 @@
         <mat-form-field class="margin-left-1 width-50 height-76-5">
           <mat-label>Enter User</mat-label>
           <input [(ngModel)]="selectedUsername"
+                 [disabled]="onlyAddToRealm()"
                  [matAutocomplete]="userAuto"
                  [required]="userIsRequired()"
                  matInput />

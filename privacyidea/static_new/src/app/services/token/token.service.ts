@@ -148,12 +148,12 @@ export class TokenService {
     const headers = this.localService.getHeaders();
     const set_url = `${this.tokenBaseUrl}set`;
 
-    const payload =
+    const params =
       key === 'maxfail'
         ? { serial: tokenSerial, max_failcount: value }
         : { serial: tokenSerial, [key]: value };
 
-    return this.http.post(set_url, payload, { headers }).pipe(
+    return this.http.post(set_url, params, { headers }).pipe(
       catchError((error) => {
         console.error('Failed to set token detail.', error);
         const message = error.error?.result?.error?.message || '';
@@ -466,147 +466,144 @@ export class TokenService {
   enrollToken(options: any): Observable<any> {
     const headers = this.localService.getHeaders();
 
-    const payload: any = {
+    const params: any = {
       type: options.type,
       description: options.description,
       container_serial: options.container_serial,
       validity_period_start: options.validity_period_start,
       validity_period_end: options.validity_period_end,
+      user: options.user,
       pin: options.pin,
     };
 
-    if (!options.onlyAddToRealm) {
-      payload.user = options.user;
+    switch (options.type) {
+      case 'passkey':
+        if (options.credential_id) {
+          Object.entries(options).forEach(([key, value]) => {
+            params[key] = value;
+          });
+        }
+        break;
+      case 'hotp':
+      case 'totp':
+      case 'motp':
+      case 'applspec':
+        params.otpkey = options.generateOnServer ? null : options.otpKey;
+        params.genkey = options.generateOnServer ? 1 : 0;
+        if (options.type === 'motp') {
+          params.motppin = options.motpPin;
+        }
+        if (options.type === 'hotp' || options.type === 'totp') {
+          params.otplen = Number(options.otpLength);
+          params.hashlib = options.hashAlgorithm;
+        }
+        if (options.type === 'totp') {
+          params.timeStep = options.timeStep;
+        }
+        if (options.type === 'applspec') {
+          params.service_id = options.serviceId;
+        }
+        break;
+      case 'push':
+        params.genkey = 1;
+        break;
+      case 'daypassword':
+        params.otpkey = options.otpKey;
+        params.otplen = Number(options.otpLength);
+        params.hashlib = options.hashAlgorithm;
+        params.timeStep = options.timeStep;
+        break;
+      case 'indexedsecret':
+        params.otpkey = options.otpKey;
+        break;
+      case 'sshkey':
+        params.sshkey = options.sshPublicKey;
+        break;
+      case 'yubikey':
+        params.otplen = Number(options.otpLength);
+        params.otpkey = options.otpKey;
+        break;
+      case 'yubico':
+        params['yubico.tokenid'] = options.yubicoIdentifier;
+        break;
+      case 'radius':
+        params['radius.identifier'] = options.radiusServerConfiguration;
+        params['radius.user'] = options.radiusUser;
+        break;
+      case 'remote':
+        params['remote.server_id'] = options.remoteServer;
+        params['remote.serial'] = options.remoteSerial;
+        params['remote.user'] = options.remoteUser;
+        params['remote.realm'] = options.remoteRealm;
+        params['remote.resolver'] = options.remoteResolver;
+        params['remote.local_checkpin'] = options.checkPinLocally;
+        break;
+      case 'sms':
+        params['sms.identifier'] = options.smsGateway;
+        params['phone'] = options.readNumberDynamically
+          ? null
+          : options.phoneNumber;
+        params['dynamic_phone'] = options.readNumberDynamically;
+        break;
+      case '4eyes':
+        params.separator = options.separator;
+        params['4eyes'] = options.requiredTokenOfRealms?.reduce(
+          (acc: any, curr: any) => {
+            acc[curr.realm] = {
+              count: curr.tokens,
+              selected: true,
+            };
+            return acc;
+          },
+          {},
+        );
+        if (options.onlyAddToRealm) {
+          params.realm = options.userRealm;
+          params.user = null;
+        }
+        break;
+      case 'certificate':
+        params.genkey = 1;
+        params.ca = options.caConnector;
+        params.template = options.certTemplate;
+        params.pem = options.pem;
+        break;
+      case 'email':
+        params.email = options.emailAddress;
+        params.dynamic_email = options.readEmailDynamically;
+        break;
+
+      case 'question':
+        params.questions = options.answers;
+        break;
+
+      case 'vasco':
+        if (options.useVascoSerial) {
+          params.serial = options.vascoSerial;
+        }
+        params.otpkey = options.otpKey;
+        params.genkey = 0;
+        break;
+      default:
+        break;
     }
 
-    if (options.type === 'passkey') {
-      Object.entries(options).forEach(([key, value]) => {
-        payload[key] = value;
-      });
-    }
-
-    if (['hotp', 'totp', 'motp', 'applspec'].includes(options.type)) {
-      payload.otpkey = options.generateOnServer ? null : options.otpKey;
-      payload.genkey = options.generateOnServer ? 1 : 0;
-    }
-
-    if (options.type === 'push') {
-      payload.genkey = 1;
-    }
-
-    if (['daypassword', 'indexedsecret'].includes(options.type)) {
-      payload.otpkey = options.otpKey;
-    }
-
-    if (['hotp', 'totp', 'daypassword'].includes(options.type)) {
-      payload.otplen = Number(options.otpLength);
-      payload.hashlib = options.hashAlgorithm;
-    }
-
-    if (['totp', 'daypassword'].includes(options.type)) {
-      payload.timeStep = options.timeStep;
-    }
-
-    if (options.type === 'motp') {
-      payload.motppin = options.motpPin;
-    }
-
-    if (options.type === 'sshkey') {
-      payload.sshkey = options.sshPublicKey;
-    }
-
-    if (options.type === 'yubikey') {
-      payload.otplen = Number(options.otpLength);
-      payload.otpkey = options.otpKey;
-    }
-
-    if (options.type === 'yubico') {
-      payload['yubico.tokenid'] = options.yubicoIdentifier;
-    }
-
-    if (options.type === 'radius') {
-      payload['radius.identifier'] = options.radiusServerConfiguration;
-      payload['radius.user'] = options.radiusUser;
-    }
-
-    if (options.type === 'remote') {
-      payload['remote.server_id'] = options.remoteServer;
-      payload['remote.serial'] = options.remoteSerial;
-      payload['remote.user'] = options.remoteUser;
-      payload['remote.realm'] = options.remoteRealm;
-      payload['remote.resolver'] = options.remoteResolver;
-      payload['remote.local_checkpin'] = options.checkPinLocally;
-    }
-
-    if (options.type === 'sms') {
-      payload['sms.identifier'] = options.smsGateway;
-      payload['phone'] = options.readNumberDynamically
-        ? null
-        : options.phoneNumber;
-      payload['dynamic_phone'] = options.readNumberDynamically;
-    }
-
-    if (options.type === '4eyes') {
-      payload.separator = options.separator;
-      payload['4eyes'] = options.requiredTokenOfRealms?.reduce(
-        (acc: any, curr: any) => {
-          acc[curr.realm] = {
-            count: curr.tokens,
-            selected: true,
-          };
-          return acc;
-        },
-        {} as Record<string, { count: number; selected: boolean }>,
-      );
-
-      if (options.onlyAddToRealm) {
-        payload.realm = options.userRealm;
-      }
-    }
-
-    if (options.type === 'applspec') {
-      payload.service_id = options.serviceId;
-    }
-
-    if (options.type === 'certificate') {
-      payload.genkey = 1;
-      payload.ca = options.caConnector;
-      payload.template = options.certTemplate;
-      payload.pem = options.pem;
-    }
-
-    if (options.type === 'email') {
-      payload.email = options.emailAddress;
-      payload.dynamic_email = options.readEmailDynamically;
-    }
-
-    if (options.type === 'question') {
-      payload.questions = options.answers;
-    }
-
-    if (options.type === 'vasco') {
-      if (options.useVascoSerial) {
-        payload.serial = options.vascoSerial;
-      }
-      payload.otpkey = options.otpKey;
-      payload.genkey = 0;
-    }
-
-    return this.http
-      .post(`${this.tokenBaseUrl}init`, payload, { headers })
-      .pipe(
-        catchError((error) => {
-          console.error('Failed to enroll token.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to enroll token. ' + message,
-          );
-          return throwError(() => error);
-        }),
-      );
+    return this.http.post(`${this.tokenBaseUrl}init`, params, { headers }).pipe(
+      catchError((error) => {
+        console.error('Failed to enroll token.', error);
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to enroll token. ' + message,
+        );
+        return throwError(() => error);
+      }),
+    );
   }
 
-  pollTokenState(tokenSerial: string, startTime: number): Observable<any> {
+  pollTokenRolloutState(
+    tokenSerial: string,
+    startTime: number,
+  ): Observable<any> {
     return timer(startTime, 2000).pipe(
       takeUntil(this.stopPolling$),
       switchMap(() => this.getTokenDetails(tokenSerial)),

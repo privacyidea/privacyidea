@@ -282,12 +282,6 @@ export class TokenEnrollmentComponent {
   setPinValue = signal(this.defaults.setPinValue);
   repeatPinValue = signal(this.defaults.repeatPinValue);
   hashAlgorithm = signal(this.defaults.hashAlgorithm);
-  filteredContainerOptions = computed(() => {
-    const filter = (this.selectedContainer() || '').toLowerCase();
-    return this.containerOptions().filter((option) =>
-      option.toLowerCase().includes(filter),
-    );
-  });
   fetchedUsernames = toSignal(
     toObservable(this.selectedUserRealm).pipe(
       distinctUntilChanged(),
@@ -307,12 +301,6 @@ export class TokenEnrollmentComponent {
     { initialValue: [] },
   );
   userOptions = computed(() => this.fetchedUsernames());
-  filteredUserOptions = computed(() => {
-    const filterValue = (this.selectedUsername() || '').toLowerCase();
-    return this.userOptions().filter((option: any) =>
-      option.toLowerCase().includes(filterValue),
-    );
-  });
   otpLength = linkedSignal({
     source: this.testYubiKey,
     computation: (testYubiKey) => {
@@ -341,6 +329,18 @@ export class TokenEnrollmentComponent {
       }
       return '';
     },
+  });
+  filteredUserOptions = computed(() => {
+    const filterValue = (this.selectedUsername() || '').toLowerCase();
+    return this.userOptions().filter((option: any) =>
+      option.toLowerCase().includes(filterValue),
+    );
+  });
+  filteredContainerOptions = computed(() => {
+    const filter = (this.selectedContainer() || '').toLowerCase();
+    return this.containerOptions().filter((option) =>
+      option.toLowerCase().includes(filter),
+    );
   });
   @ViewChild(EnrollPasskeyComponent)
   enrollPasskeyComponent!: EnrollPasskeyComponent;
@@ -425,7 +425,10 @@ export class TokenEnrollmentComponent {
     const enrollmentOptions = this.buildEnrollmentOptions();
 
     this.tokenService.enrollToken(enrollmentOptions).subscribe({
-      next: (response: any) => this.handleEnrollmentResponse(response),
+      next: (response: any) => {
+        this.response.set(response);
+        this.handleEnrollmentResponse(response);
+      },
       error: (error) => {
         const message = error.error?.result?.error?.message || '';
         this.notificationService.openSnackBar(
@@ -436,9 +439,11 @@ export class TokenEnrollmentComponent {
   }
 
   reopenEnrollmentDialog() {
-    this.openSecondStepDialog(this.response());
     if (this.response().detail.rollout_state === 'clientwait') {
-      this.pollTokenEnrollment(this.tokenSerial(), 2000);
+      this.openFirstStepDialog(this.response());
+      this.pollTokenRolloutState(this.tokenSerial(), 2000);
+    } else {
+      this.openSecondStepDialog(this.response());
     }
   }
 
@@ -462,15 +467,9 @@ export class TokenEnrollmentComponent {
 
   private buildEnrollmentOptions() {
     return {
+      // generell
       type: this.selectedType().key,
-      generateOnServer: this.generateOnServer(),
-      otpLength: this.otpLength(),
-      otpKey: this.otpKey(),
-      hashAlgorithm: this.hashAlgorithm(),
-      timeStep: this.timeStep(),
       description: this.description(),
-      tokenSerial: this.tokenSerial(),
-      user: this.selectedUsername().trim(),
       container_serial: this.selectedContainer().trim(),
       validity_period_start: this.formatDateTimeOffset(
         this.selectedStartDate(),
@@ -482,33 +481,65 @@ export class TokenEnrollmentComponent {
         this.selectedEndTime(),
         this.selectedTimezoneOffset(),
       ),
+      user: this.selectedUsername().trim(),
       pin: this.setPinValue(),
+
+      // hotp, totp, motp, applspec
+      generateOnServer: this.generateOnServer(),
+      otpLength: this.otpLength(),
+      otpKey: this.otpKey(),
+      hashAlgorithm: this.hashAlgorithm(),
+      timeStep: this.timeStep(),
+
+      // motp
       motpPin: this.motpPin(),
+
+      // sshkey
       sshPublicKey: this.sshPublicKey(),
+
+      // remote
       remoteServer: this.remoteServer(),
       remoteSerial: this.remoteSerial(),
       remoteUser: this.remoteUser().trim(),
       remoteRealm: this.remoteRealm().trim(),
       remoteResolver: this.remoteResolver().trim(),
       checkPinLocally: this.checkPinLocally(),
+
+      // yubico
       yubicoIdentifier: this.yubikeyIdentifier(),
+
+      // radius
       radiusServerConfiguration: this.radiusServerConfiguration(),
       radiusUser: this.radiusUser().trim(),
+
+      // sms
       smsGateway: this.smsGateway(),
       phoneNumber: this.phoneNumber(),
+
+      // 4eyes
       separator: this.separator(),
-      requiredTokenOfRealms: this.requiredTokenOfRealm(),
+      requiredTokenOfRealm: this.requiredTokenOfRealm(),
+      onlyAddToRealm: this.onlyAddToRealm(),
+      userRealm: this.selectedUserRealm(),
+
+      // applspec
       serviceId: this.serviceId(),
+
+      // certificate
       caConnector: this.caConnector(),
       certTemplate: this.certTemplate(),
       pem: this.pem(),
+
+      // email
       emailAddress: this.emailAddress().trim(),
       readEmailDynamically: this.readEmailDynamically(),
+
+      // question
       answers: this.answers(),
+
+      // vasco
       vascoSerial: this.vascoSerial(),
       useVascoSerial: this.useVascoSerial(),
-      onlyAddToRealm: this.onlyAddToRealm(),
-      userRealm: this.selectedUserRealm(),
     };
   }
 
@@ -516,48 +547,49 @@ export class TokenEnrollmentComponent {
     const detail = response.detail || {};
     const rolloutState = detail.rollout_state;
 
-    if (detail.serial) {
-      this.tokenSerial.set(detail.serial);
-    }
+    this.tokenSerial.update((s) => (detail.serial ? detail.serial : s));
 
-    if (!this.regenerateToken() && rolloutState !== 'clientwait') {
+    if (rolloutState !== 'clientwait') {
       this.notificationService.openSnackBar(
         `Token ${detail.serial} enrolled successfully.`,
       );
     }
 
-    if (detail.webAuthnRegisterRequest) {
-      this.openFirstStepDialog(response);
-      this.enrollWebauthnComponent.registerWebauthn(detail).subscribe({
-        next: () => {
-          this.firstDialog.closeAll();
-          this.openSecondStepDialog(response);
-        },
-      });
-      return;
-    }
-
-    if (detail.passkey_registration) {
-      this.openFirstStepDialog(response);
-      this.enrollPasskeyComponent
-        .registerPasskey(detail, this.firstDialog)
-        .subscribe({
+    switch (this.selectedType().key) {
+      case 'webauthn':
+        this.openFirstStepDialog(response);
+        this.enrollWebauthnComponent.registerWebauthn(detail).subscribe({
           next: () => {
-            this.firstDialog.closeAll();
-            this.openSecondStepDialog(response);
+            this.pollTokenRolloutState(detail.serial, 5000).add(() => {
+              this.firstDialog.closeAll();
+              this.openSecondStepDialog(response);
+            });
           },
         });
-      return;
-    } else if (rolloutState === 'clientwait') {
-      this.openFirstStepDialog(response);
-      this.pollTokenEnrollment(detail.serial, 5000);
-    } else {
-      this.response.set(response);
-      this.openSecondStepDialog(response);
-      if (this.regenerateToken()) {
-        this.regenerateToken.set(false);
-      }
+        break;
+      case 'passkey':
+        this.openFirstStepDialog(response);
+        this.enrollPasskeyComponent.registerPasskey(detail).subscribe({
+          next: () => {
+            this.pollTokenRolloutState(detail.serial, 5000).add(() => {
+              this.firstDialog.closeAll();
+              this.openSecondStepDialog(response);
+            });
+          },
+        });
+        break;
+      case 'push':
+        this.openFirstStepDialog(response);
+        this.pollTokenRolloutState(detail.serial, 5000).add(() => {
+          this.firstDialog.closeAll();
+          this.openSecondStepDialog(response);
+        });
+        break;
+      default:
+        this.openSecondStepDialog(response);
+        break;
     }
+    this.regenerateToken.set(false);
   }
 
   private openFirstStepDialog(response: any) {
@@ -567,7 +599,6 @@ export class TokenEnrollmentComponent {
         tokenSerial: this.tokenSerial,
         containerSerial: this.containerSerial,
         selectedContent: this.selectedContent,
-        regenerateToken: this.regenerateToken,
         isProgrammaticChange: this.isProgrammaticChange,
         username: this.selectedUsername(),
         userRealm: this.selectedUserRealm(),
@@ -592,19 +623,20 @@ export class TokenEnrollmentComponent {
     });
   }
 
-  private pollTokenEnrollment(tokenSerial: string, startTime: number): void {
-    this.tokenService.pollTokenState(tokenSerial, startTime).subscribe({
-      next: (pollResponse: any) => {
-        this.response.set(pollResponse);
-        if (
-          this.response().result.value.tokens[0].rollout_state === 'enrolled'
-        ) {
-          this.firstDialog.closeAll();
-          this.notificationService.openSnackBar(
-            `Token ${tokenSerial} enrolled successfully.`,
-          );
-        }
-      },
-    });
+  private pollTokenRolloutState(tokenSerial: string, startTime: number) {
+    return this.tokenService
+      .pollTokenRolloutState(tokenSerial, startTime)
+      .subscribe({
+        next: (pollResponse: any) => {
+          this.response.set(pollResponse);
+          if (
+            this.response().result.value.tokens[0].rollout_state === 'enrolled'
+          ) {
+            this.notificationService.openSnackBar(
+              `Token ${tokenSerial} enrolled successfully.`,
+            );
+          }
+        },
+      });
   }
 }

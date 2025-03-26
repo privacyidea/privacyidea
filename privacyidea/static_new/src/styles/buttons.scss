@@ -91,7 +91,7 @@ $header-bg: white;
   }
 
   &:active {
-    transform: scale(0.98);
+    transform: scale(0.98)
   }
 }
 
@@ -148,12 +148,12 @@ $header-bg: white;
       var(--background-red),
       var(--box-shadow-red)
   );
-
+  transition: 0ms;
   &.active,
   &:hover {
     background: var(--background-red-inset);
     box-shadow: var(--box-shadow-red-inset);
-    transition: 0ms;
+    transition: background 400ms, box-shadow 400ms;
   }
 }
 
@@ -166,12 +166,12 @@ $header-bg: white;
       var(--background-green),
       var(--box-shadow-green)
   );
-
+  transition: 0ms;
   &.active,
   &:hover {
     background: var(--background-green-inset);
     box-shadow: var(--box-shadow-green-inset);
-    transition: 0ms;
+    transition: background 400ms, box-shadow 400ms;
   }
 }
 
