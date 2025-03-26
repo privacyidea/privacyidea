@@ -75,33 +75,31 @@ export class TokenDetailsInfoComponent {
     protected overflowService: OverflowService,
   ) {}
 
-  toggleInfoEditMode(
-    element: any,
-    type: string = '',
-    action: string = '',
-  ): void {
-    this.isEditingInfo.set(!this.isEditingInfo());
-    if (action === 'cancel') {
-      this.newInfo.set({ key: '', value: '' });
-    }
-    if (action === 'save') {
-      this.saveInfo(element.value);
-    }
+  toggleInfoEdit(): void {
+    this.isEditingInfo.update((b) => !b);
     this.newInfo.set({ key: '', value: '' });
   }
 
-  saveInfo(infos: any): void {
+  cancelInfoEdit(): void {
+    this.isEditingInfo.update((b) => !b);
+    this.newInfo.set({ key: '', value: '' });
+  }
+
+  saveInfo(element: any): void {
     if (
       this.newInfo().key.trim() !== '' &&
       this.newInfo().value.trim() !== ''
     ) {
-      infos[this.newInfo().key] = this.newInfo().value;
+      element.value[this.newInfo().key] = this.newInfo().value;
     }
-    this.tokenService.setTokenInfos(this.tokenSerial(), infos).subscribe({
-      next: () => {
-        this.refreshDetails.set(true);
-      },
-    });
+    this.tokenService
+      .setTokenInfos(this.tokenSerial(), element.value)
+      .subscribe({
+        next: () => {
+          this.newInfo.set({ key: '', value: '' });
+          this.refreshDetails.set(true);
+        },
+      });
   }
 
   deleteInfo(key: string): void {

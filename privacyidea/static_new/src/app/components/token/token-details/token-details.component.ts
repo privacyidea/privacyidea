@@ -258,25 +258,61 @@ export class TokenDetailsComponent {
       .pipe(switchMap(() => this.showTokenDetail()));
   }
 
-  toggleEditMode(element: any, type: string = '', action: string = ''): void {
-    if (action === 'cancel') {
-      this.handleCancelAction(type);
-      element.isEditing.set(!element.isEditing());
-      return;
-    }
+  cancelTokenEdit(element: any) {
+    this.resetEdit(element.keyMap.key);
+    element.isEditing.set(!element.isEditing());
+  }
 
-    switch (type) {
+  saveTokenEdit(element: any) {
+    switch (element.keyMap.key) {
       case 'container_serial':
-        this.handleContainerSerial(action);
+        this.selectedContainer.set(this.selectedContainer().trim() ?? null);
+        this.saveContainer();
         break;
       case 'tokengroup':
-        this.handleTokengroup(action);
+        this.saveTokengroup(this.selectedTokengroup());
         break;
       case 'realms':
-        this.handleRealms(action);
+        this.saveRealms();
         break;
       default:
-        this.handleDefault(element, action);
+        this.saveDetail(element.keyMap.key, element.value);
+        break;
+    }
+    element.isEditing.set(!element.isEditing());
+  }
+
+  toggleTokenEdit(element: any): void {
+    switch (element.keyMap.key) {
+      case 'container_serial':
+        if (this.containerOptions().length === 0) {
+          this.containerService.getContainerData({ noToken: true }).subscribe({
+            next: (containers: any) => {
+              this.containerOptions.set(
+                Object.values(
+                  containers.result.value.containers as {
+                    serial: string;
+                  }[],
+                ).map((container) => container.serial),
+              );
+              this.selectedContainer.set(this.selectedContainer());
+            },
+          });
+        }
+        break;
+      case 'tokengroup':
+        if (this.tokengroupOptions().length === 0) {
+          this.tokenService.getTokengroups().subscribe({
+            next: (tokengroups: any) => {
+              this.tokengroupOptions.set(Object.keys(tokengroups.result.value));
+              this.selectedTokengroup.set(
+                this.tokenDetailData().find(
+                  (detail) => detail.keyMap.key === 'tokengroup',
+                )?.value,
+              );
+            },
+          });
+        }
         break;
     }
 
@@ -297,13 +333,15 @@ export class TokenDetailsComponent {
   saveContainer() {
     this.containerService
       .assignContainer(this.tokenSerial(), this.selectedContainer())
-      .pipe(switchMap(() => this.showTokenDetail()));
+      .pipe(switchMap(() => this.showTokenDetail()))
+      .subscribe();
   }
 
   deleteContainer() {
     this.containerService
       .unassignContainer(this.tokenSerial(), this.selectedContainer())
-      .pipe(switchMap(() => this.showTokenDetail()));
+      .pipe(switchMap(() => this.showTokenDetail()))
+      .subscribe();
   }
 
   isEditableElement(key: any) {
@@ -329,58 +367,7 @@ export class TokenDetailsComponent {
     this.containerSerial.set(containerSerial);
   }
 
-  private handleContainerSerial(action: string): void {
-    if (this.containerOptions().length === 0) {
-      this.containerService.getContainerData({ noToken: true }).subscribe({
-        next: (containers: any) => {
-          this.containerOptions.set(
-            Object.values(
-              containers.result.value.containers as {
-                serial: string;
-              }[],
-            ).map((container) => container.serial),
-          );
-          this.selectedContainer.set(this.selectedContainer());
-        },
-      });
-    }
-    if (action === 'save') {
-      this.selectedContainer.set(this.selectedContainer().trim() ?? null);
-      this.saveContainer();
-    }
-  }
-
-  private handleTokengroup(action: string): void {
-    if (this.tokengroupOptions().length === 0) {
-      this.tokenService.getTokengroups().subscribe({
-        next: (tokengroups: any) => {
-          this.tokengroupOptions.set(Object.keys(tokengroups.result.value));
-          this.selectedTokengroup.set(
-            this.tokenDetailData().find(
-              (detail) => detail.keyMap.key === 'tokengroup',
-            )?.value,
-          );
-        },
-      });
-    }
-    if (action === 'save') {
-      this.saveTokengroup(this.selectedTokengroup());
-    }
-  }
-
-  private handleRealms(action: string): void {
-    if (action === 'save') {
-      this.saveRealms();
-    }
-  }
-
-  private handleDefault(element: any, action: string): void {
-    if (action === 'save') {
-      this.saveDetail(element.keyMap.key, element.value);
-    }
-  }
-
-  private handleCancelAction(type: string): void {
+  private resetEdit(type: string): void {
     switch (type) {
       case 'container_serial':
         this.selectedContainer.set('');

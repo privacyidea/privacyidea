@@ -264,11 +264,11 @@ describe('ContainerDetailsComponent', () => {
     ]);
     const element = component.containerDetailData()[0];
 
-    component.toggleEditMode(element, 'realms', '');
+    component.toggleContainerEdit(element);
     expect(element.isEditing()).toBeTrue();
 
     component.selectedRealms.set(['realm1', 'realm2']);
-    component.toggleEditMode(element, 'realms', 'save');
+    component.saveContainerEdit(element);
 
     expect(setRealmSpy).toHaveBeenCalledWith('Mock serial', [
       'realm1',
@@ -291,7 +291,7 @@ describe('ContainerDetailsComponent', () => {
       },
     ]);
     const element = component.containerDetailData()[0];
-    component.toggleEditMode(element, 'description', '');
+    component.toggleContainerEdit(element);
     expect(element.isEditing()).toBeTrue();
 
     component.containerDetailData.set([
@@ -302,7 +302,7 @@ describe('ContainerDetailsComponent', () => {
       },
     ]);
 
-    component.toggleEditMode(element, 'description', 'save');
+    component.saveContainerEdit(element);
     expect(setDescSpy).toHaveBeenCalledWith(
       'Mock serial',
       'New description from UI',
@@ -326,13 +326,13 @@ describe('ContainerDetailsComponent', () => {
     const element = component.userData()[0];
     expect(component.isEditingUser()).toBeFalse();
 
-    component.toggleEditMode(element, 'user_name', '');
+    component.toggleContainerEdit(element);
     expect(component.isEditingUser()).toBeTrue();
 
     component.selectedUsername.set('alice');
     component.selectedUserRealm.set('realmUser');
 
-    component.toggleEditMode(element, 'user_name', 'save');
+    component.saveUser();
     expect(assignUserSpy).toHaveBeenCalledWith(
       'Mock serial',
       'alice',
@@ -343,7 +343,15 @@ describe('ContainerDetailsComponent', () => {
 
   it('should handle cancel action when editing realms', () => {
     component.selectedRealms.set(['realm1']);
-    component.handleCancelAction('realms');
+    component.containerDetailData.set([
+      {
+        keyMap: { label: 'Realms', key: 'realms' },
+        value: 'Old description',
+        isEditing: signal(false),
+      },
+    ]);
+    const element = component.containerDetailData()[0];
+    component.cancelContainerEdit(element);
     expect(component.selectedRealms()).toEqual([]);
   });
 
@@ -352,7 +360,8 @@ describe('ContainerDetailsComponent', () => {
       component,
       'showContainerDetail',
     ).and.callThrough();
-    component.handleCancelAction('description');
+    const element = component.containerDetailData()[0];
+    component.cancelContainerEdit(element);
     expect(showDetailSpy).toHaveBeenCalled();
   });
 

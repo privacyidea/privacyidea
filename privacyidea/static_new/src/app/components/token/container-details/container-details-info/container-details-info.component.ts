@@ -73,34 +73,30 @@ export class ContainerDetailsInfoComponent {
     protected overflowService: OverflowService,
   ) {}
 
-  toggleInfoEditMode(
-    element: any,
-    type: string = '',
-    action: string = '',
-  ): void {
-    this.isEditingInfo.set(!this.isEditingInfo());
-    if (action === 'cancel') {
-      this.newInfo.set({ key: '', value: '' });
-    }
-    if (action === 'save') {
-      this.saveInfo(element.value);
-    }
+  cancelInfoEdit(): void {
+    this.isEditingInfo.update((b) => !b);
     this.newInfo.set({ key: '', value: '' });
   }
 
-  saveInfo(infos: any): void {
+  toggleInfoEdit(): void {
+    this.isEditingInfo.update((b) => !b);
+    this.newInfo.set({ key: '', value: '' });
+  }
+
+  saveInfo(element: any): void {
     if (
       this.newInfo().key.trim() !== '' &&
       this.newInfo().value.trim() !== ''
     ) {
-      infos[this.newInfo().key] = this.newInfo().value;
+      element.value[this.newInfo().key] = this.newInfo().value;
     }
     const requests = this.containerService.setContainerInfos(
       this.containerSerial(),
-      infos,
+      element.value,
     );
     forkJoin(requests).subscribe({
       next: () => {
+        this.newInfo.set({ key: '', value: '' });
         this.refreshDetails.set(true);
       },
     });

@@ -135,12 +135,8 @@ export class TokenDetailsUserComponent {
     this.tokenService.setRandomPin(this.tokenSerial());
   }
 
-  toggleUserEditMode(
-    element: any,
-    type: string = '',
-    action: string = '',
-  ): void {
-    this.isEditingUser.set(!this.isEditingUser());
+  toggleUserEdit(): void {
+    this.isEditingUser.update((b) => !b);
     if (this.selectedUserRealm() === '') {
       this.realmService.getDefaultRealm().subscribe({
         next: (realm: any) => {
@@ -148,11 +144,11 @@ export class TokenDetailsUserComponent {
         },
       });
     }
-    if (action === 'save') {
-      this.saveUser();
-    } else if (action === 'cancel') {
-      this.selectedUsername.set('');
-    }
+  }
+
+  cancelUserEdit(): void {
+    this.isEditingUser.update((b) => !b);
+    this.selectedUsername.set('');
   }
 
   saveUser() {
@@ -174,6 +170,7 @@ export class TokenDetailsUserComponent {
           this.repeatPinValue.set('');
           this.selectedUsername.set('');
           this.selectedUserRealm.set('');
+          this.isEditingUser.update((b) => !b);
           this.refreshTokenDetails.set(true);
         },
       });

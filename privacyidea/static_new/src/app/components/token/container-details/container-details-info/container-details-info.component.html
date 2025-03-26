@@ -70,7 +70,9 @@
                           [isEditingInfo]="isEditingInfo"
                           [isEditingUser]="isEditingUser"
                           [shouldHideEdit]="isAnyEditingOrRevoked"
-                          [toggleEditMode]="toggleInfoEditMode.bind(this)"></app-edit-buttons>
+                          [toggleEdit]="toggleInfoEdit.bind(this)"
+                          [saveEdit]="saveInfo.bind(this)"
+                          [cancelEdit]="cancelInfoEdit.bind(this)"></app-edit-buttons>
       </td>
     </ng-container>
     <tr *matRowDef="let row; columns: ['value', 'edit']"

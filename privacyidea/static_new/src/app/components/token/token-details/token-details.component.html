@@ -193,7 +193,9 @@
                     </button>
                   </div>
                 } @else if (isEditableElement(element.keyMap.key)) {
-                  <app-edit-buttons [toggleEditMode]="toggleEditMode.bind(this)"
+                  <app-edit-buttons [toggleEdit]="toggleTokenEdit.bind(this)"
+                                    [saveEdit]="saveTokenEdit.bind(this)"
+                                    [cancelEdit]="cancelTokenEdit.bind(this)"
                                     [shouldHideEdit]="isAnyEditingOrRevoked"
                                     [isEditingUser]="isEditingUser"
                                     [isEditingInfo]="isEditingInfo"

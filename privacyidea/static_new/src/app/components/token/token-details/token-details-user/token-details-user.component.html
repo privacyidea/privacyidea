@@ -19,34 +19,41 @@
       <td *matCellDef="let element"
           class="user-editable-row height-52 fix-width-20-padr-0"
           mat-cell>
-        @if (isEditingUser() &&
-        element.keyMap.key === "username" &&
-        selectedUserRealm() !== "") {
-          <mat-form-field>
-            <mat-label>Enter User</mat-label>
-            <input matInput
-                   [(ngModel)]="selectedUsername"
-                   [matAutocomplete]="userAuto" />
-            <mat-autocomplete #userAuto="matAutocomplete">
-              @for (option of filteredUserOptions(); track option) {
-                <mat-option [value]="option">{{ option }}</mat-option>
-              }
-            </mat-autocomplete>
-          </mat-form-field>
-        } @else if (isEditingUser() && element.keyMap.key === "user_realm") {
-          <mat-form-field>
-            <mat-label>Select Realm of User</mat-label>
-            <mat-select [(ngModel)]="selectedUserRealm">
-              @for (option of realmOptions(); track option) {
-                <mat-option value="{{ option }}">{{ option }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-        } @else if (element.keyMap.key === "username" ||
-        element.keyMap.key === "user_realm") {
-          <a href="#">{{ element.value }}</a>
-        } @else {
-          {{ element.value }}
+        @switch (element.keyMap.key) {
+          @case ("username") {
+            @if (isEditingUser() && selectedUserRealm() !== "") {
+              <mat-form-field>
+                <mat-label>Enter User</mat-label>
+                <input matInput
+                       [(ngModel)]="selectedUsername"
+                       [matAutocomplete]="userAuto" />
+                <mat-autocomplete #userAuto="matAutocomplete">
+                  @for (option of filteredUserOptions(); track option) {
+                    <mat-option [value]="option">{{ option }}</mat-option>
+                  }
+                </mat-autocomplete>
+              </mat-form-field>
+            } @else {
+              <a href="#">{{ element.value }}</a>
+            }
+          }
+          @case ("user_realm") {
+            @if (isEditingUser()) {
+              <mat-form-field>
+                <mat-label>Select Realm of User</mat-label>
+                <mat-select [(ngModel)]="selectedUserRealm">
+                  @for (option of realmOptions(); track option) {
+                    <mat-option value="{{ option }}">{{ option }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            } @else {
+              <a href="#">{{ element.value }}</a>
+            }
+          }
+          @default {
+            {{ element.value }}
+          }
         }
       </td>
     </ng-container>
@@ -54,22 +61,27 @@
       <td *matCellDef="let element"
           class="edit-column-cell"
           mat-cell>
-        @if (element.keyMap.key === "username" &&
-        !(isAnyEditingOrRevoked() && !isEditingUser())) {
-          @if (element.value) {
-            <div class="edit-button-container">
-              <button mat-icon-button
-                      class="yellow"
-                      (click)="unassignUser()">
-                <mat-icon>person_remove</mat-icon>
-              </button>
-            </div>
-          } @else {
-            <app-edit-buttons [toggleEditMode]="toggleUserEditMode.bind(this)"
-                              [shouldHideEdit]="isAnyEditingOrRevoked"
-                              [isEditingUser]="isEditingUser"
-                              [isEditingInfo]="isEditingInfo"
-                              [element]="element"></app-edit-buttons>
+        @switch (element.keyMap.key) {
+          @case ("username") {
+            @if (!(isAnyEditingOrRevoked() && !isEditingUser())) {
+              @if (element.value) {
+                <div class="edit-button-container">
+                  <button mat-icon-button
+                          class="yellow"
+                          (click)="unassignUser()">
+                    <mat-icon>person_remove</mat-icon>
+                  </button>
+                </div>
+              } @else {
+                <app-edit-buttons [toggleEdit]="toggleUserEdit.bind(this)"
+                                  [saveEdit]="saveUser.bind(this)"
+                                  [cancelEdit]="cancelUserEdit.bind(this)"
+                                  [shouldHideEdit]="isAnyEditingOrRevoked"
+                                  [isEditingUser]="isEditingUser"
+                                  [isEditingInfo]="isEditingInfo"
+                                  [element]="element"></app-edit-buttons>
+              }
+            }
           }
         }
       </td>
@@ -91,20 +103,20 @@
              placeholder="Repeat Pin" />
     </div>
     <div class="user-pin-button">
-        <button class="detail-button"
-                extended
-                mat-fab
-                (click)="setPin()">
-          <mat-icon class="detail-button-icon">password</mat-icon>
-          Set Pin
-        </button>
-        <button class="detail-button"
-                extended
-                mat-fab
-                (click)="setRandomPin()">
-          <mat-icon class="detail-button-icon">casino</mat-icon>
-          Random Pin
-        </button>
+      <button (click)="setPin()"
+              class="detail-button"
+              extended
+              mat-fab>
+        <mat-icon class="detail-button-icon">password</mat-icon>
+        Set Pin
+      </button>
+      <button (click)="setRandomPin()"
+              class="detail-button"
+              extended
+              mat-fab>
+        <mat-icon class="detail-button-icon">casino</mat-icon>
+        Random Pin
+      </button>
     </div>
     <br />
     <mat-divider />

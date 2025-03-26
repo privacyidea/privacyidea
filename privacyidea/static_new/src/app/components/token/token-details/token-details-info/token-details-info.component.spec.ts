@@ -100,10 +100,17 @@ describe('TokenDetailsInfoComponent', () => {
 
   it('should set token infos', () => {
     spyOn(tokenService, 'setTokenInfos').and.callThrough();
-    component.saveInfo({});
+    component.infoData.set([
+      {
+        keyMap: { label: 'Mock label', key: 'Mock key' },
+        value: 'Mock value',
+        isEditing: signal(false),
+      },
+    ]);
+    component.saveInfo(component.infoData()[0]);
     expect(tokenService.setTokenInfos).toHaveBeenCalledWith(
       'Mock serial',
-      jasmine.any(Object),
+      'Mock value',
     );
   });
 

@@ -323,45 +323,49 @@ export class ContainerDetailsComponent {
     return key === 'description' || key === 'realms';
   }
 
-  toggleEditMode(element: any, type: string = '', action: string = ''): void {
-    if (action === 'cancel') {
-      this.handleCancelAction(type);
-      if (type === 'user_name') {
-        this.isEditingUser.set(!this.isEditingUser());
-        return;
-      }
-      element.isEditing.set(!element.isEditing());
-      return;
-    }
-
-    switch (type) {
+  cancelContainerEdit(element: any) {
+    switch (element.keyMap.key) {
       case 'realms':
-        this.handleRealms(action);
-        break;
-      case 'description':
-        this.handleDescription(action);
+        this.selectedRealms.set([]);
         break;
       case 'user_name':
-        this.isEditingUser.set(!this.isEditingUser());
-        if (
-          action === 'edit' &&
-          this.isEditingUser() &&
-          this.selectedUserRealm() === ''
-        ) {
+        this.isEditingUser.update((b) => !b);
+        break;
+    }
+    element.isEditing.set(!element.isEditing());
+    this.showContainerDetail().subscribe();
+  }
+
+  saveContainerEdit(element: any) {
+    switch (element.keyMap.key) {
+      case 'realms':
+        this.saveRealms();
+        break;
+      case 'description':
+        this.saveDescription();
+        break;
+      case 'user_name':
+        this.saveUser();
+        break;
+    }
+    element.isEditing.set(!element.isEditing());
+  }
+
+  toggleContainerEdit(element: any) {
+    switch (element.keyMap.key) {
+      case 'user_name':
+        this.isEditingUser.update((b) => !b);
+        if (this.isEditingUser() && this.selectedUserRealm() === '') {
           this.realmService.getDefaultRealm().subscribe({
             next: (realm: any) => {
               this.selectedUserRealm.set(realm);
             },
           });
         }
-        this.handleUser(action);
         return;
       default:
-        this.handleDefault(element, action);
-        break;
+        element.isEditing.set(!element.isEditing());
     }
-
-    element.isEditing.set(!element.isEditing());
   }
 
   saveUser() {
@@ -373,6 +377,9 @@ export class ContainerDetailsComponent {
       )
       .subscribe({
         next: () => {
+          this.selectedUsername.set('');
+          this.selectedUserRealm.set('');
+          this.isEditingUser.update((b) => !b);
           this.refreshContainerDetails.set(true);
         },
       });
@@ -424,17 +431,6 @@ export class ContainerDetailsComponent {
       });
   }
 
-  handleCancelAction(type: string) {
-    switch (type) {
-      case 'realms':
-        this.selectedRealms.set([]);
-        break;
-      default:
-        this.showContainerDetail().subscribe();
-        break;
-    }
-  }
-
   private fetchTokenData() {
     this.tokenService
       .getTokenData(
@@ -449,28 +445,6 @@ export class ContainerDetailsComponent {
           this.length = response.result.value.count;
         },
       });
-  }
-
-  private handleRealms(action: string) {
-    if (action === 'save') {
-      this.saveRealms();
-    }
-  }
-
-  private handleDescription(action: string) {
-    if (action === 'save') {
-      this.saveDescription();
-    }
-  }
-
-  private handleUser(action: string) {
-    if (action === 'save') {
-      this.saveUser();
-    }
-  }
-
-  private handleDefault(element: any, action: string) {
-    return;
   }
 
   private saveRealms() {

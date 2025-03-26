@@ -40,7 +40,7 @@ export class KeywordFilterComponent {
   }
 
   onToggleAdvancedFilter(): void {
-    this.showAdvancedFilter.set(!this.showAdvancedFilter());
+    this.showAdvancedFilter.update((b) => !b);
   }
 
   isFilterSelected(filter: string, inputValue: string): boolean {

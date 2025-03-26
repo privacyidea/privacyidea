@@ -100,7 +100,9 @@
                 class="edit-column-cell"
                 mat-cell>
               @if (isEditableElement(element.keyMap.key)) {
-                <app-edit-buttons [toggleEditMode]="toggleEditMode.bind(this)"
+                <app-edit-buttons [toggleEdit]="toggleContainerEdit.bind(this)"
+                                  [saveEdit]="saveContainerEdit.bind(this)"
+                                  [cancelEdit]="cancelContainerEdit.bind(this)"
                                   [shouldHideEdit]="isAnyEditing"
                                   [isEditingUser]="isEditingUser"
                                   [isEditingInfo]="isEditingInfo"
@@ -126,35 +128,42 @@
             <td *matCellDef="let element"
                 class="user-editable-row height-52 fix-width-20-padr-0"
                 mat-cell>
-              @if (isEditingUser() &&
-              element.keyMap.key === "user_name" &&
-              selectedUserRealm() !== "") {
-                <mat-form-field class="width-18rem">
-                  <mat-label>Enter User</mat-label>
-                  <input matInput
-                         [(ngModel)]="selectedUsername"
-                         [matAutocomplete]="userAuto" />
-                  <mat-autocomplete #userAuto="matAutocomplete"
-                                    class="user-selection-autocomplete">
-                    @for (option of filteredUserOptions(); track option) {
-                      <mat-option [value]="option">{{ option }}</mat-option>
-                    }
-                  </mat-autocomplete>
-                </mat-form-field>
-              } @else if (isEditingUser() && element.keyMap.key === "user_realm") {
-                <mat-form-field class="width-18rem">
-                  <mat-label>Select Realm of User</mat-label>
-                  <mat-select [(ngModel)]="selectedUserRealm">
-                    @for (option of realmOptions(); track option) {
-                      <mat-option value="{{ option }}">{{ option }}</mat-option>
-                    }
-                  </mat-select>
-                </mat-form-field>
-              } @else if (element.keyMap.key === "user_name" ||
-              element.keyMap.key === "user_realm") {
-                <a href="#">{{ element.value }}</a>
-              } @else {
-                {{ element.value }}
+              @switch (element.keyMap.key) {
+                @case ("user_name") {
+                  @if (isEditingUser() && selectedUserRealm() !== "") {
+                    <mat-form-field class="width-18rem">
+                      <mat-label>Enter User</mat-label>
+                      <input matInput
+                             [(ngModel)]="selectedUsername"
+                             [matAutocomplete]="userAuto" />
+                      <mat-autocomplete #userAuto="matAutocomplete"
+                                        class="user-selection-autocomplete">
+                        @for (option of filteredUserOptions(); track option) {
+                          <mat-option [value]="option">{{ option }}</mat-option>
+                        }
+                      </mat-autocomplete>
+                    </mat-form-field>
+                  } @else {
+                    <a href="#">{{ element.value }}</a>
+                  }
+                }
+                @case ("user_realm") {
+                  @if (isEditingUser()) {
+                    <mat-form-field class="width-18rem">
+                      <mat-label>Select Realm of User</mat-label>
+                      <mat-select [(ngModel)]="selectedUserRealm">
+                        @for (option of realmOptions(); track option) {
+                          <mat-option value="{{ option }}">{{ option }}</mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+                  } @else {
+                    <a href="#">{{ element.value }}</a>
+                  }
+                }
+                @default {
+                  {{ element.value }}
+                }
               }
             </td>
           </ng-container>
@@ -173,7 +182,9 @@
                     </button>
                   </div>
                 } @else {
-                  <app-edit-buttons [toggleEditMode]="toggleEditMode.bind(this)"
+                  <app-edit-buttons [toggleEdit]="toggleContainerEdit.bind(this)"
+                                    [saveEdit]="saveContainerEdit.bind(this)"
+                                    [cancelEdit]="cancelContainerEdit.bind(this)"
                                     [shouldHideEdit]="isAnyEditing"
                                     [isEditingUser]="isEditingUser"
                                     [isEditingInfo]="isEditingInfo"

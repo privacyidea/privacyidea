@@ -9,11 +9,9 @@ import { MatIcon } from '@angular/material/icon';
   styleUrl: './edit-buttons.component.scss',
 })
 export class EditButtonsComponent {
-  @Input() toggleEditMode!: (
-    element: any,
-    type?: string,
-    action?: string,
-  ) => void;
+  @Input() toggleEdit!: (element?: any) => void;
+  @Input() saveEdit!: (element?: any) => void;
+  @Input() cancelEdit!: (element?: any) => void;
   @Input() shouldHideEdit!: Signal<boolean>;
   @Input() isEditingUser!: WritableSignal<boolean>;
   @Input() isEditingInfo!: WritableSignal<boolean>;
