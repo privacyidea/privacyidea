@@ -683,11 +683,31 @@ class TokenContainerManagementTestCase(MyTestCase):
         container_data = get_all_containers(serial="non_existing_serial")
         self.assertEqual(0, len(container_data["containers"]))
 
+        # Filter for container serials starting with "SMPH"
+        container_data = get_all_containers(serial="SMPH*", pagesize=15)
+        self.assertEqual(2, container_data["count"])
+        self.assertSetEqual(set(container_serials[i] for i in [0, 3]),
+                            {container.serial for container in container_data["containers"]})
+
+        # Filter for any container serial
+        container_data = get_all_containers(serial="*", pagesize=15)
+        self.assertEqual(6, container_data["count"])
+
+        # Filter for container serial containing "ont"
+        container_data = get_all_containers(serial="*ont*", pagesize=15)
+        self.assertEqual(2, container_data["count"])
+
         # Filter for type
         container_data = get_all_containers(ctype="generic", pagesize=15)
         for container in container_data["containers"]:
             self.assertEqual(container.type, "generic")
         self.assertEqual(2, container_data["count"])
+
+        # Filter for type using wildcards
+        container_data = get_all_containers(ctype="*ne*", pagesize=15)
+        self.assertEqual(4, container_data["count"])
+        for container in container_data["containers"]:
+            self.assertIn(container.type, ["generic", "smartphone"])
 
         # Filter for non-existing type
         container_data = get_all_containers(ctype="random_type")
@@ -695,35 +715,58 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # Assign token
         tokens = []
-        params = {"genkey": "1"}
+        params = {"type": "hotp", "genkey": "1"}
+        container = find_container_by_serial(container_serials[2])
         for i in range(3):
             t = init_token(params)
             tokens.append(t)
+            container.add_token(t)
         token_serials = [t.get_serial() for t in tokens]
 
-        for serial in container_serials[2:4]:
-            container = find_container_by_serial(serial)
-            for token in tokens:
-                container.add_token(token)
+        token = init_token(params)
+        container = find_container_by_serial(container_serials[3])
+        container.add_token(token)
 
         # Filter for token serial
         container_data = get_all_containers(token_serial=token_serials[1], pagesize=15)
         for container in container_data["containers"]:
+            self.assertTrue(container.serial in container_serials[2])
+        self.assertEqual(1, container_data["count"])
+
+        # filter for token serial containing wildcard
+        container_data = get_all_containers(token_serial="OATH*", pagesize=15)
+        for container in container_data["containers"]:
             self.assertTrue(container.serial in container_serials[2:4])
         self.assertEqual(2, container_data["count"])
+
+        # filter for non-matching token serial containing wildcard
+        container_data = get_all_containers(token_serial="xyz1234*", pagesize=15)
+        self.assertEqual(0, container_data["count"])
 
         # Filter for non-existing token serial
         container_data = get_all_containers(token_serial="non_existing_token", pagesize=15)
         self.assertEqual(0, len(container_data["containers"]))
 
-        # Filter by realms
-        container_data = get_all_containers(realms=["realm1"], pagesize=15)
+        # Filter by realm
+        container_data = get_all_containers(realm="realm1", pagesize=15)
         self.assertEqual(4, len(container_data["containers"]))
         for container in container_data["containers"]:
             self.assertEqual("realm1", container.realms[0].name)
 
+        # Filter by realm including wildcards
+        container_data = get_all_containers(realm="*1", pagesize=15)
+        self.assertEqual(4, len(container_data["containers"]))
+        for container in container_data["containers"]:
+            self.assertIn("1", container.realms[0].name)
+
+        # Filter by realms case-insensitive
+        container_data = get_all_containers(realm="rEalM2", pagesize=15)
+        self.assertEqual(2, len(container_data["containers"]))
+        for container in container_data["containers"]:
+            self.assertEqual("realm2", container.realms[0].name)
+
         # Filter for non-existing realm
-        container_data = get_all_containers(realms=["non_existing_realm"], pagesize=15)
+        container_data = get_all_containers(realm="non_existing_realm", pagesize=15)
         self.assertEqual(0, len(container_data["containers"]))
 
         # Filter by user
@@ -739,6 +782,19 @@ class TokenContainerManagementTestCase(MyTestCase):
         container_data = get_all_containers(user=user_invalid, pagesize=15)
         self.assertEqual(0, len(container_data["containers"]))
 
+        # filter by description
+        find_container_by_serial(container_serials[0]).description = "test description"
+        find_container_by_serial(container_serials[2]).description = "this is an awesome description"
+
+        # exact match
+        container_data = get_all_containers(description="test description")
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(container_serials[0], container_data["containers"][0].serial)
+
+        # wildcard
+        container_data = get_all_containers(description="*description*")
+        self.assertEqual(2, len(container_data["containers"]))
+
         # Create container with template
         template_params = {"name": "test",
                            "container_type": "smartphone",
@@ -746,16 +802,35 @@ class TokenContainerManagementTestCase(MyTestCase):
         create_container_template(container_type=template_params["container_type"],
                                   template_name=template_params["name"],
                                   options=template_params["template_options"])
-        init_container({"type": "smartphone", "template": template_params})
+        container_serial = init_container({"type": "smartphone", "template": template_params})["container_serial"]
 
         # check filter by template
         container_data = get_all_containers(template="test")
         self.assertEqual(1, len(container_data["containers"]))
         self.assertEqual("test", container_data["containers"][0].template.name)
 
+        # filter template with wildcards
+        container_data = get_all_containers(template="te*")
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual("test", container_data["containers"][0].template.name)
+
         # check filter by non-existing template
         container_data = get_all_containers(template="random")
         self.assertEqual(0, len(container_data["containers"]))
+
+        # combined search
+        container = find_container_by_serial(container_serial)
+        container.add_user(User(login="hans", realm=self.realm1))
+        container.set_realms([self.realm1, self.realm2])
+        container.add_token(init_token({"type": "hotp", "genkey": True}))
+        # correct search
+        container_data = get_all_containers(user=User("hans", self.realm1), serial="SMPH*", ctype="smartphone",
+                                            realm="realm2", token_serial="OATH*", template="test", pagesize=15)
+        self.assertEqual(1, container_data["count"])
+        # no container fits all search params
+        container_data = get_all_containers(user=User("hans", self.realm1), serial="SMPH*", ctype="smartphone",
+                                            realm="realm3", token_serial="OATH*", template="test", pagesize=15)
+        self.assertEqual(0, container_data["count"])
 
         # Test pagination
         container_data = get_all_containers(page=2, pagesize=2)
