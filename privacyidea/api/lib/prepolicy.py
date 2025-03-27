@@ -2053,6 +2053,7 @@ def fido2_auth(request, action):
     The following policy values are added:
     - WEBAUTHNACTION.ALLOWED_TRANSPORTS
     - ACTION.CHALLENGETEXT for WebAuthn and Passkey token
+    - PasskeyAction.EnableTriggerByPIN
     """
     user_object = request.User if hasattr(request, "User") else None
     allowed_transports_policies = (Match.user(g,
@@ -2080,6 +2081,13 @@ def fido2_auth(request, action):
     rp_id = get_first_policy_value(FIDO2PolicyAction.RELYING_PARTY_ID, "", scope=SCOPE.ENROLL)
     if rp_id:
         request.all_data[FIDO2PolicyAction.RELYING_PARTY_ID] = rp_id
+
+    passkey_trigger_by_pin = (Match.user(g,
+                                         scope=SCOPE.AUTH,
+                                         action=PasskeyAction.EnableTriggerByPIN,
+                                         user_object=user_object).any())
+    request.all_data[PasskeyAction.EnableTriggerByPIN] = passkey_trigger_by_pin
+    
     return True
 
 
@@ -2612,7 +2620,7 @@ def rss_age(request, action):
     :return: True
     """
     age_list = (Match.user(g, scope=SCOPE.WEBUI, action=ACTION.RSS_AGE,
-                user_object=request.User if hasattr(request, 'User') else None).action_values(unique=True))
+                           user_object=request.User if hasattr(request, 'User') else None).action_values(unique=True))
     # The default age for normal users is 0
     age = 0
     if g.get("logged_in_user", {}).get("role") == ROLE.ADMIN:

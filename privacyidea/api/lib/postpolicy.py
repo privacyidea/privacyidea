@@ -876,6 +876,7 @@ def multichallenge_enroll_via_validate(request, response):
                                 content.get("result")["value"] = False
                                 content.get("result")["authentication"] = "CHALLENGE"
                                 detail = content.setdefault("detail", {})
+                                detail["transaction_id"] = init_details["transaction_id"]
                                 detail["transaction_ids"] = [init_details["transaction_id"]]
                                 detail["multi_challenge"] = [init_details]
                                 detail["serial"] = token.token.serial
