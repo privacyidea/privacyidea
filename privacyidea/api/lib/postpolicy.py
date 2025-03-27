@@ -50,7 +50,7 @@ from urllib.parse import quote
 from flask import g, current_app, make_response
 
 from privacyidea.api.lib.utils import get_all_params
-from privacyidea.lib import _, lazy_gettext
+from privacyidea.lib import lazy_gettext
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import get_multichallenge_enrollable_tokentypes, get_token_class, get_privacyidea_node
 from privacyidea.lib.crypto import Sign
@@ -69,7 +69,7 @@ from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token,
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import create_img, get_version
+from privacyidea.lib.utils import create_img, get_version, AUTH_RESPONSE
 from .prepolicy import check_max_token_user, check_max_token_realm, fido2_enroll, rss_age
 from ...lib.container import get_all_containers
 
@@ -410,11 +410,8 @@ def add_user_detail_to_response(request, response):
     # Check for ADD USER IN RESPONSE
     policy = (Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.ADDUSERINRESPONSE, user_object=request.User)
               .policies(write_to_audit_log=False))
-    if policy and content.get("result", {}).get("value") and request.User:
+    if policy and content.get("result", {}).get("authentication") == AUTH_RESPONSE.ACCEPT and request.User:
         # The policy was set, we need to add the user details
-        # TODO: In case of /auth and /validate/samlcheck endpoints this always
-        #  adds the user data since result->value contains a dictionary and
-        #  resolves to True even for failed requests.
         ui = request.User.info.copy()
         ui["password"] = ""  # nosec B105 # Hide a potential password
         for key, value in ui.items():

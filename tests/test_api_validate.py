@@ -9,7 +9,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from privacyidea.lib.container import init_container, find_container_by_serial
 from privacyidea.lib.fido2.util import hash_credential_id
 from privacyidea.lib.utils import to_unicode
-from urllib.parse import urlencode, quote
+from urllib.parse import quote
 import json
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION, strip_key
 from privacyidea.lib.utils import hexlify_and_unicode, AUTH_RESPONSE
@@ -1021,7 +1021,6 @@ class ValidateAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             value = result.get("value")
             attributes = value.get("attributes")
             self.assertEqual(value.get("auth"), True)
@@ -1057,7 +1056,7 @@ class ValidateAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertEqual(result["authentication"], AUTH_RESPONSE.DECLINED, result)
+            self.assertEqual(result["authentication"], AUTH_RESPONSE.REJECT, result)
             value = result.get("value")
             attributes = value.get("attributes")
             self.assertEqual(value.get("auth"), False)
@@ -1087,6 +1086,67 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(attributes.get("phone"), "+491234566")
             self.assertEqual(attributes.get("realm"), "realm1")
             self.assertEqual(attributes.get("username"), "cornelius")
+
+    def test_10b_samlcheck_challenge_response(self):
+        self.setUp_user_realms()
+        init_token({'serial': "ChalResp1",
+                    'type': 'hotp',
+                    'otpkey': self.otpkey,
+                    'pin': "1234"},
+                   user=User("cornelius", self.realm1))
+        set_policy(name="add_user_detail", scope=SCOPE.AUTHZ, action=ACTION.ADDUSERINRESPONSE)
+        # First check with pi only fails without challenge-response policy
+        with self.app.test_request_context('/validate/samlcheck',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "1234"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertEqual(result["authentication"], AUTH_RESPONSE.REJECT, result)
+            detail = res.json.get("detail")
+            # Check that there is no user information in the details
+            self.assertEqual(detail["message"], "wrong otp pin", detail)
+            self.assertNotIn("user", detail, detail)
+
+        # Add the challenge response policy and try again
+        set_policy(name="hotp_chal_resp", scope=SCOPE.AUTH, action=f"{ACTION.CHALLENGERESPONSE}=hotp")
+        with self.app.test_request_context('/validate/samlcheck',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "1234"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertEqual(result["authentication"], AUTH_RESPONSE.CHALLENGE, result)
+            detail = res.json.get("detail")
+            # Check that there is no user information in the details
+            self.assertIn("multi_challenge", detail, detail)
+            self.assertNotIn("user", detail, detail)
+            transaction_id = detail["transaction_id"]
+
+        # Finish challenge
+        with self.app.test_request_context('/validate/samlcheck',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": OTPs[0],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertEqual(result["authentication"], AUTH_RESPONSE.ACCEPT, result)
+            detail = res.json.get("detail")
+            # Check that there is no user information in the details
+            self.assertIn("user", detail, detail)
+            self.assertEqual(detail["serial"], "ChalResp1", detail)
+            self.assertEqual(detail["user"]["username"], "cornelius", detail)
+
+        delete_policy("add_user_detail")
+        delete_policy("hotp_chal_resp")
+        remove_token(serial="ChalResp1")
 
     def test_11_challenge_response_hotp(self):
         serial = "CHALRESP1"
