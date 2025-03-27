@@ -3,17 +3,18 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2024-03-27 09:25+0000\n"
-"Last-Translator: \"Enrico M. V. Fasanelli\" <enrico@infn.it>\n"
+"PO-Revision-Date: 2025-03-28 09:15+0000\n"
+"Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Mongolian <https://hosted.weblate.org/projects/privacyidea/"
-"privacyidea-webui/mn/>\n"
+"branch-3-11-webui/mn/>\n"
 "Language: mn\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.5-dev\n"
+"X-Generator: Weblate 5.11-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -35,8 +36,8 @@ msgid ""
 "\">\n"
 "                        Ask for the privacyIDEA Enterprise Edition, now!</a>"
 msgstr ""
-"<a target=\"netknights\" href=\"https://netknights.it/en/unternehmen/kontakt/"
-"\">\n"
+"<a target=\"netknights\" href="
+"\"https://netknights.it/en/unternehmen/kontakt/\">\n"
 "Одоо IDEA Enterprise Edition-н нууцлалыг асуугаарай!</a>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:84
@@ -53,8 +54,8 @@ msgid ""
 msgstr ""
 "li><b>\"5 10 * * *\"</b> даалгаврыг өдөр бүр 10:05 цагт гүйцэтгэдэг.</li>\n"
 "<li><b>\"*/10 * * * *\"</b> runs the task every ten minutes.</li>\n"
-"<li><b>\"1 23 * * 7\"</b> даалгаврыг ням гарагийн 23:01 цагт гүйцэтгэдэг.</"
-"li>"
+"<li><b>\"1 23 * * 7\"</b> даалгаврыг ням гарагийн 23:01 цагт "
+"гүйцэтгэдэг.</li>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:91
 msgid ""
@@ -226,8 +227,8 @@ msgid ""
 "privacyidea/privacyidea/blob/master/LICENSE\">AGPLv3</a>"
 msgstr ""
 "Заасны дагуу\n"
-"<a target=\"license\" href=\"https://github.com/privacyidea/privacyidea/blob/"
-"master/LICENSE\">AGPLv3</a>"
+"<a target=\"license\" href="
+"\"https://github.com/privacyidea/privacyidea/blob/master/LICENSE\">AGPLv3</a>"
 
 #: privacyidea/static/components/config/views/config.events.details.html:114
 #: privacyidea/static/components/config/views/config.events.details.html:249
