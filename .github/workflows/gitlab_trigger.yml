@@ -1,0 +1,24 @@
+name: Trigger GitLab on Tag
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  trigger-gitlab:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger GitLab pipeline
+        env:
+          GITLAB_TRIGGER_URL: https://lucan.netknights.it/api/v4/projects/3/trigger/pipeline
+          GITLAB_TRIGGER_TOKEN: ${{ secrets.GITLAB_TRIGGER_TOKEN }}
+          GITHUB_TAG: ${{ github.ref_name }}
+          GITHUB_REPO_URL: https://github.com/${{ github.repository }}.git
+        run: |
+          curl -X POST "$GITLAB_TRIGGER_URL" \
+            -F token="$GITLAB_TRIGGER_TOKEN" \
+            -F ref=main \
+            -F variables[GITHUB_TAG]="$GITHUB_TAG" \
+            -F variables[GITHUB_REPO]="$GITHUB_REPO_URL"
