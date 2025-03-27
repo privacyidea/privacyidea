@@ -922,3 +922,11 @@ will show you the correct login for your preferred client mode. For example if t
 then your client will automatically show you the login for a webauthn token.
 
 The default list is "interactive webauthn poll u2f".
+
+passkey_trigger_by_pin
+~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+If this policy is set, the passkey token can be triggered with its PIN. For privacyIDEA plugins, enabling this is not
+recommended. It is advised to use a condition with this policy, for example on the user-agent.
