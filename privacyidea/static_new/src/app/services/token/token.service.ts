@@ -477,6 +477,7 @@ export class TokenService {
     };
 
     switch (options.type) {
+      case 'webauthn':
       case 'passkey':
         if (options.credential_id) {
           Object.entries(options).forEach(([key, value]) => {

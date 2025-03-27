@@ -439,7 +439,7 @@ export class TokenEnrollmentComponent {
   }
 
   reopenEnrollmentDialog() {
-    if (this.response().detail.rollout_state === 'clientwait') {
+    if (this.response().detail?.rollout_state === 'clientwait') {
       this.openFirstStepDialog(this.response());
       this.pollTokenRolloutState(this.tokenSerial(), 2000);
     } else {
@@ -467,7 +467,6 @@ export class TokenEnrollmentComponent {
 
   private buildEnrollmentOptions() {
     return {
-      // generell
       type: this.selectedType().key,
       description: this.description(),
       container_serial: this.selectedContainer().trim(),
@@ -560,7 +559,7 @@ export class TokenEnrollmentComponent {
         this.openFirstStepDialog(response);
         this.enrollWebauthnComponent.registerWebauthn(detail).subscribe({
           next: () => {
-            this.pollTokenRolloutState(detail.serial, 5000).add(() => {
+            this.pollTokenRolloutState(detail.serial, 400).add(() => {
               this.firstDialog.closeAll();
               this.openSecondStepDialog(response);
             });
@@ -571,7 +570,7 @@ export class TokenEnrollmentComponent {
         this.openFirstStepDialog(response);
         this.enrollPasskeyComponent.registerPasskey(detail).subscribe({
           next: () => {
-            this.pollTokenRolloutState(detail.serial, 5000).add(() => {
+            this.pollTokenRolloutState(detail.serial, 400).add(() => {
               this.firstDialog.closeAll();
               this.openSecondStepDialog(response);
             });
@@ -628,9 +627,8 @@ export class TokenEnrollmentComponent {
       .pollTokenRolloutState(tokenSerial, startTime)
       .subscribe({
         next: (pollResponse: any) => {
-          this.response.set(pollResponse);
           if (
-            this.response().result.value.tokens[0].rollout_state === 'enrolled'
+            pollResponse.result.value.tokens[0].rollout_state === 'enrolled'
           ) {
             this.notificationService.openSnackBar(
               `Token ${tokenSerial} enrolled successfully.`,

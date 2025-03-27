@@ -61,11 +61,9 @@ export class EnrollPasskeyComponent {
     ).pipe(
       switchMap((publicKeyCred: any) => {
         const params: any = {
-          user: detail.newUser?.user,
-          realm: detail.newUser?.realm,
+          type: 'passkey',
           transaction_id: detail.transaction_id,
           serial: detail.serial,
-          type: 'passkey',
           credential_id: publicKeyCred.id,
           rawId: this.base64Service.bytesToBase64(
             new Uint8Array(publicKeyCred.rawId),
