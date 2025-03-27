@@ -12,7 +12,7 @@ from privacyidea.lib.utils import to_unicode
 from urllib.parse import urlencode, quote
 import json
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION, strip_key
-from privacyidea.lib.utils import hexlify_and_unicode
+from privacyidea.lib.utils import hexlify_and_unicode, AUTH_RESPONSE
 from .base import MyApiTestCase
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokens.totptoken import HotpTokenClass
@@ -1037,7 +1037,7 @@ class ValidateAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
+            self.assertEqual(result["authentication"], AUTH_RESPONSE.ACCEPT, result)
             value = result.get("value")
             attributes = value.get("attributes")
             self.assertEqual(value.get("auth"), True)
@@ -1057,7 +1057,7 @@ class ValidateAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
+            self.assertEqual(result["authentication"], AUTH_RESPONSE.DECLINED, result)
             value = result.get("value")
             attributes = value.get("attributes")
             self.assertEqual(value.get("auth"), False)
@@ -1077,6 +1077,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             value = result.get("value")
+            self.assertEqual(result["authentication"], AUTH_RESPONSE.REJECT, result)
             attributes = value.get("attributes")
             self.assertEqual(value.get("auth"), False)
             self.assertEqual(attributes.get("email"),

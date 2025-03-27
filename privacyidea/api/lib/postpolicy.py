@@ -43,7 +43,6 @@ import datetime
 import functools
 import json
 import logging
-import netaddr
 import re
 import traceback
 from urllib.parse import quote
@@ -338,6 +337,9 @@ def no_detail_on_success(request, response):
         # The policy was set, we need to strip the details, if the
         # authentication was successful. (value=true)
         # None assures that we do not get an error, if "detail" does not exist.
+        # TODO: This would strip away the details for challenge-response
+        #  authentication for the /auth and /validate/samlcheck endpoints
+        #  since they contain a dictionary in result->value
         content.pop("detail", None)
         response.set_data(json.dumps(content))
         g.audit_object.add_policy([p.get("name") for p in policy])
@@ -409,12 +411,14 @@ def add_user_detail_to_response(request, response):
     policy = (Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.ADDUSERINRESPONSE, user_object=request.User)
               .policies(write_to_audit_log=False))
     if policy and content.get("result", {}).get("value") and request.User:
-        # The policy was set, we need to add the user
-        #  details
+        # The policy was set, we need to add the user details
+        # TODO: In case of /auth and /validate/samlcheck endpoints this always
+        #  adds the user data since result->value contains a dictionary and
+        #  resolves to True even for failed requests.
         ui = request.User.info.copy()
         ui["password"] = ""  # nosec B105 # Hide a potential password
         for key, value in ui.items():
-            if type(value) == datetime.datetime:
+            if isinstance(value, datetime.datetime):
                 ui[key] = str(value)
         content.setdefault("detail", {})["user"] = ui
         g.audit_object.add_policy([p.get("name") for p in policy])
@@ -450,7 +454,10 @@ def no_detail_on_fail(request, response):
                      .policies(write_to_audit_log=False))
     if detail_policy and content.get("result", {}).get("value") is False:
         # The policy was set, we need to strip the details, if the
-        # authentication was successful. (value=true)
+        # authentication failed. (value=False)
+        # TODO: this strips away possible transactions ids during a
+        #  challenge-response authentication. We should consider the
+        #  result->authentication entry and only strip away possible user information
         del content["detail"]
         response.set_data(json.dumps(content))
         g.audit_object.add_policy([p.get("name") for p in detail_policy])
