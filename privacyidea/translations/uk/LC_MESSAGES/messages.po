@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-02-25 14:26+0100\n"
+"POT-Creation-Date: 2025-03-27 13:57+0100\n"
 "PO-Revision-Date: 2025-03-25 08:32+0000\n"
 "Last-Translator: Максим Горпиніч <maksimgorpinic2005a@gmail.com>\n"
 "Language-Team: Ukrainian <https://hosted.weblate.org/projects/privacyidea/"
@@ -57,11 +57,12 @@ msgstr "Даний вузол не існує!"
 msgid "Could not verify data in request!"
 msgstr "Не вдалося перевірити дані в запиті!"
 
-#: api/validate.py:466 lib/token.py:2571
+#: api/validate.py:466 lib/token.py:2606
 msgid "Found matching challenge"
 msgstr "Знайдено відповідне завдання"
 
 #: api/lib/postpolicy.py:89
+#, python-brace-format
 msgid ""
 "\n"
 "<--- Please describe your Problem in detail --->\n"
@@ -81,11 +82,13 @@ msgstr ""
 "Підписник: {subscriber_name}\n"
 "Підписки: {subscriptions}\n"
 
-#: api/lib/prepolicy.py:2468
+#: api/lib/prepolicy.py:2476
+#, python-brace-format
 msgid "Missing description for {} token."
 msgstr "Відсутній опис для маркера {}."
 
-#: api/lib/prepolicy.py:2469
+#: api/lib/prepolicy.py:2477
+#, python-brace-format
 msgid "Description required for {} token."
 msgstr "Необхідний опис для маркера {}."
 
@@ -102,6 +105,7 @@ msgid "Authentication failure. Your token has expired:"
 msgstr "Помилка автентифікації. Термін дії вашого маркера минув:"
 
 #: api/lib/utils.py:442
+#, python-brace-format
 msgid ""
 "Authentication failure. The username {wrong_username} is not allowed to "
 "impersonate via JWT."
@@ -110,6 +114,7 @@ msgstr ""
 "себе за іншу особу через JWT."
 
 #: api/lib/utils.py:447
+#, python-brace-format
 msgid ""
 "Authentication failure. You do not have the necessary role ({required_role}) "
 "to access this resource!"
@@ -144,7 +149,7 @@ msgstr ""
 "Контейнер загального призначення, який може містити будь-який тип і будь-яку "
 "кількість маркерів."
 
-#: lib/decorators.py:43 lib/token.py:2431
+#: lib/decorators.py:43 lib/token.py:2466
 msgid "This action is not possible, since the token is locked"
 msgstr "Ця дія неможлива, оскільки маркер заблоковано"
 
@@ -203,6 +208,7 @@ msgstr ""
 "регулярний вираз."
 
 #: lib/policy.py:1666
+#, python-brace-format
 msgid ""
 "The body of the registration email. Use '{regkey}' as tag for the "
 "registration key."
@@ -218,7 +224,7 @@ msgstr "Адміністратору дозволено вмикати марк�
 msgid "Admin is allowed to disable tokens."
 msgstr "Адміністратору дозволено відключати токени."
 
-#: lib/policy.py:1680
+#: lib/policy.py:1681
 msgid "Admin is allowed to set token properties."
 msgstr "Адміністратору дозволено встановлювати властивості маркера."
 
@@ -226,7 +232,7 @@ msgstr "Адміністратору дозволено встановлюват
 msgid "The admin is allowed to set the token description."
 msgstr "Адміністратор має право встановлювати опис маркера."
 
-#: lib/policy.py:1689
+#: lib/policy.py:1690
 msgid "Admin is allowed to set the OTP PIN of tokens."
 msgstr "Адміністратор може встановлювати одноразовий PIN-код токенів."
 
@@ -247,7 +253,7 @@ msgstr "Адміністратор може встановлювати PIN-ко�
 msgid "Admin is allowed to resync tokens."
 msgstr "Адміністратору дозволено повторно синхронізувати токени."
 
-#: lib/policy.py:1712
+#: lib/policy.py:1713
 msgid "Admin is allowed to reset the Failcounter of a token."
 msgstr "Адміністратору дозволено скидати лічильник помилок маркера."
 
@@ -255,26 +261,26 @@ msgstr "Адміністратору дозволено скидати лічи�
 msgid "Admin is allowed to revoke a token"
 msgstr "Адміністратору дозволено відкликати маркер"
 
-#: lib/policy.py:1722
+#: lib/policy.py:1723
 msgid "Admin is allowed to assign a token to a user."
 msgstr "Адміністратор має право призначати токен користувачеві."
 
-#: lib/policy.py:1728
+#: lib/policy.py:1729
 msgid ""
 "Admin is allowed to remove the token from a user, i.e. unassign a token."
 msgstr ""
 "Адміністратору дозволено видалити маркер у користувача, тобто скасувати "
 "призначення маркера."
 
-#: lib/policy.py:1734
+#: lib/policy.py:1735
 msgid "Admin is allowed to import token files."
 msgstr "Адміністратору дозволено імпортувати файли маркерів."
 
-#: lib/policy.py:1739
+#: lib/policy.py:1740
 msgid "Admin is allowed to remove tokens from the database."
 msgstr "Адміністратору дозволено видаляти токени з бази даних."
 
-#: lib/policy.py:1745
+#: lib/policy.py:1746
 msgid "Admin is allowed to view the list of the users."
 msgstr "Адміністратору дозволено переглядати список користувачів."
 
@@ -311,11 +317,11 @@ msgstr ""
 msgid "Admin is allowed to retrieve random keys from privacyIDEA."
 msgstr "Адміністратору дозволено отримувати випадкові ключі з privacyIDEA."
 
-#: lib/policy.py:1786
+#: lib/policy.py:1787
 msgid "Admin is allowed to copy the PIN of one token to another token."
 msgstr "Адміністратор може копіювати PIN-код одного токена в інший."
 
-#: lib/policy.py:1791
+#: lib/policy.py:1792
 msgid ""
 "Admin is allowed to copy the assigned user to another token, i.e. assign a "
 "user to another token."
@@ -761,12 +767,12 @@ msgstr ""
 "Користувачеві дозволено оновлювати власну інформацію користувача, наприклад "
 "змінювати свій пароль."
 
-#: lib/policy.py:2260
+#: lib/policy.py:2261
 msgid ""
 "The user is allowed to do a password reset in an editable UserIdResolver."
 msgstr "Користувачеві дозволено скинути пароль у редагованому UserIdResolver."
 
-#: lib/policy.py:2265
+#: lib/policy.py:2266
 msgid ""
 "The user is allowed to set certain custom user attributes. If the user "
 "should be allowed to set any attribute, set this to '*:*'. Use '*' with "
@@ -800,7 +806,7 @@ msgstr ""
 msgid "Users are allowed to edit the state of their own containers."
 msgstr "Користувачам дозволено редагувати стан власних контейнерів."
 
-#: lib/policy.py:2291
+#: lib/policy.py:2292
 msgid "Users are allowed to edit the description of their own containers."
 msgstr "Користувачам дозволено редагувати описи власних контейнерів."
 
@@ -812,7 +818,7 @@ msgstr "Користувачам дозволено створювати кон�
 msgid "Users are allowed to delete their own containers."
 msgstr "Користувачам дозволено видаляти власні контейнери."
 
-#: lib/policy.py:2304
+#: lib/policy.py:2305
 msgid "Users are allowed to add their own tokens to their own containers."
 msgstr "Користувачам дозволено додавати власні маркери до власних контейнерів."
 
@@ -832,7 +838,7 @@ msgstr "Користувачам дозволено скасувати приз�
 msgid "Users are allowed to list their own containers."
 msgstr "Користувачам дозволено перераховувати власні контейнери."
 
-#: lib/policy.py:2327
+#: lib/policy.py:2328
 msgid "Users are allowed to register their own containers."
 msgstr "Користувачам дозволено реєструвати власні контейнери."
 
@@ -922,6 +928,7 @@ msgstr ""
 "поведінкою."
 
 #: lib/policy.py:2408
+#, python-brace-format
 msgid ""
 "The label for a new enrolled Smartphone token. Possible tags are <code>{user}"
 "</code>, <code>{realm}</code>, <code>{serial}</code>, <code>{givenname}</"
@@ -932,6 +939,7 @@ msgstr ""
 "<code>{givenname}</code> і <code>{surname}</code>."
 
 #: lib/policy.py:2414
+#, python-brace-format
 msgid ""
 "The issuer label for new enrolled Smartphone token.Possible tags are "
 "<code>{user}</code>, <code>{realm}</code>, <code>{serial}</code>, "
@@ -1174,6 +1182,7 @@ msgstr ""
 "імені користувача."
 
 #: lib/policy.py:2604
+#, python-brace-format
 msgid ""
 "Allow the user to authenticate (default). If set to '{0!s}', the "
 "authentication of the user will be denied."
@@ -1300,7 +1309,7 @@ msgstr ""
 "Якщо встановлено, адміністратори бачитимуть інформаційну панель як "
 "початковий екран під час входу в privacyIDEA WebUI."
 
-#: lib/policy.py:2709
+#: lib/policy.py:2710
 msgid ""
 "If set to \"privacyIDEA\" the users and admins need to authenticate against "
 "privacyIDEA when they log in to the Web UI. Defaults to \"userstore\"."
@@ -1602,7 +1611,7 @@ msgstr ""
 "синхронізація або скасування реєстрації, це визначає час у хвилинах, який "
 "клієнт має виконати для завершення дії. За замовчуванням це дві хвилини."
 
-#: lib/policy.py:2927
+#: lib/policy.py:2928
 msgid ""
 "The container needs to verify the SSL certificate of the privacyIDEA server "
 "during registration and synchronization. (default True)"
@@ -1684,35 +1693,38 @@ msgstr "Секрет RADIUS задовгий"
 msgid "My subscription has expired."
 msgstr "Термін дії моєї підписки закінчився."
 
-#: lib/token.py:163
+#: lib/token.py:169
+#, python-brace-format
 msgid "create_tokenclass_object failed:  {0!r}"
 msgstr "створити об'єкт_токенкласу не вдалося: {0!r}"
 
-#: lib/token.py:329
+#: lib/token.py:335
 msgid "I can only create SQL filters from tokeninfo of length 1."
 msgstr "Я можу створювати фільтри SQL лише з інформації про маркер довжини 1."
 
-#: lib/token.py:343
+#: lib/token.py:349
+#, python-brace-format
 msgid "No container with the serial {container_serial} exists."
 msgstr "Не існує контейнера з серійним номером {container_serial}."
 
-#: lib/token.py:734
+#: lib/token.py:740
 msgid "The requested token could not be found."
 msgstr "Запитуваний маркер не знайдено."
 
-#: lib/token.py:739
+#: lib/token.py:745
 msgid "More than one matching token was found."
 msgstr "Знайдено більше ніж один відповідний маркер."
 
-#: lib/token.py:1043
+#: lib/token.py:1049
 msgid "multiple tokens are matching this OTP value!"
 msgstr "кілька токенів відповідають цьому значенню OTP!"
 
-#: lib/token.py:1233
+#: lib/token.py:1268
 msgid "init token failed. Unknown token type:"
 msgstr "маркер ініціалізації не вдалося. Невідомий тип маркера:"
 
-#: lib/token.py:1253
+#: lib/token.py:1288
+#, python-brace-format
 msgid ""
 "Token {serial} already exists with type {old_type}. Can not initialize token "
 "with new type {token_type}"
@@ -1720,39 +1732,43 @@ msgstr ""
 "Маркер {serial} уже існує з типом {old_type}. Неможливо ініціалізувати "
 "маркер новим типом {token_type}"
 
-#: lib/token.py:1257
+#: lib/token.py:1292
 msgid "init token failed:"
 msgstr "Помилка маркера ініціалізації:"
 
-#: lib/token.py:1433
+#: lib/token.py:1468
+#, python-brace-format
 msgid "Token already assigned to user {old_user!r}"
 msgstr "Маркер уже призначено користувачу {old_user!r}"
 
-#: lib/token.py:1447
+#: lib/token.py:1482
+#, python-brace-format
 msgid "Token assign failed for {0!r}/{1!s} : {2!r}"
 msgstr "Помилка призначення маркера для {0!r}/{1!s} : {2!r}"
 
-#: lib/token.py:1475
+#: lib/token.py:1510
 msgid "Token unassign failed for"
 msgstr "Не вдалося скасувати призначення маркера"
 
-#: lib/token.py:1555
+#: lib/token.py:1590
 msgid "Parameter user must not be a string:"
 msgstr "Параметр user не має бути рядком:"
 
-#: lib/token.py:2111
+#: lib/token.py:2146
 msgid "You can only define a lost token for an assigned token."
 msgstr "Ви можете визначити лише втрачений маркер для призначеного маркера."
 
-#: lib/token.py:2137
+#: lib/token.py:2172
+#, python-brace-format
 msgid "temporary replacement for {0!s}"
 msgstr "тимчасова заміна для {0!s}"
 
-#: lib/token.py:2193
+#: lib/token.py:2228
 msgid "There is no active and assigned token in this realm"
 msgstr "У цій області немає активного та призначеного маркера"
 
-#: lib/token.py:2205
+#: lib/token.py:2240
+#, python-brace-format
 msgid ""
 "There is no active and assigned token in this realm, included types: {0!s}, "
 "excluded types: {1!s}"
@@ -1760,67 +1776,74 @@ msgstr ""
 "У цій області немає активного та призначеного маркера, включені типи: {0!s}, "
 "виключені типи: {1!s}"
 
-#: lib/token.py:2258
+#: lib/token.py:2293
 msgid "OTP verification failed."
 msgstr "Не вдалося перевірити OTP."
 
-#: lib/token.py:2292
+#: lib/token.py:2327
 msgid "The user has no tokens assigned"
 msgstr "Користувач не має призначених токенів"
 
-#: lib/token.py:2513
+#: lib/token.py:2548
+#, python-brace-format
 msgid "matching {0:d} tokens"
 msgstr "відповідність {0:d} токенів"
 
-#: lib/token.py:2561
+#: lib/token.py:2596
 msgid "Challenge matches, but token is not fit for challenge"
 msgstr "Виклик відповідає, але жетон не підходить для виклику"
 
-#: lib/token.py:2610
+#: lib/token.py:2645
 msgid "Response did not match the challenge."
 msgstr "Відповідь не відповідала виклику."
 
-#: lib/token.py:2612
+#: lib/token.py:2647
+#, python-brace-format
 msgid "Response did not match for {0!s} tokens."
 msgstr "Відповідь не збігається для {0!s} маркерів."
 
-#: lib/token.py:2619
+#: lib/token.py:2654
 msgid "No active challenge response token found"
 msgstr "Жетона активної відповіді на виклик не знайдено"
 
-#: lib/token.py:2635
+#: lib/token.py:2670
 msgid "wrong otp value"
 msgstr "неправильне значення otp"
 
-#: lib/token.py:2642
+#: lib/token.py:2677
 msgid ". previous otp used again"
 msgstr ". попередній otp використано знову"
 
-#: lib/token.py:2656
+#: lib/token.py:2691
 msgid "wrong otp pin"
 msgstr "неправильний otp-пін"
 
-#: lib/token.py:2664
+#: lib/token.py:2699
 msgid "No suitable token found for authentication."
 msgstr "Не знайдено відповідного маркера для автентифікації."
 
-#: lib/token.py:2689
+#: lib/token.py:2724
+#, python-brace-format
 msgid "Admin is allowed to initialize {0!s} tokens."
 msgstr "Адміністратору дозволено ініціалізувати маркери {0!s}."
 
-#: lib/token.py:2697
+#: lib/token.py:2732
+#, python-brace-format
 msgid "The user is allowed to enroll a {0!s} token."
 msgstr "Користувачеві дозволено зареєструвати маркер {0!s}."
 
-#: lib/token.py:2728
+#: lib/token.py:2763
+#, python-brace-format
 msgid "Set the maximum allowed PIN length of the {0!s} token."
 msgstr "Установіть максимально дозволену довжину PIN-коду маркера {0!s}."
 
-#: lib/token.py:2735
+#: lib/token.py:2770
+#, python-brace-format
 msgid "Set the minimum required PIN length of the {0!s} token."
 msgstr "Установіть мінімальну необхідну довжину PIN-коду маркера {0!s}."
 
-#: lib/token.py:2741
+#: lib/token.py:2776
+#, python-brace-format
 msgid ""
 "Specifiy the required PIN contents of the {0!s} token. (c)haracters, "
 "(n)umeric, (s)pecial, (o)thers. [+/-]!"
@@ -1828,15 +1851,16 @@ msgstr ""
 "Укажіть необхідний вміст PIN-коду маркера {0!s}. (c)символи, (n)числові, "
 "(s)особливі, (o)інші. [+/-]!"
 
-#: lib/token.py:2786 lib/token.py:2802
+#: lib/token.py:2821 lib/token.py:2837
 msgid "The tokengroup does not exist."
 msgstr "Група токенів не існує."
 
-#: lib/token.py:2939
+#: lib/token.py:2974
+#, python-brace-format
 msgid " Please press: {presence_answer}"
 msgstr " Будь ласка, натисніть: {presence_answer}"
 
-#: lib/tokenclass.py:1692
+#: lib/tokenclass.py:1700
 msgid "please enter otp: "
 msgstr "будь ласка, введіть otp: "
 
@@ -2115,7 +2139,7 @@ msgstr ""
 "Потрібно ввести щось на кшталт «назва поля == значення поля», «назва поля > "
 "значення поля» або «назва поля < значення поля»."
 
-#: lib/eventhandler/base.py:473
+#: lib/eventhandler/base.py:474
 msgid ""
 "Action is triggered, if the last authentication of the container is older "
 "than the specified time. The time value has to be an integer followed by a "
@@ -2129,7 +2153,7 @@ msgstr ""
 "'s' (секунди). Дозволяється використовувати тільки одну одиницю. Приклади: "
 "'8h', '7d', '1y'"
 
-#: lib/eventhandler/base.py:484
+#: lib/eventhandler/base.py:485
 msgid ""
 "Action is triggered, if the last synchronization of the container is older "
 "than the specified time. The time value has to be an integer followed by a "
@@ -2144,6 +2168,7 @@ msgstr ""
 "'8h', '7d', '1y'"
 
 #: lib/eventhandler/containerhandler.py:89
+#, python-brace-format
 msgid "Set the state {state}"
 msgstr "Установити стан {state}"
 
@@ -2257,6 +2282,7 @@ msgid "The parameter that should be added or modified."
 msgstr "Параметр, який потрібно додати або змінити."
 
 #: lib/eventhandler/requestmangler.py:98
+#, python-brace-format
 msgid ""
 "The new value of the parameter. Can contain tags like {0}, {1} for the "
 "matched sub strings."
@@ -2415,7 +2441,7 @@ msgstr ""
 "Встановіть PIN-код MOTP маркера MOTP під час реєстрації. Це обов’язкове "
 "значення для реєстрації токенів MOTP."
 
-#: lib/eventhandler/tokenhandler.py:243
+#: lib/eventhandler/tokenhandler.py:244
 msgid ""
 "Add the token to the container if there is one identifiable in the request."
 msgstr "Додайте маркер до контейнера, якщо його можна ідентифікувати в запиті."
@@ -2504,7 +2530,7 @@ msgstr "Ідентифікатор машини, до якої потрібно 
 msgid "Set the service_id for an SSH application."
 msgstr "Установіть service_id для програми SSH."
 
-#: lib/eventhandler/tokenhandler.py:397
+#: lib/eventhandler/tokenhandler.py:398
 msgid ""
 "Set a token application like 'offline' or 'SSH'. Note: Not all tokens work "
 "well with all applications!"
@@ -2548,6 +2574,7 @@ msgstr ""
 "Будь-яка адреса електронної пошти, на яку потрібно надіслати повідомлення."
 
 #: lib/eventhandler/usernotification.py:192
+#, python-brace-format
 msgid ""
 "The template of the mail body that will be sent. It may contain the "
 "following tags as specified in the documentation: <code>{admin}, {realm}, "
@@ -2576,6 +2603,7 @@ msgid "Send the user notification via a predefined SMS gateway."
 msgstr "Надішліть сповіщення користувача через попередньо визначений шлюз SMS."
 
 #: lib/eventhandler/usernotification.py:238
+#, python-brace-format
 msgid ""
 "The text template of the SMS. It may contain the following tags as specified "
 "in the documentation: <code>{admin}, {realm}, {action}, {serial}, {url}, "
@@ -2594,6 +2622,7 @@ msgstr ""
 "{client_ip}, {ua_browser}, {ua_string}, {pin}.</code>"
 
 #: lib/eventhandler/usernotification.py:255
+#, python-brace-format
 msgid ""
 "This is the template content of the new file. It may contain the following "
 "tags as specified in the documentation: <code>{admin}, {realm}, {action}, "
@@ -2612,6 +2641,7 @@ msgstr ""
 "{client_ip}, {ua_browser}, {ua_string}, {pin}.</code>"
 
 #: lib/eventhandler/usernotification.py:266
+#, python-brace-format
 msgid ""
 "The filename of the notification. Existing files are overwritten. The name "
 "can contain tags as specified in the documentation and can also contain the "
@@ -2629,6 +2659,7 @@ msgid "The encoding that is sent to the WebHook, for example json"
 msgstr "Кодування, яке надсилається до WebHook, наприклад json"
 
 #: lib/eventhandler/webhookeventhandler.py:95
+#, python-brace-format
 msgid ""
 "You can use the following placeholders: {logged_in_user}, {realm}, "
 "{surname}, {token_owner}, {user_realm}, {token_serial}. However, tag "
@@ -2648,7 +2679,8 @@ msgid "Your LDAP config seems to be OK, %i machine objects found."
 msgstr ""
 "Ваша конфігурація LDAP здається в порядку, %i машинних об’єктів знайдено."
 
-#: lib/resolvers/LDAPIdResolver.py:1147
+#: lib/resolvers/LDAPIdResolver.py:1151
+#, python-brace-format
 msgid ""
 "Your LDAP config found {0!s} user objects in {2:.4f}s, but only {1!s} with "
 "the specified uidtype."
@@ -2656,7 +2688,8 @@ msgstr ""
 "Ваша конфігурація LDAP знайшла {0!s} об’єктів користувача в {2:.4f}s, але "
 "лише {1!s} із вказаним uidtype."
 
-#: lib/resolvers/LDAPIdResolver.py:1151
+#: lib/resolvers/LDAPIdResolver.py:1155
+#, python-brace-format
 msgid "Your LDAP config seems to be OK, {0!s} user objects found in {1:.4f}s."
 msgstr ""
 "Ваша конфігурація LDAP здається в порядку, {0!s} об’єктів користувача "
@@ -2955,6 +2988,7 @@ msgstr ""
 "користувача."
 
 #: lib/tokens/emailtoken.py:166
+#, python-brace-format
 msgid ""
 "The text that will be sent via EMail for an EMail-token. Several tags like "
 "{otp} and {serial} can be used as parameters. You may also specify a "
@@ -2966,6 +3000,7 @@ msgstr ""
 "\"файл:\"."
 
 #: lib/tokens/emailtoken.py:175
+#, python-brace-format
 msgid ""
 "The subject of the EMail for an EMail token. Use tags like {otp} and "
 "{serial} as parameters."
@@ -3104,19 +3139,20 @@ msgstr ""
 "Коефіцієнт складності, який використовується для генерації вихідного коду "
 "OTP (має бути принаймні 10000)"
 
-#: lib/tokens/hotptoken.py:278
+#: lib/tokens/hotptoken.py:279
 msgid "URL for google Authenticator"
 msgstr "URL для google Authenticator"
 
-#: lib/tokens/hotptoken.py:290
+#: lib/tokens/hotptoken.py:291
 msgid "URL for OATH token"
 msgstr "URL-адреса для маркера OATH"
 
-#: lib/tokens/hotptoken.py:839
+#: lib/tokens/hotptoken.py:840
 msgid "Please scan the QR code and enter the OTP value!"
 msgstr "Відскануйте QR-код і введіть значення OTP!"
 
 #: lib/tokens/indexedsecrettoken.py:50
+#, python-brace-format
 msgid "Please enter the positions {0!s} from your secret."
 msgstr "Будь ласка, введіть позиції {0!s} із вашого секрету."
 
@@ -3239,7 +3275,14 @@ msgstr ""
 "за допомогою ключа доступу. Ви також можете використовувати теги для заміни, "
 "перевірте документацію для отримання додаткової інформації."
 
-#: lib/tokens/passkeytoken.py:112
+#: lib/tokens/passkeytoken.py:110
+msgid ""
+"When enabled, passkey token can be triggered with the PIN. For privacyIDEA "
+"plugins, this is not recommended. It is advised to use a condition, for "
+"example on a user-agent, with this policy."
+msgstr ""
+
+#: lib/tokens/passkeytoken.py:118
 msgid ""
 "Request attestation from the authenticator during the registration. The "
 "attestation certificate will be saved in the token info. The default value "
@@ -3249,11 +3292,11 @@ msgstr ""
 "атестації буде збережено в інформації про маркер. Значення за замовчуванням "
 "- «немає»."
 
-#: lib/tokens/passkeytoken.py:391
+#: lib/tokens/passkeytoken.py:399
 msgid "Please authenticate with your passkey!"
 msgstr "Будь ласка, авторизуйтесь за допомогою ключа доступу!"
 
-#: lib/tokens/passkeytoken.py:395
+#: lib/tokens/passkeytoken.py:403
 msgid "Please confirm the registration with your passkey!"
 msgstr "Підтвердьте реєстрацію своїм паролем!"
 
@@ -3342,7 +3385,8 @@ msgid "Require to unlock the Smartphone before Push requests can be accepted"
 msgstr ""
 "Вимагати розблокувати смартфон, перш ніж можна буде прийняти Push-запити"
 
-#: lib/tokens/pushtoken.py:424
+#: lib/tokens/pushtoken.py:425
+#, python-brace-format
 msgid ""
 "The question the user sees on his mobile phone. Several tags like {serial} "
 "and {client_ip} can be used as parameters."
@@ -3365,6 +3409,7 @@ msgstr ""
 "Вимагати від користувача підтвердити вхід за допомогою перевірки присутності."
 
 #: lib/tokens/pushtoken.py:447
+#, python-brace-format
 msgid ""
 "The options that can be presented to the user to confirm the login. "
 "<code>ALPHABETIC</code>: A-Z, <code>NUMERIC</code>: 01-99, <code>CUSTOM</"
@@ -3376,6 +3421,7 @@ msgstr ""
 "встановлено."
 
 #: lib/tokens/pushtoken.py:457
+#, python-brace-format
 msgid ""
 "Custom options that can be presented to the user to confirm the login. The "
 "string must contain at least 2 options and should be unique. The options are "
@@ -3389,6 +3435,7 @@ msgstr ""
 "встановлено значення <code>CUSTOM</code>."
 
 #: lib/tokens/pushtoken.py:467
+#, python-brace-format
 msgid ""
 "The number of options the user is presented with to confirm the login. Does "
 "only apply if <em>{0!s}</em> is set."
@@ -3455,7 +3502,7 @@ msgstr ""
 "Користувачеві може бути призначена лише така максимальна кількість токенів "
 "RADIUS."
 
-#: lib/tokens/radiustoken.py:120
+#: lib/tokens/radiustoken.py:121
 msgid ""
 "The user may only have this maximum number of active RADIUS tokens assigned."
 msgstr ""
@@ -3477,7 +3524,7 @@ msgstr ""
 "Користувачеві може бути призначена лише така максимальна кількість маркерів "
 "реєстрації."
 
-#: lib/tokens/registrationtoken.py:144
+#: lib/tokens/registrationtoken.py:145
 msgid ""
 "The user may only have this maximum number of active registration tokens "
 "assigned."
@@ -3496,7 +3543,7 @@ msgstr ""
 "Користувачеві може бути призначена лише така максимальна кількість "
 "віддалених маркерів."
 
-#: lib/tokens/remotetoken.py:126 lib/tokens/totptoken.py:168
+#: lib/tokens/remotetoken.py:127 lib/tokens/totptoken.py:169
 msgid ""
 "The user may only have this maximum number of active remote tokens assigned."
 msgstr ""
@@ -3512,6 +3559,7 @@ msgid "SMS: Send a One Time Password to the users mobile phone."
 msgstr "SMS: надішліть одноразовий пароль на мобільний телефон користувача."
 
 #: lib/tokens/smstoken.py:206
+#, python-brace-format
 msgid ""
 "The text that will be send via SMS for an SMS token. Use tags like {otp} and "
 "{serial} as parameters."
@@ -3550,7 +3598,7 @@ msgid "The user may only have this maximum number of SMS tokens assigned."
 msgstr ""
 "Користувачеві може бути призначена лише ця максимальна кількість SMS-токенів."
 
-#: lib/tokens/smstoken.py:249
+#: lib/tokens/smstoken.py:250
 msgid ""
 "The user may only have this maximum number of active SMS tokens assigned."
 msgstr ""
@@ -3579,7 +3627,7 @@ msgstr ""
 "Користувачеві може бути призначена лише така максимальна кількість маркерів "
 "SPASS."
 
-#: lib/tokens/spasstoken.py:103
+#: lib/tokens/spasstoken.py:104
 msgid ""
 "The user may only have this maximum number of active SPASS tokens assigned."
 msgstr ""
@@ -3596,7 +3644,7 @@ msgstr ""
 "Користувачеві може бути призначена лише така максимальна кількість ключів "
 "SSH."
 
-#: lib/tokens/sshkeytoken.py:96
+#: lib/tokens/sshkeytoken.py:97
 msgid "The user may only have this maximum number of active SSH keys assigned."
 msgstr ""
 "Користувачеві може бути призначено лише цю максимальну кількість активних "
@@ -3612,7 +3660,7 @@ msgstr ""
 "Користувачеві може бути призначена лише така максимальна кількість токенів "
 "TAN."
 
-#: lib/tokens/tantoken.py:116
+#: lib/tokens/tantoken.py:117
 msgid ""
 "The user may only have this maximum number of active TAN tokens assigned."
 msgstr ""
@@ -3627,7 +3675,7 @@ msgstr "TiQR: зареєструйте токен TiQR."
 msgid "The user may only have this maximum number of TiQR tokens assigned."
 msgstr "Користувач може мати лише цю максимальну кількість токенів TiQR."
 
-#: lib/tokens/tiqrtoken.py:171
+#: lib/tokens/tiqrtoken.py:172
 msgid ""
 "The user may only have this maximum number of active TiQR tokens assigned."
 msgstr ""
@@ -3686,7 +3734,7 @@ msgstr ""
 "Користувачеві може бути призначена лише така максимальна кількість токенів "
 "U2F."
 
-#: lib/tokens/u2ftoken.py:295
+#: lib/tokens/u2ftoken.py:296
 msgid ""
 "The user may only have this maximum number of active U2F tokens assigned."
 msgstr ""
@@ -3698,6 +3746,7 @@ msgid "You need to define the appId in the token config!"
 msgstr "Вам потрібно визначити appId у конфігурації маркера!"
 
 #: lib/tokens/u2ftoken.py:444
+#, python-brace-format
 msgid "Please confirm with your U2F token ({0!s})"
 msgstr "Будь ласка, підтвердьте своїм маркером U2F ({0!s})"
 
@@ -3709,7 +3758,7 @@ msgstr "Токен VASCO: автентифікація за допомогою �
 msgid "The user may only have this maximum number of Vasco tokens assigned."
 msgstr "Користувач може мати лише цю максимальну кількість токенів Vasco."
 
-#: lib/tokens/vascotoken.py:113
+#: lib/tokens/vascotoken.py:114
 msgid ""
 "The user may only have this maximum number of active Vasco tokens assigned."
 msgstr ""
@@ -3721,6 +3770,7 @@ msgid "Generic WebAuthn Token"
 msgstr "Загальний маркер WebAuthn"
 
 #: lib/tokens/webauthntoken.py:472
+#, python-brace-format
 msgid "Please confirm with your WebAuthn token ({0!s})"
 msgstr "Будь ласка, підтвердьте свій маркер WebAuthn ({0!s})"
 
@@ -3842,6 +3892,7 @@ msgstr ""
 "підтримується маркером)"
 
 #: lib/tokens/webauthntoken.py:658
+#, python-brace-format
 msgid ""
 "Which algorithm are available to use for creating public key credentials for "
 "WebAuthn tokens. (Default: [{0!s}], Order: [{1!s}])"
@@ -3907,7 +3958,7 @@ msgstr ""
 "Користувачеві може бути призначена лише така максимальна кількість токенів "
 "Yubico."
 
-#: lib/tokens/yubicotoken.py:115
+#: lib/tokens/yubicotoken.py:116
 msgid ""
 "The user may only have this maximum number of active Yubico tokens assigned."
 msgstr ""
@@ -3924,7 +3975,7 @@ msgstr ""
 "Користувачеві може бути призначена лише така максимальна кількість токенів "
 "Yubikey."
 
-#: lib/tokens/yubikeytoken.py:174
+#: lib/tokens/yubikeytoken.py:175
 msgid ""
 "The user may only have this maximum number of active Yubikey tokens assigned."
 msgstr ""
