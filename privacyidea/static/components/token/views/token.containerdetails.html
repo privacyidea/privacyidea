@@ -197,22 +197,6 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 </div>
             </td>
             <td>
-                <button class="btn btn-primary"
-                        ng-hide="true || editContainerInfo || (!checkRight('container_set_options') && hide_buttons)"
-                        ng-disabled="!checkRight('container_set_options')"
-                        ng-click="editInfo()"
-                        translate>Edit
-                </button>
-                <button class="btn btn-primary"
-                        ng-show="editContainerInfo"
-                        ng-click="saveInfo()"
-                        translate>Save
-                </button>
-                <button class="btn btn-danger"
-                        ng-show="editContainerInfo"
-                        ng-click="editContainerInfo=false"
-                        translate>Cancel
-                </button>
             </td>
         </tr>
         <tr ng-show="container.info['registration_state'] === 'registered'">
@@ -359,7 +343,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 {{ containerOwner.user_name }}
             </a></td>
             <td>
-                <button id="unassignAdminButton"
+                <button id="unassignUserAdminButton"
                         ng-click="unassignUser()"
                         ng-disabled="!checkRight('container_unassign_user')"
                         ng-hide="!checkRight('container_unassign_user') && hide_buttons"
@@ -375,7 +359,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             </td>
             <td>
                 <button type="button" ng-click="assignUserToAllTokens()"
-                        id="assignButton"
+                        id="assignUserToTokenButton"
                         ng-disabled="!checkRight('assign')"
                         ng-hide="!checkRight('assign') && hide_buttons"
                         class="btn btn-primary">
