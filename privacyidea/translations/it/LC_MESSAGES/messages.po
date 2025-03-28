@@ -7,18 +7,18 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-03-27 13:57+0100\n"
-"PO-Revision-Date: 2024-09-07 16:09+0000\n"
-"Last-Translator: Federico Cucinella <fede.cuci@gmail.com>\n"
+"PO-Revision-Date: 2025-03-28 09:26+0000\n"
+"Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/privacyidea/"
-"privacyidea-server/it/>\n"
+"branch-3-11/it/>\n"
 "Language: it\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.8-dev\n"
+"X-Generator: Weblate 5.11-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:231
@@ -451,8 +451,7 @@ msgstr "La lunghezza di un PIN casuale impostato dall'amministratore."
 
 #: lib/policy.py:1913
 msgid "Admin is allowed to view the Audit log."
-msgstr ""
-"L'amministratore è autorizzato a visualizzare il registro di controllo."
+msgstr "L'amministratore è autorizzato a visualizzare il registro di controllo."
 
 #: lib/policy.py:1917
 msgid "The admin will only see audit entries of the last 10d, 3m or 2y."
@@ -480,8 +479,7 @@ msgstr ""
 
 #: lib/policy.py:1942
 msgid "Admin is allowed to delete a user object in a userstore."
-msgstr ""
-"L'amministratore può eliminare un oggetto utente in un archivio utenti."
+msgstr "L'amministratore può eliminare un oggetto utente in un archivio utenti."
 
 #: lib/policy.py:1947
 msgid "Admin is allowed to set the password of the HSM/Security Module."

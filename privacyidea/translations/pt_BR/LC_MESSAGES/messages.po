@@ -6,18 +6,18 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-03-27 13:57+0100\n"
-"PO-Revision-Date: 2025-02-06 17:27+0000\n"
-"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
+"PO-Revision-Date: 2025-03-28 09:26+0000\n"
+"Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
-"privacyidea/privacyidea-server/pt_BR/>\n"
+"privacyidea/branch-3-11/pt_BR/>\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.10-dev\n"
+"X-Generator: Weblate 5.11-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:231
@@ -423,8 +423,8 @@ msgid ""
 "Specifiy the required contents of the OTP PIN. (c)haracters, (n)umeric, "
 "(s)pecial. Use modifiers +/- or a list of allowed characters [1234567890]"
 msgstr ""
-"Especifique os requisitos de conteúdo para o OTP PIN: (c)aracteres, "
-"(n)úmeros, caracteres e(s)peciais. Use modificadores +/- ou a lista de "
+"Especifique os requisitos de conteúdo para o OTP PIN: (c)aracteres, (n)"
+"úmeros, caracteres e(s)peciais. Use modificadores +/- ou a lista de "
 "caracteres permitidos [1234567890]"
 
 #: lib/policy.py:1910
@@ -539,8 +539,7 @@ msgstr ""
 
 #: lib/policy.py:2037
 msgid "Admin is allowed to add and delete component subscriptions."
-msgstr ""
-"Admin é autorizado para adicionar e deletar assinaturas de componentes."
+msgstr "Admin é autorizado para adicionar e deletar assinaturas de componentes."
 
 #: lib/policy.py:2043
 msgid "The Admin is allowed to trigger a challenge for e.g. SMS OTP token."
@@ -747,8 +746,7 @@ msgstr "O usuário é autorizado para revogar um token"
 
 #: lib/policy.py:2206
 msgid "The user is allowed to reset the failcounter of his tokens."
-msgstr ""
-"O usuário é autorizado a reiniciar o contador de falhas de seus tokens."
+msgstr "O usuário é autorizado a reiniciar o contador de falhas de seus tokens."
 
 #: lib/policy.py:2210
 msgid "The user is allowed to set the OTP PIN of his tokens."
@@ -780,8 +778,8 @@ msgid ""
 "Specify the required contents of the OTP PIN. (c)haracters, (n)umeric, "
 "(s)pecial. Use modifiers +/- or a list of allowed characters [1234567890]"
 msgstr ""
-"Especifique os requisitos de conteúdo para o OTP PIN: (c)aracteres, "
-"(n)úmeros, caracteres e(s)peciais. Use modificadores +/- ou a lista de "
+"Especifique os requisitos de conteúdo para o OTP PIN: (c)aracteres, (n)"
+"úmeros, caracteres e(s)peciais. Use modificadores +/- ou a lista de "
 "caracteres permitidos [1234567890]"
 
 #: lib/policy.py:2243
@@ -1040,8 +1038,8 @@ msgid ""
 "(n)umeric, (s)pecial. Use modifiers +/- or a list of allowed characters "
 "[1234567890]"
 msgstr ""
-"Especifique o conteúdo necessário do código de registro. (c)haracters, "
-"(n)umeric, (s)pecial. Use modificadores +/- ou uma lista de caracteres "
+"Especifique o conteúdo necessário do código de registro. (c)haracters, (n)"
+"umeric, (s)pecial. Use modificadores +/- ou uma lista de caracteres "
 "permitidos [1234567890]"
 
 #: lib/policy.py:2461
@@ -1250,8 +1248,8 @@ msgid ""
 "being second, minute and hour."
 msgstr ""
 "Você pode especificar quantos pedidos de autenticação bem sucedidos um "
-"usuário tem permissão para fazer em um determinado tempo. Especifique como "
-"1/5s, 2/10m, 10/1h - s, m, h sendo segundo, minuto e hora."
+"usuário tem permissão para fazer em um determinado tempo. Especifique como 1/"
+"5s, 2/10m, 10/1h - s, m, h sendo segundo, minuto e hora."
 
 #: lib/policy.py:2626
 msgid ""
@@ -1260,8 +1258,8 @@ msgid ""
 "minute and hour."
 msgstr ""
 "Você pode especificar quantos pedidos de autenticação falhados um usuário "
-"tem permissão para fazer em um determinado tempo. Especifique como 1/5s, "
-"2/10m, 10/1h - s, m, h sendo segundo, minuto e hora."
+"tem permissão para fazer em um determinado tempo. Especifique como 1/5s, 2/"
+"10m, 10/1h - s, m, h sendo segundo, minuto e hora."
 
 #: lib/policy.py:2634
 msgid ""
@@ -1383,8 +1381,8 @@ msgid ""
 "The action taken when a user is idle beyond the logout_time limit. Defaults "
 "to \"lockscreen\"."
 msgstr ""
-"A ação tomada quando um usuário está ocioso além do limite de "
-"\"logout_time\". O padrão é \"tela de bloqueio\"."
+"A ação tomada quando um usuário está ocioso além do limite de \"logout_time\""
+". O padrão é \"tela de bloqueio\"."
 
 #: lib/policy.py:2735
 msgid ""
@@ -1639,8 +1637,7 @@ msgstr ""
 msgid ""
 "The client is allowed to perform a rollover of the container and the "
 "included tokens."
-msgstr ""
-"O usuário é autorizado a reiniciar o contador de falhas de seus tokens."
+msgstr "O usuário é autorizado a reiniciar o contador de falhas de seus tokens."
 
 #: lib/policy.py:2940
 msgid ""
@@ -1860,8 +1857,8 @@ msgid ""
 "Specifiy the required PIN contents of the {0!s} token. (c)haracters, "
 "(n)umeric, (s)pecial, (o)thers. [+/-]!"
 msgstr ""
-"Especifique o conteúdo do PIN requerido do token {0!s}. (c)aracteres, "
-"(n)uméricos, e(s)peciais, (o)utros. [+/-]!"
+"Especifique o conteúdo do PIN requerido do token {0!s}. (c)aracteres, (n)"
+"uméricos, e(s)peciais, (o)utros. [+/-]!"
 
 #: lib/token.py:2821 lib/token.py:2837
 msgid "The tokengroup does not exist."
@@ -1992,16 +1989,14 @@ msgstr "O token tem um usuário atribuído."
 msgid ""
 "Action is triggered, if the user has this number of tokens assigned. > and < "
 "can be used, like <8."
-msgstr ""
-"A ação é acionada, se o usuário tiver esse número de tokens atribuídos."
+msgstr "A ação é acionada, se o usuário tiver esse número de tokens atribuídos."
 
 #: lib/eventhandler/base.py:315
 #, fuzzy
 #| msgid "Action is triggered, if the user has this number of tokens assigned."
 msgid ""
 "Action is triggered, if the user has this number of containers assigned."
-msgstr ""
-"A ação é acionada, se o usuário tiver esse número de tokens atribuídos."
+msgstr "A ação é acionada, se o usuário tiver esse número de tokens atribuídos."
 
 #: lib/eventhandler/base.py:322
 msgid ""
@@ -2390,8 +2385,8 @@ msgid ""
 "Add the username of the logged in user as script parameter like '--"
 "logged_in_user <username>'."
 msgstr ""
-"Adicione o nome de usuário do usuário logado como parâmetro de script como "
-"'--logado_em_usuário <nome de usuário>'."
+"Adicione o nome de usuário do usuário logado como parâmetro de script como '"
+"--logado_em_usuário <nome de usuário>'."
 
 #: lib/eventhandler/scripthandler.py:132
 msgid ""
@@ -2606,8 +2601,7 @@ msgstr "Enviar notificação a este usuário."
 
 #: lib/eventhandler/usernotification.py:233
 msgid "Send the user notification via a predefined SMS gateway."
-msgstr ""
-"Enviar a notificação do usuário através de um gateway SMS pré-definido."
+msgstr "Enviar a notificação do usuário através de um gateway SMS pré-definido."
 
 #: lib/eventhandler/usernotification.py:238
 #, python-brace-format
@@ -2927,8 +2921,7 @@ msgstr "token OTP baseado em eventos usando o algoritmo HOTP"
 
 #: lib/tokens/daplugtoken.py:130
 msgid "The user may only have this maximum number of daplug tokens assigned."
-msgstr ""
-"A usuário só pode ser atribuído este número máximo de tokens de daplug."
+msgstr "A usuário só pode ser atribuído este número máximo de tokens de daplug."
 
 #: lib/tokens/daplugtoken.py:135
 msgid ""
@@ -3020,8 +3013,7 @@ msgstr ""
 
 #: lib/tokens/emailtoken.py:195
 msgid "The user may only have this maximum number of email tokens assigned."
-msgstr ""
-"O usuário só pode ter atribuído este número máximo de tokens de e-mail."
+msgstr "O usuário só pode ter atribuído este número máximo de tokens de e-mail."
 
 #: lib/tokens/emailtoken.py:200
 msgid ""
@@ -3183,16 +3175,16 @@ msgstr "O atributo cujo valor deve ser definido em força durante a inscrição.
 msgid ""
 "The user may only have this maximum number of indexed secret tokens assigned."
 msgstr ""
-"Ao usuário só pode ter atribuído este número máximo tokens \"Segredo "
-"Indexado\"."
+"Ao usuário só pode ter atribuído este número máximo tokens "
+"\"Segredo Indexado\"."
 
 #: lib/tokens/indexedsecrettoken.py:150
 msgid ""
 "The user may only have this maximum number of active indexed secret tokens "
 "assigned."
 msgstr ""
-"O usuário só pode ter atribuído este número máximo de tokens \"Indexed "
-"Secret\" ativos."
+"O usuário só pode ter atribuído este número máximo de tokens "
+"\"Indexed Secret\" ativos."
 
 #: lib/tokens/motptoken.py:84
 #, fuzzy
@@ -3383,8 +3375,7 @@ msgstr "O título da notificação, o usuário vê em seu telefone celular."
 
 #: lib/tokens/pushtoken.py:436
 msgid "The smartphone needs to verify SSL during authentication. (default 1)"
-msgstr ""
-"O smartphone precisa verificar o SSL durante a autenticação. (padrão 1)"
+msgstr "O smartphone precisa verificar o SSL durante a autenticação. (padrão 1)"
 
 #: lib/tokens/pushtoken.py:442
 msgid "Require the user to confirm the login with a presence check."
@@ -3450,16 +3441,16 @@ msgstr ""
 msgid ""
 "The user may only have this maximum number of questionaire tokens assigned."
 msgstr ""
-"O usuário só pode ter atribuído este número máximo de \"tokens de "
-"questionário\"."
+"O usuário só pode ter atribuído este número máximo de "
+"\"tokens de questionário\"."
 
 #: lib/tokens/questionnairetoken.py:120
 msgid ""
 "The user may only have this maximum number of active questionaire tokens "
 "assigned."
 msgstr ""
-"O usuário só pode ter atribuído este número máximo de \"tokens de "
-"questionário ativo\"."
+"O usuário só pode ter atribuído este número máximo de "
+"\"tokens de questionário ativo\"."
 
 #: lib/tokens/questionnairetoken.py:164
 #, python-format
@@ -3593,8 +3584,7 @@ msgstr "SPass: Token de passe simples. Senhas estáticas."
 
 #: lib/tokens/spasstoken.py:98
 msgid "The user may only have this maximum number of SPASS tokens assigned."
-msgstr ""
-"O usuário só pode ter atribuído este número máximo de \"tokens SPASS\"."
+msgstr "O usuário só pode ter atribuído este número máximo de \"tokens SPASS\"."
 
 #: lib/tokens/spasstoken.py:104
 msgid ""
@@ -3723,8 +3713,7 @@ msgstr "Token VASCO: Autenticação usando tokens VASCO"
 
 #: lib/tokens/vascotoken.py:108
 msgid "The user may only have this maximum number of Vasco tokens assigned."
-msgstr ""
-"O usuário só pode ter atribuído este número máximo de \"tokens Vasco\"."
+msgstr "O usuário só pode ter atribuído este número máximo de \"tokens Vasco\"."
 
 #: lib/tokens/vascotoken.py:114
 msgid ""
@@ -3886,10 +3875,10 @@ msgid ""
 "Default: untrusted (attestation is required, but can be unknown or self-"
 "signed)"
 msgstr ""
-"Se e como verificar rigorosamente os dados do atestado do autenticador. "
-"Nota: Se o formulário de atestado não for nenhum, o nível de atestado também "
-"não precisa ser nenhum. Padrão: não confiável (o certificado é necessário, "
-"mas pode ser desconhecido ou autoassinado)"
+"Se e como verificar rigorosamente os dados do atestado do autenticador. Nota:"
+" Se o formulário de atestado não for nenhum, o nível de atestado também não "
+"precisa ser nenhum. Padrão: não confiável (o certificado é necessário, mas "
+"pode ser desconhecido ou autoassinado)"
 
 #: lib/tokens/webauthntoken.py:692
 msgid "Only the specified WebAuthn-tokens are allowed to be registered."
@@ -3918,8 +3907,7 @@ msgstr ""
 
 #: lib/tokens/yubicotoken.py:101
 msgid "Yubikey Cloud mode: Forward authentication request to YubiCloud."
-msgstr ""
-"Modo Yubikey Cloud: Encaminhar o pedido de autenticação para YubiCloud."
+msgstr "Modo Yubikey Cloud: Encaminhar o pedido de autenticação para YubiCloud."
 
 #: lib/tokens/yubicotoken.py:110
 msgid "The user may only have this maximum number of Yubico tokens assigned."

@@ -6,17 +6,18 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-03-27 13:57+0100\n"
-"PO-Revision-Date: 2022-04-27 14:55+0000\n"
-"Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
+"PO-Revision-Date: 2025-03-28 09:25+0000\n"
+"Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/privacyidea/"
-"privacyidea-ui/es/>\n"
+"branch-3-11/es/>\n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 5.11-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:231
@@ -257,8 +258,7 @@ msgstr ""
 
 #: lib/policy.py:1703
 msgid "Admin is allowed to set the OTP PIN during enrollment."
-msgstr ""
-"El administrador puede configurar el PIN de OTP durante la inscripción."
+msgstr "El administrador puede configurar el PIN de OTP durante la inscripción."
 
 #: lib/policy.py:1708
 msgid "Admin is allowed to resync tokens."
@@ -352,8 +352,7 @@ msgstr ""
 
 #: lib/policy.py:1808
 msgid "Admin is allowed to delete keys in the system configuration."
-msgstr ""
-"El administrador puede eliminar claves en la configuración del sistema."
+msgstr "El administrador puede eliminar claves en la configuración del sistema."
 
 #: lib/policy.py:1814
 msgid "Admin is allowed to read basic system configuration."
@@ -490,13 +489,11 @@ msgstr "El administrador puede recuperar la lista de desafíos activos."
 
 #: lib/policy.py:1957
 msgid "Admin is allowed to write new SMTP server definitions."
-msgstr ""
-"El administrador puede escribir nuevas definiciones de servidores SMTP."
+msgstr "El administrador puede escribir nuevas definiciones de servidores SMTP."
 
 #: lib/policy.py:1962
 msgid "Admin is allowed to read SMTP server definitions."
-msgstr ""
-"El administrador puede escribir nuevas definiciones de servidores SMTP."
+msgstr "El administrador puede escribir nuevas definiciones de servidores SMTP."
 
 #: lib/policy.py:1967
 msgid "Admin is allowed to write new RADIUS server definitions."
@@ -553,8 +550,7 @@ msgstr ""
 
 #: lib/policy.py:2025
 msgid "Admin is allowed to read SMS gateway definitions."
-msgstr ""
-"El administrador puede ver las definiciones de la puerta de enlace SMS."
+msgstr "El administrador puede ver las definiciones de la puerta de enlace SMS."
 
 #: lib/policy.py:2030
 msgid ""
@@ -564,8 +560,7 @@ msgstr ""
 
 #: lib/policy.py:2037
 msgid "Admin is allowed to add and delete component subscriptions."
-msgstr ""
-"El administrador puede agregar y eliminar suscripciones de componentes."
+msgstr "El administrador puede agregar y eliminar suscripciones de componentes."
 
 #: lib/policy.py:2043
 msgid "The Admin is allowed to trigger a challenge for e.g. SMS OTP token."
@@ -849,8 +844,8 @@ msgid ""
 "CAUTION! For more details, check the documentation."
 msgstr ""
 "El usuario puede establecer ciertos atributos de usuario personalizados. Si "
-"el usuario puede establecer cualquier atributo, hagalo en '*: *'. ¡Utilice "
-"'*' con PRECAUCIÓN! Para más detalles, consulte la documentación."
+"el usuario puede establecer cualquier atributo, hagalo en '*: *'. ¡Utilice '*"
+"' con PRECAUCIÓN! Para más detalles, consulte la documentación."
 
 #: lib/policy.py:2273
 msgid ""
@@ -1044,8 +1039,7 @@ msgstr ""
 
 #: lib/policy.py:2434
 msgid "The length of the password in case of temporary token (lost token)."
-msgstr ""
-"La longitud de la contraseña en caso de token temporal (token perdido)."
+msgstr "La longitud de la contraseña en caso de token temporal (token perdido)."
 
 #: lib/policy.py:2438
 msgid ""
@@ -1069,14 +1063,13 @@ msgid ""
 "(n)umeric, (s)pecial. Use modifiers +/- or a list of allowed characters "
 "[1234567890]"
 msgstr ""
-"Especifique el contenido requerido del código de registro. (c)aracteres, "
-"(n)uméricos, e(s)peciales. Utilice modificadores +/- o una lista de "
-"caracteres permitidos [1234567890]"
+"Especifique el contenido requerido del código de registro. (c)aracteres, (n)"
+"uméricos, e(s)peciales. Utilice modificadores +/- o una lista de caracteres "
+"permitidos [1234567890]"
 
 #: lib/policy.py:2461
 msgid "Set the length of the password of generated password tokens."
-msgstr ""
-"La longitud de la contraseña en caso de token temporal (token perdido)."
+msgstr "La longitud de la contraseña en caso de token temporal (token perdido)."
 
 #: lib/policy.py:2465
 msgid ""
@@ -1434,8 +1427,8 @@ msgid ""
 "to \"lockscreen\"."
 msgstr ""
 "La acción que se realizará cuando un usuario está inactivo cuando se "
-"sobrepasa el tiempo \"logout_time\". El valor predeterminado es \"pantalla "
-"de bloqueo\"."
+"sobrepasa el tiempo \"logout_time\". El valor predeterminado es "
+"\"pantalla de bloqueo\"."
 
 #: lib/policy.py:2735
 msgid ""
@@ -1496,8 +1489,7 @@ msgstr ""
 #: lib/policy.py:2778
 msgid ""
 "Whether the user ID and the resolver should be displayed in the token list."
-msgstr ""
-"Si el ID de usuario y el almacén deben mostrarse en la lista de tokens."
+msgstr "Si el ID de usuario y el almacén deben mostrarse en la lista de tokens."
 
 #: lib/policy.py:2783
 msgid ""
@@ -1506,8 +1498,8 @@ msgid ""
 "templates/)"
 msgstr ""
 "La URL de un repositorio, donde se pueden encontrar las plantillas de "
-"políticas. (Por defecto https://raw.githubusercontent.com/privacyidea/policy-"
-"templates/master/templates/)"
+"políticas. (Por defecto https://raw.githubusercontent.com/privacyidea/"
+"policy-templates/master/templates/)"
 
 #: lib/policy.py:2790
 msgid ""
@@ -1917,8 +1909,8 @@ msgid ""
 "Specifiy the required PIN contents of the {0!s} token. (c)haracters, "
 "(n)umeric, (s)pecial, (o)thers. [+/-]!"
 msgstr ""
-"Especifique el contenido del PIN requerido del token {0!s}. (c)aracteres, "
-"(n)uméricos, e(s)peciales, (o)tros. [+/-]!"
+"Especifique el contenido del PIN requerido del token {0!s}. (c)aracteres, (n)"
+"uméricos, e(s)peciales, (o)tros. [+/-]!"
 
 #: lib/token.py:2821 lib/token.py:2837
 msgid "The tokengroup does not exist."
@@ -2936,8 +2928,8 @@ msgid ""
 "The user may only have this maximum number of application specific password "
 "tokens assigned."
 msgstr ""
-"El usuario solo puede tener asignado este número máximo de \"tokens de "
-"contraseña\" activos."
+"El usuario solo puede tener asignado este número máximo de "
+"\"tokens de contraseña\" activos."
 
 #: lib/tokens/applicationspecificpasswordtoken.py:91
 #, fuzzy
@@ -2945,8 +2937,8 @@ msgid ""
 "The user may only have this maximum number of active application specific "
 "password tokens assigned."
 msgstr ""
-"El usuario solo puede tener asignado este número máximo de \"tokens de "
-"contraseña\" activos."
+"El usuario solo puede tener asignado este número máximo de "
+"\"tokens de contraseña\" activos."
 
 #: lib/tokens/certificatetoken.py:282
 msgid "Certificate: Enroll an x509 Certificate Token."
@@ -3011,8 +3003,7 @@ msgstr ""
 #: lib/tokens/daypasswordtoken.py:35
 #, fuzzy
 msgid "Specify the time step of the DayPassword token. For example: \"24h\""
-msgstr ""
-"La longitud de la contraseña en caso de token temporal (token perdido)."
+msgstr "La longitud de la contraseña en caso de token temporal (token perdido)."
 
 #: lib/tokens/daypasswordtoken.py:83
 msgid ""
@@ -3032,8 +3023,8 @@ msgstr ""
 msgid ""
 "The user may only have this maximum number of daypassword tokens assigned."
 msgstr ""
-"El usuario solo puede tener asignado este número máximo de \"tokens de "
-"contraseña\"."
+"El usuario solo puede tener asignado este número máximo de "
+"\"tokens de contraseña\"."
 
 #: lib/tokens/daypasswordtoken.py:131
 #, fuzzy
@@ -3041,8 +3032,8 @@ msgid ""
 "The user may only have this maximum number of active daypassword tokens "
 "assigned."
 msgstr ""
-"El usuario solo puede tener asignado este número máximo de \"tokens de "
-"contraseña\" activos."
+"El usuario solo puede tener asignado este número máximo de "
+"\"tokens de contraseña\" activos."
 
 #: lib/tokens/emailtoken.py:156
 msgid "EMail Token"
@@ -3151,8 +3142,8 @@ msgstr ""
 #: lib/tokens/hotptoken.py:97
 msgid "Specify the hashing function to be used. Can be SHA1, SHA256 or SHA512."
 msgstr ""
-"Especifique el \"hashlib\" que se utilizará. Puede ser \"SHA-1\", "
-"\"SHA-256\" o \"SHA-512\"."
+"Especifique el \"hashlib\" que se utilizará. Puede ser \"SHA-1\", \"SHA-256\""
+" o \"SHA-512\"."
 
 #: lib/tokens/hotptoken.py:99
 msgid "Specify the OTP length to be used. Can be 6 or 8 digits."
@@ -3183,8 +3174,7 @@ msgstr "HOTP: Contraseñas de un solo uso basadas en eventos."
 
 #: lib/tokens/hotptoken.py:148
 msgid "The user may only have this maximum number of HOTP tokens assigned."
-msgstr ""
-"El usuario solo puede tener asignado este número máximo de tokens HOTP."
+msgstr "El usuario solo puede tener asignado este número máximo de tokens HOTP."
 
 #: lib/tokens/hotptoken.py:153
 msgid ""
@@ -3268,16 +3258,16 @@ msgstr "El atributo cuyo valor debe forzarse durante la inscripción."
 msgid ""
 "The user may only have this maximum number of indexed secret tokens assigned."
 msgstr ""
-"El usuario solo puede tener asignado este número máximo de Token \"Indexed "
-"Secret\"."
+"El usuario solo puede tener asignado este número máximo de Token "
+"\"Indexed Secret\"."
 
 #: lib/tokens/indexedsecrettoken.py:150
 msgid ""
 "The user may only have this maximum number of active indexed secret tokens "
 "assigned."
 msgstr ""
-"El usuario solo puede tener asignado este número máximo de tokens \"Indexed "
-"Secret\" activos."
+"El usuario solo puede tener asignado este número máximo de tokens "
+"\"Indexed Secret\" activos."
 
 #: lib/tokens/motptoken.py:84
 #, fuzzy
@@ -3287,8 +3277,7 @@ msgstr "TOTP: Contraseñas de un solo uso basadas en el tiempo."
 
 #: lib/tokens/motptoken.py:102
 msgid "The user may only have this maximum number of mOTP tokens assigned."
-msgstr ""
-"El usuario solo puede tener asignado este número máximo de tokens mOTP."
+msgstr "El usuario solo puede tener asignado este número máximo de tokens mOTP."
 
 #: lib/tokens/motptoken.py:107
 msgid ""
@@ -3309,8 +3298,7 @@ msgstr "OCRA: inscribe un token OCRA."
 
 #: lib/tokens/ocratoken.py:99
 msgid "The user may only have this maximum number of OCRA tokens assigned."
-msgstr ""
-"El usuario solo puede tener asignado este número máximo de tokens OCRA."
+msgstr "El usuario solo puede tener asignado este número máximo de tokens OCRA."
 
 #: lib/tokens/ocratoken.py:104
 msgid ""
@@ -3390,16 +3378,16 @@ msgstr ""
 #: lib/tokens/passwordtoken.py:125
 msgid "The user may only have this maximum number of password tokens assigned."
 msgstr ""
-"El usuario solo puede tener asignado este número máximo de \"tokens de "
-"contraseña\"."
+"El usuario solo puede tener asignado este número máximo de "
+"\"tokens de contraseña\"."
 
 #: lib/tokens/passwordtoken.py:130
 msgid ""
 "The user may only have this maximum number of active password tokens "
 "assigned."
 msgstr ""
-"El usuario solo puede tener asignado este número máximo de \"tokens de "
-"contraseña\" activos."
+"El usuario solo puede tener asignado este número máximo de "
+"\"tokens de contraseña\" activos."
 
 #: lib/tokens/pushtoken.py:72
 msgid "Please confirm the authentication on your mobile device!"
@@ -3440,8 +3428,8 @@ msgstr ""
 msgid ""
 "The second enrollment step must be completed within this time (in minutes)."
 msgstr ""
-"El segundo paso de inscripción debe completarse en este intervalo de tiempo "
-"(en minutos)."
+"El segundo paso de inscripción debe completarse en este intervalo de tiempo ("
+"en minutos)."
 
 #: lib/tokens/pushtoken.py:401
 msgid "The smartphone needs to verify SSL during the enrollment. (default 1)"
@@ -3479,8 +3467,8 @@ msgstr "El título de la notificación que el usuario ve en su teléfono móvil.
 #: lib/tokens/pushtoken.py:436
 msgid "The smartphone needs to verify SSL during authentication. (default 1)"
 msgstr ""
-"El \"smarthphone\" debe verificar SSL durante la autenticación. "
-"(predeterminado 1)"
+"El \"smarthphone\" debe verificar SSL durante la autenticación. ("
+"predeterminado 1)"
 
 #: lib/tokens/pushtoken.py:442
 msgid "Require the user to confirm the login with a presence check."
@@ -3545,16 +3533,16 @@ msgstr ""
 msgid ""
 "The user may only have this maximum number of questionaire tokens assigned."
 msgstr ""
-"El usuario solo puede tener asignado este número máximo de \"tokens de "
-"cuestionario\"."
+"El usuario solo puede tener asignado este número máximo de "
+"\"tokens de cuestionario\"."
 
 #: lib/tokens/questionnairetoken.py:120
 msgid ""
 "The user may only have this maximum number of active questionaire tokens "
 "assigned."
 msgstr ""
-"El usuario solo puede tener asignado este número máximo de \"tokens de "
-"cuestionario\" activos."
+"El usuario solo puede tener asignado este número máximo de "
+"\"tokens de cuestionario\" activos."
 
 #: lib/tokens/questionnairetoken.py:164
 #, python-format
@@ -3589,16 +3577,16 @@ msgstr ""
 msgid ""
 "The user may only have this maximum number of registration tokens assigned."
 msgstr ""
-"El usuario solo puede tener asignado este número máximo de \"tokens de "
-"registro\"."
+"El usuario solo puede tener asignado este número máximo de "
+"\"tokens de registro\"."
 
 #: lib/tokens/registrationtoken.py:145
 msgid ""
 "The user may only have this maximum number of active registration tokens "
 "assigned."
 msgstr ""
-"El usuario solo puede tener asignado este número máximo de \"tokens de "
-"registro\" activos."
+"El usuario solo puede tener asignado este número máximo de "
+"\"tokens de registro\" activos."
 
 #: lib/tokens/remotetoken.py:112
 msgid "Remote Token: Forward authentication request to another server."
@@ -3607,15 +3595,15 @@ msgstr "Token remoto: reenviar la solicitud de autenticación a otro servidor."
 #: lib/tokens/remotetoken.py:121 lib/tokens/totptoken.py:163
 msgid "The user may only have this maximum number of remote tokens assigned."
 msgstr ""
-"El usuario solo puede tener asignado este número máximo de \"tokens "
-"remotos\"."
+"El usuario solo puede tener asignado este número máximo de \"tokens remotos\""
+"."
 
 #: lib/tokens/remotetoken.py:127 lib/tokens/totptoken.py:169
 msgid ""
 "The user may only have this maximum number of active remote tokens assigned."
 msgstr ""
-"El usuario solo puede tener asignado este número máximo de \"tokens "
-"remotos\" activos."
+"El usuario solo puede tener asignado este número máximo de \"tokens remotos\""
+" activos."
 
 #: lib/tokens/smstoken.py:195
 msgid "SMS Token"
@@ -3862,9 +3850,9 @@ msgid ""
 "A list of transports to prefer to communicate with WebAuthn tokens. Default: "
 "usb ble nfc internal (All standard transports)"
 msgstr ""
-"Una lista de \"transports\" que prefieren comunicarse con los \"tokens de "
-"WebAuthn\". Predeterminado: usb ble nfc internal (todos los transportes "
-"estándar)"
+"Una lista de \"transports\" que prefieren comunicarse con los "
+"\"tokens de WebAuthn\". Predeterminado: usb ble nfc internal (todos los "
+"transportes estándar)"
 
 #: lib/tokens/webauthntoken.py:569
 msgid ""
@@ -3882,9 +3870,9 @@ msgid ""
 "WebAuthn token. Default: preferred (verify the user if supported by the "
 "token)"
 msgstr ""
-"Si se debe verificar la identidad del usuario al autenticarse con un \"token "
-"de WebAuthn\". Predeterminado: \"preferred\" (verifique al usuario si el "
-"token lo admite)"
+"Si se debe verificar la identidad del usuario al autenticarse con un "
+"\"token de WebAuthn\". Predeterminado: \"preferred\" (verifique al usuario "
+"si el token lo admite)"
 
 #: lib/tokens/webauthntoken.py:585
 #, fuzzy
@@ -3921,8 +3909,8 @@ msgstr ""
 #, fuzzy
 msgid "A human-readable name for the organization rolling out WebAuthn tokens."
 msgstr ""
-"Un nombre legible por humanos para la organización que implementa \"tokens "
-"WebAuthn\"."
+"Un nombre legible por humanos para la organización que implementa "
+"\"tokens WebAuthn\"."
 
 #: lib/tokens/webauthntoken.py:617
 msgid ""
@@ -3987,10 +3975,10 @@ msgid ""
 "Note: for u2f_req to work with WebAuthn, this cannot be set to none. "
 "Default: direct (ask for non-anonymized attestation data)"
 msgstr ""
-"Ya sea para solicitar datos de atestación al inscribir un nuevo \"token de "
-"WebAuthn\". Nota: para que \"u2f_req\" funcione con WebAuthn, esto no se "
-"puede establecer en ninguno. Predeterminado: \"direct\" (solicite datos de "
-"atestación no anonimizados)"
+"Ya sea para solicitar datos de atestación al inscribir un nuevo "
+"\"token de WebAuthn\". Nota: para que \"u2f_req\" funcione con WebAuthn, "
+"esto no se puede establecer en ninguno. Predeterminado: \"direct\" (solicite "
+"datos de atestación no anonimizados)"
 
 #: lib/tokens/webauthntoken.py:680
 msgid ""
@@ -4034,8 +4022,7 @@ msgstr ""
 
 #: lib/tokens/yubicotoken.py:101
 msgid "Yubikey Cloud mode: Forward authentication request to YubiCloud."
-msgstr ""
-"Modo Yubikey Cloud: reenviar la solicitud de autenticación a YubiCloud."
+msgstr "Modo Yubikey Cloud: reenviar la solicitud de autenticación a YubiCloud."
 
 #: lib/tokens/yubicotoken.py:110
 msgid "The user may only have this maximum number of Yubico tokens assigned."
@@ -4056,15 +4043,15 @@ msgstr "Modo Yubikey AES: contraseñas de un solo uso con Yubikey."
 #: lib/tokens/yubikeytoken.py:169
 msgid "The user may only have this maximum number of Yubikey tokens assigned."
 msgstr ""
-"El usuario solo puede tener asignado este número máximo de \"tokens "
-"Yubikey\"."
+"El usuario solo puede tener asignado este número máximo de \"tokens Yubikey\""
+"."
 
 #: lib/tokens/yubikeytoken.py:175
 msgid ""
 "The user may only have this maximum number of active Yubikey tokens assigned."
 msgstr ""
-"El usuario solo puede tener asignado este número máximo de \"tokens "
-"Yubikey\" activos ."
+"El usuario solo puede tener asignado este número máximo de \"tokens Yubikey\""
+" activos ."
 
 #: lib/tokens/yubikeytoken.py:180
 msgid ""

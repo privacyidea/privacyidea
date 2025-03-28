@@ -6,19 +6,19 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-03-27 13:57+0100\n"
-"PO-Revision-Date: 2025-01-30 15:33+0000\n"
+"PO-Revision-Date: 2025-03-28 09:26+0000\n"
 "Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Romanian <https://hosted.weblate.org/projects/privacyidea/"
-"privacyidea-server/ro/>\n"
+"branch-3-11/ro/>\n"
 "Language: ro\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=n==1 ? 0 : (n==0 || (n%100 > 0 && n%100 < "
 "20)) ? 1 : 2;\n"
-"X-Generator: Weblate 5.10-dev\n"
+"X-Generator: Weblate 5.11-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:231
@@ -2635,8 +2635,7 @@ msgstr ""
 #, fuzzy
 msgid ""
 "The user may only have this maximum number of daypassword tokens assigned."
-msgstr ""
-"Utilizatorul poate avea atribuit doar acest număr maxim de jetoane SMS."
+msgstr "Utilizatorul poate avea atribuit doar acest număr maxim de jetoane SMS."
 
 #: lib/tokens/daypasswordtoken.py:131
 #, fuzzy
@@ -3168,8 +3167,7 @@ msgstr ""
 
 #: lib/tokens/smstoken.py:244
 msgid "The user may only have this maximum number of SMS tokens assigned."
-msgstr ""
-"Utilizatorul poate avea atribuit doar acest număr maxim de jetoane SMS."
+msgstr "Utilizatorul poate avea atribuit doar acest număr maxim de jetoane SMS."
 
 #: lib/tokens/smstoken.py:250
 msgid ""
