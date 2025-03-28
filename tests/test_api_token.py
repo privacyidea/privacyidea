@@ -1,4 +1,5 @@
 from privacyidea.lib.container import init_container, add_token_to_container, find_container_by_serial
+from privacyidea.lib.error import ResourceNotFoundError
 from .base import MyApiTestCase, PWFILE2
 import json
 import datetime
@@ -175,7 +176,7 @@ class API000TokenAdminRealmList(MyApiTestCase):
         with self.app.test_request_context(url,
                                            method=method,
                                            data=data if method == 'POST' else None,
-                                           query_string=data if method == 'GET' else None,
+                                           query_string=data if method in ['GET', 'DELETE'] else None,
                                            headers={'Authorization': auth_token}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res.json)
@@ -540,6 +541,26 @@ class API000TokenAdminRealmList(MyApiTestCase):
         t1_realms = t1.get_realms()
         self.assertIn(self.realm1, t1_realms)
         self.assertNotIn(self.realm2, t1_realms)
+
+    def test_04_helpdesk_delete_all(self):
+        # helpdesk is allowed to manage realm1
+        set_policy(name="pol-realm1",scope=SCOPE.ADMIN, action=ACTION.DELETE, realm=self.realm1)
+
+        # create tokens
+        token1 = init_token({"type": "hotp", "genkey": True, "realm": self.realm1})
+        token2 = init_token({"type": "hotp", "genkey": True, "realm": self.realm2})
+        token3 = init_token({"type": "hotp", "genkey": True, "realm": self.realm1})
+        token_serials = ",".join([token1.get_serial(), token2.get_serial(), token3.get_serial()])
+
+        # Try to delete all tokens will only delete token1 and token3 from realm1
+        result = self.request_assert_200("/token/deleteall", {"serial": token_serials}, self.at, "DELETE")
+        result = result.get("result").get("value")
+        self.assertTrue(result.get(token1.get_serial()))
+        self.assertFalse(result.get(token2.get_serial()))
+        self.assertTrue(result.get(token3.get_serial()))
+        self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, token1.get_serial(), None)
+        self.assertEqual(1, len(get_tokens_from_serial_or_user(token2.get_serial(), None)))
+        self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, token3.get_serial(), None)
 
 
 class APIAttestationTestCase(MyApiTestCase):
@@ -1088,6 +1109,39 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertEqual(res.status_code, 404)
             self.assertFalse(result.get("status"))
+
+    def test_06_delete_all_tokens(self):
+        self._create_temp_token("Token1")
+        self._create_temp_token("Token2")
+        serial_list = "Token1,Token2"
+        with self.app.test_request_context(f"/token/deleteall",
+                                           method='DELETE',
+                                           query_string={"serial": serial_list},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value").get("Token1"))
+            self.assertTrue(result.get("value").get("Token2"))
+        self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, "Token1", None)
+        self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, "Token2", None)
+
+        # Try to remove token, that does not exist fails silently
+        self._create_temp_token("Token1")
+        self._create_temp_token("Token2")
+        serial_list = "Token1,Token1234,Token2"
+        with self.app.test_request_context(f"/token/deleteall",
+                                           method='DELETE',
+                                           query_string={"serial": serial_list},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value").get("Token1"))
+            self.assertFalse(result.get("value").get("Token1234"))
+            self.assertTrue(result.get("value").get("Token2"))
+        self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, "Token1", None)
+        self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, "Token2", None)
 
     def test_06_disable_enable_token(self):
         self._create_temp_token("EToken")

@@ -340,6 +340,17 @@ angular.module("TokenModule", ["privacyideaAuth"])
                         AuthFactory.authError(error.data)
                     });
                 },
+                deleteAll: function (params, callback) {
+                    $http.delete(tokenUrl + "/deleteall",
+                        {
+                            params: params,
+                            headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                        }).then(function (response) {
+                        callback(response.data)
+                    }, function (error) {
+                        AuthFactory.authError(error.data)
+                    });
+                },
                 resync: function (params, callback) {
                     $http.post(tokenUrl + "/resync", params,
                         {
