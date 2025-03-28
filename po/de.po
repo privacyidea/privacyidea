@@ -12,8 +12,8 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-03-28 09:26+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"PO-Revision-Date: 2025-03-28 10:36+0000\n"
+"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "branch-3-11-webui/de/>\n"
 "Language: de\n"
@@ -1971,12 +1971,13 @@ msgid ""
 "    <code>daypassword_timestep</code> always have precedence over these "
 "default values."
 msgstr ""
+"Hier können Sie Werte definieren, die als Standard-Werte für neu ausgerollte "
+"DayPassword Token verwendet werden.\n"
+"Beachten Sie, das die Benutzer-/Administrator-Richtlinien "
+"<code>daypassword_hashlib</code> und <code>daypassword_timestep</code> immer "
+"Vorrang vor den hier eingestellten Standardwerten haben."
 
 #: privacyidea/static/components/config/views/config.token.hotp.html:7
-#, fuzzy
-#| msgid ""
-#| "Here you can define settings, that will be set as default values, when\n"
-#| "    enrolling a HOTP token."
 msgid ""
 "Here you can define settings, that will be set as default values, when\n"
 "    enrolling a HOTP token. Note that the user/admin policy "
@@ -1984,7 +1985,9 @@ msgid ""
 "    this default value."
 msgstr ""
 "Hier können Sie Werte definieren, die als Standard-Werte für neu ausgerollte "
-"HOTP-Token verwendet werden."
+"HOTP-Token verwendet werden. Beachten Sie, das die Benutzer-/Administrator-"
+"Richtlinie <code>hotp_hashlib</code> immer Vorrang vor dem hier "
+"eingestellten Standardwert hat."
 
 #: privacyidea/static/components/config/views/config.token.totp.html:7
 msgid ""
@@ -1994,6 +1997,10 @@ msgid ""
 "    <code>totp_timestep</code> always have precedence over these default "
 "values."
 msgstr ""
+"Hier können Sie Werte definieren, die als Standard-Werte für neu ausgerollte "
+"TOTP-Token verwendet werden. Beachten Sie, das die Benutzer-/Administrator-"
+"Richtlinien <code>totp_hashlib</code> und <code>totp_timestep</code> immer "
+"Vorrang vor den hier eingestellten Standardwerten haben."
 
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:23
 msgid ""
@@ -2468,10 +2475,8 @@ msgid "New RADIUS server"
 msgstr "Neuen RADIUS-Server anlegen"
 
 #: privacyidea/static/components/config/views/config.realms.list.html:108
-#, fuzzy
-#| msgid "new realm"
 msgid "New Realm..."
-msgstr "Neuer Realm"
+msgstr "Neuer Realm..."
 
 #: privacyidea/static/components/config/views/config.machineresolvers.html:15
 #: privacyidea/static/components/config/views/config.resolvers.html:15
@@ -3712,8 +3717,6 @@ msgstr ""
 "a> einsehen."
 
 #: privacyidea/static/components/config/views/config.realms.list.html:31
-#, fuzzy
-#| msgid "set Default"
 msgid "Set Default"
 msgstr "Setze als Standard"
 
@@ -3822,10 +3825,10 @@ msgid ""
 msgstr "Spezielle Fehlerbehandlung"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:8
-#, fuzzy
-#| msgid "start typing a serial number of a token that is notassigned, yet."
 msgid "Start typing a serial number of a token that is not yet assigned"
-msgstr "Fangen Sie an, eine nicht zugewiesene Seriennummer zu tippen."
+msgstr ""
+"Fangen Sie an, eine Seriennummer eines noch nicht zugewiesenen Tokens zu "
+"tippen"
 
 #: privacyidea/static/components/config/views/config.smtp.list.html:8
 msgid "StartTLS"
@@ -4076,20 +4079,14 @@ msgid "The Enrollment URL"
 msgstr "Registrierungs-URL"
 
 #: privacyidea/static/components/config/views/config.token.hotp.html:2
-#, fuzzy
-#| msgid ""
-#| "The HOTP Token is a event based one time password token.\n"
-#| "    It is described in <a href=\"https://tools.ietf.org/html/"
-#| "rfc4226\">RFC\n"
-#| "    4226</a>."
 msgid ""
 "The HOTP Token is an event based one time password token.\n"
 "    It is described in <a href=\"https://tools.ietf.org/html/rfc4226\">RFC\n"
 "    4226</a>."
 msgstr ""
-"Der HOTP-Token ist ein ereignisbasiertes Einmalpasswort-Token. Er ist in <a "
-"href=\"https://tools.ietf.org/html/rfc4226\">RFC\n"
-"    4226 beschrieben</a>."
+"Der HOTP-Token ist ein ereignisbasiertes Einmalpasswort-Token.\n"
+"Er ist in <a href=\"https://tools.ietf.org/html/rfc4226\">RFC 4226 "
+"beschrieben</a>."
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:1
 msgid ""
@@ -5639,13 +5636,6 @@ msgstr ""
 "und ein neuer Token mit einem neuen geheimen Schlüssel erzeugt wird!"
 
 #: privacyidea/static/components/login/views/login.html:12
-#, fuzzy
-#| msgid ""
-#| "You are authenticated by the web server as user\n"
-#| "                <b>{{ remoteUser }}</b>.\n"
-#| "                You may login as this user to privacyIDEA without any "
-#| "further\n"
-#| "                credentials."
 msgid ""
 "You are authenticated by the web server as user\n"
 "                <b>{{ remoteUser }}</b>.\n"
@@ -5653,9 +5643,9 @@ msgid ""
 "further\n"
 "                credentials."
 msgstr ""
-"Sie wurden vom Webserver als Benutzer\n"
-"    <b>{{ remoteUser }}</b> authentifiziert.\n"
-"   Sie können sich ohne weitere Authentisierung an privacyIDEA anmelden."
+"Sie wurden vom Webserver als Benutzer <b>{{ remoteUser }}</b> "
+"authentifiziert.\n"
+"Sie können sich ohne weitere Authentisierung an privacyIDEA anmelden."
 
 #: privacyidea/static/components/dialogs/views/dialog.lock.html:16
 msgid ""
