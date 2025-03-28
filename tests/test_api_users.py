@@ -1,8 +1,11 @@
 """ API testcases for the "/user/" endpoint """
+
 from .base import MyApiTestCase
+from privacyidea.lib.policy import set_policy, SCOPE, delete_policy, ACTION
 from privacyidea.lib.resolver import save_resolver, get_resolver_object
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
+from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes, INTERNAL_USAGE
 from privacyidea.lib.token import init_token, remove_token
 from urllib.parse import urlencode, quote
 
@@ -10,7 +13,6 @@ PWFILE = "tests/testdata/passwd"
 
 
 class APIUsersTestCase(MyApiTestCase):
-
     parameters = {'Driver': 'sqlite',
                   'Server': '/tests/testdata/',
                   'Database': "testuser-api.sqlite",
@@ -373,7 +375,6 @@ class APIUsersTestCase(MyApiTestCase):
         self.assertEqual(uid, "")
 
     def test_10_additional_attributes(self):
-        from privacyidea.lib.policy import set_policy, ACTION, SCOPE, delete_policy
         with self.app.test_request_context('/user/attribute',
                                            method='POST',
                                            data={"user": "cornelius@realm1",
@@ -626,3 +627,39 @@ class APIUsersTestCase(MyApiTestCase):
         delete_policy("custom_attr3")
         delete_policy("custom_attr4")
         delete_policy("custom_create_user")
+
+    def test_11_internal_custom_user_attributes(self):
+        self.setUp_user_realms()
+        # Allow to set custom attributes
+        set_policy("custom_attribute", scope=SCOPE.ADMIN,
+                   action=f"{ACTION.SET_USER_ATTRIBUTES}=:*:*,{ACTION.DELETE_USER_ATTRIBUTES}='*'")
+
+        # try to set an internal custom user attribute
+        with self.app.test_request_context("/user/attribute",
+                                           method="POST",
+                                           data={"user": "hans",
+                                                 "realm": self.realm1,
+                                                 "key": f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyIDEA-cp",
+                                                 "value": "push"},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), res.data)
+            error = result.get("error")
+            self.assertEqual(905, error.get("code"))
+
+        # set an internal attribute
+        user = User("hans", self.realm1)
+        user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyIDEA-cp", "push",
+                           INTERNAL_USAGE)
+        # Delete internal attribute is allowed
+        with self.app.test_request_context(
+                f"/user/attribute/{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyIDEA-cp/hans/{self.realm1}",
+                method="DELETE",
+                data={},
+                headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), res.data)
