@@ -1,0 +1,19 @@
+@use "../../../styles";
+
+$grid-template-rows: auto 1fr auto;
+
+.layout {
+  grid-template-rows: $grid-template-rows;
+
+  header {
+  }
+
+  main {
+    display: flex;
+    flex-direction: column;
+  }
+
+  footer {
+    flex-shrink: 0;
+  }
+}
