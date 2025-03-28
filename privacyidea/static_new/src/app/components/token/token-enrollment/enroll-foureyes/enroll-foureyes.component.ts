@@ -47,7 +47,7 @@ export class EnrollFoureyesComponent {
   text = TokenComponent.tokenTypes.find((type) => type.key === '4eyes')?.text;
   @Input() description!: WritableSignal<string>;
   @Input() separator!: WritableSignal<string>;
-  @Input() requiredTokensOfRealm!: WritableSignal<
+  @Input() requiredTokensOfRealms!: WritableSignal<
     { realm: string; tokens: number }[]
   >;
   @Input() onlyAddToRealm!: WritableSignal<boolean>;
@@ -55,7 +55,7 @@ export class EnrollFoureyesComponent {
   requiredRealms = signal<string[]>([]);
   realmOptions = signal<string[]>([]);
   tokenCountMapping: Signal<Record<string, number>> = computed(() => {
-    return this.requiredTokensOfRealm().reduce(
+    return this.requiredTokensOfRealms().reduce(
       (acc, curr) => {
         acc[curr.realm] = curr.tokens;
         return acc;
@@ -74,20 +74,20 @@ export class EnrollFoureyesComponent {
   }
 
   getTokenCount(realm: string): number {
-    const tokensArray = this.requiredTokensOfRealm();
+    const tokensArray = this.requiredTokensOfRealms();
     const tokenObj = tokensArray.find((item) => item.realm === realm);
     return tokenObj ? tokenObj.tokens : 0;
   }
 
   updateTokenCount(realm: string, tokens: number): void {
-    const tokensArray = this.requiredTokensOfRealm();
+    const tokensArray = this.requiredTokensOfRealms();
     const index = tokensArray.findIndex((item) => item.realm === realm);
     if (index > -1) {
       tokensArray[index] = { realm, tokens };
     } else {
       tokensArray.push({ realm, tokens });
     }
-    this.requiredTokensOfRealm.set([...tokensArray]);
+    this.requiredTokensOfRealms.set([...tokensArray]);
   }
 
   onRealmSelectionChange(event: MatOptionSelectionChange, realm: string): void {

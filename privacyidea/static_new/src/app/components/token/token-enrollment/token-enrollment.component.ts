@@ -226,7 +226,7 @@ export class TokenEnrollmentComponent {
     smsGateway: '',
     phoneNumber: '',
     separator: '',
-    requiredTokenOfRealm: [] as { realm: string; tokens: number }[],
+    requiredTokenOfRealms: [] as { realm: string; tokens: number }[],
     serviceId: '',
     caConnector: '',
     certTemplate: '',
@@ -269,7 +269,7 @@ export class TokenEnrollmentComponent {
   smsGateway = signal(this.defaults.smsGateway);
   phoneNumber = signal(this.defaults.phoneNumber);
   separator = signal(this.defaults.separator);
-  requiredTokenOfRealm = signal(this.defaults.requiredTokenOfRealm);
+  requiredTokenOfRealms = signal(this.defaults.requiredTokenOfRealms);
   serviceId = signal(this.defaults.serviceId);
   caConnector = signal(this.defaults.caConnector);
   certTemplate = signal(this.defaults.certTemplate);
@@ -517,7 +517,7 @@ export class TokenEnrollmentComponent {
 
       // 4eyes
       separator: this.separator(),
-      requiredTokenOfRealm: this.requiredTokenOfRealm(),
+      requiredTokenOfRealms: this.requiredTokenOfRealms(),
       onlyAddToRealm: this.onlyAddToRealm(),
       userRealm: this.selectedUserRealm(),
 
