@@ -9,10 +9,10 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-03-27 13:57+0100\n"
-"PO-Revision-Date: 2025-03-24 10:13+0000\n"
-"Last-Translator: Nils Behlen <nils.behlen@netknights.it>\n"
+"PO-Revision-Date: 2025-03-28 09:15+0000\n"
+"Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "branch-3-11/de/>\n"
 "Language: de\n"
@@ -122,8 +122,8 @@ msgid ""
 "Authentication failure. You do not have the necessary role ({required_role}) "
 "to access this resource!"
 msgstr ""
-"Authentifizierungsfehler. Sie haben nicht die nötige Rolle "
-"({required_role}), um auf die Ressource zuzugreifen!"
+"Authentifizierungsfehler. Sie haben nicht die nötige Rolle ({required_role})"
+", um auf die Ressource zuzugreifen!"
 
 #: api/lib/utils.py:464
 msgid "Invalid policy name:"
@@ -407,8 +407,7 @@ msgstr "Der Administrator kann die Definitionen der CA-Konnektoren lesen."
 
 #: lib/policy.py:1873
 msgid "Admin is allowed to write and modify the machine resolvers."
-msgstr ""
-"Der Administrator kann Maschinenkonfigurationen anlegen und bearbeiten."
+msgstr "Der Administrator kann Maschinenkonfigurationen anlegen und bearbeiten."
 
 #: lib/policy.py:1879
 msgid "Admin is allowed to delete machine resolvers."
@@ -473,8 +472,7 @@ msgstr "Der Administrator kann Benutzer in der Benutzerquelle löschen."
 
 #: lib/policy.py:1947
 msgid "Admin is allowed to set the password of the HSM/Security Module."
-msgstr ""
-"Der Administrator kann das Passwort des HSM/Sicherheitsmoduls eingeben."
+msgstr "Der Administrator kann das Passwort des HSM/Sicherheitsmoduls eingeben."
 
 #: lib/policy.py:1951
 msgid "Admin is allowed to retrieve the list of active challenges."
@@ -512,8 +510,7 @@ msgstr "Der Administrator kann regelmäßige Aufgaben bearbeiten."
 
 #: lib/policy.py:1997
 msgid "Admin is allowed to read periodic task definitions."
-msgstr ""
-"Der Administrator darf Definitionen von wiederkehrenden Aufgaben lesen."
+msgstr "Der Administrator darf Definitionen von wiederkehrenden Aufgaben lesen."
 
 #: lib/policy.py:2002
 msgid "Admin is allowed to read statistics data."
@@ -552,8 +549,7 @@ msgstr "Der Administrator kann Subskriptionen importieren und löschen."
 
 #: lib/policy.py:2043
 msgid "The Admin is allowed to trigger a challenge for e.g. SMS OTP token."
-msgstr ""
-"Der Administrator kann eine Challenge für bspw. SMS OTP Token auslösen."
+msgstr "Der Administrator kann eine Challenge für bspw. SMS OTP Token auslösen."
 
 #: lib/policy.py:2049
 msgid ""
@@ -923,8 +919,8 @@ msgid ""
 "If the administrator sets the OTP PIN during enrollment or later, the user "
 "will have to change the PIN during first use."
 msgstr ""
-"Wenn der Administrator die OTP PIN setzt (während des Ausrollens oder "
-"später) muss der Benutzer die OTP PIN zurücksetzen."
+"Wenn der Administrator die OTP PIN setzt (während des Ausrollens oder später)"
+" muss der Benutzer die OTP PIN zurücksetzen."
 
 #: lib/policy.py:2396
 msgid ""
@@ -982,8 +978,8 @@ msgstr ""
 #: lib/policy.py:2434
 msgid "The length of the password in case of temporary token (lost token)."
 msgstr ""
-"Die Länge des Passworts für einen temporären Token (Workflow \"Verlorener "
-"Token\")."
+"Die Länge des Passworts für einen temporären Token (Workflow "
+"\"Verlorener Token\")."
 
 #: lib/policy.py:2438
 msgid ""
@@ -1021,10 +1017,9 @@ msgid ""
 "(c)haracters, (n)umeric, (s)pecial. Use modifiers +/- or a list of allowed "
 "characters [1234567890]"
 msgstr ""
-"Geben Sie den geforderten Inhalt des Passwortes eines Passwort-Tokens an. "
-"(c) Buchstaben, (n) Zahlen und (s) Sonderzeichen. Sie können die Attribute "
-"+/- verwenden oder eine dedizierte Liste von Zeichen angeben, z.B. "
-"[1234565890]"
+"Geben Sie den geforderten Inhalt des Passwortes eines Passwort-Tokens an. (c)"
+" Buchstaben, (n) Zahlen und (s) Sonderzeichen. Sie können die Attribute +/- "
+"verwenden oder eine dedizierte Liste von Zeichen angeben, z.B. [1234565890]"
 
 #: lib/policy.py:2473
 msgid ""
@@ -1183,8 +1178,8 @@ msgid ""
 msgstr ""
 "Das Passwort und den OTP-Wert einer erfolgreichen Anmeldung wird von "
 "privacyIDEA gecacht. Somit kann für einen gewissen Zeitraum die Anmeldung "
-"mit den gleichen Credentials erfolgen. Die Zeit wird angegeben als 4h or "
-"4h/5m."
+"mit den gleichen Credentials erfolgen. Die Zeit wird angegeben als 4h or 4h/"
+"5m."
 
 #: lib/policy.py:2590
 msgid ""
@@ -1233,8 +1228,8 @@ msgid ""
 "being second, minute and hour."
 msgstr ""
 "Sie können angeben, wie viele erfolgreiche Authentifizierungsanfragen ein "
-"Benutzer in einer gewissen Zeitspanne durchführen darf. Geben Sie an 1/5s, "
-"2/10m oder 10/1h - Dabei sind (s) Sekunden, (m) Minuten und (h) Stunden."
+"Benutzer in einer gewissen Zeitspanne durchführen darf. Geben Sie an 1/5s, 2/"
+"10m oder 10/1h - Dabei sind (s) Sekunden, (m) Minuten und (h) Stunden."
 
 #: lib/policy.py:2626
 msgid ""
@@ -1243,8 +1238,8 @@ msgid ""
 "minute and hour."
 msgstr ""
 "Sie können angeben, wie viele fehlgeschlagene Authentifizierungsversuche ein "
-"Benutzer in einer gewissen Zeit durchführen darf. Geben Sie bpsw. an 1/5s, "
-"2/10m, 10/1h - (s) für Sekunden, (m) für Minuten und (h) für Stunden."
+"Benutzer in einer gewissen Zeit durchführen darf. Geben Sie bpsw. an 1/5s, 2/"
+"10m, 10/1h - (s) für Sekunden, (m) für Minuten und (h) für Stunden."
 
 #: lib/policy.py:2634
 msgid ""
@@ -1275,8 +1270,8 @@ msgid ""
 "regexp (key/&lt;regexp&gt;/)."
 msgstr ""
 "Die Autorisierung des Benutzers ist nur erfolgreich, wenn das Token-Info "
-"Feld <code>key</code> auf den regulären Ausdruck passt: (<code>key/<regexp>/"
-"</code>)."
+"Feld <code>key</code> auf den regulären Ausdruck passt: (<code>key/"
+"<regexp>/</code>)."
 
 #: lib/policy.py:2662
 msgid ""
@@ -2184,9 +2179,9 @@ msgid ""
 msgstr ""
 "Die Aktion wird ausgeführt, wenn die letzte Authentisierung mit dem "
 "Container länger zurück liegt als die angegebene Zeit. Die Zeitangabe muss "
-"eine Zahl gefolgt von einer Einheit sein. Mögliche Einheiten sind "
-"'y' (Jahre), 'd' (Tage), 'h' (Stunden), 'm' (Minuten), 's' (Sekunden). Es "
-"ist nur eine Einzeit erlaubt. Beispielsweise '8h' oder '7d'"
+"eine Zahl gefolgt von einer Einheit sein. Mögliche Einheiten sind 'y' (Jahre)"
+", 'd' (Tage), 'h' (Stunden), 'm' (Minuten), 's' (Sekunden). Es ist nur eine "
+"Einzeit erlaubt. Beispielsweise '8h' oder '7d'"
 
 #: lib/eventhandler/base.py:485
 msgid ""
@@ -2198,8 +2193,8 @@ msgid ""
 msgstr ""
 "Die Aktion wird ausgeführt, wenn die letzte Synchronisation des Containers "
 "länger zurück liegt als die angegebene Zeit. Die Zeitangabe muss eine Zahl "
-"gefolgt von einer Einheit sein. Mögliche Einheiten sind 'y' (Jahre), "
-"'d' (Tage), 'h' (Stunden), 'm' (Minuten), 's' (Sekunden). Es ist nur eine "
+"gefolgt von einer Einheit sein. Mögliche Einheiten sind 'y' (Jahre), 'd' "
+"(Tage), 'h' (Stunden), 'm' (Minuten), 's' (Sekunden). Es ist nur eine "
 "Einzeit erlaubt. Beispielsweise '8h' oder '7d'"
 
 #: lib/eventhandler/containerhandler.py:89
@@ -2871,8 +2866,7 @@ msgstr "Code des Nummertyps des Empfängers. Wird vom SMSC Operator mitgeteilt"
 
 #: lib/smsprovider/SmppSMSProvider.py:140
 msgid "D_ADDR_NPI Special Flag"
-msgstr ""
-"Code des Nummernplans des Empfängers. Wird vom SMSC Operator mitgeteilt"
+msgstr "Code des Nummernplans des Empfängers. Wird vom SMSC Operator mitgeteilt"
 
 #: lib/task/eventcounter.py:41
 msgid "The name of the event counter to read."
@@ -3235,8 +3229,7 @@ msgstr "Die Anzahl der notwendigen Positionen, die der Benutzer eingeben muss."
 
 #: lib/tokens/indexedsecrettoken.py:124
 msgid "Preset the enrollment with the value of the given attribute."
-msgstr ""
-"Der Wert der folgenden Benutzerattributes als Voreinstellung verwenden."
+msgstr "Der Wert der folgenden Benutzerattributes als Voreinstellung verwenden."
 
 #: lib/tokens/indexedsecrettoken.py:131 lib/tokens/indexedsecrettoken.py:138
 msgid "The attribute whose value should be force set during enrollment."
@@ -3477,8 +3470,8 @@ msgid ""
 "code>: user defined. Does only apply if <em>{0!s}</em> is set."
 msgstr ""
 "Die Art der Optionen, welche dem Nutzer zum Präsenz-Check angezeigt werden. "
-"<code>ALPHABETIC</code>: A-Z, <code>NUMERIC</code>: 01-99, <code>CUSTOM</"
-"code>: user defined. Gilt nur wenn <em>{0!s}</em> gesetzt ist."
+"<code>ALPHABETIC</code>: A-Z, <code>NUMERIC</code>: 01-99, "
+"<code>CUSTOM</code>: user defined. Gilt nur wenn <em>{0!s}</em> gesetzt ist."
 
 #: lib/tokens/pushtoken.py:457
 #, python-brace-format
@@ -3986,10 +3979,9 @@ msgid ""
 "signed)"
 msgstr ""
 "Ob und wie genau Attestation Daten überprüft werden soll. Wenn die "
-"\"attestation form\" auf \"none\" gesetzt ist, muss der \"attestation "
-"level\" ebenfalls auf \"none\" gesetzt sein. Standard: "
-"\"untrusted\" (Attestation wird angefordert, can aber auch unbekannt oder "
-"selbstsigniert sein)"
+"\"attestation form\" auf \"none\" gesetzt ist, muss der \"attestation level\""
+" ebenfalls auf \"none\" gesetzt sein. Standard: \"untrusted\" (Attestation "
+"wird angefordert, can aber auch unbekannt oder selbstsigniert sein)"
 
 #: lib/tokens/webauthntoken.py:692
 msgid "Only the specified WebAuthn-tokens are allowed to be registered."
@@ -4065,8 +4057,7 @@ msgstr "Wahr, wenn der Wert des linken Attributes den rechten Wert beinhaltet"
 
 #: lib/utils/compare.py:190
 msgid "false if the value of the left attribute contains the right value"
-msgstr ""
-"Falsch, wenn der Wert des linken Attributes den rechten Wert beinhaltet"
+msgstr "Falsch, wenn der Wert des linken Attributes den rechten Wert beinhaltet"
 
 #: lib/utils/compare.py:192
 msgid "true if the value of the left attribute equals the right value"
@@ -4074,8 +4065,7 @@ msgstr "Wahr, wenn der Wert des linken Attributes gleich dem rechten Wert ist"
 
 #: lib/utils/compare.py:193
 msgid "false if the value of the left attribute equals the right value"
-msgstr ""
-"Falsch, wenn der Wert des linken Attributes gleich dem rechten Wert ist"
+msgstr "Falsch, wenn der Wert des linken Attributes gleich dem rechten Wert ist"
 
 #: lib/utils/compare.py:195
 msgid ""
