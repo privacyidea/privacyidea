@@ -6,18 +6,18 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-03-27 13:57+0100\n"
-"PO-Revision-Date: 2025-01-30 15:33+0000\n"
+"PO-Revision-Date: 2025-03-28 09:15+0000\n"
 "Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/"
-"projects/privacyidea/privacyidea-server/zh_Hans/>\n"
+"projects/privacyidea/branch-3-11/zh_Hans/>\n"
 "Language: zh_Hans\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 5.10-dev\n"
+"X-Generator: Weblate 5.11-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:231
@@ -396,9 +396,9 @@ msgstr "设置OTP PIN所需的最小长度。"
 msgid ""
 "Specifiy the required contents of the OTP PIN. (c)haracters, (n)umeric, "
 "(s)pecial. Use modifiers +/- or a list of allowed characters [1234567890]"
-msgstr ""
-"指定OTP PIN的必需内容。（c）个字符，（n）个数字，（s）个。使用修饰符+/-或允许"
-"的字符列表[1234567890]"
+msgstr "指定OTP "
+"PIN的必需内容。（c）个字符，（n）个数字，（s）个。使用修饰符+/-或允许的字符列"
+"表[1234567890]"
 
 #: lib/policy.py:1910
 msgid "The length of a random PIN set by the administrator."
@@ -729,9 +729,9 @@ msgstr "允许用户在注册期间设置OTP PIN。"
 msgid ""
 "Specify the required contents of the OTP PIN. (c)haracters, (n)umeric, "
 "(s)pecial. Use modifiers +/- or a list of allowed characters [1234567890]"
-msgstr ""
-"指定OTP PIN的必需内容。（c）个字符，（n）个数字，（s）个。使用修饰符+/-或允许"
-"的字符列表[1234567890]"
+msgstr "指定OTP "
+"PIN的必需内容。（c）个字符，（n）个数字，（s）个。使用修饰符+/-或允许的字符列"
+"表[1234567890]"
 
 #: lib/policy.py:2243
 msgid "Allow the user to view his own token history."
@@ -899,8 +899,7 @@ msgstr "如果是随机OTP PIN，请使用此python模块处理PIN。"
 msgid ""
 "If the administrator sets the OTP PIN during enrollment or later, the user "
 "will have to change the PIN during first use."
-msgstr ""
-"如果管理员在注册期间或之后设置OTP PIN，则用户将不得不在首次使用时更改PIN。"
+msgstr "如果管理员在注册期间或之后设置OTP PIN，则用户将不得不在首次使用时更改PIN。"
 
 #: lib/policy.py:2396
 msgid ""
@@ -964,9 +963,8 @@ msgid ""
 "Specify the required contents of the registration code. (c)haracters, "
 "(n)umeric, (s)pecial. Use modifiers +/- or a list of allowed characters "
 "[1234567890]"
-msgstr ""
-"请指定注册码需要填写的内容。(c) 字符、 (n) 数字、(s) 特殊符号。使用修饰符 "
-"+/- 或允许的字符列表 [1234567890]"
+msgstr "请指定注册码需要填写的内容。(c) 字符、 (n) 数字、(s) 特殊符号。使用修饰符 +/-"
+" 或允许的字符列表 [1234567890]"
 
 #: lib/policy.py:2461
 msgid "Set the length of the password of generated password tokens."
@@ -977,8 +975,7 @@ msgid ""
 "Specify the required contents of the password of a password token. "
 "(c)haracters, (n)umeric, (s)pecial. Use modifiers +/- or a list of allowed "
 "characters [1234567890]"
-msgstr ""
-"指定密码令牌的密码的需要的内容。(c)字符、 (n)数字、 (s)特殊符号。使用修饰符 "
+msgstr "指定密码令牌的密码的需要的内容。(c)字符、 (n)数字、 (s)特殊符号。使用修饰符 "
 "+/- 或允许字符[1234567890] 的列表"
 
 #: lib/policy.py:2473
@@ -1042,8 +1039,7 @@ msgstr "如果存在多个不同的挑战，则该文本紧随挑战文本列表
 msgid ""
 "If the PIN of a token is to be changed, this will allow the user to change "
 "the PIN during a validate/check request via challenge / response."
-msgstr ""
-"如果要更改令牌的PIN，这将允许用户通过质询/响应在验证/检查请求期间更改PIN。"
+msgstr "如果要更改令牌的PIN，这将允许用户通过质询/响应在验证/检查请求期间更改PIN。"
 
 #: lib/policy.py:2527
 msgid ""
@@ -1065,8 +1061,7 @@ msgstr ""
 msgid ""
 "If set, the user in this realm will be authenticated against the userstore "
 "or against the given RADIUS config, if the user has no tokens assigned."
-msgstr ""
-"如果设置，则将根据用户存储或给定的RADIUS配置对该领域的用户进行身份验证（如果"
+msgstr "如果设置，则将根据用户存储或给定的RADIUS配置对该领域的用户进行身份验证（如果"
 "未分配令牌）。"
 
 #: lib/policy.py:2550
@@ -1096,8 +1091,7 @@ msgstr "如果用户用户不存在，则此不存在的用户的身份验证请
 msgid ""
 "Can be used to modify the parameters pass, user and realm in an "
 "authentication request. See the documentation for an example."
-msgstr ""
-"可用于修改身份验证请求中的参数pass，user和realm。有关示例，请参见文档。"
+msgstr "可用于修改身份验证请求中的参数pass，user和realm。有关示例，请参见文档。"
 
 #: lib/policy.py:2574
 msgid ""
@@ -1116,8 +1110,7 @@ msgid ""
 "Cache the password used for authentication and allow authentication with the "
 "same credentials for a certain amount of time. Specify timeout like 4h or "
 "4h/5m."
-msgstr ""
-"缓存用于身份验证的密码，并允许在一定时间内使用相同的凭据进行身份验证。指定超"
+msgstr "缓存用于身份验证的密码，并允许在一定时间内使用相同的凭据进行身份验证。指定超"
 "时时间，例如4h或4h / 5m。"
 
 #: lib/policy.py:2590
@@ -1139,8 +1132,7 @@ msgstr ""
 msgid ""
 "Allow the user to authenticate (default). If set to '{0!s}', the "
 "authentication of the user will be denied."
-msgstr ""
-"允许用户进行身份验证（默认）。如果设置为“ {0！s}”，则将拒绝用户的身份验证。"
+msgstr "允许用户进行身份验证（默认）。如果设置为“ {0！s}”，则将拒绝用户的身份验证。"
 
 #: lib/policy.py:2611
 msgid ""
@@ -1148,34 +1140,31 @@ msgid ""
 "authentication. Application may set the parameter 'type' in the request. "
 "Works with validate/check, validate/samlcheck and validate/triggerchallenge."
 msgstr ""
-"允许应用程序选择应使用哪些令牌类型进行身份验证。应用程序可以在请求中设置参"
-"数“类型”。与验证/检查，验证/ samlcheck和验证/触发挑战一起使用。"
+"允许应用程序选择应使用哪些令牌类型进行身份验证。应用程序可以在请求中设置参数“"
+"类型”。与验证/检查，验证/ samlcheck和验证/触发挑战一起使用。"
 
 #: lib/policy.py:2618
 msgid ""
 "You can specify how many successful authentication requests a user is "
 "allowed to do in a given time. Specify like 1/5s, 2/10m, 10/1h - s, m, h "
 "being second, minute and hour."
-msgstr ""
-"您可以指定在给定时间内允许用户执行多少次成功的身份验证请求。指定为1 / 5s，"
-"2 / 10m，10 / 1h-s，m，h为秒，分钟和小时。"
+msgstr "您可以指定在给定时间内允许用户执行多少次成功的身份验证请求。指定为1 / 5s，2 /"
+" 10m，10 / 1h-s，m，h为秒，分钟和小时。"
 
 #: lib/policy.py:2626
 msgid ""
 "You can specify how many failed authentication requests a user is allowed to "
 "do in a given time. Specify like 1/5s, 2/10m, 10/1h - s, m, h being second, "
 "minute and hour."
-msgstr ""
-"您可以指定在给定时间内允许用户执行多少次失败的身份验证请求。指定为1 / 5s，"
-"2 / 10m，10 / 1h-s，m，h为秒，分钟和小时。"
+msgstr "您可以指定在给定时间内允许用户执行多少次失败的身份验证请求。指定为1 / 5s，2 /"
+" 10m，10 / 1h-s，m，h为秒，分钟和小时。"
 
 #: lib/policy.py:2634
 msgid ""
 "You can specify in which time frame the user needs to authenticate again "
 "with this token. If the user authenticates later, authentication will fail. "
 "Specify like 30h, 7d or 1y."
-msgstr ""
-"您可以指定用户需要在哪个时间范围内使用此令牌再次进行身份验证。如果用户稍后进"
+msgstr "您可以指定用户需要在哪个时间范围内使用此令牌再次进行身份验证。如果用户稍后进"
 "行身份验证，则身份验证将失败。指定为30h，7d或1y。"
 
 #: lib/policy.py:2642
@@ -1196,15 +1185,13 @@ msgstr "仅当令牌的序列号与此正则表达式匹配时，用户才会通
 msgid ""
 "The user will only be authenticated if the tokeninfo field matches the "
 "regexp (key/&lt;regexp&gt;/)."
-msgstr ""
-"仅当tokeninfo字段与regexp匹配时，才会对用户进行身份验证。key/&lt;regexp&gt;/"
+msgstr "仅当tokeninfo字段与regexp匹配时，才会对用户进行身份验证。key/&lt;regexp&gt;/"
 
 #: lib/policy.py:2662
 msgid ""
 "The Realm of the user is set to this very realm. This is important if the "
 "user is not contained in the default realm and can not pass his realm."
-msgstr ""
-"用户的领域已设置为该领域。如果用户未包含在默认领域中并且无法通过其领域，则这"
+msgstr "用户的领域已设置为该领域。如果用户未包含在默认领域中并且无法通过其领域，则这"
 "一点很重要。"
 
 #: lib/policy.py:2669
@@ -1235,24 +1222,21 @@ msgstr "如果认证成功，则用户解析器和领域将添加到认证响应
 msgid ""
 "The sending of an API Auth Key is required duringauthentication. This avoids "
 "rogue authenticate requests against the /validate/check interface."
-msgstr ""
-"身份验证期间需要发送API身份验证密钥。这样可以避免针对/ validate / check接口的"
-"流氓身份验证请求。"
+msgstr "身份验证期间需要发送API身份验证密钥。这样可以避免针对/ validate / "
+"check接口的流氓身份验证请求。"
 
 #: lib/policy.py:2704
 msgid ""
 "If set, administrators will see a dashboard as start screen when logging in "
 "to privacyIDEA WebUI."
-msgstr ""
-"如果设置了该选项，则管理员在登录privacyIDEA WebUI时会将仪表板作为开始屏幕。"
+msgstr "如果设置了该选项，则管理员在登录privacyIDEA WebUI时会将仪表板作为开始屏幕。"
 
 #: lib/policy.py:2710
 msgid ""
 "If set to \"privacyIDEA\" the users and admins need to authenticate against "
 "privacyIDEA when they log in to the Web UI. Defaults to \"userstore\"."
-msgstr ""
-"如果设置为“ privacyIDEA”，则用户和管理员在登录Web UI时需要针对privacyIDEA进行"
-"身份验证。默认为“用户存储”。"
+msgstr "如果设置为“ privacyIDEA”，则用户和管理员在登录Web "
+"UI时需要针对privacyIDEA进行身份验证。默认为“用户存储”。"
 
 #: lib/policy.py:2718
 msgid ""
@@ -1276,9 +1260,8 @@ msgstr "用户闲置超过logout_time限制时采取的操作。默认为“锁�
 msgid ""
 "The REMOTE_USER set by the webserver can be used to login to privacyIDEA or "
 "it will be ignored. Defaults to \"disable\"."
-msgstr ""
-"网络服务器设置的REMOTE_USER可用于登录privacyIDEA，否则将被忽略。默认为“禁"
-"用”。"
+msgstr "网络服务器设置的REMOTE_USER可用于登录privacyIDEA，否则将被忽略。默认为“禁用”"
+"。"
 
 #: lib/policy.py:2741
 msgid ""
@@ -1329,8 +1312,9 @@ msgid ""
 "https: //raw.githubusercontent.com/ privacyidea/policy-templates /master/"
 "templates/)"
 msgstr ""
-"可以在其中找到策略模板的存储库的URL。  （默认https：//raw.githubusercontent."
-"com/ privacyidea / policy-templates / master / templates /）"
+"可以在其中找到策略模板的存储库的URL。  （默认https：//"
+"raw.githubusercontent.com/ privacyidea / policy-templates / master / "
+"templates /）"
 
 #: lib/policy.py:2790
 msgid ""
@@ -1385,8 +1369,7 @@ msgstr "如果选中此选项，则管理员将不再看到“欢迎”对话框
 msgid ""
 "Per default disabled actions result in disabled buttons. When checking this "
 "action, buttons of disabled actions are hidden."
-msgstr ""
-"默认情况下，禁用操作会导致禁用按钮。检查此操作时，禁用操作的按钮将被隐藏。"
+msgstr "默认情况下，禁用操作会导致禁用按钮。检查此操作时，禁用操作的按钮将被隐藏。"
 
 #: lib/policy.py:2845
 msgid ""
@@ -1427,8 +1410,7 @@ msgstr ""
 msgid ""
 "This action adds a QR code in the enrollment page for HOTP, TOTP and Push "
 "tokens, that lead to this given URL."
-msgstr ""
-"此操作会在注册页面中为HOTP，TOTP和Push令牌添加QR码，该QR码会导致该给定URL。"
+msgstr "此操作会在注册页面中为HOTP，TOTP和Push令牌添加QR码，该QR码会导致该给定URL。"
 
 #: lib/policy.py:2879
 msgid ""
@@ -1704,8 +1686,7 @@ msgstr "设置{0！s}令牌所需的最小PIN长度。"
 msgid ""
 "Specifiy the required PIN contents of the {0!s} token. (c)haracters, "
 "(n)umeric, (s)pecial, (o)thers. [+/-]!"
-msgstr ""
-"指定{0！s}令牌的必需PIN内容。（c）字符，（n）数值，（s）特殊，（o）其他。"
+msgstr "指定{0！s}令牌的必需PIN内容。（c）字符，（n）数值，（s）特殊，（o）其他。"
 "[+/-]！"
 
 #: lib/token.py:2821 lib/token.py:2837
@@ -1848,9 +1829,8 @@ msgstr "如果用户分配了此令牌数量，则触发操作。"
 msgid ""
 "Action is triggered, if the counter of the token equals this setting. Can "
 "also be '>100' or '<99' for no exact match."
-msgstr ""
-"如果令牌的计数器等于此设置，则触发操作。也可以是'> 100'或'<99'（不完全匹"
-"配）。"
+msgstr "如果令牌的计数器等于此设置，则触发操作。也可以是'> "
+"100'或'<99'（不完全匹配）。"
 
 #: lib/eventhandler/base.py:330
 msgid ""
@@ -1863,8 +1843,8 @@ msgid ""
 "This can be '>100', '<99', or '=100', to trigger the action, if the "
 "tokeninfo field 'count_auth' is bigger than 100, less than 99 or exactly 100."
 msgstr ""
-"如果tokeninfo字段'count_auth'大于100，小于99或恰好是100，则可以为'> "
-"100'，'<99'或'= 100'来触发操作。"
+"如果tokeninfo字段'count_auth'大于100，小于99或恰好是100，则可以为'> 100'，"
+"'<99'或'= 100'来触发操作。"
 
 #: lib/eventhandler/base.py:345
 msgid ""
@@ -1890,8 +1870,8 @@ msgid ""
 "of a token matches this value. Note that the failcounter stops increasing, "
 "if the max_failcount is reached."
 msgstr ""
-"如果令牌的故障计数器与此值匹配，则可以为'> 9'，'<9'或'= 10'来触发操作。请注"
-"意，如果达到max_failcount，则故障计数器将停止增加。"
+"如果令牌的故障计数器与此值匹配，则可以为'> 9'，'<9'或'= "
+"10'来触发操作。请注意，如果达到max_failcount，则故障计数器将停止增加。"
 
 #: lib/eventhandler/base.py:372
 msgid ""
@@ -1899,8 +1879,8 @@ msgid ""
 "something like '<fieldname> == <fieldvalue>', '<fieldname> > <fieldvalue>' "
 "or '<fieldname> < <fieldvalue>'."
 msgstr ""
-"此条件可以检查任何任意的tokeninfo字段。您需要输入类似“ <字段名称> == <字段值"
-">”，“ <字段名称>> <字段值>”或“ <字段名称> <<字段值>”之类的内容。"
+"此条件可以检查任何任意的tokeninfo字段。您需要输入类似“ <字段名称> == "
+"<字段值>”，“ <字段名称>> <字段值>”或“ <字段名称> <<字段值>”之类的内容。"
 
 #: lib/eventhandler/base.py:381
 msgid ""
@@ -1914,17 +1894,15 @@ msgstr ""
 msgid ""
 "Here you can enter a regular expression. The condition only applies if the "
 "regular expression matches the detail->error->message in the response."
-msgstr ""
-"在这里您可以输入正则表达式。仅当正则表达式与响应中的detail-> error-> message"
-"相匹配时，该条件才适用。"
+msgstr "在这里您可以输入正则表达式。仅当正则表达式与响应中的detail-> error-> "
+"message相匹配时，该条件才适用。"
 
 #: lib/eventhandler/base.py:397
 msgid ""
 "Here you can enter a regular expression. The condition only applies if the "
 "regular expression matches the detail->message in the response."
-msgstr ""
-"在这里您可以输入正则表达式。仅当正则表达式与响应中的detail-> message相匹配"
-"时，该条件才适用。"
+msgstr "在这里您可以输入正则表达式。仅当正则表达式与响应中的detail-> "
+"message相匹配时，该条件才适用。"
 
 #: lib/eventhandler/base.py:405
 msgid "Trigger the action, if the client IP matches."
@@ -1985,8 +1963,8 @@ msgid ""
 "enter something like 'fieldname == fieldvalue', 'fieldname > fieldvalue' or "
 "'fieldname < fieldvalue'."
 msgstr ""
-"此条件可以检查任何任意的tokeninfo字段。您需要输入类似“ <字段名称> == <字段值"
-">”，“ <字段名称>> <字段值>”或“ <字段名称> <<字段值>”之类的内容。"
+"此条件可以检查任何任意的tokeninfo字段。您需要输入类似“ <字段名称> == "
+"<字段值>”，“ <字段名称>> <字段值>”或“ <字段名称> <<字段值>”之类的内容。"
 
 #: lib/eventhandler/base.py:474
 msgid ""
@@ -2139,8 +2117,7 @@ msgstr "该参数应与某些值匹配。"
 msgid ""
 "The value of the match_parameter. It can contain a regular expression and "
 "'()' to transfer values to the new parameter."
-msgstr ""
-"match_parameter的值。它可以包含一个正则表达式和'（）'来将值传输到新参数。"
+msgstr "match_parameter的值。它可以包含一个正则表达式和'（）'来将值传输到新参数。"
 
 #: lib/eventhandler/requestmangler.py:112
 msgid ""
@@ -2173,8 +2150,7 @@ msgstr "应该设置的JSON密钥的值。"
 msgid ""
 "Wait for script to complete or run script in background. This will either "
 "return the HTTP request early or could also block the request."
-msgstr ""
-"等待脚本完成或在后台运行脚本。这将提早返回HTTP请求，或者也可能阻止该请求。"
+msgstr "等待脚本完成或在后台运行脚本。这将提早返回HTTP请求，或者也可能阻止该请求。"
 
 #: lib/eventhandler/scripthandler.py:100
 msgid "On script error raise exception in HTTP request."
@@ -2185,8 +2161,7 @@ msgid ""
 "Finish current transaction before running the script. This is useful if "
 "changes to the database should be made available to the script or the "
 "running request."
-msgstr ""
-"在运行脚本之前完成当前事务。如果应该使脚本或正在运行的请求可以使用对数据库的"
+msgstr "在运行脚本之前完成当前事务。如果应该使脚本或正在运行的请求可以使用对数据库的"
 "更改，则这很有用。"
 
 #: lib/eventhandler/scripthandler.py:111
@@ -2211,8 +2186,7 @@ msgstr "将登录用户的用户名添加为脚本参数，例如“ --logged_in
 msgid ""
 "Add the role (either admin or user) of the logged in user as script "
 "parameter like '--logged_in_role <role>'."
-msgstr ""
-"将已登录用户的角色（管理员或用户）添加为脚本参数，例如'--logged_in_role "
+msgstr "将已登录用户的角色（管理员或用户）添加为脚本参数，例如'--logged_in_role "
 "<role>'。"
 
 #: lib/eventhandler/tokenhandler.py:144
@@ -2225,8 +2199,7 @@ msgid ""
 "The new realm will be the only realm of the token. I.e. all other realms "
 "will be removed from this token. If disabled, the realm will be added to the "
 "token."
-msgstr ""
-"新领域将是令牌的唯一领域。即所有其他领域将从此令牌中删除。否则，领域将被添加"
+msgstr "新领域将是令牌的唯一领域。即所有其他领域将从此令牌中删除。否则，领域将被添加"
 "到令牌中。"
 
 #: lib/eventhandler/tokenhandler.py:167
@@ -2284,16 +2257,14 @@ msgstr "令牌的新描述。"
 msgid ""
 "The token will be valid starting at the given date. Can be a fixed date or "
 "an offset like +10m, +24h, +7d."
-msgstr ""
-"令牌将从给定日期开始有效。可以是固定日期，也可以是偏移量，例如+ 10m，+ "
-"24h，+ 7d。"
+msgstr "令牌将从给定日期开始有效。可以是固定日期，也可以是偏移量，例如+ 10m，+ 24h，+"
+" 7d。"
 
 #: lib/eventhandler/tokenhandler.py:269
 msgid ""
 "The token will be valid until the given date. Can be a fixed date or an "
 "offset like +10m, +24h, +7d."
-msgstr ""
-"该令牌在给定日期之前一直有效。可以是固定日期，也可以是偏移量，例如+ 10m，+ "
+msgstr "该令牌在给定日期之前一直有效。可以是固定日期，也可以是偏移量，例如+ 10m，+ "
 "24h，+ 7d。"
 
 #: lib/eventhandler/tokenhandler.py:283
@@ -2446,8 +2417,7 @@ msgid ""
 "The filename of the notification. Existing files are overwritten. The name "
 "can contain tags as specified in the documentation and can also contain the "
 "tag {random}."
-msgstr ""
-"通知的文件名。现有文件将被覆盖。该名称可以包含文档中指定的标签，也可以包含标"
+msgstr "通知的文件名。现有文件将被覆盖。该名称可以包含文档中指定的标签，也可以包含标"
 "签{random}。"
 
 #: lib/eventhandler/webhookeventhandler.py:82
@@ -2480,8 +2450,7 @@ msgstr "您的LDAP配置似乎正常，%i机器对象已发现。"
 msgid ""
 "Your LDAP config found {0!s} user objects in {2:.4f}s, but only {1!s} with "
 "the specified uidtype."
-msgstr ""
-"您的LDAP配置找到{0！s}个用户对象，但只有{1！s}个具有指定uidtype的用户对象"
+msgstr "您的LDAP配置找到{0！s}个用户对象，但只有{1！s}个具有指定uidtype的用户对象"
 
 #: lib/resolvers/LDAPIdResolver.py:1155
 #, fuzzy, python-brace-format
@@ -2538,8 +2507,8 @@ msgid ""
 "HTTP_PROXY for http connections and HTTPS_PROXY for https connection. The "
 "PROXY option will be removed in future."
 msgstr ""
-"可选的代理字符串。已淘汰。不要再使用它了。而是将HTTP_PROXY用于HTTP连接，将"
-"HTTPS_PROXY用于https连接。将来会删除PROXY选项。"
+"可选的代理字符串。已淘汰。不要再使用它了。而是将HTTP_PROXY用于HTTP连接，将HTT"
+"PS_PROXY用于https连接。将来会删除PROXY选项。"
 
 #: lib/smsprovider/HttpSMSProvider.py:292
 msgid "Proxy setting for HTTP connections."
@@ -2559,16 +2528,14 @@ msgid ""
 "Regular expression to modify the phone number to make it compatible with the "
 "provider. For example to remove pluses and slashes enter something like '/[\\"
 "+/]//'."
-msgstr ""
-"用于修改电话号码以使其与提供程序兼容的正则表达式。输入“ / [\\ + /] //”之类的"
-"内容以删除加号和斜杠。"
+msgstr "用于修改电话号码以使其与提供程序兼容的正则表达式。输入“ / [\\ + /] "
+"//”之类的内容以删除加号和斜杠。"
 
 #: lib/smsprovider/ScriptSMSProvider.py:113
 msgid ""
 "The script in script directory PI_SCRIPT_SMSPROVIDER_DIRECTORY to call. "
 "Expects phone as the parameter and the message from stdin."
-msgstr ""
-"脚本目录PI_SCRIPT_SMSPROVIDER_DIRECTORY中要调用的脚本。期望将phone作为参数，"
+msgstr "脚本目录PI_SCRIPT_SMSPROVIDER_DIRECTORY中要调用的脚本。期望将phone作为参数，"
 "并接收来自stdin的消息。"
 
 #: lib/smsprovider/SmppSMSProvider.py:125
@@ -2696,9 +2663,8 @@ msgstr "应该用于颁发证书的模板。"
 msgid ""
 "This takes a space separated list of elements to be added to the subject. "
 "Can be 'email' and 'realm'."
-msgstr ""
-"需要一个要添加到主题的元素组成的列表， 不同元素间用空格隔开。 可以是“电子邮"
-"件”和“领域”。"
+msgstr "需要一个要添加到主题的元素组成的列表， 不同元素间用空格隔开。 "
+"可以是“电子邮件”和“领域”。"
 
 #: lib/tokens/certificatetoken.py:331 lib/tokens/certificatetoken.py:338
 msgid "The directory containing attestation certificate chains."
@@ -2761,8 +2727,8 @@ msgid ""
 "{otp} and {serial} can be used as parameters. You may also specify a "
 "filename as email template starting with \"file:\"."
 msgstr ""
-"将通过电子邮件发送的电子邮件令牌的文本。可以使用如 <otp> 和 <serial> 等标签作"
-"为参数。你也可以将文件名指定为以“ file：”开头的电子邮件模板。"
+"将通过电子邮件发送的电子邮件令牌的文本。可以使用如 <otp> 和 <serial> "
+"等标签作为参数。你也可以将文件名指定为以“ file：”开头的电子邮件模板。"
 
 #: lib/tokens/emailtoken.py:175
 #, fuzzy, python-brace-format
@@ -2775,9 +2741,8 @@ msgstr "电子邮件令牌的电子邮件主题。使用 <otp> 和 <serial> 等�
 msgid ""
 "If set, a new EMail OTP will be sent after successful authentication with "
 "one EMail OTP."
-msgstr ""
-"如果设置，则在通过一个电子邮件OTP成功进行身份验证之后，将发送新的电子邮件"
-"OTP。"
+msgstr "如果设置，则在通过一个电子邮件OTP成功进行身份验证之后，将发送新的电子邮件OTP"
+"。"
 
 #: lib/tokens/emailtoken.py:185
 #, fuzzy
@@ -3079,8 +3044,7 @@ msgstr "Firebase应用程序的配置。"
 msgid ""
 "The URL the Push App should contact in the second enrollment step. Usually "
 "it is the endpoint /ttype/push of the privacyIDEA server."
-msgstr ""
-"Push App在第二个注册步骤中应联系的URL。通常，它是privacyIDEA服务器的端点/ "
+msgstr "Push App在第二个注册步骤中应联系的URL。通常，它是privacyIDEA服务器的端点/ "
 "ttype / push。"
 
 #: lib/tokens/pushtoken.py:397
@@ -3446,9 +3410,8 @@ msgstr ""
 msgid ""
 "A list of transports to prefer to communicate with WebAuthn tokens. Default: "
 "usb ble nfc internal (All standard transports)"
-msgstr ""
-"首选与WebAuthn令牌通信的传输列表。默认值：usb ble nfc internal（所有标准传"
-"输）"
+msgstr "首选与WebAuthn令牌通信的传输列表。默认值：usb ble nfc "
+"internal（所有标准传输）"
 
 #: lib/tokens/webauthntoken.py:569
 msgid ""
@@ -3464,8 +3427,7 @@ msgid ""
 "Whether the user's identity should be verified when authenticating with a "
 "WebAuthn token. Default: preferred (verify the user if supported by the "
 "token)"
-msgstr ""
-"使用WebAuthn令牌进行身份验证时是否应该验证用户的身份。默认值：首选（如果令牌"
+msgstr "使用WebAuthn令牌进行身份验证时是否应该验证用户的身份。默认值：首选（如果令牌"
 "支持，请验证用户）"
 
 #: lib/tokens/webauthntoken.py:585
@@ -3484,8 +3446,7 @@ msgid ""
 "A list of WebAuthn authenticators acceptable for authorization, given as a "
 "space-separated list of AAGUIDs. Per default all authenticators are "
 "acceptable."
-msgstr ""
-"可以接受授权的WebAuthn认证程序列表，以空格分隔的AAGUID列表形式给出。默认情况"
+msgstr "可以接受授权的WebAuthn认证程序列表，以空格分隔的AAGUID列表形式给出。默认情况"
 "下，所有身份验证器都是可接受的。"
 
 #: lib/tokens/webauthntoken.py:600
@@ -3512,16 +3473,14 @@ msgid ""
 "The time in seconds the user has to confirm enrollment on his WebAuthn "
 "token. Note: You will want to increase the ChallengeValidityTime along with "
 "this. Default: 60"
-msgstr ""
-"用户必须确认其WebAuthn令牌上的注册时间（以秒为单位）。注意：您将要与此同时增"
+msgstr "用户必须确认其WebAuthn令牌上的注册时间（以秒为单位）。注意：您将要与此同时增"
 "加ChallengeValidityTime。默认值：60"
 
 #: lib/tokens/webauthntoken.py:630
 msgid ""
 "Whether to limit roll out of WebAuthn tokens to either only platform "
 "authenticators, or only cross-platform authenticators. Default: either"
-msgstr ""
-"是否将仅将WebAuthn令牌的推出限制为仅平台身份验证器或仅跨平台身份验证器。默认"
+msgstr "是否将仅将WebAuthn令牌的推出限制为仅平台身份验证器或仅跨平台身份验证器。默认"
 "值：任一"
 
 #: lib/tokens/webauthntoken.py:641
@@ -3529,17 +3488,15 @@ msgid ""
 "A list of WebAuthn authenticators acceptable for enrollment, given as a "
 "space-separated list of AAGUIDs. Per default all authenticators are "
 "acceptable."
-msgstr ""
-"可以接受的WebAuthn身份验证器列表，以空格分隔的AAGUID列表形式给出。默认情况"
-"下，所有身份验证器都是可接受的。"
+msgstr "可以接受的WebAuthn身份验证器列表，以空格分隔的AAGUID列表形式给出。默认情况下"
+"，所有身份验证器都是可接受的。"
 
 #: lib/tokens/webauthntoken.py:647
 msgid ""
 "Whether the user's identity should be verified when rolling out a new "
 "WebAuthn token. Default: preferred (verify the user if supported by the "
 "token)"
-msgstr ""
-"推出新的WebAuthn令牌时是否应验证用户的身份。默认值：首选（如果令牌支持，请验"
+msgstr "推出新的WebAuthn令牌时是否应验证用户的身份。默认值：首选（如果令牌支持，请验"
 "证用户）"
 
 #: lib/tokens/webauthntoken.py:658
@@ -3547,8 +3504,7 @@ msgstr ""
 msgid ""
 "Which algorithm are available to use for creating public key credentials for "
 "WebAuthn tokens. (Default: [{0!s}], Order: [{1!s}])"
-msgstr ""
-"可用于为 WebAuthn 令牌创建公钥凭据的算法。 (默认: [{0!s}], 顺序: [{1!s}]"
+msgstr "可用于为 WebAuthn 令牌创建公钥凭据的算法。 (默认: [{0!s}], 顺序: [{1!s}]"
 
 #: lib/tokens/webauthntoken.py:668
 msgid ""
@@ -3556,8 +3512,8 @@ msgid ""
 "Note: for u2f_req to work with WebAuthn, this cannot be set to none. "
 "Default: direct (ask for non-anonymized attestation data)"
 msgstr ""
-"注册新的WebAuthn令牌时是否请求证明数据。注意：为了使u2f_req与WebAuthn一起使"
-"用，不能将其设置为none。默认值：直接（询问非匿名证明数据）"
+"注册新的WebAuthn令牌时是否请求证明数据。注意：为了使u2f_req与WebAuthn一起使用"
+"，不能将其设置为none。默认值：直接（询问非匿名证明数据）"
 
 #: lib/tokens/webauthntoken.py:680
 msgid ""
