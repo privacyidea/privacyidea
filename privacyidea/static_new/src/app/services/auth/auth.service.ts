@@ -10,6 +10,9 @@ import { NotificationService } from '../notification/notification.service';
 })
 export class AuthService {
   isAuthenticated = signal(false);
+  user = signal('');
+  realm = signal('');
+  role = signal('');
   private authUrl = environment.proxyUrl + '/auth';
 
   constructor(
@@ -32,6 +35,9 @@ export class AuthService {
         tap((response: any) => {
           if (response?.result?.status) {
             this.acceptAuthentication();
+            this.user.set(response.result.value.username);
+            this.realm.set(response.result.value.realm);
+            this.role.set(response.result.value.role);
           }
         }),
         catchError((error) => {

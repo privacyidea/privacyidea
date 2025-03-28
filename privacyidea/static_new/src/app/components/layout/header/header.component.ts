@@ -4,6 +4,7 @@ import { MatFabAnchor, MatFabButton } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
 import { SessionTimerService } from '../../../services/session-timer/session-timer.service';
+import { AuthService } from '../../../services/auth/auth.service';
 
 @Component({
   selector: 'app-header',
@@ -21,7 +22,18 @@ import { SessionTimerService } from '../../../services/session-timer/session-tim
   styleUrl: './header.component.scss',
 })
 export class HeaderComponent {
-  constructor(protected sessionTimerService: SessionTimerService) {}
+  profileText =
+    this.authService.user() +
+    ' @' +
+    this.authService.realm() +
+    ' (' +
+    this.authService.role() +
+    ')';
+
+  constructor(
+    protected sessionTimerService: SessionTimerService,
+    protected authService: AuthService,
+  ) {}
 
   refreshPage() {
     window.location.reload();

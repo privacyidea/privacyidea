@@ -9,64 +9,72 @@
          sizes="(max-width: 307px) 100vw, 307px"
          width="307" />
   </div>
+  <div class="nav-div">
+    <nav class="nav-menu"> <!-- TODO: get header labels from auth endpoint -->
+      <a class="active"
+         extended
+         mat-fab
+         routerLink="token">
+        <mat-icon>shield</mat-icon>
+        <h4>Token</h4></a>
 
-  <nav class="nav-menu"> <!-- TODO: get header labels from auth endpoint -->
-    <a class="active"
-       extended
-       mat-fab
-       routerLink="token">
-      <mat-icon>shield</mat-icon>
-      <h4>Token</h4></a> <a extended
-                            href="#"
-                            mat-fab>
-      <mat-icon>supervised_user_circle</mat-icon>
-      <h4>User</h4></a> <a extended
-                           href="#"
-                           mat-fab>
-      <mat-icon>dns</mat-icon>
-      <h4>Machines</h4></a> <a extended
-                               href="#"
-                               mat-fab>
-      <mat-icon>miscellaneous_services</mat-icon>
-      <h4>Configuration</h4></a> <a extended
-                                    href="#"
-                                    mat-fab>
-      <mat-icon>manage_search</mat-icon>
-      <h4>Audit</h4></a> <a extended
-                            href="#"
-                            mat-fab>
-      <mat-icon>grid_view</mat-icon>
-      <h4>Components</h4></a>
-  </nav>
+      <a extended
+         href="#"
+         mat-fab>
+        <mat-icon>supervised_user_circle</mat-icon>
+        <h4>User</h4></a> <a extended
+                             href="#"
+                             mat-fab>
+        <mat-icon>dns</mat-icon>
+        <h4>Machines</h4></a>
 
-  <div [ngClass]="[
+      <a extended
+         href="#"
+         mat-fab>
+        <mat-icon>miscellaneous_services</mat-icon>
+        <h4>Configuration</h4></a>
+
+      <a extended
+         href="#"
+         mat-fab>
+        <mat-icon>manage_search</mat-icon>
+        <h4>Audit</h4></a>
+
+      <a extended
+         href="#"
+         mat-fab>
+        <mat-icon>grid_view</mat-icon>
+        <h4>Components</h4></a>
+
+      <button (click)="refreshPage()"
+              class="refresh-btn"
+              mat-fab>
+        <mat-icon>refresh</mat-icon>
+      </button>
+    </nav>
+    <div class="profile-div">
+      <div [ngClass]="[
       sessionTimerService.remainingTime() < 31000
-        ? 'red-light bold'
+        ? 'red-light'
         : sessionTimerService.remainingTime() < 60000
           ? 'yellow-light'
-          : 'shadow',
-    ]"
-       class="session-timer">
-    @if (sessionTimerService.remainingTime() < 60000) {
-      {{ sessionTimerService.remainingTime() | date: "mm:ss" }}
-    } @else if (sessionTimerService.remainingTime() >= 60000 &&
-    sessionTimerService.remainingTime() < 600000) {
-      {{ sessionTimerService.remainingTime() | date: "m" }}min
-    } @else {
-      {{ sessionTimerService.remainingTime() | date: "mm" }}min
-    }
+          : 'shadow',]"
+           class="session-timer">
+        @if (sessionTimerService.remainingTime() < 60000) {
+          {{ sessionTimerService.remainingTime() | date: "mm:ss" }}
+        } @else if (sessionTimerService.remainingTime() >= 60000 &&
+        sessionTimerService.remainingTime() < 600000) {
+          {{ sessionTimerService.remainingTime() | date: "m" }}min
+        } @else {
+          {{ sessionTimerService.remainingTime() | date: "mm" }}min
+        }
+      </div>
+      <button class="profile-btn"
+              extended
+              href="#"
+              mat-fab>
+        <mat-icon>account_box</mat-icon>
+        <h4>{{ profileText }}</h4></button>
+    </div>
   </div>
-
-  <button (click)="refreshPage()"
-          class="refresh-btn"
-          mat-fab>
-    <mat-icon>refresh</mat-icon>
-    <h4>Refresh</h4>
-  </button>
-
-  <button class="profile-btn"
-          mat-fab>
-    <mat-icon class="margin-right-10">account_box</mat-icon>
-    <h4>admin &#64; (admin)</h4>
-  </button>
 </div>

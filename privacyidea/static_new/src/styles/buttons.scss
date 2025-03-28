@@ -149,6 +149,7 @@ $header-bg: white;
       var(--box-shadow-red)
   );
   transition: 0ms;
+
   &.active,
   &:hover {
     background: var(--background-red-inset);
@@ -167,6 +168,7 @@ $header-bg: white;
       var(--box-shadow-green)
   );
   transition: 0ms;
+
   &.active,
   &:hover {
     background: var(--background-green-inset);
@@ -262,25 +264,28 @@ $header-bg: white;
 }
 
 .refresh-btn {
-  width: 100px;
+  width: 60px;
   height: 60px;
   cursor: pointer;
   border-radius: 0;
   background: $header-bg;
+  color: #767676;
   box-shadow: none;
 }
 
+.refresh-btn:hover mat-icon {
+  color: black;
+}
+
 .profile-btn {
-  margin-left: 20px;
-  margin-right: 40px;
-  padding-left: 15px;
-  height: 40px;
-  width: 192px;
+  margin-left: 1rem;
+  margin-right: 130px;
+  height: 60px;
   justify-content: start;
   border: none;
-  border-radius: $button-border-radius;
+  border-radius: 0;
   background: $profile-bg;
-  box-shadow: $shadow-white;
+  box-shadow: var(--box-shadow-header);
   cursor: pointer;
   color: white;
 

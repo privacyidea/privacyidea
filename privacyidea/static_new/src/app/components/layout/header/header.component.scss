@@ -17,6 +17,7 @@ $border-radius: var(--border-radius);
 
 .header-container {
   @include flex-center;
+  overflow: scroll;
   background: $header-bg;
   border-bottom-left-radius: 5px;
   border-bottom-right-radius: 5px;
@@ -39,8 +40,17 @@ $border-radius: var(--border-radius);
     }
   }
 
+  .nav-div {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+  }
+
   .nav-menu {
     @include flex-center;
+    overflow: auto;
+    white-space: nowrap;
 
     a {
       text-decoration: none;
@@ -76,16 +86,19 @@ $border-radius: var(--border-radius);
   }
 
   .session-timer {
-    margin-left: auto;
-    margin-right: 40px;
-    padding: 8px;
     width: 48px;
     height: 19px;
+    padding-left: 1rem;
     justify-content: center;
     display: flex;
-    border-radius: var(--border-radius);
-    background: var(--light);
-    box-shadow: var(--box-shadow-inset);
+  }
+
+  .profile-div {
+    margin-left: auto;
+    width: fit-content;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
   }
 
   h4 {
