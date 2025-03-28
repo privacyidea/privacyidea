@@ -180,7 +180,7 @@ myApp.controller("realmListController", ["$scope", "$location", "$rootScope", "$
             $scope.newRealmParams.realmName = "";
             $scope.newRealmParams.node = "All";
             $scope.selectedResolvers = {};
-            $scope.editRealm = false;
+            $scope.editRealm = null;
         }
 
         $scope.startEdit = function (realmName, realm) {
