@@ -3,15 +3,16 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2024-03-27 09:25+0000\n"
-"Last-Translator: sanghb <sanghb@chengda.com.cn>\n"
-"Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
-"privacyidea/privacyidea-webui/zh_Hans/>\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
+"PO-Revision-Date: 2025-03-28 09:16+0000\n"
+"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/"
+"projects/privacyidea/branch-3-11-webui/zh_Hans/>\n"
 "Language: zh_Hans\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 5.5-dev\n"
+"X-Generator: Weblate 5.11-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -34,8 +35,8 @@ msgid ""
 "\">\n"
 "                        Ask for the privacyIDEA Enterprise Edition, now!</a>"
 msgstr ""
-"<a target=\"netknights\" href=\"https://netknights.it/en/unternehmen/kontakt/"
-"\">\n"
+"<a target=\"netknights\" href="
+"\"https://netknights.it/en/unternehmen/kontakt/\">\n"
 "                        立即访问privacyIDEA企业版!</a>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:84
