@@ -66,8 +66,7 @@
             <mat-icon>help_outline</mat-icon>
             Get Serial Number
           </button>
-        </mat-list-item><br />
-        <mat-divider /><br />
+        </mat-list-item>
         <mat-list-item>
           <button class="card-button"
                   (click)="versioningService.openDocumentation(selectedContent())"
@@ -76,6 +75,22 @@
             Help
           </button>
         </mat-list-item>
+        <div [@toggleState]=selectedContent()>
+          @if (selectedContent() === "token_overview") {
+            <br />
+            <mat-divider /><br />
+            <mat-list-item>
+              <button class="card-button-delete"
+                      [ngClass]="{'disabled-button': tokenSelection.selected.length === 0}"
+                      (click)="deleteSelectedTokens()"
+                      [disabled]="tokenSelection.selected.length === 0"
+                      mat-flat-button>
+                <mat-icon>delete_outlined</mat-icon>
+                Delete Selected
+              </button>
+            </mat-list-item>
+          }
+        </div>
       } @else {
         <mat-list-item>
           <button [ngClass]="[

@@ -21,8 +21,10 @@
         <ng-template matTabContent>
           <app-token-tab [active]="active"
                          [refreshTokenDetails]="refreshTokenDetails"
+                         [refreshTokenOverview]="refreshTokenOverview"
                          [revoked]="revoked"
                          [selectedContent]="selectedContent"
+                         [tokenSelection]="tokenSelection"
                          [tokenSerial]="tokenSerial"></app-token-tab>
         </ng-template>
       </mat-tab>
@@ -33,9 +35,11 @@
           <h4 [ngClass]="{ 'tab-active': containerTabActive() }">Container</h4>
         </ng-template>
         <ng-template matTabContent>
-          <app-container-tab [containerSerial]="containerSerial"
+          <app-container-tab [containerSelection]="containerSelection"
+                             [containerSerial]="containerSerial"
                              [isProgrammaticChange]="isProgrammaticChange"
                              [refreshContainerDetails]="refreshContainerDetails"
+                             [refreshContainerOverview]="refreshContainerOverview"
                              [selectedContent]="selectedContent"
                              [states]="states"></app-container-tab>
         </ng-template>

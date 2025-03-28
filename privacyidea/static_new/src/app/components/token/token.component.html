@@ -9,7 +9,11 @@
                     [states]="states"
                     [refreshTokenDetails]="refreshTokenDetails"
                     [refreshContainerDetails]="refreshContainerDetails"
+                    [refreshTokenOverview]="refreshTokenOverview"
+                    [refreshContainerOverview]="refreshContainerOverview"
                     [revoked]="revoked"
+                    [tokenSelection]="tokenSelection"
+                    [containerSelection]="containerSelection"
                     [tokenSerial]="tokenSerial"
                     [containerSerial]="containerSerial"
                     [isProgrammaticChange]="isProgrammaticChange"
@@ -31,7 +35,11 @@
                         [states]="states"
                         [refreshTokenDetails]="refreshTokenDetails"
                         [refreshContainerDetails]="refreshContainerDetails"
+                        [refreshTokenOverview]="refreshTokenOverview"
+                        [refreshContainerOverview]="refreshContainerOverview"
                         [revoked]="revoked"
+                        [tokenSelection]="tokenSelection"
+                        [containerSelection]="containerSelection"
                         [tokenSerial]="tokenSerial"
                         [containerSerial]="containerSerial"
                         [isProgrammaticChange]="isProgrammaticChange"
@@ -63,10 +71,12 @@
             ]">
             @switch (selectedContent()) {
               @case ("token_overview") {
-                <app-token-table [isProgrammaticChange]="isProgrammaticChange"
+                <app-token-table #tokenTableComponent
+                                 [isProgrammaticChange]="isProgrammaticChange"
                                  [tokenSerial]="tokenSerial"
                                  [containerSerial]="containerSerial"
-                                 [selectedContent]="selectedContent"></app-token-table>
+                                 [selectedContent]="selectedContent"
+                                 [tokenSelection]="tokenSelection"></app-token-table>
               }
               @case ("token_enrollment") {
                 <app-token-enrollment [tokenSerial]="tokenSerial"
@@ -96,11 +106,13 @@
               }
               @case ("token_get_serial") {
                 <app-token-get-serial [tokenSerial]="tokenSerial"
-                                      [selectedContent]="selectedContent"/>
+                                      [selectedContent]="selectedContent" />
               }
               @case ("container_overview") {
-                <app-container-table [containerSerial]="containerSerial"
-                                     [selectedContent]="selectedContent" />
+                <app-container-table #containerTableComponent
+                                     [containerSerial]="containerSerial"
+                                     [selectedContent]="selectedContent"
+                                     [containerSelection]="containerSelection" />
               }
               @case ("container_details") {
                 <app-container-details #containerDetailsComponent

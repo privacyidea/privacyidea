@@ -47,6 +47,22 @@
             Help
           </button>
         </mat-list-item>
+        <div [@toggleState]=selectedContent()>
+          @if (selectedContent() === "container_overview") {
+            <br />
+            <mat-divider /><br />
+            <mat-list-item>
+              <button class="card-button-delete"
+                      [ngClass]="{'disabled-button': containerSelection.selected.length === 0}"
+                      (click)="deleteSelectedContainer()"
+                      [disabled]="containerSelection.selected.length === 0"
+                      mat-flat-button>
+                <mat-icon>delete_outlined</mat-icon>
+                Delete Selected
+              </button>
+            </mat-list-item>
+          }
+        </div>
       } @else {
         <mat-list-item>
           <button [ngClass]="[

@@ -2,7 +2,9 @@ import {
   Component,
   effect,
   Input,
+  linkedSignal,
   signal,
+  untracked,
   ViewChild,
   WritableSignal,
 } from '@angular/core';
@@ -22,8 +24,11 @@ import { TokenSelectedContent } from '../token.component';
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { SelectionModel } from '@angular/cdk/collections';
 
 const columnsKeyMap = [
+  { key: 'select', label: '' },
   { key: 'serial', label: 'Serial' },
   { key: 'tokentype', label: 'Type' },
   { key: 'active', label: 'Active' },
@@ -48,13 +53,13 @@ const columnsKeyMap = [
     NgClass,
     KeywordFilterComponent,
     CopyButtonComponent,
+    MatCheckboxModule,
   ],
   templateUrl: './token-table.component.html',
   styleUrl: './token-table.component.scss',
 })
 export class TokenTableComponent {
   displayedColumns: string[] = columnsKeyMap.map((column) => column.key);
-  pageSizeOptions = [5, 10, 15];
   apiFilter = this.tokenService.apiFilter;
   advancedApiFilter = this.tokenService.advancedApiFilter;
   columnsKeyMap = columnsKeyMap;
@@ -70,6 +75,7 @@ export class TokenTableComponent {
   @Input() containerSerial!: WritableSignal<string>;
   @Input() isProgrammaticChange!: WritableSignal<boolean>;
   @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
+  @Input() tokenSelection!: SelectionModel<any>;
   dataSource = signal(
     new MatTableDataSource(
       Array.from({ length: this.pageSize() }, () => {
@@ -81,6 +87,11 @@ export class TokenTableComponent {
       }),
     ),
   );
+  pageSizeOptions = linkedSignal({
+    source: this.length,
+    computation: (length) =>
+      [5, 10, 15].includes(length) ? [5, 10, 15] : [5, 10, 15, length],
+  });
   clickedKeyword = signal<string>('');
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
@@ -94,6 +105,18 @@ export class TokenTableComponent {
   ) {
     effect(() => {
       this.filterSubject.next(this.filterValue());
+      this.tokenSelection.clear();
+      untracked(() => {
+        if (![5, 10, 15].includes(this.pageSize())) {
+          this.pageSize.set(10);
+        }
+        this.pageIndex.set(0);
+      });
+    });
+    effect(() => {
+      if (this.selectedContent()) {
+        this.tokenSelection.clear();
+      }
     });
   }
 
@@ -107,13 +130,33 @@ export class TokenTableComponent {
 
   onFilterChange(newFilter: string) {
     this.filterValue.set(newFilter);
-    this.pageIndex.set(0);
-    this.filterSubject.next(newFilter);
   }
 
   ngAfterViewInit() {
     this.dataSource().paginator = this.paginator;
     this.dataSource().sort = this.sort;
+  }
+
+  isAllSelected() {
+    return (
+      this.tokenSelection.selected.length === this.dataSource().data.length
+    );
+  }
+
+  toggleAllRows() {
+    if (this.isAllSelected()) {
+      this.tokenSelection.clear();
+      return;
+    }
+
+    this.tokenSelection.select(...this.dataSource().data);
+  }
+
+  checkboxLabel(row?: any): string {
+    if (!row) {
+      return `${this.isAllSelected() ? 'deselect' : 'select'} all`;
+    }
+    return `${this.tokenSelection.isSelected(row) ? 'deselect' : 'select'} row ${row.position + 1}`;
   }
 
   toggleActive(element: any): void {
@@ -136,10 +179,13 @@ export class TokenTableComponent {
     if (element.revoked || element.locked) {
       return;
     }
-    if (columnKey === 'active') {
-      this.toggleActive(element);
-    } else if (columnKey === 'failcount') {
-      this.resetFailCount(element);
+    switch (columnKey) {
+      case 'active':
+        this.toggleActive(element);
+        break;
+      case 'failcount':
+        this.resetFailCount(element);
+        break;
     }
   }
 
@@ -155,6 +201,7 @@ export class TokenTableComponent {
   }
 
   onPageEvent(event: PageEvent) {
+    this.tokenSelection.clear();
     this.tableUtilsService.handlePageEvent(
       event,
       this.pageIndex,
@@ -163,8 +210,8 @@ export class TokenTableComponent {
     );
   }
 
-  protected fetchTokenData = (filterValue?: string) => {
-    this.tokenService
+  fetchTokenData = (filterValue?: string) => {
+    return this.tokenService
       .getTokenData(
         this.pageIndex() + 1,
         this.pageSize(),
@@ -180,4 +227,14 @@ export class TokenTableComponent {
         },
       });
   };
+
+  onSortEvent($event: Sort) {
+    this.tokenSelection.clear();
+    this.tableUtilsService.handleSortEvent(
+      $event,
+      this.pageIndex,
+      this.sortby_sortdir,
+      this.fetchTokenData,
+    );
+  }
 }

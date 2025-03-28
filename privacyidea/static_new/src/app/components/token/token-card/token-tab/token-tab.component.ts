@@ -18,6 +18,7 @@ import { LostTokenComponent } from './lost-token/lost-token.component';
 import { VersionService } from '../../../../services/version/version.service';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { TokenSelectedContent } from '../../token.component';
+import { SelectionModel } from '@angular/cdk/collections';
 
 @Component({
   selector: 'app-token-tab',
@@ -33,6 +34,8 @@ export class TokenTabComponent {
   @Input() active!: WritableSignal<boolean>;
   @Input() revoked!: WritableSignal<boolean>;
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
+  @Input() refreshTokenOverview!: WritableSignal<boolean>;
+  @Input() tokenSelection!: SelectionModel<any>;
   tokenIsSelected = computed(() => this.tokenSerial() !== '');
   isLost = signal(false);
   version!: string;
@@ -113,6 +116,33 @@ export class TokenTabComponent {
                 this.tokenSerial.set('');
               },
             });
+          }
+        },
+      });
+  }
+
+  deleteSelectedTokens() {
+    this.dialog
+      .open(ConfirmationDialogComponent, {
+        data: {
+          serial_list: this.tokenSelection.selected.map(
+            (token: any) => token.serial,
+          ),
+          title: 'Delete All Tokens',
+          type: 'token',
+          action: 'delete',
+          numberOfTokens: this.tokenSelection.selected.length,
+        },
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            for (const token of this.tokenSelection.selected) {
+              this.tokenService.deleteToken(token.serial).subscribe();
+            }
+            this.tokenSelection.clear();
+            this.refreshTokenOverview.set(true);
           }
         },
       });

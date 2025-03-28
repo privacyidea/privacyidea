@@ -11,6 +11,7 @@ import { VersionService } from '../../../../services/version/version.service';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
 import { TokenSelectedContent } from '../../token.component';
+import { SelectionModel } from '@angular/cdk/collections';
 
 @Component({
   selector: 'app-container-tab',
@@ -25,7 +26,9 @@ export class ContainerTabComponent {
   @Input() containerSerial!: WritableSignal<string>;
   @Input() states!: WritableSignal<string[]>;
   @Input() refreshContainerDetails!: WritableSignal<boolean>;
+  @Input() refreshContainerOverview!: WritableSignal<boolean>;
   @Input() isProgrammaticChange!: WritableSignal<boolean>;
+  @Input() containerSelection!: SelectionModel<any>;
   containerIsSelected = computed(() => this.containerSerial() !== '');
   version!: string;
 
@@ -77,6 +80,33 @@ export class ContainerTabComponent {
                   this.containerSerial.set('');
                 },
               });
+          }
+        },
+      });
+  }
+
+  deleteSelectedContainer() {
+    this.dialog
+      .open(ConfirmationDialogComponent, {
+        data: {
+          serial_list: this.containerSelection.selected.map(
+            (token: any) => token.serial,
+          ),
+          title: 'Delete All Tokens',
+          type: 'token',
+          action: 'delete',
+          numberOfTokens: this.containerSelection.selected.length,
+        },
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            for (const token of this.containerSelection.selected) {
+              this.containerService.deleteContainer(token.serial).subscribe();
+            }
+            this.containerSelection.clear();
+            this.refreshContainerOverview.set(true);
           }
         },
       });

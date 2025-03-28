@@ -1,24 +1,24 @@
 <h2 mat-dialog-title>{{ data.title }}</h2>
+
 <mat-dialog-content>
   @if (data.action === "remove" || data.action === "delete") {
-  <p>
-    Are you sure you want to {{ data.action }}
-    @if (data.numberOfTokens > 1 && data.type === "token") {
-      all ({{ data.numberOfTokens }}) tokens
-      {{ data.action === "remove" ? "from" : "in" }} this container?
-    } @else {
-      this {{ data.type }}?
-    }
-  </p>
-  <ul>
-    @for (serial of data.serial_list; track serial) {
-      <li>{{ serial }}</li>
-    }
-  </ul>
+    <p>
+      Are you sure you want to {{ data.action }}
+      @if (data.numberOfTokens > 1 && data.type === "token") {
+        all ({{ data.numberOfTokens }}) {{ data.type }}s?
+      } @else {
+        this {{ data.type }}?
+      }
+    </p>
+    <ul>
+      @for (serial of data.serial_list; track serial) {
+        <li>{{ serial }}</li>
+      }
+    </ul>
   } @else if (data.action === "search") {
     <p>
-      This searchrequest will check {{ data.numberOfTokens }} in the system for the given OTP value.
-      <br /> This could take a lot of time and could even timeout. <br />
+      This search request will check {{ data.numberOfTokens }} tokens in the system for
+      the given OTP value. <br />This could take a lot of time and could even time out.<br />
     </p>
   }
 </mat-dialog-content>
@@ -30,6 +30,7 @@
   </button>
   <button [mat-dialog-close]="true"
           [ngClass]="{'dialog-button-delete': data.action === 'remove' || data.action === 'delete'}"
-          mat-button>{{ data.action.charAt(0).toUpperCase() + data.action.slice(1) }}
+          mat-button>
+    {{ data.action.charAt(0).toUpperCase() + data.action.slice(1) }}
   </button>
 </mat-dialog-actions>

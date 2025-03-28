@@ -13,7 +13,7 @@ export const tabToggleState = trigger('toggleState', [
       transform: 'translateY(0)',
     }),
   ),
-  transition('false => true', [
+  transition('* => *', [
     style({
       transform: 'translateY(60%)',
     }),
@@ -24,7 +24,7 @@ export const tabToggleState = trigger('toggleState', [
       }),
     ),
   ]),
-  transition('true => false', [
+  transition('* => *', [
     style({
       transform: 'translateY(60%)',
     }),

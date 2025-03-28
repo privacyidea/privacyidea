@@ -10,6 +10,7 @@ import { signal } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { SelectionModel } from '@angular/cdk/collections';
 
 describe('TokenTableComponent', () => {
   let component: TokenTableComponent;
@@ -107,6 +108,8 @@ describe('TokenTableComponent', () => {
     component.isProgrammaticChange = signal(false);
     component.selectedContent = signal('token_overview');
     component.length = signal(0);
+    component.tokenSelection = new SelectionModel<any>(true, []);
+
     fixture.detectChanges();
   });
 

@@ -13,6 +13,7 @@ import { signal } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { Sort } from '@angular/material/sort';
 import { MatPaginator } from '@angular/material/paginator';
+import { SelectionModel } from '@angular/cdk/collections';
 
 describe('ContainerTableComponent', () => {
   let component: ContainerTableComponent;
@@ -105,6 +106,7 @@ describe('ContainerTableComponent', () => {
 
     component.containerSerial = signal('Mock container');
     component.selectedContent = signal('container_overview');
+    component.containerSelection = new SelectionModel<any>(true, []);
 
     fixture.detectChanges();
   });

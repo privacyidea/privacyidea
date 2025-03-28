@@ -4,6 +4,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { SelectionModel } from '@angular/cdk/collections';
 
 describe('TokenCardComponent', () => {
   let component: TokenCardComponent;
@@ -27,6 +28,10 @@ describe('TokenCardComponent', () => {
     component.refreshTokenDetails = signal(false);
     component.refreshContainerDetails = signal(false);
     component.isProgrammaticChange = signal(false);
+    component.tokenSelection = new SelectionModel<any>(true, []);
+    component.containerSelection = new SelectionModel<any>(true, []);
+    component.refreshTokenOverview = signal(false);
+    component.refreshContainerOverview = signal(false);
 
     fixture.detectChanges();
   });

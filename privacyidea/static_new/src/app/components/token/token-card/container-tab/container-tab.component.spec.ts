@@ -5,6 +5,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { SelectionModel } from '@angular/cdk/collections';
 
 describe('ContainerTabComponent', () => {
   let component: ContainerTabComponent;
@@ -21,6 +22,8 @@ describe('ContainerTabComponent', () => {
     component.selectedContent = signal('container_overview');
     component.containerSerial = signal('Mock serial');
     component.states = signal(['active']);
+    component.containerSelection = new SelectionModel<any>(true, []);
+
     fixture.detectChanges();
   });
 

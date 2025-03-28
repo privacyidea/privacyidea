@@ -85,8 +85,11 @@ $description-width: 18rem;
   .realm {
     margin-top: $realm-margin-top;
   }
-
   ::ng-deep {
+    .mdc-checkbox .mdc-checkbox__native-control:not(.mdc-checkbox--selected):not([aria-checked="mixed"]) ~ .mdc-checkbox__background {
+      border: 2px solid #999;
+    }
+
     .mat-mdc-paginator-page-size {
       margin-right: 0;
     }
@@ -102,7 +105,7 @@ $description-width: 18rem;
 
     .mat-mdc-paginator-container {
       padding: 0 0 0 16px;
-      width: 514px;
+      width: 565px;
     }
   }
 }
@@ -245,6 +248,11 @@ th:nth-child(even) {
 
 .details-key-row {
   min-width: 9rem;
+}
+
+.table-checkbox {
+  padding: 0;
+  width: 42px;
 }
 
 ::ng-deep {

@@ -19,6 +19,7 @@ import { TokenEnrollmentComponent } from './token-enrollment/token-enrollment.co
 import { TokenApplications } from './token-applications/token-applications';
 import { ChallengesTableComponent } from './challenges-table/challenges-table.component';
 import { LoadingService } from '../../services/loading/loading-service';
+import { SelectionModel } from '@angular/cdk/collections';
 
 export type TokenType =
   | 'hotp'
@@ -226,13 +227,20 @@ export class TokenComponent {
   tokenIsActive = signal(true);
   revoked = signal(true);
   refreshTokenDetails = signal(false);
+  refreshTokenOverview = signal(false);
+  refreshContainerOverview = signal(false);
   refreshContainerDetails = signal(false);
   states = signal<string[]>([]);
   isProgrammaticChange = signal(false);
+  containerSelection = new SelectionModel<any>(true, []);
+  tokenSelection = new SelectionModel<any>(true, []);
   @ViewChild('tokenDetailsComponent')
   tokenDetailsComponent!: TokenDetailsComponent;
   @ViewChild('containerDetailsComponent')
   containerDetailsComponent!: ContainerDetailsComponent;
+  @ViewChild('tokenTableComponent') tokenTableComponent!: TokenTableComponent;
+  @ViewChild('containerTableComponent')
+  containerTableComponent!: ContainerTableComponent;
   @ViewChild('tokenGetSerial') tokenGetSerial!: TokenGetSerial;
   @ViewChild('drawer') drawer!: MatDrawer;
 
@@ -252,9 +260,35 @@ export class TokenComponent {
       }
     });
     effect(() => {
+      if (this.refreshTokenOverview()) {
+        this.onRefreshTokenOverview();
+      }
+    });
+    effect(() => {
+      if (this.refreshContainerOverview()) {
+        this.onRefreshContainerOverview();
+      }
+    });
+    effect(() => {
       this.selectedContent();
       this.loadingService.clearAllLoadings();
     });
+  }
+
+  onRefreshTokenOverview(): void {
+    if (this.tokenTableComponent) {
+      this.tokenTableComponent.fetchTokenData().add(() => {
+        this.refreshTokenOverview.set(false);
+      });
+    }
+  }
+
+  onRefreshContainerOverview(): void {
+    if (this.containerTableComponent) {
+      this.containerTableComponent.fetchContainerData().add(() => {
+        this.refreshContainerOverview.set(false);
+      });
+    }
   }
 
   onRefreshTokenDetails(): void {

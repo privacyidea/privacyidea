@@ -12,6 +12,7 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { By } from '@angular/platform-browser';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { TokenSelectedContent } from '../../token.component';
+import { SelectionModel } from '@angular/cdk/collections';
 
 describe('TokenTabComponent', () => {
   let component: TokenTabComponent;
@@ -67,6 +68,7 @@ describe('TokenTabComponent', () => {
     component.revoked = signal<boolean>(false);
     component.active = signal<boolean>(true);
     component.refreshTokenDetails = signal<boolean>(false);
+    component.tokenSelection = new SelectionModel<any>(true, []);
 
     fixture.detectChanges();
   });
