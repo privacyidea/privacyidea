@@ -7,19 +7,19 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-03-27 13:57+0100\n"
-"PO-Revision-Date: 2024-08-27 08:31+0000\n"
-"Last-Translator: Сергей Котенков <kotenkovsn@ya.ru>\n"
+"PO-Revision-Date: 2025-03-28 09:15+0000\n"
+"Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/privacyidea/"
-"privacyidea-server/ru/>\n"
+"branch-3-11/ru/>\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-"X-Generator: Weblate 5.7.1-dev\n"
+"X-Generator: Weblate 5.11-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:231
@@ -196,8 +196,7 @@ msgstr "Конфигурация клиента некорректна!"
 
 #: lib/policy.py:1649
 msgid "Define in which resolver the user should be registered."
-msgstr ""
-"Определите, в каком резолвере должен быть зарегистрирован пользователь."
+msgstr "Определите, в каком резолвере должен быть зарегистрирован пользователь."
 
 #: lib/policy.py:1653
 msgid "Define in which realm the user should be registered."
@@ -437,8 +436,8 @@ msgid ""
 "Specifiy the required contents of the OTP PIN. (c)haracters, (n)umeric, "
 "(s)pecial. Use modifiers +/- or a list of allowed characters [1234567890]"
 msgstr ""
-"Укажите необходимое содержимое ПИН-кода OTP. (c) символы, (n)числовые, "
-"(s)специальные. Используйте модификаторы +/- или список разрешенных символов "
+"Укажите необходимое содержимое ПИН-кода OTP. (c) символы, (n)числовые, (s)"
+"специальные. Используйте модификаторы +/- или список разрешенных символов "
 "[1234567890]"
 
 #: lib/policy.py:1910
@@ -796,8 +795,8 @@ msgid ""
 "Specify the required contents of the OTP PIN. (c)haracters, (n)umeric, "
 "(s)pecial. Use modifiers +/- or a list of allowed characters [1234567890]"
 msgstr ""
-"Укажите необходимое содержимое ПИН-кода OTP. (c) символы, (n)числовые, "
-"(s)специальные. Используйте модификаторы +/- или список разрешенных символов "
+"Укажите необходимое содержимое ПИН-кода OTP. (c) символы, (n)числовые, (s)"
+"специальные. Используйте модификаторы +/- или список разрешенных символов "
 "[1234567890]"
 
 #: lib/policy.py:2243
@@ -1056,8 +1055,8 @@ msgid ""
 "(n)umeric, (s)pecial. Use modifiers +/- or a list of allowed characters "
 "[1234567890]"
 msgstr ""
-"Укажите требуемый состав кода регистрации. (c)haracters, (n)umeric, "
-"(s)pecial. Используйте модификаторы +/- или список допустимых символов "
+"Укажите требуемый состав кода регистрации. (c)haracters, (n)umeric, (s)"
+"pecial. Используйте модификаторы +/- или список допустимых символов "
 "[1234567890]"
 
 #: lib/policy.py:2461
@@ -1070,8 +1069,8 @@ msgid ""
 "(c)haracters, (n)umeric, (s)pecial. Use modifiers +/- or a list of allowed "
 "characters [1234567890]"
 msgstr ""
-"Укажите разрешенные символы для ПИН-кода OTP. (c) символы, (n)числовые, "
-"(s)специальные. Используйте модификаторы +/- или список разрешенных символов "
+"Укажите разрешенные символы для ПИН-кода OTP. (c) символы, (n)числовые, (s)"
+"специальные. Используйте модификаторы +/- или список разрешенных символов "
 "[1234567890]"
 
 #: lib/policy.py:2473
