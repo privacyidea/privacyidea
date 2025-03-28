@@ -6,18 +6,18 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-03-27 13:57+0100\n"
-"PO-Revision-Date: 2025-02-06 17:27+0000\n"
-"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
+"PO-Revision-Date: 2025-03-28 09:15+0000\n"
+"Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
-"privacyidea-server/nl/>\n"
+"branch-3-11/nl/>\n"
 "Language: nl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.10-dev\n"
+"X-Generator: Weblate 5.11-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:231
@@ -1038,9 +1038,9 @@ msgid ""
 "(n)umeric, (s)pecial. Use modifiers +/- or a list of allowed characters "
 "[1234567890]"
 msgstr ""
-"Geef de vereiste inhoud van de registratiecode. (c) tekens, (n) getallen, "
-"(s) speciale tekens. Gebruik wijzigingen */- of een lijst met toegestane "
-"tekens [1234567890]"
+"Geef de vereiste inhoud van de registratiecode. (c) tekens, (n) getallen, (s)"
+" speciale tekens. Gebruik wijzigingen */- of een lijst met toegestane tekens "
+"[1234567890]"
 
 #: lib/policy.py:2461
 msgid "Set the length of the password of generated password tokens."
@@ -1829,8 +1829,8 @@ msgid ""
 "There is no active and assigned token in this realm, included types: {0!s}, "
 "excluded types: {1!s}"
 msgstr ""
-"Er is geen actief en toegewezen token voor dit realm, inbegrepen types: {0!"
-"s}, uitgesloten types: {1!s}"
+"Er is geen actief en toegewezen token voor dit realm, inbegrepen types: {0!s}"
+", uitgesloten types: {1!s}"
 
 #: lib/token.py:2293
 msgid "OTP verification failed."
@@ -1904,8 +1904,8 @@ msgid ""
 "Specifiy the required PIN contents of the {0!s} token. (c)haracters, "
 "(n)umeric, (s)pecial, (o)thers. [+/-]!"
 msgstr ""
-"Specificeer de vereiste PIN-inhoud van het {0!s} token. (c)letters, "
-"(n)cijfers, (s)speciale tekens, (o)andere. [+/-]!"
+"Specificeer de vereiste PIN-inhoud van het {0!s} token. (c)letters, (n)"
+"cijfers, (s)speciale tekens, (o)andere. [+/-]!"
 
 #: lib/token.py:2821 lib/token.py:2837
 msgid "The tokengroup does not exist."
@@ -3015,8 +3015,7 @@ msgstr ""
 #: lib/tokens/daypasswordtoken.py:120 lib/tokens/hotptoken.py:173
 #: lib/tokens/totptoken.py:158
 msgid "Enforce setting an app pin for the privacyIDEA Authenticator App"
-msgstr ""
-"Een app-pin instellen verplichten voor de privacyIDEA Authenticator App"
+msgstr "Een app-pin instellen verplichten voor de privacyIDEA Authenticator App"
 
 #: lib/tokens/daypasswordtoken.py:125
 #, fuzzy
@@ -3435,8 +3434,7 @@ msgstr ""
 
 #: lib/tokens/pushtoken.py:401
 msgid "The smartphone needs to verify SSL during the enrollment. (default 1)"
-msgstr ""
-"De smartphone moet SSL verifiëren tijdens de registratie. (standaard 1)"
+msgstr "De smartphone moet SSL verifiëren tijdens de registratie. (standaard 1)"
 
 #: lib/tokens/pushtoken.py:407
 msgid "The user may only have this maximum number of Push tokens assigned."
@@ -3465,8 +3463,7 @@ msgstr ""
 
 #: lib/tokens/pushtoken.py:431
 msgid "The title of the notification, the user sees on his mobile phone."
-msgstr ""
-"De titel van de melding die de gebruiker ziet op zijn mobiele telefoon."
+msgstr "De titel van de melding die de gebruiker ziet op zijn mobiele telefoon."
 
 #: lib/tokens/pushtoken.py:436
 msgid "The smartphone needs to verify SSL during authentication. (default 1)"
@@ -3593,8 +3590,7 @@ msgstr ""
 
 #: lib/tokens/remotetoken.py:112
 msgid "Remote Token: Forward authentication request to another server."
-msgstr ""
-"Extern token: stuur de authenticatie-vraag door naar een andere server."
+msgstr "Extern token: stuur de authenticatie-vraag door naar een andere server."
 
 #: lib/tokens/remotetoken.py:121 lib/tokens/totptoken.py:163
 msgid "The user may only have this maximum number of remote tokens assigned."
