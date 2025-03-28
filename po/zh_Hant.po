@@ -39,8 +39,8 @@ msgid ""
 "\">\n"
 "                        Ask for the privacyIDEA Enterprise Edition, now!</a>"
 msgstr ""
-"<a target=\"netknights\" href="
-"\"https://netknights.it/en/unternehmen/kontakt/\">\n"
+"<a target=\"netknights\" href=\"https://netknights.it/en/unternehmen/kontakt/"
+"\">\n"
 "立即索取privacyIDEA企業版！</a>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:84
@@ -92,12 +92,12 @@ msgid ""
 "                    </li>"
 msgstr ""
 "<li>支援和德國\n"
-"                        <a target=\"netknights\" href="
-"\"https://netknights.it/en/leistungen/service-level-agreements/\">\n"
+"                        <a target=\"netknights\" href=\"https://netknights."
+"it/en/leistungen/service-level-agreements/\">\n"
 "                            NetKnights</a>的服務水準協議。\n"
 "                    </li>\n"
-"                    <li>適用於 Debian、Ubuntu、RHEL "
-"的穩定企業軟體包允許輕鬆更新和安全\n"
+"                    <li>適用於 Debian、Ubuntu、RHEL 的穩定企業軟體包允許輕鬆"
+"更新和安全\n"
 "                        操作。\n"
 "                    </li>\n"
 "                    <li>獨有的<b>設備</b>-工具，可以輕鬆設置RADIUS用戶端，"
@@ -106,14 +106,14 @@ msgstr ""
 "                        備份和還原...\n"
 "                    </li>\n"
 "                    <li>獨家及時的新聞和錯誤報告。</li>\n"
-"                    <li>根據支援級別，您將獲得有關更新和年度諮詢的説明。</li>"
-"\n"
+"                    <li>根據支援級別，您將獲得有關更新和年度諮詢的説明。</"
+"li>\n"
 "                    <li>通過購買\n"
-"                        <a target=\"netknights\" href="
-"\"https://netknights.it/en/produkte/privacyidea/\">privacyIDEA 企業版</a>\n"
+"                        <a target=\"netknights\" href=\"https://netknights."
+"it/en/produkte/privacyidea/\">privacyIDEA 企業版</a>\n"
 "                        您確保專業開發人員可以完整工作\n"
-"                        在開發privacyIDEA "
-"中，添加新功能並及時修復錯誤。此外，您還允許\n"
+"                        在開發privacyIDEA 中，添加新功能並及時修復錯誤。此"
+"外，您還允許\n"
 "                        外部服務\n"
 "                        比如代碼審計。\n"
 "                    </li>"
@@ -165,8 +165,8 @@ msgstr ""
 "                    這個專有軟體。\n"
 "                </p>\n"
 "                <p>\n"
-"                    開源軟體privacyIDEA 現在是<b>您的財產</b>！"
-"沒有人能帶走這個軟體\n"
+"                    開源軟體privacyIDEA 現在是<b>您的財產</b>！沒有人能帶走這"
+"個軟體\n"
 "                    或此安裝。根據 AGPLv3 許可證，您可以修改或分發此軟體。\n"
 "                    您不必擔心壽命結束。\n"
 "                </p>\n"
@@ -195,14 +195,12 @@ msgstr ""
 "<p><b>您正在使用privacyIDEA 與超過50個使用者.</b></p>\n"
 "                <p>感謝您的信任 </p>！\n"
 "                <p>對於企業使用，我們建議\n"
-"                    <a target=\"netknights\" href="
-"\"https://netknights.it/en/produkte/privacyidea/\">privacyIDEA Enterprise "
-"Edition</a>.\n"
+"                    <a target=\"netknights\" href=\"https://netknights.it/en/"
+"produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>.\n"
 "                </p>\n"
 "                <p>NetKnights 提供\n"
-"                    <a target=\"netknights\" href="
-"\"https://netknights.it/en/produkte/privacyidea/\">privacyIDEA Enterprise "
-"Edition</a>\n"
+"                    <a target=\"netknights\" href=\"https://netknights.it/en/"
+"produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
 "                    包括<b>支援和服務級別協定</b>。\n"
 "                    此外，NetKnights還提供服務，諮詢和\n"
 "                    新功能的付費程式設計。\n"
@@ -231,8 +229,8 @@ msgstr ""
 "                    多因素身份驗證系統。它是開源的。\n"
 "                    核心開發人員受雇於德國NetKnights GmbH。\n"
 "                    NetKnights 提供\n"
-"                    <a target=\"netknights\" href="
-"\"https://netknights.it/en/produkte/privacyidea/\">privacyIDEA 企業版</a>\n"
+"                    <a target=\"netknights\" href=\"https://netknights.it/en/"
+"produkte/privacyidea/\">privacyIDEA 企業版</a>\n"
 "                    包括 <b> 支援和服務級別協定</b>。\n"
 "                    此外，NetKnights還提供服務，諮詢和\n"
 "                    新功能的付費程式設計。\n"
@@ -287,7 +285,7 @@ msgstr "API 密鑰"
 msgid "API client ID"
 msgstr "API 客戶端 ID"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:802
+#: privacyidea/static/components/token/controllers/tokenControllers.js:801
 msgid "Abort operation on unverifiable token"
 msgstr ""
 
@@ -303,8 +301,8 @@ msgid ""
 "privacyidea/privacyidea/blob/master/LICENSE\">AGPLv3</a>"
 msgstr ""
 "根據\n"
-"                    <a target=\"license\" href="
-"\"https://github.com/privacyidea/privacyidea/blob/master/LICENSE\">AGPLv3</a>"
+"                    <a target=\"license\" href=\"https://github.com/"
+"privacyidea/privacyidea/blob/master/LICENSE\">AGPLv3</a>"
 
 #: privacyidea/static/components/config/views/config.events.details.html:114
 #: privacyidea/static/components/config/views/config.events.details.html:249
@@ -321,10 +319,10 @@ msgstr "行動"
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:6
 #: privacyidea/static/components/config/views/config.policies.list.html:9
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:5
-#: privacyidea/static/components/token/views/token.containerdetails.html:443
+#: privacyidea/static/components/token/views/token.containerdetails.html:427
 #: privacyidea/static/components/token/views/token.details.html:33
 #: privacyidea/static/components/user/views/user.details.html:149
-#: privacyidea/static/components/user/views/user.details.html:240
+#: privacyidea/static/components/user/views/user.details.html:236
 msgid "Active"
 msgstr "活躍"
 
@@ -336,7 +334,7 @@ msgstr "活動事件"
 msgid "Active Policies"
 msgstr "活動策略"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:780
+#: privacyidea/static/components/token/views/token.containerdetails.html:758
 msgid "Add"
 msgstr ""
 
@@ -347,14 +345,14 @@ msgstr ""
 msgid "Add Token"
 msgstr "令牌"
 
-#: privacyidea/static/components/user/views/user.details.html:293
+#: privacyidea/static/components/user/views/user.details.html:289
 #, fuzzy
 #| msgid "Tokens"
 msgid "Add Tokens"
 msgstr "令牌"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:602
-#: privacyidea/static/components/user/views/user.details.html:285
+#: privacyidea/static/components/token/views/token.containerdetails.html:580
+#: privacyidea/static/components/user/views/user.details.html:281
 msgid "Add Tokens to Container"
 msgstr ""
 
@@ -506,24 +504,24 @@ msgstr "分配使用者"
 
 #: privacyidea/static/components/token/views/token.assign.html:12
 #: privacyidea/static/components/token/views/token.html:85
-#: privacyidea/static/components/user/views/user.details.html:312
+#: privacyidea/static/components/user/views/user.details.html:308
 msgid "Assign Token"
 msgstr "分配令牌"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:408
-#: privacyidea/static/components/token/views/token.containerdetails.html:426
+#: privacyidea/static/components/token/views/token.containerdetails.html:392
+#: privacyidea/static/components/token/views/token.containerdetails.html:410
 #: privacyidea/static/components/token/views/token.details.html:585
 #: privacyidea/static/components/token/views/token.details.html:598
 msgid "Assign User"
 msgstr "分配使用者"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:383
+#: privacyidea/static/components/token/views/token.containerdetails.html:367
 #, fuzzy
 #| msgid "Assign Token"
 msgid "Assign User To All Tokens"
 msgstr "分配令牌"
 
-#: privacyidea/static/components/user/views/user.details.html:307
+#: privacyidea/static/components/user/views/user.details.html:303
 msgid "Assign a new token {{ newToken.serial }}"
 msgstr "分配一個新令牌 {{ newToken.serial }}"
 
@@ -559,7 +557,7 @@ msgstr "將令牌分配給使用者"
 msgid "Assign token to user"
 msgstr "將令牌分配給使用者"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:351
+#: privacyidea/static/components/token/views/token.containerdetails.html:335
 #: privacyidea/static/components/token/views/token.details.html:534
 msgid "Assigned User"
 msgstr "分配的使用者"
@@ -693,18 +691,17 @@ msgstr "Cache 超時（秒）"
 #: privacyidea/static/components/directives/views/directive.tokendata.html:23
 #: privacyidea/static/components/machine/views/machine.details.html:110
 #: privacyidea/static/components/token/views/token.containerdetails.html:138
-#: privacyidea/static/components/token/views/token.containerdetails.html:211
-#: privacyidea/static/components/token/views/token.containerdetails.html:489
+#: privacyidea/static/components/token/views/token.containerdetails.html:472
 #: privacyidea/static/components/token/views/token.containerdetails.html:55
-#: privacyidea/static/components/token/views/token.containerdetails.html:587
+#: privacyidea/static/components/token/views/token.containerdetails.html:565
 #: privacyidea/static/components/token/views/token.details.html:218
 #: privacyidea/static/components/token/views/token.details.html:319
 #: privacyidea/static/components/token/views/token.details.html:363
 #: privacyidea/static/components/token/views/token.details.html:408
 #: privacyidea/static/components/token/views/token.details.html:732
 #: privacyidea/static/components/token/views/token.getserial.html:83
-#: privacyidea/static/components/user/views/user.details.html:224
-#: privacyidea/static/components/user/views/user.details.html:299
+#: privacyidea/static/components/user/views/user.details.html:220
+#: privacyidea/static/components/user/views/user.details.html:295
 #: privacyidea/static/components/user/views/user.details.html:56
 msgid "Cancel"
 msgstr "取消"
@@ -982,7 +979,7 @@ msgstr ""
 msgid "Containers Created With This Template"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.details.html:325
+#: privacyidea/static/components/user/views/user.details.html:321
 #, fuzzy
 msgid "Containers for user {{ username }}"
 msgstr "使用者 {{ username }} 的令牌"
@@ -1205,9 +1202,9 @@ msgstr "HOTP 令牌設置"
 msgid "Default"
 msgstr "預設"
 
-#: privacyidea/static/components/config/views/config.token.daypassword.html:21
-#: privacyidea/static/components/config/views/config.token.hotp.html:12
-#: privacyidea/static/components/config/views/config.token.totp.html:39
+#: privacyidea/static/components/config/views/config.token.daypassword.html:22
+#: privacyidea/static/components/config/views/config.token.hotp.html:13
+#: privacyidea/static/components/config/views/config.token.totp.html:40
 msgid "Default Hashlib"
 msgstr "預設 Hashlib"
 
@@ -1215,16 +1212,16 @@ msgstr "預設 Hashlib"
 msgid "Default Remote Server"
 msgstr "預設遠端伺服器"
 
-#: privacyidea/static/components/config/views/config.token.totp.html:30
+#: privacyidea/static/components/config/views/config.token.totp.html:31
 msgid "Default Time Shift"
 msgstr "預設時移"
 
-#: privacyidea/static/components/config/views/config.token.daypassword.html:12
-#: privacyidea/static/components/config/views/config.token.totp.html:13
+#: privacyidea/static/components/config/views/config.token.daypassword.html:13
+#: privacyidea/static/components/config/views/config.token.totp.html:14
 msgid "Default Time Step"
 msgstr "預設時間步長"
 
-#: privacyidea/static/components/config/views/config.token.totp.html:21
+#: privacyidea/static/components/config/views/config.token.totp.html:22
 msgid "Default Time Window"
 msgstr "預設 Windows 時間"
 
@@ -1250,16 +1247,16 @@ msgstr "預設 Windows 時間"
 #: privacyidea/static/components/config/views/dialog.confirm_delete.html:29
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:66
 #: privacyidea/static/components/token/views/token.containerdetails.html:33
-#: privacyidea/static/components/token/views/token.containerdetails.html:485
-#: privacyidea/static/components/token/views/token.containerdetails.html:577
+#: privacyidea/static/components/token/views/token.containerdetails.html:468
+#: privacyidea/static/components/token/views/token.containerdetails.html:555
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:69
 #: privacyidea/static/components/token/views/token.details.html:20
 #: privacyidea/static/components/token/views/token.details.html:217
-#: privacyidea/static/components/user/views/user.details.html:214
+#: privacyidea/static/components/user/views/user.details.html:210
 msgid "Delete"
 msgstr "删除"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:479
+#: privacyidea/static/components/token/views/token.containerdetails.html:462
 #, fuzzy
 #| msgid "Delete"
 msgid "Delete All"
@@ -1282,8 +1279,8 @@ msgstr "CRL 配置"
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:12
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:32
-#: privacyidea/static/components/token/views/token.containerdetails.html:583
-#: privacyidea/static/components/user/views/user.details.html:220
+#: privacyidea/static/components/token/views/token.containerdetails.html:561
+#: privacyidea/static/components/user/views/user.details.html:216
 msgid "Delete Token"
 msgstr "删除令牌"
 
@@ -1292,7 +1289,7 @@ msgstr "删除令牌"
 msgid "Delete User"
 msgstr "刪除使用者"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:481
+#: privacyidea/static/components/token/views/token.containerdetails.html:464
 msgid "Delete all tokens?"
 msgstr "刪除全部令牌？"
 
@@ -1318,7 +1315,7 @@ msgstr "刪除使用者"
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:28
 #: privacyidea/static/components/config/views/config.tokengroup.list.html:7
 #: privacyidea/static/components/token/views/token.containercreate.html:44
-#: privacyidea/static/components/token/views/token.containerdetails.html:458
+#: privacyidea/static/components/token/views/token.containerdetails.html:442
 #: privacyidea/static/components/token/views/token.containerdetails.html:90
 #: privacyidea/static/components/token/views/token.containerlist.html:68
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:87
@@ -1326,9 +1323,9 @@ msgstr "刪除使用者"
 #: privacyidea/static/components/token/views/token.details.html:167
 #: privacyidea/static/components/token/views/token.details.html:179
 #: privacyidea/static/components/token/views/token.enroll.html:36
-#: privacyidea/static/components/user/views/user.details.html:151
-#: privacyidea/static/components/user/views/user.details.html:241
-#: privacyidea/static/components/user/views/user.details.html:349
+#: privacyidea/static/components/user/views/user.details.html:150
+#: privacyidea/static/components/user/views/user.details.html:237
+#: privacyidea/static/components/user/views/user.details.html:345
 #: privacyidea/static/components/user/views/user.password.html:21
 msgid "Description"
 msgstr "描述"
@@ -1374,21 +1371,21 @@ msgstr ""
 msgid "Disable"
 msgstr "禁用"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:450
+#: privacyidea/static/components/token/views/token.containerdetails.html:434
 #, fuzzy
 #| msgid "Disable"
 msgid "Disable All"
 msgstr "禁用"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:331
+#: privacyidea/static/components/token/views/token.containerdetails.html:315
 #, fuzzy
 #| msgid "Disable token"
 msgid "Disable All Tokens"
 msgstr "禁用令牌"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:724
+#: privacyidea/static/components/token/views/token.containerdetails.html:702
 #: privacyidea/static/components/token/views/token.list.html:99
-#: privacyidea/static/components/user/views/user.details.html:169
+#: privacyidea/static/components/user/views/user.details.html:167
 msgid "Disable token"
 msgstr "禁用令牌"
 
@@ -1400,7 +1397,7 @@ msgstr "潜入!"
 msgid "Do not use an authentication counter per token."
 msgstr "不要為每個令牌使用身份驗證計數器。"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:800
+#: privacyidea/static/components/token/controllers/tokenControllers.js:799
 msgid "Do not verify the authenticity"
 msgstr ""
 
@@ -1484,7 +1481,6 @@ msgstr "電子郵件令牌設置"
 #: privacyidea/static/components/directives/views/directive.tokendata.html:28
 #: privacyidea/static/components/token/views/token.containercreate.html:82
 #: privacyidea/static/components/token/views/token.containerdetails.html:125
-#: privacyidea/static/components/token/views/token.containerdetails.html:200
 #: privacyidea/static/components/token/views/token.details.html:306
 #: privacyidea/static/components/token/views/token.details.html:350
 #: privacyidea/static/components/token/views/token.details.html:395
@@ -1637,15 +1633,15 @@ msgstr "電子郵件地址"
 msgid "Enable"
 msgstr "啟用"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:444
+#: privacyidea/static/components/token/views/token.containerdetails.html:428
 #, fuzzy
 #| msgid "Enable"
 msgid "Enable All"
 msgstr "啟用"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:729
+#: privacyidea/static/components/token/views/token.containerdetails.html:707
 #: privacyidea/static/components/token/views/token.list.html:104
-#: privacyidea/static/components/user/views/user.details.html:174
+#: privacyidea/static/components/user/views/user.details.html:172
 msgid "Enable token"
 msgstr "啟用令牌"
 
@@ -1657,8 +1653,8 @@ msgstr "結束日期在開始日期之前！"
 msgid "Endpoint (URL)"
 msgstr "端點 (URL)"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:596
-#: privacyidea/static/components/user/views/user.details.html:278
+#: privacyidea/static/components/token/views/token.containerdetails.html:574
+#: privacyidea/static/components/user/views/user.details.html:274
 msgid "Enroll New Token"
 msgstr "註冊新令牌"
 
@@ -1784,14 +1780,14 @@ msgstr "擴展屬性"
 msgid "Fail counter"
 msgstr "失敗計數器"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:459
-#: privacyidea/static/components/user/views/user.details.html:152
+#: privacyidea/static/components/token/views/token.containerdetails.html:443
+#: privacyidea/static/components/user/views/user.details.html:151
 #, fuzzy
 #| msgid "Fail counter"
 msgid "Failcounter"
 msgstr "失敗計數器"
 
-#: privacyidea/static/components/user/controllers/userControllers.js:275
+#: privacyidea/static/components/user/controllers/userControllers.js:277
 msgid "Failed to delete user."
 msgstr "無法刪除使用者。"
 
@@ -1808,7 +1804,7 @@ msgstr "無法重置密碼。"
 msgid "Failed to set PIN."
 msgstr "無法設置 PIN 碼。"
 
-#: privacyidea/static/components/user/controllers/userControllers.js:256
+#: privacyidea/static/components/user/controllers/userControllers.js:258
 msgid "Failed to update user."
 msgstr "無法更新使用者。"
 
@@ -1827,14 +1823,14 @@ msgstr "指紋"
 #: privacyidea/static/components/token/views/token.applications.offline.html:14
 #: privacyidea/static/components/token/views/token.applications.ssh.html:20
 #: privacyidea/static/components/token/views/token.challenges.html:10
-#: privacyidea/static/components/token/views/token.containerdetails.html:632
+#: privacyidea/static/components/token/views/token.containerdetails.html:610
 #: privacyidea/static/components/token/views/token.containerlist.html:24
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:71
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:26
 #: privacyidea/static/components/token/views/token.details.html:656
 #: privacyidea/static/components/token/views/token.list.html:6
 #: privacyidea/static/components/user/views/user.details.html:138
-#: privacyidea/static/components/user/views/user.details.html:332
+#: privacyidea/static/components/user/views/user.details.html:328
 #: privacyidea/static/components/user/views/user.list.html:6
 msgid "First"
 msgstr "首先"
@@ -2095,18 +2091,24 @@ msgid ""
 msgstr "在這裡，您可以定義如何發送SMS - 通過哪種閘道。"
 
 #: privacyidea/static/components/config/views/config.token.daypassword.html:6
-#, fuzzy
 msgid ""
 "Here you can define settings, that will be set as default values, when\n"
-"    enrolling a DayPassword token."
+"    enrolling a DayPassword token. Note that the user/admin policies "
+"<code>daypassword_hashlib</code> and\n"
+"    <code>daypassword_timestep</code> always have precedence over these "
+"default values."
 msgstr ""
-"在這裡，您可以定義設置，該設置將被設置為預設值，當\n"
-"    註冊 HOTP 令牌。"
 
 #: privacyidea/static/components/config/views/config.token.hotp.html:7
+#, fuzzy
+#| msgid ""
+#| "Here you can define settings, that will be set as default values, when\n"
+#| "    enrolling a HOTP token."
 msgid ""
 "Here you can define settings, that will be set as default values, when\n"
-"    enrolling a HOTP token."
+"    enrolling a HOTP token. Note that the user/admin policy "
+"<code>hotp_hashlib</code> always have precedence over\n"
+"    this default value."
 msgstr ""
 "在這裡，您可以定義設置，該設置將被設置為預設值，當\n"
 "    註冊 HOTP 令牌。"
@@ -2114,10 +2116,11 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.token.totp.html:7
 msgid ""
 "Here you can define settings, that will be set as default values, when\n"
-"    enrolling a TOTP token."
+"    enrolling a TOTP token. Note that the user/admin policies "
+"<code>totp_hashlib</code> and\n"
+"    <code>totp_timestep</code> always have precedence over these default "
+"values."
 msgstr ""
-"在這裡，您可以定義設置，該設置將被設置為預設值，當\n"
-"    註冊 TOTP 令牌。"
 
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:23
 msgid ""
@@ -2162,7 +2165,7 @@ msgstr "在這裡您可以註冊一個新的用戶帳戶"
 msgid "Hide"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:610
+#: privacyidea/static/components/token/views/token.containerdetails.html:588
 #, fuzzy
 msgid "Hide Add Token List"
 msgstr "令牌"
@@ -2359,19 +2362,19 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.applications.offline.html:13
 #: privacyidea/static/components/token/views/token.applications.ssh.html:19
 #: privacyidea/static/components/token/views/token.challenges.html:9
-#: privacyidea/static/components/token/views/token.containerdetails.html:631
+#: privacyidea/static/components/token/views/token.containerdetails.html:609
 #: privacyidea/static/components/token/views/token.containerlist.html:23
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:70
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:25
 #: privacyidea/static/components/token/views/token.details.html:655
 #: privacyidea/static/components/token/views/token.list.html:5
 #: privacyidea/static/components/user/views/user.details.html:137
-#: privacyidea/static/components/user/views/user.details.html:331
+#: privacyidea/static/components/user/views/user.details.html:327
 #: privacyidea/static/components/user/views/user.list.html:5
 msgid "Last"
 msgstr "最後"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:219
+#: privacyidea/static/components/token/views/token.containerdetails.html:203
 #, fuzzy
 #| msgid "Authentications"
 msgid "Last Authentication"
@@ -2381,7 +2384,7 @@ msgstr "認證"
 msgid "Last Definition Update"
 msgstr "上次定義更新"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:224
+#: privacyidea/static/components/token/views/token.containerdetails.html:208
 msgid "Last Synchronization"
 msgstr ""
 
@@ -2547,9 +2550,9 @@ msgstr ""
 "最大失敗計數\n"
 "                    新註冊的令牌"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:460
+#: privacyidea/static/components/token/views/token.containerdetails.html:444
 #: privacyidea/static/components/token/views/token.details.html:87
-#: privacyidea/static/components/user/views/user.details.html:153
+#: privacyidea/static/components/user/views/user.details.html:152
 msgid "Maxfail"
 msgstr "最大失敗"
 
@@ -2612,6 +2615,12 @@ msgstr "新PIN"
 msgid "New RADIUS server"
 msgstr "新的RADIUS伺服器"
 
+#: privacyidea/static/components/config/views/config.realms.list.html:108
+#, fuzzy
+#| msgid "new realm"
+msgid "New Realm..."
+msgstr "新領域"
+
 #: privacyidea/static/components/config/views/config.machineresolvers.html:15
 #: privacyidea/static/components/config/views/config.resolvers.html:15
 msgid "New Resolvers"
@@ -2667,14 +2676,14 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.applications.offline.html:12
 #: privacyidea/static/components/token/views/token.applications.ssh.html:18
 #: privacyidea/static/components/token/views/token.challenges.html:8
-#: privacyidea/static/components/token/views/token.containerdetails.html:630
+#: privacyidea/static/components/token/views/token.containerdetails.html:608
 #: privacyidea/static/components/token/views/token.containerlist.html:22
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:69
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:24
 #: privacyidea/static/components/token/views/token.details.html:654
 #: privacyidea/static/components/token/views/token.list.html:4
 #: privacyidea/static/components/user/views/user.details.html:136
-#: privacyidea/static/components/user/views/user.details.html:330
+#: privacyidea/static/components/user/views/user.details.html:326
 #: privacyidea/static/components/user/views/user.list.html:4
 msgid "Next"
 msgstr "下一個"
@@ -2818,13 +2827,13 @@ msgstr ""
 msgid "Offline tokens attached to notebooks"
 msgstr "此令牌附加到的機器"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:310
+#: privacyidea/static/components/token/views/token.containerdetails.html:294
 msgid ""
 "Offline tokens can not be rolled over and can not be transferred to a new "
 "device."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:313
+#: privacyidea/static/components/token/views/token.containerdetails.html:297
 msgid ""
 "Offline tokens can not be synchronized if they do not yet exist on the "
 "smartphone."
@@ -2843,7 +2852,7 @@ msgstr "在線文檔"
 msgid "Only add to the realm (no user assignment)"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:621
+#: privacyidea/static/components/token/views/token.containerdetails.html:599
 msgid "Only show tokens that are not in a container."
 msgstr ""
 
@@ -2882,8 +2891,7 @@ msgstr "次序"
 msgid "Other Error"
 msgstr "其他錯誤"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:461
-#: privacyidea/static/components/user/views/user.details.html:154
+#: privacyidea/static/components/token/views/token.containerdetails.html:445
 msgid "Otplen"
 msgstr ""
 
@@ -3019,7 +3027,7 @@ msgid "Please provide the base URL of the privacyIDEA server."
 msgstr "請提供privacyIDEA 伺服器的基本URL。"
 
 #: privacyidea/static/components/token/views/token.containercreate.html:177
-#: privacyidea/static/components/token/views/token.containerdetails.html:291
+#: privacyidea/static/components/token/views/token.containerdetails.html:275
 #, fuzzy
 #| msgid ""
 #| "Please scan the QR code with the privacyIDEA Authenticator App\n"
@@ -3140,14 +3148,14 @@ msgstr "預設 OpenLDAP"
 #: privacyidea/static/components/token/views/token.applications.offline.html:11
 #: privacyidea/static/components/token/views/token.applications.ssh.html:17
 #: privacyidea/static/components/token/views/token.challenges.html:7
-#: privacyidea/static/components/token/views/token.containerdetails.html:629
+#: privacyidea/static/components/token/views/token.containerdetails.html:607
 #: privacyidea/static/components/token/views/token.containerlist.html:21
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:68
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:23
 #: privacyidea/static/components/token/views/token.details.html:653
 #: privacyidea/static/components/token/views/token.list.html:3
 #: privacyidea/static/components/user/views/user.details.html:135
-#: privacyidea/static/components/user/views/user.details.html:329
+#: privacyidea/static/components/user/views/user.details.html:325
 #: privacyidea/static/components/user/views/user.list.html:3
 msgid "Previous"
 msgstr "上一篇"
@@ -3263,8 +3271,8 @@ msgstr "在每個請求上從使用者源動態讀取數位。"
 #: privacyidea/static/components/config/views/config.policies.list.html:23
 #: privacyidea/static/components/directives/views/directive.assignuser.html:5
 #: privacyidea/static/components/login/views/login.html:59
-#: privacyidea/static/components/token/views/token.containerdetails.html:373
-#: privacyidea/static/components/token/views/token.containerdetails.html:463
+#: privacyidea/static/components/token/views/token.containerdetails.html:357
+#: privacyidea/static/components/token/views/token.containerdetails.html:447
 #: privacyidea/static/components/token/views/token.containerlist.html:74
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:93
 #: privacyidea/static/components/token/views/token.details.html:558
@@ -3272,6 +3280,7 @@ msgid "Realm"
 msgstr "領域"
 
 #: privacyidea/static/components/config/views/config.realms.create.html:10
+#: privacyidea/static/components/config/views/config.realms.list.html:20
 #, fuzzy
 #| msgid "Realm name"
 msgid "Realm Name"
@@ -3280,10 +3289,6 @@ msgstr "領域名稱"
 #: privacyidea/static/components/login/controllers/loginControllers.js:684
 msgid "Realm defrealm created."
 msgstr "已創建領域解凍。"
-
-#: privacyidea/static/components/config/views/config.realms.list.html:20
-msgid "Realm name"
-msgstr "領域名稱"
 
 #: privacyidea/static/components/config/views/config.html:70
 #: privacyidea/static/components/token/views/token.containerdetails.html:101
@@ -3310,7 +3315,7 @@ msgstr ""
 msgid "Refresh"
 msgstr "刷新"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:270
+#: privacyidea/static/components/token/views/token.containerdetails.html:254
 #: privacyidea/static/components/token/views/token.enrolled.daypassword.html:37
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:37
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:37
@@ -3324,7 +3329,7 @@ msgstr "重新產生QR碼"
 msgid "Register"
 msgstr "註冊"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:263
+#: privacyidea/static/components/token/views/token.containerdetails.html:247
 #, fuzzy
 msgid "Register Container on Device"
 msgstr "CRL 配置"
@@ -3340,7 +3345,7 @@ msgstr "註冊碼"
 msgid "Registration Code"
 msgstr "註冊碼"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:248
+#: privacyidea/static/components/token/views/token.containerdetails.html:232
 #, fuzzy
 #| msgid "Registration Code"
 msgid "Registration Configuration"
@@ -3376,13 +3381,13 @@ msgstr "遠端令牌設置"
 msgid "Remote User"
 msgstr "遠端使用者"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:571
+#: privacyidea/static/components/token/views/token.containerdetails.html:549
 #, fuzzy
 #| msgid "Remote Server"
 msgid "Remove"
 msgstr "遠端伺服器"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:473
+#: privacyidea/static/components/token/views/token.containerdetails.html:456
 #, fuzzy
 #| msgid "Remote Realm"
 msgid "Remove All"
@@ -3427,9 +3432,9 @@ msgstr "請求遠程privacyIDEA 伺服器成功。"
 msgid "Required Realms"
 msgstr "所需的領域"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:737
+#: privacyidea/static/components/token/views/token.containerdetails.html:715
 #: privacyidea/static/components/token/views/token.list.html:112
-#: privacyidea/static/components/user/views/user.details.html:182
+#: privacyidea/static/components/user/views/user.details.html:179
 msgid "Reset Failcounter"
 msgstr "重置故障計數器"
 
@@ -3448,8 +3453,8 @@ msgid "Reset your Password"
 msgstr "重置您的密碼"
 
 #: privacyidea/static/components/config/views/config.policies.list.html:25
-#: privacyidea/static/components/token/views/token.containerdetails.html:396
-#: privacyidea/static/components/token/views/token.containerdetails.html:709
+#: privacyidea/static/components/token/views/token.containerdetails.html:380
+#: privacyidea/static/components/token/views/token.containerdetails.html:687
 #: privacyidea/static/components/token/views/token.details.html:563
 #: privacyidea/static/components/token/views/token.details.html:668
 #: privacyidea/static/components/token/views/token.list.html:84
@@ -3470,6 +3475,7 @@ msgid "Resolver name"
 msgstr "解析器名稱"
 
 #: privacyidea/static/components/config/views/config.realms.create.html:25
+#: privacyidea/static/components/config/views/config.realms.list.html:21
 #, fuzzy
 #| msgid "Resolver"
 msgid "Resolvers"
@@ -3520,7 +3526,7 @@ msgstr "滾動令牌"
 msgid "Rollout State"
 msgstr "推出狀態"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:277
+#: privacyidea/static/components/token/views/token.containerdetails.html:261
 #: privacyidea/static/components/token/views/token.details.html:28
 msgid "Rollover"
 msgstr ""
@@ -3612,7 +3618,6 @@ msgstr "STARTTLS"
 #: privacyidea/static/components/config/views/config.realms.list.html:83
 #: privacyidea/static/components/config/views/config.tokens.html:83
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:62
-#: privacyidea/static/components/token/views/token.containerdetails.html:206
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:144
 #, fuzzy
 msgid "Save"
@@ -3794,7 +3799,7 @@ msgstr ""
 msgid "Select file and import"
 msgstr "選擇檔案並匯入"
 
-#: privacyidea/static/components/user/views/user.details.html:237
+#: privacyidea/static/components/user/views/user.details.html:233
 #, fuzzy
 #| msgid "Section"
 msgid "Selection"
@@ -3839,8 +3844,8 @@ msgstr "分隔器"
 #: privacyidea/static/components/token/views/token.containerlist.html:57
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:82
 #: privacyidea/static/components/user/views/user.details.html:147
-#: privacyidea/static/components/user/views/user.details.html:238
-#: privacyidea/static/components/user/views/user.details.html:343
+#: privacyidea/static/components/user/views/user.details.html:234
+#: privacyidea/static/components/user/views/user.details.html:339
 msgid "Serial"
 msgstr "串行"
 
@@ -3887,6 +3892,12 @@ msgid ""
 "To view attached tokens go to <a ui-sref=\"token.applications\">token "
 "applications</a>."
 msgstr ""
+
+#: privacyidea/static/components/config/views/config.realms.list.html:31
+#, fuzzy
+#| msgid "set Default"
+msgid "Set Default"
+msgstr "設置預設值"
 
 #: privacyidea/static/components/token/views/token.details.html:461
 #, fuzzy
@@ -3958,7 +3969,7 @@ msgstr "僅顯示選定的操作"
 msgid "Size Limit"
 msgstr "大小限制"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:801
+#: privacyidea/static/components/token/controllers/tokenControllers.js:800
 msgid "Skip tokens that can not be verified"
 msgstr ""
 
@@ -4002,6 +4013,12 @@ msgid ""
 msgstr ""
 "特殊錯誤\n"
 "                處理"
+
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:8
+#, fuzzy
+#| msgid "start typing a serial number of a token that is notassigned, yet."
+msgid "Start typing a serial number of a token that is not yet assigned"
+msgstr "開始鍵入尚未分配的令牌的序列號。"
 
 #: privacyidea/static/components/config/views/config.smtp.list.html:8
 msgid "StartTLS"
@@ -4068,7 +4085,7 @@ msgstr ""
 "同步窗口\n"
 "                    新註冊的令牌"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:237
+#: privacyidea/static/components/token/views/token.containerdetails.html:221
 msgid "Synchronization"
 msgstr ""
 
@@ -4237,8 +4254,8 @@ msgid ""
 msgstr ""
 "TOTP 令牌是基於時間的令牌。您可以貼上金鑰或\n"
 "    讓伺服器生成金鑰並使用\n"
-"    智慧手機應用程式，像 Google Authenticator 或 "
-"FreeOTP這樣的智能手機應用程序 智能手機進入身份驗證設備。"
+"    智慧手機應用程式，像 Google Authenticator 或 FreeOTP這樣的智能手機應用程"
+"序 智能手機進入身份驗證設備。"
 
 #: privacyidea/static/components/config/views/config.token.email.html:2
 msgid ""
@@ -4258,8 +4275,14 @@ msgid "The Enrollment URL"
 msgstr "註冊網址"
 
 #: privacyidea/static/components/config/views/config.token.hotp.html:2
+#, fuzzy
+#| msgid ""
+#| "The HOTP Token is a event based one time password token.\n"
+#| "    It is described in <a href=\"https://tools.ietf.org/html/"
+#| "rfc4226\">RFC\n"
+#| "    4226</a>."
 msgid ""
-"The HOTP Token is a event based one time password token.\n"
+"The HOTP Token is an event based one time password token.\n"
 "    It is described in <a href=\"https://tools.ietf.org/html/rfc4226\">RFC\n"
 "    4226</a>."
 msgstr ""
@@ -4449,8 +4472,8 @@ msgid ""
 msgstr ""
 "TOTP 令牌是基於時間的令牌。您可以貼上金鑰或\n"
 "    讓伺服器生成金鑰並使用\n"
-"    智慧手機應用程式，像 Google Authenticator 或 "
-"FreeOTP這樣的智能手機應用程序 智能手機進入身份驗證設備。"
+"    智慧手機應用程式，像 Google Authenticator 或 FreeOTP這樣的智能手機應用程"
+"序 智能手機進入身份驗證設備。"
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:2
 msgid ""
@@ -4475,8 +4498,9 @@ msgid ""
 "The U2F token is a hardware token, that communicates with the browser.\n"
 "    You need to set the correct appId, which in fact is the URL of your\n"
 "    privacyIDEA installation."
-msgstr "U2F令牌是一個硬件令牌，可以與瀏覽器進行通信。你需要設置正確的appId，"
-"這實際上是你的 privacyIDEA安裝的URL。"
+msgstr ""
+"U2F令牌是一個硬件令牌，可以與瀏覽器進行通信。你需要設置正確的appId，這實際上"
+"是你的 privacyIDEA安裝的URL。"
 
 #: privacyidea/static/components/token/views/token.enroll.u2f.html:1
 msgid ""
@@ -4602,8 +4626,8 @@ msgid ""
 "                    are:"
 msgstr ""
 "的附加值\n"
-"                    <a target=\"netknights\" href="
-"\"https://netknights.it/en/produkte/privacyidea/\">privacyIDEA 企業版</a>\n"
+"                    <a target=\"netknights\" href=\"https://netknights.it/en/"
+"produkte/privacyidea/\">privacyIDEA 企業版</a>\n"
 "                    是"
 
 #: privacyidea/static/components/config/views/config.token.yubikey.html:7
@@ -4618,13 +4642,12 @@ msgid ""
 "        Yubico Validation Protocol</a>."
 msgstr ""
 "認證請求可以由默認的privacyIDEA處理\n"
-"    <a href="
-"\"http://privacyidea.readthedocs.org/en/latest/modules/api/validate.html\">\n"
+"    <a href=\"http://privacyidea.readthedocs.org/en/latest/modules/api/"
+"validate.html\">\n"
 "        驗證 API</a> 但也可以由\n"
 "    <a href=\"https://privacyidea.readthedocs.io/en/latest/modules/lib/"
-"tokentypes/"
-"yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass."
-"api_endpoint\" target=\"_blank\">\n"
+"tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken."
+"YubikeyTokenClass.api_endpoint\" target=\"_blank\">\n"
 "        Yubico 驗證協議 </a>。"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:8
@@ -4636,8 +4659,8 @@ msgid ""
 msgstr ""
 "身份驗證請求被轉發到 YubiCloud。用於訪問\n"
 "    YubiCloud 您需要輸入 API 用戶端 ID 和 API 金鑰，其中\n"
-"    你可以在這裡申請<a href=\"https://upgrade.yubico.com/getapikey/\" target="
-"\"_extern\"></a>。"
+"    你可以在這裡申請<a href=\"https://upgrade.yubico.com/getapikey/\" "
+"target=\"_extern\"></a>。"
 
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:1
 msgid "The certificate was enrolled successfully."
@@ -4663,7 +4686,7 @@ msgstr "客户端ID"
 msgid "The client device can not be used for this type of request."
 msgstr "用戶端設備不能用於此類請求。"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:302
+#: privacyidea/static/components/token/views/token.containerdetails.html:286
 #, fuzzy
 #| msgid "The URL that contains the logo of the service."
 msgid "The container contains the following offline tokens:"
@@ -4827,23 +4850,26 @@ msgstr "資源名稱必須由字母、數字和「_」、「-」、「.」組成
 msgid ""
 "The resource name must consist of letters, numbers and '_', '-', '.' and "
 "must not be the word 'send_test_email'"
-msgstr "資源名稱必須由字母、數字和\"_\"、\"-\"、\".\"組成。並且不能是\""
-"send_test_email\"這個詞"
+msgstr ""
+"資源名稱必須由字母、數字和\"_\"、\"-\"、\".\"組成。並且不能是"
+"\"send_test_email\"這個詞"
 
 #: privacyidea/static/app.js:97
 #, fuzzy
 msgid ""
 "The resource name must consist of letters, numbers and '_', '-', '.' and "
 "must not be the word 'test'"
-msgstr "資源名稱必須由字母、數字和\"_\"、\"-\"、\".\"組成。並且不能是\"test\"這個詞"
+msgstr ""
+"資源名稱必須由字母、數字和\"_\"、\"-\"、\".\"組成。並且不能是\"test\"這個詞"
 
 #: privacyidea/static/app.js:107
 #, fuzzy
 msgid ""
 "The resource name must consist of letters, numbers and '_', '-', '.' and "
 "must not be the word 'test_request'"
-msgstr "資源名稱必須由字母、數字和\"_\"、\"-\"、\".\"組成，並且不能是單詞\""
-"test_request\""
+msgstr ""
+"資源名稱必須由字母、數字和\"_\"、\"-\"、\".\"組成，並且不能是單詞"
+"\"test_request\""
 
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:15
 msgid ""
@@ -4960,8 +4986,8 @@ msgid ""
 "            </a>."
 msgstr ""
 "使用序列號成功註冊令牌\n"
-"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})\">"
-"\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
+"serial})\">\n"
 "                {{enrolledToken.serial }}</a>。"
 
 #: privacyidea/static/components/token/views/token.details.html:606
@@ -5011,13 +5037,12 @@ msgid ""
 "            {{ newUser.realm }}."
 msgstr ""
 "令牌已成功註冊序列號\n"
-"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})\">"
-"\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
+"serial})\">\n"
 "                {{ enrolledToken.serial }}</a>\n"
 "            對於使用者\n"
-"            <a ui-sref="
-"\"user.details({username:newUser.user, realmname:newUser.realm})\">{{ "
-"newUser.user }}</a> 在領域\n"
+"            <a ui-sref=\"user.details({username:newUser.user, realmname:"
+"newUser.realm})\">{{ newUser.user }}</a> 在領域\n"
 "            {{ newUser.realm }}."
 
 #: privacyidea/static/components/token/views/token.enroll.html:185
@@ -5028,8 +5053,8 @@ msgid ""
 "                {{ enrolledToken.serial }}</a>."
 msgstr ""
 "使用序列號成功註冊令牌\n"
-"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})\">"
-"\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
+"serial})\">\n"
 "                {{enrolledToken.serial }}</a>。"
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:32
@@ -5197,8 +5222,8 @@ msgstr ""
 "這是 TiQR App 使用的 OCRA 套件。\n"
 "        默認的 OCRA 套件是 OCRA-1:HOTP-SHA1-6:QN10。\n"
 "        有關更多詳細信息，請參閱\n"
-"        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" target=\"OCRA\""
-">RFC\n"
+"        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" "
+"target=\"OCRA\">RFC\n"
 "            6287</a>。"
 
 #: privacyidea/static/components/directives/views/directive.registerContainer.html:63
@@ -5390,7 +5415,8 @@ msgstr ""
 msgid ""
 "To define service IDs go to <a ui-sref=\"config.serviceid\">Service ID "
 "config</a>"
-msgstr "若要定義服務 ID，請前往<a ui-sref=\"config.serviceid\">服務 ID 組態</a>"
+msgstr ""
+"若要定義服務 ID，請前往<a ui-sref=\"config.serviceid\">服務 ID 組態</a>"
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:9
 msgid ""
@@ -5408,7 +5434,7 @@ msgstr ""
 msgid "Token Applications"
 msgstr "應用"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:464
+#: privacyidea/static/components/token/views/token.containerdetails.html:448
 #, fuzzy
 #| msgid "Token realms"
 msgid "Token Realms"
@@ -5459,7 +5485,7 @@ msgstr ""
 msgid "Token of {{username}} without a container"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:700
+#: privacyidea/static/components/token/views/token.containerdetails.html:678
 #: privacyidea/static/components/token/views/token.list.html:76
 msgid "Token realms"
 msgstr "令牌領域"
@@ -5473,7 +5499,7 @@ msgid "Token resync successful."
 msgstr "令牌重新同步成功。"
 
 #: privacyidea/static/components/directives/controllers/directives.js:921
-#: privacyidea/static/components/token/controllers/tokenControllers.js:644
+#: privacyidea/static/components/token/controllers/tokenControllers.js:643
 msgid "Token successfully verified"
 msgstr "令牌驗證成功"
 
@@ -5509,7 +5535,7 @@ msgstr "令牌和應用程式機器 {{ machineid }}"
 msgid "Tokens for user {{ username }}"
 msgstr "使用者 {{ username }} 的令牌"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:434
+#: privacyidea/static/components/token/views/token.containerdetails.html:418
 msgid "Tokens in the Container"
 msgstr ""
 
@@ -5545,8 +5571,8 @@ msgstr "交易ID"
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:45
 #: privacyidea/static/components/token/views/token.details.html:12
 #: privacyidea/static/components/user/views/user.details.html:148
-#: privacyidea/static/components/user/views/user.details.html:239
-#: privacyidea/static/components/user/views/user.details.html:346
+#: privacyidea/static/components/user/views/user.details.html:235
+#: privacyidea/static/components/user/views/user.details.html:342
 msgid "Type"
 msgstr "類型"
 
@@ -5580,7 +5606,7 @@ msgstr ""
 msgid "URL of the privacyIDEA server"
 msgstr "privacyIDEA 伺服器的URL"
 
-#: privacyidea/static/components/user/views/user.details.html:208
+#: privacyidea/static/components/user/views/user.details.html:204
 #, fuzzy
 #| msgid "Unassign User"
 msgid "Unassign"
@@ -5590,12 +5616,12 @@ msgstr "取消分配使用者"
 msgid "Unassign Token"
 msgstr "取消分配令牌"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:368
+#: privacyidea/static/components/token/views/token.containerdetails.html:352
 #: privacyidea/static/components/token/views/token.details.html:553
 msgid "Unassign User"
 msgstr "取消分配使用者"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:391
+#: privacyidea/static/components/token/views/token.containerdetails.html:375
 #, fuzzy
 #| msgid "Unassign Token"
 msgid "Unassign User From All Tokens"
@@ -5609,7 +5635,7 @@ msgstr "未分配的硬體"
 msgid "Unassigned Software"
 msgstr "未分配的軟體"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:324
+#: privacyidea/static/components/token/views/token.containerdetails.html:308
 #, fuzzy
 #| msgid "Create new Event Handler"
 msgid "Unregister Container"
@@ -5681,7 +5707,7 @@ msgstr "通過privacyIDEA Authenticator App使用兩步註冊"
 #: privacyidea/static/components/config/views/config.policies.list.html:24
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:67
 #: privacyidea/static/components/config/views/config.radius.edit.html:99
-#: privacyidea/static/components/token/views/token.containerdetails.html:462
+#: privacyidea/static/components/token/views/token.containerdetails.html:446
 #: privacyidea/static/components/token/views/token.containerlist.html:71
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:90
 #: privacyidea/static/templates/menu.html:62
@@ -5697,7 +5723,7 @@ msgstr ""
 "用戶快取\n"
 "                在幾秒鐘內過期"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:401
+#: privacyidea/static/components/token/views/token.containerdetails.html:385
 #: privacyidea/static/components/token/views/token.details.html:568
 msgid "User Id"
 msgstr "使用者名"
@@ -5710,11 +5736,11 @@ msgstr "用戶帳戶已創建。已向您發送一封電子郵件。"
 msgid "User created."
 msgstr "用戶創建。"
 
-#: privacyidea/static/components/user/controllers/userControllers.js:269
+#: privacyidea/static/components/user/controllers/userControllers.js:271
 msgid "User deleted successfully."
 msgstr "使用者已成功刪除。"
 
-#: privacyidea/static/components/user/controllers/userControllers.js:241
+#: privacyidea/static/components/user/controllers/userControllers.js:243
 msgid "User updated successfully."
 msgstr "使用者已成功更新。"
 
@@ -5726,7 +5752,7 @@ msgstr "用戶領域"
 msgid "User-Resolver"
 msgstr "使用者解析器"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:706
+#: privacyidea/static/components/token/views/token.containerdetails.html:684
 #: privacyidea/static/components/token/views/token.list.html:82
 msgid "UserId"
 msgstr "用戶標識"
@@ -5739,7 +5765,7 @@ msgstr "用戶標識"
 #: privacyidea/static/components/recovery/views/recovery.html:22
 #: privacyidea/static/components/register/views/register.html:18
 #: privacyidea/static/components/register/views/register.html:22
-#: privacyidea/static/components/token/views/token.containerdetails.html:355
+#: privacyidea/static/components/token/views/token.containerdetails.html:339
 #: privacyidea/static/components/token/views/token.details.html:538
 #: privacyidea/static/components/user/views/user.password.html:6
 msgid "Username"
@@ -5840,8 +5866,7 @@ msgstr "歡迎"
 msgid "Where statement"
 msgstr "其中聲明"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:457
-#: privacyidea/static/components/user/views/user.details.html:150
+#: privacyidea/static/components/token/views/token.containerdetails.html:441
 #, fuzzy
 #| msgid "Sync Window"
 msgid "Window"
@@ -5870,10 +5895,17 @@ msgid ""
 msgstr ""
 
 #: privacyidea/static/components/login/views/login.html:12
+#, fuzzy
+#| msgid ""
+#| "You are authenticated by the web server as user\n"
+#| "                <b>{{ remoteUser }}</b>.\n"
+#| "                You may login as this user to privacyIDEA without any "
+#| "further\n"
+#| "                credentials."
 msgid ""
 "You are authenticated by the web server as user\n"
 "                <b>{{ remoteUser }}</b>.\n"
-"                You may login as this user to privacyIDEA without any "
+"                You may log in as this user to privacyIDEA without any "
 "further\n"
 "                credentials."
 msgstr ""
@@ -6081,13 +6113,13 @@ msgstr "行動"
 msgid "action detail"
 msgstr "操作詳細資訊"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:508
-#: privacyidea/static/components/token/views/token.containerdetails.html:662
-#: privacyidea/static/components/token/views/token.containerdetails.html:722
+#: privacyidea/static/components/token/views/token.containerdetails.html:491
+#: privacyidea/static/components/token/views/token.containerdetails.html:640
+#: privacyidea/static/components/token/views/token.containerdetails.html:700
 #: privacyidea/static/components/token/views/token.details.html:35
 #: privacyidea/static/components/token/views/token.list.html:39
 #: privacyidea/static/components/token/views/token.list.html:97
-#: privacyidea/static/components/user/views/user.details.html:167
+#: privacyidea/static/components/user/views/user.details.html:165
 msgid "active"
 msgstr "積極的"
 
@@ -6126,17 +6158,17 @@ msgstr "清除"
 msgid "client"
 msgstr "用戶端"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:669
+#: privacyidea/static/components/token/views/token.containerdetails.html:647
 #: privacyidea/static/components/token/views/token.list.html:46
 #: privacyidea/static/components/user/views/user.list.html:41
 msgid "description"
 msgstr "描述"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:514
-#: privacyidea/static/components/token/views/token.containerdetails.html:727
+#: privacyidea/static/components/token/views/token.containerdetails.html:497
+#: privacyidea/static/components/token/views/token.containerdetails.html:705
 #: privacyidea/static/components/token/views/token.details.html:38
 #: privacyidea/static/components/token/views/token.list.html:102
-#: privacyidea/static/components/user/views/user.details.html:172
+#: privacyidea/static/components/user/views/user.details.html:170
 msgid "disabled"
 msgstr "禁用"
 
@@ -6161,7 +6193,7 @@ msgstr ""
 msgid "enter some OTP value"
 msgstr "輸入一些 OTP 值"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:680
+#: privacyidea/static/components/token/views/token.containerdetails.html:658
 #: privacyidea/static/components/token/views/token.list.html:57
 msgid "failcounter"
 msgstr "故障計數器"
@@ -6221,7 +6253,6 @@ msgid "mobile"
 msgstr "手機"
 
 #: privacyidea/static/components/config/views/config.realms.create.html:14
-#: privacyidea/static/components/config/views/config.realms.list.html:108
 msgid "new realm"
 msgstr "新領域"
 
@@ -6319,7 +6350,7 @@ msgid "privacyidea server"
 msgstr "privacyIDEA 伺服器"
 
 #: privacyidea/static/components/audit/views/audit.log.html:107
-#: privacyidea/static/components/token/views/token.containerdetails.html:698
+#: privacyidea/static/components/token/views/token.containerdetails.html:676
 #: privacyidea/static/components/token/views/token.list.html:75
 msgid "realm"
 msgstr "領域"
@@ -6328,15 +6359,11 @@ msgstr "領域"
 msgid "resolver"
 msgstr "解析器"
 
-#: privacyidea/static/components/config/views/config.realms.list.html:21
-msgid "resolvers"
-msgstr "解析器"
-
 #: privacyidea/static/components/token/views/token.details.html:43
 msgid "revoked"
 msgstr "撤銷"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:687
+#: privacyidea/static/components/token/views/token.containerdetails.html:665
 #: privacyidea/static/components/token/views/token.list.html:64
 #, fuzzy
 msgid "rollout state"
@@ -6346,8 +6373,8 @@ msgstr "推出狀態"
 #: privacyidea/static/components/token/views/token.applications.offline.html:25
 #: privacyidea/static/components/token/views/token.applications.ssh.html:31
 #: privacyidea/static/components/token/views/token.challenges.html:26
-#: privacyidea/static/components/token/views/token.containerdetails.html:440
-#: privacyidea/static/components/token/views/token.containerdetails.html:642
+#: privacyidea/static/components/token/views/token.containerdetails.html:424
+#: privacyidea/static/components/token/views/token.containerdetails.html:620
 #: privacyidea/static/components/token/views/token.list.html:19
 #, fuzzy
 msgid "serial"
@@ -6362,10 +6389,6 @@ msgstr "序列號，種子，類型，ocrasuite"
 msgid "serial number, seed, type, otplen, timeStep"
 msgstr "序列號、種子、類型、otplen、timeStep"
 
-#: privacyidea/static/components/config/views/config.realms.list.html:31
-msgid "set Default"
-msgstr "設置預設值"
-
 #: privacyidea/static/components/user/views/user.password.html:68
 msgid "set password"
 msgstr "設置密碼"
@@ -6377,10 +6400,6 @@ msgstr "簽名檢查"
 #: privacyidea/static/components/directives/views/directive.attachmachine.html:8
 msgid "start typing a machine."
 msgstr "開始鍵入計算機。"
-
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:8
-msgid "start typing a serial number of a token that is notassigned, yet."
-msgstr "開始鍵入尚未分配的令牌的序列號。"
 
 #: privacyidea/static/components/directives/views/directive.attachtoken.html:8
 msgid "start typing a serial number of a token."
@@ -6438,8 +6457,8 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:6
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:6
 #: privacyidea/static/components/config/views/config.resolvers.list.html:6
-#: privacyidea/static/components/token/views/token.containerdetails.html:441
-#: privacyidea/static/components/token/views/token.containerdetails.html:652
+#: privacyidea/static/components/token/views/token.containerdetails.html:425
+#: privacyidea/static/components/token/views/token.containerdetails.html:630
 #: privacyidea/static/components/token/views/token.list.html:29
 msgid "type"
 msgstr "類型"
@@ -6457,7 +6476,7 @@ msgid "use VASCO Serial"
 msgstr "使用 VASCO Serial"
 
 #: privacyidea/static/components/audit/views/audit.log.html:101
-#: privacyidea/static/components/token/views/token.containerdetails.html:697
+#: privacyidea/static/components/token/views/token.containerdetails.html:675
 #: privacyidea/static/components/token/views/token.list.html:74
 msgid "user"
 msgstr "使用者"
@@ -6479,6 +6498,27 @@ msgstr "使用者名"
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
 msgstr "{{ auditdata.count }} 找到的條目。"
+
+#, fuzzy
+#~ msgid ""
+#~ "Here you can define settings, that will be set as default values, when\n"
+#~ "    enrolling a DayPassword token."
+#~ msgstr ""
+#~ "在這裡，您可以定義設置，該設置將被設置為預設值，當\n"
+#~ "    註冊 HOTP 令牌。"
+
+#~ msgid ""
+#~ "Here you can define settings, that will be set as default values, when\n"
+#~ "    enrolling a TOTP token."
+#~ msgstr ""
+#~ "在這裡，您可以定義設置，該設置將被設置為預設值，當\n"
+#~ "    註冊 TOTP 令牌。"
+
+#~ msgid "Realm name"
+#~ msgstr "領域名稱"
+
+#~ msgid "resolvers"
+#~ msgstr "解析器"
 
 #~ msgid ""
 #~ "Challenge Response Authentication. You are not completely authenticated, "
