@@ -196,26 +196,27 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
     if user:
         sql_query = sql_query.join(TokenContainer.owners).filter(TokenContainerOwner.user_id == user.uid)
 
-    if serial:
+    if serial and serial.strip("*"):
+        # only if a serial is passed and it not only contains *s we add the filter
         if "*" in serial:
             sql_query = sql_query.filter(TokenContainer.serial.ilike(serial.replace("*", "%")))
         else:
             sql_query = sql_query.filter(func.upper(TokenContainer.serial) == serial.upper())
 
-    if ctype:
+    if ctype and ctype.strip("*"):
         if "*" in ctype:
             sql_query = sql_query.filter(TokenContainer.type.ilike(ctype.replace("*", "%")))
         else:
             sql_query = sql_query.filter(func.upper(TokenContainer.type) == ctype.upper())
 
-    if token_serial:
+    if token_serial and token_serial.strip("*"):
         if "*" in token_serial:
             sql_query = sql_query.filter(TokenContainer.tokens.any(Token.serial.ilike(token_serial.replace("*", "%"))))
         else:
             sql_query = sql_query.outerjoin(TokenContainer.tokens).filter(
                 func.upper(Token.serial) == token_serial.upper())
 
-    if realm:
+    if realm and realm.strip("*"):
         if "*" in realm:
             sql_query = sql_query.outerjoin(TokenContainer.realms).filter(Realm.name.ilike(realm.replace("*", "%")))
         else:
@@ -225,7 +226,7 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
         allowed_realms = [realm.lower() for realm in allowed_realms]
         sql_query = sql_query.outerjoin(TokenContainer.realms).filter(func.lower(Realm.name).in_(allowed_realms))
 
-    if resolver:
+    if resolver and resolver.strip("*"):
         if "*" in resolver:
             sql_query = sql_query.filter(
                 TokenContainer.owners.any(TokenContainerOwner.resolver.ilike(resolver.replace("*", "%"))))
@@ -233,14 +234,14 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
             sql_query = sql_query.filter(
                 TokenContainer.owners.any(func.lower(TokenContainerOwner.resolver) == resolver.lower()))
 
-    if template:
+    if template and template.strip("*"):
         if "*" in template:
             sql_query = sql_query.filter(TokenContainer.template.has(
                 TokenContainerTemplate.name.like(template.replace("*", "%"))))
         else:
             sql_query = sql_query.filter(TokenContainer.template.has(TokenContainerTemplate.name == template))
 
-    if description:
+    if description and description.strip("*"):
         if "*" in description:
             sql_query = sql_query.filter(TokenContainer.description.ilike(description.replace("*", "%")))
         else:
@@ -254,17 +255,19 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
     if info:
         if len(info) == 1:
             key, value = list(info.items())[0]
-            if "*" in key:
-                sql_query = sql_query.outerjoin(
-                    TokenContainer.info_list).filter(TokenContainerInfo.key.like(key.replace("*", "%")))
-            else:
-                sql_query = sql_query.outerjoin(TokenContainer.info_list).filter(TokenContainerInfo.key == key)
-            if "*" in value:
-                sql_query = sql_query.outerjoin(
-                    TokenContainer.info_list).filter(TokenContainerInfo.value.ilike(value.replace("*", "%")))
-            else:
-                sql_query = sql_query.outerjoin(
-                    TokenContainer.info_list).filter(func.lower(TokenContainerInfo.value) == value.lower())
+            if key and key.strip("*"):
+                if "*" in key:
+                    sql_query = sql_query.outerjoin(
+                        TokenContainer.info_list).filter(TokenContainerInfo.key.like(key.replace("*", "%")))
+                else:
+                    sql_query = sql_query.outerjoin(TokenContainer.info_list).filter(TokenContainerInfo.key == key)
+            if value and value.strip("*"):
+                if "*" in value:
+                    sql_query = sql_query.outerjoin(
+                        TokenContainer.info_list).filter(TokenContainerInfo.value.ilike(value.replace("*", "%")))
+                else:
+                    sql_query = sql_query.outerjoin(
+                        TokenContainer.info_list).filter(func.lower(TokenContainerInfo.value) == value.lower())
         else:
             log.warning("Info dictionary has more than one entry. Only one entry is allowed. Ignoring info filter.")
 
@@ -278,7 +281,7 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
         max_time = datetime.now(timezone.utc) - time_delta
         sql_query = sql_query.filter(TokenContainer.last_updated > max_time)
 
-    if state:
+    if state and state.strip("*"):
         if "*" in state:
             sql_query = sql_query.filter(TokenContainer.states.any(
                 TokenContainerStates.state.ilike(state.replace("*", "%"))))
