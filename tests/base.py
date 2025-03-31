@@ -79,8 +79,10 @@ class MyTestCase(unittest.TestCase):
     def tearDown(self):
         # Rollback uncommitted changes to the DB and close the session to
         # avoid breaking following tests due to unfinished transactions
-        db.session.rollback()
-        db.session.commit()
+        try:
+            db.session.commit()
+        finally:
+            db.session.rollback()
         db.session.close()
 
     def setUp_user_realms(self):
