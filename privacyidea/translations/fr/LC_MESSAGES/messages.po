@@ -7,10 +7,10 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-02-25 14:26+0100\n"
-"PO-Revision-Date: 2025-01-30 11:19+0000\n"
-"Last-Translator: sebastien C <sebastien.netknights@outlook.com>\n"
+"PO-Revision-Date: 2025-03-31 20:07+0000\n"
+"Last-Translator: Gregory Bouzinac <gregory.b@orange.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/fr/>\n"
 "Language: fr\n"
@@ -18,36 +18,28 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.10-dev\n"
+"X-Generator: Weblate 5.11-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:231
 msgid "Authentication with passkey disabled."
-msgstr ""
+msgstr "Authentification avec clé d'accès désactivée."
 
 #: api/auth.py:236
-#, fuzzy
-#| msgid "Authentication failure. Missing Username"
 msgid "Authentication failure. The passkey is not registered."
-msgstr "Échec de l'authentification. Nom d'utilisateur manquant"
+msgstr "Échec de l'authentification. La clé d'accès n'est pas enregistrée."
 
 #: api/auth.py:239
-#, fuzzy
-#| msgid "Authentication failure. Your token has expired: {0!s}"
 msgid "Authentication failure. Token has no user."
-msgstr "Échec de l'authentification. Votre jeton a expiré : {0!s}"
+msgstr "Échec de l'authentification. Le jeton n'a pas d'utilisateur."
 
 #: api/auth.py:250
-#, fuzzy
-#| msgid "Authentication failure. Missing Username"
 msgid "Authentication failure using passkey."
-msgstr "Échec de l'authentification. Nom d'utilisateur manquant"
+msgstr "Échec de l'authentification en utilisant la clé d'accès."
 
 #: api/auth.py:255
-#, fuzzy
-#| msgid "Authentication failure. Unknown realm: {0!s}."
 msgid "Authentication failure. Unknown realm:"
-msgstr "Échec de l'authentification. Domaine inconnu : {0!s}."
+msgstr "Échec de l'authentification. Domaine inconnu :"
 
 #: api/auth.py:259
 msgid "Authentication failure. Missing Username"
@@ -102,47 +94,34 @@ msgid "Authentication failure. Missing Authorization header."
 msgstr "Échec de l'authentification. Entête Autorisation manquante."
 
 #: api/lib/utils.py:405 api/lib/utils.py:436
-#, fuzzy
-#| msgid "Authentication failure. Error during decoding your token: {0!s}"
 msgid "Authentication failure. Error decoding the Authorization token:"
 msgstr ""
-"Échec de l'authentification. Erreur lors du décodage de votre jeton : {0!s}"
+"Échec de l'authentification. Erreur lors du décodage de l'autorisation du "
+"jeton :"
 
 #: api/lib/utils.py:429 api/lib/utils.py:439
-#, fuzzy
-#| msgid "Authentication failure. Your token has expired: {0!s}"
 msgid "Authentication failure. Your token has expired:"
-msgstr "Échec de l'authentification. Votre jeton a expiré : {0!s}"
+msgstr "Échec de l'authentification. Votre jeton a expiré :"
 
 #: api/lib/utils.py:442
-#, fuzzy
-#| msgid ""
-#| "Authentication failure. The username {0!s} is not allowed to impersonate "
-#| "via JWT."
 msgid ""
 "Authentication failure. The username {wrong_username} is not allowed to "
 "impersonate via JWT."
 msgstr ""
-"Échec de l'authentification. Le nom d'utilisateur {0!s} n'est pas autorisé "
-"via JWT."
+"Échec de l'authentification. Le nom d'utilisateur {wrong_username} n'est pas "
+"autorisé via JWT."
 
 #: api/lib/utils.py:447
-#, fuzzy
-#| msgid ""
-#| "Authentication failure. You do not have the necessary role ({0!s}) to "
-#| "access this resource!"
 msgid ""
 "Authentication failure. You do not have the necessary role ({required_role}) "
 "to access this resource!"
 msgstr ""
-"Échec de l'authentification. Vous n'avez pas le rôle requis ({0!s}) pour "
-"accéder à cette ressource !"
+"Échec de l'authentification. Vous n'avez pas le rôle requis ({required_role})"
+" pour accéder à cette ressource !"
 
 #: api/lib/utils.py:464
-#, fuzzy
-#| msgid "'{0!s}' is an invalid policy name."
 msgid "Invalid policy name:"
-msgstr "'{0!s}' n'est pas un nom de politique valide."
+msgstr "Nom de politique non valide :"
 
 #: api/lib/utils.py:467
 msgid "The name of the policy may only contain the characters a-zA-Z0-9_. -"
@@ -181,7 +160,9 @@ msgstr "Vous devez fournir soit un utilisateur soit un numéro de série"
 #, fuzzy
 #| msgid "You need to specify a serial or a user."
 msgid "You need to specify a serial, user or credential_id."
-msgstr "Vous devez spécifier un numéro de série ou un utilisateur."
+msgstr ""
+"Vous devez spécifier un numéro de série, un utilisateur ou des informations "
+"d'identification."
 
 #: lib/decorators.py:116
 msgid "Invalid serial number."
@@ -192,10 +173,13 @@ msgid "Invalid user."
 msgstr "Utilisateur invalide."
 
 #: lib/policy.py:205
+#, fuzzy
 msgid ""
 "Note: If you use a comma in the message, you need to escape it with a "
 "backslash."
 msgstr ""
+"Note : Si vous utilisez une virgule dans le message, vous devez l'échapper "
+"avec une barre oblique inversée."
 
 #: lib/policy.py:1454
 msgid "Invalid client definition!"
@@ -719,16 +703,12 @@ msgid "Admin is allowed to list containers."
 msgstr "L'administrateur est autorisé à lister les conteneurs."
 
 #: lib/policy.py:2148
-#, fuzzy
-#| msgid "Admin is allowed to create containers."
 msgid "Admin is allowed to register containers."
-msgstr "L'administrateur est autorisé à créer des conteneurs."
+msgstr "L'administrateur est autorisé à enregistrer des conteneurs."
 
 #: lib/policy.py:2152
-#, fuzzy
-#| msgid "Admin is allowed to create containers."
 msgid "Admin is allowed to unregister containers."
-msgstr "L'administrateur est autorisé à créer des conteneurs."
+msgstr "L'administrateur est autorisé à désinscrire des conteneurs."
 
 #: lib/policy.py:2156
 #, fuzzy
@@ -739,27 +719,24 @@ msgid ""
 "Admin is allowed to perform a container rollover including a rollover of all "
 "contained tokens."
 msgstr ""
-"L'administrateur est autorisé à exporter la documentation de la "
-"configuration complète avec les interpréteurs et domaines."
+"L'administrateur est autorisé à faire un roulement de conteneur incluant un "
+"roulement de tous les jetons conteneurisés."
 
 #: lib/policy.py:2161
 #, fuzzy
 #| msgid "Admin is allowed to create containers."
 msgid "Admin is allowed to create and edit container templates."
-msgstr "L'administrateur est autorisé à créer des conteneurs."
+msgstr ""
+"L'administrateur est autorisé à créer et modifier des modèles de conteneur."
 
 #: lib/policy.py:2165
-#, fuzzy
-#| msgid "Admin is allowed to delete policies."
 msgid "Admin is allowed to delete templates."
-msgstr "L'administrateur est autorisé à supprimer des politiques."
+msgstr "L'administrateur est autorisé à supprimer des modèles."
 
 #: lib/policy.py:2169
-#, fuzzy
-#| msgid "Admin is allowed to delete resolvers and realms."
 msgid "Admin is allowed to list templates and view their details."
 msgstr ""
-"L'administrateur est autorisé à supprimer des resolvers et des domaines."
+"L'administrateur est autorisé à lister des modèles et à voir leurs détails."
 
 #: lib/policy.py:2176
 msgid ""
@@ -787,8 +764,6 @@ msgstr ""
 "L'utilisateur est autorisé à supprimer l'assignation de ses propres jetons."
 
 #: lib/policy.py:2198
-#, fuzzy
-#| msgid "The user is allowed to resyncronize his tokens."
 msgid "The user is allowed to resynchronize his tokens."
 msgstr "L'utilisateur est autorisé à resynchroniser ses jetons."
 
@@ -833,9 +808,9 @@ msgid ""
 "Specify the required contents of the OTP PIN. (c)haracters, (n)umeric, "
 "(s)pecial. Use modifiers +/- or a list of allowed characters [1234567890]"
 msgstr ""
-"Spécifier le contenu requis de l'OTP PIN. (l)ettres, (c)hiffres, caractères "
-"(s)péciaux. Utiliser les boutons +/- ou une liste de caractères autorisés "
-"[1234567890]"
+"Spécifier le contenu requis du PIN OTP. (c)aractères, (n)umériques, "
+"caractères (s)péciaux. Utiliser les boutons +/- ou une liste de caractères "
+"autorisés [1234567890]"
 
 #: lib/policy.py:2243
 msgid "Allow the user to view his own token history."
@@ -945,43 +920,39 @@ msgid "Users are allowed to list their own containers."
 msgstr "Les utilisateurs sont autorisés à lister leurs propres conteneurs."
 
 #: lib/policy.py:2327
-#, fuzzy
-#| msgid "Users are allowed to list their own containers."
 msgid "Users are allowed to register their own containers."
-msgstr "Les utilisateurs sont autorisés à lister leurs propres conteneurs."
+msgstr "Les utilisateurs sont autorisés à enregistrer leurs propres conteneurs."
 
 #: lib/policy.py:2332
-#, fuzzy
-#| msgid "Users are allowed to create containers."
 msgid "Users are allowed to unregister containers."
-msgstr "Les utilisateurs sont autorisés à créer des conteneurs."
+msgstr "Les utilisateurs sont autorisés à désinscrire des conteneurs."
 
 #: lib/policy.py:2336
+#, fuzzy
 msgid ""
 "Users are allowed to perform a container rollover of their own containers. "
 "This includes a rollover of all contained tokens even if the user is not the "
 "owner of a contained token."
 msgstr ""
+"Les utilisateurs sont autorisés à effectuer un roulement de leurs propres "
+"conteneurs. Ceci inclut un roulement de tous les jetons conteneurisés même "
+"s'ils ne lui appartiennent pas."
 
 #: lib/policy.py:2342
 #, fuzzy
 #| msgid "Users are allowed to create containers."
 msgid "Users are allowed to create and edit container templates."
-msgstr "Les utilisateurs sont autorisés à créer des conteneurs."
+msgstr ""
+"Les utilisateurs sont autorisés à créer et modifier des modèles de conteneur."
 
 #: lib/policy.py:2346
-#, fuzzy
-#| msgid "Users are allowed to delete their own containers."
 msgid "Users are allowed to delete templates."
-msgstr "Les utilisateurs sont autorisés à supprimer leurs propres conteneurs."
+msgstr "Les utilisateurs sont autorisés à supprimer des modèles."
 
 #: lib/policy.py:2350
-#, fuzzy
-#| msgid "Users are allowed to edit the state of their own containers."
 msgid "Users are allowed to list templates and view their details."
 msgstr ""
-"Les utilisateurs sont autorisés à modifier l'état de leurs propres "
-"conteneurs."
+"Les utilisateurs sont autorisés à lister les modèles et à voir leurs détails."
 
 #: lib/policy.py:2357
 msgid "Limit the number of allowed tokens in a realm."
@@ -1578,11 +1549,9 @@ msgstr ""
 "Format de jeton par défaut dans la fenêtre de dialogue de l'enrollement."
 
 #: lib/policy.py:2824
-#, fuzzy
-#| msgid "This is the default token type in the token enrollment dialog."
 msgid "This is the default container type in the container create dialog."
 msgstr ""
-"Format de jeton par défaut dans la fenêtre de dialogue de l'enrollement."
+"Le type de conteneur par défaut dans le dialogue de création de conteneur."
 
 #: lib/policy.py:2829
 msgid ""
@@ -1659,12 +1628,18 @@ msgid ""
 "The RSS feeds fetched for the user defined in the format: "
 "<code>'Title':'URL'-'Title':'URL'</code> "
 msgstr ""
+"Les flux RSS de l'utilisateur définis dans le format "
+":<code>'Title':'URL'-'Title':'URL'</code> "
 
 #: lib/policy.py:2882
+#, fuzzy
 msgid ""
 "The age of the RSS feed entries in days. Use <code>0</code> to hide the news "
 "feed. For admins the default is 180 days and for users 0 days."
 msgstr ""
+"L'âge des entrées du flux RSS en jours. Utilisez <code>0</code> pour cacher "
+"les nouveaux flux. 180 jours par défaut pour les administrateurs, 0 jour "
+"pour les utilisateurs."
 
 #: lib/policy.py:2886
 msgid ""
@@ -1980,6 +1955,8 @@ msgstr "URL pour le jeton Push privacyIDEA"
 msgid ""
 "Yubikey hardware device that can hold HOTP, certificate and webauthn token"
 msgstr ""
+"Périphérique Yubikey qui peut contenir des jetons HOTP, certificat et "
+"webauthn"
 
 #: lib/eventhandler/base.py:175
 msgid ""
@@ -2074,13 +2051,12 @@ msgid "The token is in a container."
 msgstr "Le jeton est dans un conteneur."
 
 #: lib/eventhandler/base.py:308
-#, fuzzy
-#| msgid "Action is triggered, if the user has this number of tokens assigned."
 msgid ""
 "Action is triggered, if the user has this number of tokens assigned. > and < "
 "can be used, like <8."
 msgstr ""
-"L'action est déclenchée, si l'utilisateur a ce nombre de jeton associé."
+"L'action est déclenchée, si l'utilisateur a ce nombre de jeton associé. > et "
+"< peuvent être utilisés, comme <8."
 
 #: lib/eventhandler/base.py:315
 msgid ""
@@ -2208,20 +2184,30 @@ msgid "The container is of a certain type."
 msgstr "Le conteneur est d'un certain type."
 
 #: lib/eventhandler/base.py:446
+#, fuzzy
 msgid ""
 "The container is in this realm or in no realm at all. If multiple realms are "
 "selected, the condition is fulfilled if the container is in at least one "
 "realm of the list. The condition is not checked if the container has no "
 "realm, hence the action would be triggered."
 msgstr ""
+"Le conteneur est dans ce domaine ou dans aucun domaine. Si plusieurs "
+"domaines sont sélectionnés, la condition est vérifiée si le conteneur est au "
+"moins dans un domaine de la liste. La condition n'est pas vérifiée si le "
+"conteneur n'a pas de domaine, ainsi l'action serait déclenchée."
 
 #: lib/eventhandler/base.py:456
+#, fuzzy
 msgid ""
 "An owner of the container is in this resolver. If multiple resolvers are "
 "selected, the condition is fulfilled if at least one owner is in one "
 "resolver. The condition is not checked if the container has no owner, hence "
 "the action would be triggered."
 msgstr ""
+"Un propriétaire de conteneur est dans ce résolveur. Si plusieurs résolveurs "
+"sont sélectionnés, la condition est remplie si au moins un propriétaire est "
+"dans un résolveur. La condition n'est pas vérifiée si le conteneur n'a pas "
+"de propriétaire, ainsi l'action serait déclenchée."
 
 #: lib/eventhandler/base.py:465
 #, fuzzy
