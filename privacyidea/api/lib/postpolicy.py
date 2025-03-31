@@ -838,7 +838,7 @@ def multichallenge_enroll_via_validate(request, response):
     content = response.json
     result = content.get("result")
     # Check if the authentication was successful, only then attempt to enroll a new token
-    if result.get("value") and result.get("authentication") == "ACCEPT":
+    if result.get("value") and result.get("authentication") == AUTH_RESPONSE.ACCEPT:
         # Check if another policy restricts the token count and exit early if true
         try:
             check_max_token_user(request=request)
@@ -879,7 +879,7 @@ def multichallenge_enroll_via_validate(request, response):
                                 if not init_details:
                                     token.token.delete()
                                 content.get("result")["value"] = False
-                                content.get("result")["authentication"] = "CHALLENGE"
+                                content.get("result")["authentication"] = AUTH_RESPONSE.CHALLENGE
                                 detail = content.setdefault("detail", {})
                                 detail["transaction_id"] = init_details["transaction_id"]
                                 detail["transaction_ids"] = [init_details["transaction_id"]]

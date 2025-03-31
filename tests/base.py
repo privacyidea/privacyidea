@@ -77,8 +77,9 @@ class MyTestCase(unittest.TestCase):
         create_db_admin(cls.testadmin, cls.testadminmail, cls.testadminpw)
 
     def tearDown(self):
-        # Commit all changes to the DB and close the session to avoid breaking
-        # following tests due to unfinished transactions
+        # Rollback uncommitted changes to the DB and close the session to
+        # avoid breaking following tests due to unfinished transactions
+        db.session.rollback()
         db.session.commit()
         db.session.close()
 
