@@ -188,10 +188,6 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
     :return: An SQLAlchemy sql query
     """
     sql_query = Token.query
-    if user is not None and not user.is_empty():
-        # extract the realm from the user object:
-        realm = user.realm
-
     if tokentype is not None and tokentype.strip("*"):
         # filter for type
         if "*" in tokentype:
@@ -281,8 +277,12 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
         sql_query = sql_query.filter(Token.serial.in_(serial_list))
 
     if user is not None and not user.is_empty():
-
-        # filter for the rest of the user.
+        if user.realm:
+            realm_db = Realm.query.filter(func.lower(Realm.name) == user.realm.lower()).first()
+            if realm_db:
+                sql_query = sql_query.filter(TokenOwner.realm_id == realm_db.id)
+            else:
+                log.warning(f"The users realm {user.realm} does not exist. Ignoring it as filter parameter.")
         if user.resolver:
             sql_query = sql_query.filter(TokenOwner.resolver == user.resolver)
         (uid, _rtype, _resolver) = user.get_user_identifiers()
@@ -521,7 +521,8 @@ def get_tokens(tokentype=None, token_type_list=None, realm=None, assigned=None, 
     :type tokentype: basestring
     :param token_type_list: A list of token types. If None or empty, all token types are returned.
     :type token_type_list: list
-    :param realm: get tokens of a realm. If None, all tokens are returned.
+    :param realm: get tokens of a realm. If None, all tokens are returned. If allowed_realms is not None, it must
+        contain this realm, otherwise no matching tokens will be found.
     :type realm: basestring
     :param assigned: Get either assigned (True) or unassigned (False) tokens. If None, gets all tokens.
     :type assigned: bool
@@ -609,7 +610,8 @@ def get_tokens_paginate(tokentype=None, token_type_list=None, realm=None, assign
 
     :param tokentype:
     :param token_type_list: A list of token types
-    :param realm:
+    :param realm: A realm the token is assigned to (if allowed_realms is not None, it must contain this realm,
+        otherwise no matching tokens will be found)
     :param assigned: Returns assigned (True) or not assigned (False) tokens
     :type assigned: bool
     :param user: The user, whose token should be displayed
