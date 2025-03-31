@@ -371,7 +371,8 @@ def get_auth_token():
                                     "info": f"{log_used_user(user)}|loginmode={details.get('loginmode')}"})
 
             if not user_auth and "multi_challenge" in details and len(details["multi_challenge"]) > 0:
-                return send_result({"role": role, "username": login_name, "realm": realm}, details=details)
+                # Do not return user data in case of a challenge request.
+                return send_result(False, rid=2, details=details)
 
     if not admin_auth and not user_auth:
         raise AuthError(_("Authentication failure. Wrong credentials"), id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS,

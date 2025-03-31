@@ -553,13 +553,14 @@ def get_webui_settings(request, response):
     """
     This decorator is used in the /auth API to add configuration information
     like the logout_time or the policy_template_url to the response.
+
     :param request: flask request object
     :param response: flask response object
     :return: the response
     """
     content = response.json
-    # check, if the authentication was successful, then we need to do nothing
-    if content.get("result").get("status") is True:
+    # If the authentication was successful (and not a challenge request), add the settings to the result
+    if content.get("result").get("status") and isinstance(content.get("result").get("value"), dict):
         role = content.get("result").get("value").get("role")
         username = content.get("result").get("value").get("username")
         realm = content.get("result").get("value").get("realm") or get_default_realm()
