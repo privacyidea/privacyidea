@@ -464,13 +464,13 @@ export class ContainerService {
       );
   }
 
-  deleteAllTokens(containerSerial: string, serial_list: string) {
+  deleteAllTokens(param: { containerSerial: string; serialList: string }) {
     const headers = this.localService.getHeaders();
     return this.http
       .post(
-        `${this.containerBaseUrl}${containerSerial}/removeall`,
+        `${this.containerBaseUrl}${param.containerSerial}/removeall`,
         {
-          serial: serial_list,
+          serial: param.serialList,
         },
         { headers },
       )
@@ -480,6 +480,54 @@ export class ContainerService {
           const message = error.error?.result?.error?.message || '';
           this.notificationService.openSnackBar(
             'Failed to delete all tokens. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
+  }
+
+  getTemplates() {
+    const headers = this.localService.getHeaders();
+    return this.http.get<any>(`${this.containerBaseUrl}templates`, {
+      headers,
+    });
+  }
+
+  createContainer(param: {
+    container_type: string;
+    description?: string;
+    serial?: string;
+    user_realm?: string;
+    template?: string;
+    user?: string;
+    realm?: string;
+    options?: any;
+    passphrase_prompt?: string;
+    passphrase_response?: string;
+  }) {
+    const headers = this.localService.getHeaders();
+    return this.http
+      .post(
+        `${this.containerBaseUrl}init`,
+        {
+          type: param.container_type,
+          description: param.description,
+          container_serial: param.serial,
+          user: param.user,
+          realm: param.user_realm,
+          template: param.template,
+          options: param.options,
+          passphrase_prompt: param.passphrase_prompt,
+          passphrase_response: param.passphrase_response,
+        },
+        { headers },
+      )
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to create container.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to create container. ' + message,
           );
           return throwError(() => error);
         }),

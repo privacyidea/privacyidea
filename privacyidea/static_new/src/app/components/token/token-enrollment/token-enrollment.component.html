@@ -1,7 +1,7 @@
 <div aria-label="Token Enrollment"
      class="token-enrollment-container">
   <h3 class="margin-left-1">Token Enrollment</h3>
-  <mat-form-field class="select-token-type">
+  <mat-form-field class="width-100">
     <mat-select [(ngModel)]="selectedType"
                 [panelClass]="'multi-column-panel'">
       @for (type of tokenTypesOptions; track type) {
@@ -10,7 +10,7 @@
         </mat-option>
       }
       <button (click)="versioningService.openDocumentation('tokentypes')"
-              class="card-button token-type-help"
+              class="card-button type-help-button"
               mat-flat-button>
         <mat-icon>info_outline</mat-icon>
         Help About Tokentypes
@@ -193,7 +193,7 @@
           </mat-select>
         </mat-form-field>
 
-        <mat-form-field class="margin-left-1 width-50 height-76-5">
+        <mat-form-field class="width-50 height-76-5">
           <mat-label>Enter User</mat-label>
           <input [(ngModel)]="selectedUsername"
                  [disabled]="onlyAddToRealm()"

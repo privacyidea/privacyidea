@@ -21,7 +21,8 @@ import { SystemService } from '../../../../services/system/system.service';
   styleUrl: './enroll-email.component.scss',
 })
 export class EnrollEmailComponent {
-  text = TokenComponent.tokenTypes.find((type) => type.key === 'email')?.text;
+  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'email')
+    ?.text;
   @Input() description!: WritableSignal<string>;
   @Input() emailAddress!: WritableSignal<string>;
   @Input() readEmailDynamically!: WritableSignal<boolean>;

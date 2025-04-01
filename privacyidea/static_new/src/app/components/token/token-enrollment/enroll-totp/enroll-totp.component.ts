@@ -29,7 +29,8 @@ import { TokenComponent } from '../../token.component';
   styleUrl: './enroll-totp.component.scss',
 })
 export class EnrollTotpComponent {
-  text = TokenComponent.tokenTypes.find((type) => type.key === 'totp')?.text;
+  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'totp')
+    ?.text;
   @Input() generateOnServer!: WritableSignal<boolean>;
   @Input() otpLength!: WritableSignal<number>;
   @Input() otpKey!: WritableSignal<string>;

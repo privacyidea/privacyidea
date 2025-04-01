@@ -7,8 +7,7 @@
               [ngClass]="[
           selectedContent() === 'container_overview'
             ? 'card-button-active'
-            : 'card-button',
-        ]"
+            : 'card-button']"
               mat-flat-button>
         <mat-icon class="mdi--folder-search" />
         Overview
@@ -17,7 +16,11 @@
     <div [@toggleState]="containerIsSelected()">
       @if (selectedContent() !== "container_details") {
         <mat-list-item>
-          <button class="card-button"
+          <button (click)="onClickCreateContainer()"
+                  [ngClass]="[
+          selectedContent() === 'container_create'
+            ? 'card-button-active'
+            : 'card-button']"
                   mat-flat-button>
             <mat-icon>create_new_folder</mat-icon>
             Create

@@ -11,6 +11,7 @@ import { TokenComponent } from '../../token.component';
   styleUrl: './enroll-push.component.scss',
 })
 export class EnrollPushComponent {
-  text = TokenComponent.tokenTypes.find((type) => type.key === 'spass')?.text;
+  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'spass')
+    ?.text;
   @Input() description!: WritableSignal<string>;
 }

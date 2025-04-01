@@ -12,7 +12,8 @@ import { MatError } from '@angular/material/select';
   styleUrl: './enroll-yubikey.component.scss',
 })
 export class EnrollYubikeyComponent {
-  text = TokenComponent.tokenTypes.find((type) => type.key === 'yubikey')?.text;
+  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'yubikey')
+    ?.text;
   @Input() description!: WritableSignal<string>;
   @Input() otpKey!: WritableSignal<string>;
   @Input() otpLength!: WritableSignal<number>;

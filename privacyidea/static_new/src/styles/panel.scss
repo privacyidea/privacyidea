@@ -1,0 +1,17 @@
+.expension-panel {
+  box-shadow: var(--box-shadow) !important;
+}
+
+::ng-deep {
+  .mat-expansion-panel:not(.mat-expanded) .mat-expansion-panel-header:hover {
+    background: #f3f3f3 !important;
+  }
+
+  .mat-expansion-panel {
+    background: white !important;
+  }
+
+  .mat-accordion .mat-expansion-panel {
+    border-radius: var(--border-radius) !important;
+  }
+}

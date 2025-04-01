@@ -29,7 +29,8 @@ import { MatInput } from '@angular/material/input';
   styleUrl: './enroll-hotp.component.scss',
 })
 export class EnrollHotpComponent {
-  text = TokenComponent.tokenTypes.find((type) => type.key === 'hotp')?.text;
+  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'hotp')
+    ?.text;
   @Input() generateOnServer!: WritableSignal<boolean>;
   @Input() otpLength!: WritableSignal<number>;
   @Input() otpKey!: WritableSignal<string>;

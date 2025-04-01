@@ -19,7 +19,8 @@ import { MatCheckbox } from '@angular/material/checkbox';
   styleUrl: './enroll-motp.component.scss',
 })
 export class EnrollMotpComponent {
-  text = TokenComponent.tokenTypes.find((type) => type.key === 'motp')?.text;
+  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'motp')
+    ?.text;
   @Input() motpPin!: WritableSignal<string>;
   @Input() description!: WritableSignal<string>;
   @Input() generateOnServer!: WritableSignal<boolean>;

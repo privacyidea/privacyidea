@@ -28,8 +28,9 @@ import { TokenComponent } from '../../token.component';
   styleUrl: './enroll-daypassword.component.scss',
 })
 export class EnrollDaypasswordComponent {
-  text = TokenComponent.tokenTypes.find((type) => type.key === 'daypassword')
-    ?.text;
+  text = TokenComponent.tokenTypeOptions.find(
+    (type) => type.key === 'daypassword',
+  )?.text;
   @Input() description!: WritableSignal<string>;
   @Input() otpLength!: WritableSignal<number>;
   @Input() otpKey!: WritableSignal<string>;

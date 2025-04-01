@@ -46,6 +46,9 @@ export class VersionService {
       case 'token_challenges':
         page_url = 'tokens/authentication_modes.html#challenge-mode';
         break;
+      case 'containertypes':
+        page_url = 'container/container_types.html';
+        break;
     }
     const versionUrl = `${baseUrl}v${this.version}/${page_url}`;
     const fallbackUrl = `${baseUrl}latest/${page_url}`;

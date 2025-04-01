@@ -87,7 +87,7 @@ export class TokenGetSerial {
       'radius',
       'sms',
     ];
-    this.tokenTypes = TokenComponent.tokenTypes.filter((type) =>
+    this.tokenTypes = TokenComponent.tokenTypeOptions.filter((type) =>
       tokenWithOTP.includes(type.key),
     );
 

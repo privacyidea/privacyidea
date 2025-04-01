@@ -27,7 +27,8 @@ import { SystemService } from '../../../../services/system/system.service';
   styleUrl: './enroll-sms.component.scss',
 })
 export class EnrollSmsComponent {
-  text = TokenComponent.tokenTypes.find((type) => type.key === 'sms')?.text;
+  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'sms')
+    ?.text;
   @Input() description!: WritableSignal<string>;
   @Input() smsGateway!: WritableSignal<string>;
   @Input() phoneNumber!: WritableSignal<string>;

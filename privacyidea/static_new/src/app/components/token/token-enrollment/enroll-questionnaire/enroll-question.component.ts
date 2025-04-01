@@ -30,7 +30,7 @@ export class EnrollQuestionComponent {
   ];
   configMinNumberOfAnswers = 3;
 
-  text = TokenComponent.tokenTypes.find((type) => type.key === 'question')
+  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'question')
     ?.text;
   @Input() description!: WritableSignal<string>;
   @Input() answers!: WritableSignal<Record<string, string>>;

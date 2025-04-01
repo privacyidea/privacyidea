@@ -32,7 +32,7 @@ export class ApplspecErrorStateMatcher implements ErrorStateMatcher {
   styleUrl: './enroll-applspec.component.scss',
 })
 export class EnrollApplspecComponent {
-  text = TokenComponent.tokenTypes.find((type) => type.key === 'applspec')
+  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'applspec')
     ?.text;
   @Input() description!: WritableSignal<string>;
   @Input() serviceId!: WritableSignal<string>;

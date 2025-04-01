@@ -11,6 +11,7 @@ import { TokenComponent } from '../../token.component';
   styleUrl: './enroll-tan.component.scss',
 })
 export class EnrollTanComponent {
-  text = TokenComponent.tokenTypes.find((type) => type.key === 'tan')?.text;
+  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'tan')
+    ?.text;
   @Input() description!: WritableSignal<string>;
 }

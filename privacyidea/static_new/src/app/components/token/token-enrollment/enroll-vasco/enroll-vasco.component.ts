@@ -29,7 +29,8 @@ export class VascoErrorStateMatcher implements ErrorStateMatcher {
   styleUrl: './enroll-vasco.component.scss',
 })
 export class EnrollVascoComponent {
-  text = TokenComponent.tokenTypes.find((type) => type.key === 'vasco')?.text;
+  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'vasco')
+    ?.text;
   @Input() description!: WritableSignal<string>;
   @Input() otpKey!: WritableSignal<string>;
   @Input() useVascoSerial!: WritableSignal<boolean>;

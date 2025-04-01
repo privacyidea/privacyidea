@@ -1,23 +1,25 @@
+<ng-template #tokenCard let-hasMargin="hasMargin">
+  <app-token-card [active]="tokenIsActive"
+                  [ngClass]="hasMargin ? 'margin-right-1' : ''"
+                  [containerSelection]="containerSelection"
+                  [containerSerial]="containerSerial"
+                  [isProgrammaticChange]="isProgrammaticChange"
+                  [refreshContainerDetails]="refreshContainerDetails"
+                  [refreshContainerOverview]="refreshContainerOverview"
+                  [refreshTokenDetails]="refreshTokenDetails"
+                  [refreshTokenOverview]="refreshTokenOverview"
+                  [revoked]="revoked"
+                  [selectedContent]="selectedContent"
+                  [states]="states"
+                  [tokenSelection]="tokenSelection"
+                  [tokenSerial]="tokenSerial"/>
+</ng-template>
+
 <div aria-label="Token Layout"
      class="token-layout">
-  @if (!overflowService.isWidthOverflowing(
-    ".token-layout",
-    overflowService.getOverflowThreshold(selectedContent())
-  )) {
-    <app-token-card class="margin-right-1"
-                    [active]="tokenIsActive"
-                    [states]="states"
-                    [refreshTokenDetails]="refreshTokenDetails"
-                    [refreshContainerDetails]="refreshContainerDetails"
-                    [refreshTokenOverview]="refreshTokenOverview"
-                    [refreshContainerOverview]="refreshContainerOverview"
-                    [revoked]="revoked"
-                    [tokenSelection]="tokenSelection"
-                    [containerSelection]="containerSelection"
-                    [tokenSerial]="tokenSerial"
-                    [containerSerial]="containerSerial"
-                    [isProgrammaticChange]="isProgrammaticChange"
-                    [selectedContent]="selectedContent"></app-token-card>
+  @if (!overflowService.isWidthOverflowing(".token-layout",
+    overflowService.getOverflowThreshold(selectedContent()))) {
+    <ng-container [ngTemplateOutlet]="tokenCard" [ngTemplateOutletContext]="{ hasMargin: true }"/>
   }
   <mat-drawer-container>
     @if (overflowService.isWidthOverflowing(
@@ -26,24 +28,9 @@
     )) {
       <mat-drawer #drawer
                   [mode]="'over'"
-                  [ngClass]="[
-          this.overflowService.isHeightOverflowing('.token-layout', 675)
-            ? 'token-drawer-overflow'
-            : 'token-drawer',
-        ]">
-        <app-token-card [active]="tokenIsActive"
-                        [states]="states"
-                        [refreshTokenDetails]="refreshTokenDetails"
-                        [refreshContainerDetails]="refreshContainerDetails"
-                        [refreshTokenOverview]="refreshTokenOverview"
-                        [refreshContainerOverview]="refreshContainerOverview"
-                        [revoked]="revoked"
-                        [tokenSelection]="tokenSelection"
-                        [containerSelection]="containerSelection"
-                        [tokenSerial]="tokenSerial"
-                        [containerSerial]="containerSerial"
-                        [isProgrammaticChange]="isProgrammaticChange"
-                        [selectedContent]="selectedContent"></app-token-card>
+                  [ngClass]="[ this.overflowService.isHeightOverflowing('.token-layout',
+                  675) ? 'token-drawer-overflow' : 'token-drawer' ]">
+        <ng-container [ngTemplateOutlet]="tokenCard"/>
       </mat-drawer>
     }
     <mat-drawer-content>
@@ -64,11 +51,9 @@
           <div [ngClass]="[
               overflowService.isWidthOverflowing(
                 '.token-layout',
-                overflowService.getOverflowThreshold(selectedContent())
-              )
+                overflowService.getOverflowThreshold(selectedContent()))
                 ? 'main-margin'
-                : 'main-margin-overflow',
-            ]">
+                : 'main-margin-overflow']">
             @switch (selectedContent()) {
               @case ("token_overview") {
                 <app-token-table #tokenTableComponent
@@ -121,9 +106,11 @@
                                        [states]="states"
                                        [refreshContainerDetails]="refreshContainerDetails"
                                        [selectedContent]="selectedContent"
-                                       [isProgrammaticChange]="
-                    isProgrammaticChange
-                  "></app-container-details>
+                                       [isProgrammaticChange]="isProgrammaticChange" />
+              }
+              @case ("container_create") {
+                <app-container-create [containerSerial]="containerSerial"
+                                      [selectedContent]="selectedContent" />
               }
             }
           </div>

@@ -32,7 +32,8 @@ export class RemoteErrorStateMatcher implements ErrorStateMatcher {
   styleUrl: './enroll-remote.component.scss',
 })
 export class EnrollRemoteComponent {
-  text = TokenComponent.tokenTypes.find((type) => type.key === 'remote')?.text;
+  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'remote')
+    ?.text;
   @Input() checkPinLocally!: WritableSignal<boolean>;
   @Input() description!: WritableSignal<string>;
   @Input() remoteServer!: WritableSignal<{ url: string; id: string }>;

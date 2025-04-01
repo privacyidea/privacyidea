@@ -186,7 +186,7 @@ export class CustomDateAdapter extends NativeDateAdapter {
   standalone: true,
 })
 export class TokenEnrollmentComponent {
-  tokenTypesOptions = TokenComponent.tokenTypes;
+  tokenTypesOptions = TokenComponent.tokenTypeOptions;
   timezoneOptions = TIMEZONE_OFFSETS;
   @Input() tokenSerial!: WritableSignal<string>;
   @Input() containerSerial!: WritableSignal<string>;

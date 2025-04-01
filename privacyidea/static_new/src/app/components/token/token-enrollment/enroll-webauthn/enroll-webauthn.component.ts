@@ -17,7 +17,7 @@ import { catchError } from 'rxjs/operators';
   styleUrl: './enroll-webauthn.component.scss',
 })
 export class EnrollWebauthnComponent {
-  text = TokenComponent.tokenTypes.find((type) => type.key === 'webauthn')
+  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'webauthn')
     ?.text;
   @Input() description!: WritableSignal<string>;
   @Input() response!: WritableSignal<any>;

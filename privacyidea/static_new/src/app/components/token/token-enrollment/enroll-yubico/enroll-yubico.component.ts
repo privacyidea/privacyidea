@@ -29,7 +29,8 @@ export class YubicoErrorStateMatcher implements ErrorStateMatcher {
   styleUrl: './enroll-yubico.component.scss',
 })
 export class EnrollYubicoComponent {
-  text = TokenComponent.tokenTypes.find((type) => type.key === 'yubico')?.text;
+  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'yubico')
+    ?.text;
   @Input() description!: WritableSignal<string>;
   @Input() yubikeyIdentifier!: WritableSignal<string>;
   yubicoIsConfigured = signal(false);

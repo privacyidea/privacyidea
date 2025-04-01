@@ -277,6 +277,18 @@ $header-bg: white;
   color: black;
 }
 
+.type-help-button {
+  margin-left: 4px;
+  margin-top: 4px;
+}
+
+.enroll-button-container {
+  display: flex;
+  flex-direction: row;
+  margin-left: 497px;
+  gap: 8px;
+}
+
 .profile-btn {
   margin-left: 1rem;
   margin-right: 130px;

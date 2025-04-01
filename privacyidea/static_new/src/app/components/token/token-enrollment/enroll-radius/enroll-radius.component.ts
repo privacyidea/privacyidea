@@ -27,7 +27,8 @@ import { SystemService } from '../../../../services/system/system.service';
   styleUrl: './enroll-radius.component.scss',
 })
 export class EnrollRadiusComponent {
-  text = TokenComponent.tokenTypes.find((type) => type.key === 'radius')?.text;
+  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'radius')
+    ?.text;
   @Input() description!: WritableSignal<string>;
   @Input() radiusUser!: WritableSignal<string>;
   @Input() radiusServerConfiguration!: WritableSignal<string>;

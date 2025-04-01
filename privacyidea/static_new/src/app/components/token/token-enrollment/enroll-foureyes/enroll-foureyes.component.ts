@@ -44,7 +44,8 @@ export class RequiredRealmsErrorStateMatcher implements ErrorStateMatcher {
   styleUrl: './enroll-foureyes.component.scss',
 })
 export class EnrollFoureyesComponent {
-  text = TokenComponent.tokenTypes.find((type) => type.key === '4eyes')?.text;
+  text = TokenComponent.tokenTypeOptions.find((type) => type.key === '4eyes')
+    ?.text;
   @Input() description!: WritableSignal<string>;
   @Input() separator!: WritableSignal<string>;
   @Input() requiredTokensOfRealms!: WritableSignal<

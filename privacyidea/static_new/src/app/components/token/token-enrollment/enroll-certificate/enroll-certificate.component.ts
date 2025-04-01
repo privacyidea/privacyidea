@@ -36,8 +36,9 @@ export class CaConnectorErrorStateMatcher implements ErrorStateMatcher {
   styleUrl: './enroll-certificate.component.scss',
 })
 export class EnrollCertificateComponent {
-  text = TokenComponent.tokenTypes.find((type) => type.key === 'certificate')
-    ?.text;
+  text = TokenComponent.tokenTypeOptions.find(
+    (type) => type.key === 'certificate',
+  )?.text;
   @Input() caConnector!: WritableSignal<string>;
   @Input() certTemplate!: WritableSignal<string>;
   @Input() pem!: WritableSignal<string>;

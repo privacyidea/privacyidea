@@ -11,6 +11,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
   styleUrl: './enroll-u2f.component.scss',
 })
 export class EnrollU2fComponent {
-  text = TokenComponent.tokenTypes.find((type) => type.key === 'u2f')?.text;
+  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'u2f')
+    ?.text;
   @Input() description!: WritableSignal<string>;
 }

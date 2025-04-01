@@ -12,7 +12,8 @@ import { SystemService } from '../../../../services/system/system.service';
   styleUrl: './enroll-tiqr.component.scss',
 })
 export class EnrollTiqrComponent {
-  text = TokenComponent.tokenTypes.find((type) => type.key === 'tiqr')?.text;
+  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'tiqr')
+    ?.text;
   @Input() description!: WritableSignal<string>;
   @Input() defaultTiQRIsSet = signal(false);
 

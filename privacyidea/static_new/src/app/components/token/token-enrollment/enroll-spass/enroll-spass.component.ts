@@ -11,6 +11,7 @@ import { MatInput } from '@angular/material/input';
   styleUrl: './enroll-spass.component.scss',
 })
 export class EnrollSpassComponent {
-  text = TokenComponent.tokenTypes.find((type) => type.key === 'spass')?.text;
+  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'spass')
+    ?.text;
   @Input() description!: WritableSignal<string>;
 }

@@ -99,8 +99,8 @@ describe('TokenComponent', () => {
   });
 
   it('should have static tokenTypes defined', () => {
-    expect(TokenComponent.tokenTypes).toBeDefined();
-    expect(TokenComponent.tokenTypes.length).toBeGreaterThan(0);
+    expect(TokenComponent.tokenTypeOptions).toBeDefined();
+    expect(TokenComponent.tokenTypeOptions.length).toBeGreaterThan(0);
   });
 
   it('should have default signal values', () => {

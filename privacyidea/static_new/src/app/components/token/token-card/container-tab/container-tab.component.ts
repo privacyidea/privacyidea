@@ -132,4 +132,9 @@ export class ContainerTabComponent {
     this.isProgrammaticChange.set(true);
     this.containerSerial.set(this.containerSerial());
   }
+
+  onClickCreateContainer() {
+    this.selectedContent.set('container_create');
+    this.containerSerial.set('');
+  }
 }

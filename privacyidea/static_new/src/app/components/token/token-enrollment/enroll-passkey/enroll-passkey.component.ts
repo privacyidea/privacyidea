@@ -17,7 +17,8 @@ import { MatDialog } from '@angular/material/dialog';
   styleUrl: './enroll-passkey.component.scss',
 })
 export class EnrollPasskeyComponent {
-  text = TokenComponent.tokenTypes.find((type) => type.key === 'passkey')?.text;
+  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'passkey')
+    ?.text;
   @Input() description!: WritableSignal<string>;
   @Input() response!: WritableSignal<any>;
   @Input() firstDialog!: MatDialog;

@@ -11,7 +11,8 @@ import { TokenComponent } from '../../token.component';
   styleUrl: './enroll-registration.component.scss',
 })
 export class EnrollRegistrationComponent {
-  text = TokenComponent.tokenTypes.find((type) => type.key === 'registration')
-    ?.text;
+  text = TokenComponent.tokenTypeOptions.find(
+    (type) => type.key === 'registration',
+  )?.text;
   @Input() description!: WritableSignal<string>;
 }

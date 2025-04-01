@@ -12,7 +12,8 @@ import { MatError } from '@angular/material/select';
   styleUrl: './enroll-sshkey.component.scss',
 })
 export class EnrollSshkeyComponent {
-  text = TokenComponent.tokenTypes.find((type) => type.key === 'sshkey')?.text;
+  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'sshkey')
+    ?.text;
   @Input() description!: WritableSignal<string>;
   @Input() sshPublicKey!: WritableSignal<string>;
 }

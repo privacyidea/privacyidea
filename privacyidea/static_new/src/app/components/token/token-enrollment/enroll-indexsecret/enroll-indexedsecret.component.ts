@@ -11,8 +11,9 @@ import { TokenComponent } from '../../token.component';
   styleUrl: './enroll-indexedsecret.component.scss',
 })
 export class EnrollIndexedsecretComponent {
-  text = TokenComponent.tokenTypes.find((type) => type.key === 'indexedsecret')
-    ?.text;
+  text = TokenComponent.tokenTypeOptions.find(
+    (type) => type.key === 'indexedsecret',
+  )?.text;
   @Input() description!: WritableSignal<string>;
   @Input() otpKey!: WritableSignal<string>;
 }

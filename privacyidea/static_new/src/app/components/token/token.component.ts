@@ -20,6 +20,7 @@ import { TokenApplications } from './token-applications/token-applications';
 import { ChallengesTableComponent } from './challenges-table/challenges-table.component';
 import { LoadingService } from '../../services/loading/loading-service';
 import { SelectionModel } from '@angular/cdk/collections';
+import { ContainerCreateComponent } from './container-create/container-create.component';
 
 export type TokenType =
   | 'hotp'
@@ -54,6 +55,7 @@ export type TokenSelectedContent =
   | 'token_details'
   | 'container_overview'
   | 'container_details'
+  | 'container_create'
   | 'token_enrollment'
   | 'token_challenges'
   | 'token_applications'
@@ -84,12 +86,14 @@ export interface TokenTypeOption {
     TokenEnrollmentComponent,
     TokenApplications,
     ChallengesTableComponent,
+    ContainerCreateComponent,
   ],
   templateUrl: './token.component.html',
   styleUrl: './token.component.scss',
 })
 export class TokenComponent {
-  static tokenTypes: TokenTypeOption[] = [
+  // TODO get this from token.type_list endpoint
+  static tokenTypeOptions: TokenTypeOption[] = [
     {
       key: 'hotp',
       info: 'HOTP: Counter-based One Time Passwords',

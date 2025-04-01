@@ -175,17 +175,17 @@ export class ContainerDetailsTokenTableComponent {
   }
 
   deleteAllTokens() {
-    const serial_list = this.dataSource()
+    const serialList = this.dataSource()
       .data.map((token: any) => token.serial)
       .join(',');
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: serial_list.split(','),
+          serial_list: serialList.split(','),
           title: 'Delete All Tokens',
           type: 'token',
           action: 'delete',
-          numberOfTokens: serial_list.split(',').length,
+          numberOfTokens: serialList.split(',').length,
         },
       })
       .afterClosed()
@@ -193,7 +193,10 @@ export class ContainerDetailsTokenTableComponent {
         next: (result) => {
           if (result) {
             this.containerService
-              .deleteAllTokens(this.containerSerial(), serial_list)
+              .deleteAllTokens({
+                containerSerial: this.containerSerial(),
+                serialList: serialList,
+              })
               .subscribe({
                 next: () => {
                   this.refreshContainerDetails.set(true);
