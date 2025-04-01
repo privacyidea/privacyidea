@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-02-25 14:26+0100\n"
-"PO-Revision-Date: 2025-03-31 20:07+0000\n"
+"PO-Revision-Date: 2025-04-01 19:17+0000\n"
 "Last-Translator: Gregory Bouzinac <gregory.b@orange.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/fr/>\n"
@@ -157,8 +157,6 @@ msgid "You either need to provide user or serial"
 msgstr "Vous devez fournir soit un utilisateur soit un numéro de série"
 
 #: lib/decorators.py:114
-#, fuzzy
-#| msgid "You need to specify a serial or a user."
 msgid "You need to specify a serial, user or credential_id."
 msgstr ""
 "Vous devez spécifier un numéro de série, un utilisateur ou des informations "
@@ -173,7 +171,6 @@ msgid "Invalid user."
 msgstr "Utilisateur invalide."
 
 #: lib/policy.py:205
-#, fuzzy
 msgid ""
 "Note: If you use a comma in the message, you need to escape it with a "
 "backslash."
@@ -723,8 +720,6 @@ msgstr ""
 "roulement de tous les jetons conteneurisés."
 
 #: lib/policy.py:2161
-#, fuzzy
-#| msgid "Admin is allowed to create containers."
 msgid "Admin is allowed to create and edit container templates."
 msgstr ""
 "L'administrateur est autorisé à créer et modifier des modèles de conteneur."
@@ -939,8 +934,6 @@ msgstr ""
 "s'ils ne lui appartiennent pas."
 
 #: lib/policy.py:2342
-#, fuzzy
-#| msgid "Users are allowed to create containers."
 msgid "Users are allowed to create and edit container templates."
 msgstr ""
 "Les utilisateurs sont autorisés à créer et modifier des modèles de conteneur."
@@ -1632,7 +1625,6 @@ msgstr ""
 ":<code>'Title':'URL'-'Title':'URL'</code> "
 
 #: lib/policy.py:2882
-#, fuzzy
 msgid ""
 "The age of the RSS feed entries in days. Use <code>0</code> to hide the news "
 "feed. For admins the default is 180 days and for users 0 days."
@@ -1642,24 +1634,37 @@ msgstr ""
 "pour les utilisateurs."
 
 #: lib/policy.py:2886
+#, fuzzy
 msgid ""
 "Container type to be created with the container wizard. It is required to "
 "set at least this option to enable the container wizard. As long as the user "
 "has no container assigned he will only see the container wizard in the UI."
 msgstr ""
+"Type de conteneur à créer avec l'assistant de création de conteneur. Il est "
+"nécessaire de définir au moins cette option pour activer l'assistant. Tant "
+"que l'utilisateur n'a pas de conteneur assigné il verra seulement "
+"l'assistant de création de conteneur dans son interface."
 
 #: lib/policy.py:2893
+#, fuzzy
 msgid ""
 "Name of the container template to be used to create a container in the "
 "container wizard (optional). Note that the template must be of the same type "
 "as selected in the container_wizard_type."
 msgstr ""
+"Nom du modèle de conteneur à utiliser pour créer un conteneur dans "
+"l'assistant (optionnel). Notez que le modèle doit être du même type que "
+"celui sélectionné dans container_wizard_type."
 
 #: lib/policy.py:2899
+#, fuzzy
 msgid ""
 "In the container wizard, a QR code will be generated to register the new "
 "container on the smartphone. (Only applicable for smartphone containers)"
 msgstr ""
+"Dans l'assistant de création de conteneur, un code QR sera généré pour "
+"enregistrer le nouveau conteneur sur le smartphone. (S'applique seulement "
+"pour les conteneurs de smartphone)"
 
 #: lib/policy.py:2907
 msgid ""
@@ -1667,12 +1672,17 @@ msgid ""
 "used to build URLs the container can contact for registration and "
 "synchronization."
 msgstr ""
+"L'URL de votre serveur privacyIDEA, e.g. <code>https://pi/</code>. Il est "
+"utilisé pour construire les URLs que le conteneur peut contacter pour "
+"l'enregistrement et la synchronisation."
 
 #: lib/policy.py:2913
 msgid ""
 "The time in minutes the client has to do the second step of the "
 "registration. The default is ten minutes."
 msgstr ""
+"La durée en minutes que le client a pour faire la seconde étape "
+"d'enregistrement. 10 minutes par défaut."
 
 #: lib/policy.py:2919
 msgid ""
@@ -1688,14 +1698,11 @@ msgid ""
 msgstr ""
 
 #: lib/policy.py:2935
-#, fuzzy
-#| msgid "The user is allowed to reset the failcounter of his tokens."
 msgid ""
 "The client is allowed to perform a rollover of the container and the "
 "included tokens."
 msgstr ""
-"L'utilisateur est autorisé à réinitialiser le compteur d'échecs de ses "
-"jetons."
+"Le client est autorisé à faire un roulement du conteneur et de ses jetons."
 
 #: lib/policy.py:2940
 msgid ""
@@ -1706,10 +1713,9 @@ msgid ""
 msgstr ""
 
 #: lib/policy.py:2947
-#, fuzzy
-#| msgid "The user is allowed to delete his own tokens."
 msgid "The user is not allowed to delete tokens locally on the smartphone."
-msgstr "L'utilisateur est autorisé à supprimer ses propres jetons."
+msgstr ""
+"L'utilisateur n'est pas autorisé à supprimer des jetons sur le smartphone."
 
 #: lib/policy.py:2952
 msgid ""
@@ -1789,10 +1795,8 @@ msgid "multiple tokens are matching this OTP value!"
 msgstr "plusieurs jetons correspondent à cette valeur OTP !"
 
 #: lib/token.py:1233
-#, fuzzy
-#| msgid "init token failed: unknown token type {0!r}"
 msgid "init token failed. Unknown token type:"
-msgstr "initialisation du jeton échouée : type de jeton inconnu {0!r}"
+msgstr "initialisation du jeton échouée : type de jeton inconnu :"
 
 #: lib/token.py:1253
 msgid ""
@@ -1801,32 +1805,24 @@ msgid ""
 msgstr ""
 
 #: lib/token.py:1257
-#, fuzzy
-#| msgid "initToken failed: {0!s}"
 msgid "init token failed:"
-msgstr "initToken échouée : {0!s}"
+msgstr "initialisation jeton échouée :"
 
 #: lib/token.py:1433
-#, fuzzy
-#| msgid "Token already assigned to user {0!r}"
 msgid "Token already assigned to user {old_user!r}"
-msgstr "Jeton déjà assigné à l'utilisateur {0!r}"
+msgstr "Jeton déjà assigné à l'utilisateur {old_user!r}"
 
 #: lib/token.py:1447
 msgid "Token assign failed for {0!r}/{1!s} : {2!r}"
 msgstr "Assignation jeton échouée pour {0!r}/{1!s} : {2!r}"
 
 #: lib/token.py:1475
-#, fuzzy
-#| msgid "Token unassign failed for {0!r}/{1!r}: {2!r}"
 msgid "Token unassign failed for"
-msgstr "Retrait du jeton échoué pour {0!r}/{1!r}: {2!r}"
+msgstr "Désinscription du jeton échouée pour"
 
 #: lib/token.py:1555
-#, fuzzy
-#| msgid "Parameter user must not be a string: {0!r}"
 msgid "Parameter user must not be a string:"
-msgstr "Le paramètre de l'utilisateur ne doit pas être une chaine : {0!r}"
+msgstr "Le paramètre de l'utilisateur ne doit pas être une chaine :"
 
 #: lib/token.py:2111
 msgid "You can only define a lost token for an assigned token."
@@ -1946,10 +1942,8 @@ msgid "A smartphone that uses an authenticator app."
 msgstr ""
 
 #: lib/containers/smartphone.py:224
-#, fuzzy
-#| msgid "URL for privacyIDEA Push Token"
 msgid "URL for privacyIDEA Container Registration"
-msgstr "URL pour le jeton Push privacyIDEA"
+msgstr "URL pour l'enregistrement de conteneur privacyIDEA"
 
 #: lib/containers/yubikey.py:62
 msgid ""
@@ -2184,7 +2178,6 @@ msgid "The container is of a certain type."
 msgstr "Le conteneur est d'un certain type."
 
 #: lib/eventhandler/base.py:446
-#, fuzzy
 msgid ""
 "The container is in this realm or in no realm at all. If multiple realms are "
 "selected, the condition is fulfilled if the container is in at least one "
@@ -2197,7 +2190,6 @@ msgstr ""
 "conteneur n'a pas de domaine, ainsi l'action serait déclenchée."
 
 #: lib/eventhandler/base.py:456
-#, fuzzy
 msgid ""
 "An owner of the container is in this resolver. If multiple resolvers are "
 "selected, the condition is fulfilled if at least one owner is in one "
@@ -2220,9 +2212,9 @@ msgid ""
 "enter something like 'fieldname == fieldvalue', 'fieldname > fieldvalue' or "
 "'fieldname < fieldvalue'."
 msgstr ""
-"Cette condition peut vérifier n'importe quel champ tokeninfo. Vous devez "
-"entrer quelque chose comme '<nom_champ>== <valeur_champ>', '<nom_champ> > "
-"<valeur_champ>' ou '<nom_champ> < <valeur_champ>'."
+"Cette condition peut vérifier n'importe quel champ d'information de "
+"conteneur. Vous devez entrer quelque chose comme 'nom_champ == "
+"valeur_champ', 'nom_champ > valeur_champ' ou 'nom_champ < valeur_champ'."
 
 #: lib/eventhandler/base.py:473
 msgid ""
@@ -2734,24 +2726,18 @@ msgstr ""
 "trouvées."
 
 #: lib/resolvers/LDAPIdResolver.py:1147
-#, fuzzy
-#| msgid ""
-#| "Your LDAP config found {0!s} user objects, but only {1!s} with the "
-#| "specified uidtype"
 msgid ""
 "Your LDAP config found {0!s} user objects in {2:.4f}s, but only {1!s} with "
 "the specified uidtype."
 msgstr ""
-"Votre configuration LDAP a trouvé {0!s} objets utilisateurs, mais seulement "
-"{1!s} avec le uidtype indiqué"
+"Votre configuration LDAP a trouvé {0!s} objets utilisateurs en {2:.4f}s, "
+"mais seulement {1!s} avec le uidtype spécifié."
 
 #: lib/resolvers/LDAPIdResolver.py:1151
-#, fuzzy
-#| msgid "Your LDAP config seems to be OK, {0!s} user objects found."
 msgid "Your LDAP config seems to be OK, {0!s} user objects found in {1:.4f}s."
 msgstr ""
 "Votre configuration LDAP semble correcte, {0!s} objets utilisateurs ont été "
-"trouvés."
+"trouvés en {1:.4f}s."
 
 #: lib/smsprovider/FirebaseProvider.py:199
 msgid ""
@@ -3323,18 +3309,13 @@ msgid "Passkey: A secret stored on a device, unlocked with biometrics."
 msgstr ""
 
 #: lib/tokens/passkeytoken.py:104
-#, fuzzy
-#| msgid ""
-#| "Use an alternative challenge text for telling the user to enter an OTP "
-#| "value. You can also use tags for automated replacement. Check out the "
-#| "documentation for more details."
 msgid ""
 "Alternative challenge message to use when authenticating with a passkey.You "
 "can also use tags for replacement, check the documentation for more details."
 msgstr ""
-"Utiliser un texte alternatif de challenge pour indiquer à l'utilisateur de "
-"saisir une valeur OTP. Vous pouvez aussi utiliser des tags pour le "
-"remplacement automatique. Consultez la documentation pour plus de détails."
+"Texte alternatif de challenge à utiliser lors de l'authentification avec une "
+"clé d'accès. Vous pouvez aussi utiliser des balises pour le remplacement, "
+"consultez la documentation pour plus de détails."
 
 #: lib/tokens/passkeytoken.py:112
 msgid ""
@@ -3348,10 +3329,8 @@ msgid "Please authenticate with your passkey!"
 msgstr ""
 
 #: lib/tokens/passkeytoken.py:395
-#, fuzzy
-#| msgid "Please confirm the authentication on your mobile device!"
 msgid "Please confirm the registration with your passkey!"
-msgstr "Veuillez confirmer l'authentification sur votre téléphone!"
+msgstr "Veuillez confirmer l'enregistrement avec votre clé d'accès !"
 
 #: lib/tokens/passwordtoken.py:113
 msgid ""
@@ -3466,11 +3445,6 @@ msgstr ""
 "présence."
 
 #: lib/tokens/pushtoken.py:447
-#, fuzzy
-#| msgid ""
-#| "The options that can be presented to the user to confirm the login. "
-#| "<code>ALPHABETIC</code>: A-Z, <code>NUMERIC</code>: 01-99, <code>CUSTOM</"
-#| "code>: user defined. "
 msgid ""
 "The options that can be presented to the user to confirm the login. "
 "<code>ALPHABETIC</code>: A-Z, <code>NUMERIC</code>: 01-99, <code>CUSTOM</"
@@ -3478,15 +3452,10 @@ msgid ""
 msgstr ""
 "Les options qui peuvent être présentées à l'utilisateur pour confirmer la "
 "connexion. <code>ALPHABETIQUE</code>: A-Z, <code>NUMERIQUE</code>: 01-99, "
-"<code>PERSO</code>: prédéfinies. "
+"<code>PERSO</code>: prédéfinies. S'applique seulement si <em>{0!s}</em> est "
+"défini."
 
 #: lib/tokens/pushtoken.py:457
-#, fuzzy
-#| msgid ""
-#| "Custom options that can be presented to the user to confirm the login. "
-#| "The string must contain at least 2 options and should be unique. The "
-#| "options are separated by <code>:</code>. e.g.: <code>01:02:03:1A:1B:1C</"
-#| "code>. to <code>CUSTOM</code>."
 msgid ""
 "Custom options that can be presented to the user to confirm the login. The "
 "string must contain at least 2 options and should be unique. The options are "
@@ -3494,19 +3463,18 @@ msgid ""
 "apply if <em>{0!s}</em> is set to <code>CUSTOM</code>."
 msgstr ""
 "Options personnalisées qui peuvent être présentées à l'utilisateur pour "
-"confirmer la connexion. La chaine doit contenir au moins 2 options et être "
-"unique. Les options sont séparées par <code>:</code>. e.g. : "
-"<code>01:02:03:1A:1B:1C</code>. to <code>CUSTOM</code>."
+"confirmer la connexion. La chaine doit contenir au moins 2 options et doit "
+"être unique. Les options sont séparées par <code>:</code>. e.g. : "
+"<code>01:02:03:1A:1B:1C</code>. S'applique seulement si <em>{0!s}</em> est "
+"défini à <code>CUSTOM</code>."
 
 #: lib/tokens/pushtoken.py:467
-#, fuzzy
-#| msgid ""
-#| "The number of options the user is presented with to confirm the login. "
 msgid ""
 "The number of options the user is presented with to confirm the login. Does "
 "only apply if <em>{0!s}</em> is set."
 msgstr ""
 "Le nombre d'options présentées à l'utilisateur pour confirmer la connexion. "
+"S'applique seulement si <em>{0!s}</em> est défini."
 
 #: lib/tokens/pushtoken.py:475
 msgid ""
