@@ -3185,6 +3185,31 @@ class APITokenTestCase(MyApiTestCase):
             self.assertEqual(tok.get_serial(), token.get("serial"), token)
         remove_token(tok.get_serial())
 
+    def test_61_list_tokens_realm(self):
+        self.setUp_user_realm2()
+
+        # create token for a user and an additional token realm
+        token = init_token({"type": "hotp", "genkey": True}, user=User(login="hans", realm=self.realm2))
+        token.set_realms([self.realm1, self.realm2])
+
+        # set policy for helpdesk admin
+        set_policy("helpdesk", scope=SCOPE.ADMIN, action=ACTION.TOKENLIST, realm=self.realm1)
+
+        # List tokens for serial (before request will also add user as parameter)
+        with self.app.test_request_context("/token/",
+                                           method="GET",
+                                           query_string={"serial": token.get_serial()},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertEqual(1, len(result.get("value").get("tokens")))
+            self.assertEqual(token.get_serial(), result.get("value").get("tokens")[0].get("serial"))
+
+        remove_token(token.get_serial())
+        delete_policy("helpdesk")
+
 
 class API00TokenPerformance(MyApiTestCase):
     token_count = 21

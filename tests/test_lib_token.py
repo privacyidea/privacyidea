@@ -1049,6 +1049,18 @@ class TokenTestCase(MyTestCase):
         container.delete()
         token_in_container.delete_token()
 
+        # filter for realm
+        self.setUp_user_realm2()
+        token = init_token({"type": "hotp", "genkey": True}, user=User("hans", self.realm2))
+        token.set_realms([self.realm1, self.realm2])
+        # if realm is not contained in allowed_realms, the query does not find any token
+        tokens = get_tokens_paginate(realm=self.realm2, allowed_realms=[self.realm1])["tokens"]
+        self.assertEqual(0, len(tokens))
+        # filter for a user which is not contained in the allowed realms, but the token itself is
+        tokens = get_tokens_paginate(user=User(login="hans", realm=self.realm2), allowed_realms=[self.realm1])["tokens"]
+        self.assertEqual(1, len(tokens))
+        token.delete_token()
+
     def test_42_sort_tokens(self):
         # return pagination
         tokendata = get_tokens_paginate(sortby=Token.serial, page=1, psize=5)
