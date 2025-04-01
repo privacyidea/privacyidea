@@ -1331,6 +1331,10 @@ def prepare_result(obj, rid=1, details=None):
         res["detail"] = details
 
     if rid > 1:
+        if isinstance(obj, dict):
+            # Looks like we have a /validate/samlcheck request
+            # TODO: Remove when /validate/samlcheck is removed
+            obj = obj.get("auth")
         if obj and obj != AUTH_RESPONSE.CHALLENGE:
             r_authentication = AUTH_RESPONSE.ACCEPT
         elif obj and obj == AUTH_RESPONSE.CHALLENGE:
