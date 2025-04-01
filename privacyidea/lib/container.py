@@ -195,6 +195,14 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
     sql_query = TokenContainer.query
     if user:
         sql_query = sql_query.join(TokenContainer.owners).filter(TokenContainerOwner.user_id == user.uid)
+        if user.realm:
+            realm_db = Realm.query.filter(func.lower(Realm.name) == user.realm.lower()).first()
+            if realm_db:
+                sql_query = sql_query.filter(TokenContainerOwner.realm_id == realm_db.id)
+            else:
+                log.warning(f"The users realm {user.realm} does not exist. Ignoring it as filter parameter.")
+        if user.resolver:
+            sql_query = sql_query.filter(func.lower(TokenContainerOwner.resolver) == user.resolver.lower())
 
     if serial and serial.strip("*"):
         # only if a serial is passed and it not only contains *s we add the filter

@@ -18,7 +18,8 @@ from privacyidea.lib.container import (delete_container_by_id, find_container_by
                                        get_templates_by_query, get_template_obj,
                                        create_container_template_from_db_object, compare_template_dicts,
                                        set_default_template, compare_template_with_container,
-                                       finalize_registration, finalize_container_rollover, init_container_rollover)
+                                       finalize_registration, finalize_container_rollover, init_container_rollover,
+                                       unassign_user)
 from privacyidea.lib.container import get_container_classes, unregister
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.containers.container_info import TokenContainerInfoData, PI_INTERNAL
@@ -774,13 +775,17 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertEqual(0, len(container_data["containers"]))
 
         # ---- user ----
-        # Filter by user
-        user_hans = User(login="hans", realm=self.realm1)
-        assign_user(container_serials[1], user_hans)
-        container_data = get_all_containers(user=user_hans, pagesize=15)
+        # Filter by user (same username and resolver, but different realms)
+        user_cornelius_1 = User(login="cornelius", realm=self.realm1)
+        assign_user(container_serials[1], user_cornelius_1)
+        user_cornelius_2 = User(login="cornelius", realm=self.realm2)
+        assign_user(container_serials[2], user_cornelius_2)
+        container_data = get_all_containers(user=user_cornelius_1, pagesize=15)
         self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(container_serials[1], container_data["containers"][0].serial)
         self.assertEqual(1, len(container_data["containers"][0].get_users()))
-        self.assertEqual("hans", container_data["containers"][0].get_users()[0].login)
+        container1_owner = container_data["containers"][0].get_users()[0]
+        self.assertEqual(user_cornelius_1, container1_owner)
 
         # Filter for non-existing user
         user_invalid = User(login="invalid", realm="random")
@@ -789,15 +794,20 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # ---- assigned ----
         container_data = get_all_containers(assigned=True, pagesize=15)
-        self.assertEqual(1, len(container_data["containers"]))
-        self.assertEqual(container_serials[1], container_data["containers"][0].serial)
+        self.assertEqual(2, len(container_data["containers"]))
+        self.assertSetEqual(set(container_serials[1:3]),
+                            {container.serial for container in container_data["containers"]})
 
         # not assigned
         container_data = get_all_containers(assigned=False, pagesize=15)
-        self.assertEqual(5, len(container_data["containers"]))
-        self.assertNotIn(container_serials[1], [container.serial for container in container_data["containers"]])
+        self.assertEqual(4, len(container_data["containers"]))
+        not_assigned_serials = [container.serial for container in container_data["containers"]]
+        self.assertNotIn(container_serials[1], not_assigned_serials)
+        self.assertNotIn(container_serials[2], not_assigned_serials)
 
         # ---- resolver ----
+        # unassign one user
+        unassign_user(container_serials[2], user_cornelius_2)
         # exact match
         container_data = get_all_containers(resolver=self.resolvername1, pagesize=15)
         self.assertEqual(1, len(container_data["containers"]))
