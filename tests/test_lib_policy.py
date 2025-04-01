@@ -1248,7 +1248,9 @@ class PolicyTestCase(MyTestCase):
         user3.info = {"type": "notverysecure", "groups": ["b", "c"]}
 
         # no user => policy error
-        with self.assertRaisesRegex(PolicyError, ".* an according object is not available.*"):
+        with self.assertRaisesRegex(PolicyError,
+                                    "ERR303: Policy 'verysecure' has condition on 'userinfo', but "
+                                    "the required object is not available!"):
             P.match_policies(user_object=None)
 
         # empty user => policy error
@@ -1444,7 +1446,6 @@ class PolicyTestCase(MyTestCase):
         def _names(policies):
             return set(p['name'] for p in policies)
 
-        from privacyidea.lib.tokenclass import TokenClass
         from privacyidea.models import Token
         serial = "filter_by_conditions_token"
         db_token = Token(serial, tokentype="spass")
