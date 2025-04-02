@@ -9,9 +9,29 @@ export class OverflowService {
     return element ? element.clientWidth < threshold : false;
   }
 
-  isHeightOverflowing(selector: string, threshold: number): boolean {
-    const element = document.querySelector(selector);
-    return element ? element.clientHeight < threshold : false;
+  isHeightOverflowing(params: {
+    selector: string;
+    threshold?: number;
+    thresholdSelector?: string;
+  }): boolean {
+    const element = document.querySelector<HTMLElement>(params.selector);
+    if (!element) return false;
+
+    if (params.threshold !== undefined) {
+      return element.clientHeight < params.threshold;
+    } else if (params.thresholdSelector) {
+      const thresholdElement = document.querySelector<HTMLElement>(
+        params.thresholdSelector,
+      );
+      if (!thresholdElement) return false;
+      const computedStyle = window.getComputedStyle(thresholdElement);
+      const paddingBottom = parseFloat(computedStyle.paddingBottom) || 0;
+      const thresholdHeightWithoutPadding =
+        thresholdElement.clientHeight - paddingBottom;
+      return element.clientHeight < thresholdHeightWithoutPadding + 150;
+    } else {
+      return false;
+    }
   }
 
   getOverflowThreshold(selectedContent: string) {
@@ -29,6 +49,8 @@ export class OverflowService {
       case 'token_applications':
         return 1500;
       case 'token_enrollment':
+        return 1240;
+      case 'container_create':
         return 1240;
       case 'token_get_serial':
         return 1240;

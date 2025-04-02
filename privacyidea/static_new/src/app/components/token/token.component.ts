@@ -236,6 +236,7 @@ export class TokenComponent {
   refreshContainerDetails = signal(false);
   states = signal<string[]>([]);
   isProgrammaticChange = signal(false);
+  isTokenDrawerOverflowing = signal(false);
   containerSelection = new SelectionModel<any>(true, []);
   tokenSelection = new SelectionModel<any>(true, []);
   @ViewChild('tokenDetailsComponent')
@@ -276,7 +277,28 @@ export class TokenComponent {
     effect(() => {
       this.selectedContent();
       this.loadingService.clearAllLoadings();
+      this.updateOverflowState();
     });
+  }
+
+  ngAfterViewInit() {
+    window.addEventListener('resize', this.updateOverflowState.bind(this));
+    this.updateOverflowState();
+  }
+
+  updateOverflowState() {
+    setTimeout(() => {
+      this.isTokenDrawerOverflowing.set(
+        this.overflowService.isHeightOverflowing({
+          selector: '.token-layout',
+          thresholdSelector: '.drawer',
+        }),
+      );
+    }, 400);
+  }
+
+  ngOnDestroy() {
+    window.removeEventListener('resize', this.updateOverflowState);
   }
 
   onRefreshTokenOverview(): void {

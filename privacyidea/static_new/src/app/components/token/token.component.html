@@ -27,10 +27,12 @@
       overflowService.getOverflowThreshold(selectedContent())
     )) {
       <mat-drawer #drawer
+                  (opened)="updateOverflowState()"
                   [mode]="'over'"
-                  [ngClass]="[ this.overflowService.isHeightOverflowing('.token-layout',
-                  675) ? 'token-drawer-overflow' : 'token-drawer' ]">
+                  [ngClass]="isTokenDrawerOverflowing() ? 'token-drawer-overflow' : 'token-drawer'">
+        <div class="drawer">
         <ng-container [ngTemplateOutlet]="tokenCard"/>
+        </div>
       </mat-drawer>
     }
     <mat-drawer-content>

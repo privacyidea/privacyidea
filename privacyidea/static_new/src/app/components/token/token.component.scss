@@ -9,6 +9,7 @@ $margin-bottom-main: 9.5rem;
 }
 
 .token-drawer {
+  border: solid 2px #efedec;
   height: fit-content;
   box-shadow: var(--box-shadow-hover);
   border-radius: var(--border-radius);
@@ -17,6 +18,7 @@ $margin-bottom-main: 9.5rem;
 }
 
 .token-drawer-overflow {
+  border: solid 2px #efedec;
   height: auto;
   box-shadow: var(--box-shadow-hover);
   border-radius: var(--border-radius);
