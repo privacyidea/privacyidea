@@ -69,28 +69,4 @@ h5 {
     background: #dedcdf;
     padding: 12px 4px 16px 12px
   }
-
-  .token-type-option.mat-mdc-option.mdc-list-item--selected:not(
-      .mdc-list-item--disabled
-    ):not(.mat-mdc-option-multiple) {
-    background-color: #217fa8;
-  }
-
-  .token-type-option.mat-mdc-option.mdc-list-item {
-    background: #efedf0;
-  }
-
-  .token-type-option.mat-mdc-option.mdc-list-item--selected:not(
-      .mdc-list-item--disabled
-    ) .mdc-list-item__primary-text {
-    color: white;
-  }
-
-  .token-type-option.mat-mdc-option:hover:not(.mdc-list-item--disabled) {
-    background-color: #f2f9fd;
-  }
-
-  .multi-column-panel .mat-pseudo-checkbox-checked::after {
-    color: white !important;
-  }
 }

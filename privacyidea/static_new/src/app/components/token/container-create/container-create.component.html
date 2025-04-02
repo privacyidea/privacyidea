@@ -4,7 +4,7 @@
   <mat-form-field class="width-100 margin-button-1">
     <mat-select [(ngModel)]="selectedType">
       @for (type of containerTypes; track type) {
-        <mat-option class="token-type-option"
+        <mat-option class="type-option"
                     [value]="type">{{
             type.key[0].toUpperCase() + type.key.slice(1) + ': ' +
             type.info
