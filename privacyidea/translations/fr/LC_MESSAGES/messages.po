@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-02-25 14:26+0100\n"
-"PO-Revision-Date: 2025-04-01 19:17+0000\n"
+"PO-Revision-Date: 2025-04-02 19:16+0000\n"
 "Last-Translator: Gregory Bouzinac <gregory.b@orange.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/fr/>\n"
@@ -1035,7 +1035,7 @@ msgid ""
 "some other apps like FreeOTP (supported file formats: PNG, JPG and GIF)."
 msgstr ""
 "L'URL de l'image du jeton pour le PrivacyIDEA Authenticator et pour quelques "
-"autres apps comme FreeOTP (format de fichiers supportés: PNG, JPG et GIF)."
+"autres apps comme FreeOTP (format de fichiers supportés : PNG, JPG et GIF)."
 
 #: lib/policy.py:2428
 msgid ""
@@ -1259,9 +1259,9 @@ msgid ""
 "or the answer to a challenge. PIN concatenated with OTP can not be used "
 "anymore! Does only work when authenticating with a username."
 msgstr ""
-"Quand activé, les tentatives d'authentification seront interprétées comme le "
-"PIN ou comme la réponse à un challenge. Le PIN concaténé avec l'OTP ne "
-"peuvent plus être utilisés! Fonctionne uniquement avec un nom d'utilisateur."
+"Quand activé, les tentatives d'authentifications seront interprétées comme "
+"le PIN ou comme la réponse à un challenge. Le PIN concaténé avec l'OTP ne "
+"peuvent plus être utilisés ! Fonctionne uniquement avec un nom d'utilisateur."
 
 #: lib/policy.py:2604
 msgid ""
@@ -1634,7 +1634,6 @@ msgstr ""
 "pour les utilisateurs."
 
 #: lib/policy.py:2886
-#, fuzzy
 msgid ""
 "Container type to be created with the container wizard. It is required to "
 "set at least this option to enable the container wizard. As long as the user "
@@ -1690,12 +1689,17 @@ msgid ""
 "synchronization or unregistration, this defines the time in minutes the "
 "client has to complete the action. The default is two minutes."
 msgstr ""
+"Après que le client (un conteneur enregistré) a demandé une action comme une "
+"synchronisation ou une désinscription, ceci définit la durée en minutes que "
+"le client dispose pour compléter l'action. 2 minutes par défaut."
 
 #: lib/policy.py:2927
 msgid ""
 "The container needs to verify the SSL certificate of the privacyIDEA server "
 "during registration and synchronization. (default True)"
 msgstr ""
+"Le conteneur doit vérifier le certificat SSL du serveur privacyIDEA pendant "
+"l'enregistrement ou la synchronisation. (vrai par défaut)"
 
 #: lib/policy.py:2935
 msgid ""
@@ -1705,12 +1709,18 @@ msgstr ""
 "Le client est autorisé à faire un roulement du conteneur et de ses jetons."
 
 #: lib/policy.py:2940
+#, fuzzy
 msgid ""
 "During the first synchronization, the server automatically adds the clients "
 "tokens existing in privacyIDEA to the container. This allows to register "
 "devices with existing tokens as container without having to manually add the "
 "tokens on the device to the container."
 msgstr ""
+"Durant la première synchronisation, le serveur ajoute automatiquement les "
+"jetons des clients existants de privacyIDEA au conteneur. Ceci permet "
+"d'enregistrer des périphériques avec des jetons existants en tant que "
+"conteneur sans avoir à ajouter manuellement les jetons du périphérique au "
+"conteneur."
 
 #: lib/policy.py:2947
 msgid "The user is not allowed to delete tokens locally on the smartphone."
@@ -1722,6 +1732,8 @@ msgid ""
 "The client is not allowed to unregister the container. The user can not "
 "delete the container locally on the smartphone."
 msgstr ""
+"Le client n'est pas autorisé à désinscrire le conteneur. L'utilisateur ne "
+"peut pas supprimer le conteneur sur le smartphone."
 
 #: lib/policy.py:2997
 msgid ""
@@ -1780,7 +1792,7 @@ msgstr "Je peux seulement créer des filtres SQL de tokeninfo de longueur 1."
 
 #: lib/token.py:343
 msgid "No container with the serial {container_serial} exists."
-msgstr ""
+msgstr "Aucun conteneur avec le numéro de série {container_serial} existe."
 
 #: lib/token.py:734
 msgid "The requested token could not be found."
@@ -1803,6 +1815,8 @@ msgid ""
 "Token {serial} already exists with type {old_type}. Can not initialize token "
 "with new type {token_type}"
 msgstr ""
+"Le jeton {serial} existe déjà avec le type {old_type}. Impossible "
+"d'initialiser le jeton avec le nouveau type {token_type}"
 
 #: lib/token.py:1257
 msgid "init token failed:"
@@ -1841,8 +1855,8 @@ msgid ""
 "There is no active and assigned token in this realm, included types: {0!s}, "
 "excluded types: {1!s}"
 msgstr ""
-"Il n'y a aucun jeton actif ou attribué dans ce domaine, types inclus: {0!s}, "
-"types exclus: {1!s}"
+"Il n'y a aucun jeton actif ou attribué dans ce domaine, types inclus : {0!s}"
+", types exclus : {1!s}"
 
 #: lib/token.py:2258
 msgid "OTP verification failed."
@@ -1919,7 +1933,7 @@ msgstr "Le groupe de jetons n'existe pas."
 
 #: lib/token.py:2939
 msgid " Please press: {presence_answer}"
-msgstr ""
+msgstr " Veuillez presser : {presence_answer}"
 
 #: lib/tokenclass.py:1692
 msgid "please enter otp: "
@@ -1939,7 +1953,7 @@ msgstr ""
 
 #: lib/containers/smartphone.py:123
 msgid "A smartphone that uses an authenticator app."
-msgstr ""
+msgstr "Un smartphone utilisant une application d'authentification."
 
 #: lib/containers/smartphone.py:224
 msgid "URL for privacyIDEA Container Registration"
@@ -2217,6 +2231,7 @@ msgstr ""
 "valeur_champ', 'nom_champ > valeur_champ' ou 'nom_champ < valeur_champ'."
 
 #: lib/eventhandler/base.py:473
+#, fuzzy
 msgid ""
 "Action is triggered, if the last authentication of the container is older "
 "than the specified time. The time value has to be an integer followed by a "
@@ -2224,6 +2239,11 @@ msgid ""
 "'m' (minutes), 's' (seconds). Only one unit is allowed. Examples: '8h', "
 "'7d', '1y'"
 msgstr ""
+"L'action est déclenchée, si la dernière authentification du conteneur est "
+"plus ancienne que la durée spécifiée. La valeur de temps doit être un entier "
+"suivi d'une unité de temps. Les unités supportées sont 'y' (années), 'd' "
+"(jours), 'h' (heures), 'm' (minutes), 's' (secondes). Seule une unité est "
+"autorisée. Exemples : '8h', '7d', '1y'"
 
 #: lib/eventhandler/base.py:484
 msgid ""
@@ -2233,10 +2253,15 @@ msgid ""
 "'m' (minutes), 's' (seconds). Only one unit is allowed. Examples: '8h', "
 "'7d', '1y'"
 msgstr ""
+"L'action est déclenchée, si la dernière synchronisation du conteneur est "
+"plus ancienne que la durée spécifiée. La valeur de temps doit être un entier "
+"suivi d'une unité de temps. Les unités supportées sont 'y' (années), 'd' "
+"(jours), 'h' (heures), 'm' (minutes), 's' (secondes). Seule une unité est "
+"autorisée. Exemples : '8h', '7d', '1y'"
 
 #: lib/eventhandler/containerhandler.py:89
 msgid "Set the state {state}"
-msgstr ""
+msgstr "Définir l'état {state}"
 
 #: lib/eventhandler/containerhandler.py:96
 msgid "Container type to create"
@@ -2375,10 +2400,14 @@ msgstr ""
 "'()' afin de transférer des valeurs au nouveau paramètre."
 
 #: lib/eventhandler/requestmangler.py:112
+#, fuzzy
 msgid ""
 "If the parameter is 'username', 'user' or 'realm', the user will be reset. "
 "This can have an effect on any further actions on the user!"
 msgstr ""
+"Si le paramètre est 'username', 'user' or 'realm', l'utilisateur sera "
+"réinitialisé. Ceci peut avoir un effet sur les actions futures de "
+"l'utilisateur !"
 
 #: lib/eventhandler/responsemangler.py:79
 msgid ""
@@ -2630,7 +2659,7 @@ msgstr "Envoyez un courriel sous forme de texte brut ou HTML."
 
 #: lib/eventhandler/usernotification.py:154
 msgid "Send QR-Code image as an attachment (cid URL: token_image)"
-msgstr "Envoyer l'image QR-Code comme une pièce jointe (cid URL: token_image)"
+msgstr "Envoyer l'image QR-Code comme une pièce jointe (cid URL : token_image)"
 
 #: lib/eventhandler/usernotification.py:159
 msgid "The subject of the mail that is sent."
@@ -2657,6 +2686,14 @@ msgid ""
 "{container_url_img}, {time}, {date}, {client_ip}, {ua_browser}, {ua_string}, "
 "{pin}.</code>"
 msgstr ""
+"Le modèle du corps du courriel qui sera envoyé. Il peut contenir les balises "
+"suivantes comme spécifié dans la documentation : <code>{admin}, {realm}, "
+"{action}, {serial}, {url}, {user}, {givenname}, {surname}, {username}, "
+"{userrealm}, {tokentype}, {tokendescription}, {registrationcode}, "
+"{recipient_givenname}, {recipient_surname}, {googleurl_value}, "
+"{googleurl_img}, {pushurl_value}, {pushurl_img}, {container_url_value}, "
+"{container_url_img}, {time}, {date}, {client_ip}, {ua_browser}, {ua_string}, "
+"{pin}.</code>"
 
 #: lib/eventhandler/usernotification.py:203
 #: lib/eventhandler/usernotification.py:248
@@ -2677,6 +2714,13 @@ msgid ""
 "{pushurl_img}, {container_url_value}, {container_url_img}, {time}, {date}, "
 "{client_ip}, {ua_browser}, {ua_string}, {pin}.</code>"
 msgstr ""
+"Le modèle de texte du SMS. Il peut contenir les balises suivantes comme "
+"spécifié dans la documentation : <code>{admin}, {realm}, {action}, {serial}, "
+"{url}, {user}, {givenname}, {surname}, {username}, {userrealm}, {tokentype}, "
+"{tokendescription}, {registrationcode}, {recipient_givenname}, "
+"{recipient_surname}, {googleurl_value}, {googleurl_img}, {pushurl_value}, "
+"{pushurl_img}, {container_url_value}, {container_url_img}, {time}, {date}, "
+"{client_ip}, {ua_browser}, {ua_string}, {pin}.</code>"
 
 #: lib/eventhandler/usernotification.py:255
 msgid ""
@@ -2688,6 +2732,14 @@ msgid ""
 "{pushurl_img}, {container_url_value}, {container_url_img}, {time}, {date}, "
 "{client_ip}, {ua_browser}, {ua_string}, {pin}.</code>"
 msgstr ""
+"Ceci est le contenu du modèle du nouveau fichier. Il peut contenir les "
+"balises suivantes comme spécifié dans la documentation : <code>{admin}, "
+"{realm}, {action}, {serial}, {url}, {user}, {givenname}, {surname}, "
+"{username}, {userrealm}, {tokentype}, {tokendescription}, {registrationcode}"
+", {recipient_givenname}, {recipient_surname}, {googleurl_value}, "
+"{googleurl_img}, {pushurl_value}, {pushurl_img}, {container_url_value}, "
+"{container_url_img}, {time}, {date}, {client_ip}, {ua_browser}, {ua_string}, "
+"{pin}.</code>"
 
 #: lib/eventhandler/usernotification.py:266
 msgid ""
@@ -2713,6 +2765,9 @@ msgid ""
 "{surname}, {token_owner}, {user_realm}, {token_serial}. However, tag "
 "availability is depending on the endpoint."
 msgstr ""
+"Vous pouvez utiliser les balises réservées suivantes : {logged_in_user}, "
+"{realm}, {surname}, {token_owner}, {user_realm}, {token_serial}. Toutefois, "
+"la disponibilité des balises dépend du terminal."
 
 #: lib/eventhandler/webhookeventhandler.py:102
 msgid "The data posted in the WebHook"
@@ -3098,7 +3153,7 @@ msgstr "Veuillez entrer votre nouvelle adresse email !"
 
 #: lib/tokens/emailtoken.py:601
 msgid "The email address is not valid!"
-msgstr "L'adresse email n'est pas valide!"
+msgstr "L'adresse email n'est pas valide !"
 
 #: lib/tokens/foureyestoken.py:130
 msgid "4Eyes Token: Use tokens of two or more users to authenticate"
@@ -3193,7 +3248,7 @@ msgstr "URL pour jeton OATHURL pour jeton OATH"
 
 #: lib/tokens/hotptoken.py:839
 msgid "Please scan the QR code and enter the OTP value!"
-msgstr "Veuillez scanner le code QR et entrer la valeur OTP!"
+msgstr "Veuillez scanner le code QR et entrer la valeur OTP !"
 
 #: lib/tokens/indexedsecrettoken.py:50
 msgid "Please enter the positions {0!s} from your secret."
@@ -3207,7 +3262,7 @@ msgstr "Jeton Secret indexé"
 msgid ""
 "IndexedSecret: Request certain positions of a shared secret from the user."
 msgstr ""
-"IndexedSecret: Demande certaines positions d'un secret partagé de "
+"SecretIndexé : Demande certaines positions d'un secret partagé de "
 "l'utilisateur."
 
 #: lib/tokens/indexedsecrettoken.py:109
@@ -3249,7 +3304,7 @@ msgstr ""
 
 #: lib/tokens/motptoken.py:84
 msgid "mOTP: Classical mobile One Time Passwords."
-msgstr "mOTP: Mot de passe unique mobile classique."
+msgstr "mOTP : Mot de passe unique mobile classique."
 
 #: lib/tokens/motptoken.py:102
 msgid "The user may only have this maximum number of mOTP tokens assigned."
@@ -3269,7 +3324,7 @@ msgstr "URL pour jeton mOTP"
 
 #: lib/tokens/ocratoken.py:89
 msgid "OCRA: Enroll an OCRA token."
-msgstr "OCRA: enrôler un jeton OCRA."
+msgstr "OCRA : enrôler un jeton OCRA."
 
 #: lib/tokens/ocratoken.py:99
 msgid "The user may only have this maximum number of OCRA tokens assigned."
@@ -3285,7 +3340,7 @@ msgstr ""
 
 #: lib/tokens/papertoken.py:93
 msgid "PPR: One Time Passwords printed on a sheet of paper."
-msgstr "PPR: Mots de passe uniques imprimés sur une feuille de papier."
+msgstr "PPR : Mots de passe uniques imprimés sur une feuille de papier."
 
 #: lib/tokens/papertoken.py:104 lib/tokens/tantoken.py:106
 msgid "The number of OTP values, which are printed on the paper."
@@ -3307,6 +3362,7 @@ msgstr ""
 #: lib/tokens/passkeytoken.py:95
 msgid "Passkey: A secret stored on a device, unlocked with biometrics."
 msgstr ""
+"Clé d'accès : Un secret stocké sur un périphérique, débloqué par biométrie."
 
 #: lib/tokens/passkeytoken.py:104
 msgid ""
@@ -3318,15 +3374,19 @@ msgstr ""
 "consultez la documentation pour plus de détails."
 
 #: lib/tokens/passkeytoken.py:112
+#, fuzzy
 msgid ""
 "Request attestation from the authenticator during the registration. The "
 "attestation certificate will be saved in the token info. The default value "
 "is 'none'."
 msgstr ""
+"Demande une attestation de l'authentificateur pendant l'enregistrement. Le "
+"certificat d'attestation sera sauvegardé dans les informations du jeton. La "
+"valeur par défaut est 'aucun'."
 
 #: lib/tokens/passkeytoken.py:391
 msgid "Please authenticate with your passkey!"
-msgstr ""
+msgstr "Veuillez vous authentifier avec votre clé d'accès !"
 
 #: lib/tokens/passkeytoken.py:395
 msgid "Please confirm the registration with your passkey!"
@@ -3356,7 +3416,7 @@ msgstr ""
 
 #: lib/tokens/pushtoken.py:72
 msgid "Please confirm the authentication on your mobile device!"
-msgstr "Veuillez confirmer l'authentification sur votre téléphone!"
+msgstr "Veuillez confirmer l'authentification sur votre téléphone !"
 
 #: lib/tokens/pushtoken.py:73
 msgid ""
@@ -3368,7 +3428,7 @@ msgstr ""
 
 #: lib/tokens/pushtoken.py:75
 msgid "Do you want to confirm the login?"
-msgstr "Voulez-vous confirmer la connexion?"
+msgstr "Voulez-vous confirmer la connexion ?"
 
 #: lib/tokens/pushtoken.py:372
 msgid "PUSH Token"
