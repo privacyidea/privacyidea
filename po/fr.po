@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-04-03 11:42+0000\n"
+"PO-Revision-Date: 2025-04-03 13:23+0000\n"
 "Last-Translator: Gregory Bouzinac <gregory.b@orange.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "branch-3-11-webui/fr/>\n"
@@ -2756,7 +2756,6 @@ msgid "Offline tokens attached to notebooks"
 msgstr "Jetons hors lignes rattachés aux machines"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:294
-#, fuzzy
 msgid ""
 "Offline tokens can not be rolled over and can not be transferred to a new "
 "device."
@@ -4065,7 +4064,7 @@ msgstr "Tester OTP seulement"
 
 #: privacyidea/static/components/token/views/token.details.html:519
 msgid "Test Passkey."
-msgstr "Tester la clé d'accès"
+msgstr "Tester la clé d'accès."
 
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:83
 msgid "Test SCIM Resolver"
@@ -5611,7 +5610,6 @@ msgid "Use a Template"
 msgstr "Utiliser un Modèle"
 
 #: privacyidea/static/components/directives/views/directive.registerContainer.html:28
-#, fuzzy
 msgid "Use the passphrase of the user from the AD."
 msgstr "Utiliser la phrase secrète de l'utilisateur à partir de l'AD."
 
