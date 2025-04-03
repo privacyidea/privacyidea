@@ -303,17 +303,15 @@ export class TokenComponent {
 
   onRefreshTokenOverview(): void {
     if (this.tokenTableComponent) {
-      this.tokenTableComponent.fetchTokenData().add(() => {
-        this.refreshTokenOverview.set(false);
-      });
+      this.tokenTableComponent.fetchTokenData();
+      this.refreshTokenOverview.set(false);
     }
   }
 
   onRefreshContainerOverview(): void {
     if (this.containerTableComponent) {
-      this.containerTableComponent.fetchContainerData().add(() => {
-        this.refreshContainerOverview.set(false);
-      });
+      this.containerTableComponent.fetchContainerData();
+      this.refreshContainerOverview.set(false);
     }
   }
 

@@ -25,7 +25,7 @@ import { NotificationService } from '../../../services/notification/notification
 import { TokenSelectedContent } from '../token.component';
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
-import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, Subject, switchMap } from 'rxjs';
 import { SelectionModel } from '@angular/cdk/collections';
 import { MatCheckbox } from '@angular/material/checkbox';
 
@@ -95,6 +95,12 @@ export class ContainerTableComponent {
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   filterSubject = new Subject<string>();
+  requestSubject = new Subject<{
+    page: number;
+    pageSize: number;
+    sort: Sort;
+    filter: string;
+  }>();
 
   constructor(
     private containerService: ContainerService,
@@ -124,6 +130,27 @@ export class ContainerTableComponent {
       .subscribe((filter) => {
         this.fetchContainerData(filter);
       });
+    this.requestSubject
+      .pipe(
+        distinctUntilChanged(
+          (prev, curr) => JSON.stringify(prev) === JSON.stringify(curr),
+        ),
+        switchMap((params) =>
+          this.containerService.getContainerData({
+            page: params.page,
+            pageSize: params.pageSize,
+            sort: params.sort,
+            filterValue: params.filter,
+          }),
+        ),
+      )
+      .subscribe({
+        next: (response) => {
+          this.length.set(response.result.value.count);
+          this.processDataSource(response.result.value.containers);
+        },
+        error: () => {},
+      });
   }
 
   ngAfterViewInit() {
@@ -142,7 +169,6 @@ export class ContainerTableComponent {
       this.containerSelection.clear();
       return;
     }
-
     this.containerSelection.select(...this.dataSource().data);
   }
 
@@ -150,7 +176,9 @@ export class ContainerTableComponent {
     if (!row) {
       return `${this.isAllSelected() ? 'deselect' : 'select'} all`;
     }
-    return `${this.containerSelection.isSelected(row) ? 'deselect' : 'select'} row ${row.position + 1}`;
+    return `${this.containerSelection.isSelected(row) ? 'deselect' : 'select'} row ${
+      row.position + 1
+    }`;
   }
 
   onFilterChange(newFilter: string) {
@@ -200,19 +228,12 @@ export class ContainerTableComponent {
   }
 
   fetchContainerData = (filterValue?: string) => {
-    return this.containerService
-      .getContainerData({
-        page: this.pageIndex() + 1,
-        pageSize: this.pageSize(),
-        sort: this.sortby_sortdir(),
-        filterValue: filterValue ?? this.filterValue(),
-      })
-      .subscribe({
-        next: (response) => {
-          this.length.set(response.result.value.count);
-          this.processDataSource(response.result.value.containers);
-        },
-      });
+    this.requestSubject.next({
+      page: this.pageIndex() + 1,
+      pageSize: this.pageSize(),
+      sort: this.sortby_sortdir(),
+      filter: filterValue ?? this.filterValue(),
+    });
   };
 
   private processDataSource(data: any[]) {

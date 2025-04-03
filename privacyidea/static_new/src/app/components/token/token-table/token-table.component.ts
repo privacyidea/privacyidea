@@ -23,7 +23,7 @@ import { TableUtilsService } from '../../../services/table-utils/table-utils.ser
 import { TokenSelectedContent } from '../token.component';
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
-import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, Subject, switchMap } from 'rxjs';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { SelectionModel } from '@angular/cdk/collections';
 
@@ -95,9 +95,14 @@ export class TokenTableComponent {
   clickedKeyword = signal<string>('');
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
-  @ViewChild('filterInput', { static: true })
-  filterInput!: HTMLInputElement;
+  @ViewChild('filterInput', { static: true }) filterInput!: HTMLInputElement;
   filterSubject = new Subject<string>();
+  requestSubject = new Subject<{
+    page: number;
+    pageSize: number;
+    sort: Sort;
+    filter: string;
+  }>();
 
   constructor(
     protected tokenService: TokenService,
@@ -126,6 +131,29 @@ export class TokenTableComponent {
       .subscribe((filter) => {
         this.fetchTokenData(filter);
       });
+    this.requestSubject
+      .pipe(
+        distinctUntilChanged(
+          (prev, curr) => JSON.stringify(prev) === JSON.stringify(curr),
+        ),
+        switchMap((params) =>
+          this.tokenService.getTokenData(
+            params.page,
+            params.pageSize,
+            params.sort,
+            params.filter,
+          ),
+        ),
+      )
+      .subscribe({
+        next: (response) => {
+          this.length.set(response.result.value.count);
+          this.dataSource.set(
+            new MatTableDataSource(response.result.value.tokens),
+          );
+        },
+        error: () => {},
+      });
   }
 
   onFilterChange(newFilter: string) {
@@ -148,7 +176,6 @@ export class TokenTableComponent {
       this.tokenSelection.clear();
       return;
     }
-
     this.tokenSelection.select(...this.dataSource().data);
   }
 
@@ -210,24 +237,6 @@ export class TokenTableComponent {
     );
   }
 
-  fetchTokenData = (filterValue?: string) => {
-    return this.tokenService
-      .getTokenData(
-        this.pageIndex() + 1,
-        this.pageSize(),
-        this.sortby_sortdir(),
-        filterValue ?? this.filterValue(),
-      )
-      .subscribe({
-        next: (response) => {
-          this.length.set(response.result.value.count);
-          this.dataSource.set(
-            new MatTableDataSource(response.result.value.tokens),
-          );
-        },
-      });
-  };
-
   onSortEvent($event: Sort) {
     this.tokenSelection.clear();
     this.tableUtilsService.handleSortEvent(
@@ -237,4 +246,13 @@ export class TokenTableComponent {
       this.fetchTokenData,
     );
   }
+
+  fetchTokenData = (filterValue?: string) => {
+    this.requestSubject.next({
+      page: this.pageIndex() + 1,
+      pageSize: this.pageSize(),
+      sort: this.sortby_sortdir(),
+      filter: filterValue ?? this.filterValue(),
+    });
+  };
 }
