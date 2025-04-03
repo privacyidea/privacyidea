@@ -27,7 +27,7 @@ from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy, check_u
                                            check_admin_tokenlist, check_container_action, check_token_list_action,
                                            check_container_register_rollover, container_registration_config,
                                            smartphone_config, check_client_container_action, hide_tokeninfo,
-                                           check_client_container_disabled_action)
+                                           check_client_container_disabled_action, hide_container_info)
 from privacyidea.api.lib.utils import send_result, getParam, required
 from privacyidea.lib.container import (find_container_by_serial, init_container, get_container_classes_descriptions,
                                        get_container_token_types, get_all_containers, add_container_info,
@@ -66,6 +66,7 @@ API for managing token containers
 @prepolicy(check_base_action, request, action=ACTION.CONTAINER_LIST)
 @prepolicy(check_admin_tokenlist, request, ACTION.CONTAINER_LIST)
 @prepolicy(check_admin_tokenlist, request, ACTION.TOKENLIST)
+@prepolicy(hide_container_info, request)
 @prepolicy(hide_tokeninfo, request)
 @log_with(log)
 def list_containers():
@@ -119,6 +120,7 @@ def list_containers():
     logged_in_user_role = g.logged_in_user.get("role")
     allowed_container_realms = getattr(request, "pi_allowed_container_realms", None)
     allowed_token_realms = getattr(request, "pi_allowed_realms", None)
+    hide_container_info = getParam(param, "hide_container_info", optional=True)
     hide_token_info = getParam(param, "hidden_tokeninfo", optional=True)
 
     # Set info dictionary (if either key or value is None, filter for all keys/values using * as wildcard)
@@ -133,7 +135,7 @@ def list_containers():
                                 sortby=sortby, sortdir=sortdir, pagesize=psize, page=page)
 
     containers = create_container_dict(result["containers"], no_token, user, logged_in_user_role, allowed_token_realms,
-                                       hide_token_info=hide_token_info)
+                                       hide_container_info=hide_container_info, hide_token_info=hide_token_info)
     result["containers"] = containers
 
     g.audit_object.log({"success": True,

@@ -2421,6 +2421,31 @@ def hide_tokeninfo(request=None, action=None):
     return True
 
 
+def hide_container_info(request=None, action=None):
+    """
+    This decorator checks for the policy `hide_container_info` and sets the `hide_container_info` parameter in the
+    request object containing a list of container info keys that shall be hidden in the response.
+
+    :param request: The request that is intercepted during the API call
+    :type request: Request Object
+    :param action: An optional action (not used in this decorator)
+    :return: Always true. Modifies the parameter `request`
+    :rtype: bool
+    """
+    # If no user is available (e.g. container/list without any query parameters), policies with conditions will not be
+    # matched. That's why we also use the allowed_realms to find matching policies. However, if multiple containers
+    # are returned, there might be different policies for each container. Actually all policies will simply add all
+    # matching hide_container_info keys, but not specific to the returned containers.
+    # That is not a problem as the container info is only displayed on the container details page (where a user object
+    # is available) and not in the list view. But the info is still contained in the response for the list view.
+    allowed_realms = getattr(request, "pi_allowed_container_realms", None)
+    hidden_fields = Match.admin_or_user(g=g, action=ACTION.HIDE_CONTAINER_INFO, user_obj=request.User,
+                                        allowed_realms=allowed_realms).action_values(unique=False)
+
+    request.all_data["hide_container_info"] = list(hidden_fields)
+    return True
+
+
 def increase_failcounter_on_challenge(request=None, action=None):
     """
     This is a decorator for /validate/check, validate/triggerchallenge and auth
@@ -2615,7 +2640,7 @@ def rss_age(request, action):
     :return: True
     """
     age_list = (Match.user(g, scope=SCOPE.WEBUI, action=ACTION.RSS_AGE,
-                user_object=request.User if hasattr(request, 'User') else None).action_values(unique=True))
+                           user_object=request.User if hasattr(request, 'User') else None).action_values(unique=True))
     # The default age for normal users is 0
     age = 0
     if g.get("logged_in_user", {}).get("role") == ROLE.ADMIN:
