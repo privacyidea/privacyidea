@@ -107,7 +107,8 @@ class PasskeyTokenClass(TokenClass):
                     },
                     PasskeyAction.EnableTriggerByPIN: {
                         'type': 'bool',
-                        'desc': _("When enabled, passkey token can be triggered with the PIN. For privacyIDEA plugins, "
+                        'desc': _("When enabled, passkey token can be triggered with the PIN or via the "
+                                  "/validate/triggerchallenge endpoint. For privacyIDEA plugins, "
                                   "this is not recommended. It is advised to use a condition, for example on a "
                                   "user-agent, with this policy."),
                     }
@@ -404,22 +405,34 @@ class PasskeyTokenClass(TokenClass):
 
     def create_challenge(self, transactionid=None, options=None):
         """
-        Requires the key "webauthn_relying_party_id" (FIDO2PolicyAction.RELYING_PARTY_ID) in the option dict.
-        Returns a fido2 challenge that is bound to this token.
+        Passkey does not create a challenge itself, it uses an open challenge acquired from /validate/initialize.
+        By returning False here, passkey tokens will not generate a challenge via
+        /validate/triggerchallenge -> create_challenge_from_tokens()
+        Optionally, creating a challenge can be enabled by setting the passkey_trigger_by_pin policy
         """
-        rp_id = get_required(options, FIDO2PolicyAction.RELYING_PARTY_ID)
-        user_verification = get_optional(options, "user_verification", "preferred")
-        challenge = fido2.challenge.create_fido2_challenge(rp_id, user_verification=user_verification,
-                                                           transaction_id=transactionid, serial=self.token.serial)
-        message = challenge["message"]
-        transaction_id = challenge["transaction_id"]
-        challenge_details = {"challenge": challenge["challenge"], "rpId": rp_id, "userVerification": user_verification}
-        # TODO this vvv is horrible
-        return True, message, transaction_id, challenge_details
+        if options and PasskeyAction.EnableTriggerByPIN in options and options[PasskeyAction.EnableTriggerByPIN]:
+            rp_id = get_required(options, FIDO2PolicyAction.RELYING_PARTY_ID)
+            user_verification = get_optional(options, "user_verification", "preferred")
+            challenge = fido2.challenge.create_fido2_challenge(rp_id, user_verification=user_verification,
+                                                               transaction_id=transactionid, serial=self.token.serial)
+            message = challenge["message"]
+            transaction_id = challenge["transaction_id"]
+            challenge_details = {"challenge": challenge["challenge"], "rpId": rp_id,
+                                 "userVerification": user_verification}
+            # TODO this vvv is horrible
+            return True, message, transaction_id, challenge_details
+        else:
+            return False, "", "", {}
 
     @log_with(log)
     def use_for_authentication(self, options):
         return self.is_active()
+
+    def inc_failcount(self):
+        """
+        Do not increment the fail count for passkey, since their authentication process is decoupled from the usual.
+        """
+        pass
 
     @classmethod
     def is_multichallenge_enrollable(cls):

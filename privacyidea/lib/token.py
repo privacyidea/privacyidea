@@ -2356,7 +2356,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
     for token in token_list:
         # Check if the max auth is succeeded
         if token.check_all(message_list):
-            r_chal, message, transaction_id, challenge_info = token.create_challenge(
+            challenge_created, message, transaction_id, challenge_info = token.create_challenge(
                 transactionid=transaction_id, options=options)
 
             # We need to pass the info if a push token has been triggered, so that require presence can re-use the
@@ -2371,7 +2371,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
             message = challenge_text_replace(message, user=token.user, token_obj=token,
                                              additional_tags=additional_tags)
             message_list.append(message)
-            if r_chal:
+            if challenge_created:
                 challenge_info = challenge_info or {}
                 challenge_info["transaction_id"] = transaction_id
                 challenge_info["serial"] = token.token.serial
@@ -2397,7 +2397,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
     # The "messages" element is needed by some decorators
     reply_dict["messages"] = message_list
     # TODO: This line is deprecated: Add the information for the old administrative triggerchallenge
-    reply_dict["transaction_ids"] = [chal.get("transaction_id") for chal in reply_dict.get("multi_challenge", [])]
+    reply_dict["transaction_ids"] = [challenge.get("transaction_id") for challenge in reply_dict.get("multi_challenge", [])]
 
 
 def weigh_token_type(token_obj):
