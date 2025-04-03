@@ -2193,6 +2193,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             self.assertEqual(result.get("value"), 1)
+            self.assertEqual(result.get("authentication"), AUTH_RESPONSE.CHALLENGE)
             detail = res.json.get("detail")
             self.assertEqual(detail.get("messages")[0],
                              _("Enter the OTP from the SMS:"))
@@ -2224,6 +2225,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             self.assertEqual(result.get("value"), 1)
+            self.assertEqual(result.get("authentication"), AUTH_RESPONSE.CHALLENGE)
             detail = res.json.get("detail")
             self.assertEqual(detail.get("messages")[0],
                              _("Enter the OTP from the SMS:"))
@@ -5166,6 +5168,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             self.assertEqual(result.get("value"), 1)
+            self.assertEqual(result.get("authentication"), AUTH_RESPONSE.CHALLENGE)
             detail = res.json.get("detail")
             self.assertEqual(detail.get("messages")[0],
                              _("Enter the OTP from the Email"))
