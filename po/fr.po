@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-04-02 19:16+0000\n"
+"PO-Revision-Date: 2025-04-03 19:16+0000\n"
 "Last-Translator: Gregory Bouzinac <gregory.b@orange.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/fr/>\n"
@@ -1648,7 +1648,6 @@ msgid "Enter PIN for token"
 msgstr "Veuillez saisir le code PIN pour le jeton"
 
 #: privacyidea/static/components/directives/views/directive.registerContainer.html:44
-#, fuzzy
 msgid ""
 "Enter a passphrase prompt that will be displayed to the user.\n"
 "                            This should indicate which passphrase the user "
@@ -2369,10 +2368,6 @@ msgid "List Tokengroup definitions"
 msgstr "Lister les définitions du groupe de jetons"
 
 #: privacyidea/static/components/config/views/config.system.html:88
-#, fuzzy
-#| msgid ""
-#| "List privacyIDEA server\n"
-#| "                                    definitions"
 msgid ""
 "List privacyIDEA server\n"
 "                                definitions"
@@ -2753,6 +2748,8 @@ msgid ""
 "Offline tokens can not be rolled over and can not be transferred to a new "
 "device."
 msgstr ""
+"Les jetons hors lignes ne peuvent pas être regénérés ou transférés sur un "
+"nouveau périphérique."
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:313
 msgid ""
@@ -2954,12 +2951,6 @@ msgstr "Veuillez indiquer l'URL de base du serveur privacyIDEA."
 
 #: privacyidea/static/components/token/views/token.containercreate.html:177
 #: privacyidea/static/components/token/views/token.containerdetails.html:291
-#, fuzzy
-#| msgid ""
-#| "Please scan the QR code with the privacyIDEA Authenticator App\n"
-#| "            or click <a href=\"{{ enrolledToken.pushurl.value }}\">this "
-#| "link</a> on your\n"
-#| "            smartphone."
 msgid ""
 "Please scan the QR code with the privacyIDEA Authenticator App\n"
 "                    or click <a href=\"{{ containerRegistrationURL }}\">this "
@@ -2969,9 +2960,11 @@ msgid ""
 "                    endpoint."
 msgstr ""
 "Veuillez scanner le code QR avec l'application privacyIDEA authenticator\n"
-"ou cliquer sur <a href=\"{{ enrolledToken.pushurl.value }}\">ce lien</a> sur "
+"ou cliquer sur  <a href=\"{{ containerRegistrationURL }}\">ce lien</a> sur "
 "votre\n"
-"smartphone."
+"smartphone pour enregistrer votre conteneur. Il enverra les informations "
+"d'enregistrement manquantes au terminal\n"
+"configuré."
 
 #: privacyidea/static/components/token/views/token.enrolled.push.html:9
 msgid ""
@@ -3260,33 +3253,25 @@ msgid "Register"
 msgstr "S'inscrire"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:263
-#, fuzzy
-#| msgid "Delete Container and Tokens"
 msgid "Register Container on Device"
-msgstr "Effacer le conteneur et les jetons"
+msgstr "Enregistrer le conteneur sur le périphérique"
 
 #: privacyidea/static/components/token/views/token.containercreate.html:112
 #: privacyidea/static/components/token/views/token.containercreate.html:169
-#, fuzzy
-#| msgid "Registration Code"
 msgid "Registration"
-msgstr "Code d'inscription"
+msgstr "Enregistrement"
 
 #: privacyidea/static/components/token/views/token.enrolled.registration.html:6
 msgid "Registration Code"
 msgstr "Code d'inscription"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:248
-#, fuzzy
-#| msgid "Registration Code"
 msgid "Registration Configuration"
-msgstr "Code d'inscription"
+msgstr "Configuration d'enregistrement"
 
 #: privacyidea/static/components/token/views/token.containercreate.html:239
-#, fuzzy
-#| msgid "User deleted successfully."
 msgid "Registration completed successfully"
-msgstr "Utilisateur supprimé avec succès."
+msgstr "Enregistrement effectué avec succès"
 
 #: privacyidea/static/components/token/views/token.enroll.remote.html:44
 msgid "Remote Realm"
@@ -3321,10 +3306,8 @@ msgid "Remove All"
 msgstr "Enlever tout"
 
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:54
-#, fuzzy
-#| msgid "Rollover Token"
 msgid "Remove Token"
-msgstr "Enrôlement du jeton"
+msgstr "Enlever le jeton"
 
 #: privacyidea/static/components/token/views/token.details.html:637
 msgid "Remove from Container"
@@ -3812,10 +3795,8 @@ msgid "Set PIN"
 msgstr "Définir le code PIN"
 
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:23
-#, fuzzy
-#| msgid "Create default realm"
 msgid "Set as default template"
-msgstr "Créer un domaine par défaut"
+msgstr "Définir comme modèle par défaut"
 
 #: privacyidea/static/components/token/views/token.details.html:129
 msgid "Set count window"
@@ -4029,26 +4010,20 @@ msgid "Taskmodule"
 msgstr "Module des tâches"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:148
-#, fuzzy
-#| msgid "Policy Templates"
 msgid "Template"
-msgstr "Modèles de politique"
+msgstr "Modèle"
 
 #: privacyidea/static/components/token/views/token.containercreate.html:72
-#, fuzzy
-#| msgid "Delete Container and Tokens"
 msgid "Template Name and Contained Token Types"
-msgstr "Effacer le conteneur et les jetons"
+msgstr "Nom du Modèle et Types de jetons contenus"
 
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:19
 msgid "Template {{ template.name }}"
 msgstr "Modèle {{ template.name }}"
 
 #: privacyidea/static/components/token/views/token.html:195
-#, fuzzy
-#| msgid "Policy Templates"
 msgid "Templates"
-msgstr "Modèles de politique"
+msgstr "Modèles"
 
 #: privacyidea/static/components/config/controllers/smtpServerController.js:79
 msgid "Test Email sent successfully."
@@ -4068,10 +4043,8 @@ msgid "Test OTP only"
 msgstr "Tester OTP seulement"
 
 #: privacyidea/static/components/token/views/token.details.html:519
-#, fuzzy
-#| msgid "Test Yubikey"
 msgid "Test Passkey."
-msgstr "Tester Yubikey"
+msgstr "Tester la clé d'accès."
 
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:83
 msgid "Test SCIM Resolver"
@@ -4619,10 +4592,8 @@ msgstr ""
 "Le périphérique du client ne peut pas être utilisé pour ce type de demande."
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:302
-#, fuzzy
-#| msgid "The URL that contains the logo of the service."
 msgid "The container contains the following offline tokens:"
-msgstr "L'URL contenant le logo du service."
+msgstr "Le conteneur contient les jetons hors lignes suivants :"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:68
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:102
@@ -5370,8 +5341,6 @@ msgid "Token Applications"
 msgstr "Applications du jeton"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:464
-#, fuzzy
-#| msgid "Token realms"
 msgid "Token Realms"
 msgstr "Domaines du jeton"
 
@@ -5481,20 +5450,16 @@ msgid "Total Challenges:"
 msgstr "Challenges totaux :"
 
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:77
-#, fuzzy
-#| msgid "Total Containers: {{ containerdata.count }}"
 msgid "Total Containers: {{ containerData.count }}"
-msgstr "Conteneurs totaux : {{ containerdata.count }}"
+msgstr "Conteneurs totaux : {{ containerData.count }}"
 
 #: privacyidea/static/components/token/views/token.containerlist.html:30
 msgid "Total Containers: {{ containerdata.count }}"
 msgstr "Conteneurs totaux : {{ containerdata.count }}"
 
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:32
-#, fuzzy
-#| msgid "total tokens: {{ tokendata.count }}"
 msgid "Total Templates: {{ templatedata.count }}"
-msgstr "jetons totaux : {{ tokendata.count }}"
+msgstr "Modèles totaux : {{ templatedata.count }}"
 
 #: privacyidea/static/components/token/views/token.challenges.html:34
 msgid "Transaction ID"
@@ -5552,10 +5517,8 @@ msgid "Unassign User"
 msgstr "Désassigner utilisateur"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:391
-#, fuzzy
-#| msgid "Unassign Token"
 msgid "Unassign User From All Tokens"
-msgstr "Désassigner jeton"
+msgstr "Désassigner l'utilisateur de tous les jetons"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:31
 msgid "Unassigned Hardware"
@@ -5566,10 +5529,8 @@ msgid "Unassigned Software"
 msgstr "Désassigner logiciel"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:324
-#, fuzzy
-#| msgid "Create Container"
 msgid "Unregister Container"
-msgstr "Créer un Conteneur"
+msgstr "Désinscrire Conteneur"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:22
 msgid "Upload Certificate"
@@ -5619,13 +5580,10 @@ msgid "Use StartTLS"
 msgstr "Utiliser StartTLS"
 
 #: privacyidea/static/components/token/views/token.containercreate.html:70
-#, fuzzy
-#| msgid "Certificate Template"
 msgid "Use a Template"
-msgstr "Modèle de certificat"
+msgstr "Utiliser un Modèle"
 
 #: privacyidea/static/components/directives/views/directive.registerContainer.html:28
-#, fuzzy
 msgid "Use the passphrase of the user from the AD."
 msgstr "Utiliser la phrase secrète de l'utilisateur à partir de l'AD."
 
@@ -5941,10 +5899,8 @@ msgstr ""
 "Cela dépend de votre modèle de jeton actuel."
 
 #: privacyidea/static/components/token/views/token.details.html:525
-#, fuzzy
-#| msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgid "You will be logged in as: {{ loggedinUsername }}"
-msgstr "Vous serez déconnecté dans {{ myCountdown }} seconde(s)."
+msgstr "Vous serez connecté en tant que : {{ loggedinUsername }}"
 
 #: privacyidea/static/templates/menu.html:171
 msgid "You will be logged out in {{ myCountdown }} second(s)."
