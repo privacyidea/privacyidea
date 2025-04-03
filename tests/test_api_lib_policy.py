@@ -59,7 +59,8 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            require_description, jwt_validity, check_container_action,
                                            check_token_action, check_token_list_action, check_user_params,
                                            check_client_container_action, container_registration_config,
-                                           smartphone_config, check_client_container_disabled_action, rss_age)
+                                           smartphone_config, check_client_container_disabled_action, rss_age,
+                                           hide_container_info)
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.realm import delete_realm
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
@@ -3703,7 +3704,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         """
         if role == "admin":
             g.logged_in_user = {"username": "admin",
-                                "role": "admin"}
+                                "role": "admin",
+                                "realm": ""}
         elif role == "user":
             g.logged_in_user = {"username": "root",
                                 "realm": self.realm3,
@@ -4679,6 +4681,48 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(None, req.all_data.get(f"{ACTION.RSS_AGE}"))
 
         delete_policy("rssage")
+
+    def test_85_hide_container_info(self):
+        self.setUp_user_realm3()
+        # ---- Admin ----
+        req, container = self.mock_container_request("admin", "smartphone")
+
+        # No policy set
+        hide_container_info(req)
+        self.assertSetEqual(set(), set(req.all_data["hide_container_info"]))
+
+        # Set admin, helpdesk and user policies
+        set_policy(name="admin", scope=SCOPE.ADMIN,
+                   action=f"{ACTION.HIDE_CONTAINER_INFO}=initially_synchronized device")
+        set_policy(name="user", scope=SCOPE.USER,
+                   action=f"{ACTION.HIDE_CONTAINER_INFO}=initially_synchronized challenge_ttl encrypt_algorithm "
+                          f"encrypt_key_algorithm encrypt_mode hash_algorithm key_algorithm server_url")
+
+        # admin
+        hide_container_info(req)
+        self.assertSetEqual({"initially_synchronized", "device"}, set(req.all_data["hide_container_info"]))
+
+        # ---- Helpdesk ----
+        set_policy(name="admin", scope=SCOPE.ADMIN,
+                   action=f"{ACTION.HIDE_CONTAINER_INFO}=device", realm=self.realm3)
+        # request including  user
+        hide_container_info(req)
+        self.assertSetEqual({"device"}, set(req.all_data["hide_container_info"]))
+        # request not including user, but the allowed realms for the helpdesk
+        req, container = self.mock_container_request_no_user("admin", "smartphone")
+        req.pi_allowed_container_realms = [self.realm3]
+        hide_container_info(req)
+        self.assertSetEqual({"device"}, set(req.all_data["hide_container_info"]))
+
+        # ---- User ----
+        req, container = self.mock_container_request("user", "smartphone")
+        hide_container_info(req)
+        self.assertSetEqual({"initially_synchronized", "challenge_ttl", "encrypt_algorithm", "encrypt_key_algorithm",
+                             "encrypt_mode", "hash_algorithm", "key_algorithm", "server_url"},
+                            set(req.all_data["hide_container_info"]))
+
+        delete_policy("admin")
+        delete_policy("user")
 
 
 class PostPolicyDecoratorTestCase(MyApiTestCase):
@@ -5676,7 +5720,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(1, len(container_wizard.keys()))
 
         # User with container: container wizard disabled
-        container_serial = init_container({"type": "generic", "user": "cornelius", "realm": self.realm1})["container_serial"]
+        container_serial = init_container({"type": "generic", "user": "cornelius", "realm": self.realm1})[
+            "container_serial"]
         resp = jsonify(user_response)
         new_response = get_webui_settings(req, resp)
         container_wizard = new_response.json["result"]["value"]["container_wizard"]

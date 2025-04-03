@@ -1073,7 +1073,7 @@ def get_container_realms(serial: str) -> list[str]:
 
 def create_container_dict(container_list: list[TokenContainerClass], no_token: bool = False, user: User = None,
                           logged_in_user_role: str = 'user', allowed_token_realms: Union[list[str], None] = [],
-                          hide_token_info: list[str] = None) -> list[dict]:
+                          hide_token_info: list[str] = None, hide_container_info: list[str] = None) -> list[dict]:
     """
     Create a dictionary for each container in the list.
     It contains the container properties, owners, realms, tokens and info.
@@ -1085,6 +1085,7 @@ def create_container_dict(container_list: list[TokenContainerClass], no_token: b
     :param logged_in_user_role: The role of the logged-in user ('admin' or 'user')
     :param allowed_token_realms: A list of realms the admin is allowed to see tokens from
     :param hide_token_info: List of token info keys to hide in the response, optional
+    :param hide_container_info: List of container info keys to hide in the response, optional
     :return: List of container dictionaries
 
     Example of a returned list:
@@ -1122,7 +1123,8 @@ def create_container_dict(container_list: list[TokenContainerClass], no_token: b
     """
     res: list = []
     for container in container_list:
-        container_dict = container.get_as_dict(include_tokens=not no_token, public_info=True)
+        container_dict = container.get_as_dict(include_tokens=not no_token, public_info=True,
+                                               additional_hide_info=hide_container_info)
         if not no_token:
             token_serials = ",".join(container_dict["tokens"])
             tokens_dict_list = []

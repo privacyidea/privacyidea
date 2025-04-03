@@ -2504,6 +2504,28 @@ class APIContainer(APIContainerTest):
         self.assertTrue(container_serials[1], result["result"]["value"]["containers"][0]["serial"])
         self.assertEqual(result["result"]["value"]["count"], 1)
 
+        # Set hide_container_info_policy
+        set_policy("hide_info", scope=SCOPE.ADMIN,
+                   action=f"{ACTION.HIDE_CONTAINER_INFO}=encrypt_algorithm device,{ACTION.CONTAINER_LIST}")
+        container3 = find_container_by_serial(container_serials[3])
+        container3.set_container_info({"encrypt_algorithm": "AES", "encrypt_mode": "GCM", "device": "ABC1234",
+                                       "registration_state": "registered"})
+        # Filter for container serial
+        result = self.request_assert_success('/container/',
+                                             {"container_serial": container_serials[3], "pagesize": 15},
+                                             self.at, 'GET')
+        result_container = result["result"]["value"]["containers"][0]
+        self.assertTrue(container_serials[3], result_container["serial"])
+        self.assertSetEqual({"encrypt_mode", "registration_state"}, set(result_container["info"].keys()))
+        # Get all containers
+        result = self.request_assert_success('/container/', {"pagesize": 15}, self.at, 'GET')
+        result_containers = result["result"]["value"]["containers"]
+        for container in result_containers:
+            info_keys = container["info"].keys()
+            self.assertNotIn("encrypt_algorithm", info_keys)
+            self.assertNotIn("device", info_keys)
+        delete_policy("hide_info")
+
         # Test output
         result = self.request_assert_success('/container/',
                                              {"container_serial": container_serials[1], "pagesize": 15, "page": 1},
