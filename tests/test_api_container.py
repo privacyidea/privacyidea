@@ -2595,7 +2595,6 @@ class APIContainerSynchronization(APIContainerTest):
         if not smartphone_serial:
             smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
         data = {"container_serial": smartphone_serial,
-                "passphrase_ad": False,
                 "passphrase_prompt": "Enter your passphrase",
                 "passphrase_response": "top_secret"}
 
@@ -2709,7 +2708,6 @@ class APIContainerSynchronization(APIContainerTest):
                                             "user": "hans",
                                             "realm": self.realm1})["container_serial"]
         data = {"container_serial": smartphone_serial,
-                "passphrase_ad": False,
                 "passphrase_prompt": "Enter your passphrase",
                 "passphrase_response": "top_secret"}
 
@@ -2755,7 +2753,6 @@ class APIContainerSynchronization(APIContainerTest):
                    realm=self.realm1, priority=1)
         smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
         data = {"container_serial": smartphone_serial,
-                "passphrase_ad": False,
                 "passphrase_prompt": "Enter your passphrase",
                 "passphrase_response": "top_secret"}
 
@@ -2803,7 +2800,6 @@ class APIContainerSynchronization(APIContainerTest):
                                                             ACTION.CONTAINER_REGISTRATION_TTL: 24})
         smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
         data = {"container_serial": smartphone_serial,
-                "passphrase_ad": False,
                 "passphrase_prompt": "Enter your passphrase",
                 "passphrase_response": "top_secret"}
         # Initialize
@@ -2827,7 +2823,6 @@ class APIContainerSynchronization(APIContainerTest):
                                                             ACTION.CONTAINER_REGISTRATION_TTL: 24})
         smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
         data = {"container_serial": smartphone_serial,
-                "passphrase_ad": False,
                 "passphrase_prompt": "Enter your passphrase",
                 "passphrase_response": "top_secret"}
 
@@ -3149,7 +3144,6 @@ class APIContainerSynchronization(APIContainerTest):
                                                             ACTION.CONTAINER_REGISTRATION_TTL: 24})
         generic_serial = init_container({"type": "generic"})["container_serial"]
         data = {"container_serial": generic_serial,
-                "passphrase_ad": False,
                 "passphrase_prompt": "Enter your passphrase",
                 "passphrase_response": "top_secret"}
 
@@ -3175,7 +3169,6 @@ class APIContainerSynchronization(APIContainerTest):
                                                             ACTION.CONTAINER_REGISTRATION_TTL: 24})
         yubi_serial = init_container({"type": "yubikey"})["container_serial"]
         data = {"container_serial": yubi_serial,
-                "passphrase_ad": False,
                 "passphrase_prompt": "Enter your passphrase",
                 "passphrase_response": "top_secret"}
 

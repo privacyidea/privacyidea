@@ -170,17 +170,12 @@ class SmartphoneContainer(TokenContainerClass):
         # get params
         params = params or {}
         extra_data = getParam(params, 'extra_data', optional=True) or {}
-        passphrase_ad = getParam(params, 'passphrase_ad', optional=True) or False
         passphrase_prompt = getParam(params, 'passphrase_prompt', optional=True) or ""
         passphrase_response = getParam(params, 'passphrase_response', optional=True) or ""
-        if passphrase_ad:
-            if not passphrase_prompt:
-                passphrase_prompt = "Please enter your AD passphrase."
         if passphrase_response:
             passphrase_response = encryptPassword(passphrase_response)
         challenge_params = {"scope": scope, "passphrase_prompt": passphrase_prompt,
-                            "passphrase_response": passphrase_response,
-                            "passphrase_ad": passphrase_ad}
+                            "passphrase_response": passphrase_response}
 
         # Delete all other challenges for this container
         challenge_list = get_challenges(serial=self.serial)
