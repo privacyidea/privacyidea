@@ -24,7 +24,7 @@
   </mat-form-field>
   <div class="enroll-button-container">
     <button (click)="this.reopenEnrollmentDialog()"
-            [disabled]="this.response() === null"
+            [disabled]="this.enrollResponse() === null"
             mat-icon-button>
       <mat-icon>open_in_new</mat-icon>
     </button>
@@ -165,12 +165,12 @@
     }
     @case ("webauthn") {
       <app-enroll-webauthn [firstDialog]="firstDialog"
-                           [response]="response"
+                           [enrollResponse]="enrollResponse"
                            [description]="description" />
     }
     @case ("passkey") {
       <app-enroll-passkey [firstDialog]="firstDialog"
-                          [response]="response"
+                          [enrollResponse]="enrollResponse"
                           [description]="description" />
     }
   }

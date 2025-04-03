@@ -20,7 +20,7 @@ export class EnrollPasskeyComponent {
   text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'passkey')
     ?.text;
   @Input() description!: WritableSignal<string>;
-  @Input() response!: WritableSignal<any>;
+  @Input() enrollResponse!: WritableSignal<any>;
   @Input() firstDialog!: MatDialog;
 
   constructor(
@@ -92,7 +92,7 @@ export class EnrollPasskeyComponent {
         );
         return from(this.tokenService.deleteToken(detail.serial)).pipe(
           switchMap(() => {
-            this.response.set(null);
+            this.enrollResponse.set(null);
             this.firstDialog.closeAll();
             this.notificationService.openSnackBar(
               `Token ${detail.serial} deleted successfully.`,

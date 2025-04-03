@@ -20,7 +20,7 @@ export class EnrollWebauthnComponent {
   text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'webauthn')
     ?.text;
   @Input() description!: WritableSignal<string>;
-  @Input() response!: WritableSignal<any>;
+  @Input() enrollResponse!: WritableSignal<any>;
   @Input() firstDialog!: MatDialog;
 
   constructor(
@@ -91,7 +91,7 @@ export class EnrollWebauthnComponent {
         return this.tokenService.enrollToken(params);
       }),
       catchError((error) => {
-        this.response.set(null);
+        this.enrollResponse.set(null);
         this.firstDialog.closeAll();
         const errMsg = `Error during WebAuthn registration: ${error.message || error}`;
         this.notificationService.openSnackBar(errMsg);

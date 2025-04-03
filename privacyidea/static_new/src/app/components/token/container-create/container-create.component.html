@@ -28,7 +28,8 @@
   </mat-form-field>
 
   <div class="enroll-button-container">
-    <button disabled
+    <button (click)="this.reopenEnrollmentDialog()"
+            [disabled]="this.registerResponse() === null"
             mat-icon-button>
       <mat-icon>open_in_new</mat-icon>
     </button>

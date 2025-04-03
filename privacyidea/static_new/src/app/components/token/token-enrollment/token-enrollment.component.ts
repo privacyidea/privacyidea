@@ -186,16 +186,6 @@ export class CustomDateAdapter extends NativeDateAdapter {
   standalone: true,
 })
 export class TokenEnrollmentComponent {
-  tokenTypesOptions = TokenComponent.tokenTypeOptions;
-  timezoneOptions = TIMEZONE_OFFSETS;
-  @Input() tokenSerial!: WritableSignal<string>;
-  @Input() containerSerial!: WritableSignal<string>;
-  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
-  @Input() isProgrammaticChange!: WritableSignal<boolean>;
-  selectedType = signal(this.tokenTypesOptions[0]);
-  selectedUserRealm = signal('');
-  containerOptions = signal<string[]>([]);
-  realmOptions = signal<string[]>([]);
   private readonly defaults = {
     testYubiKey: '',
     otpKey: '',
@@ -209,7 +199,8 @@ export class TokenEnrollmentComponent {
     selectedStartDate: new Date(),
     selectedEndDate: new Date(),
     timeStep: 30,
-    response: null as any,
+    enrollResponse: null as any,
+    pollResponse: null as any,
     regenerateToken: false,
     motpPin: '',
     repeatMotpPin: '',
@@ -240,19 +231,85 @@ export class TokenEnrollmentComponent {
     repeatPinValue: '',
     hashAlgorithm: 'sha1',
   };
+  tokenTypesOptions = TokenComponent.tokenTypeOptions;
+  timezoneOptions = TIMEZONE_OFFSETS;
+  @Input() tokenSerial!: WritableSignal<string>;
+  @Input() containerSerial!: WritableSignal<string>;
+  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
+  @Input() isProgrammaticChange!: WritableSignal<boolean>;
+  selectedType = signal(this.tokenTypesOptions[0]);
+  selectedUserRealm = signal('');
+  containerOptions = signal<string[]>([]);
+  realmOptions = signal<string[]>([]);
+  fetchedUsernames = toSignal(
+    toObservable(this.selectedUserRealm).pipe(
+      distinctUntilChanged(),
+      switchMap((realm) => {
+        if (!realm) {
+          return from<string[]>([]);
+        }
+        return this.userService
+          .getUsers(realm)
+          .pipe(
+            map((result: any) =>
+              result.value.map((user: any) => user.username),
+            ),
+          );
+      }),
+    ),
+    { initialValue: [] },
+  );
+  userOptions = computed(() => this.fetchedUsernames());
+  @ViewChild(EnrollPasskeyComponent)
+  enrollPasskeyComponent!: EnrollPasskeyComponent;
+  @ViewChild(EnrollWebauthnComponent)
+  enrollWebauthnComponent!: EnrollWebauthnComponent;
   testYubiKey = signal(this.defaults.testYubiKey);
+  otpLength = linkedSignal({
+    source: this.testYubiKey,
+    computation: (testYubiKey) => {
+      if (testYubiKey.length > 0) {
+        return testYubiKey.length;
+      } else {
+        return this.selectedType() ===
+          this.tokenTypesOptions.find((type) => type.key === 'yubikey')
+          ? 44
+          : 6;
+      }
+    },
+  });
   otpKey = signal(this.defaults.otpKey);
   sshPublicKey = signal(this.defaults.sshPublicKey);
+  description = linkedSignal({
+    source: this.sshPublicKey,
+    computation: (sshPublicKey) => {
+      const parts = sshPublicKey?.split(' ') ?? [];
+      return parts.length >= 3 ? parts[2] : '';
+    },
+  });
   generateOnServer = signal(this.defaults.generateOnServer);
   selectedUsername = signal(this.defaults.selectedUsername);
+  filteredUserOptions = computed(() => {
+    const filterValue = (this.selectedUsername() || '').toLowerCase();
+    return this.userOptions().filter((option: any) =>
+      option.toLowerCase().includes(filterValue),
+    );
+  });
   selectedContainer = signal(this.defaults.selectedContainer);
+  filteredContainerOptions = computed(() => {
+    const filter = (this.selectedContainer() || '').toLowerCase();
+    return this.containerOptions().filter((option) =>
+      option.toLowerCase().includes(filter),
+    );
+  });
   selectedTimezoneOffset = signal(this.defaults.selectedTimezoneOffset);
   selectedStartTime = signal(this.defaults.selectedStartTime);
   selectedEndTime = signal(this.defaults.selectedEndTime);
   selectedStartDate = signal(this.defaults.selectedStartDate);
   selectedEndDate = signal(this.defaults.selectedEndDate);
   timeStep = signal(this.defaults.timeStep);
-  response: WritableSignal<any> = signal(this.defaults.response);
+  enrollResponse: WritableSignal<any> = signal(this.defaults.enrollResponse);
+  pollResponse: WritableSignal<any> = signal(this.defaults.pollResponse);
   regenerateToken = signal(this.defaults.regenerateToken);
   motpPin = signal(this.defaults.motpPin);
   repeatMotpPin = signal(this.defaults.repeatMotpPin);
@@ -278,49 +335,6 @@ export class TokenEnrollmentComponent {
   readEmailDynamically = signal(this.defaults.readEmailDynamically);
   answers = signal(this.defaults.answers);
   useVascoSerial = signal(this.defaults.useVascoSerial);
-  onlyAddToRealm = signal(this.defaults.onlyAddToRealm);
-  setPinValue = signal(this.defaults.setPinValue);
-  repeatPinValue = signal(this.defaults.repeatPinValue);
-  hashAlgorithm = signal(this.defaults.hashAlgorithm);
-  fetchedUsernames = toSignal(
-    toObservable(this.selectedUserRealm).pipe(
-      distinctUntilChanged(),
-      switchMap((realm) => {
-        if (!realm) {
-          return from<string[]>([]);
-        }
-        return this.userService
-          .getUsers(realm)
-          .pipe(
-            map((result: any) =>
-              result.value.map((user: any) => user.username),
-            ),
-          );
-      }),
-    ),
-    { initialValue: [] },
-  );
-  userOptions = computed(() => this.fetchedUsernames());
-  otpLength = linkedSignal({
-    source: this.testYubiKey,
-    computation: (testYubiKey) => {
-      if (testYubiKey.length > 0) {
-        return testYubiKey.length;
-      } else {
-        return this.selectedType() ===
-          this.tokenTypesOptions.find((type) => type.key === 'yubikey')
-          ? 44
-          : 6;
-      }
-    },
-  });
-  description = linkedSignal({
-    source: this.sshPublicKey,
-    computation: (sshPublicKey) => {
-      const parts = sshPublicKey?.split(' ') ?? [];
-      return parts.length >= 3 ? parts[2] : '';
-    },
-  });
   vascoSerial = linkedSignal({
     source: this.otpKey,
     computation: (otpKey) => {
@@ -330,22 +344,10 @@ export class TokenEnrollmentComponent {
       return '';
     },
   });
-  filteredUserOptions = computed(() => {
-    const filterValue = (this.selectedUsername() || '').toLowerCase();
-    return this.userOptions().filter((option: any) =>
-      option.toLowerCase().includes(filterValue),
-    );
-  });
-  filteredContainerOptions = computed(() => {
-    const filter = (this.selectedContainer() || '').toLowerCase();
-    return this.containerOptions().filter((option) =>
-      option.toLowerCase().includes(filter),
-    );
-  });
-  @ViewChild(EnrollPasskeyComponent)
-  enrollPasskeyComponent!: EnrollPasskeyComponent;
-  @ViewChild(EnrollWebauthnComponent)
-  enrollWebauthnComponent!: EnrollWebauthnComponent;
+  onlyAddToRealm = signal(this.defaults.onlyAddToRealm);
+  setPinValue = signal(this.defaults.setPinValue);
+  repeatPinValue = signal(this.defaults.repeatPinValue);
+  hashAlgorithm = signal(this.defaults.hashAlgorithm);
   protected readonly TokenEnrollmentDialogComponent =
     TokenEnrollmentFirstStepDialogComponent;
 
@@ -423,10 +425,12 @@ export class TokenEnrollmentComponent {
 
   enrollToken(): void {
     const enrollmentOptions = this.buildEnrollmentOptions();
+    this.pollResponse.set(null);
+    this.enrollResponse.set(null);
 
     this.tokenService.enrollToken(enrollmentOptions).subscribe({
       next: (response: any) => {
-        this.response.set(response);
+        this.enrollResponse.set(response);
         this.handleEnrollmentResponse(response);
       },
       error: (error) => {
@@ -439,11 +443,18 @@ export class TokenEnrollmentComponent {
   }
 
   reopenEnrollmentDialog() {
-    if (this.response().detail?.rollout_state === 'clientwait') {
-      this.openFirstStepDialog(this.response());
+    let waitingForClient =
+      ((this.enrollResponse().detail?.rollout_state === 'clientwait' ||
+        this.enrollResponse().detail?.passkey_registration ||
+        this.enrollResponse().detail?.webAuthnRegisterRequest) &&
+        !this.pollResponse()) ||
+      this.pollResponse()?.result?.value?.tokens[0]?.rollout_state ===
+        'clientwait';
+    if (waitingForClient) {
+      this.openFirstStepDialog(this.enrollResponse());
       this.pollTokenRolloutState(this.tokenSerial(), 2000);
     } else {
-      this.openSecondStepDialog(this.response());
+      this.openSecondStepDialog(this.enrollResponse());
     }
   }
 
@@ -559,10 +570,7 @@ export class TokenEnrollmentComponent {
         this.openFirstStepDialog(response);
         this.enrollWebauthnComponent.registerWebauthn(detail).subscribe({
           next: () => {
-            this.pollTokenRolloutState(detail.serial, 400).add(() => {
-              this.firstDialog.closeAll();
-              this.openSecondStepDialog(response);
-            });
+            this.pollTokenRolloutState(detail.serial, 2000);
           },
         });
         break;
@@ -570,19 +578,13 @@ export class TokenEnrollmentComponent {
         this.openFirstStepDialog(response);
         this.enrollPasskeyComponent.registerPasskey(detail).subscribe({
           next: () => {
-            this.pollTokenRolloutState(detail.serial, 400).add(() => {
-              this.firstDialog.closeAll();
-              this.openSecondStepDialog(response);
-            });
+            this.pollTokenRolloutState(detail.serial, 2000);
           },
         });
         break;
       case 'push':
         this.openFirstStepDialog(response);
-        this.pollTokenRolloutState(detail.serial, 5000).add(() => {
-          this.firstDialog.closeAll();
-          this.openSecondStepDialog(response);
-        });
+        this.pollTokenRolloutState(detail.serial, 5000);
         break;
       default:
         this.openSecondStepDialog(response);
@@ -627,9 +629,12 @@ export class TokenEnrollmentComponent {
       .pollTokenRolloutState(tokenSerial, startTime)
       .subscribe({
         next: (pollResponse: any) => {
+          this.pollResponse.set(pollResponse);
           if (
-            pollResponse.result.value.tokens[0].rollout_state === 'enrolled'
+            pollResponse.result.value.tokens[0].rollout_state !== 'clientwait'
           ) {
+            this.firstDialog.closeAll();
+            this.openSecondStepDialog(this.enrollResponse());
             this.notificationService.openSnackBar(
               `Token ${tokenSerial} enrolled successfully.`,
             );

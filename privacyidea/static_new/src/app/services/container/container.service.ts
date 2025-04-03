@@ -1,6 +1,16 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { forkJoin, Observable, of, switchMap, throwError } from 'rxjs';
+import {
+  forkJoin,
+  Observable,
+  of,
+  Subject,
+  switchMap,
+  takeUntil,
+  takeWhile,
+  throwError,
+  timer,
+} from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { LocalService } from '../local/local.service';
 import { Sort } from '@angular/material/sort';
@@ -13,9 +23,10 @@ import { environment } from '../../../environments/environment';
   providedIn: 'root',
 })
 export class ContainerService {
+  private stopPolling$ = new Subject<void>();
+  private containerBaseUrl = environment.proxyUrl + '/container/';
   apiFilter = ['container_serial', 'type', 'user'];
   advancedApiFilter = ['token_serial'];
-  private containerBaseUrl = environment.proxyUrl + '/container/';
 
   constructor(
     private http: HttpClient,
@@ -496,14 +507,11 @@ export class ContainerService {
   createContainer(param: {
     container_type: string;
     description?: string;
-    serial?: string;
     user_realm?: string;
     template?: string;
     user?: string;
     realm?: string;
     options?: any;
-    passphrase_prompt?: string;
-    passphrase_response?: string;
   }) {
     const headers = this.localService.getHeaders();
     return this.http
@@ -512,13 +520,10 @@ export class ContainerService {
         {
           type: param.container_type,
           description: param.description,
-          container_serial: param.serial,
           user: param.user,
           realm: param.user_realm,
           template: param.template,
           options: param.options,
-          passphrase_prompt: param.passphrase_prompt,
-          passphrase_response: param.passphrase_response,
         },
         { headers },
       )
@@ -532,5 +537,62 @@ export class ContainerService {
           return throwError(() => error);
         }),
       );
+  }
+
+  registerContainer(params: {
+    container_serial: string;
+    passphrase_prompt: string;
+    passphrase_response: string;
+  }) {
+    const headers = this.localService.getHeaders();
+    return this.http
+      .post(
+        `${this.containerBaseUrl}register/initialize`,
+        {
+          container_serial: params.container_serial,
+          passphrase_ad: false,
+          passphrase_prompt: params.passphrase_prompt,
+          passphrase_response: params.passphrase_response,
+        },
+        { headers },
+      )
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to register container.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to register container. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
+  }
+
+  stopPolling() {
+    this.stopPolling$.next();
+  }
+
+  pollContainerRolloutState(
+    containerSerial: string,
+    startTime: number,
+  ): Observable<any> {
+    return timer(startTime, 2000).pipe(
+      takeUntil(this.stopPolling$),
+      switchMap(() => this.getContainerDetails(containerSerial)),
+      takeWhile(
+        (response: any) =>
+          response.result.value.containers[0].info.registration_state ===
+          'client_wait',
+        true,
+      ),
+      catchError((error) => {
+        console.error('Failed to poll container state.', error);
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to poll container state. ' + message,
+        );
+        return throwError(() => error);
+      }),
+    );
   }
 }
