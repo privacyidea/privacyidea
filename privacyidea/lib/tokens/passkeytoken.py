@@ -404,18 +404,11 @@ class PasskeyTokenClass(TokenClass):
 
     def create_challenge(self, transactionid=None, options=None):
         """
-        Requires the key "webauthn_relying_party_id" (FIDO2PolicyAction.RELYING_PARTY_ID) in the option dict.
-        Returns a fido2 challenge that is bound to this token.
+        Passkey does not create a challenge itself, it uses an open challenge acquired from /validate/initialize.
+        By returning False here, passkey tokens will not generate a challenge via
+        /validate/triggerchallenge -> create_challenge_from_tokens()
         """
-        rp_id = get_required(options, FIDO2PolicyAction.RELYING_PARTY_ID)
-        user_verification = get_optional(options, "user_verification", "preferred")
-        challenge = fido2.challenge.create_fido2_challenge(rp_id, user_verification=user_verification,
-                                                           transaction_id=transactionid, serial=self.token.serial)
-        message = challenge["message"]
-        transaction_id = challenge["transaction_id"]
-        challenge_details = {"challenge": challenge["challenge"], "rpId": rp_id, "userVerification": user_verification}
-        # TODO this vvv is horrible
-        return True, message, transaction_id, challenge_details
+        return False, "", "", {}
 
     @log_with(log)
     def use_for_authentication(self, options):
