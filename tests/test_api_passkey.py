@@ -389,8 +389,9 @@ class PasskeyAPITest(PasskeyAPITestBase):
     def test_07_trigger_challenge(self):
         """
         Just test if the challenge is returned by /validate/triggerchallenge. The response would be sent to
-        /validate/check and that is already tested.
+        /validate/check and that is already tested. Requires the passkey_trigger_with_pin policy to be set.
         """
+        set_policy("passkey_trigger_with_pin", scope=SCOPE.AUTH, action=f"{PasskeyAction.EnableTriggerByPIN}=true")
         serial = self._enroll_static_passkey()
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
             get_nonce.return_value = self.authentication_challenge_no_uv

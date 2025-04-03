@@ -1319,6 +1319,8 @@ def prepare_result(obj, rid=1, details=None):
     :return: json rendered sting result
     :rtype: string
     """
+    # TODO this function has to be reworked or removed. We do not need to calculate the value of authentication here
+    # TODO when the caller already knows it. A function for formatting the response is fine.
     res = {"jsonrpc": "2.0",
            "result": {"status": True,
                       "value": obj},
