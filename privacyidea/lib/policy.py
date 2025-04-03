@@ -2668,13 +2668,15 @@ def get_static_policy_definitions(scope=None):
             ACTION.NODETAILSUCCESS: {
                 'type': 'bool',
                 'desc': _('In case of successful authentication additional '
-                          'no detail information will be returned.'),
+                          'no detail information will be returned.')
+                        + " <em>Deprecated since v3.11</em>",
                 'group': GROUP.SETTING_ACTIONS,
             },
             ACTION.NODETAILFAIL: {
                 'type': 'bool',
                 'desc': _('In case of failed authentication additional '
-                          'no detail information will be returned.'),
+                          'no detail information will be returned.')
+                        + " <em>Deprecated since v3.11</em>",
                 'group': GROUP.SETTING_ACTIONS,
             },
             ACTION.ADDUSERINRESPONSE: {
