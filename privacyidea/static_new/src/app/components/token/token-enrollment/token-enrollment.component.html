@@ -186,8 +186,8 @@
 
         <mat-form-field class="width-50 height-76-5">
           <mat-label>Select Realm of User</mat-label>
-          <mat-select [(ngModel)]="selectedUserRealm">
-            @for (option of realmOptions(); track option) {
+          <mat-select [(ngModel)]="userService.selectedUserRealm">
+            @for (option of realmService.realmOptions(); track option) {
               <mat-option value="{{ option }}">{{ option }}</mat-option>
             }
           </mat-select>
@@ -195,14 +195,14 @@
 
         <mat-form-field class="width-50 height-76-5">
           <mat-label>Enter User</mat-label>
-          <input [(ngModel)]="selectedUsername"
+          <input [(ngModel)]="userService.selectedUsername"
                  [disabled]="onlyAddToRealm()"
                  [matAutocomplete]="userAuto"
                  [required]="userIsRequired()"
                  matInput />
           <mat-error>User is <strong>required</strong></mat-error>
           <mat-autocomplete #userAuto="matAutocomplete">
-            @for (option of filteredUserOptions(); track option) {
+            @for (option of userService.filteredUserOptions(); track option) {
               <mat-option [value]="option">{{ option }}</mat-option>
             }
           </mat-autocomplete>
@@ -228,11 +228,11 @@
   <h4 class="enroll-h4">Assign Token to a Container</h4>
   <mat-form-field class="width-32 height-76-5">
     <mat-label>Enter Container</mat-label>
-    <input [(ngModel)]="selectedContainer"
+    <input [(ngModel)]="containerService.selectedContainer"
            [matAutocomplete]="containerAuto"
            matInput />
     <mat-autocomplete #containerAuto="matAutocomplete">
-      @for (option of filteredContainerOptions(); track option) {
+      @for (option of containerService.filteredContainerOptions(); track option) {
         <mat-option [value]="option">{{ option }}</mat-option>
       }
     </mat-autocomplete>

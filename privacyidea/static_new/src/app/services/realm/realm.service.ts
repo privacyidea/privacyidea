@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
 import { LocalService } from '../local/local.service';
 import { HttpClient } from '@angular/common/http';
@@ -10,11 +10,18 @@ import { NotificationService } from '../notification/notification.service';
   providedIn: 'root',
 })
 export class RealmService {
+  realmOptions = signal<string[]>([]);
+  selectedRealms = signal<string[]>([]);
+
   constructor(
     private http: HttpClient,
     private localService: LocalService,
     private notificationService: NotificationService,
   ) {}
+
+  resetRealmSelection(): void {
+    this.selectedRealms.set([]);
+  }
 
   getRealms(): Observable<any> {
     const headers = this.localService.getHeaders();

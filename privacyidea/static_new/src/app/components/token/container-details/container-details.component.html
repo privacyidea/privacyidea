@@ -130,15 +130,15 @@
                 mat-cell>
               @switch (element.keyMap.key) {
                 @case ("user_name") {
-                  @if (isEditingUser() && selectedUserRealm() !== "") {
+                  @if (isEditingUser() && userService.selectedUserRealm() !== "") {
                     <mat-form-field class="width-18rem">
                       <mat-label>Enter User</mat-label>
                       <input matInput
-                             [(ngModel)]="selectedUsername"
+                             [(ngModel)]="userService.selectedUsername"
                              [matAutocomplete]="userAuto" />
                       <mat-autocomplete #userAuto="matAutocomplete"
                                         class="user-selection-autocomplete">
-                        @for (option of filteredUserOptions(); track option) {
+                        @for (option of userService.filteredUserOptions(); track option) {
                           <mat-option [value]="option">{{ option }}</mat-option>
                         }
                       </mat-autocomplete>
@@ -151,7 +151,7 @@
                   @if (isEditingUser()) {
                     <mat-form-field class="width-18rem">
                       <mat-label>Select Realm of User</mat-label>
-                      <mat-select [(ngModel)]="selectedUserRealm">
+                      <mat-select [(ngModel)]="userService.selectedUserRealm">
                         @for (option of realmOptions(); track option) {
                           <mat-option value="{{ option }}">{{ option }}</mat-option>
                         }

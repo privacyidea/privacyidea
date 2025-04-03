@@ -1,6 +1,5 @@
 import {
   Component,
-  computed,
   effect,
   Injectable,
   Input,
@@ -76,9 +75,6 @@ import { EnrollVascoComponent } from './enroll-vasco/enroll-vasco.component';
 import { EnrollWebauthnComponent } from './enroll-webauthn/enroll-webauthn.component';
 import { EnrollPasskeyComponent } from './enroll-passkey/enroll-passkey.component';
 import { VersionService } from '../../../services/version/version.service';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { distinctUntilChanged, from, switchMap } from 'rxjs';
-import { map } from 'rxjs/operators';
 import { TokenEnrollmentSecondStepDialogComponent } from './token-enrollment-second-step-dialog/token-enrollment-second-step-dialog.component';
 
 export const CUSTOM_DATE_FORMATS = {
@@ -238,28 +234,6 @@ export class TokenEnrollmentComponent {
   @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
   @Input() isProgrammaticChange!: WritableSignal<boolean>;
   selectedType = signal(this.tokenTypesOptions[0]);
-  selectedUserRealm = signal('');
-  containerOptions = signal<string[]>([]);
-  realmOptions = signal<string[]>([]);
-  fetchedUsernames = toSignal(
-    toObservable(this.selectedUserRealm).pipe(
-      distinctUntilChanged(),
-      switchMap((realm) => {
-        if (!realm) {
-          return from<string[]>([]);
-        }
-        return this.userService
-          .getUsers(realm)
-          .pipe(
-            map((result: any) =>
-              result.value.map((user: any) => user.username),
-            ),
-          );
-      }),
-    ),
-    { initialValue: [] },
-  );
-  userOptions = computed(() => this.fetchedUsernames());
   @ViewChild(EnrollPasskeyComponent)
   enrollPasskeyComponent!: EnrollPasskeyComponent;
   @ViewChild(EnrollWebauthnComponent)
@@ -288,20 +262,6 @@ export class TokenEnrollmentComponent {
     },
   });
   generateOnServer = signal(this.defaults.generateOnServer);
-  selectedUsername = signal(this.defaults.selectedUsername);
-  filteredUserOptions = computed(() => {
-    const filterValue = (this.selectedUsername() || '').toLowerCase();
-    return this.userOptions().filter((option: any) =>
-      option.toLowerCase().includes(filterValue),
-    );
-  });
-  selectedContainer = signal(this.defaults.selectedContainer);
-  filteredContainerOptions = computed(() => {
-    const filter = (this.selectedContainer() || '').toLowerCase();
-    return this.containerOptions().filter((option) =>
-      option.toLowerCase().includes(filter),
-    );
-  });
   selectedTimezoneOffset = signal(this.defaults.selectedTimezoneOffset);
   selectedStartTime = signal(this.defaults.selectedStartTime);
   selectedEndTime = signal(this.defaults.selectedEndTime);
@@ -352,10 +312,10 @@ export class TokenEnrollmentComponent {
     TokenEnrollmentFirstStepDialogComponent;
 
   constructor(
-    private containerService: ContainerService,
-    private realmService: RealmService,
+    protected containerService: ContainerService,
+    protected realmService: RealmService,
     private notificationService: NotificationService,
-    private userService: UserService,
+    protected userService: UserService,
     private tokenService: TokenService,
     protected firstDialog: MatDialog,
     protected secondDialog: MatDialog,
@@ -377,13 +337,13 @@ export class TokenEnrollmentComponent {
 
   ngAfterViewInit() {
     this.getContainerOptions();
-    this.selectedContainer.set(this.containerSerial());
+    this.containerService.selectedContainer.set(this.containerSerial());
   }
 
   getRealmOptions() {
     this.realmService.getRealms().subscribe({
       next: (realms: any) => {
-        this.realmOptions.set(Object.keys(realms.result.value));
+        this.realmService.realmOptions.set(Object.keys(realms.result.value));
       },
     });
   }
@@ -391,7 +351,7 @@ export class TokenEnrollmentComponent {
   getContainerOptions() {
     this.containerService.getContainerData({ noToken: true }).subscribe({
       next: (containers: any) => {
-        this.containerOptions.set(
+        this.containerService.containerOptions.set(
           Object.values(
             containers.result.value.containers as {
               serial: string;
@@ -465,9 +425,12 @@ export class TokenEnrollmentComponent {
   }
 
   private resetEnrollmentOptions = () => {
+    this.userService.resetUserSelection();
+    this.containerService.resetContainerSelection();
+    this.realmService.resetRealmSelection();
     this.realmService.getDefaultRealm().subscribe({
       next: (realm: any) => {
-        this.selectedUserRealm.set(realm);
+        this.userService.selectedUserRealm.set(realm);
       },
     });
     this.getRealmOptions();
@@ -480,7 +443,7 @@ export class TokenEnrollmentComponent {
     return {
       type: this.selectedType().key,
       description: this.description(),
-      container_serial: this.selectedContainer().trim(),
+      container_serial: this.containerService.selectedContainer().trim(),
       validity_period_start: this.formatDateTimeOffset(
         this.selectedStartDate(),
         this.selectedStartTime(),
@@ -491,7 +454,7 @@ export class TokenEnrollmentComponent {
         this.selectedEndTime(),
         this.selectedTimezoneOffset(),
       ),
-      user: this.selectedUsername().trim(),
+      user: this.userService.selectedUsername().trim(),
       pin: this.setPinValue(),
 
       // hotp, totp, motp, applspec
@@ -530,7 +493,7 @@ export class TokenEnrollmentComponent {
       separator: this.separator(),
       requiredTokenOfRealms: this.requiredTokenOfRealms(),
       onlyAddToRealm: this.onlyAddToRealm(),
-      userRealm: this.selectedUserRealm(),
+      userRealm: this.userService.selectedUserRealm(),
 
       // applspec
       serviceId: this.serviceId(),
@@ -601,8 +564,8 @@ export class TokenEnrollmentComponent {
         containerSerial: this.containerSerial,
         selectedContent: this.selectedContent,
         isProgrammaticChange: this.isProgrammaticChange,
-        username: this.selectedUsername(),
-        userRealm: this.selectedUserRealm(),
+        username: this.userService.selectedUsername(),
+        userRealm: this.userService.selectedUserRealm(),
         onlyAddToRealm: this.onlyAddToRealm(),
       },
     });
@@ -617,8 +580,8 @@ export class TokenEnrollmentComponent {
         selectedContent: this.selectedContent,
         regenerateToken: this.regenerateToken,
         isProgrammaticChange: this.isProgrammaticChange,
-        username: this.selectedUsername(),
-        userRealm: this.selectedUserRealm(),
+        username: this.userService.selectedUsername(),
+        userRealm: this.userService.selectedUserRealm(),
         onlyAddToRealm: this.onlyAddToRealm(),
       },
     });

@@ -49,6 +49,8 @@ export class VersionService {
       case 'containertypes':
         page_url = 'container/container_types.html';
         break;
+      case 'container_create':
+        page_url = 'webui/container_view.html#container-create';
     }
     const versionUrl = `${baseUrl}v${this.version}/${page_url}`;
     const fallbackUrl = `${baseUrl}latest/${page_url}`;

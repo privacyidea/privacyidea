@@ -19,13 +19,7 @@ import {
   MatTableModule,
 } from '@angular/material/table';
 import { ContainerService } from '../../../services/container/container.service';
-import {
-  distinctUntilChanged,
-  forkJoin,
-  from,
-  Observable,
-  switchMap,
-} from 'rxjs';
+import { forkJoin, Observable, switchMap } from 'rxjs';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatListItem } from '@angular/material/list';
 import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
@@ -33,7 +27,7 @@ import { EditButtonsComponent } from '../../shared/edit-buttons/edit-buttons.com
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { RealmService } from '../../../services/realm/realm.service';
-import { catchError, map } from 'rxjs/operators';
+import { catchError } from 'rxjs/operators';
 import { MatInput } from '@angular/material/input';
 import {
   MatAutocomplete,
@@ -41,7 +35,6 @@ import {
 } from '@angular/material/autocomplete';
 import { MatIcon } from '@angular/material/icon';
 import { MatIconButton } from '@angular/material/button';
-import { UserService } from '../../../services/user/user.service';
 import { infoDetailsKeyMap } from '../token-details/token-details.component';
 import { ContainerDetailsInfoComponent } from './container-details-info/container-details-info.component';
 import { ContainerDetailsTokenTableComponent } from './container-details-token-table/container-details-token-table.component';
@@ -51,8 +44,8 @@ import { MatDivider } from '@angular/material/divider';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { NotificationService } from '../../../services/notification/notification.service';
 import { TokenSelectedContent } from '../token.component';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
+import { UserService } from '../../../services/user/user.service';
 
 export const containerDetailsKeyMap = [
   { key: 'type', label: 'Type' },
@@ -112,9 +105,7 @@ export class ContainerDetailsComponent {
   @Input() tokenSerial!: WritableSignal<string>;
   @Input() states!: WritableSignal<string[]>;
   @Input() refreshContainerDetails!: WritableSignal<boolean>;
-  @Input() selectedUsername = signal<string>('');
   @Input() isProgrammaticChange!: WritableSignal<boolean>;
-  selectedUserRealm = signal<string>('');
   isEditingUser = signal(false);
   isEditingInfo = signal(false);
   containerDetailData = signal<
@@ -165,24 +156,6 @@ export class ContainerDetailsComponent {
     computation: () => 0,
   });
   pageSize = signal(10);
-  fetchedUsernames = toSignal(
-    toObservable(this.selectedUserRealm).pipe(
-      distinctUntilChanged(),
-      switchMap((realm) => {
-        if (!realm) {
-          return from<string[]>([]);
-        }
-        return this.userService
-          .getUsers(realm)
-          .pipe(
-            map((result: any) =>
-              result.value.map((user: any) => user.username),
-            ),
-          );
-      }),
-    ),
-    { initialValue: [] },
-  );
   computedFilterValue = linkedSignal({
     source: this.showOnlyTokenNotInContainer,
     computation: (showOnlyTokenNotInContainer) => {
@@ -192,13 +165,6 @@ export class ContainerDetailsComponent {
         return this.filterValue().replace(/container_serial:\S*/g, '');
       }
     },
-  });
-  userOptions = computed(() => this.fetchedUsernames());
-  filteredUserOptions = computed(() => {
-    const filterValue = (this.selectedUsername() || '').toLowerCase();
-    return this.userOptions().filter((option: any) =>
-      option.toLowerCase().includes(filterValue),
-    );
   });
   isAnyEditing = computed(() => {
     const detailData = this.containerDetailData();
@@ -222,9 +188,9 @@ export class ContainerDetailsComponent {
     protected containerService: ContainerService,
     protected tableUtilsService: TableUtilsService,
     protected realmService: RealmService,
-    protected userService: UserService,
     protected tokenService: TokenService,
     private notificationService: NotificationService,
+    protected userService: UserService,
   ) {
     effect(() => {
       this.showOnlyTokenNotInContainer();
@@ -295,11 +261,11 @@ export class ContainerDetailsComponent {
             }))
             .filter((detail) => detail.value !== undefined),
         );
-        this.selectedUserRealm.set(
-          this.userData().find((detail) => detail.keyMap.key === 'user_realm')
-            ?.value,
-        );
-        this.userRealm = this.selectedUserRealm();
+        const userRealm = this.userData().find(
+          (detail) => detail.keyMap.key === 'user_realm',
+        )?.value;
+        this.userService.selectedUserRealm.set(userRealm || '');
+        this.userRealm = userRealm || '';
         this.realmOptions.set(Object.keys(realms.result.value));
         this.selectedRealms.set(containerDetails.realms);
         this.states.set(containerDetails['states']);
@@ -355,12 +321,8 @@ export class ContainerDetailsComponent {
     switch (element.keyMap.key) {
       case 'user_name':
         this.isEditingUser.update((b) => !b);
-        if (this.isEditingUser() && this.selectedUserRealm() === '') {
-          this.realmService.getDefaultRealm().subscribe({
-            next: (realm: any) => {
-              this.selectedUserRealm.set(realm);
-            },
-          });
+        if (this.isEditingUser() && !this.userService.selectedUserRealm()) {
+          this.userService.setDefaultRealm(this.realmService);
         }
         return;
       default:
@@ -372,13 +334,12 @@ export class ContainerDetailsComponent {
     this.containerService
       .assignUser(
         this.containerSerial(),
-        this.selectedUsername(),
-        this.selectedUserRealm(),
+        this.userService.selectedUsername(),
+        this.userService.selectedUserRealm(),
       )
       .subscribe({
         next: () => {
-          this.selectedUsername.set('');
-          this.selectedUserRealm.set('');
+          this.userService.resetUserSelection();
           this.isEditingUser.update((b) => !b);
           this.refreshContainerDetails.set(true);
         },

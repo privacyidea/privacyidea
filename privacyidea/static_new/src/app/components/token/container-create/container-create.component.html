@@ -67,8 +67,8 @@
       <h4 class="enroll-h4"> Assign the Container to a User </h4>
       <mat-form-field class="width-100 height-76-5">
         <mat-label>Select Realm of User</mat-label>
-        <mat-select [(ngModel)]="selectedUserRealm">
-          @for (option of realmOptions(); track option) {
+        <mat-select [(ngModel)]="userService.selectedUserRealm">
+          @for (option of realmService.realmOptions(); track option) {
             <mat-option value="{{ option }}">{{ option }}</mat-option>
           }
         </mat-select>
@@ -78,13 +78,13 @@
       </mat-checkbox>
       <mat-form-field class="width-100 height-76-5">
         <mat-label>Enter User</mat-label>
-        <input [(ngModel)]="selectedUsername"
+        <input [(ngModel)]="userService.selectedUsername"
                [disabled]="onlyAddToRealm()"
                [matAutocomplete]="userAuto"
                matInput />
         <mat-error>User is <strong>required</strong></mat-error>
         <mat-autocomplete #userAuto="matAutocomplete">
-          @for (option of filteredUserOptions(); track option) {
+          @for (option of userService.filteredUserOptions(); track option) {
             <mat-option [value]="option">{{ option }}</mat-option>
           }
         </mat-autocomplete>

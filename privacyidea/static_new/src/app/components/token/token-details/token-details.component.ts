@@ -97,8 +97,8 @@ export const infoDetailsKeyMap = [{ key: 'info', label: 'Information' }];
 })
 export class TokenDetailsComponent {
   @Input() tokenSerial!: WritableSignal<string>;
-  @Input() active!: WritableSignal<boolean>;
-  @Input() revoked!: WritableSignal<boolean>;
+  @Input() tokenIsActive!: WritableSignal<boolean>;
+  @Input() tokenIsRevoked!: WritableSignal<boolean>;
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
   @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
   @Input() containerSerial!: WritableSignal<string>;
@@ -107,7 +107,6 @@ export class TokenDetailsComponent {
   isEditingInfo = signal(false);
   setPinValue = signal('');
   repeatPinValue = signal('');
-  realmOptions = signal<string[]>([]);
   tokenDetailData = signal<
     {
       value: any;
@@ -154,19 +153,10 @@ export class TokenDetailsComponent {
       detailData.some((element) => element.isEditing()) ||
       this.isEditingUser() ||
       this.isEditingInfo() ||
-      this.revoked()
+      this.tokenIsRevoked()
     );
   });
-  containerOptions = signal<string[]>([]);
   tokengroupOptions = signal<string[]>([]);
-  selectedContainer = signal<string>('');
-  filteredContainerOptions = computed(() => {
-    const filter = (this.selectedContainer() || '').toLowerCase();
-    return this.containerOptions().filter((option) =>
-      option.toLowerCase().includes(filter),
-    );
-  });
-  selectedRealms = signal<string[]>([]);
   selectedTokengroup = signal<string[]>([]);
   tokenType = signal<string>('');
   userRealm: string = '';
@@ -175,8 +165,8 @@ export class TokenDetailsComponent {
 
   constructor(
     private tokenService: TokenService,
-    private containerService: ContainerService,
-    private realmService: RealmService,
+    protected containerService: ContainerService,
+    protected realmService: RealmService,
     private notificationService: NotificationService,
     protected overflowService: OverflowService,
     protected tableUtilsService: TableUtilsService,
@@ -197,10 +187,12 @@ export class TokenDetailsComponent {
     ]).pipe(
       switchMap(([tokenDetailsResponse, realms]) => {
         const tokenDetails = tokenDetailsResponse.result.value.tokens[0];
-        this.active.set(tokenDetails.active);
-        this.revoked.set(tokenDetails.revoked);
+        this.tokenIsActive.set(tokenDetails.active);
+        this.tokenIsRevoked.set(tokenDetails.revoked);
         this.maxfail = tokenDetails.maxfail;
-        this.selectedContainer.set(tokenDetails.container_serial);
+        this.containerService.selectedContainer.set(
+          tokenDetails.container_serial,
+        );
         this.tokenDetailData.set(
           tokenDetailsKeyMap
             .map((detail) => ({
@@ -231,8 +223,8 @@ export class TokenDetailsComponent {
             .filter((detail) => detail.value !== undefined),
         );
 
-        this.realmOptions.set(Object.keys(realms.result.value));
-        this.selectedRealms.set(tokenDetails.realms);
+        this.realmService.realmOptions.set(Object.keys(realms.result.value));
+        this.realmService.selectedRealms.set(tokenDetails.realms);
         this.userRealm = this.userData().find(
           (detail) => detail.keyMap.key === 'user_realm',
         )?.value;
@@ -266,7 +258,9 @@ export class TokenDetailsComponent {
   saveTokenEdit(element: any) {
     switch (element.keyMap.key) {
       case 'container_serial':
-        this.selectedContainer.set(this.selectedContainer().trim() ?? null);
+        this.containerService.selectedContainer.set(
+          this.containerService.selectedContainer().trim() ?? null,
+        );
         this.saveContainer();
         break;
       case 'tokengroup':
@@ -285,17 +279,19 @@ export class TokenDetailsComponent {
   toggleTokenEdit(element: any): void {
     switch (element.keyMap.key) {
       case 'container_serial':
-        if (this.containerOptions().length === 0) {
+        if (this.containerService.containerOptions().length === 0) {
           this.containerService.getContainerData({ noToken: true }).subscribe({
             next: (containers: any) => {
-              this.containerOptions.set(
+              this.containerService.containerOptions.set(
                 Object.values(
                   containers.result.value.containers as {
                     serial: string;
                   }[],
                 ).map((container) => container.serial),
               );
-              this.selectedContainer.set(this.selectedContainer());
+              this.containerService.selectedContainer.set(
+                this.containerService.selectedContainer(),
+              );
             },
           });
         }
@@ -332,14 +328,20 @@ export class TokenDetailsComponent {
 
   saveContainer() {
     this.containerService
-      .assignContainer(this.tokenSerial(), this.selectedContainer())
+      .assignContainer(
+        this.tokenSerial(),
+        this.containerService.selectedContainer(),
+      )
       .pipe(switchMap(() => this.showTokenDetail()))
       .subscribe();
   }
 
   deleteContainer() {
     this.containerService
-      .unassignContainer(this.tokenSerial(), this.selectedContainer())
+      .unassignContainer(
+        this.tokenSerial(),
+        this.containerService.selectedContainer(),
+      )
       .pipe(switchMap(() => this.showTokenDetail()))
       .subscribe();
   }
@@ -370,7 +372,7 @@ export class TokenDetailsComponent {
   private resetEdit(type: string): void {
     switch (type) {
       case 'container_serial':
-        this.selectedContainer.set('');
+        this.containerService.selectedContainer.set('');
         break;
       case 'tokengroup':
         this.selectedTokengroup.set(
@@ -380,7 +382,7 @@ export class TokenDetailsComponent {
         );
         break;
       case 'realms':
-        this.selectedRealms.set(
+        this.realmService.selectedRealms.set(
           this.tokenDetailData().find(
             (detail) => detail.keyMap.key === 'realms',
           )?.value,
@@ -394,7 +396,7 @@ export class TokenDetailsComponent {
 
   private saveRealms() {
     this.tokenService
-      .setTokenRealm(this.tokenSerial(), this.selectedRealms())
+      .setTokenRealm(this.tokenSerial(), this.realmService.selectedRealms())
       .pipe(switchMap(() => this.showTokenDetail()))
       .subscribe({
         next: () => {

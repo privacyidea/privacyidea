@@ -1,6 +1,5 @@
 import {
   Component,
-  computed,
   Input,
   signal,
   Signal,
@@ -31,9 +30,6 @@ import { UserService } from '../../../../services/user/user.service';
 import { NgClass } from '@angular/common';
 import { OverflowService } from '../../../../services/overflow/overflow.service';
 import { NotificationService } from '../../../../services/notification/notification.service';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { distinctUntilChanged, from, switchMap } from 'rxjs';
-import { map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-token-details-user',
@@ -70,7 +66,6 @@ export class TokenDetailsUserComponent {
       isEditing: WritableSignal<boolean>;
     }[]
   >([]);
-  @Input() selectedUsername = signal<string>('');
   @Input() tokenSerial!: WritableSignal<string>;
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
   @Input() setPinValue!: WritableSignal<string>;
@@ -79,37 +74,11 @@ export class TokenDetailsUserComponent {
   @Input() isEditingInfo!: WritableSignal<boolean>;
   @Input() isAnyEditingOrRevoked!: Signal<boolean>;
   @Input() realmOptions!: WritableSignal<string[]>;
-  selectedUserRealm = signal<string>('');
-  fetchedUsernames = toSignal(
-    toObservable(this.selectedUserRealm).pipe(
-      distinctUntilChanged(),
-      switchMap((realm) => {
-        if (!realm) {
-          return from<string[]>([]);
-        }
-        return this.userService
-          .getUsers(realm)
-          .pipe(
-            map((result: any) =>
-              result.value.map((user: any) => user.username),
-            ),
-          );
-      }),
-    ),
-    { initialValue: [] },
-  );
-  userOptions = computed(() => this.fetchedUsernames());
-  filteredUserOptions = computed(() => {
-    const filterValue = (this.selectedUsername() || '').toLowerCase();
-    return this.userOptions().filter((option: any) =>
-      option.toLowerCase().includes(filterValue),
-    );
-  });
 
   constructor(
     private tokenService: TokenService,
     private realmService: RealmService,
-    private userService: UserService,
+    protected userService: UserService,
     private notificationService: NotificationService,
     protected overflowService: OverflowService,
   ) {}
@@ -137,10 +106,10 @@ export class TokenDetailsUserComponent {
 
   toggleUserEdit(): void {
     this.isEditingUser.update((b) => !b);
-    if (this.selectedUserRealm() === '') {
+    if (this.userService.selectedUserRealm() === '') {
       this.realmService.getDefaultRealm().subscribe({
         next: (realm: any) => {
-          this.selectedUserRealm.set(realm);
+          this.userService.selectedUserRealm.set(realm);
         },
       });
     }
@@ -148,7 +117,7 @@ export class TokenDetailsUserComponent {
 
   cancelUserEdit(): void {
     this.isEditingUser.update((b) => !b);
-    this.selectedUsername.set('');
+    this.userService.selectedUsername.set('');
   }
 
   saveUser() {
@@ -160,16 +129,16 @@ export class TokenDetailsUserComponent {
     this.tokenService
       .assignUser(
         this.tokenSerial(),
-        this.selectedUsername(),
-        this.selectedUserRealm(),
+        this.userService.selectedUsername(),
+        this.userService.selectedUserRealm(),
         this.setPinValue(),
       )
       .subscribe({
         next: () => {
           this.setPinValue.set('');
           this.repeatPinValue.set('');
-          this.selectedUsername.set('');
-          this.selectedUserRealm.set('');
+          this.userService.selectedUsername.set('');
+          this.userService.selectedUserRealm.set('');
           this.isEditingUser.update((b) => !b);
           this.refreshTokenDetails.set(true);
         },

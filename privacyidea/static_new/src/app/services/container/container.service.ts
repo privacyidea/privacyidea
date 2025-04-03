@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { computed, Injectable, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import {
   forkJoin,
@@ -27,6 +27,14 @@ export class ContainerService {
   private containerBaseUrl = environment.proxyUrl + '/container/';
   apiFilter = ['container_serial', 'type', 'user'];
   advancedApiFilter = ['token_serial'];
+  containerOptions = signal<string[]>([]);
+  selectedContainer = signal<string>('');
+  filteredContainerOptions = computed(() => {
+    const filter = (this.selectedContainer() || '').toLowerCase();
+    return this.containerOptions().filter((option) =>
+      option.toLowerCase().includes(filter),
+    );
+  });
 
   constructor(
     private http: HttpClient,
@@ -594,5 +602,9 @@ export class ContainerService {
         return throwError(() => error);
       }),
     );
+  }
+
+  resetContainerSelection() {
+    this.selectedContainer.set('');
   }
 }

@@ -1,6 +1,5 @@
 import {
   Component,
-  computed,
   effect,
   Input,
   signal,
@@ -31,9 +30,6 @@ import {
   MatAutocomplete,
   MatAutocompleteTrigger,
 } from '@angular/material/autocomplete';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { distinctUntilChanged, from, switchMap } from 'rxjs';
-import { map } from 'rxjs/operators';
 import { UserService } from '../../../services/user/user.service';
 import { RealmService } from '../../../services/realm/realm.service';
 import { MatCheckbox } from '@angular/material/checkbox';
@@ -97,40 +93,12 @@ export class ContainerCreateComponent {
   @Input() containerSerial!: WritableSignal<string>;
   description = signal('');
   selectedType = signal(this.containerTypes[0]);
-  selectedUserRealm = signal('');
   selectedTemplate = signal('');
-  realmOptions = signal<string[]>([]);
   templateOptions = signal<
     { container_type: string; default: boolean; name: string }[]
   >([]);
-  selectedUsername = signal('');
   onlyAddToRealm = signal(false);
   generateQRCode = signal(false);
-  fetchedUsernames = toSignal(
-    toObservable(this.selectedUserRealm).pipe(
-      distinctUntilChanged(),
-      switchMap((realm) => {
-        if (!realm) {
-          return from<string[]>([]);
-        }
-        return this.userService
-          .getUsers(realm)
-          .pipe(
-            map((result: any) =>
-              result.value.map((user: any) => user.username),
-            ),
-          );
-      }),
-    ),
-    { initialValue: [] },
-  );
-  userOptions = computed(() => this.fetchedUsernames());
-  filteredUserOptions = computed(() => {
-    const filterValue = (this.selectedUsername() || '').toLowerCase();
-    return this.userOptions().filter((option: any) =>
-      option.toLowerCase().includes(filterValue),
-    );
-  });
   passphrasePrompt = signal('');
   passphraseResponse = signal('');
   registerResponse = signal<any>(null);
@@ -139,8 +107,8 @@ export class ContainerCreateComponent {
   constructor(
     protected registrationDialog: MatDialog,
     protected versioningService: VersionService,
-    private userService: UserService,
-    private realmService: RealmService,
+    protected userService: UserService,
+    protected realmService: RealmService,
     private containerService: ContainerService,
     private notificationService: NotificationService,
   ) {
@@ -175,7 +143,7 @@ export class ContainerCreateComponent {
   getRealmOptions() {
     this.realmService.getRealms().subscribe({
       next: (realms: any) => {
-        this.realmOptions.set(Object.keys(realms.result.value));
+        this.realmService.realmOptions.set(Object.keys(realms.result.value));
       },
     });
   }
@@ -192,10 +160,12 @@ export class ContainerCreateComponent {
       .createContainer({
         container_type: this.selectedType().key,
         description: this.description(),
-        user_realm: this.selectedUserRealm(),
+        user_realm: this.userService.selectedUserRealm(),
         template: this.selectedTemplate(),
-        user: this.selectedUsername(),
-        realm: this.onlyAddToRealm() ? this.selectedUserRealm() : '',
+        user: this.userService.selectedUsername(),
+        realm: this.onlyAddToRealm()
+          ? this.userService.selectedUserRealm()
+          : '',
       })
       .subscribe({
         next: (response: any) => {
@@ -223,9 +193,11 @@ export class ContainerCreateComponent {
   }
 
   private resetCreateOptions = () => {
+    this.userService.resetUserSelection();
+    this.realmService.resetRealmSelection();
     this.realmService.getDefaultRealm().subscribe({
       next: (realm: any) => {
-        this.selectedUserRealm.set(realm);
+        this.userService.selectedUserRealm.set(realm);
       },
     });
     this.getRealmOptions();

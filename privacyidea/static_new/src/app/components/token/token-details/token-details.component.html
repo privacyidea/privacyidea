@@ -33,10 +33,10 @@
                     <mat-form-field class="width-18rem container-form-field">
                       <mat-label>Enter Container</mat-label>
                       <input matInput
-                             [(ngModel)]="selectedContainer"
+                             [(ngModel)]="containerService.selectedContainer"
                              [matAutocomplete]="containerAuto" />
                       <mat-autocomplete #containerAuto="matAutocomplete">
-                        @for (option of filteredContainerOptions();
+                        @for (option of containerService.filteredContainerOptions();
                           track option) {
                           <mat-option [value]="option">{{ option }}</mat-option>
                         }
@@ -54,9 +54,9 @@
                   @if (element.isEditing()) {
                     <mat-form-field class="width-18rem">
                       <mat-label>Select Realms</mat-label>
-                      <mat-select [(ngModel)]="selectedRealms"
+                      <mat-select [(ngModel)]="realmService.selectedRealms"
                                   multiple>
-                        @for (option of realmOptions(); track option) {
+                        @for (option of realmService.realmOptions(); track option) {
                           @if (option === userRealm) {
                             <mat-option value="{{ option }}"
                                         disabled>{{ option }}
@@ -72,8 +72,7 @@
                     <div class="details-scrollable-container"
                          [ngClass]="{ 'details-list': element.value.length > 2 }">
                       @for (realm of element.value;
-                        track realm;
-                        let idx = $index) {
+                        track realm) {
                         <mat-list-item class="height-auto">
                           <span class="font-14">• {{ realm }}</span>
                         </mat-list-item>
@@ -105,8 +104,7 @@
                         'details-list': element.value.length > 2,
                       }">
                       @for (tokengroup of element.value;
-                        track tokengroup;
-                        let idx = $index) {
+                        track tokengroup) {
                         <mat-list-item class="height-auto">
                           <span class="font-14">• {{ tokengroup }}</span>
                         </mat-list-item>
@@ -159,7 +157,7 @@
                           tableUtilsService.getDisplayTextForKeyAndRevoked(
                             element.keyMap.key,
                             element.value,
-                            revoked()
+                            tokenIsRevoked()
                           )
                         }}
                       </span>
@@ -217,7 +215,7 @@
         <app-token-details-user [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
                                 [isEditingInfo]="isEditingInfo"
                                 [isEditingUser]="isEditingUser"
-                                [realmOptions]="realmOptions"
+                                [realmOptions]="realmService.realmOptions"
                                 [refreshTokenDetails]="refreshTokenDetails"
                                 [repeatPinValue]="repeatPinValue"
                                 [setPinValue]="setPinValue"
