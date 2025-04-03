@@ -390,8 +390,6 @@ class IdResolver(UserIdResolver):
                                                 auto_referrals=not self.noreferrals,
                                                 start_tls=self.start_tls)
             if not connection.bind():
-                log.info(f"Bind operation failed: {connection.result.get('description')} "
-                         f"({connection.result.get('result')})")
                 raise ResolverError(f"Bind failed with: {connection.result.get('description')} "
                                     f"({connection.result.get('result')})")
             log.debug(f"LDAP bind operation took {connection.usage.elapsed_time}")

@@ -98,7 +98,7 @@ def check_time_in_range(time_range, check_time=None):
     :param time_range: The timerange
     :type time_range: basestring
     :param check_time: The time to check
-    :type check_time: datetime
+    :type check_time: datetime.datetime
     :return: True, if time is within time_range.
     """
     time_match = False
