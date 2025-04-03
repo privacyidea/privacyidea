@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-03-27 13:57+0100\n"
-"PO-Revision-Date: 2025-04-03 11:42+0000\n"
+"PO-Revision-Date: 2025-04-03 13:23+0000\n"
 "Last-Translator: Gregory Bouzinac <gregory.b@orange.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "branch-3-11/fr/>\n"
@@ -712,16 +712,12 @@ msgid "Admin is allowed to unregister containers."
 msgstr "L'administrateur est autorisé à désinscrire des conteneurs."
 
 #: lib/policy.py:2156
-#, fuzzy
-#| msgid ""
-#| "Admin is allowed to export a documentation of the complete configuration "
-#| "including resolvers and realm."
 msgid ""
 "Admin is allowed to perform a container rollover including a rollover of all "
 "contained tokens."
 msgstr ""
 "L'administrateur est autorisé à faire un roulement de conteneur incluant un "
-"roulement de tous les jetons conteneurisés."
+"roulement de tous les jetons contenus."
 
 #: lib/policy.py:2161
 msgid "Admin is allowed to create and edit container templates."
@@ -923,15 +919,14 @@ msgid "Users are allowed to unregister containers."
 msgstr "Les utilisateurs sont autorisés à désinscrire des conteneurs."
 
 #: lib/policy.py:2336
-#, fuzzy
 msgid ""
 "Users are allowed to perform a container rollover of their own containers. "
 "This includes a rollover of all contained tokens even if the user is not the "
 "owner of a contained token."
 msgstr ""
-"Les utilisateurs sont autorisés à effectuer un roulement de leurs propres "
-"conteneurs. Ceci inclut un roulement de tous les jetons conteneurisés même "
-"s'ils ne lui appartiennent pas."
+"Les utilisateurs sont autorisés à effectuer un renouvellement de leurs "
+"propres conteneurs. Ceci inclut un renouvellement de tous les jetons "
+"contenus même s'ils ne lui appartiennent pas."
 
 #: lib/policy.py:2342
 msgid "Users are allowed to create and edit container templates."
