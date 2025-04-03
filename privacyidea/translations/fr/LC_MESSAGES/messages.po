@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-02-25 14:26+0100\n"
-"PO-Revision-Date: 2025-04-02 19:16+0000\n"
+"PO-Revision-Date: 2025-04-03 19:16+0000\n"
 "Last-Translator: Gregory Bouzinac <gregory.b@orange.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/fr/>\n"
@@ -708,16 +708,12 @@ msgid "Admin is allowed to unregister containers."
 msgstr "L'administrateur est autorisé à désinscrire des conteneurs."
 
 #: lib/policy.py:2156
-#, fuzzy
-#| msgid ""
-#| "Admin is allowed to export a documentation of the complete configuration "
-#| "including resolvers and realm."
 msgid ""
 "Admin is allowed to perform a container rollover including a rollover of all "
 "contained tokens."
 msgstr ""
 "L'administrateur est autorisé à faire un roulement de conteneur incluant un "
-"roulement de tous les jetons conteneurisés."
+"roulement de tous les jetons contenus."
 
 #: lib/policy.py:2161
 msgid "Admin is allowed to create and edit container templates."
@@ -795,10 +791,6 @@ msgid "The user is allowed to set the OTP PIN during enrollment."
 msgstr "L'utilisateur est autorisé à définir un PIN TOP pendant l'enrôlement."
 
 #: lib/policy.py:2237
-#, fuzzy
-#| msgid ""
-#| "Specifiy the required contents of the OTP PIN. (c)haracters, (n)umeric, "
-#| "(s)pecial. Use modifiers +/- or a list of allowed characters [1234567890]"
 msgid ""
 "Specify the required contents of the OTP PIN. (c)haracters, (n)umeric, "
 "(s)pecial. Use modifiers +/- or a list of allowed characters [1234567890]"
@@ -923,15 +915,14 @@ msgid "Users are allowed to unregister containers."
 msgstr "Les utilisateurs sont autorisés à désinscrire des conteneurs."
 
 #: lib/policy.py:2336
-#, fuzzy
 msgid ""
 "Users are allowed to perform a container rollover of their own containers. "
 "This includes a rollover of all contained tokens even if the user is not the "
 "owner of a contained token."
 msgstr ""
-"Les utilisateurs sont autorisés à effectuer un roulement de leurs propres "
-"conteneurs. Ceci inclut un roulement de tous les jetons conteneurisés même "
-"s'ils ne lui appartiennent pas."
+"Les utilisateurs sont autorisés à effectuer un renouvellement de leurs "
+"propres conteneurs. Ceci inclut un renouvellement de tous les jetons "
+"contenus même s'ils ne lui appartiennent pas."
 
 #: lib/policy.py:2342
 msgid "Users are allowed to create and edit container templates."
@@ -1645,7 +1636,6 @@ msgstr ""
 "l'assistant de création de conteneur dans son interface."
 
 #: lib/policy.py:2893
-#, fuzzy
 msgid ""
 "Name of the container template to be used to create a container in the "
 "container wizard (optional). Note that the template must be of the same type "
@@ -1656,7 +1646,6 @@ msgstr ""
 "celui sélectionné dans container_wizard_type."
 
 #: lib/policy.py:2899
-#, fuzzy
 msgid ""
 "In the container wizard, a QR code will be generated to register the new "
 "container on the smartphone. (Only applicable for smartphone containers)"
@@ -1709,7 +1698,6 @@ msgstr ""
 "Le client est autorisé à faire un roulement du conteneur et de ses jetons."
 
 #: lib/policy.py:2940
-#, fuzzy
 msgid ""
 "During the first synchronization, the server automatically adds the clients "
 "tokens existing in privacyIDEA to the container. This allows to register "
@@ -2231,7 +2219,6 @@ msgstr ""
 "valeur_champ', 'nom_champ > valeur_champ' ou 'nom_champ < valeur_champ'."
 
 #: lib/eventhandler/base.py:473
-#, fuzzy
 msgid ""
 "Action is triggered, if the last authentication of the container is older "
 "than the specified time. The time value has to be an integer followed by a "
@@ -2400,7 +2387,6 @@ msgstr ""
 "'()' afin de transférer des valeurs au nouveau paramètre."
 
 #: lib/eventhandler/requestmangler.py:112
-#, fuzzy
 msgid ""
 "If the parameter is 'username', 'user' or 'realm', the user will be reset. "
 "This can have an effect on any further actions on the user!"
@@ -3374,7 +3360,6 @@ msgstr ""
 "consultez la documentation pour plus de détails."
 
 #: lib/tokens/passkeytoken.py:112
-#, fuzzy
 msgid ""
 "Request attestation from the authenticator during the registration. The "
 "attestation certificate will be saved in the token info. The default value "
