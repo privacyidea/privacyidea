@@ -1332,15 +1332,13 @@ def prepare_result(obj, rid=1, details=None):
 
     if rid > 1:
         if isinstance(obj, dict):
-            # Looks like we have a /validate/samlcheck request
             # TODO: Remove when /validate/samlcheck is removed
             obj = obj.get("auth")
-        if obj and obj != AUTH_RESPONSE.CHALLENGE:
+        if obj and obj != AUTH_RESPONSE.CHALLENGE and not details.get("multi_challenge"):
             r_authentication = AUTH_RESPONSE.ACCEPT
         elif obj and obj == AUTH_RESPONSE.CHALLENGE:
             r_authentication = AUTH_RESPONSE.CHALLENGE
-        elif not obj and details.get("multi_challenge") or details.get("passkey"):
-            # We have a challenge authentication
+        elif details.get("multi_challenge") or details.get("passkey"):
             r_authentication = AUTH_RESPONSE.CHALLENGE
         elif not obj and (details.get("challenge_status") == "declined"):
             r_authentication = AUTH_RESPONSE.DECLINED

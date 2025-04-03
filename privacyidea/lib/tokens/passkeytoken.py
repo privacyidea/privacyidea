@@ -421,6 +421,12 @@ class PasskeyTokenClass(TokenClass):
     def use_for_authentication(self, options):
         return self.is_active()
 
+    def inc_failcount(self):
+        """
+        Do not increment the fail count for passkey, since their authentication process is decoupled from the usual.
+        """
+        pass
+
     @classmethod
     def is_multichallenge_enrollable(cls):
         return True
