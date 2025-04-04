@@ -916,6 +916,7 @@ class HotpTokenClass(TokenClass):
         token_dict["otplen"] = self.token.otplen
         token_dict["hashlib"] = self.get_tokeninfo("hashlib")
         token_dict["count"] = self.token.count
+        token_dict["tokenkind"] = self.get_tokeninfo("tokenkind")
         return token_dict
 
     def import_token(self, dict_token_info):
@@ -927,5 +928,6 @@ class HotpTokenClass(TokenClass):
         self.token.count = dict_token_info["count"]
         self.token.type = dict_token_info["type"]
         self.token.description = dict_token_info["description"]
+        self.add_tokeninfo("tokenkind", dict_token_info["tokenkind"])
         self.save()
         pass

@@ -2015,6 +2015,7 @@ class TokenClass(object):
         token_dict["otpkey"] = self.token.get_otpkey().getKey().decode("utf-8")
         token_dict["otplen"] = self.token.otplen
         token_dict["hashlib"] = self.get_tokeninfo("hashlib")
+        token_dict["tokenkind"] = self.get_tokeninfo("tokenkind")
 
         return token_dict
 
