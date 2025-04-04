@@ -12,7 +12,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-03-28 10:57+0000\n"
+"PO-Revision-Date: 2025-04-04 09:18+0000\n"
 "Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "branch-3-11-webui/de/>\n"
@@ -464,8 +464,8 @@ msgid ""
 "As the values are encrypted with AES128-CBC, you need to give a\n"
 "            32 characters long hex string."
 msgstr ""
-"Da die OTP seeds mit AES128-CBC verschlüsselt werden, müssen Sie einen 32 "
-"Zeichen langen Hex-String eingeben."
+"Da die OTP Geheimnisse mit AES128-CBC verschlüsselt werden, müssen Sie eine "
+"32 Zeichen lange Hexadezimal-Zeichenkette eingeben."
 
 #: privacyidea/static/components/token/views/token.details.html:605
 msgid "Assign Container"
@@ -2784,10 +2784,8 @@ msgid "Parameters"
 msgstr "Parameter"
 
 #: privacyidea/static/components/login/views/login.html:81
-#, fuzzy
-#| msgid "Log In"
 msgid "Passkey Log In"
-msgstr "Anmelden"
+msgstr "Passkey Anmeldung"
 
 #: privacyidea/static/components/directives/views/directive.registerContainer.html:21
 msgid "Passphrase (optional)"
