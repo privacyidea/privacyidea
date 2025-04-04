@@ -1,8 +1,8 @@
 import { Component, Input, WritableSignal } from '@angular/core';
-import { TokenComponent } from '../../token.component';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { TokenService } from '../../../../services/token/token.service';
 
 @Component({
   selector: 'app-enroll-u2f',
@@ -11,7 +11,9 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
   styleUrl: './enroll-u2f.component.scss',
 })
 export class EnrollU2fComponent {
-  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'u2f')
+  text = this.tokenService.tokenTypeOptions().find((type) => type.key === 'u2f')
     ?.text;
   @Input() description!: WritableSignal<string>;
+
+  constructor(private tokenService: TokenService) {}
 }

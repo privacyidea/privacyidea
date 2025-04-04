@@ -24,7 +24,11 @@ import { MatOption } from '@angular/material/core';
 import { MatSelect } from '@angular/material/select';
 import { FormsModule } from '@angular/forms';
 import { VersionService } from '../../../services/version/version.service';
-import { TokenSelectedContent } from '../token.component';
+import {
+  TokenComponent,
+  TokenSelectedContent,
+  TokenType,
+} from '../token.component';
 import { MatInput } from '@angular/material/input';
 import {
   MatAutocomplete,
@@ -37,6 +41,15 @@ import { ContainerService } from '../../../services/container/container.service'
 import { NotificationService } from '../../../services/notification/notification.service';
 import { MatDialog } from '@angular/material/dialog';
 import { ContainerRegistrationDialogComponent } from './container-registration-dialog/container-registration-dialog.component';
+import { TokenService } from '../../../services/token/token.service';
+
+export type ContainerType = 'generic' | 'smartphone' | 'yubikey';
+
+export interface ContainerTypeOption {
+  key: ContainerType;
+  description: string;
+  token_types: TokenType[];
+}
 
 @Component({
   selector: 'app-container-create',
@@ -64,35 +77,9 @@ import { ContainerRegistrationDialogComponent } from './container-registration-d
   styleUrl: './container-create.component.scss',
 })
 export class ContainerCreateComponent {
-  // TODO get this from container/types endpoint and add containerTypeOption interface
-  containerTypes = [
-    {
-      key: 'generic',
-      info: 'General prupose container that can hold any type and any number of token.',
-      supportedToken: ['All'],
-    },
-    {
-      key: 'smartphone',
-      info: 'A smartphone that uses an authentication app.',
-      supportedToken: ['Daypassword', 'HOTP', 'Push', 'SMS', 'TOTP'],
-    },
-    {
-      key: 'yubikey',
-      info: 'Yubikey hardware device that can hold HOTP, certificate and webauthn token.',
-      supportedToken: [
-        'Certificate',
-        'HOTP',
-        'Passkey',
-        'Webauthn',
-        'Yubico',
-        'Yubikey',
-      ],
-    },
-  ];
   @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
   @Input() containerSerial!: WritableSignal<string>;
   description = signal('');
-  selectedType = signal(this.containerTypes[0]);
   selectedTemplate = signal('');
   templateOptions = signal<
     { container_type: string; default: boolean; name: string }[]
@@ -103,24 +90,26 @@ export class ContainerCreateComponent {
   passphraseResponse = signal('');
   registerResponse = signal<any>(null);
   pollResponse = signal<any>(null);
+  protected readonly TokenComponent = TokenComponent;
 
   constructor(
     protected registrationDialog: MatDialog,
     protected versioningService: VersionService,
     protected userService: UserService,
     protected realmService: RealmService,
-    private containerService: ContainerService,
+    protected containerService: ContainerService,
     private notificationService: NotificationService,
+    protected tokenService: TokenService,
   ) {
     effect(() => {
-      if (this.selectedType().key === 'smartphone') {
+      if (this.containerService.selectedType().key === 'smartphone') {
         this.generateQRCode.set(true);
       } else {
         this.generateQRCode.set(false);
       }
     });
     effect(() => {
-      this.selectedType();
+      this.containerService.selectedType();
       untracked(() => {
         this.resetCreateOptions();
       });
@@ -158,7 +147,7 @@ export class ContainerCreateComponent {
     this.registerResponse.set(null);
     this.containerService
       .createContainer({
-        container_type: this.selectedType().key,
+        container_type: this.containerService.selectedType().key,
         description: this.description(),
         user_realm: this.userService.selectedUserRealm(),
         template: this.selectedTemplate(),

@@ -5,9 +5,9 @@ import { MatInput } from '@angular/material/input';
 import { MatOption } from '@angular/material/core';
 import { MatError, MatSelect } from '@angular/material/select';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { TokenComponent } from '../../token.component';
 import { RadiusServerService } from '../../../../services/radius-server/radius-server.service';
 import { SystemService } from '../../../../services/system/system.service';
+import { TokenService } from '../../../../services/token/token.service';
 
 @Component({
   selector: 'app-enroll-radius',
@@ -27,8 +27,9 @@ import { SystemService } from '../../../../services/system/system.service';
   styleUrl: './enroll-radius.component.scss',
 })
 export class EnrollRadiusComponent {
-  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'radius')
-    ?.text;
+  text = this.tokenService
+    .tokenTypeOptions()
+    .find((type) => type.key === 'radius')?.text;
   @Input() description!: WritableSignal<string>;
   @Input() radiusUser!: WritableSignal<string>;
   @Input() radiusServerConfiguration!: WritableSignal<string>;
@@ -39,6 +40,7 @@ export class EnrollRadiusComponent {
   constructor(
     private radiusServerService: RadiusServerService,
     private systemService: SystemService,
+    private tokenService: TokenService,
   ) {}
 
   ngOnInit(): void {

@@ -4,7 +4,7 @@
   <mat-form-field class="width-100">
     <mat-select [(ngModel)]="selectedType"
                 [panelClass]="'multi-column-panel'">
-      @for (type of tokenTypesOptions; track type) {
+      @for (type of tokenService.tokenTypeOptions(); track type) {
         <mat-option class="token-type-option type-option"
                     [value]="type">{{ type.info.split(":")[0] }}
         </mat-option>

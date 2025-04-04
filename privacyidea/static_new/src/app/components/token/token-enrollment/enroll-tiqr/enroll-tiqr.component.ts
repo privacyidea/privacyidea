@@ -2,8 +2,8 @@ import { Component, Input, signal, WritableSignal } from '@angular/core';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { TokenComponent } from '../../token.component';
 import { SystemService } from '../../../../services/system/system.service';
+import { TokenService } from '../../../../services/token/token.service';
 
 @Component({
   selector: 'app-enroll-tiqr',
@@ -12,12 +12,16 @@ import { SystemService } from '../../../../services/system/system.service';
   styleUrl: './enroll-tiqr.component.scss',
 })
 export class EnrollTiqrComponent {
-  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'tiqr')
-    ?.text;
+  text = this.tokenService
+    .tokenTypeOptions()
+    .find((type) => type.key === 'tiqr')?.text;
   @Input() description!: WritableSignal<string>;
   @Input() defaultTiQRIsSet = signal(false);
 
-  constructor(private systemService: SystemService) {}
+  constructor(
+    private systemService: SystemService,
+    private tokenService: TokenService,
+  ) {}
 
   ngOnInit(): void {
     this.systemService.getSystemConfig().subscribe((response) => {

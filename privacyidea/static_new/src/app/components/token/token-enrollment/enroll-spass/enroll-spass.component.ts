@@ -1,8 +1,8 @@
 import { Component, Input, WritableSignal } from '@angular/core';
-import { TokenComponent } from '../../token.component';
 import { FormsModule } from '@angular/forms';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
+import { TokenService } from '../../../../services/token/token.service';
 
 @Component({
   selector: 'app-enroll-spass',
@@ -11,7 +11,10 @@ import { MatInput } from '@angular/material/input';
   styleUrl: './enroll-spass.component.scss',
 })
 export class EnrollSpassComponent {
-  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'spass')
-    ?.text;
+  text = this.tokenService
+    .tokenTypeOptions()
+    .find((type) => type.key === 'spass')?.text;
   @Input() description!: WritableSignal<string>;
+
+  constructor(private tokenService: TokenService) {}
 }

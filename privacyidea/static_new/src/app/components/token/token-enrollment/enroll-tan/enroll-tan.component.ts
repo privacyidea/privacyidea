@@ -2,7 +2,7 @@ import { Component, Input, WritableSignal } from '@angular/core';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { TokenComponent } from '../../token.component';
+import { TokenService } from '../../../../services/token/token.service';
 
 @Component({
   selector: 'app-enroll-tan',
@@ -11,7 +11,9 @@ import { TokenComponent } from '../../token.component';
   styleUrl: './enroll-tan.component.scss',
 })
 export class EnrollTanComponent {
-  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'tan')
+  text = this.tokenService.tokenTypeOptions().find((type) => type.key === 'tan')
     ?.text;
   @Input() description!: WritableSignal<string>;
+
+  constructor(private tokenService: TokenService) {}
 }

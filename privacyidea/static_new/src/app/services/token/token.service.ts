@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import {
   forkJoin,
@@ -16,11 +16,19 @@ import { TableUtilsService } from '../table-utils/table-utils.service';
 import { environment } from '../../../environments/environment';
 import { catchError } from 'rxjs/operators';
 import { NotificationService } from '../notification/notification.service';
+import {
+  TokenComponent,
+  TokenType,
+  TokenTypeOption,
+} from '../../components/token/token.component';
 
 @Injectable({
   providedIn: 'root',
 })
 export class TokenService {
+  private tokenBaseUrl = environment.proxyUrl + '/token/';
+  private stopPolling$ = new Subject<void>();
+  tokenTypeOptions = signal<TokenTypeOption[]>([]);
   apiFilter = [
     'serial',
     'type',
@@ -34,15 +42,29 @@ export class TokenService {
   advancedApiFilter = ['infokey & infovalue', 'userid', 'resolver', 'assigned'];
   challengesApiFilter = ['serial', 'transaction_id'];
   challengesAdvancedApiFilter = [];
-  private tokenBaseUrl = environment.proxyUrl + '/token/';
-  private stopPolling$ = new Subject<void>();
 
   constructor(
     private http: HttpClient,
     private localService: LocalService,
     private tableUtilsService: TableUtilsService,
     private notificationService: NotificationService,
-  ) {}
+  ) {
+    this.getTokenTypes().subscribe((tokenTypes: any) => {
+      const options = Object.keys(tokenTypes.result.value).map(
+        (key: string) => {
+          const text =
+            TokenComponent.tokenTypeTexts.find((type) => type.key === key)
+              ?.text || '';
+          return {
+            key: key as TokenType,
+            info: tokenTypes.result.value[key],
+            text,
+          };
+        },
+      );
+      this.tokenTypeOptions.set(options);
+    });
+  }
 
   toggleActive(tokenSerial: string, active: boolean): Observable<any> {
     const headers = this.localService.getHeaders();
@@ -673,6 +695,22 @@ export class TokenService {
       .pipe(
         catchError((error) => {
           console.error('Failed to load challenges.', error);
+          return throwError(() => error);
+        }),
+      );
+  }
+
+  getTokenTypes() {
+    const headers = this.localService.getHeaders();
+    return this.http
+      .get<any>(environment.proxyUrl + '/auth/rights', { headers })
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to get token types.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to get token types. ' + message,
+          );
           return throwError(() => error);
         }),
       );

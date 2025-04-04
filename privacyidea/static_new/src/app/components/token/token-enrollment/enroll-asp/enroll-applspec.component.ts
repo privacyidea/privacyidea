@@ -3,10 +3,10 @@ import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatCheckbox } from '@angular/material/checkbox';
-import { TokenComponent } from '../../token.component';
 import { ServiceIdService } from '../../../../services/service-id/service-id.service';
 import { ErrorStateMatcher, MatOption } from '@angular/material/core';
 import { MatError, MatSelect } from '@angular/material/select';
+import { TokenService } from '../../../../services/token/token.service';
 
 export class ApplspecErrorStateMatcher implements ErrorStateMatcher {
   isErrorState(control: FormControl | null): boolean {
@@ -32,8 +32,9 @@ export class ApplspecErrorStateMatcher implements ErrorStateMatcher {
   styleUrl: './enroll-applspec.component.scss',
 })
 export class EnrollApplspecComponent {
-  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'applspec')
-    ?.text;
+  text = this.tokenService
+    .tokenTypeOptions()
+    .find((type) => type.key === 'applspec')?.text;
   @Input() description!: WritableSignal<string>;
   @Input() serviceId!: WritableSignal<string>;
   @Input() generateOnServer!: WritableSignal<boolean>;
@@ -41,7 +42,10 @@ export class EnrollApplspecComponent {
   serviceIdOptions = signal<string[]>([]);
   applspecErrorStateMatcher = new ApplspecErrorStateMatcher();
 
-  constructor(private serviceIdService: ServiceIdService) {}
+  constructor(
+    private serviceIdService: ServiceIdService,
+    private tokenService: TokenService,
+  ) {}
 
   ngOnInit(): void {
     this.serviceIdService.getServiceIdOptions().subscribe((response) => {

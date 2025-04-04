@@ -35,7 +35,7 @@
       <mat-label>Token Type</mat-label>
       <mat-select [(ngModel)]="tokenType"
                   placeholder="Select token type">
-        @for (type of tokenTypes; track type) {
+        @for (type of tokenTypesWithOTP; track type) {
           <mat-option [value]="type['key']">{{ type["info"] }}</mat-option>
         }
       </mat-select>

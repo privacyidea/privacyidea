@@ -6,10 +6,10 @@ import {
   MatButtonToggle,
   MatButtonToggleGroup,
 } from '@angular/material/button-toggle';
-import { TokenComponent } from '../../token.component';
 import { ErrorStateMatcher, MatOption } from '@angular/material/core';
 import { MatError, MatSelect } from '@angular/material/select';
 import { CaConnectorService } from '../../../../services/ca-connector/ca-connector.service';
+import { TokenService } from '../../../../services/token/token.service';
 
 export class CaConnectorErrorStateMatcher implements ErrorStateMatcher {
   isErrorState(control: FormControl | null): boolean {
@@ -36,9 +36,9 @@ export class CaConnectorErrorStateMatcher implements ErrorStateMatcher {
   styleUrl: './enroll-certificate.component.scss',
 })
 export class EnrollCertificateComponent {
-  text = TokenComponent.tokenTypeOptions.find(
-    (type) => type.key === 'certificate',
-  )?.text;
+  text = this.tokenService
+    .tokenTypeOptions()
+    .find((type) => type.key === 'certificate')?.text;
   @Input() caConnector!: WritableSignal<string>;
   @Input() certTemplate!: WritableSignal<string>;
   @Input() pem!: WritableSignal<string>;
@@ -48,7 +48,10 @@ export class EnrollCertificateComponent {
   certTemplateOptions = signal<string[]>([]);
   caConnectorErrorStateMatcher = new CaConnectorErrorStateMatcher();
 
-  constructor(private caConnectorService: CaConnectorService) {}
+  constructor(
+    private caConnectorService: CaConnectorService,
+    private tokenService: TokenService,
+  ) {}
 
   ngOnInit(): void {
     this.caConnectorService

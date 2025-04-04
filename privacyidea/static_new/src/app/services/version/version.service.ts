@@ -1,18 +1,15 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 
 @Injectable({
   providedIn: 'root',
 })
 export class VersionService {
-  private readonly version: string;
+  version = signal('');
 
-  constructor() {
-    // TODO get version from an environment variable or API
-    this.version = '3.11';
-  }
+  constructor() {}
 
   getVersion(): string {
-    return this.version;
+    return this.version();
   }
 
   openDocumentation(page: string) {

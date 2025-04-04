@@ -20,7 +20,7 @@ import { NotificationService } from '../../../services/notification/notification
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
-import { TokenComponent, TokenSelectedContent } from '../token.component';
+import { TokenSelectedContent } from '../token.component';
 import { MatButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { LoadingService } from '../../../services/loading/loading-service';
@@ -59,7 +59,7 @@ export class TokenGetSerial {
   foundSerial = signal<string>('');
   tokenCount = signal<string>('');
   serialSubscription: Subscription | null = null;
-  tokenTypes: { key: string; info: string }[] = [];
+  tokenTypesWithOTP: { key: string; info: string }[] = [];
   assignmentStates = [
     { key: 'assigned', info: 'The token is assigned to a user' },
     { key: 'unassigned', info: 'The token is not assigned to a user' },
@@ -87,9 +87,9 @@ export class TokenGetSerial {
       'radius',
       'sms',
     ];
-    this.tokenTypes = TokenComponent.tokenTypeOptions.filter((type) =>
-      tokenWithOTP.includes(type.key),
-    );
+    this.tokenTypesWithOTP = this.tokenService
+      .tokenTypeOptions()
+      .filter((type) => tokenWithOTP.includes(type.key));
 
     effect(() => {
       this.otpValue();

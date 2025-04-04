@@ -2,13 +2,10 @@
      class="container-enrollment-container">
   <h3 class="margin-left-1">Create Container</h3>
   <mat-form-field class="width-100 margin-button-1">
-    <mat-select [(ngModel)]="selectedType">
-      @for (type of containerTypes; track type) {
+    <mat-select [(ngModel)]="containerService.selectedType">
+      @for (type of containerService.containerTypeOptions(); track type) {
         <mat-option class="type-option"
-                    [value]="type">{{
-            type.key[0].toUpperCase() + type.key.slice(1) + ': ' +
-            type.info
-          }}
+                    [value]="type">{{ type.description }}
         </mat-option>
       }
       <div class="width-100 flex just-center">
@@ -21,8 +18,14 @@
       </div>
     </mat-select>
     <mat-hint class="container-type-hint">
-      @if (selectedType().supportedToken.length > 0) {
-        Supported Token Types: {{ selectedType().supportedToken.join(', ') }}
+      Supported Token Types:
+      @if (containerService.selectedType().token_types.length >=
+      tokenService.tokenTypeOptions().length) {
+        All
+      } @else if (containerService.selectedType().token_types.length > 1) {
+        {{ containerService.selectedType().token_types.join(', ') }}
+      } @else {
+        {{ containerService.selectedType().token_types[0] }}
       }
     </mat-hint>
   </mat-form-field>
@@ -37,7 +40,7 @@
             class="card-button"
             mat-flat-button>
       <mat-icon>add</mat-icon>
-      Create {{ selectedType().key }} Container
+      Create {{ containerService.selectedType().key }} Container
     </button>
   </div>
 
@@ -92,7 +95,7 @@
     </div>
   </div>
 
-  @if (selectedType().key === 'smartphone') {
+  @if (containerService.selectedType().key === 'smartphone') {
     <h4 class="enroll-h4"> Registration </h4>
     <mat-checkbox [(ngModel)]="generateQRCode">
       Generate a QR code to register the container on a smartphone.
@@ -109,8 +112,8 @@
                     placeholder="This prompt will be displayed to the user."
                     rows="2"></textarea>
           <mat-hint class="font-14">
-            Enter a passphrase prompt that will be displayed to the user.
-            This should indicate which passphrase the user should enter.
+            Enter a passphrase prompt that will be displayed to the user. This should indicate which
+            passphrase the user should enter.
           </mat-hint>
         </mat-form-field>
         <mat-form-field class="width-100 margin-top-2 margin-button-1">

@@ -5,9 +5,9 @@ import { MatInput } from '@angular/material/input';
 import { MatOption } from '@angular/material/core';
 import { MatError, MatSelect } from '@angular/material/select';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { TokenComponent } from '../../token.component';
 import { SmsGatewayService } from '../../../../services/sms-gateway/sms-gateway.service';
 import { SystemService } from '../../../../services/system/system.service';
+import { TokenService } from '../../../../services/token/token.service';
 
 @Component({
   selector: 'app-enroll-sms',
@@ -27,7 +27,7 @@ import { SystemService } from '../../../../services/system/system.service';
   styleUrl: './enroll-sms.component.scss',
 })
 export class EnrollSmsComponent {
-  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'sms')
+  text = this.tokenService.tokenTypeOptions().find((type) => type.key === 'sms')
     ?.text;
   @Input() description!: WritableSignal<string>;
   @Input() smsGateway!: WritableSignal<string>;
@@ -39,6 +39,7 @@ export class EnrollSmsComponent {
   constructor(
     private smsGatewayService: SmsGatewayService,
     private systemService: SystemService,
+    private tokenService: TokenService,
   ) {}
 
   ngOnInit(): void {

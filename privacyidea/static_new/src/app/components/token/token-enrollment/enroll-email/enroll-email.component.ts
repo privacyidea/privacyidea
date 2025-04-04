@@ -3,8 +3,8 @@ import { MatCheckbox } from '@angular/material/checkbox';
 import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { TokenComponent } from '../../token.component';
 import { SystemService } from '../../../../services/system/system.service';
+import { TokenService } from '../../../../services/token/token.service';
 
 @Component({
   selector: 'app-enroll-email',
@@ -21,14 +21,18 @@ import { SystemService } from '../../../../services/system/system.service';
   styleUrl: './enroll-email.component.scss',
 })
 export class EnrollEmailComponent {
-  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'email')
-    ?.text;
+  text = this.tokenService
+    .tokenTypeOptions()
+    .find((type) => type.key === 'email')?.text;
   @Input() description!: WritableSignal<string>;
   @Input() emailAddress!: WritableSignal<string>;
   @Input() readEmailDynamically!: WritableSignal<boolean>;
   defaultSMTPisSet = signal(false);
 
-  constructor(private systemService: SystemService) {}
+  constructor(
+    private systemService: SystemService,
+    private tokenService: TokenService,
+  ) {}
 
   ngOnInit(): void {
     this.systemService.getSystemConfig().subscribe((response) => {

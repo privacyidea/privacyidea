@@ -18,6 +18,10 @@ import { TableUtilsService } from '../table-utils/table-utils.service';
 import { TokenService } from '../token/token.service';
 import { NotificationService } from '../notification/notification.service';
 import { environment } from '../../../environments/environment';
+import {
+  ContainerType,
+  ContainerTypeOption,
+} from '../../components/token/container-create/container-create.component';
 
 @Injectable({
   providedIn: 'root',
@@ -35,14 +39,33 @@ export class ContainerService {
       option.toLowerCase().includes(filter),
     );
   });
-
+  containerTypeOptions = signal<ContainerTypeOption[]>([
+    {
+      key: 'generic',
+      description: 'No container type data available',
+      token_types: [],
+    },
+  ]);
+  selectedType = signal(this.containerTypeOptions()[0]);
   constructor(
     private http: HttpClient,
     private localService: LocalService,
     private tableUtilsService: TableUtilsService,
     private tokenService: TokenService,
     private notificationService: NotificationService,
-  ) {}
+  ) {
+    this.getContainerTypes().subscribe((containerTypes: any) => {
+      const options = Object.keys(containerTypes.result.value).map(
+        (key: string) => ({
+          key: key as ContainerType,
+          description: containerTypes.result.value[key].description,
+          token_types: containerTypes.result.value[key].token_types,
+        }),
+      );
+      this.containerTypeOptions.set(options);
+      this.selectedType.set(this.containerTypeOptions()[0]);
+    });
+  }
 
   getContainerData(
     options: {
@@ -606,5 +629,23 @@ export class ContainerService {
 
   resetContainerSelection() {
     this.selectedContainer.set('');
+  }
+
+  getContainerTypes() {
+    const headers = this.localService.getHeaders();
+    return this.http
+      .get<any>(`${this.containerBaseUrl}types`, {
+        headers,
+      })
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to get container types.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to get container types. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 }

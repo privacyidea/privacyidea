@@ -2,7 +2,6 @@ import { Component, Input, WritableSignal } from '@angular/core';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { TokenComponent } from '../../token.component';
 import { NotificationService } from '../../../../services/notification/notification.service';
 import { Base64Service } from '../../../../services/base64/base64.service';
 import { from, Observable, switchMap, throwError } from 'rxjs';
@@ -17,8 +16,9 @@ import { catchError } from 'rxjs/operators';
   styleUrl: './enroll-webauthn.component.scss',
 })
 export class EnrollWebauthnComponent {
-  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'webauthn')
-    ?.text;
+  text = this.tokenService
+    .tokenTypeOptions()
+    .find((type) => type.key === 'webauthn')?.text;
   @Input() description!: WritableSignal<string>;
   @Input() enrollResponse!: WritableSignal<any>;
   @Input() firstDialog!: MatDialog;

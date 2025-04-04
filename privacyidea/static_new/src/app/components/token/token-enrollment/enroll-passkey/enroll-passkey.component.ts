@@ -1,5 +1,4 @@
 import { Component, Input, WritableSignal } from '@angular/core';
-import { TokenComponent } from '../../token.component';
 import { FormsModule } from '@angular/forms';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
@@ -17,8 +16,9 @@ import { MatDialog } from '@angular/material/dialog';
   styleUrl: './enroll-passkey.component.scss',
 })
 export class EnrollPasskeyComponent {
-  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'passkey')
-    ?.text;
+  text = this.tokenService
+    .tokenTypeOptions()
+    .find((type) => type.key === 'passkey')?.text;
   @Input() description!: WritableSignal<string>;
   @Input() enrollResponse!: WritableSignal<any>;
   @Input() firstDialog!: MatDialog;

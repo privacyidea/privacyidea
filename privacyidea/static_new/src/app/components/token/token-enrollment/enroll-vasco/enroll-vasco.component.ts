@@ -2,9 +2,9 @@ import { Component, Input, WritableSignal } from '@angular/core';
 import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { TokenComponent } from '../../token.component';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { ErrorStateMatcher } from '@angular/material/core';
+import { TokenService } from '../../../../services/token/token.service';
 
 export class VascoErrorStateMatcher implements ErrorStateMatcher {
   isErrorState(control: FormControl | null): boolean {
@@ -29,13 +29,16 @@ export class VascoErrorStateMatcher implements ErrorStateMatcher {
   styleUrl: './enroll-vasco.component.scss',
 })
 export class EnrollVascoComponent {
-  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'vasco')
-    ?.text;
+  text = this.tokenService
+    .tokenTypeOptions()
+    .find((type) => type.key === 'vasco')?.text;
   @Input() description!: WritableSignal<string>;
   @Input() otpKey!: WritableSignal<string>;
   @Input() useVascoSerial!: WritableSignal<boolean>;
   @Input() vascoSerial!: WritableSignal<string>;
   vascoErrorStatematcher = new VascoErrorStateMatcher();
+
+  constructor(private tokenService: TokenService) {}
 
   static convertOtpKeyToVascoSerial(otpHex: string): string {
     let vascoOtpStr = '';

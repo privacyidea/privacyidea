@@ -9,7 +9,7 @@ import { MatInput } from '@angular/material/input';
 import { MatOption } from '@angular/material/core';
 import { MatSelect } from '@angular/material/select';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { TokenComponent } from '../../token.component';
+import { TokenService } from '../../../../services/token/token.service';
 
 @Component({
   selector: 'app-enroll-daypassword',
@@ -28,14 +28,16 @@ import { TokenComponent } from '../../token.component';
   styleUrl: './enroll-daypassword.component.scss',
 })
 export class EnrollDaypasswordComponent {
-  text = TokenComponent.tokenTypeOptions.find(
-    (type) => type.key === 'daypassword',
-  )?.text;
+  text = this.tokenService
+    .tokenTypeOptions()
+    .find((type) => type.key === 'daypassword')?.text;
   @Input() description!: WritableSignal<string>;
   @Input() otpLength!: WritableSignal<number>;
   @Input() otpKey!: WritableSignal<string>;
   @Input() hashAlgorithm!: WritableSignal<string>;
   @Input() timeStep!: WritableSignal<number | string>;
+
+  constructor(private tokenService: TokenService) {}
 
   ngOnInit() {
     this.timeStep.set('');

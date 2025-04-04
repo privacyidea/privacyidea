@@ -9,7 +9,6 @@ import {
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { TokenComponent } from '../../token.component';
 import { RealmService } from '../../../../services/realm/realm.service';
 import {
   ErrorStateMatcher,
@@ -18,6 +17,7 @@ import {
 } from '@angular/material/core';
 import { MatError, MatSelect } from '@angular/material/select';
 import { MatCheckbox } from '@angular/material/checkbox';
+import { TokenService } from '../../../../services/token/token.service';
 
 export class RequiredRealmsErrorStateMatcher implements ErrorStateMatcher {
   isErrorState(control: FormControl | null): boolean {
@@ -44,8 +44,9 @@ export class RequiredRealmsErrorStateMatcher implements ErrorStateMatcher {
   styleUrl: './enroll-foureyes.component.scss',
 })
 export class EnrollFoureyesComponent {
-  text = TokenComponent.tokenTypeOptions.find((type) => type.key === '4eyes')
-    ?.text;
+  text = this.tokenService
+    .tokenTypeOptions()
+    .find((type) => type.key === '4eyes')?.text;
   @Input() description!: WritableSignal<string>;
   @Input() separator!: WritableSignal<string>;
   @Input() requiredTokensOfRealms!: WritableSignal<
@@ -66,7 +67,10 @@ export class EnrollFoureyesComponent {
   });
   requiredRealmsErrorStateMatcher = new RequiredRealmsErrorStateMatcher();
 
-  constructor(private realmService: RealmService) {}
+  constructor(
+    private realmService: RealmService,
+    private tokenService: TokenService,
+  ) {}
 
   ngOnInit(): void {
     this.realmService.getRealms().subscribe((response) => {

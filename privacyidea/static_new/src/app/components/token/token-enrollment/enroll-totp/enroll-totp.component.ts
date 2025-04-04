@@ -10,7 +10,7 @@ import {
 import { MatInput } from '@angular/material/input';
 import { MatOption } from '@angular/material/core';
 import { MatSelect } from '@angular/material/select';
-import { TokenComponent } from '../../token.component';
+import { TokenService } from '../../../../services/token/token.service';
 
 @Component({
   selector: 'app-enroll-totp',
@@ -29,12 +29,15 @@ import { TokenComponent } from '../../token.component';
   styleUrl: './enroll-totp.component.scss',
 })
 export class EnrollTotpComponent {
-  text = TokenComponent.tokenTypeOptions.find((type) => type.key === 'totp')
-    ?.text;
+  text = this.tokenService
+    .tokenTypeOptions()
+    .find((type) => type.key === 'totp')?.text;
   @Input() generateOnServer!: WritableSignal<boolean>;
   @Input() otpLength!: WritableSignal<number>;
   @Input() otpKey!: WritableSignal<string>;
   @Input() hashAlgorithm!: WritableSignal<string>;
   @Input() timeStep!: WritableSignal<number | string>;
   @Input() description!: WritableSignal<string>;
+
+  constructor(private tokenService: TokenService) {}
 }

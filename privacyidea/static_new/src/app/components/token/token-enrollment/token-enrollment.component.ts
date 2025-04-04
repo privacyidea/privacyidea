@@ -18,7 +18,7 @@ import {
 } from '@angular/material/form-field';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { TokenComponent, TokenSelectedContent } from '../token.component';
+import { TokenSelectedContent } from '../token.component';
 import { EnrollHotpComponent } from './enroll-hotp/enroll-hotp.component';
 import { MatInput } from '@angular/material/input';
 import {
@@ -104,7 +104,7 @@ export const TIMEZONE_OFFSETS = (() => {
 export class CustomDateAdapter extends NativeDateAdapter {
   private timezoneOffset = '+00:00';
 
-  override format(date: Date, displayFormat: any): string {
+  override format(date: Date): string {
     const adjustedDate = this._applyTimezoneOffset(date);
     const year = adjustedDate.getFullYear();
     const month = (adjustedDate.getMonth() + 1).toString().padStart(2, '0');
@@ -227,17 +227,16 @@ export class TokenEnrollmentComponent {
     repeatPinValue: '',
     hashAlgorithm: 'sha1',
   };
-  tokenTypesOptions = TokenComponent.tokenTypeOptions;
   timezoneOptions = TIMEZONE_OFFSETS;
   @Input() tokenSerial!: WritableSignal<string>;
   @Input() containerSerial!: WritableSignal<string>;
   @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
   @Input() isProgrammaticChange!: WritableSignal<boolean>;
-  selectedType = signal(this.tokenTypesOptions[0]);
   @ViewChild(EnrollPasskeyComponent)
   enrollPasskeyComponent!: EnrollPasskeyComponent;
   @ViewChild(EnrollWebauthnComponent)
   enrollWebauthnComponent!: EnrollWebauthnComponent;
+  selectedType = signal(this.tokenService.tokenTypeOptions()[0]);
   testYubiKey = signal(this.defaults.testYubiKey);
   otpLength = linkedSignal({
     source: this.testYubiKey,
@@ -246,7 +245,9 @@ export class TokenEnrollmentComponent {
         return testYubiKey.length;
       } else {
         return this.selectedType() ===
-          this.tokenTypesOptions.find((type) => type.key === 'yubikey')
+          this.tokenService
+            .tokenTypeOptions()
+            .find((type) => type.key === 'yubikey')
           ? 44
           : 6;
       }
@@ -308,15 +309,13 @@ export class TokenEnrollmentComponent {
   setPinValue = signal(this.defaults.setPinValue);
   repeatPinValue = signal(this.defaults.repeatPinValue);
   hashAlgorithm = signal(this.defaults.hashAlgorithm);
-  protected readonly TokenEnrollmentDialogComponent =
-    TokenEnrollmentFirstStepDialogComponent;
 
   constructor(
     protected containerService: ContainerService,
     protected realmService: RealmService,
     private notificationService: NotificationService,
     protected userService: UserService,
-    private tokenService: TokenService,
+    protected tokenService: TokenService,
     protected firstDialog: MatDialog,
     protected secondDialog: MatDialog,
     protected versioningService: VersionService,

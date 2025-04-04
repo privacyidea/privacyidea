@@ -4,6 +4,7 @@ import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { NotificationService } from '../notification/notification.service';
+import { VersionService } from '../version/version.service';
 
 @Injectable({
   providedIn: 'root',
@@ -18,6 +19,7 @@ export class AuthService {
   constructor(
     private http: HttpClient,
     private notificationService: NotificationService,
+    private versionService: VersionService,
   ) {}
 
   authenticate(params: any): Observable<{
@@ -33,6 +35,7 @@ export class AuthService {
       })
       .pipe(
         tap((response: any) => {
+          this.versionService.version.set(response.versionnumber);
           if (response?.result?.status) {
             this.acceptAuthentication();
             this.user.set(response.result.value.username);
