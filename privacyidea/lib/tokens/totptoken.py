@@ -707,6 +707,7 @@ class TotpTokenClass(HotpTokenClass):
         token_dict["timeShift"] = self.timeshift
         token_dict["timeStep"] = self.timestep
         token_dict["timeWindow"] = self.timewindow
+        token_dict["tokenkind"] = self.get_tokeninfo("tokenkind")
         return token_dict
 
     def import_token(self, dict_token_info):
@@ -721,5 +722,6 @@ class TotpTokenClass(HotpTokenClass):
         self.add_tokeninfo("timeWindow", dict_token_info["timeWindow"])
         self.add_tokeninfo("timeShift", dict_token_info["timeShift"])
         self.add_tokeninfo("timeStep", dict_token_info["timeStep"])
+        self.add_tokeninfo("tokenkind", dict_token_info["tokenkind"])
         self.save()
         pass

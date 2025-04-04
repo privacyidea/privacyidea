@@ -599,3 +599,34 @@ class EmailTokenClass(HotpTokenClass):
         else:
             self.token.delete()
             raise ValidateError(_("The email address is not valid!"))
+
+    def export_token(self):
+        """
+        Create a dictionary with the token information that can be exported.
+        """
+        token_dict = {}
+        token_dict["type"] = self.type.lower()
+        token_dict["issuer"] = "privacyIDEA"
+        token_dict["description"] = self.token.description
+        token_dict["serial"] = self.token.serial
+        token_dict["otpkey"] = self.token.get_otpkey().getKey().decode("utf-8")
+        token_dict["otplen"] = self.token.otplen
+        token_dict["hashlib"] = self.get_tokeninfo("hashlib")
+        token_dict["count"] = self.token.count
+        token_dict["dynamic_email"] = self.get_tokeninfo("dynamic_email")
+        token_dict["tokenkind"] = self.get_tokeninfo("tokenkind")
+        return token_dict
+
+    def import_token(self, dict_token_info):
+        """
+        Import a email token.
+        """
+        self.token.set_otpkey(dict_token_info["otpkey"])
+        self.token.count = dict_token_info["count"]
+        self.token.type = dict_token_info["type"]
+        self.token.description = dict_token_info["description"]
+        self.add_tokeninfo("hashlib", dict_token_info["hashlib"])
+        self.add_tokeninfo("dynamic_email", dict_token_info["dynamic_email"])
+        self.add_tokeninfo("tokenkind", dict_token_info["tokenkind"])
+        self.save()
+        pass
