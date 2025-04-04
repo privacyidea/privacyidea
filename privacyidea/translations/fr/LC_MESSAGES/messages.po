@@ -7,9 +7,9 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-04-04 01:39+0200\n"
-"PO-Revision-Date: 2025-04-03 13:23+0000\n"
+"PO-Revision-Date: 2025-04-04 09:18+0000\n"
 "Last-Translator: Gregory Bouzinac <gregory.b@orange.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "branch-3-11/fr/>\n"
@@ -2229,11 +2229,6 @@ msgstr ""
 "de propriétaire, ainsi l'action serait déclenchée."
 
 #: lib/eventhandler/base.py:465
-#, fuzzy
-#| msgid ""
-#| "This condition can check any arbitrary tokeninfo field. You need to enter "
-#| "something like '<fieldname> == <fieldvalue>', '<fieldname> > "
-#| "<fieldvalue>' or '<fieldname> < <fieldvalue>'."
 msgid ""
 "This condition can check any arbitrary container info field. You need to "
 "enter something like 'fieldname == fieldvalue', 'fieldname > fieldvalue' or "
@@ -3403,6 +3398,10 @@ msgid ""
 "recommended. It is advised to use a condition, for example on a user-agent, "
 "with this policy."
 msgstr ""
+"Quand activé, le jeton avec clé d'accès peut être déclenché avec le PIN ou "
+"via le terminal /validate/triggerchallenge. Pour les plugins privacyIDEA, ce "
+"n'est pas recommandé. Il est conseillé d'utiliser une condition, sur un user-"
+"agent par exemple, avec cette politique."
 
 #: lib/tokens/passkeytoken.py:119
 msgid ""
@@ -3588,11 +3587,11 @@ msgstr "URL pour le jeton Push privacyIDEA"
 
 #: lib/tokens/pushtoken.py:1195
 msgid "Please scan the QR code!"
-msgstr "Veuillez scanner le QR code!"
+msgstr "Veuillez scanner le code QR !"
 
 #: lib/tokens/questionnairetoken.py:96
 msgid "Questionnaire: Enroll Questions for the user."
-msgstr "Questionnaire: Enrôle les questions pour l'utilisateur."
+msgstr "Questionnaire : Enrôle les questions pour l'utilisateur."
 
 #: lib/tokens/questionnairetoken.py:107
 msgid "The user has to answer this number of questions during authentication."
@@ -3622,7 +3621,7 @@ msgstr "Vous devez fournir au moins %s réponses."
 
 #: lib/tokens/radiustoken.py:106
 msgid "RADIUS: Forward authentication request to a RADIUS server."
-msgstr "RADIUS: transfère la requête d'authentification à un serveur RADIUS."
+msgstr "RADIUS : transfère la requête d'authentification à un serveur RADIUS."
 
 #: lib/tokens/radiustoken.py:115
 msgid "The user may only have this maximum number of RADIUS tokens assigned."
@@ -3737,19 +3736,19 @@ msgstr ""
 
 #: lib/tokens/smstoken.py:326
 msgid "Enter the OTP from the SMS:"
-msgstr "Entrez le code OTP reçu par SMS:"
+msgstr "Entrez le code OTP reçu par SMS :"
 
 #: lib/tokens/smstoken.py:360
 msgid "The PIN was correct, but the SMS could not be sent!"
-msgstr "Le PIN était correct mais le SMS n'a pas pu être envoyé!"
+msgstr "Le PIN était correct mais le SMS n'a pas pu être envoyé !"
 
 #: lib/tokens/smstoken.py:611
 msgid "Please enter your new phone number!"
-msgstr "Veuillez entrer votre nouveau numéro de téléphone!"
+msgstr "Veuillez entrer votre nouveau numéro de téléphone !"
 
 #: lib/tokens/spasstoken.py:86
 msgid "SPass: Simple Pass token. Static passwords."
-msgstr "SPass: jeton avec mot de passe simple. Mots de passe statiques."
+msgstr "SPass : jeton avec mot de passe simple. Mots de passe statiques."
 
 #: lib/tokens/spasstoken.py:98
 msgid "The user may only have this maximum number of SPASS tokens assigned."
@@ -3766,7 +3765,7 @@ msgstr ""
 
 #: lib/tokens/sshkeytoken.py:82
 msgid "SSH Public Key: The public SSH key."
-msgstr "Clé SSH Publique: La clé publique SSH."
+msgstr "Clé SSH Publique : La clé publique SSH."
 
 #: lib/tokens/sshkeytoken.py:91
 msgid "The user may only have this maximum number of SSH keys assigned."
@@ -3781,7 +3780,7 @@ msgstr ""
 
 #: lib/tokens/tantoken.py:96
 msgid "TAN: TANs printed on a sheet of paper."
-msgstr "TAN: TANs imprimés sur une feuille de papier."
+msgstr "TAN : TANs imprimés sur une feuille de papier."
 
 #: lib/tokens/tantoken.py:111
 msgid "The user may only have this maximum number of TAN tokens assigned."
@@ -3825,11 +3824,11 @@ msgstr "Spécifie la durée du jeton OTP basé sur le temps."
 
 #: lib/tokens/totptoken.py:106
 msgid "TOTP: Time based One Time Passwords."
-msgstr "TOTP: Mots de passe basés sur le temps."
+msgstr "TOTP : Mots de passe basés sur le temps."
 
 #: lib/tokens/u2ftoken.py:248
 msgid "U2F: Enroll a U2F token."
-msgstr "U2F: Enrôle un jeton U2F."
+msgstr "U2F : Enrôle un jeton U2F."
 
 #: lib/tokens/u2ftoken.py:258
 msgid "This is a list of FQDN hostnames trusting the registered U2F tokens."
@@ -3872,7 +3871,7 @@ msgstr ""
 
 #: lib/tokens/u2ftoken.py:380
 msgid "You need to define the appId in the token config!"
-msgstr "Vous devez définir l'appId dans la configuration du jeton!"
+msgstr "Vous devez définir l'appId dans la configuration du jeton !"
 
 #: lib/tokens/u2ftoken.py:444
 #, python-brace-format
@@ -3881,7 +3880,7 @@ msgstr "Veuillez confirmer avec votre jeton U2F ({0!s})"
 
 #: lib/tokens/vascotoken.py:99
 msgid "VASCO Token: Authentication using VASCO tokens"
-msgstr "Jeton VASCO: Authentification grâce aux jetons VASCO"
+msgstr "Jeton VASCO : Authentification grâce aux jetons VASCO"
 
 #: lib/tokens/vascotoken.py:108
 msgid "The user may only have this maximum number of Vasco tokens assigned."
