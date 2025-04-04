@@ -614,6 +614,8 @@ class EmailTokenClass(HotpTokenClass):
         token_dict["hashlib"] = self.get_tokeninfo("hashlib")
         token_dict["count"] = self.token.count
         token_dict["dynamic_email"] = self.get_tokeninfo("dynamic_email")
+        if not self.get_tokeninfo("dynamic_email"):
+            token_dict["email"] = self.get_tokeninfo("email")
         token_dict["tokenkind"] = self.get_tokeninfo("tokenkind")
         return token_dict
 
@@ -627,6 +629,8 @@ class EmailTokenClass(HotpTokenClass):
         self.token.description = dict_token_info["description"]
         self.add_tokeninfo("hashlib", dict_token_info["hashlib"])
         self.add_tokeninfo("dynamic_email", dict_token_info["dynamic_email"])
+        if not dict_token_info["dynamic_email"]:
+            self.add_tokeninfo("email", dict_token_info["email"])
         self.add_tokeninfo("tokenkind", dict_token_info["tokenkind"])
         self.save()
         pass

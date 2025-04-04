@@ -3050,7 +3050,7 @@ def regenerate_enroll_url(serial: str, request: Request, g) -> Union[str, None]:
 
 def export_tokens(tokenobj_list):
     """
-    Takes a list of tokens and returs an exporteble json object
+    Takes a list of tokens and returns an exporteble json object
 
     :param tokenobj_list: list of token objects
     :return: list of dict with tokens
