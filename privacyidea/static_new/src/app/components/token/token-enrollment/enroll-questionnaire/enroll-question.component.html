@@ -3,18 +3,21 @@
     <p>{{ text }}</p>
   </div>
   <h4 class="enroll-h4">Token Configuration</h4>
-  <span>Please answer at least {{ configMinNumberOfAnswers }} of the following
-    questions.</span>
+  <span>
+    Please answer at least {{ configMinNumberOfAnswers() }} of the following questions.
+  </span>
   <div class="margin-top-1 form-group">
-    @for (question of configQuestions; track question) {
+    @for (question of configQuestions(); track question) {
       <mat-form-field class="question-input-width">
-        <mat-label>{{ question }}</mat-label>
+        <mat-label>{{ question.text }}</mat-label>
         <input type="text"
-               [ngModel]="answers()[question]"
-               (ngModelChange)="onAnswerChange($event, question)"
+               [ngModel]="answers()[question.question]"
+               (ngModelChange)="onAnswerChange($event, question.question)"
                matInput
-               [required]="isRequired(question)" />
-        <mat-error>At least {{ configMinNumberOfAnswers }} are <strong>required</strong></mat-error>
+               [required]="isRequired(question.question)" />
+        <mat-error>
+          At least {{ configMinNumberOfAnswers() }} are <strong>required</strong>
+        </mat-error>
       </mat-form-field>
     }
     <mat-form-field class="question-description">
