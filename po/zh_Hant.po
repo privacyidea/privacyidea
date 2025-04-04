@@ -541,7 +541,7 @@ msgid ""
 "                realm {{ userRealm }}"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.html:77
+#: privacyidea/static/components/token/views/token.enroll.html:78
 #, fuzzy
 #| msgid "Assign token to user"
 msgid "Assign the token to a container"
@@ -1157,7 +1157,7 @@ msgstr "創建新策略"
 msgid "Create new SMS Gateway definition"
 msgstr "創建新的SMS閘道定義"
 
-#: privacyidea/static/components/token/views/token.enroll.html:227
+#: privacyidea/static/components/token/views/token.enroll.html:228
 #, fuzzy
 #| msgid "Create new Event Handler"
 msgid "Create new container"
@@ -1658,7 +1658,7 @@ msgstr "端點 (URL)"
 msgid "Enroll New Token"
 msgstr "註冊新令牌"
 
-#: privacyidea/static/components/token/views/token.enroll.html:160
+#: privacyidea/static/components/token/views/token.enroll.html:161
 #: privacyidea/static/components/token/views/token.enrolled.daypassword.html:57
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:56
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:57
@@ -1669,7 +1669,7 @@ msgstr "註冊令牌"
 #: privacyidea/static/components/login/controllers/loginControllers.js:118
 #: privacyidea/static/components/token/controllers/tokenControllers.js:146
 #: privacyidea/static/components/token/views/token.enroll.html:1
-#: privacyidea/static/components/token/views/token.enroll.html:223
+#: privacyidea/static/components/token/views/token.enroll.html:224
 msgid "Enroll a new token"
 msgstr "註冊新令牌"
 
@@ -1704,7 +1704,7 @@ msgstr "輸入 PIN 和 OTP 以檢查令牌。"
 msgid "Enter PIN for token"
 msgstr "輸入令牌的 PIN 碼"
 
-#: privacyidea/static/components/directives/views/directive.registerContainer.html:44
+#: privacyidea/static/components/directives/views/directive.registerContainer.html:37
 msgid ""
 "Enter a passphrase prompt that will be displayed to the user.\n"
 "                            This should indicate which passphrase the user "
@@ -1771,7 +1771,7 @@ msgstr "例子"
 msgid "Expiration"
 msgstr "到期"
 
-#: privacyidea/static/components/token/views/token.enroll.html:94
+#: privacyidea/static/components/token/views/token.enroll.html:95
 #, fuzzy
 msgid "Extended Attributes"
 msgstr "擴展屬性"
@@ -2497,7 +2497,7 @@ msgid "Login with credentials"
 msgstr "使用憑據登錄"
 
 #: privacyidea/static/components/token/views/token.containercreate.html:243
-#: privacyidea/static/components/token/views/token.enroll.html:231
+#: privacyidea/static/components/token/views/token.enroll.html:232
 #: privacyidea/static/templates/menu.html:160
 msgid "Logout"
 msgstr "登出"
@@ -2778,7 +2778,7 @@ msgstr "一次性密碼金鑰"
 msgid "OTP Length"
 msgstr "OTP 長度"
 
-#: privacyidea/static/components/token/views/token.enroll.html:54
+#: privacyidea/static/components/token/views/token.enroll.html:55
 msgid "OTP PINs do not match!"
 msgstr "OTP PIN 不匹配！"
 
@@ -2918,7 +2918,7 @@ msgstr "PIN 碼設置成功。"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:29
 #: privacyidea/static/components/directives/views/directive.assignuser.html:41
-#: privacyidea/static/components/token/views/token.enroll.html:62
+#: privacyidea/static/components/token/views/token.enroll.html:63
 #, fuzzy
 msgid "PIN/Password"
 msgstr "密碼"
@@ -2931,19 +2931,25 @@ msgstr "PKCS12"
 msgid "Parameters"
 msgstr "參數"
 
+#: privacyidea/static/components/login/views/login.html:81
+#, fuzzy
+#| msgid "Log In"
+msgid "Passkey Log In"
+msgstr "登錄"
+
 #: privacyidea/static/components/directives/views/directive.registerContainer.html:21
 msgid "Passphrase (optional)"
 msgstr ""
 
-#: privacyidea/static/components/directives/views/directive.registerContainer.html:31
+#: privacyidea/static/components/directives/views/directive.registerContainer.html:24
 msgid "Passphrase Prompt"
 msgstr ""
 
-#: privacyidea/static/components/directives/views/directive.registerContainer.html:50
+#: privacyidea/static/components/directives/views/directive.registerContainer.html:43
 msgid "Passphrase Response"
 msgstr ""
 
-#: privacyidea/static/components/directives/views/directive.registerContainer.html:58
+#: privacyidea/static/components/directives/views/directive.registerContainer.html:51
 msgid "Passphrase the user has to enter to successfully register the container"
 msgstr ""
 
@@ -3404,7 +3410,7 @@ msgstr ""
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:39
 #: privacyidea/static/components/directives/views/directive.assignuser.html:51
-#: privacyidea/static/components/token/views/token.enroll.html:70
+#: privacyidea/static/components/token/views/token.enroll.html:71
 #, fuzzy
 msgid "Repeat PIN or password"
 msgstr "重複輸入密碼"
@@ -3438,7 +3444,7 @@ msgstr "所需的領域"
 msgid "Reset Failcounter"
 msgstr "重置故障計數器"
 
-#: privacyidea/static/components/login/views/login.html:86
+#: privacyidea/static/components/login/views/login.html:87
 #: privacyidea/static/components/recovery/views/recovery.html:14
 #: privacyidea/static/components/recovery/views/recovery.reset.html:23
 msgid "Reset Password"
@@ -3531,7 +3537,7 @@ msgstr "推出狀態"
 msgid "Rollover"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.html:161
+#: privacyidea/static/components/token/views/token.enroll.html:162
 #, fuzzy
 msgid "Rollover Token"
 msgstr "滾動令牌"
@@ -4306,7 +4312,7 @@ msgstr ""
 "    像Google Authenticator 這樣的應用程式轉動你的\n"
 "    智慧手機進入身份驗證設備。"
 
-#: privacyidea/static/components/login/views/login.html:95
+#: privacyidea/static/components/login/views/login.html:96
 msgid ""
 "The HSM is not ready. privacyIDEA can not work properly. Please start\n"
 "        the HSM and reload this page."
@@ -4948,7 +4954,7 @@ msgstr ""
 msgid "The server will create the static password."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.html:143
+#: privacyidea/static/components/token/views/token.enroll.html:144
 msgid ""
 "The start time and the end time of the validity period\n"
 "                    should be entered in the format\n"
@@ -4971,7 +4977,7 @@ msgstr ""
 msgid "The time in which the password can be used. For example '1d' or '12h'."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.html:191
+#: privacyidea/static/components/token/views/token.enroll.html:192
 #, fuzzy
 #| msgid ""
 #| "The token was successfully enrolled with serial number\n"
@@ -5025,7 +5031,7 @@ msgstr ""
 msgid "The token was marked lost successfully."
 msgstr "令牌已成功標記為丟失。"
 
-#: privacyidea/static/components/token/views/token.enroll.html:176
+#: privacyidea/static/components/token/views/token.enroll.html:177
 msgid ""
 "The token was successfully enrolled with serial number\n"
 "            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
@@ -5045,7 +5051,7 @@ msgstr ""
 "newUser.realm})\">{{ newUser.user }}</a> 在領域\n"
 "            {{ newUser.realm }}."
 
-#: privacyidea/static/components/token/views/token.enroll.html:185
+#: privacyidea/static/components/token/views/token.enroll.html:186
 msgid ""
 "The token was successfully enrolled with serial number\n"
 "            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
@@ -5226,7 +5232,7 @@ msgstr ""
 "target=\"OCRA\">RFC\n"
 "            6287</a>。"
 
-#: privacyidea/static/components/directives/views/directive.registerContainer.html:63
+#: privacyidea/static/components/directives/views/directive.registerContainer.html:56
 msgid ""
 "This is the correct answer to the passphrase prompt the user has to enter "
 "to\n"
@@ -5332,7 +5338,7 @@ msgstr ""
 "這必須是有效的 FQDN，並且還必須具有有效的頂級域 -\n"
 "        否則，您可能會收到U2F錯誤 2（錯誤請求）。"
 
-#: privacyidea/static/components/directives/views/directive.registerContainer.html:39
+#: privacyidea/static/components/directives/views/directive.registerContainer.html:32
 msgid "This prompt will be displayed to the user."
 msgstr ""
 
@@ -5578,7 +5584,7 @@ msgstr "類型"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:34
 #: privacyidea/static/components/directives/views/directive.assignuser.html:46
-#: privacyidea/static/components/token/views/token.enroll.html:66
+#: privacyidea/static/components/token/views/token.enroll.html:67
 #, fuzzy
 msgid "Type a PIN or password"
 msgstr "鍵入密碼"
@@ -5694,10 +5700,6 @@ msgstr "使用 StartTLS"
 msgid "Use a Template"
 msgstr "證書範本"
 
-#: privacyidea/static/components/directives/views/directive.registerContainer.html:28
-msgid "Use the passphrase of the user from the AD."
-msgstr ""
-
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:37
 #: privacyidea/static/components/token/views/token.enroll.totp.html:37
 msgid "Use two-step enrollment with the privacyIDEA Authenticator App"
@@ -5794,7 +5796,7 @@ msgid "Valid time"
 msgstr "有效時間"
 
 #: privacyidea/static/components/token/views/token.details.html:280
-#: privacyidea/static/components/token/views/token.enroll.html:123
+#: privacyidea/static/components/token/views/token.enroll.html:124
 msgid "Validity End"
 msgstr "有效期結束"
 
@@ -5803,7 +5805,7 @@ msgid "Validity Period"
 msgstr "有效期"
 
 #: privacyidea/static/components/token/views/token.details.html:254
-#: privacyidea/static/components/token/views/token.enroll.html:102
+#: privacyidea/static/components/token/views/token.enroll.html:103
 msgid "Validity Start"
 msgstr "有效期開始"
 

@@ -544,7 +544,7 @@ msgstr ""
 "Assigner le nouveau conteneur à {{ userName }} du\n"
 "                domaine {{ userRealm }}"
 
-#: privacyidea/static/components/token/views/token.enroll.html:77
+#: privacyidea/static/components/token/views/token.enroll.html:78
 msgid "Assign the token to a container"
 msgstr "Assigner le jeton à un conteneur"
 
@@ -1118,7 +1118,7 @@ msgstr "Créer une nouvelle politique"
 msgid "Create new SMS Gateway definition"
 msgstr "Créer la définition d'une nouvelle passerelle SMS"
 
-#: privacyidea/static/components/token/views/token.enroll.html:227
+#: privacyidea/static/components/token/views/token.enroll.html:228
 msgid "Create new container"
 msgstr "Créer un nouveau conteneur"
 
@@ -1601,7 +1601,7 @@ msgstr "Point de sortie (URL)"
 msgid "Enroll New Token"
 msgstr "Inscrire un nouveau jeton"
 
-#: privacyidea/static/components/token/views/token.enroll.html:160
+#: privacyidea/static/components/token/views/token.enroll.html:161
 #: privacyidea/static/components/token/views/token.enrolled.daypassword.html:57
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:56
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:57
@@ -1612,7 +1612,7 @@ msgstr "Inscrire le jeton"
 #: privacyidea/static/components/login/controllers/loginControllers.js:118
 #: privacyidea/static/components/token/controllers/tokenControllers.js:146
 #: privacyidea/static/components/token/views/token.enroll.html:1
-#: privacyidea/static/components/token/views/token.enroll.html:223
+#: privacyidea/static/components/token/views/token.enroll.html:224
 msgid "Enroll a new token"
 msgstr "Inscrire un nouveau jeton"
 
@@ -1645,7 +1645,7 @@ msgstr "Veuillez entrer le PIN et le code OTP pour vérifier le jeton."
 msgid "Enter PIN for token"
 msgstr "Veuillez saisir le code PIN pour le jeton"
 
-#: privacyidea/static/components/directives/views/directive.registerContainer.html:44
+#: privacyidea/static/components/directives/views/directive.registerContainer.html:37
 msgid ""
 "Enter a passphrase prompt that will be displayed to the user.\n"
 "                            This should indicate which passphrase the user "
@@ -1714,7 +1714,7 @@ msgstr "Exemples"
 msgid "Expiration"
 msgstr "Expiration"
 
-#: privacyidea/static/components/token/views/token.enroll.html:94
+#: privacyidea/static/components/token/views/token.enroll.html:95
 msgid "Extended Attributes"
 msgstr "Attributs étendus"
 
@@ -2434,7 +2434,7 @@ msgid "Login with credentials"
 msgstr "Se connecter avec les identifiants"
 
 #: privacyidea/static/components/token/views/token.containercreate.html:243
-#: privacyidea/static/components/token/views/token.enroll.html:231
+#: privacyidea/static/components/token/views/token.enroll.html:232
 #: privacyidea/static/templates/menu.html:160
 msgid "Logout"
 msgstr "Se déconnecter"
@@ -2708,7 +2708,7 @@ msgstr "Clé OTP"
 msgid "OTP Length"
 msgstr "Longueur OTP"
 
-#: privacyidea/static/components/token/views/token.enroll.html:54
+#: privacyidea/static/components/token/views/token.enroll.html:55
 msgid "OTP PINs do not match!"
 msgstr "Les codes PIN OTP ne correspondent pas !"
 
@@ -2849,7 +2849,7 @@ msgstr "Code PIN défini avec succès."
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:29
 #: privacyidea/static/components/directives/views/directive.assignuser.html:41
-#: privacyidea/static/components/token/views/token.enroll.html:62
+#: privacyidea/static/components/token/views/token.enroll.html:63
 msgid "PIN/Password"
 msgstr "PIN/Mot de passe"
 
@@ -2861,19 +2861,25 @@ msgstr "PKCS12"
 msgid "Parameters"
 msgstr "Paramètres"
 
+#: privacyidea/static/components/login/views/login.html:81
+#, fuzzy
+#| msgid "Log In"
+msgid "Passkey Log In"
+msgstr "Se connecter"
+
 #: privacyidea/static/components/directives/views/directive.registerContainer.html:21
 msgid "Passphrase (optional)"
 msgstr "Phrase secrète (optionnelle)"
 
-#: privacyidea/static/components/directives/views/directive.registerContainer.html:31
+#: privacyidea/static/components/directives/views/directive.registerContainer.html:24
 msgid "Passphrase Prompt"
 msgstr "Invite de phrase secrète"
 
-#: privacyidea/static/components/directives/views/directive.registerContainer.html:50
+#: privacyidea/static/components/directives/views/directive.registerContainer.html:43
 msgid "Passphrase Response"
 msgstr "Réponse de phrase secrète"
 
-#: privacyidea/static/components/directives/views/directive.registerContainer.html:58
+#: privacyidea/static/components/directives/views/directive.registerContainer.html:51
 msgid "Passphrase the user has to enter to successfully register the container"
 msgstr ""
 "Phrase secrète que l'utilisateur doit entrer pour enregistrer correctement "
@@ -3323,7 +3329,7 @@ msgstr "Enlever du conteneur"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:39
 #: privacyidea/static/components/directives/views/directive.assignuser.html:51
-#: privacyidea/static/components/token/views/token.enroll.html:70
+#: privacyidea/static/components/token/views/token.enroll.html:71
 msgid "Repeat PIN or password"
 msgstr "Répéter le PIN ou mot de passe"
 
@@ -3356,7 +3362,7 @@ msgstr "Domaines requis"
 msgid "Reset Failcounter"
 msgstr "Réinitialiser le compteur d'échecs"
 
-#: privacyidea/static/components/login/views/login.html:86
+#: privacyidea/static/components/login/views/login.html:87
 #: privacyidea/static/components/recovery/views/recovery.html:14
 #: privacyidea/static/components/recovery/views/recovery.reset.html:23
 msgid "Reset Password"
@@ -3447,7 +3453,7 @@ msgstr "Etat de l'enrôlement"
 msgid "Rollover"
 msgstr "Renouvellement"
 
-#: privacyidea/static/components/token/views/token.enroll.html:161
+#: privacyidea/static/components/token/views/token.enroll.html:162
 msgid "Rollover Token"
 msgstr "Enrôlement du jeton"
 
@@ -4215,7 +4221,7 @@ msgstr ""
 "certaines peuvent avoir des limitations dans les algorithmes supportés ou "
 "dans d'autres paramètres."
 
-#: privacyidea/static/components/login/views/login.html:95
+#: privacyidea/static/components/login/views/login.html:96
 msgid ""
 "The HSM is not ready. privacyIDEA can not work properly. Please start\n"
 "        the HSM and reload this page."
@@ -4872,7 +4878,7 @@ msgstr ""
 msgid "The server will create the static password."
 msgstr "Le serveur créera le mot de passe statique."
 
-#: privacyidea/static/components/token/views/token.enroll.html:143
+#: privacyidea/static/components/token/views/token.enroll.html:144
 msgid ""
 "The start time and the end time of the validity period\n"
 "                    should be entered in the format\n"
@@ -4897,7 +4903,7 @@ msgstr ""
 "La durée pendant laquelle le mot de passe peut être utilisé. Par exemple "
 "'1d' or '12h'."
 
-#: privacyidea/static/components/token/views/token.enroll.html:191
+#: privacyidea/static/components/token/views/token.enroll.html:192
 msgid ""
 "The token has been enrolled in the container\n"
 "            <a ui-sref=\"token.containerdetails({containerSerial: "
@@ -4953,7 +4959,7 @@ msgstr ""
 msgid "The token was marked lost successfully."
 msgstr "Le jeton a été marqué perdu avec succès."
 
-#: privacyidea/static/components/token/views/token.enroll.html:176
+#: privacyidea/static/components/token/views/token.enroll.html:177
 msgid ""
 "The token was successfully enrolled with serial number\n"
 "            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
@@ -4973,7 +4979,7 @@ msgstr ""
 "newUser.realm})\">{{ newUser.user }}</a> dans le royaume\n"
 "            {{ newUser.realm }}."
 
-#: privacyidea/static/components/token/views/token.enroll.html:185
+#: privacyidea/static/components/token/views/token.enroll.html:186
 msgid ""
 "The token was successfully enrolled with serial number\n"
 "            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
@@ -5153,7 +5159,7 @@ msgstr ""
 "<a href=\"http://tools.ietf.org/html/rfc6287#page-8\" target=\"OCRA\">RFC\n"
 "6287</a>."
 
-#: privacyidea/static/components/directives/views/directive.registerContainer.html:63
+#: privacyidea/static/components/directives/views/directive.registerContainer.html:56
 msgid ""
 "This is the correct answer to the passphrase prompt the user has to enter "
 "to\n"
@@ -5262,7 +5268,7 @@ msgstr ""
 "valide également sinon vous pouvez recevoir une erreur 2 U2F (Mauvaise "
 "requête)."
 
-#: privacyidea/static/components/directives/views/directive.registerContainer.html:39
+#: privacyidea/static/components/directives/views/directive.registerContainer.html:32
 msgid "This prompt will be displayed to the user."
 msgstr "Cet invite sera affiché à l'utilisateur."
 
@@ -5503,7 +5509,7 @@ msgstr "Type"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:34
 #: privacyidea/static/components/directives/views/directive.assignuser.html:46
-#: privacyidea/static/components/token/views/token.enroll.html:66
+#: privacyidea/static/components/token/views/token.enroll.html:67
 msgid "Type a PIN or password"
 msgstr "Saisir un PIN ou un mot de passe"
 
@@ -5609,10 +5615,6 @@ msgstr "Utiliser StartTLS"
 msgid "Use a Template"
 msgstr "Utiliser un Modèle"
 
-#: privacyidea/static/components/directives/views/directive.registerContainer.html:28
-msgid "Use the passphrase of the user from the AD."
-msgstr "Utiliser la phrase secrète de l'utilisateur à partir de l'AD."
-
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:37
 #: privacyidea/static/components/token/views/token.enroll.totp.html:37
 msgid "Use two-step enrollment with the privacyIDEA Authenticator App"
@@ -5710,7 +5712,7 @@ msgid "Valid time"
 msgstr "Durée de validité"
 
 #: privacyidea/static/components/token/views/token.details.html:280
-#: privacyidea/static/components/token/views/token.enroll.html:123
+#: privacyidea/static/components/token/views/token.enroll.html:124
 msgid "Validity End"
 msgstr "Fin de validité"
 
@@ -5719,7 +5721,7 @@ msgid "Validity Period"
 msgstr "Période de validité"
 
 #: privacyidea/static/components/token/views/token.details.html:254
-#: privacyidea/static/components/token/views/token.enroll.html:102
+#: privacyidea/static/components/token/views/token.enroll.html:103
 msgid "Validity Start"
 msgstr "Début de validité"
 
@@ -6416,6 +6418,9 @@ msgstr "nom d'utilisateur"
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
 msgstr "{{ auditdata.count }} entrées trouvées."
+
+#~ msgid "Use the passphrase of the user from the AD."
+#~ msgstr "Utiliser la phrase secrète de l'utilisateur à partir de l'AD."
 
 #~ msgid ""
 #~ "Here you can define settings, that will be set as default values, when\n"
