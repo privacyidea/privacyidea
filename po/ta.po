@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
-"PO-Revision-Date: 2025-03-28 09:26+0000\n"
+"PO-Revision-Date: 2025-04-04 09:18+0000\n"
 "Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Tamil <https://hosted.weblate.org/projects/privacyidea/"
 "branch-3-11-webui/ta/>\n"
@@ -58,6 +58,7 @@ msgstr ""
 "இயக்குகிறது. </li>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:91
+#, fuzzy
 msgid ""
 "<li>Support and\n"
 "                        <a target=\"netknights\" href=\"https://netknights."
@@ -89,12 +90,12 @@ msgid ""
 "                    </li>"
 msgstr ""
 "<li> உதவி மற்றும்\n"
-" <a target = \"netknights\" href = \"https://netknights.it/en/leistungen/"
-"service-level-agrements/\">\n"
+" <a target = \"netknights\" href = "
+"\"https://netknights.it/en/leistungen/service-level-agrements/\">\n"
 " நெட்நைட்சின் பணி நிலை ஒப்பந்தங்கள் </a>, செர்மனி.\n"
 " </li>\n"
-" <li> உபுண்டு மற்றும் RHEL க்கான நிலையான நிறுவன தொகுப்புகள் எளிதான புதுப்பிப்பு "
-"மற்றும் பாதுகாப்பை அனுமதிக்கின்றன\n"
+" <li> உபுண்டு மற்றும் RHEL க்கான நிலையான நிறுவன தொகுப்புகள் எளிதான புதுப்பிப்பு மற்றும்"
+" பாதுகாப்பை அனுமதிக்கின்றன\n"
 " செயல்பாடுகள்.\n"
 " </li>\n"
 " <li> ஒரு பிரத்யேக <b> பயன்பாடு </b>-டூல், இது எளிதாக அனுமதிக்கிறது\n"
@@ -105,10 +106,11 @@ msgstr ""
 " <li> உதவி நிலையைப் பொறுத்து நீங்கள் புதுப்பிப்புகள் மற்றும் வருடாந்திர ஆலோசனைக்கு உதவி "
 "பெறுவீர்கள். </li>\n"
 " <li> வாங்குவதன் மூலம்\n"
-" <a target = \"netknights\" HREF = \"https://netknights.it/en/produkte/"
-"privacyidea/\"> தனியுரிமிடியா நிறுவன பதிப்பு </a>\n"
-" தொழில்முறை உருவாக்குபவர்கள் முழுநேர வேலை செய்ய முடியும் என்பதை நீங்கள் உறுதி "
-"செய்கிறீர்கள்\n"
+" <a target = \"netknights\" HREF = "
+"\"https://netknights.it/en/produkte/privacyidea/\"> தனியுரிமிடியா நிறுவன "
+"பதிப்பு </a>\n"
+" தொழில்முறை உருவாக்குபவர்கள் முழுநேர வேலை செய்ய முடியும் என்பதை நீங்கள் உறுதி செய்கிறீர்கள்"
+"\n"
 " தனியுரிமையில், புதிய அம்சங்களைச் சேர்த்து, பிழைகளை சரியான நேரத்தில் சரிசெய்யவும். "
 "கூடுதலாக, நீங்கள் அனுமதிக்கிறீர்கள்\n"
 " வெளிப்புற சேவைகள்\n"
@@ -178,6 +180,7 @@ msgstr ""
 " </p>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:149
+#, fuzzy
 msgid ""
 "<p><b>You are using privacyIDEA with more than 50 users.</b></p>\n"
 "                <p>Thank you for your trust!</p>\n"
@@ -196,18 +199,21 @@ msgstr ""
 "<p> <b> நீங்கள் 50 க்கும் மேற்பட்ட பயனர்களுடன் தனியுரிமைப் பயன்படுத்துகிறீர்கள். </b> </p>\n"
 " <p> உங்கள் நம்பிக்கைக்கு நன்றி! </p>\n"
 " <p> விளைவாக்கம் நிறுவன பயன்பாட்டிற்கு நாங்கள் பரிந்துரைக்கிறோம்\n"
-" <a target = \"netknights\" HREF = \"https://netknights.it/en/produkte/"
-"privacyidea/\"> தனியுரிமிடியா நிறுவன பதிப்பு </a>.\n"
+" <a target = \"netknights\" HREF = "
+"\"https://netknights.it/en/produkte/privacyidea/\"> தனியுரிமிடியா நிறுவன "
+"பதிப்பு </a>.\n"
 " </p>\n"
 " <p> நெட்நைட்ச் வழங்குகிறது\n"
-" <a target = \"netknights\" HREF = \"https://netknights.it/en/produkte/"
-"privacyidea/\"> தனியுரிமிடியா நிறுவன பதிப்பு </a>\n"
+" <a target = \"netknights\" HREF = "
+"\"https://netknights.it/en/produkte/privacyidea/\"> தனியுரிமிடியா நிறுவன "
+"பதிப்பு </a>\n"
 " <b> உதவி மற்றும் பணி நிலை ஒப்பந்தங்கள் </b> உட்பட.\n"
 " மேலும், நெட்நைட்ச் சேவைகள், அறிவுரை மற்றும்\n"
 " புதிய அம்சங்களின் கட்டண நிரலாக்க.\n"
 " </p>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:18
+#, fuzzy
 msgid ""
 "<p>First, we would like to give you some background\n"
 "                    information on privacyIDEA.</p>\n"
@@ -229,8 +235,9 @@ msgstr ""
 " மல்டி காரணி அங்கீகார அமைப்பு. இது திறந்த மூலமாகும்.\n"
 " முக்கிய உருவாக்குபவர்கள் செர்மனியின் நெட்நைட்ச் சி.எம்.பி.எச்.\n"
 " நெட்நைட்ச் வழங்குகிறது\n"
-" <a target = \"netknights\" HREF = \"https://netknights.it/en/produkte/"
-"privacyidea/\"> தனியுரிமிடியா நிறுவன பதிப்பு </a>\n"
+" <a target = \"netknights\" HREF = "
+"\"https://netknights.it/en/produkte/privacyidea/\"> தனியுரிமிடியா நிறுவன "
+"பதிப்பு </a>\n"
 " <b> உதவி மற்றும் பணி நிலை ஒப்பந்தங்கள் </b> உட்பட.\n"
 " மேலும், நெட்நைட்ச் சேவைகள், அறிவுரை மற்றும்\n"
 " புதிய அம்சங்களின் கட்டண நிரலாக்க.\n"
@@ -531,7 +538,7 @@ msgstr ""
 "புதிய கொள்கலனை {{ userName }} in க்கு ஒதுக்கவும்\n"
 " சாம்ராச்யம் {{ userRealm }}"
 
-#: privacyidea/static/components/token/views/token.enroll.html:77
+#: privacyidea/static/components/token/views/token.enroll.html:78
 msgid "Assign the token to a container"
 msgstr "கிள்ளாக்கை ஒரு கொள்கலனுக்கு ஒதுக்குங்கள்"
 
@@ -1124,7 +1131,7 @@ msgstr "புதிய கொள்கையை உருவாக்கவு�
 msgid "Create new SMS Gateway definition"
 msgstr "புதிய எச்எம்எச் நுழைவாயில் வரையறையை உருவாக்கவும்"
 
-#: privacyidea/static/components/token/views/token.enroll.html:227
+#: privacyidea/static/components/token/views/token.enroll.html:228
 #, fuzzy
 #| msgid "Create Container"
 msgid "Create new container"
@@ -1610,7 +1617,7 @@ msgstr "இறுதிப்புள்ளி (URL)"
 msgid "Enroll New Token"
 msgstr "புதிய கிள்ளாக்கை பதிவு செய்யுங்கள்"
 
-#: privacyidea/static/components/token/views/token.enroll.html:160
+#: privacyidea/static/components/token/views/token.enroll.html:161
 #: privacyidea/static/components/token/views/token.enrolled.daypassword.html:57
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:56
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:57
@@ -1621,7 +1628,7 @@ msgstr "கிள்ளாக்கை பதிவு செய்யுங்�
 #: privacyidea/static/components/login/controllers/loginControllers.js:118
 #: privacyidea/static/components/token/controllers/tokenControllers.js:146
 #: privacyidea/static/components/token/views/token.enroll.html:1
-#: privacyidea/static/components/token/views/token.enroll.html:223
+#: privacyidea/static/components/token/views/token.enroll.html:224
 msgid "Enroll a new token"
 msgstr "ஒரு புதிய கிள்ளாக்கை சேர்க்கவும்"
 
@@ -1654,7 +1661,7 @@ msgstr "கிள்ளாக்கை சரிபார்க்க முள�
 msgid "Enter PIN for token"
 msgstr "டோக்கனுக்கு முள் உள்ளிடவும்"
 
-#: privacyidea/static/components/directives/views/directive.registerContainer.html:44
+#: privacyidea/static/components/directives/views/directive.registerContainer.html:37
 msgid ""
 "Enter a passphrase prompt that will be displayed to the user.\n"
 "                            This should indicate which passphrase the user "
@@ -1720,7 +1727,7 @@ msgstr "எடுத்துக்காட்டுகள்"
 msgid "Expiration"
 msgstr "காலாவதி"
 
-#: privacyidea/static/components/token/views/token.enroll.html:94
+#: privacyidea/static/components/token/views/token.enroll.html:95
 msgid "Extended Attributes"
 msgstr "நீட்டிக்கப்பட்ட பண்புக்கூறுகள்"
 
@@ -2450,7 +2457,7 @@ msgid "Login with credentials"
 msgstr "நற்சான்றிதழ்களுடன் உள்நுழைக"
 
 #: privacyidea/static/components/token/views/token.containercreate.html:243
-#: privacyidea/static/components/token/views/token.enroll.html:231
+#: privacyidea/static/components/token/views/token.enroll.html:232
 #: privacyidea/static/templates/menu.html:160
 msgid "Logout"
 msgstr "வெளியேற்றம்"
@@ -2724,7 +2731,7 @@ msgstr "OTP விசை"
 msgid "OTP Length"
 msgstr "OTP நீளம்"
 
-#: privacyidea/static/components/token/views/token.enroll.html:54
+#: privacyidea/static/components/token/views/token.enroll.html:55
 msgid "OTP PINs do not match!"
 msgstr "OTP ஊசிகள் பொருந்தவில்லை!"
 
@@ -2862,7 +2869,7 @@ msgstr "முள் செட் வெற்றிகரமாக."
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:29
 #: privacyidea/static/components/directives/views/directive.assignuser.html:41
-#: privacyidea/static/components/token/views/token.enroll.html:62
+#: privacyidea/static/components/token/views/token.enroll.html:63
 msgid "PIN/Password"
 msgstr "பின்/கடவுச்சொல்"
 
@@ -2874,19 +2881,25 @@ msgstr "PKCS12"
 msgid "Parameters"
 msgstr "அளவுருக்கள்"
 
+#: privacyidea/static/components/login/views/login.html:81
+#, fuzzy
+#| msgid "Log In"
+msgid "Passkey Log In"
+msgstr "புகுபதிகை"
+
 #: privacyidea/static/components/directives/views/directive.registerContainer.html:21
 msgid "Passphrase (optional)"
 msgstr ""
 
-#: privacyidea/static/components/directives/views/directive.registerContainer.html:31
+#: privacyidea/static/components/directives/views/directive.registerContainer.html:24
 msgid "Passphrase Prompt"
 msgstr ""
 
-#: privacyidea/static/components/directives/views/directive.registerContainer.html:50
+#: privacyidea/static/components/directives/views/directive.registerContainer.html:43
 msgid "Passphrase Response"
 msgstr ""
 
-#: privacyidea/static/components/directives/views/directive.registerContainer.html:58
+#: privacyidea/static/components/directives/views/directive.registerContainer.html:51
 msgid "Passphrase the user has to enter to successfully register the container"
 msgstr ""
 
@@ -3333,7 +3346,7 @@ msgstr "கொள்கலனில் இருந்து அகற்று"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:39
 #: privacyidea/static/components/directives/views/directive.assignuser.html:51
-#: privacyidea/static/components/token/views/token.enroll.html:70
+#: privacyidea/static/components/token/views/token.enroll.html:71
 msgid "Repeat PIN or password"
 msgstr "முள் அல்லது கடவுச்சொல்லை மீண்டும் செய்யவும்"
 
@@ -3365,7 +3378,7 @@ msgstr "தேவையான பகுதிகள்"
 msgid "Reset Failcounter"
 msgstr "தோல்வி கவுண்டரை மீட்டமை"
 
-#: privacyidea/static/components/login/views/login.html:86
+#: privacyidea/static/components/login/views/login.html:87
 #: privacyidea/static/components/recovery/views/recovery.html:14
 #: privacyidea/static/components/recovery/views/recovery.reset.html:23
 msgid "Reset Password"
@@ -3456,7 +3469,7 @@ msgstr "ரோல்அவுட் நிலை"
 msgid "Rollover"
 msgstr "ரோல்ஓவர்"
 
-#: privacyidea/static/components/token/views/token.enroll.html:161
+#: privacyidea/static/components/token/views/token.enroll.html:162
 msgid "Rollover Token"
 msgstr "ரோல்ஓவர் கிள்ளாக்கு"
 
@@ -4220,7 +4233,7 @@ msgstr ""
 " Google Authenticator போன்ற அங்கீகார பயன்பாடுகள். ஆனால் கவனியுங்கள், இவை\n"
 " ஆதரிக்கப்பட்ட ஆச் வழிமுறைகள் அல்லது பிற அளவுருக்களில் வரம்புகள் இருக்கலாம்."
 
-#: privacyidea/static/components/login/views/login.html:95
+#: privacyidea/static/components/login/views/login.html:96
 msgid ""
 "The HSM is not ready. privacyIDEA can not work properly. Please start\n"
 "        the HSM and reload this page."
@@ -4539,6 +4552,7 @@ msgid "The added value of privacyIDEA Enterprise Edition"
 msgstr "தனியுரிமைடியா எண்டர்பிரைச் பதிப்பின் கூடுதல் மதிப்பு"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:87
+#, fuzzy
 msgid ""
 "The added values of the\n"
 "                    <a target=\"netknights\" href=\"https://netknights.it/en/"
@@ -4546,11 +4560,13 @@ msgid ""
 "                    are:"
 msgstr ""
 "சேர்க்கப்பட்ட மதிப்புகள்\n"
-" <a target = \"netknights\" HREF = \"https://netknights.it/en/produkte/"
-"privacyidea/\"> தனியுரிமிடியா நிறுவன பதிப்பு </a>\n"
+" <a target = \"netknights\" HREF = "
+"\"https://netknights.it/en/produkte/privacyidea/\"> தனியுரிமிடியா நிறுவன "
+"பதிப்பு </a>\n"
 " அவை:"
 
 #: privacyidea/static/components/config/views/config.token.yubikey.html:7
+#, fuzzy
 msgid ""
 "The authentication request can be handled by the default privacyIDEA\n"
 "    <a href=\"https://privacyidea.readthedocs.io/en/latest/modules/api/"
@@ -4562,15 +4578,18 @@ msgid ""
 "        Yubico Validation Protocol</a>."
 msgstr ""
 "அங்கீகார கோரிக்கையை இயல்புநிலை தனியுரிமை மூலம் கையாளலாம்\n"
-" <a href = \"https://privacyidea.readthedocs.io/en/latest/modules/api/"
-"validate.html\" இலக்கு = \"_ வெற்று\">\n"
+" <a href = "
+"\"https://privacyidea.readthedocs.io/en/latest/modules/api/validate.html\" "
+"இலக்கு = \"_ வெற்று\">\n"
 " பநிஇ ஐ சரிபார்க்கவும் </a> ஆனால் ஆனால் கையாளலாம்\n"
 " <a href = \"https://privacyidea.readthedocs.io/en/latest/modules/lib/"
-"tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken."
-"yubikeytokytoketokenclass.api_api_endpont\"> \"_\"\n"
+"tokentypes/"
+"yubikey.html#privacyidea.lib.tokens.yubikeytoken.yubikeytokytoketokenclass."
+"api_api_endpont\"> \"_\"\n"
 " யூபிகோ சரிபார்ப்பு நெறிமுறை </a>."
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:8
+#, fuzzy
 msgid ""
 "The authentication request is forwarded to the YubiCloud. For accessing\n"
 "    the YubiCloud you need to enter an API Client ID and an API Key, which\n"
@@ -4579,8 +4598,8 @@ msgid ""
 msgstr ""
 "அங்கீகார கோரிக்கை யூபிக்ளவுட்டுக்கு அனுப்பப்படுகிறது. அணுக\n"
 " யூபிக்ளவுட் நீங்கள் ஒரு பநிஇ வாங்கி ஐடி மற்றும் பநிஇ விசையை உள்ளிட வேண்டும், இது\n"
-" நீங்கள் <a href = \"https://upgrade.yubico.com/getapikey/\" இலக்கு = \"_ "
-"வெளிப்புற\"> இங்கே </a> ஐ கோரலாம்."
+" நீங்கள் <a href = \"https://upgrade.yubico.com/getapikey/\" இலக்கு = "
+"\"_ வெளிப்புற\"> இங்கே </a> ஐ கோரலாம்."
 
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:1
 msgid "The certificate was enrolled successfully."
@@ -4801,6 +4820,7 @@ msgid "The serial number on the remote server"
 msgstr "தொலை சேவையகத்தில் வரிசை எண்"
 
 #: privacyidea/static/components/token/views/token.lost.html:38
+#, fuzzy
 msgid ""
 "The serial of the new token is\n"
 "        <a ui-sref=\"token.details({tokenSerial:lostResult.serial})\">\n"
@@ -4855,7 +4875,7 @@ msgstr ""
 msgid "The server will create the static password."
 msgstr "சேவையகம் நிலையான கடவுச்சொல்லை உருவாக்கும்."
 
-#: privacyidea/static/components/token/views/token.enroll.html:143
+#: privacyidea/static/components/token/views/token.enroll.html:144
 msgid ""
 "The start time and the end time of the validity period\n"
 "                    should be entered in the format\n"
@@ -4878,7 +4898,7 @@ msgstr ""
 msgid "The time in which the password can be used. For example '1d' or '12h'."
 msgstr "கடவுச்சொல்லைப் பயன்படுத்தக்கூடிய நேரம். உதாரணமாக '1 டி' அல்லது '12 எச்'."
 
-#: privacyidea/static/components/token/views/token.enroll.html:191
+#: privacyidea/static/components/token/views/token.enroll.html:192
 msgid ""
 "The token has been enrolled in the container\n"
 "            <a ui-sref=\"token.containerdetails({containerSerial: "
@@ -4893,6 +4913,7 @@ msgstr ""
 " </a>."
 
 #: privacyidea/static/components/token/views/token.details.html:606
+#, fuzzy
 msgid ""
 "The token is currently assigned to container\n"
 "    <a ui-sref=\"token.containerdetails({containerSerial: "
@@ -4904,12 +4925,12 @@ msgid ""
 "    ."
 msgstr ""
 "கிள்ளாக்கு தற்போது கொள்கலனுக்கு ஒதுக்கப்பட்டுள்ளது\n"
-" <a Ui-sref = \"token.containerdetails ({containerSerial: "
-"containerSerial})\" ng-Hide = \"! CheckRight ('கொள்கலன்_ல மேலும்')\">\n"
+" <a Ui-sref = \"token.containerdetails ({containerSerial: containerSerial})\""
+" ng-Hide = \"! CheckRight ('கொள்கலன்_ல மேலும்')\">\n"
 " {{ containerSerial }}}\n"
 " </a>\n"
-" <span ng-hide = \"checkright ('கொள்கலன்_ல்ட்')\"> {{ containerSerial }} </"
-"span>\n"
+" <span ng-hide = \"checkright ('கொள்கலன்_ல்ட்')\"> {{ containerSerial }} </span>"
+"\n"
 " ."
 
 #: privacyidea/static/components/token/views/token.details.html:614
@@ -4937,7 +4958,7 @@ msgstr ""
 msgid "The token was marked lost successfully."
 msgstr "கிள்ளாக்கு வெற்றிகரமாக இழந்ததாகக் குறிக்கப்பட்டது."
 
-#: privacyidea/static/components/token/views/token.enroll.html:176
+#: privacyidea/static/components/token/views/token.enroll.html:177
 msgid ""
 "The token was successfully enrolled with serial number\n"
 "            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
@@ -4956,7 +4977,7 @@ msgstr ""
 "realm})\"> {{ newUser.user }} </a> சாம்ராச்யத்தில்\n"
 " {{ newUser.realm }}."
 
-#: privacyidea/static/components/token/views/token.enroll.html:185
+#: privacyidea/static/components/token/views/token.enroll.html:186
 msgid ""
 "The token was successfully enrolled with serial number\n"
 "            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
@@ -5118,6 +5139,7 @@ msgstr ""
 " ரத்து செய்யப்படுகிறது அல்லது சி.ஆர்.எல் இல்லையெனில் உருவாக்கப்படுகிறது."
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:79
+#, fuzzy
 msgid ""
 "This is the OCRA suite used by the TiQR App.\n"
 "        The default OCRA suite is OCRA-1:HOTP-SHA1-6:QN10.\n"
@@ -5133,7 +5155,7 @@ msgstr ""
 "RFC\n"
 " 6287 </a>."
 
-#: privacyidea/static/components/directives/views/directive.registerContainer.html:63
+#: privacyidea/static/components/directives/views/directive.registerContainer.html:56
 msgid ""
 "This is the correct answer to the passphrase prompt the user has to enter "
 "to\n"
@@ -5237,7 +5259,7 @@ msgstr ""
 "இருக்க வேண்டும் -\n"
 " இல்லையெனில் நீங்கள் U2F பிழை 2 (மோசமான கோரிக்கை) பெறலாம்."
 
-#: privacyidea/static/components/directives/views/directive.registerContainer.html:39
+#: privacyidea/static/components/directives/views/directive.registerContainer.html:32
 msgid "This prompt will be displayed to the user."
 msgstr ""
 
@@ -5480,7 +5502,7 @@ msgstr "வகை"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:34
 #: privacyidea/static/components/directives/views/directive.assignuser.html:46
-#: privacyidea/static/components/token/views/token.enroll.html:66
+#: privacyidea/static/components/token/views/token.enroll.html:67
 msgid "Type a PIN or password"
 msgstr "முள் அல்லது கடவுச்சொல்லை தட்டச்சு செய்க"
 
@@ -5590,10 +5612,6 @@ msgstr "Use StartTLS"
 msgid "Use a Template"
 msgstr "சான்றிதழ் வார்ப்புரு"
 
-#: privacyidea/static/components/directives/views/directive.registerContainer.html:28
-msgid "Use the passphrase of the user from the AD."
-msgstr ""
-
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:37
 #: privacyidea/static/components/token/views/token.enroll.totp.html:37
 msgid "Use two-step enrollment with the privacyIDEA Authenticator App"
@@ -5689,7 +5707,7 @@ msgid "Valid time"
 msgstr "Valid time"
 
 #: privacyidea/static/components/token/views/token.details.html:280
-#: privacyidea/static/components/token/views/token.enroll.html:123
+#: privacyidea/static/components/token/views/token.enroll.html:124
 msgid "Validity End"
 msgstr "Validity End"
 
@@ -5698,7 +5716,7 @@ msgid "Validity Period"
 msgstr "Validity காலசுழற்சி"
 
 #: privacyidea/static/components/token/views/token.details.html:254
-#: privacyidea/static/components/token/views/token.enroll.html:102
+#: privacyidea/static/components/token/views/token.enroll.html:103
 msgid "Validity Start"
 msgstr "Validity தொடங்கு"
 
