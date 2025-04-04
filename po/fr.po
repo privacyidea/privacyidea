@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-04-03 13:23+0000\n"
+"PO-Revision-Date: 2025-04-04 09:18+0000\n"
 "Last-Translator: Gregory Bouzinac <gregory.b@orange.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "branch-3-11-webui/fr/>\n"
@@ -2041,20 +2041,23 @@ msgid ""
 "    <code>daypassword_timestep</code> always have precedence over these "
 "default values."
 msgstr ""
+"Ici vous pouvez définir les paramètres par défaut, pour\n"
+"l'enrôlement d'un jeton DayPassword. Notez que les politiques utilisateur/"
+"admin <code>daypassword_hashlib</code> et\n"
+"<code>daypassword_timestep</code> ont toujours la priorité sur ces valeurs "
+"par défaut."
 
 #: privacyidea/static/components/config/views/config.token.hotp.html:7
-#, fuzzy
-#| msgid ""
-#| "Here you can define settings, that will be set as default values, when\n"
-#| "    enrolling a HOTP token."
 msgid ""
 "Here you can define settings, that will be set as default values, when\n"
 "    enrolling a HOTP token. Note that the user/admin policy "
 "<code>hotp_hashlib</code> always have precedence over\n"
 "    this default value."
 msgstr ""
-"Ici vous pouvez définir les paramètres par défaut lors de l'enrôlement\n"
-"d'un jeton HOTP."
+"Ici vous pouvez définir les paramètres par défaut pour l'enrôlement\n"
+"d'un jeton HOTP. Notez que la politique utilisateur/admin "
+"<code>hotp_hashlib</code> a toujours la priorité sur\n"
+"cette valeur par défaut."
 
 #: privacyidea/static/components/config/views/config.token.totp.html:7
 msgid ""
@@ -2064,6 +2067,11 @@ msgid ""
 "    <code>totp_timestep</code> always have precedence over these default "
 "values."
 msgstr ""
+"Ici vous pouvez définir les paramètres par défaut pour l'enrôlement\n"
+"d'un jeton TOTP. Notez que les politiques utilisateur/admin "
+"<code>totp_hashlib</code> et\n"
+"<code>totp_timestep</code> ont toujours la priorité sur ces valeurs par "
+"défaut."
 
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:23
 msgid ""
@@ -2419,7 +2427,7 @@ msgstr "Se déconnecter"
 
 #: privacyidea/static/templates/menu.html:127
 msgid "Login"
-msgstr "Se connecter"
+msgstr "Connexion"
 
 #: privacyidea/static/components/login/views/login.html:9
 msgid ""
@@ -2550,10 +2558,8 @@ msgid "New RADIUS server"
 msgstr "Nouveau serveur RADIUS"
 
 #: privacyidea/static/components/config/views/config.realms.list.html:108
-#, fuzzy
-#| msgid "new realm"
 msgid "New Realm..."
-msgstr "nouveau domaine"
+msgstr "Nouveau Domaine..."
 
 #: privacyidea/static/components/config/views/config.machineresolvers.html:15
 #: privacyidea/static/components/config/views/config.resolvers.html:15
@@ -2862,10 +2868,8 @@ msgid "Parameters"
 msgstr "Paramètres"
 
 #: privacyidea/static/components/login/views/login.html:81
-#, fuzzy
-#| msgid "Log In"
 msgid "Passkey Log In"
-msgstr "Se connecter"
+msgstr "Se connecter avec clé d'accès"
 
 #: privacyidea/static/components/directives/views/directive.registerContainer.html:21
 msgid "Passphrase (optional)"
@@ -3805,10 +3809,8 @@ msgstr ""
 "applications\">applications de jetons</a>."
 
 #: privacyidea/static/components/config/views/config.realms.list.html:31
-#, fuzzy
-#| msgid "set Default"
 msgid "Set Default"
-msgstr "définir par Défaut"
+msgstr "Définir par Défaut"
 
 #: privacyidea/static/components/token/views/token.details.html:461
 msgid "Set PIN"
@@ -3921,10 +3923,9 @@ msgstr ""
 "                erreurs spécifiques"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:8
-#, fuzzy
-#| msgid "start typing a serial number of a token that is notassigned, yet."
 msgid "Start typing a serial number of a token that is not yet assigned"
-msgstr "Saisir un numéro de série qui n'a pas encore été assigné."
+msgstr ""
+"Commencez à saisir un numéro de série de jeton qui n'a pas encore été assigné"
 
 #: privacyidea/static/components/config/views/config.smtp.list.html:8
 msgid "StartTLS"
@@ -4182,20 +4183,14 @@ msgid "The Enrollment URL"
 msgstr "L'URL d'enrôlement"
 
 #: privacyidea/static/components/config/views/config.token.hotp.html:2
-#, fuzzy
-#| msgid ""
-#| "The HOTP Token is a event based one time password token.\n"
-#| "    It is described in <a href=\"https://tools.ietf.org/html/"
-#| "rfc4226\">RFC\n"
-#| "    4226</a>."
 msgid ""
 "The HOTP Token is an event based one time password token.\n"
 "    It is described in <a href=\"https://tools.ietf.org/html/rfc4226\">RFC\n"
 "    4226</a>."
 msgstr ""
 "Le jeton HOTP est un jeton avec mot de passe unique basé sur un\n"
-"événement. Il est décrit dans la <a href=\"https://tools.ietf.org/html/"
-"rfc4226\">RFC\n"
+"événement. Il est décrit dans la <a href="
+"\"https://tools.ietf.org/html/rfc4226\">RFC\n"
 "4226</a>."
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:1
@@ -4308,7 +4303,9 @@ msgstr ""
 msgid ""
 "The Remote token forwards the authentication request to another\n"
 "    privacyIDEA server."
-msgstr "Le jeton distant transfère la requête à un autre serveur privacyIDEA."
+msgstr ""
+"Le jeton distant transfère la requête d'authentification à\n"
+"un autre serveur privacyIDEA."
 
 #: privacyidea/static/components/config/views/config.token.sms.html:2
 msgid ""
@@ -4844,7 +4841,8 @@ msgid ""
 "            displayed to you to be scanned."
 msgstr ""
 "Le serveur créera une clé OTP et\n"
-"affichera un code QR que vous devrez scanner."
+"affichera un code QR\n"
+"que vous devrez scanner."
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:73
 msgid ""
@@ -4933,7 +4931,8 @@ msgstr ""
 "hide=\"!checkRight('container_list')\">\n"
 "{{ containerSerial }}\n"
 "</a>\n"
-"<span ng-hide=\"checkRight('container_list')\">{{ containerSerial }}</span>."
+"<span ng-hide=\"checkRight('container_list')\">{{ containerSerial }}</span>\n"
+"."
 
 #: privacyidea/static/components/token/views/token.details.html:614
 msgid "The token is currently in no container."
@@ -5061,7 +5060,8 @@ msgstr ""
 "Voici les interpréteurs marqués comme éditables. Vous pouvez\n"
 "ajouter un utilisateur\n"
 "à l'interpréteur. L'utilisateur apparaitra dans les domaines,\n"
-"contenant cet interpréteur."
+"contenant\n"
+"cet interpréteur."
 
 #: privacyidea/static/components/config/views/config.system.edit.html:116
 msgid ""
@@ -5315,7 +5315,9 @@ msgstr "Serveur d'enregistrement TiQR"
 msgid ""
 "TiQR Service\n"
 "        Identifier"
-msgstr "Identifiant de service TiQR"
+msgstr ""
+"Identifiant de\n"
+"service TiQR"
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:32
 msgid "TiQR Service Displayname"
@@ -5815,13 +5817,6 @@ msgstr ""
 "et créera un nouveau jeton avec une nouvelle clé secrète !"
 
 #: privacyidea/static/components/login/views/login.html:12
-#, fuzzy
-#| msgid ""
-#| "You are authenticated by the web server as user\n"
-#| "                <b>{{ remoteUser }}</b>.\n"
-#| "                You may login as this user to privacyIDEA without any "
-#| "further\n"
-#| "                credentials."
 msgid ""
 "You are authenticated by the web server as user\n"
 "                <b>{{ remoteUser }}</b>.\n"
@@ -5913,13 +5908,13 @@ msgstr ""
 "Vous devez confirmer l'enregistrement avec votre\n"
 "authentificateur. Pour un authentificateur externe, cela signifie "
 "habituellement\n"
-"de cliquer sur le bouton de l'authentificateur, ou de le rebrancher (s'il "
-"n'y a pas de bouton).\n"
-"Si vous voulez utiliser un authentificateur intégré à votre appareil, "
-"cherchez une\n"
+"de cliquer sur le bouton de l'authentificateur, ou de le rebrancher\n"
+"(s'il n'y a pas de bouton). Si vous voulez utiliser\n"
+"un authentificateur intégré à votre appareil, cherchez une\n"
 "boite de dialogue sur votre écran. Si vous ne voyez rien, veuillez vous "
 "assurer que votre\n"
-"authentificateur est compatible avec WebAuthn."
+"authentificateur est compatible\n"
+"avec WebAuthn."
 
 #: privacyidea/static/components/token/views/token.enrolled.u2f.html:28
 msgid ""
@@ -5929,8 +5924,9 @@ msgid ""
 "                    token model."
 msgstr ""
 "Vous devez confirmer l'enregistrement avec votre jeton\n"
-"en appuyant sur le bouton clignotant ou en le rebranchant.\n"
-"Cela dépend de votre modèle de jeton actuel."
+"en appuyant sur le bouton clignotant ou en le\n"
+"rebranchant. Cela dépend de votre modèle\n"
+"de jeton actuel."
 
 #: privacyidea/static/components/token/views/token.details.html:525
 msgid "You will be logged in as: {{ loggedinUsername }}"
