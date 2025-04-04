@@ -58,8 +58,11 @@ tokenclass implementations like lib.tokens.hotptoken)
 
 This is the middleware/glue between the HTTP API and the database
 """
+
+from dataclasses import dataclass
 import base64
 import datetime
+import json
 import logging
 import os
 import random
@@ -3044,3 +3047,48 @@ def regenerate_enroll_url(serial: str, request: Request, g) -> Union[str, None]:
         log.warning(f"{ex}")
 
     return enroll_url
+
+def export_tokens(tokenobj_list):
+    """
+    Takes a list of tokens and returs an exporteble json object
+
+    :param tokenobj_list: list of token objects
+    :return: list of dict with tokens
+    """
+
+    exported_tokens = []
+    for tokenobj in tokenobj_list:
+        exported_tokens.append(tokenobj.export_token())
+
+    json_export = json.dumps(exported_tokens, default=repr, indent=2)
+
+    return json_export
+def import_tokens(token_list):
+    """
+    Import a list of token dictionaries.
+
+    :param token_list: list of token dictionaries
+    :param key: pre-shared-key for AES-128-CBC in hex format
+    :return: list of token objects
+    """
+    successful_tokens = []
+    failed_tokens = []
+    token_list = json.loads(token_list)
+    for token_info_dict in token_list:
+        serial = token_info_dict.get("serial")
+        try:
+            serial_not_exists, a = check_serial(serial) #replace cheak_serial
+            if serial_not_exists:
+                token_type = token_info_dict.get("type")
+                db_token = Token(serial, tokentype=token_type.lower())
+                tokenobj = create_tokenclass_object(db_token)
+                tokenobj.import_token(token_info_dict)
+            else:
+                token = get_tokens_from_serial_or_user(serial=serial, user=None)
+                token[0].update(token_info_dict)
+            successful_tokens.append(serial)
+        except Exception as e:
+            log.error(f"Could not import token {serial}: {e}")
+            print(e)
+            failed_tokens.append(serial)
+    return Token_import_result(successful_tokens=successful_tokens, failed_tokens=failed_tokens)
