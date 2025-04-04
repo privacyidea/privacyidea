@@ -2019,7 +2019,6 @@ class TokenClass(object):
         token_dict["description"] = self.token.description
         token_dict["serial"] = self.token.serial
         token_dict["otpkey"] = self.token.get_otpkey().getKey().decode("utf-8")
-        token_dict["otplen"] = self.token.otplen
         token_dict["hashlib"] = self.get_tokeninfo("hashlib")
         token_dict["tokenkind"] = self.get_tokeninfo("tokenkind")
 
@@ -2029,4 +2028,10 @@ class TokenClass(object):
         """
         Import a given token.
         """
+        self.token.set_otpkey(dict_token_info["otpkey"])
+        self.add_tokeninfo("hashlib", dict_token_info["hashlib"])
+        self.token.type = dict_token_info["type"]
+        self.token.description = dict_token_info["description"]
+        self.add_tokeninfo("tokenkind", dict_token_info["tokenkind"])
+        self.save()
         pass
