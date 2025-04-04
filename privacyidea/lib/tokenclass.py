@@ -2001,3 +2001,30 @@ class TokenClass(object):
         Return the URL to enroll this token. It is not supported by all token types.
         """
         return None
+
+    def export_token(self):
+        """
+        Create a dictionary with the token information that can be exported.
+        """
+        token_dict = {}
+        token_dict["type"] = self.type.lower()
+        token_dict["issuer"] = "privacyIDEA"
+        token_dict["description"] = self.token.description
+        token_dict["serial"] = self.token.serial
+        token_dict["otpkey"] = self.token.get_otpkey().getKey().decode("utf-8")
+        token_dict["hashlib"] = self.get_tokeninfo("hashlib")
+        token_dict["tokenkind"] = self.get_tokeninfo("tokenkind")
+
+        return token_dict
+
+    def import_token(self, dict_token_info):
+        """
+        Import a given token.
+        """
+        self.token.set_otpkey(dict_token_info["otpkey"])
+        self.add_tokeninfo("hashlib", dict_token_info["hashlib"])
+        self.token.type = dict_token_info["type"]
+        self.token.description = dict_token_info["description"]
+        self.add_tokeninfo("tokenkind", dict_token_info["tokenkind"])
+        self.save()
+        pass
