@@ -6,7 +6,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-03-31 23:17+0000\n"
+"PO-Revision-Date: 2025-04-05 09:21+0000\n"
 "Last-Translator: Максим Горпиніч <maksimgorpinic2005a@gmail.com>\n"
 "Language-Team: Ukrainian <https://hosted.weblate.org/projects/privacyidea/"
 "branch-3-11-webui/uk/>\n"
@@ -618,12 +618,12 @@ msgstr "Базова конфігурація"
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:82
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:116
 msgid "Base DN"
-msgstr "Base DN"
+msgstr "Базовий DN"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:92
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:151
 msgid "Bind DN"
-msgstr "Bind DN"
+msgstr "Прив’язати DN"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:102
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:161
@@ -1904,7 +1904,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.events.details.html:62
 #: privacyidea/static/components/config/views/config.events.list.html:18
 msgid "Handlermodule"
-msgstr "Handlermodule"
+msgstr "Модуль обробки"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:23
 msgid "Hardware"
@@ -2453,7 +2453,7 @@ msgstr "Атрибут ідентифікатора комп'ютера"
 #: privacyidea/static/components/machine/views/machine.details.html:26
 #: privacyidea/static/components/machine/views/machine.list.html:27
 msgid "Machine Resolver"
-msgstr "Machine Resolver"
+msgstr "Машинний резольвер"
 
 #: privacyidea/static/components/config/views/config.html:54
 #: privacyidea/static/templates/menu.html:70
@@ -2484,7 +2484,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:87
 #: privacyidea/static/components/user/views/user.details.html:152
 msgid "Maxfail"
-msgstr "Maxfail"
+msgstr "Максфакс"
 
 #: privacyidea/static/components/token/views/token.details.html:231
 msgid "Maximum Authentication Count"
@@ -2850,10 +2850,8 @@ msgid "Parameters"
 msgstr "Параметри"
 
 #: privacyidea/static/components/login/views/login.html:81
-#, fuzzy
-#| msgid "Log In"
 msgid "Passkey Log In"
-msgstr "Увійти"
+msgstr "Пароль для входу"
 
 #: privacyidea/static/components/directives/views/directive.registerContainer.html:21
 msgid "Passphrase (optional)"
@@ -6141,7 +6139,7 @@ msgstr "mOTP PIN"
 
 #: privacyidea/static/components/audit/views/audit.log.html:149
 msgid "missing_line"
-msgstr "missing_line"
+msgstr "відсутній_лінія"
 
 #: privacyidea/static/components/user/views/user.list.html:40
 msgid "mobile"
