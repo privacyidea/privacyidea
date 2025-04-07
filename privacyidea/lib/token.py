@@ -138,6 +138,12 @@ class clob_to_varchar(FunctionElement):
     inherit_cache = True
 
 
+@dataclass
+class TokenImportResult:
+    successful_tokens: list
+    failed_tokens: list
+
+
 @compiles(clob_to_varchar)
 def fn_clob_to_varchar_default(element, compiler, **kw):
     return compiler.process(element.clauses, **kw)
@@ -3048,41 +3054,41 @@ def regenerate_enroll_url(serial: str, request: Request, g) -> Union[str, None]:
 
     return enroll_url
 
-def export_tokens(tokenobj_list):
-    """
-    Takes a list of tokens and returns an exporteble json object
 
-    :param tokenobj_list: list of token objects
+def export_tokens(tokens) -> str:
+    """
+    Takes a list of tokens and returns an exportable json object
+
+    :param tokens: list of token objects
     :return: list of dict with tokens
     """
-
     exported_tokens = []
-    for tokenobj in tokenobj_list:
-        exported_tokens.append(tokenobj.export_token())
+    for token in tokens:
+        exported_tokens.append(token.export_token())
 
     json_export = json.dumps(exported_tokens, default=repr, indent=2)
-
     return json_export
-def import_tokens(token_list):
+
+
+def import_tokens(tokens) -> TokenImportResult:
     """
     Import a list of token dictionaries.
 
-    :param token_list: list of token dictionaries
-    :param key: pre-shared-key for AES-128-CBC in hex format
+    :param tokens: list of token dictionaries # TODO list does not work with json.loads
     :return: list of token objects
     """
     successful_tokens = []
     failed_tokens = []
-    token_list = json.loads(token_list)
-    for token_info_dict in token_list:
+    tokens = json.loads(tokens)
+    for token_info_dict in tokens:
         serial = token_info_dict.get("serial")
         try:
-            serial_not_exists, a = check_serial(serial) #replace cheak_serial
+            serial_not_exists, a = check_serial(serial)  # replace check_serial
             if serial_not_exists:
                 token_type = token_info_dict.get("type")
                 db_token = Token(serial, tokentype=token_type.lower())
-                tokenobj = create_tokenclass_object(db_token)
-                tokenobj.import_token(token_info_dict)
+                token = create_tokenclass_object(db_token)
+                token.import_token(token_info_dict)
             else:
                 token = get_tokens_from_serial_or_user(serial=serial, user=None)
                 token[0].update(token_info_dict)
@@ -3091,4 +3097,4 @@ def import_tokens(token_list):
             log.error(f"Could not import token {serial}: {e}")
             print(e)
             failed_tokens.append(serial)
-    return Token_import_result(successful_tokens=successful_tokens, failed_tokens=failed_tokens)
+    return TokenImportResult(successful_tokens=successful_tokens, failed_tokens=failed_tokens)
