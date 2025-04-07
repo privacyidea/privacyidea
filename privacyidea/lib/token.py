@@ -138,7 +138,7 @@ class clob_to_varchar(FunctionElement):
     inherit_cache = True
 
 
-@dataclass
+@dataclass(frozen=True)
 class TokenImportResult:
     successful_tokens: list
     failed_tokens: list
