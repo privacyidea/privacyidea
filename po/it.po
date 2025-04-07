@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
-"PO-Revision-Date: 2025-03-28 09:26+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"PO-Revision-Date: 2025-04-08 14:01+0000\n"
+"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/privacyidea/"
 "branch-3-11-webui/it/>\n"
 "Language: it\n"
@@ -1373,9 +1373,8 @@ msgstr ""
 "        {{ machineresolver }}"
 
 #: privacyidea/static/components/user/views/user.details.html:14
-#, fuzzy
 msgid "Details for user {{ username }} in realm"
-msgstr "Dettagli per l'utente {{ nome utente }} nel realm"
+msgstr "Dettagli per l'utente {{ username }} nel realm"
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:79
 #: privacyidea/static/components/config/views/config.radius.list.html:7
