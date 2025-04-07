@@ -291,10 +291,9 @@ class TokenClass(object):
         user_object = None
         tokenowner = self.token.first_owner
         if tokenowner:
-            username = get_username(tokenowner.user_id, tokenowner.resolver)
-            user_object = User(login=username,
-                               resolver=tokenowner.resolver,
-                               realm=tokenowner.realm.name)
+            user_object = User(resolver=tokenowner.resolver,
+                               realm=tokenowner.realm.name,
+                               uid=tokenowner.user_id)
         return user_object
 
     def is_orphaned(self, orphaned_on_error=True):
