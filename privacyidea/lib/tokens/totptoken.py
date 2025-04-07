@@ -691,7 +691,7 @@ class TotpTokenClass(HotpTokenClass):
 
         return params
 
-    def export_token(self):
+    def export_token(self) -> dict:
         """
         Create a dictionary with the token information that can be exported.
         """
@@ -701,13 +701,13 @@ class TotpTokenClass(HotpTokenClass):
         token_dict["timeWindow"] = self.timewindow
         return token_dict
 
-    def import_token(self, dict_token_info):
+    def import_token(self, token_information: dict):
         """
         Import a totp token.
         """
-        HotpTokenClass.import_token(self, dict_token_info)
-        self.add_tokeninfo("timeWindow", dict_token_info["timeWindow"])
-        self.add_tokeninfo("timeShift", dict_token_info["timeShift"])
-        self.add_tokeninfo("timeStep", dict_token_info["timeStep"])
+        HotpTokenClass.import_token(self, token_information)
+        self.add_tokeninfo("timeWindow", token_information["timeWindow"])
+        self.add_tokeninfo("timeShift", token_information["timeShift"])
+        self.add_tokeninfo("timeStep", token_information["timeStep"])
         self.save()
         pass

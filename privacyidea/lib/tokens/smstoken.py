@@ -632,7 +632,7 @@ class SmsTokenClass(HotpTokenClass):
         # Dynamically we remember that we need to do another challenge
         self.currently_in_challenge = True
 
-    def export_token(self):
+    def export_token(self) -> dict:
         """
         Create a dictionary with the token information that can be exported.
         """
@@ -642,14 +642,14 @@ class SmsTokenClass(HotpTokenClass):
             token_dict["phone"] = self.get_tokeninfo("phone")
         return token_dict
 
-    def import_token(self, dict_token_info):
+    def import_token(self, token_information: dict):
         """
         Import a sms token.
         """
-        HotpTokenClass.import_token(self, dict_token_info)
-        self.add_tokeninfo("dynamic_phone", dict_token_info["dynamic_phone"])
-        if not dict_token_info["dynamic_phone"]:
-            self.add_tokeninfo("phone", dict_token_info["phone"])
+        HotpTokenClass.import_token(self, token_information)
+        self.add_tokeninfo("dynamic_phone", token_information["dynamic_phone"])
+        if not token_information["dynamic_phone"]:
+            self.add_tokeninfo("phone", token_information["phone"])
         self.save()
         pass
 
