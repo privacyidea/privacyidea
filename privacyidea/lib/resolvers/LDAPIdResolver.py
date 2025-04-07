@@ -461,11 +461,20 @@ class IdResolver(UserIdResolver):
             uid = convert_column_to_unicode(uid)
         except UnicodeDecodeError as e:
             # in some cases ldap3 fails to decode the uid and return it as a byte-array
-            # if the utf-8 decoding fails, we try the UUID little endian conversion
-            log.warning(f"Found a byte-array as uid ({binascii.hexlify(uid)}), trying to "
-                        f"convert it to a UUID. ({e})")
-            log.debug(traceback.format_exc())
-            uid = str(uuid.UUID(bytes_le=uid))
+            # if the utf-8 decoding fails, we try the UUID conversion
+            if uidtype.lower() == "objectguid":
+                # Active Directory uses little endian byte order
+                log.debug(f"Found a byte-array as uid ({binascii.hexlify(uid)}), trying to convert it to a UUID "
+                          f"assuming little endian byte order. ({e})")
+                log.debug(traceback.format_exc())
+                uid = str(uuid.UUID(bytes_le=uid))
+            else:
+                # ldap3 defines a standard formatter using big endian byte order for GUID (eDirectory), entryUUID
+                # (openLDAP), and UUID. Hence, we assume it as the default byte order here.
+                log.debug(f"Found a byte-array as uid ({binascii.hexlify(uid)}), trying to convert it to a UUID "
+                          f"assuming big endian byte order. ({e})")
+                log.debug(traceback.format_exc())
+                uid = str(uuid.UUID(bytes=uid))
 
         if uidtype.lower() == "objectguid":
             # For ldap3 versions <= 2.4.1, objectGUID attribute values are returned as UUID strings.

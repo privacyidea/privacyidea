@@ -2252,8 +2252,8 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(correct_uid, uid)
 
         # GUID (eDirectory)
-        correct_uid = "91f36280-eaa1-11d7-97fc-0002a537cc5d"
-        entry = {"attributes": {"GUID": [b'\x80b\xf3\x91\xa1\xea\xd7\x11\x97\xfc\x00\x02\xa57\xcc]']}}
+        correct_uid = "fa44faa0-e051-4fb9-afa2-1e24c7fbaeb0"
+        entry = {"attributes": {"GUID": [b'\xfaD\xfa\xa0\xe0QO\xb9\xaf\xa2\x1e$\xc7\xfb\xae\xb0']}}
         uid = IdResolver._get_uid(entry, "GUID")
         self.assertEqual(correct_uid, uid)
 
