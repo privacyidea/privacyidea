@@ -2,6 +2,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { EnrollIndexedsecretComponent } from './enroll-indexedsecret.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 describe('EnrollIndexsecretComponent', () => {
   let component: EnrollIndexedsecretComponent;
@@ -10,6 +12,7 @@ describe('EnrollIndexsecretComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollIndexedsecretComponent, BrowserAnimationsModule],
+      providers: [provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollIndexedsecretComponent);

@@ -11,6 +11,7 @@ import { ContainerService } from '../../../services/container/container.service'
 import { ValidateService } from '../../../services/validate/validate.service';
 import { of, throwError } from 'rxjs';
 import { NotificationService } from '../../../services/notification/notification.service';
+import { UserService } from '../../../services/user/user.service';
 
 class MockTokenService {
   getTokenDetails() {
@@ -116,11 +117,24 @@ class MockNotificationService {
   }
 }
 
+class MockUserService {
+  selectedUsername = signal('');
+  selectedUserRealm = signal('');
+  setDefaultRealm() {
+    return of(null);
+  }
+  resetUserSelection() {
+    this.selectedUsername.set('');
+    this.selectedUserRealm.set('');
+  }
+}
+
 describe('ContainerDetailsComponent', () => {
   let component: ContainerDetailsComponent;
   let fixture: ComponentFixture<ContainerDetailsComponent>;
   let tokenService: TokenService;
   let containerService: ContainerService;
+  let userService: UserService;
   let validateService: ValidateService;
   let notificationService: NotificationService;
 
@@ -134,6 +148,7 @@ describe('ContainerDetailsComponent', () => {
         { provide: ContainerService, useClass: MockContainerService },
         { provide: ValidateService, useClass: MockValidateService },
         { provide: NotificationService, useValue: MockNotificationService },
+        { provide: UserService, useClass: MockUserService },
       ],
     }).compileComponents();
 
@@ -156,13 +171,13 @@ describe('ContainerDetailsComponent', () => {
         isEditing: signal(false),
       },
     ]);
-    component.userOptions = signal(['admin_user']);
     component.realmOptions = signal(['realm1', 'realm2']);
     component.selectedContent = signal('token_details');
     tokenService = TestBed.inject(TokenService);
     containerService = TestBed.inject(ContainerService);
     validateService = TestBed.inject(ValidateService);
     notificationService = TestBed.inject(NotificationService);
+    userService = TestBed.inject(UserService);
 
     fixture.detectChanges();
   });
@@ -329,15 +344,15 @@ describe('ContainerDetailsComponent', () => {
     component.toggleContainerEdit(element);
     expect(component.isEditingUser()).toBeTrue();
 
-    component.selectedUsername.set('alice');
-    component.selectedUserRealm.set('realmUser');
+    userService.selectedUsername.set('alice');
+    userService.selectedUserRealm.set('realmUser');
 
     component.saveUser();
-    expect(assignUserSpy).toHaveBeenCalledWith(
-      'Mock serial',
-      'alice',
-      'realmUser',
-    );
+    expect(assignUserSpy).toHaveBeenCalledWith({
+      containerSerial: 'Mock serial',
+      username: 'alice',
+      userRealm: 'realmUser',
+    });
     expect(component.isEditingUser()).toBeFalse();
   });
 

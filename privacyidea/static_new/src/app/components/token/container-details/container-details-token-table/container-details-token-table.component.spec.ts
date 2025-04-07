@@ -223,10 +223,10 @@ describe('ContainerDetailsTokenTableComponent', () => {
         },
       );
 
-      expect(containerServiceSpy.deleteAllTokens).toHaveBeenCalledWith(
-        'CONT-1',
-        'Mock serial,Another serial',
-      );
+      expect(containerServiceSpy.deleteAllTokens).toHaveBeenCalledWith({
+        containerSerial: 'CONT-1',
+        serialList: 'Mock serial,Another serial',
+      });
       expect(component.refreshContainerDetails()).toBeTrue();
     });
 

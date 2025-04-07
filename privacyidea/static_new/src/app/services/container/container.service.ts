@@ -284,7 +284,12 @@ export class ContainerService {
       );
   }
 
-  assignUser(containerSerial: string, username: string, userRealm: string) {
+  assignUser(args: {
+    containerSerial: string;
+    username: string;
+    userRealm: string;
+  }) {
+    const { containerSerial, username, userRealm } = args;
     const headers = this.localService.getHeaders();
     return this.http
       .post(

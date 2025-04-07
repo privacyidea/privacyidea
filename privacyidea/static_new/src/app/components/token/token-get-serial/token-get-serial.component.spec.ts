@@ -5,6 +5,7 @@ import { HttpClient, HttpHandler, HttpParams } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { TokenService } from '../../../services/token/token.service';
 import { MatDialog } from '@angular/material/dialog';
+import { signal } from '@angular/core';
 
 describe('TokenGetSerial', () => {
   let component: TokenGetSerial;
@@ -67,6 +68,8 @@ describe('TokenGetSerial', () => {
 });
 
 class MockTokenService1 {
+  tokenTypeOptions = signal([]);
+
   getSerial(otp: string, params: HttpParams): Observable<any> {
     if (otp.length === 0) {
       return throwError(() => null);
@@ -83,6 +86,8 @@ class MockTokenService1 {
 }
 
 class MockTokenService2 {
+  tokenTypeOptions = signal([]);
+
   getSerial(otp: string, params: HttpParams): Observable<any> {
     if (otp.length === 0) {
       return throwError(() => null);

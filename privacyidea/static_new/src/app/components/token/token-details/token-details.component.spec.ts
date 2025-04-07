@@ -61,6 +61,8 @@ class MockTokenService {
 }
 
 class MockContainerService {
+  selectedContainer = signal('');
+  containerOptions = signal(['container1', 'container2', 'admin-container']);
   getContainerData() {
     return of({
       result: {
@@ -86,11 +88,16 @@ class MockValidateService {
   }
 }
 
+class MockRealmService {
+  realmOptions = signal(['realm1', 'realm2']);
+}
+
 describe('TokenDetailsComponent', () => {
   let component: TokenDetailsComponent;
   let fixture: ComponentFixture<TokenDetailsComponent>;
   let tokenService: TokenService;
   let containerService: ContainerService;
+  let realmService: MockRealmService;
   let validateService: ValidateService;
 
   beforeEach(async () => {
@@ -108,14 +115,8 @@ describe('TokenDetailsComponent', () => {
     fixture = TestBed.createComponent(TokenDetailsComponent);
     component = fixture.componentInstance;
     component.tokenSerial = signal('Mock serial');
-    component.selectedContainer = signal('');
-    component.active = signal(false);
-    component.revoked = signal(false);
-    component.containerOptions = signal([
-      'container1',
-      'container2',
-      'admin-container',
-    ]);
+    component.tokenIsActive = signal(false);
+    component.tokenIsRevoked = signal(false);
     component.tokengroupOptions = signal(['group1', 'group2']);
     component.infoData = signal([
       {
@@ -124,7 +125,6 @@ describe('TokenDetailsComponent', () => {
         isEditing: signal(false),
       },
     ]);
-    component.realmOptions = signal(['realm1', 'realm2']);
     component.tokenDetailData = signal([
       {
         keyMap: { key: 'container_serial', label: 'Container' },
@@ -154,11 +154,11 @@ describe('TokenDetailsComponent', () => {
       expect(component.tokenDetailData().length).toBeGreaterThan(0);
       expect(component.infoData().length).toBeGreaterThan(0);
       expect(component.tokengroupOptions().length).toBeGreaterThan(0);
-      expect(component.containerOptions().length).toBeGreaterThan(0);
-      expect(component.realmOptions().length).toBeGreaterThan(0);
-      expect(component.selectedContainer()).toBe('Mock serial');
-      expect(component.realmOptions().length).toBeGreaterThan(0);
-      expect(component.active()).toBeTrue();
+      expect(containerService.containerOptions().length).toBeGreaterThan(0);
+      expect(realmService.realmOptions().length).toBeGreaterThan(0);
+      expect(containerService.selectedContainer()).toBe('Mock serial');
+      expect(realmService.realmOptions().length).toBeGreaterThan(0);
+      expect(component.tokenIsActive()).toBeTrue();
     });
   });
 
@@ -218,12 +218,12 @@ describe('TokenDetailsComponent', () => {
         page: 1,
         pageSize: 10,
       });
-      expect(component.containerOptions().length).toBe(3);
+      expect(containerService.containerOptions().length).toBe(3);
     });
   });
 
   it('should assign container', () => {
-    component.selectedContainer = signal('container1');
+    containerService.selectedContainer = signal('container1');
     spyOn(containerService, 'assignContainer').and.callThrough();
     component.saveContainer();
     expect(containerService.assignContainer).toHaveBeenCalledWith(
@@ -233,7 +233,7 @@ describe('TokenDetailsComponent', () => {
   });
 
   it('should unassign container', () => {
-    component.selectedContainer = signal('container1');
+    containerService.selectedContainer = signal('container1');
     spyOn(containerService, 'unassignContainer').and.callThrough();
     component.deleteContainer();
     expect(containerService.unassignContainer).toHaveBeenCalledWith(

@@ -1,5 +1,4 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-
 import { TokenDetailsUserComponent } from './token-details-user.component';
 import { TokenService } from '../../../../services/token/token.service';
 import { AppComponent } from '../../../../app.component';
@@ -7,10 +6,18 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { UserService } from '../../../../services/user/user.service'; // Adjust path as necessary
+
+class MockUserService {
+  selectedUserRealm = signal('');
+  selectedUsername = signal('');
+  userOptions = signal(['user1', 'user2', 'admin']);
+}
 
 describe('TokenDetailsUserComponent', () => {
   let component: TokenDetailsUserComponent;
   let tokenService: TokenService;
+  let userService: MockUserService;
   let fixture: ComponentFixture<TokenDetailsUserComponent>;
 
   beforeEach(async () => {
@@ -22,21 +29,20 @@ describe('TokenDetailsUserComponent', () => {
       ],
       providers: [
         TokenService,
+        { provide: UserService, useClass: MockUserService },
         provideHttpClient(),
         provideHttpClientTesting(),
       ],
     }).compileComponents();
 
     tokenService = TestBed.inject(TokenService);
+    userService = TestBed.inject(UserService) as unknown as MockUserService;
     fixture = TestBed.createComponent(TokenDetailsUserComponent);
     component = fixture.componentInstance;
     component.tokenSerial = signal('Mock serial');
     component.isEditingUser = signal(false);
     component.setPinValue = signal('');
-    component.setPinValue = signal('');
     component.repeatPinValue = signal('');
-    component.selectedUserRealm = signal('');
-    component.userOptions = signal(['user1', 'user2', 'admin']);
     fixture.detectChanges();
   });
 
@@ -45,8 +51,8 @@ describe('TokenDetailsUserComponent', () => {
   });
 
   it('should assign user', () => {
-    component.selectedUsername.set('testUser');
-    component.selectedUserRealm.set('testRealm');
+    userService.selectedUsername.set('testUser');
+    userService.selectedUserRealm.set('testRealm');
     component.setPinValue.set('1234');
     component.repeatPinValue.set('1234');
 

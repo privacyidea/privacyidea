@@ -332,11 +332,11 @@ export class ContainerDetailsComponent {
 
   saveUser() {
     this.containerService
-      .assignUser(
-        this.containerSerial(),
-        this.userService.selectedUsername(),
-        this.userService.selectedUserRealm(),
-      )
+      .assignUser({
+        containerSerial: this.containerSerial(),
+        username: this.userService.selectedUsername(),
+        userRealm: this.userService.selectedUserRealm(),
+      })
       .subscribe({
         next: () => {
           this.userService.resetUserSelection();

@@ -63,7 +63,7 @@ describe('VersionService', () => {
       service.openDocumentation('token_enrollment');
       tick();
       const expectedUrl =
-        'https://privacyidea.readthedocs.io/en/v3.11/webui/token_details.html#enroll-token';
+        'https://privacyidea.readthedocs.io/en/v/webui/token_details.html#enroll-token';
       expect(window.open).toHaveBeenCalledWith(expectedUrl, '_blank');
       expect(window.alert).not.toHaveBeenCalled();
     }));

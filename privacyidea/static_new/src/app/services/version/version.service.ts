@@ -49,7 +49,7 @@ export class VersionService {
       case 'container_create':
         page_url = 'webui/container_view.html#container-create';
     }
-    const versionUrl = `${baseUrl}v${this.version}/${page_url}`;
+    const versionUrl = `${baseUrl}v${this.version()}/${page_url}`;
     const fallbackUrl = `${baseUrl}latest/${page_url}`;
 
     async function checkPage(url: any) {

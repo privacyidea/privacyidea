@@ -58,15 +58,24 @@ class MockNotificationService {
   }
 }
 
+class MockTokenService {
+  tokenTypeOptions = [
+    { value: 'type1', label: 'Type 1' },
+    { value: 'type2', label: 'Type 2' },
+  ];
+}
+
 describe('TokenComponent', () => {
   let component: TokenComponent;
   let fixture: ComponentFixture<TokenComponent>;
   let mockNotificationService: MockNotificationService;
   let mockOverflowService: MockOverflowService;
+  let mockTokenService: MockTokenService;
 
   beforeEach(async () => {
     mockNotificationService = new MockNotificationService();
     mockOverflowService = new MockOverflowService();
+    mockTokenService = new MockTokenService();
 
     await TestBed.configureTestingModule({
       imports: [BrowserAnimationsModule, TokenComponent],
@@ -77,6 +86,7 @@ describe('TokenComponent', () => {
         { provide: TokenDetailsComponent, useClass: MockTokenDetailsComponent },
         { provide: OverflowService, useValue: mockOverflowService },
         { provide: NotificationService, useValue: mockNotificationService },
+        { provide: MockTokenService, useValue: mockTokenService },
       ],
     })
       .overrideComponent(TokenComponent, {
@@ -99,8 +109,8 @@ describe('TokenComponent', () => {
   });
 
   it('should have static tokenTypes defined', () => {
-    expect(TokenComponent.tokenTypeOptions).toBeDefined();
-    expect(TokenComponent.tokenTypeOptions.length).toBeGreaterThan(0);
+    expect(mockTokenService.tokenTypeOptions).toBeDefined();
+    expect(mockTokenService.tokenTypeOptions.length).toBeGreaterThan(0);
   });
 
   it('should have default signal values', () => {
