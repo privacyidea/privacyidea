@@ -98,7 +98,7 @@ def check_time_in_range(time_range, check_time=None):
     :param time_range: The timerange
     :type time_range: basestring
     :param check_time: The time to check
-    :type check_time: datetime
+    :type check_time: datetime.datetime
     :return: True, if time is within time_range.
     """
     time_match = False
@@ -1319,6 +1319,8 @@ def prepare_result(obj, rid=1, details=None):
     :return: json rendered sting result
     :rtype: string
     """
+    # TODO this function has to be reworked or removed. We do not need to calculate the value of authentication here
+    # TODO when the caller already knows it. A function for formatting the response is fine.
     res = {"jsonrpc": "2.0",
            "result": {"status": True,
                       "value": obj},
@@ -1331,12 +1333,14 @@ def prepare_result(obj, rid=1, details=None):
         res["detail"] = details
 
     if rid > 1:
-        if obj and obj != AUTH_RESPONSE.CHALLENGE:
+        if isinstance(obj, dict):
+            # TODO: Remove when /validate/samlcheck is removed
+            obj = obj.get("auth")
+        if obj and obj != AUTH_RESPONSE.CHALLENGE and not details.get("multi_challenge"):
             r_authentication = AUTH_RESPONSE.ACCEPT
         elif obj and obj == AUTH_RESPONSE.CHALLENGE:
             r_authentication = AUTH_RESPONSE.CHALLENGE
-        elif not obj and details.get("multi_challenge") or details.get("passkey"):
-            # We have a challenge authentication
+        elif details.get("multi_challenge") or details.get("passkey"):
             r_authentication = AUTH_RESPONSE.CHALLENGE
         elif not obj and (details.get("challenge_status") == "declined"):
             r_authentication = AUTH_RESPONSE.DECLINED

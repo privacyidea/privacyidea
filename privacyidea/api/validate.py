@@ -655,23 +655,20 @@ def trigger_challenge():
     user = request.User
     serial = getParam(request.all_data, "serial")
     token_type = getParam(request.all_data, "type")
-    details = {"messages": [],
-               "transaction_ids": []}
-    options = {"g": g,
-               "clientip": g.client_ip,
-               "user": user}
-    # Add all params to the options
-    for key, value in request.all_data.items():
-        if value and key not in ["g", "clientip", "user"]:
-            options[key] = value
+    details = {"messages": [], "transaction_ids": []}
 
-    token_objs = get_tokens(serial=serial, user=user, active=True, revoked=False, locked=False, tokentype=token_type)
-    # Only use the tokens, that are allowed to do challenge response
-    chal_resp_tokens = [token_obj for token_obj in token_objs if "challenge" in token_obj.mode]
+    # Add all params to the options
+    options: dict = {}
+    options.update(request.all_data)
+    options.update({"g": g, "clientip": g.client_ip, "user": user})
+
+    tokens = get_tokens(serial=serial, user=user, active=True, revoked=False, locked=False, tokentype=token_type)
+    # Only use the tokens that are allowed to do challenge
+    challenge_response_token = [token for token in tokens if "challenge" in token.mode]
     if is_true(options.get("increase_failcounter_on_challenge")):
-        for token_obj in chal_resp_tokens:
-            token_obj.inc_failcount()
-    create_challenges_from_tokens(chal_resp_tokens, details, options)
+        for token in challenge_response_token:
+            token.inc_failcount()
+    create_challenges_from_tokens(challenge_response_token, details, options)
     result_obj = len(details.get("multi_challenge"))
 
     challenge_serials = [challenge_info["serial"] for challenge_info in details["multi_challenge"]]

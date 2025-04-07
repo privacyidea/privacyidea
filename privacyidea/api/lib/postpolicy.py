@@ -43,7 +43,6 @@ import datetime
 import functools
 import json
 import logging
-import netaddr
 import re
 import traceback
 from urllib.parse import quote
@@ -51,7 +50,7 @@ from urllib.parse import quote
 from flask import g, current_app, make_response
 
 from privacyidea.api.lib.utils import get_all_params
-from privacyidea.lib import _, lazy_gettext
+from privacyidea.lib import lazy_gettext
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import get_multichallenge_enrollable_tokentypes, get_token_class, get_privacyidea_node
 from privacyidea.lib.crypto import Sign
@@ -70,7 +69,7 @@ from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token,
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import create_img, get_version
+from privacyidea.lib.utils import create_img, get_version, AUTH_RESPONSE
 from .prepolicy import check_max_token_user, check_max_token_realm, fido2_enroll, rss_age
 from ...lib.container import get_all_containers
 
@@ -338,6 +337,9 @@ def no_detail_on_success(request, response):
         # The policy was set, we need to strip the details, if the
         # authentication was successful. (value=true)
         # None assures that we do not get an error, if "detail" does not exist.
+        # TODO: This would strip away the details for challenge-response
+        #  authentication for the /auth and /validate/samlcheck endpoints
+        #  since they contain a dictionary in result->value
         content.pop("detail", None)
         response.set_data(json.dumps(content))
         g.audit_object.add_policy([p.get("name") for p in policy])
@@ -408,13 +410,12 @@ def add_user_detail_to_response(request, response):
     # Check for ADD USER IN RESPONSE
     policy = (Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.ADDUSERINRESPONSE, user_object=request.User)
               .policies(write_to_audit_log=False))
-    if policy and content.get("result", {}).get("value") and request.User:
-        # The policy was set, we need to add the user
-        #  details
+    if policy and content.get("result", {}).get("authentication") == AUTH_RESPONSE.ACCEPT and request.User:
+        # The policy was set, we need to add the user details
         ui = request.User.info.copy()
         ui["password"] = ""  # nosec B105 # Hide a potential password
         for key, value in ui.items():
-            if type(value) == datetime.datetime:
+            if isinstance(value, datetime.datetime):
                 ui[key] = str(value)
         content.setdefault("detail", {})["user"] = ui
         g.audit_object.add_policy([p.get("name") for p in policy])
@@ -450,7 +451,10 @@ def no_detail_on_fail(request, response):
                      .policies(write_to_audit_log=False))
     if detail_policy and content.get("result", {}).get("value") is False:
         # The policy was set, we need to strip the details, if the
-        # authentication was successful. (value=true)
+        # authentication failed. (value=False)
+        # TODO: this strips away possible transactions ids during a
+        #  challenge-response authentication. We should consider the
+        #  result->authentication entry and only strip away possible user information
         del content["detail"]
         response.set_data(json.dumps(content))
         g.audit_object.add_policy([p.get("name") for p in detail_policy])
@@ -549,13 +553,14 @@ def get_webui_settings(request, response):
     """
     This decorator is used in the /auth API to add configuration information
     like the logout_time or the policy_template_url to the response.
+
     :param request: flask request object
     :param response: flask response object
     :return: the response
     """
     content = response.json
-    # check, if the authentication was successful, then we need to do nothing
-    if content.get("result").get("status") is True:
+    # If the authentication was successful (and not a challenge request), add the settings to the result
+    if content.get("result").get("status") and isinstance(content.get("result").get("value"), dict):
         role = content.get("result").get("value").get("role")
         username = content.get("result").get("value").get("username")
         realm = content.get("result").get("value").get("realm") or get_default_realm()
@@ -833,7 +838,7 @@ def multichallenge_enroll_via_validate(request, response):
     content = response.json
     result = content.get("result")
     # Check if the authentication was successful, only then attempt to enroll a new token
-    if result.get("value") and result.get("authentication") == "ACCEPT":
+    if result.get("value") and result.get("authentication") == AUTH_RESPONSE.ACCEPT:
         # Check if another policy restricts the token count and exit early if true
         try:
             check_max_token_user(request=request)
@@ -874,8 +879,9 @@ def multichallenge_enroll_via_validate(request, response):
                                 if not init_details:
                                     token.token.delete()
                                 content.get("result")["value"] = False
-                                content.get("result")["authentication"] = "CHALLENGE"
+                                content.get("result")["authentication"] = AUTH_RESPONSE.CHALLENGE
                                 detail = content.setdefault("detail", {})
+                                detail["transaction_id"] = init_details["transaction_id"]
                                 detail["transaction_ids"] = [init_details["transaction_id"]]
                                 detail["multi_challenge"] = [init_details]
                                 detail["serial"] = token.token.serial
