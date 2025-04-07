@@ -600,7 +600,7 @@ class EmailTokenClass(HotpTokenClass):
             self.token.delete()
             raise ValidateError(_("The email address is not valid!"))
 
-    def export_token(self):
+    def export_token(self) -> dict:
         """
         Create a dictionary with the token information that can be exported.
         """
@@ -610,13 +610,13 @@ class EmailTokenClass(HotpTokenClass):
             token_dict["email"] = self.get_tokeninfo("email")
         return token_dict
 
-    def import_token(self, dict_token_info):
+    def import_token(self, token_information: dict):
         """
         Import a email token.
         """
-        HotpTokenClass.import_token(self, dict_token_info)
-        self.add_tokeninfo("dynamic_email", dict_token_info["dynamic_email"])
-        if not dict_token_info["dynamic_email"]:
-            self.add_tokeninfo("email", dict_token_info["email"])
+        HotpTokenClass.import_token(self, token_information)
+        self.add_tokeninfo("dynamic_email", token_information["dynamic_email"])
+        if not token_information["dynamic_email"]:
+            self.add_tokeninfo("email", token_information["email"])
         self.save()
         pass

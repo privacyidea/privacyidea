@@ -2003,7 +2003,7 @@ class TokenClass(object):
         """
         return None
 
-    def export_token(self):
+    def export_token(self) -> dict:
         """
         Create a dictionary with the token information that can be exported.
         """
@@ -2018,14 +2018,14 @@ class TokenClass(object):
 
         return token_dict
 
-    def import_token(self, dict_token_info):
+    def import_token(self, token_information: dict):
         """
         Import a given token.
         """
-        self.token.set_otpkey(dict_token_info["otpkey"])
-        self.add_tokeninfo("hashlib", dict_token_info["hashlib"])
-        self.token.type = dict_token_info["type"]
-        self.token.description = dict_token_info["description"]
-        self.add_tokeninfo("tokenkind", dict_token_info["tokenkind"])
+        self.token.set_otpkey(token_information["otpkey"])
+        self.add_tokeninfo("hashlib", token_information["hashlib"])
+        self.token.type = token_information["type"]
+        self.token.description = token_information["description"]
+        self.add_tokeninfo("tokenkind", token_information["tokenkind"])
         self.save()
         pass
