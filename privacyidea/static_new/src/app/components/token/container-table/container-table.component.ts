@@ -25,8 +25,7 @@ import { NotificationService } from '../../../services/notification/notification
 import { TokenSelectedContent } from '../token.component';
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
-import { debounceTime, distinctUntilChanged, Subject, switchMap } from 'rxjs';
-import { SelectionModel } from '@angular/cdk/collections';
+import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import { MatCheckbox } from '@angular/material/checkbox';
 
 const columnsKeyMap = [
@@ -60,7 +59,7 @@ const columnsKeyMap = [
 export class ContainerTableComponent {
   @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
   @Input() containerSerial!: WritableSignal<string>;
-  @Input() containerSelection!: SelectionModel<any>;
+  @Input() containerSelection!: WritableSignal<any[]>;
   @Input() refreshContainerOverview!: WritableSignal<boolean>;
   sortby_sortdir: WritableSignal<Sort> = signal({
     active: 'serial',
@@ -95,12 +94,6 @@ export class ContainerTableComponent {
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   filterSubject = new Subject<string>();
-  requestSubject = new Subject<{
-    page: number;
-    pageSize: number;
-    sort: Sort;
-    filter: string;
-  }>();
 
   constructor(
     private containerService: ContainerService,
@@ -109,7 +102,7 @@ export class ContainerTableComponent {
   ) {
     effect(() => {
       this.filterSubject.next(this.filterValue());
-      this.containerSelection.clear();
+      this.containerSelection.set([]);
       untracked(() => {
         if (![5, 10, 15].includes(this.pageSize())) {
           this.pageSize.set(10);
@@ -119,7 +112,7 @@ export class ContainerTableComponent {
     });
     effect(() => {
       if (this.selectedContent()) {
-        this.containerSelection.clear();
+        this.containerSelection.set([]);
       }
     });
   }
@@ -130,27 +123,6 @@ export class ContainerTableComponent {
       .subscribe((filter) => {
         this.fetchContainerData(filter);
       });
-    this.requestSubject
-      .pipe(
-        distinctUntilChanged(
-          (prev, curr) => JSON.stringify(prev) === JSON.stringify(curr),
-        ),
-        switchMap((params) =>
-          this.containerService.getContainerData({
-            page: params.page,
-            pageSize: params.pageSize,
-            sort: params.sort,
-            filterValue: params.filter,
-          }),
-        ),
-      )
-      .subscribe({
-        next: (response) => {
-          this.length.set(response.result.value.count);
-          this.processDataSource(response.result.value.containers);
-        },
-        error: () => {},
-      });
   }
 
   ngAfterViewInit() {
@@ -159,24 +131,31 @@ export class ContainerTableComponent {
   }
 
   isAllSelected() {
-    return (
-      this.containerSelection.selected.length === this.dataSource().data.length
-    );
+    return this.containerSelection().length === this.dataSource().data.length;
   }
 
   toggleAllRows() {
     if (this.isAllSelected()) {
-      this.containerSelection.clear();
+      this.containerSelection.set([]);
       return;
     }
-    this.containerSelection.select(...this.dataSource().data);
+    this.containerSelection.set([...this.dataSource().data]);
+  }
+
+  toggleRow(row: any): void {
+    const current = this.containerSelection();
+    if (current.includes(row)) {
+      this.containerSelection.set(current.filter((r) => r !== row));
+    } else {
+      this.containerSelection.set([...current, row]);
+    }
   }
 
   checkboxLabel(row?: any): string {
     if (!row) {
       return `${this.isAllSelected() ? 'deselect' : 'select'} all`;
     }
-    return `${this.containerSelection.isSelected(row) ? 'deselect' : 'select'} row ${
+    return `${this.containerSelection().includes(row) ? 'deselect' : 'select'} row ${
       row.position + 1
     }`;
   }
@@ -208,7 +187,7 @@ export class ContainerTableComponent {
   }
 
   onPageEvent(event: PageEvent) {
-    this.containerSelection.clear();
+    this.containerSelection.set([]);
     this.tableUtilsService.handlePageEvent(
       event,
       this.pageIndex,
@@ -218,7 +197,7 @@ export class ContainerTableComponent {
   }
 
   onSortEvent($event: Sort) {
-    this.containerSelection.clear();
+    this.containerSelection.set([]);
     this.tableUtilsService.handleSortEvent(
       $event,
       this.pageIndex,
@@ -228,12 +207,19 @@ export class ContainerTableComponent {
   }
 
   fetchContainerData = (filterValue?: string) => {
-    this.requestSubject.next({
-      page: this.pageIndex() + 1,
-      pageSize: this.pageSize(),
-      sort: this.sortby_sortdir(),
-      filter: filterValue ?? this.filterValue(),
-    });
+    return this.containerService
+      .getContainerData({
+        page: this.pageIndex() + 1,
+        pageSize: this.pageSize(),
+        sort: this.sortby_sortdir(),
+        filterValue: filterValue ?? this.filterValue(),
+      })
+      .subscribe({
+        next: (response) => {
+          this.length.set(response.result.value.count);
+          this.processDataSource(response.result.value.containers);
+        },
+      });
   };
 
   private processDataSource(data: any[]) {

@@ -54,12 +54,7 @@
             },
             "development": {
               "optimization": false,
-              "extractLicenses": false,
-              "sourceMap": false,
-              "aot": true,
-              "outputHashing": "none",
-              "namedChunks": true,
-              "subresourceIntegrity": false,
+              "sourceMap": true,
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",

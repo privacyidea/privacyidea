@@ -56,9 +56,9 @@
             <mat-divider /><br />
             <mat-list-item>
               <button class="card-button-delete"
-                      [ngClass]="{'disabled-button': containerSelection.selected.length === 0}"
+                      [ngClass]="{'disabled-button': containerSelection().length === 0}"
                       (click)="deleteSelectedContainer()"
-                      [disabled]="containerSelection.selected.length === 0"
+                      [disabled]="containerSelection().length === 0"
                       mat-flat-button>
                 <mat-icon>delete_outlined</mat-icon>
                 Delete Selected

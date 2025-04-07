@@ -7,7 +7,6 @@ import { ContainerTabComponent } from './container-tab/container-tab.component';
 import { NgClass } from '@angular/common';
 import { OverflowService } from '../../../services/overflow/overflow.service';
 import { TokenSelectedContent } from '../token.component';
-import { SelectionModel } from '@angular/cdk/collections';
 
 @Component({
   selector: 'app-token-card',
@@ -36,8 +35,8 @@ export class TokenCardComponent {
   @Input() refreshTokenOverview!: WritableSignal<boolean>;
   @Input() refreshContainerOverview!: WritableSignal<boolean>;
   @Input() isProgrammaticChange!: WritableSignal<boolean>;
-  @Input() tokenSelection!: SelectionModel<any>;
-  @Input() containerSelection!: SelectionModel<any>;
+  @Input() tokenSelection!: WritableSignal<any[]>;
+  @Input() containerSelection!: WritableSignal<any[]>;
   selectedTabIndex = linkedSignal({
     source: () => this.selectedContent(),
     computation: (selectedContent) => {

@@ -37,8 +37,8 @@
               class="table-checkbox">
             <mat-checkbox (change)="$event ? toggleAllRows() : null"
                           [aria-label]="checkboxLabel()"
-                          [checked]="tokenSelection.hasValue() && isAllSelected()"
-                          [indeterminate]="tokenSelection.hasValue() && !isAllSelected()"
+                          [checked]="isAllSelected()"
+                          [indeterminate]="tokenSelection().length > 0 && !isAllSelected()"
                           [disabled]="length() === 0"></mat-checkbox>
           </th>
         } @else {
@@ -52,16 +52,18 @@
         <td *matCellDef="let element; let row"
             attr.aria-label="{{ column.label }} Cell"
             mat-cell
-            [ngClass]="{ 'width-18rem': column.key === 'description',
-                         'table-checkbox': column.key === 'select' }">
+            [ngClass]="{
+            'width-18rem': column.key === 'description',
+            'table-checkbox': column.key === 'select'
+          }">
           <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
             @switch (column.key) {
               @case ('select') {
-                  <mat-checkbox (change)="$event ? tokenSelection.toggle(row) : null"
-                                (click)="$event.stopPropagation()"
-                                [aria-label]="checkboxLabel(row)"
-                                [checked]="tokenSelection.isSelected(row)"
-                                [disabled]="length() === 0"></mat-checkbox>
+                <mat-checkbox (change)="$event ? toggleRow(row) : null"
+                              (click)="$event.stopPropagation()"
+                              [aria-label]="checkboxLabel(row)"
+                              [checked]="tokenSelection().includes(row)"
+                              [disabled]="length() === 0"></mat-checkbox>
               }
               @case ("serial") {
                 <a attr.aria-label="{{ column.label }} Link"
@@ -69,7 +71,7 @@
                 <app-copy-button [copyText]="element.serial"></app-copy-button>
               }
               @case ("realms") {
-                <div [ngClass]="(element[column.key]?.length || 0)  > 1 ? 'realm-list' : 'realm'">
+                <div [ngClass]="(element[column.key]?.length || 0) > 1 ? 'realm-list' : 'realm'">
                   @for (realm of element[column.key]; track realm; let idx = $index) {
                     <a attr.aria-label="{{ column.label }} Link"
                        href="#"> {{ realm }} </a><br style="margin-top: 3px" />
@@ -90,8 +92,8 @@
                 } @else {
                   <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
                         (click)="handleColumnClick(column.key, element)">
-                  {{ tableUtilsService.getDisplayText(column.key, element) }}
-                </span>
+                    {{ tableUtilsService.getDisplayText(column.key, element) }}
+                  </span>
                 }
               }
             }

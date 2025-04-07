@@ -24,6 +24,7 @@
                       [filterValue]="filterValue"></app-keyword-filter>
   <table (matSortChange)="onSortEvent($event)"
          [dataSource]="dataSource()"
+         [matSortDisableClear]="false"
          aria-label="Container Data Table"
          class="container-table"
          mat-table
@@ -36,8 +37,8 @@
               class="table-checkbox">
             <mat-checkbox (change)="$event ? toggleAllRows() : null"
                           [aria-label]="checkboxLabel()"
-                          [checked]="containerSelection.hasValue() && isAllSelected()"
-                          [indeterminate]="containerSelection.hasValue() && !isAllSelected()"
+                          [checked]="isAllSelected()"
+                          [indeterminate]="containerSelection().length > 0 &&  !isAllSelected()"
                           [disabled]="length() === 0"></mat-checkbox>
           </th>
         } @else {
@@ -56,10 +57,10 @@
           <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
             @switch (column.key) {
               @case ('select') {
-                <mat-checkbox (change)="$event ? containerSelection.toggle(row) : null"
+                <mat-checkbox (change)="$event ? toggleRow(row) : null"
                               (click)="$event.stopPropagation()"
                               [aria-label]="checkboxLabel(row)"
-                              [checked]="containerSelection.isSelected(row)"
+                              [checked]="containerSelection().includes(row)"
                               [disabled]="length() === 0"></mat-checkbox>
               }
               @case ("serial") {

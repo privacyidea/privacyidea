@@ -5,13 +5,12 @@ import { MatButton } from '@angular/material/button';
 import { NgClass } from '@angular/common';
 import { tabToggleState } from '../../../../../styles/animations/animations';
 import { MatDivider } from '@angular/material/divider';
-import { switchMap } from 'rxjs';
+import { forkJoin, switchMap } from 'rxjs';
 import { ContainerService } from '../../../../services/container/container.service';
 import { VersionService } from '../../../../services/version/version.service';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
 import { TokenSelectedContent } from '../../token.component';
-import { SelectionModel } from '@angular/cdk/collections';
 
 @Component({
   selector: 'app-container-tab',
@@ -28,7 +27,7 @@ export class ContainerTabComponent {
   @Input() refreshContainerDetails!: WritableSignal<boolean>;
   @Input() refreshContainerOverview!: WritableSignal<boolean>;
   @Input() isProgrammaticChange!: WritableSignal<boolean>;
-  @Input() containerSelection!: SelectionModel<any>;
+  @Input() containerSelection!: WritableSignal<any[]>;
   containerIsSelected = computed(() => this.containerSerial() !== '');
   version!: string;
 
@@ -85,28 +84,37 @@ export class ContainerTabComponent {
       });
   }
 
-  deleteSelectedContainer() {
+  deleteSelectedContainer(): void {
+    const selectedContainers = this.containerSelection();
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: this.containerSelection.selected.map(
-            (token: any) => token.serial,
+          serial_list: selectedContainers.map(
+            (container: any) => container.serial,
           ),
-          title: 'Delete All Tokens',
-          type: 'token',
+          title: 'Delete All Containers',
+          type: 'container',
           action: 'delete',
-          numberOfTokens: this.containerSelection.selected.length,
+          numberOfContainers: selectedContainers.length,
         },
       })
       .afterClosed()
       .subscribe({
         next: (result) => {
           if (result) {
-            for (const token of this.containerSelection.selected) {
-              this.containerService.deleteContainer(token.serial).subscribe();
-            }
-            this.containerSelection.clear();
-            this.refreshContainerOverview.set(true);
+            forkJoin(
+              selectedContainers.map((container: any) =>
+                this.containerService.deleteContainer(container.serial),
+              ),
+            ).subscribe({
+              next: () => {
+                this.containerSelection.set([]);
+                this.refreshContainerOverview.set(true);
+              },
+              error: (err) => {
+                console.error('Error deleting containers:', err);
+              },
+            });
           }
         },
       });

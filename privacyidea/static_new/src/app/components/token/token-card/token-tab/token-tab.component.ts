@@ -10,7 +10,7 @@ import { MatList, MatListItem } from '@angular/material/list';
 import { MatButton } from '@angular/material/button';
 import { MatDivider } from '@angular/material/divider';
 import { NgClass } from '@angular/common';
-import { switchMap } from 'rxjs';
+import { forkJoin, switchMap } from 'rxjs';
 import { TokenService } from '../../../../services/token/token.service';
 import { tabToggleState } from '../../../../../styles/animations/animations';
 import { MatDialog } from '@angular/material/dialog';
@@ -18,7 +18,6 @@ import { LostTokenComponent } from './lost-token/lost-token.component';
 import { VersionService } from '../../../../services/version/version.service';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { TokenSelectedContent } from '../../token.component';
-import { SelectionModel } from '@angular/cdk/collections';
 
 @Component({
   selector: 'app-token-tab',
@@ -35,7 +34,7 @@ export class TokenTabComponent {
   @Input() revoked!: WritableSignal<boolean>;
   @Input() refreshTokenDetails!: WritableSignal<boolean>;
   @Input() refreshTokenOverview!: WritableSignal<boolean>;
-  @Input() tokenSelection!: SelectionModel<any>;
+  @Input() tokenSelection!: WritableSignal<any[]>;
   tokenIsSelected = computed(() => this.tokenSerial() !== '');
   isLost = signal(false);
   version!: string;
@@ -121,28 +120,35 @@ export class TokenTabComponent {
       });
   }
 
-  deleteSelectedTokens() {
+  deleteSelectedTokens(): void {
+    const selectedTokens = this.tokenSelection();
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: this.tokenSelection.selected.map(
-            (token: any) => token.serial,
-          ),
+          serial_list: selectedTokens.map((token: any) => token.serial),
           title: 'Delete All Tokens',
           type: 'token',
           action: 'delete',
-          numberOfTokens: this.tokenSelection.selected.length,
+          numberOfTokens: selectedTokens.length,
         },
       })
       .afterClosed()
       .subscribe({
         next: (result) => {
           if (result) {
-            for (const token of this.tokenSelection.selected) {
-              this.tokenService.deleteToken(token.serial).subscribe();
-            }
-            this.tokenSelection.clear();
-            this.refreshTokenOverview.set(true);
+            forkJoin(
+              selectedTokens.map((token: any) =>
+                this.tokenService.deleteToken(token.serial),
+              ),
+            ).subscribe({
+              next: () => {
+                this.tokenSelection.set([]);
+                this.refreshTokenOverview.set(true);
+              },
+              error: (err) => {
+                console.error('Error deleting tokens:', err);
+              },
+            });
           }
         },
       });

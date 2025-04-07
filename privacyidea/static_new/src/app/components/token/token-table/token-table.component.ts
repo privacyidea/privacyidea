@@ -23,9 +23,8 @@ import { TableUtilsService } from '../../../services/table-utils/table-utils.ser
 import { TokenSelectedContent } from '../token.component';
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
-import { debounceTime, distinctUntilChanged, Subject, switchMap } from 'rxjs';
+import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { SelectionModel } from '@angular/cdk/collections';
 
 const columnsKeyMap = [
   { key: 'select', label: '' },
@@ -75,7 +74,8 @@ export class TokenTableComponent {
   @Input() containerSerial!: WritableSignal<string>;
   @Input() isProgrammaticChange!: WritableSignal<boolean>;
   @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
-  @Input() tokenSelection!: SelectionModel<any>;
+  @Input() tokenSelection!: WritableSignal<any[]>;
+  @Input() refreshTokenOverview!: WritableSignal<boolean>;
   dataSource = signal(
     new MatTableDataSource(
       Array.from({ length: this.pageSize() }, () => {
@@ -97,12 +97,6 @@ export class TokenTableComponent {
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild('filterInput', { static: true }) filterInput!: HTMLInputElement;
   filterSubject = new Subject<string>();
-  requestSubject = new Subject<{
-    page: number;
-    pageSize: number;
-    sort: Sort;
-    filter: string;
-  }>();
 
   constructor(
     protected tokenService: TokenService,
@@ -110,7 +104,7 @@ export class TokenTableComponent {
   ) {
     effect(() => {
       this.filterSubject.next(this.filterValue());
-      this.tokenSelection.clear();
+      this.tokenSelection.set([]);
       untracked(() => {
         if (![5, 10, 15].includes(this.pageSize())) {
           this.pageSize.set(10);
@@ -120,7 +114,7 @@ export class TokenTableComponent {
     });
     effect(() => {
       if (this.selectedContent()) {
-        this.tokenSelection.clear();
+        this.tokenSelection.set([]);
       }
     });
   }
@@ -130,29 +124,6 @@ export class TokenTableComponent {
       .pipe(distinctUntilChanged(), debounceTime(200))
       .subscribe((filter) => {
         this.fetchTokenData(filter);
-      });
-    this.requestSubject
-      .pipe(
-        distinctUntilChanged(
-          (prev, curr) => JSON.stringify(prev) === JSON.stringify(curr),
-        ),
-        switchMap((params) =>
-          this.tokenService.getTokenData(
-            params.page,
-            params.pageSize,
-            params.sort,
-            params.filter,
-          ),
-        ),
-      )
-      .subscribe({
-        next: (response) => {
-          this.length.set(response.result.value.count);
-          this.dataSource.set(
-            new MatTableDataSource(response.result.value.tokens),
-          );
-        },
-        error: () => {},
       });
   }
 
@@ -166,24 +137,33 @@ export class TokenTableComponent {
   }
 
   isAllSelected() {
-    return (
-      this.tokenSelection.selected.length === this.dataSource().data.length
-    );
+    return this.tokenSelection().length === this.dataSource().data.length;
   }
 
   toggleAllRows() {
     if (this.isAllSelected()) {
-      this.tokenSelection.clear();
-      return;
+      this.tokenSelection.set([]);
+    } else {
+      this.tokenSelection.set([...this.dataSource().data]);
     }
-    this.tokenSelection.select(...this.dataSource().data);
+  }
+
+  toggleRow(row: any): void {
+    const current = this.tokenSelection();
+    if (current.includes(row)) {
+      this.tokenSelection.set(current.filter((r) => r !== row));
+    } else {
+      this.tokenSelection.set([...current, row]);
+    }
   }
 
   checkboxLabel(row?: any): string {
     if (!row) {
       return `${this.isAllSelected() ? 'deselect' : 'select'} all`;
     }
-    return `${this.tokenSelection.isSelected(row) ? 'deselect' : 'select'} row ${row.position + 1}`;
+    return `${
+      this.tokenSelection().includes(row) ? 'deselect' : 'select'
+    } row ${row.position + 1}`;
   }
 
   toggleActive(element: any): void {
@@ -228,7 +208,7 @@ export class TokenTableComponent {
   }
 
   onPageEvent(event: PageEvent) {
-    this.tokenSelection.clear();
+    this.tokenSelection.set([]);
     this.tableUtilsService.handlePageEvent(
       event,
       this.pageIndex,
@@ -238,7 +218,7 @@ export class TokenTableComponent {
   }
 
   onSortEvent($event: Sort) {
-    this.tokenSelection.clear();
+    this.tokenSelection.set([]);
     this.tableUtilsService.handleSortEvent(
       $event,
       this.pageIndex,
@@ -248,11 +228,20 @@ export class TokenTableComponent {
   }
 
   fetchTokenData = (filterValue?: string) => {
-    this.requestSubject.next({
-      page: this.pageIndex() + 1,
-      pageSize: this.pageSize(),
-      sort: this.sortby_sortdir(),
-      filter: filterValue ?? this.filterValue(),
-    });
+    return this.tokenService
+      .getTokenData(
+        this.pageIndex() + 1,
+        this.pageSize(),
+        this.sortby_sortdir(),
+        filterValue ?? this.filterValue(),
+      )
+      .subscribe({
+        next: (response) => {
+          this.length.set(response.result.value.count);
+          this.dataSource.set(
+            new MatTableDataSource(response.result.value.tokens),
+          );
+        },
+      });
   };
 }

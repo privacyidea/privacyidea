@@ -19,7 +19,6 @@ import { TokenEnrollmentComponent } from './token-enrollment/token-enrollment.co
 import { TokenApplications } from './token-applications/token-applications';
 import { ChallengesTableComponent } from './challenges-table/challenges-table.component';
 import { LoadingService } from '../../services/loading/loading-service';
-import { SelectionModel } from '@angular/cdk/collections';
 import { ContainerCreateComponent } from './container-create/container-create.component';
 
 export type TokenType =
@@ -211,8 +210,8 @@ export class TokenComponent {
   states = signal<string[]>([]);
   isProgrammaticChange = signal(false);
   isTokenDrawerOverflowing = signal(false);
-  containerSelection = new SelectionModel<any>(true, []);
-  tokenSelection = new SelectionModel<any>(true, []);
+  containerSelection = signal([]);
+  tokenSelection = signal([]);
   @ViewChild('tokenDetailsComponent')
   tokenDetailsComponent!: TokenDetailsComponent;
   @ViewChild('containerDetailsComponent')
