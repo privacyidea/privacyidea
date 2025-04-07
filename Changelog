@@ -1,4 +1,4 @@
-Version 3.11.1, 2025-04-04
+Version 3.11.1, 2025-04-08
 
   Fixes:
   * UI: Reload of user list, doubled delete button, container pagination (#4277)
@@ -15,6 +15,7 @@ Version 3.11.1, 2025-04-04
   * Fix `authentication` return value when using `/validate/samlcheck`,
     `/validate/triggerchallenge` and `/auth` (#4313, #4334)
   * Improve log messages when extended conditions fail (#4016)
+  * Use UUID big-endian conversion for GUIDs returned as bytearray (#4304)
 
 Version 3.11, 2025-02-17
 
