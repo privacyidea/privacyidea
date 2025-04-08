@@ -59,7 +59,9 @@ tokenclass implementations like lib.tokens.hotptoken)
 This is the middleware/glue between the HTTP API and the database
 """
 
+from dataclasses import dataclass
 import datetime
+import json
 import logging
 import os
 import string
@@ -127,6 +129,12 @@ ENCODING = "utf-8"
 class clob_to_varchar(FunctionElement):
     name = 'clob_to_varchar'
     inherit_cache = True
+
+
+@dataclass(frozen=True)
+class TokenImportResult:
+    successful_tokens: list
+    failed_tokens: list
 
 
 @compiles(clob_to_varchar)
@@ -2995,3 +3003,48 @@ def regenerate_enroll_url(serial: str, request: Request, g) -> Union[str, None]:
         log.warning(f"{ex}")
 
     return enroll_url
+
+
+def export_tokens(tokens) -> str:
+    """
+    Takes a list of tokens and returns an exportable json object
+
+    :param tokens: list of token objects
+    :return: list of dict with tokens
+    """
+    exported_tokens = []
+    for token in tokens:
+        exported_tokens.append(token.export_token())
+
+    json_export = json.dumps(exported_tokens, default=repr, indent=2)
+    return json_export
+
+
+def import_tokens(tokens) -> TokenImportResult:
+    """
+    Import a list of token dictionaries.
+
+    :param tokens: list of token dictionaries # TODO list does not work with json.loads
+    :return: list of token objects
+    """
+    successful_tokens = []
+    failed_tokens = []
+    tokens = json.loads(tokens)
+    for token_info_dict in tokens:
+        serial = token_info_dict.get("serial")
+        try:
+            serial_not_exists, a = check_serial(serial)  # replace check_serial
+            if serial_not_exists:
+                token_type = token_info_dict.get("type")
+                db_token = Token(serial, tokentype=token_type.lower())
+                token = create_tokenclass_object(db_token)
+                token.import_token(token_info_dict)
+            else:
+                token = get_tokens_from_serial_or_user(serial=serial, user=None)
+                token[0].update(token_info_dict)
+            successful_tokens.append(serial)
+        except Exception as e:
+            log.error(f"Could not import token {serial}: {e}")
+            print(e)
+            failed_tokens.append(serial)
+    return TokenImportResult(successful_tokens=successful_tokens, failed_tokens=failed_tokens)
