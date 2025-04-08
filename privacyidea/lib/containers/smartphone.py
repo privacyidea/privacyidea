@@ -35,6 +35,7 @@ from privacyidea.lib.containers.smartphone_options import SmartphoneOptions
 from privacyidea.lib.crypto import (geturandom, encryptPassword, b64url_str_key_pair_to_ecc_obj,
                                     generate_keypair_ecc, encrypt_aes)
 from privacyidea.lib.error import ContainerInvalidChallenge, ContainerNotRegistered, ParameterError
+from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.utils import create_img
 from privacyidea.models import Challenge
 
