@@ -70,6 +70,7 @@ from privacyidea.lib.tokengroup import set_tokengroup, delete_tokengroup
 from privacyidea.lib.error import (TokenAdminError, ParameterError,
                                    privacyIDEAError, ResourceNotFoundError)
 from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.framework import get_app_config
 from dateutil.tz import tzlocal
 
 PWFILE = "tests/testdata/passwords"
@@ -297,23 +298,43 @@ class TokenTestCase(MyTestCase):
         db_token.delete()
 
     def test_14_gen_serial(self):
+        hotp_token_count = get_tokens(tokentype="hotp", count=True)
         serial = gen_serial(tokentype="hotp")
         # check the beginning of the serial
-        self.assertTrue("OATH0001" in serial, serial)
+        self.assertTrue(serial.startswith(f"OATH000{hotp_token_count}"), serial)
+        self.assertEqual(12, len(serial), serial)
 
         serial = gen_serial(tokentype="hotp", prefix="blah")
         # check the beginning of the serial
-        self.assertTrue("blah0001" in serial, serial)
+        self.assertTrue(serial.startswith(f"blah000{hotp_token_count}"), serial)
 
-        serial = gen_serial()
-        # check the beginning of the serial
-        self.assertTrue("PIUN0000" in serial, serial)
+        # Try a non-existing token type
+        serial = gen_serial(tokentype="non-existing")
+        self.assertTrue(serial.startswith("NON-EXISTING0000"), serial)
 
         set_privacyidea_config("SerialLength", 12)
         serial = gen_serial(tokentype="hotp")
-        self.assertTrue("OATH0001" in serial, serial)
+        self.assertTrue(serial.startswith(f"OATH000{hotp_token_count}"), serial)
         self.assertEqual(len(serial), len("OATH") + 12)
         set_privacyidea_config("SerialLength", 8)
+
+        # Test the random serial configuration
+        get_app_config()["PI_TOKEN_SERIAL_RANDOM"] = True
+        serial = gen_serial(tokentype="hotp")
+        # check the beginning of the serial
+        self.assertTrue(serial.startswith("OATH"), serial)
+        self.assertEqual(12, len(serial), serial)
+
+        serial = gen_serial(tokentype="hotp", prefix="blah")
+        # check the beginning of the serial
+        self.assertTrue(serial.startswith("blah"), serial)
+
+        set_privacyidea_config("SerialLength", 12)
+        serial = gen_serial(tokentype="yubikey")
+        self.assertTrue(serial.startswith("UBAM"), serial)
+        self.assertEqual(16, len(serial), serial)
+        set_privacyidea_config("SerialLength", 8)
+        del get_app_config()["PI_TOKEN_SERIAL_RANDOM"]
 
     def test_15_init_token(self):
         count = get_tokens(count=True)

@@ -147,7 +147,7 @@ angular.module("privacyideaApp")
                         pagesize: $scope.containersPerPage,
                         page: $scope.containerParams.page
                     }, function (data) {
-                        $scope.containerdata = data.result.value.containers;
+                        $scope.containerdata = data.result.value;
                     });
                 } else {
                     $scope.containerdata = [];
@@ -155,9 +155,11 @@ angular.module("privacyideaApp")
             };
 
             // Change the pagination
-            $scope.pageChanged = function () {
+            $scope.tokenPageChanged = function () {
                 //debug: console.log('Page changed to: ' + $scope.params.page);
                 $scope._getUserToken();
+            };
+            $scope.containerPageChanged = function () {
                 $scope.getUserContainer();
             };
 
@@ -388,6 +390,21 @@ angular.module("privacyideaApp")
         }
     ]);
 
+
+angular.module("privacyideaApp")
+    .controller("userListController", ['$scope',
+        function ($scope) {
+            // Change the pagination
+            $scope.pageChanged = function () {
+                //debug: console.log('Page changed to: ' + $scope.params.page);
+                $scope._getUsers();
+            };
+            $scope.$on("piReload", function () {
+                $scope._getUsers(false);
+            });
+        }
+    ]);
+
 angular.module("privacyideaApp")
     .controller("userController", ['$scope', '$location', 'userUrl', 'realmUrl',
         '$rootScope', 'ConfigFactory', 'UserFactory', 'gettextCatalog', 'AuthFactory',
@@ -439,12 +456,6 @@ angular.module("privacyideaApp")
                             //debug: console.log($scope.userlist);
                         });
                 }
-            };
-
-            // Change the pagination
-            $scope.pageChanged = function () {
-                //debug: console.log('Page changed to: ' + $scope.params.page);
-                $scope._getUsers();
             };
 
             $scope.getRealms = function () {
@@ -552,7 +563,4 @@ angular.module("privacyideaApp")
                 $scope.rightColumn = userFields.slice(middle, end);
             };
 
-            $scope.$on("piReload", function () {
-                $scope._getUsers(false);
-            });
         }]);
