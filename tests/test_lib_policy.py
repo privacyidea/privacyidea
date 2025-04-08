@@ -6,6 +6,7 @@ The lib.policy.py only depends on the database model.
 import dateutil
 import mock
 
+from privacyidea.lib.token import init_token
 from privacyidea.models import PolicyDescription
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 
@@ -17,7 +18,8 @@ from privacyidea.lib.policy import (set_policy, delete_policy,
                                     PolicyError, ACTION, MAIN_MENU,
                                     delete_all_policies,
                                     get_action_values_from_options, Match, MatchingError,
-                                    get_allowed_custom_attributes, convert_action_dict_to_python_dict)
+                                    get_allowed_custom_attributes, convert_action_dict_to_python_dict,
+                                    ConditionHandleMissingData)
 from privacyidea.lib.realm import (set_realm, delete_realm, get_realms)
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list,
                                       delete_resolver)
@@ -1203,18 +1205,35 @@ class PolicyTestCase(MyTestCase):
 
         P = PolicyClass()
         self.assertEqual(P.list_policies()[0]["conditions"],
-                         [("userinfo", "type", "equals", "verysecure", True)])
+                         [("userinfo", "type", "equals", "verysecure", True, None)])
 
         # Update existing policy with conditions
         set_policy("act1", conditions=[
             ("userinfo", "type", "equals", "notverysecure", True),
-            ("request", "user_agent", "equals", "vpn", True)
+            ("request", "user_agent", "equals", "vpn", True, ConditionHandleMissingData.RAISE_ERROR)
         ])
-        P = PolicyClass()
 
         self.assertEqual(P.list_policies()[0]["conditions"],
-                         [("userinfo", "type", "equals", "notverysecure", True),
-                          ("request", "user_agent", "equals", "vpn", True)])
+                         [("userinfo", "type", "equals", "notverysecure", True, None),
+                          ("request", "user_agent", "equals", "vpn", True, ConditionHandleMissingData.RAISE_ERROR)])
+
+        # Set None for handle missing data is allowed
+        set_policy("act1", conditions=[("userinfo", "type", "equals", "notverysecure", True),
+                                       ("request", "user_agent", "equals", "vpn", True, None)])
+        self.assertEqual(P.list_policies()[0]["conditions"],
+                         [("userinfo", "type", "equals", "notverysecure", True, None),
+                          ("request", "user_agent", "equals", "vpn", True, None)])
+
+        # Set policy with invalid condition tuple
+        # Missing active value
+        self.assertRaises(ParameterError, set_policy, "policy",
+                          conditions=[("userinfo", "type", "equals", "verysecure")])
+        # invalid data type
+        self.assertRaises(ParameterError, set_policy, "policy",
+                          conditions=[("userinfo", ["type", "password"], "equals", "verysecure", True)])
+        # invalid data type of handle missing data
+        self.assertRaises(ParameterError, set_policy, "policy",
+                          conditions=[("userinfo", "type", "equals", "verysecure", True, False)])
 
         delete_policy("act1")
         delete_realm("realm1")
@@ -1248,11 +1267,11 @@ class PolicyTestCase(MyTestCase):
         user3.info = {"type": "notverysecure", "groups": ["b", "c"]}
 
         # no user => policy error
-        with self.assertRaisesRegex(PolicyError, ".* an according object is not available.*"):
+        with self.assertRaisesRegex(PolicyError, ".* a user is unavailable.*"):
             P.match_policies(user_object=None)
 
         # empty user => policy error
-        with self.assertRaisesRegex(PolicyError, ".*Unknown key.*"):
+        with self.assertRaisesRegex(PolicyError, ".*Unknown userinfo key.*"):
             P.match_policies(user_object=empty_user)
 
         # user1 => verysecure matches
@@ -1321,7 +1340,7 @@ class PolicyTestCase(MyTestCase):
         # an unknown key in the condition
         set_policy("unknownkey", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
                    conditions=[("userinfo", "bla", "equals", "verysecure", True)])
-        with self.assertRaisesRegex(PolicyError, r".*Unknown key.*"):
+        with self.assertRaisesRegex(PolicyError, r".*Unknown .*key.*"):
             P.match_policies(user_object=user1)
         delete_policy("unknownkey")
 
@@ -1422,20 +1441,29 @@ class PolicyTestCase(MyTestCase):
                    conditions=[("tokeninfo", "fixedpin", "equals", "false", False)])
 
         # policy matches, because the condition on tokeninfo is inactive
-        self.assertEqual(_names(P.match_policies(user_object=user1, serial=serial)),
-                         {"setpin_pol"})
+        self.assertSetEqual({"setpin_pol"}, _names(P.match_policies(user_object=user1, serial=serial)))
 
         # activate the condition
-        set_policy("setpin_pol", conditions=[("tokeninfo", "fixedpin", "equals", "false", True)])
+        set_policy("setpin_pol", conditions=[
+            ("tokeninfo", "fixedpin", "equals", "false", True, ConditionHandleMissingData.RAISE_ERROR)])
 
         # policy does not match anymore, because the condition on tokeninfo is active
         # setpin action not returned for our token with tokeninfo "fixedpin" = "true"
-        self.assertEqual(_names(P.match_policies(user_object=user1, serial=serial)),
-                         set())
+        self.assertSetEqual(set(), _names(P.match_policies(user_object=user1, serial=serial)))
 
         # A request without any serial number will raise a Policy error, since condition
         # on tokeninfo is there, but no dbtoken object is available.
         self.assertRaises(PolicyError, P.match_policies, user_object=user1)
+
+        # policy matches, because the condition shall be true if no token is available
+        set_policy("setpin_pol", conditions=[
+            ("tokeninfo", "fixedpin", "equals", "false", True, ConditionHandleMissingData.IS_TRUE)])
+        self.assertSetEqual({"setpin_pol"}, _names(P.match_policies(user_object=user1)))
+
+        # policy not matches, because the condition shall be false if no token is available, but not raise an error
+        set_policy("setpin_pol", conditions=[
+            ("tokeninfo", "fixedpin", "equals", "false", True, ConditionHandleMissingData.IS_FALSE)])
+        self.assertSetEqual(set(), _names(P.match_policies(user_object=user1)))
 
         delete_policy("setpin_pol")
         db_token.delete()
@@ -1482,9 +1510,9 @@ class PolicyTestCase(MyTestCase):
                          set())
 
         # Now check, if we can compare numbers.
-        set_policy("setpin_pol", conditions=[("token", "count", "<", "100", True)])
-        self.assertEqual(_names(P.match_policies(user_object=user1, serial=serial)),
-                         {"setpin_pol"})
+        set_policy("setpin_pol", conditions=[("token", "count", "<", "100", True,
+                                              ConditionHandleMissingData.RAISE_ERROR)])
+        self.assertEqual({"setpin_pol"}, _names(P.match_policies(user_object=user1, serial=serial)))
         # The the counter of the token is >=100, the policy will not match anymore
         db_token.count = 102
         db_token.save()
@@ -1492,8 +1520,18 @@ class PolicyTestCase(MyTestCase):
                          set())
 
         # A request without any serial number will raise a Policy error, since condition
-        # on tokeninfo is there, but no dbtoken object is available.
+        # on the token is there, but no dbtoken object is available.
         self.assertRaises(PolicyError, P.match_policies, user_object=user1)
+
+        # policy matches, because the condition shall be true if no token is available
+        set_policy("setpin_pol", conditions=[("token", "count", "<", "100", True,
+                                              ConditionHandleMissingData.IS_TRUE)])
+        self.assertEqual({"setpin_pol"}, _names(P.match_policies(user_object=user1)))
+
+        # policy not matches, because the condition shall be false if no token is available
+        set_policy("setpin_pol", conditions=[("token", "count", "<", "100", True,
+                                              ConditionHandleMissingData.IS_FALSE)])
+        self.assertEqual(set(), _names(P.match_policies(user_object=user1)))
 
         # Now check, if a wrong comparison raises an exception
         set_policy("setpin_pol", conditions=[("token", "count", "<", "not a number", True)])
@@ -1537,6 +1575,12 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual(sorted(d.get("set").get("*")), ["off", "on"])
         self.assertEqual(sorted(d.get("set").get("hello")), ["one", "three", "two"])
         self.assertEqual(sorted(d.get("set").get("hello2")), ["*"])
+
+        delete_policy("custom_attr")
+        delete_policy("custom_attr2")
+        delete_policy("custom_attr3")
+        delete_policy("custom_attr4")
+        delete_policy("custom_attr5")
 
     def test_40_disable_policy_client_remains(self):
         pname = "client_must_not_vanish"
@@ -1657,6 +1701,229 @@ class PolicyTestCase(MyTestCase):
         action_dict = "'Key1' 'Value1'-'Community News': 'https://community.privacyidea.org/c/news.rss'-'Key2'-'Value2'"
         python_dict = convert_action_dict_to_python_dict(action_dict)
         self.assertEqual({}, python_dict)
+
+    def test_44_do_handle_missing_data(self):
+        policy = PolicyClass()
+        # ---- Test for ConditionHandleMissingData.RAISE_ERROR ----
+        # Token object not available
+        error_message = (r"Policy test has a condition on the section tokeninfo with key hashlib, but a token is "
+                         r"unavailable!")
+        with self.assertRaisesRegex(PolicyError, error_message):
+            policy._do_handle_missing_data(handle_missing_data=ConditionHandleMissingData.RAISE_ERROR,
+                                           policy_name="test", missing="token", section="tokeninfo",
+                                           object_name="token", key="hashlib")
+
+        # Key not available
+        error_message = r"Unknown tokeninfo key referenced in condition of policy test: hashlib"
+        with self.assertRaisesRegex(PolicyError, error_message):
+            policy._do_handle_missing_data(handle_missing_data=ConditionHandleMissingData.RAISE_ERROR,
+                                           policy_name="test", missing="hashlib", section="tokeninfo",
+                                           object_name="token",
+                                           key="hashlib", available_keys=["serial"])
+
+        # missing parameter does not match object_name or key
+        error_message = (r"Policy test has a condition on the section tokeninfo with key type, but some required data "
+                         r"is unavailable!")
+        with self.assertRaisesRegex(PolicyError, error_message):
+            policy._do_handle_missing_data(handle_missing_data=ConditionHandleMissingData.RAISE_ERROR,
+                                           policy_name="test", missing="user", section="tokeninfo", object_name="token",
+                                           key="type")
+
+        # ---- Test for ConditionHandleMissingData.IS_TRUE ----
+        # Token object not available
+        self.assertTrue(policy._do_handle_missing_data(handle_missing_data=ConditionHandleMissingData.IS_TRUE,
+                                                       policy_name="test", missing="token", section="tokeninfo",
+                                                       object_name="token", key="hashlib"))
+
+        # Key not available
+        self.assertTrue(policy._do_handle_missing_data(handle_missing_data=ConditionHandleMissingData.IS_TRUE,
+                                                       policy_name="test", missing="hashlib", section="tokeninfo",
+                                                       object_name="token", key="hashlib", available_keys=["serial"]))
+
+        # missing parameter does not match object_name or key
+        self.assertTrue(policy._do_handle_missing_data(handle_missing_data=ConditionHandleMissingData.IS_TRUE,
+                                                       policy_name="test", missing="user", section="tokeninfo",
+                                                       object_name="token", key="hashlib"))
+
+        # ---- Test for ConditionHandleMissingData.IS_FALSE ----
+        # Token object not available
+        self.assertFalse(
+            policy._do_handle_missing_data(handle_missing_data=ConditionHandleMissingData.IS_FALSE,
+                                           policy_name="test", missing="token", section="tokeninfo",
+                                           object_name="token", key="hashlib"))
+
+        # Key not available
+        self.assertFalse(
+            policy._do_handle_missing_data(handle_missing_data=ConditionHandleMissingData.IS_FALSE,
+                                           policy_name="test", missing="hashlib", section="tokeninfo",
+                                           object_name="token", key="hashlib", available_keys=["serial"]))
+
+        # missing parameter does not match object_name or key
+        self.assertFalse(
+            policy._do_handle_missing_data(handle_missing_data=ConditionHandleMissingData.IS_FALSE,
+                                           policy_name="test", missing="user", section="tokeninfo",
+                                           object_name="token", key="hashlib"))
+
+        # ---- ConditionHandleMissingData is not defined ----
+        error_message = r"Unknown handle missing data do_random_stuff defined in condition of policy test."
+        with self.assertRaisesRegex(PolicyError, error_message):
+            policy._do_handle_missing_data(handle_missing_data="do_random_stuff", policy_name="test", missing="token",
+                                           section="tokeninfo", object_name="token", key="hashlib")
+
+    def test_45_filter_by_condition_missing_data_error(self):
+        """
+        This test checks the behaviour to raise an error if any data is missing to check the condition.
+        """
+        policy_class = PolicyClass()
+        # Define condition
+        set_policy("policy", scope=SCOPE.USER, action=ACTION.SETPIN,
+                   conditions=[
+                       ("tokeninfo", "fixedpin", "equals", "false", True, ConditionHandleMissingData.RAISE_ERROR)])
+
+        # Create token for a user
+        self.setUp_user_realm2()
+        user = User(login="hans", realm=self.realm2)
+        token = init_token({"type": "hotp", "genkey": True}, user=user)
+
+        # Token object not available
+        error_message = (r"Policy policy has a condition on the section tokeninfo with key fixedpin, but a token is "
+                         r"unavailable!")
+        with self.assertRaisesRegex(PolicyError, error_message):
+            policy_class.match_policies(user_object=user)
+
+        # Key not available
+        error_message = r"Unknown tokeninfo key referenced in condition of policy policy: fixedpin"
+        with self.assertRaisesRegex(PolicyError, error_message):
+            policy_class.match_policies(user_object=user, serial=token.get_serial())
+
+        # Compare Error
+        set_policy("policy", scope=SCOPE.USER, action=ACTION.SETPIN,
+                   conditions=[
+                       ("tokeninfo", "fixedpin", "random", "false", True, ConditionHandleMissingData.RAISE_ERROR)])
+        token.set_tokeninfo({"fixedpin": "false"})
+        self.assertRaises(PolicyError, policy_class.match_policies, user_object=user, serial=token.get_serial())
+
+        delete_policy("policy")
+
+    def test_46_filter_by_condition_missing_data_true(self):
+        """
+        This test checks the behaviour to evaluate the condition to true if any data is missing.
+        """
+        policy_class = PolicyClass()
+        # Define condition
+        set_policy("policy", scope=SCOPE.USER, action=ACTION.SETPIN,
+                   conditions=[
+                       ("tokeninfo", "fixedpin", "equals", "false", True,
+                        ConditionHandleMissingData.IS_TRUE)])
+
+        # Create token for a user
+        self.setUp_user_realm2()
+        user = User(login="hans", realm=self.realm2)
+        token = init_token({"type": "hotp", "genkey": True}, user=user)
+
+        # Token object not available
+        policies = policy_class.match_policies(user_object=user)
+        self.assertEqual("policy", policies[0]['name'])
+
+        # Key not available
+        policy_class.match_policies(user_object=user, serial=token.get_serial())
+        self.assertEqual("policy", policies[0]['name'])
+
+        # Compare Error still raises error
+        set_policy("policy", scope=SCOPE.USER, action=ACTION.SETPIN,
+                   conditions=[
+                       ("tokeninfo", "fixedpin", "random", "false", True,
+                        ConditionHandleMissingData.IS_TRUE)])
+        token.set_tokeninfo({"fixedpin": "false"})
+        self.assertRaises(PolicyError, policy_class.match_policies, user_object=user, serial=token.get_serial())
+
+        delete_policy("policy")
+
+    def test_47_filter_by_condition_missing_data_false(self):
+        """
+        This test checks the behaviour to evaluate the condition to false if any data is missing.
+        """
+        policy_class = PolicyClass()
+        # Define condition
+        set_policy("policy", scope=SCOPE.USER, action=ACTION.SETPIN,
+                   conditions=[
+                       ("tokeninfo", "fixedpin", "equals", "false", True,
+                        ConditionHandleMissingData.IS_FALSE)])
+
+        # Create token for a user
+        self.setUp_user_realm2()
+        user = User(login="hans", realm=self.realm2)
+        token = init_token({"type": "hotp", "genkey": True}, user=user)
+
+        # Token object not available
+        policies = policy_class.match_policies(user_object=user)
+        self.assertEqual(0, len(policies))
+
+        # Key not available
+        policy_class.match_policies(user_object=user, serial=token.get_serial())
+        self.assertEqual(0, len(policies))
+
+        # Compare Error still raises error
+        set_policy("policy", scope=SCOPE.USER, action=ACTION.SETPIN,
+                   conditions=[
+                       ("tokeninfo", "fixedpin", "random", "false", True,
+                        ConditionHandleMissingData.IS_FALSE)])
+        token.set_tokeninfo({"fixedpin": "false"})
+        self.assertRaises(PolicyError, policy_class.match_policies, user_object=user, serial=token.get_serial())
+
+        delete_policy("policy")
+
+    def test_48_filter_by_condition_user_info(self):
+        self.setUp_user_realms()
+        cornelius = User(login="cornelius", realm=self.realm1)
+        selfservice = User(login="selfservice", realm=self.realm1)
+        policy_class = PolicyClass()
+
+        set_policy("policy", scope=SCOPE.USER, action=ACTION.SETPIN,
+                   conditions=[("userinfo", "phone", "matches", "\+49.*", True,
+                                ConditionHandleMissingData.RAISE_ERROR)])
+
+        # Policy matches
+        policies = policy_class.match_policies(user_object=cornelius)
+        self.assertEqual(1, len(policies))
+        self.assertSetEqual({"policy"}, {p["name"] for p in policies})
+
+        # Policy does not match
+        policies = policy_class.match_policies(user_object=selfservice)
+        self.assertEqual(0, len(policies))
+
+        # ---- Raise error on missing data ----
+        # missing user object
+        self.assertRaises(PolicyError, policy_class.match_policies, user_object=None)
+
+        # Empty user / missing key
+        self.assertRaises(PolicyError, policy_class.match_policies, user_object=User())
+
+        # ---- Condition is true on missing data ----
+        set_policy("policy", scope=SCOPE.USER, action=ACTION.SETPIN,
+                   conditions=[("userinfo", "phone", "matches", "\+49.*", True,
+                                ConditionHandleMissingData.IS_TRUE)])
+        # missing user object
+        policies = policy_class.match_policies(user_object=None)
+        self.assertEqual(1, len(policies))
+        self.assertSetEqual({"policy"}, {p["name"] for p in policies})
+
+        # empty user / missing key
+        policies = policy_class.match_policies(user_object=User())
+        self.assertEqual(1, len(policies))
+        self.assertSetEqual({"policy"}, {p["name"] for p in policies})
+
+        # ---- Condition is false on missing data ----
+        set_policy("policy", scope=SCOPE.USER, action=ACTION.SETPIN,
+                   conditions=[("userinfo", "phone", "matches", "\+49.*", True,
+                                ConditionHandleMissingData.IS_FALSE)])
+        # missing user object
+        policies = policy_class.match_policies(user_object=None)
+        self.assertEqual(0, len(policies))
+
+        # empty user / missing key
+        policies = policy_class.match_policies(user_object=User())
+        self.assertEqual(0, len(policies))
 
 
 class PolicyMatchTestCase(MyTestCase):

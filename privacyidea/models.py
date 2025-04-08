@@ -1656,12 +1656,18 @@ class Policy(TimestampMethodsMixin, db.Model):
     def set_conditions(self, conditions):
         """
         Replace the list of conditions of this policy with a new list
-        of conditions, i.e. a list of 5-tuples (section, key, comparator, value, active).
+        of conditions, i.e. a list of 5- or 6-tuples (section, key, comparator, value, active, hide_missing_data).
         """
         self.conditions = []
-        for section, key, comparator, value, active in conditions:
+        for condition in conditions:
+            if len(condition) == 5:
+                section, key, comparator, value, active = condition
+                handle_missing_data = None
+            else:
+                section, key, comparator, value, active, handle_missing_data = condition
             condition_object = PolicyCondition(
                 section=section, Key=key, comparator=comparator, Value=value, active=active,
+                handle_missing_data=handle_missing_data
             )
             self.conditions.append(condition_object)
 
@@ -1748,14 +1754,16 @@ class PolicyCondition(MethodsMixin, db.Model):
     comparator = db.Column(db.Unicode(255), nullable=False, default='equals')
     Value = db.Column(db.Unicode(2000), nullable=False, default='')
     active = db.Column(db.Boolean, nullable=False, default=True)
+    handle_missing_data = db.Column(db.Unicode(255), nullable=True)
 
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
 
     def as_tuple(self):
         """
-        :return: the condition as a tuple (section, key, comparator, value, active)
+        :return: the condition as a tuple (section, key, comparator, value, active, handle_missing_data)
         """
-        return self.section, self.Key, self.comparator, self.Value, self.active
+        # TODO: Use dataclass
+        return self.section, self.Key, self.comparator, self.Value, self.active, self.handle_missing_data
 
 
 # ------------------------------------------------------------------
