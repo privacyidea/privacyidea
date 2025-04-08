@@ -21,7 +21,6 @@ from privacyidea.api.lib.postpolicy import DEFAULT_POLICY_TEMPLATE_URL
 from privacyidea.lib.policy import (ACTION, SCOPE, set_policy, delete_policy,
                                     LOGINMODE, ACTIONVALUE)
 
-
 PWFILE = "tests/testdata/passwords"
 
 
@@ -75,7 +74,7 @@ class APIAuthTestCase(MyApiTestCase):
     def test_02_REMOTE_USER(self):
         # Allow remote user
         set_policy(name="remote", scope=SCOPE.WEBUI, action="{0!s}=allowed".format(
-                                                            ACTION.REMOTE_USER))
+            ACTION.REMOTE_USER))
 
         # Admin remote user
         with self.app.test_request_context('/auth', method='POST',
@@ -125,7 +124,7 @@ class APIAuthTestCase(MyApiTestCase):
                                            data={"username":
                                                      "cornelius@adminrealm"},
                                            environ_base={"REMOTE_USER":
-                                                     "cornelius@adminrealm"}):
+                                                             "cornelius@adminrealm"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
@@ -228,7 +227,6 @@ class APIAuthChallengeResponse(MyApiTestCase):
 
 
 class APISelfserviceTestCase(MyApiTestCase):
-
     my_serial = "myToken"
     foreign_serial = "notMyToken"
 
@@ -242,7 +240,6 @@ class APISelfserviceTestCase(MyApiTestCase):
               resolver="resolver1", realm="realm1").save()
         Token(self.foreign_serial, tokentype="hotp").save()
 
-
     def tearDown(self):
         remove_token(self.my_serial)
         remove_token(self.foreign_serial)
@@ -254,7 +251,6 @@ class APISelfserviceTestCase(MyApiTestCase):
                                                  "password": "testpw"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 401, res)
-
 
     def test_01_authenticate_admin(self):
         with self.app.test_request_context('/auth',
@@ -449,10 +445,10 @@ class APISelfserviceTestCase(MyApiTestCase):
         self.authenticate_selfservice_user()
         assign_token(self.foreign_serial, User("cornelius", self.realm1))
         with self.app.test_request_context('/token/disable/{0!s}'.format(
-                                                   self.foreign_serial),
-                                           method='POST',
-                                           headers={'Authorization':
-                                                        self.at_user}):
+                self.foreign_serial),
+                method='POST',
+                headers={'Authorization':
+                             self.at_user}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 404)
             response = res.json
@@ -466,22 +462,21 @@ class APISelfserviceTestCase(MyApiTestCase):
         self.authenticate_selfservice_user()
         assign_token(self.foreign_serial, User("cornelius", self.realm1))
         with self.app.test_request_context('/token/lost/{0!s}'.format(
-                                                   self.foreign_serial),
-                                           method='POST',
-                                           headers={'Authorization':
-                                                        self.at_user}):
+                self.foreign_serial),
+                method='POST',
+                headers={'Authorization':
+                             self.at_user}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
-
 
     def test_05_user_can_disable_token(self):
         self.authenticate_selfservice_user()
         # User can not disable a token, that does not belong to him.
         with self.app.test_request_context('/token/disable/{0!s}'.format(
-                                                   self.foreign_serial),
-                                           method='POST',
-                                           headers={'Authorization':
-                                                        self.at_user}):
+                self.foreign_serial),
+                method='POST',
+                headers={'Authorization':
+                             self.at_user}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 404)
             response = res.json
@@ -524,10 +519,10 @@ class APISelfserviceTestCase(MyApiTestCase):
         tokenobject = get_tokens(serial=self.foreign_serial)[0]
         self.assertFalse(tokenobject.token.active, tokenobject.token.active)
         with self.app.test_request_context('/token/enable/{0!s}'.format(
-                                                   self.foreign_serial),
-                                           method='POST',
-                                           headers={'Authorization':
-                                                        self.at_user}):
+                self.foreign_serial),
+                method='POST',
+                headers={'Authorization':
+                             self.at_user}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 404)
             response = res.json
@@ -553,7 +548,7 @@ class APISelfserviceTestCase(MyApiTestCase):
 
         tokenobject = get_tokens(serial=self.foreign_serial)[0]
         self.assertTrue(tokenobject.token.first_owner.user_id == "1004",
-                         tokenobject.token.first_owner.user_id)
+                        tokenobject.token.first_owner.user_id)
 
         # User can unassign token
         with self.app.test_request_context('/token/unassign',
@@ -569,7 +564,6 @@ class APISelfserviceTestCase(MyApiTestCase):
 
         tokenobject = get_tokens(serial=self.foreign_serial)[0]
         self.assertEqual(tokenobject.token.first_owner, None)
-
 
         # User can not unassign token, which does not belong to him
         with self.app.test_request_context('/token/unassign',
@@ -762,7 +756,7 @@ class APISelfserviceTestCase(MyApiTestCase):
     def test_11_authz_tokentype(self):
         # Check TOKENTYPE policy action for /auth endpoint
         spass_token = init_token({"type": "spass", "pin": "somepin"},
-                                       user=User("selfservice", "realm1"))
+                                 user=User("selfservice", "realm1"))
         set_policy("pol_loginmode",
                    scope=SCOPE.WEBUI,
                    action={
@@ -901,7 +895,7 @@ class APISelfserviceTestCase(MyApiTestCase):
 
         # Add a token with a suitable serial
         good_token = init_token({"type": "spass", "pin": "anotherpin", "serial": "GOOD1234"},
-                                 user=User("selfservice", "realm1"))
+                                user=User("selfservice", "realm1"))
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "selfservice@realm1",
@@ -977,20 +971,20 @@ class APISelfserviceTestCase(MyApiTestCase):
 
         # Can not set things
         with self.app.test_request_context('/token/set',
-                                            method="POST",
-                                            data={"serial": serial,
-                                                  "pin": "test"},
-                                            headers={'Authorization':
-                                                         self.at_user}):
+                                           method="POST",
+                                           data={"serial": serial,
+                                                 "pin": "test"},
+                                           headers={'Authorization':
+                                                        self.at_user}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 401, res)
 
         # Can not set token realm
         with self.app.test_request_context('/token/realm/{0!s}'.format(serial),
-                                            method="POST",
-                                            data={"realms": "realm1"},
-                                            headers={'Authorization':
-                                                         self.at_user}):
+                                           method="POST",
+                                           data={"realms": "realm1"},
+                                           headers={'Authorization':
+                                                        self.at_user}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 401, res)
 
@@ -998,31 +992,31 @@ class APISelfserviceTestCase(MyApiTestCase):
         with self.app.test_request_context('/token/getserial/12345',
                                            method="GET",
                                            headers={'Authorization':
-                                                         self.at_user}):
+                                                        self.at_user}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 401, res)
 
         # Can not copy pin
         with self.app.test_request_context('/token/copypin',
-                                            method="POST",
-                                            headers={'Authorization':
-                                                         self.at_user}):
+                                           method="POST",
+                                           headers={'Authorization':
+                                                        self.at_user}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 401, res)
 
         # Can not copy user
         with self.app.test_request_context('/token/copyuser',
-                                            method="POST",
-                                            headers={'Authorization':
-                                                         self.at_user}):
+                                           method="POST",
+                                           headers={'Authorization':
+                                                        self.at_user}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 401, res)
 
         # Can not load tokens
         with self.app.test_request_context('/token/load/test.xml',
-                                            method="POST",
-                                            headers={'Authorization':
-                                                         self.at_user}):
+                                           method="POST",
+                                           headers={'Authorization':
+                                                        self.at_user}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 401, res)
 
@@ -1180,12 +1174,12 @@ class PolicyConditionsTestCase(MyApiTestCase):
                   'LDAPSEARCHFILTER': '(cn=*)',
                   'MULTIVALUEATTRIBUTES': '["groups"]',
                   'USERINFO': '{ "username": "cn",'
-                                  '"phone" : "telephoneNumber", '
-                                  '"mobile" : "mobile"'
-                                  ', "email" : "mail", '
-                                  '"surname" : "sn", '
-                                  '"groups": "memberOf", '
-                                  '"givenname" : "givenName" }',
+                              '"phone" : "telephoneNumber", '
+                              '"mobile" : "mobile"'
+                              ', "email" : "mail", '
+                              '"surname" : "sn", '
+                              '"groups": "memberOf", '
+                              '"givenname" : "givenName" }',
                   'UIDTYPE': 'DN',
                   "resolver": "ldapgroups",
                   "type": "ldapresolver"}
@@ -1479,7 +1473,8 @@ class PolicyConditionsTestCase(MyApiTestCase):
         status_code, result = _try_enroll(bob_token, 'totp')
         self.assertEqual(status_code, 403)
         self.assertFalse(result['status'])
-        self.assertIn("has conditions on tokens, but a token object is not available", result['error']['message'])
+        self.assertIn("has a condition on the section token with key count, but a token is unavailable",
+                      result['error']['message'])
         # ... and certainly not SPASS
         status_code, result = _try_enroll(bob_token, 'spass')
         self.assertEqual(status_code, 403)

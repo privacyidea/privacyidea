@@ -157,8 +157,9 @@ class APIPolicyTestCase(MyApiTestCase):
                                                  "realm": "realm1",
                                                  "conditions": [
                                                      ["userinfo", "groups", "contains", "group1", True],
-                                                     ["userinfo", "type", "equals", "secure", False],
-                                                     ["HTTP header", "Origin", "equals", "https://localhost", True]
+                                                     ["userinfo", "type", "equals", "secure", False, None],
+                                                     ["HTTP header", "Origin", "equals", "https://localhost", True,
+                                                      ConditionHandleMissingData.IS_TRUE]
                                                  ]},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -177,9 +178,10 @@ class APIPolicyTestCase(MyApiTestCase):
             self.assertEqual(cond1["realm"], ["realm1"])
             self.assertEqual(len(cond1["conditions"]), 3)
             # order of conditions is not guaranteed
-            self.assertIn(["userinfo", "groups", "contains", "group1", True], cond1["conditions"])
-            self.assertIn(["userinfo", "type", "equals", "secure", False], cond1["conditions"])
-            self.assertIn(["HTTP header", "Origin", "equals", "https://localhost", True], cond1["conditions"])
+            self.assertIn(["userinfo", "groups", "contains", "group1", True, None], cond1["conditions"])
+            self.assertIn(["userinfo", "type", "equals", "secure", False, None], cond1["conditions"])
+            self.assertIn(["HTTP header", "Origin", "equals", "https://localhost", True,
+                           ConditionHandleMissingData.IS_TRUE], cond1["conditions"])
 
         # update the policy, but not its conditions
         with self.app.test_request_context('/policy/cond1',
@@ -205,9 +207,10 @@ class APIPolicyTestCase(MyApiTestCase):
             self.assertEqual(cond1["realm"], ["realm2"])
             self.assertEqual(len(cond1["conditions"]), 3)
             # order of conditions is not guaranteed
-            self.assertIn(["userinfo", "groups", "contains", "group1", True], cond1["conditions"])
-            self.assertIn(["userinfo", "type", "equals", "secure", False], cond1["conditions"])
-            self.assertIn(["HTTP header", "Origin", "equals", "https://localhost", True], cond1["conditions"])
+            self.assertIn(["userinfo", "groups", "contains", "group1", True, None], cond1["conditions"])
+            self.assertIn(["userinfo", "type", "equals", "secure", False, None], cond1["conditions"])
+            self.assertIn(["HTTP header", "Origin", "equals", "https://localhost", True,
+                           ConditionHandleMissingData.IS_TRUE], cond1["conditions"])
 
         # update the policy conditions
         with self.app.test_request_context('/policy/cond1',
@@ -234,10 +237,10 @@ class APIPolicyTestCase(MyApiTestCase):
             self.assertEqual(cond1["realm"], ["realm2"])
             self.assertEqual(len(cond1["conditions"]), 1)
             # order of conditions is not guaranteed
-            self.assertIn(["userinfo", "type", "equals", "secure", True], cond1["conditions"])
+            self.assertIn(["userinfo", "type", "equals", "secure", True, None], cond1["conditions"])
 
         # test some invalid conditions
-        # no 5-tuples
+        # no 5-/6-tuples
         with self.app.test_request_context('/policy/cond1',
                                            method='POST',
                                            json={"action": ACTION.NODETAILFAIL,
@@ -254,8 +257,8 @@ class APIPolicyTestCase(MyApiTestCase):
                                            json={"action": ACTION.NODETAILFAIL,
                                                  "client": "10.1.2.3",
                                                  "scope": SCOPE.AUTHZ,
-                                                 "conditions": [["userinfo", "type", "equals",
-                                                                 "secure", True, "extra"]],
+                                                 "conditions": [["userinfo", "type", "equals", "secure", True,
+                                                                 ConditionHandleMissingData.RAISE_ERROR, "extra"]],
                                                  "realm": "realm2"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
