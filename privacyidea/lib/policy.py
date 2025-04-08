@@ -523,9 +523,10 @@ class CONDITION_SECTION(object):
 
 class CONDITION_CHECK(object):
     __doc__ = """The available check methods for extended conditions"""
+    # TODO: Use the same datatype for all checks
     DO_NOT_CHECK_AT_ALL = 1
     ONLY_CHECK_USERINFO = [CONDITION_SECTION.USERINFO]
-    CHECK_AND_RAISE_EXCEPTION_ON_MISSING = None
+    CHECK_AND_HANDLE_MISSING_DATA = None
 
 
 class ConditionHandleMissingData:
@@ -894,7 +895,7 @@ class PolicyClass(object):
         for policy in policies:
             include_policy = True
             for section, key, comparator, value, active, handle_missing_data in policy['conditions']:
-                if (extended_condition_check is CONDITION_CHECK.CHECK_AND_RAISE_EXCEPTION_ON_MISSING
+                if (extended_condition_check is CONDITION_CHECK.CHECK_AND_HANDLE_MISSING_DATA
                         or section in extended_condition_check):
                     # We check conditions, either if we are supposed to check everything or if
                     # the section is contained in the extended condition check
