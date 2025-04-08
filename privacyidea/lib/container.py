@@ -1071,9 +1071,9 @@ def get_container_realms(serial: str) -> list[str]:
     return [realm.name for realm in container.realms]
 
 
-def create_container_dict(container_list: list[TokenContainerClass], no_token: bool = False, user: User = None,
-                          logged_in_user_role: str = 'user', allowed_token_realms: Union[list[str], None] = [],
-                          hide_token_info: list[str] = None, hide_container_info: list = None) -> list[dict]:
+def create_container_dict(container_list: list, no_token: bool = False, user: User = None,
+                          logged_in_user_role: str = 'user', allowed_token_realms: Union[list, None] = [],
+                          hide_token_info: list = None) -> list:
     """
     Create a dictionary for each container in the list.
     It contains the container properties, owners, realms, tokens and info.
