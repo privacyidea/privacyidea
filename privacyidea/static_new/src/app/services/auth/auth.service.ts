@@ -10,11 +10,11 @@ import { VersionService } from '../version/version.service';
   providedIn: 'root',
 })
 export class AuthService {
+  private authUrl = environment.proxyUrl + '/auth';
   isAuthenticated = signal(false);
   user = signal('');
   realm = signal('');
   role = signal('');
-  private authUrl = environment.proxyUrl + '/auth';
 
   constructor(
     private http: HttpClient,

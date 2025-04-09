@@ -1,4 +1,4 @@
-import { Component, Inject, Input, WritableSignal } from '@angular/core';
+import { Component, Inject, WritableSignal } from '@angular/core';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import {
   MAT_DIALOG_DATA,
@@ -37,7 +37,6 @@ import { TokenService } from '../../../../services/token/token.service';
   styleUrl: './token-enrollment-second-step-dialog.component.scss',
 })
 export class TokenEnrollmentSecondStepDialogComponent {
-  @Input() regenerateToken!: WritableSignal<boolean>;
   protected readonly Object = Object;
 
   constructor(
@@ -46,11 +45,7 @@ export class TokenEnrollmentSecondStepDialogComponent {
     @Inject(MAT_DIALOG_DATA)
     public data: {
       response: any;
-      tokenSerial: WritableSignal<string>;
-      containerSerial: WritableSignal<string>;
-      selectedContent: WritableSignal<string>;
-      regenerateToken: WritableSignal<boolean>;
-      isProgrammaticChange: WritableSignal<boolean>;
+      enrollToken: () => void;
       username: string;
       userRealm: string;
       onlyAddToRealm: WritableSignal<boolean>;
@@ -63,20 +58,17 @@ export class TokenEnrollmentSecondStepDialogComponent {
 
   tokenSelected(tokenSerial: string) {
     this.dialogRef.close();
-    this.data.selectedContent.set('token_details');
-    this.data.tokenSerial.set(tokenSerial);
+    this.tokenService.tokenSelected(tokenSerial);
   }
 
   regenerateQRCode() {
-    this.data.regenerateToken.set(true);
+    this.data.enrollToken();
     this.dialogRef.close();
   }
 
   containerSelected(containerSerial: string) {
     this.dialogRef.close();
-    this.data.selectedContent.set('container_details');
-    this.data.isProgrammaticChange.set(true);
-    this.data.containerSerial.set(containerSerial);
+    this.tokenService.containerSelected(containerSerial);
   }
 
   printOtps(): void {

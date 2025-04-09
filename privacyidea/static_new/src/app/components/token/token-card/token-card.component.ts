@@ -1,4 +1,4 @@
-import { Component, Input, linkedSignal, WritableSignal } from '@angular/core';
+import { Component, linkedSignal } from '@angular/core';
 import { MatCard, MatCardContent } from '@angular/material/card';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatIcon } from '@angular/material/icon';
@@ -6,7 +6,8 @@ import { TokenTabComponent } from './token-tab/token-tab.component';
 import { ContainerTabComponent } from './container-tab/container-tab.component';
 import { NgClass } from '@angular/common';
 import { OverflowService } from '../../../services/overflow/overflow.service';
-import { TokenSelectedContent } from '../token.component';
+import { TokenService } from '../../../services/token/token.service';
+import { ContainerService } from '../../../services/container/container.service';
 
 @Component({
   selector: 'app-token-card',
@@ -24,19 +25,11 @@ import { TokenSelectedContent } from '../token.component';
   styleUrls: ['./token-card.component.scss'],
 })
 export class TokenCardComponent {
-  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
-  @Input() tokenSerial!: WritableSignal<string>;
-  @Input() containerSerial!: WritableSignal<string>;
-  @Input() active!: WritableSignal<boolean>;
-  @Input() revoked!: WritableSignal<boolean>;
-  @Input() states!: WritableSignal<string[]>;
-  @Input() refreshTokenDetails!: WritableSignal<boolean>;
-  @Input() refreshContainerDetails!: WritableSignal<boolean>;
-  @Input() refreshTokenOverview!: WritableSignal<boolean>;
-  @Input() refreshContainerOverview!: WritableSignal<boolean>;
-  @Input() isProgrammaticChange!: WritableSignal<boolean>;
-  @Input() tokenSelection!: WritableSignal<any[]>;
-  @Input() containerSelection!: WritableSignal<any[]>;
+  containerSerial = this.tokenService.containerSerial;
+  selectedContent = this.tokenService.selectedContent;
+  tokenSerial = this.tokenService.tokenSerial;
+  states = this.containerService.states;
+  isProgrammaticChange = this.tokenService.isProgrammaticTabChange;
   selectedTabIndex = linkedSignal({
     source: () => this.selectedContent(),
     computation: (selectedContent) => {
@@ -48,7 +41,11 @@ export class TokenCardComponent {
     },
   });
 
-  constructor(protected overflowService: OverflowService) {}
+  constructor(
+    protected overflowService: OverflowService,
+    private tokenService: TokenService,
+    private containerService: ContainerService,
+  ) {}
 
   onTabChange(): void {
     if (this.isProgrammaticChange()) {

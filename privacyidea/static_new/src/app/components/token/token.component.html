@@ -1,37 +1,26 @@
-<ng-template #tokenCard let-hasMargin="hasMargin">
-  <app-token-card [active]="tokenIsActive"
-                  [ngClass]="hasMargin ? 'margin-right-1' : ''"
-                  [containerSelection]="containerSelection"
-                  [containerSerial]="containerSerial"
-                  [isProgrammaticChange]="isProgrammaticChange"
-                  [refreshContainerDetails]="refreshContainerDetails"
-                  [refreshContainerOverview]="refreshContainerOverview"
-                  [refreshTokenDetails]="refreshTokenDetails"
-                  [refreshTokenOverview]="refreshTokenOverview"
-                  [revoked]="revoked"
-                  [selectedContent]="selectedContent"
-                  [states]="states"
-                  [tokenSelection]="tokenSelection"
-                  [tokenSerial]="tokenSerial"/>
+<ng-template #tokenCard
+             let-hasMargin="hasMargin">
+  <app-token-card [ngClass]="hasMargin ? 'margin-right-1' : ''" />
 </ng-template>
 
 <div aria-label="Token Layout"
      class="token-layout">
   @if (!overflowService.isWidthOverflowing(".token-layout",
-    overflowService.getOverflowThreshold(selectedContent()))) {
-    <ng-container [ngTemplateOutlet]="tokenCard" [ngTemplateOutletContext]="{ hasMargin: true }"/>
+    overflowService.getOverflowThreshold(tokenService.selectedContent()))) {
+    <ng-container [ngTemplateOutlet]="tokenCard"
+                  [ngTemplateOutletContext]="{ hasMargin: true }" />
   }
   <mat-drawer-container>
     @if (overflowService.isWidthOverflowing(
       ".token-layout",
-      overflowService.getOverflowThreshold(selectedContent())
+      overflowService.getOverflowThreshold(tokenService.selectedContent())
     )) {
       <mat-drawer #drawer
                   (opened)="updateOverflowState()"
                   [mode]="'over'"
                   [ngClass]="isTokenDrawerOverflowing() ? 'token-drawer-overflow' : 'token-drawer'">
         <div class="drawer">
-        <ng-container [ngTemplateOutlet]="tokenCard"/>
+          <ng-container [ngTemplateOutlet]="tokenCard" />
         </div>
       </mat-drawer>
     }
@@ -39,7 +28,7 @@
       <div class="drawer-content-div">
         @if (overflowService.isWidthOverflowing(
           ".token-layout",
-          overflowService.getOverflowThreshold(selectedContent())
+          overflowService.getOverflowThreshold(tokenService.selectedContent())
         )) {
           <div class="drawer-button-div">
             <button mat-fab
@@ -53,67 +42,36 @@
           <div [ngClass]="[
               overflowService.isWidthOverflowing(
                 '.token-layout',
-                overflowService.getOverflowThreshold(selectedContent()))
+                overflowService.getOverflowThreshold(tokenService.selectedContent()))
                 ? 'main-margin'
                 : 'main-margin-overflow']">
-            @switch (selectedContent()) {
+            @switch (tokenService.selectedContent()) {
               @case ("token_overview") {
-                <app-token-table #tokenTableComponent
-                                 [isProgrammaticChange]="isProgrammaticChange"
-                                 [tokenSerial]="tokenSerial"
-                                 [containerSerial]="containerSerial"
-                                 [selectedContent]="selectedContent"
-                                 [tokenSelection]="tokenSelection"
-                                 [refreshTokenOverview]="refreshTokenOverview"></app-token-table>
+                <app-token-table #tokenTableComponent />
               }
               @case ("token_enrollment") {
-                <app-token-enrollment [tokenSerial]="tokenSerial"
-                                      [containerSerial]="containerSerial"
-                                      [selectedContent]="selectedContent"
-                                      [isProgrammaticChange]="isProgrammaticChange" />
+                <app-token-enrollment />
               }
               @case ("token_details") {
-                <app-token-details #tokenDetailsComponent
-                                   [tokenSerial]="tokenSerial"
-                                   [tokenIsActive]="tokenIsActive"
-                                   [tokenIsRevoked]="revoked"
-                                   [refreshTokenDetails]="refreshTokenDetails"
-                                   [containerSerial]="containerSerial"
-                                   [selectedContent]="selectedContent"
-                                   [isProgrammaticChange]="
-                    isProgrammaticChange
-                  "></app-token-details>
+                <app-token-details #tokenDetailsComponent />
               }
               @case ("token_challenges") {
-                <app-challenges-table [selectedContent]="selectedContent"
-                                      [tokenSerial]="tokenSerial" />
+                <app-challenges-table />
               }
               @case ("token_applications") {
-                <app-token-applications [tokenSerial]="tokenSerial"
-                                        [selectedContent]="selectedContent" />
+                <app-token-applications />
               }
               @case ("token_get_serial") {
-                <app-token-get-serial [tokenSerial]="tokenSerial"
-                                      [selectedContent]="selectedContent" />
+                <app-token-get-serial />
               }
               @case ("container_overview") {
-                <app-container-table #containerTableComponent
-                                     [containerSerial]="containerSerial"
-                                     [selectedContent]="selectedContent"
-                                     [containerSelection]="containerSelection" />
+                <app-container-table #containerTableComponent />
               }
               @case ("container_details") {
-                <app-container-details #containerDetailsComponent
-                                       [containerSerial]="containerSerial"
-                                       [tokenSerial]="tokenSerial"
-                                       [states]="states"
-                                       [refreshContainerDetails]="refreshContainerDetails"
-                                       [selectedContent]="selectedContent"
-                                       [isProgrammaticChange]="isProgrammaticChange" />
+                <app-container-details #containerDetailsComponent />
               }
               @case ("container_create") {
-                <app-container-create [containerSerial]="containerSerial"
-                                      [selectedContent]="selectedContent" />
+                <app-container-create />
               }
             }
           </div>

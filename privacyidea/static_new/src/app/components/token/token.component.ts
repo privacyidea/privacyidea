@@ -13,13 +13,14 @@ import { MatFabButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { OverflowService } from '../../services/overflow/overflow.service';
 import { TokenCardComponent } from './token-card/token-card.component';
-import { NotificationService } from '../../services/notification/notification.service';
 import { TokenGetSerial } from './token-get-serial/token-get-serial.component';
 import { TokenEnrollmentComponent } from './token-enrollment/token-enrollment.component';
 import { TokenApplications } from './token-applications/token-applications';
 import { ChallengesTableComponent } from './challenges-table/challenges-table.component';
 import { LoadingService } from '../../services/loading/loading-service';
 import { ContainerCreateComponent } from './container-create/container-create.component';
+import { TokenService } from '../../services/token/token.service';
+import { ContainerService } from '../../services/container/container.service';
 
 export type TokenType =
   | 'hotp'
@@ -59,12 +60,6 @@ export type TokenSelectedContent =
   | 'token_challenges'
   | 'token_applications'
   | 'token_get_serial';
-
-export interface TokenTypeOption {
-  key: TokenType;
-  info: string;
-  text: string;
-}
 
 @Component({
   selector: 'app-token-grid',
@@ -197,21 +192,8 @@ export class TokenComponent {
       text: 'The Passkey is a token defined by the W3C and the Fido Alliance. You can register this token with any webservice and with as many web services you wish to.',
     },
   ];
-  tokenTypeOptions = signal<TokenTypeOption[]>([]);
-  selectedContent = signal<TokenSelectedContent>('token_overview');
-  tokenSerial = signal('');
-  containerSerial = signal('');
-  tokenIsActive = signal(true);
-  revoked = signal(true);
-  refreshTokenDetails = signal(false);
-  refreshTokenOverview = signal(false);
-  refreshContainerOverview = signal(false);
-  refreshContainerDetails = signal(false);
-  states = signal<string[]>([]);
-  isProgrammaticChange = signal(false);
+  tokenTypeOptions = signal([]);
   isTokenDrawerOverflowing = signal(false);
-  containerSelection = signal([]);
-  tokenSelection = signal([]);
   @ViewChild('tokenDetailsComponent')
   tokenDetailsComponent!: TokenDetailsComponent;
   @ViewChild('containerDetailsComponent')
@@ -224,31 +206,12 @@ export class TokenComponent {
 
   constructor(
     protected overflowService: OverflowService,
-    private notificationService: NotificationService,
     private loadingService: LoadingService,
+    protected tokenService: TokenService,
+    protected containerService: ContainerService,
   ) {
     effect(() => {
-      if (this.refreshTokenDetails()) {
-        this.onRefreshTokenDetails();
-      }
-    });
-    effect(() => {
-      if (this.refreshContainerDetails()) {
-        this.onRefreshContainerDetails();
-      }
-    });
-    effect(() => {
-      if (this.refreshTokenOverview()) {
-        this.onRefreshTokenOverview();
-      }
-    });
-    effect(() => {
-      if (this.refreshContainerOverview()) {
-        this.onRefreshContainerOverview();
-      }
-    });
-    effect(() => {
-      this.selectedContent();
+      this.tokenService.selectedContent();
       this.loadingService.clearAllLoadings();
       this.updateOverflowState();
     });
@@ -272,49 +235,5 @@ export class TokenComponent {
 
   ngOnDestroy() {
     window.removeEventListener('resize', this.updateOverflowState);
-  }
-
-  onRefreshTokenOverview(): void {
-    if (this.tokenTableComponent) {
-      this.tokenTableComponent.fetchTokenData();
-      this.refreshTokenOverview.set(false);
-    }
-  }
-
-  onRefreshContainerOverview(): void {
-    if (this.containerTableComponent) {
-      this.containerTableComponent.fetchContainerData();
-      this.refreshContainerOverview.set(false);
-    }
-  }
-
-  onRefreshTokenDetails(): void {
-    if (this.tokenDetailsComponent) {
-      this.tokenDetailsComponent.showTokenDetail().subscribe({
-        next: () => {
-          this.refreshTokenDetails.set(false);
-        },
-      });
-    } else {
-      console.warn('TokenDetailsComponent is not yet initialized.');
-      this.notificationService.openSnackBar(
-        'TokenDetailsComponent is not yet initialized.',
-      );
-    }
-  }
-
-  onRefreshContainerDetails(): void {
-    if (this.containerDetailsComponent) {
-      this.containerDetailsComponent.showContainerDetail().subscribe({
-        next: () => {
-          this.refreshContainerDetails.set(false);
-        },
-      });
-    } else {
-      console.warn('ContainerDetailsComponent is not yet initialized.');
-      this.notificationService.openSnackBar(
-        'ContainerDetailsComponent is not yet initialized.',
-      );
-    }
   }
 }

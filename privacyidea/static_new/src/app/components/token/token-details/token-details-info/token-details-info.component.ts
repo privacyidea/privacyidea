@@ -1,7 +1,7 @@
 import {
   Component,
   Input,
-  signal,
+  linkedSignal,
   Signal,
   WritableSignal,
 } from '@angular/core';
@@ -48,6 +48,7 @@ import { OverflowService } from '../../../../services/overflow/overflow.service'
   styleUrl: './token-details-info.component.scss',
 })
 export class TokenDetailsInfoComponent {
+  protected readonly Object = Object;
   @Input() tokenSerial!: WritableSignal<string>;
   @Input() infoData!: WritableSignal<
     {
@@ -66,9 +67,12 @@ export class TokenDetailsInfoComponent {
   @Input() isAnyEditingOrRevoked!: Signal<boolean>;
   @Input() isEditingInfo!: WritableSignal<boolean>;
   @Input() isEditingUser!: WritableSignal<boolean>;
-  @Input() refreshDetails!: WritableSignal<boolean>;
-  newInfo = signal({ key: '', value: '' });
-  protected readonly Object = Object;
+  newInfo: WritableSignal<{ key: string; value: string }> = linkedSignal({
+    source: () => this.isEditingInfo,
+    computation: () => {
+      return { key: '', value: '' };
+    },
+  });
 
   constructor(
     private tokenService: TokenService,
@@ -77,12 +81,6 @@ export class TokenDetailsInfoComponent {
 
   toggleInfoEdit(): void {
     this.isEditingInfo.update((b) => !b);
-    this.newInfo.set({ key: '', value: '' });
-  }
-
-  cancelInfoEdit(): void {
-    this.isEditingInfo.update((b) => !b);
-    this.newInfo.set({ key: '', value: '' });
   }
 
   saveInfo(element: any): void {
@@ -97,7 +95,7 @@ export class TokenDetailsInfoComponent {
       .subscribe({
         next: () => {
           this.newInfo.set({ key: '', value: '' });
-          this.refreshDetails.set(true);
+          this.tokenService.tokenDetailResource.reload();
         },
       });
   }
@@ -121,7 +119,7 @@ export class TokenDetailsInfoComponent {
       )
       .subscribe({
         next: () => {
-          this.refreshDetails.set(true);
+          this.tokenService.tokenDetailResource.reload();
         },
       });
   }

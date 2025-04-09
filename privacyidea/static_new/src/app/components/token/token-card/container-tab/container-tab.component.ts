@@ -1,16 +1,16 @@
-import { Component, computed, Input, WritableSignal } from '@angular/core';
+import { Component, computed } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { MatList, MatListItem } from '@angular/material/list';
 import { MatButton } from '@angular/material/button';
 import { NgClass } from '@angular/common';
-import { tabToggleState } from '../../../../../styles/animations/animations';
 import { MatDivider } from '@angular/material/divider';
-import { forkJoin, switchMap } from 'rxjs';
+import { forkJoin } from 'rxjs';
 import { ContainerService } from '../../../../services/container/container.service';
 import { VersionService } from '../../../../services/version/version.service';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
-import { TokenSelectedContent } from '../../token.component';
+import { tabToggleState } from '../../../../../styles/animations/animations';
+import { TokenService } from '../../../../services/token/token.service';
 
 @Component({
   selector: 'app-container-tab',
@@ -21,18 +21,21 @@ import { TokenSelectedContent } from '../../token.component';
   animations: [tabToggleState],
 })
 export class ContainerTabComponent {
-  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
-  @Input() containerSerial!: WritableSignal<string>;
-  @Input() states!: WritableSignal<string[]>;
-  @Input() refreshContainerDetails!: WritableSignal<boolean>;
-  @Input() refreshContainerOverview!: WritableSignal<boolean>;
-  @Input() isProgrammaticChange!: WritableSignal<boolean>;
-  @Input() containerSelection!: WritableSignal<any[]>;
+  containerSelection = this.containerService.containerSelection;
+  selectedContent = this.tokenService.selectedContent;
+  containerSerial = this.tokenService.containerSerial;
   containerIsSelected = computed(() => this.containerSerial() !== '');
+  isProgrammaticChange = this.tokenService.isProgrammaticTabChange;
+  states = computed(() => {
+    const containerDetail =
+      this.containerService.containerDetailResource.value();
+    return containerDetail?.result?.value?.containers[0]?.states ?? [];
+  });
   version!: string;
 
   constructor(
     private containerService: ContainerService,
+    private tokenService: TokenService,
     protected versioningService: VersionService,
     private dialog: MatDialog,
   ) {}
@@ -44,15 +47,8 @@ export class ContainerTabComponent {
   toggleActive(): void {
     this.containerService
       .toggleActive(this.containerSerial(), this.states())
-      .pipe(
-        switchMap(() =>
-          this.containerService.getContainerDetails(this.containerSerial()),
-        ),
-      )
-      .subscribe({
-        next: () => {
-          this.refreshContainerDetails.set(true);
-        },
+      .subscribe(() => {
+        this.containerService.containerDetailResource.reload();
       });
   }
 
@@ -109,7 +105,7 @@ export class ContainerTabComponent {
             ).subscribe({
               next: () => {
                 this.containerSelection.set([]);
-                this.refreshContainerOverview.set(true);
+                this.containerService.containerResource.reload();
               },
               error: (err) => {
                 console.error('Error deleting containers:', err);
@@ -138,7 +134,7 @@ export class ContainerTabComponent {
   enrollTokenInContainer() {
     this.selectedContent.set('token_enrollment');
     this.isProgrammaticChange.set(true);
-    this.containerSerial.set(this.containerSerial());
+    this.containerService.selectedContainer.set(this.containerSerial());
   }
 
   onClickCreateContainer() {

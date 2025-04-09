@@ -10,10 +10,7 @@
              matInput
              placeholder="Example query: 'transaction_id: 00000000000000000001'" />
     </mat-form-field>
-    <mat-paginator (page)="tableUtilsService.handlePageEvent(
-        $event,
-        pageIndex,
-        pageSize, fetchChallengesData)"
+    <mat-paginator (page)="onPageEvent($event)"
                    [length]="length()"
                    [pageIndex]="pageIndex()"
                    [pageSizeOptions]="pageSizeOptions"
@@ -22,12 +19,10 @@
   </div>
   <app-keyword-filter [advancedApiFilter]="advancedApiFilter"
                       [apiFilter]="apiFilter"
-                      [clickedKeyword]="clickedKeyword"
-                      [filterInput]="filterInput"
+                      [filterHTMLInputElement]="filterInput"
                       [filterValue]="filterValue"></app-keyword-filter>
-  <table (matSortChange)="tableUtilsService.handleSortEvent($event, pageIndex, sortby_sortdir,
-      fetchChallengesData)"
-         [dataSource]="dataSource()"
+  <table (matSortChange)="onSortEvent($event)"
+         [dataSource]="challengesDataSource()"
          [matSortDisableClear]="false"
          aria-label="Token Challenges Table"
          class="challenges-table"
@@ -54,7 +49,7 @@
                   }
                 </div>
               }
-              @case ("received") {
+              @case ("otp_received") {
                 <span [ngClass]="[element[column.key] ? 'highlight-true' : 'highlight-false',]">{{
                     element[column.key]
                   }}</span>

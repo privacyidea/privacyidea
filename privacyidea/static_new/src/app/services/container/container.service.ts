@@ -1,6 +1,24 @@
-import { computed, Injectable, signal } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
 import {
+  computed,
+  effect,
+  Injectable,
+  linkedSignal,
+  signal,
+  WritableSignal,
+} from '@angular/core';
+import {
+  HttpClient,
+  HttpErrorResponse,
+  HttpParams,
+  httpResource,
+} from '@angular/common/http';
+import { environment } from '../../../environments/environment';
+import { LocalService } from '../local/local.service';
+import { NotificationService } from '../notification/notification.service';
+import { TableUtilsService } from '../table-utils/table-utils.service';
+import { TokenService } from '../token/token.service';
+import {
+  catchError,
   forkJoin,
   Observable,
   of,
@@ -11,42 +29,206 @@ import {
   throwError,
   timer,
 } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
-import { LocalService } from '../local/local.service';
 import { Sort } from '@angular/material/sort';
-import { TableUtilsService } from '../table-utils/table-utils.service';
-import { TokenService } from '../token/token.service';
-import { NotificationService } from '../notification/notification.service';
-import { environment } from '../../../environments/environment';
-import {
-  ContainerType,
-  ContainerTypeOption,
-} from '../../components/token/container-create/container-create.component';
+import { ContainerType } from '../../components/token/container-create/container-create.component';
+
+const apiFilter = ['container_serial', 'type', 'user'];
+const advancedApiFilter = ['token_serial'];
+
+export interface ContainerResponse {
+  result: {
+    value: {
+      containers: [
+        {
+          states: string[];
+        },
+      ];
+      count: number;
+    };
+  };
+}
 
 @Injectable({
   providedIn: 'root',
 })
 export class ContainerService {
-  private stopPolling$ = new Subject<void>();
-  private containerBaseUrl = environment.proxyUrl + '/container/';
-  apiFilter = ['container_serial', 'type', 'user'];
-  advancedApiFilter = ['token_serial'];
-  containerOptions = signal<string[]>([]);
-  selectedContainer = signal<string>('');
+  readonly apiFilter = apiFilter;
+  readonly advancedApiFilter = advancedApiFilter;
+  stopPolling$ = new Subject<void>();
+  containerBaseUrl = environment.proxyUrl + '/container/';
+  eventPageSize = 10;
+  containerSerial = this.tokenService.containerSerial;
+  states = signal<string[]>([]);
+  selectedContent = this.tokenService.selectedContent;
+  selectedContainer = linkedSignal({
+    source: () => ({
+      selectedContent: this.selectedContent(),
+      selectedType: this.tokenService.selectedTokenType(),
+    }),
+    computation: () => '',
+  });
+
+  sort = signal<Sort>({ active: 'serial', direction: 'asc' });
+
+  filterValue: WritableSignal<string> = linkedSignal({
+    source: this.selectedContent,
+    computation: () => '',
+  });
+  filterParams = computed<Record<string, string>>(() => {
+    const { filterPairs } = this.tableUtilsService.parseFilterString(
+      this.filterValue(),
+      [...this.apiFilter, ...this.advancedApiFilter],
+    );
+    return filterPairs.reduce(
+      (acc, { key, value }) => {
+        if (
+          key === 'user' ||
+          key === 'type' ||
+          key === 'container_serial' ||
+          key === 'token_serial'
+        ) {
+          acc[key] = `${value}`;
+        } else {
+          acc[key] = `*${value}*`;
+        }
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
+  });
+  pageSize = linkedSignal({
+    source: this.filterValue,
+    computation: (): any => {
+      if (![5, 10, 15].includes(this.eventPageSize)) {
+        return 10;
+      }
+      return this.eventPageSize;
+    },
+  });
+  pageIndex = linkedSignal({
+    source: () => ({
+      filterValue: this.filterValue(),
+      pageSize: this.pageSize(),
+      selectedContent: this.selectedContent(),
+    }),
+    computation: () => 0,
+  });
+  loadAllContainers = computed(() => {
+    return (
+      this.selectedContent() === 'token_details' ||
+      this.selectedContent() === 'token_enrollment'
+    );
+  });
+  containerResource = httpResource<ContainerResponse>(() => ({
+    url: this.containerBaseUrl,
+    method: 'GET',
+    headers: this.localService.getHeaders(),
+    params: {
+      ...(!this.loadAllContainers() && {
+        page: this.pageIndex() + 1,
+        pagesize: this.eventPageSize,
+      }),
+      sortby: this.sort().active,
+      sortdir: this.sort().direction,
+      no_token: this.loadAllContainers() ? 1 : 0,
+      ...this.filterParams(),
+    },
+  }));
+  containerOptions = linkedSignal({
+    source: this.containerResource.value,
+    computation: (containerResource) => {
+      if (containerResource) {
+        return containerResource.result.value.containers.map(
+          (container: any) => container.serial,
+        );
+      }
+      return [];
+    },
+  });
   filteredContainerOptions = computed(() => {
     const filter = (this.selectedContainer() || '').toLowerCase();
     return this.containerOptions().filter((option) =>
       option.toLowerCase().includes(filter),
     );
   });
-  containerTypeOptions = signal<ContainerTypeOption[]>([
-    {
-      key: 'generic',
-      description: 'No container type data available',
-      token_types: [],
-    },
-  ]);
-  selectedType = signal(this.containerTypeOptions()[0]);
+
+  containerSelection: WritableSignal<any[]> = linkedSignal({
+    source: () => ({
+      pageIndex: this.pageIndex(),
+      pageSize: this.pageSize(),
+      sort: this.sort(),
+      filterValue: this.filterValue(),
+    }),
+    computation: () => [],
+  });
+
+  containerTypesResource = httpResource<any>(() => ({
+    url: `${this.containerBaseUrl}types`,
+    method: 'GET',
+    headers: this.localService.getHeaders(),
+  }));
+
+  containerTypeOptions = computed(() => {
+    return Object.keys(
+      this.containerTypesResource.value()?.result.value ?? [],
+    ).map((key: string) => {
+      return {
+        key: key as ContainerType,
+        description:
+          this.containerTypesResource.value().result.value[key].description,
+        token_types:
+          this.containerTypesResource.value().result.value[key].token_types,
+      };
+    });
+  });
+
+  selectedContainerType = linkedSignal({
+    source: this.selectedContent,
+    computation: () =>
+      this.containerTypeOptions()[0] ?? [
+        {
+          key: 'generic',
+          description: 'No container type data available',
+          token_types: [],
+        },
+      ],
+  });
+
+  containerDetailResource = httpResource<any>(() => {
+    const serial = this.tokenService.containerSerial();
+
+    if (serial === '') {
+      return undefined;
+    }
+    return {
+      url: this.containerBaseUrl,
+      method: 'GET',
+      headers: this.localService.getHeaders(),
+      params: {
+        container_serial: serial,
+      },
+    };
+  });
+
+  templatesResource = httpResource<any>(() => ({
+    url: `${this.containerBaseUrl}templates`,
+    method: 'GET',
+    headers: this.localService.getHeaders(),
+  }));
+
+  templateOptions = computed(() => {
+    const data = this.templatesResource.value();
+    if (data && data.result && Array.isArray(data.result.value)) {
+      return data.result.value.map((template: any) => {
+        return {
+          id: template.id,
+          name: template.name,
+        };
+      });
+    }
+    return [];
+  });
+
   constructor(
     private http: HttpClient,
     private localService: LocalService,
@@ -54,80 +236,39 @@ export class ContainerService {
     private tokenService: TokenService,
     private notificationService: NotificationService,
   ) {
-    this.getContainerTypes().subscribe((containerTypes: any) => {
-      const options = Object.keys(containerTypes.result.value).map(
-        (key: string) => ({
-          key: key as ContainerType,
-          description: containerTypes.result.value[key].description,
-          token_types: containerTypes.result.value[key].token_types,
-        }),
-      );
-      this.containerTypeOptions.set(options);
-      this.selectedType.set(this.containerTypeOptions()[0]);
+    effect(() => {
+      if (this.containerDetailResource.error()) {
+        const containerDetailError =
+          this.containerDetailResource.error() as HttpErrorResponse;
+        console.error(
+          'Failed to get container details.',
+          containerDetailError.message,
+        );
+        const message =
+          containerDetailError.error?.result?.error?.message ||
+          containerDetailError.message;
+        this.notificationService.openSnackBar(
+          'Failed to get container details.' + message,
+        );
+      }
+    });
+    effect(() => {
+      if (this.containerResource.error()) {
+        const error = this.containerResource.error() as HttpErrorResponse;
+        this.notificationService.openSnackBar(error.message);
+      }
     });
   }
 
-  getContainerData(
-    options: {
-      page?: number;
-      pageSize?: number;
-      sort?: Sort;
-      filterValue?: string;
-      noToken?: boolean;
-    } = {},
-  ): Observable<any> {
-    const { page, pageSize, sort, filterValue, noToken } = options;
-    const headers = this.localService.getHeaders();
-    let params = new HttpParams();
+  tokenSelected(serial: string) {
+    this.tokenService.isProgrammaticTabChange.set(true);
+    this.tokenService.tokenSerial.set(serial);
+    this.tokenService.selectedContent.set('token_details');
+  }
 
-    if (page && pageSize) {
-      params = params
-        .set('page', page.toString())
-        .set('pagesize', pageSize.toString());
-    }
-    if (sort) {
-      params = params.set('sortby', sort.active).set('sortdir', sort.direction);
-    }
-
-    if (filterValue) {
-      let combinedFilter = [...this.apiFilter, ...this.advancedApiFilter];
-      const { filterPairs, remainingFilterText } =
-        this.tableUtilsService.parseFilterString(filterValue, combinedFilter);
-      filterPairs.forEach(({ key, value }) => {
-        if (
-          key === 'user' ||
-          key === 'type' ||
-          key === 'container_serial' ||
-          key === 'token_serial'
-        ) {
-          params = params.set(key, `${value}`);
-        } else {
-          params = params.set(key, `*${value}*`);
-        }
-      });
-
-      /* TODO global filtering is missing in api
-      if (remainingFilterText) {
-        params = params.set('globalfilter', `*${remainingFilterText}*`);
-      }
-      */
-    }
-
-    if (noToken) {
-      params = params.set('no_token', 1);
-    }
-
-    return this.http.get<any>(this.containerBaseUrl, { headers, params }).pipe(
-      map((response) => response),
-      catchError((error) => {
-        console.error('Failed to get container data.', error);
-        const message = error.error?.result?.error?.message || '';
-        this.notificationService.openSnackBar(
-          'Failed to get container data. ' + message,
-        );
-        return throwError(() => error);
-      }),
-    );
+  containerSelected(containerSerial: string) {
+    this.tokenService.containerSerial.set(containerSerial);
+    this.tokenService.selectedContent.set('container_details');
   }
 
   assignContainer(tokenSerial: string, containerSerial: string) {
@@ -135,13 +276,10 @@ export class ContainerService {
     return this.http
       .post(
         `${this.containerBaseUrl}${containerSerial}/add`,
-        {
-          serial: tokenSerial,
-        },
+        { serial: tokenSerial },
         { headers },
       )
       .pipe(
-        map((response) => response),
         catchError((error) => {
           console.error('Failed to assign container.', error);
           const message = error.error?.result?.error?.message || '';
@@ -158,13 +296,10 @@ export class ContainerService {
     return this.http
       .post(
         `${this.containerBaseUrl}${containerSerial}/remove`,
-        {
-          serial: tokenSerial,
-        },
+        { serial: tokenSerial },
         { headers },
       )
       .pipe(
-        map((response) => response),
         catchError((error) => {
           console.error('Failed to unassign container.', error);
           const message = error.error?.result?.error?.message || '';
@@ -176,21 +311,13 @@ export class ContainerService {
       );
   }
 
-  getContainerDetails(containerSerial: string): Observable<any> {
-    const headers = this.localService.getHeaders();
-    let params = new HttpParams().set('container_serial', containerSerial);
-    return this.http.get(this.containerBaseUrl, { headers, params });
-  }
-
   setContainerRealm(containerSerial: string, value: string[]) {
     const headers = this.localService.getHeaders();
-    let valueString = value ? value.join(',') : '';
+    const valueString = value ? value.join(',') : '';
     return this.http
       .post(
         `${this.containerBaseUrl}${containerSerial}/realms`,
-        {
-          realms: valueString,
-        },
+        { realms: valueString },
         { headers },
       )
       .pipe(
@@ -210,9 +337,7 @@ export class ContainerService {
     return this.http
       .post(
         `${this.containerBaseUrl}${containerSerial}/description`,
-        {
-          description: value,
-        },
+        { description: value },
         { headers },
       )
       .pipe(
@@ -266,10 +391,7 @@ export class ContainerService {
     return this.http
       .post(
         `${this.containerBaseUrl}${containerSerial}/unassign`,
-        {
-          user: username,
-          realm: userRealm,
-        },
+        { user: username, realm: userRealm },
         { headers },
       )
       .pipe(
@@ -289,15 +411,11 @@ export class ContainerService {
     username: string;
     userRealm: string;
   }) {
-    const { containerSerial, username, userRealm } = args;
     const headers = this.localService.getHeaders();
     return this.http
       .post(
-        `${this.containerBaseUrl}${containerSerial}/assign`,
-        {
-          user: username,
-          realm: userRealm,
-        },
+        `${this.containerBaseUrl}${args.containerSerial}/assign`,
+        { user: args.username, realm: args.userRealm },
         { headers },
       )
       .pipe(
@@ -316,10 +434,9 @@ export class ContainerService {
     const headers = this.localService.getHeaders();
     const info_url = `${this.containerBaseUrl}${containerSerial}/info`;
     return Object.keys(infos).map((info) => {
-      const infoKey = info;
-      const infoValue = infos[infoKey];
+      const infoValue = infos[info];
       return this.http
-        .post(`${info_url}/${infoKey}`, { value: infoValue }, { headers })
+        .post(`${info_url}/${info}`, { value: infoValue }, { headers })
         .pipe(
           catchError((error) => {
             console.error('Failed to save container infos.', error);
@@ -356,9 +473,7 @@ export class ContainerService {
     return this.http
       .post(
         `${this.containerBaseUrl}${containerSerial}/add`,
-        {
-          serial: tokenSerial,
-        },
+        { serial: tokenSerial },
         { headers },
       )
       .pipe(
@@ -378,9 +493,7 @@ export class ContainerService {
     return this.http
       .post(
         `${this.containerBaseUrl}${containerSerial}/remove`,
-        {
-          serial: tokenSerial,
-        },
+        { serial: tokenSerial },
         { headers },
       )
       .pipe(
@@ -399,48 +512,38 @@ export class ContainerService {
     containerSerial: string,
     action: 'activate' | 'deactivate',
   ): Observable<any> {
-    return this.getContainerDetails(containerSerial).pipe(
-      map((data) => {
-        if (!data || !Array.isArray(data.result.value.containers[0].tokens)) {
-          console.error('No valid tokens array found in data.', data);
-          this.notificationService.openSnackBar(
-            'No valid tokens array found in data.',
-          );
-          return [];
-        }
-        if (action === 'activate') {
-          return data.result.value.containers[0].tokens.filter(
+    const data = this.containerDetailResource.value();
+
+    if (!data || !Array.isArray(data.result.value.containers[0].tokens)) {
+      this.notificationService.openSnackBar(
+        'No valid tokens array found in data.',
+      );
+      return of(null);
+    }
+
+    const tokensForAction =
+      action === 'activate'
+        ? data.result.value.containers[0].tokens.filter(
             (token: any) => !token.active,
-          );
-        } else {
-          return data.result.value.containers[0].tokens.filter(
+          )
+        : data.result.value.containers[0].tokens.filter(
             (token: any) => token.active,
           );
-        }
-      }),
 
-      switchMap((tokensForAction) => {
-        if (tokensForAction.length === 0) {
-          console.error('No tokens for action. Returning []');
-          this.notificationService.openSnackBar('No tokens for action.');
-          return of([]);
-        }
-        return forkJoin(
-          tokensForAction.map(
-            (token: { serial: string; active: boolean; revoked: boolean }) => {
-              if (!token.revoked) {
-                return this.tokenService.toggleActive(
-                  token.serial,
-                  token.active,
-                );
-              } else {
-                return of(null);
-              }
-            },
-          ),
-        );
-      }),
+    if (tokensForAction.length === 0) {
+      this.notificationService.openSnackBar('No tokens for action.');
+      return of(null);
+    }
 
+    return forkJoin(
+      tokensForAction.map(
+        (token: { serial: string; active: boolean; revoked: boolean }) => {
+          return !token.revoked
+            ? this.tokenService.toggleActive(token.serial, token.active)
+            : of(null);
+        },
+      ),
+    ).pipe(
       catchError((error) => {
         console.error('Failed to toggle all.', error);
         const message = error.error?.result?.error?.message || '';
@@ -453,52 +556,50 @@ export class ContainerService {
   }
 
   removeAll(containerSerial: string): Observable<any> {
-    return this.getContainerDetails(containerSerial).pipe(
-      map((data) => {
-        if (!data || !Array.isArray(data.result.value.containers[0].tokens)) {
-          console.error('No valid tokens array found in data.', data);
-          this.notificationService.openSnackBar(
-            'No valid tokens array found in data.',
-          );
-          return [];
-        }
-        return data.result.value.containers[0].tokens.map(
-          (token: any) => token.serial,
-        );
-      }),
+    const data = this.containerDetailResource.value();
 
-      switchMap((tokensForAction) => {
-        if (tokensForAction.length === 0) {
-          console.error('No tokens to remove. Returning []');
-          this.notificationService.openSnackBar('No tokens to remove.');
-          return of([]);
-        }
-        const headers = this.localService.getHeaders();
-        return this.http.post(
-          `${this.containerBaseUrl}${containerSerial}/removeall`,
-          {
-            serial: tokensForAction.join(','),
-          },
-          { headers },
-        );
-      }),
-      catchError((error) => {
-        console.error('Failed to remove all.', error);
-        const message = error.error?.result?.error?.message || '';
-        this.notificationService.openSnackBar(
-          'Failed to remove all. ' + message,
-        );
-        return throwError(() => error);
-      }),
+    if (!data || !Array.isArray(data.result.value.containers[0].tokens)) {
+      console.error('No valid tokens array found in data.', data);
+      this.notificationService.openSnackBar(
+        'No valid tokens array found in data.',
+      );
+      return of(null);
+    }
+
+    const tokensForAction = data.result.value.containers[0].tokens.map(
+      (token: any) => token.serial,
     );
+
+    if (tokensForAction.length === 0) {
+      console.error('No tokens to remove. Returning []');
+      this.notificationService.openSnackBar('No tokens to remove.');
+      return of(null);
+    }
+
+    const headers = this.localService.getHeaders();
+
+    return this.http
+      .post(
+        `${this.containerBaseUrl}${containerSerial}/removeall`,
+        { serial: tokensForAction.join(',') },
+        { headers },
+      )
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to remove all.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to remove all. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 
   deleteContainer(containerSerial: string) {
     const headers = this.localService.getHeaders();
     return this.http
-      .delete(`${this.containerBaseUrl}${containerSerial}`, {
-        headers,
-      })
+      .delete(`${this.containerBaseUrl}${containerSerial}`, { headers })
       .pipe(
         catchError((error) => {
           console.error('Failed to delete container.', error);
@@ -516,9 +617,7 @@ export class ContainerService {
     return this.http
       .post(
         `${this.containerBaseUrl}${param.containerSerial}/removeall`,
-        {
-          serial: param.serialList,
-        },
+        { serial: param.serialList },
         { headers },
       )
       .pipe(
@@ -531,13 +630,6 @@ export class ContainerService {
           return throwError(() => error);
         }),
       );
-  }
-
-  getTemplates() {
-    const headers = this.localService.getHeaders();
-    return this.http.get<any>(`${this.containerBaseUrl}templates`, {
-      headers,
-    });
   }
 
   createContainer(param: {
@@ -608,13 +700,20 @@ export class ContainerService {
     this.stopPolling$.next();
   }
 
+  getContainerDetails(containerSerial: string): Observable<any> {
+    const headers = this.localService.getHeaders();
+    let params = new HttpParams().set('container_serial', containerSerial);
+    return this.http.get(this.containerBaseUrl, { headers, params });
+  }
+
   pollContainerRolloutState(
     containerSerial: string,
     startTime: number,
   ): Observable<any> {
+    this.containerSerial.set(containerSerial);
     return timer(startTime, 2000).pipe(
       takeUntil(this.stopPolling$),
-      switchMap(() => this.getContainerDetails(containerSerial)),
+      switchMap(() => this.getContainerDetails(this.containerSerial())),
       takeWhile(
         (response: any) =>
           response.result.value.containers[0].info.registration_state ===
@@ -630,27 +729,5 @@ export class ContainerService {
         return throwError(() => error);
       }),
     );
-  }
-
-  resetContainerSelection() {
-    this.selectedContainer.set('');
-  }
-
-  getContainerTypes() {
-    const headers = this.localService.getHeaders();
-    return this.http
-      .get<any>(`${this.containerBaseUrl}types`, {
-        headers,
-      })
-      .pipe(
-        catchError((error) => {
-          console.error('Failed to get container types.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to get container types. ' + message,
-          );
-          return throwError(() => error);
-        }),
-      );
   }
 }

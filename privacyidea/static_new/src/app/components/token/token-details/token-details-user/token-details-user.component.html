@@ -42,7 +42,7 @@
               <mat-form-field>
                 <mat-label>Select Realm of User</mat-label>
                 <mat-select [(ngModel)]="userService.selectedUserRealm">
-                  @for (option of realmOptions(); track option) {
+                  @for (option of realmService.realmOptions(); track option) {
                     <mat-option value="{{ option }}">{{ option }}</mat-option>
                   }
                 </mat-select>

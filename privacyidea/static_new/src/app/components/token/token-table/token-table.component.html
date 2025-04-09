@@ -4,14 +4,14 @@
     <mat-form-field class="token-table-filter"
                     subscriptSizing="dynamic">
       <mat-label>Enter Filter</mat-label>
-      <input #filterInput
-             (keyup)="onFilterChange(filterInput.value)"
+      <input #filterHTMLInputElement
+             [(ngModel)]="filterValue"
              aria-label="Filter Input"
              matInput
              placeholder="Example query: 'type: hotp userid: 1000'" />
     </mat-form-field>
     <mat-paginator (page)="onPageEvent($event)"
-                   [length]="length()"
+                   [length]="totalLength()"
                    [pageIndex]="pageIndex()"
                    [pageSizeOptions]="pageSizeOptions()"
                    [pageSize]="pageSize()"
@@ -19,27 +19,25 @@
   </div>
   <app-keyword-filter [advancedApiFilter]="advancedApiFilter"
                       [apiFilter]="apiFilter"
-                      [clickedKeyword]="clickedKeyword"
-                      [filterInput]="filterInput"
+                      [filterHTMLInputElement]="filterHTMLInputElement"
                       [filterValue]="filterValue"></app-keyword-filter>
   <table (matSortChange)="onSortEvent($event)"
-         [dataSource]="dataSource()"
+         [dataSource]="tokenDataSource()"
          [matSortDisableClear]="false"
          aria-label="Token Data Table"
          class="token-table"
          mat-table
          matSort>
-    @for (column of columnsKeyMap; track column) {
+    @for (column of columnKeysMap; track column) {
       <ng-container [matColumnDef]="column.key">
         @if (column.key === 'select') {
           <th *matHeaderCellDef
               mat-header-cell
               class="table-checkbox">
             <mat-checkbox (change)="$event ? toggleAllRows() : null"
-                          [aria-label]="checkboxLabel()"
                           [checked]="isAllSelected()"
                           [indeterminate]="tokenSelection().length > 0 && !isAllSelected()"
-                          [disabled]="length() === 0"></mat-checkbox>
+                          [disabled]="totalLength() === 0"></mat-checkbox>
           </th>
         } @else {
           <th *matHeaderCellDef
@@ -61,14 +59,25 @@
               @case ('select') {
                 <mat-checkbox (change)="$event ? toggleRow(row) : null"
                               (click)="$event.stopPropagation()"
-                              [aria-label]="checkboxLabel(row)"
                               [checked]="tokenSelection().includes(row)"
-                              [disabled]="length() === 0"></mat-checkbox>
+                              [disabled]="totalLength() === 0"></mat-checkbox>
               }
               @case ("serial") {
                 <a attr.aria-label="{{ column.label }} Link"
-                   (click)="tokenSelected(element.serial)"> {{ element[column.key] }} </a>
+                   (click)="tokenService.tokenSelected(element.serial)"> {{ element[column.key] }} </a>
                 <app-copy-button [copyText]="element.serial"></app-copy-button>
+              }
+              @case ("active") {
+                <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
+                      (click)="this.toggleActive(element)">
+                    {{ tableUtilsService.getDisplayText(column.key, element) }}
+                  </span>
+              }
+              @case ("failcount") {
+                <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
+                      (click)="this.resetFailCount(element)">
+                    {{ tableUtilsService.getDisplayText(column.key, element) }}
+                  </span>
               }
               @case ("realms") {
                 <div [ngClass]="(element[column.key]?.length || 0) > 1 ? 'realm-list' : 'realm'">
@@ -80,7 +89,7 @@
               }
               @case ("container_serial") {
                 <a attr.aria-label="{{ column.label }} Link"
-                   (click)="containerSelected(element.container_serial)"> {{ element[column.key] }} </a>
+                   (click)="tokenService.containerSelected(element.container_serial)"> {{ element[column.key] }} </a>
                 @if (element.container_serial !== "") {
                   <app-copy-button [copyText]="element.container_serial"></app-copy-button>
                 }
@@ -90,9 +99,8 @@
                   <a attr.aria-label="{{ column.label }} Link"
                      href="#"> {{ element[column.key] }} </a>
                 } @else {
-                  <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
-                        (click)="handleColumnClick(column.key, element)">
-                    {{ tableUtilsService.getDisplayText(column.key, element) }}
+                  <span>
+                    {{ element[column.key] }}
                   </span>
                 }
               }
@@ -101,15 +109,15 @@
         </td>
       </ng-container>
     }
-    <tr *matHeaderRowDef="displayedColumns"
+    <tr *matHeaderRowDef="columnKeys"
         aria-label="Header Row"
         mat-header-row></tr>
-    <tr *matRowDef="let row; columns: displayedColumns"
+    <tr *matRowDef="let row; columns: columnKeys"
         aria-label="Data Row"
         mat-row></tr>
     <tr *matNoDataRow
         aria-label="No Data Row">
-      <td [attr.colspan]="displayedColumns.length"
+      <td [attr.colspan]="columnKeys.length"
           aria-label="No Data Cell">
         No data matching the filter.
       </td>

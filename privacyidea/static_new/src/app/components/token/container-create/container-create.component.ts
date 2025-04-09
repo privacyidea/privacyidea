@@ -1,10 +1,9 @@
 import {
   Component,
   effect,
-  Input,
+  linkedSignal,
   signal,
   untracked,
-  WritableSignal,
 } from '@angular/core';
 import {
   MatAccordion,
@@ -24,11 +23,7 @@ import { MatOption } from '@angular/material/core';
 import { MatSelect } from '@angular/material/select';
 import { FormsModule } from '@angular/forms';
 import { VersionService } from '../../../services/version/version.service';
-import {
-  TokenComponent,
-  TokenSelectedContent,
-  TokenType,
-} from '../token.component';
+import { TokenComponent } from '../token.component';
 import { MatInput } from '@angular/material/input';
 import {
   MatAutocomplete,
@@ -44,12 +39,6 @@ import { ContainerRegistrationDialogComponent } from './container-registration-d
 import { TokenService } from '../../../services/token/token.service';
 
 export type ContainerType = 'generic' | 'smartphone' | 'yubikey';
-
-export interface ContainerTypeOption {
-  key: ContainerType;
-  description: string;
-  token_types: TokenType[];
-}
 
 @Component({
   selector: 'app-container-create',
@@ -77,20 +66,21 @@ export interface ContainerTypeOption {
   styleUrl: './container-create.component.scss',
 })
 export class ContainerCreateComponent {
-  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
-  @Input() containerSerial!: WritableSignal<string>;
+  protected readonly TokenComponent = TokenComponent;
+  selectedContent = this.tokenService.selectedContent;
+  containerSerial = this.tokenService.containerSerial;
   description = signal('');
   selectedTemplate = signal('');
-  templateOptions = signal<
-    { container_type: string; default: boolean; name: string }[]
-  >([]);
+  templateOptions = linkedSignal({
+    source: () => this.containerService.templatesResource.value(),
+    computation: (templates: any) => templates?.result?.value?.templates ?? [],
+  });
   onlyAddToRealm = signal(false);
   generateQRCode = signal(false);
   passphrasePrompt = signal('');
   passphraseResponse = signal('');
   registerResponse = signal<any>(null);
   pollResponse = signal<any>(null);
-  protected readonly TokenComponent = TokenComponent;
 
   constructor(
     protected registrationDialog: MatDialog,
@@ -102,38 +92,17 @@ export class ContainerCreateComponent {
     protected tokenService: TokenService,
   ) {
     effect(() => {
-      if (this.containerService.selectedType().key === 'smartphone') {
+      if (this.containerService.selectedContainerType().key === 'smartphone') {
         this.generateQRCode.set(true);
       } else {
         this.generateQRCode.set(false);
       }
     });
     effect(() => {
-      this.containerService.selectedType();
+      this.containerService.selectedContainerType();
       untracked(() => {
         this.resetCreateOptions();
       });
-    });
-  }
-
-  ngAfterViewInit() {
-    this.getRealmOptions();
-    this.getTemplateOptions();
-  }
-
-  getTemplateOptions() {
-    this.containerService.getTemplates().subscribe({
-      next: (templates: any) => {
-        this.templateOptions.set(templates.result.value.templates);
-      },
-    });
-  }
-
-  getRealmOptions() {
-    this.realmService.getRealms().subscribe({
-      next: (realms: any) => {
-        this.realmService.realmOptions.set(Object.keys(realms.result.value));
-      },
     });
   }
 
@@ -147,7 +116,7 @@ export class ContainerCreateComponent {
     this.registerResponse.set(null);
     this.containerService
       .createContainer({
-        container_type: this.containerService.selectedType().key,
+        container_type: this.containerService.selectedContainerType().key,
         description: this.description(),
         user_realm: this.userService.selectedUserRealm(),
         template: this.selectedTemplate(),
@@ -182,14 +151,6 @@ export class ContainerCreateComponent {
   }
 
   private resetCreateOptions = () => {
-    this.userService.resetUserSelection();
-    this.realmService.resetRealmSelection();
-    this.realmService.getDefaultRealm().subscribe({
-      next: (realm: any) => {
-        this.userService.selectedUserRealm.set(realm);
-      },
-    });
-    this.getRealmOptions();
     this.registerResponse.set(null);
     this.pollResponse.set(null);
     this.passphrasePrompt.set('');
@@ -224,7 +185,7 @@ export class ContainerCreateComponent {
             this.registrationDialog.closeAll();
             this.selectedContent.set('container_details');
             this.notificationService.openSnackBar(
-              `Container ${containerSerial} enrolled successfully.`,
+              `Container ${this.containerSerial()} enrolled successfully.`,
             );
           }
         },

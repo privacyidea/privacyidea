@@ -1,10 +1,4 @@
-import {
-  Component,
-  effect,
-  Input,
-  signal,
-  WritableSignal,
-} from '@angular/core';
+import { Component, effect, signal } from '@angular/core';
 import {
   MatError,
   MatFormField,
@@ -20,7 +14,6 @@ import { NotificationService } from '../../../services/notification/notification
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
-import { TokenSelectedContent } from '../token.component';
 import { MatButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { LoadingService } from '../../../services/loading/loading-service';
@@ -48,8 +41,8 @@ import { ConfirmationDialogComponent } from '../../shared/confirmation-dialog/co
   styleUrl: './token-get-serial.component.scss',
 })
 export class TokenGetSerial {
-  @Input() tokenSerial!: WritableSignal<string>;
-  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
+  selectedContent = this.tokenService.selectedContent;
+  tokenSerial = this.tokenService.tokenSerial;
   otpValue = signal<string>('');
   tokenType = signal<string>('');
   assignmentState = signal<string>('');

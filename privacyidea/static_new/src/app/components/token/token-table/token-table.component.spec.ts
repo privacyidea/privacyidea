@@ -105,9 +105,9 @@ describe('TokenTableComponent', () => {
 
     component.tokenSerial = signal('Mock serial');
     component.containerSerial = signal('Mock container');
-    component.isProgrammaticChange = signal(false);
+    component.isProgrammaticTabChange = signal(false);
     component.selectedContent = signal('token_overview');
-    component.length = signal(0);
+    component.totalLength = signal(0);
     component.tokenSelection = new SelectionModel<any>(true, []);
 
     fixture.detectChanges();
@@ -119,25 +119,25 @@ describe('TokenTableComponent', () => {
 
   describe('tokenSelected()', () => {
     it('should set tokenSerial and selectedContent, but NOT set isProgrammaticChange', () => {
-      expect(component.isProgrammaticChange()).toBeFalse();
+      expect(component.isProgrammaticTabChange()).toBeFalse();
 
       component.tokenSelected('Mock serial');
 
       expect(component.tokenSerial()).toBe('Mock serial');
       expect(component.selectedContent()).toBe('token_details');
-      expect(component.isProgrammaticChange()).toBeFalse();
+      expect(component.isProgrammaticTabChange()).toBeFalse();
     });
   });
 
   describe('containerSelected()', () => {
     it('should set containerSerial, selectedContent, AND set isProgrammaticChange to true', () => {
-      expect(component.isProgrammaticChange()).toBeFalse();
+      expect(component.isProgrammaticTabChange()).toBeFalse();
 
       component.containerSelected('Mock serial');
 
       expect(component.containerSerial()).toBe('Mock serial');
       expect(component.selectedContent()).toBe('container_details');
-      expect(component.isProgrammaticChange()).toBeTrue();
+      expect(component.isProgrammaticTabChange()).toBeTrue();
     });
   });
 });

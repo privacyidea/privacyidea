@@ -1,10 +1,17 @@
-import { Component, Input, ViewChild, WritableSignal } from '@angular/core';
+import {
+  Component,
+  effect,
+  Input,
+  ViewChild,
+  WritableSignal,
+} from '@angular/core';
 import {
   MatCell,
   MatHeaderCell,
   MatHeaderRow,
   MatRow,
   MatTable,
+  MatTableDataSource,
   MatTableModule,
 } from '@angular/material/table';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
@@ -20,7 +27,6 @@ import { ContainerService } from '../../../../services/container/container.servi
 import { OverflowService } from '../../../../services/overflow/overflow.service';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
-import { TokenSelectedContent } from '../../token.component';
 import { CopyButtonComponent } from '../../../shared/copy-button/copy-button.component';
 
 const columnsKeyMap = [
@@ -56,6 +62,7 @@ const columnsKeyMap = [
   styleUrl: './container-details-token-table.component.scss',
 })
 export class ContainerDetailsTokenTableComponent {
+  protected readonly columnsKeyMap = columnsKeyMap;
   displayedColumns: string[] = [
     ...columnsKeyMap.map((column) => column.key),
     'remove',
@@ -63,38 +70,38 @@ export class ContainerDetailsTokenTableComponent {
   pageSize = 10;
   pageSizeOptions = [5, 10, 15];
   filterValue = '';
-  @Input() dataSource!: WritableSignal<any>;
-  @Input() containerSerial!: WritableSignal<string>;
-  @Input() tokenSerial!: WritableSignal<string>;
-  @Input() refreshContainerDetails!: WritableSignal<boolean>;
-  @Input() isProgrammaticChange!: WritableSignal<boolean>;
-  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
+  @Input() containerTokenData!: WritableSignal<any>;
+  dataSource = new MatTableDataSource<any>([]);
+  containerSerial = this.tokenService.containerSerial;
+  tokenSerial = this.tokenService.tokenSerial;
+  isProgrammaticTabChange = this.tokenService.isProgrammaticTabChange;
+  selectedContent = this.tokenService.selectedContent;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
-  protected readonly columnsKeyMap = columnsKeyMap;
 
   constructor(
-    private containerService: ContainerService,
+    protected containerService: ContainerService,
     protected tokenService: TokenService,
     protected tableUtilsService: TableUtilsService,
     protected overflowService: OverflowService,
     private dialog: MatDialog,
-  ) {}
+  ) {
+    effect(() => {
+      const containerDetails = this.containerTokenData();
+      if (containerDetails) {
+        this.dataSource.data = containerDetails.data ?? [];
+      }
+    });
+  }
 
   ngAfterViewInit() {
-    this.dataSource().paginator = this.paginator;
-    this.dataSource().sort = this.sort;
+    this.dataSource.paginator = this.paginator;
+    this.dataSource.sort = this.sort;
   }
 
   handleFilterInput(event: Event) {
     this.filterValue = (event.target as HTMLInputElement).value.trim();
-    this.dataSource().filter = this.filterValue.trim().toLowerCase();
-  }
-
-  tokenSelected(tokenSerial: string) {
-    this.isProgrammaticChange.set(true);
-    this.tokenSerial.set(tokenSerial);
-    this.selectedContent.set('token_details');
+    this.containerTokenData().filter = this.filterValue.trim().toLowerCase();
   }
 
   removeTokenFromContainer(containerSerial: string, tokenSerial: string) {
@@ -116,7 +123,7 @@ export class ContainerDetailsTokenTableComponent {
               .removeTokenFromContainer(containerSerial, tokenSerial)
               .subscribe({
                 next: () => {
-                  this.refreshContainerDetails.set(true);
+                  this.containerService.containerDetailResource.reload();
                 },
               });
           }
@@ -133,7 +140,7 @@ export class ContainerDetailsTokenTableComponent {
   toggleActive(element: any): void {
     this.tokenService.toggleActive(element.serial, element.active).subscribe({
       next: () => {
-        this.refreshContainerDetails.set(true);
+        this.containerService.containerDetailResource.reload();
       },
     });
   }
@@ -141,13 +148,13 @@ export class ContainerDetailsTokenTableComponent {
   toggleAll(action: 'activate' | 'deactivate') {
     this.containerService.toggleAll(this.containerSerial(), action).subscribe({
       next: () => {
-        this.refreshContainerDetails.set(true);
+        this.containerService.containerDetailResource.reload();
       },
     });
   }
 
   removeAll() {
-    const serial_list = this.dataSource()
+    const serial_list = this.containerTokenData()
       .data.map((token: any) => token.serial)
       .join(',');
     this.dialog
@@ -166,7 +173,7 @@ export class ContainerDetailsTokenTableComponent {
           if (result) {
             this.containerService.removeAll(this.containerSerial()).subscribe({
               next: () => {
-                this.refreshContainerDetails.set(true);
+                this.containerService.containerDetailResource.reload();
               },
             });
           }
@@ -175,7 +182,7 @@ export class ContainerDetailsTokenTableComponent {
   }
 
   deleteAllTokens() {
-    const serialList = this.dataSource()
+    const serialList = this.containerTokenData()
       .data.map((token: any) => token.serial)
       .join(',');
     this.dialog
@@ -199,7 +206,7 @@ export class ContainerDetailsTokenTableComponent {
               })
               .subscribe({
                 next: () => {
-                  this.refreshContainerDetails.set(true);
+                  this.containerService.containerDetailResource.reload();
                 },
               });
           }

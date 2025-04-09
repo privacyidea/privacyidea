@@ -1,17 +1,19 @@
+<!-- container-table.component.html -->
+
 <div aria-label="Container Table"
      class="container-table-container">
   <div class="filter-paginator-container">
     <mat-form-field class="container-table-filter"
                     subscriptSizing="dynamic">
       <mat-label>Enter Filter</mat-label>
-      <input #filterInput
-             (keyup)="onFilterChange(filterInput.value)"
+      <input #filterHTMLInputElement
+             [(ngModel)]="filterValue"
              aria-label="Filter Input"
              matInput
              placeholder="Example query: 'type: generic user: admin'" />
     </mat-form-field>
     <mat-paginator (page)="onPageEvent($event)"
-                   [length]="length()"
+                   [length]="total()"
                    [pageIndex]="pageIndex()"
                    [pageSizeOptions]="pageSizeOptions()"
                    [pageSize]="pageSize()"
@@ -19,11 +21,10 @@
   </div>
   <app-keyword-filter [advancedApiFilter]="advancedApiFilter"
                       [apiFilter]="apiFilter"
-                      [clickedKeyword]="clickedKeyword"
-                      [filterInput]="filterInput"
+                      [filterHTMLInputElement]="filterHTMLInputElement"
                       [filterValue]="filterValue"></app-keyword-filter>
   <table (matSortChange)="onSortEvent($event)"
-         [dataSource]="dataSource()"
+         [dataSource]="containerDataSource()"
          [matSortDisableClear]="false"
          aria-label="Container Data Table"
          class="container-table"
@@ -36,32 +37,32 @@
               mat-header-cell
               class="table-checkbox">
             <mat-checkbox (change)="$event ? toggleAllRows() : null"
-                          [aria-label]="checkboxLabel()"
                           [checked]="isAllSelected()"
-                          [indeterminate]="containerSelection().length > 0 &&  !isAllSelected()"
-                          [disabled]="length() === 0"></mat-checkbox>
+                          [indeterminate]="containerSelection().length > 0 && !isAllSelected()"
+                          [disabled]="total() === 0"></mat-checkbox>
           </th>
         } @else {
-        <th *matHeaderCellDef
-            attr.aria-label="{{ column.label }} Header"
-            mat-header-cell
-            mat-sort-header>
-          {{ column.label }}
-        </th>
+          <th *matHeaderCellDef
+              attr.aria-label="{{ column.label }} Header"
+              mat-header-cell
+              mat-sort-header>
+            {{ column.label }}
+          </th>
         }
         <td *matCellDef="let element; let row"
             attr.aria-label="{{ column.label }} Cell"
             mat-cell
-            [ngClass]="{ 'width-18rem': column.key === 'description',
-                         'table-checkbox': column.key === 'select'  }">
+            [ngClass]="{
+              'width-18rem': column.key === 'description',
+              'table-checkbox': column.key === 'select'
+            }">
           <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
             @switch (column.key) {
               @case ('select') {
                 <mat-checkbox (change)="$event ? toggleRow(row) : null"
                               (click)="$event.stopPropagation()"
-                              [aria-label]="checkboxLabel(row)"
                               [checked]="containerSelection().includes(row)"
-                              [disabled]="length() === 0"></mat-checkbox>
+                              [disabled]="total() === 0"></mat-checkbox>
               }
               @case ("serial") {
                 <a attr.aria-label="{{ column.label }} Link"
@@ -71,7 +72,7 @@
                 }
               }
               @case ("realms") {
-                <div [ngClass]="element[column.key].length > 1 ? 'realm-list' : 'realm'">
+                <div [ngClass]="(element[column.key]?.length || 0) > 1 ? 'realm-list' : 'realm'">
                   @for (realm of element[column.key]; track realm; let idx = $index) {
                     <a attr.aria-label="{{ column.label }} Link"
                        href="#"> {{ realm }} </a><br style="margin-top: 3px" />
@@ -80,11 +81,8 @@
               }
               @case ("states") {
                 <span (click)="handleStateClick(element)"
-                      [ngClass]="tableUtilsService.getSpanClassForState(element[column.key][0],
-                      true)">
-                  {{
-                    tableUtilsService.getDisplayTextForState(element[column.key][0])
-                  }}
+                      [ngClass]="tableUtilsService.getSpanClassForState(element[column.key][0], true)">
+                  {{ tableUtilsService.getDisplayTextForState(element[column.key][0]) }}
                 </span>
               }
               @default {
@@ -100,15 +98,15 @@
         </td>
       </ng-container>
     }
-    <tr *matHeaderRowDef="displayedColumns"
+    <tr *matHeaderRowDef="columnKeys"
         aria-label="Header Row"
         mat-header-row></tr>
-    <tr *matRowDef="let row; columns: displayedColumns"
+    <tr *matRowDef="let row; columns: columnKeys"
         aria-label="Data Row"
         mat-row></tr>
     <tr *matNoDataRow
         aria-label="No Data Row">
-      <td [attr.colspan]="displayedColumns.length"
+      <td [attr.colspan]="columnKeys.length"
           aria-label="No Data Cell">
         No data matching the filter.
       </td>

@@ -34,7 +34,7 @@ describe('TokenApplicationsOffline', () => {
     component.pageSize = signal(10);
     component.pageIndex = signal(0);
     component.filterValue = signal('');
-    component.sortby_sortdir = signal({
+    component.sort = signal({
       active: 'serial',
       direction: 'asc',
     });

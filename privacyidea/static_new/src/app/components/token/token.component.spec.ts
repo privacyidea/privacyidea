@@ -118,7 +118,7 @@ describe('TokenComponent', () => {
     expect(component.tokenSerial()).toBe('');
     expect(component.containerSerial()).toBe('');
     expect(component.tokenIsActive()).toBeTrue();
-    expect(component.revoked()).toBeTrue();
+    expect(component.tokenIsRevoked()).toBeTrue();
   });
 
   it('should refresh token details successfully', fakeAsync(() => {

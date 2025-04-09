@@ -12,13 +12,12 @@
                     subscriptSizing="dynamic">
       <mat-label>Enter Filter</mat-label>
       <input #filterInput
-             (keyup)="onFilterChange(filterInput.value)"
+             [(ngModel)]="filterValue"
              aria-label="Filter Input"
              matInput
              placeholder="Example query: 'service_id: myService'" />
     </mat-form-field>
-    <mat-paginator (page)="tableUtilsService.handlePageEvent(
-                           $event, pageIndex, pageSize, fetchApplicationOfflineData)"
+    <mat-paginator (page)="machineService.onPageEvent($event)"
                    [length]="length()"
                    [pageIndex]="pageIndex()"
                    [pageSizeOptions]="pageSizeOptions"
@@ -27,11 +26,9 @@
   </div>
   <app-keyword-filter [advancedApiFilter]="advancedApiFilter"
                       [apiFilter]="apiFilter"
-                      [clickedKeyword]="clickedKeyword"
-                      [filterInput]="filterInput"
+                      [filterHTMLInputElement]="filterInput"
                       [filterValue]="filterValue"></app-keyword-filter>
-  <table (matSortChange)="tableUtilsService.handleSortEvent($event, pageIndex, sortby_sortdir,
-  fetchApplicationOfflineData)"
+  <table (matSortChange)="machineService.onSortEvent($event)"
          [dataSource]="dataSource()"
          [matSortDisableClear]="false"
          aria-label="Token Applications Table"
@@ -54,7 +51,7 @@
             @switch (column.key) {
               @case ("serial") {
                 <a attr.aria-label="{{ column.label }} Link"
-                   (click)="tokenSelected(element.serial)"> {{ element[column.key] }} </a>
+                   (click)="tokenService.tokenSelected(element.serial)"> {{ element[column.key] }} </a>
                 <app-copy-button [copyText]="element.serial"></app-copy-button>
               }
               @default {

@@ -46,8 +46,8 @@
                       <mat-label>Select Realms</mat-label>
                       <mat-select [(ngModel)]="selectedRealms"
                                   multiple>
-                        @for (option of realmOptions(); track option) {
-                          @if (option === userRealm) {
+                        @for (option of realmService.realmOptions(); track option) {
+                          @if (option === userRealm()) {
                             <mat-option value="{{ option }}"
                                         disabled>{{ option }}
                             </mat-option>
@@ -152,7 +152,7 @@
                     <mat-form-field class="width-18rem">
                       <mat-label>Select Realm of User</mat-label>
                       <mat-select [(ngModel)]="userService.selectedUserRealm">
-                        @for (option of realmOptions(); track option) {
+                        @for (option of realmService.realmOptions(); track option) {
                           <mat-option value="{{ option }}">{{ option }}</mat-option>
                         }
                       </mat-select>
@@ -197,15 +197,11 @@
               mat-row></tr>
         </table>
         <div class="details-flex-layout">
-          <app-container-details-info [containerSerial]="containerSerial"
-                                      [detailData]="containerDetailData"
+          <app-container-details-info [detailData]="containerDetailData"
                                       [infoData]="infoData"
                                       [isAnyEditingOrRevoked]="isAnyEditing"
                                       [isEditingInfo]="isEditingInfo"
-                                      [isEditingUser]="isEditingUser"
-                                      [refreshDetails]="
-              refreshContainerDetails
-            "></app-container-details-info>
+                                      [isEditingUser]="isEditingUser" />
         </div>
         @if (overflowService.isWidthOverflowing(".token-layout", 1310)) {
           <br />
@@ -229,23 +225,22 @@
               }
             </mat-checkbox>
           </section>
-          <mat-paginator (page)="onPageChanged($event)"
+          <mat-paginator (page)="onPageEvent($event)"
                          [hidePageSize]="true"
-                         [length]="this.length"
-                         [pageIndex]="pageIndex"
-                         [pageSizeOptions]="this.pageSizeOptions"
+                         [length]="total()"
+                         [pageIndex]="pageIndex()"
                          [pageSize]="pageSize"></mat-paginator>
         </div>
         <mat-form-field class="add-token">
           <mat-label>Add Token to Container</mat-label>
-          <input #tokenAutoTrigger="matAutocompleteTrigger"
-                 #tokenFilterInput
-                 (keyup)="handleFilterInput($event)"
+          <input #filterHTMLInputElement
+                 #tokenAutoTrigger="matAutocompleteTrigger"
+                 (keyup)="onFilterEvent(filterHTMLInputElement.value)"
                  [matAutocomplete]="tokenAuto"
                  matInput
                  placeholder="Example query: 'type: hotp serial: 123'" />
           <mat-autocomplete #tokenAuto="matAutocomplete">
-            @for (option of tokenOptions(); track option) {
+            @for (option of tokenDataSource().data; track option) {
               <mat-option class="token-option"
                           (click)="addTokenToContainer(option)">
                 <span class="token-option-span"> {{ option["serial"] }} </span>
@@ -265,12 +260,7 @@
           </mat-autocomplete>
         </mat-form-field>
         <mat-divider class="width-36"></mat-divider>
-        <app-container-details-token-table [containerSerial]="containerSerial"
-                                           [dataSource]="containerTokenData"
-                                           [isProgrammaticChange]="isProgrammaticChange"
-                                           [refreshContainerDetails]="refreshContainerDetails"
-                                           [selectedContent]="selectedContent"
-                                           [tokenSerial]="tokenSerial"></app-container-details-token-table>
+        <app-container-details-token-table [containerTokenData]="containerTokenData" />
       </div>
     </div>
   </div>

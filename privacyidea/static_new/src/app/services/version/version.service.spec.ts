@@ -1,4 +1,4 @@
-import { TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { VersionService } from './version.service';
 
 describe('VersionService', () => {
@@ -47,6 +47,7 @@ describe('VersionService', () => {
         </body>
       </html>
     `;
+
     function mockFetchWithHTML(html: string) {
       return Promise.resolve({
         text: () => Promise.resolve(html),

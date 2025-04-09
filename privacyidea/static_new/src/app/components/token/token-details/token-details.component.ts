@@ -1,9 +1,9 @@
 import {
   Component,
   computed,
-  Input,
+  effect,
+  linkedSignal,
   signal,
-  WritableSignal,
 } from '@angular/core';
 import {
   MatCell,
@@ -22,9 +22,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatInput } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
-import { forkJoin, Observable, single, switchMap } from 'rxjs';
 import { RealmService } from '../../../services/realm/realm.service';
-import { catchError } from 'rxjs/operators';
 import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
 import { TokenDetailsUserComponent } from './token-details-user/token-details-user.component';
 import {
@@ -36,8 +34,6 @@ import { TokenDetailsActionsComponent } from './token-details-actions/token-deta
 import { EditButtonsComponent } from '../../shared/edit-buttons/edit-buttons.component';
 import { OverflowService } from '../../../services/overflow/overflow.service';
 import { MatDivider } from '@angular/material/divider';
-import { NotificationService } from '../../../services/notification/notification.service';
-import { TokenSelectedContent } from '../token.component';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 
 export const tokenDetailsKeyMap = [
@@ -93,161 +89,131 @@ export const infoDetailsKeyMap = [{ key: 'info', label: 'Information' }];
     CopyButtonComponent,
   ],
   templateUrl: './token-details.component.html',
-  styleUrl: './token-details.component.scss',
+  styleUrls: ['./token-details.component.scss'],
 })
 export class TokenDetailsComponent {
-  @Input() tokenSerial!: WritableSignal<string>;
-  @Input() tokenIsActive!: WritableSignal<boolean>;
-  @Input() tokenIsRevoked!: WritableSignal<boolean>;
-  @Input() refreshTokenDetails!: WritableSignal<boolean>;
-  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
-  @Input() containerSerial!: WritableSignal<string>;
-  @Input() isProgrammaticChange!: WritableSignal<boolean>;
+  tokenIsActive = this.tokenService.tokenIsActive;
+  tokenIsRevoked = this.tokenService.tokenIsRevoked;
+  selectedContent = this.tokenService.selectedContent;
+  isProgrammaticTabChange = this.tokenService.isProgrammaticTabChange;
+  containerSerial = this.tokenService.containerSerial;
+  tokenSerial = this.tokenService.tokenSerial;
   isEditingUser = signal(false);
   isEditingInfo = signal(false);
   setPinValue = signal('');
   repeatPinValue = signal('');
-  tokenDetailData = signal<
-    {
-      value: any;
-      keyMap: { label: string; key: string };
-      isEditing: WritableSignal<boolean>;
-    }[]
-  >(
-    tokenDetailsKeyMap.map((detail) => ({
-      keyMap: detail,
-      value: '',
-      isEditing: signal(false),
-    })),
-  );
-  infoData = signal<
-    {
-      value: any;
-      keyMap: { label: string; key: string };
-      isEditing: WritableSignal<boolean>;
-    }[]
-  >(
-    infoDetailsKeyMap.map((detail) => ({
-      keyMap: detail,
-      value: '',
-      isEditing: signal(false),
-    })),
-  );
-  userData = signal<
-    {
-      value: any;
-      keyMap: { label: string; key: string };
-      isEditing: WritableSignal<boolean>;
-    }[]
-  >(
-    userDetailsKeyMap.map((detail) => ({
-      keyMap: detail,
-      value: '',
-      isEditing: signal(false),
-    })),
-  );
-  isAnyEditingOrRevoked = computed(() => {
-    const detailData = this.tokenDetailData();
 
+  tokenDetailResource = this.tokenService.tokenDetailResource;
+  tokenDetails = linkedSignal({
+    source: this.tokenDetailResource.value,
+    computation: (res) => (res ? res.result.value.tokens[0] : null),
+  });
+  tokenDetailData = linkedSignal({
+    source: this.tokenDetails,
+    computation: (details) => {
+      if (!details) {
+        return tokenDetailsKeyMap.map((detail) => ({
+          keyMap: detail,
+          value: '',
+          isEditing: signal(false),
+        }));
+      }
+      return tokenDetailsKeyMap
+        .map((detail) => ({
+          keyMap: detail,
+          value: details[detail.key],
+          isEditing: signal(false),
+        }))
+        .filter((detail) => detail.value !== undefined);
+    },
+  });
+  infoData = linkedSignal({
+    source: this.tokenDetails,
+    computation: (details) => {
+      if (!details) {
+        return infoDetailsKeyMap.map((detail) => ({
+          keyMap: detail,
+          value: '',
+          isEditing: signal(false),
+        }));
+      }
+      return infoDetailsKeyMap
+        .map((detail) => ({
+          keyMap: detail,
+          value: details[detail.key],
+          isEditing: signal(false),
+        }))
+        .filter((detail) => detail.value !== undefined);
+    },
+  });
+  userData = linkedSignal({
+    source: this.tokenDetails,
+    computation: (details) => {
+      if (!details) {
+        return userDetailsKeyMap.map((detail) => ({
+          keyMap: detail,
+          value: '',
+          isEditing: signal(false),
+        }));
+      }
+      return userDetailsKeyMap
+        .map((detail) => ({
+          keyMap: detail,
+          value: details[detail.key],
+          isEditing: signal(false),
+        }))
+        .filter((detail) => detail.value !== undefined);
+    },
+  });
+  tokengroupOptions = signal<string[]>([]);
+  selectedTokengroup = signal<string[]>([]);
+  tokenType = linkedSignal({
+    source: () => this.tokenDetails,
+    computation: () => this.tokenDetails()?.tokentype ?? '',
+  });
+  userRealm = '';
+  maxfail = 0;
+  isAnyEditingOrRevoked = computed(() => {
     return (
-      detailData.some((element) => element.isEditing()) ||
+      this.tokenDetailData().some((element) => element.isEditing()) ||
       this.isEditingUser() ||
       this.isEditingInfo() ||
       this.tokenIsRevoked()
     );
   });
-  tokengroupOptions = signal<string[]>([]);
-  selectedTokengroup = signal<string[]>([]);
-  tokenType = signal<string>('');
-  userRealm: string = '';
-  maxfail: number = 0;
-  protected readonly single = single;
 
   constructor(
-    private tokenService: TokenService,
+    protected tokenService: TokenService,
     protected containerService: ContainerService,
     protected realmService: RealmService,
-    private notificationService: NotificationService,
     protected overflowService: OverflowService,
     protected tableUtilsService: TableUtilsService,
-  ) {}
-
-  ngAfterViewInit() {
-    this.showTokenDetail().subscribe();
+  ) {
+    effect(() => {
+      if (!this.tokenDetails()) return;
+      this.tokenIsActive.set(this.tokenDetails().active);
+      this.tokenIsRevoked.set(this.tokenDetails().revoked);
+      this.maxfail = this.tokenDetails().maxfail;
+      this.containerService.selectedContainer.set(
+        this.tokenDetails().container_serial,
+      );
+      this.realmService.selectedRealms.set(this.tokenDetails().realms);
+      this.userRealm =
+        this.userData().find((detail) => detail.keyMap.key === 'user_realm')
+          ?.value || '';
+    });
   }
 
   isObject(value: any): boolean {
     return typeof value === 'object' && value !== null;
   }
 
-  showTokenDetail(): Observable<void> {
-    return forkJoin([
-      this.tokenService.getTokenDetails(this.tokenSerial()),
-      this.realmService.getRealms(),
-    ]).pipe(
-      switchMap(([tokenDetailsResponse, realms]) => {
-        const tokenDetails = tokenDetailsResponse.result.value.tokens[0];
-        this.tokenIsActive.set(tokenDetails.active);
-        this.tokenIsRevoked.set(tokenDetails.revoked);
-        this.maxfail = tokenDetails.maxfail;
-        this.containerService.selectedContainer.set(
-          tokenDetails.container_serial,
-        );
-        this.tokenDetailData.set(
-          tokenDetailsKeyMap
-            .map((detail) => ({
-              keyMap: detail,
-              value: tokenDetails[detail.key],
-              isEditing: signal(false),
-            }))
-            .filter((detail) => detail.value !== undefined),
-        );
-        this.tokenType.set(tokenDetails.tokentype);
-        this.userData.set(
-          userDetailsKeyMap
-            .map((detail) => ({
-              keyMap: detail,
-              value: tokenDetails[detail.key],
-              isEditing: signal(false),
-            }))
-            .filter((detail) => detail.value !== undefined),
-        );
-
-        this.infoData.set(
-          infoDetailsKeyMap
-            .map((detail) => ({
-              keyMap: detail,
-              value: tokenDetails[detail.key],
-              isEditing: signal(false),
-            }))
-            .filter((detail) => detail.value !== undefined),
-        );
-
-        this.realmService.realmOptions.set(Object.keys(realms.result.value));
-        this.realmService.selectedRealms.set(tokenDetails.realms);
-        this.userRealm = this.userData().find(
-          (detail) => detail.keyMap.key === 'user_realm',
-        )?.value;
-        return new Observable<void>((observer) => {
-          observer.next();
-          observer.complete();
-        });
-      }),
-      catchError((error) => {
-        console.error('Failed to get token details.', error);
-        const message = error.error?.result?.error?.message || '';
-        this.notificationService.openSnackBar(
-          'Failed to get token details. ' + message,
-        );
-        throw error;
-      }),
-    );
-  }
-
   resetFailCount(): void {
-    this.tokenService
-      .resetFailCount(this.tokenSerial())
-      .pipe(switchMap(() => this.showTokenDetail()));
+    this.tokenService.resetFailCount(this.tokenSerial()).subscribe({
+      next: () => {
+        this.tokenDetailResource.reload();
+      },
+    });
   }
 
   cancelTokenEdit(element: any) {
@@ -270,7 +236,7 @@ export class TokenDetailsComponent {
         this.saveRealms();
         break;
       default:
-        this.saveDetail(element.keyMap.key, element.value);
+        this.saveTokenDetail(element.keyMap.key, element.value);
         break;
     }
     element.isEditing.set(!element.isEditing());
@@ -278,24 +244,6 @@ export class TokenDetailsComponent {
 
   toggleTokenEdit(element: any): void {
     switch (element.keyMap.key) {
-      case 'container_serial':
-        if (this.containerService.containerOptions().length === 0) {
-          this.containerService.getContainerData({ noToken: true }).subscribe({
-            next: (containers: any) => {
-              this.containerService.containerOptions.set(
-                Object.values(
-                  containers.result.value.containers as {
-                    serial: string;
-                  }[],
-                ).map((container) => container.serial),
-              );
-              this.containerService.selectedContainer.set(
-                this.containerService.selectedContainer(),
-              );
-            },
-          });
-        }
-        break;
       case 'tokengroup':
         if (this.tokengroupOptions().length === 0) {
           this.tokenService.getTokengroups().subscribe({
@@ -311,17 +259,15 @@ export class TokenDetailsComponent {
         }
         break;
     }
-
     element.isEditing.set(!element.isEditing());
   }
 
-  saveDetail(key: string, value: string): void {
+  saveTokenDetail(key: string, value: string): void {
     this.tokenService
-      .setTokenDetail(this.tokenSerial(), key, value)
-      .pipe(switchMap(() => this.showTokenDetail()))
+      .saveTokenDetail(this.tokenSerial(), key, value)
       .subscribe({
         next: () => {
-          this.showTokenDetail();
+          this.tokenDetailResource.reload();
         },
       });
   }
@@ -332,8 +278,11 @@ export class TokenDetailsComponent {
         this.tokenSerial(),
         this.containerService.selectedContainer(),
       )
-      .pipe(switchMap(() => this.showTokenDetail()))
-      .subscribe();
+      .subscribe({
+        next: () => {
+          this.tokenDetailResource.reload();
+        },
+      });
   }
 
   deleteContainer() {
@@ -342,8 +291,11 @@ export class TokenDetailsComponent {
         this.tokenSerial(),
         this.containerService.selectedContainer(),
       )
-      .pipe(switchMap(() => this.showTokenDetail()))
-      .subscribe();
+      .subscribe({
+        next: () => {
+          this.tokenDetailResource.reload();
+        },
+      });
   }
 
   isEditableElement(key: any) {
@@ -364,7 +316,7 @@ export class TokenDetailsComponent {
   }
 
   containerSelected(containerSerial: string) {
-    this.isProgrammaticChange.set(true);
+    this.isProgrammaticTabChange.set(true);
     this.selectedContent.set('container_details');
     this.containerSerial.set(containerSerial);
   }
@@ -389,7 +341,7 @@ export class TokenDetailsComponent {
         );
         break;
       default:
-        this.showTokenDetail().subscribe();
+        this.tokenDetailResource.reload();
         break;
     }
   }
@@ -397,22 +349,18 @@ export class TokenDetailsComponent {
   private saveRealms() {
     this.tokenService
       .setTokenRealm(this.tokenSerial(), this.realmService.selectedRealms())
-      .pipe(switchMap(() => this.showTokenDetail()))
       .subscribe({
         next: () => {
-          this.showTokenDetail();
+          this.tokenDetailResource.reload();
         },
       });
   }
 
   private saveTokengroup(value: any) {
-    this.tokenService
-      .setTokengroup(this.tokenSerial(), value)
-      .pipe(switchMap(() => this.showTokenDetail()))
-      .subscribe({
-        next: () => {
-          this.showTokenDetail();
-        },
-      });
+    this.tokenService.setTokengroup(this.tokenSerial(), value).subscribe({
+      next: () => {
+        this.tokenDetailResource.reload();
+      },
+    });
   }
 }

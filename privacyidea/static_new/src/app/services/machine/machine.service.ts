@@ -1,19 +1,87 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs/internal/Observable';
+import { HttpClient, HttpParams, httpResource } from '@angular/common/http';
+import { computed, Injectable, linkedSignal, signal } from '@angular/core';
 import { LocalService } from '../local/local.service';
 import { environment } from '../../../environments/environment';
 import { TableUtilsService } from '../table-utils/table-utils.service';
+import { Sort } from '@angular/material/sort';
+import { Observable } from 'rxjs';
+import { PageEvent } from '@angular/material/paginator';
 
 @Injectable({
   providedIn: 'root',
 })
 export class MachineService {
-  baseUrl: string = environment.proxyUrl + '/machine/';
+  baseUrl = environment.proxyUrl + '/machine/';
   sshApiFilter = ['serial', 'service_id'];
   sshAdvancedApiFilter = ['hostname', 'machineid & resolver'];
   offlineApiFilter = ['serial', 'count', 'rounds'];
   offlineAdvancedApiFilter = ['hostname', 'machineid & resolver'];
+  selectedApplicationType = signal<'ssh' | 'offline'>('ssh');
+  pageSize = linkedSignal({
+    source: this.selectedApplicationType,
+    computation: () => 10,
+  });
+  filterValue = linkedSignal({
+    source: this.selectedApplicationType,
+    computation: () => '',
+  });
+  private filterParams = computed(() => {
+    let combined =
+      this.selectedApplicationType() === 'ssh'
+        ? [...this.sshApiFilter, ...this.sshAdvancedApiFilter]
+        : [...this.offlineApiFilter, ...this.offlineAdvancedApiFilter];
+    let { filterPairs } = this.tableUtilsService.parseFilterString(
+      this.filterValue(),
+      combined,
+    );
+    let params: any = {};
+    filterPairs.forEach(({ key, value }) => {
+      if (['serial'].includes(key)) {
+        params[key] = `*${value}*`;
+      }
+      if (['hostname', 'machineid', 'resolver'].includes(key)) {
+        params[key] = value;
+      }
+      if (
+        this.selectedApplicationType() === 'ssh' &&
+        ['service_id'].includes(key)
+      ) {
+        params[key] = `*${value}*`;
+      }
+      if (
+        this.selectedApplicationType() === 'offline' &&
+        ['count', 'rounds'].includes(key)
+      ) {
+        params[key] = value;
+      }
+    });
+    return params;
+  });
+  sort = linkedSignal({
+    source: this.selectedApplicationType,
+    computation: () => ({ active: 'serial', direction: 'asc' }) as Sort,
+  });
+  pageIndex = linkedSignal({
+    source: () => ({
+      application: this.selectedApplicationType(),
+      filter: this.filterValue(),
+      sort: this.sort(),
+    }),
+    computation: () => 0,
+  });
+  tokenApplicationResource = httpResource<any>(() => ({
+    url: this.baseUrl + 'token',
+    method: 'GET',
+    headers: this.localService.getHeaders(),
+    params: {
+      application: this.selectedApplicationType(),
+      page: this.pageIndex() + 1,
+      pagesize: this.pageSize(),
+      sortby: this.sort()?.active || 'serial',
+      sortdir: this.sort()?.direction || 'asc',
+      ...this.filterParams(),
+    },
+  }));
 
   constructor(
     private http: HttpClient,
@@ -72,71 +140,6 @@ export class MachineService {
     );
   }
 
-  getTokenMachineData(
-    pageSize: number,
-    currentFilter: string,
-    application: 'ssh' | 'offline',
-    sortby?: string,
-    sortdir?: string,
-    page?: number,
-  ): Observable<any> {
-    const headers = this.localService.getHeaders();
-    let params = new HttpParams().set('application', application);
-
-    if (page) {
-      params = params.set('page', page.toString());
-    }
-    params = params.set('pagesize', pageSize.toString());
-    if (sortby) {
-      params = params.set('sortby', sortby);
-    }
-    if (sortdir) {
-      params = params.set('sortdir', sortdir);
-    }
-
-    if (currentFilter) {
-      let combinedFilters: string[];
-      if (application === 'ssh') {
-        combinedFilters = [...this.sshApiFilter, ...this.sshAdvancedApiFilter];
-      } else {
-        combinedFilters = [
-          ...this.offlineApiFilter,
-          ...this.offlineAdvancedApiFilter,
-        ];
-      }
-      const { filterPairs, remainingFilterText } =
-        this.tableUtilsService.parseFilterString(
-          currentFilter,
-          combinedFilters,
-        );
-      filterPairs.forEach(({ key, value }) => {
-        if (['serial'].includes(key)) {
-          params = params.set(key, `*${value}*`);
-        }
-        if (['hostname', 'machineid', 'resolver'].includes(key)) {
-          params = params.set(key, `${value}`);
-        }
-        switch (application) {
-          case 'ssh':
-            if (['service_id'].includes(key)) {
-              params = params.set(key, `*${value}*`);
-            }
-            break;
-          case 'offline':
-            if (['count', 'rounds'].includes(key)) {
-              params = params.set(key, `${value}`);
-            }
-            break;
-        }
-      });
-      // if (remainingFilterText) {
-      //   params = params.set('globalfilter', `*${remainingFilterText}*`);
-      // }
-    }
-
-    return this.http.get(`${this.baseUrl}token`, { headers, params });
-  }
-
   getMachine(
     hostname: string,
     ip: string,
@@ -177,5 +180,14 @@ export class MachineService {
       `${this.baseUrl}token/${serial}/${application}/${mtid}`,
       { headers },
     );
+  }
+
+  onPageEvent(event: PageEvent) {
+    this.pageSize.set(event.pageSize);
+    this.pageIndex.set(event.pageIndex);
+  }
+
+  onSortEvent($event: Sort) {
+    this.sort.set($event);
   }
 }

@@ -16,7 +16,6 @@ describe('KeywordFilterComponent', () => {
     component = fixture.componentInstance;
     component.filterValue = signal('');
     component.advancedApiFilter = [];
-    component.clickedKeyword = signal('');
     fixture.detectChanges();
   });
 

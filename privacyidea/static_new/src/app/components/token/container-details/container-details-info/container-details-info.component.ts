@@ -1,7 +1,7 @@
 import {
   Component,
   Input,
-  signal,
+  linkedSignal,
   Signal,
   WritableSignal,
 } from '@angular/core';
@@ -22,6 +22,7 @@ import { forkJoin, Observable, switchMap } from 'rxjs';
 import { OverflowService } from '../../../../services/overflow/overflow.service';
 import { EditButtonsComponent } from '../../../shared/edit-buttons/edit-buttons.component';
 import { ContainerService } from '../../../../services/container/container.service';
+import { TokenService } from '../../../../services/token/token.service';
 
 @Component({
   selector: 'app-container-details-info',
@@ -46,7 +47,8 @@ import { ContainerService } from '../../../../services/container/container.servi
   styleUrl: './container-details-info.component.scss',
 })
 export class ContainerDetailsInfoComponent {
-  @Input() containerSerial!: WritableSignal<string>;
+  protected readonly Object = Object;
+  containerSerial = this.tokenService.containerSerial;
   @Input() infoData!: WritableSignal<
     {
       value: any;
@@ -64,19 +66,18 @@ export class ContainerDetailsInfoComponent {
   @Input() isAnyEditingOrRevoked!: Signal<boolean>;
   @Input() isEditingInfo!: WritableSignal<boolean>;
   @Input() isEditingUser!: WritableSignal<boolean>;
-  @Input() refreshDetails!: WritableSignal<boolean>;
-  newInfo = signal({ key: '', value: '' });
-  protected readonly Object = Object;
+  newInfo: WritableSignal<{ key: string; value: string }> = linkedSignal({
+    source: () => this.isEditingInfo,
+    computation: () => {
+      return { key: '', value: '' };
+    },
+  });
 
   constructor(
     private containerService: ContainerService,
     protected overflowService: OverflowService,
+    private tokenService: TokenService,
   ) {}
-
-  cancelInfoEdit(): void {
-    this.isEditingInfo.update((b) => !b);
-    this.newInfo.set({ key: '', value: '' });
-  }
 
   toggleInfoEdit(): void {
     this.isEditingInfo.update((b) => !b);
@@ -97,7 +98,7 @@ export class ContainerDetailsInfoComponent {
     forkJoin(requests).subscribe({
       next: () => {
         this.newInfo.set({ key: '', value: '' });
-        this.refreshDetails.set(true);
+        this.containerService.containerDetailResource.reload();
       },
     });
   }
@@ -121,7 +122,7 @@ export class ContainerDetailsInfoComponent {
       )
       .subscribe({
         next: () => {
-          this.refreshDetails.set(true);
+          this.containerService.containerDetailResource.reload();
         },
       });
   }

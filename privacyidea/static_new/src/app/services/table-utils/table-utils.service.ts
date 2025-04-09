@@ -1,6 +1,5 @@
-import { Injectable, WritableSignal } from '@angular/core';
-import { PageEvent } from '@angular/material/paginator';
-import { Sort } from '@angular/material/sort';
+import { Injectable } from '@angular/core';
+import { MatTableDataSource } from '@angular/material/table';
 
 interface FilterPair {
   key: string;
@@ -11,6 +10,21 @@ interface FilterPair {
   providedIn: 'root',
 })
 export class TableUtilsService {
+  emptyDataSource = (
+    pageSize: number,
+    columnsKeyMap: { key: string; label: string }[],
+  ) => {
+    return new MatTableDataSource(
+      Array.from({ length: pageSize }, () => {
+        const emptyRow: any = {};
+        columnsKeyMap.forEach((column) => {
+          emptyRow[column.key] = '';
+        });
+        return emptyRow;
+      }),
+    );
+  };
+
   parseFilterString(
     filterValue: string,
     apiFilter: string[],
@@ -296,35 +310,5 @@ export class TableUtilsService {
     } else {
       return state;
     }
-  }
-
-  handlePageEvent(
-    event: PageEvent,
-    pageIndex: WritableSignal<number>,
-    pageSize: WritableSignal<number>,
-    fetchData: () => void,
-  ) {
-    pageSize.set(event.pageSize);
-    pageIndex.set(event.pageIndex);
-    fetchData();
-  }
-
-  handleSortEvent(
-    sort: Sort,
-    pageIndex: WritableSignal<number>,
-    sortby_sortdir: WritableSignal<Sort>,
-    fetchData: () => void,
-  ) {
-    let { active, direction } = sort;
-    if (!direction) {
-      active = '';
-      direction = '';
-    } else if (active === 'active') {
-      direction = direction === 'asc' ? 'desc' : 'asc';
-    }
-
-    sortby_sortdir.set({ active, direction });
-    pageIndex.set(0);
-    fetchData();
   }
 }

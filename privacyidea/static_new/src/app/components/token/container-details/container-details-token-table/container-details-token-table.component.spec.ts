@@ -86,7 +86,7 @@ describe('ContainerDetailsTokenTableComponent', () => {
     fixture = TestBed.createComponent(ContainerDetailsTokenTableComponent);
     component = fixture.componentInstance;
 
-    component.dataSource = signal(
+    component.containerTokenData = signal(
       new MatTableDataSource<any>([
         {
           serial: 'Mock serial',
@@ -105,7 +105,7 @@ describe('ContainerDetailsTokenTableComponent', () => {
     component.containerSerial = signal('CONT-1');
     component.tokenSerial = signal('');
     component.refreshContainerDetails = signal(false);
-    component.isProgrammaticChange = signal(false);
+    component.isProgrammaticTabChange = signal(false);
     component.selectedContent = signal('container_details');
 
     fixture.detectChanges();
@@ -117,7 +117,7 @@ describe('ContainerDetailsTokenTableComponent', () => {
 
   describe('ngAfterViewInit', () => {
     it('should set paginator and sort on dataSource', () => {
-      const ds = component.dataSource();
+      const ds = component.containerTokenData();
       expect(ds.paginator).toBe(component.paginator);
       expect(ds.sort).toBe(component.sort);
     });
@@ -132,16 +132,16 @@ describe('ContainerDetailsTokenTableComponent', () => {
       component.handleFilterInput(mockEvent);
 
       expect(component.filterValue).toBe('testFilter');
-      expect(component.dataSource().filter).toBe('testfilter');
+      expect(component.containerTokenData().filter).toBe('testfilter');
     });
   });
 
   describe('tokenSelected', () => {
     it('should set signals for isProgrammaticChange and tokenSerial, and selectedContent', () => {
-      expect(component.isProgrammaticChange()).toBeFalse();
+      expect(component.isProgrammaticTabChange()).toBeFalse();
       component.tokenSelected('Mock serial');
 
-      expect(component.isProgrammaticChange()).toBeTrue();
+      expect(component.isProgrammaticTabChange()).toBeTrue();
       expect(component.tokenSerial()).toBe('Mock serial');
       expect(component.selectedContent()).toBe('token_details');
     });

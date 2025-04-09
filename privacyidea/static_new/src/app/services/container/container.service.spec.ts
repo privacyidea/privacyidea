@@ -4,7 +4,6 @@ import { ContainerService } from './container.service';
 import { AppComponent } from '../../app.component';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { throwError } from 'rxjs';
 
 describe('ContainerService', () => {
   let service: ContainerService;

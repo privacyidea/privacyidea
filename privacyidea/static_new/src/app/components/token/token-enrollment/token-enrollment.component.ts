@@ -1,11 +1,8 @@
 import {
   Component,
-  effect,
+  computed,
   Injectable,
-  Input,
   linkedSignal,
-  signal,
-  untracked,
   ViewChild,
   WritableSignal,
 } from '@angular/core';
@@ -18,7 +15,6 @@ import {
 } from '@angular/material/form-field';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { TokenSelectedContent } from '../token.component';
 import { EnrollHotpComponent } from './enroll-hotp/enroll-hotp.component';
 import { MatInput } from '@angular/material/input';
 import {
@@ -182,265 +178,204 @@ export class CustomDateAdapter extends NativeDateAdapter {
   standalone: true,
 })
 export class TokenEnrollmentComponent {
-  private readonly defaults = {
-    testYubiKey: '',
-    otpKey: '',
-    sshPublicKey: '',
-    generateOnServer: true,
-    selectedUsername: '',
-    selectedContainer: '',
-    selectedTimezoneOffset: '+01:00',
-    selectedStartTime: '',
-    selectedEndTime: '',
-    selectedStartDate: new Date(),
-    selectedEndDate: new Date(),
-    timeStep: 30,
-    enrollResponse: null as any,
-    pollResponse: null as any,
-    regenerateToken: false,
-    motpPin: '',
-    repeatMotpPin: '',
-    checkPinLocally: false,
-    remoteServer: { url: '', id: '' },
-    remoteSerial: '',
-    remoteUser: '',
-    remoteRealm: '',
-    remoteResolver: '',
-    yubikeyIdentifier: '',
-    radiusServerConfiguration: '',
-    radiusUser: '',
-    readNumberDynamically: false,
-    smsGateway: '',
-    phoneNumber: '',
-    separator: '',
-    requiredTokenOfRealms: [] as { realm: string; tokens: number }[],
-    serviceId: '',
-    caConnector: '',
-    certTemplate: '',
-    pem: '',
-    emailAddress: '',
-    readEmailDynamically: false,
-    answers: {} as Record<string, string>,
-    useVascoSerial: false,
-    onlyAddToRealm: false,
-    setPinValue: '',
-    repeatPinValue: '',
-    hashAlgorithm: 'sha1',
-  };
   timezoneOptions = TIMEZONE_OFFSETS;
-  @Input() tokenSerial!: WritableSignal<string>;
-  @Input() containerSerial!: WritableSignal<string>;
-  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
-  @Input() isProgrammaticChange!: WritableSignal<boolean>;
-  @ViewChild(EnrollPasskeyComponent)
-  enrollPasskeyComponent!: EnrollPasskeyComponent;
-  @ViewChild(EnrollWebauthnComponent)
-  enrollWebauthnComponent!: EnrollWebauthnComponent;
-  selectedType = signal(this.tokenService.tokenTypeOptions()[0]);
-  testYubiKey = signal(this.defaults.testYubiKey);
+  tokenSerial = this.tokenService.tokenSerial;
+  containerSerial = this.tokenService.containerSerial;
+  selectedContent = this.tokenService.selectedContent;
+  tokenTypeOptions = this.tokenService.tokenTypeOptions;
+  selectedTokenType = this.tokenService.selectedTokenType;
+  testYubiKey = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => '',
+  });
   otpLength = linkedSignal({
     source: this.testYubiKey,
     computation: (testYubiKey) => {
       if (testYubiKey.length > 0) {
         return testYubiKey.length;
       } else {
-        return this.selectedType() ===
-          this.tokenService
-            .tokenTypeOptions()
-            .find((type) => type.key === 'yubikey')
-          ? 44
-          : 6;
+        return this.selectedTokenType().key === 'yubikey' ? 44 : 6;
       }
     },
   });
-  otpKey = signal(this.defaults.otpKey);
-  sshPublicKey = signal(this.defaults.sshPublicKey);
+  otpKey = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => '',
+  });
+  sshPublicKey = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => '',
+  });
   description = linkedSignal({
-    source: this.sshPublicKey,
-    computation: (sshPublicKey) => {
-      const parts = sshPublicKey?.split(' ') ?? [];
+    source: () => ({
+      sshPublicKey: this.sshPublicKey(),
+      selectedType: this.selectedTokenType(),
+    }),
+    computation: (source: any) => {
+      const parts = source.sshPublicKey?.split(' ') ?? [];
       return parts.length >= 3 ? parts[2] : '';
     },
   });
-  generateOnServer = signal(this.defaults.generateOnServer);
-  selectedTimezoneOffset = signal(this.defaults.selectedTimezoneOffset);
-  selectedStartTime = signal(this.defaults.selectedStartTime);
-  selectedEndTime = signal(this.defaults.selectedEndTime);
-  selectedStartDate = signal(this.defaults.selectedStartDate);
-  selectedEndDate = signal(this.defaults.selectedEndDate);
-  timeStep = signal(this.defaults.timeStep);
-  enrollResponse: WritableSignal<any> = signal(this.defaults.enrollResponse);
-  pollResponse: WritableSignal<any> = signal(this.defaults.pollResponse);
-  regenerateToken = signal(this.defaults.regenerateToken);
-  motpPin = signal(this.defaults.motpPin);
-  repeatMotpPin = signal(this.defaults.repeatMotpPin);
-  checkPinLocally = signal(this.defaults.checkPinLocally);
-  remoteServer = signal(this.defaults.remoteServer);
-  remoteSerial = signal(this.defaults.remoteSerial);
-  remoteUser = signal(this.defaults.remoteUser);
-  remoteRealm = signal(this.defaults.remoteRealm);
-  remoteResolver = signal(this.defaults.remoteResolver);
-  yubikeyIdentifier = signal(this.defaults.yubikeyIdentifier);
-  radiusServerConfiguration = signal(this.defaults.radiusServerConfiguration);
-  radiusUser = signal(this.defaults.radiusUser);
-  readNumberDynamically = signal(this.defaults.readNumberDynamically);
-  smsGateway = signal(this.defaults.smsGateway);
-  phoneNumber = signal(this.defaults.phoneNumber);
-  separator = signal(this.defaults.separator);
-  requiredTokenOfRealms = signal(this.defaults.requiredTokenOfRealms);
-  serviceId = signal(this.defaults.serviceId);
-  caConnector = signal(this.defaults.caConnector);
-  certTemplate = signal(this.defaults.certTemplate);
-  pem = signal(this.defaults.pem);
-  emailAddress = signal(this.defaults.emailAddress);
-  readEmailDynamically = signal(this.defaults.readEmailDynamically);
-  answers = signal(this.defaults.answers);
-  useVascoSerial = signal(this.defaults.useVascoSerial);
+  generateOnServer = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => true,
+  });
+  selectedTimezoneOffset = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => '+01:00',
+  });
+  selectedStartTime = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => '',
+  });
+  selectedEndTime = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => '',
+  });
+  selectedStartDate = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => new Date(),
+  });
+  selectedEndDate = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => new Date(),
+  });
+  timeStep = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => 30,
+  });
+  enrollResponse: WritableSignal<any> = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => null,
+  });
+  pollResponse: WritableSignal<any> = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => null,
+  });
+  motpPin = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => '',
+  });
+  repeatMotpPin = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => '',
+  });
+  checkPinLocally = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => false,
+  });
+  remoteServer = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => ({ url: '', id: '' }),
+  });
+  remoteSerial = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => '',
+  });
+  remoteUser = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => '',
+  });
+  remoteRealm = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => '',
+  });
+  remoteResolver = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => '',
+  });
+  yubikeyIdentifier = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => '',
+  });
+  radiusServerConfiguration = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => '',
+  });
+  radiusUser = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => '',
+  });
+  readNumberDynamically = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => false,
+  });
+  smsGateway = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => '',
+  });
+  phoneNumber = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => '',
+  });
+  separator = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => '',
+  });
+  requiredTokenOfRealms = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => [] as { realm: string; tokens: number }[],
+  });
+  serviceId = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => '',
+  });
+  caConnector = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => '',
+  });
+  certTemplate = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => '',
+  });
+  pem = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => '',
+  });
+  emailAddress = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => '',
+  });
+  readEmailDynamically = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => false,
+  });
+  answers = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => ({}) as Record<string, string>,
+  });
+  useVascoSerial = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => false,
+  });
   vascoSerial = linkedSignal({
     source: this.otpKey,
     computation: (otpKey) => {
-      if (this.useVascoSerial()) {
+      if (this.selectedTokenType().key === 'vasco' && this.useVascoSerial()) {
         return EnrollVascoComponent.convertOtpKeyToVascoSerial(otpKey);
       }
       return '';
     },
   });
-  onlyAddToRealm = signal(this.defaults.onlyAddToRealm);
-  setPinValue = signal(this.defaults.setPinValue);
-  repeatPinValue = signal(this.defaults.repeatPinValue);
-  hashAlgorithm = signal(this.defaults.hashAlgorithm);
-
-  constructor(
-    protected containerService: ContainerService,
-    protected realmService: RealmService,
-    private notificationService: NotificationService,
-    protected userService: UserService,
-    protected tokenService: TokenService,
-    protected firstDialog: MatDialog,
-    protected secondDialog: MatDialog,
-    protected versioningService: VersionService,
-  ) {
-    effect(() => {
-      this.selectedType();
-      untracked(() => {
-        this.resetEnrollmentOptions();
-      });
-    });
-
-    effect(() => {
-      if (this.regenerateToken()) {
-        this.enrollToken();
-      }
-    });
-  }
-
-  ngAfterViewInit() {
-    this.getContainerOptions();
-    this.containerService.selectedContainer.set(this.containerSerial());
-  }
-
-  getRealmOptions() {
-    this.realmService.getRealms().subscribe({
-      next: (realms: any) => {
-        this.realmService.realmOptions.set(Object.keys(realms.result.value));
-      },
-    });
-  }
-
-  getContainerOptions() {
-    this.containerService.getContainerData({ noToken: true }).subscribe({
-      next: (containers: any) => {
-        this.containerService.containerOptions.set(
-          Object.values(
-            containers.result.value.containers as {
-              serial: string;
-            }[],
-          ).map((container) => container.serial),
-        );
-      },
-    });
-  }
-
-  formatDateTimeOffset(date: Date, time: string, offset: string): string {
-    const timeMatch = time.match(/^(\d{2}):(\d{2})$/);
-    if (!timeMatch) {
-      return '';
-    }
-    const hours = parseInt(timeMatch[1], 10);
-    const minutes = parseInt(timeMatch[2], 10);
-    const newDate = new Date(date.getTime());
-
-    newDate.setHours(hours, minutes, 0, 0);
-
-    const year = newDate.getFullYear();
-    const month = String(newDate.getMonth() + 1).padStart(2, '0');
-    const day = String(newDate.getDate()).padStart(2, '0');
-    const formattedHours = String(newDate.getHours()).padStart(2, '0');
-    const formattedMinutes = String(newDate.getMinutes()).padStart(2, '0');
-    const offsetNoColon = offset.replace(':', '');
-
-    return `${year}-${month}-${day}T${formattedHours}:${formattedMinutes}${offsetNoColon}`;
-  }
-
-  enrollToken(): void {
-    const enrollmentOptions = this.buildEnrollmentOptions();
-    this.pollResponse.set(null);
-    this.enrollResponse.set(null);
-
-    this.tokenService.enrollToken(enrollmentOptions).subscribe({
-      next: (response: any) => {
-        this.enrollResponse.set(response);
-        this.handleEnrollmentResponse(response);
-      },
-      error: (error) => {
-        const message = error.error?.result?.error?.message || '';
-        this.notificationService.openSnackBar(
-          'Failed to enroll token. ' + message,
-        );
-      },
-    });
-  }
-
-  reopenEnrollmentDialog() {
-    let waitingForClient =
-      ((this.enrollResponse().detail?.rollout_state === 'clientwait' ||
-        this.enrollResponse().detail?.passkey_registration ||
-        this.enrollResponse().detail?.webAuthnRegisterRequest) &&
-        !this.pollResponse()) ||
-      this.pollResponse()?.result?.value?.tokens[0]?.rollout_state ===
-        'clientwait';
-    if (waitingForClient) {
-      this.openFirstStepDialog(this.enrollResponse());
-      this.pollTokenRolloutState(this.tokenSerial(), 2000);
-    } else {
-      this.openSecondStepDialog(this.enrollResponse());
-    }
-  }
-
-  userIsRequired() {
-    return ['tiqr', 'webauthn', 'passkey', 'certificate'].includes(
-      this.selectedType().key,
-    );
-  }
-
-  private resetEnrollmentOptions = () => {
-    this.userService.resetUserSelection();
-    this.containerService.resetContainerSelection();
-    this.realmService.resetRealmSelection();
-    this.realmService.getDefaultRealm().subscribe({
-      next: (realm: any) => {
-        this.userService.selectedUserRealm.set(realm);
-      },
-    });
-    this.getRealmOptions();
-    Object.entries(this.defaults).forEach(([key, value]) => {
-      (this as any)[key]?.set(value);
-    });
-  };
-
-  private buildEnrollmentOptions() {
+  onlyAddToRealm = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => false,
+  });
+  setPinValue = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => '',
+  });
+  repeatPinValue = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => '',
+  });
+  hashAlgorithm = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => 'sha1',
+  });
+  enrollmentOptions = computed(() => {
     return {
-      type: this.selectedType().key,
+      type: this.selectedTokenType().key,
       description: this.description(),
       container_serial: this.containerService.selectedContainer().trim(),
       validity_period_start: this.formatDateTimeOffset(
@@ -513,13 +448,87 @@ export class TokenEnrollmentComponent {
       vascoSerial: this.vascoSerial(),
       useVascoSerial: this.useVascoSerial(),
     };
+  });
+
+  @ViewChild(EnrollPasskeyComponent)
+  enrollPasskeyComponent!: EnrollPasskeyComponent;
+  @ViewChild(EnrollWebauthnComponent)
+  enrollWebauthnComponent!: EnrollWebauthnComponent;
+
+  constructor(
+    protected containerService: ContainerService,
+    protected realmService: RealmService,
+    private notificationService: NotificationService,
+    protected userService: UserService,
+    protected tokenService: TokenService,
+    protected firstDialog: MatDialog,
+    protected secondDialog: MatDialog,
+    protected versioningService: VersionService,
+  ) {}
+
+  formatDateTimeOffset(date: Date, time: string, offset: string): string {
+    const timeMatch = time.match(/^(\d{2}):(\d{2})$/);
+    if (!timeMatch) {
+      return '';
+    }
+    const hours = parseInt(timeMatch[1], 10);
+    const minutes = parseInt(timeMatch[2], 10);
+    const newDate = new Date(date.getTime());
+
+    newDate.setHours(hours, minutes, 0, 0);
+
+    const year = newDate.getFullYear();
+    const month = String(newDate.getMonth() + 1).padStart(2, '0');
+    const day = String(newDate.getDate()).padStart(2, '0');
+    const formattedHours = String(newDate.getHours()).padStart(2, '0');
+    const formattedMinutes = String(newDate.getMinutes()).padStart(2, '0');
+    const offsetNoColon = offset.replace(':', '');
+
+    return `${year}-${month}-${day}T${formattedHours}:${formattedMinutes}${offsetNoColon}`;
+  }
+
+  enrollToken(): void {
+    this.pollResponse.set(null);
+    this.enrollResponse.set(null);
+    this.tokenService.enrollToken(this.enrollmentOptions()).subscribe({
+      next: (response: any) => {
+        this.enrollResponse.set(response);
+        this.handleEnrollmentResponse(response);
+      },
+      error: (error) => {
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to enroll token. ' + message,
+        );
+      },
+    });
+  }
+
+  reopenEnrollmentDialog() {
+    let waitingForClient =
+      ((this.enrollResponse().detail?.rollout_state === 'clientwait' ||
+        this.enrollResponse().detail?.passkey_registration ||
+        this.enrollResponse().detail?.webAuthnRegisterRequest) &&
+        !this.pollResponse()) ||
+      this.pollResponse()?.result?.value?.tokens[0]?.rollout_state ===
+        'clientwait';
+    if (waitingForClient) {
+      this.openFirstStepDialog(this.enrollResponse());
+      this.pollTokenRolloutState(this.enrollResponse().detail?.serial, 2000);
+    } else {
+      this.openSecondStepDialog(this.enrollResponse());
+    }
+  }
+
+  userIsRequired() {
+    return ['tiqr', 'webauthn', 'passkey', 'certificate'].includes(
+      this.selectedTokenType().key,
+    );
   }
 
   private handleEnrollmentResponse(response: any): void {
     const detail = response.detail || {};
     const rolloutState = detail.rollout_state;
-
-    this.tokenSerial.update((s) => (detail.serial ? detail.serial : s));
 
     if (rolloutState !== 'clientwait') {
       this.notificationService.openSnackBar(
@@ -527,7 +536,7 @@ export class TokenEnrollmentComponent {
       );
     }
 
-    switch (this.selectedType().key) {
+    switch (this.selectedTokenType().key) {
       case 'webauthn':
         this.openFirstStepDialog(response);
         this.enrollWebauthnComponent.registerWebauthn(detail).subscribe({
@@ -552,20 +561,12 @@ export class TokenEnrollmentComponent {
         this.openSecondStepDialog(response);
         break;
     }
-    this.regenerateToken.set(false);
   }
 
   private openFirstStepDialog(response: any) {
     this.firstDialog.open(TokenEnrollmentFirstStepDialogComponent, {
       data: {
         response: response,
-        tokenSerial: this.tokenSerial,
-        containerSerial: this.containerSerial,
-        selectedContent: this.selectedContent,
-        isProgrammaticChange: this.isProgrammaticChange,
-        username: this.userService.selectedUsername(),
-        userRealm: this.userService.selectedUserRealm(),
-        onlyAddToRealm: this.onlyAddToRealm(),
       },
     });
   }
@@ -574,11 +575,7 @@ export class TokenEnrollmentComponent {
     this.secondDialog.open(TokenEnrollmentSecondStepDialogComponent, {
       data: {
         response: response,
-        tokenSerial: this.tokenSerial,
-        containerSerial: this.containerSerial,
-        selectedContent: this.selectedContent,
-        regenerateToken: this.regenerateToken,
-        isProgrammaticChange: this.isProgrammaticChange,
+        enrollToken: this.enrollToken.bind(this),
         username: this.userService.selectedUsername(),
         userRealm: this.userService.selectedUserRealm(),
         onlyAddToRealm: this.onlyAddToRealm(),

@@ -8,11 +8,11 @@ import { AuthService } from '../auth/auth.service';
   providedIn: 'root',
 })
 export class SessionTimerService {
+  private readonly sessionTimeout = 3570_000;
   private timer: any;
   private intervalId: any;
   private startTime = signal(Date.now());
   private currentTime = signal(Date.now());
-  private readonly sessionTimeout = 3570_000;
   remainingTime = computed(
     () => this.sessionTimeout - (this.currentTime() - this.startTime()),
   );

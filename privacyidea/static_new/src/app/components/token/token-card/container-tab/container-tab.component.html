@@ -50,22 +50,20 @@
             Help
           </button>
         </mat-list-item>
-        <div [@toggleState]=selectedContent()>
-          @if (selectedContent() === "container_overview") {
-            <br />
-            <mat-divider /><br />
-            <mat-list-item>
-              <button class="card-button-delete"
-                      [ngClass]="{'disabled-button': containerSelection().length === 0}"
-                      (click)="deleteSelectedContainer()"
-                      [disabled]="containerSelection().length === 0"
-                      mat-flat-button>
-                <mat-icon>delete_outlined</mat-icon>
-                Delete Selected
-              </button>
-            </mat-list-item>
-          }
-        </div>
+        @if (selectedContent() === "container_overview") {
+          <br />
+          <mat-divider /><br />
+          <mat-list-item>
+            <button class="card-button-delete"
+                    [ngClass]="{'disabled-button': containerSelection().length === 0}"
+                    (click)="deleteSelectedContainer()"
+                    [disabled]="containerSelection().length === 0"
+                    mat-flat-button>
+              <mat-icon>delete_outlined</mat-icon>
+              Delete Selected
+            </button>
+          </mat-list-item>
+        }
       } @else {
         <mat-list-item>
           <button [ngClass]="[
@@ -83,7 +81,7 @@
                   class="card-button"
                   mat-flat-button>
             <mat-icon>add_moderator</mat-icon>
-            {{ "Enroll Token" }}
+            Enroll Token
           </button>
         </mat-list-item><br />
         <mat-divider /><br />
@@ -92,7 +90,7 @@
                   class="card-button"
                   mat-flat-button>
             <mat-icon>remove_red_eye</mat-icon>
-            {{ "Lost Container" }}
+            Lost Container
           </button>
         </mat-list-item>
         <mat-list-item>
@@ -100,7 +98,7 @@
                   class="card-button"
                   mat-flat-button>
             <mat-icon>broken_image</mat-icon>
-            {{ "Damaged Container" }}
+            Damaged Container
           </button>
         </mat-list-item>
         <mat-list-item>
@@ -113,7 +111,7 @@
         </mat-list-item><br />
         <mat-divider /><br />
         <mat-list-item>
-          <button (click)="toggleActive()"
+          <button (click)="this.toggleActive()"
                   [ngClass]="{
               'card-button-delete': states().includes('active'),
               'card-button-activate': !states().includes('active'),
@@ -129,7 +127,7 @@
                   class="card-button-delete"
                   mat-flat-button>
             <mat-icon>delete_outlined</mat-icon>
-            {{ "Delete" }}
+            Delete
           </button>
         </mat-list-item>
       }

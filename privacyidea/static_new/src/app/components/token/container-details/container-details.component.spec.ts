@@ -120,9 +120,11 @@ class MockNotificationService {
 class MockUserService {
   selectedUsername = signal('');
   selectedUserRealm = signal('');
+
   setDefaultRealm() {
     return of(null);
   }
+
   resetUserSelection() {
     this.selectedUsername.set('');
     this.selectedUserRealm.set('');

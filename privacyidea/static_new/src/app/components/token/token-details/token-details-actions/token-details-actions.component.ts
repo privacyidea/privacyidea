@@ -24,8 +24,7 @@ import { NotificationService } from '../../../../services/notification/notificat
   styleUrl: './token-details-actions.component.scss',
 })
 export class TokenDetailsActionsComponent {
-  @Input() refreshTokenDetails!: WritableSignal<boolean>;
-  @Input() tokenSerial!: WritableSignal<string>;
+  tokenSerial = this.tokenService.tokenSerial;
   @Input() tokenType!: WritableSignal<string>;
   fristOTPValue: string = '';
   secondOTPValue: string = '';
@@ -48,7 +47,7 @@ export class TokenDetailsActionsComponent {
       )
       .subscribe({
         next: () => {
-          this.refreshTokenDetails.set(true);
+          this.tokenService.tokenDetailResource.reload();
         },
       });
   }
@@ -58,7 +57,7 @@ export class TokenDetailsActionsComponent {
       .testToken(this.tokenSerial(), this.otpOrPinToTest)
       .subscribe({
         next: () => {
-          this.refreshTokenDetails.set(true);
+          this.tokenService.tokenDetailResource.reload();
         },
       });
   }
@@ -68,10 +67,11 @@ export class TokenDetailsActionsComponent {
       .testToken(this.tokenSerial(), this.otpOrPinToTest, '1')
       .subscribe({
         next: () => {
-          this.refreshTokenDetails.set(true);
+          this.tokenService.tokenDetailResource.reload();
         },
       });
   }
+
   testPasskey() {
     this.validateService.authenticatePasskey({ isTest: true }).subscribe({
       next: (checkResponse: any) => {

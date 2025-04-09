@@ -1,47 +1,211 @@
-import { Injectable, signal } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import {
+  computed,
+  effect,
+  Injectable,
+  linkedSignal,
+  signal,
+  WritableSignal,
+} from '@angular/core';
+import {
+  HttpClient,
+  HttpErrorResponse,
+  HttpParams,
+  httpResource,
+} from '@angular/common/http';
 import {
   forkJoin,
   Observable,
   Subject,
   switchMap,
-  takeUntil,
-  takeWhile,
   throwError,
   timer,
 } from 'rxjs';
+import { catchError, takeUntil, takeWhile } from 'rxjs/operators';
 import { LocalService } from '../local/local.service';
 import { Sort } from '@angular/material/sort';
 import { TableUtilsService } from '../table-utils/table-utils.service';
 import { environment } from '../../../environments/environment';
-import { catchError } from 'rxjs/operators';
 import { NotificationService } from '../notification/notification.service';
 import {
   TokenComponent,
+  TokenSelectedContent,
   TokenType,
-  TokenTypeOption,
 } from '../../components/token/token.component';
+
+const apiFilter = [
+  'serial',
+  'type',
+  'active',
+  'description',
+  'rollout_state',
+  'user',
+  'tokenrealm',
+  'container_serial',
+];
+const advancedApiFilter = [
+  'infokey & infovalue',
+  'userid',
+  'resolver',
+  'assigned',
+];
+
+export interface TokenResponse {
+  result: {
+    value: {
+      tokens: any[];
+      count: number;
+    };
+  };
+}
 
 @Injectable({
   providedIn: 'root',
 })
 export class TokenService {
-  private tokenBaseUrl = environment.proxyUrl + '/token/';
-  private stopPolling$ = new Subject<void>();
-  tokenTypeOptions = signal<TokenTypeOption[]>([]);
-  apiFilter = [
-    'serial',
-    'type',
-    'active',
-    'description',
-    'rollout_state',
-    'user',
-    'tokenrealm',
-    'container_serial',
-  ];
-  advancedApiFilter = ['infokey & infovalue', 'userid', 'resolver', 'assigned'];
-  challengesApiFilter = ['serial', 'transaction_id'];
-  challengesAdvancedApiFilter = [];
+  readonly apiFilter = apiFilter;
+  readonly advancedApiFilter = advancedApiFilter;
+  tokenBaseUrl = environment.proxyUrl + '/token/';
+  eventPageSize = 10;
+  stopPolling$ = new Subject<void>();
+  tokenIsActive = signal(true);
+  tokenIsRevoked = signal(true);
+  tokenSerial = signal('');
+  containerSerial = signal('');
+  isProgrammaticTabChange = signal(false);
+  selectedContent = signal<TokenSelectedContent>('token_overview');
+  showOnlyTokenNotInContainer = linkedSignal({
+    source: this.selectedContent,
+    computation: (selectedContent) => {
+      return selectedContent === 'container_details';
+    },
+  });
+  filterValue: WritableSignal<string> = linkedSignal({
+    source: () => ({
+      showOnlyTokenNotInContainer: this.showOnlyTokenNotInContainer(),
+      selectedContent: this.selectedContent(),
+    }),
+    computation: (source: any, previous) => {
+      if (
+        !previous ||
+        source.selectedContent !== previous.source.selectedContent
+      ) {
+        return source.selectedContent === 'container_details'
+          ? 'container_serial:'
+          : '';
+      }
+      if (source.showOnlyTokenNotInContainer) {
+        return previous.value + ' container_serial:';
+      } else {
+        return previous.value.replace(/container_serial:\S*/g, '').trim();
+      }
+    },
+  });
+  tokenDetailResource = httpResource<any>(() => ({
+    url: this.tokenBaseUrl,
+    method: 'GET',
+    headers: this.localService.getHeaders(),
+    params: { serial: this.tokenSerial() },
+  }));
+  tokenTypesResource = httpResource<any>(() => ({
+    url: environment.proxyUrl + '/auth/rights',
+    method: 'GET',
+    headers: this.localService.getHeaders(),
+  }));
+  tokenTypeOptions = computed(() => {
+    return Object.keys(this.tokenTypesResource.value()?.result.value ?? []).map(
+      (key: string) => {
+        const text =
+          TokenComponent.tokenTypeTexts.find((type) => type.key === key)
+            ?.text || '';
+        return {
+          key: key as TokenType,
+          info: this.tokenTypesResource.value().result.value[key],
+          text,
+        };
+      },
+    );
+  });
+  selectedTokenType = linkedSignal({
+    source: () => ({
+      tokenTypeOptions: this.tokenTypeOptions(),
+      selectedContent: this.selectedContent(),
+    }),
+    computation: (source: any) =>
+      source.tokenTypeOptions.find((type: any) => type.key === 'hotp'),
+  });
+  pageSize = linkedSignal({
+    source: this.filterValue,
+    computation: (): any => {
+      if (![5, 10, 15].includes(this.eventPageSize)) {
+        return 10;
+      }
+      return this.eventPageSize;
+    },
+  });
+  sort = linkedSignal({
+    source: () => ({
+      pageSize: this.pageSize(),
+      selectedContent: this.selectedContent(),
+    }),
+    computation: () => {
+      return { active: 'serial', direction: 'asc' } as Sort;
+    },
+  });
+  pageIndex = linkedSignal({
+    source: () => ({
+      filterValue: this.filterValue(),
+      pageSize: this.pageSize(),
+      selectedContent: this.selectedContent(),
+    }),
+    computation: () => 0,
+  });
+  filterParams = computed<Record<string, string>>(() => {
+    const combinedFilters = [...this.apiFilter, ...this.advancedApiFilter];
+    const { filterPairs, remainingFilterText } =
+      this.tableUtilsService.parseFilterString(
+        this.filterValue()!,
+        combinedFilters,
+      );
+    return filterPairs.reduce(
+      (acc, { key, value }) => ({
+        ...acc,
+        [key]: [
+          'user',
+          'infokey',
+          'infovalue',
+          'active',
+          'assigned',
+          'container_serial',
+        ].includes(key)
+          ? `${value}`
+          : `*${value}*`,
+      }),
+      {} as Record<string, string>,
+    );
+  });
+  tokenResource = httpResource<TokenResponse>(() => ({
+    url: this.tokenBaseUrl,
+    method: 'GET',
+    headers: this.localService.getHeaders(),
+    params: {
+      page: this.pageIndex() + 1,
+      pagesize: this.pageSize(),
+      sortby: this.sort()?.active || 'serial',
+      sortdir: this.sort()?.direction || 'asc',
+      ...this.filterParams(),
+    },
+  }));
+
+  tokenSelection: WritableSignal<any> = linkedSignal({
+    source: () => ({
+      page: this.pageIndex(),
+      pageSize: this.pageSize(),
+      sort: this.sort(),
+      filterValue: this.filterValue(),
+      selectedContent: this.selectedContent(),
+    }),
+    computation: () => [],
+  });
 
   constructor(
     private http: HttpClient,
@@ -49,21 +213,36 @@ export class TokenService {
     private tableUtilsService: TableUtilsService,
     private notificationService: NotificationService,
   ) {
-    this.getTokenTypes().subscribe((tokenTypes: any) => {
-      const options = Object.keys(tokenTypes.result.value).map(
-        (key: string) => {
-          const text =
-            TokenComponent.tokenTypeTexts.find((type) => type.key === key)
-              ?.text || '';
-          return {
-            key: key as TokenType,
-            info: tokenTypes.result.value[key],
-            text,
-          };
-        },
-      );
-      this.tokenTypeOptions.set(options);
+    effect(() => {
+      if (this.tokenResource.error()) {
+        let tokensResourceError =
+          this.tokenResource.error() as HttpErrorResponse;
+        console.error('Failed to get token data.', tokensResourceError.message);
+        this.notificationService.openSnackBar(tokensResourceError.message);
+      }
     });
+    effect(() => {
+      if (this.tokenTypesResource.error()) {
+        let tokenTypesResourceError =
+          this.tokenTypesResource.error() as HttpErrorResponse;
+        console.error(
+          'Failed to get token type data.',
+          tokenTypesResourceError.message,
+        );
+        this.notificationService.openSnackBar(tokenTypesResourceError.message);
+      }
+    });
+  }
+
+  tokenSelected(serial: string) {
+    this.tokenSerial.set(serial);
+    this.selectedContent.set('token_details');
+  }
+
+  containerSelected(containerSerial: string) {
+    this.isProgrammaticTabChange.set(true);
+    this.containerSerial.set(containerSerial);
+    this.selectedContent.set('container_details');
   }
 
   toggleActive(tokenSerial: string, active: boolean): Observable<any> {
@@ -103,66 +282,7 @@ export class TokenService {
       );
   }
 
-  getTokenData(
-    page: number,
-    pageSize: number,
-    sort?: Sort,
-    filterValue?: string,
-  ): Observable<any> {
-    const headers = this.localService.getHeaders();
-    let params = new HttpParams()
-      .set('page', page.toString())
-      .set('pagesize', pageSize.toString());
-
-    if (sort) {
-      params = params.set('sortby', sort.active).set('sortdir', sort.direction);
-    }
-
-    if (filterValue) {
-      const combinedFilters = [...this.apiFilter, ...this.advancedApiFilter];
-      const { filterPairs, remainingFilterText } =
-        this.tableUtilsService.parseFilterString(filterValue, combinedFilters);
-      filterPairs.forEach(({ key, value }) => {
-        if (
-          key === 'user' ||
-          key === 'infokey' ||
-          key === 'infovalue' ||
-          key === 'active' ||
-          key === 'assigned' ||
-          key === 'container_serial'
-        ) {
-          params = params.set(key, `${value}`);
-        } else {
-          params = params.set(key, `*${value}*`);
-        }
-      });
-
-      /* TODO global filtering is missing in api
-      if (remainingFilterText) {
-        params = params.set('globalfilter', `*${remainingFilterText}*`);
-      }
-      */
-    }
-
-    return this.http.get<any>(this.tokenBaseUrl, { headers, params }).pipe(
-      catchError((error) => {
-        console.error('Failed to get token data.', error);
-        const message = error.error?.result?.error?.message || '';
-        this.notificationService.openSnackBar(
-          'Failed to get token data. ' + message,
-        );
-        return throwError(() => error);
-      }),
-    );
-  }
-
-  getTokenDetails(tokenSerial: string): Observable<any> {
-    const headers = this.localService.getHeaders();
-    let params = new HttpParams().set('serial', tokenSerial);
-    return this.http.get(this.tokenBaseUrl, { headers, params });
-  }
-
-  setTokenDetail(
+  saveTokenDetail(
     tokenSerial: string,
     key: string,
     value: any,
@@ -434,22 +554,6 @@ export class TokenService {
       );
   }
 
-  getTokengroups() {
-    const headers = this.localService.getHeaders();
-    return this.http
-      .get(environment.proxyUrl + `/tokengroup/`, { headers })
-      .pipe(
-        catchError((error) => {
-          console.error('Failed to get token groups.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to get tokengroups. ' + message,
-          );
-          return throwError(() => error);
-        }),
-      );
-  }
-
   lostToken(tokenSerial: string) {
     const headers = this.localService.getHeaders();
     return this.http
@@ -460,25 +564,6 @@ export class TokenService {
           const message = error.error?.result?.error?.message || '';
           this.notificationService.openSnackBar(
             'Failed to mark token as lost. ' + message,
-          );
-          return throwError(() => error);
-        }),
-      );
-  }
-
-  getSerial(otp: string, params: HttpParams): Observable<any> {
-    const headers = this.localService.getHeaders();
-    return this.http
-      .get(`${this.tokenBaseUrl}getserial/${otp}`, {
-        params: params,
-        headers: headers,
-      })
-      .pipe(
-        catchError((error) => {
-          console.error('Failed to get count.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to get count. ' + message,
           );
           return throwError(() => error);
         }),
@@ -623,13 +708,55 @@ export class TokenService {
     );
   }
 
+  getTokenDetails(tokenSerial: string): Observable<any> {
+    const headers = this.localService.getHeaders();
+    let params = new HttpParams().set('serial', tokenSerial);
+    return this.http.get(this.tokenBaseUrl, { headers, params });
+  }
+
+  getTokengroups() {
+    const headers = this.localService.getHeaders();
+    return this.http
+      .get(environment.proxyUrl + `/tokengroup/`, { headers })
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to get token groups.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to get tokengroups. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
+  }
+
+  getSerial(otp: string, params: HttpParams): Observable<any> {
+    const headers = this.localService.getHeaders();
+    return this.http
+      .get(`${this.tokenBaseUrl}getserial/${otp}`, {
+        params: params,
+        headers: headers,
+      })
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to get count.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to get count. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
+  }
+
   pollTokenRolloutState(
     tokenSerial: string,
     startTime: number,
   ): Observable<any> {
+    this.tokenSerial.set(tokenSerial);
     return timer(startTime, 2000).pipe(
       takeUntil(this.stopPolling$),
-      switchMap(() => this.getTokenDetails(tokenSerial)),
+      switchMap(() => this.getTokenDetails(this.tokenSerial())),
       takeWhile(
         (response: any) =>
           response.result.value.tokens[0].rollout_state === 'clientwait',
@@ -648,71 +775,5 @@ export class TokenService {
 
   stopPolling() {
     this.stopPolling$.next();
-  }
-
-  getChallenges(named: {
-    pageIndex: number;
-    pageSize: number;
-    sort: Sort;
-    filterValue: string;
-  }): Observable<any> {
-    const { pageIndex, pageSize, sort, filterValue } = named;
-    const headers = this.localService.getHeaders();
-    let params = new HttpParams()
-      .set('page', pageIndex.toString())
-      .set('pagesize', pageSize.toString());
-
-    if (sort) {
-      params = params.set('sortby', sort.active).set('sortdir', sort.direction);
-    }
-
-    const combinedFilters = [
-      ...this.challengesApiFilter,
-      ...this.challengesAdvancedApiFilter,
-    ];
-    let urlPath = 'challenges/';
-    if (filterValue) {
-      const { filterPairs, remainingFilterText } =
-        this.tableUtilsService.parseFilterString(filterValue, combinedFilters);
-      filterPairs.forEach(({ key, value }) => {
-        if (key === 'serial') {
-          urlPath = `challenges/*${value}*`;
-        } else {
-          params = params.set(key, `*${value}*`);
-        }
-      });
-      /* global filtering is missing in api
-        if (remainingFilterText) {
-          params = params.set('globalfilter', `*${remainingFilterText}*`);
-        } */
-    }
-
-    return this.http
-      .get<any>(this.tokenBaseUrl + urlPath, {
-        headers,
-        params,
-      })
-      .pipe(
-        catchError((error) => {
-          console.error('Failed to load challenges.', error);
-          return throwError(() => error);
-        }),
-      );
-  }
-
-  getTokenTypes() {
-    const headers = this.localService.getHeaders();
-    return this.http
-      .get<any>(environment.proxyUrl + '/auth/rights', { headers })
-      .pipe(
-        catchError((error) => {
-          console.error('Failed to get token types.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to get token types. ' + message,
-          );
-          return throwError(() => error);
-        }),
-      );
   }
 }

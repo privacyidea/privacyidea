@@ -2,7 +2,7 @@
      class="token-enrollment-container">
   <h3 class="margin-left-1">Token Enrollment</h3>
   <mat-form-field class="width-100">
-    <mat-select [(ngModel)]="selectedType"
+    <mat-select [(ngModel)]="selectedTokenType"
                 [panelClass]="'multi-column-panel'">
       @for (type of tokenService.tokenTypeOptions(); track type) {
         <mat-option class="token-type-option type-option"
@@ -17,8 +17,8 @@
       </button>
     </mat-select>
     <mat-hint class="token-type-hint">
-      @if (selectedType().info) {
-        {{ selectedType().info.split(":")[1] }}
+      @if (selectedTokenType().info) {
+        {{ selectedTokenType().info.split(":")[1] }}
       }
     </mat-hint>
   </mat-form-field>
@@ -38,10 +38,10 @@
       }"
             mat-flat-button>
       <mat-icon>add</mat-icon>
-      Enroll {{ selectedType().key }} Token
+      Enroll {{ selectedTokenType().key }} Token
     </button>
   </div>
-  @switch (selectedType().key) {
+  @switch (selectedTokenType().key) {
     @case ("hotp") {
       <app-enroll-hotp [generateOnServer]="generateOnServer"
                        [otpLength]="otpLength"

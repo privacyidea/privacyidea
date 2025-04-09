@@ -1,10 +1,4 @@
-import {
-  Component,
-  computed,
-  Input,
-  signal,
-  WritableSignal,
-} from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { MatList, MatListItem } from '@angular/material/list';
 import { MatButton } from '@angular/material/button';
@@ -12,12 +6,11 @@ import { MatDivider } from '@angular/material/divider';
 import { NgClass } from '@angular/common';
 import { forkJoin, switchMap } from 'rxjs';
 import { TokenService } from '../../../../services/token/token.service';
-import { tabToggleState } from '../../../../../styles/animations/animations';
 import { MatDialog } from '@angular/material/dialog';
 import { LostTokenComponent } from './lost-token/lost-token.component';
 import { VersionService } from '../../../../services/version/version.service';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
-import { TokenSelectedContent } from '../../token.component';
+import { tabToggleState } from '../../../../../styles/animations/animations';
 
 @Component({
   selector: 'app-token-tab',
@@ -28,13 +21,11 @@ import { TokenSelectedContent } from '../../token.component';
   animations: [tabToggleState],
 })
 export class TokenTabComponent {
-  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
-  @Input() tokenSerial!: WritableSignal<string>;
-  @Input() active!: WritableSignal<boolean>;
-  @Input() revoked!: WritableSignal<boolean>;
-  @Input() refreshTokenDetails!: WritableSignal<boolean>;
-  @Input() refreshTokenOverview!: WritableSignal<boolean>;
-  @Input() tokenSelection!: WritableSignal<any[]>;
+  selectedContent = this.tokenService.selectedContent;
+  tokenIsActive = this.tokenService.tokenIsActive;
+  tokenIsRevoked = this.tokenService.tokenIsRevoked;
+  tokenSerial = this.tokenService.tokenSerial;
+  tokenSelection = this.tokenService.tokenSelection;
   tokenIsSelected = computed(() => this.tokenSerial() !== '');
   isLost = signal(false);
   version!: string;
@@ -51,13 +42,13 @@ export class TokenTabComponent {
 
   toggleActive(): void {
     this.tokenService
-      .toggleActive(this.tokenSerial(), this.active())
+      .toggleActive(this.tokenSerial(), this.tokenIsActive())
       .pipe(
         switchMap(() => this.tokenService.getTokenDetails(this.tokenSerial())),
       )
       .subscribe({
         next: () => {
-          this.refreshTokenDetails.set(true);
+          this.tokenService.tokenDetailResource.reload();
         },
       });
   }
@@ -86,7 +77,7 @@ export class TokenTabComponent {
               )
               .subscribe({
                 next: () => {
-                  this.refreshTokenDetails.set(true);
+                  this.tokenService.tokenDetailResource.reload();
                 },
               });
           }
@@ -143,7 +134,7 @@ export class TokenTabComponent {
             ).subscribe({
               next: () => {
                 this.tokenSelection.set([]);
-                this.refreshTokenOverview.set(true);
+                this.tokenService.tokenResource.reload();
               },
               error: (err) => {
                 console.error('Error deleting tokens:', err);

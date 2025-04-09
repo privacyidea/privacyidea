@@ -66,13 +66,13 @@
       <td *matCellDef="let element"
           class="height-52 edit-column-cell"
           mat-cell>
-        <app-edit-buttons [element]="element"
+        <app-edit-buttons [cancelEdit]="toggleInfoEdit.bind(this)"
+                          [element]="element"
                           [isEditingInfo]="isEditingInfo"
                           [isEditingUser]="isEditingUser"
-                          [shouldHideEdit]="isAnyEditingOrRevoked"
-                          [toggleEdit]="toggleInfoEdit.bind(this)"
                           [saveEdit]="saveInfo.bind(this)"
-                          [cancelEdit]="cancelInfoEdit.bind(this)"></app-edit-buttons>
+                          [shouldHideEdit]="isAnyEditingOrRevoked"
+                          [toggleEdit]="toggleInfoEdit.bind(this)" />
       </td>
     </ng-container>
     <tr *matRowDef="let row; columns: ['value', 'edit']"

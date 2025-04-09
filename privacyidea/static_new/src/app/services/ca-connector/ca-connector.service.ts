@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { httpResource } from '@angular/common/http';
 import { LocalService } from '../local/local.service';
 import { environment } from '../../../environments/environment';
 
@@ -7,13 +7,11 @@ import { environment } from '../../../environments/environment';
   providedIn: 'root',
 })
 export class CaConnectorService {
-  constructor(
-    private http: HttpClient,
-    private localService: LocalService,
-  ) {}
+  caConnectorServiceResource = httpResource<any>(() => ({
+    url: environment.proxyUrl + '/caconnector/',
+    method: 'GET',
+    headers: this.localService.getHeaders(),
+  }));
 
-  getCaConnectorServiceOptions() {
-    const headers = this.localService.getHeaders();
-    return this.http.get(environment.proxyUrl + '/caconnector/', { headers });
-  }
+  constructor(private localService: LocalService) {}
 }

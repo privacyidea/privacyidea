@@ -13,29 +13,20 @@
 
   @switch (selectedApplicationType()) {
     @case ("ssh") {
-      <app-token-applications-ssh [tokenSerial]="tokenSerial"
-                                  [selectedContent]="selectedContent"
+      <app-token-applications-ssh [filterValue]="filterValue"
                                   [dataSource]="sshDataSource"
-                                  [fetchApplicationSshData]="fetchApplicationSshData"
-                                  [filterValue]="filterValue"
-                                  [length]="length"
+                                  [length]="totalLength"
                                   [pageIndex]="pageIndex"
                                   [pageSize]="pageSize"
-                                  [sortby_sortdir]="sortby_sortdir"
-                                  [tokenSelected]="tokenSelected"></app-token-applications-ssh>
+                                  [sort]="sort" />
     }
     @case ("offline") {
-      <app-token-applications-offline [tokenSerial]="tokenSerial"
-                                      [selectedContent]="selectedContent"
-                                      [dataSource]="offlineDataSource"
-                                      [fetchApplicationOfflineData]="fetchApplicationOfflineData"
+      <app-token-applications-offline [dataSource]="offlineDataSource"
                                       [filterValue]="filterValue"
-                                      [length]="length"
+                                      [length]="totalLength"
                                       [pageIndex]="pageIndex"
                                       [pageSize]="pageSize"
-                                      [sortby_sortdir]="sortby_sortdir"
-                                      [tokenSelected]="tokenSelected"></app-token-applications-offline>
-
+                                      [sort]="sort" />
     }
     @default {
       <div>

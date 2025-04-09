@@ -63,6 +63,7 @@ class MockTokenService {
 class MockContainerService {
   selectedContainer = signal('');
   containerOptions = signal(['container1', 'container2', 'admin-container']);
+
   getContainerData() {
     return of({
       result: {
@@ -197,8 +198,8 @@ describe('TokenDetailsComponent', () => {
 
   it('should save token detail', () => {
     spyOn(tokenService, 'setTokenDetail').and.callThrough();
-    component.saveDetail('key', 'value');
-    expect(tokenService.setTokenDetail).toHaveBeenCalledWith(
+    component.saveTokenDetail('key', 'value');
+    expect(tokenService.saveTokenDetail).toHaveBeenCalledWith(
       'Mock serial',
       'key',
       'value',
@@ -243,13 +244,13 @@ describe('TokenDetailsComponent', () => {
   });
 
   it('should navigate to container details when containerSelected is called', () => {
-    component.isProgrammaticChange = signal(false);
+    component.isProgrammaticTabChange = signal(false);
     component.selectedContent = signal('token_overview');
     component.containerSerial = signal('');
 
     component.containerSelected('testSerial');
 
-    expect(component.isProgrammaticChange()).toBeTrue();
+    expect(component.isProgrammaticTabChange()).toBeTrue();
     expect(component.selectedContent()).toBe('container_details');
     expect(component.containerSerial()).toBe('testSerial');
   });

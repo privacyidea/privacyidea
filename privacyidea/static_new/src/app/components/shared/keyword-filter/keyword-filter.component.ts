@@ -1,10 +1,4 @@
-import {
-  Component,
-  effect,
-  Input,
-  signal,
-  WritableSignal,
-} from '@angular/core';
+import { Component, Input, signal, WritableSignal } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
 import { MatFabButton } from '@angular/material/button';
@@ -20,23 +14,14 @@ import { TableUtilsService } from '../../../services/table-utils/table-utils.ser
 export class KeywordFilterComponent {
   @Input() apiFilter!: string[];
   @Input() advancedApiFilter!: string[];
+  @Input() filterHTMLInputElement!: HTMLInputElement;
   @Input() filterValue!: WritableSignal<string>;
-  @Input() clickedKeyword!: WritableSignal<string>;
-  @Input() filterInput!: HTMLInputElement;
   showAdvancedFilter = signal(false);
 
-  constructor(private tableUtilsService: TableUtilsService) {
-    effect(() => {
-      const clicked = this.clickedKeyword();
-      if (clicked && this.filterInput) {
-        this.toggleFilter(clicked, this.filterInput);
-        this.clickedKeyword.set('');
-      }
-    });
-  }
+  constructor(private tableUtilsService: TableUtilsService) {}
 
   onKeywordClick(filterKeyword: string): void {
-    this.clickedKeyword.set(filterKeyword);
+    this.toggleFilter(filterKeyword, this.filterHTMLInputElement);
   }
 
   onToggleAdvancedFilter(): void {
@@ -58,7 +43,7 @@ export class KeywordFilterComponent {
     return regex.test(inputValue);
   }
 
-  public getFilterIconName(keyword: string, currentValue: string): string {
+  getFilterIconName(keyword: string, currentValue: string): string {
     if (keyword === 'active') {
       const activeMatch = currentValue.match(/active:\s*(\S+)/i);
       if (!activeMatch) {
@@ -77,10 +62,7 @@ export class KeywordFilterComponent {
     }
   }
 
-  private toggleFilter(
-    filterKeyword: string,
-    inputElement: HTMLInputElement,
-  ): void {
+  toggleFilter(filterKeyword: string, inputElement: HTMLInputElement): void {
     let newValue;
     if (filterKeyword === 'active') {
       newValue = this.tableUtilsService.toggleActiveInFilter(

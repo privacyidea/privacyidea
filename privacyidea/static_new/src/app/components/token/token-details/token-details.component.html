@@ -44,7 +44,7 @@
                     </mat-form-field>
                   } @else {
                     <a attr.aria-label="{{ element.keyMap.label }} Link"
-                       (click)="containerSelected(element.value)"> {{ element.value }} </a>
+                       (click)="tokenService.containerSelected(element.value)"> {{ element.value }} </a>
                     @if (element.value !== "") {
                       <app-copy-button [copyText]="element.value"></app-copy-button>
                     }
@@ -215,11 +215,8 @@
         <app-token-details-user [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
                                 [isEditingInfo]="isEditingInfo"
                                 [isEditingUser]="isEditingUser"
-                                [realmOptions]="realmService.realmOptions"
-                                [refreshTokenDetails]="refreshTokenDetails"
                                 [repeatPinValue]="repeatPinValue"
                                 [setPinValue]="setPinValue"
-                                [tokenSerial]="tokenSerial"
                                 [userData]="userData"
                                 class="flex"></app-token-details-user>
         <div [ngClass]="[
@@ -232,12 +229,8 @@
                                   [infoData]="infoData"
                                   [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
                                   [isEditingInfo]="isEditingInfo"
-                                  [isEditingUser]="isEditingUser"
-                                  [refreshDetails]="refreshTokenDetails"
-                                  [tokenSerial]="tokenSerial"></app-token-details-info>
-          <app-token-details-actions [refreshTokenDetails]="refreshTokenDetails"
-                                     [tokenSerial]="tokenSerial"
-                                     [tokenType]="tokenType"></app-token-details-actions>
+                                  [isEditingUser]="isEditingUser"></app-token-details-info>
+          <app-token-details-actions [tokenType]="tokenType"></app-token-details-actions>
         </div>
       </div>
     </div>

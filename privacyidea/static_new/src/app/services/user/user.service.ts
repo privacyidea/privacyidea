@@ -1,34 +1,61 @@
-import { computed, Injectable, Signal, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { computed, Injectable, linkedSignal } from '@angular/core';
+import { httpResource } from '@angular/common/http';
 import { LocalService } from '../local/local.service';
 import { environment } from '../../../environments/environment';
-import { catchError, map } from 'rxjs/operators';
-import { NotificationService } from '../notification/notification.service';
-import { distinctUntilChanged, from, switchMap, throwError } from 'rxjs';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { TokenService } from '../token/token.service';
+import { ContainerService } from '../container/container.service';
+import { RealmService } from '../realm/realm.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class UserService {
   private baseUrl = environment.proxyUrl + '/user/';
-  selectedUserRealm = signal<string>('');
-  selectedUsername = signal<string>('');
-  fetchedUsernames: Signal<string[]> = toSignal(
-    toObservable(this.selectedUserRealm).pipe(
-      distinctUntilChanged(),
-      switchMap((realm) => {
-        if (!realm) {
-          return from<string[]>([]);
-        }
-        return this.getUsers(realm).pipe(
-          map((result: any) => result.value.map((user: any) => user.username)),
-        );
-      }),
-    ),
-    { initialValue: [] },
-  );
+
+  selectedUserRealm = linkedSignal({
+    source: () => ({
+      selectedContent: this.tokenService.selectedContent(),
+      tokenServiceSelectedType: this.tokenService.selectedTokenType(),
+      containerServiceSelectedType:
+        this.containerService.selectedContainerType(),
+      defaultRealm: this.realmService.defaultRealm(),
+    }),
+    computation: (source: any) => source.defaultRealm ?? '',
+  });
+
+  selectedUsername = linkedSignal({
+    source: () => ({
+      tokenServiceSelectedType: this.tokenService.selectedTokenType(),
+      containerServiceSelectedType:
+        this.containerService.selectedContainerType(),
+    }),
+    computation: () => '',
+  });
+
+  userResource = httpResource<any>(() => {
+    const selectedUserRealm = this.selectedUserRealm();
+    if (selectedUserRealm === '') {
+      return undefined;
+    }
+    return {
+      url: this.baseUrl,
+      method: 'GET',
+      headers: this.localService.getHeaders(),
+      params: {
+        realm: selectedUserRealm,
+      },
+    };
+  });
+  fetchedUsernames = computed<string[]>(() => {
+    const data = this.userResource.value();
+    if (!data?.result?.value) {
+      return [];
+    }
+    return data.result.value.map((user: any) => user.username);
+  });
+
   userOptions = computed(() => this.fetchedUsernames());
+
   filteredUserOptions = computed(() => {
     const filterValue = (this.selectedUsername() || '').toLowerCase();
     return this.userOptions().filter((option: any) =>
@@ -37,35 +64,9 @@ export class UserService {
   });
 
   constructor(
-    private http: HttpClient,
     private localService: LocalService,
-    private notificationService: NotificationService,
+    private tokenService: TokenService,
+    private containerService: ContainerService,
+    private realmService: RealmService,
   ) {}
-
-  setDefaultRealm(realmService: any): void {
-    realmService.getDefaultRealm().subscribe({
-      next: (realm: any) => {
-        this.selectedUserRealm.set(realm);
-      },
-    });
-  }
-
-  resetUserSelection(): void {
-    this.selectedUsername.set('');
-    this.selectedUserRealm.set('');
-  }
-
-  getUsers(userRealm: string) {
-    const headers = this.localService.getHeaders();
-    return this.http
-      .get(`${this.baseUrl}?realm=${userRealm}`, { headers })
-      .pipe(
-        map((response: any) => response.result),
-        catchError((error) => {
-          console.error('Failed to get users.', error);
-          this.notificationService.openSnackBar('Failed to get users.');
-          return throwError(() => error);
-        }),
-      );
-  }
 }

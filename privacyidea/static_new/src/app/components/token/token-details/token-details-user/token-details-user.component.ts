@@ -67,17 +67,15 @@ export class TokenDetailsUserComponent {
     }[]
   >([]);
   @Input() tokenSerial!: WritableSignal<string>;
-  @Input() refreshTokenDetails!: WritableSignal<boolean>;
   @Input() setPinValue!: WritableSignal<string>;
   @Input() repeatPinValue!: WritableSignal<string>;
   @Input() isEditingUser!: WritableSignal<boolean>;
   @Input() isEditingInfo!: WritableSignal<boolean>;
   @Input() isAnyEditingOrRevoked!: Signal<boolean>;
-  @Input() realmOptions!: WritableSignal<string[]>;
 
   constructor(
     private tokenService: TokenService,
-    private realmService: RealmService,
+    protected realmService: RealmService,
     protected userService: UserService,
     private notificationService: NotificationService,
     protected overflowService: OverflowService,
@@ -86,7 +84,7 @@ export class TokenDetailsUserComponent {
   unassignUser() {
     this.tokenService.unassignUser(this.tokenSerial()).subscribe({
       next: () => {
-        this.refreshTokenDetails.set(true);
+        this.tokenService.tokenDetailResource.reload();
       },
     });
   }
@@ -106,13 +104,7 @@ export class TokenDetailsUserComponent {
 
   toggleUserEdit(): void {
     this.isEditingUser.update((b) => !b);
-    if (this.userService.selectedUserRealm() === '') {
-      this.realmService.getDefaultRealm().subscribe({
-        next: (realm: any) => {
-          this.userService.selectedUserRealm.set(realm);
-        },
-      });
-    }
+    this.realmService.defaultRealmResource.reload();
   }
 
   cancelUserEdit(): void {
@@ -140,7 +132,7 @@ export class TokenDetailsUserComponent {
           this.userService.selectedUsername.set('');
           this.userService.selectedUserRealm.set('');
           this.isEditingUser.update((b) => !b);
-          this.refreshTokenDetails.set(true);
+          this.tokenService.tokenDetailResource.reload();
         },
       });
   }

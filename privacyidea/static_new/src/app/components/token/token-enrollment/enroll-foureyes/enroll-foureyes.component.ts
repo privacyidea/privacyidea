@@ -3,7 +3,6 @@ import {
   computed,
   Input,
   Signal,
-  signal,
   WritableSignal,
 } from '@angular/core';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
@@ -54,8 +53,7 @@ export class EnrollFoureyesComponent {
   >;
   @Input() onlyAddToRealm!: WritableSignal<boolean>;
 
-  requiredRealms = signal<string[]>([]);
-  realmOptions = signal<string[]>([]);
+  realmOptions = this.realmService.realmOptions;
   tokenCountMapping: Signal<Record<string, number>> = computed(() => {
     return this.requiredTokensOfRealms().reduce(
       (acc, curr) => {
@@ -71,12 +69,6 @@ export class EnrollFoureyesComponent {
     private realmService: RealmService,
     private tokenService: TokenService,
   ) {}
-
-  ngOnInit(): void {
-    this.realmService.getRealms().subscribe((response) => {
-      this.realmOptions.set(Object.keys(response.result.value));
-    });
-  }
 
   getTokenCount(realm: string): number {
     const tokensArray = this.requiredTokensOfRealms();

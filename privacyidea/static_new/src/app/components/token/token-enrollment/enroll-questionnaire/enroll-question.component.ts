@@ -34,8 +34,6 @@ export class EnrollQuestionComponent {
   ) {
     this.systemService.getSystemConfig().subscribe((response) => {
       const config = response?.result?.value;
-      console.log('System config:', config);
-
       if (
         config &&
         Object.keys(config).some((key) => key.startsWith('question.question.'))

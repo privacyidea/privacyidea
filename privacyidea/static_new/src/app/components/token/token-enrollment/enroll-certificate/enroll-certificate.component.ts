@@ -1,4 +1,10 @@
-import { Component, Input, signal, WritableSignal } from '@angular/core';
+import {
+  Component,
+  Input,
+  linkedSignal,
+  signal,
+  WritableSignal,
+} from '@angular/core';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -39,35 +45,35 @@ export class EnrollCertificateComponent {
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'certificate')?.text;
+
+  caConnectorOptions = linkedSignal({
+    source: this.caConnectorService.caConnectorServiceResource.value,
+    computation: (data) => {
+      const rawValue = data?.result?.value;
+      return rawValue && typeof rawValue === 'object'
+        ? Object.values(rawValue).map((option: any) => option.connectorname)
+        : [];
+    },
+  });
+
+  certTemplateOptions = linkedSignal({
+    source: this.caConnectorService.caConnectorServiceResource.value,
+    computation: (data) => {
+      const rawValue = data?.result?.value;
+      return Array.isArray(rawValue) && rawValue.length && rawValue[0].templates
+        ? Object.keys(rawValue[0].templates)
+        : [];
+    },
+  });
   @Input() caConnector!: WritableSignal<string>;
   @Input() certTemplate!: WritableSignal<string>;
   @Input() pem!: WritableSignal<string>;
   @Input() description!: WritableSignal<string>;
   intentionToggle = signal('generate');
-  caConnectorOptions = signal<string[]>([]);
-  certTemplateOptions = signal<string[]>([]);
   caConnectorErrorStateMatcher = new CaConnectorErrorStateMatcher();
 
   constructor(
     private caConnectorService: CaConnectorService,
     private tokenService: TokenService,
   ) {}
-
-  ngOnInit(): void {
-    this.caConnectorService
-      .getCaConnectorServiceOptions()
-      .subscribe((response) => {
-        const rawValue = (response as any)?.result?.value;
-        const caOptions =
-          rawValue && typeof rawValue === 'object'
-            ? Object.values(rawValue).map((option: any) => option.connectorname)
-            : [];
-        const templateOptions =
-          Array.isArray(rawValue) && rawValue.length && rawValue[0].templates
-            ? Object.keys(rawValue[0].templates)
-            : [];
-        this.caConnectorOptions.set(caOptions);
-        this.certTemplateOptions.set(templateOptions);
-      });
-  }
 }

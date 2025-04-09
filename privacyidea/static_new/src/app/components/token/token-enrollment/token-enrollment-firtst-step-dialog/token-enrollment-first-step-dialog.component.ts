@@ -1,4 +1,4 @@
-import { Component, Inject, WritableSignal } from '@angular/core';
+import { Component, Inject } from '@angular/core';
 import { MatButton } from '@angular/material/button';
 import {
   MAT_DIALOG_DATA,
@@ -32,14 +32,6 @@ export class TokenEnrollmentFirstStepDialogComponent {
     @Inject(MAT_DIALOG_DATA)
     public data: {
       response: any;
-      tokenSerial: WritableSignal<string>;
-      containerSerial: WritableSignal<string>;
-      selectedContent: WritableSignal<string>;
-      regenerateToken: WritableSignal<boolean>;
-      isProgrammaticChange: WritableSignal<boolean>;
-      username: string;
-      userRealm: string;
-      onlyAddToRealm: WritableSignal<boolean>;
     },
   ) {
     this.dialogRef.afterClosed().subscribe(() => {
@@ -49,14 +41,11 @@ export class TokenEnrollmentFirstStepDialogComponent {
 
   tokenSelected(tokenSerial: string) {
     this.dialogRef.close();
-    this.data.selectedContent.set('token_details');
-    this.data.tokenSerial.set(tokenSerial);
+    this.tokenService.tokenSelected(tokenSerial);
   }
 
   containerSelected(containerSerial: string) {
     this.dialogRef.close();
-    this.data.selectedContent.set('container_details');
-    this.data.isProgrammaticChange.set(true);
-    this.data.containerSerial.set(containerSerial);
+    this.tokenService.containerSelected(containerSerial);
   }
 }

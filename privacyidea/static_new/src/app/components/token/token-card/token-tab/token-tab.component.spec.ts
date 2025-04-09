@@ -65,8 +65,8 @@ describe('TokenTabComponent', () => {
 
     component.tokenSerial = signal<string>('Mock serial');
     component.selectedContent = signal<TokenSelectedContent>('token_overview');
-    component.revoked = signal<boolean>(false);
-    component.active = signal<boolean>(true);
+    component.tokenIsRevoked = signal<boolean>(false);
+    component.tokenIsActive = signal<boolean>(true);
     component.refreshTokenDetails = signal<boolean>(false);
     component.tokenSelection = new SelectionModel<any>(true, []);
 

@@ -8,9 +8,8 @@ describe('CopyButtonComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [CopyButtonComponent]
-    })
-    .compileComponents();
+      imports: [CopyButtonComponent],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(CopyButtonComponent);
     component = fixture.componentInstance;

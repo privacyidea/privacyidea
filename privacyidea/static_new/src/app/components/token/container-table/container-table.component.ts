@@ -1,32 +1,24 @@
 import {
   Component,
-  effect,
-  ElementRef,
   Input,
   linkedSignal,
-  signal,
-  untracked,
   ViewChild,
   WritableSignal,
 } from '@angular/core';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import {
-  MatPaginator,
-  MatPaginatorModule,
-  PageEvent,
-} from '@angular/material/paginator';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatInputModule } from '@angular/material/input';
-import { MatSort, MatSortModule, Sort } from '@angular/material/sort';
+import { MatSortModule, Sort } from '@angular/material/sort';
 import { NgClass } from '@angular/common';
 import { ContainerService } from '../../../services/container/container.service';
 import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
-import { NotificationService } from '../../../services/notification/notification.service';
-import { TokenSelectedContent } from '../token.component';
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
-import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
-import { MatCheckbox } from '@angular/material/checkbox';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { FormsModule } from '@angular/forms';
+import { TokenService } from '../../../services/token/token.service';
+import { TokenSelectedContent } from '../token.component';
 
 const columnsKeyMap = [
   { key: 'select', label: '' },
@@ -51,95 +43,100 @@ const columnsKeyMap = [
     NgClass,
     KeywordFilterComponent,
     CopyButtonComponent,
-    MatCheckbox,
+    MatCheckboxModule,
+    FormsModule,
   ],
   templateUrl: './container-table.component.html',
   styleUrl: './container-table.component.scss',
 })
 export class ContainerTableComponent {
-  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
-  @Input() containerSerial!: WritableSignal<string>;
-  @Input() containerSelection!: WritableSignal<any[]>;
-  @Input() refreshContainerOverview!: WritableSignal<boolean>;
-  sortby_sortdir: WritableSignal<Sort> = signal({
-    active: 'serial',
-    direction: 'asc',
-  });
-  length = signal(0);
-  pageSize = signal(10);
-  pageIndex = signal(0);
-  filterValue = signal('');
-  dataSource = signal(
-    new MatTableDataSource(
-      Array.from({ length: this.pageSize() }, () => {
+  readonly columnsKeyMap = columnsKeyMap;
+  readonly columnKeys: string[] = columnsKeyMap.map((column) => column.key);
+  readonly apiFilter = this.containerService.apiFilter;
+  readonly advancedApiFilter = this.containerService.advancedApiFilter;
+  containerSelection = this.containerService.containerSelection;
+  filterValue = this.containerService.filterValue;
+  pageSize = this.containerService.pageSize;
+  pageIndex = this.containerService.pageIndex;
+  sort = this.containerService.sort;
+  containerResource = this.containerService.containerResource;
+
+  emptyResource = linkedSignal({
+    source: this.pageSize,
+    computation: (pageSize: number) =>
+      Array.from({ length: pageSize }, () => {
         const emptyRow: any = {};
         columnsKeyMap.forEach((column) => {
           emptyRow[column.key] = '';
         });
         return emptyRow;
       }),
-    ),
-  );
-  clickedKeyword = signal<string>('');
-  pageSizeOptions = linkedSignal({
-    source: this.length,
-    computation: (length) =>
-      [5, 10, 15].includes(length) ? [5, 10, 15] : [5, 10, 15, length],
   });
-  displayedColumns: string[] = columnsKeyMap.map((column) => column.key);
-  apiFilter = this.containerService.apiFilter;
-  advancedApiFilter = this.containerService.advancedApiFilter;
-  columnsKeyMap = columnsKeyMap;
-  @ViewChild('filterInput') inputElement!: ElementRef<HTMLInputElement>;
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild(MatSort) sort!: MatSort;
-  filterSubject = new Subject<string>();
+
+  containerDataSource: WritableSignal<MatTableDataSource<any>> = linkedSignal({
+    source: this.containerResource.value,
+    computation: (containerResource, previous) => {
+      if (containerResource) {
+        const processedData = containerResource.result.value.containers.map(
+          (item: any) => ({
+            ...item,
+            users:
+              item.users && item.users.length > 0
+                ? item.users[0]['user_name']
+                : '',
+            user_realm:
+              item.users && item.users.length > 0
+                ? item.users[0]['user_realm']
+                : '',
+          }),
+        );
+        return new MatTableDataSource(processedData);
+      }
+      return previous?.value ?? new MatTableDataSource(this.emptyResource());
+    },
+  });
+
+  total: WritableSignal<number> = linkedSignal({
+    source: this.containerResource.value,
+    computation: (containerResource, previous) => {
+      if (containerResource) {
+        return containerResource.result.value.count;
+      }
+      return previous?.value ?? 0;
+    },
+  });
+
+  pageSizeOptions = linkedSignal({
+    source: this.total,
+    computation: (total) =>
+      [5, 10, 15].includes(total) || total > 50
+        ? [5, 10, 15]
+        : [5, 10, 15, total],
+  });
+
+  @ViewChild('filterHTMLInputElement', { static: true })
+  filterInput!: HTMLInputElement;
+  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
 
   constructor(
-    private containerService: ContainerService,
-    private notificationService: NotificationService,
+    protected containerService: ContainerService,
+    protected tokenService: TokenService,
     protected tableUtilsService: TableUtilsService,
-  ) {
-    effect(() => {
-      this.filterSubject.next(this.filterValue());
-      this.containerSelection.set([]);
-      untracked(() => {
-        if (![5, 10, 15].includes(this.pageSize())) {
-          this.pageSize.set(10);
-        }
-        this.pageIndex.set(0);
-      });
-    });
-    effect(() => {
-      if (this.selectedContent()) {
-        this.containerSelection.set([]);
-      }
-    });
-  }
-
-  ngOnInit() {
-    this.filterSubject
-      .pipe(distinctUntilChanged(), debounceTime(200))
-      .subscribe((filter) => {
-        this.fetchContainerData(filter);
-      });
-  }
-
-  ngAfterViewInit() {
-    this.dataSource().paginator = this.paginator;
-    this.dataSource().sort = this.sort;
-  }
+  ) {}
 
   isAllSelected() {
-    return this.containerSelection().length === this.dataSource().data.length;
+    return (
+      this.containerSelection().length ===
+      this.containerDataSource().data.length
+    );
   }
 
   toggleAllRows() {
     if (this.isAllSelected()) {
       this.containerSelection.set([]);
-      return;
+    } else {
+      this.containerSelection.set([...this.containerDataSource().data]);
     }
-    this.containerSelection.set([...this.dataSource().data]);
   }
 
   toggleRow(row: any): void {
@@ -151,85 +148,30 @@ export class ContainerTableComponent {
     }
   }
 
-  checkboxLabel(row?: any): string {
-    if (!row) {
-      return `${this.isAllSelected() ? 'deselect' : 'select'} all`;
-    }
-    return `${this.containerSelection().includes(row) ? 'deselect' : 'select'} row ${
-      row.position + 1
-    }`;
-  }
-
-  onFilterChange(newFilter: string) {
-    this.filterValue.set(newFilter);
-  }
-
   handleStateClick(element: any) {
     this.containerService
       .toggleActive(element.serial, element.states)
       .subscribe({
         next: () => {
-          this.fetchContainerData();
+          this.containerResource.reload();
         },
         error: (error) => {
           console.error('Failed to toggle active.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to toggle active. ' + message,
-          );
         },
       });
   }
 
   containerSelected(containerSerial: string) {
-    this.containerSerial.set(containerSerial);
-    this.selectedContent.set('container_details');
+    this.containerService.containerSelected(containerSerial);
   }
 
   onPageEvent(event: PageEvent) {
-    this.containerSelection.set([]);
-    this.tableUtilsService.handlePageEvent(
-      event,
-      this.pageIndex,
-      this.pageSize,
-      this.fetchContainerData,
-    );
+    this.pageSize.set(event.pageSize);
+    this.containerService.eventPageSize = event.pageSize;
+    this.pageIndex.set(event.pageIndex);
   }
 
   onSortEvent($event: Sort) {
-    this.containerSelection.set([]);
-    this.tableUtilsService.handleSortEvent(
-      $event,
-      this.pageIndex,
-      this.sortby_sortdir,
-      this.fetchContainerData,
-    );
-  }
-
-  fetchContainerData = (filterValue?: string) => {
-    return this.containerService
-      .getContainerData({
-        page: this.pageIndex() + 1,
-        pageSize: this.pageSize(),
-        sort: this.sortby_sortdir(),
-        filterValue: filterValue ?? this.filterValue(),
-      })
-      .subscribe({
-        next: (response) => {
-          this.length.set(response.result.value.count);
-          this.processDataSource(response.result.value.containers);
-        },
-      });
-  };
-
-  private processDataSource(data: any[]) {
-    const processedData = data.map((item) => ({
-      ...item,
-      users:
-        item.users && item.users.length > 0 ? item.users[0]['user_name'] : '',
-      user_realm:
-        item.users && item.users.length > 0 ? item.users[0]['user_realm'] : '',
-    }));
-    this.dataSource.set(new MatTableDataSource(processedData));
+    this.sort.set($event);
   }
 }

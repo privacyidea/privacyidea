@@ -10,7 +10,6 @@ import {
   WritableSignal,
 } from '@angular/core';
 import { NgClass } from '@angular/common';
-import { OverflowService } from '../../../services/overflow/overflow.service';
 import {
   MatCell,
   MatColumnDef,
@@ -19,7 +18,6 @@ import {
   MatTableModule,
 } from '@angular/material/table';
 import { ContainerService } from '../../../services/container/container.service';
-import { forkJoin, Observable, switchMap } from 'rxjs';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatListItem } from '@angular/material/list';
 import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
@@ -27,7 +25,6 @@ import { EditButtonsComponent } from '../../shared/edit-buttons/edit-buttons.com
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { RealmService } from '../../../services/realm/realm.service';
-import { catchError } from 'rxjs/operators';
 import { MatInput } from '@angular/material/input';
 import {
   MatAutocomplete,
@@ -42,10 +39,10 @@ import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { TokenService } from '../../../services/token/token.service';
 import { MatDivider } from '@angular/material/divider';
 import { MatCheckbox } from '@angular/material/checkbox';
-import { NotificationService } from '../../../services/notification/notification.service';
-import { TokenSelectedContent } from '../token.component';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 import { UserService } from '../../../services/user/user.service';
+import { OverflowService } from '../../../services/overflow/overflow.service';
+import { TokenSelectedContent } from '../token.component';
 
 export const containerDetailsKeyMap = [
   { key: 'type', label: 'Type' },
@@ -97,91 +94,146 @@ interface TokenOption {
     CopyButtonComponent,
   ],
   templateUrl: './container-details.component.html',
-  styleUrl: './container-details.component.scss',
+  styleUrls: ['./container-details.component.scss'],
 })
 export class ContainerDetailsComponent {
-  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
-  @Input() containerSerial!: WritableSignal<string>;
-  @Input() tokenSerial!: WritableSignal<string>;
-  @Input() states!: WritableSignal<string[]>;
-  @Input() refreshContainerDetails!: WritableSignal<boolean>;
-  @Input() isProgrammaticChange!: WritableSignal<boolean>;
+  states = this.containerService.states;
   isEditingUser = signal(false);
   isEditingInfo = signal(false);
-  containerDetailData = signal<
-    {
-      value: any;
-      keyMap: { label: string; key: string };
-      isEditing: WritableSignal<boolean>;
-    }[]
-  >(
-    containerDetailsKeyMap.map((detail) => ({
-      keyMap: detail,
-      value: '',
-      isEditing: signal(false),
-    })),
-  );
-  infoData = signal<
-    {
-      value: any;
-      keyMap: { label: string; key: string };
-      isEditing: WritableSignal<boolean>;
-    }[]
-  >(
-    infoDetailsKeyMap.map((detail) => ({
-      keyMap: detail,
-      value: '',
-      isEditing: signal(false),
-    })),
-  );
-  userData = signal<
-    {
-      value: any;
-      keyMap: { label: string; key: string };
-      isEditing: WritableSignal<boolean>;
-    }[]
-  >([]);
-  tokenOptions = signal<TokenOption[]>([]);
-  selectedRealms = signal<string[]>([]);
-  realmOptions = signal<string[]>([]);
-  tokenToAddFilter = signal('');
-  showOnlyTokenNotInContainer = signal(true);
-  containerTokenData = signal<MatTableDataSource<any>>(
-    new MatTableDataSource<any>([]),
-  );
-  length = signal(0);
-  filterValue = signal('');
-  pageIndex = linkedSignal({
-    source: this.showOnlyTokenNotInContainer,
-    computation: () => 0,
-  });
-  pageSize = signal(10);
-  computedFilterValue = linkedSignal({
-    source: this.showOnlyTokenNotInContainer,
-    computation: (showOnlyTokenNotInContainer) => {
-      if (showOnlyTokenNotInContainer) {
-        return this.filterValue() + ' container_serial:';
-      } else {
-        return this.filterValue().replace(/container_serial:\S*/g, '');
+  tokenSerial = this.tokenService.tokenSerial;
+  containerSerial = this.tokenService.containerSerial;
+  showOnlyTokenNotInContainer = this.tokenService.showOnlyTokenNotInContainer;
+  filterValue = this.tokenService.filterValue;
+
+  tokenResource = this.tokenService.tokenResource;
+  pageIndex = this.tokenService.pageIndex;
+  pageSize = 10;
+  tokenDataSource: WritableSignal<MatTableDataSource<any>> = linkedSignal({
+    source: this.tokenResource.value,
+    computation: (tokenResource, previous) => {
+      if (tokenResource) {
+        return new MatTableDataSource(tokenResource.result.value.tokens);
       }
+      return previous?.value ?? new MatTableDataSource();
     },
   });
-  isAnyEditing = computed(() => {
-    const detailData = this.containerDetailData();
+  total: WritableSignal<number> = linkedSignal({
+    source: this.tokenResource.value,
+    computation: (tokenResource, previous) => {
+      if (tokenResource) {
+        return tokenResource.result.value.count;
+      }
+      return previous?.value ?? 0;
+    },
+  });
 
+  containerDetailResource = this.containerService.containerDetailResource;
+  containerDetails = linkedSignal({
+    source: this.containerDetailResource.value,
+    computation: (containerDetailResourceValue) =>
+      containerDetailResourceValue
+        ? containerDetailResourceValue.result.value.containers[0]
+        : null,
+  });
+  containerDetailData = linkedSignal({
+    source: this.containerDetails,
+    computation: (containerDetails) => {
+      if (!containerDetails) {
+        return containerDetailsKeyMap.map((detail) => ({
+          keyMap: detail,
+          value: '',
+          isEditing: signal(false),
+        }));
+      }
+      return containerDetailsKeyMap
+        .map((detail) => ({
+          keyMap: detail,
+          value: containerDetails[detail.key],
+          isEditing: signal(false),
+        }))
+        .filter((detail) => detail.value !== undefined);
+    },
+  });
+  infoData = linkedSignal({
+    source: this.containerDetails,
+    computation: (containerDetails) => {
+      if (!containerDetails) {
+        return infoDetailsKeyMap.map((detail) => ({
+          keyMap: detail,
+          value: '',
+          isEditing: signal(false),
+        }));
+      }
+      return infoDetailsKeyMap
+        .map((detail) => ({
+          keyMap: detail,
+          value: containerDetails[detail.key],
+          isEditing: signal(false),
+        }))
+        .filter((detail) => detail.value !== undefined);
+    },
+  });
+  containerTokenData = linkedSignal({
+    source: this.containerDetails,
+    computation: (containerDetails, previous) => {
+      if (!containerDetails) {
+        return previous?.value ?? new MatTableDataSource([]);
+      }
+      return new MatTableDataSource(containerDetails.tokens ?? []);
+    },
+  });
+  selectedRealms = linkedSignal({
+    source: this.containerDetails,
+    computation: (containerDetails) => containerDetails?.realms || [],
+  });
+  rawUserData = linkedSignal({
+    source: this.containerDetails,
+    computation: (containerDetails) => {
+      if (
+        !containerDetails ||
+        !Array.isArray(containerDetails.users) ||
+        containerDetails.users.length === 0
+      ) {
+        return {
+          user_realm: '',
+          user_name: '',
+          user_resolver: '',
+          user_id: '',
+        };
+      }
+      return containerDetails.users[0];
+    },
+  });
+  userData = linkedSignal({
+    source: this.rawUserData,
+    computation: (user) => {
+      return containerUserDetailsKeyMap
+        .map((detail) => ({
+          keyMap: detail,
+          value: user[detail.key as keyof typeof user],
+          isEditing: signal(false),
+        }))
+        .filter((detail) => detail.value !== undefined);
+    },
+  });
+  userRealm = linkedSignal({
+    source: this.rawUserData,
+    computation: (user) => user.user_realm || '',
+  });
+
+  isAnyEditing = computed(() => {
     return (
-      detailData.some((element) => element.isEditing()) ||
+      this.containerDetailData().some((element) => element.isEditing()) ||
       this.isEditingUser() ||
       this.isEditingInfo()
     );
   });
-  pageSizeOptions = [10];
-  userRealm = '';
-  @ViewChild('tokenFilterInput')
-  tokenFilterInput!: ElementRef<HTMLInputElement>;
+
+  @ViewChild('filterHTMLInputElement')
+  filterHTMLInputElement!: ElementRef<HTMLInputElement>;
   @ViewChild('tokenAutoTrigger', { read: MatAutocompleteTrigger })
   tokenAutoTrigger!: MatAutocompleteTrigger;
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
 
   constructor(
     protected overflowService: OverflowService,
@@ -189,100 +241,14 @@ export class ContainerDetailsComponent {
     protected tableUtilsService: TableUtilsService,
     protected realmService: RealmService,
     protected tokenService: TokenService,
-    private notificationService: NotificationService,
     protected userService: UserService,
   ) {
     effect(() => {
       this.showOnlyTokenNotInContainer();
-      this.fetchTokenData();
-      if (this.tokenFilterInput) {
-        this.tokenFilterInput.nativeElement.focus();
+      if (this.filterHTMLInputElement) {
+        this.filterHTMLInputElement.nativeElement.focus();
       }
     });
-  }
-
-  ngAfterViewInit() {
-    this.showContainerDetail().subscribe();
-  }
-
-  showContainerDetail() {
-    return forkJoin([
-      this.containerService.getContainerDetails(this.containerSerial()),
-      this.realmService.getRealms(),
-      this.tokenService.getTokenData(
-        this.paginator.pageIndex + 1,
-        this.paginator.pageSize,
-        undefined,
-        this.tokenToAddFilter().trim() + ' container_serial:',
-      ),
-    ]).pipe(
-      switchMap(([containerDetailsResponse, realms, tokens]) => {
-        const containerDetails =
-          containerDetailsResponse.result.value.containers[0];
-        this.containerDetailData.set(
-          containerDetailsKeyMap
-            .map((detail) => ({
-              keyMap: detail,
-              value: containerDetails[detail.key],
-              isEditing: signal(false),
-            }))
-            .filter((detail) => detail.value !== undefined),
-        );
-
-        this.infoData.set(
-          infoDetailsKeyMap
-            .map((detail) => ({
-              keyMap: detail,
-              value: containerDetails[detail.key],
-              isEditing: signal(false),
-            }))
-            .filter((detail) => detail.value !== undefined),
-        );
-
-        this.containerTokenData().data = containerDetails.tokens;
-        this.tokenOptions.set(tokens.result.value.tokens);
-        this.length = tokens.result.value.count;
-
-        let user = {
-          user_realm: '',
-          user_name: '',
-          user_resolver: '',
-          user_id: '',
-        };
-        if (containerDetails['users'].length) {
-          user = containerDetails['users'][0];
-        }
-        this.userData.set(
-          containerUserDetailsKeyMap
-            .map((detail) => ({
-              keyMap: detail,
-              value: user[detail.key as keyof typeof user],
-              isEditing: signal(false),
-            }))
-            .filter((detail) => detail.value !== undefined),
-        );
-        const userRealm = this.userData().find(
-          (detail) => detail.keyMap.key === 'user_realm',
-        )?.value;
-        this.userService.selectedUserRealm.set(userRealm || '');
-        this.userRealm = userRealm || '';
-        this.realmOptions.set(Object.keys(realms.result.value));
-        this.selectedRealms.set(containerDetails.realms);
-        this.states.set(containerDetails['states']);
-        return new Observable<void>((observer) => {
-          observer.next();
-          observer.complete();
-        });
-      }),
-      catchError((error) => {
-        console.error('Failed to get container details.', error);
-        const message = error.error?.result?.error?.message || '';
-        this.notificationService.openSnackBar(
-          'Failed to get container details. ' + message,
-        );
-        throw error;
-      }),
-    );
   }
 
   isEditableElement(key: string) {
@@ -299,7 +265,6 @@ export class ContainerDetailsComponent {
         break;
     }
     element.isEditing.set(!element.isEditing());
-    this.showContainerDetail().subscribe();
   }
 
   saveContainerEdit(element: any) {
@@ -322,7 +287,7 @@ export class ContainerDetailsComponent {
       case 'user_name':
         this.isEditingUser.update((b) => !b);
         if (this.isEditingUser() && !this.userService.selectedUserRealm()) {
-          this.userService.setDefaultRealm(this.realmService);
+          this.realmService.defaultRealmResource.reload();
         }
         return;
       default:
@@ -339,96 +304,76 @@ export class ContainerDetailsComponent {
       })
       .subscribe({
         next: () => {
-          this.userService.resetUserSelection();
+          this.userService.selectedUsername.set('');
+          this.userService.selectedUserRealm.set('');
           this.isEditingUser.update((b) => !b);
-          this.refreshContainerDetails.set(true);
+          this.containerDetailResource.reload();
         },
       });
   }
 
   unassignUser() {
+    const userName = this.userData().find(
+      (d) => d.keyMap.key === 'user_name',
+    )?.value;
+    const userRealm = this.userData().find(
+      (d) => d.keyMap.key === 'user_realm',
+    )?.value;
     this.containerService
-      .unassignUser(
-        this.containerSerial(),
-        this.userData().find((detail) => detail.keyMap.key === 'user_name')
-          ?.value,
-        this.userData().find((detail) => detail.keyMap.key === 'user_realm')
-          ?.value,
-      )
+      .unassignUser(this.containerSerial(), userName ?? '', userRealm ?? '')
       .subscribe({
         next: () => {
-          this.refreshContainerDetails.set(true);
+          this.containerDetailResource.reload();
         },
       });
   }
 
-  onPageChanged(event: PageEvent): void {
-    this.pageSize.set(event.pageSize);
+  onPageEvent(event: PageEvent) {
+    this.tokenService.eventPageSize = event.pageSize;
     this.pageIndex.set(event.pageIndex);
-
     setTimeout(() => {
-      this.tokenFilterInput.nativeElement.focus();
+      this.filterHTMLInputElement.nativeElement.focus();
       this.tokenAutoTrigger.openPanel();
     }, 0);
   }
 
-  handleFilterInput(event: Event) {
-    this.filterValue.set((event.target as HTMLInputElement).value.trim());
+  onFilterEvent(newFilter: string) {
     if (this.showOnlyTokenNotInContainer()) {
-      this.filterValue.set(this.filterValue() + ' container_serial:');
+      newFilter = newFilter + ' container_serial:';
     }
-    this.pageIndex.set(0);
-    this.paginator.pageIndex = this.pageIndex();
+    this.filterValue.set(newFilter);
   }
 
   addTokenToContainer(option: TokenOption) {
     this.containerService
       .addTokenToContainer(this.containerSerial(), option['serial'])
-      .pipe(switchMap(() => this.showContainerDetail()))
       .subscribe({
         next: () => {
-          this.showContainerDetail();
+          this.containerDetailResource.reload();
+          this.tokenService.tokenResource.reload();
         },
       });
   }
 
-  private fetchTokenData() {
-    this.tokenService
-      .getTokenData(
-        this.pageIndex() + 1,
-        this.pageSize(),
-        undefined,
-        this.computedFilterValue(),
-      )
-      .subscribe({
-        next: (response: any) => {
-          this.tokenOptions.set(response.result.value.tokens);
-          this.length = response.result.value.count;
-        },
-      });
-  }
-
-  private saveRealms() {
+  saveRealms() {
     this.containerService
       .setContainerRealm(this.containerSerial(), this.selectedRealms())
-      .pipe(switchMap(() => this.showContainerDetail()))
       .subscribe({
         next: () => {
-          this.showContainerDetail();
+          this.containerDetailResource.reload();
         },
       });
   }
 
-  private saveDescription() {
+  saveDescription() {
     const description = this.containerDetailData().find(
       (detail) => detail.keyMap.key === 'description',
     )?.value;
     this.containerService
       .setContainerDescription(this.containerSerial(), description)
-      .pipe(switchMap(() => this.showContainerDetail()))
       .subscribe({
         next: () => {
-          this.showContainerDetail();
+          this.containerDetailResource.reload();
         },
       });
   }
