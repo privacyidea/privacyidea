@@ -58,15 +58,30 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                         pi-sort-by="serial"
                         translate>Serial
                 </button>
+                <pi-filter ng-model="filter.serial"
+                           ng-change="get()"
+                           ng-keypress="($event.which==13)?get():return"
+                ></pi-filter>
             </th>
             <th class="pifilter">
                 <button class="btn btn-default unsorted"
                         pi-sort-by="type"
                         translate>Type
                 </button>
+                <pi-filter ng-model="filter.type"
+                           ng-change="get()"
+                           ng-keypress="($event.which==13)?get():return"
+                ></pi-filter>
             </th>
-            <th translate>
-                Description
+            <th class="pifilter">
+                <button class="btn btn-default unsorted"
+                        pi-sort-by="description"
+                        translate>Description
+                </button>
+                <pi-filter ng-model="filter.description"
+                           ng-change="get()"
+                           ng-keypress="($event.which==13)?get():return"
+                ></pi-filter>
             </th>
             <th ng-show="loggedInUser.role == 'admin'" translate>
                 User
@@ -76,6 +91,10 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             </th>
             <th ng-show="loggedInUser.role == 'admin'" translate>
                 Container Realms
+                <pi-filter ng-model="filter.realm"
+                           ng-change="get()"
+                           ng-keypress="($event.which==13)?get():return"
+                ></pi-filter>
             </th>
         </tr>
         </thead>
