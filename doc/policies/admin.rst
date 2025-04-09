@@ -1164,3 +1164,13 @@ The administrator is allowed to list container templates and see the template pr
 In combination with the ```container_list`` policy, the administrator is allowed to compare templates with containers.
 
 New in version 3.11
+
+hide_container_info
+~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This specifies a whitespace-separated list of container info keys that should be removed from the response of the
+:http:get:`/container/` endpoint and therefore will not be shown in the WebUI on the container details page.
+
+New in version 3.12

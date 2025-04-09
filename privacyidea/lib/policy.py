@@ -430,6 +430,7 @@ class ACTION(object):
     CONTAINER_WIZARD_TEMPLATE = "container_wizard_template"
     CONTAINER_WIZARD_REGISTRATION = "container_wizard_registration"
     CLIENT_MODE_PER_USER = "client_mode_per_user"
+    HIDE_CONTAINER_INFO = "hide_container_info"
 
 
 class TYPE(object):
@@ -2168,7 +2169,11 @@ def get_static_policy_definitions(scope=None):
             ACTION.CONTAINER_TEMPLATE_LIST: {'type': 'bool',
                                              'desc': _('Admin is allowed to list templates and view their details.'),
                                              'mainmenu': [MAIN_MENU.TOKENS],
-                                             'group': GROUP.CONTAINER}
+                                             'group': GROUP.CONTAINER},
+            ACTION.HIDE_CONTAINER_INFO: {'type': TYPE.STRING,
+                                         'desc': _('A whitespace-separated list of container info keys that shall '
+                                                   'not be displayed to the admin.'),
+                                         'group': GROUP.CONTAINER}
         },
         SCOPE.USER: {
             ACTION.ASSIGN: {
@@ -2349,7 +2354,11 @@ def get_static_policy_definitions(scope=None):
             ACTION.CONTAINER_TEMPLATE_LIST: {'type': 'bool',
                                              'desc': _('Users are allowed to list templates and view their details.'),
                                              'mainmenu': [MAIN_MENU.TOKENS],
-                                             'group': GROUP.CONTAINER}
+                                             'group': GROUP.CONTAINER},
+            ACTION.HIDE_CONTAINER_INFO: {'type': TYPE.STRING,
+                                         'desc': _('A whitespace-separated list of container info keys that shall '
+                                                   'not be displayed to the users.'),
+                                         'group': GROUP.CONTAINER}
         },
         SCOPE.ENROLL: {
             ACTION.MAXTOKENREALM: {
@@ -3296,17 +3305,18 @@ class Match(object):
                    sort_by_priority=True, serial=g.serial)
 
     @classmethod
-    def admin_or_user(cls, g, action, user_obj):
+    def admin_or_user(cls, g, action, user_obj, allowed_realms=None):
         """
         Depending on the role of the currently logged-in user, match either scope=ADMIN or scope=USER policies.
-        If the currently logged-in user is an admin, match policies against the username, adminrealm
-        and the given user_obj on which the admin is acting.
+        If the currently logged-in user is an admin, match policies against the username, adminrealm, the allowed
+        user realms (if any) for the admin and the given user_obj on which the admin is acting.
         If the currently logged-in user is a user, match policies against the username and the given realm.
         The client IP is matched implicitly.
 
         :param g: context object
         :param action: the policy action
         :param user_obj: the user_obj on which the administrator is acting
+        :param allowed_realms: list of realm names the admin is allowed to manage (None if all realms are allowed)
         :rtype: ``Match``
         """
         from privacyidea.lib.auth import ROLE
@@ -3321,12 +3331,13 @@ class Match(object):
                 # Otherwise, we take the user from the logged-in user.
                 username = g.logged_in_user["username"]
                 userrealm = g.logged_in_user["realm"]
+            allowed_realms = None   # admin only attribute
         else:
             raise MatchingError("Unknown role")
         return cls(g, name=None, scope=scope, realm=userrealm, active=True,
                    resolver=None, user=username, user_object=user_obj,
                    client=g.client_ip, action=action, adminrealm=adminrealm, adminuser=adminuser,
-                   time=None, sort_by_priority=True, serial=g.serial)
+                   time=None, sort_by_priority=True, serial=g.serial, additional_realms=allowed_realms)
 
     @classmethod
     def generic(cls, g, scope: str = None, realm: str = None, resolver: str = None, user: str = None,
