@@ -90,6 +90,10 @@ def yubico_api_signature(data, api_key):
     r = dict(data)
     if 'h' in r:
         del r['h']
+    if 'ttype' in r:
+        # The /ttype/yubikey endpoint adds ttype=yubikey to the request parameters which is obviously not included in
+        # the signature according to the yubico specification
+        del r['ttype']
     keys = sorted(r.keys())
     data_string = ""
     for key in keys:
@@ -374,7 +378,7 @@ class YubikeyTokenClass(TokenClass):
         :query otp: The OTP from the yubikey in the yubikey mode
         :query nonce: 16-40 bytes of random data
 
-        Optional parameters h, timestamp, sl, timeout are not supported at the
+        Optional parameters timestamp, sl, timeout are not supported at the
         moment.
         """
         id = getParam(request.all_data, "id")

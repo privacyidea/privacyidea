@@ -58,10 +58,11 @@ tokenclass implementations like lib.tokens.hotptoken)
 
 This is the middleware/glue between the HTTP API and the database
 """
-
+import base64
 import datetime
 import logging
 import os
+import random
 import string
 import traceback
 from collections import defaultdict
@@ -118,6 +119,11 @@ optional = True
 required = False
 
 ENCODING = "utf-8"
+
+# Configuration to generate a complete random serial
+PI_TOKEN_SERIAL_RANDOM = "PI_TOKEN_SERIAL_RANDOM"  # nosec B105
+
+B32_ALPHABET = base64._b32alphabet.decode()
 
 
 # Define function to convert Oracle CLOBs to VARCHAR before using them in a
@@ -182,10 +188,6 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
     :return: An SQLAlchemy sql query
     """
     sql_query = Token.query
-    if user is not None and not user.is_empty():
-        # extract the realm from the user object:
-        realm = user.realm
-
     if tokentype is not None and tokentype.strip("*"):
         # filter for type
         if "*" in tokentype:
@@ -275,8 +277,12 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
         sql_query = sql_query.filter(Token.serial.in_(serial_list))
 
     if user is not None and not user.is_empty():
-
-        # filter for the rest of the user.
+        if user.realm:
+            realm_db = Realm.query.filter(func.lower(Realm.name) == user.realm.lower()).first()
+            if realm_db:
+                sql_query = sql_query.filter(TokenOwner.realm_id == realm_db.id)
+            else:
+                log.warning(f"The users realm {user.realm} does not exist. Ignoring it as filter parameter.")
         if user.resolver:
             sql_query = sql_query.filter(TokenOwner.resolver == user.resolver)
         (uid, _rtype, _resolver) = user.get_user_identifiers()
@@ -515,7 +521,8 @@ def get_tokens(tokentype=None, token_type_list=None, realm=None, assigned=None, 
     :type tokentype: basestring
     :param token_type_list: A list of token types. If None or empty, all token types are returned.
     :type token_type_list: list
-    :param realm: get tokens of a realm. If None, all tokens are returned.
+    :param realm: get tokens of a realm. If None, all tokens are returned. If allowed_realms is not None, it must
+        contain this realm, otherwise no matching tokens will be found.
     :type realm: basestring
     :param assigned: Get either assigned (True) or unassigned (False) tokens. If None, gets all tokens.
     :type assigned: bool
@@ -603,7 +610,8 @@ def get_tokens_paginate(tokentype=None, token_type_list=None, realm=None, assign
 
     :param tokentype:
     :param token_type_list: A list of token types
-    :param realm:
+    :param realm: A realm the token is assigned to (if allowed_realms is not None, it must contain this realm,
+        otherwise no matching tokens will be found)
     :param assigned: Returns assigned (True) or not assigned (False) tokens
     :type assigned: bool
     :param user: The user, whose token should be displayed
@@ -1109,9 +1117,33 @@ def get_serial_by_otp_list(token_list: list, otp_list: list, window: int = 10, c
 
 
 @log_with(log)
-def gen_serial(tokentype=None, prefix=None):
+def gen_serial(tokentype: str, prefix: str = None) -> str:
     """
-    generate a serial for a given tokentype
+    Generate a serial for a given token type.
+
+    The serial consists of the token type prefix and a randomly generated string
+    of characters. By default, the random string contains 8 characters.
+
+    If no prefix is given, it is determined by the token class prefix.
+
+    The generation of the random part of the serial is determined by the
+    ``PI_TOKEN_SERIAL_RANDOM`` setting in :ref:`the config file <picfg_token_serial_random>`.
+    The default is to calculate a two-part serial with the first 4 characters
+    containing the current token count at the time of the generation and the
+    next 4 characters containing a random hexadecimal value.
+    This severely limits the number of generated serials since for every count
+    value only 16\\ :sup:`4` possible values for the random part exist. Specific count
+    values are only ever reused if tokens are deleted.
+
+    Setting ``PI_TOKEN_SERIAL_RANDOM`` to ``True`` enables to completely generate
+    the random string with 4 random digits and the rest using the Base32
+    character table (See :rfc:`4648#section-6`) thus allowing more than
+    10\\ :sup:`10` different serials.
+
+    Due to the required uniqueness of the serial, each generated serial is
+    checked if it already exists in the database. If the number of possibilities
+    for generated serials decreases, this can lead to excessive queries on the
+    database.
 
     :param tokentype: the token type prefix is done by a lookup on the tokens
     :type tokentype: str
@@ -1120,26 +1152,31 @@ def gen_serial(tokentype=None, prefix=None):
     :return: serial number
     :rtype: str
     """
+    random_serial = get_app_config_value(PI_TOKEN_SERIAL_RANDOM, False)
+    # TODO: the serial length is currently not configurable through the UI
     serial_len = int(get_from_config("SerialLength") or 8)
-
-    def _gen_serial(_prefix, _tokennum):
-        h_serial = ''
-        num_str = '{:04d}'.format(_tokennum)
-        h_len = serial_len - len(num_str)
-        if h_len > 0:
-            h_serial = hexlify_and_unicode(os.urandom(h_len)).upper()[0:h_len]
-        return "{0!s}{1!s}{2!s}".format(_prefix, num_str, h_serial)
-
-    if not tokentype:
-        tokentype = 'PIUN'
     if not prefix:
         prefix = get_token_prefix(tokentype.lower(), tokentype.upper())
+
+    if random_serial:
+        def _gen_serial(_tokennum) -> str:
+            digit_part = random.randrange(10000)  # nosec B311
+            b32_part = "".join([random.choice(B32_ALPHABET) for _ in range(serial_len - 4)])  # nosec B311
+            return f"{prefix}{digit_part:04}{b32_part}"
+    else:
+        def _gen_serial(_tokennum):
+            h_serial = ''
+            num_str = '{:04d}'.format(_tokennum)
+            h_len = serial_len - len(num_str)
+            if h_len > 0:
+                h_serial = hexlify_and_unicode(os.urandom(h_len)).upper()[0:h_len]
+            return "{0!s}{1!s}{2!s}".format(prefix, num_str, h_serial)
 
     # now search the number of tokens of tokenytype in the token database
     tokennum = Token.query.filter(Token.tokentype == tokentype).count()
 
     # Now create the serial
-    serial = _gen_serial(prefix, tokennum)
+    serial = _gen_serial(tokennum)
 
     # now test if serial already exists
     while True:
@@ -1147,7 +1184,7 @@ def gen_serial(tokentype=None, prefix=None):
         if numtokens == 0:
             # ok, there is no such token, so we're done
             break
-        serial = _gen_serial(prefix, tokennum + numtokens)  # pragma: no cover
+        serial = _gen_serial(tokennum + numtokens)  # pragma: no cover
 
     return serial
 
@@ -2319,7 +2356,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
     for token in token_list:
         # Check if the max auth is succeeded
         if token.check_all(message_list):
-            r_chal, message, transaction_id, challenge_info = token.create_challenge(
+            challenge_created, message, transaction_id, challenge_info = token.create_challenge(
                 transactionid=transaction_id, options=options)
 
             # We need to pass the info if a push token has been triggered, so that require presence can re-use the
@@ -2334,7 +2371,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
             message = challenge_text_replace(message, user=token.user, token_obj=token,
                                              additional_tags=additional_tags)
             message_list.append(message)
-            if r_chal:
+            if challenge_created:
                 challenge_info = challenge_info or {}
                 challenge_info["transaction_id"] = transaction_id
                 challenge_info["serial"] = token.token.serial
@@ -2360,7 +2397,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
     # The "messages" element is needed by some decorators
     reply_dict["messages"] = message_list
     # TODO: This line is deprecated: Add the information for the old administrative triggerchallenge
-    reply_dict["transaction_ids"] = [chal.get("transaction_id") for chal in reply_dict.get("multi_challenge", [])]
+    reply_dict["transaction_ids"] = [challenge.get("transaction_id") for challenge in reply_dict.get("multi_challenge", [])]
 
 
 def weigh_token_type(token_obj):

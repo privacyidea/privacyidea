@@ -15,9 +15,13 @@
   but the serial of the token is required.
 * The webauthn JavaScript submodule was removed and replaced with a static file.
   When using a Git-Checkout you probably need to remove the directory/submodule before updating.
-* Deprecation of `/validate/samlcheck`: The endpoint will be removed in the future version **3.12**.
-  If you are using that endpoint for one of your applications, please start using `validate/check` with the policies
-  `add_user_in_response` and/or `add_resolver_in_response`.
+* Deprecation:
+  * `/validate/samlcheck`: The endpoint will be removed in the future version **3.12**.
+    This also removes the `Include SAML attributes in the authentication response` configuration option.
+    If you are using that endpoint for one of your applications, please start using `validate/check` with the policies
+    `add_user_in_response` and/or `add_resolver_in_response`.
+  * Authorization Policies `no_detail_on_fail` and `no_detail_on_success` since they
+    break challenge-response authentication.
 
 ## Update from 3.9 to 3.10
 

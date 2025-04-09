@@ -1,12 +1,13 @@
 <h2 translate>HOTP Token settings</h2>
 <p class="help-block" translate>
-    The HOTP Token is a event based one time password token.
+    The HOTP Token is an event based one time password token.
     It is described in <a href="https://tools.ietf.org/html/rfc4226">RFC
     4226</a>.
 </p>
 <p translate>
     Here you can define settings, that will be set as default values, when
-    enrolling a HOTP token.
+    enrolling a HOTP token. Note that the user/admin policy <code>hotp_hashlib</code> always have precedence over
+    this default value.
 </p>
 <div class="form-group">
     <label for="hotpHashlib" translate>Default Hashlib</label>
