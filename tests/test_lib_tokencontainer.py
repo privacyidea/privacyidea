@@ -1,6 +1,6 @@
 import base64
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import set_privacyidea_config
@@ -18,7 +18,8 @@ from privacyidea.lib.container import (delete_container_by_id, find_container_by
                                        get_templates_by_query, get_template_obj,
                                        create_container_template_from_db_object, compare_template_dicts,
                                        set_default_template, compare_template_with_container,
-                                       finalize_registration, finalize_container_rollover, init_container_rollover)
+                                       finalize_registration, finalize_container_rollover, init_container_rollover,
+                                       unassign_user)
 from privacyidea.lib.container import get_container_classes, unregister
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.containers.container_info import TokenContainerInfoData, PI_INTERNAL
@@ -661,6 +662,7 @@ class TokenContainerManagementTestCase(MyTestCase):
             serial = init_container({"type": t, "description": "test container", "realm": r})["container_serial"]
             container_serials.append(serial)
 
+        # ---- container serial ----
         # Filter for exact container serial
         container_data = get_all_containers(serial=container_serials[0], pagesize=15)
         self.assertEqual(1, container_data["count"])
@@ -683,62 +685,181 @@ class TokenContainerManagementTestCase(MyTestCase):
         container_data = get_all_containers(serial="non_existing_serial")
         self.assertEqual(0, len(container_data["containers"]))
 
+        # Filter for container serials starting with "SMPH"
+        container_data = get_all_containers(serial="SMPH*", pagesize=15)
+        self.assertEqual(2, container_data["count"])
+        self.assertSetEqual(set(container_serials[i] for i in [0, 3]),
+                            {container.serial for container in container_data["containers"]})
+
+        # Filter for any container serial
+        container_data = get_all_containers(serial="*", pagesize=15)
+        self.assertEqual(6, container_data["count"])
+
+        # Filter for container serial containing "ont"
+        container_data = get_all_containers(serial="*ont*", pagesize=15)
+        self.assertEqual(2, container_data["count"])
+
+        # ---- Type ----
         # Filter for type
         container_data = get_all_containers(ctype="generic", pagesize=15)
         for container in container_data["containers"]:
             self.assertEqual(container.type, "generic")
         self.assertEqual(2, container_data["count"])
 
+        # Filter for type using wildcards
+        container_data = get_all_containers(ctype="*ne*", pagesize=15)
+        self.assertEqual(4, container_data["count"])
+        for container in container_data["containers"]:
+            self.assertIn(container.type, ["generic", "smartphone"])
+
         # Filter for non-existing type
         container_data = get_all_containers(ctype="random_type")
         self.assertEqual(0, len(container_data["containers"]))
 
-        # Assign token
+        # ---- token serial ----
+        # Add token
         tokens = []
-        params = {"genkey": "1"}
+        params = {"type": "hotp", "genkey": "1"}
+        container = find_container_by_serial(container_serials[2])
         for i in range(3):
             t = init_token(params)
             tokens.append(t)
+            container.add_token(t)
         token_serials = [t.get_serial() for t in tokens]
 
-        for serial in container_serials[2:4]:
-            container = find_container_by_serial(serial)
-            for token in tokens:
-                container.add_token(token)
+        token = init_token(params)
+        container = find_container_by_serial(container_serials[3])
+        container.add_token(token)
 
         # Filter for token serial
         container_data = get_all_containers(token_serial=token_serials[1], pagesize=15)
         for container in container_data["containers"]:
+            self.assertTrue(container.serial in container_serials[2])
+        self.assertEqual(1, container_data["count"])
+
+        # filter for token serial containing wildcard
+        container_data = get_all_containers(token_serial="OATH*", pagesize=15)
+        for container in container_data["containers"]:
             self.assertTrue(container.serial in container_serials[2:4])
         self.assertEqual(2, container_data["count"])
+
+        # filter for non-matching token serial containing wildcard
+        container_data = get_all_containers(token_serial="xyz1234*", pagesize=15)
+        self.assertEqual(0, container_data["count"])
 
         # Filter for non-existing token serial
         container_data = get_all_containers(token_serial="non_existing_token", pagesize=15)
         self.assertEqual(0, len(container_data["containers"]))
 
-        # Filter by realms
-        container_data = get_all_containers(realms=["realm1"], pagesize=15)
+        # ---- Realm ----
+        # Filter by realm
+        container_data = get_all_containers(realm="realm1", pagesize=15)
         self.assertEqual(4, len(container_data["containers"]))
         for container in container_data["containers"]:
             self.assertEqual("realm1", container.realms[0].name)
 
+        # Filter by realm including wildcards
+        container_data = get_all_containers(realm="*1", pagesize=15)
+        self.assertEqual(4, len(container_data["containers"]))
+        for container in container_data["containers"]:
+            self.assertIn("1", container.realms[0].name)
+
+        # Filter by realms case-insensitive
+        container_data = get_all_containers(realm="rEalM2", pagesize=15)
+        self.assertEqual(2, len(container_data["containers"]))
+        for container in container_data["containers"]:
+            self.assertEqual("realm2", container.realms[0].name)
+
         # Filter for non-existing realm
-        container_data = get_all_containers(realms=["non_existing_realm"], pagesize=15)
+        container_data = get_all_containers(realm="non_existing_realm", pagesize=15)
         self.assertEqual(0, len(container_data["containers"]))
 
-        # Filter by user
-        user_hans = User(login="hans", realm=self.realm1)
-        assign_user(container_serials[1], user_hans)
-        container_data = get_all_containers(user=user_hans, pagesize=15)
+        # ---- user ----
+        # Filter by user (same username and resolver, but different realms)
+        user_cornelius_1 = User(login="cornelius", realm=self.realm1)
+        assign_user(container_serials[1], user_cornelius_1)
+        user_cornelius_2 = User(login="cornelius", realm=self.realm2)
+        assign_user(container_serials[2], user_cornelius_2)
+        container_data = get_all_containers(user=user_cornelius_1, pagesize=15)
         self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(container_serials[1], container_data["containers"][0].serial)
         self.assertEqual(1, len(container_data["containers"][0].get_users()))
-        self.assertEqual("hans", container_data["containers"][0].get_users()[0].login)
+        container1_owner = container_data["containers"][0].get_users()[0]
+        self.assertEqual(user_cornelius_1, container1_owner)
 
         # Filter for non-existing user
         user_invalid = User(login="invalid", realm="random")
         container_data = get_all_containers(user=user_invalid, pagesize=15)
         self.assertEqual(0, len(container_data["containers"]))
 
+        # ---- assigned ----
+        container_data = get_all_containers(assigned=True, pagesize=15)
+        self.assertEqual(2, len(container_data["containers"]))
+        self.assertSetEqual(set(container_serials[1:3]),
+                            {container.serial for container in container_data["containers"]})
+
+        # not assigned
+        container_data = get_all_containers(assigned=False, pagesize=15)
+        self.assertEqual(4, len(container_data["containers"]))
+        not_assigned_serials = [container.serial for container in container_data["containers"]]
+        self.assertNotIn(container_serials[1], not_assigned_serials)
+        self.assertNotIn(container_serials[2], not_assigned_serials)
+
+        # ---- resolver ----
+        # unassign one user
+        unassign_user(container_serials[2], user_cornelius_2)
+        # exact match
+        container_data = get_all_containers(resolver=self.resolvername1, pagesize=15)
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(1, len(container_data["containers"][0].get_users()))
+        self.assertEqual(self.resolvername1, container_data["containers"][0].get_users()[0].resolver)
+
+        # wildcard
+        container_data = get_all_containers(resolver="reso*", pagesize=15)
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(1, len(container_data["containers"][0].get_users()))
+        self.assertEqual(self.resolvername1, container_data["containers"][0].get_users()[0].resolver)
+
+        # non-existing resolver
+        container_data = get_all_containers(resolver="random*", pagesize=15)
+        self.assertEqual(0, len(container_data["containers"]))
+
+        # ---- info ----
+        # Add info
+        container_3 = find_container_by_serial(container_serials[3])
+        container_3.set_container_info({"key1": "value1", "key2": "value2"})
+        container_4 = find_container_by_serial(container_serials[4])
+        container_4.set_container_info({"key1": "value1", "test": "1234"})
+        # exact
+        container_data = get_all_containers(info={"key1": "value1"}, pagesize=15)
+        self.assertEqual(2, len(container_data["containers"]))
+        self.assertSetEqual(set(container_serials[3:5]),
+                            {container.serial for container in container_data["containers"]})
+
+        # wildcard
+        container_data = get_all_containers(info={"key*": "*2*"}, pagesize=15)
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(container_serials[3], container_data["containers"][0].serial)
+
+        # no match
+        container_data = get_all_containers(info={"test": "*value*"}, pagesize=15)
+        self.assertEqual(0, len(container_data["containers"]))
+
+        # ---- description ----
+        # filter by description
+        find_container_by_serial(container_serials[0]).description = "test description"
+        find_container_by_serial(container_serials[2]).description = "this is an awesome description"
+
+        # exact match
+        container_data = get_all_containers(description="test description")
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(container_serials[0], container_data["containers"][0].serial)
+
+        # wildcard
+        container_data = get_all_containers(description="*description*")
+        self.assertEqual(2, len(container_data["containers"]))
+
+        # ---- template ----
         # Create container with template
         template_params = {"name": "test",
                            "container_type": "smartphone",
@@ -746,10 +867,15 @@ class TokenContainerManagementTestCase(MyTestCase):
         create_container_template(container_type=template_params["container_type"],
                                   template_name=template_params["name"],
                                   options=template_params["template_options"])
-        init_container({"type": "smartphone", "template": template_params})
+        container_serial = init_container({"type": "smartphone", "template": template_params})["container_serial"]
 
         # check filter by template
         container_data = get_all_containers(template="test")
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual("test", container_data["containers"][0].template.name)
+
+        # filter template with wildcards
+        container_data = get_all_containers(template="te*")
         self.assertEqual(1, len(container_data["containers"]))
         self.assertEqual("test", container_data["containers"][0].template.name)
 
@@ -757,7 +883,96 @@ class TokenContainerManagementTestCase(MyTestCase):
         container_data = get_all_containers(template="random")
         self.assertEqual(0, len(container_data["containers"]))
 
-        # Test pagination
+        # ---- last_auth ----
+        # Add last_auth
+        container_3 = find_container_by_serial(container_serials[3])
+        container_3._db_container.last_seen = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=2)
+        container_4 = find_container_by_serial(container_serials[4])
+        container_4._db_container.last_seen = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=300)
+
+        # within last hour
+        container_data = get_all_containers(last_auth_delta="1h", pagesize=15)
+        self.assertEqual(0, len(container_data["containers"]))
+
+        # within last 7 days
+        container_3._db_container.last_seen = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=2)
+        container_data = get_all_containers(last_auth_delta="7d", pagesize=15)
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(container_serials[3], container_data["containers"][0].serial)
+
+        # within last year
+        container_data = get_all_containers(last_auth_delta="1y", pagesize=15)
+        self.assertEqual(2, len(container_data["containers"]))
+        self.assertSetEqual({container_serials[3], container_serials[4]},
+                            {container.serial for container in container_data["containers"]})
+
+        # within last minute
+        container_3._db_container.last_seen = datetime.now(timezone.utc).replace(tzinfo=None)
+        container_data = get_all_containers(last_auth_delta="1m", pagesize=15)
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(container_serials[3], container_data["containers"][0].serial)
+
+        # ---- last_sync ----
+        # Add last_sync
+        container_3._db_container.last_updated = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=5)
+        container_4._db_container.last_updated = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=300)
+
+        # within last minute
+        container_data = get_all_containers(last_sync_delta="1m", pagesize=15)
+        self.assertEqual(0, len(container_data["containers"]))
+
+        # within last hour
+        container_data = get_all_containers(last_sync_delta="1h", pagesize=15)
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(container_serials[3], container_data["containers"][0].serial)
+
+        # within last year
+        container_data = get_all_containers(last_sync_delta="1y", pagesize=15)
+        self.assertEqual(2, len(container_data["containers"]))
+        self.assertSetEqual({container_serials[3], container_serials[4]},
+                            {container.serial for container in container_data["containers"]})
+
+        # ---- state ----
+        # Add states
+        container_3.add_states(["disabled", "lost"])
+        container_4.add_states(["disabled"])
+
+        # exact
+        container_data = get_all_containers(state="disabled", pagesize=15)
+        self.assertEqual(2, len(container_data["containers"]))
+        self.assertSetEqual({container_serials[3], container_serials[4]},
+                            {container.serial for container in container_data["containers"]})
+
+        # wildcard
+        container_data = get_all_containers(state="*s*", pagesize=15)
+        self.assertEqual(2, len(container_data["containers"]))
+        self.assertSetEqual({container_serials[3], container_serials[4]},
+                            {container.serial for container in container_data["containers"]})
+
+        # wildcard
+        container_data = get_all_containers(state="los*", pagesize=15)
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(container_serials[3], container_data["containers"][0].serial)
+
+        # non-existing state
+        container_data = get_all_containers(state="non_existing_state", pagesize=15)
+        self.assertEqual(0, len(container_data["containers"]))
+
+        # ---- combined search ----
+        container = find_container_by_serial(container_serial)
+        container.add_user(User(login="hans", realm=self.realm1))
+        container.set_realms([self.realm1, self.realm2])
+        container.add_token(init_token({"type": "hotp", "genkey": True}))
+        # correct search
+        container_data = get_all_containers(user=User("hans", self.realm1), serial="SMPH*", ctype="smartphone",
+                                            realm="realm2", token_serial="OATH*", template="test", pagesize=15)
+        self.assertEqual(1, container_data["count"])
+        # no container fits all search params
+        container_data = get_all_containers(user=User("hans", self.realm1), serial="SMPH*", ctype="smartphone",
+                                            realm="realm3", token_serial="OATH*", template="test", pagesize=15)
+        self.assertEqual(0, container_data["count"])
+
+        # ---- Test pagination ----
         container_data = get_all_containers(page=2, pagesize=2)
         self.assertEqual(1, container_data["prev"])
         self.assertEqual(2, container_data["current"])
@@ -771,6 +986,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertNotIn("current", container_data)
         self.assertEqual(7, len(container_data["containers"]))
 
+        # ---- Sorting ----
         # Sort by type ascending
         container_data = get_all_containers(sortby="type", sortdir="asc")
         self.assertEqual("generic", container_data["containers"][0].type)

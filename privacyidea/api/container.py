@@ -74,36 +74,63 @@ def list_containers():
     at once.
 
     :query user: Username of a user assigned to the containers
-    :query container_serial: Serial of a single container
-    :query type: Type of the containers to return
-    :query token_serial: Serial of a token assigned to the container
-    :query template: Name of the template the container is created from
+    :query container_serial: Serial of a single container (case-insensitive, can contain '*' as wildcards)
+    :query type: Type of the containers to return (case-insensitive, can contain '*' as wildcards)
+    :query token_serial: Serial of a token assigned to the container (case-insensitive, can contain '*' as wildcards)
+    :query template: Name of the template the container is created from (case-sensitive, can contain '*' as wildcards)
+    :query container_realm: Name of the realm the container is assigned to (case-insensitive, can contain '*' as
+        wildcards)
+    :query description: Description of the container (case-insensitive, can contain '*' as wildcards)
+    :query resolver: Resolver of the user assigned to the container  (case-insensitive, can contain '*' as wildcards)
+    :query assigned: Filter for assigned or unassigned containers (True or False)
+    :query info_key: Key of the container info (case-sensitive, can contain '*' as wildcards)
+    :query info_value: Value of the container info (case-insensitive, can contain '*' as wildcards)
+    :query last_auth_delta: The maximum time difference the last authentication may have to now, e.g. "1y", "14d", "1h"
+        The following units are supported: y (years), d (days), h (hours), m (minutes), s (seconds)
+    :query last_sync_delta: The maximum time difference the last synchronization may have to now, e.g. "1y", "14d", "1h"
+        The following units are supported: y (years), d (days), h (hours), m (minutes), s (seconds)
+    :query state: State the container should have (case-insensitive and allows "*" as wildcard), optional
     :query sortby: Sort by a container attribute (serial or type)
     :query sortdir: Sort direction (asc or desc)
     :query pagesize: Number of containers per page
     :query page: Page number
-    :jsonparam no_token: no_token=1: Do not return tokens assigned to the container
+    :query no_token: no_token=1: Do not return tokens assigned to the container
     """
     param = request.all_data
     user = request.User
     cserial = getParam(param, "container_serial", optional=True)
     ctype = getParam(param, "type", optional=True)
     token_serial = getParam(param, "token_serial", optional=True)
+    template = getParam(param, "template", optional=True)
+    realm = getParam(param, "container_realm", optional=True)
+    description = getParam(param, "description", optional=True)
+    resolver = getParam(param, "resolver", optional=True)
+    assigned = getParam(param, "assigned", optional=True)
+    info_key = getParam(param, "info_key", optional=True)
+    info_value = getParam(param, "info_value", optional=True)
+    last_auth_delta = getParam(param, "last_auth_delta", optional=True)
+    last_sync_delta = getParam(param, "last_sync_delta", optional=True)
+    state = getParam(param, "state", optional=True)
     sortby = getParam(param, "sortby", optional=True, default="serial")
     sortdir = getParam(param, "sortdir", optional=True, default="asc")
     psize = int(getParam(param, "pagesize", optional=True) or 0)
     page = int(getParam(param, "page", optional=True) or 0)
     no_token = getParam(param, "no_token", optional=True, default=False)
-    template = getParam(param, "template", optional=True)
     logged_in_user_role = g.logged_in_user.get("role")
     allowed_container_realms = getattr(request, "pi_allowed_container_realms", None)
     allowed_token_realms = getattr(request, "pi_allowed_realms", None)
     hide_token_info = getParam(param, "hidden_tokeninfo", optional=True)
 
+    # Set info dictionary (if either key or value is None, filter for all keys/values using * as wildcard)
+    info = None
+    if info_key or info_value:
+        info = {info_key or "*": info_value or "*"}
+
     result = get_all_containers(user=user, serial=cserial, ctype=ctype, token_serial=token_serial,
-                                realms=allowed_container_realms, template=template,
-                                sortby=sortby, sortdir=sortdir,
-                                pagesize=psize, page=page)
+                                realm=realm, allowed_realms=allowed_container_realms, template=template,
+                                description=description, resolver=resolver, assigned=assigned, info=info,
+                                last_auth_delta=last_auth_delta, last_sync_delta=last_sync_delta, state=state,
+                                sortby=sortby, sortdir=sortdir, pagesize=psize, page=page)
 
     containers = create_container_dict(result["containers"], no_token, user, logged_in_user_role, allowed_token_realms,
                                        hide_token_info=hide_token_info)

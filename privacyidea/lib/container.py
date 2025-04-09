@@ -21,6 +21,7 @@ import importlib
 import json
 import logging
 import os
+from datetime import timezone, datetime
 from typing import Union
 
 from sqlalchemy import func
@@ -38,9 +39,9 @@ from privacyidea.lib.machine import is_offline_token
 from privacyidea.lib.token import (get_tokens_from_serial_or_user, get_tokens,
                                    convert_token_objects_to_dicts, init_token)
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import hexlify_and_unicode
+from privacyidea.lib.utils import hexlify_and_unicode, parse_timedelta
 from privacyidea.models import (TokenContainer, TokenContainerOwner, Token, TokenContainerToken,
-                                Realm, TokenContainerTemplate)
+                                Realm, TokenContainerTemplate, TokenContainerInfo, TokenContainerStates)
 
 log = logging.getLogger(__name__)
 
@@ -159,17 +160,34 @@ def find_container_by_serial(serial: str) -> TokenContainerClass:
 
 
 def _create_container_query(user: User = None, serial: str = None, ctype: str = None, token_serial: str = None,
-                            realms: list[str] = None, template: str = None, sortby: str = 'serial',
-                            sortdir: str = 'asc') -> Query:
+                            realm: str = None, allowed_realms: list[str] = None, template: str = None,
+                            description: str = None, assigned: bool = None, resolver: str = None, info: dict = None,
+                            last_auth_delta: str = None, last_sync_delta: str = None, state: str = None,
+                            sortby: str = 'serial', sortdir: str = 'asc') -> Query:
     """
     Generates a sql query to filter containers by the given parameters.
 
     :param user: container owner, optional
-    :param serial: container serial, optional
-    :param ctype: container type, optional
-    :param token_serial: serial of a token which is assigned to the container, optional
-    :param realms: list of realms to filter by, optional
-    :param template: The name of the template the container was created with, optional
+    :param serial: container serial (case-insensitive and allows '*' as wildcard), optional
+    :param ctype: container type (case-insensitive and allows '*' as wildcard), optional
+    :param token_serial: serial of a token which is assigned to the container (case-insensitive and allows '*' as
+        wildcard), optional
+    :param realm: realm name to filter by (case-insensitive and allows '*' as wildcard), optional
+    :param allowed_realms: list of realms the user is allowed to see (None if all realms are allowed), optional
+        If realms and allowed_realms are given, the intersection of both lists is used. If there is no intersection, no
+        container is returned.
+    :param template: The name of the template the container was created with (case-sensitive and allows '*' as
+        wildcard), optional
+    :param description: The description of the container (case-insensitive and allows '*' as wildcard), optional
+    :param assigned: True if the container is assigned to a user, False if not, optional
+    :param resolver: The resolver of the user (case-insensitive and allows '*' as wildcard), optional
+    :param info: The info dictionary in the format {key: value} of length 1, optional
+        Both key and value can contain '*' as wildcard. key is case-sensitive, value is case-insensitive.
+    :param last_auth_delta: The maximum time difference the last authentication may have to now, e.g. "1y", "14d", "1h"
+        The following units are supported: y (years), d (days), h (hours), m (minutes), s (seconds)
+    :param last_sync_delta: The maximum time difference the last synchronization may have to now, e.g. "1y", "14d", "1h"
+        The following units are supported: y (years), d (days), h (hours), m (minutes), s (seconds)
+    :param state: State the container should have (case-insensitive and allows "*" as wildcard), optional
     :param sortby: column to sort by, default is the container serial
     :param sortdir: sort direction, default is ascending
     :return: sql query
@@ -177,21 +195,107 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
     sql_query = TokenContainer.query
     if user:
         sql_query = sql_query.join(TokenContainer.owners).filter(TokenContainerOwner.user_id == user.uid)
+        if user.realm:
+            realm_db = Realm.query.filter(func.lower(Realm.name) == user.realm.lower()).first()
+            if realm_db:
+                sql_query = sql_query.filter(TokenContainerOwner.realm_id == realm_db.id)
+            else:
+                log.warning(f"The users realm {user.realm} does not exist. Ignoring it as filter parameter.")
+        if user.resolver:
+            sql_query = sql_query.filter(func.lower(TokenContainerOwner.resolver) == user.resolver.lower())
 
-    if serial:
-        sql_query = sql_query.filter(func.upper(TokenContainer.serial) == serial.upper())
+    if serial and serial.strip("*"):
+        # only if a serial is passed and it not only contains *s we add the filter
+        if "*" in serial:
+            sql_query = sql_query.filter(TokenContainer.serial.ilike(serial.replace("*", "%")))
+        else:
+            sql_query = sql_query.filter(func.upper(TokenContainer.serial) == serial.upper())
 
-    if ctype:
-        sql_query = sql_query.filter(TokenContainer.type == ctype)
+    if ctype and ctype.strip("*"):
+        if "*" in ctype:
+            sql_query = sql_query.filter(TokenContainer.type.ilike(ctype.replace("*", "%")))
+        else:
+            sql_query = sql_query.filter(func.upper(TokenContainer.type) == ctype.upper())
 
-    if token_serial:
-        sql_query = sql_query.join(TokenContainer.tokens).filter(Token.serial == token_serial)
+    if token_serial and token_serial.strip("*"):
+        if "*" in token_serial:
+            sql_query = sql_query.filter(TokenContainer.tokens.any(Token.serial.ilike(token_serial.replace("*", "%"))))
+        else:
+            sql_query = sql_query.outerjoin(TokenContainer.tokens).filter(
+                func.upper(Token.serial) == token_serial.upper())
 
-    if realms:
-        sql_query = sql_query.join(TokenContainer.realms).filter(Realm.name.in_(realms))
+    if realm and realm.strip("*"):
+        if "*" in realm:
+            sql_query = sql_query.outerjoin(TokenContainer.realms).filter(Realm.name.ilike(realm.replace("*", "%")))
+        else:
+            sql_query = sql_query.outerjoin(TokenContainer.realms).filter(func.lower(Realm.name) == realm.lower())
 
-    if template:
-        sql_query = sql_query.join(TokenContainer.template).filter(TokenContainerTemplate.name == template)
+    if allowed_realms:
+        allowed_realms = [realm.lower() for realm in allowed_realms]
+        sql_query = sql_query.outerjoin(TokenContainer.realms).filter(func.lower(Realm.name).in_(allowed_realms))
+
+    if resolver and resolver.strip("*"):
+        if "*" in resolver:
+            sql_query = sql_query.filter(
+                TokenContainer.owners.any(TokenContainerOwner.resolver.ilike(resolver.replace("*", "%"))))
+        else:
+            sql_query = sql_query.filter(
+                TokenContainer.owners.any(func.lower(TokenContainerOwner.resolver) == resolver.lower()))
+
+    if template and template.strip("*"):
+        if "*" in template:
+            sql_query = sql_query.filter(TokenContainer.template.has(
+                TokenContainerTemplate.name.like(template.replace("*", "%"))))
+        else:
+            sql_query = sql_query.filter(TokenContainer.template.has(TokenContainerTemplate.name == template))
+
+    if description and description.strip("*"):
+        if "*" in description:
+            sql_query = sql_query.filter(TokenContainer.description.ilike(description.replace("*", "%")))
+        else:
+            sql_query = sql_query.filter(func.lower(TokenContainer.description) == description.lower())
+
+    if assigned:
+        sql_query = sql_query.filter(TokenContainer.owners.any())
+    elif assigned is False:
+        sql_query = sql_query.filter(~TokenContainer.owners.any())
+
+    if info:
+        if len(info) == 1:
+            key, value = list(info.items())[0]
+            if key and key.strip("*"):
+                if "*" in key:
+                    sql_query = sql_query.outerjoin(
+                        TokenContainer.info_list).filter(TokenContainerInfo.key.like(key.replace("*", "%")))
+                else:
+                    sql_query = sql_query.outerjoin(TokenContainer.info_list).filter(TokenContainerInfo.key == key)
+            if value and value.strip("*"):
+                if "*" in value:
+                    sql_query = sql_query.outerjoin(
+                        TokenContainer.info_list).filter(TokenContainerInfo.value.ilike(value.replace("*", "%")))
+                else:
+                    sql_query = sql_query.outerjoin(
+                        TokenContainer.info_list).filter(func.lower(TokenContainerInfo.value) == value.lower())
+        else:
+            log.warning("Info dictionary has more than one entry. Only one entry is allowed. Ignoring info filter.")
+
+    if last_auth_delta:
+        time_delta = parse_timedelta(last_auth_delta)
+        max_time = datetime.now(timezone.utc) - time_delta
+        sql_query = sql_query.filter(TokenContainer.last_seen > max_time)
+
+    if last_sync_delta:
+        time_delta = parse_timedelta(last_sync_delta)
+        max_time = datetime.now(timezone.utc) - time_delta
+        sql_query = sql_query.filter(TokenContainer.last_updated > max_time)
+
+    if state and state.strip("*"):
+        if "*" in state:
+            sql_query = sql_query.filter(TokenContainer.states.any(
+                TokenContainerStates.state.ilike(state.replace("*", "%"))))
+        else:
+            sql_query = sql_query.filter(
+                TokenContainer.states.any(func.lower(TokenContainerStates.state) == state.lower()))
 
     if isinstance(sortby, str):
         # Check that the sort column exists and convert it to a container column
@@ -211,7 +315,9 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
 
 
 def get_all_containers(user: User = None, serial: str = None, ctype: str = None, token_serial: str = None,
-                       realms: list[str] = None, sortby: str = 'serial', sortdir: str = 'asc', template: str = None,
+                       realm: str = None, allowed_realms: list[str] = None, sortby: str = 'serial', sortdir: str = 'asc',
+                       template: str = None, description: str = None, assigned: bool = None, resolver: str = None,
+                       info: dict = None, last_auth_delta: str = None, last_sync_delta: str = None, state: str = None,
                        page: int = 0, pagesize: int = 0) -> dict[str, Union[int, None, list[TokenContainerClass]]]:
     """
     This function is used to retrieve a container list, that can be displayed in
@@ -221,20 +327,38 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
     The containers are filtered by the given parameters.
 
     :param user: container owner, optional
-    :param serial: container serial, optional
-    :param ctype: container type, optional
-    :param token_serial: serial of a token which is assigned to the container, optional
-    :param realms: list of realms the container is assigned to, optional
+    :param serial: container serial (case-insensitive and allows '*' as wildcard), optional
+    :param ctype: container type (case-insensitive and allows '*' as wildcard), optional
+    :param token_serial: serial of a token which is assigned to the container (case-insensitive and allows '*'
+        as wildcard), optional
+    :param realm: name of the realm the container is assigned to (case-insensitive and allows '*' as wildcard), optional
+    :param allowed_realms: list of realms the user is allowed to see (None if all realms are allowed), optional
+        If realms and allowed_realms are given, the intersection of both lists is used. If there is no intersection, no
+        container is returned.
+    :param template: The name of the template the container was created with (case-sensitive and allows '*' as wildcard)
+        , optional
+    :param description: The description of the container (case-insensitive and allows '*' as wildcard), optional
+    :param assigned: True if the container is assigned to a user, False otherwise, optional
+    :param resolver: The resolver of the user (case-insensitive and allows '*' as wildcard), optional
+    :param info: The info dictionary in the format {key: value} of length 1, optional
+        Both key and value can contain '*' as wildcard. key is case-sensitive, value is case-insensitive.
+    :param last_auth_delta: The maximum time difference the last authentication may have to now, e.g. "1y", "14d", "1h"
+        The following units are supported: y (years), d (days), h (hours), m (minutes), s (seconds)
+    :param last_sync_delta: The maximum time difference the last synchronization may have to now, e.g. "1y", "14d", "1h"
+        The following units are supported: y (years), d (days), h (hours), m (minutes), s (seconds)
+    :param state: State the container should have (case-insensitive and allows "*" as wildcard), optional
     :param sortby: column to sort by, default is the container serial
     :param sortdir: sort direction, default is ascending
-    :param template: The name of the template the container was created with, optional
     :param page: The number of the page to view. Starts with 1 ;-)
     :param pagesize: The size of the page
     :returns: A dictionary with a list of containers at the key 'containers' and optionally pagination entries ('prev',
               'next', 'current', 'count')
     """
-    sql_query = _create_container_query(user=user, serial=serial, ctype=ctype, token_serial=token_serial, realms=realms,
-                                        template=template, sortby=sortby, sortdir=sortdir)
+    sql_query = _create_container_query(user=user, serial=serial, ctype=ctype, token_serial=token_serial, realm=realm,
+                                        allowed_realms=allowed_realms, template=template, description=description,
+                                        assigned=assigned, resolver=resolver, info=info,
+                                        last_auth_delta=last_auth_delta, last_sync_delta=last_sync_delta, state=state,
+                                        sortby=sortby, sortdir=sortdir)
     ret = {}
     # Paginate if requested
     if page > 0 or pagesize > 0:
@@ -434,7 +558,6 @@ def init_container(params: dict[str, any]) -> dict[str, Union[str, list]]:
             template_tokens = template_options.get("tokens", [])
         else:
             log.warning(f"Template {template_name} is not of type {ctype}, create container without template.")
-
 
     user = params.get("user")
     realm = params.get("realm")
