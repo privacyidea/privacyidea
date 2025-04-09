@@ -1293,7 +1293,8 @@ class MockSmartphone:
     def container_serial(self, value):
         self._container_serial = value
 
-    def register_finalize(self, nonce, registration_time, scope, serial=None, passphrase=None, private_key_smph=None):
+    def register_finalize(self, nonce, registration_time, scope, serial=None, passphrase=None, private_key_smph=None,
+                          passphrase_user=False):
         if serial:
             self.container_serial = serial
 
@@ -1320,6 +1321,8 @@ class MockSmartphone:
         params = {"signature": base64.b64encode(sign_res["signature"]), "public_client_key": key_pair_str.public_key,
                   "device_brand": self.device_brand, "device_model": self.device_model, "scope": scope,
                   "container_serial": self.container_serial}
+        if passphrase_user:
+            params.update({"passphrase": passphrase})
         return params
 
     def synchronize(self, challenge_params, scope):
@@ -1512,7 +1515,7 @@ class TokenContainerSynchronization(MyTestCase):
         challenges = get_challenges(serial=mock_smph.container_serial)
         self.assertEqual(0, len(challenges))
 
-    def test_05_register_smartphone_passphrase_success(self):
+    def test_05a_register_smartphone_passphrase_success(self):
         # Prepare
         scope = "https://pi.net/container/register/finalize"
         passphrase_params = {"passphrase_ad": False, "passphrase_prompt": "Enter passphrase",
@@ -1539,6 +1542,108 @@ class TokenContainerSynchronization(MyTestCase):
         container_info = smartphone.get_container_info_dict()
         container_info_keys = container_info.keys()
         self.assertIn("public_key_client", container_info_keys)
+
+    def test_05b_register_smartphone_passphrase_user_success(self):
+        """
+        Test a successful registration when securing the registration with the passphrase from the user store
+        """
+        self.setUp_user_realms()
+        # Prepare
+        server_url = "https://pi.net/"
+        passphrase_params = {"passphrase_user": True, "passphrase_prompt": "Enter AD passphrase"}
+        smartphone_serial = init_container({"type": "smartphone", "user": "cornelius", "realm": self.realm1})[
+            "container_serial"]
+        smartphone_serial, init_result = self.register_smartphone_initialize_success(server_url,
+                                                                                     smartphone_serial=smartphone_serial,
+                                                                                     passphrase_params=passphrase_params)
+        # check register init result
+        self.assertTrue(init_result["send_passphrase"])
+        self.assertEqual("Enter AD passphrase", init_result["passphrase_prompt"])
+        url = init_result["container_url"]["value"]
+        self.assertIn("send_passphrase=True", url)
+        self.assertIn("passphrase=Enter%20AD%20passphrase", url)
+
+        # check challenge data
+        challenge = get_challenges(serial=smartphone_serial)[0]
+        challenge_data = json.loads(challenge.data)
+        self.assertTrue(challenge_data["passphrase_user"])
+        self.assertEqual("", challenge_data["passphrase_response"])
+
+        # Mock smartphone
+        mock_smph = MockSmartphone(device_brand="XY", device_model="ABC123")
+        scope = create_endpoint_url(server_url, "container/register/finalize")
+        params = mock_smph.register_finalize(init_result["nonce"], init_result["time_stamp"], scope, smartphone_serial,
+                                             passphrase="test", passphrase_user=True)
+
+        # Finalize registration
+        smartphone = find_container_by_serial(smartphone_serial)
+        smartphone.finalize_registration(params)
+
+        # Check if container info is set correctly
+        container_info = smartphone.get_container_info_dict()
+        container_info_keys = container_info.keys()
+        self.assertIn("public_key_client", container_info_keys)
+        self.assertEqual(f"{mock_smph.device_brand} {mock_smph.device_model}", container_info["device"])
+        self.assertEqual("registered", container_info["registration_state"])
+
+    def test_05c_register_smartphone_passphrase_user_fails(self):
+        """
+        Test failed registrations when securing the registration with the passphrase from the user store
+        """
+        self.setUp_user_realms()
+
+        # ---- Invalid passphrase parameter combination ----
+        server_url = "https://pi.net/"
+        passphrase_params = {"passphrase_user": True, "passphrase_prompt": "Enter AD passphrase",
+                             "passphrase_response": "test1234"}
+        smartphone_serial = init_container({"type": "smartphone", "user": "cornelius", "realm": self.realm1})[
+            "container_serial"]
+        smartphone = find_container_by_serial(smartphone_serial)
+        scope = create_endpoint_url(server_url, "container/register/finalize")
+
+        # Register init fails: passphrase_user and passphrase_response are both passed
+        self.assertRaises(ParameterError, smartphone.init_registration, server_url, scope, registration_ttl=100,
+                          ssl_verify=True, params=passphrase_params)
+
+        # ---- Invalid passphrase ----
+        server_url = "https://pi.net/"
+        passphrase_params = {"passphrase_user": True, "passphrase_prompt": "Enter AD passphrase"}
+        smartphone_serial = init_container({"type": "smartphone", "user": "cornelius", "realm": self.realm1})[
+            "container_serial"]
+        smartphone_serial, init_result = self.register_smartphone_initialize_success(server_url,
+                                                                                     smartphone_serial=smartphone_serial,
+                                                                                     passphrase_params=passphrase_params)
+        # check register init result
+        self.assertTrue(init_result["send_passphrase"])
+        self.assertEqual("Enter AD passphrase", init_result["passphrase_prompt"])
+        url = init_result["container_url"]["value"]
+        self.assertIn("send_passphrase=True", url)
+        self.assertIn("passphrase=Enter%20AD%20passphrase", url)
+
+        # check challenge data
+        challenge = get_challenges(serial=smartphone_serial)[0]
+        challenge_data = json.loads(challenge.data)
+        self.assertTrue(challenge_data["passphrase_user"])
+        self.assertEqual("", challenge_data["passphrase_response"])
+
+        # Mock smartphone
+        mock_smph = MockSmartphone(device_brand="XY", device_model="ABC123")
+        scope = create_endpoint_url(server_url, "container/register/finalize")
+        params = mock_smph.register_finalize(init_result["nonce"], init_result["time_stamp"], scope, smartphone_serial,
+                                             passphrase="invalid", passphrase_user=True)
+
+        # Finalize registration
+        smartphone = find_container_by_serial(smartphone_serial)
+        self.assertRaises(ContainerInvalidChallenge, smartphone.finalize_registration, params)
+
+        # ---- Do not pass passphrase on finalize ----
+        # Mock smartphone
+        mock_smph = MockSmartphone()
+        scope = create_endpoint_url(server_url, "container/register/finalize")
+        params = mock_smph.register_finalize(init_result["nonce"], init_result["time_stamp"], scope, smartphone_serial)
+
+        # Finalize registration
+        self.assertRaises(ContainerInvalidChallenge, smartphone.finalize_registration, params)
 
     def test_06_create_container_challenge(self):
         container_serial = init_container({"type": "smartphone"})["container_serial"]

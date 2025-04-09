@@ -22,10 +22,20 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
             <div>
 
-                <div class="form-group" ng-hide=true>
-                    <input type="checkbox" id="passphrase_ad"
-                           ng-model="passphrase.ad">
-                    <label for="passphrase_ad" translate>Use the passphrase of the user from the AD.</label>
+                <div class="form-group">
+                    <input type="checkbox" id="passphrase_user"
+                           ng-model="passphrase.user"
+                           ng-disabled="users.length === 0"/>
+                    <label ng-show="users.length > 0" for="passphrase_user" translate>
+                        Validate the passphrase against the user store.
+                    </label>
+                    <label ng-show="users.length === 0" class="text text-muted" for="passphrase_user" translate>
+                        Validate the passphrase against the user store.
+                    </label>
+                    <div class="text text-muted" ng-show="users.length === 0">
+                        <span class="glyphicon glyphicon-info-sign"></span>
+                        <span translate>Assign the container to a user to enable this option.</span>
+                    </div>
                 </div>
 
                 <label for="passphrase_prompt" translate>
@@ -37,7 +47,6 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                                id="passphrase_prompt"
                                ng-model="passphrase.prompt"
                                placeholder="{{ 'This prompt will be displayed to the user.'|translate }}"
-                               ng-disabled="passphrase.ad"
                                autofocus/>
                     </div>
                     <div class="col-sm-5">
@@ -56,7 +65,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                                id="passphrase_response"
                                ng-model="passphrase.response"
                                placeholder="{{ 'Passphrase the user has to enter to successfully register the container'|translate }}"
-                               ng-disabled="passphrase.ad"
+                               ng-disabled="passphrase.user"
                                autofocus/>
                     </div>
                     <div class="col-sm-5">

@@ -744,13 +744,13 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         };
 
         $scope.registrationOptions = {"open": false};
-        $scope.passphrase = {"required": false, "ad": false, "prompt": "", "response": ""};
+        $scope.passphrase = {"required": false, "user": false, "prompt": "", "response": ""};
         $scope.offline_tokens = [];
         $scope.registerContainer = function (rollover) {
             let registrationParams =
                 {
                     "container_serial": $scope.containerSerial,
-                    "passphrase_ad": $scope.passphrase.ad,
+                    "passphrase_user": $scope.passphrase.user,
                     "passphrase_prompt": $scope.passphrase.prompt,
                     "passphrase_response": $scope.passphrase.response,
                     "rollover": rollover

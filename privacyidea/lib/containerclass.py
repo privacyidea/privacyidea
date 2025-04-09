@@ -610,7 +610,7 @@ class TokenContainerClass:
 
     def validate_challenge(self, signature: bytes, public_key: EllipticCurvePublicKey, scope: str,
                            transaction_id: str = None, key: str = None, container: str = None, device_brand: str = None,
-                           device_model: str = None) -> bool:
+                           device_model: str = None, passphrase: str = None) -> bool:
         """
         Verifies the response of a challenge:
             * Checks if challenge is valid (not expired)
@@ -627,6 +627,7 @@ class TokenContainerClass:
         :param container: Container to be included in the signature, optional
         :param device_brand: Device brand to be included in the signature, optional
         :param device_model: Device model to be included in the signature, optional
+        :param passphrase: Passphrase to be included in the signature and validated against the user store, optional
         :return: True if the challenge response is valid, False otherwise
         """
         challenge_list = get_challenges(serial=self.serial, transaction_id=transaction_id)
@@ -641,7 +642,31 @@ class TokenContainerClass:
                 nonce = challenge.challenge
                 times_stamp = challenge.timestamp.replace(tzinfo=timezone.utc).isoformat()
                 extra_data = json.loads(challenge.data)
-                passphrase = extra_data.get("passphrase_response")
+                passphrase_user = extra_data.get("passphrase_user")
+                if passphrase_user:
+                    if not passphrase:
+                        log.debug("The challenge requires to validate the passphrase against the user store, but no "
+                                  "passphrase is provided.")
+                        continue
+                    owners = self.get_users()
+                    if len(owners) == 0:
+                        log.debug(f"No user assigned to the container {self.serial}. Passphrase can not be validated "
+                                  "against the user store.")
+                        continue
+                    valid_passphrase = owners[0].check_password(passphrase)
+                    if not valid_passphrase:
+                        log.debug(f"Invalid passphrase {len(passphrase) * '*'} for user {owners[0].login} in realm "
+                                  f"{owners[0].realm}.")
+                        continue
+                else:
+                    passphrase = extra_data.get("passphrase_response")
+                    if passphrase:
+                        passphrase = decryptPassword(passphrase)
+                        if passphrase == FAILED_TO_DECRYPT_PASSWORD:
+                            challenge.delete()
+                            log.warning("Failed to decrypt the passphrase from the challenge. "
+                                        "Hence, deleted the challenge.")
+                            continue
                 challenge_scope = extra_data.get("scope")
                 # explicitly check the scope that the right challenge for the right endpoint is used
                 if scope != challenge_scope:
@@ -654,14 +679,7 @@ class TokenContainerClass:
                 if device_model:
                     message += f"|{device_model}"
                 if passphrase:
-                    passphrase = decryptPassword(passphrase)
-                    if passphrase == FAILED_TO_DECRYPT_PASSWORD:
-                        challenge.delete()
-                        log.warning("Failed to decrypt the passphrase from the challenge. "
-                                    "Hence, deleted the challenge.")
-                        continue
-                    else:
-                        message += f"|{passphrase}"
+                    message += f"|{passphrase}"
                 if key:
                     message += f"|{key}"
                 if container:
@@ -674,7 +692,8 @@ class TokenContainerClass:
                     # It is not the right challenge: log to find reason for invalid signature
                     log.debug(f"Used hash algorithm to verify: {verify_res['hash_algorithm']}")
                     challenge_data_log = (f"Challenge data: nonce={nonce}, timestamp={times_stamp}, "
-                                          f"serial={self.serial}, scope={scope}")
+                                          f"serial={self.serial}, scope={scope}, "
+                                          f"transaction_id={challenge.transaction_id}")
                     if passphrase:
                         challenge_data_log += f", passphrase={len(passphrase) * '*'}"
                     log.debug(challenge_data_log)
