@@ -25,7 +25,7 @@ docker run -v <volume-id>:/etc/privacyidea -p 8080:80 <pi-tag>:latest
 Some configuration data is required at `/etc/privacyidea` for this container to
 work. See  https://privacyidea.readthedocs.io/en/latest/installation/pip.html#database
 and https://privacyidea.readthedocs.io/en/latest/installation/system/inifile.html#cfgfile
-for configration options.
+for configuration options.
 
 Commands can be run inside the container with:
 ```

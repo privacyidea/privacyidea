@@ -69,7 +69,7 @@ from privacyidea.api.tokengroup import tokengroup_blueprint
 from privacyidea.api.serviceid import serviceid_blueprint
 from privacyidea.api.info import info_blueprint
 from privacyidea.lib import queue
-from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG
+from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
 from privacyidea.config import config
 from privacyidea.models import db, NodeName
 from privacyidea.lib.crypto import init_hsm
@@ -80,11 +80,78 @@ ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
 DEFAULT_UUID_FILE = "/etc/privacyidea/uuid.txt"
 
 migrate = Migrate()
+babel = Babel()
+
+
+def _register_blueprints(app):
+    """Register the available Flask blueprints"""
+    app.register_blueprint(validate_blueprint, url_prefix='/validate')
+    app.register_blueprint(token_blueprint, url_prefix='/token')
+    app.register_blueprint(system_blueprint, url_prefix='/system')
+    app.register_blueprint(resolver_blueprint, url_prefix='/resolver')
+    app.register_blueprint(realm_blueprint, url_prefix='/realm')
+    app.register_blueprint(defaultrealm_blueprint, url_prefix='/defaultrealm')
+    app.register_blueprint(policy_blueprint, url_prefix='/policy')
+    app.register_blueprint(login_blueprint, url_prefix='/')
+    app.register_blueprint(jwtauth, url_prefix='/auth')
+    app.register_blueprint(user_blueprint, url_prefix='/user')
+    app.register_blueprint(audit_blueprint, url_prefix='/audit')
+    app.register_blueprint(machineresolver_blueprint, url_prefix='/machineresolver')
+    app.register_blueprint(machine_blueprint, url_prefix='/machine')
+    app.register_blueprint(application_blueprint, url_prefix='/application')
+    app.register_blueprint(caconnector_blueprint, url_prefix='/caconnector')
+    app.register_blueprint(cert_blueprint, url_prefix='/certificate')
+    app.register_blueprint(ttype_blueprint, url_prefix='/ttype')
+    app.register_blueprint(register_blueprint, url_prefix='/register')
+    app.register_blueprint(smtpserver_blueprint, url_prefix='/smtpserver')
+    app.register_blueprint(recover_blueprint, url_prefix='/recover')
+    app.register_blueprint(radiusserver_blueprint, url_prefix='/radiusserver')
+    app.register_blueprint(periodictask_blueprint, url_prefix='/periodictask')
+    app.register_blueprint(privacyideaserver_blueprint, url_prefix='/privacyideaserver')
+    app.register_blueprint(eventhandling_blueprint, url_prefix='/event')
+    app.register_blueprint(smsgateway_blueprint, url_prefix='/smsgateway')
+    app.register_blueprint(client_blueprint, url_prefix='/client')
+    app.register_blueprint(subscriptions_blueprint, url_prefix='/subscriptions')
+    app.register_blueprint(monitoring_blueprint, url_prefix='/monitoring')
+    app.register_blueprint(tokengroup_blueprint, url_prefix='/tokengroup')
+    app.register_blueprint(serviceid_blueprint, url_prefix='/serviceid')
+    app.register_blueprint(container_blueprint, url_prefix='/container')
+    app.register_blueprint(healthz_blueprint, url_prefix='/healthz')
+    app.register_blueprint(info_blueprint, url_prefix='/info')
+
+
+def _setup_logging(app, logging_config=DEFAULT_LOGGING_CONFIG):
+    # Setup logging
+    log_read_func = {
+        'yaml': lambda x: logging.config.dictConfig(yaml.safe_load(open(x, 'r').read())),
+        'cfg': lambda x: logging.config.fileConfig(x)
+    }
+    have_config = False
+    log_exception = None
+    log_config_file = app.config.get("PI_LOGCONFIG", "/etc/privacyidea/logging.cfg")
+    if os.path.isfile(log_config_file):
+        for cnf_type in ['cfg', 'yaml']:
+            if app.config["VERBOSE"]:
+                sys.stderr.write(f"Read Logging settings from {log_config_file}\n")
+            try:
+                log_read_func[cnf_type](log_config_file)
+                have_config = True
+                break
+            except Exception as e:
+                log_exception = e
+                pass
+    if not have_config:
+        if log_exception:
+            # We tried to read the logging configuration from a given file but failed
+            sys.stderr.write("Could not use PI_LOGCONFIG: " + str(log_exception) + "\n")
+        if app.config["VERBOSE"]:
+            sys.stderr.write(f"Using logging configuration {logging_config}.\n")
+        logging.config.dictConfig(logging_config)
 
 
 def create_app(config_name="development",
                config_file='/etc/privacyidea/pi.cfg',
-               silent=False, initialize_hsm=False):
+               silent=False, initialize_hsm=False) -> Flask:
     """
     First the configuration from the config.py is loaded depending on the
     config type like "production" or "development" or "testing".
@@ -105,118 +172,66 @@ def create_app(config_name="development",
     :return: The flask application
     :rtype: App object
     """
-    if not silent:
-        print("The configuration name is: {0!s}".format(config_name))
-    if os.environ.get(ENV_KEY):
-        config_file = os.environ[ENV_KEY]
-    if not silent:
-        print("Additional configuration will be read "
-              "from the file {0!s}".format(config_file))
     app = Flask(__name__, static_folder="static",
                 template_folder="static/templates")
-    app.config['APP_READY'] = False
-    if config_name:
-        app.config.from_object(config[config_name])
+    app.config["APP_READY"] = False
+    app.config["VERBOSE"] = not silent
+
+    # Overwrite default config with environment setting
+    config_name = os.environ.get("PI_CONFIG_NAME", config_name)
+    if app.config.get("VERBOSE"):
+        print("The configuration name is: {0!s}".format(config_name))
+    app.config.from_object(config[config_name])
+
+    # Load configuration from environment variables prefixed with PRIVACYIDEA_
+    app.config.from_prefixed_env("PRIVACYIDEA")
+
+    if ENV_KEY in os.environ:
+        config_file = os.environ[ENV_KEY]
+    if app.config.get("VERBOSE"):
+        print("Additional configuration will be read "
+              "from the file {0!s}".format(config_file))
 
     try:
         # Try to load the given config_file.
-        # If it does not exist, just ignore it.
-        app.config.from_pyfile(config_file, silent=True)
-    except IOError:
-        sys.stderr.write("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
-        sys.stderr.write("  WARNING: privacyidea create_app has no access\n")
-        sys.stderr.write("  to {0!s}!\n".format(config_file))
-        sys.stderr.write("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
+        app.config.from_pyfile(config_file, silent=False)
+    except IOError as e:
+        if config_name != "docker" or ENV_KEY in os.environ:
+            sys.stderr.write("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
+            sys.stderr.write("  WARNING: Unable to load additional configuration\n")
+            sys.stderr.write(f"  from {config_file}!\n")
+            if app.config.get("VERBOSE"):
+                sys.stderr.write(f"  ({e})\n")
+            sys.stderr.write("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
 
-    # Try to load the file, that was specified in the environment variable
-    # PRIVACYIDEA_CONFIG_FILE
-    # If this file does not exist, we create an error!
-    app.config.from_envvar(ENV_KEY, silent=True)
+    # Setup logging
+    if config_name == "docker":
+        if "PI_LOGLEVEL" in app.config:
+            DOCKER_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = app.config.get("PI_LOGLEVEL")
+        _setup_logging(app, DOCKER_LOGGING_CONFIG)
+    else:
+        if "PI_LOGLEVEL" in app.config:
+            DEFAULT_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = app.config.get("PI_LOGLEVEL")
+        if "PI_LOGFILE" in app.config:
+            DEFAULT_LOGGING_CONFIG["handlers"]["file"]["filename"] = app.config.get("PI_LOGFILE")
+        _setup_logging(app, DEFAULT_LOGGING_CONFIG)
+
+    log = logging.getLogger(__name__)
 
     # We allow to set different static folders
     app.static_folder = app.config.get("PI_STATIC_FOLDER", "static/")
     app.template_folder = app.config.get("PI_TEMPLATE_FOLDER", "static/templates/")
 
-    app.register_blueprint(validate_blueprint, url_prefix='/validate')
-    app.register_blueprint(token_blueprint, url_prefix='/token')
-    app.register_blueprint(system_blueprint, url_prefix='/system')
-    app.register_blueprint(resolver_blueprint, url_prefix='/resolver')
-    app.register_blueprint(realm_blueprint, url_prefix='/realm')
-    app.register_blueprint(defaultrealm_blueprint, url_prefix='/defaultrealm')
-    app.register_blueprint(policy_blueprint, url_prefix='/policy')
-    app.register_blueprint(login_blueprint, url_prefix='/')
-    app.register_blueprint(jwtauth, url_prefix='/auth')
-    app.register_blueprint(user_blueprint, url_prefix='/user')
-    app.register_blueprint(audit_blueprint, url_prefix='/audit')
-    app.register_blueprint(machineresolver_blueprint,
-                           url_prefix='/machineresolver')
-    app.register_blueprint(machine_blueprint, url_prefix='/machine')
-    app.register_blueprint(application_blueprint, url_prefix='/application')
-    app.register_blueprint(caconnector_blueprint, url_prefix='/caconnector')
-    app.register_blueprint(cert_blueprint, url_prefix='/certificate')
-    app.register_blueprint(ttype_blueprint, url_prefix='/ttype')
-    app.register_blueprint(register_blueprint, url_prefix='/register')
-    app.register_blueprint(smtpserver_blueprint, url_prefix='/smtpserver')
-    app.register_blueprint(recover_blueprint, url_prefix='/recover')
-    app.register_blueprint(radiusserver_blueprint, url_prefix='/radiusserver')
-    app.register_blueprint(periodictask_blueprint, url_prefix='/periodictask')
-    app.register_blueprint(privacyideaserver_blueprint,
-                           url_prefix='/privacyideaserver')
-    app.register_blueprint(eventhandling_blueprint, url_prefix='/event')
-    app.register_blueprint(smsgateway_blueprint, url_prefix='/smsgateway')
-    app.register_blueprint(client_blueprint, url_prefix='/client')
-    app.register_blueprint(subscriptions_blueprint, url_prefix='/subscriptions')
-    app.register_blueprint(monitoring_blueprint, url_prefix='/monitoring')
-    app.register_blueprint(tokengroup_blueprint, url_prefix='/tokengroup')
-    app.register_blueprint(serviceid_blueprint, url_prefix='/serviceid')
-    app.register_blueprint(container_blueprint, url_prefix='/container')
-    app.register_blueprint(healthz_blueprint, url_prefix='/healthz')
-    app.register_blueprint(info_blueprint, url_prefix='/info')
+    _register_blueprints(app)
 
     # Set up Plug-Ins
     db.init_app(app)
+    # TODO: This is not necessary except for pi-manage
     migrate.init_app(app, db)
 
     Versioned(app, format='%(path)s?v=%(version)s')
 
-    Babel(app, locale_selector=get_accepted_language)
-
-    # Setup logging
-    log_read_func = {
-        'yaml': lambda x: logging.config.dictConfig(yaml.safe_load(open(x, 'r').read())),
-        'cfg': lambda x: logging.config.fileConfig(x)
-    }
-    have_config = False
-    log_exx = None
-    log_config_file = app.config.get("PI_LOGCONFIG", "/etc/privacyidea/logging.cfg")
-    if os.path.isfile(log_config_file):
-        for cnf_type in ['cfg', 'yaml']:
-            try:
-                log_read_func[cnf_type](log_config_file)
-                if not silent:
-                    print('Read Logging settings from {0!s}'.format(log_config_file))
-                have_config = True
-                break
-            except Exception as exx:
-                log_exx = exx
-                pass
-    if not have_config:
-        if log_exx:
-            sys.stderr.write("Could not use PI_LOGCONFIG: " + str(log_exx) + "\n")
-        if not silent:
-            sys.stderr.write("Using PI_LOGLEVEL and PI_LOGFILE.\n")
-        level = app.config.get("PI_LOGLEVEL", logging.INFO)
-        # If there is another logfile in pi.cfg we use this.
-        logfile = app.config.get("PI_LOGFILE", '/var/log/privacyidea/privacyidea.log')
-        if not silent:
-            sys.stderr.write("Using PI_LOGLEVEL {0!s}.\n".format(level))
-            sys.stderr.write("Using PI_LOGFILE {0!s}.\n".format(logfile))
-        DEFAULT_LOGGING_CONFIG["handlers"]["file"]["filename"] = logfile
-        DEFAULT_LOGGING_CONFIG["handlers"]["file"]["level"] = level
-        DEFAULT_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = level
-        logging.config.dictConfig(DEFAULT_LOGGING_CONFIG)
-
-    log = logging.getLogger(__name__)
+    babel.init_app(app, locale_selector=get_accepted_language)
 
     queue.register_app(app)
 
@@ -226,7 +241,8 @@ def create_app(config_name="development",
 
     # check that we have a correct node_name -> UUID relation
     with app.app_context():
-        # first check if we have a UUID in the config file which takes precedence
+        # TODO: this is not multi-process-safe since every process runs its own `create_app()`
+        # First check if we have a UUID in the config file which takes precedence
         try:
             pi_uuid = uuid.UUID(app.config.get("PI_NODE_UUID", ""))
         except ValueError as e:
@@ -252,7 +268,7 @@ def create_app(config_name="development",
                                 f"persisting the UUID fails, it will change on every application start")
                     # only in case of a generated UUID we save it to the uuid file
                     try:
-                        with open(pi_uuid_file, 'a') as f:  # pragma: no cover
+                        with open(pi_uuid_file, 'w') as f:  # pragma: no cover
                             f.write(f"{str(pi_uuid)}\n")
                             log.info(f"Successfully wrote current UUID to file '{pi_uuid_file}'")
                     except IOError as exx:

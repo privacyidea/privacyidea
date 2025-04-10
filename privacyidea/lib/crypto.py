@@ -836,7 +836,7 @@ def create_hsm_object(config):
                                  "privacyidea.lib.security.default.DefaultSecurityModule")
     package_name, class_name = hsm_module_name.rsplit(".", 1)
     hsm_class = get_module_class(package_name, class_name, "setup_module")
-    log.info("initializing HSM class: {0!s}".format(hsm_class))
+    log.debug("initializing HSM class: {0!s}".format(hsm_class))
     if class_name == "DefaultSecurityModule":
         hsm_parameters = {"file": config.get("PI_ENCFILE")}
     else:
