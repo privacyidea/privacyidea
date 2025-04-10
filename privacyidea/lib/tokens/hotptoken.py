@@ -258,6 +258,7 @@ class HotpTokenClass(TokenClass):
         if otpkey:
             tok_type = self.type.lower()
             if user is not None:
+                time_step = self.get_tokeninfo("timeStep", default="30")
                 try:
                     key_bin = binascii.unhexlify(otpkey)
                     # also strip the padding =, as it will get problems with the google app.
@@ -269,9 +270,9 @@ class HotpTokenClass(TokenClass):
                                         tokentype=tok_type.lower(),
                                         serial=self.get_serial(),
                                         tokenlabel=tokenlabel,
-                                        hash_algo=params.get("hashlib", "sha1"),
+                                        hash_algo=self.hashlib,
                                         digits=params.get("otplen", 6),
-                                        period=params.get("timeStep", 30),
+                                        period=time_step,
                                         issuer=tokenissuer,
                                         user_obj=user,
                                         extra_data=extra_data)
