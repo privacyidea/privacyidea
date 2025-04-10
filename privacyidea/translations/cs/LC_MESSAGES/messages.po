@@ -3,15 +3,16 @@
 # This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2021.
 # Lukáš Krejza <gryffus@hkfree.org>, 2023.
+# Paul Lettich <paul.lettich@netknights.it>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-04-09 14:24+0200\n"
-"PO-Revision-Date: 2025-03-28 09:25+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"PO-Revision-Date: 2025-04-10 12:05+0000\n"
+"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/privacyidea/"
-"branch-3-11/cs/>\n"
+"privacyidea-server/cs/>\n"
 "Language: cs\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -43,10 +44,8 @@ msgid "Authentication failure using passkey."
 msgstr "Chyba autentizace. Chybí uživatelské jméno"
 
 #: api/auth.py:255
-#, fuzzy
-#| msgid "Authentication failure. Unknown realm: {0!s}."
 msgid "Authentication failure. Unknown realm:"
-msgstr "Chyba autentizace. Neznámý realm: {0!s}."
+msgstr "Chyba autentizace. Neznámý realm:"
 
 #: api/auth.py:259
 msgid "Authentication failure. Missing Username"
@@ -96,38 +95,30 @@ msgid "Authentication failure. Missing Authorization header."
 msgstr "Chyba autentizace. Chybí hlavička Authorization."
 
 #: api/lib/utils.py:405 api/lib/utils.py:436
-#, fuzzy
-#| msgid "Authentication failure. Error during decoding your token: {0!s}"
 msgid "Authentication failure. Error decoding the Authorization token:"
-msgstr "Chyba autentizace. Selhalo dekódování Vašeho tokenu: {0!s}"
+msgstr "Chyba autentizace. Selhalo dekódování Vašeho tokenu:"
 
 #: api/lib/utils.py:429 api/lib/utils.py:439
-#, fuzzy
-#| msgid "Authentication failure. Your token has expired: {0!s}"
 msgid "Authentication failure. Your token has expired:"
-msgstr "Chyba autentizace. Vašemu tokenu vypršela platnost: {0!s}"
+msgstr "Chyba autentizace. Vašemu tokenu vypršela platnost:"
 
 #: api/lib/utils.py:442
-#, fuzzy, python-brace-format
-#| msgid ""
-#| "Authentication failure. The username {0!s} is not allowed to impersonate "
-#| "via JWT."
+#, python-brace-format
 msgid ""
 "Authentication failure. The username {wrong_username} is not allowed to "
 "impersonate via JWT."
 msgstr ""
-"Chyba autentizace. Uživatelské jméno {0!s} nelze impersonovat pomocí JWT."
+"Chyba autentizace. Uživatelské jméno {wrong_username} nelze impersonovat "
+"pomocí JWT."
 
 #: api/lib/utils.py:447
-#, fuzzy, python-brace-format
-#| msgid ""
-#| "Authentication failure. You do not have the necessary role ({0!s}) to "
-#| "access this resource!"
+#, python-brace-format
 msgid ""
 "Authentication failure. You do not have the necessary role ({required_role}) "
 "to access this resource!"
 msgstr ""
-"Chyba autentizace. Nemáte potřebnou roli ({0!s}) pro přístup ke zdroji!"
+"Chyba autentizace. Nemáte potřebnou roli ({required_role}) pro přístup ke "
+"zdroji!"
 
 #: api/lib/utils.py:464
 #, fuzzy
@@ -1548,10 +1539,8 @@ msgid "multiple tokens are matching this OTP value!"
 msgstr "tento jednorázový kód odpovídá několika tokenům!"
 
 #: lib/token.py:1270
-#, fuzzy
-#| msgid "init token failed: unknown token type {0!r}"
 msgid "init token failed. Unknown token type:"
-msgstr "inicializace tokenu selhala: neznámý typ tokenu {0!r}"
+msgstr "inicializace tokenu selhala: neznámý typ tokenu:"
 
 #: lib/token.py:1290
 #, python-brace-format
@@ -1565,10 +1554,9 @@ msgid "init token failed:"
 msgstr ""
 
 #: lib/token.py:1470
-#, fuzzy, python-brace-format
-#| msgid "Token already assigned to user {0!r}"
+#, python-brace-format
 msgid "Token already assigned to user {old_user!r}"
-msgstr "Token je již přiřazen uživateli {0!r}"
+msgstr "Token je již přiřazen uživateli {old_user!r}"
 
 #: lib/token.py:1484
 #, python-brace-format
@@ -1576,16 +1564,12 @@ msgid "Token assign failed for {0!r}/{1!s} : {2!r}"
 msgstr "Přiřazení tokenu selhalo pro {0!r}/{1!s} : {2!r}"
 
 #: lib/token.py:1512
-#, fuzzy
-#| msgid "Token unassign failed for {0!r}/{1!r}: {2!r}"
 msgid "Token unassign failed for"
-msgstr "Odebrání tokenu selhalo pro {0!r}/{1!r}: {2!r}"
+msgstr "Odebrání tokenu selhalo pro"
 
 #: lib/token.py:1592
-#, fuzzy
-#| msgid "Parameter user must not be a string: {0!r}"
 msgid "Parameter user must not be a string:"
-msgstr "Parametr uživatel nesmí být řetězec: {0!r}"
+msgstr "Parametr uživatel nesmí být řetězec:"
 
 #: lib/token.py:2148
 msgid "You can only define a lost token for an assigned token."
