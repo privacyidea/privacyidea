@@ -9,10 +9,10 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-04-09 14:24+0200\n"
-"PO-Revision-Date: 2025-03-25 00:44+0000\n"
-"Last-Translator: Nils Behlen <nils.behlen@netknights.it>\n"
+"PO-Revision-Date: 2025-04-10 12:05+0000\n"
+"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
 "Language: de\n"
@@ -1212,6 +1212,9 @@ msgid ""
 "attributes. For the next authentication the last used token type is used to "
 "identify the preferred client mode."
 msgstr ""
+"Speichere den zuletzt verwendeten Tokentyp pro Benutzer und Anwendung in den "
+"benutzerdefinierten Attributen. Bei der nächsten Authentifizierung wird "
+"dieser Tokentyp verwendet um den bevorzugten Clint-Modus auszuwählen."
 
 #: lib/policy.py:2611
 #, python-brace-format
@@ -1502,6 +1505,8 @@ msgid ""
 "If this is checked, the administrator will not see the welcome dialog "
 "anymore."
 msgstr ""
+"Wenn diese Aktion aktiviert ist, wird dem Administrator der Willkommens-"
+"Dialog nicht mehr angezeigt."
 
 #: lib/policy.py:2849
 msgid ""
@@ -3343,6 +3348,10 @@ msgid ""
 "recommended. It is advised to use a condition, for example on a user-agent, "
 "with this policy."
 msgstr ""
+"Wenn aktiviert, können Passkey Token über eine PIN oder den <code>/validate/"
+"triggerchallenge</code> API-Endpunkt ausgelöst werden. Für privacyIDEA Plug-"
+"ins wird dies nicht empfohlen. Es wird empfohlen, mit dieser Richtlinie eine "
+"Bedingung zu setzen, beispielsweise auf den <code>user-agent</code>."
 
 #: lib/tokens/passkeytoken.py:119
 msgid ""
