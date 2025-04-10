@@ -191,7 +191,7 @@ msgstr "API-nøkkel"
 msgid "API client ID"
 msgstr "Klient-ID for API"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:801
+#: privacyidea/static/components/token/controllers/tokenControllers.js:808
 msgid "Abort operation on unverifiable token"
 msgstr ""
 
@@ -1219,7 +1219,7 @@ msgstr ""
 msgid "Do not use an authentication counter per token."
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:799
+#: privacyidea/static/components/token/controllers/tokenControllers.js:806
 msgid "Do not verify the authenticity"
 msgstr ""
 
@@ -2629,6 +2629,10 @@ msgstr ""
 msgid "PKCS12"
 msgstr ""
 
+#: privacyidea/static/components/token/controllers/tokenControllers.js:776
+msgid "PKCS12 Password copied to clipboard"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.smsgateway.edit.html:62
 msgid "Parameters"
 msgstr ""
@@ -3566,6 +3570,10 @@ msgstr ""
 msgid "Show"
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.enrolled.certificate.html:32
+msgid "Show PKCS12 password"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.policies.details.html:51
 msgid "Show Policy templates"
 msgstr ""
@@ -3595,7 +3603,7 @@ msgstr ""
 msgid "Size Limit"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:800
+#: privacyidea/static/components/token/controllers/tokenControllers.js:807
 msgid "Skip tokens that can not be verified"
 msgstr ""
 
@@ -3902,6 +3910,14 @@ msgstr ""
 #: privacyidea/static/components/directives/views/directive.otpList.html:26
 #: privacyidea/static/components/token/views/token.enrolled.tan.html:8
 msgid "The OTP values"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enrolled.certificate.html:26
+msgid ""
+"The PKCS12 container contains the public and private key of the\n"
+"        certificate. The container will also be available for download in "
+"the\n"
+"        token details."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.paper.html:1
@@ -4222,6 +4238,16 @@ msgstr ""
 msgid "The password can not be shown again, later!"
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.enrolled.certificate.html:45
+msgid ""
+"The password for the PKCS12 container is shown here only once. Make sure\n"
+"            to keep the password safe now."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enrolled.certificate.html:50
+msgid "The password of the PKCS12 container is the given token PIN"
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.lost.html:44
 msgid ""
 "The password that needs to be combined with the OTP PIN:\n"
@@ -4325,8 +4351,8 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:73
 msgid ""
-"The server will create the private RSA key and store it in\n"
-"                    the database. You can later download the PKCS#12 file."
+"The server will create the private RSA key and return it with\n"
+"                    the certificate in an encrypted PKCS#12 container."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.daypassword.html:20
