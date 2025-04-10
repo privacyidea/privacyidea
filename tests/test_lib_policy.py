@@ -1210,12 +1210,12 @@ class PolicyTestCase(MyTestCase):
         # Update existing policy with conditions
         set_policy("act1", conditions=[
             ("userinfo", "type", "equals", "notverysecure", True),
-            ("request", "user_agent", "equals", "vpn", True, ConditionHandleMissingData.RAISE_ERROR)
+            ("request", "user_agent", "equals", "vpn", True, ConditionHandleMissingData.RAISE_ERROR.value)
         ])
 
         self.assertEqual(P.list_policies()[0]["conditions"],
                          [("userinfo", "type", "equals", "notverysecure", True, None),
-                          ("request", "user_agent", "equals", "vpn", True, ConditionHandleMissingData.RAISE_ERROR)])
+                          ("request", "user_agent", "equals", "vpn", True, ConditionHandleMissingData.RAISE_ERROR.value)])
 
         # Set None for handle missing data is allowed
         set_policy("act1", conditions=[("userinfo", "type", "equals", "notverysecure", True),
@@ -1445,7 +1445,7 @@ class PolicyTestCase(MyTestCase):
 
         # activate the condition
         set_policy("setpin_pol", conditions=[
-            ("tokeninfo", "fixedpin", "equals", "false", True, ConditionHandleMissingData.RAISE_ERROR)])
+            ("tokeninfo", "fixedpin", "equals", "false", True, ConditionHandleMissingData.RAISE_ERROR.value)])
 
         # policy does not match anymore, because the condition on tokeninfo is active
         # setpin action not returned for our token with tokeninfo "fixedpin" = "true"
@@ -1457,12 +1457,12 @@ class PolicyTestCase(MyTestCase):
 
         # policy matches, because the condition shall be true if no token is available
         set_policy("setpin_pol", conditions=[
-            ("tokeninfo", "fixedpin", "equals", "false", True, ConditionHandleMissingData.IS_TRUE)])
+            ("tokeninfo", "fixedpin", "equals", "false", True, ConditionHandleMissingData.IS_TRUE.value)])
         self.assertSetEqual({"setpin_pol"}, _names(P.match_policies(user_object=user1)))
 
         # policy not matches, because the condition shall be false if no token is available, but not raise an error
         set_policy("setpin_pol", conditions=[
-            ("tokeninfo", "fixedpin", "equals", "false", True, ConditionHandleMissingData.IS_FALSE)])
+            ("tokeninfo", "fixedpin", "equals", "false", True, ConditionHandleMissingData.IS_FALSE.value)])
         self.assertSetEqual(set(), _names(P.match_policies(user_object=user1)))
 
         delete_policy("setpin_pol")
@@ -1511,7 +1511,7 @@ class PolicyTestCase(MyTestCase):
 
         # Now check, if we can compare numbers.
         set_policy("setpin_pol", conditions=[("token", "count", "<", "100", True,
-                                              ConditionHandleMissingData.RAISE_ERROR)])
+                                              ConditionHandleMissingData.RAISE_ERROR.value)])
         self.assertEqual({"setpin_pol"}, _names(P.match_policies(user_object=user1, serial=serial)))
         # The the counter of the token is >=100, the policy will not match anymore
         db_token.count = 102
@@ -1525,12 +1525,12 @@ class PolicyTestCase(MyTestCase):
 
         # policy matches, because the condition shall be true if no token is available
         set_policy("setpin_pol", conditions=[("token", "count", "<", "100", True,
-                                              ConditionHandleMissingData.IS_TRUE)])
+                                              ConditionHandleMissingData.IS_TRUE.value)])
         self.assertEqual({"setpin_pol"}, _names(P.match_policies(user_object=user1)))
 
         # policy not matches, because the condition shall be false if no token is available
         set_policy("setpin_pol", conditions=[("token", "count", "<", "100", True,
-                                              ConditionHandleMissingData.IS_FALSE)])
+                                              ConditionHandleMissingData.IS_FALSE.value)])
         self.assertEqual(set(), _names(P.match_policies(user_object=user1)))
 
         # Now check, if a wrong comparison raises an exception
@@ -1764,11 +1764,18 @@ class PolicyTestCase(MyTestCase):
                                            policy_name="test", missing="user", section="tokeninfo",
                                            object_name="token", key="hashlib"))
 
+        # Test that we did not miss to test an enum member
+        tested_enums = {ConditionHandleMissingData.RAISE_ERROR, ConditionHandleMissingData.IS_FALSE,
+                        ConditionHandleMissingData.IS_TRUE}
+        self.assertSetEqual(set(ConditionHandleMissingData), tested_enums)
+
         # ---- ConditionHandleMissingData is not defined ----
-        error_message = r"Unknown handle missing data do_random_stuff defined in condition of policy test."
+        ConditionHandleMissingData.RANDOM = "random"
+        self.assertFalse(ConditionHandleMissingData.RANDOM in ConditionHandleMissingData)
+        error_message = r"Unknown handle missing data random defined in condition of policy test."
         with self.assertRaisesRegex(PolicyError, error_message):
-            policy._do_handle_missing_data(handle_missing_data="do_random_stuff", policy_name="test", missing="token",
-                                           section="tokeninfo", object_name="token", key="hashlib")
+            policy._do_handle_missing_data(handle_missing_data=ConditionHandleMissingData.RANDOM, policy_name="test",
+                                           missing="token", section="tokeninfo", object_name="token", key="hashlib")
 
     def test_45_filter_by_condition_missing_data_error(self):
         """
@@ -1778,7 +1785,7 @@ class PolicyTestCase(MyTestCase):
         # Define condition
         set_policy("policy", scope=SCOPE.USER, action=ACTION.SETPIN,
                    conditions=[
-                       ("tokeninfo", "fixedpin", "equals", "false", True, ConditionHandleMissingData.RAISE_ERROR)])
+                       ("tokeninfo", "fixedpin", "equals", "false", True, ConditionHandleMissingData.RAISE_ERROR.value)])
 
         # Create token for a user
         self.setUp_user_realm2()
@@ -1799,7 +1806,7 @@ class PolicyTestCase(MyTestCase):
         # Compare Error
         set_policy("policy", scope=SCOPE.USER, action=ACTION.SETPIN,
                    conditions=[
-                       ("tokeninfo", "fixedpin", "random", "false", True, ConditionHandleMissingData.RAISE_ERROR)])
+                       ("tokeninfo", "fixedpin", "random", "false", True, ConditionHandleMissingData.RAISE_ERROR.value)])
         token.set_tokeninfo({"fixedpin": "false"})
         self.assertRaises(PolicyError, policy_class.match_policies, user_object=user, serial=token.get_serial())
 
@@ -1814,7 +1821,7 @@ class PolicyTestCase(MyTestCase):
         set_policy("policy", scope=SCOPE.USER, action=ACTION.SETPIN,
                    conditions=[
                        ("tokeninfo", "fixedpin", "equals", "false", True,
-                        ConditionHandleMissingData.IS_TRUE)])
+                        ConditionHandleMissingData.IS_TRUE.value)])
 
         # Create token for a user
         self.setUp_user_realm2()
@@ -1833,7 +1840,7 @@ class PolicyTestCase(MyTestCase):
         set_policy("policy", scope=SCOPE.USER, action=ACTION.SETPIN,
                    conditions=[
                        ("tokeninfo", "fixedpin", "random", "false", True,
-                        ConditionHandleMissingData.IS_TRUE)])
+                        ConditionHandleMissingData.IS_TRUE.value)])
         token.set_tokeninfo({"fixedpin": "false"})
         self.assertRaises(PolicyError, policy_class.match_policies, user_object=user, serial=token.get_serial())
 
@@ -1848,7 +1855,7 @@ class PolicyTestCase(MyTestCase):
         set_policy("policy", scope=SCOPE.USER, action=ACTION.SETPIN,
                    conditions=[
                        ("tokeninfo", "fixedpin", "equals", "false", True,
-                        ConditionHandleMissingData.IS_FALSE)])
+                        ConditionHandleMissingData.IS_FALSE.value)])
 
         # Create token for a user
         self.setUp_user_realm2()
@@ -1867,7 +1874,7 @@ class PolicyTestCase(MyTestCase):
         set_policy("policy", scope=SCOPE.USER, action=ACTION.SETPIN,
                    conditions=[
                        ("tokeninfo", "fixedpin", "random", "false", True,
-                        ConditionHandleMissingData.IS_FALSE)])
+                        ConditionHandleMissingData.IS_FALSE.value)])
         token.set_tokeninfo({"fixedpin": "false"})
         self.assertRaises(PolicyError, policy_class.match_policies, user_object=user, serial=token.get_serial())
 
@@ -1881,7 +1888,7 @@ class PolicyTestCase(MyTestCase):
 
         set_policy("policy", scope=SCOPE.USER, action=ACTION.SETPIN,
                    conditions=[("userinfo", "phone", "matches", "\+49.*", True,
-                                ConditionHandleMissingData.RAISE_ERROR)])
+                                ConditionHandleMissingData.RAISE_ERROR.value)])
 
         # Policy matches
         policies = policy_class.match_policies(user_object=cornelius)
@@ -1902,7 +1909,7 @@ class PolicyTestCase(MyTestCase):
         # ---- Condition is true on missing data ----
         set_policy("policy", scope=SCOPE.USER, action=ACTION.SETPIN,
                    conditions=[("userinfo", "phone", "matches", "\+49.*", True,
-                                ConditionHandleMissingData.IS_TRUE)])
+                                ConditionHandleMissingData.IS_TRUE.value)])
         # missing user object
         policies = policy_class.match_policies(user_object=None)
         self.assertEqual(1, len(policies))
@@ -1916,7 +1923,7 @@ class PolicyTestCase(MyTestCase):
         # ---- Condition is false on missing data ----
         set_policy("policy", scope=SCOPE.USER, action=ACTION.SETPIN,
                    conditions=[("userinfo", "phone", "matches", "\+49.*", True,
-                                ConditionHandleMissingData.IS_FALSE)])
+                                ConditionHandleMissingData.IS_FALSE.value)])
         # missing user object
         policies = policy_class.match_policies(user_object=None)
         self.assertEqual(0, len(policies))
@@ -1924,6 +1931,28 @@ class PolicyTestCase(MyTestCase):
         # empty user / missing key
         policies = policy_class.match_policies(user_object=User())
         self.assertEqual(0, len(policies))
+
+    def test_49_condition_handle_missing_data_get_selection_dict(self):
+        # check that all enums are included in get_selection_dict (dict for the UI)
+        enum_members = {member.value for member in ConditionHandleMissingData.__members__.values()}
+        dict_members = set(ConditionHandleMissingData.get_selection_dict().keys())
+        self.assertSetEqual(enum_members, dict_members)
+
+    def test_50_get_handle_missing_data_enum(self):
+        policy_class = PolicyClass()
+
+        # Valid value
+        handle_missing_data = policy_class.get_handle_missing_data_enum(ConditionHandleMissingData.IS_TRUE.value)
+        self.assertEqual(ConditionHandleMissingData.IS_TRUE, handle_missing_data)
+
+        # None: set default
+        handle_missing_data = policy_class.get_handle_missing_data_enum()
+        self.assertEqual(ConditionHandleMissingData.RAISE_ERROR, handle_missing_data)
+
+        # Invalid value
+        with self.assertRaises(PolicyError) as exception:
+            policy_class.get_handle_missing_data_enum("invalid_value")
+        self.assertIn("Unknown handle missing data", exception.exception.message)
 
 
 class PolicyMatchTestCase(MyTestCase):

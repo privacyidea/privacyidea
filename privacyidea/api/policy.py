@@ -44,7 +44,7 @@ from ..lib.policy import (set_policy, ACTION,
                           export_policies, import_policies,
                           delete_policy, get_static_policy_definitions,
                           enable_policy, get_policy_condition_sections,
-                          get_policy_condition_comparators, Match, get_policy_condition_handle_missing_data)
+                          get_policy_condition_comparators, Match, ConditionHandleMissingData)
 from ..lib.token import get_dynamic_policy_definitions
 from ..lib.error import (ParameterError)
 from privacyidea.lib.utils import is_true
@@ -547,7 +547,7 @@ def get_policy_defs(scope=None):
         # special treatment: get descriptions of conditions
         section_descriptions = get_policy_condition_sections()
         comparator_descriptions = get_policy_condition_comparators()
-        handle_missing_data = get_policy_condition_handle_missing_data()
+        handle_missing_data = ConditionHandleMissingData.get_selection_dict()
         result = {
             "sections": section_descriptions,
             "comparators": comparator_descriptions,
