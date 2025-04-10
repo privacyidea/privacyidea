@@ -12,7 +12,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-04-10 12:05+0000\n"
+"PO-Revision-Date: 2025-04-10 22:38+0000\n"
 "Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/de/>\n"
@@ -2783,7 +2783,7 @@ msgstr "PKCS12"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:776
 msgid "PKCS12 Password copied to clipboard"
-msgstr "PKCS12 Passwort in die Zwischenablage kopiert!"
+msgstr "PKCS12 Passwort in die Zwischenablage kopiert"
 
 #: privacyidea/static/components/config/views/config.smsgateway.edit.html:62
 msgid "Parameters"
@@ -5669,13 +5669,6 @@ msgstr ""
 "und ein neuer Token mit einem neuen geheimen Schlüssel erzeugt wird!"
 
 #: privacyidea/static/components/login/views/login.html:12
-#, fuzzy
-#| msgid ""
-#| "You are authenticated by the web server as user\n"
-#| "                <b>{{ remoteUser }}</b>.\n"
-#| "                You may login as this user to privacyIDEA without any "
-#| "further\n"
-#| "                credentials."
 msgid ""
 "You are authenticated by the web server as user\n"
 "                <b>{{ remoteUser }}</b>.\n"
