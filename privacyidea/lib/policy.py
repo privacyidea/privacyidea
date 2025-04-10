@@ -1052,7 +1052,7 @@ class PolicyClass(object):
             log_message = f"Unknown {section} key '{key}' referenced in condition of policy '{policy_name}'."
             if available_keys:
                 log_available_keys = f"Available {section} keys: {available_keys}"
-            error_message = f"Unknown {section} key referenced in condition of policy '{policy_name}': {key}"
+            error_message = f"Unknown {section} key '{key}' referenced in condition of policy '{policy_name}'!"
         else:
             # We should never reach this point, but if we do, some parameters seem to be not consistent. Hence, we
             # log a more imprecise message

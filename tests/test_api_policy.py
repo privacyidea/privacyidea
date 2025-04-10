@@ -261,7 +261,8 @@ class APIPolicyTestCase(MyApiTestCase):
                                                  "client": "10.1.2.3",
                                                  "scope": SCOPE.AUTHZ,
                                                  "conditions": [["userinfo", "type", "equals", "secure", True,
-                                                                 ConditionHandleMissingData.RAISE_ERROR.value, "extra"]],
+                                                                 ConditionHandleMissingData.RAISE_ERROR.value,
+                                                                 "extra"]],
                                                  "realm": "realm2"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -488,11 +489,11 @@ class APIPolicyConditionTestCase(MyApiTestCase):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(res.status_code, 403)
                 result = res.json
-                self.assertIn("Unknown HTTP header key referenced in condition of policy 'cond1'",
+                self.assertIn("Unknown HTTP header key 'User-Agent' referenced in condition of policy 'policy'",
                               result["result"]["error"]["message"])
                 # Make sure the missing key is described in the error log
                 lc.check_present(("privacyidea.lib.policy", "ERROR",
-                                  "Unknown HTTP header key 'User-Agent' referenced in condition of policy 'cond1'"))
+                                  "Unknown HTTP header key 'User-Agent' referenced in condition of policy 'policy'."))
 
         # A request without such a specific header - always has a header
         with LogCapture(level=logging.ERROR) as lc:
@@ -503,11 +504,11 @@ class APIPolicyConditionTestCase(MyApiTestCase):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(res.status_code, 403)
                 result = res.json
-                self.assertIn("Unknown HTTP header key referenced in condition of policy 'cond1'",
+                self.assertIn("Unknown HTTP header key 'User-Agent' referenced in condition of policy 'policy'",
                               result["result"]["error"]["message"])
                 # Make sure the missing key is described in the error log
                 lc.check_present(("privacyidea.lib.policy", "ERROR",
-                                  "Unknown HTTP header key 'User-Agent' referenced in condition of policy 'cond1'"))
+                                  "Unknown HTTP header key 'User-Agent' referenced in condition of policy 'policy'."))
 
         # ---- Policy match for missing data ----
         # Define policy shall match if header or key is not present
@@ -666,12 +667,13 @@ class APIPolicyConditionTestCase(MyApiTestCase):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(res.status_code, 403)
                 result = res.json
-                self.assertIn("Unknown HTTP environment key referenced in condition of policy 'cond1'",
+                self.assertIn("Unknown HTTP environment key 'NON_EXISTING' referenced in condition of policy "
+                              "'cond1'",
                               result["result"]["error"]["message"])
                 # Make sure the missing key is described in the error log
                 lc.check_present(("privacyidea.lib.policy", "ERROR",
                                   "Unknown HTTP environment key 'NON_EXISTING' referenced "
-                                  "in condition of policy 'cond1'"))
+                                  "in condition of policy 'cond1'."))
 
         delete_policy("cond1")
 
@@ -688,9 +690,9 @@ class APIPolicyConditionTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 403)
             result = res.json
-            self.assertIn("Unknown HTTP environment key referenced in condition of policy",
-                          result["result"]["error"]["message"])
-            self.assertIn("NON_EXISTING", result["result"]["error"]["message"])
+            self.assertEqual("Unknown HTTP environment key 'NON_EXISTING' referenced in condition of policy "
+                             "'policy'!",
+                             result["result"]["error"]["message"])
 
         # Policy matches (condition is true)
         set_policy("policy", scope=SCOPE.AUTHZ, action=ACTION.NODETAILSUCCESS, realm=self.realm1,

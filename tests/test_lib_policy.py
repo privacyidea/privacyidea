@@ -1268,8 +1268,8 @@ class PolicyTestCase(MyTestCase):
 
         # no user => policy error
         with self.assertRaisesRegex(PolicyError,
-                                    "ERR303: Policy 'verysecure' has condition on 'userinfo', but "
-                                    "a user is not available!"):
+                                    "ERR303: Policy 'verysecure' has a condition on the section "
+                                    "'userinfo' with key 'type', but a user is unavailable!"):
             P.match_policies(user_object=None)
 
         # empty user => policy error
@@ -1707,7 +1707,7 @@ class PolicyTestCase(MyTestCase):
         policy = PolicyClass()
         # ---- Test for ConditionHandleMissingData.RAISE_ERROR ----
         # Token object not available
-        error_message = (r"Policy test has a condition on the section tokeninfo with key hashlib, but a token is "
+        error_message = (r"Policy 'test' has a condition on the section 'tokeninfo' with key 'hashlib', but a token is "
                          r"unavailable!")
         with self.assertRaisesRegex(PolicyError, error_message):
             policy._do_handle_missing_data(handle_missing_data=ConditionHandleMissingData.RAISE_ERROR,
@@ -1715,7 +1715,7 @@ class PolicyTestCase(MyTestCase):
                                            object_name="token", key="hashlib")
 
         # Key not available
-        error_message = r"Unknown tokeninfo key referenced in condition of policy test: hashlib"
+        error_message = r"Unknown tokeninfo key 'hashlib' referenced in condition of policy 'test'"
         with self.assertRaisesRegex(PolicyError, error_message):
             policy._do_handle_missing_data(handle_missing_data=ConditionHandleMissingData.RAISE_ERROR,
                                            policy_name="test", missing="hashlib", section="tokeninfo",
@@ -1723,8 +1723,8 @@ class PolicyTestCase(MyTestCase):
                                            key="hashlib", available_keys=["serial"])
 
         # missing parameter does not match object_name or key
-        error_message = (r"Policy test has a condition on the section tokeninfo with key type, but some required data "
-                         r"is unavailable!")
+        error_message = (r"Policy 'test' has a condition on the section 'tokeninfo' with key 'type', but some required "
+                         r"data is unavailable!")
         with self.assertRaisesRegex(PolicyError, error_message):
             policy._do_handle_missing_data(handle_missing_data=ConditionHandleMissingData.RAISE_ERROR,
                                            policy_name="test", missing="user", section="tokeninfo", object_name="token",
@@ -1794,13 +1794,13 @@ class PolicyTestCase(MyTestCase):
         token = init_token({"type": "hotp", "genkey": True}, user=user)
 
         # Token object not available
-        error_message = (r"Policy policy has a condition on the section tokeninfo with key fixedpin, but a token is "
-                         r"unavailable!")
+        error_message = (r"Policy 'policy' has a condition on the section 'tokeninfo' with key 'fixedpin', but a token "
+                         r"is unavailable!")
         with self.assertRaisesRegex(PolicyError, error_message):
             policy_class.match_policies(user_object=user)
 
         # Key not available
-        error_message = r"Unknown tokeninfo key referenced in condition of policy policy: fixedpin"
+        error_message = r"Unknown tokeninfo key 'fixedpin' referenced in condition of policy 'policy'"
         with self.assertRaisesRegex(PolicyError, error_message):
             policy_class.match_policies(user_object=user, serial=token.get_serial())
 
