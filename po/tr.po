@@ -294,7 +294,7 @@ msgstr "API anahtarı"
 msgid "API client ID"
 msgstr "API Client ID"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:801
+#: privacyidea/static/components/token/controllers/tokenControllers.js:808
 msgid "Abort operation on unverifiable token"
 msgstr ""
 
@@ -1410,7 +1410,7 @@ msgstr "Dalış!"
 msgid "Do not use an authentication counter per token."
 msgstr "Tokken başına bir kimlik doğrulama sayacını kullanmayın."
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:799
+#: privacyidea/static/components/token/controllers/tokenControllers.js:806
 msgid "Do not verify the authenticity"
 msgstr ""
 
@@ -2938,6 +2938,10 @@ msgstr "Şifre"
 msgid "PKCS12"
 msgstr "Pkcs12"
 
+#: privacyidea/static/components/token/controllers/tokenControllers.js:776
+msgid "PKCS12 Password copied to clipboard"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.smsgateway.edit.html:62
 msgid "Parameters"
 msgstr "Parametreler"
@@ -3950,6 +3954,12 @@ msgstr "SYNC penceresini ayarla"
 msgid "Show"
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.enrolled.certificate.html:32
+#, fuzzy
+#| msgid "Show password"
+msgid "Show PKCS12 password"
+msgstr "Şifreyi göster"
+
 #: privacyidea/static/components/config/views/config.policies.details.html:51
 msgid "Show Policy templates"
 msgstr "Politika şablonlarını göster"
@@ -3979,7 +3989,7 @@ msgstr "Yalnızca seçilen koşulları göster"
 msgid "Size Limit"
 msgstr "Boyut sınırı"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:800
+#: privacyidea/static/components/token/controllers/tokenControllers.js:807
 msgid "Skip tokens that can not be verified"
 msgstr ""
 
@@ -4343,6 +4353,14 @@ msgstr "OTP tuşu"
 #: privacyidea/static/components/token/views/token.enrolled.tan.html:8
 msgid "The OTP values"
 msgstr "OTP değerleri"
+
+#: privacyidea/static/components/token/views/token.enrolled.certificate.html:26
+msgid ""
+"The PKCS12 container contains the public and private key of the\n"
+"        certificate. The container will also be available for download in "
+"the\n"
+"        token details."
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.paper.html:1
 msgid ""
@@ -4798,6 +4816,16 @@ msgstr ""
 msgid "The password can not be shown again, later!"
 msgstr "Şifre daha sonra tekrar gösterilemiyor!"
 
+#: privacyidea/static/components/token/views/token.enrolled.certificate.html:45
+msgid ""
+"The password for the PKCS12 container is shown here only once. Make sure\n"
+"            to keep the password safe now."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enrolled.certificate.html:50
+msgid "The password of the PKCS12 container is the given token PIN"
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.lost.html:44
 msgid ""
 "The password that needs to be combined with the OTP PIN:\n"
@@ -4937,9 +4965,13 @@ msgstr ""
 "            Taramanız için size gösterilecektir."
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:73
+#, fuzzy
+#| msgid ""
+#| "The server will create the private RSA key and store it in\n"
+#| "                    the database. You can later download the PKCS#12 file."
 msgid ""
-"The server will create the private RSA key and store it in\n"
-"                    the database. You can later download the PKCS#12 file."
+"The server will create the private RSA key and return it with\n"
+"                    the certificate in an encrypted PKCS#12 container."
 msgstr ""
 "Sunucu özel RSA anahtarını oluşturacak ve saklayacak\n"
 "                    veritabanı. Daha sonra PKCS # 12 dosyasını "

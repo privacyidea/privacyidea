@@ -285,7 +285,7 @@ msgstr "API 密鑰"
 msgid "API client ID"
 msgstr "API 客戶端 ID"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:801
+#: privacyidea/static/components/token/controllers/tokenControllers.js:808
 msgid "Abort operation on unverifiable token"
 msgstr ""
 
@@ -1397,7 +1397,7 @@ msgstr "潜入!"
 msgid "Do not use an authentication counter per token."
 msgstr "不要為每個令牌使用身份驗證計數器。"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:799
+#: privacyidea/static/components/token/controllers/tokenControllers.js:806
 msgid "Do not verify the authenticity"
 msgstr ""
 
@@ -2927,6 +2927,10 @@ msgstr "密碼"
 msgid "PKCS12"
 msgstr "PKCS12"
 
+#: privacyidea/static/components/token/controllers/tokenControllers.js:776
+msgid "PKCS12 Password copied to clipboard"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.smsgateway.edit.html:62
 msgid "Parameters"
 msgstr "參數"
@@ -3944,6 +3948,12 @@ msgstr "設置同步視窗"
 msgid "Show"
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.enrolled.certificate.html:32
+#, fuzzy
+#| msgid "Show password"
+msgid "Show PKCS12 password"
+msgstr "顯示密碼"
+
 #: privacyidea/static/components/config/views/config.policies.details.html:51
 msgid "Show Policy templates"
 msgstr "顯示策略範本"
@@ -3975,7 +3985,7 @@ msgstr "僅顯示選定的操作"
 msgid "Size Limit"
 msgstr "大小限制"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:800
+#: privacyidea/static/components/token/controllers/tokenControllers.js:807
 msgid "Skip tokens that can not be verified"
 msgstr ""
 
@@ -4333,6 +4343,14 @@ msgstr "OTP 金鑰"
 msgid "The OTP values"
 msgstr "OTP 值"
 
+#: privacyidea/static/components/token/views/token.enrolled.certificate.html:26
+msgid ""
+"The PKCS12 container contains the public and private key of the\n"
+"        certificate. The container will also be available for download in "
+"the\n"
+"        token details."
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.enroll.paper.html:1
 msgid ""
 "The Paper token will let you print a list of OTP values.\n"
@@ -4649,13 +4667,12 @@ msgid ""
 "        Yubico Validation Protocol</a>."
 msgstr ""
 "認證請求可以由默認的privacyIDEA處理\n"
-"    <a href="
-"\"http://privacyidea.readthedocs.org/en/latest/modules/api/validate.html\">\n"
+"    <a href=\"http://privacyidea.readthedocs.org/en/latest/modules/api/"
+"validate.html\">\n"
 "        驗證 API</a> 但也可以由\n"
 "    <a href=\"https://privacyidea.readthedocs.io/en/latest/modules/lib/"
-"tokentypes/"
-"yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass."
-"api_endpoint\" target=\"_blank\">\n"
+"tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken."
+"YubikeyTokenClass.api_endpoint\" target=\"_blank\">\n"
 "        Yubico 驗證協議 </a>。"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:8
@@ -4772,6 +4789,16 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.lost.html:48
 msgid "The password can not be shown again, later!"
 msgstr "密碼無法再次顯示，稍後！"
+
+#: privacyidea/static/components/token/views/token.enrolled.certificate.html:45
+msgid ""
+"The password for the PKCS12 container is shown here only once. Make sure\n"
+"            to keep the password safe now."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enrolled.certificate.html:50
+msgid "The password of the PKCS12 container is the given token PIN"
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.lost.html:44
 msgid ""
@@ -4919,8 +4946,8 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:73
 #, fuzzy
 msgid ""
-"The server will create the private RSA key and store it in\n"
-"                    the database. You can later download the PKCS#12 file."
+"The server will create the private RSA key and return it with\n"
+"                    the certificate in an encrypted PKCS#12 container."
 msgstr ""
 "伺服器將創建私有 RSA 金鑰並將其存儲在\n"
 "                    這\n"
