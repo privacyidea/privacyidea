@@ -2,16 +2,16 @@
 # Copyright (C) 2020 ORGANIZATION
 # This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
-#
+# Paul Lettich <paul.lettich@netknights.it>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-04-09 14:24+0200\n"
-"PO-Revision-Date: 2025-03-28 09:26+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"PO-Revision-Date: 2025-04-10 12:05+0000\n"
+"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/"
-"projects/privacyidea/branch-3-11/zh_Hans/>\n"
+"projects/privacyidea/privacyidea-server/zh_Hans/>\n"
 "Language: zh_Hans\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -43,10 +43,8 @@ msgid "Authentication failure using passkey."
 msgstr "验证失败,缺少用户名"
 
 #: api/auth.py:255
-#, fuzzy
-#| msgid "Authentication failure. Unknown realm: {0!s}."
 msgid "Authentication failure. Unknown realm:"
-msgstr "验证失败,未知的域: {0!s}."
+msgstr "验证失败,未知的域:"
 
 #: api/auth.py:259
 msgid "Authentication failure. Missing Username"
@@ -96,29 +94,26 @@ msgid "Authentication failure. Missing Authorization header."
 msgstr "验证失败。缺少授权标头。"
 
 #: api/lib/utils.py:405 api/lib/utils.py:436
-#, fuzzy
 msgid "Authentication failure. Error decoding the Authorization token:"
-msgstr "验证失败。解码令牌时出错：{0！s}"
+msgstr "验证失败。解码令牌时出错："
 
 #: api/lib/utils.py:429 api/lib/utils.py:439
-#, fuzzy
-#| msgid "Authentication failure. Your token has expired: {0!s}"
 msgid "Authentication failure. Your token has expired:"
-msgstr "验证失败,因为您的令牌已过期: {0!s}"
+msgstr "验证失败,因为您的令牌已过期:"
 
 #: api/lib/utils.py:442
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "Authentication failure. The username {wrong_username} is not allowed to "
 "impersonate via JWT."
-msgstr "验证失败。用户名{0！s}不允许通过JWT模拟。"
+msgstr "验证失败。用户名{wrong_username}不允许通过JWT模拟。"
 
 #: api/lib/utils.py:447
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "Authentication failure. You do not have the necessary role ({required_role}) "
 "to access this resource!"
-msgstr "验证失败。您没有访问此资源所需的角色（{0！s}）！"
+msgstr "验证失败。您没有访问此资源所需的角色（{required_role}）！"
 
 #: api/lib/utils.py:464
 #, fuzzy
@@ -1142,12 +1137,11 @@ msgid ""
 msgstr ""
 
 #: lib/policy.py:2611
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "Allow the user to authenticate (default). If set to '{0!s}', the "
 "authentication of the user will be denied."
-msgstr ""
-"允许用户进行身份验证（默认）。如果设置为“ {0！s}”，则将拒绝用户的身份验证。"
+msgstr "允许用户进行身份验证（默认）。如果设置为“ {0!s}”，则将拒绝用户的身份验证。"
 
 #: lib/policy.py:2618
 msgid ""
@@ -1603,10 +1597,9 @@ msgid "init token failed:"
 msgstr ""
 
 #: lib/token.py:1470
-#, fuzzy, python-brace-format
-#| msgid "Token already assigned to user {0!r}"
+#, python-brace-format
 msgid "Token already assigned to user {old_user!r}"
-msgstr "已分配给用户的令牌 {0!r}"
+msgstr "已分配给用户的令牌 {old_user!r}"
 
 #: lib/token.py:1484
 #, python-brace-format
@@ -1688,33 +1681,32 @@ msgid "No suitable token found for authentication."
 msgstr ""
 
 #: lib/token.py:2726
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Admin is allowed to initialize {0!s} tokens."
-msgstr "允许管理员初始化{0！s}令牌。"
+msgstr "允许管理员初始化{0!s}令牌。"
 
 #: lib/token.py:2734
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "The user is allowed to enroll a {0!s} token."
-msgstr "允许用户注册{0！s}令牌。"
+msgstr "允许用户注册{0!s}令牌。"
 
 #: lib/token.py:2765
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Set the maximum allowed PIN length of the {0!s} token."
-msgstr "设置{0！s}令牌的最大允许PIN长度。"
+msgstr "设置{0!s}令牌的最大允许PIN长度。"
 
 #: lib/token.py:2772
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Set the minimum required PIN length of the {0!s} token."
-msgstr "设置{0！s}令牌所需的最小PIN长度。"
+msgstr "设置{0!s}令牌所需的最小PIN长度。"
 
 #: lib/token.py:2778
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "Specifiy the required PIN contents of the {0!s} token. (c)haracters, "
 "(n)umeric, (s)pecial, (o)thers. [+/-]!"
-msgstr ""
-"指定{0！s}令牌的必需PIN内容。（c）字符，（n）数值，（s）特殊，（o）其他。"
-"[+/-]！"
+msgstr "指定{0!s}令牌的必需PIN内容。（c）字符，（n）数值，（s）特殊，（o）其他。[+/-]"
+"！"
 
 #: lib/token.py:2823 lib/token.py:2839
 msgid "The tokengroup does not exist."
@@ -2763,21 +2755,21 @@ msgid "EMail: Send a One Time Password to the users email address."
 msgstr "电子邮件：向用户的电子邮件地址发送一次性密码。"
 
 #: lib/tokens/emailtoken.py:166
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "The text that will be sent via EMail for an EMail-token. Several tags like "
 "{otp} and {serial} can be used as parameters. You may also specify a "
 "filename as email template starting with \"file:\"."
 msgstr ""
-"将通过电子邮件发送的电子邮件令牌的文本。可以使用如 <otp> 和 <serial> 等标签作"
-"为参数。你也可以将文件名指定为以“ file：”开头的电子邮件模板。"
+"将通过电子邮件发送的电子邮件令牌的文本。可以使用如 {otp} 和 {serial} "
+"等标签作为参数。你也可以将文件名指定为以“ file：”开头的电子邮件模板。"
 
 #: lib/tokens/emailtoken.py:175
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "The subject of the EMail for an EMail token. Use tags like {otp} and "
 "{serial} as parameters."
-msgstr "电子邮件令牌的电子邮件主题。使用 <otp> 和 <serial> 等标签作为参数。"
+msgstr "电子邮件令牌的电子邮件主题。使用 {otp} 和 {serial} 等标签作为参数。"
 
 #: lib/tokens/emailtoken.py:180
 msgid ""
@@ -2905,9 +2897,9 @@ msgid "Please scan the QR code and enter the OTP value!"
 msgstr "请扫描二维码！"
 
 #: lib/tokens/indexedsecrettoken.py:50
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Please enter the positions {0!s} from your secret."
-msgstr "请从您的秘密中输入职位{0！s}。"
+msgstr "请从您的秘密中输入职位{0!s}。"
 
 #: lib/tokens/indexedsecrettoken.py:99
 msgid "Indexed Secret Token"
@@ -3251,11 +3243,11 @@ msgid "SMS: Send a One Time Password to the users mobile phone."
 msgstr "SMS：向用户手机发送一次性密码。"
 
 #: lib/tokens/smstoken.py:206
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "The text that will be send via SMS for an SMS token. Use tags like {otp} and "
 "{serial} as parameters."
-msgstr "将通过 SMS 发送的 SMS令牌文本。使用 <otp> 和 <serial> 等标签作为参数。"
+msgstr "将通过 SMS 发送的 SMS令牌文本。使用 {otp} 和 {serial} 等标签作为参数。"
 
 #: lib/tokens/smstoken.py:213
 msgid ""
@@ -3417,9 +3409,9 @@ msgid "You need to define the appId in the token config!"
 msgstr "您需要在令牌配置中定义appId！"
 
 #: lib/tokens/u2ftoken.py:444
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Please confirm with your U2F token ({0!s})"
-msgstr "请使用您的U2F令牌（{0！s}）进行确认"
+msgstr "请使用您的U2F令牌（{0!s}）进行确认"
 
 #: lib/tokens/vascotoken.py:99
 msgid "VASCO Token: Authentication using VASCO tokens"
@@ -3439,9 +3431,9 @@ msgid "Generic WebAuthn Token"
 msgstr "通用WebAuthn令牌"
 
 #: lib/tokens/webauthntoken.py:472
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Please confirm with your WebAuthn token ({0!s})"
-msgstr "请使用您的WebAuthn令牌（{0！s}）进行确认"
+msgstr "请使用您的WebAuthn令牌（{0!s}）进行确认"
 
 #: lib/tokens/webauthntoken.py:473
 msgid "Please confirm with your WebAuthn token"
