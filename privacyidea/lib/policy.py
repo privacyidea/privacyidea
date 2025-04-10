@@ -902,13 +902,18 @@ class PolicyClass(object):
                             (policy.get("time") and
                              check_time_in_range(policy.get("time"), time))
                             or not policy.get("time")]
-        log.debug("Policies after matching time: {0!s}".format([p.get("name") for p in reduced_policies]))
+        log.debug(f"Policies after matching time: {[p.get('name') for p in reduced_policies]}")
 
         # filter policies by the policy conditions
         if extended_condition_check != CONDITION_CHECK.DO_NOT_CHECK_AT_ALL:
-            reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object, request_headers,
-                                                                  serial, extended_condition_check)
-            log.debug("Policies after matching conditions: {0!s}".format([p.get("name") for p in reduced_policies]))
+            try:
+                reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object, request_headers,
+                                                                      serial, extended_condition_check)
+            except PolicyError:
+                # Add the information on which actions triggered the error to the logs
+                log.error(f"Error checking extended conditions for action '{action}'.")
+                raise
+            log.debug(f"Policies after matching extended conditions: {[p.get('name') for p in reduced_policies]}")
 
         if audit_data is not None:
             for p in reduced_policies:
@@ -1036,22 +1041,24 @@ class PolicyClass(object):
         log_available_keys = None
         if missing == object_name:
             # the full object is not available
-            log_message = (f"Policy {policy_name} has a condition on the section {section} with key {key}, but "
-                           f"a {object_name} is unavailable: {''.join(traceback.format_stack())}.")
-            error_message = (f"Policy {policy_name} has a condition on the section {section} with key {key}, but "
+            log_message = (f"Policy '{policy_name}' has a condition on the section '{section}' with key '{key}', but "
+                           f"a {object_name} is unavailable. This should not happen! Please check/reduce the policy "
+                           f"actions or disable the policy."
+                           f"\n{''.join(traceback.format_stack())}.")
+            error_message = (f"Policy '{policy_name}' has a condition on the section '{section}' with key '{key}', but "
                              f"a {object_name} is unavailable!")
         elif missing == key:
             # the object is available, but it does not contain the key
-            log_message = f"Unknown {section} key {key} referenced in condition of policy {policy_name}."
+            log_message = f"Unknown {section} key '{key}' referenced in condition of policy '{policy_name}'."
             if available_keys:
                 log_available_keys = f"Available {section} keys: {available_keys}"
-            error_message = f"Unknown {section} key referenced in condition of policy {policy_name}: {key}"
+            error_message = f"Unknown {section} key referenced in condition of policy '{policy_name}': {key}"
         else:
             # We should never reach this point, but if we do, some parameters seem to be not consistent. Hence, we
             # log a more imprecise message
-            log_message = (f"Policy {policy_name} has a condition on the section {section} with key {key}, but "
-                           f"{missing} is unavailable: {''.join(traceback.format_stack())}.")
-            error_message = (f"Policy {policy_name} has a condition on the section {section} with key {key}, but "
+            log_message = (f"Policy '{policy_name}' has a condition on the section '{section}' with key '{key}', but "
+                           f"'{missing}' is unavailable: {''.join(traceback.format_stack())}.")
+            error_message = (f"Policy '{policy_name}' has a condition on the section '{section}' with key '{key}', but "
                              "some required data is unavailable!")
 
         # Execute the behaviour according to the handle_missing_data parameter
@@ -1099,11 +1106,11 @@ class PolicyClass(object):
         """
         try:
             return compare_values(left_value, comparator, right_value)
-        except Exception as exx:
-            log.warning(f"Error during handling the condition on {section} {key_name} "
-                        f"of policy {policy_name}: {exx}")
+        except Exception as e:
+            log.warning(f"Error during handling the condition on {section} '{key_name}' "
+                        f"of policy \'{policy_name}\': {e}")
             raise PolicyError(
-                f"Invalid comparison in the {section} conditions of policy {policy_name}")
+                f"Invalid comparison in the {section} conditions of policy \'{policy_name}\'")
 
     @classmethod
     def _policy_matches_request_environ_condition(cls, policy: dict, key: str, comparator: str, value: str,
@@ -2842,13 +2849,15 @@ def get_static_policy_definitions(scope=None):
             ACTION.NODETAILSUCCESS: {
                 'type': 'bool',
                 'desc': _('In case of successful authentication additional '
-                          'no detail information will be returned.'),
+                          'no detail information will be returned.')
+                        + " <em>Deprecated since v3.11</em>",
                 'group': GROUP.SETTING_ACTIONS,
             },
             ACTION.NODETAILFAIL: {
                 'type': 'bool',
                 'desc': _('In case of failed authentication additional '
-                          'no detail information will be returned.'),
+                          'no detail information will be returned.')
+                        + " <em>Deprecated since v3.11</em>",
                 'group': GROUP.SETTING_ACTIONS,
             },
             ACTION.ADDUSERINRESPONSE: {

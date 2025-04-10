@@ -120,7 +120,7 @@ myApp.directive('assignUser', ["$http", "$rootScope", "userUrl", "AuthFactory", 
             //console.log(scope.realms);
             // If the user is not set, set the default realm selection to the first realm in the list
             scope.$watch('realms', function (newVal, oldVal) {
-                if (newVal && !scope.newUserObject.user) {
+                if (newVal && !scope.newUserObject.user && !scope.newUserObject.realm) {
                     scope.newUserObject.realm = Object.keys(newVal)[0];
                 }
             }, true);

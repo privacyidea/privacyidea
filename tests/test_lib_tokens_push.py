@@ -36,7 +36,7 @@ from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PUSH_ACTION,
                                               AVAILABLE_PRESENCE_OPTIONS_NUMERIC,
                                               PushAllowPolling, POLLING_ALLOWED, POLL_ONLY)
 from privacyidea.lib.user import (User)
-from privacyidea.lib.utils import to_bytes, b32encode_and_unicode, to_unicode
+from privacyidea.lib.utils import to_bytes, b32encode_and_unicode, to_unicode, AUTH_RESPONSE
 from privacyidea.models import Token, Challenge
 from .base import MyTestCase, FakeFlaskG
 
@@ -898,8 +898,9 @@ class PushTokenTestCase(MyTestCase):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(res.status_code, 200)
                 jsonresp = res.json
-                self.assertTrue(jsonresp.get("result").get("value"))
+                self.assertFalse(jsonresp.get("result").get("value"))
                 self.assertTrue(jsonresp.get("result").get("status"))
+                self.assertEqual(jsonresp["result"]["authentication"], AUTH_RESPONSE.CHALLENGE)
                 self.assertEqual(jsonresp.get("detail").get("serial"), tokenobj.token.serial)
                 self.assertIn("transaction_id", jsonresp.get("detail"))
                 transaction_id = jsonresp.get("detail").get("transaction_id")
@@ -949,6 +950,10 @@ class PushTokenTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             self.assertTrue(res.json['result']['status'])
+            self.assertIsInstance(res.json["result"]["value"], dict, res.json)
+            self.assertIn("role", res.json["result"]["value"], res.json)
+            self.assertIn("rights", res.json["result"]["value"], res.json)
+            self.assertEqual(res.json["result"]["authentication"], AUTH_RESPONSE.ACCEPT, res.json)
 
         delete_policy("push1")
         delete_policy("webui")
@@ -1010,8 +1015,10 @@ class PushTokenTestCase(MyTestCase):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(200, res.status_code)
                 response_json = res.json
-                self.assertTrue(response_json.get("result").get("value"))
+                self.assertFalse(response_json.get("result").get("value"))
                 self.assertTrue(response_json.get("result").get("status"))
+                self.assertEqual(response_json["result"]["authentication"],
+                                 AUTH_RESPONSE.CHALLENGE, response_json)
                 self.assertTrue(response_json.get("detail").get("serial") in serials)
                 self.assertIn("transaction_id", response_json.get("detail"))
 
@@ -1074,6 +1081,9 @@ class PushTokenTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             self.assertTrue(res.json['result']['status'])
+            self.assertIsInstance(res.json["result"]["value"], dict, res.json)
+            self.assertEqual(res.json["result"]["authentication"],
+                             AUTH_RESPONSE.ACCEPT, res.json)
 
         remove_token(push_token1.get_serial())
         remove_token(push_token2.get_serial())
@@ -1127,8 +1137,10 @@ class PushTokenTestCase(MyTestCase):
                 # Get the challenge from the database
 
                 response_json = res.json
-                self.assertTrue(response_json.get("result").get("value"))
+                self.assertFalse(response_json.get("result").get("value"))
                 self.assertTrue(response_json.get("result").get("status"))
+                self.assertEqual(response_json["result"]["authentication"],
+                                 AUTH_RESPONSE.CHALLENGE, response_json)
                 self.assertEqual(response_json.get("detail").get("serial"), token_object.token.serial)
                 self.assertIn("transaction_id", response_json.get("detail"))
                 transaction_id = response_json.get("detail").get("transaction_id")
@@ -1181,6 +1193,9 @@ class PushTokenTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             self.assertTrue(res.json['result']['status'])
+            self.assertIsInstance(res.json["result"]["value"], dict, res.json)
+            self.assertEqual(res.json["result"]["authentication"],
+                             AUTH_RESPONSE.ACCEPT, res.json)
 
         remove_token(token_object.get_serial())
         delete_policy("webui")
@@ -1236,8 +1251,10 @@ class PushTokenTestCase(MyTestCase):
                 # Get the challenge from the database
 
                 json_response = res.json
-                self.assertTrue(json_response.get("result").get("value"))
+                self.assertFalse(json_response.get("result").get("value"))
                 self.assertTrue(json_response.get("result").get("status"))
+                self.assertEqual(json_response["result"]["authentication"],
+                                 AUTH_RESPONSE.CHALLENGE, res.json)
                 self.assertEqual(json_response.get("detail").get("serial"), token.token.serial)
                 self.assertIn("transaction_id", json_response.get("detail"))
                 transaction_id = json_response.get("detail").get("transaction_id")
@@ -1290,6 +1307,9 @@ class PushTokenTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
             self.assertTrue(res.json['result']['status'])
+            self.assertIsInstance(res.json["result"]["value"], dict, res.json)
+            self.assertEqual(res.json["result"]["authentication"],
+                             AUTH_RESPONSE.ACCEPT, res.json)
 
         remove_token(token.get_serial())
         delete_policy("webui")
@@ -1314,7 +1334,7 @@ class PushTokenTestCase(MyTestCase):
                                                  "password": "pushpin"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code)
-            self.assertTrue(res.json.get("result").get("value"))
+            self.assertFalse(res.json.get("result").get("value"))
             self.assertTrue(res.json.get("result").get("status"))
             self.assertEqual(res.json.get("detail").get("serial"), token.token.serial)
             self.assertIn("transaction_id", res.json.get("detail"))
