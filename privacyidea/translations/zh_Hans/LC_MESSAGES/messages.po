@@ -2,16 +2,16 @@
 # Copyright (C) 2020 ORGANIZATION
 # This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
-#
+# Paul Lettich <paul.lettich@netknights.it>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-04-04 01:39+0200\n"
-"PO-Revision-Date: 2025-03-28 09:26+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
+"POT-Creation-Date: 2025-04-09 14:24+0200\n"
+"PO-Revision-Date: 2025-04-10 12:05+0000\n"
+"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/"
-"projects/privacyidea/branch-3-11/zh_Hans/>\n"
+"projects/privacyidea/privacyidea-server/zh_Hans/>\n"
 "Language: zh_Hans\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -43,10 +43,8 @@ msgid "Authentication failure using passkey."
 msgstr "验证失败,缺少用户名"
 
 #: api/auth.py:255
-#, fuzzy
-#| msgid "Authentication failure. Unknown realm: {0!s}."
 msgid "Authentication failure. Unknown realm:"
-msgstr "验证失败,未知的域: {0!s}."
+msgstr "验证失败,未知的域:"
 
 #: api/auth.py:259
 msgid "Authentication failure. Missing Username"
@@ -64,11 +62,11 @@ msgstr ""
 msgid "Could not verify data in request!"
 msgstr ""
 
-#: api/validate.py:466 lib/token.py:2608
+#: api/validate.py:467 lib/token.py:2608
 msgid "Found matching challenge"
 msgstr ""
 
-#: api/lib/postpolicy.py:88
+#: api/lib/postpolicy.py:90
 #, python-brace-format
 msgid ""
 "\n"
@@ -81,12 +79,12 @@ msgid ""
 "Subscriptions: {subscriptions}\n"
 msgstr ""
 
-#: api/lib/prepolicy.py:2476
+#: api/lib/prepolicy.py:2478
 #, fuzzy, python-brace-format
 msgid "Missing description for {} token."
 msgstr "令牌的新描述。"
 
-#: api/lib/prepolicy.py:2477
+#: api/lib/prepolicy.py:2479
 #, fuzzy, python-brace-format
 msgid "Description required for {} token."
 msgstr "令牌的新描述。"
@@ -96,29 +94,26 @@ msgid "Authentication failure. Missing Authorization header."
 msgstr "验证失败。缺少授权标头。"
 
 #: api/lib/utils.py:405 api/lib/utils.py:436
-#, fuzzy
 msgid "Authentication failure. Error decoding the Authorization token:"
-msgstr "验证失败。解码令牌时出错：{0！s}"
+msgstr "验证失败。解码令牌时出错："
 
 #: api/lib/utils.py:429 api/lib/utils.py:439
-#, fuzzy
-#| msgid "Authentication failure. Your token has expired: {0!s}"
 msgid "Authentication failure. Your token has expired:"
-msgstr "验证失败,因为您的令牌已过期: {0!s}"
+msgstr "验证失败,因为您的令牌已过期:"
 
 #: api/lib/utils.py:442
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "Authentication failure. The username {wrong_username} is not allowed to "
 "impersonate via JWT."
-msgstr "验证失败。用户名{0！s}不允许通过JWT模拟。"
+msgstr "验证失败。用户名{wrong_username}不允许通过JWT模拟。"
 
 #: api/lib/utils.py:447
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "Authentication failure. You do not have the necessary role ({required_role}) "
 "to access this resource!"
-msgstr "验证失败。您没有访问此资源所需的角色（{0！s}）！"
+msgstr "验证失败。您没有访问此资源所需的角色（{required_role}）！"
 
 #: api/lib/utils.py:464
 #, fuzzy
@@ -1134,15 +1129,21 @@ msgid ""
 "anymore! Does only work when authenticating with a username."
 msgstr ""
 
-#: lib/policy.py:2605
-#, fuzzy, python-brace-format
+#: lib/policy.py:2603
+msgid ""
+"Store the last used token type per user and application in the custom user "
+"attributes. For the next authentication the last used token type is used to "
+"identify the preferred client mode."
+msgstr ""
+
+#: lib/policy.py:2611
+#, python-brace-format
 msgid ""
 "Allow the user to authenticate (default). If set to '{0!s}', the "
 "authentication of the user will be denied."
-msgstr ""
-"允许用户进行身份验证（默认）。如果设置为“ {0！s}”，则将拒绝用户的身份验证。"
+msgstr "允许用户进行身份验证（默认）。如果设置为“ {0!s}”，则将拒绝用户的身份验证。"
 
-#: lib/policy.py:2612
+#: lib/policy.py:2618
 msgid ""
 "Allow the application to choose which token types should be used for "
 "authentication. Application may set the parameter 'type' in the request. "
@@ -1151,7 +1152,7 @@ msgstr ""
 "允许应用程序选择应使用哪些令牌类型进行身份验证。应用程序可以在请求中设置参"
 "数“类型”。与验证/检查，验证/ samlcheck和验证/触发挑战一起使用。"
 
-#: lib/policy.py:2619
+#: lib/policy.py:2625
 msgid ""
 "You can specify how many successful authentication requests a user is "
 "allowed to do in a given time. Specify like 1/5s, 2/10m, 10/1h - s, m, h "
@@ -1160,7 +1161,7 @@ msgstr ""
 "您可以指定在给定时间内允许用户执行多少次成功的身份验证请求。指定为1 / 5s，"
 "2 / 10m，10 / 1h-s，m，h为秒，分钟和小时。"
 
-#: lib/policy.py:2627
+#: lib/policy.py:2633
 msgid ""
 "You can specify how many failed authentication requests a user is allowed to "
 "do in a given time. Specify like 1/5s, 2/10m, 10/1h - s, m, h being second, "
@@ -1169,7 +1170,7 @@ msgstr ""
 "您可以指定在给定时间内允许用户执行多少次失败的身份验证请求。指定为1 / 5s，"
 "2 / 10m，10 / 1h-s，m，h为秒，分钟和小时。"
 
-#: lib/policy.py:2635
+#: lib/policy.py:2641
 msgid ""
 "You can specify in which time frame the user needs to authenticate again "
 "with this token. If the user authenticates later, authentication will fail. "
@@ -1178,17 +1179,17 @@ msgstr ""
 "您可以指定用户需要在哪个时间范围内使用此令牌再次进行身份验证。如果用户稍后进"
 "行身份验证，则身份验证将失败。指定为30h，7d或1y。"
 
-#: lib/policy.py:2643
+#: lib/policy.py:2649
 msgid "The user will only be authenticated with this very tokentype."
 msgstr "将仅使用此令牌类型对用户进行身份验证。"
 
-#: lib/policy.py:2650
+#: lib/policy.py:2656
 msgid ""
 "The user will only be authenticated if the serial number of the token "
 "matches this regexp."
 msgstr "仅当令牌的序列号与此正则表达式匹配时，用户才会通过身份验证。"
 
-#: lib/policy.py:2656
+#: lib/policy.py:2662
 #, fuzzy
 #| msgid ""
 #| "The user will only be authenticated if the tokeninfo field matches the "
@@ -1199,7 +1200,7 @@ msgid ""
 msgstr ""
 "仅当tokeninfo字段与regexp匹配时，才会对用户进行身份验证。key/&lt;regexp&gt;/"
 
-#: lib/policy.py:2663
+#: lib/policy.py:2669
 msgid ""
 "The Realm of the user is set to this very realm. This is important if the "
 "user is not contained in the default realm and can not pass his realm."
@@ -1207,31 +1208,31 @@ msgstr ""
 "用户的领域已设置为该领域。如果用户未包含在默认领域中并且无法通过其领域，则这"
 "一点很重要。"
 
-#: lib/policy.py:2670
+#: lib/policy.py:2676
 msgid ""
 "In case of successful authentication additional no detail information will "
 "be returned."
 msgstr "如果认证成功，则不会返回任何详细信息。"
 
-#: lib/policy.py:2677
+#: lib/policy.py:2683
 msgid ""
 "In case of failed authentication additional no detail information will be "
 "returned."
 msgstr "如果认证失败，则不会返回任何详细信息。"
 
-#: lib/policy.py:2684
+#: lib/policy.py:2690
 msgid ""
 "In case of successful authentication user data will be added in the detail "
 "branch of the authentication response."
 msgstr "如果认证成功，则将用户数据添加到认证响应的详细分支中。"
 
-#: lib/policy.py:2691
+#: lib/policy.py:2697
 msgid ""
 "In case of successful authentication the user resolver and realm will be "
 "added in the detail branch of the authentication response."
 msgstr "如果认证成功，则用户解析器和领域将添加到认证响应的详细分支中。"
 
-#: lib/policy.py:2698
+#: lib/policy.py:2704
 msgid ""
 "The sending of an API Auth Key is required duringauthentication. This avoids "
 "rogue authenticate requests against the /validate/check interface."
@@ -1239,14 +1240,14 @@ msgstr ""
 "身份验证期间需要发送API身份验证密钥。这样可以避免针对/ validate / check接口的"
 "流氓身份验证请求。"
 
-#: lib/policy.py:2707
+#: lib/policy.py:2713
 msgid ""
 "If set, administrators will see a dashboard as start screen when logging in "
 "to privacyIDEA WebUI."
 msgstr ""
 "如果设置了该选项，则管理员在登录privacyIDEA WebUI时会将仪表板作为开始屏幕。"
 
-#: lib/policy.py:2713
+#: lib/policy.py:2719
 msgid ""
 "If set to \"privacyIDEA\" the users and admins need to authenticate against "
 "privacyIDEA when they log in to the Web UI. Defaults to \"userstore\"."
@@ -1254,25 +1255,25 @@ msgstr ""
 "如果设置为“ privacyIDEA”，则用户和管理员在登录Web UI时需要针对privacyIDEA进行"
 "身份验证。默认为“用户存储”。"
 
-#: lib/policy.py:2721
+#: lib/policy.py:2727
 msgid ""
 "An alternative text to display on the WebUI login dialog instead of \"Please "
 "sign in\"."
 msgstr "在WebUI登录对话框上显示的替代文本，而不是“请登录”。"
 
-#: lib/policy.py:2725
+#: lib/policy.py:2731
 msgid ""
 "When searching in the user list, the search will only performed when "
 "pressing enter."
 msgstr "在用户列表中搜索时，仅在按Enter键时才执行搜索。"
 
-#: lib/policy.py:2730
+#: lib/policy.py:2736
 msgid ""
 "The action taken when a user is idle beyond the logout_time limit. Defaults "
 "to \"lockscreen\"."
 msgstr "用户闲置超过logout_time限制时采取的操作。默认为“锁屏”。"
 
-#: lib/policy.py:2738
+#: lib/policy.py:2744
 msgid ""
 "The REMOTE_USER set by the webserver can be used to login to privacyIDEA or "
 "it will be ignored. Defaults to \"disable\"."
@@ -1280,50 +1281,50 @@ msgstr ""
 "网络服务器设置的REMOTE_USER可用于登录privacyIDEA，否则将被忽略。默认为“禁"
 "用”。"
 
-#: lib/policy.py:2744
+#: lib/policy.py:2750
 msgid ""
 "Set the time in seconds after which the user will be logged out from the "
 "WebUI. Default: 120"
 msgstr "设置以秒为单位的时间，在该时间之后，用户将从WebUI注销。默认值：120"
 
-#: lib/policy.py:2749
+#: lib/policy.py:2755
 msgid ""
 "privacyIDEA issues a JWT when the user or admins logs in to the WebUI. The "
 "default validity is 1 hour. You can specify different validity times in "
 "seconds."
 msgstr ""
 
-#: lib/policy.py:2754
+#: lib/policy.py:2760
 msgid "Set how many tokens should be displayed in the token view on one page."
 msgstr "设置应在一页的令牌视图中显示多少个令牌。"
 
-#: lib/policy.py:2759
+#: lib/policy.py:2765
 msgid "Set how many users should be displayed in the user view on one page."
 msgstr "设置应在一页的用户视图中显示多少个用户。"
 
-#: lib/policy.py:2764
+#: lib/policy.py:2770
 msgid ""
 "Set how many audit entries should be displayed in the audit view on one page."
 msgstr "设置应在审计视图的一页中显示多少审计条目。"
 
-#: lib/policy.py:2769
+#: lib/policy.py:2775
 msgid "Use your own html template for the web UI menu."
 msgstr "将您自己的html模板用于Web UI菜单。"
 
-#: lib/policy.py:2773
+#: lib/policy.py:2779
 msgid "Use your own html template for the web UI baseline/footer."
 msgstr "将您自己的html模板用于Web UI基线/页脚。"
 
-#: lib/policy.py:2777
+#: lib/policy.py:2783
 msgid "Link your privacy statement to be displayed in the baseline/footer."
 msgstr ""
 
-#: lib/policy.py:2781
+#: lib/policy.py:2787
 msgid ""
 "Whether the user ID and the resolver should be displayed in the token list."
 msgstr "用户标识和解析器是否应显示在令牌列表中。"
 
-#: lib/policy.py:2786
+#: lib/policy.py:2792
 msgid ""
 "The URL of a repository, where the policy templates can be found.  (Default "
 "https: //raw.githubusercontent.com/ privacyidea/policy-templates /master/"
@@ -1332,80 +1333,81 @@ msgstr ""
 "可以在其中找到策略模板的存储库的URL。  （默认https：//raw.githubusercontent."
 "com/ privacyidea / policy-templates / master / templates /）"
 
-#: lib/policy.py:2793
+#: lib/policy.py:2799
 msgid ""
 "The URL of an SSO provider for redirect at logout.(The URL must start with "
 "http:// or https://)"
 msgstr ""
 
-#: lib/policy.py:2798
+#: lib/policy.py:2804
 msgid ""
 "As long as a user has no token, he will only see a token wizard in the UI."
 msgstr "只要用户没有令牌，他将仅在UI中看到令牌向导。"
 
-#: lib/policy.py:2804
+#: lib/policy.py:2810
 msgid ""
 "The tokenwizard will be displayed in the token menu, even if the user "
 "already has a token."
 msgstr "即使用户已经拥有令牌，令牌向导也会显示在令牌菜单中。"
 
-#: lib/policy.py:2810
+#: lib/policy.py:2816
 msgid ""
 "This is a whitespace separated list of tokentypes, for which a rollover "
 "button is displayed in the token details."
 msgstr ""
 
-#: lib/policy.py:2817
+#: lib/policy.py:2823
 msgid ""
 "The welcome dialog will be displayed if the user has no tokens assigned."
 msgstr "如果用户未分配令牌，将显示欢迎对话框。"
 
-#: lib/policy.py:2821
+#: lib/policy.py:2827
 msgid "This is the default token type in the token enrollment dialog."
 msgstr "这是令牌注册对话框中的默认令牌类型。"
 
-#: lib/policy.py:2827
+#: lib/policy.py:2833
 #, fuzzy
 #| msgid "This is the default token type in the token enrollment dialog."
 msgid "This is the default container type in the container create dialog."
 msgstr "这是令牌注册对话框中的默认令牌类型。"
 
-#: lib/policy.py:2832
+#: lib/policy.py:2838
 msgid ""
 "A list of realm names, which are displayed in a drop down menu in the WebUI "
 "login screen. Realms are separated by white spaces."
 msgstr "领域名称列表，显示在WebUI登录屏幕的下拉菜单中。领域之间用空格隔开。"
 
-#: lib/policy.py:2838
+#: lib/policy.py:2844
 msgid ""
-"If this checked, the administrator will not see the welcome dialog anymore."
-msgstr "如果选中此选项，则管理员将不再看到“欢迎”对话框。"
+"If this is checked, the administrator will not see the welcome dialog "
+"anymore."
+msgstr ""
 
-#: lib/policy.py:2843
+#: lib/policy.py:2849
 msgid ""
 "Per default disabled actions result in disabled buttons. When checking this "
 "action, buttons of disabled actions are hidden."
 msgstr ""
 "默认情况下，禁用操作会导致禁用按钮。检查此操作时，禁用操作的按钮将被隐藏。"
 
-#: lib/policy.py:2848
+#: lib/policy.py:2854
 msgid ""
 "If this is checked, there will be a confirmation prompt when deleting "
 "policies, events, mresolver, resolver or periodic tasks!"
 msgstr ""
 
-#: lib/policy.py:2853
+#: lib/policy.py:2859
 msgid ""
 "If this is checked, the seed will be displayed as text during enrollment."
 msgstr "如果选中此选项，则种子将在注册过程中显示为文本。"
 
-#: lib/policy.py:2858
+#: lib/policy.py:2864
 msgid ""
 "If this is checked, the privacyIDEA Node name will be displayed in the menu "
 "bar."
 msgstr "如果选中此选项，则 privacyIDEA 节点名称将显示在菜单栏中。"
 
-#: lib/policy.py:2863
+#: lib/policy.py:2869
 msgid ""
 "If this is checked, the enrollment page for HOTP, TOTP and Push tokens will "
 "contain a QR code that leads to the privacyIDEA Authenticator in the Google "
@@ -1414,7 +1416,7 @@ msgstr ""
 "如果选中此选项，则HOTP，TOTP和Push令牌的注册页面将包含一个QR码，可转到Google "
 "Play商店中的privacyIDEA身份验证器。"
 
-#: lib/policy.py:2870
+#: lib/policy.py:2876
 msgid ""
 "If this is checked, the enrollment page for HOTP, TOTP and Push tokens will "
 "contain a QR code that leads to the privacyIDEA Authenticator in the iOS App "
@@ -1423,72 +1425,72 @@ msgstr ""
 "如果选中此选项，那么HOTP，TOTP和Push令牌的注册页面将包含一个QR码，可通往iOS "
 "App Store中的privacyIDEA Authenticator。"
 
-#: lib/policy.py:2877
+#: lib/policy.py:2883
 msgid ""
 "This action adds a QR code in the enrollment page for HOTP, TOTP and Push "
 "tokens, that lead to this given URL."
 msgstr ""
 "此操作会在注册页面中为HOTP，TOTP和Push令牌添加QR码，该QR码会导致该给定URL。"
 
-#: lib/policy.py:2882
+#: lib/policy.py:2888
 msgid ""
 "The RSS feeds fetched for the user defined in the format: "
 "<code>'Title':'URL'-'Title':'URL'</code> "
 msgstr ""
 
-#: lib/policy.py:2885
+#: lib/policy.py:2891
 msgid ""
 "The age of the RSS feed entries in days. Use <code>0</code> to hide the news "
 "feed. For admins the default is 180 days and for users 0 days."
 msgstr ""
 
-#: lib/policy.py:2889
+#: lib/policy.py:2895
 msgid ""
 "Container type to be created with the container wizard. It is required to "
 "set at least this option to enable the container wizard. As long as the user "
 "has no container assigned he will only see the container wizard in the UI."
 msgstr ""
 
-#: lib/policy.py:2896
+#: lib/policy.py:2902
 msgid ""
 "Name of the container template to be used to create a container in the "
 "container wizard (optional). Note that the template must be of the same type "
 "as selected in the container_wizard_type."
 msgstr ""
 
-#: lib/policy.py:2902
+#: lib/policy.py:2908
 msgid ""
 "In the container wizard, a QR code will be generated to register the new "
 "container on the smartphone. (Only applicable for smartphone containers)"
 msgstr ""
 
-#: lib/policy.py:2910
+#: lib/policy.py:2916
 msgid ""
 "The URL of your privacyIDEA server, e.g. <code>https://pi/</code>. It is "
 "used to build URLs the container can contact for registration and "
 "synchronization."
 msgstr ""
 
-#: lib/policy.py:2916
+#: lib/policy.py:2922
 msgid ""
 "The time in minutes the client has to do the second step of the "
 "registration. The default is ten minutes."
 msgstr ""
 
-#: lib/policy.py:2922
+#: lib/policy.py:2928
 msgid ""
 "After the client (a registered container) has challenged an action such as "
 "synchronization or unregistration, this defines the time in minutes the "
 "client has to complete the action. The default is two minutes."
 msgstr ""
 
-#: lib/policy.py:2931
+#: lib/policy.py:2937
 msgid ""
 "The container needs to verify the SSL certificate of the privacyIDEA server "
 "during registration and synchronization. (default True)"
 msgstr ""
 
-#: lib/policy.py:2938
+#: lib/policy.py:2944
 #, fuzzy
 #| msgid "The user is allowed to reset the failcounter of his tokens."
 msgid ""
@@ -1496,7 +1498,7 @@ msgid ""
 "included tokens."
 msgstr "允许用户重置其令牌的故障计数器。"
 
-#: lib/policy.py:2943
+#: lib/policy.py:2949
 msgid ""
 "During the first synchronization, the server automatically adds the clients "
 "tokens existing in privacyIDEA to the container. This allows to register "
@@ -1504,42 +1506,42 @@ msgid ""
 "tokens on the device to the container."
 msgstr ""
 
-#: lib/policy.py:2950
+#: lib/policy.py:2956
 #, fuzzy
 #| msgid "The user is allowed to delete his own tokens."
 msgid "The user is not allowed to delete tokens locally on the smartphone."
 msgstr "允许用户删除自己的令牌。"
 
-#: lib/policy.py:2955
+#: lib/policy.py:2961
 msgid ""
 "The client is not allowed to unregister the container. The user can not "
 "delete the container locally on the smartphone."
 msgstr ""
 
-#: lib/policy.py:3000
+#: lib/policy.py:3006
 msgid ""
 "The policy only matches if certain conditions on the user info are fulfilled."
 msgstr "该策略仅在满足用户信息的某些条件时匹配。"
 
-#: lib/policy.py:3003
+#: lib/policy.py:3009
 msgid ""
 "The policy only matches if certain conditions of the token attributes are "
 "fulfilled."
 msgstr ""
 
-#: lib/policy.py:3006
+#: lib/policy.py:3012
 msgid ""
 "The policy only matches if certain conditions on the token info are "
 "fulfilled."
 msgstr "该策略只在令牌信息的某些条件得到满足时才匹配。"
 
-#: lib/policy.py:3009
+#: lib/policy.py:3015
 msgid ""
 "The policy only matches if certain conditions on the HTTP Request header are "
 "fulfilled."
 msgstr "该策略仅在满足HTTP Request标头上的某些条件时匹配。"
 
-#: lib/policy.py:3012
+#: lib/policy.py:3018
 msgid ""
 "The policy only matches if certain conditions on the HTTP Environment are "
 "fulfilled."
@@ -1595,10 +1597,9 @@ msgid "init token failed:"
 msgstr ""
 
 #: lib/token.py:1470
-#, fuzzy, python-brace-format
-#| msgid "Token already assigned to user {0!r}"
+#, python-brace-format
 msgid "Token already assigned to user {old_user!r}"
-msgstr "已分配给用户的令牌 {0!r}"
+msgstr "已分配给用户的令牌 {old_user!r}"
 
 #: lib/token.py:1484
 #, python-brace-format
@@ -1680,33 +1681,32 @@ msgid "No suitable token found for authentication."
 msgstr ""
 
 #: lib/token.py:2726
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Admin is allowed to initialize {0!s} tokens."
-msgstr "允许管理员初始化{0！s}令牌。"
+msgstr "允许管理员初始化{0!s}令牌。"
 
 #: lib/token.py:2734
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "The user is allowed to enroll a {0!s} token."
-msgstr "允许用户注册{0！s}令牌。"
+msgstr "允许用户注册{0!s}令牌。"
 
 #: lib/token.py:2765
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Set the maximum allowed PIN length of the {0!s} token."
-msgstr "设置{0！s}令牌的最大允许PIN长度。"
+msgstr "设置{0!s}令牌的最大允许PIN长度。"
 
 #: lib/token.py:2772
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Set the minimum required PIN length of the {0!s} token."
-msgstr "设置{0！s}令牌所需的最小PIN长度。"
+msgstr "设置{0!s}令牌所需的最小PIN长度。"
 
 #: lib/token.py:2778
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "Specifiy the required PIN contents of the {0!s} token. (c)haracters, "
 "(n)umeric, (s)pecial, (o)thers. [+/-]!"
-msgstr ""
-"指定{0！s}令牌的必需PIN内容。（c）字符，（n）数值，（s）特殊，（o）其他。"
-"[+/-]！"
+msgstr "指定{0!s}令牌的必需PIN内容。（c）字符，（n）数值，（s）特殊，（o）其他。[+/-]"
+"！"
 
 #: lib/token.py:2823 lib/token.py:2839
 msgid "The tokengroup does not exist."
@@ -1717,7 +1717,7 @@ msgstr ""
 msgid " Please press: {presence_answer}"
 msgstr ""
 
-#: lib/tokenclass.py:1700
+#: lib/tokenclass.py:1698
 msgid "please enter otp: "
 msgstr "请输入otp： "
 
@@ -2475,7 +2475,7 @@ msgstr ""
 msgid "Your LDAP config seems to be OK, %i machine objects found."
 msgstr "您的LDAP配置似乎正常，%i机器对象已发现。"
 
-#: lib/resolvers/LDAPIdResolver.py:1146
+#: lib/resolvers/LDAPIdResolver.py:1158
 #, fuzzy, python-brace-format
 msgid ""
 "Your LDAP config found {0!s} user objects in {2:.4f}s, but only {1!s} with "
@@ -2483,7 +2483,7 @@ msgid ""
 msgstr ""
 "您的LDAP配置找到{0！s}个用户对象，但只有{1！s}个具有指定uidtype的用户对象"
 
-#: lib/resolvers/LDAPIdResolver.py:1150
+#: lib/resolvers/LDAPIdResolver.py:1162
 #, fuzzy, python-brace-format
 msgid "Your LDAP config seems to be OK, {0!s} user objects found in {1:.4f}s."
 msgstr "您的LDAP配置似乎正常，找到了{0！s}个用户对象。"
@@ -2665,34 +2665,34 @@ msgid ""
 "password tokens assigned."
 msgstr "用户只能分配此最大数量的活动密码令牌。"
 
-#: lib/tokens/certificatetoken.py:282
+#: lib/tokens/certificatetoken.py:287
 msgid "Certificate: Enroll an x509 Certificate Token."
 msgstr "证书：注册一个 x509 证书令牌。"
 
-#: lib/tokens/certificatetoken.py:293
+#: lib/tokens/certificatetoken.py:298
 msgid "The user may only have this maximum number of certificates assigned."
 msgstr "用户只能分配此最大数量的证书。"
 
-#: lib/tokens/certificatetoken.py:298
+#: lib/tokens/certificatetoken.py:303
 msgid ""
 "The user may only have this maximum number of active certificates assigned."
 msgstr "用户只能分配此最大数量的活动证书。"
 
-#: lib/tokens/certificatetoken.py:303
+#: lib/tokens/certificatetoken.py:308
 msgid ""
 "Enrolling a certificate token can require an attestation certificate. "
 "(Default: ignore)"
 msgstr ""
 
-#: lib/tokens/certificatetoken.py:312
+#: lib/tokens/certificatetoken.py:317
 msgid "The CA connector that should be used during certificate enrollment."
 msgstr "证书注册期间应使用的 CA 连接器。"
 
-#: lib/tokens/certificatetoken.py:318
+#: lib/tokens/certificatetoken.py:323
 msgid "The template that should be used to issue a certificate."
 msgstr "应该用于颁发证书的模板。"
 
-#: lib/tokens/certificatetoken.py:323
+#: lib/tokens/certificatetoken.py:328
 msgid ""
 "This takes a space separated list of elements to be added to the subject. "
 "Can be 'email' and 'realm'."
@@ -2700,7 +2700,7 @@ msgstr ""
 "需要一个要添加到主题的元素组成的列表， 不同元素间用空格隔开。 可以是“电子邮"
 "件”和“领域”。"
 
-#: lib/tokens/certificatetoken.py:331 lib/tokens/certificatetoken.py:338
+#: lib/tokens/certificatetoken.py:336 lib/tokens/certificatetoken.py:343
 msgid "The directory containing attestation certificate chains."
 msgstr ""
 
@@ -2755,21 +2755,21 @@ msgid "EMail: Send a One Time Password to the users email address."
 msgstr "电子邮件：向用户的电子邮件地址发送一次性密码。"
 
 #: lib/tokens/emailtoken.py:166
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "The text that will be sent via EMail for an EMail-token. Several tags like "
 "{otp} and {serial} can be used as parameters. You may also specify a "
 "filename as email template starting with \"file:\"."
 msgstr ""
-"将通过电子邮件发送的电子邮件令牌的文本。可以使用如 <otp> 和 <serial> 等标签作"
-"为参数。你也可以将文件名指定为以“ file：”开头的电子邮件模板。"
+"将通过电子邮件发送的电子邮件令牌的文本。可以使用如 {otp} 和 {serial} "
+"等标签作为参数。你也可以将文件名指定为以“ file：”开头的电子邮件模板。"
 
 #: lib/tokens/emailtoken.py:175
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "The subject of the EMail for an EMail token. Use tags like {otp} and "
 "{serial} as parameters."
-msgstr "电子邮件令牌的电子邮件主题。使用 <otp> 和 <serial> 等标签作为参数。"
+msgstr "电子邮件令牌的电子邮件主题。使用 {otp} 和 {serial} 等标签作为参数。"
 
 #: lib/tokens/emailtoken.py:180
 msgid ""
@@ -2897,9 +2897,9 @@ msgid "Please scan the QR code and enter the OTP value!"
 msgstr "请扫描二维码！"
 
 #: lib/tokens/indexedsecrettoken.py:50
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Please enter the positions {0!s} from your secret."
-msgstr "请从您的秘密中输入职位{0！s}。"
+msgstr "请从您的秘密中输入职位{0!s}。"
 
 #: lib/tokens/indexedsecrettoken.py:99
 msgid "Indexed Secret Token"
@@ -3243,11 +3243,11 @@ msgid "SMS: Send a One Time Password to the users mobile phone."
 msgstr "SMS：向用户手机发送一次性密码。"
 
 #: lib/tokens/smstoken.py:206
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "The text that will be send via SMS for an SMS token. Use tags like {otp} and "
 "{serial} as parameters."
-msgstr "将通过 SMS 发送的 SMS令牌文本。使用 <otp> 和 <serial> 等标签作为参数。"
+msgstr "将通过 SMS 发送的 SMS令牌文本。使用 {otp} 和 {serial} 等标签作为参数。"
 
 #: lib/tokens/smstoken.py:213
 msgid ""
@@ -3409,9 +3409,9 @@ msgid "You need to define the appId in the token config!"
 msgstr "您需要在令牌配置中定义appId！"
 
 #: lib/tokens/u2ftoken.py:444
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Please confirm with your U2F token ({0!s})"
-msgstr "请使用您的U2F令牌（{0！s}）进行确认"
+msgstr "请使用您的U2F令牌（{0!s}）进行确认"
 
 #: lib/tokens/vascotoken.py:99
 msgid "VASCO Token: Authentication using VASCO tokens"
@@ -3431,9 +3431,9 @@ msgid "Generic WebAuthn Token"
 msgstr "通用WebAuthn令牌"
 
 #: lib/tokens/webauthntoken.py:472
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Please confirm with your WebAuthn token ({0!s})"
-msgstr "请使用您的WebAuthn令牌（{0！s}）进行确认"
+msgstr "请使用您的WebAuthn令牌（{0!s}）进行确认"
 
 #: lib/tokens/webauthntoken.py:473
 msgid "Please confirm with your WebAuthn token"
@@ -3676,6 +3676,11 @@ msgid ""
 "true if the integer value of the left attribute is bigger than the right "
 "integer value"
 msgstr ""
+
+#~ msgid ""
+#~ "If this checked, the administrator will not see the welcome dialog "
+#~ "anymore."
+#~ msgstr "如果选中此选项，则管理员将不再看到“欢迎”对话框。"
 
 #, fuzzy
 #~ msgid "Admin is allowed to register containers for synchronization."

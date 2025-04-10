@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-04-04 01:39+0200\n"
+"POT-Creation-Date: 2025-04-09 14:24+0200\n"
 "PO-Revision-Date: 2025-03-28 09:25+0000\n"
 "Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/privacyidea/"
@@ -64,11 +64,11 @@ msgstr ""
 msgid "Could not verify data in request!"
 msgstr ""
 
-#: api/validate.py:466 lib/token.py:2608
+#: api/validate.py:467 lib/token.py:2608
 msgid "Found matching challenge"
 msgstr ""
 
-#: api/lib/postpolicy.py:88
+#: api/lib/postpolicy.py:90
 #, python-brace-format
 msgid ""
 "\n"
@@ -81,12 +81,12 @@ msgid ""
 "Subscriptions: {subscriptions}\n"
 msgstr ""
 
-#: api/lib/prepolicy.py:2476
+#: api/lib/prepolicy.py:2478
 #, fuzzy, python-brace-format
 msgid "Missing description for {} token."
 msgstr "La nueva descripción del token."
 
-#: api/lib/prepolicy.py:2477
+#: api/lib/prepolicy.py:2479
 #, fuzzy, python-brace-format
 msgid "Description required for {} token."
 msgstr "La nueva descripción del token."
@@ -1272,7 +1272,14 @@ msgid ""
 "anymore! Does only work when authenticating with a username."
 msgstr ""
 
-#: lib/policy.py:2605
+#: lib/policy.py:2603
+msgid ""
+"Store the last used token type per user and application in the custom user "
+"attributes. For the next authentication the last used token type is used to "
+"identify the preferred client mode."
+msgstr ""
+
+#: lib/policy.py:2611
 #, python-brace-format
 msgid ""
 "Allow the user to authenticate (default). If set to '{0!s}', the "
@@ -1281,7 +1288,7 @@ msgstr ""
 "Permite que el usuario se autentique (predeterminado). Si se establece en "
 "'{0!s}', se denegará la autenticación del usuario."
 
-#: lib/policy.py:2612
+#: lib/policy.py:2618
 msgid ""
 "Allow the application to choose which token types should be used for "
 "authentication. Application may set the parameter 'type' in the request. "
@@ -1292,7 +1299,7 @@ msgstr ""
 "solicitud. Funciona con validate / check, validate / samlcheck y validate / "
 "triggerchallenge."
 
-#: lib/policy.py:2619
+#: lib/policy.py:2625
 msgid ""
 "You can specify how many successful authentication requests a user is "
 "allowed to do in a given time. Specify like 1/5s, 2/10m, 10/1h - s, m, h "
@@ -1302,7 +1309,7 @@ msgstr ""
 "realizar un usuario en un tiempo determinado. Especifique como 1 / 5s, 2 / "
 "10m, 10 / 1h ."
 
-#: lib/policy.py:2627
+#: lib/policy.py:2633
 msgid ""
 "You can specify how many failed authentication requests a user is allowed to "
 "do in a given time. Specify like 1/5s, 2/10m, 10/1h - s, m, h being second, "
@@ -1312,7 +1319,7 @@ msgstr ""
 "realizar un usuario en un tiempo determinado. Especifique como 1 / 5s, 2 / "
 "10m, 10 / 1h."
 
-#: lib/policy.py:2635
+#: lib/policy.py:2641
 msgid ""
 "You can specify in which time frame the user needs to authenticate again "
 "with this token. If the user authenticates later, authentication will fail. "
@@ -1322,11 +1329,11 @@ msgstr ""
 "con este token. Si el usuario se autentica más tarde, la autenticación "
 "fallará. Especifique como 30h, 7d o 1y."
 
-#: lib/policy.py:2643
+#: lib/policy.py:2649
 msgid "The user will only be authenticated with this very tokentype."
 msgstr "El usuario solo se autenticará con este mismo tipo de token."
 
-#: lib/policy.py:2650
+#: lib/policy.py:2656
 msgid ""
 "The user will only be authenticated if the serial number of the token "
 "matches this regexp."
@@ -1334,7 +1341,7 @@ msgstr ""
 "El usuario solo será autenticado si el número de serie del token coincide "
 "con esta expresión regular."
 
-#: lib/policy.py:2656
+#: lib/policy.py:2662
 #, fuzzy
 #| msgid ""
 #| "The user will only be authenticated if the tokeninfo field matches the "
@@ -1346,7 +1353,7 @@ msgstr ""
 "El usuario solo será autenticado si el campo tokeninfo coincide con la "
 "expresión regular. clave/&lt;regexp&gt;/"
 
-#: lib/policy.py:2663
+#: lib/policy.py:2669
 msgid ""
 "The Realm of the user is set to this very realm. This is important if the "
 "user is not contained in the default realm and can not pass his realm."
@@ -1355,7 +1362,7 @@ msgstr ""
 "importante si el usuario no está contenido en el dominio predeterminado y no "
 "puede pasar su dominio."
 
-#: lib/policy.py:2670
+#: lib/policy.py:2676
 msgid ""
 "In case of successful authentication additional no detail information will "
 "be returned."
@@ -1363,7 +1370,7 @@ msgstr ""
 "En caso de autenticación exitosa, no se devolverá información adicional "
 "detallada ."
 
-#: lib/policy.py:2677
+#: lib/policy.py:2683
 msgid ""
 "In case of failed authentication additional no detail information will be "
 "returned."
@@ -1371,7 +1378,7 @@ msgstr ""
 "En caso de autenticación fallida, no se devolverá información adicional "
 "detallada."
 
-#: lib/policy.py:2684
+#: lib/policy.py:2690
 msgid ""
 "In case of successful authentication user data will be added in the detail "
 "branch of the authentication response."
@@ -1379,7 +1386,7 @@ msgstr ""
 "En caso de una autenticación exitosa, los datos del usuario se agregarán en "
 "la rama de detalle de la respuesta de autenticación."
 
-#: lib/policy.py:2691
+#: lib/policy.py:2697
 msgid ""
 "In case of successful authentication the user resolver and realm will be "
 "added in the detail branch of the authentication response."
@@ -1387,7 +1394,7 @@ msgstr ""
 "En caso de una autenticación exitosa, el almacen de usuario y el dominio se "
 "agregarán en la rama de detalle de la respuesta de autenticación."
 
-#: lib/policy.py:2698
+#: lib/policy.py:2704
 msgid ""
 "The sending of an API Auth Key is required duringauthentication. This avoids "
 "rogue authenticate requests against the /validate/check interface."
@@ -1396,7 +1403,7 @@ msgstr ""
 "autenticación. Esto evita solicitudes de autenticación fraudulentas contra "
 "la interfaz validate / check."
 
-#: lib/policy.py:2707
+#: lib/policy.py:2713
 msgid ""
 "If set, administrators will see a dashboard as start screen when logging in "
 "to privacyIDEA WebUI."
@@ -1404,7 +1411,7 @@ msgstr ""
 "Si está configurado, los administradores verán un panel como pantalla de "
 "inicio cuando inicien sesión en privacyIDEA WebUI."
 
-#: lib/policy.py:2713
+#: lib/policy.py:2719
 msgid ""
 "If set to \"privacyIDEA\" the users and admins need to authenticate against "
 "privacyIDEA when they log in to the Web UI. Defaults to \"userstore\"."
@@ -1413,7 +1420,7 @@ msgstr ""
 "autenticarse contra privacyIDEA cuando inician sesión en la interfaz de "
 "usuario web. El valor predeterminado es \"almacen de usuarios\"."
 
-#: lib/policy.py:2721
+#: lib/policy.py:2727
 msgid ""
 "An alternative text to display on the WebUI login dialog instead of \"Please "
 "sign in\"."
@@ -1421,7 +1428,7 @@ msgstr ""
 "Un texto alternativo para mostrar en el cuadro de diálogo de inicio de "
 "sesión de WebUI en lugar de \"Inicio de sesión\"."
 
-#: lib/policy.py:2725
+#: lib/policy.py:2731
 msgid ""
 "When searching in the user list, the search will only performed when "
 "pressing enter."
@@ -1429,7 +1436,7 @@ msgstr ""
 "Al buscar en la lista de usuarios, la búsqueda solo se realizará al "
 "presionar INTRO."
 
-#: lib/policy.py:2730
+#: lib/policy.py:2736
 msgid ""
 "The action taken when a user is idle beyond the logout_time limit. Defaults "
 "to \"lockscreen\"."
@@ -1438,7 +1445,7 @@ msgstr ""
 "sobrepasa el tiempo \"logout_time\". El valor predeterminado es \"pantalla "
 "de bloqueo\"."
 
-#: lib/policy.py:2738
+#: lib/policy.py:2744
 msgid ""
 "The REMOTE_USER set by the webserver can be used to login to privacyIDEA or "
 "it will be ignored. Defaults to \"disable\"."
@@ -1447,7 +1454,7 @@ msgstr ""
 "para iniciar sesión en privacyIDEA o se ignorará. El valor predeterminado es "
 "\"deshabilitado\"."
 
-#: lib/policy.py:2744
+#: lib/policy.py:2750
 msgid ""
 "Set the time in seconds after which the user will be logged out from the "
 "WebUI. Default: 120"
@@ -1455,52 +1462,52 @@ msgstr ""
 "Se establece el tiempo en segundos después del cual el usuario cerrará la "
 "sesión de WebUI. Predeterminado: 120"
 
-#: lib/policy.py:2749
+#: lib/policy.py:2755
 msgid ""
 "privacyIDEA issues a JWT when the user or admins logs in to the WebUI. The "
 "default validity is 1 hour. You can specify different validity times in "
 "seconds."
 msgstr ""
 
-#: lib/policy.py:2754
+#: lib/policy.py:2760
 msgid "Set how many tokens should be displayed in the token view on one page."
 msgstr ""
 "Establece cuántos tokens deben mostrarse en la vista de tokens en una página."
 
-#: lib/policy.py:2759
+#: lib/policy.py:2765
 msgid "Set how many users should be displayed in the user view on one page."
 msgstr ""
 "Establece cuántos usuarios deben mostrarse en la vista de usuarios en una "
 "página."
 
-#: lib/policy.py:2764
+#: lib/policy.py:2770
 msgid ""
 "Set how many audit entries should be displayed in the audit view on one page."
 msgstr ""
 
-#: lib/policy.py:2769
+#: lib/policy.py:2775
 msgid "Use your own html template for the web UI menu."
 msgstr ""
 "Utilice su propia plantilla html para el menú de la interfaz de usuario web."
 
-#: lib/policy.py:2773
+#: lib/policy.py:2779
 msgid "Use your own html template for the web UI baseline/footer."
 msgstr ""
 "Utilice su propia plantilla html para el pie de página de la interfaz de "
 "usuario web."
 
-#: lib/policy.py:2777
+#: lib/policy.py:2783
 msgid "Link your privacy statement to be displayed in the baseline/footer."
 msgstr ""
 "Enlaza su declaración de privacidad para que se muestre en el pie de página."
 
-#: lib/policy.py:2781
+#: lib/policy.py:2787
 msgid ""
 "Whether the user ID and the resolver should be displayed in the token list."
 msgstr ""
 "Si el ID de usuario y el almacén deben mostrarse en la lista de tokens."
 
-#: lib/policy.py:2786
+#: lib/policy.py:2792
 msgid ""
 "The URL of a repository, where the policy templates can be found.  (Default "
 "https: //raw.githubusercontent.com/ privacyidea/policy-templates /master/"
@@ -1510,20 +1517,20 @@ msgstr ""
 "políticas. (Por defecto https://raw.githubusercontent.com/privacyidea/policy-"
 "templates/master/templates/)"
 
-#: lib/policy.py:2793
+#: lib/policy.py:2799
 msgid ""
 "The URL of an SSO provider for redirect at logout.(The URL must start with "
 "http:// or https://)"
 msgstr ""
 
-#: lib/policy.py:2798
+#: lib/policy.py:2804
 msgid ""
 "As long as a user has no token, he will only see a token wizard in the UI."
 msgstr ""
 "Si el usuario no tiene tokens, solo se verá un asistente de token en la "
 "interfaz de usuario."
 
-#: lib/policy.py:2804
+#: lib/policy.py:2810
 msgid ""
 "The tokenwizard will be displayed in the token menu, even if the user "
 "already has a token."
@@ -1531,7 +1538,7 @@ msgstr ""
 "El asistente de token se mostrará en el menú de token, incluso si el usuario "
 "ya tiene un token."
 
-#: lib/policy.py:2810
+#: lib/policy.py:2816
 msgid ""
 "This is a whitespace separated list of tokentypes, for which a rollover "
 "button is displayed in the token details."
@@ -1539,20 +1546,20 @@ msgstr ""
 "Esta es una lista de tipos de tokens separados por espacios en blanco, para "
 "los cuales se muestra un botón con los detalles del token."
 
-#: lib/policy.py:2817
+#: lib/policy.py:2823
 msgid ""
 "The welcome dialog will be displayed if the user has no tokens assigned."
 msgstr ""
 "El cuadro de diálogo de bienvenida se mostrará si el usuario no tiene tokens "
 "asignados."
 
-#: lib/policy.py:2821
+#: lib/policy.py:2827
 msgid "This is the default token type in the token enrollment dialog."
 msgstr ""
 "Este es el tipo de token predeterminado en el cuadro de diálogo de "
 "inscripción de token."
 
-#: lib/policy.py:2827
+#: lib/policy.py:2833
 #, fuzzy
 #| msgid "This is the default token type in the token enrollment dialog."
 msgid "This is the default container type in the container create dialog."
@@ -1560,7 +1567,7 @@ msgstr ""
 "Este es el tipo de token predeterminado en el cuadro de diálogo de "
 "inscripción de token."
 
-#: lib/policy.py:2832
+#: lib/policy.py:2838
 msgid ""
 "A list of realm names, which are displayed in a drop down menu in the WebUI "
 "login screen. Realms are separated by white spaces."
@@ -1569,14 +1576,13 @@ msgstr ""
 "la pantalla de inicio de sesión de WebUI. Los dominios están separados por "
 "espacios en blanco."
 
-#: lib/policy.py:2838
+#: lib/policy.py:2844
 msgid ""
-"If this checked, the administrator will not see the welcome dialog anymore."
+"If this is checked, the administrator will not see the welcome dialog "
+"anymore."
 msgstr ""
-"Si se marca esta casilla, el administrador ya no verá el cuadro de diálogo "
-"de bienvenida."
 
-#: lib/policy.py:2843
+#: lib/policy.py:2849
 msgid ""
 "Per default disabled actions result in disabled buttons. When checking this "
 "action, buttons of disabled actions are hidden."
@@ -1585,20 +1591,20 @@ msgstr ""
 "deshabilitados. Al marcar esta acción, los botones de las acciones "
 "deshabilitadas están ocultos."
 
-#: lib/policy.py:2848
+#: lib/policy.py:2854
 msgid ""
 "If this is checked, there will be a confirmation prompt when deleting "
 "policies, events, mresolver, resolver or periodic tasks!"
 msgstr ""
 
-#: lib/policy.py:2853
+#: lib/policy.py:2859
 msgid ""
 "If this is checked, the seed will be displayed as text during enrollment."
 msgstr ""
 "Si se marca esta opción, la semilla se mostrará como texto durante la "
 "inscripción."
 
-#: lib/policy.py:2858
+#: lib/policy.py:2864
 msgid ""
 "If this is checked, the privacyIDEA Node name will be displayed in the menu "
 "bar."
@@ -1606,7 +1612,7 @@ msgstr ""
 "Si se marca esta opción, el nombre del nodo privacyIDEA se mostrará en la "
 "barra de menú."
 
-#: lib/policy.py:2863
+#: lib/policy.py:2869
 msgid ""
 "If this is checked, the enrollment page for HOTP, TOTP and Push tokens will "
 "contain a QR code that leads to the privacyIDEA Authenticator in the Google "
@@ -1616,7 +1622,7 @@ msgstr ""
 "TOTP y Push contendrá un código QR que conduce al Autenticador PRIVACYIDEA "
 "en Google Play Store."
 
-#: lib/policy.py:2870
+#: lib/policy.py:2876
 msgid ""
 "If this is checked, the enrollment page for HOTP, TOTP and Push tokens will "
 "contain a QR code that leads to the privacyIDEA Authenticator in the iOS App "
@@ -1626,7 +1632,7 @@ msgstr ""
 "TOTP y Push contendrá un código QR que conduce al autenticador PRIVACYIDEA "
 "en la App Store de iOS."
 
-#: lib/policy.py:2877
+#: lib/policy.py:2883
 msgid ""
 "This action adds a QR code in the enrollment page for HOTP, TOTP and Push "
 "tokens, that lead to this given URL."
@@ -1634,65 +1640,65 @@ msgstr ""
 "Esta acción agrega un código QR en la página de inscripción para los tokens "
 "HOTP, TOTP y Push, que conducen a esta URL determinada."
 
-#: lib/policy.py:2882
+#: lib/policy.py:2888
 msgid ""
 "The RSS feeds fetched for the user defined in the format: "
 "<code>'Title':'URL'-'Title':'URL'</code> "
 msgstr ""
 
-#: lib/policy.py:2885
+#: lib/policy.py:2891
 msgid ""
 "The age of the RSS feed entries in days. Use <code>0</code> to hide the news "
 "feed. For admins the default is 180 days and for users 0 days."
 msgstr ""
 
-#: lib/policy.py:2889
+#: lib/policy.py:2895
 msgid ""
 "Container type to be created with the container wizard. It is required to "
 "set at least this option to enable the container wizard. As long as the user "
 "has no container assigned he will only see the container wizard in the UI."
 msgstr ""
 
-#: lib/policy.py:2896
+#: lib/policy.py:2902
 msgid ""
 "Name of the container template to be used to create a container in the "
 "container wizard (optional). Note that the template must be of the same type "
 "as selected in the container_wizard_type."
 msgstr ""
 
-#: lib/policy.py:2902
+#: lib/policy.py:2908
 msgid ""
 "In the container wizard, a QR code will be generated to register the new "
 "container on the smartphone. (Only applicable for smartphone containers)"
 msgstr ""
 
-#: lib/policy.py:2910
+#: lib/policy.py:2916
 msgid ""
 "The URL of your privacyIDEA server, e.g. <code>https://pi/</code>. It is "
 "used to build URLs the container can contact for registration and "
 "synchronization."
 msgstr ""
 
-#: lib/policy.py:2916
+#: lib/policy.py:2922
 msgid ""
 "The time in minutes the client has to do the second step of the "
 "registration. The default is ten minutes."
 msgstr ""
 
-#: lib/policy.py:2922
+#: lib/policy.py:2928
 msgid ""
 "After the client (a registered container) has challenged an action such as "
 "synchronization or unregistration, this defines the time in minutes the "
 "client has to complete the action. The default is two minutes."
 msgstr ""
 
-#: lib/policy.py:2931
+#: lib/policy.py:2937
 msgid ""
 "The container needs to verify the SSL certificate of the privacyIDEA server "
 "during registration and synchronization. (default True)"
 msgstr ""
 
-#: lib/policy.py:2938
+#: lib/policy.py:2944
 #, fuzzy
 #| msgid "The user is allowed to reset the failcounter of his tokens."
 msgid ""
@@ -1700,7 +1706,7 @@ msgid ""
 "included tokens."
 msgstr "El usuario puede reiniciar el contador de fallos de sus tokens."
 
-#: lib/policy.py:2943
+#: lib/policy.py:2949
 msgid ""
 "During the first synchronization, the server automatically adds the clients "
 "tokens existing in privacyIDEA to the container. This allows to register "
@@ -1708,26 +1714,26 @@ msgid ""
 "tokens on the device to the container."
 msgstr ""
 
-#: lib/policy.py:2950
+#: lib/policy.py:2956
 #, fuzzy
 #| msgid "The user is allowed to delete his own tokens."
 msgid "The user is not allowed to delete tokens locally on the smartphone."
 msgstr "El usuario puede eliminar sus propios tokens."
 
-#: lib/policy.py:2955
+#: lib/policy.py:2961
 msgid ""
 "The client is not allowed to unregister the container. The user can not "
 "delete the container locally on the smartphone."
 msgstr ""
 
-#: lib/policy.py:3000
+#: lib/policy.py:3006
 msgid ""
 "The policy only matches if certain conditions on the user info are fulfilled."
 msgstr ""
 "La política solo coincide si se cumplen ciertas condiciones en la "
 "información del usuario."
 
-#: lib/policy.py:3003
+#: lib/policy.py:3009
 msgid ""
 "The policy only matches if certain conditions of the token attributes are "
 "fulfilled."
@@ -1735,7 +1741,7 @@ msgstr ""
 "La política solo coincide si se cumplen determinadas condiciones de los "
 "atributos del token."
 
-#: lib/policy.py:3006
+#: lib/policy.py:3012
 msgid ""
 "The policy only matches if certain conditions on the token info are "
 "fulfilled."
@@ -1743,7 +1749,7 @@ msgstr ""
 "La política solo coincide si se cumplen ciertas condiciones en la "
 "información del token."
 
-#: lib/policy.py:3009
+#: lib/policy.py:3015
 msgid ""
 "The policy only matches if certain conditions on the HTTP Request header are "
 "fulfilled."
@@ -1751,7 +1757,7 @@ msgstr ""
 "La política solo coincide si se cumplen determinadas condiciones en el "
 "encabezado de solicitud HTTP."
 
-#: lib/policy.py:3012
+#: lib/policy.py:3018
 msgid ""
 "The policy only matches if certain conditions on the HTTP Environment are "
 "fulfilled."
@@ -1930,7 +1936,7 @@ msgstr ""
 msgid " Please press: {presence_answer}"
 msgstr ""
 
-#: lib/tokenclass.py:1700
+#: lib/tokenclass.py:1698
 msgid "please enter otp: "
 msgstr "por favor ingrese otp: "
 
@@ -2737,7 +2743,7 @@ msgstr ""
 msgid "Your LDAP config seems to be OK, %i machine objects found."
 msgstr "Su configuración LDAP parece estar bien, %i máquinas encontradas."
 
-#: lib/resolvers/LDAPIdResolver.py:1146
+#: lib/resolvers/LDAPIdResolver.py:1158
 #, fuzzy, python-brace-format
 #| msgid ""
 #| "Your LDAP config found {0!s} user objects, but only {1!s} with the "
@@ -2749,7 +2755,7 @@ msgstr ""
 "Su configuración LDAP encontró {0!s} usuarios, pero solo {1!s} con el tipo "
 "de uid especificado"
 
-#: lib/resolvers/LDAPIdResolver.py:1150
+#: lib/resolvers/LDAPIdResolver.py:1162
 #, fuzzy, python-brace-format
 #| msgid "Your LDAP config seems to be OK, {0!s} user objects found."
 msgid "Your LDAP config seems to be OK, {0!s} user objects found in {1:.4f}s."
@@ -2949,23 +2955,23 @@ msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens de "
 "contraseña\" activos."
 
-#: lib/tokens/certificatetoken.py:282
+#: lib/tokens/certificatetoken.py:287
 msgid "Certificate: Enroll an x509 Certificate Token."
 msgstr "Certificado: registre un token de certificado x509."
 
-#: lib/tokens/certificatetoken.py:293
+#: lib/tokens/certificatetoken.py:298
 msgid "The user may only have this maximum number of certificates assigned."
 msgstr ""
 "El usuario solo puede tener asignado este máximo número de certificados."
 
-#: lib/tokens/certificatetoken.py:298
+#: lib/tokens/certificatetoken.py:303
 msgid ""
 "The user may only have this maximum number of active certificates assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de certificados "
 "activos."
 
-#: lib/tokens/certificatetoken.py:303
+#: lib/tokens/certificatetoken.py:308
 msgid ""
 "Enrolling a certificate token can require an attestation certificate. "
 "(Default: ignore)"
@@ -2973,21 +2979,21 @@ msgstr ""
 "La inscripción de un token de certificado puede requerir una certificación "
 "de certificado. (Predeterminado: ignorar)"
 
-#: lib/tokens/certificatetoken.py:312
+#: lib/tokens/certificatetoken.py:317
 msgid "The CA connector that should be used during certificate enrollment."
 msgstr ""
 
-#: lib/tokens/certificatetoken.py:318
+#: lib/tokens/certificatetoken.py:323
 msgid "The template that should be used to issue a certificate."
 msgstr ""
 
-#: lib/tokens/certificatetoken.py:323
+#: lib/tokens/certificatetoken.py:328
 msgid ""
 "This takes a space separated list of elements to be added to the subject. "
 "Can be 'email' and 'realm'."
 msgstr ""
 
-#: lib/tokens/certificatetoken.py:331 lib/tokens/certificatetoken.py:338
+#: lib/tokens/certificatetoken.py:336 lib/tokens/certificatetoken.py:343
 msgid "The directory containing attestation certificate chains."
 msgstr ""
 "El directorio que contiene las cadenas de las El directorio que contiene las "
@@ -4145,6 +4151,13 @@ msgid ""
 msgstr ""
 "Verdadero si el valor entero del atributo izquierdo es mayor que el valor "
 "entero derecho"
+
+#~ msgid ""
+#~ "If this checked, the administrator will not see the welcome dialog "
+#~ "anymore."
+#~ msgstr ""
+#~ "Si se marca esta casilla, el administrador ya no verá el cuadro de "
+#~ "diálogo de bienvenida."
 
 #, fuzzy
 #~ msgid "Admin is allowed to register containers for synchronization."
