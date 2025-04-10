@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-04-05 09:03+0000\n"
+"PO-Revision-Date: 2025-04-10 12:05+0000\n"
 "Last-Translator: Максим Горпиніч <maksimgorpinic2005a@gmail.com>\n"
 "Language-Team: Ukrainian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/uk/>\n"
@@ -2030,12 +2030,14 @@ msgid ""
 "    <code>daypassword_timestep</code> always have precedence over these "
 "default values."
 msgstr ""
+"Тут ви можете визначити параметри, які будуть встановлені як значення за "
+"замовчуванням, коли\n"
+"    реєстрація токена DayPassword. Зверніть увагу, що політика користувача/"
+"адміністратора <code>daypassword_hashlib</code> і\n"
+"    <code>daypassword_timestep</code> завжди має пріоритет над цими "
+"значеннями за замовчуванням."
 
 #: privacyidea/static/components/config/views/config.token.hotp.html:7
-#, fuzzy
-#| msgid ""
-#| "Here you can define settings, that will be set as default values, when\n"
-#| "    enrolling a HOTP token."
 msgid ""
 "Here you can define settings, that will be set as default values, when\n"
 "    enrolling a HOTP token. Note that the user/admin policy "
@@ -2043,8 +2045,10 @@ msgid ""
 "    this default value."
 msgstr ""
 "Тут ви можете визначити параметри, які будуть встановлені як значення за "
-"замовчуванням під час\n"
-"    випуску HOTP токена."
+"замовчуванням, коли\n"
+"    реєстрація маркера HOTP. Зауважте, що політика користувача/"
+"адміністратора <code>hotp_hashlib</code> завжди має пріоритет над\n"
+"    це значення за замовчуванням."
 
 #: privacyidea/static/components/config/views/config.token.totp.html:7
 msgid ""
@@ -2054,6 +2058,12 @@ msgid ""
 "    <code>totp_timestep</code> always have precedence over these default "
 "values."
 msgstr ""
+"Тут ви можете визначити параметри, які будуть встановлені як значення за "
+"замовчуванням, коли\n"
+"    реєстрація токена TOTP. Зауважте, що правила користувача/адміністратора "
+"<code>totp_hashlib</code> і\n"
+"    <code>totp_timestep</code> завжди мають пріоритет над цими значеннями за "
+"замовчуванням."
 
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:23
 msgid ""
@@ -2535,10 +2545,8 @@ msgid "New RADIUS server"
 msgstr "Новий сервер RADIUS"
 
 #: privacyidea/static/components/config/views/config.realms.list.html:108
-#, fuzzy
-#| msgid "new realm"
 msgid "New Realm..."
-msgstr "нове царство"
+msgstr "Нове царство..."
 
 #: privacyidea/static/components/config/views/config.machineresolvers.html:15
 #: privacyidea/static/components/config/views/config.resolvers.html:15
@@ -2839,20 +2847,16 @@ msgid "PKCS12"
 msgstr "PKCS12"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:776
-#, fuzzy
-#| msgid "Refilltoken copied to clipboard!"
 msgid "PKCS12 Password copied to clipboard"
-msgstr "Refilltoken скопійовано в буфер обміну!"
+msgstr "Пароль PKCS12 скопійовано в буфер обміну"
 
 #: privacyidea/static/components/config/views/config.smsgateway.edit.html:62
 msgid "Parameters"
 msgstr "Параметри"
 
 #: privacyidea/static/components/login/views/login.html:81
-#, fuzzy
-#| msgid "Log In"
 msgid "Passkey Log In"
-msgstr "Увійти"
+msgstr "Пароль для входу"
 
 #: privacyidea/static/components/directives/views/directive.registerContainer.html:21
 msgid "Passphrase (optional)"
@@ -3789,10 +3793,8 @@ msgstr ""
 "applications\">додатків маркерів</a>."
 
 #: privacyidea/static/components/config/views/config.realms.list.html:31
-#, fuzzy
-#| msgid "set Default"
 msgid "Set Default"
-msgstr "встановити за замовчуванням"
+msgstr "Установити за замовчуванням"
 
 #: privacyidea/static/components/token/views/token.details.html:461
 msgid "Set PIN"
@@ -3830,10 +3832,8 @@ msgid "Show"
 msgstr "Показати"
 
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:32
-#, fuzzy
-#| msgid "Show password"
 msgid "Show PKCS12 password"
-msgstr "Показати пароль"
+msgstr "Показати пароль PKCS12"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:51
 msgid "Show Policy templates"
@@ -3907,10 +3907,8 @@ msgstr ""
 "                поводження"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:8
-#, fuzzy
-#| msgid "start typing a serial number of a token that is notassigned, yet."
 msgid "Start typing a serial number of a token that is not yet assigned"
-msgstr "почніть вводити серійний номер маркера, який ще не призначено."
+msgstr "Почніть вводити серійний номер маркера, який ще не призначено"
 
 #: privacyidea/static/components/config/views/config.smtp.list.html:8
 msgid "StartTLS"
@@ -4167,12 +4165,6 @@ msgid "The Enrollment URL"
 msgstr "URL-адреса реєстрації"
 
 #: privacyidea/static/components/config/views/config.token.hotp.html:2
-#, fuzzy
-#| msgid ""
-#| "The HOTP Token is a event based one time password token.\n"
-#| "    It is described in <a href=\"https://tools.ietf.org/html/"
-#| "rfc4226\">RFC\n"
-#| "    4226</a>."
 msgid ""
 "The HOTP Token is an event based one time password token.\n"
 "    It is described in <a href=\"https://tools.ietf.org/html/rfc4226\">RFC\n"
@@ -4234,6 +4226,9 @@ msgid ""
 "the\n"
 "        token details."
 msgstr ""
+"Контейнер PKCS12 містить відкритий і закритий ключ\n"
+"        сертифікат. Контейнер також буде доступний для завантаження в\n"
+"        деталі жетона."
 
 #: privacyidea/static/components/token/views/token.enroll.paper.html:1
 msgid ""
@@ -4700,10 +4695,13 @@ msgid ""
 "The password for the PKCS12 container is shown here only once. Make sure\n"
 "            to keep the password safe now."
 msgstr ""
+"Пароль для контейнера PKCS12 відображається тут лише один раз. "
+"Переконайтесь\n"
+"            щоб захистити пароль зараз."
 
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:50
 msgid "The password of the PKCS12 container is the given token PIN"
-msgstr ""
+msgstr "Пароль контейнера PKCS12 — наданий маркер PIN"
 
 #: privacyidea/static/components/token/views/token.lost.html:44
 msgid ""
@@ -4850,16 +4848,12 @@ msgstr ""
 "            відображаються для сканування."
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:73
-#, fuzzy
-#| msgid ""
-#| "The server will create the private RSA key and store it in\n"
-#| "                    the database. You can later download the PKCS#12 file."
 msgid ""
 "The server will create the private RSA key and return it with\n"
 "                    the certificate in an encrypted PKCS#12 container."
 msgstr ""
-"Сервер створить приватний ключ RSA та збереже його\n"
-"                    база даних. Пізніше ви зможете завантажити файл PKCS#12."
+"Сервер створить приватний ключ RSA та поверне його\n"
+"                    сертифікат у зашифрованому контейнері PKCS#12."
 
 #: privacyidea/static/components/token/views/token.enroll.daypassword.html:20
 msgid ""
@@ -5825,13 +5819,6 @@ msgstr ""
 "        і створити новий маркер з новим секретним ключем!"
 
 #: privacyidea/static/components/login/views/login.html:12
-#, fuzzy
-#| msgid ""
-#| "You are authenticated by the web server as user\n"
-#| "                <b>{{ remoteUser }}</b>.\n"
-#| "                You may login as this user to privacyIDEA without any "
-#| "further\n"
-#| "                credentials."
 msgid ""
 "You are authenticated by the web server as user\n"
 "                <b>{{ remoteUser }}</b>.\n"
@@ -5841,7 +5828,7 @@ msgid ""
 msgstr ""
 "Ви автентифіковані веб-сервером як користувач\n"
 "                <b>{{ remoteUser }}</b>.\n"
-"                Ви можете увійти як цей користувач до privacyIDEA без будь-"
+"                Ви можете увійти як цей користувач у privacyIDEA без будь-"
 "яких подальших дій\n"
 "                облікові дані."
 
