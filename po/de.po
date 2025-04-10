@@ -12,7 +12,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-04-05 09:03+0000\n"
+"PO-Revision-Date: 2025-04-10 12:05+0000\n"
 "Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/de/>\n"
@@ -1973,20 +1973,23 @@ msgid ""
 "    <code>daypassword_timestep</code> always have precedence over these "
 "default values."
 msgstr ""
+"Hier können Sie Werte definieren, die als Standardwerte für neu ausgerollte "
+"DayPassword Token verwendet werden.\n"
+"Beachten Sie, das die Benutzer-/Administrator-Richtlinien "
+"<code>daypassword_hashlib</code> und <code>daypassword_timestep</code> immer "
+"Vorrang vor den hier eingestellten Standardwerten haben."
 
 #: privacyidea/static/components/config/views/config.token.hotp.html:7
-#, fuzzy
-#| msgid ""
-#| "Here you can define settings, that will be set as default values, when\n"
-#| "    enrolling a HOTP token."
 msgid ""
 "Here you can define settings, that will be set as default values, when\n"
 "    enrolling a HOTP token. Note that the user/admin policy "
 "<code>hotp_hashlib</code> always have precedence over\n"
 "    this default value."
 msgstr ""
-"Hier können Sie Werte definieren, die als Standard-Werte für neu ausgerollte "
-"HOTP-Token verwendet werden."
+"Hier können Sie Werte definieren, die als Standardwerte für neu ausgerollte "
+"HOTP-Token verwendet werden. Beachten Sie, das die Benutzer-/Administrator-"
+"Richtlinie <code>hotp_hashlib</code> immer Vorrang vor dem hier "
+"eingestellten Standardwert hat."
 
 #: privacyidea/static/components/config/views/config.token.totp.html:7
 msgid ""
@@ -1996,6 +1999,10 @@ msgid ""
 "    <code>totp_timestep</code> always have precedence over these default "
 "values."
 msgstr ""
+"Hier können Sie Werte definieren, die als Standardwerte für neu ausgerollte "
+"TOTP-Token verwendet werden. Beachten Sie, das die Benutzer-/Administrator-"
+"Richtlinien <code>totp_hashlib</code> und <code>totp_timestep</code> immer "
+"Vorrang vor den hier eingestellten Standardwerten haben."
 
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:23
 msgid ""
@@ -2470,10 +2477,8 @@ msgid "New RADIUS server"
 msgstr "Neuen RADIUS-Server anlegen"
 
 #: privacyidea/static/components/config/views/config.realms.list.html:108
-#, fuzzy
-#| msgid "new realm"
 msgid "New Realm..."
-msgstr "Neuer Realm"
+msgstr "Neuer Realm..."
 
 #: privacyidea/static/components/config/views/config.machineresolvers.html:15
 #: privacyidea/static/components/config/views/config.resolvers.html:15
@@ -2777,20 +2782,16 @@ msgid "PKCS12"
 msgstr "PKCS12"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:776
-#, fuzzy
-#| msgid "Refilltoken copied to clipboard!"
 msgid "PKCS12 Password copied to clipboard"
-msgstr "Refilltoken in die Zwischenablage kopiert!"
+msgstr "PKCS12 Passwort in die Zwischenablage kopiert!"
 
 #: privacyidea/static/components/config/views/config.smsgateway.edit.html:62
 msgid "Parameters"
 msgstr "Parameter"
 
 #: privacyidea/static/components/login/views/login.html:81
-#, fuzzy
-#| msgid "Log In"
 msgid "Passkey Log In"
-msgstr "Anmelden"
+msgstr "Passkey Anmeldung"
 
 #: privacyidea/static/components/directives/views/directive.registerContainer.html:21
 msgid "Passphrase (optional)"
@@ -3726,8 +3727,6 @@ msgstr ""
 "a> einsehen."
 
 #: privacyidea/static/components/config/views/config.realms.list.html:31
-#, fuzzy
-#| msgid "set Default"
 msgid "Set Default"
 msgstr "Setze als Standard"
 
@@ -3767,10 +3766,8 @@ msgid "Show"
 msgstr "Anzeigen"
 
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:32
-#, fuzzy
-#| msgid "Show password"
 msgid "Show PKCS12 password"
-msgstr "Passwort anzeigen"
+msgstr "PKCS12 Passwort anzeigen"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:51
 msgid "Show Policy templates"
@@ -3842,10 +3839,10 @@ msgid ""
 msgstr "Spezielle Fehlerbehandlung"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:8
-#, fuzzy
-#| msgid "start typing a serial number of a token that is notassigned, yet."
 msgid "Start typing a serial number of a token that is not yet assigned"
-msgstr "Fangen Sie an, eine nicht zugewiesene Seriennummer zu tippen."
+msgstr ""
+"Fangen Sie an, eine Seriennummer eines noch nicht zugewiesenen Tokens zu "
+"tippen"
 
 #: privacyidea/static/components/config/views/config.smtp.list.html:8
 msgid "StartTLS"
@@ -4096,20 +4093,14 @@ msgid "The Enrollment URL"
 msgstr "Registrierungs-URL"
 
 #: privacyidea/static/components/config/views/config.token.hotp.html:2
-#, fuzzy
-#| msgid ""
-#| "The HOTP Token is a event based one time password token.\n"
-#| "    It is described in <a href=\"https://tools.ietf.org/html/"
-#| "rfc4226\">RFC\n"
-#| "    4226</a>."
 msgid ""
 "The HOTP Token is an event based one time password token.\n"
 "    It is described in <a href=\"https://tools.ietf.org/html/rfc4226\">RFC\n"
 "    4226</a>."
 msgstr ""
-"Der HOTP-Token ist ein ereignisbasiertes Einmalpasswort-Token. Er ist in <a "
-"href=\"https://tools.ietf.org/html/rfc4226\">RFC\n"
-"    4226 beschrieben</a>."
+"Der HOTP-Token ist ein ereignisbasiertes Einmalpasswort-Token.\n"
+"Er ist in <a href=\"https://tools.ietf.org/html/rfc4226\">RFC 4226 "
+"beschrieben</a>."
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:1
 msgid ""
@@ -4157,6 +4148,9 @@ msgid ""
 "the\n"
 "        token details."
 msgstr ""
+"Der PKCS12 Container enthält den öffentlichen und privaten Schlüssel des\n"
+"Zertifikats. Der Container kann auch in den Token-Details heruntergeladen "
+"werden."
 
 #: privacyidea/static/components/token/views/token.enroll.paper.html:1
 msgid ""
@@ -4600,10 +4594,12 @@ msgid ""
 "The password for the PKCS12 container is shown here only once. Make sure\n"
 "            to keep the password safe now."
 msgstr ""
+"Das Passwort für den PKCS12 Container wird hier nur einmal angezeigt. "
+"Verwahren Sie das Passwort sicher auf."
 
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:50
 msgid "The password of the PKCS12 container is the given token PIN"
-msgstr ""
+msgstr "Das Passwort des PKCS12 Containers ist die gesetzte Token PIN"
 
 #: privacyidea/static/components/token/views/token.lost.html:44
 msgid ""
@@ -4740,16 +4736,12 @@ msgstr ""
 "den Sie mit einer Smartphone-App scannen können."
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:73
-#, fuzzy
-#| msgid ""
-#| "The server will create the private RSA key and store it in\n"
-#| "                    the database. You can later download the PKCS#12 file."
 msgid ""
 "The server will create the private RSA key and return it with\n"
 "                    the certificate in an encrypted PKCS#12 container."
 msgstr ""
-"Der Server erzeugt das RSA Schlüsselpaar und speichert es in der Datenbank. "
-"Sie können es später im PKCS#12-Format abspeichern."
+"Der Server erzeugt das RSA Schlüsselpaar und gibt es zusammen mit dem "
+"Zertifikat in einem verschlüsselten PKCS#12-Container zurück."
 
 #: privacyidea/static/components/token/views/token.enroll.daypassword.html:20
 msgid ""
