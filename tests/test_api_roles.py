@@ -1473,7 +1473,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
         status_code, result = _try_enroll(bob_token, 'totp')
         self.assertEqual(status_code, 403)
         self.assertFalse(result['status'])
-        self.assertIn("has a condition on the section token with key count, but a token is unavailable",
+        self.assertIn("has a condition on the section 'token' with key 'count', but a token is unavailable",
                       result['error']['message'])
         # ... and certainly not SPASS
         status_code, result = _try_enroll(bob_token, 'spass')

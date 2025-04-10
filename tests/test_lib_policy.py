@@ -1772,7 +1772,7 @@ class PolicyTestCase(MyTestCase):
 
         # ---- ConditionHandleMissingData is not defined ----
         ConditionHandleMissingData.RANDOM = "random"
-        self.assertFalse(ConditionHandleMissingData.RANDOM in ConditionHandleMissingData)
+        self.assertFalse(ConditionHandleMissingData.RANDOM in ConditionHandleMissingData.__members__)
         error_message = r"Unknown handle missing data random defined in condition of policy test."
         with self.assertRaisesRegex(PolicyError, error_message):
             policy._do_handle_missing_data(handle_missing_data=ConditionHandleMissingData.RANDOM, policy_name="test",
