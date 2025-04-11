@@ -509,3 +509,22 @@ class FourEyesTokenClass(TokenClass):
             return r_success >= 0
 
         return False
+
+    def export_token(self) -> dict:
+        """
+        Create a dictionary with the token information that can be exported.
+        """
+        token_dict = TokenClass.export_token(self)
+        token_dict["separator"] = self.get_tokeninfo("separator")
+        token_dict["realms"] = self.get_tokeninfo("4eyes")
+        return token_dict
+
+    def import_token(self, token_information: dict):
+        """
+        Import a email token.
+        """
+        TokenClass.import_token(self, token_information)
+        self.add_tokeninfo("separator", token_information["separator"])
+        self.add_tokeninfo("4eyes", token_information["realms"])
+        self.save()
+        pass
