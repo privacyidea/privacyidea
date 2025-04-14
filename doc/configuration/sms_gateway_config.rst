@@ -186,7 +186,7 @@ Set the additional **options** as POST parameters:
 SMSEagle
 ''''''''''
 
-You can send OTP messages by using the **SMSEagle** gateway API (requires physical hardware). [#smseagle]_
+You can send OTP messages by using the **SMSEagle** hardware SMS gateway (requires physical hardware). [#smseagle]_
 
 Parameters:
 
