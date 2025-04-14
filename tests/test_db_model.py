@@ -22,6 +22,10 @@ from mock import mock
 import os
 from sqlalchemy import func
 
+from privacyidea.lib.policies.policy_conditions import (PolicyConditionClass, CONDITION_SECTION,
+                                                        ConditionHandleMissingData)
+from privacyidea.lib.policy import set_policy_conditions
+from privacyidea.lib.utils.compare import COMPARATORS
 from privacyidea.models import (Token,
                                 Resolver,
                                 ResolverRealm, NodeName,
@@ -50,6 +54,7 @@ class TokenModelTestCase(MyTestCase):
     """
     Test the token on the database level
     """
+
     def create_resolver_realm(self):
         r = Resolver("resolver1", "passwdresolver")
         r.save()
@@ -151,9 +156,7 @@ class TokenModelTestCase(MyTestCase):
               userid=1009,
               resolver="resolver1",
               realm="realm1")
-        t2 = Token.query\
-                  .filter_by(serial="serial2")\
-                  .first()
+        t2 = Token.query.filter_by(serial="serial2").first()
         self.assertEqual(t2.first_owner.resolver, "resolver1")
         # check the realm list of the token
         realm_found = False
@@ -215,9 +218,7 @@ class TokenModelTestCase(MyTestCase):
         t2.set_description("De scription")
         t2.save()
         t2.set_info({"info": "value"})
-        t3 = Token.query\
-                  .filter_by(serial="serial2")\
-                  .first()
+        t3 = Token.query.filter_by(serial="serial2").first()
         self.assertTrue(t3.count_window == 100)
         self.assertTrue(t3.otplen == 8)
         self.assertTrue(t3.description == "De scription")
@@ -433,38 +434,43 @@ class TokenModelTestCase(MyTestCase):
         p3.save()
 
         # set conditions
-        p3.set_conditions([("userinfo", "type", "==", "foobar", False),
-                           ("request", "user_agent", "==", "abcd", True)])
-        self.assertEqual(p3.get_conditions_tuples(),
-                         [("userinfo", "type", "==", "foobar", False, None),
-                          ("request", "user_agent", "==", "abcd", True, None)])
-        self.assertEqual(p3.get()["conditions"],
-                         [("userinfo", "type", "==", "foobar", False, None),
-                          ("request", "user_agent", "==", "abcd", True, None)])
-        self.assertEqual(PolicyCondition.query.count(), 2)
+        conditions = [PolicyConditionClass(CONDITION_SECTION.USERINFO, "type", COMPARATORS.EQUALS, "foobar", False),
+                      PolicyConditionClass(CONDITION_SECTION.HTTP_REQUEST_HEADER, "user_agent", COMPARATORS.EQUALS,
+                                           "abcd", True)]
+        set_policy_conditions(conditions, p3)
+        expected = [(CONDITION_SECTION.USERINFO, "type", COMPARATORS.EQUALS, "foobar", False,
+                     ConditionHandleMissingData.default().value),
+                    (CONDITION_SECTION.HTTP_REQUEST_HEADER, "user_agent", COMPARATORS.EQUALS, "abcd", True,
+                     ConditionHandleMissingData.default().value)]
+        self.assertEqual(expected, p3.get_conditions_tuples())
+        self.assertEqual(expected, p3.get()["conditions"])
+        self.assertEqual(2, PolicyCondition.query.count())
 
-        p3.set_conditions([("userinfo", "type", "==", "baz", True)])
+        set_policy_conditions(
+            [PolicyConditionClass(CONDITION_SECTION.USERINFO, "type", COMPARATORS.EQUALS, "baz", True)],
+            p3)
         p3.save()
-        self.assertEqual(p3.get()["conditions"],
-                         [("userinfo", "type", "==", "baz", True, None)])
-        self.assertEqual(len(p3.conditions), 1)
-        self.assertEqual(p3.conditions[0].Value, "baz")
-        self.assertEqual(PolicyCondition.query.count(), 1)
+        self.assertEqual([(CONDITION_SECTION.USERINFO, "type", COMPARATORS.EQUALS, "baz", True,
+                           ConditionHandleMissingData.default().value)], p3.get()["conditions"])
+        self.assertEqual(1, len(p3.conditions))
+        self.assertEqual("baz", p3.conditions[0].Value)
+        self.assertEqual(1, PolicyCondition.query.count())
 
         # Check that the change has been persisted to the database
         p3_reloaded1 = Policy.query.filter_by(name="pol3").one()
-        self.assertEqual(p3_reloaded1.get()["pinode"], ["pinode3"])
-        self.assertEqual(p3_reloaded1.get()["conditions"],
-                         [("userinfo", "type", "==", "baz", True, None)])
-        self.assertEqual(len(p3_reloaded1.conditions), 1)
-        self.assertEqual(p3_reloaded1.conditions[0].Value, "baz")
-        self.assertEqual(PolicyCondition.query.count(), 1)
+        self.assertEqual(["pinode3"], p3_reloaded1.get()["pinode"])
+        self.assertEqual(
+            [("userinfo", "type", COMPARATORS.EQUALS, "baz", True, ConditionHandleMissingData.default().value)],
+            p3_reloaded1.get()["conditions"])
+        self.assertEqual(1, len(p3_reloaded1.conditions))
+        self.assertEqual("baz", p3_reloaded1.conditions[0].Value)
+        self.assertEqual(1, PolicyCondition.query.count())
 
-        p3.set_conditions([])
+        set_policy_conditions([], p3)
         p3.save()
-        self.assertEqual(p3.get()["conditions"], [])
-        self.assertEqual(Policy.query.filter_by(name="pol3").one().get()["conditions"], [])
-        self.assertEqual(PolicyCondition.query.count(), 0)
+        self.assertEqual([], p3.get()["conditions"])
+        self.assertEqual([], Policy.query.filter_by(name="pol3").one().get()["conditions"])
+        self.assertEqual(0, PolicyCondition.query.count())
 
         # Test policies with adminusers
         p = Policy("pol1admin", active="true",
@@ -859,8 +865,8 @@ class TokenModelTestCase(MyTestCase):
         self.assertEqual(counter6.counter_value, 4)
         self.assertEqual(counter6.node, "othernode")
 
-        counter_value = db.session.query(func.sum(EventCounter.counter_value))\
-            .filter(EventCounter.counter_name == "test_counter").one()[0]
+        counter_value = db.session.query(func.sum(EventCounter.counter_value)).filter(
+            EventCounter.counter_name == "test_counter").one()[0]
         self.assertEqual(counter_value, 14)
 
         counters7 = EventCounter.query.filter_by(counter_name="test_counter").all()
