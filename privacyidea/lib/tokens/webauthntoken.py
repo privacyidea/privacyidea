@@ -808,6 +808,7 @@ class WebAuthnTokenClass(TokenClass):
 
         if not (reg_data and client_data):
             self.token.rollout_state = ROLLOUTSTATE.CLIENTWAIT
+            self.token.active = False
             # Set the description in the first enrollment step
             if "description" in param:
                 self.set_description(get_optional(param, "description", default=""))
@@ -898,7 +899,8 @@ class WebAuthnTokenClass(TokenClass):
                 challenge.delete()
             self.challenge_janitor()
             # Reset clientwait rollout_state
-            self.token.rollout_state = ""
+            self.token.rollout_state = ROLLOUTSTATE.ENROLLED
+            self.token.active = True
         else:
             raise ParameterError("regdata and or clientdata provided but token not in clientwait rollout_state.")
 
@@ -935,7 +937,7 @@ class WebAuthnTokenClass(TokenClass):
             rp_name = get_required(params, FIDO2PolicyAction.RELYING_PARTY_NAME)
 
             response_detail = TokenClass.get_init_detail(self, params, user)
-
+            response_detail['rollout_state'] = self.token.rollout_state
             # To aid with unit testing a fixed nonce may be passed in.
             nonce = self._get_nonce()
             # Create the challenge in the database
@@ -1005,7 +1007,7 @@ class WebAuthnTokenClass(TokenClass):
             self.add_tokeninfo(FIDO2TokenInfo.RELYING_PARTY_NAME,
                                public_key_credential_creation_options["rp"]["name"])
 
-        elif self.token.rollout_state == "":
+        elif self.token.rollout_state in [ROLLOUTSTATE.ENROLLED, ""]:
             # This is the second step of the init request. The registration
             # ceremony has been successfully performed.
             response_detail = {

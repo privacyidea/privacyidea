@@ -854,13 +854,18 @@ class PolicyClass(object):
                             (policy.get("time") and
                              check_time_in_range(policy.get("time"), time))
                             or not policy.get("time")]
-        log.debug("Policies after matching time: {0!s}".format([p.get("name") for p in reduced_policies]))
+        log.debug(f"Policies after matching time: {[p.get('name') for p in reduced_policies]}")
 
         # filter policies by the policy conditions
         if extended_condition_check != CONDITION_CHECK.DO_NOT_CHECK_AT_ALL:
-            reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object, request_headers,
-                                                                  serial, extended_condition_check)
-            log.debug("Policies after matching conditions: {0!s}".format([p.get("name") for p in reduced_policies]))
+            try:
+                reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object, request_headers,
+                                                                      serial, extended_condition_check)
+            except PolicyError:
+                # Add the information on which actions triggered the error to the logs
+                log.error(f"Error checking extended conditions for action '{action}'.")
+                raise
+            log.debug(f"Policies after matching extended conditions: {[p.get('name') for p in reduced_policies]}")
 
         if audit_data is not None:
             for p in reduced_policies:
@@ -874,6 +879,7 @@ class PolicyClass(object):
         Given a list of policy dictionaries and a current user object (if any),
         return a list of all policies whose conditions match the given user object.
         Raises a PolicyError if a condition references an unknown section.
+
         :param policies: a list of policy dictionaries
         :param user_object: a User object, or None if there is no current user
         :param request_headers: The HTTP headers
@@ -942,24 +948,24 @@ class PolicyClass(object):
                 try:
                     environ_value = request_environ.get(key)
                     return compare_values(environ_value, comparator, value)
-                except Exception as exx:
-                    log.warning("Error during handling the condition on HTTP environment {!r} "
-                                "of policy {!r}: {!r}".format(key, policy['name'], exx))
+                except Exception as e:
+                    log.error(f"Error during handling the condition on HTTP "
+                              f"environment '{key}' of policy \'{policy['name']}\': {e}")
                     raise PolicyError(
-                        "Invalid comparison in the HTTP environment conditions of policy {!r}".format(policy['name']))
+                        f"Invalid comparison in the HTTP environment conditions of policy \'{policy['name']}\'")
             else:
-                log.warning("Unknown HTTP environment key referenced in condition of policy "
-                            "{!r}: {!r}".format(policy["name"], key))
-                log.warning("Available HTTP environment: {!r}".format(request_environ))
-                raise PolicyError("Unknown HTTP environment key referenced in condition of policy "
-                                  "{!r}: {!r}".format(policy["name"], key))
+                log.error(f"Unknown HTTP environment key '{key}' referenced in condition "
+                          f"of policy \'{policy['name']}\'")
+                log.warning(f"Available HTTP environment keys: {request_environ}")
+                raise PolicyError(f"Unknown HTTP environment key referenced in condition "
+                                  f"of policy \'{policy['name']}\'")
         else:  # pragma: no cover
-            log.error("Policy {!r} has conditions on HTTP environment, but HTTP environment"
-                      " is not available. This should not happen - possible "
-                      "programming error {!s}.".format(policy["name"],
-                                                       ''.join(traceback.format_stack())))
-            raise PolicyError("Policy {!r} has conditions on environment {!r}, but HTTP environment"
-                              " is not available".format(policy["name"], key))
+            log.error(f"Policy \'{policy['name']}\' has conditions on HTTP environment, "
+                      f"but the HTTP environment is not available. This should not happen! "
+                      f"Please check/reduce the policy actions or disable the policy.")
+            log.debug(f"{traceback.format_stack()}")
+            raise PolicyError(f"Policy \'{policy['name']}\' has conditions on the HTTP "
+                              f"environment but it is not available!")
 
     @staticmethod
     def _policy_matches_request_header_condition(policy, key, comparator, value, request_headers):
@@ -973,25 +979,24 @@ class PolicyClass(object):
                 try:
                     header_value = request_headers.get(key)
                     return compare_values(header_value, comparator, value)
-                except Exception as exx:
-                    log.warning("Error during handling the condition on HTTP header {!r} of policy {!r}: {!r}".format(
-                        key, policy['name'], exx
-                    ))
+                except Exception as e:
+                    log.error(f"Error during handling the condition on HTTP header "
+                              f"'{key}' of policy \'{policy['name']}\': {e}")
                     raise PolicyError(
-                        "Invalid comparison in the HTTP header conditions of policy {!r}".format(policy['name']))
+                        f"Invalid comparison in the HTTP header conditions of policy \'{policy['name']}'")
             else:
-                log.warning("Unknown HTTP header key referenced in condition of policy "
-                            "{!r}: {!r}".format(policy["name"], key))
-                log.warning("Available HTTP headers: {!r}".format(request_headers))
-                raise PolicyError("Unknown HTTP header key referenced in condition of policy "
-                                  "{!r}: {!r}".format(policy["name"], key))
+                log.error(f"Unknown HTTP header key '{key}' referenced in condition "
+                          f"of policy \'{policy['name']}\'")
+                log.warning(f"Available HTTP headers: {request_headers}")
+                raise PolicyError(f"Unknown HTTP header key referenced in condition "
+                                  f"of policy \'{policy['name']}\'")
         else:  # pragma: no cover
-            log.error("Policy {!r} has conditions on HTTP headers, but HTTP header"
-                      " is not available. This should not happen - possible "
-                      "programming error {!s}.".format(policy["name"],
-                                                       ''.join(traceback.format_stack())))
-            raise PolicyError("Policy {!r} has conditions on headers {!r}, but HTTP header"
-                              " is not available".format(policy["name"], key))
+            log.error(f"Policy \'{policy['name']}\' has conditions on HTTP headers, "
+                      f"but the HTTP header is not available. This should not happen! "
+                      f"Please check/reduce the policy actions or disable the policy.")
+            log.debug(f"{traceback.format_stack()}")
+            raise PolicyError(f"Policy \'{policy['name']}\' has conditions on "
+                              f"HTTP headers but they are not available!")
 
     @staticmethod
     def _policy_matches_token_condition(policy, key, comparator, value, db_token):
@@ -1010,23 +1015,24 @@ class PolicyClass(object):
             if key in db_token.get():
                 try:
                     return compare_values(db_token.get(key), comparator, value)
-                except Exception as exx:
-                    log.warning("Error during handling the condition on token {!r} "
-                                "of policy {!r}: {!r}".format(key, policy['name'], exx))
-                    raise PolicyError("Invalid comparison in the 'token' "
-                                      "conditions of policy {!r}".format(policy['name']))
+                except Exception as e:
+                    log.error(f"Error during handling the condition on token the token "
+                              f"column '{key}' of policy \'{policy['name']}\': {e}")
+                    raise PolicyError(f"Invalid comparison in the 'token' conditions "
+                                      f"of policy \'{policy['name']}\'")
             else:
-                log.warning("Unknown token column referenced in a "
-                            "condition of policy {!r}: {!r}".format(policy['name'], key))
+                log.error(f"Unknown token column '{key}' referenced in a condition of "
+                          f"policy \'{policy['name']}\'")
                 # If we do have token object but the referenced key is not an attribute of the token,
                 # we have a misconfiguration and raise an error.
-                raise PolicyError("Unknown key in the token conditions of policy {!r}".format(policy['name']))
+                raise PolicyError(f"Unknown key in the token conditions of policy \'{policy['name']}\'")
         else:  # pragma: no cover
-            log.error("Policy {!r} has conditions on tokens, but a token object"
-                      " is not available. This should not happen - possible programming "
-                      "error: {!s}.".format(policy["name"], ''.join(traceback.format_stack())))
-            raise PolicyError("Policy {!r} has conditions on tokens, but a token object"
-                              " is not available".format(policy["name"]))
+            log.error(f"Policy \'{policy['name']}\' has conditions on tokens, "
+                      f"but a token object is not available. This should not happen! "
+                      f"Please check/reduce the policy actions or disable the policy.")
+            log.debug(f"{traceback.format_stack()}")
+            raise PolicyError(f"Policy \'{policy['name']}\' has conditions on tokens, "
+                              f"but a token object is not available!")
 
     @staticmethod
     def _policy_matches_info_condition(policy, key, comparator, value, type, user_object=None, dbtoken=None):
@@ -1037,6 +1043,7 @@ class PolicyClass(object):
         a PolicyError is raised.
         In case of a tokeninfo, no exception is raised if ``dbtoken`` is malformed. Instead, the
         condition is effectively set to True and the policy may apply.
+
         :param policy: a policy dictionary, the policy in question
         :param key: a tokeninfo or userinfo key
         :param comparator: a value comparator: one of "equal", "contains"
@@ -1052,32 +1059,26 @@ class PolicyClass(object):
             if key in info:
                 try:
                     return compare_values(info[key], comparator, value)
-                except Exception as exx:
-                    log.warning("Error during handling the condition on {!s} {!r} of policy {!r}: {!r}".format(
-                        type, key, policy['name'], exx
-                    ))
-                    raise PolicyError(
-                        "Invalid comparison in the {!s} conditions of policy {!r}".format(type, policy['name']))
+                except Exception as e:
+                    log.error(f"Error during handling the condition on '{type}':{key} "
+                              f"of policy \'{policy['name']}\': {e}")
+                    raise PolicyError(f"Invalid comparison in the '{type}' conditions "
+                                      f"of policy \'{policy['name']}\'")
             else:
-                log.warning("Unknown {!s} key referenced in a condition of policy {!r}: {!r}".format(
-                    type, policy['name'], key
-                ))
-                # If we do have an user or token object, but the conditions of policies reference
+                log.error(f"Unknown '{type}' key referenced in a condition of "
+                          f"policy \'{policy['name']}\': {key}")
+                # If we do have a user or token object, but the conditions of policies reference
                 # an unknown userinfo or tokeninfo key, we have a misconfiguration and raise an error.
-                raise PolicyError("Unknown key in the {!s} conditions of policy {!r}".format(
-                    type, policy['name']
-                ))
+                raise PolicyError(f"Unknown key in the '{type}' conditions of policy \'{policy['name']}\'")
         else:
-            log.error("Policy {!r} has condition on {!s}, but the according object"
-                      " is not available - possible programming error "
-                      "{!s}.".format(policy['name'], type, ''.join(traceback.format_stack())))
-            # If the policy specifies a userinfo or tokeninfo condition, but no object is available,
+            log.error(f"Policy \'{policy['name']}\' has condition on '{type}', but the required object "
+                      f"is not available. Please check/reduce the policy actions or disable the policy.")
+            log.debug(f"{traceback.format_stack()}")
+            # If the policy specifies an userinfo or tokeninfo condition, but no object is available,
             # the policy is misconfigured. We have to raise a PolicyError to ensure that
             # the privacyIDEA server does not silently misbehave.
-            raise PolicyError(
-                "Policy {!r} has condition on {!s}, but an according object is not available".format(
-                    policy['name'], type
-                ))
+            raise PolicyError(f"Policy \'{policy['name']}\' has condition on "
+                              f"'{type}', but the required object is not available!")
 
     @staticmethod
     def check_for_conflicts(policies, action):
@@ -2673,13 +2674,15 @@ def get_static_policy_definitions(scope=None):
             ACTION.NODETAILSUCCESS: {
                 'type': 'bool',
                 'desc': _('In case of successful authentication additional '
-                          'no detail information will be returned.'),
+                          'no detail information will be returned.')
+                        + " <em>Deprecated since v3.11</em>",
                 'group': GROUP.SETTING_ACTIONS,
             },
             ACTION.NODETAILFAIL: {
                 'type': 'bool',
                 'desc': _('In case of failed authentication additional '
-                          'no detail information will be returned.'),
+                          'no detail information will be returned.')
+                        + " <em>Deprecated since v3.11</em>",
                 'group': GROUP.SETTING_ACTIONS,
             },
             ACTION.ADDUSERINRESPONSE: {

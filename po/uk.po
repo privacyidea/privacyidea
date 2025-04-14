@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-03-25 00:44+0000\n"
+"PO-Revision-Date: 2025-04-05 09:03+0000\n"
 "Last-Translator: Максим Горпиніч <maksimgorpinic2005a@gmail.com>\n"
 "Language-Team: Ukrainian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/uk/>\n"
@@ -94,33 +94,36 @@ msgid ""
 "                        like code audits.\n"
 "                    </li>"
 msgstr ""
-"<li>Підтримка та\n"
-" <a target=\"netknights\" href="
+"<li> Підтримка та\n"
+"                        <a target=\"netknights\" href="
 "\"https://netknights.it/en/leistungen/service-level-agreements/\">\n"
-" Угоди про рівень обслуговування NetKnights</a>, Німеччина.\n"
-" </li>\n"
-" <li>Стабільні корпоративні пакети для Ubuntu і RHEL дозволяють легко "
-"оновлювати та безпечно\n"
-" операції.\n"
-" </li>\n"
-" <li>Ексклюзивний <b>прилад</b>-інструмент, який дозволяє легко\n"
-" налаштування клієнтів RADIUS, реплікацій MySQL,\n"
-" резервне копіювання та відновлення...\n"
-" </li>\n"
-" <li>Ексклюзивні своєчасні новини та звіти про помилки.</li>\n"
-" <li>Залежно від рівня підтримки ви отримуєте допомогу з оновленнями та "
-"щорічну консультацію.</li>\n"
-" <li>Купуючи\n"
-" <a target=\"netknights\" href="
-"\"https://netknights.it/en/produkte/privacyidea/\">privacyIDEA Enterprise "
-"Edition</a>\n"
-" ви гарантуєте, що професійні розробники можуть працювати повний робочий "
-"день\n"
-" на privacyIDEA, додавайте нові функції та своєчасно виправляйте помилки. "
-"Крім того, ви допускаєте\n"
-" зовнішні послуги\n"
-" як аудит коду.\n"
-" </li>"
+"                            Угоди про рівень обслуговування від NetKnights </"
+"a>, Німеччина.\n"
+"                    </li>\n"
+"                    <li> Стабільні корпоративні пакети для Debian, Ubuntu, "
+"RHEL дозволяють легко оновлювати та захищати\n"
+"                        робочі процеси.\n"
+"                    </li>\n"
+"                    <li> Ексклюзивний <b> Appliance</b> -інструмент, що "
+"дозволяє легко налаштувати RADIUS-клієнти, MySQL master\n"
+"                         реплікації,\n"
+"                        резервне копіювання та відновлення...\n"
+"                    </li>\n"
+"                    <li> Ексклюзивні своєчасні новини та звіти про помилки. "
+"</li>\n"
+"                    <li> Залежно від рівня підтримки ви отримуєте допомогу з "
+"оновленням та щорічні консультації. </li>\n"
+"                    <li> Купуючи\n"
+"                        <a target=\"netknights\" href="
+"\"https://netknights.it/en/produkte/privacyidea/\"> PrivacyIDEA Enterprise "
+"Edition </a>\n"
+"                        ви гарантуєте, що професійні розробники мають змогу "
+"працювати повний робочий день\n"
+"                        над privacyIDEA, додавати новий функціонал та "
+"своєчасно виправляти помилки. До того ж ви дозволяєте\n"
+"                        залучати зовнішні сервіси,\n"
+"                        наприклад аудит коду.\n"
+"                    </li>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:45
 msgid ""
@@ -239,19 +242,22 @@ msgid ""
 "                    paid programming of new features.\n"
 "                </p>"
 msgstr ""
-"<p>По-перше, ми хотіли б дати вам деякі передумови\n"
-" інформація про конфіденційністьIDEA.</p>\n"
-" <p>privacyIDEA — це <b>рівень підприємства</b>\n"
-" Багатофакторна система автентифікації. Це відкритий код.\n"
-" Основні розробники працюють у NetKnights GmbH, Німеччина.\n"
-" NetKnights надає\n"
-" <a target=\"netknights\" href="
-"\"https://netknights.it/en/produkte/privacyidea/\">privacyIDEA Enterprise "
+"<p> По-перше, ми хотіли б дати вам деяку довідкову\n"
+"                    інформацію про privacyIDEA. </p>\n"
+"                <p>PrivacyIDEA - система багатофакторної "
+"автентифікації<b>корпоративного рівня</b>.\n"
+"                    Вона з відкритим кодом.\n"
+"                    Основні розробники працюють в NetKnights GmbH, Німеччина."
+"\n"
+"                    NetKnights постачає\n"
+"                    <a target=\"netknights\" href="
+"\"https://netknights.it/en/produkte/privacyidea/\">PrivacyIDEA Enterprise "
 "Edition</a>\n"
-" включаючи <b>Угоди про підтримку та рівень обслуговування</b>.\n"
-" Крім того, NetKnights надає послуги, консультації та\n"
-" платне програмування нових функцій.\n"
-" </p>"
+"                    включаючи <b>Угоди про підтримку та рівень "
+"обслуговування</b>.\n"
+"                    Крім того, NetKnights надає послуги, консультації та\n"
+"                    платну розробку нового функціоналу.\n"
+"                </p>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:131
 msgid ""
@@ -356,7 +362,7 @@ msgstr "Додати"
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:61
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:88
 msgid "Add Token"
-msgstr "Додати жетон"
+msgstr "Додати маркер"
 
 #: privacyidea/static/components/user/views/user.details.html:293
 msgid "Add Tokens"
@@ -617,7 +623,7 @@ msgstr "Базова конфігурація"
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:82
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:116
 msgid "Base DN"
-msgstr "Base DN"
+msgstr "Базовий DN"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:92
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:151
@@ -1367,7 +1373,7 @@ msgstr "Ви справді хочете видалити цю подію?"
 
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:25
 msgid "Do you really want to delete this machine resolver?"
-msgstr "Ви справді хочете видалити цей машинний розпізнавач?"
+msgstr "Ви дійсно хочете видалити цей машинний розпізнавач?"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:107
 msgid "Do you really want to delete this object?"
@@ -1715,7 +1721,7 @@ msgstr "Розширені атрибути"
 
 #: privacyidea/static/components/token/views/token.details.html:99
 msgid "Fail counter"
-msgstr "Лічильник відмов"
+msgstr "Лічильник помилок"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:459
 #: privacyidea/static/components/user/views/user.details.html:152
@@ -1899,12 +1905,12 @@ msgstr "Налаштування HOTP токена"
 
 #: privacyidea/static/components/token/views/token.applications.offline.html:6
 msgid "HOTP tokens can be attached with offline to e.g. notebooks."
-msgstr "Токени HOTP можна приєднати в режимі офлайн, наприклад, до зошити."
+msgstr "Токени HOTP можна приєднати в автономному режимі, наприклад, до зошити."
 
 #: privacyidea/static/components/config/views/config.events.details.html:62
 #: privacyidea/static/components/config/views/config.events.list.html:18
 msgid "Handlermodule"
-msgstr "Модуль трейдер"
+msgstr "Модуль обробки"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:23
 msgid "Hardware"
@@ -2341,7 +2347,7 @@ msgstr "Перелік визначень сервера SMTP"
 
 #: privacyidea/static/components/config/views/config.system.html:172
 msgid "List Service ID definitions"
-msgstr "Список визначень ідентифікатора служби"
+msgstr "Список визначень ідентифікаторів служби"
 
 #: privacyidea/static/components/token/views/token.html:205
 msgid "List Templates"
@@ -2468,7 +2474,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:87
 #: privacyidea/static/components/user/views/user.details.html:153
 msgid "Maxfail"
-msgstr "Maxfail"
+msgstr "Максфакс"
 
 #: privacyidea/static/components/token/views/token.details.html:231
 msgid "Maximum Authentication Count"
@@ -2554,7 +2560,7 @@ msgstr "Новий сервер privacyIDEA"
 
 #: privacyidea/static/components/config/views/config.system.html:223
 msgid "New {{ connectortype | uppercase }} CA Connector"
-msgstr "Новий {{ connectortype | uppercase }} CA Connector"
+msgstr "Новий {{ connectortype | uppercase }} Роз'єм CA"
 
 #: privacyidea/static/components/config/views/config.machineresolvers.html:25
 msgid "New {{ mResolvertype | uppercase }} Resolver"
@@ -2938,11 +2944,11 @@ msgid ""
 "                    endpoint."
 msgstr ""
 "Відскануйте QR-код за допомогою програми privacyIDEA Authenticator\n"
-"                    або натисніть <a href=\"{{ containerRegistrationURL }}\""
-">це посилання</a> на вашому\n"
-"                    смартфон для реєстрації вашого контейнера. Він надішле "
-"відсутні реєстраційні дані до налаштованого\n"
-"                    кінцева точка."
+" або натисніть <a href=\"{{ containerRegistrationURL }}\">це посилання</a> "
+"на своєму\n"
+" смартфон для реєстрації вашого контейнера. Він надішле відсутні "
+"реєстраційні дані до налаштованого\n"
+" кінцева точка."
 
 #: privacyidea/static/components/token/views/token.enrolled.push.html:9
 msgid ""
@@ -3227,7 +3233,7 @@ msgstr "Відновити QR-код"
 #: privacyidea/static/components/register/views/register.html:89
 #: privacyidea/static/templates/menu.html:123
 msgid "Register"
-msgstr "Реєстрація"
+msgstr "Зареєструватися"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:263
 msgid "Register Container on Device"
@@ -3280,15 +3286,15 @@ msgstr "Вилучити"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:473
 msgid "Remove All"
-msgstr "Вилучити Все"
+msgstr "Вилучити все"
 
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:54
 msgid "Remove Token"
-msgstr "Вилучити Жетон"
+msgstr "Вилучити маркер"
 
 #: privacyidea/static/components/token/views/token.details.html:637
 msgid "Remove from Container"
-msgstr "Вийняти з контейнера"
+msgstr "Вилучити з контейнера"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:39
 #: privacyidea/static/components/directives/views/directive.assignuser.html:51
@@ -3420,7 +3426,7 @@ msgstr "Токен перекидання"
 
 #: privacyidea/static/components/token/views/token.enroll.html:7
 msgid "Rollover token {{ form.serial }}"
-msgstr "Жетон перекидання {{ form.serial }}"
+msgstr "Маркер перекидання {{ form.serial }}"
 
 #: privacyidea/static/components/token/views/token.applications.offline.html:46
 msgid "Rounds"
@@ -3870,7 +3876,7 @@ msgid ""
 "                Handling"
 msgstr ""
 "Особлива помилка\n"
-"                Поводження"
+"                поводження"
 
 #: privacyidea/static/components/config/views/config.smtp.list.html:8
 msgid "StartTLS"
@@ -4156,8 +4162,8 @@ msgstr ""
 "інші\n"
 "    програми-автентифікатори, такі як Google Authenticator. Але зауважте, що "
 "вони\n"
-"    можуть мати обмеження щодо підтримуваних хеш-алгоритмів або інших "
-"параметрів."
+"    можуть мати обмеження в підтримуваних хеш-алгоритмах або інших "
+"параметрах."
 
 #: privacyidea/static/components/login/views/login.html:95
 msgid ""
@@ -4165,7 +4171,7 @@ msgid ""
 "        the HSM and reload this page."
 msgstr ""
 "HSM не готовий. privacyIDEA не може працювати належним чином. Будь ласка, "
-"починайте\n"
+"почніть\n"
 "        HSM і перезавантажте цю сторінку."
 
 #: privacyidea/static/components/token/views/token.enrolled.daypassword.html:15
@@ -4202,9 +4208,9 @@ msgid ""
 "            regenerate the QR Code, when no one else is watching.</b>"
 msgstr ""
 "QR-код містить секретний ключ вашого токена. Вам потрібно\n"
-" захистити його. <b>Якщо ви сумніваєтеся, що це бачив хтось інший, будь "
-"ласка\n"
-" відновити QR-код, коли ніхто інший не дивиться.</b>"
+"            захистити його. <b>Якщо ви сумніваєтеся, що це бачив хтось "
+"інший, будь ласка\n"
+"            відновити QR-код, коли ніхто інший не дивиться.</b>"
 
 #: privacyidea/static/components/token/views/token.enroll.question.html:1
 msgid ""
@@ -4345,8 +4351,7 @@ msgid ""
 "The TiQR Token is an OCRA based Smartphone Token, that can be used to\n"
 "    authenticate by just scanning a QR code."
 msgstr ""
-"Токен TiQR — це токен смартфона на основі OCRA, який можна використовувати "
-"для\n"
+"Токен TiQR — це токен смартфона на основі OCRA, який можна використовувати\n"
 "    аутентифікуватися, просто відсканувавши QR-код."
 
 #: privacyidea/static/components/token/views/token.enroll.tiqr.html:6
@@ -4397,10 +4402,10 @@ msgid ""
 "will create a new\n"
 "    unique serial number."
 msgstr ""
-"Послідовний номер VASCO зчитується з блоку VASCO. Якщо ви хочете "
-"використовувати цей серійний номер VASCO\n"
-"    номер у privacyIDEA, установіть прапорець. Інакше privacyIDEA створить "
-"новий\n"
+"Серійний номер VASCO зчитується з VASCO blob. Якщо ви хочете використовувати "
+"цей серійний номер VASCO\n"
+"    в privacyIDEA, встановіть цей прапорець. В іншому випадку privacyIDEA "
+"створить новий\n"
 "    унікальний серійний номер."
 
 #: privacyidea/static/components/token/views/token.enroll.vasco.html:1
@@ -4447,11 +4452,11 @@ msgid ""
 "12\n"
 "    characters are a unique ID which is used to bind the device to the user."
 msgstr ""
-"Токен Yubico - це Yubikey, який зареєстрований у сервісі YubiCloud\n"
-"    сервісі YubiCloud. Yubikey генерує одноразовий пароль з 44 символів. "
-"Перші 12\n"
-"    символи - це унікальний ідентифікатор, який використовується для "
-"прив'язки пристрою до користувача."
+"Токен Yubico — це Yubikey, зареєстрований у YubiCloud\n"
+"    обслуговування. Yubikey видає одноразовий пароль із 44 символів. Перші "
+"12\n"
+"    символи є унікальним ідентифікатором, який використовується для прив’"
+"язки пристрою до користувача."
 
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:1
 msgid ""
@@ -4517,15 +4522,15 @@ msgid ""
 "        Yubico Validation Protocol</a>."
 msgstr ""
 "Запит на автентифікацію може оброблятися за замовчуванням privacyIDEA\n"
-" <a href="
+"    <a href="
 "\"https://privacyidea.readthedocs.io/en/latest/modules/api/validate.html\" "
 "target=\"_blank\">\n"
-" перевірити API</a>, але також може бути оброблено\n"
-" <a href=\"https://privacyidea.readthedocs.io/en/latest/modules/lib/"
+"        перевірити API</a>, але також може бути оброблено\n"
+"    <a href=\"https://privacyidea.readthedocs.io/en/latest/modules/lib/"
 "tokentypes/"
 "yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass."
 "api_endpoint\" target=\"_blank\">\n"
-" Протокол перевірки Yubico</a>."
+"        Протокол перевірки Yubico</a>."
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:8
 msgid ""
@@ -4535,9 +4540,9 @@ msgid ""
 "target=\"_extern\">here</a>."
 msgstr ""
 "Запит на автентифікацію пересилається в YubiCloud. Для доступу\n"
-" YubiCloud потрібно ввести ідентифікатор клієнта API та ключ API, які\n"
-" ви можете надіслати запит <a href=\"https://upgrade.yubico.com/getapikey/\" "
-"target=\"_extern\">тут</a>."
+"    YubiCloud потрібно ввести ідентифікатор клієнта API та ключ API, які\n"
+"    ви можете надіслати запит <a href="
+"\"https://upgrade.yubico.com/getapikey/\" target=\"_extern\">тут</a>."
 
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:1
 msgid "The certificate was enrolled successfully."
@@ -4671,15 +4676,16 @@ msgid ""
 "                        service itself</a>."
 msgstr ""
 "Сервер автентифікації privacyIDEA ліцензовано згідно з\n"
-" AGPLv3.\n"
-" Деякі компоненти можуть бути частиною інших ліцензій.\n"
-" privacyIDEA спочатку була розгалужена з LinOTP, який був\n"
-" ліцензований\n"
-" від LSE Leading Security Experts GmbH.\n"
-" Для отримання детальної інформації, будь ласка, перегляньте\n"
-" <a href=\"http://github.com/privacyidea/privacyidea\" target=\"github\">"
-"сервер\n"
-" сама служба</a>."
+"                    AGPLv3.\n"
+"                    Деякі компоненти можуть бути частиною інших ліцензії.\n"
+"                    privacyIDEA спочатку була розгалужена з LinOTP, який "
+"був\n"
+"                    ліцензований\n"
+"                    від LSE Leading Security Experts GmbH.\n"
+"                    За детальною інформацією беріть в\n"
+"                    <a href=\"http://github.com/privacyidea/privacyidea\" "
+"target=\"github\">сервер\n"
+"                        сама служба</a>."
 
 #: privacyidea/static/app.js:156
 msgid "The privacyIDEA system seems to be offline. The API is not reachable!"
@@ -4734,7 +4740,7 @@ msgid ""
 "must not be the word 'send_test_email'"
 msgstr ""
 "Назва ресурсу має складатися з літер, цифр і «_», «-», «.» і не має бути "
-"словом \"send_test_email\""
+"словом \"send_test_email\".'"
 
 #: privacyidea/static/app.js:97
 msgid ""
@@ -4889,7 +4895,7 @@ msgstr "Маркер зареєстровано."
 
 #: privacyidea/static/components/token/views/token.lost.html:52
 msgid "The token is valid till {{ lostResult.end_date }}."
-msgstr "Токен дійсний до {{ lostResult.end_date }}."
+msgstr "Маркер дійсний до {{ lostResult.end_date }}."
 
 #: privacyidea/static/components/directives/views/directive.verifyEnrolledToken.html:19
 msgid ""
@@ -4921,7 +4927,7 @@ msgstr ""
 "            для користувача\n"
 "            <a ui-sref="
 "\"user.details({username:newUser.user, realmname:newUser.realm})\">{{ "
-"newUser.user }}</a> in realm\n"
+"newUser.user }}</a> в області\n"
 "            {{ newUser.realm }}."
 
 #: privacyidea/static/components/token/views/token.enroll.html:185
@@ -4991,7 +4997,7 @@ msgstr "Веб-сайт постачальника посвідчень"
 
 #: privacyidea/static/components/config/views/config.token.question.html:23
 msgid "These are the possible questions, a user may define answers to."
-msgstr "Це можливі питання, на які користувач може визначити відповіді."
+msgstr "Це можливі питання, відповіді на які користувач може визначити."
 
 #: privacyidea/static/components/user/views/user.add.html:18
 msgid ""
@@ -5002,11 +5008,11 @@ msgid ""
 "                        that\n"
 "                        contain this resolver."
 msgstr ""
-"Це резолвери, позначені як доступні для редагування. Ви можете додати\n"
-"                        користувач\n"
-"                        до розв’язувача. Користувач з'явиться в сферах,\n"
-"                        що\n"
-"                        містять цей розв’язувач."
+"Ці розв'язувачі позначено як редаговані. Ви можете додати\n"
+"                        користувача\n"
+"                        до перетворювача. Користувач з'явиться у сферах,\n"
+"                        які\n"
+"                        містять цей перетворювач."
 
 #: privacyidea/static/components/config/views/config.system.edit.html:116
 msgid ""
@@ -5074,12 +5080,13 @@ msgid ""
 "            password."
 msgstr ""
 "Це файл PSKC, сумісний з RFC6030 OATH.\n"
-" Значення у файлах PSKC можуть бути незашифрованими або\n"
-" <em>або</em> зашифровано за допомогою a\n"
-" <em>Попередній спільний ключ</em> або <em>пароль</em>. Якщо значення є\n"
-" зашифровано, укажіть попередній спільний ключ у шістнадцятковому форматі "
-"або\n"
-" пароль."
+"            Значення у файлах PSKC можуть бути незашифрованими або\n"
+"            <em>або</em> зашифровано за допомогою a\n"
+"            <em>Попередній спільний ключ</em> або <em>пароль</em>. Якщо "
+"значення є\n"
+"            зашифровано, укажіть попередній спільний ключ у шістнадцятковому "
+"форматі або\n"
+"            пароль."
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:132
 msgid ""
@@ -5099,10 +5106,11 @@ msgid ""
 "            6287</a>."
 msgstr ""
 "Це пакет OCRA, який використовується додатком TiQR.\n"
-" Стандартним пакетом OCRA є OCRA-1:HOTP-SHA1-6:QN10.\n"
-" Додаткову інформацію див\n"
-" <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" target=\"OCRA\">RFC\n"
-" 6287</a>."
+"        Стандартним пакетом OCRA є OCRA-1:HOTP-SHA1-6:QN10.\n"
+"        Додаткову інформацію див\n"
+"        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" target=\"OCRA\""
+">RFC\n"
+"            6287</a>."
 
 #: privacyidea/static/components/directives/views/directive.registerContainer.html:63
 msgid ""
@@ -5252,7 +5260,7 @@ msgstr "TiQR URL-адреса логотипу"
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:8
 msgid "TiQR Registration Server"
-msgstr "Сервер реєстрації TiQR"
+msgstr "TiQR Сервер реєстрації"
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:41
 msgid ""
@@ -5412,7 +5420,7 @@ msgstr "Токени та програми для машини {{ machineid }}"
 
 #: privacyidea/static/components/user/views/user.details.html:130
 msgid "Tokens for user {{ username }}"
-msgstr "Жетони для користувача {{ username }}"
+msgstr "Токени для користувача {{ username }}"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:434
 msgid "Tokens in the Container"
@@ -5511,7 +5519,7 @@ msgstr "Скасувати реєстрацію контейнера"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:22
 msgid "Upload Certificate"
-msgstr "Вивантажити сертифікат"
+msgstr "Завантажити сертифікат"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:17
 msgid "Upload Request"
@@ -5519,7 +5527,7 @@ msgstr "Запит на завантаження"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:5
 msgid "Upload Subscription File"
-msgstr "Завантажити файл підписки"
+msgstr "Завантажте файл підписки"
 
 #: privacyidea/static/components/token/views/token.import.html:139
 msgid "Uploaded File"
@@ -5620,7 +5628,7 @@ msgstr "Користувач-вирішувач"
 #: privacyidea/static/components/token/views/token.containerdetails.html:706
 #: privacyidea/static/components/token/views/token.list.html:82
 msgid "UserId"
-msgstr "КористувачId"
+msgstr "UserId"
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:72
 #: privacyidea/static/components/directives/views/directive.assignuser.html:18
@@ -5760,7 +5768,7 @@ msgid ""
 msgstr ""
 "Ви збираєтеся перекинути свій жетон! Це призведе до недійсності\n"
 "        ваш існуючий маркер\n"
-"        і створіть новий маркер з новим секретним ключем!"
+"        і створити новий маркер з новим секретним ключем!"
 
 #: privacyidea/static/components/login/views/login.html:12
 msgid ""
@@ -5824,12 +5832,12 @@ msgid ""
 "                box \"Edit user store\"."
 msgstr ""
 "У вас не визначено редагованих резолверів. Так можна і не писати\n"
-" до будь-якого магазину користувачів. Якщо ви хочете додати користувачів, "
-"вам це потрібно\n"
-" <a ui-sref=\"config.resolvers.list\">визначте редагований\n"
-" розв’язувач</a>\n"
-" (наприклад, SQLResolver) і перевірте\n"
-" поле «Редагувати магазин користувача»."
+"                до будь-якого магазину користувачів. Якщо ви хочете додати "
+"користувачів, вам це потрібно\n"
+"                <a ui-sref=\"config.resolvers.list\">визначити редагований\n"
+"                    розв’язувач</a>\n"
+"                (наприклад, SQLResolver) і перевірте\n"
+"                поле «Редагувати магазин користувача»."
 
 #: privacyidea/static/components/token/views/token.enrolled.registration.html:16
 msgid "You may pass this registration code to the user."
@@ -5926,9 +5934,10 @@ msgid ""
 "        time and could even timeout. Do you want to run the search? You\n"
 "            might also cancel this and narrow down the search!"
 msgstr ""
-"Ваш пошук включатиме {{ count }} токенів. Це може зайняти багато\n"
-"        час і може навіть тайм-аут. Ви хочете запустити пошук? Ви\n"
-"            також можна скасувати це та звузити пошук!"
+"Ваш пошук буде включати {{ count }} токенів. Це може зайняти багато\n"
+"        часу і навіть може завершитися в таймауті. Ви хочете запустити "
+"пошук? Ви\n"
+"            також можете скасувати пошук і звузити його!"
 
 #: privacyidea/static/components/token/views/token.enroll.indexedsecret.html:14
 msgid "Your secret phrase."
@@ -5946,8 +5955,8 @@ msgid ""
 "sref=\"component.subscriptions\">subscription</a>."
 msgstr ""
 "Ваша підписка більше не діє. Або ви перевищили кількість токенів, або\n"
-" термін дії підписки закінчився. Перевірте, чи потрібно продовжити <a ui-"
-"sref=\"component.subscriptions\">підписку</a>."
+"        термін дії підписки закінчився. Будь ласка, перевірте, якщо вам "
+"потрібно оновити свій <a ui-sref=\"component.subscriptions\">підписка</a>."
 
 #: privacyidea/static/components/login/views/pinchange.html:5
 msgid ""
@@ -6115,7 +6124,7 @@ msgstr "mOTP PIN"
 
 #: privacyidea/static/components/audit/views/audit.log.html:149
 msgid "missing_line"
-msgstr "missing_line"
+msgstr "відсутній_лінія"
 
 #: privacyidea/static/components/user/views/user.list.html:40
 msgid "mobile"
@@ -6182,11 +6191,11 @@ msgid ""
 "tokens, set the PIN of the tokens,\n"
 "                disable tokens or even delete tokens."
 msgstr ""
-"privacyIDEA - це система для управління вашими токенами.\n"
-"                Наразі ви не маєте жодного призначеного токена.\n"
-"                Тут ви можете керувати власними токенами - створювати нові "
-"токени, встановлювати PIN-код токенів,\n"
-"                вимкнути токени або навіть видалити токени."
+"privacyIDEA — це система для керування вашими токенами.\n"
+"                Наразі у вас немає призначеного маркера.\n"
+"                Тут ви можете керувати власними токенами - ви можете "
+"створювати нові токени, установлювати PIN-код токенів,\n"
+"                вимкнути маркери або навіть видалити маркери."
 
 #: privacyidea/static/templates/menu.html:6
 msgid ""
@@ -6212,7 +6221,7 @@ msgstr "сервери privacyIDEA"
 
 #: privacyidea/static/components/audit/views/audit.log.html:154
 msgid "privacyidea server"
-msgstr "сервер idea конфіденційності"
+msgstr "сервер ідеї конфіденційності"
 
 #: privacyidea/static/components/audit/views/audit.log.html:107
 #: privacyidea/static/components/token/views/token.containerdetails.html:698
@@ -6373,7 +6382,7 @@ msgstr "ім'я користувача"
 
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
-msgstr "{{ auditdata.count }} знайдено записів."
+msgstr "Знайдено {{ auditdata.count }} записів."
 
 #~ msgid ""
 #~ "Challenge Response Authentication. You are not completely authenticated, "
