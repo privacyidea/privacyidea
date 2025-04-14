@@ -113,7 +113,7 @@ class ConditionHandleMissingData(Enum):
 
 
 class PolicyConditionClass:
-    _pass_if_inactive = False
+    _pass_if_inactive: bool = False
 
     @log_with(log)
     def __init__(self, section: str, key: str, comparator: str, value: str, active: bool,
@@ -127,15 +127,15 @@ class PolicyConditionClass:
         self.handle_missing_data = handle_missing_data
 
     @property
-    def _allow_invalid_parameters(self):
+    def _allow_invalid_parameters(self) -> bool:
         return self._pass_if_inactive and not self.active
 
     @property
-    def section(self):
+    def section(self) -> str:
         return self._section
 
     @section.setter
-    def section(self, section):
+    def section(self, section: str):
         if section in CONDITION_SECTION.get_all_sections() or self._allow_invalid_parameters:
             self._section = section
         else:
@@ -144,22 +144,22 @@ class PolicyConditionClass:
             raise ParameterError(f"Unknown section '{section}' set in condition.")
 
     @property
-    def key(self):
+    def key(self) -> str:
         return self._key
 
     @key.setter
-    def key(self, key):
+    def key(self, key: str):
         if (isinstance(key, str) and len(key) > 0) or self._allow_invalid_parameters:
             self._key = key
         else:
             raise ParameterError(f"Key must be a non-empty string. Got '{key}' of type '{type(key)}' instead.")
 
     @property
-    def comparator(self):
+    def comparator(self) -> str:
         return self._comparator
 
     @comparator.setter
-    def comparator(self, comparator):
+    def comparator(self, comparator: str):
         if comparator in COMPARATORS.get_all_comparators() or self._allow_invalid_parameters:
             self._comparator = comparator
         else:
@@ -168,22 +168,22 @@ class PolicyConditionClass:
             raise ParameterError(f"Unknown comparator '{comparator}'.")
 
     @property
-    def value(self):
+    def value(self) -> str:
         return self._value
 
     @value.setter
-    def value(self, value):
+    def value(self, value: str):
         if (isinstance(value, str) and len(value) > 0)  or self._allow_invalid_parameters:
             self._value = value
         else:
             raise ParameterError(f"Value must be a non-empty string. Got '{value}' of type '{type(value)}' instead.")
 
     @property
-    def active(self):
+    def active(self) -> bool:
         return self._active
 
     @active.setter
-    def active(self, active):
+    def active(self, active: bool):
         if isinstance(active, bool):
             evaluate_parameters = self._allow_invalid_parameters and active
             self._active = active
@@ -202,7 +202,7 @@ class PolicyConditionClass:
             raise ParameterError(f"Active must be a boolean. Got '{active}' of type '{type(active)}' instead.")
 
     @property
-    def handle_missing_data(self):
+    def handle_missing_data(self) -> ConditionHandleMissingData:
         return self._handle_missing_data
 
     @handle_missing_data.setter
