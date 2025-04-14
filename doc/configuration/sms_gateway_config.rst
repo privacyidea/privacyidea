@@ -182,7 +182,30 @@ Set the additional **options** as POST parameters:
  * From: *your Twilio phone number*
  * Body: {otp}
  * To: {phone}
+ 
+SMSEagle
+''''''''''
 
+You can send OTP messages by using the **SMSEagle** hardware SMS gateway (requires physical hardware). [#smseagle]_
+
+Parameters:
+
+ * **URL**: http://your-smseagle-url/api/v2/sms
+ * **HTTP_METHOD**: POST
+ * **RETURN_SUCCESS**: queued
+ * **RETURN_FAIL**: REJECTED
+ * **SEND_DATA_AS_JSON**: yes
+
+Headers:
+
+ * **access-token**: *your-access-token*
+ 
+Options:
+
+ * **to**: ["{phone}"]
+ * **text**: "Your OTP: {otp}"
+
+You can personalize the **text** option, but you must place it inside double-quotes and must include the *{otp}* value.
 
 Sipgate provider
 ~~~~~~~~~~~~~~~~
@@ -213,6 +236,7 @@ content from the Sipgate gateway.
 
 .. [#twilio] https://www.twilio.com/docs/api/rest/sending-messages
 .. [#gtxapi] https://www.gtx-messaging.com/de/api-docs/http/
+.. [#smseagle] https://www.smseagle.eu/integration-plugins/privacyidea-sms-integration/
 
 SMPP Provider
 ~~~~~~~~~~~~~
