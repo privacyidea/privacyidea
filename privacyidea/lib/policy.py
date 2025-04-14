@@ -165,7 +165,6 @@ Time formats are::
 and any combination of it. ``dow`` being day of week Mon, Tue, Wed, Thu, Fri,
 Sat, Sun.
 """
-from enum import Enum
 from typing import Union
 
 from werkzeug.datastructures.headers import EnvironHeaders
@@ -175,7 +174,10 @@ from configobj import ConfigObj
 
 from operator import itemgetter
 import logging
-from ..models import (Policy, db, save_config_timestamp, Token, PolicyDescription)
+
+from .policies.policy_conditions import (PolicyConditionClass, ConditionHandleMissingData, CONDITION_SECTION,
+                                         CONDITION_CHECK)
+from ..models import (Policy, db, save_config_timestamp, Token, PolicyDescription, PolicyCondition)
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     get_config_object, get_privacyidea_node,
                                     get_multichallenge_enrollable_tokentypes,
@@ -515,65 +517,6 @@ class TIMEOUT_ACTION(object):
     __doc__ = """This is a list of actions values for idle users"""
     LOGOUT = "logout"
     LOCKSCREEN = 'lockscreen'
-
-
-class CONDITION_SECTION(object):
-    __doc__ = """This is a list of available sections for conditions of policies """
-    USERINFO = "userinfo"
-    TOKENINFO = "tokeninfo"
-    TOKEN = "token"  # nosec B105 # section name
-    HTTP_REQUEST_HEADER = "HTTP Request header"
-    HTTP_ENVIRONMENT = "HTTP Environment"
-
-
-class CONDITION_CHECK(object):
-    __doc__ = """The available check methods for extended conditions"""
-    # TODO: Use the same datatype for all checks
-    DO_NOT_CHECK_AT_ALL = 1
-    ONLY_CHECK_USERINFO = [CONDITION_SECTION.USERINFO]
-    CHECK_AND_HANDLE_MISSING_DATA = None
-
-
-class ConditionHandleMissingData(Enum):
-    __doc__ = """The possible behaviours if the data that is required to check a condition is missing."""
-    RAISE_ERROR = "raise_error"
-    IS_TRUE = "condition_is_true"
-    IS_FALSE = "condition_is_false"
-
-    @classmethod
-    def default(cls):
-        """
-        Return the default value for the condition handling of missing data.
-        """
-        return cls.RAISE_ERROR
-
-    @classmethod
-    def get_selection_dict(cls):
-        """
-        Returns a dictionary mapping the values of the enum to dictionaries with the following keys:
-        * ``"display_value"``, a human-readable name of the behaviour to be displayed in the webUI
-        * ``"description"``, a short description of the behaviour
-        This can be used for a selection in the webUI.
-        """
-        selection_dict = {
-            cls.RAISE_ERROR.value: {
-                "display_value": "Raise an error",
-                "description": _("Raise an error if the data that is required to check the condition is not available.")
-            },
-            cls.IS_TRUE.value: {
-                "display_value": "Condition is true",
-                "description": _(
-                    "If the required data is not available, the condition is considered to be true. Hence, "
-                    "the policy is applied.")
-            },
-            cls.IS_FALSE.value: {
-                "display_value": "Condition is false",
-                "description": _(
-                    "If the required data is not available, the condition is considered to be false. Hence, "
-                    "the policy is not applied.")
-            }
-        }
-        return selection_dict
 
 
 class PolicyClass(object):
@@ -921,29 +864,36 @@ class PolicyClass(object):
 
         return reduced_policies
 
-    @classmethod
-    def get_handle_missing_data_enum(cls, handle_missing_data: str = None,
-                                     policy_name: str = None) -> ConditionHandleMissingData:
+    @staticmethod
+    def get_policy_condition_from_tuple(condition_tuple: tuple, policy_name: str,
+                                        pass_if_inactive: bool = False) -> PolicyConditionClass:
         """
-        Convert a string to the corresponding ConditionHandleMissingData enum member.
-        If the string is None, return the default value.
+        Converts the condition tuple into a PolicyConditionClass object.
 
-        :param handle_missing_data: The string representation of the handle missing data option (enum value).
-        :param policy_name: The name of the policy for logging purposes.
-        :return: The corresponding ConditionHandleMissingData enum.
+        :param condition_tuple: A tuple of 5 or 6 values (section, key, comparator, value, active, handle_missing_data)
+        :param policy_name: The name of the policy (used for the error message)
+        :param pass_if_inactive: If True, no error is raised for invalid parameters if the condition is inactive
+        :return: A PolicyConditionClass object
         """
-        if handle_missing_data is not None:
-            try:
-                handle_missing_data = ConditionHandleMissingData(handle_missing_data)
-            except ValueError:
-                log.error(f"Policy {policy_name} has condition with unknown handle_missing_data "
-                          f"{handle_missing_data}. Allowed values are: "
-                          f"{[name.value for name in ConditionHandleMissingData.__members__.values()]}")
-                raise PolicyError(f"Unknown handle missing data {handle_missing_data} defined in "
-                                  f"condition of policy {policy_name}.")
-        else:
-            handle_missing_data = ConditionHandleMissingData.default()
-        return handle_missing_data
+        # Check if the condition tuple contains the correct number of values
+        if len(condition_tuple) not in [5, 6]:
+            raise ParameterError(
+                f"Condition of policy '{policy_name}' has {len(condition_tuple)} values, but should have 5 or 6.")
+
+        # Set handle_missing data if available
+        handle_missing_data = None
+        if len(condition_tuple) == 6:
+            handle_missing_data = condition_tuple[5]
+
+        # Get condition and evaluate the tuple parameters
+        try:
+            condition = PolicyConditionClass(section=condition_tuple[0], key=condition_tuple[1],
+                                             comparator=condition_tuple[2],
+                                             value=condition_tuple[3], active=condition_tuple[4],
+                                             handle_missing_data=handle_missing_data, pass_if_inactive=pass_if_inactive)
+        except ParameterError as e:
+            raise ParameterError(f"Invalid condition of policy '{policy_name}': {e}")
+        return condition
 
     def filter_policies_by_conditions(self, policies: list[dict], user_object: User = None,
                                       request_headers: EnvironHeaders = None, serial: str = None,
@@ -967,71 +917,65 @@ class PolicyClass(object):
         dbtoken = None
         for policy in policies:
             include_policy = True
-            for section, key, comparator, value, active, handle_missing_data in policy['conditions']:
+            policy_name = policy.get("name")
+            for condition_tuple in policy['conditions']:
+                # raise a PolicyError if the condition is not valid
+                try:
+                    condition = self.get_policy_condition_from_tuple(condition_tuple, policy_name,
+                                                                     pass_if_inactive=True)
+                except ParameterError as e:
+                    raise PolicyError(e.message)
+
                 if (extended_condition_check is CONDITION_CHECK.CHECK_AND_HANDLE_MISSING_DATA
-                        or section in extended_condition_check):
+                        or condition.section in extended_condition_check):
                     # We check conditions, either if we are supposed to check everything or if
                     # the section is contained in the extended condition check
-                    if active:
-                        # parse handle missing data to enum
-                        handle_missing_data = self.get_handle_missing_data_enum(handle_missing_data, policy['name'])
-
-                        if section == CONDITION_SECTION.USERINFO:
-                            if not self._policy_matches_info_condition(policy, key, comparator, value,
-                                                                       CONDITION_SECTION.USERINFO,
-                                                                       user_object=user_object,
-                                                                       handle_missing_data=handle_missing_data):
+                    if condition.active:
+                        if condition.section == CONDITION_SECTION.USERINFO:
+                            if not self._policy_matches_info_condition(policy_name, condition, user_object=user_object):
                                 include_policy = False
                                 break
-                        elif section == CONDITION_SECTION.TOKENINFO:
+                        elif condition.section == CONDITION_SECTION.TOKENINFO:
                             dbtoken = dbtoken or Token.query.filter(Token.serial == serial).first() if serial else None
-                            if not self._policy_matches_info_condition(policy, key, comparator, value,
-                                                                       CONDITION_SECTION.TOKENINFO,
-                                                                       dbtoken=dbtoken,
-                                                                       handle_missing_data=handle_missing_data):
+                            if not self._policy_matches_info_condition(policy_name, condition, dbtoken=dbtoken):
                                 include_policy = False
                                 break
-                        elif section == CONDITION_SECTION.TOKEN:
+                        elif condition.section == CONDITION_SECTION.TOKEN:
                             dbtoken = dbtoken or Token.query.filter(Token.serial == serial).first() if serial else None
-                            if not self._policy_matches_token_condition(policy, key, comparator, value, dbtoken,
-                                                                        handle_missing_data=handle_missing_data):
+                            if not self._policy_matches_token_condition(policy_name, condition, dbtoken):
                                 include_policy = False
                                 break
-                        elif section == CONDITION_SECTION.HTTP_REQUEST_HEADER:
-                            if not self._policy_matches_request_header_condition(policy, key, comparator, value,
-                                                                                 request_headers,
-                                                                                 handle_missing_data=handle_missing_data):
+                        elif condition.section == CONDITION_SECTION.HTTP_REQUEST_HEADER:
+                            if not self._policy_matches_request_header_condition(policy_name, condition,
+                                                                                 request_headers):
                                 include_policy = False
                                 break
-                        elif section == CONDITION_SECTION.HTTP_ENVIRONMENT:
-                            if not self._policy_matches_request_environ_condition(policy, key, comparator, value,
-                                                                                  request_headers,
-                                                                                  handle_missing_data=handle_missing_data):
+                        elif condition.section == CONDITION_SECTION.HTTP_ENVIRONMENT:
+                            if not self._policy_matches_request_environ_condition(policy_name, condition,
+                                                                                  request_headers):
                                 include_policy = False
                                 break
-                        else:
-                            log.warning("Policy {!r} has condition with unknown section: {!r}".format(
-                                policy['name'], section
-                            ))
-                            raise PolicyError("Policy {!r} has condition with unknown section".format(policy['name']))
+                        else:  # pragma no cover
+                            # We should never reach this case as the section is already evaluated in the condition
+                            log.warning(f"Policy '{policy_name}' has condition with unknown section: "
+                                        f"'{condition.section}'")
+                            raise PolicyError(f"Policy '{policy_name}' has condition with unknown section")
             if include_policy:
                 reduced_policies.append(policy)
         return reduced_policies
 
     @staticmethod
-    def _do_handle_missing_data(handle_missing_data: ConditionHandleMissingData, policy_name: str, missing: str,
-                                section: str, object_name: str, key: str, available_keys: list = None) -> bool:
+    def _do_handle_missing_data(condition: PolicyConditionClass, policy_name: str, missing: str, object_name: str,
+                                available_keys: list = None) -> bool:
         """
         This function handles the behaviour of the system if the data that is required to check a policy condition is
         missing. There are three valid options: raise an error (default), evaluate the condition to True or evaluate
         the condition to False.
 
-        :param handle_missing_data: The name of the behaviour if the data is missing
+        :param condition: The condition for which the data is missing
         :param policy_name: The name of the policy
-        :param missing: The missing data, either equal to the object_name or the key
-        :param section: The section of the condition
+        :param missing: The missing data, either equal to the object_name or the condition key
         :param object_name: The name of the object that should be evaluated in the condition
-        :param key: The key that should be evaluated in th condition
         :param available_keys: The available keys of the object (if it is available), optional
         :return: True if handle_missing_data is CONDITION_IS_TRUE
                  False if handle_missing_data is CONDITION_IS_FALSE
@@ -1041,175 +985,151 @@ class PolicyClass(object):
         log_available_keys = None
         if missing == object_name:
             # the full object is not available
-            log_message = (f"Policy '{policy_name}' has a condition on the section '{section}' with key '{key}', but "
-                           f"a {object_name} is unavailable. This should not happen! Please check/reduce the policy "
-                           f"actions or disable the policy."
+            log_message = (f"Policy '{policy_name}' has a condition on the section '{condition.section}' with key "
+                           f"'{condition.key}', but a {object_name} is unavailable. This should not happen! Please "
+                           f"check/reduce the policy actions or disable the policy."
                            f"\n{''.join(traceback.format_stack())}.")
-            error_message = (f"Policy '{policy_name}' has a condition on the section '{section}' with key '{key}', but "
-                             f"a {object_name} is unavailable!")
-        elif missing == key:
+            error_message = (f"Policy '{policy_name}' has a condition on the section '{condition.section}' with key "
+                             f"'{condition.key}', but a {object_name} is unavailable!")
+        elif missing == condition.key:
             # the object is available, but it does not contain the key
-            log_message = f"Unknown {section} key '{key}' referenced in condition of policy '{policy_name}'."
+            log_message = (f"Unknown {condition.section} key '{condition.key}' referenced in condition of policy "
+                           f"'{policy_name}'.")
             if available_keys:
-                log_available_keys = f"Available {section} keys: {available_keys}"
-            error_message = f"Unknown {section} key '{key}' referenced in condition of policy '{policy_name}'!"
+                log_available_keys = f"Available {condition.section} keys: {available_keys}"
+            error_message = (f"Unknown {condition.section} key '{condition.key}' referenced in condition of policy "
+                             f"'{policy_name}'!")
         else:
             # We should never reach this point, but if we do, some parameters seem to be not consistent. Hence, we
             # log a more imprecise message
-            log_message = (f"Policy '{policy_name}' has a condition on the section '{section}' with key '{key}', but "
-                           f"'{missing}' is unavailable: {''.join(traceback.format_stack())}.")
-            error_message = (f"Policy '{policy_name}' has a condition on the section '{section}' with key '{key}', but "
-                             "some required data is unavailable!")
+            log_message = (f"Policy '{policy_name}' has a condition on the section '{condition.section}' with key "
+                           f"'{condition.key}', but '{missing}' is unavailable: {''.join(traceback.format_stack())}.")
+            error_message = (f"Policy '{policy_name}' has a condition on the section '{condition.section}' with key "
+                             f"'{condition.key}', but some required data is unavailable!")
 
-        # Execute the behaviour according to the handle_missing_data parameter
-        if not handle_missing_data:
-            # if not defined, set to default
-            handle_missing_data = ConditionHandleMissingData.default()
-
-        if handle_missing_data is ConditionHandleMissingData.RAISE_ERROR:
+        if condition.handle_missing_data is ConditionHandleMissingData.RAISE_ERROR:
             # default is error
             log.error(log_message)
             if log_available_keys:
                 log.debug(log_available_keys)
             raise PolicyError(error_message)
-        elif handle_missing_data is ConditionHandleMissingData.IS_TRUE:
+        elif condition.handle_missing_data is ConditionHandleMissingData.IS_TRUE:
             log.debug(log_message + " Evaluating condition as True, according to the policy definition.")
             if log_available_keys:
                 log.debug(log_available_keys)
             return True
-        elif handle_missing_data is ConditionHandleMissingData.IS_FALSE:
+        elif condition.handle_missing_data is ConditionHandleMissingData.IS_FALSE:
             log.debug(log_message + " Evaluating condition as False, according to the policy definition.")
             if log_available_keys:
                 log.debug(log_available_keys)
             return False
         else:
             # raise error for undefined behaviour
-            log.error(f"Unknown handle missing data {handle_missing_data} defined in condition of policy "
-                      f"{policy_name} for {object_name} and key {key}. Allowed values are: "
-                      f"{[name.value for name in ConditionHandleMissingData.__members__.values()]}")
-            raise PolicyError(f"Unknown handle missing data {handle_missing_data} defined in condition of policy "
-                              f"{policy_name}.")
+            log.error(f"Unknown handle missing data {condition.handle_missing_data} defined in condition of policy "
+                      f"{policy_name} for {object_name} and key '{condition.key}'. Allowed values are: "
+                      f"{[ConditionHandleMissingData.get_valid_values()]}")
+            raise PolicyError(f"Unknown handle missing data {condition.handle_missing_data} defined in condition of "
+                              f"policy {policy_name}.")
 
     @staticmethod
-    def _policy_match_condition(left_value: str, comparator: str, right_value: str, policy_name: str,
-                                section: str, key_name: str) -> bool:
+    def _policy_match_condition(left_value: str, condition: PolicyConditionClass, policy_name: str) -> bool:
         """
         Checks the condition of a policy and raises a PolicyError if any error during the comparison occurs.
 
         :param left_value: the left value in the comparison equation
-        :param comparator: the comparator to be used
-        :param right_value: the right value in the comparison equation
+        :param condition: the policy condition
         :param policy_name: the name of the policy the condition belongs to
-        :param section: the section of the condition
-        :param key_name: the key of the condition used to get the left value from the section
         :return: True if the condition matches, False otherwise
         """
         try:
-            return compare_values(left_value, comparator, right_value)
+            return compare_values(left_value, condition.comparator, condition.value)
         except Exception as e:
-            log.warning(f"Error during handling the condition on {section} '{key_name}' "
+            log.warning(f"Error during handling the condition on {condition.section} '{condition.key}' "
                         f"of policy \'{policy_name}\': {e}")
             raise PolicyError(
-                f"Invalid comparison in the {section} conditions of policy \'{policy_name}\'")
+                f"Invalid comparison in the {condition.section} conditions of policy \'{policy_name}\'")
 
     @classmethod
-    def _policy_matches_request_environ_condition(cls, policy: dict, key: str, comparator: str, value: str,
-                                                  request_headers: EnvironHeaders,
-                                                  handle_missing_data: ConditionHandleMissingData) -> bool:
+    def _policy_matches_request_environ_condition(cls, policy_name: str, condition: PolicyConditionClass,
+                                                  request_headers: EnvironHeaders) -> bool:
         """
         Checks if the given policy matches a certain request environment condition. Compares the given ``value`` with
         actual value in the request environment using the specified comparator.
         If either the request header or environment is None, or it does not contain the ``key``, behaves as defined in
         ``handle_missing_data`` or raises a PolicyError if None.
 
-        :param policy: the policy to check the condition
-        :param key: the key of the HTTP header
-        :param comparator: a value comparator, one of COMPARATORS
-        :param value: the value against which the HTTP header value will be compared
+        :param policy_name: The name of the policy the condition belongs to
+        :param condition: The policy condition
         :param request_headers: Request Header object
-        :param handle_missing_data: the behaviour if the data (request header or key) is missing
         :return: True if the condition matches, False otherwise
         """
         object_name = "HTTP environment"
         # Now we check the HTTP request headers
         if request_headers is not None:
             request_environ = request_headers.environ
-            if request_environ.get(key):
-                environ_value = request_environ.get(key)
-                return cls._policy_match_condition(environ_value, comparator, value, policy["name"], object_name, key)
+            if request_environ.get(condition.key):
+                environ_value = request_environ.get(condition.key)
+                return cls._policy_match_condition(environ_value, condition, policy_name)
             else:
-                return cls._do_handle_missing_data(handle_missing_data, policy["name"], missing=key,
-                                                   section=object_name, object_name=object_name, key=key,
-                                                   available_keys=list(request_environ.keys()))
+                return cls._do_handle_missing_data(condition, policy_name, missing=condition.key,
+                                                   object_name=object_name, available_keys=list(request_environ.keys()))
         else:  # pragma: no cover
-            return cls._do_handle_missing_data(handle_missing_data, policy["name"], missing=object_name,
-                                               section=object_name, object_name=object_name, key=key)
+            return cls._do_handle_missing_data(condition, policy_name, missing=object_name,
+                                               object_name=object_name)
 
     @classmethod
-    def _policy_matches_request_header_condition(cls, policy: dict, key: str, comparator: str, value: str,
-                                                 request_headers: EnvironHeaders,
-                                                 handle_missing_data: ConditionHandleMissingData) -> bool:
+    def _policy_matches_request_header_condition(cls, policy_name: str, condition: PolicyConditionClass,
+                                                 request_headers: EnvironHeaders) -> bool:
         """
         Checks if the given policy matches a certain request header condition. Compares the given ``value`` with actual
         value in the request header using the specified comparator.
         If either the request header is None or it does not contain the ``key``, behaves as defined in
         ``handle_missing_data`` or raises a PolicyError if None.
 
-        :param policy: the policy to check the condition
-        :param key: the key of the HTTP header
-        :param comparator: a value comparator, one of COMPARATORS
-        :param value: the value against which the HTTP header value will be compared
+        :param policy_name: The name of the policy the condition belongs to
+        :param condition: the policy condition
         :param request_headers: Request Header object
-        :param handle_missing_data: the behaviour if the data (request header or key) is missing
         :return: True if the condition matches, False otherwise
         """
         # Now we check the HTTP request headers
         object_name = "HTTP header"
         if request_headers is not None:
-            if request_headers.get(key):
-                header_value = request_headers.get(key)
-                return cls._policy_match_condition(header_value, comparator, value, policy["name"], object_name, key)
+            if request_headers.get(condition.key):
+                header_value = request_headers.get(condition.key)
+                return cls._policy_match_condition(header_value, condition, policy_name)
             else:
-                return cls._do_handle_missing_data(handle_missing_data, policy["name"], missing=key,
-                                                   section=object_name, object_name=object_name, key=key,
-                                                   available_keys=list(request_headers.keys()))
+                return cls._do_handle_missing_data(condition, policy_name, missing=condition.key,
+                                                   object_name=object_name, available_keys=list(request_headers.keys()))
         else:  # pragma: no cover
-            return cls._do_handle_missing_data(handle_missing_data, policy["name"], missing=object_name,
-                                               section=object_name, object_name=object_name, key=key)
+            return cls._do_handle_missing_data(condition, policy_name, missing=object_name,
+                                               object_name=object_name)
 
     @classmethod
-    def _policy_matches_token_condition(cls, policy: dict, key: str, comparator: str, value: str, db_token: Token,
-                                        handle_missing_data: ConditionHandleMissingData) -> bool:
+    def _policy_matches_token_condition(cls, policy_name: str, condition: PolicyConditionClass,
+                                        db_token: Token) -> bool:
         """
         Checks if the given policy matches a certain token condition. Compares the given ``value`` with actual token
         attribute using the specified comparator.
         If either the token is None or the token does not have the attribute ``key``, behaves as defined in
         ``handle_missing_data`` or raises a PolicyError if None.
 
-        :param policy: a policy dictionary, the policy in question
-        :param key: the column name of the token
-        :param comparator: a value comparator: one of "equal", "contains"
-        :param value: a value against which the token value will be compared
+        :param policy_name: The name of the policy the condition belongs to
+        :param condition: the policy condition
         :param db_token: a dbtoken object
-        :param handle_missing_data: the behaviour if the data (token or key) is missing
         :return: True if the condition matches, False otherwise
         """
         object_name = "token"
         if db_token:
-            if key in db_token.get():
-                return cls._policy_match_condition(db_token.get(key), comparator, value, policy["name"], object_name,
-                                                   key)
+            if condition.key in db_token.get():
+                return cls._policy_match_condition(db_token.get(condition.key), condition, policy_name)
             else:
-                return cls._do_handle_missing_data(handle_missing_data, policy["name"], missing=key,
-                                                   section=object_name, object_name=object_name, key=key,
-                                                   available_keys=list(db_token.get().keys()))
+                return cls._do_handle_missing_data(condition, policy_name, missing=condition.key,
+                                                   object_name=object_name, available_keys=list(db_token.get().keys()))
         else:
-            return cls._do_handle_missing_data(handle_missing_data, policy["name"], missing=object_name,
-                                               section=object_name, object_name=object_name, key=key)
+            return cls._do_handle_missing_data(condition, policy_name, missing=object_name, object_name=object_name)
 
     @classmethod
-    def _policy_matches_info_condition(cls, policy: dict, key: str, comparator: str, value: str, type: str,
-                                       handle_missing_data: ConditionHandleMissingData, user_object: User = None,
+    def _policy_matches_info_condition(cls, policy_name: str, condition: PolicyConditionClass, user_object: User = None,
                                        dbtoken: Token = None) -> bool:
         """
         Checks if the given policy matches a certain userinfo or tokeninfo condition depending on the specified ``type``.
@@ -1217,34 +1137,29 @@ class PolicyClass(object):
         If either the token/user or the key in the info is not available, behaves as defined in ``handle_missing_data``
         or raises a PolicyError if not defined.
 
-        :param policy: a policy dictionary, the policy in question
-        :param key: a tokeninfo or userinfo key
-        :param comparator: a value comparator, one of COMPARATORS
-        :param value: a value against which the tokeninfo or userinfo value will be compared
-        :param type: the info type to match, "userinfo" or "tokeninfo"
+        :param policy_name: The name of the policy the condition belongs to
+        :param condition: the policy condition
         :param user_object: a User object, if any, or None
         :param dbtoken: a dbtoken object, if any, or None
-        :param handle_missing_data: the behaviour if the data (user / token or the key in the info) is missing
         :return: True if the condition matches, False otherwise
         """
         object_name = ""
         info = {}
-        if type == CONDITION_SECTION.USERINFO:
+        if condition.section == CONDITION_SECTION.USERINFO:
             object_name = "user"
             info = user_object.info if user_object is not None else {}
-        elif type == CONDITION_SECTION.TOKENINFO:
+        elif condition.section == CONDITION_SECTION.TOKENINFO:
             object_name = "token"
             info = dbtoken.get_info() if dbtoken is not None else {}
 
         if user_object is not None or dbtoken is not None:
-            if key in info:
-                return cls._policy_match_condition(info[key], comparator, value, policy["name"], type, key)
+            if condition.key in info:
+                return cls._policy_match_condition(info[condition.key], condition, policy_name)
             else:
-                return cls._do_handle_missing_data(handle_missing_data, policy["name"], missing=key, section=type,
-                                                   object_name=object_name, key=key, available_keys=list(info.keys()))
+                return cls._do_handle_missing_data(condition, policy_name, missing=condition.key,
+                                                   object_name=object_name, available_keys=list(info.keys()))
         else:
-            return cls._do_handle_missing_data(handle_missing_data, policy["name"], missing=object_name, section=type,
-                                               object_name=object_name, key=key)
+            return cls._do_handle_missing_data(condition, policy_name, missing=object_name, object_name=object_name)
 
     @staticmethod
     def check_for_conflicts(policies, action):
@@ -1543,6 +1458,25 @@ class PolicyClass(object):
 #
 #
 
+
+def set_policy_conditions(conditions: list[PolicyConditionClass], policy: Policy):
+    """
+    This function writes the policy conditions to the database. Old conditions are removed.
+    It does not commit the database session as we assume that the calling function is also doing some database
+    operations and will do a single final commit.
+    It raises a ParameterError if the conditions are not valid.
+
+    :param conditions: A list of policy conditions
+    :param policy: The policy to which the conditions belong
+    """
+    policy.conditions = []
+    for condition in conditions:
+        db_condition = PolicyCondition(section=condition.section, Key=condition.key, comparator=condition.comparator,
+                                       Value=condition.value, active=condition.active,
+                                       handle_missing_data=condition.handle_missing_data.value)
+        policy.conditions.append(db_condition)
+
+
 @log_with(log)
 def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                user=None, time=None, client=None, active=True,
@@ -1622,26 +1556,12 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
             raise privacyIDEAError(_("Invalid client definition!"), id=302)
     if isinstance(pinode, list):
         pinode = ", ".join(pinode)
-    # validate conditions parameter
+    # Evaluate condition parameter and convert tuple into PolicyConditionClass object
+    conditions_data = []
     if conditions is not None:
-        for condition in conditions:
-            if len(condition) not in [5, 6]:
-                raise ParameterError(f"Conditions must be 5- or 6-tuples: {condition}")
-            if not (isinstance(condition[0], str)
-                    and isinstance(condition[1], str)
-                    and isinstance(condition[2], str)
-                    and isinstance(condition[3], str)
-                    and isinstance(condition[4], bool)):
-                raise ParameterError(
-                    f"Conditions must be 5- or 6-tuples of the types (string, string, string, string, boolean, string) "
-                    f"where the last string is optional: {condition}")
-            if len(condition) == 6:
-                # validate handle_missing_data parameter
-                try:
-                    PolicyClass().get_handle_missing_data_enum(condition[5], name)
-                except PolicyError as ex:
-                    # Since the policy is about to be set here, we re-raise the error as ParameterError
-                    raise ParameterError(ex.message)
+        for condition_tuple in conditions:
+            condition = PolicyClass.get_policy_condition_from_tuple(condition_tuple, name)
+            conditions_data.append(condition)
     p1 = Policy.query.filter_by(name=name).first()
     if p1:
         # The policy already exist, we need to update
@@ -1671,18 +1591,22 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         p1.check_all_resolvers = check_all_resolvers
         p1.user_case_insensitive = user_case_insensitive
         if conditions is not None:
-            p1.set_conditions(conditions)
+            # only update the conditions if there are any
+            set_policy_conditions(conditions_data, p1)
         save_config_timestamp()
         db.session.commit()
         ret = p1.id
     else:
         # Create a new policy
-        ret = Policy(name, action=action, scope=scope, realm=realm,
-                     user=user, time=time, client=client, active=active,
-                     resolver=resolver, adminrealm=adminrealm,
-                     adminuser=adminuser, priority=priority,
-                     check_all_resolvers=check_all_resolvers,
-                     conditions=conditions, pinode=pinode, user_case_insensitive=user_case_insensitive).save()
+        policy = Policy(name, action=action, scope=scope, realm=realm,
+                        user=user, time=time, client=client, active=active,
+                        resolver=resolver, adminrealm=adminrealm,
+                        adminuser=adminuser, priority=priority,
+                        check_all_resolvers=check_all_resolvers,
+                        pinode=pinode, user_case_insensitive=user_case_insensitive)
+        ret = policy.save()
+        # Since we create a new policy we always set the conditions, even if the list is empty
+        set_policy_conditions(conditions_data, policy)
     if description:
         d1 = PolicyDescription.query.filter_by(object_id=ret, object_type="policy").first()
         if d1:

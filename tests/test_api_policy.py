@@ -151,6 +151,13 @@ class APIPolicyTestCase(MyApiTestCase):
         delete_policy("polpinode")
 
     def test_02_set_policy_conditions(self):
+        expected_conditions = [["userinfo", "groups", "contains", "group1", True,
+                                ConditionHandleMissingData.RAISE_ERROR.value],
+                               ["userinfo", "type", "equals", "secure", False,
+                                ConditionHandleMissingData.RAISE_ERROR.value],
+                               ["HTTP Request header", "Origin", "equals", "https://localhost", True,
+                                ConditionHandleMissingData.IS_TRUE.value]]
+
         # set a policy with conditions
         with self.app.test_request_context('/policy/cond1',
                                            method='POST',
@@ -161,7 +168,8 @@ class APIPolicyTestCase(MyApiTestCase):
                                                  "conditions": [
                                                      ["userinfo", "groups", "contains", "group1", True],
                                                      ["userinfo", "type", "equals", "secure", False, None],
-                                                     ["HTTP header", "Origin", "equals", "https://localhost", True,
+                                                     ["HTTP Request header", "Origin", "equals", "https://localhost",
+                                                      True,
                                                       ConditionHandleMissingData.IS_TRUE.value]
                                                  ]},
                                            headers={'Authorization': self.at}):
@@ -181,10 +189,8 @@ class APIPolicyTestCase(MyApiTestCase):
             self.assertEqual(cond1["realm"], ["realm1"])
             self.assertEqual(len(cond1["conditions"]), 3)
             # order of conditions is not guaranteed
-            self.assertIn(["userinfo", "groups", "contains", "group1", True, None], cond1["conditions"])
-            self.assertIn(["userinfo", "type", "equals", "secure", False, None], cond1["conditions"])
-            self.assertIn(["HTTP header", "Origin", "equals", "https://localhost", True,
-                           ConditionHandleMissingData.IS_TRUE.value], cond1["conditions"])
+            for condition in expected_conditions:
+                self.assertIn(condition, cond1["conditions"])
 
         # update the policy, but not its conditions
         with self.app.test_request_context('/policy/cond1',
@@ -210,10 +216,8 @@ class APIPolicyTestCase(MyApiTestCase):
             self.assertEqual(cond1["realm"], ["realm2"])
             self.assertEqual(len(cond1["conditions"]), 3)
             # order of conditions is not guaranteed
-            self.assertIn(["userinfo", "groups", "contains", "group1", True, None], cond1["conditions"])
-            self.assertIn(["userinfo", "type", "equals", "secure", False, None], cond1["conditions"])
-            self.assertIn(["HTTP header", "Origin", "equals", "https://localhost", True,
-                           ConditionHandleMissingData.IS_TRUE.value], cond1["conditions"])
+            for condition in expected_conditions:
+                self.assertIn(condition, cond1["conditions"])
 
         # update the policy conditions
         with self.app.test_request_context('/policy/cond1',
@@ -240,7 +244,8 @@ class APIPolicyTestCase(MyApiTestCase):
             self.assertEqual(cond1["realm"], ["realm2"])
             self.assertEqual(len(cond1["conditions"]), 1)
             # order of conditions is not guaranteed
-            self.assertIn(["userinfo", "type", "equals", "secure", True, None], cond1["conditions"])
+            self.assertIn(["userinfo", "type", "equals", "secure", True,
+                           ConditionHandleMissingData.RAISE_ERROR.value], cond1["conditions"])
 
         # test some invalid conditions
         # no 5-/6-tuples
@@ -489,11 +494,11 @@ class APIPolicyConditionTestCase(MyApiTestCase):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(res.status_code, 403)
                 result = res.json
-                self.assertIn("Unknown HTTP header key 'User-Agent' referenced in condition of policy 'policy'",
-                              result["result"]["error"]["message"])
+                self.assertIn("Unknown HTTP Request header key 'User-Agent' referenced in condition of policy "
+                              "'policy'!", result["result"]["error"]["message"])
                 # Make sure the missing key is described in the error log
-                lc.check_present(("privacyidea.lib.policy", "ERROR",
-                                  "Unknown HTTP header key 'User-Agent' referenced in condition of policy 'policy'."))
+                lc.check_present(("privacyidea.lib.policy", "ERROR", "Unknown HTTP Request header key 'User-Agent' "
+                                                                     "referenced in condition of policy 'policy'."))
 
         # A request without such a specific header - always has a header
         with LogCapture(level=logging.ERROR) as lc:
@@ -504,11 +509,11 @@ class APIPolicyConditionTestCase(MyApiTestCase):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(res.status_code, 403)
                 result = res.json
-                self.assertIn("Unknown HTTP header key 'User-Agent' referenced in condition of policy 'policy'",
-                              result["result"]["error"]["message"])
+                self.assertIn("Unknown HTTP Request header key 'User-Agent' referenced in condition of policy '"
+                              "policy'!", result["result"]["error"]["message"])
                 # Make sure the missing key is described in the error log
-                lc.check_present(("privacyidea.lib.policy", "ERROR",
-                                  "Unknown HTTP header key 'User-Agent' referenced in condition of policy 'policy'."))
+                lc.check_present(("privacyidea.lib.policy", "ERROR", "Unknown HTTP Request header key 'User-Agent' "
+                                                                     "referenced in condition of policy 'policy'."))
 
         # ---- Policy match for missing data ----
         # Define policy shall match if header or key is not present
@@ -571,7 +576,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
     def test_03_check_httpheader_condition_invalid(self):
         # Error for invalid comparator
         set_policy("policy", scope=SCOPE.AUTHZ, action=ACTION.NODETAILSUCCESS, client="10.1.2.3",
-                   realm=self.realm1, conditions=[(CONDITION_SECTION.HTTP_REQUEST_HEADER, "User-Agent", "broken",
+                   realm=self.realm1, conditions=[(CONDITION_SECTION.HTTP_REQUEST_HEADER, "User-Agent", "contains",
                                                    "SpecialApp", True, ConditionHandleMissingData.RAISE_ERROR.value)])
 
         with self.app.test_request_context("/validate/check",
@@ -582,27 +587,8 @@ class APIPolicyConditionTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 403)
             result = res.json
-            self.assertIn("Invalid comparison in the HTTP header conditions of policy",
+            self.assertIn("Invalid comparison in the HTTP Request header conditions of policy",
                           result["result"]["error"]["message"])
-
-        # Error for unknown section
-        set_policy("policy", scope=SCOPE.AUTHZ, action=ACTION.NODETAILSUCCESS, client="10.1.2.3",
-                   realm=self.realm1, conditions=[("random", "User-Agent", "equals",
-                                                   "SpecialApp", True, ConditionHandleMissingData.RAISE_ERROR.value)])
-
-        with self.app.test_request_context("/validate/check",
-                                           method="POST",
-                                           headers={"User-Agent": "SpecialApp"},
-                                           json={"pass": "1234", "user": "cornelius", "realm": "realm1",
-                                                 "client": "10.1.2.3"}):
-            res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 403)
-            result = res.json
-            # The text can be "Policy u'cond1' has condition with unknown section"
-            # or "Policy 'cond1' has condition with unknown section"
-            # so we only match for a substring
-            self.assertIn("has condition with unknown section",
-                          result["result"]["error"]["message"], result)
 
         delete_policy("policy")
 
@@ -667,12 +653,12 @@ class APIPolicyConditionTestCase(MyApiTestCase):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(res.status_code, 403)
                 result = res.json
-                self.assertIn("Unknown HTTP environment key 'NON_EXISTING' referenced in condition of policy "
-                              "'cond1'",
+                self.assertIn("Unknown HTTP Environment key 'NON_EXISTING' referenced in condition of policy "
+                              "'cond1'!",
                               result["result"]["error"]["message"])
                 # Make sure the missing key is described in the error log
                 lc.check_present(("privacyidea.lib.policy", "ERROR",
-                                  "Unknown HTTP environment key 'NON_EXISTING' referenced "
+                                  "Unknown HTTP Environment key 'NON_EXISTING' referenced "
                                   "in condition of policy 'cond1'."))
 
         delete_policy("cond1")
@@ -690,7 +676,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 403)
             result = res.json
-            self.assertEqual("Unknown HTTP environment key 'NON_EXISTING' referenced in condition of policy "
+            self.assertEqual("Unknown HTTP Environment key 'NON_EXISTING' referenced in condition of policy "
                              "'policy'!",
                              result["result"]["error"]["message"])
 
