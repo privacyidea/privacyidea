@@ -186,11 +186,11 @@ Set the additional **options** as POST parameters:
 SMSEagle
 ''''''''''
 
-You can send OTP messages by using the **SMSEagle** gateway API (requires physical hardware). [#smseagle]
+You can send OTP messages by using the **SMSEagle** gateway API (requires physical hardware). [#smseagle]_
 
 Parameters:
 
- * **URL**: *http://your-smseagle-url/api/v2/sms*
+ * **URL**: http://your-smseagle-url/api/v2/sms
  * **HTTP_METHOD**: POST
  * **RETURN_SUCCESS**: queued
  * **RETURN_FAIL**: REJECTED
@@ -236,7 +236,7 @@ content from the Sipgate gateway.
 
 .. [#twilio] https://www.twilio.com/docs/api/rest/sending-messages
 .. [#gtxapi] https://www.gtx-messaging.com/de/api-docs/http/
-.. [#smseagle] TODO
+.. [#smseagle] https://www.smseagle.eu/integration-plugins/privacyidea-sms-integration/
 
 SMPP Provider
 ~~~~~~~~~~~~~
