@@ -497,8 +497,9 @@ class APIPolicyConditionTestCase(MyApiTestCase):
                 self.assertIn("Unknown HTTP Request header key 'User-Agent' referenced in condition of policy "
                               "'policy'!", result["result"]["error"]["message"])
                 # Make sure the missing key is described in the error log
-                lc.check_present(("privacyidea.lib.policy", "ERROR", "Unknown HTTP Request header key 'User-Agent' "
-                                                                     "referenced in condition of policy 'policy'."))
+                lc.check_present(("privacyidea.lib.policies.policy_conditions", "ERROR",
+                                  "Unknown HTTP Request header key 'User-Agent' referenced in condition of policy "
+                                  "'policy'."))
 
         # A request without such a specific header - always has a header
         with LogCapture(level=logging.ERROR) as lc:
@@ -512,8 +513,9 @@ class APIPolicyConditionTestCase(MyApiTestCase):
                 self.assertIn("Unknown HTTP Request header key 'User-Agent' referenced in condition of policy '"
                               "policy'!", result["result"]["error"]["message"])
                 # Make sure the missing key is described in the error log
-                lc.check_present(("privacyidea.lib.policy", "ERROR", "Unknown HTTP Request header key 'User-Agent' "
-                                                                     "referenced in condition of policy 'policy'."))
+                lc.check_present(("privacyidea.lib.policies.policy_conditions", "ERROR",
+                                  "Unknown HTTP Request header key 'User-Agent' "
+                                  "referenced in condition of policy 'policy'."))
 
         # ---- Policy match for missing data ----
         # Define policy shall match if header or key is not present
@@ -657,9 +659,9 @@ class APIPolicyConditionTestCase(MyApiTestCase):
                               "'cond1'!",
                               result["result"]["error"]["message"])
                 # Make sure the missing key is described in the error log
-                lc.check_present(("privacyidea.lib.policy", "ERROR",
-                                  "Unknown HTTP Environment key 'NON_EXISTING' referenced "
-                                  "in condition of policy 'cond1'."))
+                lc.check_present(("privacyidea.lib.policies.policy_conditions", "ERROR",
+                                  "Unknown HTTP Environment key 'NON_EXISTING' referenced in condition of policy "
+                                  "'cond1'."))
 
         delete_policy("cond1")
 
@@ -676,8 +678,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 403)
             result = res.json
-            self.assertEqual("Unknown HTTP Environment key 'NON_EXISTING' referenced in condition of policy "
-                             "'policy'!",
+            self.assertEqual("Unknown HTTP Environment key 'NON_EXISTING' referenced in condition of policy 'policy'!",
                              result["result"]["error"]["message"])
 
         # Policy matches (condition is true)
