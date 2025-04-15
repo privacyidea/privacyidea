@@ -1,8 +1,11 @@
 import os
 import logging
+from pathlib import Path
 import secrets
 import string
+
 log = logging.getLogger(__name__)
+
 basedir = os.path.abspath(os.path.dirname(__file__))
 basedir = "/".join(basedir.split("/")[:-1]) + "/"
 
@@ -38,8 +41,6 @@ def _random_password(size):
 
 class Config(object):
     SECRET_KEY = os.environ.get('SECRET_KEY')
-    # SQL_ALCHEMY_DATABASE_URI = "mysql://privacyidea:XmbSrlqy5d4IS08zjz"
-    # "GG5HTt40Cpf5@localhost/privacyidea"
     PI_ENCFILE = os.path.join(basedir, "tests/testdata/enckey")
     PI_HSM = "default"
     PI_AUDIT_MODULE = "privacyidea.lib.auditmodules.sqlaudit"
@@ -122,7 +123,6 @@ class AltUIConfig(TestingConfig):
 class ProductionConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
         'sqlite:///' + os.path.join(basedir, 'data.sqlite')
-    #SQLALCHEMY_DATABASE_URI = "mysql://pi2:pi2@localhost/pi2"
     # This is used to encrypt the auth_token
     SECRET_KEY = os.environ.get('SECRET_KEY') or _random_password(24)
     # This is used to encrypt the admin passwords
@@ -155,8 +155,33 @@ class HerokuConfig(Config):
     SUPERUSER_REALM = ['superuser']
 
 
+class DockerConfig:
+    # TODO: Make secrets available through the docker secrets API (env or file)
+    confdir = Path("/etc/privacyidea/")
+    if "PI_DATABASE_URI" in os.environ:
+        SQLALCHEMY_DATABASE_URI = os.getenv("PI_DATABASE_URI")
+    elif all(x in os.environ for x in ["DB_API", "DB_USER", "DB_PASSWORD", "DB_HOST", "DB_PORT", "DB_NAME"]):
+        SQLALCHEMY_DATABASE_URI = ("{DB_API}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:"
+                                   "{DB_PORT}/{DB_NAME}").format(**os.environ)
+        if "DB_EXTRA_PARAMS" in os.environ:
+            SQLALCHEMY_DATABASE_URI += f"?{os.getenv('DB_EXTRA_PARAMS')}"
+    else:
+        SQLALCHEMY_DATABASE_URI = f"sqlite:///{confdir / 'privacyidea.sqlite'}"
+
+    # TODO: These files must be generated externally. If not, weird things might happen.
+    PI_ENCFILE = str(confdir / "enckey")
+    # This is used to sign the audit log
+    PI_AUDIT_MODULE = "privacyidea.lib.auditmodules.sqlaudit"
+    PI_AUDIT_KEY_PRIVATE = str(confdir / "private.pem")
+    PI_AUDIT_KEY_PUBLIC = str(confdir / "public.pem")
+    # TODO: These variables must be set from the outside. If not, weird things might happen.
+    SECRET_KEY = os.getenv("PI_SECRET")
+    PI_PEPPER = os.getenv("PI_PEPPER")
+
+
 config = {
     'development': DevelopmentConfig,
+    'docker': DockerConfig,
     'testing': TestingConfig,
     'production': ProductionConfig,
     'default': DevelopmentConfig,

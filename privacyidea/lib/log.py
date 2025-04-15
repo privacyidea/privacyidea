@@ -21,7 +21,7 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#  
+#
 from logging import Formatter
 import string
 import logging
@@ -47,14 +47,44 @@ DEFAULT_LOGGING_CONFIG = {
             "class": "logging.handlers.RotatingFileHandler",
             "backupCount": 5,
             "maxBytes": 10000000,
-            "level": logging.DEBUG,
-            "filename": "privacyidea.log"
+            "level": logging.NOTSET,
+            "filename": "/var/log/privacyidea/privacyidea.log"
         }
     },
     "loggers": {"privacyidea": {"handlers": ["file"],
                                 "qualname": "privacyidea",
                                 "level": logging.INFO}
                 }
+}
+
+DOCKER_LOGGING_CONFIG = {
+    "version": 1,
+    "formatters": {
+        "container": {
+            "()": "privacyidea.lib.log.SecureFormatter",
+            "format": "[%(asctime)s.%(msecs)03d][%(process)d]"
+                      "[%(thread)d][%(levelname)s][%(name)s:%(lineno)d] %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S"
+        }
+    },
+    "handlers": {
+        "stream": {
+            "formatter": "container",
+            "class": "logging.StreamHandler",
+            "level": logging.NOTSET
+        }
+    },
+    "loggers": {
+        "privacyidea": {
+            "handlers": ["stream"],
+            "propagate": False,
+            "level": logging.INFO
+        }
+    },
+    "root": {
+        "handlers": ["stream"],
+        "level": logging.INFO
+    }
 }
 
 

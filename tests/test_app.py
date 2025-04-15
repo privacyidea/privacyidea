@@ -69,7 +69,7 @@ class AppTestCase(unittest.TestCase):
                                                  "[%(name)s:%(lineno)d] "
                                                  "%(message)s",
                                             partial=True),
-                       level=logging.DEBUG,
+                       level=logging.NOTSET,
                        partial=True)
         ], logger.handlers)
 
@@ -165,6 +165,6 @@ class AppTestCase(unittest.TestCase):
                                                      "[%(name)s:%(lineno)d] "
                                                      "%(message)s",
                                                 partial=True),
-                           level=logging.INFO,
+                           level=logging.NOTSET,
                            partial=True)
             ], logger.handlers)
