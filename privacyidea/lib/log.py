@@ -91,12 +91,21 @@ DOCKER_LOGGING_CONFIG = {
 class SecureFormatter(Formatter):
 
     def format(self, record):
-        message = record.msg
-        if not message.isascii():
-            s = ''.join([c if c in string.printable else '.' for c in message])
+        message = super(SecureFormatter, self).format(record)
+        secured = False
+
+        s = ""
+        for c in message:
+            if c in string.printable:
+                s += c
+            else:
+                s += '.'
+                secured = True
+
+        if secured:
             s = "!!!Log Entry Secured by SecureFormatter!!! " + s
-            record.msg = s
-        return super(SecureFormatter, self).format(record)
+
+        return s
 
 
 class log_with(object):

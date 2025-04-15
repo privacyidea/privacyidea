@@ -297,4 +297,5 @@ def import_realms(data, name=None):
         added, failed = set_realm(realm, resolvers=r_config.get('resolver', []))
         if is_true(r_config['default']):
             set_default_realm(realm)
-        log.info(f"realm: '{realm}' resolver added: {added} failed: {failed}")
+        log.info('realm: {0!s:<15} resolver added: {1!s} '
+                 'failed: {2!s}'.format(realm, added, failed))

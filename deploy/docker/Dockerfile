@@ -1,13 +1,17 @@
-ARG PYTHON_VERSION=3.13
+FROM cgr.dev/chainguard/wolfi-base AS builder
 
-FROM python:${PYTHON_VERSION}-slim AS builder
+ARG PYTHON_VERSION=3.13
 
 ARG GUNICORN=23.0.0
 # TODO: we should probably create a different container image for use with postgres
 ARG PSYCOPG2=2.9.10
 
 # Set environment variables to optimize Python for docker
-ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Install Python, pip, build tools
+RUN apk add --no-cache python-${PYTHON_VERSION} py${PYTHON_VERSION}-pip build-base
 
 RUN python3 -m venv /opt/privacyidea
 
@@ -32,25 +36,20 @@ COPY ./privacyidea/ ./privacyidea
 RUN /opt/privacyidea/bin/pip install --no-cache-dir .
 
 # Final Stage: Create a slim image only with necessary files
-FROM python:${PYTHON_VERSION}-slim
+FROM cgr.dev/chainguard/wolfi-base
 
-# Create a non-privileged user that the app will run under.
-# See https://docs.docker.com/go/dockerfile-user-best-practices/
-ARG UID=999
-ARG GID=999
-RUN groupadd --system --gid "${GID}" privacyidea && \
-    useradd --no-log-init --no-create-home --shell /usr/sbin/nologin \
-            --system --gid "${GID}" --uid "${UID}" privacyidea
+ARG PYTHON_VERSION=3.13
+RUN apk add --no-cache python-${PYTHON_VERSION}
 
 WORKDIR /opt/privacyidea
 
 # Add path to volume for the configuration and set rights for user.
 # See https://serverfault.com/a/984599
 RUN mkdir /etc/privacyidea && \
-    chown -R privacyidea:privacyidea /etc/privacyidea
+    chown -R nonroot:nonroot /etc/privacyidea
 
 # Switch to non-root user
-USER privacyidea
+USER nonroot
 
 VOLUME /etc/privacyidea
 
@@ -65,8 +64,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PI_CONFIG_NAME="docker"
 
 # Copy the privacyIDEA virtuelenv from the builde
-COPY --chown=privacyidea:privacyidea --from=builder /opt/privacyidea/ /opt/privacyidea/
-COPY --chown=privacyidea:privacyidea --chmod=755 deploy/docker/entrypoint.sh /opt/privacyidea/
+COPY --chown=nonroot:nonroot --from=builder /opt/privacyidea/ /opt/privacyidea/
+COPY --chown=nonroot:nonroot --chmod=755 deploy/docker/entrypoint.sh /opt/privacyidea/
 
 ENTRYPOINT ["./entrypoint.sh"]
 

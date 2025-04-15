@@ -27,12 +27,25 @@ work. See  https://privacyidea.readthedocs.io/en/latest/installation/pip.html#da
 and https://privacyidea.readthedocs.io/en/latest/installation/system/inifile.html#cfgfile
 for configuration options.
 
+Configuration options can be given as environment variables with the `PRIVACYIDEA_` prefix like:
+```
+docker run -p 8080:80 -e PRIVACYIDEA_PI_PEPPER="Never know..." -e PRIVACYIDEA_PI_SECRET="t0p s3cr3t" <pi-tag>:latest
+```
+
 Commands can be run inside the container with:
 ```
 docker exec -i <container name> pi-manage ...
 ```
 
-For example to import existing policies run:
+To set up a running container use:
+```
+docker exec -i <privacyidea-container> pi-manage setup create_tables
+docker exec -i <privacyidea-container> pi-manage setup create_enckey
+docker exec -i <privacyidea-container> pi-manage setup create_audit_keys
+```
+The created files will be added to the mounted volume.
+
+Configuration can be imported in the container with:
 ```
 cat <policy template yaml> | docker exec -i <container name> pi-manage config import
 ```
@@ -43,4 +56,5 @@ TODO:
 * Don't start the container if the configuration is missing or incomplete
   * Alternatively create a running configuration during container startup
 * Pass configuration parameters via variables for better use with `compose`
-* Create a default logging configuration for docker to log everything to `stdout`
+* Add dependencies in the container (PyKCS11, gssapi)
+* Add recurring tasks runner (cron? via docker? via redis?)
