@@ -533,6 +533,7 @@ class APITokenTestCase(MyApiTestCase):
     def setUp(self):
         super(APITokenTestCase, self).setUp()
         self.setUp_user_realms()
+        self.setUp_user_realm2()
 
     def _create_temp_token(self, serial):
         with self.app.test_request_context('/token/init',
@@ -1361,7 +1362,7 @@ class APITokenTestCase(MyApiTestCase):
 
         with self.app.test_request_context('/token/realm/REALM001',
                                            method="POST",
-                                           data={"realms": "realm1, realm2"},
+                                           data={"realms": f"{self.realm1}, non-existin-realm"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -1378,7 +1379,7 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             value = result.get("value")
             token = value.get("tokens")[0]
-            self.assertTrue(token.get("realms") == ["realm1"], token)
+            self.assertTrue(token.get("realms") == [self.realm1], token)
 
     def test_11_load_tokens(self):
         # Set dummy policy to check if token upload still works (see #2209)
@@ -1530,6 +1531,7 @@ class APITokenTestCase(MyApiTestCase):
         delete_event(event_id)
 
     def test_11_load_tokens_only_to_specific_realm(self):
+
         # Load token to a realm
         def _clean_up_tokens():
             remove_token("token01")
@@ -1575,7 +1577,7 @@ class APITokenTestCase(MyApiTestCase):
         self.assertIn(self.realm1, r)
 
         # Now define a policy, that allows the user to upload tokens to some other realm
-        set_policy(name="tokupload", scope=SCOPE.ADMIN, action=ACTION.IMPORT, realm="otherrealm",
+        set_policy(name="tokupload", scope=SCOPE.ADMIN, action=ACTION.IMPORT, realm=self.realm2,
                    adminuser="testadmin")
         _clean_up_tokens()
         with self.app.test_request_context('/token/load/import.oath',
@@ -1913,8 +1915,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 400, res)
 
     def test_19_get_challenges(self):
-        set_policy("chalresp", scope=SCOPE.AUTHZ,
-                   action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+        set_policy("chalresp", scope=SCOPE.AUTH, action=f"{ACTION.CHALLENGERESPONSE}=hotp")
         token = init_token({"genkey": 1, "serial": "CHAL1", "pin": "pin"})
         serial = token.token.serial
         r = check_serial_pass(serial, "pin")
@@ -2067,12 +2068,11 @@ class APITokenTestCase(MyApiTestCase):
         # Check if a realm admin can not delete a token in another realm
         # Admin is only allowed to delete tokens in "testrealm"
         set_policy("deleteToken", scope=SCOPE.ADMIN,
-                   action="delete",
+                   action=ACTION.DELETE,
                    user="testadmin",
-                   realm="testrealm"
-                   )
+                   realm=self.realm1)
         init_token({"type": "SPASS", "serial": "SP001"},
-                   user=User("cornelius", self.realm1))
+                   user=User("cornelius", self.realm2))
 
         # Now testadmin tries to delete a token from realm1, which he can not
         #  access.
