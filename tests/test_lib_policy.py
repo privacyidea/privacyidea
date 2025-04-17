@@ -2091,7 +2091,7 @@ class PolicyTestCase(MyTestCase):
             validate_actions(SCOPE.ADMIN, {"i_am_invalid": False})
             self.assertEqual("Invalid actions: ['i_am_invalid']", exception.exception.message)
 
-        # Invalid action sting (actions can not be extracted correctly)
+        # Invalid action string (actions can not be extracted correctly)
         action_str = (f"{ACTION.ENABLE}, {ACTION.HIDE_TOKENINFO}:hashlib private_server_key ,"
                       f"{ACTION.DISABLE}; {ACTION.DELETE}")
         with self.assertRaises(ParameterError) as exception:
