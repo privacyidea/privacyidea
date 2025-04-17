@@ -41,11 +41,11 @@ from privacyidea.lib.policy import SCOPE, GROUP, ACTION
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import TokenClass, CLIENTMODE, ROLLOUTSTATE
 from privacyidea.lib.tokens.u2ftoken import IMAGES
-from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, webauthn_b64_encode, WebAuthnRegistrationResponse,
+from privacyidea.lib.tokens.webauthn import (CoseAlgorithm, webauthn_b64_encode, WebAuthnRegistrationResponse,
                                              ATTESTATION_REQUIREMENT_LEVEL, webauthn_b64_decode,
                                              WebAuthnMakeCredentialOptions, WebAuthnAssertionOptions, WebAuthnUser,
                                              WebAuthnAssertionResponse, AuthenticationRejectedException,
-                                             USER_VERIFICATION_LEVEL)
+                                             UserVerificationLevel)
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode, is_true, convert_imagefile_to_dataimage
 
@@ -473,9 +473,9 @@ DEFAULT_CHALLENGE_TEXT_AUTH = lazy_gettext('Please confirm with your WebAuthn to
 DEFAULT_CHALLENGE_TEXT_ENROLL = lazy_gettext('Please confirm with your WebAuthn token')
 
 PUBLIC_KEY_CREDENTIAL_ALGORITHMS = {
-    'ecdsa': COSE_ALGORITHM.ES256,
-    'rsassa-pss': COSE_ALGORITHM.PS256,
-    'rsassa-pkcs1v1_5': COSE_ALGORITHM.RS256
+    'ecdsa': CoseAlgorithm.ES256,
+    'rsassa-pss': CoseAlgorithm.PS256,
+    'rsassa-pkcs1v1_5': CoseAlgorithm.RS256
 }
 # since in Python < 3.7 the insert order of a dictionary is not guaranteed, we
 # need a list to define the proper order
@@ -852,7 +852,7 @@ class WebAuthnTokenClass(TokenClass):
                     challenge=webauthn_b64_encode(challenge_nonce),
                     attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[attestation_level],
                     trust_anchor_dir=get_from_config(FIDO2ConfigOptions.TRUST_ANCHOR_DIR),
-                    uv_required=uv_req == USER_VERIFICATION_LEVEL.REQUIRED
+                    uv_required=uv_req == UserVerificationLevel.REQUIRED
                 ).verify([
                     # TODO: this might get slow when a lot of webauthn tokens are registered
                     token.decrypt_otpkey() for token in get_tokens(tokentype=self.type) if
@@ -949,17 +949,16 @@ class WebAuthnTokenClass(TokenClass):
                                   validitytime=self._get_challenge_validity_time())
             challenge.save()
 
-            credential_ids = []
+            exclude_credential_ids = []
             if is_true(get_optional(params, FIDO2PolicyAction.AVOID_DOUBLE_REGISTRATION)):
-                # Get the other webauthn tokens of the user
+                # Get the other webauthn tokens of the user and add their credential_ids to the exclude list
                 webauthn_tokens = get_tokens(tokentype=self.type, user=self.user)
-                # add their credential ids
                 for token in webauthn_tokens:
                     if token.token.rollout_state != ROLLOUTSTATE.CLIENTWAIT:
                         credential_id = token.decrypt_otpkey()
-                        credential_ids.append(credential_id)
+                        exclude_credential_ids.append(credential_id)
 
-            public_key_credential_creation_options = WebAuthnMakeCredentialOptions(
+            credential_options = WebAuthnMakeCredentialOptions(
                 challenge=webauthn_b64_encode(nonce),
                 rp_name=rp_name,
                 rp_id=rp_id,
@@ -973,39 +972,37 @@ class WebAuthnTokenClass(TokenClass):
                                                               FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS),
                 authenticator_attachment=get_optional(params, FIDO2PolicyAction.AUTHENTICATOR_ATTACHMENT),
                 authenticator_selection_list=get_optional(params, FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST),
-                credential_ids=credential_ids
+                credential_ids=exclude_credential_ids
             ).registration_dict
 
-            response_detail["webAuthnRegisterRequest"] = {
+            register_request = {
                 "transaction_id": challenge.transaction_id,
                 "message": self._get_message(params),
-                "nonce": public_key_credential_creation_options["challenge"],
-                "relyingParty": public_key_credential_creation_options["rp"],
-                "serialNumber": public_key_credential_creation_options["user"]["id"],
-                "pubKeyCredAlgorithms": public_key_credential_creation_options["pubKeyCredParams"],
-                "name": public_key_credential_creation_options["user"]["name"],
-                "displayName": public_key_credential_creation_options["user"]["displayName"]
+                "nonce": credential_options["challenge"],
+                "relyingParty": credential_options["rp"],
+                "serialNumber": credential_options["user"]["id"],
+                "pubKeyCredAlgorithms": credential_options["pubKeyCredParams"],
+                "name": credential_options["user"]["name"],
+                "displayName": credential_options["user"]["displayName"]
             }
-            if public_key_credential_creation_options.get("authenticatorSelection"):
-                response_detail["webAuthnRegisterRequest"]["authenticatorSelection"] \
-                    = public_key_credential_creation_options["authenticatorSelection"]
-            if public_key_credential_creation_options.get("timeout"):
-                response_detail["webAuthnRegisterRequest"]["timeout"] \
-                    = public_key_credential_creation_options["timeout"]
-            if public_key_credential_creation_options.get("attestation"):
-                response_detail["webAuthnRegisterRequest"]["attestation"] \
-                    = public_key_credential_creation_options["attestation"]
-            if (public_key_credential_creation_options.get("extensions") or {}).get("authnSel"):
-                response_detail["webAuthnRegisterRequest"]["authenticatorSelectionList"] \
-                    = public_key_credential_creation_options["extensions"]["authnSel"]
-            if public_key_credential_creation_options.get("excludeCredentials"):
-                response_detail["webAuthnRegisterRequest"]["excludeCredentials"] = \
-                    public_key_credential_creation_options.get("excludeCredentials")
 
-            self.add_tokeninfo(FIDO2TokenInfo.RELYING_PARTY_ID,
-                               public_key_credential_creation_options["rp"]["id"])
-            self.add_tokeninfo(FIDO2TokenInfo.RELYING_PARTY_NAME,
-                               public_key_credential_creation_options["rp"]["name"])
+            if credential_options.get("authenticatorSelection"):
+               register_request["authenticatorSelection"] = credential_options["authenticatorSelection"]
+            if credential_options.get("timeout"):
+               register_request["timeout"] = credential_options["timeout"]
+            if credential_options.get("attestation"):
+               register_request["attestation"] = credential_options["attestation"]
+            if (credential_options.get("extensions") or {}).get("authnSel"):
+               register_request["authenticatorSelectionList"] = credential_options["extensions"]["authnSel"]
+            if credential_options.get("excludeCredentials"):
+               register_request["excludeCredentials"] = credential_options.get("excludeCredentials")
+
+            response_detail["webAuthnRegisterRequest"] = register_request
+
+            self.add_tokeninfo_dict({
+                FIDO2TokenInfo.RELYING_PARTY_ID: credential_options["rp"]["id"],
+                FIDO2TokenInfo.RELYING_PARTY_NAME: credential_options["rp"]["name"],
+            })
 
         elif self.token.rollout_state in [ROLLOUTSTATE.ENROLLED, ""]:
             # This is the second step of the init request. The registration
