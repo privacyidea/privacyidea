@@ -31,8 +31,7 @@
 __doc__ = """
 The code of this module is tested in tests/test_api_system.py
 """
-from flask import (Blueprint,
-                   request)
+from flask import Blueprint, request, current_app
 from .lib.utils import (getParam,
                         getLowerParams,
                         optional,
@@ -45,7 +44,7 @@ from ..lib.policy import (set_policy, ACTION,
                           export_policies, import_policies,
                           delete_policy, get_static_policy_definitions,
                           enable_policy, get_policy_condition_sections,
-                          get_policy_condition_comparators, Match)
+                          get_policy_condition_comparators, Match, validate_values)
 from ..lib.token import get_dynamic_policy_definitions
 from ..lib.error import (ParameterError)
 from privacyidea.lib.utils import is_true
@@ -198,6 +197,11 @@ def set_policy_api(name=None):
     priority = int(getParam(param, "priority", optional, default=1))
     conditions = getParam(param, "conditions", optional)
     description = getParam(param, "description", optional)
+
+    # Validate admin realms here, because the allowed realms need to be read from the config file
+    # (avoid flask imports on lib level)
+    valid_admin_realms = current_app.config.get("SUPERUSER_REALM", [])
+    validate_values(admin_realm, valid_admin_realms, "Admin Realms")
 
     g.audit_object.log({'action_detail': name,
                         'info': "{0!s}".format(param)})

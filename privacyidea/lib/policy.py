@@ -1323,66 +1323,25 @@ def validate_actions(scope: str, action: Union[str, dict]) -> bool:
         return True
 
 
-def validate_realms(realms: Union[str, list, None], name: str = "realm") -> bool:
+def validate_values(values: Union[str, list, None], allowed_values: list, name: str) -> bool:
     """
-    Check if the given realms are defined. Raises a ParameterError if at least one does not exist.
+    Checks if all values are contained in the 'allowed_values' list.
 
-    :param realms: Realms to be evaluated whether they are defined. Either passed as list of strings or as a comma
+    :param values: Values to be evaluated whether they are defined. Either passed as list of strings or as a comma
         separated list as single string
-    :param name: The name of the parameter
-    :return: True if all realms are valid, raises a ParameterError otherwise
+    :param allowed_values: A list of allowed values
+    :param name: The name of the parameter used for an error message
+    :return: True if all values are valid, raise a ParameterError otherwise
     """
-    if realms is not None:
-        if isinstance(realms, str):
-            realms = realms.replace(" ", "").split(",")
-        elif not isinstance(realms, list):
-            raise ParameterError(f"Invalid {name} type '{type(realms)}'!")
-        realms = remove_wildcards_and_negations(realms)
-        undefined_realms = [realm for realm in realms if not realm_is_defined(realm)]
-        if len(undefined_realms) > 0:
-            raise ParameterError(f"Undefined {name.capitalize()}s {undefined_realms}!")
-    return True
-
-
-def validate_resolvers(resolvers: Union[str, list, None]) -> bool:
-    """
-    Check if the given resolvers are defined. Raises a ParameterError if at least one does not exist.
-
-    :param resolvers: Resolvers to be evaluated whether they are defined. Either passed as list of strings or as a comma
-        separated list as single string
-    :return: True if all resolvers exist, raises a ParameterError otherwise
-    """
-    if resolvers is not None:
-        if isinstance(resolvers, str):
-            resolvers = resolvers.replace(" ", "").split(",")
-        elif not isinstance(resolvers, list):
-            raise ParameterError(f"Invalid resolvers type '{type(resolvers)}'!")
-        valid_resolvers = list(get_resolver_list().keys())
-        resolvers = remove_wildcards_and_negations(resolvers)
-        undefined_resolvers = list(set(resolvers) - set(valid_resolvers))
-        if len(undefined_resolvers) > 0:
-            raise ParameterError(f"Undefined Resolvers {undefined_resolvers}!")
-    return True
-
-
-def validate_nodes(nodes: Union[str, list, None]) -> bool:
-    """
-    Check if the given nodes are defined. Raises a ParameterError if at least one does not exist.
-
-    :param nodes: Nodes to be evaluated whether they are defined. Either passed as list of strings or as a comma
-        separated list as single string
-    :return: True if all nodes are valid, raises a ParameterError otherwise
-    """
-    if nodes is not None:
-        if isinstance(nodes, str):
-            nodes = nodes.replace(" ", "").split(",")
-        elif not isinstance(nodes, list):
-            raise ParameterError(f"Invalid nodes type '{type(nodes)}'!")
-        valid_nodes = [node["name"] for node in get_privacyidea_nodes()]
-        nodes = remove_wildcards_and_negations(nodes)
-        undefined_nodes = list(set(nodes) - set(valid_nodes))
-        if len(undefined_nodes) > 0:
-            raise ParameterError(f"Undefined Nodes {undefined_nodes}!")
+    if values is not None:
+        if isinstance(values, str):
+            values = values.replace(" ", "").split(",")
+        elif not isinstance(values, list):
+            raise ParameterError(f"Invalid resolvers type '{type(values)}'!")
+        values = remove_wildcards_and_negations(values)
+        undefined_values = list(set(values) - set(allowed_values))
+        if len(undefined_values) > 0:
+            raise ParameterError(f"Undefined {name.capitalize()} {undefined_values}!")
     return True
 
 
@@ -1439,22 +1398,24 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         raise ParameterError("Priority must be at least 1")
 
     # check for valid realms
-    validate_realms(realm)
-    validate_realms(adminrealm, "adminrealm")
+    valid_realms = list(get_realms().keys())
+    validate_values(realm, valid_realms, "User-Realms")
 
     # check for valid resolvers
-    validate_resolvers(resolver)
+    valid_resolvers = list(get_resolver_list().keys())
+    validate_values(resolver, valid_resolvers, "Resolvers")
 
     # check for valid nodes
-    validate_nodes(pinode)
+    valid_nodes = [node["name"] for node in get_privacyidea_nodes()]
+    validate_values(pinode, valid_nodes, "privacyIDEA Nodes")
 
     # check for valid time
     if time is not None:
         if len(time) > 0:
             try:
                 check_time_in_range(time)
-            except (ValueError, ParameterError) as ex:
-                raise ParameterError(f"Invalid time format '{time}': {ex}")
+            except (ValueError, ParameterError):
+                raise ParameterError(f"Invalid time format '{time}'!")
         else:
             time = None
 

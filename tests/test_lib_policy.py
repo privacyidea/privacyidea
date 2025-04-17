@@ -24,8 +24,7 @@ from privacyidea.lib.policy import (set_policy, delete_policy,
                                     delete_all_policies,
                                     get_action_values_from_options, Match, MatchingError,
                                     get_allowed_custom_attributes, convert_action_dict_to_python_dict,
-                                    set_policy_conditions, validate_actions, validate_realms, validate_resolvers,
-                                    validate_nodes)
+                                    set_policy_conditions, validate_actions)
 from privacyidea.lib.realm import (set_realm, delete_realm, get_realms)
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list,
                                       delete_resolver)
@@ -2099,63 +2098,73 @@ class PolicyTestCase(MyTestCase):
             self.assertEqual(f"Invalid actions: ['{ACTION.HIDE_TOKENINFO}:hashlib private_server_key', "
                              f"'{ACTION.DISABLE}; {ACTION.DELETE}']", exception.exception.message)
 
-    def test_52_validate_realms(self):
+    def test_52_set_policy_validate_realms(self):
+        """
+        This test checks that the realm parameter is evaluated correctly in the set_policy function
+        """
         # Valid single realm
-        self.assertTrue(validate_realms(self.realm1))
+        set_policy(name="test", scope=SCOPE.ADMIN, realm=self.realm1)
 
         # Valid list
-        self.assertTrue(validate_realms([self.realm1, self.realm2]))
-        self.assertTrue(validate_realms(f"{self.realm1}, {self.realm2}"))
+        set_policy(name="test", scope=SCOPE.ADMIN, realm=[self.realm1, self.realm2])
+        set_policy(name="test", scope=SCOPE.ADMIN, realm=f"{self.realm1}, {self.realm2}")
 
         # realm is None
-        self.assertTrue(validate_realms(None))
+        set_policy(name="test", scope=SCOPE.ADMIN, realm=None)
 
         # Use wildcard and negations
-        self.assertTrue(validate_realms(f"*, -{self.realm1}, {self.realm2}, !{self.realm1}"))
+        set_policy(name="test", scope=SCOPE.ADMIN, realm=f"*, -{self.realm1}, {self.realm2}, !{self.realm1}")
 
         # Invalid data type
-        self.assertRaises(ParameterError, validate_realms, {self.realm1, self.realm2})
+        self.assertRaises(ParameterError, set_policy, name="test", scope=SCOPE.ADMIN, realm={self.realm1, self.realm2})
 
         # Undefined Realm
         with self.assertRaises(ParameterError) as exception:
-            validate_realms([self.realm2, "undefined_realm", self.realm1, "invalid"])
+            set_policy(name="test", scope=SCOPE.ADMIN, realm=[self.realm2, "undefined_realm", self.realm1, "invalid"])
             self.assertEqual("Undefined Realms: ['undefined_realm', 'invalid']!", exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
-            validate_realms(f"{self.realm2}, undefined_realm,{self.realm1} ,invalid")
+            set_policy(name="test", scope=SCOPE.ADMIN, realm=f"{self.realm2}, undefined_realm,{self.realm1} ,invalid")
             self.assertEqual("Undefined Realms: ['undefined_realm', 'invalid']!", exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
-            validate_realms(f"{self.realm2}, -undefined_realm,{self.realm1} ,!invalid")
+            set_policy(name="test", scope=SCOPE.ADMIN, realm=f"{self.realm2}, -undefined_realm,{self.realm1} ,!invalid")
             self.assertEqual("Undefined Realms: ['undefined_realm', 'invalid']!", exception.exception.message)
 
-    def test_53_validate_resolvers(self):
+        delete_policy("test")
+
+    def test_53_set_policy_validate_resolvers(self):
         # Valid single resolver
-        self.assertTrue(validate_resolvers(self.resolvername1))
+        set_policy(name="test", scope=SCOPE.ADMIN, resolver=self.resolvername1)
 
         # Valid list
-        self.assertTrue(validate_resolvers([self.resolvername1, self.resolvername3, ""]))
-        self.assertTrue(validate_resolvers(f"{self.resolvername1}, {self.resolvername3}"))
+        set_policy(name="test", scope=SCOPE.ADMIN, resolver=[self.resolvername1, self.resolvername3, ""])
+        set_policy(name="test", scope=SCOPE.ADMIN, resolver=f"{self.resolvername1}, {self.resolvername3}")
 
         # resolver is None
-        self.assertTrue(validate_resolvers(None))
+        set_policy(name="test", scope=SCOPE.ADMIN, resolver=None)
 
         # Use wildcard and negations
-        self.assertTrue(validate_resolvers(f"*, -{self.resolvername1}, !{self.resolvername3}, "))
+        set_policy(name="test", scope=SCOPE.ADMIN, resolver=f"*, -{self.resolvername1}, !{self.resolvername3}, ")
 
         # Invalid data type
-        self.assertRaises(ParameterError, validate_resolvers, {self.resolvername1, self.resolvername3})
+        self.assertRaises(ParameterError, set_policy, name="test", scope=SCOPE.ADMIN,
+                          resolver={self.resolvername1, self.resolvername3})
 
         # Undefined Resolver
         with self.assertRaises(ParameterError) as exception:
-            validate_resolvers([self.resolvername1, "undefined_resolver", self.resolvername3, "invalid"])
+            set_policy(name="test", scope=SCOPE.ADMIN,
+                       resolver=[self.resolvername1, "undefined_resolver", self.resolvername3, "invalid"])
             self.assertEqual("Undefined Resolvers: ['undefined_resolver', 'invalid']!", exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
-            validate_resolvers(f"undefined_resolver,{self.resolvername1}, invalid")
+            set_policy(name="test", scope=SCOPE.ADMIN, resolver=f"undefined_resolver,{self.resolvername1}, invalid")
             self.assertEqual("Undefined Resolvers: ['undefined_resolver', 'invalid']!", exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
-            validate_resolvers(f"*, -undefined_resolver,{self.resolvername1}, !invalid")
+            set_policy(name="test", scope=SCOPE.ADMIN,
+                       resolver=f"*, -undefined_resolver,{self.resolvername1}, !invalid")
             self.assertEqual("Undefined Resolvers: ['undefined_resolver', 'invalid']!", exception.exception.message)
 
-    def test_54_validate_nodes(self):
+        delete_policy("test")
+
+    def test_54_set_policy_validate_nodes(self):
         node1 = "pinode1"
         node2 = "pinode2"
         db.session.add(NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a8", name=node1))
@@ -2163,34 +2172,35 @@ class PolicyTestCase(MyTestCase):
         db.session.commit()
 
         # Valid single node
-        self.assertTrue(validate_nodes(node1))
+        set_policy(name="test", scope=SCOPE.ADMIN, pinode=node1)
 
         # Valid list
-        self.assertTrue(validate_nodes([node1, "", "*", node2]))
-        self.assertTrue(validate_nodes(f"{node1}, {node2}"))
+        set_policy(name="test", scope=SCOPE.ADMIN, pinode=[node1, "", "*", node2])
+        set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"{node1}, {node2}")
 
         # node is None
-        self.assertTrue(validate_nodes(None))
+        set_policy(name="test", scope=SCOPE.ADMIN, pinode=None)
 
         # Use wildcard and negations
-        self.assertTrue(validate_nodes(f"*, -{node1}, !{node2}"))
+        set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"*, -{node1}, !{node2}")
 
         # Invalid data type
-        self.assertRaises(ParameterError, validate_nodes, {node1, node2})
+        self.assertRaises(ParameterError, set_policy, name="test", scope=SCOPE.ADMIN, realm={node1, node2})
 
         # Undefined Node
         with self.assertRaises(ParameterError) as exception:
-            validate_nodes([node1, "undefined_node", node2, "invalid"])
+            set_policy(name="test", scope=SCOPE.ADMIN, pinode=[node1, "undefined_node", node2, "invalid"])
             self.assertEqual("Undefined Nodes: ['undefined_node', 'invalid']!", exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
-            validate_nodes(f"undefined_node,{node1}, invalid")
+            set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"undefined_node,{node1}, invalid")
             self.assertEqual("Undefined Nodes: ['undefined_node', 'invalid']!", exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
-            validate_nodes(f"*, -undefined_node,{node1}, !invalid")
+            set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"*, -undefined_node,{node1}, !invalid")
             self.assertEqual("Undefined Nodes: ['undefined_node', 'invalid']!", exception.exception.message)
 
         NodeName.query.filter_by(name=node1).first().delete()
         NodeName.query.filter_by(name=node2).first().delete()
+        delete_policy("test")
 
 
 class PolicyConditionClassTestCase(MyTestCase):

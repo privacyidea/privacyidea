@@ -96,7 +96,7 @@ class APIPolicyTestCase(MyApiTestCase):
                                                "scope": SCOPE.AUTHZ,
                                                "check_all_resolvers": "false",
                                                "priority": 5,
-                                               "realm": "realm1"},
+                                               "realm": self.realm1},
                                            headers={
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -338,6 +338,44 @@ class APIPolicyTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 200)
 
     def test_03_set_adminuser_policy(self):
+        self.setUp_user_realms()
+        # Set an invalid admin realm throws ParameterError
+        with self.app.test_request_context("/policy/pol1adminuser", method="POST",
+                                           data={"action": f"{ACTION.POLICYDELETE}, {ACTION.POLICYREAD}",
+                                                 "scope": SCOPE.ADMIN,
+                                                 "realm": "",
+                                                 "adminrealm": "test",
+                                                 "client": "10.1.2.3"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code)
+            self.assertEqual(905, res.json["result"]["error"]["code"])
+
+        # Set a user realm as admin realm fails
+        with self.app.test_request_context("/policy/pol1adminuser", method="POST",
+                                           data={"action": f"{ACTION.POLICYDELETE}, {ACTION.POLICYREAD}",
+                                                 "scope": SCOPE.ADMIN,
+                                                 "realm": "",
+                                                 "adminrealm": self.realm1,
+                                                 "client": "10.1.2.3"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code)
+            self.assertEqual(905, res.json["result"]["error"]["code"])
+
+        # Set a correct admin realm
+        with self.app.test_request_context('/policy/pol1adminuser',
+                                           method='POST',
+                                           data={"action": f"{ACTION.POLICYDELETE}, {ACTION.POLICYREAD}",
+                                                 "scope": SCOPE.ADMIN,
+                                                 "realm": "",
+                                                 "adminrealm": "adminrealm",
+                                                 "client": "10.1.2.3"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+        delete_policy("pol1adminuser")
+
         # Set a policy for the user testadmin
         with self.app.test_request_context('/policy/pol1adminuser',
                                            method='POST',
