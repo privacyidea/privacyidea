@@ -1557,7 +1557,10 @@ class WebAuthnAssertionResponse:
             # identified by this value is the owner of the public key credential
             # identified by credential.id.
             user_handle = self.assertion_response.get('userHandle')
-            user_handle = base64url_to_bytes(user_handle).decode("utf-8") if user_handle else None
+            try:
+                user_handle = base64url_to_bytes(user_handle).decode("utf-8") if user_handle else None
+            except (ValueError, TypeError) as e:
+                raise AuthenticationRejectedException(f"Malformed user handle: {e}")
             if user_handle and not user_handle == self.webauthn_user.user_id:
                 raise AuthenticationRejectedException(f"Invalid credential: user handle from param {user_handle} "
                                                       f"does not match the one from the user "
