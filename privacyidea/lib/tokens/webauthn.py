@@ -68,6 +68,7 @@ from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15, PSS, MGF
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicNumbers
 from cryptography.hazmat.primitives.hashes import SHA256, SHA1
 from cryptography.x509 import load_der_x509_certificate
+from webauthn import base64url_to_bytes
 
 from privacyidea.lib.tokens.u2f import url_encode, url_decode
 from privacyidea.lib.utils import to_bytes, to_unicode
@@ -91,7 +92,7 @@ DEFAULT_AUTHENTICATOR_EXTENSIONS = {}
 log = logging.getLogger(__name__)
 
 
-class COSE_PUBLIC_KEY(object):
+class CosePublicKey:
     """
     The indices of the various parameters in a COSE-formatted public key.
     """
@@ -103,7 +104,7 @@ class COSE_PUBLIC_KEY(object):
     N = -1
 
 
-class ATTESTATION_TYPE(object):
+class AttestationType:
     """
     Attestation types known to this implementation.
     """
@@ -117,13 +118,13 @@ class ATTESTATION_TYPE(object):
 
 # Only supporting 'None', 'Basic', and 'Self Attestation' attestation types for now.
 SUPPORTED_ATTESTATION_TYPES = (
-    ATTESTATION_TYPE.BASIC,
-    ATTESTATION_TYPE.NONE,
-    ATTESTATION_TYPE.SELF_ATTESTATION
+    AttestationType.BASIC,
+    AttestationType.NONE,
+    AttestationType.SELF_ATTESTATION
 )
 
 
-class ATTESTATION_FORMAT(object):
+class AttestationFormat:
     """
     Attestation format identifiers as registered in the IANA WebAuthn attestation statement format identifiers registry.
     """
@@ -140,23 +141,23 @@ class ATTESTATION_FORMAT(object):
 # Only supporting 'fido-u2f', 'packed', and 'none' attestation formats for now.
 # TODO: implement android, apple and TPM authentication formats
 SUPPORTED_ATTESTATION_FORMATS = (
-    ATTESTATION_FORMAT.FIDO_U2F,
-    ATTESTATION_FORMAT.PACKED,
-    ATTESTATION_FORMAT.NONE
+    AttestationFormat.FIDO_U2F,
+    AttestationFormat.PACKED,
+    AttestationFormat.NONE
 )
 
 REGISTERED_ATTESTATION_FORMATS = (
-    ATTESTATION_FORMAT.PACKED,
-    ATTESTATION_FORMAT.TPM,
-    ATTESTATION_FORMAT.ANDROID_KEY,
-    ATTESTATION_FORMAT.ANDROID_SAFETYNET,
-    ATTESTATION_FORMAT.APPLE,
-    ATTESTATION_FORMAT.FIDO_U2F,
-    ATTESTATION_FORMAT.NONE
+    AttestationFormat.PACKED,
+    AttestationFormat.TPM,
+    AttestationFormat.ANDROID_KEY,
+    AttestationFormat.ANDROID_SAFETYNET,
+    AttestationFormat.APPLE,
+    AttestationFormat.FIDO_U2F,
+    AttestationFormat.NONE
 )
 
 
-class CLIENT_DATA_TYPE(object):
+class ClientDataType:
     """
     Client data types used by this implementation.
     """
@@ -166,12 +167,12 @@ class CLIENT_DATA_TYPE(object):
 
 
 SUPPORTED_CLIENT_DATA_TYPES = (
-    CLIENT_DATA_TYPE.CREATE,
-    CLIENT_DATA_TYPE.GET
+    ClientDataType.CREATE,
+    ClientDataType.GET
 )
 
 
-class COSE_ALGORITHM(object):
+class CoseAlgorithm:
     """
     IANA-assigned identifiers of supported COSE algorithms.
     """
@@ -183,13 +184,13 @@ class COSE_ALGORITHM(object):
 
 
 SUPPORTED_COSE_ALGORITHMS = (
-    COSE_ALGORITHM.ES256,
-    COSE_ALGORITHM.PS256,
-    COSE_ALGORITHM.RS256,
+    CoseAlgorithm.ES256,
+    CoseAlgorithm.PS256,
+    CoseAlgorithm.RS256,
 )
 
 
-class ATTESTATION_FORM(object):
+class AttestationForm:
     """
     The different forms of attestation.
     """
@@ -200,13 +201,13 @@ class ATTESTATION_FORM(object):
 
 
 ATTESTATION_FORMS = (
-    ATTESTATION_FORM.NONE,
-    ATTESTATION_FORM.INDIRECT,
-    ATTESTATION_FORM.DIRECT
+    AttestationForm.NONE,
+    AttestationForm.INDIRECT,
+    AttestationForm.DIRECT
 )
 
 
-class USER_VERIFICATION_LEVEL(object):
+class UserVerificationLevel:
     """
     The different levels of user verification.
     """
@@ -217,13 +218,13 @@ class USER_VERIFICATION_LEVEL(object):
 
 
 USER_VERIFICATION_LEVELS = (
-    USER_VERIFICATION_LEVEL.REQUIRED,
-    USER_VERIFICATION_LEVEL.PREFERRED,
-    USER_VERIFICATION_LEVEL.DISCOURAGED
+    UserVerificationLevel.REQUIRED,
+    UserVerificationLevel.PREFERRED,
+    UserVerificationLevel.DISCOURAGED
 )
 
 
-class ATTESTATION_LEVEL(object):
+class AttestationLevel:
     """
     The different levels of attestation requirement.
     """
@@ -234,34 +235,34 @@ class ATTESTATION_LEVEL(object):
 
 
 ATTESTATION_LEVELS = (
-    ATTESTATION_LEVEL.TRUSTED,
-    ATTESTATION_LEVEL.UNTRUSTED,
-    ATTESTATION_LEVEL.NONE
+    AttestationLevel.TRUSTED,
+    AttestationLevel.UNTRUSTED,
+    AttestationLevel.NONE
 )
 
 ATTESTATION_REQUIREMENT_LEVEL = {
-    ATTESTATION_LEVEL.TRUSTED: {
+    AttestationLevel.TRUSTED: {
         'self_attestation_permitted': False,
         'none_attestation_permitted': False
     },
-    ATTESTATION_LEVEL.UNTRUSTED: {
+    AttestationLevel.UNTRUSTED: {
         'self_attestation_permitted': True,
         'none_attestation_permitted': False
     },
-    ATTESTATION_LEVEL.NONE: {
+    AttestationLevel.NONE: {
         'self_attestation_permitted': True,
         'none_attestation_permitted': True
     }
 }
 
 ATTESTATION_REQUIREMENT_LEVELS = (
-    ATTESTATION_REQUIREMENT_LEVEL[ATTESTATION_LEVEL.TRUSTED],
-    ATTESTATION_REQUIREMENT_LEVEL[ATTESTATION_LEVEL.UNTRUSTED],
-    ATTESTATION_REQUIREMENT_LEVEL[ATTESTATION_LEVEL.NONE]
+    ATTESTATION_REQUIREMENT_LEVEL[AttestationLevel.TRUSTED],
+    ATTESTATION_REQUIREMENT_LEVEL[AttestationLevel.UNTRUSTED],
+    ATTESTATION_REQUIREMENT_LEVEL[AttestationLevel.NONE]
 )
 
 
-class AUTHENTICATOR_ATTACHMENT_TYPE(object):
+class AuthenticatorAttachmentType:
     """
     The different types of authenticator attachment.
     """
@@ -271,12 +272,12 @@ class AUTHENTICATOR_ATTACHMENT_TYPE(object):
 
 
 AUTHENTICATOR_ATTACHMENT_TYPES = (
-    AUTHENTICATOR_ATTACHMENT_TYPE.PLATFORM,
-    AUTHENTICATOR_ATTACHMENT_TYPE.CROSS_PLATFORM
+    AuthenticatorAttachmentType.PLATFORM,
+    AuthenticatorAttachmentType.CROSS_PLATFORM
 )
 
 
-class TRANSPORT(object):
+class TRANSPORT:
     """
     The standard transports.
     """
@@ -327,7 +328,7 @@ class WebAuthnUserDataMissing(Exception):
     pass
 
 
-class AuthenticatorDataFlags(object):
+class AuthenticatorDataFlags:
     """
     Authenticator data flags:
 
@@ -388,7 +389,7 @@ class AuthenticatorDataFlags(object):
         return (self.flags & self.EXTENSION_DATA_INCLUDED) == self.EXTENSION_DATA_INCLUDED
 
 
-class WebAuthnMakeCredentialOptions(object):
+class WebAuthnMakeCredentialOptions:
     """
     Generate the options passed to navigator.credentials.create()
     """
@@ -548,7 +549,7 @@ class WebAuthnMakeCredentialOptions(object):
         return json.dumps(self.registration_dict)
 
 
-class WebAuthnAssertionOptions(object):
+class WebAuthnAssertionOptions:
     """
     Generate the options passed to navigator.credentials.get()
     """
@@ -640,7 +641,7 @@ class WebAuthnAssertionOptions(object):
         return json.dumps(self.assertion_dict)
 
 
-class WebAuthnUser(object):
+class WebAuthnUser:
     """
     A single WebAuthn user credential.
     """
@@ -698,7 +699,7 @@ class WebAuthnUser(object):
                                           self.user_display_name, self.sign_count)
 
 
-class WebAuthnCredential(object):
+class WebAuthnCredential:
     """
     A single WebAuthn credential.
     """
@@ -771,7 +772,7 @@ class WebAuthnCredential(object):
                                           self.origin, self.sign_count)
 
 
-class WebAuthnRegistrationResponse(object):
+class WebAuthnRegistrationResponse:
     """
     The WebAuthn registration response containing all information needed to verify the registration ceremony.
     """
@@ -889,7 +890,7 @@ class WebAuthnRegistrationResponse(object):
         cred_id = attestation_data[18:18 + credential_id_len]
         credential_pub_key = attestation_data[18 + credential_id_len:]
 
-        if fmt == ATTESTATION_FORMAT.FIDO_U2F:
+        if fmt == AttestationFormat.FIDO_U2F:
             # Step 1.
             #
             # Verify that attStmt is valid CBOR conforming to the syntax
@@ -937,7 +938,7 @@ class WebAuthnRegistrationResponse(object):
             # clientDataHash || credentialId || publicKeyU2F) (see Section 4.3
             # of [FIDO-U2F-Message-Formats]).
             auth_data_rp_id_hash = _get_auth_data_rp_id_hash(auth_data)
-            alg = COSE_ALGORITHM.ES256
+            alg = CoseAlgorithm.ES256
             signature = att_stmt['sig']
             verification_data = b''.join([
                 b'\0',
@@ -962,7 +963,7 @@ class WebAuthnRegistrationResponse(object):
                 except NotImplementedError:
                     # We do not support this. Treat as none attestation, if acceptable.
                     if none_attestation_permitted:
-                        attestation_type = ATTESTATION_TYPE.NONE
+                        attestation_type = AttestationType.NONE
                         trust_path = []
                         return (
                             attestation_type,
@@ -978,7 +979,7 @@ class WebAuthnRegistrationResponse(object):
             #
             # If successful, return attestation type Basic with the
             # attestation trust path set to x5c.
-            attestation_type = ATTESTATION_TYPE.BASIC
+            attestation_type = AttestationType.BASIC
             trust_path = [x509_att_cert]
 
             return (
@@ -988,19 +989,19 @@ class WebAuthnRegistrationResponse(object):
                 cred_id,
                 aaguid
             )
-        elif fmt == ATTESTATION_FORMAT.PACKED:
+        elif fmt == AttestationFormat.PACKED:
             attestation_syntaxes = {
-                ATTESTATION_TYPE.BASIC: ([
+                AttestationType.BASIC: ([
                     'alg',
                     'x5c',
                     'sig'
                 ]),
-                ATTESTATION_TYPE.ECDAA: ([
+                AttestationType.ECDAA: ([
                     'alg',
                     'sig',
                     'ecdaaKeyId'
                 ]),
-                ATTESTATION_TYPE.SELF_ATTESTATION: ([
+                AttestationType.SELF_ATTESTATION: ([
                     'alg',
                     'sig'
                 ])
@@ -1049,7 +1050,7 @@ class WebAuthnRegistrationResponse(object):
                     except NotImplementedError:
                         # We do not support this. Treat as none attestation, if acceptable.
                         if none_attestation_permitted:
-                            attestation_type = ATTESTATION_TYPE.NONE
+                            attestation_type = AttestationType.NONE
                             trust_path = []
                             return (
                                 attestation_type,
@@ -1128,7 +1129,7 @@ class WebAuthnRegistrationResponse(object):
 
                 # If successful, return attestation type Basic and
                 # attestation trust path x5c.
-                attestation_type = ATTESTATION_TYPE.BASIC
+                attestation_type = AttestationType.BASIC
                 trust_path = [x509_att_cert]
 
                 return (
@@ -1141,7 +1142,7 @@ class WebAuthnRegistrationResponse(object):
             elif 'ecdaaKeyId' in att_stmt:
                 # We do not support this. If attestation is optional, have it go through anyway.
                 if none_attestation_permitted:
-                    attestation_type = ATTESTATION_TYPE.ECDAA
+                    attestation_type = AttestationType.ECDAA
                     trust_path = []
                     return (
                         attestation_type,
@@ -1188,7 +1189,7 @@ class WebAuthnRegistrationResponse(object):
                     # We do not support this algorithm. Treat as none attestation, if acceptable.
                     if none_attestation_permitted:
                         return (
-                            ATTESTATION_TYPE.NONE,
+                            AttestationType.NONE,
                             [],
                             credential_pub_key,
                             cred_id,
@@ -1198,7 +1199,7 @@ class WebAuthnRegistrationResponse(object):
                         raise RegistrationRejectedException('Unsupported algorithm '
                                                             '({0!s}).'.format(alg))
                 return (
-                    ATTESTATION_TYPE.SELF_ATTESTATION,
+                    AttestationType.SELF_ATTESTATION,
                     [],
                     credential_pub_key,
                     cred_id,
@@ -1207,7 +1208,7 @@ class WebAuthnRegistrationResponse(object):
         else:
             # Attestation is either none, or unsupported.
             if not none_attestation_permitted:
-                if fmt == ATTESTATION_FORMAT.NONE:
+                if fmt == AttestationFormat.NONE:
                     raise RegistrationRejectedException('Authenticator attestation is required.')
                 else:
                     raise RegistrationRejectedException(
@@ -1218,7 +1219,7 @@ class WebAuthnRegistrationResponse(object):
             # Step 1.
             #
             # Return attestation type None with an empty trust path.
-            attestation_type = ATTESTATION_TYPE.NONE
+            attestation_type = AttestationType.NONE
             trust_path = []
             return (
                 attestation_type,
@@ -1263,7 +1264,7 @@ class WebAuthnRegistrationResponse(object):
             # Step 3.
             #
             # Verify that the value of C.type is webauthn.create.
-            if not _verify_type(c.get('type'), CLIENT_DATA_TYPE.CREATE):
+            if not _verify_type(c.get('type'), ClientDataType.CREATE):
                 raise RegistrationRejectedException('Invalid type.')
 
             # Step 4.
@@ -1412,20 +1413,20 @@ class WebAuthnRegistrationResponse(object):
             #       verification procedure to verify that the attestation
             #       public key correctly chains up to an acceptable root
             #       certificate.
-            if attestation_type == ATTESTATION_TYPE.SELF_ATTESTATION and not self.self_attestation_permitted:
+            if attestation_type == AttestationType.SELF_ATTESTATION and not self.self_attestation_permitted:
                 raise RegistrationRejectedException('Self attestation is not permitted.')
-            is_trusted_attestation_cert = ((attestation_type == ATTESTATION_TYPE.BASIC
+            is_trusted_attestation_cert = ((attestation_type == AttestationType.BASIC
                                             and _is_trusted_x509_attestation_cert(trust_path, trust_anchors))
-                                           or (attestation_type == ATTESTATION_TYPE.ECDAA
+                                           or (attestation_type == AttestationType.ECDAA
                                                and _is_trusted_ecdaa_attestation_certificate(None, trust_anchors)))
             is_signed_attestation_cert = attestation_type in SUPPORTED_ATTESTATION_TYPES
 
             if is_trusted_attestation_cert:
-                attestation_level = ATTESTATION_LEVEL.TRUSTED
+                attestation_level = AttestationLevel.TRUSTED
             elif is_signed_attestation_cert:
-                attestation_level = ATTESTATION_LEVEL.UNTRUSTED
+                attestation_level = AttestationLevel.UNTRUSTED
             else:
-                attestation_level = ATTESTATION_LEVEL.NONE
+                attestation_level = AttestationLevel.NONE
 
             # Step 17.
             #
@@ -1480,7 +1481,7 @@ class WebAuthnRegistrationResponse(object):
             raise RegistrationRejectedException('Registration rejected. Error: {}'.format(e))
 
 
-class WebAuthnAssertionResponse(object):
+class WebAuthnAssertionResponse:
     """
     The WebAuthn assertion response containing all information needed to verify the authentication ceremony.
     """
@@ -1508,7 +1509,7 @@ class WebAuthnAssertionResponse(object):
         :param allow_credentials: Which existing credentials to allow for the authentication.
         :type allow_credentials: list of basestring
         :param uv_required: Whether user verification is required, preferred or discouraged.
-        :type uv_required: USER_VERIFICATION_LEVEL
+        :type uv_required: UserVerificationLevel
         :param expected_assertion_client_extensions: A dict whose keys indicate which client extensions are expected.
         :type expected_assertion_client_extensions: dict
         :param expected_assertion_authenticator_extensions: A dict whose keys indicate which auth exts to expect.
@@ -1520,7 +1521,7 @@ class WebAuthnAssertionResponse(object):
         self.challenge = challenge
         self.origin = origin
         self.allow_credentials = allow_credentials
-        self.uv_required = uv_required or USER_VERIFICATION_LEVEL.PREFERRED
+        self.uv_required = uv_required or UserVerificationLevel.PREFERRED
 
         self.expected_assertion_client_extensions = expected_assertion_client_extensions or DEFAULT_CLIENT_EXTENSIONS
         self.expected_assertion_authenticator_extensions = (expected_assertion_authenticator_extensions
@@ -1556,9 +1557,11 @@ class WebAuthnAssertionResponse(object):
             # identified by this value is the owner of the public key credential
             # identified by credential.id.
             user_handle = self.assertion_response.get('userHandle')
+            user_handle = base64url_to_bytes(user_handle).decode("utf-8") if user_handle else None
             if user_handle and not user_handle == self.webauthn_user.user_id:
-                raise AuthenticationRejectedException('Invalid credential: user '
-                                                      'handle does not match.')
+                raise AuthenticationRejectedException(f"Invalid credential: user handle from param {user_handle} "
+                                                      f"does not match the one from the user "
+                                                      f"{self.webauthn_user.user_id}.")
 
             # Step 3.
             #
@@ -1596,7 +1599,7 @@ class WebAuthnAssertionResponse(object):
             # Step 7.
             #
             # Verify that the value of C.type is the string webauthn.get.
-            if not _verify_type(c.get('type'), CLIENT_DATA_TYPE.GET):
+            if not _verify_type(c.get('type'), ClientDataType.GET):
                 raise RegistrationRejectedException('Invalid type.')
 
             # Step 8.
@@ -1645,7 +1648,7 @@ class WebAuthnAssertionResponse(object):
             #
             # If user verification is required for this assertion, verify that
             # the User Verified bit of the flags in authData is set.
-            if (self.uv_required == USER_VERIFICATION_LEVEL.REQUIRED
+            if (self.uv_required == UserVerificationLevel.REQUIRED
                     and not AuthenticatorDataFlags(a_data).user_verified):
                 raise RegistrationRejectedException('Malformed request received.')
 
@@ -1781,47 +1784,47 @@ def _encode_public_key(public_key):
 def _load_cose_public_key(key_bytes):
     cose_public_key = cbor2.loads(key_bytes)
 
-    if COSE_PUBLIC_KEY.ALG not in cose_public_key:
+    if CosePublicKey.ALG not in cose_public_key:
         raise COSEKeyException('Public key missing required algorithm parameter.')
 
-    alg = cose_public_key[COSE_PUBLIC_KEY.ALG]
+    alg = cose_public_key[CosePublicKey.ALG]
 
-    if alg == COSE_ALGORITHM.ES256:
+    if alg == CoseAlgorithm.ES256:
 
         required_keys = {
-            COSE_PUBLIC_KEY.ALG,
-            COSE_PUBLIC_KEY.X,
-            COSE_PUBLIC_KEY.Y
+            CosePublicKey.ALG,
+            CosePublicKey.X,
+            CosePublicKey.Y
         }
 
         if not set(cose_public_key.keys()).issuperset(required_keys):
             raise COSEKeyException('Public key must match COSE_Key spec.')
 
-        if len(cose_public_key[COSE_PUBLIC_KEY.X]) != 32:
+        if len(cose_public_key[CosePublicKey.X]) != 32:
             raise RegistrationRejectedException('Bad public key.')
-        x = int(codecs.encode(cose_public_key[COSE_PUBLIC_KEY.X], 'hex'), 16)
+        x = int(codecs.encode(cose_public_key[CosePublicKey.X], 'hex'), 16)
 
-        if len(cose_public_key[COSE_PUBLIC_KEY.Y]) != 32:
+        if len(cose_public_key[CosePublicKey.Y]) != 32:
             raise RegistrationRejectedException('Bad public key.')
-        y = int(codecs.encode(cose_public_key[COSE_PUBLIC_KEY.Y], 'hex'), 16)
+        y = int(codecs.encode(cose_public_key[CosePublicKey.Y], 'hex'), 16)
 
         return alg, EllipticCurvePublicNumbers(x, y, SECP256R1()).public_key(backend=default_backend())
-    elif alg in (COSE_ALGORITHM.PS256, COSE_ALGORITHM.RS256, COSE_ALGORITHM.RS1):
+    elif alg in (CoseAlgorithm.PS256, CoseAlgorithm.RS256, CoseAlgorithm.RS1):
 
         required_keys = {
-            COSE_PUBLIC_KEY.ALG,
-            COSE_PUBLIC_KEY.E,
-            COSE_PUBLIC_KEY.N
+            CosePublicKey.ALG,
+            CosePublicKey.E,
+            CosePublicKey.N
         }
 
         if not set(cose_public_key.keys()).issuperset(required_keys):
             raise COSEKeyException('Public key must match COSE_Key spec.')
 
-        if len(cose_public_key[COSE_PUBLIC_KEY.E]) != 3 or len(cose_public_key[COSE_PUBLIC_KEY.N]) != 256:
+        if len(cose_public_key[CosePublicKey.E]) != 3 or len(cose_public_key[CosePublicKey.N]) != 256:
             raise COSEKeyException('Bad public key.')
 
-        e = int(codecs.encode(cose_public_key[COSE_PUBLIC_KEY.E], 'hex'), 16)
-        n = int(codecs.encode(cose_public_key[COSE_PUBLIC_KEY.N], 'hex'), 16)
+        e = int(codecs.encode(cose_public_key[CosePublicKey.E], 'hex'), 16)
+        n = int(codecs.encode(cose_public_key[CosePublicKey.N], 'hex'), 16)
 
         return alg, RSAPublicNumbers(e, n).public_key(backend=default_backend())
     else:
@@ -2030,14 +2033,14 @@ def _validate_credential_id(credential_id):
 
 
 def _verify_signature(public_key, alg, data, signature):
-    if alg == COSE_ALGORITHM.ES256:
+    if alg == CoseAlgorithm.ES256:
         public_key.verify(signature, data, ECDSA(SHA256()))
-    elif alg == COSE_ALGORITHM.RS256:
+    elif alg == CoseAlgorithm.RS256:
         public_key.verify(signature, data, PKCS1v15(), SHA256())
-    elif alg == COSE_ALGORITHM.PS256:
+    elif alg == CoseAlgorithm.PS256:
         padding = PSS(mgf=MGF1(SHA256()), salt_length=PSS.MAX_LENGTH)
         public_key.verify(signature, data, padding, SHA256())
-    elif alg == COSE_ALGORITHM.RS1:
+    elif alg == CoseAlgorithm.RS1:
         public_key.verify(signature, data, PKCS1v15(), SHA1())  # nosec B303 # part of webauthn specification
     else:
         raise NotImplementedError()
