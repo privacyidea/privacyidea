@@ -175,15 +175,14 @@ from configobj import ConfigObj
 from operator import itemgetter
 import logging
 
-from .policies.policy_conditions import (PolicyConditionClass, ConditionHandleMissingData, CONDITION_SECTION,
-                                         CONDITION_CHECK)
-from ..models import (Policy, db, save_config_timestamp, Token, PolicyDescription, PolicyCondition)
+from .policies.policy_conditions import PolicyConditionClass, CONDITION_SECTION, CONDITION_CHECK
+from ..models import (Policy, db, save_config_timestamp, PolicyDescription, PolicyCondition)
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     get_config_object, get_privacyidea_node,
                                     get_multichallenge_enrollable_tokentypes,
-                                    get_email_validators)
+                                    get_email_validators, get_privacyidea_nodes)
 from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, ServerError
-from privacyidea.lib.realm import get_realms
+from privacyidea.lib.realm import get_realms, realm_is_defined
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.radiusserver import get_radiusservers
@@ -226,6 +225,15 @@ class SCOPE(object):
     WEBUI = "webui"
     REGISTER = "register"
     CONTAINER = "container"
+
+    @classmethod
+    def get_all_scopes(cls) -> list[str]:
+        """
+        Return all valid scopes as a list
+        """
+        valid_scopes = [cls.AUTHZ, cls.ADMIN, cls.AUTH, cls.AUDIT, cls.USER, cls.ENROLL, cls.WEBUI, cls.REGISTER,
+                        cls.CONTAINER]
+        return valid_scopes
 
 
 class ACTION(object):
@@ -841,10 +849,18 @@ class PolicyClass(object):
 
         # filter policy for time. If no time is set or if a time is set, and
         # it matches the time_range, then we add this policy
-        reduced_policies = [policy for policy in reduced_policies if
-                            (policy.get("time") and
-                             check_time_in_range(policy.get("time"), time))
-                            or not policy.get("time")]
+        policies_match_time = []
+        for policy in reduced_policies:
+            if policy.get("time"):
+                try:
+                    if check_time_in_range(policy.get("time"), time):
+                        policies_match_time.append(policy)
+                except (ValueError, ParameterError):
+                    log.error("Wrong time range format: <dow>-<dow>:<hh:mm>-<hh:mm>")
+                    log.debug(f"{traceback.format_exc()}")
+            else:
+                policies_match_time.append(policy)
+        reduced_policies = policies_match_time
         log.debug(f"Policies after matching time: {[p.get('name') for p in reduced_policies]}")
 
         # filter policies by the policy conditions
@@ -1256,6 +1272,120 @@ def set_policy_conditions(conditions: list[PolicyConditionClass], policy: Policy
         policy.conditions.append(db_condition)
 
 
+def remove_wildcards_and_negations(value_list: list[str]) -> list[str]:
+    """
+    Removes leading negation characters ("!" or "-") from the strings in a list. Removes wildcard ("*") and empty
+    strings from the list.
+
+    :param value_list: A list of values to be processed
+    :return: A list of values without leading negation characters and wildcards
+    """
+    raw_values = []
+    for value in value_list:
+        if value == "*" or value == "":
+            # Wildcard is allowed
+            continue
+        elif value[0] in ("!", "-"):
+            # remove leading negation characters
+            value = value[1:]
+        raw_values.append(value)
+    return raw_values
+
+
+def validate_actions(scope: str, action: Union[str, dict]) -> bool:
+    """
+    Check if the given actions are valid for the given scope.
+
+    :param scope: The scope of the policy
+    :param action: The policy actions
+    :return: True if all actions are valid, raises a Parameter Error otherwise
+    """
+    from .token import get_dynamic_policy_definitions
+    policy_definitions_static = get_static_policy_definitions(scope)
+    policy_definitions_dynamic = get_dynamic_policy_definitions(scope)
+    allowed_actions = set(policy_definitions_static.keys()) | set(policy_definitions_dynamic.keys())
+    if isinstance(action, dict):
+        action_keys = list(action.keys())
+    elif isinstance(action, str):
+        # This is similarly implemented in models.py in Policy.get(), but with the actual code structure there is no
+        # possibility to use the same function without mixing up the layers
+        action_keys = [x.strip().split("=", 1)[0] for x in re.split(r'(?<!\\),', action or "")]
+    else:
+        raise ParameterError(f"Invalid actions type '{type(action)}'. Must be a string or a dictionary.")
+
+    raw_actions = remove_wildcards_and_negations(action_keys)
+    invalid_actions = list(set(raw_actions) - allowed_actions)
+
+    if len(invalid_actions) > 0:
+        log.error(f"The following actions are not valid for scope '{scope}': {invalid_actions}")
+        raise ParameterError(f"Invalid actions {invalid_actions}!")
+    else:
+        return True
+
+
+def validate_realms(realms: Union[str, list, None], name: str = "realm") -> bool:
+    """
+    Check if the given realms are defined. Raises a ParameterError if at least one does not exist.
+
+    :param realms: Realms to be evaluated whether they are defined. Either passed as list of strings or as a comma
+        separated list as single string
+    :param name: The name of the parameter
+    :return: True if all realms are valid, raises a ParameterError otherwise
+    """
+    if realms is not None:
+        if isinstance(realms, str):
+            realms = realms.replace(" ", "").split(",")
+        elif not isinstance(realms, list):
+            raise ParameterError(f"Invalid {name} type '{type(realms)}'!")
+        realms = remove_wildcards_and_negations(realms)
+        undefined_realms = [realm for realm in realms if not realm_is_defined(realm)]
+        if len(undefined_realms) > 0:
+            raise ParameterError(f"Undefined {name.capitalize()}s {undefined_realms}!")
+    return True
+
+
+def validate_resolvers(resolvers: Union[str, list, None]) -> bool:
+    """
+    Check if the given resolvers are defined. Raises a ParameterError if at least one does not exist.
+
+    :param resolvers: Resolvers to be evaluated whether they are defined. Either passed as list of strings or as a comma
+        separated list as single string
+    :return: True if all resolvers exist, raises a ParameterError otherwise
+    """
+    if resolvers is not None:
+        if isinstance(resolvers, str):
+            resolvers = resolvers.replace(" ", "").split(",")
+        elif not isinstance(resolvers, list):
+            raise ParameterError(f"Invalid resolvers type '{type(resolvers)}'!")
+        valid_resolvers = list(get_resolver_list().keys())
+        resolvers = remove_wildcards_and_negations(resolvers)
+        undefined_resolvers = list(set(resolvers) - set(valid_resolvers))
+        if len(undefined_resolvers) > 0:
+            raise ParameterError(f"Undefined Resolvers {undefined_resolvers}!")
+    return True
+
+
+def validate_nodes(nodes: Union[str, list, None]) -> bool:
+    """
+    Check if the given nodes are defined. Raises a ParameterError if at least one does not exist.
+
+    :param nodes: Nodes to be evaluated whether they are defined. Either passed as list of strings or as a comma
+        separated list as single string
+    :return: True if all nodes are valid, raises a ParameterError otherwise
+    """
+    if nodes is not None:
+        if isinstance(nodes, str):
+            nodes = nodes.replace(" ", "").split(",")
+        elif not isinstance(nodes, list):
+            raise ParameterError(f"Invalid nodes type '{type(nodes)}'!")
+        valid_nodes = [node["name"] for node in get_privacyidea_nodes()]
+        nodes = remove_wildcards_and_negations(nodes)
+        undefined_nodes = list(set(nodes) - set(valid_nodes))
+        if len(undefined_nodes) > 0:
+            raise ParameterError(f"Undefined Nodes {undefined_nodes}!")
+    return True
+
+
 @log_with(log)
 def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                user=None, time=None, client=None, active=True,
@@ -1297,23 +1427,41 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     :return: The database ID of the policy
     :rtype: int
     """
-    active = is_true(active)
+    # validate scope
+    if scope and scope not in SCOPE.get_all_scopes():
+        log.error(f"Invalid scope '{scope}' in policy '{name}'. Valid scopes are: {SCOPE.get_all_scopes()}")
+        raise ParameterError(f"Invalid scope '{scope}' in policy '{name}'!")
+
+    # validate priority
     if isinstance(priority, str):
         priority = int(priority)
     if priority is not None and priority <= 0:
         raise ParameterError("Priority must be at least 1")
+
+    # check for valid realms
+    validate_realms(realm)
+    validate_realms(adminrealm, "adminrealm")
+
+    # check for valid resolvers
+    validate_resolvers(resolver)
+
+    # check for valid nodes
+    validate_nodes(pinode)
+
+    # check for valid time
+    if time is not None:
+        if len(time) > 0:
+            try:
+                check_time_in_range(time)
+            except (ValueError, ParameterError) as ex:
+                raise ParameterError(f"Invalid time format '{time}': {ex}")
+        else:
+            time = None
+
+    active = is_true(active)
     check_all_resolvers = is_true(check_all_resolvers)
     user_case_insensitive = is_true(user_case_insensitive)
-    if isinstance(action, dict):
-        action_list = []
-        for k, v in action.items():
-            if v is not True:
-                # value key
-                action_list.append("{0!s}={1!s}".format(k, v))
-            else:
-                # simple boolean value
-                action_list.append(k)
-        action = ", ".join(action_list)
+
     if isinstance(action, list):
         action = ", ".join(action)
     if isinstance(realm, list):
@@ -1342,6 +1490,26 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
             condition = PolicyClass.get_policy_condition_from_tuple(condition_tuple, name)
             conditions_data.append(condition)
     p1 = Policy.query.filter_by(name=name).first()
+
+    # validate action values
+    if action is not None:
+        if scope is not None:
+            validate_actions(scope, action)
+        elif p1:
+            validate_actions(p1.scope, action)
+        else:
+            raise ParameterError("Scope is required to set action values!")
+    if isinstance(action, dict):
+        action_list = []
+        for k, v in action.items():
+            if v is not True:
+                # value key
+                action_list.append("{0!s}={1!s}".format(k, v))
+            else:
+                # simple boolean value
+                action_list.append(k)
+        action = ", ".join(action_list)
+
     if p1:
         # The policy already exist, we need to update
         if action is not None:
@@ -2579,7 +2747,7 @@ def get_static_policy_definitions(scope=None):
             },
             ACTION.APIKEY: {
                 'type': 'bool',
-                'desc': _('The sending of an API Auth Key is required during'
+                'desc': _('The sending of an API Auth Key is required during '
                           'authentication. This avoids rogue authenticate '
                           'requests against the /validate/check interface.'),
                 'group': GROUP.SETTING_ACTIONS,
@@ -2845,6 +3013,8 @@ def get_static_policy_definitions(scope=None):
     }
 
     if scope:
+        if scope not in pol:
+            log.debug(f"Scope '{scope}' is not defined in the static policy definitions.")
         ret = pol.get(scope, {})
     else:
         ret = pol

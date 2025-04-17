@@ -40,11 +40,12 @@ from .lib.utils import (getParam,
                         send_result,
                         check_policy_name, send_file)
 from ..lib.log import log_with
+from ..lib.policies.policy_conditions import ConditionHandleMissingData
 from ..lib.policy import (set_policy, ACTION,
                           export_policies, import_policies,
                           delete_policy, get_static_policy_definitions,
                           enable_policy, get_policy_condition_sections,
-                          get_policy_condition_comparators, Match, ConditionHandleMissingData)
+                          get_policy_condition_comparators, Match)
 from ..lib.token import get_dynamic_policy_definitions
 from ..lib.error import (ParameterError)
 from privacyidea.lib.utils import is_true

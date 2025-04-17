@@ -1,10 +1,10 @@
 import logging
 from testfixtures import LogCapture
 
+from privacyidea.lib.policies.policy_conditions import CONDITION_SECTION, ConditionHandleMissingData
 from privacyidea.lib.utils.compare import COMPARATORS
 from .base import MyApiTestCase
-from privacyidea.lib.policy import (set_policy, SCOPE, ACTION, delete_policy, CONDITION_SECTION,
-                                    ConditionHandleMissingData)
+from privacyidea.lib.policy import (set_policy, SCOPE, ACTION, delete_policy)
 from privacyidea.lib.token import init_token
 from privacyidea.lib.user import User
 from privacyidea.models import db, NodeName
@@ -43,13 +43,14 @@ class APIPolicyTestCase(MyApiTestCase):
         delete_policy('hide_welcome')
 
     def test_01_set_policy(self):
+        self.setUp_user_realms()
         with self.app.test_request_context('/policy/pol1',
                                            method='POST',
                                            data={"action": ACTION.NODETAILFAIL,
                                                  "client": "10.1.2.3",
                                                  "scope": SCOPE.AUTHZ,
                                                  "check_all_resolvers": "true",
-                                                 "realm": "realm1",
+                                                 "realm": self.realm1,
                                                  "priority": 3,
                                                  "description": "This is a test policy"},
                                            headers={'Authorization': self.at}):
@@ -121,6 +122,7 @@ class APIPolicyTestCase(MyApiTestCase):
 
         delete_policy("pol1")
 
+        db.session.add(NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a8", name="Node1"))
         with self.app.test_request_context('/policy/polpinode',
                                            method='POST',
                                            data={"action": ACTION.NODETAILFAIL,
@@ -128,7 +130,7 @@ class APIPolicyTestCase(MyApiTestCase):
                                                  "scope": SCOPE.AUTHZ,
                                                  "pinode": "Node1",
                                                  "priority": 1,
-                                                 "realm": "realm1"},
+                                                 "realm": self.realm1},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -136,6 +138,7 @@ class APIPolicyTestCase(MyApiTestCase):
             result = data.get("result")
             self.assertTrue("setPolicy polpinode" in result.get("value"),
                             result.get("value"))
+        NodeName.query.filter_by(name="Node1").first().delete()
 
         # get the policies and see if the pinode was set
         with self.app.test_request_context('/policy/',
@@ -152,6 +155,9 @@ class APIPolicyTestCase(MyApiTestCase):
         delete_policy("polpinode")
 
     def test_02_set_policy_conditions(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+
         expected_conditions = [[CONDITION_SECTION.USERINFO, "groups", COMPARATORS.CONTAINS, "group1", True,
                                 ConditionHandleMissingData.RAISE_ERROR.value],
                                [CONDITION_SECTION.USERINFO, "type", COMPARATORS.EQUALS, "secure", False,
@@ -169,7 +175,7 @@ class APIPolicyTestCase(MyApiTestCase):
                                            json={"action": ACTION.NODETAILFAIL,
                                                  "client": "10.1.2.3",
                                                  "scope": SCOPE.AUTHZ,
-                                                 "realm": "realm1",
+                                                 "realm": self.realm1,
                                                  "conditions": conditions},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -197,7 +203,7 @@ class APIPolicyTestCase(MyApiTestCase):
                                            json={"action": ACTION.NODETAILFAIL,
                                                  "client": "10.1.2.3",
                                                  "scope": SCOPE.AUTHZ,
-                                                 "realm": "realm2"},
+                                                 "realm": self.realm2},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
@@ -212,7 +218,7 @@ class APIPolicyTestCase(MyApiTestCase):
             self.assertTrue(res.json['result']['status'], res.json)
             value = res.json['result']['value']
             cond1 = value[0]
-            self.assertEqual(cond1["realm"], ["realm2"])
+            self.assertEqual(cond1["realm"], [self.realm2])
             self.assertEqual(len(cond1["conditions"]), 3)
             # order of conditions is not guaranteed
             for condition in expected_conditions:
@@ -226,7 +232,7 @@ class APIPolicyTestCase(MyApiTestCase):
                                                  "scope": SCOPE.AUTHZ,
                                                  "conditions": [[CONDITION_SECTION.USERINFO, "type",
                                                                  COMPARATORS.EQUALS, "secure", True]],
-                                                 "realm": "realm2"},
+                                                 "realm": self.realm2},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
@@ -270,7 +276,7 @@ class APIPolicyTestCase(MyApiTestCase):
                                                                  "secure", True,
                                                                  ConditionHandleMissingData.RAISE_ERROR.value,
                                                                  "extra"]],
-                                                 "realm": "realm2"},
+                                                 "realm": self.realm2},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400)
@@ -283,7 +289,7 @@ class APIPolicyTestCase(MyApiTestCase):
                                                  "scope": SCOPE.AUTHZ,
                                                  "conditions": [[CONDITION_SECTION.USERINFO, "type", COMPARATORS.EQUALS,
                                                                  123, False]],
-                                                 "realm": "realm2"},
+                                                 "realm": self.realm2},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400)
@@ -295,7 +301,7 @@ class APIPolicyTestCase(MyApiTestCase):
                                                  "scope": SCOPE.AUTHZ,
                                                  "conditions": [[CONDITION_SECTION.USERINFO, "type", COMPARATORS.EQUALS,
                                                                  "123", "true"]],
-                                                 "realm": "realm2"},
+                                                 "realm": self.realm2},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400)
@@ -307,7 +313,7 @@ class APIPolicyTestCase(MyApiTestCase):
                                                  "client": "10.1.2.3",
                                                  "scope": SCOPE.AUTHZ,
                                                  "conditions": [],
-                                                 "realm": "realm2"},
+                                                 "realm": self.realm2},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
@@ -321,7 +327,7 @@ class APIPolicyTestCase(MyApiTestCase):
             self.assertTrue(res.json['result']['status'], res.json)
             value = res.json['result']['value']
             cond1 = value[0]
-            self.assertEqual(cond1["realm"], ["realm2"])
+            self.assertEqual(cond1["realm"], [self.realm2])
             self.assertEqual(cond1["conditions"], [])
 
         # delete policy

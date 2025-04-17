@@ -2703,13 +2703,13 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
     return res, reply_dict
 
 
-def get_dynamic_policy_definitions(scope=None):
+def get_dynamic_policy_definitions(scope: str = None) -> dict:
     """
     This returns the dynamic policy definitions that come with the new loaded
     token classes.
 
     :param scope: an optional scope parameter. Only return the policies of
-        this scope.
+        this scope. If the scope is not defined, an empty dictionary is returned.
     :return: The policy definition for the token or only for the scope.
     """
     from privacyidea.lib.policy import SCOPE, MAIN_MENU, GROUP
@@ -2783,10 +2783,11 @@ def get_dynamic_policy_definitions(scope=None):
             }
 
     # return subsection, if scope is defined
-    # make sure that scope is in the policy key
-    # e.g. scope='_' is undefined and would break
-    if scope and scope in pol:
-        pol = pol[scope]
+    # return empty dict for invalid scopes
+    if scope:
+        if scope not in pol:
+            log.debug(f"Scope '{scope}' is not defined in the dynamic policy definitions.")
+        pol = pol.get(scope, {})
 
     return pol
 
