@@ -1,0 +1,56 @@
+@use "../../../styles";
+
+$login-bg: white;
+$btn-bg: var(--background-blue);
+$btn-hover-bg: var(--background-blue-inset);
+$btn-text-color: white;
+$box-shadow: var(--box-shadow-white);
+$border-radius: var(--border-radius);
+
+.login-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: scroll;
+  height: 100vh;
+  background: $login-bg;
+
+  .login-scroll {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 6rem;
+  }
+
+  .logo {
+    width: 8%;
+    height: auto;
+    border-radius: 50%;
+    box-shadow: $box-shadow;
+    margin-bottom: 20px;
+  }
+
+  .logo-text {
+    width: 15%;
+    height: auto;
+  }
+
+  .login-form {
+    display: flex;
+    flex-direction: column;
+    margin-top: 4rem;
+    width: 300px;
+
+    mat-form-field {
+      width: 100%;
+      margin-bottom: 16px;
+    }
+  }
+
+  .passkey-form {
+    display: flex;
+    flex-direction: column;
+    width: 300px;
+  }
+}
