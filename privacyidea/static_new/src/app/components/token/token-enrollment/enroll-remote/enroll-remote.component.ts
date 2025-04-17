@@ -1,4 +1,4 @@
-import { Component, Input, signal, WritableSignal } from '@angular/core';
+import { Component, computed, Input, WritableSignal } from '@angular/core';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -42,27 +42,22 @@ export class EnrollRemoteComponent {
   @Input() remoteUser!: WritableSignal<string>;
   @Input() remoteRealm!: WritableSignal<string>;
   @Input() remoteResolver!: WritableSignal<string>;
-  remoteServerOptions = signal<{ url: string; id: string }[]>([]);
+  remoteServerOptions = computed(() => {
+    const rawValue =
+      this.privacyideaServerService.remoteServerResource.value()?.result?.value;
+    const options =
+      rawValue && typeof rawValue === 'object'
+        ? Object.values(rawValue).map((option: any) => ({
+            url: option.url,
+            id: option.id,
+          }))
+        : [];
+    return options ?? [];
+  });
   remoteErrorStateMatcher = new RemoteErrorStateMatcher();
 
   constructor(
     private privacyideaServerService: PrivacyideaServerService,
     private tokenService: TokenService,
   ) {}
-
-  ngOnInit(): void {
-    this.privacyideaServerService
-      .getRemoteServerOptions()
-      .subscribe((response) => {
-        const rawValue = response?.result?.value;
-        const options =
-          rawValue && typeof rawValue === 'object'
-            ? Object.values(rawValue).map((option: any) => ({
-                url: option.url,
-                id: option.id,
-              }))
-            : [];
-        this.remoteServerOptions.set(options);
-      });
-  }
 }

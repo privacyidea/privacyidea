@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
+import { httpResource } from '@angular/common/http';
 import { LocalService } from '../local/local.service';
 import { environment } from '../../../environments/environment';
 
@@ -8,13 +7,11 @@ import { environment } from '../../../environments/environment';
   providedIn: 'root',
 })
 export class RadiusServerService {
-  constructor(
-    private http: HttpClient,
-    private localService: LocalService,
-  ) {}
+  radiusServerConfigurationResource = httpResource<any>(() => ({
+    url: environment.proxyUrl + '/radiusserver/',
+    method: 'GET',
+    headers: this.localService.getHeaders(),
+  }));
 
-  getRadiusServerConfigurationOptions(): Observable<any> {
-    const headers = this.localService.getHeaders();
-    return this.http.get(environment.proxyUrl + '/radiusserver/', { headers });
-  }
+  constructor(private localService: LocalService) {}
 }

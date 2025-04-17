@@ -1,13 +1,19 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, httpResource } from '@angular/common/http';
 import { LocalService } from '../local/local.service';
-import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
 })
 export class SystemService {
+  systemConfigResource = httpResource<any>(() => ({
+    url: environment.proxyUrl + '/system/',
+    method: 'GET',
+    headers: this.localService.getHeaders(),
+  }));
+
   constructor(
     private http: HttpClient,
     private localService: LocalService,

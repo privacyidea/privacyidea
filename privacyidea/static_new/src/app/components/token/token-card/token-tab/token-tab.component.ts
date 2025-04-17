@@ -133,7 +133,6 @@ export class TokenTabComponent {
               ),
             ).subscribe({
               next: () => {
-                this.tokenSelection.set([]);
                 this.tokenService.tokenResource.reload();
               },
               error: (err) => {

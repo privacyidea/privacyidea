@@ -27,11 +27,15 @@ export class ChallengesService {
       combined,
     );
     return filterPairs.reduce(
-      (acc, { key, value }) => ({
-        ...acc,
-        [key]: `*${value}*`,
-      }),
-      {} as Record<string, string>,
+      (acc, { key, value }) => {
+        if (key === 'serial') {
+          acc.serial = `*${value}*`;
+        } else {
+          acc.params[key] = `*${value}*`;
+        }
+        return acc;
+      },
+      { params: {} as Record<string, string>, serial: '' },
     );
   });
   pageSize = linkedSignal({
@@ -55,20 +59,26 @@ export class ChallengesService {
       return { active: 'timestamp', direction: 'asc' } as Sort;
     },
   });
-  challengesResource = httpResource<any>(() => ({
-    url: this.tokenBaseUrl + 'challenges/',
-    method: 'GET',
-    headers: this.localService.getHeaders(),
-    params: {
-      pagesize: this.pageSize(),
-      page: this.pageIndex() + 1,
-      ...(this.sort().active && {
-        sortby: this.sort().active,
-        sortdir: this.sort().direction || 'asc',
-      }),
-      ...this.filterParams(),
-    },
-  }));
+  challengesResource = httpResource<any>(() => {
+    const { params: filterParams, serial } = this.filterParams();
+    const url = serial
+      ? `${this.tokenBaseUrl}challenges/${serial}`
+      : `${this.tokenBaseUrl}challenges/`;
+    return {
+      url,
+      method: 'GET',
+      headers: this.localService.getHeaders(),
+      params: {
+        pagesize: this.pageSize(),
+        page: this.pageIndex() + 1,
+        ...(this.sort().active && {
+          sortby: this.sort().active,
+          sortdir: this.sort().direction || 'asc',
+        }),
+        ...filterParams,
+      },
+    };
+  });
 
   constructor(
     private tokenService: TokenService,

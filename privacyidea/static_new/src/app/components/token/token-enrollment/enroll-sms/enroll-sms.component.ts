@@ -1,4 +1,10 @@
-import { Component, Input, signal, WritableSignal } from '@angular/core';
+import {
+  Component,
+  computed,
+  Input,
+  signal,
+  WritableSignal,
+} from '@angular/core';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
@@ -33,7 +39,15 @@ export class EnrollSmsComponent {
   @Input() smsGateway!: WritableSignal<string>;
   @Input() phoneNumber!: WritableSignal<string>;
   @Input() readNumberDynamically!: WritableSignal<boolean>;
-  smsGatewayOptions = signal<string[]>([]);
+  smsGatewayOptions = computed(() => {
+    const rawValue =
+      this.smsGatewayService.smsGatewayResource.value()?.result?.value;
+    const options =
+      rawValue && typeof rawValue === 'object'
+        ? Object.values(rawValue).map((option: any) => option.name)
+        : [];
+    return options ?? [];
+  });
   defaultSMSGatewayIsSet = signal(false);
 
   constructor(
@@ -43,19 +57,12 @@ export class EnrollSmsComponent {
   ) {}
 
   ngOnInit(): void {
-    this.smsGatewayService.getSmsGatewayOptions().subscribe((response) => {
-      const options = response.result.value
-        ? Object.values(response.result.value).map((item: any) => item.name)
-        : [];
-      this.smsGatewayOptions.set(options);
-
-      this.systemService.getSystemConfig().subscribe((response) => {
-        const config = response?.result?.value;
-        if (config && config['sms.identifier']) {
-          this.defaultSMSGatewayIsSet.set(true);
-          this.smsGateway.set(config['sms.identifier']);
-        }
-      });
+    this.systemService.getSystemConfig().subscribe((response) => {
+      const config = response?.result?.value;
+      if (config && config['sms.identifier']) {
+        this.defaultSMSGatewayIsSet.set(true);
+        this.smsGateway.set(config['sms.identifier']);
+      }
     });
   }
 }

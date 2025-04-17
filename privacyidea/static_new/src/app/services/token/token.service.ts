@@ -100,12 +100,19 @@ export class TokenService {
       }
     },
   });
-  tokenDetailResource = httpResource<any>(() => ({
-    url: this.tokenBaseUrl,
-    method: 'GET',
-    headers: this.localService.getHeaders(),
-    params: { serial: this.tokenSerial() },
-  }));
+  tokenDetailResource = httpResource<any>(() => {
+    const serial = this.tokenSerial();
+
+    if (serial === '') {
+      return undefined;
+    }
+    return {
+      url: this.tokenBaseUrl,
+      method: 'GET',
+      headers: this.localService.getHeaders(),
+      params: { serial: serial },
+    };
+  });
   tokenTypesResource = httpResource<any>(() => ({
     url: environment.proxyUrl + '/auth/rights',
     method: 'GET',
@@ -198,11 +205,8 @@ export class TokenService {
 
   tokenSelection: WritableSignal<any> = linkedSignal({
     source: () => ({
-      page: this.pageIndex(),
-      pageSize: this.pageSize(),
-      sort: this.sort(),
-      filterValue: this.filterValue(),
       selectedContent: this.selectedContent(),
+      tokenResource: this.tokenResource.value(),
     }),
     computation: () => [],
   });

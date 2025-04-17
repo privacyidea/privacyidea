@@ -43,8 +43,8 @@ export class TokenApplications {
         const mappedData = tokenApplicationResource.result.value.map(
           (value: any) => ({
             serial: value.serial,
-            serviceid: value.options.service_id,
-            ssh_user: value.options.user,
+            service_id: value.options.service_id,
+            user: value.options.user,
           }),
         );
         return new MatTableDataSource(mappedData);

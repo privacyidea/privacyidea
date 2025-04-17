@@ -2,6 +2,7 @@ import {
   Component,
   effect,
   Input,
+  signal,
   ViewChild,
   WritableSignal,
 } from '@angular/core';
@@ -28,6 +29,7 @@ import { OverflowService } from '../../../../services/overflow/overflow.service'
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { CopyButtonComponent } from '../../../shared/copy-button/copy-button.component';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 const columnsKeyMap = [
   { key: 'serial', label: 'Serial' },
@@ -57,6 +59,8 @@ const columnsKeyMap = [
     MatIconButton,
     MatButton,
     CopyButtonComponent,
+    ReactiveFormsModule,
+    FormsModule,
   ],
   templateUrl: './container-details-token-table.component.html',
   styleUrl: './container-details-token-table.component.scss',
@@ -101,7 +105,7 @@ export class ContainerDetailsTokenTableComponent {
 
   handleFilterInput(event: Event) {
     this.filterValue = (event.target as HTMLInputElement).value.trim();
-    this.containerTokenData().filter = this.filterValue.trim().toLowerCase();
+    this.dataSource.filter = this.filterValue.trim().toLowerCase();
   }
 
   removeTokenFromContainer(containerSerial: string, tokenSerial: string) {

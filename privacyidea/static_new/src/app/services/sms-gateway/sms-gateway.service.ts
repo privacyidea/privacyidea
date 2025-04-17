@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, httpResource } from '@angular/common/http';
 import { LocalService } from '../local/local.service';
 import { environment } from '../../../environments/environment';
 
@@ -8,6 +8,12 @@ import { environment } from '../../../environments/environment';
   providedIn: 'root',
 })
 export class SmsGatewayService {
+  smsGatewayResource = httpResource<any>(() => ({
+    url: environment.proxyUrl + '/smsgateway/',
+    method: 'GET',
+    headers: this.localService.getHeaders(),
+  }));
+
   constructor(
     private http: HttpClient,
     private localService: LocalService,

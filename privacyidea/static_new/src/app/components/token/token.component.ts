@@ -20,7 +20,6 @@ import { ChallengesTableComponent } from './challenges-table/challenges-table.co
 import { LoadingService } from '../../services/loading/loading-service';
 import { ContainerCreateComponent } from './container-create/container-create.component';
 import { TokenService } from '../../services/token/token.service';
-import { ContainerService } from '../../services/container/container.service';
 
 export type TokenType =
   | 'hotp'
@@ -208,7 +207,6 @@ export class TokenComponent {
     protected overflowService: OverflowService,
     private loadingService: LoadingService,
     protected tokenService: TokenService,
-    protected containerService: ContainerService,
   ) {
     effect(() => {
       this.tokenService.selectedContent();

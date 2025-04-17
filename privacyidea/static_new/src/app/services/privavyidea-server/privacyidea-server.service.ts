@@ -1,22 +1,17 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { httpResource } from '@angular/common/http';
 import { LocalService } from '../local/local.service';
-import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class PrivacyideaServerService {
-  constructor(
-    private http: HttpClient,
-    private localService: LocalService,
-  ) {}
+  remoteServerResource = httpResource<any>(() => ({
+    url: environment.proxyUrl + '/privacyideaserver/',
+    method: 'GET',
+    headers: this.localService.getHeaders(),
+  }));
 
-  getRemoteServerOptions(): Observable<any> {
-    const headers = this.localService.getHeaders();
-    return this.http.get(environment.proxyUrl + '/privacyideaserver/', {
-      headers,
-    });
-  }
+  constructor(private localService: LocalService) {}
 }

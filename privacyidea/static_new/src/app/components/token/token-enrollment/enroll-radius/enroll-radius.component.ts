@@ -1,4 +1,10 @@
-import { Component, Input, signal, WritableSignal } from '@angular/core';
+import {
+  Component,
+  computed,
+  Input,
+  signal,
+  WritableSignal,
+} from '@angular/core';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
@@ -34,7 +40,16 @@ export class EnrollRadiusComponent {
   @Input() radiusUser!: WritableSignal<string>;
   @Input() radiusServerConfiguration!: WritableSignal<string>;
   @Input() checkPinLocally!: WritableSignal<boolean>;
-  radiusServerConfigurationOptions = signal<string[]>([]);
+  radiusServerConfigurationOptions = computed(() => {
+    const rawValue =
+      this.radiusServerService.radiusServerConfigurationResource.value()?.result
+        ?.value;
+    const options =
+      rawValue && typeof rawValue === 'object'
+        ? Object.keys(rawValue).map((option: any) => option)
+        : [];
+    return options ?? [];
+  });
   defaultRadiusServerIsSet = signal(false);
 
   constructor(
@@ -44,15 +59,6 @@ export class EnrollRadiusComponent {
   ) {}
 
   ngOnInit(): void {
-    this.radiusServerService
-      .getRadiusServerConfigurationOptions()
-      .subscribe((response) => {
-        const options = response.result.value
-          ? Object.keys(response.result.value)
-          : [];
-        this.radiusServerConfigurationOptions.set(options);
-      });
-
     this.systemService.getSystemConfig().subscribe((response) => {
       const config = response?.result?.value;
       if (config && config['radius.identifier']) {

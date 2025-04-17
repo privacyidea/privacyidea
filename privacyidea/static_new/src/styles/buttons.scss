@@ -224,6 +224,7 @@ $header-bg: white;
   height: $keyword-height;
   margin: 3px;
   box-shadow: none;
+  color: black;
 
   &.keyword-button {
     padding: $keyword-padding;
@@ -270,7 +271,7 @@ $header-bg: white;
   border-radius: 0;
   background: $header-bg;
   color: #767676;
-  box-shadow: none;
+  box-shadow: none !important;
 }
 
 .refresh-btn:hover mat-icon {

@@ -126,7 +126,7 @@ export class ContainerService {
     params: {
       ...(!this.loadAllContainers() && {
         page: this.pageIndex() + 1,
-        pagesize: this.eventPageSize,
+        pagesize: this.pageSize(),
       }),
       sortby: this.sort().active,
       sortdir: this.sort().direction,
@@ -215,19 +215,6 @@ export class ContainerService {
     method: 'GET',
     headers: this.localService.getHeaders(),
   }));
-
-  templateOptions = computed(() => {
-    const data = this.templatesResource.value();
-    if (data && data.result && Array.isArray(data.result.value)) {
-      return data.result.value.map((template: any) => {
-        return {
-          id: template.id,
-          name: template.name,
-        };
-      });
-    }
-    return [];
-  });
 
   constructor(
     private http: HttpClient,

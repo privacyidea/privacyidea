@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
+import { httpResource } from '@angular/common/http';
 import { LocalService } from '../local/local.service';
 import { environment } from '../../../environments/environment';
 
@@ -8,13 +7,11 @@ import { environment } from '../../../environments/environment';
   providedIn: 'root',
 })
 export class ServiceIdService {
-  constructor(
-    private http: HttpClient,
-    private localService: LocalService,
-  ) {}
+  serviceIdResource = httpResource<any>(() => ({
+    url: environment.proxyUrl + '/serviceid/',
+    method: 'GET',
+    headers: this.localService.getHeaders(),
+  }));
 
-  getServiceIdOptions(): Observable<any> {
-    const headers = this.localService.getHeaders();
-    return this.http.get(environment.proxyUrl + '/serviceid/', { headers });
-  }
+  constructor(private localService: LocalService) {}
 }

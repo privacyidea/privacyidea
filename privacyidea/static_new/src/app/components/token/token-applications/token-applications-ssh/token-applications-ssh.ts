@@ -20,8 +20,8 @@ import { FormsModule } from '@angular/forms';
 
 export const columnsKeyMap = [
   { key: 'serial', label: 'Serial' },
-  { key: 'serviceid', label: 'Service ID' },
-  { key: 'ssh_user', label: 'SSH User' },
+  { key: 'service_id', label: 'Service ID' },
+  { key: 'user', label: 'SSH User' },
 ];
 
 @Component({

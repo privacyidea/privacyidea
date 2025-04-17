@@ -1,4 +1,4 @@
-import { Component, Input, signal, WritableSignal } from '@angular/core';
+import { Component, computed, Input, WritableSignal } from '@angular/core';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -39,22 +39,19 @@ export class EnrollApplspecComponent {
   @Input() serviceId!: WritableSignal<string>;
   @Input() generateOnServer!: WritableSignal<boolean>;
   @Input() otpKey!: WritableSignal<string>;
-  serviceIdOptions = signal<string[]>([]);
+  serviceIdOptions = computed(() => {
+    const rawValue =
+      this.serviceIdService.serviceIdResource.value()?.result?.value;
+    const options =
+      rawValue && typeof rawValue === 'object'
+        ? Object.keys(rawValue).map((option: any) => option)
+        : [];
+    return options ?? [];
+  });
   applspecErrorStateMatcher = new ApplspecErrorStateMatcher();
 
   constructor(
     private serviceIdService: ServiceIdService,
     private tokenService: TokenService,
   ) {}
-
-  ngOnInit(): void {
-    this.serviceIdService.getServiceIdOptions().subscribe((response) => {
-      const rawValue = response?.result?.value;
-      const options =
-        rawValue && typeof rawValue === 'object'
-          ? Object.keys(rawValue).map((option: any) => option)
-          : [];
-      this.serviceIdOptions.set(options);
-    });
-  }
 }
