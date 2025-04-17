@@ -447,7 +447,7 @@ myApp.directive("piPolicyConditions", ["instanceUrl", "versioningSuffixProvider"
             // Called when the user clicks on the "add condition" button.
             // Adds a condition with default values
             scope.addCondition = function () {
-                scope.policyConditions.push(["userinfo", "", "equals", "", false]);
+                scope.policyConditions.push(["userinfo", "", "equals", "", false, "raise_error"]);
                 scope.editIndex = scope.policyConditions.length - 1;
             };
         },

@@ -433,6 +433,7 @@ class AuthApiTestCase(MyApiTestCase):
 
     def test_04_remote_user_auth(self):
         self.setUp_user_realms()
+        self.setUp_user_realm2()
         # first check that without a remote_user policy the login fails
         with self.app.test_request_context('/auth',
                                            method='POST',
@@ -515,8 +516,8 @@ class AuthApiTestCase(MyApiTestCase):
             # "login with credentials" button.
             self.assertIn('input type=hidden id=FORCE_REMOTE_USER value="True"', to_unicode(res.data))
 
-        # bind the remote user policy to an unknown realm
-        set_policy(name="remote", scope=SCOPE.WEBUI, realm='unknown',
+        # bind the remote user policy to a different realm
+        set_policy(name="remote", scope=SCOPE.WEBUI, realm=self.realm2,
                    action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.ACTIVE))
         with self.app.test_request_context('/auth',
                                            method='POST',
@@ -678,6 +679,7 @@ class AuthApiTestCase(MyApiTestCase):
         # cleanup
         delete_policy("piLogin")
         delete_realm(self.realm1)
+        delete_realm(self.realm2)
         delete_resolver(self.resolvername1)
 
 

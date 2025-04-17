@@ -39,6 +39,7 @@ class CompareError(Exception):
     Signals that an error occurred when carrying out a comparison.
     The error message is not presented to the user, but written to the logfile.
     """
+
     def __init__(self, message):
         self.message = message
 
@@ -138,9 +139,11 @@ def negate(func):
     :param func: a comparison function taking three arguments
     :return: a comparison function taking three arguments
     """
+
     @wraps(func)
     def negated(left, comparator, right):
         return not func(left, comparator, right)
+
     return negated
 
 
@@ -163,6 +166,14 @@ class COMPARATORS(object):
     SMALLER = "<"
     BIGGER = ">"
 
+    @classmethod
+    def get_all_comparators(cls):
+        """
+        Return a list of all comparators.
+        """
+        return [cls.EQUALS, cls.NOT_EQUALS, cls.CONTAINS, cls.NOT_CONTAINS, cls.MATCHES, cls.NOT_MATCHES,
+                cls.IN, cls.NOT_IN, cls.SMALLER, cls.BIGGER]
+
 
 #: This dictionary connects comparators to comparator functions.
 #: A comparison function takes three parameters ``left``, ``comparator``, ``right``.
@@ -183,7 +194,6 @@ COMPARATOR_FUNCTIONS = {
     COMPARATORS.BIGGER: _compare_bigger
 }
 
-
 #: This dictionary connects comparators to their human-readable (and translated) descriptions.
 COMPARATOR_DESCRIPTIONS = {
     COMPARATORS.CONTAINS: _("true if the value of the left attribute contains the right value"),
@@ -192,11 +202,15 @@ COMPARATOR_DESCRIPTIONS = {
     COMPARATORS.EQUALS: _("true if the value of the left attribute equals the right value"),
     COMPARATORS.NOT_EQUALS: _("false if the value of the left attribute equals the right value"),
 
-    COMPARATORS.MATCHES: _("true if the value of the left attribute completely matches the given regular expression pattern on the right"),
-    COMPARATORS.NOT_MATCHES: _("false if the value of the left attribute completely matches the given regular expression pattern on the right"),
+    COMPARATORS.MATCHES: _("true if the value of the left attribute completely matches the given regular expression "
+                           "pattern on the right"),
+    COMPARATORS.NOT_MATCHES: _("false if the value of the left attribute completely matches the given regular "
+                               "expression pattern on the right"),
 
-    COMPARATORS.IN: _("true if the value of the left attribute is contained in the comma-separated values on the right"),
-    COMPARATORS.NOT_IN: _("false if the value of the left attribute is contained in the comma-separated values on the right"),
+    COMPARATORS.IN: _("true if the value of the left attribute is contained in the comma-separated values on the "
+                      "right"),
+    COMPARATORS.NOT_IN: _("false if the value of the left attribute is contained in the comma-separated values on the "
+                          "right"),
 
     COMPARATORS.SMALLER: _("true if the integer value of the left attribute is smaller than the right integer value"),
     COMPARATORS.BIGGER: _("true if the integer value of the left attribute is bigger than the right integer value")

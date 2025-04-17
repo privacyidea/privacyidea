@@ -2,6 +2,7 @@ Version 3.12dev1, 2025-03-14
 
   Enhancements:
   * Remember last used token type per user and application for multi-challenge (#4179)
+  * Add option 'handle_missing_data' to the extended policy conditions (#4339)
 
   Fixes:
   * Reduce PyOpenSSL dependencies for certificate token (#4212)

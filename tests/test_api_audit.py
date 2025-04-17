@@ -111,6 +111,7 @@ class APIAuditTestCase(MyApiTestCase):
             self.assertNotIn(b"'enroll','1','','','','foo'", res.data, res)
 
     def test_02_get_allowed_audit_realm(self):
+        self.setUp_user_realms()
         # Check that an administrator is only allowed to see log entries of
         # the defined realms.
         # fill some audit entries
@@ -179,7 +180,8 @@ class APIAuditTestCase(MyApiTestCase):
         delete_policy("audit01")
 
     def test_03_get_allowed_audit_realm(self):
-        # Check than an internal admin is allowed to see all realms
+        self.setUp_user_realms()
+        # Check that an internal admin is allowed to see all realms
         # A helpdesk user in "adminrealm" is only allowerd to see realm1A
         Audit(action="enroll", success=1, realm=self.realm1a).save()
         Audit(action="enroll", success=1, realm=self.realm1a).save()
