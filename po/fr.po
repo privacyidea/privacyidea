@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-04-05 09:03+0000\n"
+"PO-Revision-Date: 2025-04-22 11:29+0000\n"
 "Last-Translator: Gregory Bouzinac <gregory.b@orange.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/fr/>\n"
@@ -19,7 +19,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.11-dev\n"
+"X-Generator: Weblate 5.11.1-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -2041,12 +2041,13 @@ msgid ""
 "    <code>daypassword_timestep</code> always have precedence over these "
 "default values."
 msgstr ""
+"Ici vous pouvez définir les paramètres par défaut, pour\n"
+"l'enrôlement d'un jeton DayPassword. Notez que les politiques d'utilisateur/"
+"administrateur <code>daypassword_hashlib</code> et\n"
+"<code>daypassword_timestep</code> ont toujours la priorité sur ces valeurs "
+"par défaut."
 
 #: privacyidea/static/components/config/views/config.token.hotp.html:7
-#, fuzzy
-#| msgid ""
-#| "Here you can define settings, that will be set as default values, when\n"
-#| "    enrolling a HOTP token."
 msgid ""
 "Here you can define settings, that will be set as default values, when\n"
 "    enrolling a HOTP token. Note that the user/admin policy "
@@ -2054,7 +2055,9 @@ msgid ""
 "    this default value."
 msgstr ""
 "Ici vous pouvez définir les paramètres par défaut lors de l'enrôlement\n"
-"d'un jeton HOTP."
+"d'un jeton HOTP. Notez que la politique d'utilisateur/administrateur "
+"<code>hotp_hashlib</code> a toujours la priorité sur\n"
+"cette valeur par défaut."
 
 #: privacyidea/static/components/config/views/config.token.totp.html:7
 msgid ""
@@ -2064,6 +2067,11 @@ msgid ""
 "    <code>totp_timestep</code> always have precedence over these default "
 "values."
 msgstr ""
+"Ici vous pouvez définir les paramètres par défaut lors de l'enrôlement\n"
+"d'un jeton TOTP. Notez que les politiques d'utilisateur/administrateur "
+"<code>totp_hashlib</code> et\n"
+"<code>totp_timestep</code> ont toujours la priorité sur ces valeurs par "
+"défaut."
 
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:23
 msgid ""
@@ -2550,10 +2558,8 @@ msgid "New RADIUS server"
 msgstr "Nouveau serveur RADIUS"
 
 #: privacyidea/static/components/config/views/config.realms.list.html:108
-#, fuzzy
-#| msgid "new realm"
 msgid "New Realm..."
-msgstr "nouveau domaine"
+msgstr "Nouveau Domaine"
 
 #: privacyidea/static/components/config/views/config.machineresolvers.html:15
 #: privacyidea/static/components/config/views/config.resolvers.html:15
@@ -2858,20 +2864,16 @@ msgid "PKCS12"
 msgstr "PKCS12"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:776
-#, fuzzy
-#| msgid "Refilltoken copied to clipboard!"
 msgid "PKCS12 Password copied to clipboard"
-msgstr "remplissage du jeton copié sur le presse papier !"
+msgstr "Mot de passe PKCS12 copié dans le presse papier"
 
 #: privacyidea/static/components/config/views/config.smsgateway.edit.html:62
 msgid "Parameters"
 msgstr "Paramètres"
 
 #: privacyidea/static/components/login/views/login.html:81
-#, fuzzy
-#| msgid "Log In"
 msgid "Passkey Log In"
-msgstr "Se connecter"
+msgstr "Se connecter avec clé d'accès"
 
 #: privacyidea/static/components/directives/views/directive.registerContainer.html:21
 msgid "Passphrase (optional)"
@@ -3811,10 +3813,8 @@ msgstr ""
 "applications\">applications de jetons</a>."
 
 #: privacyidea/static/components/config/views/config.realms.list.html:31
-#, fuzzy
-#| msgid "set Default"
 msgid "Set Default"
-msgstr "définir par Défaut"
+msgstr "Définir par Défaut"
 
 #: privacyidea/static/components/token/views/token.details.html:461
 msgid "Set PIN"
@@ -3852,10 +3852,8 @@ msgid "Show"
 msgstr "Montrer"
 
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:32
-#, fuzzy
-#| msgid "Show password"
 msgid "Show PKCS12 password"
-msgstr "Afficher le mot de passe"
+msgstr "Afficher le mot de passe PKCS12"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:51
 msgid "Show Policy templates"
@@ -3933,10 +3931,8 @@ msgstr ""
 "                erreurs spécifiques"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:8
-#, fuzzy
-#| msgid "start typing a serial number of a token that is notassigned, yet."
 msgid "Start typing a serial number of a token that is not yet assigned"
-msgstr "Saisir un numéro de série qui n'a pas encore été assigné."
+msgstr "Saisir un numéro de série de jeton qui n'a pas encore été assigné."
 
 #: privacyidea/static/components/config/views/config.smtp.list.html:8
 msgid "StartTLS"
@@ -4194,20 +4190,14 @@ msgid "The Enrollment URL"
 msgstr "L'URL d'enrôlement"
 
 #: privacyidea/static/components/config/views/config.token.hotp.html:2
-#, fuzzy
-#| msgid ""
-#| "The HOTP Token is a event based one time password token.\n"
-#| "    It is described in <a href=\"https://tools.ietf.org/html/"
-#| "rfc4226\">RFC\n"
-#| "    4226</a>."
 msgid ""
 "The HOTP Token is an event based one time password token.\n"
 "    It is described in <a href=\"https://tools.ietf.org/html/rfc4226\">RFC\n"
 "    4226</a>."
 msgstr ""
 "Le jeton HOTP est un jeton avec mot de passe unique basé sur un\n"
-"événement. Il est décrit dans la <a href=\"https://tools.ietf.org/html/"
-"rfc4226\">RFC\n"
+"événement. Il est décrit dans la <a href="
+"\"https://tools.ietf.org/html/rfc4226\">RFC\n"
 "4226</a>."
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:1
@@ -4261,6 +4251,10 @@ msgid ""
 "the\n"
 "        token details."
 msgstr ""
+"Le conteneur PKCS12 contient les clés publique et privée du\n"
+"certificat. Le conteneur sera également disponible au téléchargement dans "
+"les\n"
+"détails du jeton."
 
 #: privacyidea/static/components/token/views/token.enroll.paper.html:1
 msgid ""
