@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-04-22 11:29+0000\n"
+"PO-Revision-Date: 2025-04-22 14:16+0000\n"
 "Last-Translator: Gregory Bouzinac <gregory.b@orange.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "branch-3-11-webui/fr/>\n"
@@ -2559,7 +2559,7 @@ msgstr "Nouveau serveur RADIUS"
 
 #: privacyidea/static/components/config/views/config.realms.list.html:108
 msgid "New Realm..."
-msgstr "Nouveau Domaine"
+msgstr "Nouveau Domaine..."
 
 #: privacyidea/static/components/config/views/config.machineresolvers.html:15
 #: privacyidea/static/components/config/views/config.resolvers.html:15
@@ -3924,7 +3924,7 @@ msgstr ""
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:8
 msgid "Start typing a serial number of a token that is not yet assigned"
-msgstr "Saisir un numéro de série de jeton qui n'a pas encore été assigné."
+msgstr "Saisir un numéro de série de jeton qui n'a pas encore été assigné"
 
 #: privacyidea/static/components/config/views/config.smtp.list.html:8
 msgid "StartTLS"
