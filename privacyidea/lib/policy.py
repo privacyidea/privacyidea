@@ -182,14 +182,14 @@ from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     get_multichallenge_enrollable_tokentypes,
                                     get_email_validators, get_privacyidea_nodes)
 from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, ServerError
-from privacyidea.lib.realm import get_realms, realm_is_defined
+from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
                                    fetch_one_resource, is_true, check_ip_in_policy,
                                    determine_logged_in_userparams, parse_string_to_dict)
-from privacyidea.lib.utils.compare import compare_values, COMPARATOR_DESCRIPTIONS
+from privacyidea.lib.utils.compare import COMPARATOR_DESCRIPTIONS
 from privacyidea.lib.utils.export import (register_import, register_export)
 from privacyidea.lib.user import User
 from privacyidea.lib import _, lazy_gettext
