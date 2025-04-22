@@ -7,9 +7,9 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-04-09 14:24+0200\n"
-"PO-Revision-Date: 2025-04-05 09:02+0000\n"
+"PO-Revision-Date: 2025-04-22 23:21+0000\n"
 "Last-Translator: Gregory Bouzinac <gregory.b@orange.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/fr/>\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.11-dev\n"
+"X-Generator: Weblate 5.11.1-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:231
@@ -1269,6 +1269,10 @@ msgid ""
 "attributes. For the next authentication the last used token type is used to "
 "identify the preferred client mode."
 msgstr ""
+"Stocke le dernier type de jeton utilisé par utilisateur et application dans "
+"les attributs personnalisés d'utilisateur. Pour la prochaine "
+"authentification le dernier type de jeton utilisé sert à identifier le mode "
+"client préféré."
 
 #: lib/policy.py:2611
 #, python-brace-format
@@ -1568,6 +1572,7 @@ msgid ""
 "If this is checked, the administrator will not see the welcome dialog "
 "anymore."
 msgstr ""
+"Si coché, l'administrateur ne verra plus du tout le dialogue de bienvenue."
 
 #: lib/policy.py:2849
 msgid ""
@@ -3406,6 +3411,10 @@ msgid ""
 "recommended. It is advised to use a condition, for example on a user-agent, "
 "with this policy."
 msgstr ""
+"Quand activé, le jeton avec clé d'accès peut être déclenché par le PIN ou "
+"via le challenge /validate/trigger du terminal. Pour les plugins "
+"privacyIDEA, ce n'est pas recommandé. Il est conseillé d'utiliser une "
+"condition, par exemple sur un user-agent, avec cette politique."
 
 #: lib/tokens/passkeytoken.py:119
 msgid ""
