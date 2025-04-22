@@ -319,11 +319,24 @@ class PolicyTestCase(MyTestCase):
         with self.assertRaises(ParameterError):
             P.match_policies(client="")
 
+        # Check client parameter is set correctly
+        policy = Policy.query.filter_by(name="pol1").first()
+        self.assertEqual("172.16.0.3, 172.16.0.4/24", policy.client)
+        # Update policy without client keeps old parameter
+        set_policy(name="pol1", scope=SCOPE.CONTAINER)
+        self.assertEqual("172.16.0.3, 172.16.0.4/24", policy.client)
+        # Set empty string removes client
+        set_policy(name="pol1", scope=SCOPE.CONTAINER, client="")
+        self.assertEqual("", policy.client)
+
     def test_08_user_policies(self):
         set_policy(name="pol1", scope=SCOPE.CONTAINER, user="*")
         set_policy(name="pol2", scope=SCOPE.AUTHZ, user="admin, root, user1")
         set_policy(name="pol3", scope=SCOPE.AUTH, user="*, !user1")
         set_policy(name="pol4", scope=SCOPE.ADMIN, user="*, -root")
+
+        policy = Policy.query.filter_by(name="pol2").first()
+        self.assertEqual("admin, root, user1", policy.user)
 
         # get policies for user1
         P = PolicyClass()
@@ -354,11 +367,21 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue(_check_policy_name("pol3", p), p)
         self.assertTrue(_check_policy_name("pol4", p), p)
 
+        # Update policy without user keeps old user parameter
+        set_policy(name="pol2", scope=SCOPE.AUTHZ)
+        self.assertEqual("admin, root, user1", policy.user)
+        # Set empty string removes adminuser
+        set_policy(name="pol2", scope=SCOPE.AUTHZ, user="")
+        self.assertEqual("", policy.user)
+
     def test_08a_adminuser_policies(self):
         set_policy(name="pol1", scope=SCOPE.ADMIN, adminuser="*", user="")
         set_policy(name="pol2", scope=SCOPE.ADMIN, adminuser="admin, root, user1", user="*")
         set_policy(name="pol3", scope=SCOPE.ADMIN, adminuser="*, !user1", user="")
         set_policy(name="pol4", scope=SCOPE.ADMIN, adminuser="*, -root", user="")
+
+        policy = Policy.query.filter_by(name="pol2").first()
+        self.assertEqual("admin, root, user1", policy.adminuser)
 
         # get policies for user1
         P = PolicyClass()
@@ -388,6 +411,13 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue(_check_policy_name("pol1", p), p)
         self.assertTrue(_check_policy_name("pol3", p), p)
         self.assertTrue(_check_policy_name("pol4", p), p)
+
+        # Update policy without admin keeps old admin parameter
+        set_policy(name="pol2", scope=SCOPE.ADMIN, user="*")
+        self.assertEqual("admin, root, user1", policy.adminuser)
+        # Set empty string removes adminuser
+        set_policy(name="pol2", scope=SCOPE.ADMIN, adminuser="", user="*")
+        self.assertEqual("", policy.adminuser)
 
     def test_09_realm_resolver_policy(self):
         set_policy(name="pol1", scope=SCOPE.CONTAINER, realm=self.realm1)
@@ -437,6 +467,20 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual(len(p), 2)
         self.assertTrue(_check_policy_name("pol1", p), p)
         self.assertTrue(_check_policy_name("pol4", p), p)
+
+        # Check realm and resolver are set correctly
+        policy = Policy.query.filter_by(name="pol2").first()
+        self.assertEqual(self.resolvername1, policy.resolver)
+        self.assertEqual(self.realm1, policy.realm)
+
+        # Update policy without realm and resolver keeps old parameters
+        set_policy(name="pol2", scope=SCOPE.AUTHZ)
+        self.assertEqual(self.resolvername1, policy.resolver)
+        self.assertEqual(self.realm1, policy.realm)
+        # Set empty string removes realm and resolver
+        set_policy(name="pol2", scope=SCOPE.AUTHZ, realm="", resolver="")
+        self.assertEqual("", policy.resolver)
+        self.assertEqual("", policy.realm)
 
     def test_10_action_policies(self):
         set_policy(name="pol1", scope=SCOPE.ADMIN, action=f"enrollHOTP, {ACTION.ENABLE}, {ACTION.DISABLE}")
@@ -629,9 +673,9 @@ class PolicyTestCase(MyTestCase):
                    adminrealm=["realm2"],
                    action="enrollYUBIKEY")
         # Update policy: An admin in realm1 may only enroll Yubikeys
-        set_policy(name="tokenEnroll", scope=SCOPE.ADMIN,
-                   adminrealm=["realm1"],
-                   action="enrollYUBIKEY")
+        set_policy(name="tokenEnroll", scope=SCOPE.ADMIN, adminrealm=[self.realm1], action="enrollYUBIKEY")
+        policy = Policy.query.filter_by(name="tokenEnroll").first()
+        self.assertEqual(self.realm1, policy.adminrealm)
         P = PolicyClass()
 
         tt = P.ui_get_enroll_tokentypes("127.0.0.1", logged_in_user)
@@ -663,6 +707,17 @@ class PolicyTestCase(MyTestCase):
         self.assertFalse("yubico" in tt)
         self.assertFalse("yubikey" in tt)
         self.assertFalse("radius" in tt)
+
+        # Update without passing adminrealm keeps old admin realm
+        set_policy(name="tokenEnroll", scope=SCOPE.ADMIN, adminrealm=None, action="enrollYUBIKEY")
+        policy = Policy.query.filter_by(name="tokenEnroll").first()
+        self.assertEqual(self.realm1, policy.adminrealm)
+
+        # Update with empty list removes adminrealm
+        set_policy(name="tokenEnroll", scope=SCOPE.ADMIN, adminrealm="", action="enrollYUBIKEY")
+        policy = Policy.query.filter_by(name="tokenEnroll").first()
+        self.assertEqual("", policy.adminrealm)
+
         delete_policy("tokenEnroll")
 
     def test_17_ui_get_rights(self):
@@ -754,6 +809,12 @@ class PolicyTestCase(MyTestCase):
         set_policy(name="test", scope=SCOPE.AUTHZ, action=f"{ACTION.TOKENTYPE}=hotp totp", time="Tue-Thu:6-22")
         set_policy(name="test", scope=SCOPE.AUTHZ, action=f"{ACTION.TOKENTYPE}=hotp totp", time="Wed: 13:30-18")
         set_policy(name="test", scope=SCOPE.AUTHZ, action=f"{ACTION.TOKENTYPE}=hotp totp", time="Sat-Sun: 20-23:59")
+        policy = Policy.query.filter_by(name="test").first()
+        self.assertEqual("Sat-Sun: 20-23:59", policy.time)
+        # set empty string removes time
+        set_policy(name="test", scope=SCOPE.AUTHZ, action=f"{ACTION.TOKENTYPE}=hotp totp", time="")
+        policy = Policy.query.filter_by(name="test").first()
+        self.assertEqual("", policy.time)
 
         # Set invalid times raises Error
         self.assertRaises(ParameterError, set_policy, name="test", scope=SCOPE.AUTHZ,
@@ -1511,6 +1572,18 @@ class PolicyTestCase(MyTestCase):
         pols = Match.admin(g, "enable", None).policies()
         # The "enable_admin" is allowed to enable on all nodes, so also on "Node1"
         self.assertSetEqual({"enable"}, set(p['name'] for p in pols))
+
+        # Check node parameter is set correctly
+        policy = Policy.query.filter_by(name="import_node1").first()
+        self.assertEqual("pinode1", policy.pinode)
+        # Update policy without pinode parameter keeps old parameter
+        set_policy("import_node1", scope=SCOPE.ADMIN, action=ACTION.IMPORT,
+                   adminuser="import_admin, delete_admin")
+        self.assertEqual("pinode1", policy.pinode)
+        # Pass empty string to remove pinode parameter
+        set_policy("import_node1", scope=SCOPE.ADMIN, action=ACTION.IMPORT,
+                   adminuser="import_admin, delete_admin", pinode="")
+        self.assertEqual("", policy.pinode)
 
         delete_policy("import_node1")
         delete_policy("delete_node2")

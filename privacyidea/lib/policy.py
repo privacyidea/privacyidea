@@ -1410,14 +1410,11 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     validate_values(pinode, valid_nodes, "privacyIDEA Nodes")
 
     # check for valid time
-    if time is not None:
-        if len(time) > 0:
-            try:
-                check_time_in_range(time)
-            except (ValueError, ParameterError):
-                raise ParameterError(f"Invalid time format '{time}'!")
-        else:
-            time = None
+    if time is not None and len(time) > 0:
+        try:
+            check_time_in_range(time)
+        except (ValueError, ParameterError):
+            raise ParameterError(f"Invalid time format '{time}'!")
 
     active = is_true(active)
     check_all_resolvers = is_true(check_all_resolvers)
