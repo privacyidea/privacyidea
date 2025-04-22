@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-04-22 11:29+0000\n"
+"PO-Revision-Date: 2025-04-22 23:21+0000\n"
 "Last-Translator: Gregory Bouzinac <gregory.b@orange.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/fr/>\n"
@@ -2559,7 +2559,7 @@ msgstr "Nouveau serveur RADIUS"
 
 #: privacyidea/static/components/config/views/config.realms.list.html:108
 msgid "New Realm..."
-msgstr "Nouveau Domaine"
+msgstr "Nouveau Domaine..."
 
 #: privacyidea/static/components/config/views/config.machineresolvers.html:15
 #: privacyidea/static/components/config/views/config.resolvers.html:15
@@ -3932,7 +3932,7 @@ msgstr ""
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:8
 msgid "Start typing a serial number of a token that is not yet assigned"
-msgstr "Saisir un numéro de série de jeton qui n'a pas encore été assigné."
+msgstr "Saisir un numéro de série de jeton qui n'a pas encore été assigné"
 
 #: privacyidea/static/components/config/views/config.smtp.list.html:8
 msgid "StartTLS"
@@ -4725,10 +4725,13 @@ msgid ""
 "The password for the PKCS12 container is shown here only once. Make sure\n"
 "            to keep the password safe now."
 msgstr ""
+"Le mot de passe du conteneur PKCS12 est affiché ici une seule fois. Assurez-"
+"vous\n"
+"de le garder dans un endroit sûr."
 
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:50
 msgid "The password of the PKCS12 container is the given token PIN"
-msgstr ""
+msgstr "Le mot de passe du conteneur PKCS12 est le PIN du jeton donné"
 
 #: privacyidea/static/components/token/views/token.lost.html:44
 msgid ""
@@ -4874,16 +4877,12 @@ msgstr ""
 "que vous devrez scanner."
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:73
-#, fuzzy
-#| msgid ""
-#| "The server will create the private RSA key and store it in\n"
-#| "                    the database. You can later download the PKCS#12 file."
 msgid ""
 "The server will create the private RSA key and return it with\n"
 "                    the certificate in an encrypted PKCS#12 container."
 msgstr ""
-"Le serveur créera la clé privée RSA et la stockera dans la\n"
-"base de données. Vous pourrez télécharger plus tard le fichier PKCS#12."
+"Le serveur créera la clé privée RSA et la retournera avec\n"
+"le certificat dans un conteneur PKCS#12 chiffré."
 
 #: privacyidea/static/components/token/views/token.enroll.daypassword.html:20
 msgid ""
@@ -5850,13 +5849,6 @@ msgstr ""
 "et créera un nouveau jeton avec une nouvelle clé secrète !"
 
 #: privacyidea/static/components/login/views/login.html:12
-#, fuzzy
-#| msgid ""
-#| "You are authenticated by the web server as user\n"
-#| "                <b>{{ remoteUser }}</b>.\n"
-#| "                You may login as this user to privacyIDEA without any "
-#| "further\n"
-#| "                credentials."
 msgid ""
 "You are authenticated by the web server as user\n"
 "                <b>{{ remoteUser }}</b>.\n"
