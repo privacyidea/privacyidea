@@ -844,7 +844,7 @@ def multichallenge_enroll_via_validate(request, response):
             check_max_token_user(request=request)
             check_max_token_realm(request=request)
         except PolicyError as e:
-            g.audit_object.log({"success": True, "action_detail": e})
+            g.audit_object.log({"success": True, "action_detail": f"{e}"})
             return response
 
         user = request.User

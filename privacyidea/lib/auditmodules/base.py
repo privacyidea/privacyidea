@@ -70,7 +70,7 @@ class Paginate(object):
         self.page = 1
         # the total entry numbers
         self.total = 0
-    
+
 
 class Audit(object):  # pragma: no cover
 
@@ -158,7 +158,7 @@ class Audit(object):  # pragma: no cover
         return bool(self.audit_data and "action" in self.audit_data)
 
     @log_with(log)
-    def log(self, param):
+    def log(self, param: dict[str, str]):
         """
         This method is used to log the data.
         During a request this method can be called several times to fill the
