@@ -6086,3 +6086,19 @@ class ValidateShortPasswordTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
+
+class Initialize(MyApiTestCase):
+
+    def test01_no_type(self):
+        with self.app.test_request_context('/validate/initialize',
+                                           method='POST',
+                                           data={"type": ""}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res)
+            self.assertIn("result", res.json)
+            self.assertIn("error", res.json["result"])
+            error = res.json["result"]["error"]
+            self.assertIn("code", error)
+            self.assertIn("message", error)
+            self.assertEqual(905, error["code"], error)
+            self.assertEqual("ERR905: Missing parameter: type", error["message"], error)

@@ -120,6 +120,7 @@ class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
                 self.assertEqual(200, res.status_code)
                 self.assertIn("detail", res.json)
                 detail = res.json["detail"]
+                self.assertIn("transaction_id", detail)
                 self.assertIn("passkey", detail)
                 passkey = detail["passkey"]
                 self.assertIn("challenge", passkey)
