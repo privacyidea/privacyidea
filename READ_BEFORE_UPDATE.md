@@ -1,5 +1,11 @@
 # Update Notes
 
+## Update from 3.11 to 3.12
+* The behaviour of the Certificate Token changes when the certificate key-pair is created by privacyIDEA.
+  The secret key will not be saved to the tokeninfo anymore. Instead, only the PKCS12 container will contain
+  the secret key. The PKCS12 container will be available in the tokeninfo and will be encrypted either with
+  the token PIN or a generated password which is shown to the user during rollout, but only once!
+
 ## Update from 3.10 to 3.11
 * To improve consistency of conditions for policies and eventhandlers, tokens that are not in any realm will not be
   listed for users with access restricted to a realm (i.e. helpdesk admins). The user with access restricted to a realm
@@ -9,9 +15,13 @@
   but the serial of the token is required.
 * The webauthn JavaScript submodule was removed and replaced with a static file.
   When using a Git-Checkout you probably need to remove the directory/submodule before updating.
-* Deprecation of `/validate/samlcheck`: The endpoint will be removed in the future version **3.12**.
-  If you are using that endpoint for one of your applications, please start using `validate/check` with the policies
-  `add_user_in_response` and/or `add_resolver_in_response`.
+* Deprecation:
+  * `/validate/samlcheck`: The endpoint will be removed in the future version **3.12**.
+    This also removes the `Include SAML attributes in the authentication response` configuration option.
+    If you are using that endpoint for one of your applications, please start using `validate/check` with the policies
+    `add_user_in_response` and/or `add_resolver_in_response`.
+  * Authorization Policies `no_detail_on_fail` and `no_detail_on_success` since they
+    break challenge-response authentication.
 
 ## Update from 3.9 to 3.10
 

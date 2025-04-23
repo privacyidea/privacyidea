@@ -59,7 +59,7 @@ from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.fido2.challenge import verify_fido2_challenge
-from privacyidea.lib.fido2.util import get_fido2_token_by_credential_id, get_fido2_token_by_transaction_id
+from privacyidea.lib.fido2.util import get_fido2_token_by_credential_id
 from privacyidea.lib.user import User, split_user, log_used_user
 from privacyidea.lib.policy import PolicyClass, REMOTE_USER
 from privacyidea.lib.realm import get_default_realm, realm_is_defined
@@ -371,7 +371,8 @@ def get_auth_token():
                                     "info": f"{log_used_user(user)}|loginmode={details.get('loginmode')}"})
 
             if not user_auth and "multi_challenge" in details and len(details["multi_challenge"]) > 0:
-                return send_result({"role": role, "username": login_name, "realm": realm}, details=details)
+                # Do not return user data in case of a challenge request.
+                return send_result(False, rid=2, details=details)
 
     if not admin_auth and not user_auth:
         raise AuthError(_("Authentication failure. Wrong credentials"), id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS,
@@ -416,7 +417,9 @@ def get_auth_token():
                         "realm": realm,
                         "log_level": log_level,
                         "rights": rights,
-                        "menus": menus},
+                        "menus": menus,
+                        "auth": True},
+                       rid=2,
                        details=details)
 
 

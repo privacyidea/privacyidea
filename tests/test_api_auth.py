@@ -1,4 +1,5 @@
 """ Test for the '/auth' API-endpoint """
+import json
 import logging
 
 from testfixtures import log_capture
@@ -15,7 +16,7 @@ from privacyidea.lib.event import set_event, delete_event
 from privacyidea.lib.eventhandler.base import CONDITION
 from privacyidea.lib.token import get_tokens, remove_token
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import to_unicode
+from privacyidea.lib.utils import to_unicode, AUTH_RESPONSE
 from privacyidea.config import TestingConfig
 from . import ldap3mock
 
@@ -812,6 +813,9 @@ class EventHandlerTest(MyApiTestCase):
         set_policy("crhotp", scope=SCOPE.AUTH, action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
 
         # Create an event handler, that creates HOTP token on /auth with default OTP key
+        # TODO: this is probably a bad test case since enrolling an HOTP-Token
+        #  during `/auth` does not return the generated secret/QR-code.
+        #  For now this is useful to test the `/auth` endpoint with challenge-response.
         eid = set_event("createtoken", event=["auth"], handlermodule="Token",
                         action="enroll", position="pre",
                         conditions={CONDITION.USER_TOKEN_NUMBER: 0},
@@ -836,6 +840,10 @@ class EventHandlerTest(MyApiTestCase):
             detail = res.json.get("detail")
             self.assertEqual("please enter otp: ", detail.get("message"))
             transaction_id = detail.get("transaction_id")
+            # In case of a challenge request, make sure no user data is spilled
+            self.assertNotIn("someuser", json.dumps(res.json), res.json)
+            self.assertFalse(result.get("value"), result)
+            self.assertEqual(result.get("authentication"), AUTH_RESPONSE.CHALLENGE, result)
 
         # Check if the token was enrolled
         toks = get_tokens(user=User("someuser", self.realm1))
@@ -857,6 +865,7 @@ class EventHandlerTest(MyApiTestCase):
             self.assertEqual(200, res.status_code, res)
             result = res.json.get("result")
             self.assertTrue(result.get("status"))
+            self.assertEqual(result.get("authentication"), AUTH_RESPONSE.ACCEPT, result)
             self.assertTrue(result.get("value"))
 
         # Check that there is still only one token

@@ -6,6 +6,7 @@ The api.lib.policy.py depends on lib.policy and on flask!
 import json
 import logging
 from testfixtures import log_capture
+from werkzeug.datastructures.headers import Headers
 
 from privacyidea.lib.container import init_container, find_container_by_serial
 from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AUTHENTICATOR_ATTACHMENT_TYPE,
@@ -21,14 +22,16 @@ from privacyidea.lib.tokens.webauthntoken import (DEFAULT_ALLOWED_TRANSPORTS,
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT,
                                                   PUBKEY_CRED_ALGORITHMS_ORDER)
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
-from privacyidea.lib.utils import hexlify_and_unicode
+from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes, INTERNAL_USAGE
+from privacyidea.lib.utils import hexlify_and_unicode, AUTH_RESPONSE
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
 from .base import (MyApiTestCase)
 
 from privacyidea.lib.subscriptions import EXPIRE_MESSAGE
 from privacyidea.lib.policy import (set_policy, delete_policy, enable_policy,
                                     PolicyClass, SCOPE, ACTION, REMOTE_USER,
-                                    AUTOASSIGNVALUE, AUTHORIZED)
+                                    AUTOASSIGNVALUE, AUTHORIZED,
+                                    DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL)
 from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_base_action, check_token_init,
                                            check_max_token_user,
@@ -69,7 +72,7 @@ from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             save_pin_change,
                                             add_user_detail_to_response,
                                             mangle_challenge_response, is_authorized,
-                                            check_verify_enrollment)
+                                            check_verify_enrollment, preferred_client_mode)
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    set_realms, check_user_pass, unassign_token,
                                    enable_token)
@@ -183,13 +186,13 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.setUp_user_realms()
         # setup realm2
         self.setUp_user_realm2()
-        tokenobject = init_token({"serial": "POL001", "type": "hotp",
-                                  "otpkey": "1234567890123456"})
-        r = set_realms("POL001", [self.realm1])
+        init_token({"serial": "POL001", "type": "hotp",
+                    "otpkey": "1234567890123456"})
+        set_realms("POL001", [self.realm1])
 
-        tokenobject = init_token({"serial": "POL002", "type": "hotp",
-                                  "otpkey": "1234567890123456"})
-        r = set_realms("POL002", [self.realm2])
+        init_token({"serial": "POL002", "type": "hotp",
+                    "otpkey": "1234567890123456"})
+        set_realms("POL002", [self.realm2])
 
         # Token in realm1 can not be deleted
         req.all_data = {"serial": "POL001"}
@@ -351,10 +354,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
         # The user has one token, everything is fine.
         self.setUp_user_realms()
-        tokenobject = init_token({"serial": "NEW001", "type": "hotp",
-                                  "otpkey": "1234567890123456"},
-                                 user=User(login="cornelius",
-                                           realm=self.realm1))
+        init_token({"serial": "NEW001", "type": "hotp",
+                    "otpkey": "1234567890123456"},
+                   user=User(login="cornelius",
+                             realm=self.realm1))
         tokenobject_list = get_tokens(user=User(login="cornelius",
                                                 realm=self.realm1))
         self.assertTrue(len(tokenobject_list) == 1)
@@ -453,20 +456,20 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
         # The user has one token, everything is fine.
         self.setUp_user_realms()
-        tokenobject = init_token({"serial": "NEW001", "type": "hotp",
-                                  "otpkey": "1234567890123456"},
-                                 user=User(login="cornelius",
-                                           realm=self.realm1))
+        init_token({"serial": "NEW001", "type": "hotp",
+                    "otpkey": "1234567890123456"},
+                   user=User(login="cornelius",
+                             realm=self.realm1))
         tokenobject_list = get_tokens(user=User(login="cornelius",
                                                 realm=self.realm1))
         self.assertTrue(len(tokenobject_list) == 1)
         self.assertTrue(check_max_token_user(req))
 
         # Now the user gets his second token
-        tokenobject = init_token({"serial": "NEW002", "type": "hotp",
-                                  "otpkey": "1234567890123456"},
-                                 user=User(login="cornelius",
-                                           realm=self.realm1))
+        init_token({"serial": "NEW002", "type": "hotp",
+                    "otpkey": "1234567890123456"},
+                   user=User(login="cornelius",
+                             realm=self.realm1))
         tokenobject_list = get_tokens(user=User(login="cornelius",
                                                 realm=self.realm1))
         self.assertTrue(len(tokenobject_list) == 2)
@@ -567,8 +570,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
         self.setUp_user_realms()
         # Add the first token into the realm
-        tokenobject = init_token({"serial": "NEW001", "type": "hotp",
-                                  "otpkey": "1234567890123456"})
+        init_token({"serial": "NEW001", "type": "hotp",
+                    "otpkey": "1234567890123456"})
         set_realms("NEW001", [self.realm1])
         # check the realm, only one token is in it the policy condition will
         # pass
@@ -577,8 +580,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertTrue(check_max_token_realm(req))
 
         # add a second token to the realm
-        tokenobject = init_token({"serial": "NEW002", "type": "hotp",
-                                  "otpkey": "1234567890123456"})
+        init_token({"serial": "NEW002", "type": "hotp",
+                    "otpkey": "1234567890123456"})
         set_realms("NEW002", [self.realm1])
         tokenobject_list = get_tokens(realm=self.realm1)
         self.assertTrue(len(tokenobject_list) == 2)
@@ -825,7 +828,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         policies = ["+cn", "+c", "+cs"]
         for policy in policies:
-            required = ["".join([CHARLIST_CONTENTPOLICY[str] for str in policy[1:]])]
+            required = ["".join([CHARLIST_CONTENTPOLICY[c] for c in policy[1:]])]
             charlists_dict = generate_charlists_from_pin_policy(policy)
             self.assertEqual(charlists_dict,
                              {"base": default_chars,
@@ -845,7 +848,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         policies = ["cn", "c", "sc"]
         for policy in policies:
-            required = [CHARLIST_CONTENTPOLICY[str] for str in policy[:]]
+            required = [CHARLIST_CONTENTPOLICY[c] for c in policy]
             charlists_dict = generate_charlists_from_pin_policy(policy)
             self.assertEqual(charlists_dict,
                              {"base": default_chars,
@@ -4959,10 +4962,11 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         req = Request(env)
         self.setUp_user_realms()
         req.User = User("autoassignuser", self.realm1)
-        # The response contains the token type SPASS
+        # The response contains the token type SPASS and result->authentication set to ACCEPT
         res = {"jsonrpc": "2.0",
                "result": {"status": True,
-                          "value": True},
+                          "value": True,
+                          "authentication": AUTH_RESPONSE.ACCEPT},
                "version": "privacyIDEA test",
                "id": 1,
                "detail": {"message": "matching 1 tokens",
@@ -5048,17 +5052,14 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
     def test_05_autoassign_any_pin(self):
         # init a token, that does has no uwser
         self.setUp_user_realms()
-        tokenobject = init_token({"serial": "UASSIGN1", "type": "hotp",
-                                  "otpkey": "3132333435363738393031"
-                                            "323334353637383930"},
-                                 tokenrealms=[self.realm1])
+        init_token({"serial": "UASSIGN1", "type": "hotp",
+                    "otpkey": "3132333435363738393031"
+                              "323334353637383930"},
+                   tokenrealms=[self.realm1])
 
         user_obj = User("autoassignuser", self.realm1)
         # unassign all tokens from the user autoassignuser
-        try:
-            unassign_token(None, user=user_obj)
-        except Exception:
-            print("no need to unassign token")
+        unassign_token(None, user=user_obj)
 
         # The request with an OTP value and a PIN of a user, who has no token assigned
         builder = EnvironBuilder(method='POST',
@@ -5108,16 +5109,13 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
     def test_05_autoassign_userstore(self):
         # init a token, that does has no user
         self.setUp_user_realms()
-        tokenobject = init_token({"serial": "UASSIGN2", "type": "hotp",
-                                  "otpkey": "3132333435363738393031"
-                                            "323334353637383930"},
-                                 tokenrealms=[self.realm1])
+        init_token({"serial": "UASSIGN2", "type": "hotp",
+                    "otpkey": "3132333435363738393031"
+                              "323334353637383930"},
+                   tokenrealms=[self.realm1])
         user_obj = User("autoassignuser", self.realm1)
         # unassign all tokens from the user autoassignuser
-        try:
-            unassign_token(None, user=user_obj)
-        except Exception as e:
-            print("no need to unassign token")
+        unassign_token(None, user=user_obj)
 
         # The request with an OTP value and a PIN of a user, who has no token assigned
         builder = EnvironBuilder(method='POST',
@@ -5168,15 +5166,15 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # Test that a machine definition will return offline hashes
         self.setUp_user_realms()
         serial = "offline01"
-        tokenobject = init_token({"serial": serial, "type": "hotp",
-                                  "otpkey": "3132333435363738393031323334353637383930",
-                                  "pin": "offline",
-                                  "user": "cornelius"})
+        init_token({"serial": serial, "type": "hotp",
+                    "otpkey": "3132333435363738393031323334353637383930",
+                    "pin": "offline",
+                    "user": "cornelius"})
 
         # Set the Machine and MachineToken
-        resolver1 = save_resolver({"name": "reso1",
-                                   "type": "hosts",
-                                   "filename": HOSTSFILE})
+        save_resolver({"name": "reso1",
+                       "type": "hosts",
+                       "filename": HOSTSFILE})
 
         mt = attach_token(serial, "offline", hostname="gandalf")
         self.assertEqual(mt.token.serial, serial)
@@ -5390,43 +5388,15 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         set_policy(name="pol_qr3", scope=SCOPE.WEBUI,
                    action="{0!s}=http://privacyidea.org".format(ACTION.SHOW_CUSTOM_AUTHENTICATOR))
 
+        android_url_image = create_img(DEFAULT_ANDROID_APP_URL)
+        ios_url_image = create_img(DEFAULT_IOS_APP_URL)
         custom_url = create_img("http://privacyidea.org")
         g.policy_object = PolicyClass()
         new_response = get_webui_settings(req, resp)
         jresult = new_response.json
-        self.assertEqual('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZoAAAG'
-                         'aAQAAAAAefbjOAAACFElEQVR42u1cS07FMBCL6AFypHd1jtQDVJrX'
-                         'zD+FBbBDdhZPbVpviOV4nClDfj8+B0EEEUQQQQQRRFCAho/jnpnrd'
-                         'uozHyJnXL4U9DH+MAj6HyBnhK60nIeRwVd/3eaD9h4ZgcCI0ylwa8'
-                         'TlUiByX4371qkyDjICkBF9w1Bu1AMyAlMjljKYKKw5lQxqBLSPaLQ'
-                         'wy1lz9BFAjMhaw/3k84e1BhgjtqHy4BbidhTH15KVfz0QjSgpaJKh'
-                         'FFhmwhwFGYGiEUqGWauvMZXWoe4s7RXuGjjO8so8wm+DKmtuHOLJB'
-                         'BkBU31GhWHG4fzecpIRQM7ysoVXjTBaZBRhOabuKWQEjkaMEWTY5S'
-                         'FpYfUHGQGiES2anCEZLdTevQUZAVF91pFG5lISkuHegj4CSiO2Q29'
-                         '94LrhWwc1Aq/WeAQQVpHqeByTkxEIu0Zrmupp1ONwnBqBoxHRHVNd'
-                         'EVF4imyRBRmBkke4vWxXmVXRR0DWGrrwIlsbXb4SvTP0EVjOsrfaZ'
-                         'mDVfqgRUIwojfBWqao/PMUe9BFozrL3R+QpaM1NdtWBOcstnNqPPW'
-                         'tjISOgnGULsK8UhTjheJ2DPgJp1+gpdjXL2DuvarwjI5CcZX6oE/0'
-                         'RfSfxrYOMgGNEbg4+V19usGMGVyOaZ2hf9dBHQPqIOPss95CbCPMI'
-                         'zFqjjRlt+y4ZzCwR8wj+PxaCCCKIIIIIIuinoDczovv0cx3r0AAAA'
-                         'ABJRU5ErkJggg==',
+        self.assertEqual(android_url_image,
                          jresult.get("result").get("value").get("qr_image_android"))
-        self.assertEqual('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZoAAAG'
-                         'aAQAAAAAefbjOAAACC0lEQVR42u2cUW7DMAxDheUAPlKvniPlAAa8'
-                         'xpYtufnZ9jfw5aPo0vCnJiSSUmft99dpgAABAgQIECBAE2R+He/31'
-                         '9Hsdd3vWh133/fmA68O+rI/XID+B8gZ0U86keHy0zcr/kF6DkYoMK'
-                         'JTIB189YpzljZY0isIjNBjxDh4K3fDKLluwAjVGnGmNhE6Akbo6oh'
-                         'eHm6CuORER2gyYnmN0SEeL3gNMUZsfrTfq1NWlPp8hG9PpEaMUnBT'
-                         '4FwvQ0ykP2GERo04h2ystpmLWS08uqJrSNWIY9IiEqotvaRG6NWIu'
-                         'NxrdDM69KQXDxihoyw/E6qWk4keXA4fCiNUasTQjqtKbJ4zBVboCB'
-                         'kdMccX3ib2SZf3FHSEECNGZtm2uDLNPtEReoy43Guk/pF1RLU8D+X'
-                         'bU1CWeciV+kfoCKcFjBBSlpFBeQCxzEWZwSU1QkdHeAblGnMbhcba'
-                         'DIzQ6Rqbdtw2ZjyhQkfoeY3H5tTkwfAf6Ag997m8xiRDziPQEWru0'
-                         '+ec0T+SI229Rhg6QowR3hz63bL5j3692KrTUpYx9sz7Ebb2bf0DGC'
-                         'FSI9Lpxy7dGnflBRoYIaQs2xVrMzOrWg7DDB0hqCOO3YdWy/0DryH'
-                         'MiLSTT2apzgiz+DlXVhTDgsIIOR0xzcVMJmJZhjxC1GtEFHGuuUZ/'
-                         'jl1szTyC/8cCCBAgQIAAAfop6Bt9aCglBgbq7QAAAABJRU5ErkJgg'
-                         'g==',
+        self.assertEqual(ios_url_image,
                          jresult.get("result").get("value").get("qr_image_ios"))
         qr_image_custom = jresult.get("result").get("value").get("qr_image_custom")
         self.assertEqual(len(custom_url), len(qr_image_custom))
@@ -5600,18 +5570,18 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # Add a subscription
         from privacyidea.models import Subscription
-        s = Subscription(application="privacyidea",
-                         for_name="testuser",
-                         for_email="admin@example.com",
-                         for_phone="0",
-                         by_name="privacyIDEA project",
-                         by_email="privacyidea@example.com",
-                         date_from=datetime.utcnow(),
-                         date_till=datetime.utcnow() + timedelta(days=365),
-                         num_users=100,
-                         num_tokens=100,
-                         num_clients=100
-                         ).save()
+        Subscription(application="privacyidea",
+                     for_name="testuser",
+                     for_email="admin@example.com",
+                     for_phone="0",
+                     by_name="privacyIDEA project",
+                     by_email="privacyidea@example.com",
+                     date_from=datetime.utcnow(),
+                     date_till=datetime.utcnow() + timedelta(days=365),
+                     num_users=100,
+                     num_tokens=100,
+                     num_clients=100
+                     ).save()
         new_response = get_webui_settings(req, resp)
         jresult = new_response.json
         self.assertIn("privacyidea@example.com", jresult.get("result").get("value").get("supportmail"))
@@ -6012,3 +5982,131 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # Also check the token object.
         self.assertEqual(tok.token.rollout_state, ROLLOUTSTATE.VERIFYPENDING)
         delete_policy("verify_toks")
+
+    def test_21_preferred_client_mode_for_user_allowed(self):
+        """
+        Tests the preferred_client_mode function when the policy client_mode_per_user is activated.
+        """
+        # Mock request
+        builder = EnvironBuilder(method="POST", data={}, headers=Headers({"user_agent": "privacyidea-cp"}))
+        env = builder.get_environ()
+        request = Request(env)
+        request.all_data = {}
+        self.setUp_user_realms()
+        user = User("hans", self.realm1)
+        request.User = user
+
+        response_data = {"jsonrpc": "2.0",
+                         "result": {"status": True, "value": True},
+                         "version": "privacyIDEA test",
+                         "detail": {"multi_challenge": []}
+                         }
+        g.policy_object = PolicyClass()
+
+        # Allow to use preferred client mode per user
+        set_policy("user_client_mode", scope=SCOPE.AUTH, action=ACTION.CLIENT_MODE_PER_USER)
+
+        # No custom user attribute available for the user and no policy: use default
+        multi_challenge = [
+            {"client_mode": "interactive", "type": "hotp", "transaction_id": "", "serial": "", "message": ""},
+            {"client_mode": "poll", "type": "push", "transaction_id": "", "serial": "", "message": ""},
+            {"client_mode": "webauthn", "type": "webauthn", "transaction_id": "", "serial": "", "message": ""}
+        ]
+        response_data["detail"]["multi_challenge"] = multi_challenge
+        response = jsonify(response_data)
+
+        preferred_client_mode(request, response)
+
+        response_details = response.json["detail"]
+        self.assertEqual("interactive", response_details.get("preferred_client_mode"))
+
+        # No preferred client mode policy set only custom user attribute: use user+application preference
+        response = jsonify(response_data)
+        user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-cp", "push", INTERNAL_USAGE)
+        user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-Shibbole", "u2f", INTERNAL_USAGE)
+
+        preferred_client_mode(request, response)
+
+        response_details = response.json["detail"]
+        self.assertEqual("poll", response_details.get("preferred_client_mode"))
+
+        # preferred client mode policy with webauthn first, but user prefers push
+        set_policy("preferred_client_mode", scope=SCOPE.AUTH,
+                   action={ACTION.PREFERREDCLIENTMODE: "webauthn interactive poll u2f"})
+        response = jsonify(response_data)
+
+        preferred_client_mode(request, response)
+        response_details = response.json["detail"]
+        self.assertEqual("poll", response_details.get("preferred_client_mode"))
+
+        # preferred user token not in multi-challenge: use preferred client mode policy
+        multi_challenge = [
+            {"client_mode": "interactive", "type": "hotp", "transaction_id": "", "serial": "", "message": ""},
+            {"client_mode": "webauthn", "type": "webauthn", "transaction_id": "", "serial": "", "message": ""}
+        ]
+        response_data["detail"]["multi_challenge"] = multi_challenge
+        response = jsonify(response_data)
+
+        preferred_client_mode(request, response)
+        response_details = response.json["detail"]
+        self.assertEqual("webauthn", response_details.get("preferred_client_mode"))
+
+        # preferred user token not in multi-challenge and no preferred_client_mode policy: use default
+        delete_policy("preferred_client_mode")
+        response = jsonify(response_data)
+        preferred_client_mode(request, response)
+        response_details = response.json["detail"]
+        self.assertEqual("interactive", response_details.get("preferred_client_mode"))
+
+        delete_policy("user_client_mode")
+
+    def test_22_preferred_client_mode_for_user_denied(self):
+        """
+        Tests the preferred_client_mode function when the policy client_mode_per_user is not activated.
+        """
+        # Mock request
+        builder = EnvironBuilder(method='POST', data={}, headers=Headers({"user_agent": "privacyidea-cp"}))
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        request = Request(env)
+        request.all_data = {}
+        self.setUp_user_realms()
+        user = User("hans", self.realm1)
+        request.User = user
+
+        response_data = {"jsonrpc": "2.0",
+                         "result": {"status": True, "value": True},
+                         "version": "privacyIDEA test",
+                         "detail": {"multi_challenge": []}
+                         }
+        g.policy_object = PolicyClass()
+
+        multi_challenge = [
+            {"client_mode": "interactive", "type": "hotp", "transaction_id": "", "serial": "", "message": ""},
+            {"client_mode": "poll", "type": "push", "transaction_id": "", "serial": "", "message": ""},
+            {"client_mode": "webauthn", "type": "webauthn", "transaction_id": "", "serial": "", "message": ""}
+        ]
+        response_data["detail"]["multi_challenge"] = multi_challenge
+        response = jsonify(response_data)
+        user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-cp", "push", INTERNAL_USAGE)
+
+        # set any policy in scope AUTH
+        set_policy("challenge", scope=SCOPE.AUTH, action={ACTION.CHALLENGERESPONSE: "hotp"})
+
+        # user_client_mode not allowed and also no preferred_client_mode policy: use default
+        preferred_client_mode(request, response)
+        response_details = response.json["detail"]
+        self.assertEqual("interactive", response_details.get("preferred_client_mode"))
+
+        # user_client_mode not allowed: use preferred_client_mode policy: webauthn
+        set_policy("preferred_client_mode", scope=SCOPE.AUTH,
+                   action={ACTION.PREFERREDCLIENTMODE: "webauthn interactive poll u2f"})
+        response = jsonify(response_data)
+
+        preferred_client_mode(request, response)
+        response_details = response.json["detail"]
+        self.assertEqual("webauthn", response_details.get("preferred_client_mode"))
+
+        delete_policy("preferred_client_mode")
+        delete_policy("challenge")

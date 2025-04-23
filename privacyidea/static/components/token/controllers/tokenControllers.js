@@ -376,18 +376,17 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                 $scope.realms = data.result.value;
                 // Set the default realm
                 const size = Object.keys($scope.realms).length;
-                angular.forEach($scope.realms, function (realm, realmname) {
-                    if (size === 1) {
-                        // if there is only one realm, preset it
-                        $scope.newUser = {user: "", realm: realmname};
-                    }
-                    // if there is a default realm, preset the default realm
-                    if (realm.default && !$stateParams.realmname) {
-                        $scope.newUser = {user: "", realm: realmname};
-                        //debug: console.log("tokenEnrollController");
-                        //debug: console.log($scope.newUser);
-                    }
-                });
+                if (size === 1) {
+                    $scope.newUser = {user: "", realm: realmname};
+                } else {
+                    angular.forEach($scope.realms, function (realm, realmname) {
+                        // if there is a default realm, preset the default realm
+                        if (realm.default && !$stateParams.realmname) {
+                            $scope.newUser = {user: "", realm: realmname};
+                        }
+                    });
+                }
+
                 // init the user, if token.enroll was called from the user.details
                 if ($stateParams.realmname) {
                     $scope.newUser.realm = $stateParams.realmname;
@@ -771,6 +770,13 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             myWindow.focus(); // necessary for IE >= 10
             return true;
         };
+
+        $scope.copyPKCS12PasswordToClipboard = function (text) {
+            navigator.clipboard.writeText(text).then(function () {
+                inform.add(gettextCatalog.getString("PKCS12 Password copied to clipboard"),
+                    {type: "info", ttl: 3000})
+            });
+        }
 
         // ===========================================================
         // ===============  Date stuff ===============================

@@ -3,7 +3,7 @@ import os
 import stat
 import sys
 
-VERSION = "3.11"
+VERSION = "3.11.1"
 
 # Taken from kennethreitz/requests/setup.py
 package_directory = os.path.realpath(os.path.dirname(__file__))
@@ -51,7 +51,7 @@ install_requires = [
     "pydash",
     "PyJWT",
     "PyMySQL",
-    "pyOpenSSL<=24.0.0",
+    "pyOpenSSL",
     "pyrad",
     "python-dateutil",
     "python-gnupg",

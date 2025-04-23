@@ -110,7 +110,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             $scope.initRegistration = $scope.container_wizard["registration"];
             $scope.form.containerType = $scope.container_wizard["type"];
         }
-        $scope.passphrase = {"ad": false, "prompt": "", "response": ""};
+        $scope.passphrase = {"prompt": "", "response": ""};
 
         $scope.allowedTokenTypes = {
             list: [],
@@ -332,7 +332,6 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                     let registrationParams =
                         {
                             "container_serial": $scope.containerSerial,
-                            "passphrase_ad": $scope.passphrase.ad,
                             "passphrase_prompt": $scope.passphrase.prompt,
                             "passphrase_response": $scope.passphrase.response
                         };
@@ -656,36 +655,6 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         $scope.editContainerInfo = false;
         $scope.containerInfoOptions = {};
         $scope.selectedInfoOptions = {};
-        $scope.editInfo = function () {
-            $scope.editContainerInfo = true;
-
-            ContainerFactory.getClassOptions({
-                "only_selectable": true,
-                "container_type": $scope.container.type
-            }, function (data) {
-                $scope.containerInfoOptions = data.result.value[$scope.container.type];
-                angular.forEach($scope.containerInfoOptions, function (values, key) {
-                    let selected = $scope.container.info[key];
-                    if (selected !== undefined) {
-                        $scope.selectedInfoOptions[key] = selected;
-                    } else {
-                        $scope.selectedInfoOptions[key] = values[0];
-                    }
-                });
-
-            });
-        };
-
-        $scope.saveInfo = function () {
-            ContainerFactory.setOptions($scope.containerSerial,
-                {"options": $scope.selectedInfoOptions},
-                function () {
-                    $scope.editContainerInfo = false;
-                    $scope.getContainer();
-                }
-            );
-
-        };
 
         $scope.saveRealms = function () {
             let realmList = "";
@@ -737,13 +706,12 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         };
 
         $scope.registrationOptions = {"open": false};
-        $scope.passphrase = {"required": false, "ad": false, "prompt": "", "response": ""};
+        $scope.passphrase = {"required": false, "prompt": "", "response": ""};
         $scope.offline_tokens = [];
         $scope.registerContainer = function (rollover) {
             let registrationParams =
                 {
                     "container_serial": $scope.containerSerial,
-                    "passphrase_ad": $scope.passphrase.ad,
                     "passphrase_prompt": $scope.passphrase.prompt,
                     "passphrase_response": $scope.passphrase.response,
                     "rollover": rollover
@@ -832,6 +800,12 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             // as we do not assign a user
             ConfigFactory.getRealms(function (data) {
                 $scope.realms = data.result.value;
+                angular.forEach($scope.realms, function (realm, realmname) {
+                    // if there is a default realm, preset the default realm
+                    if (realm.default && !$scope.newUser.realm && !$scope.newUser.user) {
+                        $scope.newUser = {user: "", realm: realmname};
+                    }
+                });
             });
         }
 

@@ -43,7 +43,6 @@ import datetime
 import functools
 import json
 import logging
-import netaddr
 import re
 import traceback
 from urllib.parse import quote
@@ -51,7 +50,7 @@ from urllib.parse import quote
 from flask import g, current_app, make_response
 
 from privacyidea.api.lib.utils import get_all_params
-from privacyidea.lib import _, lazy_gettext
+from privacyidea.lib import lazy_gettext
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import get_multichallenge_enrollable_tokentypes, get_token_class, get_privacyidea_node
 from privacyidea.lib.crypto import Sign
@@ -70,9 +69,11 @@ from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token,
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import create_img, get_version
+from privacyidea.lib.utils import (create_img, get_version, AUTH_RESPONSE,
+                                   get_plugin_info_from_useragent)
 from .prepolicy import check_max_token_user, check_max_token_realm, fido2_enroll, rss_age
 from ...lib.container import get_all_containers
+from ...lib.users.custom_user_attributes import InternalCustomUserAttributes
 
 log = logging.getLogger(__name__)
 
@@ -338,6 +339,9 @@ def no_detail_on_success(request, response):
         # The policy was set, we need to strip the details, if the
         # authentication was successful. (value=true)
         # None assures that we do not get an error, if "detail" does not exist.
+        # TODO: This would strip away the details for challenge-response
+        #  authentication for the /auth and /validate/samlcheck endpoints
+        #  since they contain a dictionary in result->value
         content.pop("detail", None)
         response.set_data(json.dumps(content))
         g.audit_object.add_policy([p.get("name") for p in policy])
@@ -358,36 +362,57 @@ def preferred_client_mode(request, response):
     :return:
     """
     content = response.json
-    user_object = request.User
+    user = request.User
 
     # get the preferred client mode from a policy definition
-    detail_pol = Match.user(g, scope=SCOPE.AUTH, action=ACTION.PREFERREDCLIENTMODE, user_object=user_object) \
-        .action_values(allow_white_space_in_action=True, unique=True)
-
-    if detail_pol:
+    preferred_client_mode_pol = Match.user(g, scope=SCOPE.AUTH, action=ACTION.PREFERREDCLIENTMODE,
+                                           user_object=user).action_values(allow_white_space_in_action=True,
+                                                                                  unique=True)
+    if preferred_client_mode_pol:
         # Split at whitespaces and strip
-        preferred_client_mode_list = str.split(list(detail_pol)[0])
+        preferred_client_mode_list = str.split(list(preferred_client_mode_pol)[0])
     else:
         preferred_client_mode_list = DEFAULT_PREFERRED_CLIENT_MODE_LIST
+
+    # check policy if client mode per user shall be used
+    client_mode_per_user_pol = Match.user(g, scope=SCOPE.AUTH, action=ACTION.CLIENT_MODE_PER_USER,
+                                          user_object=user).allowed()
+    last_used_token_type = None
+    if client_mode_per_user_pol:
+        user_agent, _, _ = get_plugin_info_from_useragent(request.user_agent.string)
+        user_attributes = user.attributes
+        last_used_token_type = user_attributes.get(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_{user_agent}")
+
     if content.get("detail"):
         detail = content.get("detail")
         if detail.get("multi_challenge"):
             multi_challenge = detail.get("multi_challenge")
-            client_modes = [x.get('client_mode') for x in multi_challenge]
 
-            try:
-                preferred = [x for x in preferred_client_mode_list if x in client_modes][0]
-                content.setdefault("detail", {})["preferred_client_mode"] = preferred
-            except IndexError as err:
-                content.setdefault("detail", {})["preferred_client_mode"] = 'interactive'
-                log.error('There was no acceptable client mode in the multi-challenge list. '
-                          'The preferred client mode is set to "interactive". '
-                          'Please check Your policy ({0!s}). '
-                          'Error: {1!s} '.format(preferred_client_mode_list, err))
-            except Exception as err:  # pragma no cover
-                content.setdefault("detail", {})["preferred_client_mode"] = 'interactive'
-                log.error('Something went wrong during setting the preferred '
-                          'client mode. Error: {0!s}'.format(err))
+            # First try to use the users preferred token type
+            preferred = None
+            if last_used_token_type:
+                for challenge in multi_challenge:
+                    if challenge.get('type') == last_used_token_type:
+                        preferred = challenge.get('client_mode')
+                        content.setdefault("detail", {})["preferred_client_mode"] = preferred
+                        break
+
+            if not preferred:
+                # User preferred client mode not found, check the policy
+                client_modes = [x.get('client_mode') for x in multi_challenge]
+                try:
+                    preferred = [x for x in preferred_client_mode_list if x in client_modes][0]
+                    content.setdefault("detail", {})["preferred_client_mode"] = preferred
+                except IndexError as err:
+                    content.setdefault("detail", {})["preferred_client_mode"] = 'interactive'
+                    log.error('There was no acceptable client mode in the multi-challenge list. '
+                              'The preferred client mode is set to "interactive". '
+                              f'Please check Your policy ({preferred_client_mode_list}). '
+                              f'Error: {err} ')
+                except Exception as err:  # pragma no cover
+                    content.setdefault("detail", {})["preferred_client_mode"] = 'interactive'
+                    log.error('Something went wrong during setting the preferred '
+                              f'client mode. Error: {err}')
 
     response.set_data(json.dumps(content))
     return response
@@ -408,13 +433,12 @@ def add_user_detail_to_response(request, response):
     # Check for ADD USER IN RESPONSE
     policy = (Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.ADDUSERINRESPONSE, user_object=request.User)
               .policies(write_to_audit_log=False))
-    if policy and content.get("result", {}).get("value") and request.User:
-        # The policy was set, we need to add the user
-        #  details
+    if policy and content.get("result", {}).get("authentication") == AUTH_RESPONSE.ACCEPT and request.User:
+        # The policy was set, we need to add the user details
         ui = request.User.info.copy()
         ui["password"] = ""  # nosec B105 # Hide a potential password
         for key, value in ui.items():
-            if type(value) == datetime.datetime:
+            if isinstance(value, datetime.datetime):
                 ui[key] = str(value)
         content.setdefault("detail", {})["user"] = ui
         g.audit_object.add_policy([p.get("name") for p in policy])
@@ -450,7 +474,10 @@ def no_detail_on_fail(request, response):
                      .policies(write_to_audit_log=False))
     if detail_policy and content.get("result", {}).get("value") is False:
         # The policy was set, we need to strip the details, if the
-        # authentication was successful. (value=true)
+        # authentication failed. (value=False)
+        # TODO: this strips away possible transactions ids during a
+        #  challenge-response authentication. We should consider the
+        #  result->authentication entry and only strip away possible user information
         del content["detail"]
         response.set_data(json.dumps(content))
         g.audit_object.add_policy([p.get("name") for p in detail_policy])
@@ -549,13 +576,14 @@ def get_webui_settings(request, response):
     """
     This decorator is used in the /auth API to add configuration information
     like the logout_time or the policy_template_url to the response.
+
     :param request: flask request object
     :param response: flask response object
     :return: the response
     """
     content = response.json
-    # check, if the authentication was successful, then we need to do nothing
-    if content.get("result").get("status") is True:
+    # If the authentication was successful (and not a challenge request), add the settings to the result
+    if content.get("result").get("status") and isinstance(content.get("result").get("value"), dict):
         role = content.get("result").get("value").get("role")
         username = content.get("result").get("value").get("username")
         realm = content.get("result").get("value").get("realm") or get_default_realm()
@@ -833,7 +861,7 @@ def multichallenge_enroll_via_validate(request, response):
     content = response.json
     result = content.get("result")
     # Check if the authentication was successful, only then attempt to enroll a new token
-    if result.get("value") and result.get("authentication") == "ACCEPT":
+    if result.get("value") and result.get("authentication") == AUTH_RESPONSE.ACCEPT:
         # Check if another policy restricts the token count and exit early if true
         try:
             check_max_token_user(request=request)
@@ -874,8 +902,9 @@ def multichallenge_enroll_via_validate(request, response):
                                 if not init_details:
                                     token.token.delete()
                                 content.get("result")["value"] = False
-                                content.get("result")["authentication"] = "CHALLENGE"
+                                content.get("result")["authentication"] = AUTH_RESPONSE.CHALLENGE
                                 detail = content.setdefault("detail", {})
+                                detail["transaction_id"] = init_details["transaction_id"]
                                 detail["transaction_ids"] = [init_details["transaction_id"]]
                                 detail["multi_challenge"] = [init_details]
                                 detail["serial"] = token.token.serial
