@@ -8,9 +8,9 @@ import logging
 from testfixtures import log_capture
 
 from privacyidea.lib.container import init_container, find_container_by_serial
-from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AUTHENTICATOR_ATTACHMENT_TYPE,
-                                             ATTESTATION_LEVEL, ATTESTATION_FORM,
-                                             USER_VERIFICATION_LEVEL)
+from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AuthenticatorAttachmentType,
+                                             AttestationLevel, AttestationForm,
+                                             UserVerificationLevel)
 from privacyidea.lib.tokens.webauthntoken import (DEFAULT_ALLOWED_TRANSPORTS,
                                                   WebAuthnTokenClass, DEFAULT_CHALLENGE_TEXT_AUTH,
                                                   PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
@@ -2523,10 +2523,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                          request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT))
 
         # With policies
-        authenticator_attachment = AUTHENTICATOR_ATTACHMENT_TYPE.CROSS_PLATFORM
+        authenticator_attachment = AuthenticatorAttachmentType.CROSS_PLATFORM
         public_key_credential_algorithm_preference = 'ecdsa'
-        authenticator_attestation_level = ATTESTATION_LEVEL.TRUSTED
-        authenticator_attestation_form = ATTESTATION_FORM.INDIRECT
+        authenticator_attestation_level = AttestationLevel.TRUSTED
+        authenticator_attestation_form = AttestationForm.INDIRECT
         challengetext = "Lorem Ipsum"
         set_policy(
             name="WebAuthn2",
@@ -2637,7 +2637,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # With policies
         timeout = 30
-        user_verification_requirement = USER_VERIFICATION_LEVEL.REQUIRED
+        user_verification_requirement = UserVerificationLevel.REQUIRED
         authenticator_selection_list = 'foo bar baz'
         set_policy(
             name="WebAuthn",
@@ -2738,7 +2738,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # With policies
         timeout = 30
-        user_verification_requirement = USER_VERIFICATION_LEVEL.REQUIRED
+        user_verification_requirement = UserVerificationLevel.REQUIRED
         set_policy(
             name="WebAuthn",
             scope=SCOPE.AUTH,
@@ -2788,7 +2788,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # With policies
         timeout = 30
-        user_verification_requirement = USER_VERIFICATION_LEVEL.REQUIRED
+        user_verification_requirement = UserVerificationLevel.REQUIRED
         set_policy(
             name="WebAuthn",
             scope=SCOPE.AUTH,
@@ -2894,7 +2894,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # With policies
         timeout = 30
-        user_verification_requirement = USER_VERIFICATION_LEVEL.REQUIRED
+        user_verification_requirement = UserVerificationLevel.REQUIRED
         set_policy(
             name="WebAuthn",
             scope=SCOPE.AUTH,
