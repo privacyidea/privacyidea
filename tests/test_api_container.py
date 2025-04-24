@@ -10,7 +10,7 @@ from privacyidea.lib.applications.offline import MachineApplication, REFILLTOKEN
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.container import (create_container_template, get_template_obj, delete_container_by_serial,
                                        get_container_realms)
-from privacyidea.lib.containers.container_info import PI_INTERNAL, TokenContainerInfoData
+from privacyidea.lib.containers.container_info import PI_INTERNAL, TokenContainerInfoData, RegistrationState
 from privacyidea.lib.containers.smartphone import SmartphoneOptions
 from privacyidea.lib.crypto import generate_keypair_ecc, decrypt_aes
 from privacyidea.lib.container import (init_container, find_container_by_serial, add_token_to_container, assign_user,
@@ -560,8 +560,9 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
     def test_24_user_container_rollover_allowed(self):
         container_serial = self.create_container_for_user("smartphone")
         container = find_container_by_serial(container_serial)
-        container.update_container_info(
-            [TokenContainerInfoData(key="registration_state", value="registered", info_type=PI_INTERNAL)])
+        container.update_container_info([TokenContainerInfoData(key=RegistrationState.get_key(),
+                                                                value=RegistrationState.REGISTERED.value,
+                                                                info_type=PI_INTERNAL)])
         set_policy("policy", scope=SCOPE.USER,
                    action={ACTION.CONTAINER_ROLLOVER: True})
         set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
@@ -575,8 +576,9 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         # User has no CONTAINER_ROLLOVER rights
         container_serial = self.create_container_for_user("smartphone")
         container = find_container_by_serial(container_serial)
-        container.update_container_info(
-            [TokenContainerInfoData(key="registration_state", value="registered", info_type=PI_INTERNAL)])
+        container.update_container_info([TokenContainerInfoData(key=RegistrationState.get_key(),
+                                                                value=RegistrationState.REGISTERED.value,
+                                                                info_type=PI_INTERNAL)])
         set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
         set_policy("policy", scope=SCOPE.USER,
                    action={ACTION.CONTAINER_REGISTER: True})
@@ -967,8 +969,9 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
     def test_27_admin_container_rollover_allowed(self):
         container_serial = self.create_container_for_user("smartphone")
         container = find_container_by_serial(container_serial)
-        container.update_container_info(
-            [TokenContainerInfoData(key="registration_state", value="registered", info_type=PI_INTERNAL)])
+        container.update_container_info([TokenContainerInfoData(key=RegistrationState.get_key(),
+                                                                value=RegistrationState.REGISTERED.value,
+                                                                info_type=PI_INTERNAL)])
         set_policy("policy", scope=SCOPE.ADMIN,
                    action={ACTION.CONTAINER_ROLLOVER: True})
         set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
@@ -982,8 +985,9 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         # Admin has no CONTAINER_ROLLOVER rights
         container_serial = self.create_container_for_user("smartphone")
         container = find_container_by_serial(container_serial)
-        container.update_container_info(
-            [TokenContainerInfoData("registration_state", "registered", info_type=PI_INTERNAL)])
+        container.update_container_info([TokenContainerInfoData(RegistrationState.get_key(),
+                                                                RegistrationState.REGISTERED.value,
+                                                                info_type=PI_INTERNAL)])
         set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
         set_policy("policy", scope=SCOPE.ADMIN,
                    action={ACTION.CONTAINER_REGISTER: True})
@@ -1752,8 +1756,9 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
     def test_24_helpdesk_container_rollover_allowed(self):
         container_serial = self.create_container_for_user("smartphone")
         container = find_container_by_serial(container_serial)
-        container.update_container_info(
-            [TokenContainerInfoData(key="registration_state", value="registered", info_type=PI_INTERNAL)])
+        container.update_container_info([TokenContainerInfoData(key=RegistrationState.get_key(),
+                                                                value=RegistrationState.REGISTERED.value,
+                                                                info_type=PI_INTERNAL)])
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ROLLOVER, realm=self.realm1)
         set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
         data = {"container_serial": container_serial, "rollover": True}
@@ -1766,8 +1771,9 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         # Helpdesk has no CONTAINER_ROLLOVER rights for the realm of the container
         container_serial = self.create_container_for_user("smartphone")
         container = find_container_by_serial(container_serial)
-        container.update_container_info(
-            [TokenContainerInfoData(key="registration_state", value="registered", info_type=PI_INTERNAL)])
+        container.update_container_info([TokenContainerInfoData(key=RegistrationState.get_key(),
+                                                                value=RegistrationState.REGISTERED.value,
+                                                                info_type=PI_INTERNAL)])
         set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REGISTER, realm=self.realm2)
         data = {"container_serial": container_serial, "rollover": True}
@@ -2509,14 +2515,14 @@ class APIContainer(APIContainerTest):
                    action=f"{ACTION.HIDE_CONTAINER_INFO}=encrypt_algorithm device,{ACTION.CONTAINER_LIST}")
         container3 = find_container_by_serial(container_serials[3])
         container3.set_container_info({"encrypt_algorithm": "AES", "encrypt_mode": "GCM", "device": "ABC1234",
-                                       "registration_state": "registered"})
+                                       RegistrationState.get_key(): RegistrationState.REGISTERED.value})
         # Filter for container serial
         result = self.request_assert_success('/container/',
                                              {"container_serial": container_serials[3], "pagesize": 15},
                                              self.at, 'GET')
         result_container = result["result"]["value"]["containers"][0]
         self.assertTrue(container_serials[3], result_container["serial"])
-        self.assertSetEqual({"encrypt_mode", "registration_state"}, set(result_container["info"].keys()))
+        self.assertSetEqual({"encrypt_mode", RegistrationState.get_key()}, set(result_container["info"].keys()))
         # Get all containers
         result = self.request_assert_success('/container/', {"pagesize": 15}, self.at, 'GET')
         result_containers = result["result"]["value"]["containers"]
@@ -4125,7 +4131,8 @@ class APIContainerSynchronization(APIContainerTest):
         self.request_assert_success('container/register/finalize',
                                     params,
                                     None, 'POST')
-        self.assertEqual("rollover_completed", smartphone.get_container_info_dict().get("registration_state"))
+        self.assertEqual(RegistrationState.ROLLOVER_COMPLETED.value,
+                         smartphone.get_container_info_dict().get(RegistrationState.get_key()))
 
         # Challenge for Sync
         scope = "https://new-pi.net/container/synchronize"
@@ -4152,7 +4159,8 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertEqual(0, len(token_diff["update"]))
 
         # smartphone got new token secrets: rollover completed
-        self.assertEqual("registered", smartphone.get_container_info_dict().get("registration_state"))
+        self.assertEqual(RegistrationState.REGISTERED.value,
+                         smartphone.get_container_info_dict().get(RegistrationState.get_key()))
 
         delete_policy("policy")
 
@@ -4280,7 +4288,8 @@ class APIContainerSynchronization(APIContainerTest):
         self.request_assert_success('container/register/finalize',
                                     params,
                                     None, 'POST')
-        self.assertEqual("rollover_completed", smartphone.get_container_info_dict().get("registration_state"))
+        self.assertEqual(RegistrationState.ROLLOVER_COMPLETED.value,
+                         smartphone.get_container_info_dict().get(RegistrationState.get_key()))
 
         # Try to sync with old smartphone
         scope = "https://pi.net/container/synchronize"
@@ -4291,7 +4300,8 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_error(400, "container/synchronize",
                                            params, None, 'POST')
         self.assertEqual(3002, result["result"]["error"]["code"])
-        self.assertEqual("rollover_completed", smartphone.get_container_info_dict().get("registration_state"))
+        self.assertEqual(RegistrationState.ROLLOVER_COMPLETED.value,
+                         smartphone.get_container_info_dict().get(RegistrationState.get_key()))
 
         # Sync with new smartphone
         scope = "https://new-pi.net/container/synchronize"
@@ -4330,7 +4340,8 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertEqual("firebase", push.get_tokeninfo()[PUSH_ACTION.FIREBASE_CONFIG])
 
         # smartphone got new token secrets: rollover completed
-        self.assertEqual("registered", smartphone.get_container_info_dict().get("registration_state"))
+        self.assertEqual(RegistrationState.REGISTERED.value,
+                         smartphone.get_container_info_dict().get(RegistrationState.get_key()))
 
         delete_policy("policy")
 
@@ -4728,8 +4739,9 @@ class APIContainerSynchronization(APIContainerTest):
         registration = self.register_smartphone_success()
         mock_smph = registration.mock_smph
         smartphone = find_container_by_serial(mock_smph.container_serial)
-        smartphone.update_container_info(
-            [TokenContainerInfoData(key="registration_state", value="rollover_completed", info_type=PI_INTERNAL)])
+        smartphone.update_container_info([TokenContainerInfoData(key=RegistrationState.get_key(),
+                                                                 value=RegistrationState.ROLLOVER_COMPLETED.value,
+                                                                 info_type=PI_INTERNAL)])
 
         # tokens
         server_token = init_token({"genkey": "1", "type": "hotp", "otplen": 8, "hashlib": "sha256"})

@@ -30,7 +30,8 @@ from privacyidea.lib import _
 from privacyidea.lib.apps import _construct_extra_parameters
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.containerclass import TokenContainerClass
-from privacyidea.lib.containers.container_info import TokenContainerInfoData, PI_INTERNAL
+from privacyidea.lib.containers.container_info import (TokenContainerInfoData, PI_INTERNAL, RegistrationState,
+                                                       INITIALLY_SYNCHRONIZED)
 from privacyidea.lib.containers.smartphone_options import SmartphoneOptions
 from privacyidea.lib.crypto import (geturandom, encryptPassword, b64url_str_key_pair_to_ecc_obj,
                                     generate_keypair_ecc, encrypt_aes)
@@ -224,7 +225,8 @@ class SmartphoneContainer(TokenContainerClass):
 
         # Set container info
         self.update_container_info(
-            [TokenContainerInfoData(key="registration_state", value="client_wait", info_type=PI_INTERNAL)])
+            [TokenContainerInfoData(key=RegistrationState.get_key(), value=RegistrationState.CLIENT_WAIT.value,
+                                    info_type=PI_INTERNAL)])
 
         # Response
         response_detail = {"container_url": {"description": _("URL for privacyIDEA Container Registration"),
@@ -313,15 +315,16 @@ class SmartphoneContainer(TokenContainerClass):
 
         # The rollover is completed with the first synchronization
         container_info = self.get_container_info_dict()
-        registration_state = container_info.get("registration_state", "")
-        if registration_state != "rollover":
+        registration_state = RegistrationState(container_info.get(RegistrationState.get_key()))
+        if registration_state != RegistrationState.ROLLOVER:
             new_container_info.append(
-                TokenContainerInfoData(key="registration_state", value="registered", info_type=PI_INTERNAL))
+                TokenContainerInfoData(key=RegistrationState.get_key(), value=RegistrationState.REGISTERED.value,
+                                       info_type=PI_INTERNAL))
 
         # check right for initial token transfer
         if params.get("client_policies", {}).get("initially_add_tokens_to_container"):
             new_container_info.append(
-                TokenContainerInfoData(key="initially_synchronized", value="False", info_type=PI_INTERNAL))
+                TokenContainerInfoData(key=INITIALLY_SYNCHRONIZED, value="False", info_type=PI_INTERNAL))
 
         # update container info
         self.update_container_info(new_container_info)
@@ -338,9 +341,9 @@ class SmartphoneContainer(TokenContainerClass):
         self.delete_container_info("public_key_client", keep_internal=False)
         self.delete_container_info("device", keep_internal=False)
         self.delete_container_info("server_url", keep_internal=False)
-        self.delete_container_info("registration_state", keep_internal=False)
+        self.delete_container_info(RegistrationState.get_key(), keep_internal=False)
         self.delete_container_info("challenge_ttl", keep_internal=False)
-        self.delete_container_info("initially_synchronized", keep_internal=False)
+        self.delete_container_info(INITIALLY_SYNCHRONIZED, keep_internal=False)
 
     def create_challenge(self, scope: str, validity_time: int = 2, data: dict = None) -> dict[str, str]:
         """

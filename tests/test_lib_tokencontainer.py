@@ -22,7 +22,7 @@ from privacyidea.lib.container import (delete_container_by_id, find_container_by
                                        unassign_user)
 from privacyidea.lib.container import get_container_classes, unregister
 from privacyidea.lib.containerclass import TokenContainerClass
-from privacyidea.lib.containers.container_info import TokenContainerInfoData, PI_INTERNAL
+from privacyidea.lib.containers.container_info import TokenContainerInfoData, PI_INTERNAL, RegistrationState
 from privacyidea.lib.containers.smartphone import SmartphoneOptions, SmartphoneContainer
 from privacyidea.lib.containers.yubikey import YubikeyContainer
 from privacyidea.lib.containertemplate.containertemplatebase import ContainerTemplateBase
@@ -1485,7 +1485,7 @@ class TokenContainerSynchronization(MyTestCase):
         container_info_keys = container_info.keys()
         self.assertIn("public_key_client", container_info_keys)
         self.assertEqual(f"{mock_smph.device_brand} {mock_smph.device_model}", container_info["device"])
-        self.assertEqual("registered", container_info["registration_state"])
+        self.assertEqual(RegistrationState.REGISTERED.value, container_info[RegistrationState.get_key()])
 
         return mock_smph
 
@@ -1508,7 +1508,7 @@ class TokenContainerSynchronization(MyTestCase):
         container_info_keys = container_info.keys()
         self.assertNotIn("public_key_client", container_info_keys)
         self.assertNotIn("device", container_info_keys)
-        self.assertNotIn("registration_state", container_info_keys)
+        self.assertNotIn(RegistrationState.get_key(), container_info_keys)
         self.assertNotIn("server_url", container_info_keys)
 
         # check challenge
@@ -1584,7 +1584,7 @@ class TokenContainerSynchronization(MyTestCase):
         container_info_keys = container_info.keys()
         self.assertIn("public_key_client", container_info_keys)
         self.assertEqual(f"{mock_smph.device_brand} {mock_smph.device_model}", container_info["device"])
-        self.assertEqual("registered", container_info["registration_state"])
+        self.assertEqual(RegistrationState.REGISTERED.value, container_info[RegistrationState.get_key()])
 
     def test_05c_register_smartphone_passphrase_user_fails(self):
         """
@@ -1965,7 +1965,7 @@ class TokenContainerSynchronization(MyTestCase):
         container_info_keys = container_info.keys()
         self.assertIn("public_key_client", container_info_keys)
         self.assertEqual(f"{mock_smph_new.device_brand} {mock_smph_new.device_model}", container_info["device"])
-        self.assertEqual("rollover_completed", container_info["registration_state"])
+        self.assertEqual(RegistrationState.ROLLOVER_COMPLETED.value, container_info[RegistrationState.get_key()])
         self.assertEqual("https://pi.net/", container_info["server_url"])
         self.assertEqual("20", container_info["challenge_ttl"])
 

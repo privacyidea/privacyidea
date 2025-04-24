@@ -31,7 +31,7 @@ from privacyidea.api.lib.utils import send_result
 from privacyidea.lib.challenge import delete_challenges
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.containerclass import TokenContainerClass
-from privacyidea.lib.containers.container_info import PI_INTERNAL, TokenContainerInfoData
+from privacyidea.lib.containers.container_info import PI_INTERNAL, TokenContainerInfoData, RegistrationState
 from privacyidea.lib.containertemplate.containertemplatebase import ContainerTemplateBase
 from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError
 from privacyidea.lib.log import log_with
@@ -315,10 +315,11 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
 
 
 def get_all_containers(user: User = None, serial: str = None, ctype: str = None, token_serial: str = None,
-                       realm: str = None, allowed_realms: list[str] = None, sortby: str = 'serial', sortdir: str = 'asc',
-                       template: str = None, description: str = None, assigned: bool = None, resolver: str = None,
-                       info: dict = None, last_auth_delta: str = None, last_sync_delta: str = None, state: str = None,
-                       page: int = 0, pagesize: int = 0) -> dict[str, Union[int, None, list[TokenContainerClass]]]:
+                       realm: str = None, allowed_realms: list[str] = None, sortby: str = 'serial',
+                       sortdir: str = 'asc', template: str = None, description: str = None, assigned: bool = None,
+                       resolver: str = None, info: dict = None, last_auth_delta: str = None,
+                       last_sync_delta: str = None, state: str = None, page: int = 0,
+                       pagesize: int = 0) -> dict[str, Union[int, None, list[TokenContainerClass]]]:
     """
     This function is used to retrieve a container list, that can be displayed in
     the Web UI. It supports pagination if either page or pagesize is given (e.g. >0).
@@ -449,26 +450,6 @@ def get_container_classes() -> dict[str, type[TokenContainerClass]]:
             log.warning(f"Error importing module {cls}: {ex}")
 
     return ret
-
-
-def get_container_policy_info(container_type: Union[str, None] = None):
-    """
-    Returns the policy info for the given container type or for all container types if no type is defined.
-
-    :param container_type: The type of the container, optional
-    :return: The policy info for the given container type or for all container types
-    """
-    classes = get_container_classes()
-    if container_type:
-        if container_type in classes.keys():
-            return classes[container_type].get_container_policy_info()
-        else:
-            raise ResourceNotFoundError(f"Unable to find container type {container_type}.")
-    else:
-        ret = {}
-        for container_type, container_class in classes.items():
-            ret[container_type] = container_class.get_container_policy_info()
-        return ret
 
 
 def init_container(params: dict[str, any]) -> dict[str, Union[str, list]]:
@@ -1171,10 +1152,10 @@ def finalize_registration(container_serial: str, params: dict) -> dict:
     # Get container
     container = find_container_by_serial(container_serial)
     container_info = container.get_container_info_dict()
-    registration_state = container_info.get("registration_state")
+    registration_state = RegistrationState(container_info.get(RegistrationState.get_key()))
 
     # Update params with registration url
-    if registration_state == "rollover":
+    if registration_state == RegistrationState.ROLLOVER:
         server_url = container_info.get("rollover_server_url")
     else:
         server_url = container_info.get("server_url")
@@ -1186,7 +1167,7 @@ def finalize_registration(container_serial: str, params: dict) -> dict:
 
     res = container.finalize_registration(params)
 
-    if registration_state == "rollover":
+    if registration_state == RegistrationState.ROLLOVER:
         # container registration rolled over: set rollover info as correct info
         for key, value in container_info.items():
             if key.find("rollover_") == 0:
@@ -1196,8 +1177,9 @@ def finalize_registration(container_serial: str, params: dict) -> dict:
                 container.delete_container_info(key, keep_internal=False)
 
         finalize_container_rollover(container)
-        container.update_container_info(
-            [TokenContainerInfoData(key="registration_state", value="rollover_completed", info_type=PI_INTERNAL)])
+        container.update_container_info([TokenContainerInfoData(key=RegistrationState.get_key(),
+                                                                value=RegistrationState.ROLLOVER_COMPLETED.value,
+                                                                info_type=PI_INTERNAL)])
 
     return res
 
@@ -1263,7 +1245,8 @@ def init_container_rollover(container: TokenContainerClass, server_url: str, cha
     res = container.init_registration(server_url, registration_scope, registration_ttl, ssl_verify, params)
 
     # Set registration state
-    info = [TokenContainerInfoData(key="registration_state", value="rollover", info_type=PI_INTERNAL),
+    info = [TokenContainerInfoData(key=RegistrationState.get_key(), value=RegistrationState.ROLLOVER.value,
+                                   info_type=PI_INTERNAL),
             TokenContainerInfoData(key="rollover_server_url", value=server_url, info_type=PI_INTERNAL),
             TokenContainerInfoData(key="rollover_challenge_ttl", value=str(challenge_ttl), info_type=PI_INTERNAL)]
     container.update_container_info(info)

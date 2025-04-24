@@ -17,8 +17,10 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 from dataclasses import dataclass
+from enum import Enum
 
 PI_INTERNAL = "pi_internal"
+INITIALLY_SYNCHRONIZED = "initially_synchronized"
 
 @dataclass
 class TokenContainerInfoData:
@@ -35,3 +37,21 @@ class TokenContainerInfoData:
         self.value = value
         self.type = info_type
         self.description = description
+
+
+class RegistrationState(Enum):
+    """
+    Enum for registration states.
+    """
+    NOT_REGISTERED = None
+    CLIENT_WAIT = "client_wait"
+    REGISTERED = "registered"
+    ROLLOVER = "rollover"
+    ROLLOVER_COMPLETED = "rollover_completed"
+
+    @classmethod
+    def get_key(cls):
+        """
+        Get the key used to write the registration state in the container info.
+        """
+        return "registration_state"
