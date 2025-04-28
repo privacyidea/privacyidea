@@ -405,7 +405,8 @@ def init_container(params: dict) -> dict:
 
     # Creation Date
     creation_date = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
-    container.update_container_info([TokenContainerInfoData(key="creation_date", value=creation_date)])
+    container.update_container_info(
+        [TokenContainerInfoData(key="creation_date", value=creation_date, info_type=PI_INTERNAL)])
 
     # Template handling
     template_tokens = []
@@ -439,7 +440,6 @@ def init_container(params: dict) -> dict:
             template_tokens = template_options.get("tokens", [])
         else:
             log.warning(f"Template {template_name} is not of type {ctype}, create container without template.")
-
 
     user = params.get("user")
     realm = params.get("realm")
