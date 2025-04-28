@@ -279,6 +279,7 @@ class SmartphoneContainer(TokenContainerClass):
                 "public_client_key": <public key of the smartphone serialized in the PEM format>,
                 "device_brand": <Brand of the smartphone, str> (optional),
                 "device_model": <Model of the smartphone, str> (optional),
+                "passphrase": <Passphrase of the user store, str> (optional)
             }
 
         :return: A dictionary with the success status like ``{"success": True}``
