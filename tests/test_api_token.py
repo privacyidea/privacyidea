@@ -533,6 +533,7 @@ class APITokenTestCase(MyApiTestCase):
     def setUp(self):
         super(APITokenTestCase, self).setUp()
         self.setUp_user_realms()
+        self.setUp_user_realm2()
 
     def _create_temp_token(self, serial):
         with self.app.test_request_context('/token/init',
@@ -1361,7 +1362,7 @@ class APITokenTestCase(MyApiTestCase):
 
         with self.app.test_request_context('/token/realm/REALM001',
                                            method="POST",
-                                           data={"realms": "realm1, realm2"},
+                                           data={"realms": f"{self.realm1}, non-existin-realm"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -1378,7 +1379,7 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             value = result.get("value")
             token = value.get("tokens")[0]
-            self.assertTrue(token.get("realms") == ["realm1"], token)
+            self.assertTrue(token.get("realms") == [self.realm1], token)
 
     def test_11_load_tokens(self):
         # Set dummy policy to check if token upload still works (see #2209)
@@ -1530,6 +1531,7 @@ class APITokenTestCase(MyApiTestCase):
         delete_event(event_id)
 
     def test_11_load_tokens_only_to_specific_realm(self):
+
         # Load token to a realm
         def _clean_up_tokens():
             remove_token("token01")
@@ -1575,7 +1577,7 @@ class APITokenTestCase(MyApiTestCase):
         self.assertIn(self.realm1, r)
 
         # Now define a policy, that allows the user to upload tokens to some other realm
-        set_policy(name="tokupload", scope=SCOPE.ADMIN, action=ACTION.IMPORT, realm="otherrealm",
+        set_policy(name="tokupload", scope=SCOPE.ADMIN, action=ACTION.IMPORT, realm=self.realm2,
                    adminuser="testadmin")
         _clean_up_tokens()
         with self.app.test_request_context('/token/load/import.oath',
@@ -1913,8 +1915,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 400, res)
 
     def test_19_get_challenges(self):
-        set_policy("chalresp", scope=SCOPE.AUTHZ,
-                   action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+        set_policy("chalresp", scope=SCOPE.AUTH, action=f"{ACTION.CHALLENGERESPONSE}=hotp")
         token = init_token({"genkey": 1, "serial": "CHAL1", "pin": "pin"})
         serial = token.token.serial
         r = check_serial_pass(serial, "pin")
@@ -2067,12 +2068,11 @@ class APITokenTestCase(MyApiTestCase):
         # Check if a realm admin can not delete a token in another realm
         # Admin is only allowed to delete tokens in "testrealm"
         set_policy("deleteToken", scope=SCOPE.ADMIN,
-                   action="delete",
+                   action=ACTION.DELETE,
                    user="testadmin",
-                   realm="testrealm"
-                   )
+                   realm=self.realm1)
         init_token({"type": "SPASS", "serial": "SP001"},
-                   user=User("cornelius", self.realm1))
+                   user=User("cornelius", self.realm2))
 
         # Now testadmin tries to delete a token from realm1, which he can not
         #  access.
@@ -2238,90 +2238,71 @@ class APITokenTestCase(MyApiTestCase):
             self.assertNotIn('key1', tokeninfo)
 
     def test_25_user_init_defaults(self):
-        self.setUp_user_realms()
+        """
+        Test the token init endpoint without passing the required enrollment parameters for TOTP tokens.
+        Test that the correct system defaults are used for the token and in the enroll url.
+        There are three possibilities for the hashlib and time step: Use the system default (sha1, 30 seconds), set the
+        defaults in the configurations, or use a user/admin policy to enforce a specific hashlib and time step. The
+        policies take precedence over the system defaults.
+        """
         self.authenticate_selfservice_user()
-        # Now this user is authenticated as selfservice@realm1
+        set_policy("user_enroll", SCOPE.USER, "enrollTOTP")
+        set_policy("admin_enroll", SCOPE.ADMIN, "enrollTOTP")
 
-        # first test with system configuration
-        set_privacyidea_config('totp.hashlib', 'sha512')
-        with self.app.test_request_context('/token/init',
-                                           method='POST',
-                                           data={
-                                               "type": "totp",
-                                               "genkey": 1,
-                                               "user": "selfservice",
-                                               "realm": "realm1"},
-                                           headers={'Authorization': self.at_user}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            self.assertTrue(res.json.get('result').get("value"))
-            detail = res.json.get("detail")
-            googleurl = detail.get("googleurl")
-            # TODO: The google URL states no hashlib (which means sha1) but the
-            #       actual hashlib is sha512 since no hashlib parameter was
-            #       send in the request.
-            #       This is wrong and needs to be fixed in hotptoken.py:253
-            self.assertFalse("sha1" in googleurl.get("value"))
-            serial = detail.get("serial")
-            token = get_tokens(serial=serial)[0]
-            self.assertEqual(token.hashlib, "sha512")
-            self.assertEqual(token.timestep, 30)
-            self.assertEqual(token.token.otplen, 6)
-            remove_token(serial)
+        def check_token_init(hashlib, time_step, otp_len=6, auth_header=self.at_user):
+            with self.app.test_request_context('/token/init',
+                                               method='POST',
+                                               data={"type": "totp",
+                                                     "genkey": True,
+                                                     "user": "selfservice",
+                                                     "realm": self.realm1},
+                                               headers={'Authorization': auth_header}):
+                res = self.app.full_dispatch_request()
+                data = res.json
+                self.assertTrue(res.status_code == 200, res)
+                result = data.get("result")
+                detail = data.get("detail")
+                self.assertTrue(result.get("status"), result)
+                self.assertTrue(result.get("value"), result)
 
-        # Now create policy for sha256, overwriting the system config
-        set_policy(name="init_details",
-                   scope=SCOPE.USER,
-                   action="totp_otplen=8,totp_hashlib=sha256,"
-                          "totp_timestep=60,enrollTOTP")
+                # check enroll url
+                enroll_url = detail.get("googleurl", {}).get("value")
+                if hashlib == "sha1":
+                    self.assertNotIn("&algorithm", enroll_url)
+                else:
+                    self.assertIn(f"&algorithm={hashlib.upper()}", enroll_url)
+                self.assertIn(f"&period={time_step}", enroll_url)
 
-        with self.app.test_request_context('/token/init',
-                                           method='POST',
-                                           data={
-                                               "type": "totp",
-                                               "totp.hashlib": "sha1",
-                                               "hashlib": "sha1",
-                                               "genkey": 1,
-                                               "user": "selfservice",
-                                               "realm": "realm1"},
-                                           headers={'Authorization': self.at_user}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            self.assertTrue(result.get("value"))
-            detail = res.json.get("detail")
-            googleurl = detail.get("googleurl")
-            self.assertTrue("SHA256" in googleurl.get("value"))
-            serial = detail.get("serial")
-            token = get_tokens(serial=serial)[0]
-            self.assertEqual(token.hashlib, "sha256")
-            self.assertEqual(token.token.otplen, 8)
+                # check token info
+                serial = detail.get("serial")
+                token = get_tokens(serial=serial)[0]
+                self.assertEqual(hashlib, token.hashlib)
+                self.assertEqual(time_step, token.timestep)
+                self.assertEqual(otp_len, token.token.otplen)
 
-        delete_policy("init_details")
-        remove_token(serial)
+        # ---- hashlib and time step ----
+        # System default
+        check_token_init("sha1", 30)
 
+        # Set system default to sha256 and 60 seconds
+        set_privacyidea_config("totp.hashlib", "sha256", "public", "")
+        set_privacyidea_config("totp.timeStep", "60", "public", "")
+        check_token_init("sha256", 60)
+
+        # Set user policy
+        set_policy("user_policy", SCOPE.USER, {"totp_hashlib": "sha512", "totp_timestep": "30"})
+        check_token_init("sha512", 30)
+        delete_policy("user_policy")
+
+        # Set admin policy
+        set_policy("admin_policy", SCOPE.ADMIN, {"totp_hashlib": "sha512", "totp_timestep": "30"})
+        check_token_init("sha512", 30, auth_header=self.at)
+        delete_policy("admin_policy")
+
+        # ---- OTP len ----
         # Set OTP len using the system wide default
         set_privacyidea_config("DefaultOtpLen", 8)
-        with self.app.test_request_context('/token/init',
-                                           method='POST',
-                                           data={
-                                               "type": "totp",
-                                               "totp.hashlib": "sha1",
-                                               "hashlib": "sha1",
-                                               "genkey": 1,
-                                               "user": "selfservice",
-                                               "realm": "realm1"},
-                                           headers={'Authorization': self.at_user}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            self.assertTrue(result.get("value"))
-            detail = res.json.get("detail")
-            serial = detail.get("serial")
-            token = get_tokens(serial=serial)[0]
-            self.assertEqual(token.token.otplen, 8)
-
-        remove_token(serial)
+        check_token_init("sha256", 60, 8)
 
         # override the DefaultOtpLen
         with self.app.test_request_context('/token/init',
@@ -2346,6 +2327,8 @@ class APITokenTestCase(MyApiTestCase):
 
         remove_token(serial)
         delete_privacyidea_config("DefaultOtpLen")
+        delete_policy("user_enroll")
+        delete_policy("admin_enroll")
 
     def test_26_supply_key_size(self):
         with self.app.test_request_context('/token/init',
@@ -3114,6 +3097,31 @@ class APITokenTestCase(MyApiTestCase):
             token = result.get("value").get("tokens")[0]
             self.assertEqual(tok.get_serial(), token.get("serial"), token)
         remove_token(tok.get_serial())
+
+    def test_61_list_tokens_realm(self):
+        self.setUp_user_realm2()
+
+        # create token for a user and an additional token realm
+        token = init_token({"type": "hotp", "genkey": True}, user=User(login="hans", realm=self.realm2))
+        token.set_realms([self.realm1, self.realm2])
+
+        # set policy for helpdesk admin
+        set_policy("helpdesk", scope=SCOPE.ADMIN, action=ACTION.TOKENLIST, realm=self.realm1)
+
+        # List tokens for serial (before request will also add user as parameter)
+        with self.app.test_request_context("/token/",
+                                           method="GET",
+                                           query_string={"serial": token.get_serial()},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertEqual(1, len(result.get("value").get("tokens")))
+            self.assertEqual(token.get_serial(), result.get("value").get("tokens")[0].get("serial"))
+
+        remove_token(token.get_serial())
+        delete_policy("helpdesk")
 
 
 class API00TokenPerformance(MyApiTestCase):

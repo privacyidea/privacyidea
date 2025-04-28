@@ -2055,6 +2055,7 @@ def fido2_auth(request, action):
     The following policy values are added:
     - WEBAUTHNACTION.ALLOWED_TRANSPORTS
     - ACTION.CHALLENGETEXT for WebAuthn and Passkey token
+    - PasskeyAction.EnableTriggerByPIN
     """
     user_object = request.User if hasattr(request, "User") else None
     allowed_transports_policies = (Match.user(g,
@@ -2082,6 +2083,13 @@ def fido2_auth(request, action):
     rp_id = get_first_policy_value(FIDO2PolicyAction.RELYING_PARTY_ID, "", scope=SCOPE.ENROLL)
     if rp_id:
         request.all_data[FIDO2PolicyAction.RELYING_PARTY_ID] = rp_id
+
+    passkey_trigger_by_pin = (Match.user(g,
+                                         scope=SCOPE.AUTH,
+                                         action=PasskeyAction.EnableTriggerByPIN,
+                                         user_object=user_object).any())
+    request.all_data[PasskeyAction.EnableTriggerByPIN] = passkey_trigger_by_pin
+
     return True
 
 

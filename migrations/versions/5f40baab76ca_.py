@@ -23,7 +23,7 @@ def upgrade():
                       sa.Column('handle_missing_data', sa.Unicode(length=255), nullable=True))
     except (OperationalError, ProgrammingError) as exx:
         if "already exists" in str(exx.orig).lower() or "duplicate column name" in str(exx.orig).lower():
-            print("Column 'handle_missing_data' already exist.")
+            print("Column 'handle_missing_data' already exists.")
         else:
             print("Could not add column 'handle_missing_data' to table 'policycondition'.")
             print(exx)

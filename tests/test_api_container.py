@@ -455,10 +455,10 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
 
     def test_18_user_container_list_allowed(self):
         # Arrange
+        self.setUp_user_realms()
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_LIST)
 
         # container with token from another user: reduce token info
-        set_policy("policy2", scope=SCOPE.USER, action=ACTION.TOKENLIST)
         container_serial = init_container({"type": "generic"})["container_serial"]
         me = User("selfservice", self.realm1, self.resolvername1)
         assign_user(container_serial, me)
@@ -486,7 +486,6 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         self.assertNotIn("tokentype", tokens[1].keys())
 
         delete_policy("policy")
-        delete_policy("policy2")
 
     def test_19_user_container_list_denied(self):
         # User does not have CONTAINER_LIST rights
@@ -494,6 +493,8 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         self.request_denied_assert_403('/container/', {}, self.at_user, 'GET')
 
     def test_20_user_container_register_allowed(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
         container_serial = self.create_container_for_user("smartphone")
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_REGISTER)
         # set two policies, but only one applicable for the realm of the user
@@ -2631,7 +2632,6 @@ class APIContainerSynchronization(APIContainerTest):
         if not smartphone_serial:
             smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
         data = {"container_serial": smartphone_serial,
-                "passphrase_ad": False,
                 "passphrase_prompt": "Enter your passphrase",
                 "passphrase_response": "top_secret"}
 
@@ -2745,7 +2745,6 @@ class APIContainerSynchronization(APIContainerTest):
                                             "user": "hans",
                                             "realm": self.realm1})["container_serial"]
         data = {"container_serial": smartphone_serial,
-                "passphrase_ad": False,
                 "passphrase_prompt": "Enter your passphrase",
                 "passphrase_response": "top_secret"}
 
@@ -2791,7 +2790,6 @@ class APIContainerSynchronization(APIContainerTest):
                    realm=self.realm1, priority=1)
         smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
         data = {"container_serial": smartphone_serial,
-                "passphrase_ad": False,
                 "passphrase_prompt": "Enter your passphrase",
                 "passphrase_response": "top_secret"}
 
@@ -2839,7 +2837,6 @@ class APIContainerSynchronization(APIContainerTest):
                                                             ACTION.CONTAINER_REGISTRATION_TTL: 24})
         smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
         data = {"container_serial": smartphone_serial,
-                "passphrase_ad": False,
                 "passphrase_prompt": "Enter your passphrase",
                 "passphrase_response": "top_secret"}
         # Initialize
@@ -2863,7 +2860,6 @@ class APIContainerSynchronization(APIContainerTest):
                                                             ACTION.CONTAINER_REGISTRATION_TTL: 24})
         smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
         data = {"container_serial": smartphone_serial,
-                "passphrase_ad": False,
                 "passphrase_prompt": "Enter your passphrase",
                 "passphrase_response": "top_secret"}
 
@@ -3185,7 +3181,6 @@ class APIContainerSynchronization(APIContainerTest):
                                                             ACTION.CONTAINER_REGISTRATION_TTL: 24})
         generic_serial = init_container({"type": "generic"})["container_serial"]
         data = {"container_serial": generic_serial,
-                "passphrase_ad": False,
                 "passphrase_prompt": "Enter your passphrase",
                 "passphrase_response": "top_secret"}
 
@@ -3211,7 +3206,6 @@ class APIContainerSynchronization(APIContainerTest):
                                                             ACTION.CONTAINER_REGISTRATION_TTL: 24})
         yubi_serial = init_container({"type": "yubikey"})["container_serial"]
         data = {"container_serial": yubi_serial,
-                "passphrase_ad": False,
                 "passphrase_prompt": "Enter your passphrase",
                 "passphrase_response": "top_secret"}
 

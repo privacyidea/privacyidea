@@ -1418,7 +1418,7 @@ class TokenContainerSynchronization(MyTestCase):
         self.assertRaises(ContainerInvalidChallenge, smartphone.finalize_registration, params)
 
         # Valid prepare
-        passphrase_params = {"passphrase_ad": False, "passphrase_prompt": "Enter passphrase",
+        passphrase_params = {"passphrase_prompt": "Enter passphrase",
                              "passphrase_response": "top_secret"}
         smartphone_serial, init_results = self.register_smartphone_initialize_success(scope,
                                                                                       passphrase_params)
@@ -1518,7 +1518,7 @@ class TokenContainerSynchronization(MyTestCase):
     def test_05a_register_smartphone_passphrase_success(self):
         # Prepare
         scope = "https://pi.net/container/register/finalize"
-        passphrase_params = {"passphrase_ad": False, "passphrase_prompt": "Enter passphrase",
+        passphrase_params = {"passphrase_prompt": "Enter passphrase",
                              "passphrase_response": "top_secret"}
         smartphone_serial, init_result = self.register_smartphone_initialize_success(scope,
                                                                                      passphrase_params)
