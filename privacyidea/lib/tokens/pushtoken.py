@@ -1200,14 +1200,28 @@ class PushTokenClass(TokenClass):
     def is_multichallenge_enrollable(cls):
         return True
 
-    def get_enroll_url(self, user: User, params: dict) -> str:
+    def export_token(self) -> dict:
         """
-        Return the URL to enroll this token. It is not supported by all token types.
+        Create a dictionary with the token information that can be exported.
+        """
+        token_dict = TokenClass.export_token(self)
+        token_dict["public_key_smartphone"] = self.get_tokeninfo("public_key_smartphone")
+        token_dict["public_key_server"] = self.get_tokeninfo("public_key_server")
+        token_dict["firebase_token"] = self.get_tokeninfo("firebase_token")
+        token_dict["private_key_server"] = self.get_tokeninfo("private_key_server")
+        token_dict["push_firebase_config"] = self.get_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
+        return token_dict
 
-        :param user: The user object
-        :param params: Further parameters
-        :return: The URL containing all required information to enroll the token
+    def import_token(self, token_information: dict):
         """
-        init_details = self.get_init_detail(params, user)
-        enroll_url = init_details.get("pushurl").get("value")
-        return enroll_url
+        Import a push token.
+        """
+        TokenClass.import_token(self, token_information)
+        self.add_tokeninfo("public_key_smartphone", token_information["public_key_smartphone"])
+        self.add_tokeninfo("public_key_server", token_information["public_key_server"])
+        self.add_tokeninfo("firebase_token", token_information["firebase_token"])
+        self.add_tokeninfo("private_key_server", token_information["private_key_server"], "password")
+        self.add_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG, token_information["push_firebase_config"])
+        self.save()
+        pass
+

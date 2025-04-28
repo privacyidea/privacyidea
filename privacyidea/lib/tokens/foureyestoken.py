@@ -521,7 +521,7 @@ class FourEyesTokenClass(TokenClass):
 
     def import_token(self, token_information: dict):
         """
-        Import a email token.
+        Import a 4eyes token.
         """
         TokenClass.import_token(self, token_information)
         self.add_tokeninfo("separator", token_information["separator"])
