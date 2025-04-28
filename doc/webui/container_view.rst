@@ -81,8 +81,8 @@ The registration can be initiated in the dropdown `Registration Configuration`.
 Optionally, the user can secure the registration with a passphrase. For this, a prompt that will be displayed to the
 user in the authenticator app, and the correct passphrase response can be configured. Another possibility is to simply
 use the passphrase from the user store (Added in version 3.12). This requires that the container is assigned to a user.
-When the passphrase shall be evaluated against the user store you can optionally specify a prompt, but not the
-passphrase response.
+When the passphrase shall be evaluated against the user store you can optionally specify a prompt, otherwise a default
+prompt will be displayed.
 
 After clicking the button `Register Container on Device`, a QR code is displayed. The user has to
 scan this QR code with the privacyIDEA Authenticator app to complete the registration.

@@ -110,7 +110,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             $scope.initRegistration = $scope.container_wizard["registration"];
             $scope.form.containerType = $scope.container_wizard["type"];
         }
-        $scope.passphrase = {"ad": false, "prompt": "", "response": ""};
+        $scope.passphrase = {"user": false, "prompt": "", "response": ""};
 
         $scope.allowedTokenTypes = {
             list: [],
@@ -332,7 +332,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                     let registrationParams =
                         {
                             "container_serial": $scope.containerSerial,
-                            "passphrase_ad": $scope.passphrase.ad,
+                            "passphrase_user": $scope.passphrase.user,
                             "passphrase_prompt": $scope.passphrase.prompt,
                             "passphrase_response": $scope.passphrase.response
                         };
@@ -744,7 +744,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         };
 
         $scope.registrationOptions = {"open": false};
-        $scope.passphrase = {"required": false, "user": false, "prompt": "", "response": ""};
+        $scope.passphrase = {"user": false, "prompt": "", "response": ""};
         $scope.offline_tokens = [];
         $scope.registerContainer = function (rollover) {
             let registrationParams =
