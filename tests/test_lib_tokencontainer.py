@@ -91,7 +91,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # Check creation Date
         create_now = datetime.now(tz=timezone.utc)
-        with mock.patch("datetime.datetime", wraps=datetime) as mock_datetime:
+        with mock.patch("privacyidea.lib.container.datetime.datetime", wraps=datetime) as mock_datetime:
             mock_datetime.now.return_value = create_now
             container_serial = init_container({"type": "generic"})["container_serial"]
         container = find_container_by_serial(container_serial)
@@ -492,11 +492,12 @@ class TokenContainerManagementTestCase(MyTestCase):
         container_info = get_container_info_dict(container_serial, ikey="key1")
         self.assertIsNone(container_info["key1"])
 
-        # Pass no info only deletes old entries
+        # Pass no info only deletes old entries, but not internal entries
         res = set_container_info(container_serial, {})
         self.assertDictEqual({}, res)
         container_info = get_container_info_dict(container_serial)
-        self.assertEqual(0, len(container_info))
+        self.assertEqual(1, len(container_info))
+        self.assertIn("creation_date", container_info.keys())
 
         # Pass no value
         res = set_container_info(container_serial, {"key": None})
@@ -527,13 +528,13 @@ class TokenContainerManagementTestCase(MyTestCase):
         res = delete_container_info(container_serial, "non_existing_key")
         self.assertFalse(res["non_existing_key"])
         container_info = get_container_info_dict(container_serial)
-        self.assertEqual(3, len(container_info))
+        self.assertEqual(4, len(container_info))
 
         # Delete existing key
         res = delete_container_info(container_serial, "key1")
         self.assertTrue(res["key1"])
         container_info = get_container_info_dict(container_serial)
-        self.assertEqual(2, len(container_info))
+        self.assertEqual(3, len(container_info))
         self.assertNotIn("key1", container_info.keys())
 
         # Delete all keys
@@ -541,7 +542,8 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertTrue(res["key2"])
         self.assertTrue(res["key3"])
         container_info = get_container_info_dict(container_serial)
-        self.assertEqual(0, len(container_info))
+        self.assertEqual(1, len(container_info))
+        self.assertIn("creation_date", container_info)
 
         # Try to delete internal info key
         container.update_container_info(
@@ -549,7 +551,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         res = delete_container_info(container_serial, "public_server_key")
         self.assertDictEqual({"public_server_key": False}, res)
         res = delete_container_info(container_serial)
-        self.assertDictEqual({"public_server_key": False}, res)
+        self.assertDictEqual({"public_server_key": False, "creation_date": False}, res)
 
     def test_25_set_description(self):
         # Arrange
@@ -891,7 +893,8 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertIsNone(container_dict["last_synchronization"])
         self.assertListEqual(["active"], container_dict["states"])
         self.assertEqual("test", container_dict["template"])
-        self.assertDictEqual({}, container_dict["info"])
+        self.assertEqual(1, len(container_dict["info"]))
+        self.assertIn("creation_date", container_dict["info"])
         self.assertListEqual([self.realm1], container_dict["realms"])
         self.assertEqual("hans", container_dict["users"][0]["user_name"])
         self.assertEqual(self.realm1, container_dict["users"][0]["user_realm"])
@@ -917,7 +920,8 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertIsNone(container_dict["last_synchronization"])
         self.assertListEqual(["active"], container_dict["states"])
         self.assertEqual("", container_dict["template"])
-        self.assertDictEqual({}, container_dict["info"])
+        self.assertEqual(1, len(container_dict["info"]))
+        self.assertIn("creation_date", container_dict["info"])
         self.assertListEqual([], container_dict["realms"])
         self.assertListEqual([], container_dict["users"])
         self.assertListEqual([], container_dict["tokens"])
@@ -964,7 +968,8 @@ class TokenContainerManagementTestCase(MyTestCase):
         container_info = get_container_info_dict(container_serial)
         self.assertEqual("abc", container_info["key1"])
         self.assertEqual("123", container_info["key2"])
-        self.assertEqual(2, len(container_info))
+        self.assertIn("creation_date", container_info)
+        self.assertEqual(3, len(container_info))
 
         # Update info fields
         info = [TokenContainerInfoData(key="key2", value="456"), TokenContainerInfoData(key="key3", value="xyz")]
@@ -973,12 +978,13 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertEqual("abc", container_info["key1"])
         self.assertEqual("456", container_info["key2"])
         self.assertEqual("xyz", container_info["key3"])
-        self.assertEqual(3, len(container_info))
+        self.assertIn("creation_date", container_info)
+        self.assertEqual(4, len(container_info))
 
         # Pass empty list
         container.update_container_info([])
         container_info = get_container_info_dict(container_serial)
-        self.assertEqual(3, len(container_info))
+        self.assertEqual(4, len(container_info))
 
         # Clean up
         container.delete()
@@ -1257,9 +1263,10 @@ class TokenContainerSynchronization(MyTestCase):
         smartphone = find_container_by_serial(smartphone_serial)
         smartphone.terminate_registration()
 
-        # check container_info is empty
+        # check container_info is empty except for creation date
         container_info = smartphone.get_container_info_dict()
-        self.assertEqual(0, len(container_info))
+        self.assertEqual(1, len(container_info))
+        self.assertIn("creation_date", container_info.keys())
 
     def test_03_register_smartphone_success(self, smartphone_serial=None):
         # Prepare
