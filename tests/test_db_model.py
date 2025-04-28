@@ -22,10 +22,10 @@ from mock import mock
 import os
 from sqlalchemy import func
 
-from privacyidea.lib.policies.policy_conditions import (PolicyConditionClass, CONDITION_SECTION,
+from privacyidea.lib.policies.policy_conditions import (PolicyConditionClass, ConditionSection,
                                                         ConditionHandleMissingData)
 from privacyidea.lib.policy import set_policy_conditions
-from privacyidea.lib.utils.compare import COMPARATORS
+from privacyidea.lib.utils.compare import Comparators
 from privacyidea.models import (Token,
                                 Resolver,
                                 ResolverRealm, NodeName,
@@ -434,23 +434,23 @@ class TokenModelTestCase(MyTestCase):
         p3.save()
 
         # set conditions
-        conditions = [PolicyConditionClass(CONDITION_SECTION.USERINFO, "type", COMPARATORS.EQUALS, "foobar", False),
-                      PolicyConditionClass(CONDITION_SECTION.HTTP_REQUEST_HEADER, "user_agent", COMPARATORS.EQUALS,
+        conditions = [PolicyConditionClass(ConditionSection.USERINFO, "type", Comparators.EQUALS, "foobar", False),
+                      PolicyConditionClass(ConditionSection.HTTP_REQUEST_HEADER, "user_agent", Comparators.EQUALS,
                                            "abcd", True)]
         set_policy_conditions(conditions, p3)
-        expected = [(CONDITION_SECTION.USERINFO, "type", COMPARATORS.EQUALS, "foobar", False,
+        expected = [(ConditionSection.USERINFO, "type", Comparators.EQUALS, "foobar", False,
                      ConditionHandleMissingData.default().value),
-                    (CONDITION_SECTION.HTTP_REQUEST_HEADER, "user_agent", COMPARATORS.EQUALS, "abcd", True,
+                    (ConditionSection.HTTP_REQUEST_HEADER, "user_agent", Comparators.EQUALS, "abcd", True,
                      ConditionHandleMissingData.default().value)]
         self.assertEqual(expected, p3.get_conditions_tuples())
         self.assertEqual(expected, p3.get()["conditions"])
         self.assertEqual(2, PolicyCondition.query.count())
 
         set_policy_conditions(
-            [PolicyConditionClass(CONDITION_SECTION.USERINFO, "type", COMPARATORS.EQUALS, "baz", True)],
+            [PolicyConditionClass(ConditionSection.USERINFO, "type", Comparators.EQUALS, "baz", True)],
             p3)
         p3.save()
-        self.assertEqual([(CONDITION_SECTION.USERINFO, "type", COMPARATORS.EQUALS, "baz", True,
+        self.assertEqual([(ConditionSection.USERINFO, "type", Comparators.EQUALS, "baz", True,
                            ConditionHandleMissingData.default().value)], p3.get()["conditions"])
         self.assertEqual(1, len(p3.conditions))
         self.assertEqual("baz", p3.conditions[0].Value)
@@ -460,7 +460,7 @@ class TokenModelTestCase(MyTestCase):
         p3_reloaded1 = Policy.query.filter_by(name="pol3").one()
         self.assertEqual(["pinode3"], p3_reloaded1.get()["pinode"])
         self.assertEqual(
-            [("userinfo", "type", COMPARATORS.EQUALS, "baz", True, ConditionHandleMissingData.default().value)],
+            [("userinfo", "type", Comparators.EQUALS, "baz", True, ConditionHandleMissingData.default().value)],
             p3_reloaded1.get()["conditions"])
         self.assertEqual(1, len(p3_reloaded1.conditions))
         self.assertEqual("baz", p3_reloaded1.conditions[0].Value)

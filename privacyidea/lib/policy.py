@@ -175,7 +175,7 @@ from configobj import ConfigObj
 from operator import itemgetter
 import logging
 
-from .policies.policy_conditions import PolicyConditionClass, CONDITION_SECTION, CONDITION_CHECK
+from .policies.policy_conditions import PolicyConditionClass, ConditionCheck, ConditionSection
 from ..models import (Policy, db, save_config_timestamp, PolicyDescription, PolicyCondition)
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     get_config_object, get_privacyidea_node,
@@ -864,7 +864,7 @@ class PolicyClass(object):
         log.debug(f"Policies after matching time: {[p.get('name') for p in reduced_policies]}")
 
         # filter policies by the policy conditions
-        if extended_condition_check != CONDITION_CHECK.DO_NOT_CHECK_AT_ALL:
+        if extended_condition_check != ConditionCheck.DO_NOT_CHECK_AT_ALL:
             try:
                 reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object, request_headers,
                                                                       serial, extended_condition_check)
@@ -930,7 +930,6 @@ class PolicyClass(object):
         """
         reduced_policies = []
         # If we have several token specific conditions, we only create the db_token (query token DB) once.
-        dbtoken = None
         for policy in policies:
             include_policy = True
             policy_name = policy.get("name")
@@ -942,11 +941,11 @@ class PolicyClass(object):
                 except ParameterError as e:
                     raise PolicyError(e.message)
 
-                if (extended_condition_check is CONDITION_CHECK.CHECK_AND_HANDLE_MISSING_DATA
+                if (extended_condition_check is ConditionCheck.CHECK_AND_HANDLE_MISSING_DATA
                         or condition.section in extended_condition_check):
                     # We check conditions, either if we are supposed to check everything or if
                     # the section is contained in the extended condition check
-                    include_policy = condition.match(policy_name, user_object, dbtoken, serial, request_headers)
+                    include_policy = condition.match(policy_name, user_object, serial, request_headers)
 
                     if not include_policy:
                         # condition does not match request, no need to check the remaining conditions
@@ -1137,7 +1136,7 @@ class PolicyClass(object):
             # During login of the admin there is no token, no tokeninfo and no user info available.
             # Also, the http header is only passed down to the policy Match-class, but not in the get_rights method.
             # Thus, we can not check any extended conditions for admins at this point.
-            extended_condition_check = CONDITION_CHECK.DO_NOT_CHECK_AT_ALL
+            extended_condition_check = ConditionCheck.DO_NOT_CHECK_AT_ALL
         elif scope == SCOPE.USER:
             admin_user = None
             admin_realm = None
@@ -1146,7 +1145,7 @@ class PolicyClass(object):
             # During login of the admin there is no token and no tokeninfo available.
             # Also, the http header is only passed down to the policy Match-class, but not in the get_rights method.
             # Thus, we can only check the extended condition "userinfo" for users at this point.
-            extended_condition_check = CONDITION_CHECK.ONLY_CHECK_USERINFO
+            extended_condition_check = ConditionCheck.ONLY_CHECK_USERINFO
         else:
             raise PolicyError("Unknown scope: {}".format(scope))
         pols = self.match_policies(scope=scope,
@@ -1220,9 +1219,9 @@ class PolicyClass(object):
                 enroll_types[tokenclass.get_class_type()] = tokenclass.get_class_info("description")
 
         if role == SCOPE.ADMIN:
-            extended_condition_check = CONDITION_CHECK.DO_NOT_CHECK_AT_ALL
+            extended_condition_check = ConditionCheck.DO_NOT_CHECK_AT_ALL
         else:
-            extended_condition_check = CONDITION_CHECK.ONLY_CHECK_USERINFO
+            extended_condition_check = ConditionCheck.ONLY_CHECK_USERINFO
         if pols:
             # Admin policies or user policies are set, so we need to
             # test, which tokens are allowed to be enrolled for this user
@@ -1386,6 +1385,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     :return: The database ID of the policy
     :rtype: int
     """
+    # TODO: Create update_policy function and restrict set_policy to only create new policies
     # validate scope
     if scope and scope not in SCOPE.get_all_scopes():
         log.error(f"Invalid scope '{scope}' in policy '{name}'. Valid scopes are: {SCOPE.get_all_scopes()}")
@@ -3008,19 +3008,19 @@ def get_policy_condition_sections():
       * ``"description"``, a human-readable description of the section
     """
     return {
-        CONDITION_SECTION.USERINFO: {
+        ConditionSection.USERINFO: {
             "description": _("The policy only matches if certain conditions on the user info are fulfilled.")
         },
-        CONDITION_SECTION.TOKEN: {
+        ConditionSection.TOKEN: {
             "description": _("The policy only matches if certain conditions of the token attributes are fulfilled.")
         },
-        CONDITION_SECTION.TOKENINFO: {
+        ConditionSection.TOKENINFO: {
             "description": _("The policy only matches if certain conditions on the token info are fulfilled.")
         },
-        CONDITION_SECTION.HTTP_REQUEST_HEADER: {
+        ConditionSection.HTTP_REQUEST_HEADER: {
             "description": _("The policy only matches if certain conditions on the HTTP Request header are fulfilled.")
         },
-        CONDITION_SECTION.HTTP_ENVIRONMENT: {
+        ConditionSection.HTTP_ENVIRONMENT: {
             "description": _("The policy only matches if certain conditions on the HTTP Environment are fulfilled.")
         }
     }

@@ -25,16 +25,15 @@ from typing import Union
 from werkzeug.datastructures import EnvironHeaders
 
 from privacyidea.lib import _
-from privacyidea.lib.error import ParameterError, PolicyError
+from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.user import User
-from privacyidea.lib.utils.compare import COMPARATORS, compare_values
-from privacyidea.models import Token
+from privacyidea.lib.utils.compare import Comparators, compare_values
 
 log = logging.getLogger(__name__)
 
 
-class CONDITION_SECTION(object):
+class ConditionSection:
     __doc__ = """This is a list of available sections for conditions of policies """
     USERINFO = "userinfo"
     TOKENINFO = "tokeninfo"
@@ -51,11 +50,11 @@ class CONDITION_SECTION(object):
         return sections
 
 
-class CONDITION_CHECK(object):
+class ConditionCheck:
     __doc__ = """The available check methods for extended conditions"""
     # TODO: Use the same datatype for all checks
     DO_NOT_CHECK_AT_ALL = 1
-    ONLY_CHECK_USERINFO = [CONDITION_SECTION.USERINFO]
+    ONLY_CHECK_USERINFO = [ConditionSection.USERINFO]
     CHECK_AND_HANDLE_MISSING_DATA = None
 
 
@@ -128,13 +127,14 @@ class ConditionSectionData:
 
 
 class PolicyConditionClass:
-    _pass_if_inactive: bool = False
 
     @log_with(log)
     def __init__(self, section: str, key: str, comparator: str, value: str, active: bool,
                  handle_missing_data: str = None, pass_if_inactive: bool = False):
-        self.active = active
         self._pass_if_inactive = pass_if_inactive
+        # Active setter methods requires that _active already exists
+        self._active = None
+        self.active = active
         self.section = section
         self.key = key
         self.comparator = comparator
@@ -143,7 +143,7 @@ class PolicyConditionClass:
 
     @property
     def _allow_invalid_parameters(self) -> bool:
-        return self._pass_if_inactive and not self.active
+        return self._pass_if_inactive and self.active is False
 
     @property
     def section(self) -> str:
@@ -151,11 +151,11 @@ class PolicyConditionClass:
 
     @section.setter
     def section(self, section: str):
-        if section in CONDITION_SECTION.get_all_sections() or self._allow_invalid_parameters:
+        if section in ConditionSection.get_all_sections() or self._allow_invalid_parameters:
             self._section = section
         else:
             log.error(f"Unknown section '{section}' set in condition. Valid sections are: "
-                      f"{CONDITION_SECTION.get_all_sections()}")
+                      f"{ConditionSection.get_all_sections()}")
             raise ParameterError(f"Unknown section '{section}' set in condition.")
 
     @property
@@ -175,11 +175,11 @@ class PolicyConditionClass:
 
     @comparator.setter
     def comparator(self, comparator: str):
-        if comparator in COMPARATORS.get_all_comparators() or self._allow_invalid_parameters:
+        if comparator in Comparators.get_all_comparators() or self._allow_invalid_parameters:
             self._comparator = comparator
         else:
             log.error(f"Unknown comparator '{comparator}' set in condition. Valid comparators are: "
-                      f"{COMPARATORS.get_all_comparators()}")
+                      f"{Comparators.get_all_comparators()}")
             raise ParameterError(f"Unknown comparator '{comparator}'.")
 
     @property
@@ -299,7 +299,7 @@ class PolicyConditionClass:
             raise PolicyError(f"Unknown handle missing data {self.handle_missing_data} defined in condition of "
                               f"policy {policy_name}.")
 
-    def get_token_data(self, token: Union[Token, None], serial: Union[str, None]) -> ConditionSectionData:
+    def get_token_data(self, serial: Union[str, None]) -> ConditionSectionData:
         """
         Get the token data for the condition. If the token is None, it will try to get the token from the serial.
 
@@ -308,17 +308,24 @@ class PolicyConditionClass:
         :return: The value from token data and further information if it is not available
         """
         data = ConditionSectionData("token")
-        if not token:
-            token = Token.query.filter(Token.serial == serial).first() if serial else None
+        token = None
+        if serial:
+            try:
+                from privacyidea.lib.token import get_one_token
+                token = get_one_token(serial=serial)
+            except ResourceNotFoundError:
+                # The error for a missing token will be handled later
+                log.debug(f"Token with serial '{serial}' not found.")
         data.object_available = token is not None
 
         if data.object_available:
-            if self.section == CONDITION_SECTION.TOKEN:
-                data.value = token.get(self.key)
+            if self.section == ConditionSection.TOKEN:
+                token_dict = token.get_as_dict()
+                data.value = token_dict.get(self.key)
                 if data.value is None:
-                    data.available_keys = list(token.get().keys())
-            elif self.section == CONDITION_SECTION.TOKENINFO:
-                token_info = token.get_info()
+                    data.available_keys = list(token_dict.keys())
+            elif self.section == ConditionSection.TOKENINFO:
+                token_info = token.get_tokeninfo()
                 data.value = token_info.get(self.key)
                 if data.value is None:
                     data.available_keys = list(token_info.keys())
@@ -351,25 +358,24 @@ class PolicyConditionClass:
         data.object_available = request_header is not None
 
         if data.object_available:
-            if self.section == CONDITION_SECTION.HTTP_REQUEST_HEADER:
+            if self.section == ConditionSection.HTTP_REQUEST_HEADER:
                 data.value = request_header.get(self.key)
                 if data.value is None:
                     data.available_keys = list(request_header.keys())
-            elif self.section == CONDITION_SECTION.HTTP_ENVIRONMENT:
+            elif self.section == ConditionSection.HTTP_ENVIRONMENT:
                 request_environment = request_header.environ
                 data.value = request_environment.get(self.key)
                 if data.value is None:
                     data.available_keys = list(request_environment.keys())
         return data
 
-    def match(self, policy_name: str, user: Union[User, None], token: Union[Token, None], serial: Union[str, None],
+    def match(self, policy_name: str, user: Union[User, None], serial: Union[str, None],
               request_header: Union[EnvironHeaders, None]) -> bool:
         """
         Check if the condition matches the given user, token, or request header.
 
         :param policy_name: The name of the corresponding policy (for logging and error messages)
         :param user: The user to check
-        :param token: The token to check
         :param serial: The serial number of the token
         :param request_header: The request header to check
         :return: True if the condition matches, False otherwise
@@ -377,11 +383,11 @@ class PolicyConditionClass:
         condition_matches = True
         if self.active:
             # Get required data from the section
-            if self.section == CONDITION_SECTION.USERINFO:
+            if self.section == ConditionSection.USERINFO:
                 section_data = self.get_user_data(user)
-            elif self.section in [CONDITION_SECTION.TOKEN, CONDITION_SECTION.TOKENINFO]:
-                section_data = self.get_token_data(token, serial)
-            elif self.section in [CONDITION_SECTION.HTTP_REQUEST_HEADER, CONDITION_SECTION.HTTP_ENVIRONMENT]:
+            elif self.section in [ConditionSection.TOKEN, ConditionSection.TOKENINFO]:
+                section_data = self.get_token_data(serial)
+            elif self.section in [ConditionSection.HTTP_REQUEST_HEADER, ConditionSection.HTTP_ENVIRONMENT]:
                 section_data = self.get_request_header_data(request_header)
             else:  # pragma no cover
                 # We should never reach this case as the section is already evaluated in the setter

@@ -218,8 +218,9 @@ There are three different options how the system should handle if the data is mi
     * ``Condition is false``: The condition is evaluated to false, hence the policy will not be applied.
     * ``Condition is true``: The condition is evaluated to true, hence the policy will be applied.
 
-The default behaviour is to raise an error. This is the most strict behaviour and prevent policy misconfigurations
-from going unnoticed. It is also applied for policies defined in privacyIDEA versions < 3.12.
+The default behaviour is to raise an error. This is the most strict behaviour and prevents policy misconfigurations
+from going unnoticed. It is also applied for policies defined in privacyIDEA versions < 3.12 and was the behaviour in
+previous versions.
 
 Generally, the usage of conditions is an advanced feature and requires further knowledge about the data available in
 the related requests. We highly recommend to evaluate the correct behaviour of the policies in a test environment,
