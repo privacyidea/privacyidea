@@ -2468,9 +2468,10 @@ class ContainerEventTestCase(MyTestCase):
         res = c_handler.do(C_ACTION_TYPE.DELETE_CONTAINER_INFO, options=options)
         self.assertTrue(res)
 
-        # check that all infos are deleted
+        # check that all infos are deleted (except for internals)
         infos = {container_info.key: container_info.value for container_info in container.get_container_info()}
-        self.assertEqual(0, len(infos))
+        self.assertEqual(1, len(infos))
+        self.assertIn("creation_date", infos)
 
         # Clean up
         container.delete()
