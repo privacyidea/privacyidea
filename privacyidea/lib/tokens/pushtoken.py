@@ -1200,6 +1200,18 @@ class PushTokenClass(TokenClass):
     def is_multichallenge_enrollable(cls):
         return True
 
+    def get_enroll_url(self, user: User, params: dict) -> str:
+        """
+        Return the URL to enroll this token. It is not supported by all token types.
+
+        :param user: The user object
+        :param params: Further parameters
+        :return: The URL containing all required information to enroll the token
+        """
+        init_details = self.get_init_detail(params, user)
+        enroll_url = init_details.get("pushurl").get("value")
+        return enroll_url
+
     def export_token(self) -> dict:
         """
         Create a dictionary with the token information that can be exported.
