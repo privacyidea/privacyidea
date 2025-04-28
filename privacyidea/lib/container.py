@@ -17,6 +17,7 @@
 # SPDX-FileCopyrightText: 2024 Jelina Unger <jelina.unger@netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
+import datetime
 import importlib
 import json
 import logging
@@ -401,6 +402,10 @@ def init_container(params: dict) -> dict:
     db_container.save()
 
     container = create_container_from_db_object(db_container)
+
+    # Creation Date
+    creation_date = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+    container.update_container_info([TokenContainerInfoData(key="creation_date", value=creation_date)])
 
     # Template handling
     template_tokens = []
