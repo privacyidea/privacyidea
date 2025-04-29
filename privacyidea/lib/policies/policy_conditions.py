@@ -301,9 +301,8 @@ class PolicyConditionClass:
 
     def get_token_data(self, serial: Union[str, None]) -> ConditionSectionData:
         """
-        Get the token data for the condition. If the token is None, it will try to get the token from the serial.
+        Get the token data for the condition.
 
-        :param token: The token to check
         :param serial: The serial of the token
         :return: The value from token data and further information if it is not available
         """
