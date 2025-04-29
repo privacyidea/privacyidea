@@ -17,6 +17,7 @@
 # SPDX-FileCopyrightText: 2024 Jelina Unger <jelina.unger@netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
+import datetime
 import importlib
 import json
 import logging
@@ -402,6 +403,11 @@ def init_container(params: dict[str, any]) -> dict[str, Union[str, list]]:
 
     container = create_container_from_db_object(db_container)
 
+    # Creation Date
+    creation_date = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+    container.update_container_info(
+        [TokenContainerInfoData(key="creation_date", value=creation_date, info_type=PI_INTERNAL)])
+
     # Template handling
     template_tokens = []
     if template_name:
@@ -434,7 +440,6 @@ def init_container(params: dict[str, any]) -> dict[str, Union[str, list]]:
             template_tokens = template_options.get("tokens", [])
         else:
             log.warning(f"Template {template_name} is not of type {ctype}, create container without template.")
-
 
     user = params.get("user")
     realm = params.get("realm")

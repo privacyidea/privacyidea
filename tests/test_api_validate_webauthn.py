@@ -1,5 +1,6 @@
 
 from mock.mock import patch
+from webauthn.helpers import bytes_to_base64url
 
 from .base import MyApiTestCase
 from privacyidea.models import TokenCredentialIdHash, TokenInfo
@@ -305,6 +306,8 @@ class WebAuthn(MyApiTestCase):
         self.assertTrue(token_info_entry)
         token_info_entry.delete()
 
+        # For WebAuthn token, the userHandle is the serial
+        user_handle = bytes_to_base64url(webauthn_serial.encode("utf-8"))
         data = {
             "authenticatordata": "1kwVsywYDmugu2qhEi7LiS8tgyaE5XqILRqvKXkZ-1oBAAAACA",
             "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiWjFvc0hYVl9rYm1FMEpnNVMyemtCV1VLSTNaTzZVWU8t"
@@ -313,6 +316,7 @@ class WebAuthn(MyApiTestCase):
             "signaturedata": "MEYCIQDl9geJO2uBLoedFxpGLhOyxKIhp9CJXdFO0gAp56HgcQIhAO5MRvXN_ZOEl-M_fhIsVJCq4xeVrbME-Mw2C"
                              "AVK_1kh",
             "transaction_id": transaction_id,
+            "userHandle": user_handle,
             "username": "hans"
         }
         with self.app.test_request_context('/validate/check', method='POST', data=data, headers=headers):
