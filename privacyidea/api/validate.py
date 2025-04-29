@@ -777,7 +777,7 @@ def initialize():
     Start an authentication by requesting a challenge for a token type. Currently, supports only type passkey
     :jsonparam type: The type of the token, for which a challenge should be created.
     """
-    token_type = get_optional(request.all_data, "type")
+    token_type = get_required(request.all_data, "type")
     details = {}
     if token_type.lower() == "passkey":
         rp_id = get_first_policy_value(policy_action=FIDO2PolicyAction.RELYING_PARTY_ID, default="", scope=SCOPE.ENROLL)
@@ -790,9 +790,9 @@ def initialize():
         if f"passkey_{ACTION.CHALLENGETEXT}" in request.all_data:
             challenge["message"] = request.all_data[f"passkey_{ACTION.CHALLENGETEXT}"]
         details["passkey"] = challenge
-
+        details["transaction_id"] = challenge["transaction_id"]
     else:
-        raise ParameterError("Unsupported token type for authentication initialization!")
+        raise ParameterError(f"Unsupported token type '{token_type}' for authentication initialization!")
     g.audit_object.log({"success": True})
     response = send_result(False, rid=2, details=details)
     return response

@@ -6173,6 +6173,12 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             detail = data.get("detail")
             self.assertNotIn("transaction_id", detail)
             self.assertNotIn("multi_challenge", detail)
+        # Check that we have the proper log message (action_detail) in the audit
+        audit_entry = self.find_most_recent_audit_entry(action='POST /validate/check')
+        self.assertIsNotNone(audit_entry)
+        self.assertTrue(audit_entry["action_detail"].startswith("ERR303: The number of "), audit_entry)
+        self.assertEqual(audit_entry["authentication"], AUTH_RESPONSE.ACCEPT, audit_entry)
+        self.assertEqual(audit_entry["success"], 1, audit_entry)
 
 
 class ValidateShortPasswordTestCase(MyApiTestCase):
@@ -6237,3 +6243,19 @@ class ValidateShortPasswordTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
+
+class Initialize(MyApiTestCase):
+
+    def test01_no_type(self):
+        with self.app.test_request_context('/validate/initialize',
+                                           method='POST',
+                                           data={"type": ""}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res)
+            self.assertIn("result", res.json)
+            self.assertIn("error", res.json["result"])
+            error = res.json["result"]["error"]
+            self.assertIn("code", error)
+            self.assertIn("message", error)
+            self.assertEqual(905, error["code"], error)
+            self.assertEqual("ERR905: Missing parameter: type", error["message"], error)

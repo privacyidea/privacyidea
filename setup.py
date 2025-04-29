@@ -3,7 +3,7 @@ import os
 import stat
 import sys
 
-VERSION = "3.11.1"
+VERSION = "3.11.2"
 
 # Taken from kennethreitz/requests/setup.py
 package_directory = os.path.realpath(os.path.dirname(__file__))
