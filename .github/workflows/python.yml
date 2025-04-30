@@ -40,6 +40,8 @@ jobs:
       matrix:
         # current supported Python versions
         python-version: ['3.9', '3.10', '3.11', '3.12']
+        include:
+          - python-version: ${{ github.event_name == 'pull_request' && contains(github.base_ref, 'branch-3.11') && '3.8' || '3.12' }}
 
     steps:
     - uses: actions/checkout@v3

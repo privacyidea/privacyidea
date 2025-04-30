@@ -158,7 +158,7 @@ class Audit(object):  # pragma: no cover
         return bool(self.audit_data and "action" in self.audit_data)
 
     @log_with(log)
-    def log(self, param: dict[str, str]):
+    def log(self, param):
         """
         This method is used to log the data.
         During a request this method can be called several times to fill the
@@ -199,7 +199,7 @@ class Audit(object):  # pragma: no cover
         """
         if "policies" not in self.audit_data:
             self.audit_data["policies"] = []
-        if type(policyname) == list:
+        if isinstance(policyname, list):
             for p in policyname:
                 self.audit_data["policies"].append(p)
         else:
