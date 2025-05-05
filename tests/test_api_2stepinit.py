@@ -4,7 +4,7 @@ import hashlib
 from passlib.crypto.digest import pbkdf2_hmac
 import time
 
-from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
+from privacyidea.lib.policy import set_policy, SCOPE, delete_policy, ACTION
 from privacyidea.lib.token import init_token
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
 from privacyidea.lib.tokens.HMAC import HmacOtp
@@ -674,7 +674,7 @@ class TwoStepRolloverAndVerify(MyApiTestCase):
         self.setUp_user_realms()
         set_policy(
             name="force_2step",
-            action=["hotp_2step=force", "enrollHOTP=1", "otp_pin_minlength: 4"],
+            action=[f"hotp_2step=force", "enrollHOTP=1", f"{ACTION.OTPPINMINLEN}=4"],
             scope=SCOPE.USER,
         )
         set_policy(
@@ -682,7 +682,7 @@ class TwoStepRolloverAndVerify(MyApiTestCase):
             action=["hotp_2step_difficulty=12345",
                     "hotp_2step_serversize=33",
                     "hotp_2step_clientsize=11",
-                    "verify_enrollment=hotp"],
+                    f"{ACTION.VERIFY_ENROLLMENT}=hotp"],
             scope=SCOPE.ENROLL,
         )
 

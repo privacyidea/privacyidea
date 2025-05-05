@@ -3832,11 +3832,9 @@ class MultiChallenge(MyApiTestCase):
                     "type": "hotp",
                     "otpkey": self.otpkey,
                     "pin": pin}, user)
-        set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=hotp".format(
-            ACTION.CHALLENGERESPONSE))
+        set_policy("test49", scope=SCOPE.AUTH, action=f"{ACTION.CHALLENGERESPONSE}=hotp")
         # both tokens will be a valid challenge response token!
-        set_policy("test", scope=SCOPE.AUTH, action="{0!s}=wrong, falsch, Chigau, sbagliato".format(
-            ACTION.PREFERREDCLIENTMODE))
+        set_policy("test", scope=SCOPE.AUTH, action=f"{ACTION.PREFERREDCLIENTMODE}=wrong falsch Chigau sbagliato")
 
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -4727,7 +4725,7 @@ class AChallengeResponse(MyApiTestCase):
                        user=User("cornelius", self.realm1))
         self.assertTrue(r)
 
-        set_policy("chalresp", scope=SCOPE.AUTHZ, action="{0!s}=hotp".format(ACTION.TRIGGERCHALLENGE))
+        set_policy("chalresp", scope=SCOPE.ADMIN, action=f"{ACTION.TRIGGERCHALLENGE}=hotp")
 
         with self.app.test_request_context('/validate/triggerchallenge',
                                            method='POST',

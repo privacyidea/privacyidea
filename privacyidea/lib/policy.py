@@ -165,16 +165,22 @@ Time formats are::
 and any combination of it. ``dow`` being day of week Mon, Tue, Wed, Thu, Fri,
 Sat, Sun.
 """
+from typing import Union
+
+from werkzeug.datastructures.headers import EnvironHeaders
+
 from .log import log_with
 from configobj import ConfigObj
 
 from operator import itemgetter
 import logging
-from ..models import (Policy, db, save_config_timestamp, Token, PolicyDescription)
+
+from .policies.policy_conditions import PolicyConditionClass, ConditionCheck, ConditionSection
+from ..models import (Policy, db, save_config_timestamp, PolicyDescription, PolicyCondition)
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     get_config_object, get_privacyidea_node,
                                     get_multichallenge_enrollable_tokentypes,
-                                    get_email_validators)
+                                    get_email_validators, get_privacyidea_nodes)
 from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, ServerError
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
@@ -183,7 +189,7 @@ from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
                                    fetch_one_resource, is_true, check_ip_in_policy,
                                    determine_logged_in_userparams, parse_string_to_dict)
-from privacyidea.lib.utils.compare import compare_values, COMPARATOR_DESCRIPTIONS
+from privacyidea.lib.utils.compare import COMPARATOR_DESCRIPTIONS
 from privacyidea.lib.utils.export import (register_import, register_export)
 from privacyidea.lib.user import User
 from privacyidea.lib import _, lazy_gettext
@@ -219,6 +225,15 @@ class SCOPE(object):
     WEBUI = "webui"
     REGISTER = "register"
     CONTAINER = "container"
+
+    @classmethod
+    def get_all_scopes(cls) -> list[str]:
+        """
+        Return all valid scopes as a list
+        """
+        valid_scopes = [cls.AUTHZ, cls.ADMIN, cls.AUTH, cls.AUDIT, cls.USER, cls.ENROLL, cls.WEBUI, cls.REGISTER,
+                        cls.CONTAINER]
+        return valid_scopes
 
 
 class ACTION(object):
@@ -510,22 +525,6 @@ class TIMEOUT_ACTION(object):
     __doc__ = """This is a list of actions values for idle users"""
     LOGOUT = "logout"
     LOCKSCREEN = 'lockscreen'
-
-
-class CONDITION_SECTION(object):
-    __doc__ = """This is a list of available sections for conditions of policies """
-    USERINFO = "userinfo"
-    TOKENINFO = "tokeninfo"
-    TOKEN = "token"  # nosec B105 # section name
-    HTTP_REQUEST_HEADER = "HTTP Request header"
-    HTTP_ENVIRONMENT = "HTTP Environment"
-
-
-class CONDITION_CHECK(object):
-    __doc__ = """The available check methods for extended conditions"""
-    DO_NOT_CHECK_AT_ALL = 1
-    ONLY_CHECK_USERINFO = [CONDITION_SECTION.USERINFO]
-    CHECK_AND_RAISE_EXCEPTION_ON_MISSING = None
 
 
 class PolicyClass(object):
@@ -850,14 +849,22 @@ class PolicyClass(object):
 
         # filter policy for time. If no time is set or if a time is set, and
         # it matches the time_range, then we add this policy
-        reduced_policies = [policy for policy in reduced_policies if
-                            (policy.get("time") and
-                             check_time_in_range(policy.get("time"), time))
-                            or not policy.get("time")]
+        policies_match_time = []
+        for policy in reduced_policies:
+            if policy.get("time"):
+                try:
+                    if check_time_in_range(policy.get("time"), time):
+                        policies_match_time.append(policy)
+                except (ValueError, ParameterError):
+                    log.error("Wrong time range format: <dow>-<dow>:<hh:mm>-<hh:mm>")
+                    log.debug(f"{traceback.format_exc()}")
+            else:
+                policies_match_time.append(policy)
+        reduced_policies = policies_match_time
         log.debug(f"Policies after matching time: {[p.get('name') for p in reduced_policies]}")
 
         # filter policies by the policy conditions
-        if extended_condition_check != CONDITION_CHECK.DO_NOT_CHECK_AT_ALL:
+        if extended_condition_check != ConditionCheck.DO_NOT_CHECK_AT_ALL:
             try:
                 reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object, request_headers,
                                                                       serial, extended_condition_check)
@@ -873,212 +880,80 @@ class PolicyClass(object):
 
         return reduced_policies
 
-    def filter_policies_by_conditions(self, policies, user_object=None, request_headers=None, serial=None,
-                                      extended_condition_check=None):
+    @staticmethod
+    def get_policy_condition_from_tuple(condition_tuple: tuple, policy_name: str,
+                                        pass_if_inactive: bool = False) -> PolicyConditionClass:
         """
-        Given a list of policy dictionaries and a current user object (if any),
-        return a list of all policies whose conditions match the given user object.
-        Raises a PolicyError if a condition references an unknown section.
+        Converts the condition tuple into a PolicyConditionClass object.
+
+        :param condition_tuple: A tuple of 5 or 6 values (section, key, comparator, value, active, handle_missing_data)
+        :param policy_name: The name of the policy (used for the error message)
+        :param pass_if_inactive: If True, no error is raised for invalid parameters if the condition is inactive
+        :return: A PolicyConditionClass object
+        """
+        # Check if the condition tuple contains the correct number of values
+        if len(condition_tuple) not in [5, 6]:
+            raise ParameterError(
+                f"Condition of policy '{policy_name}' has {len(condition_tuple)} values, but should have 5 or 6.")
+
+        # Set handle_missing data if available
+        handle_missing_data = None
+        if len(condition_tuple) == 6:
+            handle_missing_data = condition_tuple[5]
+
+        # Get condition and evaluate the tuple parameters
+        try:
+            condition = PolicyConditionClass(section=condition_tuple[0], key=condition_tuple[1],
+                                             comparator=condition_tuple[2],
+                                             value=condition_tuple[3], active=condition_tuple[4],
+                                             handle_missing_data=handle_missing_data, pass_if_inactive=pass_if_inactive)
+        except ParameterError as e:
+            raise ParameterError(f"Invalid condition of policy '{policy_name}': {e}")
+        return condition
+
+    def filter_policies_by_conditions(self, policies: list[dict], user_object: User = None,
+                                      request_headers: EnvironHeaders = None, serial: str = None,
+                                      extended_condition_check: Union[None, int, list[str]] = None) -> list[dict]:
+        """
+        Evaluates for each policy condition if it matches the actual request (user / token / request headers) and
+        returns a list of all matching policies.
+        Raises a PolicyError if any condition misconfiguration (unknown comparator or section) occurs and depending on
+        the condition definition also if some required data is missing.
 
         :param policies: a list of policy dictionaries
         :param user_object: a User object, or None if there is no current user
         :param request_headers: The HTTP headers
-        :type request_headers: Request object
-        :param extended_condition_check: A list of sections to check or None.
-        :return: generates a list of policy dictionaries
+        :param serial: The serial of a token or None if not contained in the request data
+        :param extended_condition_check: One of CONDITION_CHECK (1 - not check, list of sections to check,
+            None - check all).
+        :return: a list of matching policy dictionaries
         """
         reduced_policies = []
         # If we have several token specific conditions, we only create the db_token (query token DB) once.
-        dbtoken = None
         for policy in policies:
             include_policy = True
-            for section, key, comparator, value, active in policy['conditions']:
-                if (extended_condition_check is CONDITION_CHECK.CHECK_AND_RAISE_EXCEPTION_ON_MISSING
-                        or section in extended_condition_check):
+            policy_name = policy.get("name")
+            for condition_tuple in policy['conditions']:
+                # raise a PolicyError if the condition is not valid
+                try:
+                    condition = self.get_policy_condition_from_tuple(condition_tuple, policy_name,
+                                                                     pass_if_inactive=True)
+                except ParameterError as e:
+                    raise PolicyError(e.message)
+
+                if (extended_condition_check is ConditionCheck.CHECK_AND_HANDLE_MISSING_DATA
+                        or condition.section in extended_condition_check):
                     # We check conditions, either if we are supposed to check everything or if
                     # the section is contained in the extended condition check
-                    if active:
-                        if section == CONDITION_SECTION.USERINFO:
-                            if not self._policy_matches_info_condition(policy, key, comparator, value,
-                                                                       CONDITION_SECTION.USERINFO,
-                                                                       user_object=user_object):
-                                include_policy = False
-                                break
-                        elif section == CONDITION_SECTION.TOKENINFO:
-                            dbtoken = dbtoken or Token.query.filter(Token.serial == serial).first() if serial else None
-                            if not self._policy_matches_info_condition(policy, key, comparator, value,
-                                                                       CONDITION_SECTION.TOKENINFO,
-                                                                       dbtoken=dbtoken):
-                                include_policy = False
-                                break
-                        elif section == CONDITION_SECTION.TOKEN:
-                            dbtoken = dbtoken or Token.query.filter(Token.serial == serial).first() if serial else None
-                            if not self._policy_matches_token_condition(policy, key, comparator, value, dbtoken):
-                                include_policy = False
-                                break
-                        elif section == CONDITION_SECTION.HTTP_REQUEST_HEADER:
-                            if not self._policy_matches_request_header_condition(policy, key, comparator, value,
-                                                                                 request_headers):
-                                include_policy = False
-                                break
-                        elif section == CONDITION_SECTION.HTTP_ENVIRONMENT:
-                            if not self._policy_matches_request_environ_condition(policy, key, comparator, value,
-                                                                                  request_headers):
-                                include_policy = False
-                                break
-                        else:
-                            log.warning("Policy {!r} has condition with unknown section: {!r}".format(
-                                policy['name'], section
-                            ))
-                            raise PolicyError("Policy {!r} has condition with unknown section".format(policy['name']))
+                    include_policy = condition.match(policy_name, user_object, serial, request_headers)
+
+                    if not include_policy:
+                        # condition does not match request, no need to check the remaining conditions
+                        break
+
             if include_policy:
                 reduced_policies.append(policy)
         return reduced_policies
-
-    @staticmethod
-    def _policy_matches_request_environ_condition(policy, key, comparator, value, request_headers):
-        """
-        :param request_headers: Request Header object
-        :type request_headers: Can be accessed using .get()
-        """
-        # Now we check the HTTP request headers
-        if request_headers is not None:
-            request_environ = request_headers.environ
-            if request_environ.get(key):
-                try:
-                    environ_value = request_environ.get(key)
-                    return compare_values(environ_value, comparator, value)
-                except Exception as e:
-                    log.error(f"Error during handling the condition on HTTP "
-                              f"environment '{key}' of policy \'{policy['name']}\': {e}")
-                    raise PolicyError(
-                        f"Invalid comparison in the HTTP environment conditions of policy \'{policy['name']}\'")
-            else:
-                log.error(f"Unknown HTTP environment key '{key}' referenced in condition "
-                          f"of policy \'{policy['name']}\'")
-                log.warning(f"Available HTTP environment keys: {request_environ}")
-                raise PolicyError(f"Unknown HTTP environment key referenced in condition "
-                                  f"of policy \'{policy['name']}\'")
-        else:  # pragma: no cover
-            log.error(f"Policy \'{policy['name']}\' has conditions on HTTP environment, "
-                      f"but the HTTP environment is not available. This should not happen! "
-                      f"Please check/reduce the policy actions or disable the policy.")
-            log.debug(f"{traceback.format_stack()}")
-            raise PolicyError(f"Policy \'{policy['name']}\' has conditions on the HTTP "
-                              f"environment but it is not available!")
-
-    @staticmethod
-    def _policy_matches_request_header_condition(policy, key, comparator, value, request_headers):
-        """
-        :param request_headers: Request Header object
-        :type request_headers: Can be accessed using .get()
-        """
-        # Now we check the HTTP request headers
-        if request_headers is not None:
-            if request_headers.get(key):
-                try:
-                    header_value = request_headers.get(key)
-                    return compare_values(header_value, comparator, value)
-                except Exception as e:
-                    log.error(f"Error during handling the condition on HTTP header "
-                              f"'{key}' of policy \'{policy['name']}\': {e}")
-                    raise PolicyError(
-                        f"Invalid comparison in the HTTP header conditions of policy \'{policy['name']}'")
-            else:
-                log.error(f"Unknown HTTP header key '{key}' referenced in condition "
-                          f"of policy \'{policy['name']}\'")
-                log.warning(f"Available HTTP headers: {request_headers}")
-                raise PolicyError(f"Unknown HTTP header key referenced in condition "
-                                  f"of policy \'{policy['name']}\'")
-        else:  # pragma: no cover
-            log.error(f"Policy \'{policy['name']}\' has conditions on HTTP headers, "
-                      f"but the HTTP header is not available. This should not happen! "
-                      f"Please check/reduce the policy actions or disable the policy.")
-            log.debug(f"{traceback.format_stack()}")
-            raise PolicyError(f"Policy \'{policy['name']}\' has conditions on "
-                              f"HTTP headers but they are not available!")
-
-    @staticmethod
-    def _policy_matches_token_condition(policy, key, comparator, value, db_token):
-        """
-        This extended policy checks for token attributes, which are existing columns in
-        the token DB table.
-
-        :param policy: a policy dictionary, the policy in question
-        :param key: the column name of the token
-        :param comparator: a value comparator: one of "equal", "contains"
-        :param value: a value against which the token value will be compared
-        :param db_token: a dbtoken object
-        :return: bool
-        """
-        if db_token:
-            if key in db_token.get():
-                try:
-                    return compare_values(db_token.get(key), comparator, value)
-                except Exception as e:
-                    log.error(f"Error during handling the condition on token the token "
-                              f"column '{key}' of policy \'{policy['name']}\': {e}")
-                    raise PolicyError(f"Invalid comparison in the 'token' conditions "
-                                      f"of policy \'{policy['name']}\'")
-            else:
-                log.error(f"Unknown token column '{key}' referenced in a condition of "
-                          f"policy \'{policy['name']}\'")
-                # If we do have token object but the referenced key is not an attribute of the token,
-                # we have a misconfiguration and raise an error.
-                raise PolicyError(f"Unknown key in the token conditions of policy \'{policy['name']}\'")
-        else:  # pragma: no cover
-            log.error(f"Policy \'{policy['name']}\' has conditions on tokens, "
-                      f"but a token object is not available. This should not happen! "
-                      f"Please check/reduce the policy actions or disable the policy.")
-            log.debug(f"{traceback.format_stack()}")
-            raise PolicyError(f"Policy \'{policy['name']}\' has conditions on tokens, "
-                              f"but a token object is not available!")
-
-    @staticmethod
-    def _policy_matches_info_condition(policy, key, comparator, value, type, user_object=None, dbtoken=None):
-        """
-        Check if the given policy matches a certain userinfo or tokeninfo condition depending
-        on the specified ``type``.
-        For the userinfo, if ``user_object`` is None or the requested ``key`` is not contained,
-        a PolicyError is raised.
-        In case of a tokeninfo, no exception is raised if ``dbtoken`` is malformed. Instead, the
-        condition is effectively set to True and the policy may apply.
-
-        :param policy: a policy dictionary, the policy in question
-        :param key: a tokeninfo or userinfo key
-        :param comparator: a value comparator: one of "equal", "contains"
-        :param value: a value against which the tokeninfo or userinfo value will be compared
-        :param type: the info type to match, "userinfo" or "tokeninfo"
-        :param user_object: a User object, if any, or None
-        :param dbtoken: a dbtoken object, if any, or None
-        :return: a Boolean
-        """
-        if user_object is not None or dbtoken is not None:
-            info = user_object.info if user_object is not None else dbtoken.get_info()
-
-            if key in info:
-                try:
-                    return compare_values(info[key], comparator, value)
-                except Exception as e:
-                    log.error(f"Error during handling the condition on '{type}':{key} "
-                              f"of policy \'{policy['name']}\': {e}")
-                    raise PolicyError(f"Invalid comparison in the '{type}' conditions "
-                                      f"of policy \'{policy['name']}\'")
-            else:
-                log.error(f"Unknown '{type}' key referenced in a condition of "
-                          f"policy \'{policy['name']}\': {key}")
-                # If we do have a user or token object, but the conditions of policies reference
-                # an unknown userinfo or tokeninfo key, we have a misconfiguration and raise an error.
-                raise PolicyError(f"Unknown key in the '{type}' conditions of policy \'{policy['name']}\'")
-        else:
-            log.error(f"Policy \'{policy['name']}\' has condition on '{type}', but the required object "
-                      f"is not available. Please check/reduce the policy actions or disable the policy.")
-            log.debug(f"{traceback.format_stack()}")
-            # If the policy specifies an userinfo or tokeninfo condition, but no object is available,
-            # the policy is misconfigured. We have to raise a PolicyError to ensure that
-            # the privacyIDEA server does not silently misbehave.
-            raise PolicyError(f"Policy \'{policy['name']}\' has condition on "
-                              f"'{type}', but the required object is not available!")
 
     @staticmethod
     def check_for_conflicts(policies, action):
@@ -1261,7 +1136,7 @@ class PolicyClass(object):
             # During login of the admin there is no token, no tokeninfo and no user info available.
             # Also, the http header is only passed down to the policy Match-class, but not in the get_rights method.
             # Thus, we can not check any extended conditions for admins at this point.
-            extended_condition_check = CONDITION_CHECK.DO_NOT_CHECK_AT_ALL
+            extended_condition_check = ConditionCheck.DO_NOT_CHECK_AT_ALL
         elif scope == SCOPE.USER:
             admin_user = None
             admin_realm = None
@@ -1270,7 +1145,7 @@ class PolicyClass(object):
             # During login of the admin there is no token and no tokeninfo available.
             # Also, the http header is only passed down to the policy Match-class, but not in the get_rights method.
             # Thus, we can only check the extended condition "userinfo" for users at this point.
-            extended_condition_check = CONDITION_CHECK.ONLY_CHECK_USERINFO
+            extended_condition_check = ConditionCheck.ONLY_CHECK_USERINFO
         else:
             raise PolicyError("Unknown scope: {}".format(scope))
         pols = self.match_policies(scope=scope,
@@ -1344,9 +1219,9 @@ class PolicyClass(object):
                 enroll_types[tokenclass.get_class_type()] = tokenclass.get_class_info("description")
 
         if role == SCOPE.ADMIN:
-            extended_condition_check = CONDITION_CHECK.DO_NOT_CHECK_AT_ALL
+            extended_condition_check = ConditionCheck.DO_NOT_CHECK_AT_ALL
         else:
-            extended_condition_check = CONDITION_CHECK.ONLY_CHECK_USERINFO
+            extended_condition_check = ConditionCheck.ONLY_CHECK_USERINFO
         if pols:
             # Admin policies or user policies are set, so we need to
             # test, which tokens are allowed to be enrolled for this user
@@ -1376,6 +1251,98 @@ class PolicyClass(object):
 #  NEW STUFF
 #
 #
+
+
+def set_policy_conditions(conditions: list[PolicyConditionClass], policy: Policy):
+    """
+    This function writes the policy conditions to the database. Old conditions are removed.
+    It does not commit the database session as we assume that the calling function is also doing some database
+    operations and will do a single final commit.
+    It raises a ParameterError if the conditions are not valid.
+
+    :param conditions: A list of policy conditions
+    :param policy: The policy to which the conditions belong
+    """
+    policy.conditions = []
+    for condition in conditions:
+        db_condition = PolicyCondition(section=condition.section, Key=condition.key, comparator=condition.comparator,
+                                       Value=condition.value, active=condition.active,
+                                       handle_missing_data=condition.handle_missing_data.value)
+        policy.conditions.append(db_condition)
+
+
+def remove_wildcards_and_negations(value_list: list[str]) -> list[str]:
+    """
+    Removes leading negation characters ("!" or "-") from the strings in a list. Removes wildcard ("*") and empty
+    strings from the list.
+
+    :param value_list: A list of values to be processed
+    :return: A list of values without leading negation characters and wildcards
+    """
+    raw_values = []
+    for value in value_list:
+        if value == "*" or value == "":
+            # Wildcard is allowed
+            continue
+        elif value[0] in ("!", "-"):
+            # remove leading negation characters
+            value = value[1:]
+        raw_values.append(value)
+    return raw_values
+
+
+def validate_actions(scope: str, action: Union[str, dict]) -> bool:
+    """
+    Check if the given actions are valid for the given scope.
+
+    :param scope: The scope of the policy
+    :param action: The policy actions
+    :return: True if all actions are valid, raises a Parameter Error otherwise
+    """
+    from .token import get_dynamic_policy_definitions
+    policy_definitions_static = get_static_policy_definitions(scope)
+    policy_definitions_dynamic = get_dynamic_policy_definitions(scope)
+    allowed_actions = set(policy_definitions_static.keys()) | set(policy_definitions_dynamic.keys())
+    if isinstance(action, dict):
+        action_keys = list(action.keys())
+    elif isinstance(action, str):
+        # This is similarly implemented in models.py in Policy.get(), but with the actual code structure there is no
+        # possibility to use the same function without mixing up the layers
+        action_keys = [x.strip().split("=", 1)[0] for x in re.split(r'(?<!\\),', action or "")]
+    else:
+        raise ParameterError(f"Invalid actions type '{type(action)}'. Must be a string or a dictionary.")
+
+    raw_actions = remove_wildcards_and_negations(action_keys)
+    invalid_actions = list(set(raw_actions) - allowed_actions)
+
+    if len(invalid_actions) > 0:
+        log.error(f"The following actions are not valid for scope '{scope}': {invalid_actions}")
+        raise ParameterError(f"Invalid actions {invalid_actions}!")
+    else:
+        return True
+
+
+def validate_values(values: Union[str, list, None], allowed_values: list, name: str) -> bool:
+    """
+    Checks if all values are contained in the 'allowed_values' list.
+
+    :param values: Values to be evaluated whether they are defined. Either passed as list of strings or as a comma
+        separated list as single string
+    :param allowed_values: A list of allowed values
+    :param name: The name of the parameter used for an error message
+    :return: True if all values are valid, raise a ParameterError otherwise
+    """
+    if values is not None:
+        if isinstance(values, str):
+            values = values.replace(" ", "").split(",")
+        elif not isinstance(values, list):
+            raise ParameterError(f"Invalid {name.capitalize()} type '{type(values)}'!")
+        values = remove_wildcards_and_negations(values)
+        undefined_values = list(set(values) - set(allowed_values))
+        if undefined_values:
+            raise ParameterError(f"Undefined {name.capitalize()}: {undefined_values}!")
+    return True
+
 
 @log_with(log)
 def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
@@ -1410,30 +1377,49 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     :type check_all_resolvers: bool
     :param user_case_insensitive: The username should be case-insensitive.
     :type user_case_insensitive: bool
-    :param conditions: A list of 5-tuples (section, key, comparator, value, active) of policy conditions
+    :param conditions: A list of 5- or 6-tuples (section, key, comparator, value, active, handle_missing_data) of
+        policy conditions
     :param pinode: A privacyIDEA node or a list of privacyIDEA nodes.
     :param description: A description for the policy
     :type description: str
     :return: The database ID of the policy
     :rtype: int
     """
-    active = is_true(active)
+    # TODO: Create update_policy function and restrict set_policy to only create new policies
+    # validate scope
+    if scope and scope not in SCOPE.get_all_scopes():
+        log.error(f"Invalid scope '{scope}' in policy '{name}'. Valid scopes are: {SCOPE.get_all_scopes()}")
+        raise ParameterError(f"Invalid scope '{scope}' in policy '{name}'!")
+
+    # validate priority
     if isinstance(priority, str):
         priority = int(priority)
     if priority is not None and priority <= 0:
         raise ParameterError("Priority must be at least 1")
+
+    # check for valid realms
+    valid_realms = list(get_realms().keys())
+    validate_values(realm, valid_realms, "User-Realms")
+
+    # check for valid resolvers
+    valid_resolvers = list(get_resolver_list().keys())
+    validate_values(resolver, valid_resolvers, "Resolvers")
+
+    # check for valid nodes
+    valid_nodes = [node["name"] for node in get_privacyidea_nodes()]
+    validate_values(pinode, valid_nodes, "privacyIDEA Nodes")
+
+    # check for valid time
+    if time is not None and len(time) > 0:
+        try:
+            check_time_in_range(time)
+        except (ValueError, ParameterError):
+            raise ParameterError(f"Invalid time format '{time}'!")
+
+    active = is_true(active)
     check_all_resolvers = is_true(check_all_resolvers)
     user_case_insensitive = is_true(user_case_insensitive)
-    if isinstance(action, dict):
-        action_list = []
-        for k, v in action.items():
-            if v is not True:
-                # value key
-                action_list.append("{0!s}={1!s}".format(k, v))
-            else:
-                # simple boolean value
-                action_list.append(k)
-        action = ", ".join(action_list)
+
     if isinstance(action, list):
         action = ", ".join(action)
     if isinstance(realm, list):
@@ -1446,7 +1432,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         adminuser = ", ".join(adminuser)
     if isinstance(resolver, list):
         resolver = ", ".join(resolver)
-    if isinstance(client,  list):
+    if isinstance(client, list):
         client = ", ".join(client)
     if client is not None:
         try:
@@ -1455,19 +1441,33 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
             raise privacyIDEAError(_("Invalid client definition!"), id=302)
     if isinstance(pinode, list):
         pinode = ", ".join(pinode)
-    # validate conditions parameter
+    # Evaluate condition parameter and convert tuple into PolicyConditionClass object
+    conditions_data = []
     if conditions is not None:
-        for condition in conditions:
-            if len(condition) != 5:
-                raise ParameterError("Conditions must be 5-tuples: {!r}".format(condition))
-            if not (isinstance(condition[0], str)
-                    and isinstance(condition[1], str)
-                    and isinstance(condition[2], str)
-                    and isinstance(condition[3], str)
-                    and isinstance(condition[4], bool)):
-                raise ParameterError("Conditions must be 5-tuples of four strings and one boolean: {!r}".format(
-                    condition))
+        for condition_tuple in conditions:
+            condition = PolicyClass.get_policy_condition_from_tuple(condition_tuple, name)
+            conditions_data.append(condition)
     p1 = Policy.query.filter_by(name=name).first()
+
+    # validate action values
+    if action is not None:
+        if scope is not None:
+            validate_actions(scope, action)
+        elif p1:
+            validate_actions(p1.scope, action)
+        else:
+            raise ParameterError("Scope is required to set action values!")
+    if isinstance(action, dict):
+        action_list = []
+        for k, v in action.items():
+            if v is not True:
+                # value key
+                action_list.append("{0!s}={1!s}".format(k, v))
+            else:
+                # simple boolean value
+                action_list.append(k)
+        action = ", ".join(action_list)
+
     if p1:
         # The policy already exist, we need to update
         if action is not None:
@@ -1496,18 +1496,22 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         p1.check_all_resolvers = check_all_resolvers
         p1.user_case_insensitive = user_case_insensitive
         if conditions is not None:
-            p1.set_conditions(conditions)
+            # only update the conditions if there are any
+            set_policy_conditions(conditions_data, p1)
         save_config_timestamp()
         db.session.commit()
         ret = p1.id
     else:
         # Create a new policy
-        ret = Policy(name, action=action, scope=scope, realm=realm,
-                     user=user, time=time, client=client, active=active,
-                     resolver=resolver, adminrealm=adminrealm,
-                     adminuser=adminuser, priority=priority,
-                     check_all_resolvers=check_all_resolvers,
-                     conditions=conditions, pinode=pinode, user_case_insensitive=user_case_insensitive).save()
+        policy = Policy(name, action=action, scope=scope, realm=realm,
+                        user=user, time=time, client=client, active=active,
+                        resolver=resolver, adminrealm=adminrealm,
+                        adminuser=adminuser, priority=priority,
+                        check_all_resolvers=check_all_resolvers,
+                        pinode=pinode, user_case_insensitive=user_case_insensitive)
+        ret = policy.save()
+        # Since we create a new policy we always set the conditions, even if the list is empty
+        set_policy_conditions(conditions_data, policy)
     if description:
         d1 = PolicyDescription.query.filter_by(object_id=ret, object_type="policy").first()
         if d1:
@@ -2701,7 +2705,7 @@ def get_static_policy_definitions(scope=None):
             },
             ACTION.APIKEY: {
                 'type': 'bool',
-                'desc': _('The sending of an API Auth Key is required during'
+                'desc': _('The sending of an API Auth Key is required during '
                           'authentication. This avoids rogue authenticate '
                           'requests against the /validate/check interface.'),
                 'group': GROUP.SETTING_ACTIONS,
@@ -2967,6 +2971,8 @@ def get_static_policy_definitions(scope=None):
     }
 
     if scope:
+        if scope not in pol:
+            log.debug(f"Scope '{scope}' is not defined in the static policy definitions.")
         ret = pol.get(scope, {})
     else:
         ret = pol
@@ -3002,19 +3008,19 @@ def get_policy_condition_sections():
       * ``"description"``, a human-readable description of the section
     """
     return {
-        CONDITION_SECTION.USERINFO: {
+        ConditionSection.USERINFO: {
             "description": _("The policy only matches if certain conditions on the user info are fulfilled.")
         },
-        CONDITION_SECTION.TOKEN: {
+        ConditionSection.TOKEN: {
             "description": _("The policy only matches if certain conditions of the token attributes are fulfilled.")
         },
-        CONDITION_SECTION.TOKENINFO: {
+        ConditionSection.TOKENINFO: {
             "description": _("The policy only matches if certain conditions on the token info are fulfilled.")
         },
-        CONDITION_SECTION.HTTP_REQUEST_HEADER: {
+        ConditionSection.HTTP_REQUEST_HEADER: {
             "description": _("The policy only matches if certain conditions on the HTTP Request header are fulfilled.")
         },
-        CONDITION_SECTION.HTTP_ENVIRONMENT: {
+        ConditionSection.HTTP_ENVIRONMENT: {
             "description": _("The policy only matches if certain conditions on the HTTP Environment are fulfilled.")
         }
     }

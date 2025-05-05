@@ -17,7 +17,7 @@ account.
 Each policy condition performs a comparison of two values. The left value is
 taken from the current request. The comparison operator (called *Comparator*)
 and the right value are entered in the policy definition. Each condition
-consists of five parts:
+consists of the following parts:
 
  * ``Active`` determines if the condition is currently active.
  * ``Section`` refers to an aspect of the incoming request on which the condition is applied.
@@ -26,6 +26,8 @@ consists of five parts:
    of the incoming request on which the condition is applied.
  * ``Comparator`` defines the comparison to be performed. The available comparators are predefined, see `Comparators`_.
  * ``Value`` determines the value the property should be compared against.
+ * ``Handle Missing Data`` defines the behaviour of the system if the data required to check the condition is missing.
+   See `Handle Missing Data`_ for more information.
 
 Sections
 ~~~~~~~~
@@ -203,6 +205,28 @@ you would have to define an extended condition like:
    "username" in "alice,bob,charlie"
 
 
+Handle Missing Data
+~~~~~~~~~~~~~~~~~~~~
+
+There might be the case, that a condition shall be evaluated, but the required data to check the condition is missing.
+For example, an admin is doing a request and hence the user object is not available or even if the user object is
+available, the defined key may not be included in the user attributes. This could be avoided with well thought out and
+elaborated conditions. However, this might not hold for all scenarios.
+
+There are three different options how the system should handle if the data is missing to check the condition:
+    * ``Raise an error``: The system will raise a PolicyError and abort the request.
+    * ``Condition is false``: The condition is evaluated to false, hence the policy will not be applied.
+    * ``Condition is true``: The condition is evaluated to true, hence the policy will be applied.
+
+The default behaviour is to raise an error. This is the most strict behaviour and prevents policy misconfigurations
+from going unnoticed. It is also applied for policies defined in privacyIDEA versions < 3.12 and was the behaviour in
+previous versions.
+
+Generally, the usage of conditions is an advanced feature and requires further knowledge about the data available in
+the related requests. We highly recommend to evaluate the correct behaviour of the policies in a test environment,
+especially when using ``Condition is false/true``.
+
+
 Error Handling
 ~~~~~~~~~~~~~~
 
@@ -211,3 +235,8 @@ in order to prevent policy misconfiguration from going unnoticed. If
 privacyIDEA encounters a policy condition that evaluates neither to true nor
 false, but simply *invalid* due to a misconfiguration, privacyIDEA throws an
 error and the current request is aborted.
+
+This behaviour can be changed by setting the `Handle Missing Data`_ option
+to ``Condition is false`` or ``Condition is true``. However, this only avoids to throw an error if the required data
+is missing (e.g. no token or user in the request). If an invalid section or comparator is used, an error will still be
+raised.

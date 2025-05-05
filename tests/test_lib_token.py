@@ -945,6 +945,10 @@ class TokenTestCase(MyTestCase):
         self.assertTrue("spass_otp_pin_maxlength" in p, p)
         self.assertTrue("spass_otp_pin_minlength" in p, p)
 
+        # invalid scope returns empty dict
+        p = get_dynamic_policy_definitions(scope="invalid")
+        self.assertDictEqual({}, p)
+
     def test_41_get_tokens_paginate(self):
         # create some tokens
         for serial in ["S1", "S2", "S3", "A8", "B", "X"]:

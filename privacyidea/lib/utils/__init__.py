@@ -117,35 +117,41 @@ def check_time_in_range(time_range, check_time=None):
     time_range = ''.join(time_range.split())
     # split into list of time ranges
     time_ranges = time_range.split(",")
-    try:
-        for tr in time_ranges:
-            # tr is something like: Mon-Tue:09:30-17:30
-            dow, t = [x.lower() for x in tr.split(":", 1)]
-            if "-" in dow:
-                dow_start, dow_end = dow.split("-")
-            else:
-                dow_start = dow_end = dow
-            t_start, t_end = t.split("-")
-            # determine if we have times like 9:00-15:00 or 9-15
-            ts = [int(x) for x in t_start.split(":")]
-            te = [int(x) for x in t_end.split(":")]
-            if len(ts) == 2:
-                time_start = dt_time(ts[0], ts[1])
-            else:
-                time_start = dt_time(ts[0])
-            if len(te) == 2:
-                time_end = dt_time(te[0], te[1])
-            else:
-                time_end = dt_time(te[0])
 
-            # check the day and the time
-            if (dow_index.get(dow_start) <= check_day <= dow_index.get(dow_end)
-                    and
-                    time_start <= check_hour <= time_end):
-                time_match = True
-    except ValueError:
-        log.error("Wrong time range format: <dow>-<dow>:<hh:mm>-<hh:mm>")
-        log.debug("{0!s}".format(traceback.format_exc()))
+    for tr in time_ranges:
+        # tr is something like: Mon-Tue:09:30-17:30
+        dow, t = [x.lower() for x in tr.split(":", 1)]
+        if "-" in dow:
+            dow_start, dow_end = dow.split("-")
+        else:
+            dow_start = dow_end = dow
+        # check for valid day of the week
+        if dow_start not in dow_index or dow_end not in dow_index:
+            log.error(f"Invalid day of the week '{dow}'. Allowed values are: {dow_index.keys()}")
+            raise ParameterError("Invalid time format!")
+
+        t_start, t_end = t.split("-")
+        # determine if we have times like 9:00-15:00 or 9-15
+        ts = [int(x) for x in t_start.split(":")]
+        te = [int(x) for x in t_end.split(":")]
+        if len(ts) == 2:
+            time_start = dt_time(ts[0], ts[1])
+        else:
+            time_start = dt_time(ts[0])
+        if len(te) == 2:
+            time_end = dt_time(te[0], te[1])
+        else:
+            time_end = dt_time(te[0])
+
+        if time_start > time_end:
+            log.error(f"Invalid time range. Start time is greater than end time: {t}")
+            raise ParameterError("Invalid time format!")
+
+        # check the day and the time
+        if (dow_index.get(dow_start) <= check_day <= dow_index.get(dow_end)
+                and
+                time_start <= check_hour <= time_end):
+            time_match = True
 
     return time_match
 
