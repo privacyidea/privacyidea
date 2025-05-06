@@ -40,13 +40,16 @@ class ConditionSection:
     TOKEN = "token"  # nosec B105 # section name
     HTTP_REQUEST_HEADER = "HTTP Request header"
     HTTP_ENVIRONMENT = "HTTP Environment"
+    CONTAINER = "container"
+    CONTAINER_INFO = "container_info"
 
     @classmethod
     def get_all_sections(cls) -> list[str]:
         """
         Return all available sections for conditions of policies as a list.
         """
-        sections = [cls.USERINFO, cls.TOKENINFO, cls.TOKEN, cls.HTTP_REQUEST_HEADER, cls.HTTP_ENVIRONMENT]
+        sections = [cls.USERINFO, cls.TOKENINFO, cls.TOKEN, cls.HTTP_REQUEST_HEADER, cls.HTTP_ENVIRONMENT,
+                    cls.CONTAINER, cls.CONTAINER_INFO]
         return sections
 
 
@@ -301,9 +304,8 @@ class PolicyConditionClass:
 
     def get_token_data(self, serial: Union[str, None]) -> ConditionSectionData:
         """
-        Get the token data for the condition. If the token is None, it will try to get the token from the serial.
+        Get the token data for the condition.
 
-        :param token: The token to check
         :param serial: The serial of the token
         :return: The value from token data and further information if it is not available
         """
@@ -329,6 +331,37 @@ class PolicyConditionClass:
                 data.value = token_info.get(self.key)
                 if data.value is None:
                     data.available_keys = list(token_info.keys())
+        return data
+
+    def get_container_data(self, container_serial: Union[str, None]) -> ConditionSectionData:
+        """
+        Get the container data for the condition.
+
+        :param container_serial: The serial of the container
+        :return: The value from container data and further information if it is not available
+        """
+        data = ConditionSectionData("container")
+        container = None
+        if container_serial:
+            try:
+                from privacyidea.lib.container import find_container_by_serial
+                container = find_container_by_serial(container_serial)
+            except ResourceNotFoundError:
+                # The error for a missing container will be handled later
+                log.debug(f"Container with serial '{container_serial}' not found.")
+        data.object_available = container is not None
+
+        if data.object_available:
+            if self.section == ConditionSection.CONTAINER:
+                container_dict = container.get_as_dict(include_tokens=False)
+                data.value = container_dict.get(self.key)
+                if data.value is None:
+                    data.available_keys = list(container_dict.keys())
+            elif self.section == ConditionSection.CONTAINER_INFO:
+                container_info = container.get_container_info_dict()
+                data.value = container_info.get(self.key)
+                if data.value is None:
+                    data.available_keys = list(container_info.keys())
         return data
 
     def get_user_data(self, user: Union[User, None]) -> ConditionSectionData:
@@ -370,7 +403,7 @@ class PolicyConditionClass:
         return data
 
     def match(self, policy_name: str, user: Union[User, None], serial: Union[str, None],
-              request_header: Union[EnvironHeaders, None]) -> bool:
+              request_header: Union[EnvironHeaders, None], container_serial: Union[str, None] = None) -> bool:
         """
         Check if the condition matches the given user, token, or request header.
 
@@ -378,6 +411,7 @@ class PolicyConditionClass:
         :param user: The user to check
         :param serial: The serial number of the token
         :param request_header: The request header to check
+        :param container_serial: The serial number of the container
         :return: True if the condition matches, False otherwise
         """
         condition_matches = True
@@ -389,6 +423,8 @@ class PolicyConditionClass:
                 section_data = self.get_token_data(serial)
             elif self.section in [ConditionSection.HTTP_REQUEST_HEADER, ConditionSection.HTTP_ENVIRONMENT]:
                 section_data = self.get_request_header_data(request_header)
+            elif self.section in [ConditionSection.CONTAINER, ConditionSection.CONTAINER_INFO]:
+                section_data = self.get_container_data(container_serial)
             else:  # pragma no cover
                 # We should never reach this case as the section is already evaluated in the setter
                 log.warning(f"Policy '{policy_name}' has condition with unknown section: '{self.section}'")

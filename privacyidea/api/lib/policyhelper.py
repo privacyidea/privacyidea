@@ -25,8 +25,9 @@ Like policies, that are supposed to read and pass parameters during enrollment o
 from dataclasses import dataclass
 import logging
 
-from privacyidea.lib.container import get_container_realms, find_container_for_token, find_container_by_serial
+from privacyidea.lib.container import find_container_for_token, find_container_by_serial
 from privacyidea.lib.log import log_with
+from privacyidea.lib.policies.policy_conditions import ConditionSection
 from privacyidea.lib.policy import Match, SCOPE, ACTION
 from privacyidea.lib.error import PolicyError, ResourceNotFoundError
 from privacyidea.lib.token import get_tokens_from_serial_or_user, get_token_owner, get_realms_of_token
@@ -44,6 +45,7 @@ class UserAttributes:
     adminuser: str = None
     adminrealm: str = None
     additional_realms: list = None
+    user: User = None
 
 
 @log_with(log)
@@ -152,6 +154,7 @@ def get_token_user_attributes(serial: str):
         user_attributes.username = token_owner.login
         user_attributes.realm = token_owner.realm
         user_attributes.resolver = token_owner.resolver
+        user_attributes.user = token_owner
     if token:
         user_attributes.additional_realms = token.get_realms()
     return user_attributes
@@ -180,6 +183,7 @@ def get_container_user_attributes(container_serial: str) -> UserAttributes:
             container_owner_attributes.username = container_owner.login
             container_owner_attributes.realm = container_owner.realm
             container_owner_attributes.resolver = container_owner.resolver
+            container_owner_attributes.user = container_owner
         container_owner_attributes.additional_realms = [realm.name for realm in container.realms]
 
     return container_owner_attributes
@@ -221,23 +225,32 @@ def check_token_action_allowed(g, action: str, serial: str, user_attributes: Use
             user_attributes.username = token_owner_attributes.username or ""
             user_attributes.realm = token_owner_attributes.realm or ""
             user_attributes.resolver = token_owner_attributes.resolver or ""
+        user_attributes.user = token_owner_attributes.user
         user_attributes.additional_realms = token_owner_attributes.additional_realms or None
     elif user_attributes.role == "user" and serial:
         # for adding / removing tokens from a container, the user has to be the owner of the token
         if action in [ACTION.CONTAINER_ADD_TOKEN, ACTION.CONTAINER_REMOVE_TOKEN]:
-            if not user_is_owner(user_attributes, token_owner_attributes, allow_no_owner=False):
+            if not user_is_owner(user_attributes.user, token_owner_attributes.user, allow_no_owner=False):
                 return False
+
+    # Do not check extended conditions for containers
+    condition_check = ConditionSection.get_all_sections()
+    condition_check.remove(ConditionSection.CONTAINER)
+    condition_check.remove(ConditionSection.CONTAINER_INFO)
 
     # Check action for the token
     action_allowed = Match.generic(g,
                                    scope=user_attributes.role,
                                    action=action,
+                                   user_object=user_attributes.user,
                                    user=user_attributes.username,
                                    resolver=user_attributes.resolver,
                                    realm=user_attributes.realm,
                                    adminrealm=user_attributes.adminrealm,
                                    adminuser=user_attributes.adminuser,
-                                   additional_realms=user_attributes.additional_realms).allowed()
+                                   additional_realms=user_attributes.additional_realms,
+                                   serial=serial,
+                                   extended_condition_check=condition_check).allowed()
 
     if action_allowed and action == ACTION.CONTAINER_ADD_TOKEN:
         # Adding a token to a container will remove it from the old container: Check if the remove action is allowed
@@ -282,6 +295,11 @@ def check_container_action_allowed(g, action: str, container_serial: str, user_a
         # get user attributes from the container
         container_owner_attributes = get_container_user_attributes(container_serial)
 
+    # Do not check extended conditions for tokens
+    condition_check = ConditionSection.get_all_sections()
+    condition_check.remove(ConditionSection.TOKEN)
+    condition_check.remove(ConditionSection.TOKENINFO)
+
     if user_attributes.role == "admin":
         if action == ACTION.CONTAINER_ASSIGN_USER:
             # Assigning a user to a container is only possible if the container has no owner yet.
@@ -291,6 +309,9 @@ def check_container_action_allowed(g, action: str, container_serial: str, user_a
             user_attributes.username = container_owner_attributes.username or None
             user_attributes.realm = container_owner_attributes.realm or None
             user_attributes.resolver = container_owner_attributes.resolver or None
+            user_attributes.user = container_owner_attributes.user
+            # user conditions are already evaluated in the check_user_params decorator
+            condition_check.remove(ConditionSection.USERINFO)
         elif action == ACTION.CONTAINER_CREATE:
             # If the container is created, it has no owner yet, instead check the user attributes from the parameters
             user_attributes.username = user_attributes.username or ""
@@ -301,6 +322,7 @@ def check_container_action_allowed(g, action: str, container_serial: str, user_a
             user_attributes.username = container_owner_attributes.username or ""
             user_attributes.realm = container_owner_attributes.realm or ""
             user_attributes.resolver = container_owner_attributes.resolver or ""
+            user_attributes.user = container_owner_attributes.user
         user_attributes.additional_realms = container_owner_attributes.additional_realms or None
     elif user_attributes.role == "user" and container_serial:
         # check if the user is the owner of the container
@@ -309,9 +331,9 @@ def check_container_action_allowed(g, action: str, container_serial: str, user_a
             is_owner = True
         elif action == ACTION.CONTAINER_ASSIGN_USER:
             # users are allowed to assign containers without owner
-            is_owner = user_is_owner(user_attributes, container_owner_attributes, allow_no_owner=True)
+            is_owner = user_is_owner(user_attributes.user, container_owner_attributes.user, allow_no_owner=True)
         else:
-            is_owner = user_is_owner(user_attributes, container_owner_attributes, allow_no_owner=False)
+            is_owner = user_is_owner(user_attributes.user, container_owner_attributes.user, allow_no_owner=False)
         if not is_owner:
             return False
 
@@ -319,28 +341,28 @@ def check_container_action_allowed(g, action: str, container_serial: str, user_a
     action_allowed = Match.generic(g,
                                    scope=user_attributes.role,
                                    action=action,
+                                   user_object=user_attributes.user,
                                    user=user_attributes.username,
                                    resolver=user_attributes.resolver,
                                    realm=user_attributes.realm,
                                    adminrealm=user_attributes.adminrealm,
                                    adminuser=user_attributes.adminuser,
-                                   additional_realms=user_attributes.additional_realms).allowed()
+                                   additional_realms=user_attributes.additional_realms,
+                                   container_serial=container_serial,
+                                   extended_condition_check=condition_check).allowed()
     return action_allowed
 
 
-def user_is_owner(logged_in_user_attr: UserAttributes, owner_attr: UserAttributes,
-                  allow_no_owner: bool = False) -> bool:
+def user_is_owner(logged_in_user: User, owner: User, allow_no_owner: bool = False) -> bool:
     """
     Checks if the logged-in user is the owner of the token or container.
 
-    :param logged_in_user_attr: User attributes of the logged-in user
-    :param owner_attr: User attributes of the token or container owner
+    :param logged_in_user: Logged-in user
+    :param owner: User who is the owner of the token or container
     :param allow_no_owner: If True, the user is considered the owner if the owner is None
     :return: True if the user is the owner, False otherwise
     """
-    user = User(logged_in_user_attr.username, logged_in_user_attr.realm, logged_in_user_attr.resolver)
-    owner = User(owner_attr.username, owner_attr.realm, owner_attr.resolver)
-    is_owner = user == owner
+    is_owner = logged_in_user == owner
     if not is_owner and allow_no_owner and not owner:
         is_owner = True
     return is_owner
