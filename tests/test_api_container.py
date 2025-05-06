@@ -2481,6 +2481,10 @@ class APIContainer(APIContainerTest):
         cserial = res["result"]["value"]["container_serial"]
         self.assertTrue(len(cserial) > 1)
 
+        # Check creation date is set
+        container = find_container_by_serial(cserial)
+        self.assertIn("creation_date", list(container.get_container_info_dict().keys()))
+
         # Delete the container
         result = self.request_assert_success(f"container/{cserial}", {}, self.at, 'DELETE')
         self.assertTrue(result["result"]["value"])

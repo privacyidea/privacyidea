@@ -862,20 +862,20 @@ def multichallenge_enroll_via_validate(request, response):
     result = content.get("result")
     # Check if the authentication was successful, only then attempt to enroll a new token
     if result.get("value") and result.get("authentication") == AUTH_RESPONSE.ACCEPT:
-        # Check if another policy restricts the token count and exit early if true
-        try:
-            check_max_token_user(request=request)
-            check_max_token_realm(request=request)
-        except PolicyError as e:
-            g.audit_object.log({"success": True, "action_detail": e})
-            return response
-
         user = request.User
         if user.login and user.realm:
             enroll_policies = Match.user(g, scope=SCOPE.AUTH, action=ACTION.ENROLL_VIA_MULTICHALLENGE,
                                          user_object=user).action_values(unique=True, write_to_audit_log=False)
             # Check if we have a policy to enroll a token and which type
             if enroll_policies:
+                # First check if another policy restricts the token count and exit early if true
+                try:
+                    check_max_token_user(request=request)
+                    check_max_token_realm(request=request)
+                except PolicyError as e:
+                    g.audit_object.log({"success": True, "action_detail": f"{e}"})
+                    return response
+
                 tokentype = list(enroll_policies)[0]
                 tokentype = tokentype.lower()
                 # Check if the user already has a token of the type that should be enrolled

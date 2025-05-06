@@ -375,17 +375,12 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             ConfigFactory.getRealms(function (data) {
                 $scope.realms = data.result.value;
                 // Set the default realm
-                const size = Object.keys($scope.realms).length;
-                if (size === 1) {
-                    $scope.newUser = {user: "", realm: realmname};
-                } else {
-                    angular.forEach($scope.realms, function (realm, realmname) {
-                        // if there is a default realm, preset the default realm
-                        if (realm.default && !$stateParams.realmname) {
-                            $scope.newUser = {user: "", realm: realmname};
-                        }
-                    });
-                }
+                angular.forEach($scope.realms, function (realm, realmname) {
+                    // if there is a default realm, preset the default realm
+                    if (realm.default && !$stateParams.realmname) {
+                        $scope.newUser = {user: "", realm: realmname};
+                    }
+                });
 
                 // init the user, if token.enroll was called from the user.details
                 if ($stateParams.realmname) {

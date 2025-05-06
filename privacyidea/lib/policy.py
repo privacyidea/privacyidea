@@ -1345,11 +1345,11 @@ def validate_values(values: Union[str, list, None], allowed_values: list, name: 
         if isinstance(values, str):
             values = values.replace(" ", "").split(",")
         elif not isinstance(values, list):
-            raise ParameterError(f"Invalid resolvers type '{type(values)}'!")
+            raise ParameterError(f"Invalid {name.capitalize()} type '{type(values)}'!")
         values = remove_wildcards_and_negations(values)
         undefined_values = list(set(values) - set(allowed_values))
-        if len(undefined_values) > 0:
-            raise ParameterError(f"Undefined {name.capitalize()} {undefined_values}!")
+        if undefined_values:
+            raise ParameterError(f"Undefined {name.capitalize()}: {undefined_values}!")
     return True
 
 

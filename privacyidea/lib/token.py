@@ -1348,6 +1348,9 @@ def init_token(param, user=None, tokenrealms=None, tokenkind=None):
     if validity_period_start:
         token.set_validity_period_start(validity_period_start)
 
+    # Creation Date
+    token.add_tokeninfo("creation_date", datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"))
+
     # Safe the token object to make sure all changes are persisted in the db
     token.save()
     return token

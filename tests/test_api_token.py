@@ -594,7 +594,7 @@ class APITokenTestCase(MyApiTestCase):
                                            data={"type": "hmac"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 400, res)
+            self.assertEqual(400, res.status_code, res)
 
         # missing parameter otpkey
         with self.app.test_request_context('/token/init',
@@ -602,7 +602,7 @@ class APITokenTestCase(MyApiTestCase):
                                            data={"type": "hotp"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 400, res)
+            self.assertEqual(400, res.status_code, res)
 
         with self.app.test_request_context('/token/init',
                                            method='POST',
@@ -618,6 +618,8 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(result.get("value"), result)
             self.assertTrue("value" in detail.get("googleurl"), detail)
             self.assertTrue("OATH" in serial, detail)
+            token = get_one_token(serial=serial)
+            self.assertIn("creation_date", token.get_tokeninfo(), token)
             remove_token(serial)
 
         with self.app.test_request_context('/token/init',
@@ -677,16 +679,19 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(result.get("status"), result)
             self.assertGreaterEqual(len(tokenlist), 1, tokenlist)
             self.assertGreaterEqual(count, 1, result)
-            self.assertTrue(next_tokens is None, next_tokens)
-            self.assertTrue(prev is None, prev)
+            self.assertIsNone(next_tokens, next_tokens)
+            self.assertIsNone(prev, prev)
             token0 = tokenlist[0]
-            self.assertTrue(token0.get("username") == "", token0)
-            self.assertTrue(token0.get("count") == 0, token0)
-            self.assertTrue(token0.get("tokentype") == "hotp", token0)
-            self.assertTrue(token0.get("tokentype") == "hotp", token0)
-            self.assertTrue(token0.get("count_window") == 10, token0)
-            self.assertTrue(token0.get("realms") == [], token0)
-            self.assertTrue(token0.get("user_realm") == "", token0)
+            self.assertEqual("", token0.get("username"), token0)
+            self.assertEqual(0, token0.get("count"), token0)
+            self.assertEqual("hotp", token0.get("tokentype"), token0)
+            self.assertEqual(10, token0.get("count_window"), token0)
+            self.assertEqual([], token0.get("realms"), token0)
+            self.assertEqual("", token0.get("user_realm"), token0)
+            self.assertIn("creation_date", token0.get("info"), token0)
+            self.assertGreaterEqual(datetime.datetime.now(tz=datetime.timezone.utc),
+                                    datetime.datetime.fromisoformat(token0.get("info").get("creation_date")),
+                                    token0)
 
         # get assigned tokens
         with self.app.test_request_context('/token/',

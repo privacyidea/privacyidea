@@ -125,7 +125,7 @@ class ConditionHandleMissingData(Enum):
 class ConditionSectionData:
     object_name: str
     object_available: bool = False
-    value: str = None
+    value: any = None
     available_keys: list[str] = None
 
 

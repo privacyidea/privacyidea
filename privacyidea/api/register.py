@@ -26,7 +26,7 @@ register.
 
 The methods are tested in the file tests/test_api_register.py
 """
-from flask import (Blueprint, request, g, current_app)
+from flask import (Blueprint, request, g)
 from .lib.utils import send_result, getParam
 from .lib.utils import required
 import logging
@@ -38,7 +38,7 @@ from privacyidea.lib.policy import Match
 from privacyidea.lib.realm import get_default_realm
 from privacyidea.lib.error import RegistrationError
 from privacyidea.api.lib.prepolicy import required_email, prepolicy
-from privacyidea.lib.smtpserver import get_smtpserver, send_email_identifier
+from privacyidea.lib.smtpserver import send_email_identifier
 
 DEFAULT_BODY="""
 Your registration token is {regkey}.
@@ -149,7 +149,7 @@ def register_post():
                                      "password": password})
 
     # 3. create a registration token for this user
-    user = User(username, realm=realm, resolver=resolvername)
+    user = User(realm=realm, resolver=resolvername, uid=uid)
     token = init_token({"type": "registration"}, user=user)
     # 4. send the registration token to the users email
     registration_key = token.init_details.get("otpkey")

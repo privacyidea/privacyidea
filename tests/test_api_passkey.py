@@ -21,12 +21,12 @@ from unittest.mock import patch
 from webauthn.helpers.structs import AttestationConveyancePreference
 
 import privacyidea.lib.token
-from privacyidea.config import TestingConfig, Config
+from privacyidea.config import TestingConfig
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
 from privacyidea.lib.token import remove_token, init_token, get_tokens
-from privacyidea.lib.tokens.webauthn import COSE_ALGORITHM
+from privacyidea.lib.tokens.webauthn import CoseAlgorithm
 from privacyidea.lib.user import User
 from tests.base import MyApiTestCase, OverrideConfigTestCase
 from tests.passkey_base import PasskeyTestBase
@@ -120,6 +120,7 @@ class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
                 self.assertEqual(200, res.status_code)
                 self.assertIn("detail", res.json)
                 detail = res.json["detail"]
+                self.assertIn("transaction_id", detail)
                 self.assertIn("passkey", detail)
                 passkey = detail["passkey"]
                 self.assertIn("challenge", passkey)
@@ -187,7 +188,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
                 passkey_registration = data["detail"]["passkey_registration"]
                 # PubKeyCredParams: Only ecdsa should be allowed
                 self.assertEqual(len(passkey_registration["pubKeyCredParams"]), 1)
-                self.assertEqual(passkey_registration["pubKeyCredParams"][0]["alg"], COSE_ALGORITHM.ES256)
+                self.assertEqual(passkey_registration["pubKeyCredParams"][0]["alg"], CoseAlgorithm.ES256)
                 # Attestation should be enterprise
                 self.assertEqual(passkey_registration["attestation"], AttestationConveyancePreference.ENTERPRISE)
                 # ExcludeCredentials should contain the credential id of the registered token
