@@ -2960,7 +2960,8 @@ class APIContainer(APIContainerTest):
                                              self.at, 'GET')
         result_container = result["result"]["value"]["containers"][0]
         self.assertTrue(container_serials[3], result_container["serial"])
-        self.assertSetEqual({"encrypt_mode", RegistrationState.get_key()}, set(result_container["info"].keys()))
+        self.assertSetEqual({"encrypt_mode", RegistrationState.get_key(), "creation_date"},
+                            set(result_container["info"].keys()))
         # Get all containers
         result = self.request_assert_success('/container/', {"pagesize": 15}, self.at, 'GET')
         result_containers = result["result"]["value"]["containers"]
