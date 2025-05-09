@@ -14,7 +14,7 @@ export class VersionService {
 
   openDocumentation(page: string) {
     const baseUrl = 'https://privacyidea.readthedocs.io/en/'; //TODO translation
-    let page_url = 'webui';
+    let page_url;
     switch (page) {
       case 'token_enrollment':
         page_url = 'webui/token_details.html#enroll-token';
@@ -48,6 +48,10 @@ export class VersionService {
         break;
       case 'container_create':
         page_url = 'webui/container_view.html#container-create';
+        break;
+      default:
+        page_url = 'webui/index.html';
+        break;
     }
     const versionUrl = `${baseUrl}v${this.version()}/${page_url}`;
     const fallbackUrl = `${baseUrl}latest/${page_url}`;

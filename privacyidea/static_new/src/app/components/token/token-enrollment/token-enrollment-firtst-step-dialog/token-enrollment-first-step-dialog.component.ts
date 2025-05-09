@@ -10,6 +10,7 @@ import {
 } from '@angular/material/dialog';
 import { LostTokenComponent } from '../../token-card/token-tab/lost-token/lost-token.component';
 import { TokenService } from '../../../../services/token/token.service';
+import { ContentService } from '../../../../services/content/content.service';
 
 @Component({
   selector: 'app-token-enrollment-first-step-dialog',
@@ -28,6 +29,7 @@ export class TokenEnrollmentFirstStepDialogComponent {
 
   constructor(
     protected tokenService: TokenService,
+    private contentService: ContentService,
     private dialogRef: MatDialogRef<LostTokenComponent>,
     @Inject(MAT_DIALOG_DATA)
     public data: {
@@ -41,11 +43,11 @@ export class TokenEnrollmentFirstStepDialogComponent {
 
   tokenSelected(tokenSerial: string) {
     this.dialogRef.close();
-    this.tokenService.tokenSelected(tokenSerial);
+    this.contentService.tokenSelected(tokenSerial);
   }
 
   containerSelected(containerSerial: string) {
     this.dialogRef.close();
-    this.tokenService.containerSelected(containerSerial);
+    this.contentService.containerSelected(containerSerial);
   }
 }

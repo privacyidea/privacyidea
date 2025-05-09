@@ -4,6 +4,7 @@ import { httpResource } from '@angular/common/http';
 import { TokenService } from '../token.service';
 import { LocalService } from '../../local/local.service';
 import { TableUtilsService } from '../../table-utils/table-utils.service';
+import { ContentService } from '../../content/content.service';
 
 const apiFilter = ['serial', 'transaction_id'];
 const advancedApiFilter: string[] = [];
@@ -14,7 +15,7 @@ const advancedApiFilter: string[] = [];
 export class ChallengesService {
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
-  selectedContent = this.tokenService.selectedContent;
+  selectedContent = this.contentService.selectedContent;
   tokenBaseUrl = this.tokenService.tokenBaseUrl;
   filterValue = linkedSignal({
     source: this.selectedContent,
@@ -84,5 +85,6 @@ export class ChallengesService {
     private tokenService: TokenService,
     private localService: LocalService,
     private tableUtilsService: TableUtilsService,
+    private contentService: ContentService,
   ) {}
 }

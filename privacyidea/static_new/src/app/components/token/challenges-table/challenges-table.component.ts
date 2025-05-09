@@ -20,6 +20,7 @@ import { CopyButtonComponent } from '../../shared/copy-button/copy-button.compon
 import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
 import { TokenService } from '../../../services/token/token.service';
 import { ChallengesService } from '../../../services/token/challenges/challenges.service';
+import { ContentService } from '../../../services/content/content.service';
 
 export const columnsKeyMap = [
   { key: 'timestamp', label: 'Timestamp' },
@@ -52,7 +53,7 @@ export class ChallengesTableComponent {
   pageSizeOptions = [5, 10, 15];
   apiFilter = this.challengesService.apiFilter;
   advancedApiFilter = this.challengesService.advancedApiFilter;
-  selectedContent = this.tokenService.selectedContent;
+  selectedContent = this.contentService.selectedContent;
   tokenSerial = this.tokenService.tokenSerial;
   pageSize = this.challengesService.pageSize;
   pageIndex = this.challengesService.pageIndex;
@@ -87,6 +88,7 @@ export class ChallengesTableComponent {
     protected tokenService: TokenService,
     protected tableUtilsService: TableUtilsService,
     private challengesService: ChallengesService,
+    protected contentService: ContentService,
   ) {}
 
   onFilterChange(newFilter: string) {
@@ -101,10 +103,5 @@ export class ChallengesTableComponent {
 
   onSortEvent($event: Sort) {
     this.sortby_sortdir.set($event);
-  }
-
-  tokenSelected(serial: string) {
-    this.tokenSerial.set(serial);
-    this.selectedContent.set('token_details');
   }
 }

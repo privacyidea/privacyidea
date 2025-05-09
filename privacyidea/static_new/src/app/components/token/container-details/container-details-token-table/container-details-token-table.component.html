@@ -16,7 +16,7 @@
                    showFirstLastButtons></mat-paginator>
   </div>
   <div [ngClass]="[
-      overflowService.isWidthOverflowing('.token-layout', 1580)
+      overflowService.isWidthOverflowing('body', 1580)
         ? 'flex-column'
         : 'flex-row',
     ]">
@@ -42,7 +42,7 @@
                 @switch (column.key) {
                   @case ("serial") {
                     <a attr.aria-label="{{ column.label }} Link"
-                       (click)="containerService.tokenSelected(element.serial)"> {{
+                       (click)="contentService.tokenSelected(element.serial)"> {{
                         element[column.key]
                       }} </a>
                     <app-copy-button [copyText]="element.serial"></app-copy-button>
@@ -75,7 +75,7 @@
             aria-label="Remove Button Cell"
             mat-cell>
           <div class="flex just-center">
-            <button (click)="removeTokenFromContainer(this.containerSerial(), element.serial)"
+            <button (click)="removeTokenFromContainer(containerSerial(), element.serial)"
                     mat-icon-button>
               <mat-icon>delete_outlined</mat-icon>
             </button>
@@ -97,7 +97,7 @@
       </tr>
     </table>
     <div [ngClass]="[
-        overflowService.isWidthOverflowing('.token-layout', 1580)
+        overflowService.isWidthOverflowing('body', 1580)
           ? 'container-details-action-column'
           : 'container-details-action-row',
       ]">

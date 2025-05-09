@@ -1,4 +1,5 @@
 @use "sass:meta";
+@use '@angular/material' as mat;
 
 @include meta.load-css("table.scss");
 @include meta.load-css("buttons.scss");
@@ -144,6 +145,9 @@ body {
   --mat-select-focused-arrow-color: var(--blue-light);
   --mdc-outlined-text-field-focus-outline-color: var(--blue-light);
   --mat-sys-primary: var(--blue-base);
+  --mat-sys-surface-container-low: white !important;
+  --mat-sys-primary-container: white !important;
+  --mat-sys-on-primary-container: transparent !important;
 }
 
 .shadow {
@@ -246,7 +250,7 @@ body {
   margin-top: 2rem;
 }
 
-.margin-button-1 {
+.margin-bottom-1 {
   margin-bottom: 1rem;
 }
 
@@ -276,6 +280,10 @@ body {
 
 .gap-1 {
   gap: 1rem;
+}
+
+.margin-1 {
+  margin: 1rem;
 }
 
 .copy-button {

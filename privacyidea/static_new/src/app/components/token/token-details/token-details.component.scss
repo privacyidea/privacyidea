@@ -1,13 +1,14 @@
 @use "../../../../styles";
+@use '@angular/material' as mat;
 
 .details-container {
   display: flex;
   align-items: center;
   border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
+  @include mat.elevation(5);
   background-color: var(--table-color);
   padding: var(--global-padding);
-  margin-left: 1rem;
+  margin: 2rem 1rem 1rem;
   overflow: auto;
 
   .mat-mdc-select-value-text {

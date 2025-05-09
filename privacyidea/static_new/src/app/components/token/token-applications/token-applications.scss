@@ -1,11 +1,12 @@
 @use "../../../../styles";
+@use '@angular/material' as mat;
 
 .token-applications {
   padding: var(--global-padding);
   border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
+  @include mat.elevation(5);
   background-color: var(--table-color);
-  margin-left: 1rem;
+  margin: 2rem 1rem 1rem;
   overflow: auto;
 
   h4 {

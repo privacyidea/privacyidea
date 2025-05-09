@@ -35,6 +35,7 @@ import { EditButtonsComponent } from '../../shared/edit-buttons/edit-buttons.com
 import { OverflowService } from '../../../services/overflow/overflow.service';
 import { MatDivider } from '@angular/material/divider';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
+import { ContentService } from '../../../services/content/content.service';
 
 export const tokenDetailsKeyMap = [
   { key: 'tokentype', label: 'Type' },
@@ -94,9 +95,9 @@ export const infoDetailsKeyMap = [{ key: 'info', label: 'Information' }];
 export class TokenDetailsComponent {
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
-  selectedContent = this.tokenService.selectedContent;
-  isProgrammaticTabChange = this.tokenService.isProgrammaticTabChange;
-  containerSerial = this.tokenService.containerSerial;
+  selectedContent = this.contentService.selectedContent;
+  isProgrammaticTabChange = this.contentService.isProgrammaticTabChange;
+  containerSerial = this.containerService.containerSerial;
   tokenSerial = this.tokenService.tokenSerial;
   isEditingUser = signal(false);
   isEditingInfo = signal(false);
@@ -188,6 +189,7 @@ export class TokenDetailsComponent {
     protected realmService: RealmService,
     protected overflowService: OverflowService,
     protected tableUtilsService: TableUtilsService,
+    protected contentService: ContentService,
   ) {
     effect(() => {
       if (!this.tokenDetails()) return;

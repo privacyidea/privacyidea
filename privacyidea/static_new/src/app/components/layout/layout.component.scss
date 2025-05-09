@@ -1,16 +1,15 @@
 @use "../../../styles";
 
-$grid-template-rows: auto 1fr auto;
-
 .layout {
-  grid-template-rows: $grid-template-rows;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100vh;
 
   header {
   }
 
   main {
-    display: flex;
-    flex-direction: column;
+    overflow: auto;
   }
 
   footer {

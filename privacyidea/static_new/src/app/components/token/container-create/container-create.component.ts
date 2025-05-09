@@ -37,6 +37,7 @@ import { NotificationService } from '../../../services/notification/notification
 import { MatDialog } from '@angular/material/dialog';
 import { ContainerRegistrationDialogComponent } from './container-registration-dialog/container-registration-dialog.component';
 import { TokenService } from '../../../services/token/token.service';
+import { ContentService } from '../../../services/content/content.service';
 
 export type ContainerType = 'generic' | 'smartphone' | 'yubikey';
 
@@ -67,8 +68,8 @@ export type ContainerType = 'generic' | 'smartphone' | 'yubikey';
 })
 export class ContainerCreateComponent {
   protected readonly TokenComponent = TokenComponent;
-  selectedContent = this.tokenService.selectedContent;
-  containerSerial = this.tokenService.containerSerial;
+  selectedContent = this.contentService.selectedContent;
+  containerSerial = this.containerService.containerSerial;
   description = signal('');
   selectedTemplate = signal('');
   templateOptions = linkedSignal({
@@ -90,6 +91,7 @@ export class ContainerCreateComponent {
     protected containerService: ContainerService,
     private notificationService: NotificationService,
     protected tokenService: TokenService,
+    private contentService: ContentService,
   ) {
     effect(() => {
       if (this.containerService.selectedContainerType().key === 'smartphone') {

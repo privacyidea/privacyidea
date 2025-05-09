@@ -3,7 +3,7 @@
     <mat-divider />
     <br />
     <mat-list-item>
-      <button (click)="onClickOverview()"
+      <button (click)="selectedContent.set('token_overview')"
               [ngClass]="[
           selectedContent() === 'token_overview'
             ? 'card-button-active'
@@ -16,7 +16,7 @@
     <div [@toggleState]="tokenIsSelected()">
       @if (selectedContent() !== "token_details") {
         <mat-list-item>
-          <button (click)="onClickEnrollment()"
+          <button (click)="selectedContent.set('token_enrollment')"
                   [ngClass]="[
               selectedContent() === 'token_enrollment'
                 ? 'card-button-active'
@@ -38,7 +38,7 @@
               selectedContent() === 'token_challenges'
                 ? 'card-button-active'
                 : 'card-button',]"
-                  (click)="onClickShowChallenges()"
+                  (click)="selectedContent.set('token_challenges')"
                   mat-flat-button>
             <mat-icon>cached</mat-icon>
             Show Challenges
@@ -49,7 +49,7 @@
               selectedContent() === 'token_applications'
                 ? 'card-button-active'
                 : 'card-button',]"
-                  (click)="onClickTokenApplications()"
+                  (click)="selectedContent.set('token_applications')"
                   mat-flat-button>
             <mat-icon>now_widgets</mat-icon>
             Applications
@@ -62,7 +62,7 @@
                 ? 'card-button-active'
                 : 'card-button',]"
                   mat-flat-button
-                  (click)="onClickGetSerial()">
+                  (click)="selectedContent.set('token_get_serial')">
             <mat-icon>help_outline</mat-icon>
             Get Serial Number
           </button>

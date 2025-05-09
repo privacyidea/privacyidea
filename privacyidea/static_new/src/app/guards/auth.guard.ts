@@ -1,7 +1,20 @@
-import { Injectable } from '@angular/core';
-import { CanActivate, CanActivateChild, Router } from '@angular/router';
+import { inject, Injectable } from '@angular/core';
+import {
+  CanActivate,
+  CanActivateChild,
+  CanMatchFn,
+  Route,
+  Router,
+  UrlSegment,
+} from '@angular/router';
 import { AuthService } from '../services/auth/auth.service';
 import { NotificationService } from '../services/notification/notification.service';
+
+export const adminMatch: CanMatchFn = () =>
+  inject(AuthService).role() === 'admin';
+
+export const selfServiceMatch: CanMatchFn = () =>
+  inject(AuthService).role() === 'user';
 
 @Injectable({
   providedIn: 'root',

@@ -1,4 +1,5 @@
 @use "../../../../styles";
+@use '@angular/material' as mat;
 
 $header-bg: white;
 $header-shadow: var(--box-shadow);
@@ -17,11 +18,11 @@ $border-radius: var(--border-radius);
 
 .header-container {
   @include flex-center;
+  @include mat.elevation(3);
   overflow: scroll;
   background: $header-bg;
   border-bottom-left-radius: 5px;
   border-bottom-right-radius: 5px;
-  box-shadow: $header-shadow;
   z-index: 2;
   position: sticky;
   width: fit-content;

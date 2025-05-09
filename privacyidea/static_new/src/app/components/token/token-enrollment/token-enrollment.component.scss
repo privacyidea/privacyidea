@@ -1,14 +1,15 @@
 @use "../../../../styles";
+@use '@angular/material' as mat;
 
 .token-enrollment-container {
   @include styles.table-container-styles;
-  margin-left: 1rem;
+  margin: 2rem 1rem 1rem;
   overflow: auto;
   width: 785px;
 }
 
 .token-type-option {
-  box-shadow: 4px 4px var(--blur) var(--shadow);
+  @include mat.elevation(3);
   background: #efedf0;
   border-radius: var(--border-radius);
   margin: 0 3px 5px;

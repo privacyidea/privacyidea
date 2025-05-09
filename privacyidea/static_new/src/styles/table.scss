@@ -1,3 +1,5 @@
+@use '@angular/material' as mat;
+
 $table-border-color: #e0e2ec;
 $td-max-width: 18rem;
 $filter-width: 54.5rem;
@@ -29,7 +31,7 @@ $description-width: 18rem;
 @mixin table-container-styles {
   padding: var(--global-padding);
   border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
+  @include mat.elevation(5);
   background-color: var(--table-color);
 }
 

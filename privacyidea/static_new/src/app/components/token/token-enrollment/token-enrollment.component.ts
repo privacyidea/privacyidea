@@ -72,6 +72,7 @@ import { EnrollWebauthnComponent } from './enroll-webauthn/enroll-webauthn.compo
 import { EnrollPasskeyComponent } from './enroll-passkey/enroll-passkey.component';
 import { VersionService } from '../../../services/version/version.service';
 import { TokenEnrollmentSecondStepDialogComponent } from './token-enrollment-second-step-dialog/token-enrollment-second-step-dialog.component';
+import { ContentService } from '../../../services/content/content.service';
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -180,8 +181,8 @@ export class CustomDateAdapter extends NativeDateAdapter {
 export class TokenEnrollmentComponent {
   timezoneOptions = TIMEZONE_OFFSETS;
   tokenSerial = this.tokenService.tokenSerial;
-  containerSerial = this.tokenService.containerSerial;
-  selectedContent = this.tokenService.selectedContent;
+  containerSerial = this.containerService.containerSerial;
+  selectedContent = this.contentService.selectedContent;
   tokenTypeOptions = this.tokenService.tokenTypeOptions;
   selectedTokenType = this.tokenService.selectedTokenType;
   testYubiKey = linkedSignal({
@@ -464,6 +465,7 @@ export class TokenEnrollmentComponent {
     protected firstDialog: MatDialog,
     protected secondDialog: MatDialog,
     protected versioningService: VersionService,
+    private contentService: ContentService,
   ) {}
 
   formatDateTimeOffset(date: Date, time: string, offset: string): string {

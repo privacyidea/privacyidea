@@ -1,5 +1,3 @@
-<!-- container-table.component.html -->
-
 <div aria-label="Container Table"
      class="container-table-container">
   <div class="filter-paginator-container">
@@ -66,7 +64,9 @@
               }
               @case ("serial") {
                 <a attr.aria-label="{{ column.label }} Link"
-                   (click)="containerSelected(element.serial)"> {{ element[column.key] }} </a>
+                   (click)="contentService.containerSelected(element.serial)"> {{
+                    element[column.key]
+                  }} </a>
                 @if (element.serial !== "") {
                   <app-copy-button [copyText]="element.serial"></app-copy-button>
                 }

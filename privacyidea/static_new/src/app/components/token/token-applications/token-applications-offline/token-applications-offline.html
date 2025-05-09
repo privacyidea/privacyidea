@@ -51,7 +51,9 @@
             @switch (column.key) {
               @case ("serial") {
                 <a attr.aria-label="{{ column.label }} Link"
-                   (click)="tokenService.tokenSelected(element.serial)"> {{ element[column.key] }} </a>
+                   (click)="contentService.tokenSelected(element.serial)"> {{
+                    element[column.key]
+                  }} </a>
                 <app-copy-button [copyText]="element.serial"></app-copy-button>
               }
               @default {

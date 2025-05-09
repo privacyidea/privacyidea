@@ -17,6 +17,7 @@ import { TableUtilsService } from '../../../../services/table-utils/table-utils.
 import { CopyButtonComponent } from '../../../shared/copy-button/copy-button.component';
 import { TokenService } from '../../../../services/token/token.service';
 import { FormsModule } from '@angular/forms';
+import { ContentService } from '../../../../services/content/content.service';
 
 export const columnsKeyMap = [
   { key: 'serial', label: 'Serial' },
@@ -48,7 +49,7 @@ export const columnsKeyMap = [
 export class TokenApplicationsSsh {
   static columnsKeyMap = columnsKeyMap;
   tokenSerial = this.tokenService.tokenSerial;
-  selectedContent = this.tokenService.selectedContent;
+  selectedContent = this.contentService.selectedContent;
   @Input() length!: WritableSignal<number>;
   @Input() pageSize!: WritableSignal<number>;
   @Input() pageIndex!: WritableSignal<number>;
@@ -67,6 +68,7 @@ export class TokenApplicationsSsh {
     protected machineService: MachineService,
     protected tableUtilsService: TableUtilsService,
     protected tokenService: TokenService,
+    protected contentService: ContentService,
   ) {}
 
   getObjectStrings(options: object) {

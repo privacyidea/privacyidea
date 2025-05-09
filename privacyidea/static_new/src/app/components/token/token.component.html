@@ -5,15 +5,15 @@
 
 <div aria-label="Token Layout"
      class="token-layout">
-  @if (!overflowService.isWidthOverflowing(".token-layout",
-    overflowService.getOverflowThreshold(tokenService.selectedContent()))) {
+  @if (!overflowService.isWidthOverflowing("body",
+    overflowService.getOverflowThreshold(contentService.selectedContent()))) {
     <ng-container [ngTemplateOutlet]="tokenCard"
                   [ngTemplateOutletContext]="{ hasMargin: true }" />
   }
   <mat-drawer-container>
     @if (overflowService.isWidthOverflowing(
-      ".token-layout",
-      overflowService.getOverflowThreshold(tokenService.selectedContent())
+      "body",
+      overflowService.getOverflowThreshold(contentService.selectedContent())
     )) {
       <mat-drawer #drawer
                   (opened)="updateOverflowState()"
@@ -27,8 +27,8 @@
     <mat-drawer-content>
       <div class="drawer-content-div">
         @if (overflowService.isWidthOverflowing(
-          ".token-layout",
-          overflowService.getOverflowThreshold(tokenService.selectedContent())
+          "body",
+          overflowService.getOverflowThreshold(contentService.selectedContent())
         )) {
           <div class="drawer-button-div">
             <button mat-fab
@@ -38,44 +38,43 @@
             </button>
           </div>
         }
-        <main>
-          <div [ngClass]="[
+        <div [ngClass]="[
               overflowService.isWidthOverflowing(
-                '.token-layout',
-                overflowService.getOverflowThreshold(tokenService.selectedContent()))
+                'body',
+                overflowService.getOverflowThreshold(contentService.selectedContent()))
                 ? 'main-margin'
-                : 'main-margin-overflow']">
-            @switch (tokenService.selectedContent()) {
-              @case ("token_overview") {
-                <app-token-table #tokenTableComponent />
-              }
-              @case ("token_enrollment") {
-                <app-token-enrollment />
-              }
-              @case ("token_details") {
-                <app-token-details #tokenDetailsComponent />
-              }
-              @case ("token_challenges") {
-                <app-challenges-table />
-              }
-              @case ("token_applications") {
-                <app-token-applications />
-              }
-              @case ("token_get_serial") {
-                <app-token-get-serial />
-              }
-              @case ("container_overview") {
-                <app-container-table #containerTableComponent />
-              }
-              @case ("container_details") {
-                <app-container-details #containerDetailsComponent />
-              }
-              @case ("container_create") {
-                <app-container-create />
-              }
+                : 'main-margin-overflow']"
+             class="main-content-div">
+          @switch (contentService.selectedContent()) {
+            @case ("token_overview") {
+              <app-token-table #tokenTableComponent />
             }
-          </div>
-        </main>
+            @case ("token_enrollment") {
+              <app-token-enrollment />
+            }
+            @case ("token_details") {
+              <app-token-details #tokenDetailsComponent />
+            }
+            @case ("token_challenges") {
+              <app-challenges-table />
+            }
+            @case ("token_applications") {
+              <app-token-applications />
+            }
+            @case ("token_get_serial") {
+              <app-token-get-serial />
+            }
+            @case ("container_overview") {
+              <app-container-table #containerTableComponent />
+            }
+            @case ("container_details") {
+              <app-container-details #containerDetailsComponent />
+            }
+            @case ("container_create") {
+              <app-container-create />
+            }
+          }
+        </div>
       </div>
     </mat-drawer-content>
   </mat-drawer-container>

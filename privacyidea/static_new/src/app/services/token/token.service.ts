@@ -28,9 +28,9 @@ import { environment } from '../../../environments/environment';
 import { NotificationService } from '../notification/notification.service';
 import {
   TokenComponent,
-  TokenSelectedContent,
   TokenType,
 } from '../../components/token/token.component';
+import { ContentService } from '../content/content.service';
 
 const apiFilter = [
   'serial',
@@ -69,12 +69,9 @@ export class TokenService {
   stopPolling$ = new Subject<void>();
   tokenIsActive = signal(true);
   tokenIsRevoked = signal(true);
-  tokenSerial = signal('');
-  containerSerial = signal('');
-  isProgrammaticTabChange = signal(false);
-  selectedContent = signal<TokenSelectedContent>('token_overview');
+  tokenSerial = this.contentService.tokenSerial;
   showOnlyTokenNotInContainer = linkedSignal({
-    source: this.selectedContent,
+    source: this.contentService.selectedContent,
     computation: (selectedContent) => {
       return selectedContent === 'container_details';
     },
@@ -82,7 +79,7 @@ export class TokenService {
   filterValue: WritableSignal<string> = linkedSignal({
     source: () => ({
       showOnlyTokenNotInContainer: this.showOnlyTokenNotInContainer(),
-      selectedContent: this.selectedContent(),
+      selectedContent: this.contentService.selectedContent(),
     }),
     computation: (source: any, previous) => {
       if (
@@ -135,7 +132,7 @@ export class TokenService {
   selectedTokenType = linkedSignal({
     source: () => ({
       tokenTypeOptions: this.tokenTypeOptions(),
-      selectedContent: this.selectedContent(),
+      selectedContent: this.contentService.selectedContent(),
     }),
     computation: (source: any) =>
       source.tokenTypeOptions.find((type: any) => type.key === 'hotp'),
@@ -152,7 +149,7 @@ export class TokenService {
   sort = linkedSignal({
     source: () => ({
       pageSize: this.pageSize(),
-      selectedContent: this.selectedContent(),
+      selectedContent: this.contentService.selectedContent(),
     }),
     computation: () => {
       return { active: 'serial', direction: 'asc' } as Sort;
@@ -162,7 +159,7 @@ export class TokenService {
     source: () => ({
       filterValue: this.filterValue(),
       pageSize: this.pageSize(),
-      selectedContent: this.selectedContent(),
+      selectedContent: this.contentService.selectedContent(),
     }),
     computation: () => 0,
   });
@@ -205,7 +202,7 @@ export class TokenService {
 
   tokenSelection: WritableSignal<any> = linkedSignal({
     source: () => ({
-      selectedContent: this.selectedContent(),
+      selectedContent: this.contentService.selectedContent(),
       tokenResource: this.tokenResource.value(),
     }),
     computation: () => [],
@@ -216,6 +213,7 @@ export class TokenService {
     private localService: LocalService,
     private tableUtilsService: TableUtilsService,
     private notificationService: NotificationService,
+    private contentService: ContentService,
   ) {
     effect(() => {
       if (this.tokenResource.error()) {
@@ -236,17 +234,6 @@ export class TokenService {
         this.notificationService.openSnackBar(tokenTypesResourceError.message);
       }
     });
-  }
-
-  tokenSelected(serial: string) {
-    this.tokenSerial.set(serial);
-    this.selectedContent.set('token_details');
-  }
-
-  containerSelected(containerSerial: string) {
-    this.isProgrammaticTabChange.set(true);
-    this.containerSerial.set(containerSerial);
-    this.selectedContent.set('container_details');
   }
 
   toggleActive(tokenSerial: string, active: boolean): Observable<any> {

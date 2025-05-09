@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment';
 import { TokenService } from '../token/token.service';
 import { ContainerService } from '../container/container.service';
 import { RealmService } from '../realm/realm.service';
+import { ContentService } from '../content/content.service';
 
 @Injectable({
   providedIn: 'root',
@@ -14,21 +15,14 @@ export class UserService {
 
   selectedUserRealm = linkedSignal({
     source: () => ({
-      selectedContent: this.tokenService.selectedContent(),
-      tokenServiceSelectedType: this.tokenService.selectedTokenType(),
-      containerServiceSelectedType:
-        this.containerService.selectedContainerType(),
+      selectedContent: this.contentService.selectedContent(),
       defaultRealm: this.realmService.defaultRealm(),
     }),
     computation: (source: any) => source.defaultRealm ?? '',
   });
 
   selectedUsername = linkedSignal({
-    source: () => ({
-      tokenServiceSelectedType: this.tokenService.selectedTokenType(),
-      containerServiceSelectedType:
-        this.containerService.selectedContainerType(),
-    }),
+    source: () => this.selectedUserRealm(),
     computation: () => '',
   });
 
@@ -65,8 +59,7 @@ export class UserService {
 
   constructor(
     private localService: LocalService,
-    private tokenService: TokenService,
-    private containerService: ContainerService,
     private realmService: RealmService,
+    private contentService: ContentService,
   ) {}
 }

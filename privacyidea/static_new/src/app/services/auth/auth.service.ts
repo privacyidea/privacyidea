@@ -15,6 +15,7 @@ export class AuthService {
   user = signal('');
   realm = signal('');
   role = signal('');
+  menus = signal<string[]>([]);
 
   constructor(
     private http: HttpClient,
@@ -41,6 +42,7 @@ export class AuthService {
             this.user.set(response.result.value.username);
             this.realm.set(response.result.value.realm);
             this.role.set(response.result.value.role);
+            this.menus.set(response.result.value.menus);
           }
         }),
         catchError((error) => {

@@ -64,18 +64,20 @@
               }
               @case ("serial") {
                 <a attr.aria-label="{{ column.label }} Link"
-                   (click)="tokenService.tokenSelected(element.serial)"> {{ element[column.key] }} </a>
+                   (click)="contentService.tokenSelected(element.serial)"> {{
+                    element[column.key]
+                  }} </a>
                 <app-copy-button [copyText]="element.serial"></app-copy-button>
               }
               @case ("active") {
                 <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
-                      (click)="this.toggleActive(element)">
+                      (click)="toggleActive(element)">
                     {{ tableUtilsService.getDisplayText(column.key, element) }}
                   </span>
               }
               @case ("failcount") {
                 <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
-                      (click)="this.resetFailCount(element)">
+                      (click)="resetFailCount(element)">
                     {{ tableUtilsService.getDisplayText(column.key, element) }}
                   </span>
               }
@@ -89,7 +91,9 @@
               }
               @case ("container_serial") {
                 <a attr.aria-label="{{ column.label }} Link"
-                   (click)="tokenService.containerSelected(element.container_serial)"> {{ element[column.key] }} </a>
+                   (click)="contentService.containerSelected(element.container_serial)"> {{
+                    element[column.key]
+                  }} </a>
                 @if (element.container_serial !== "") {
                   <app-copy-button [copyText]="element.container_serial"></app-copy-button>
                 }

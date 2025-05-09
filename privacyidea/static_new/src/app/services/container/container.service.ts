@@ -31,6 +31,7 @@ import {
 } from 'rxjs';
 import { Sort } from '@angular/material/sort';
 import { ContainerType } from '../../components/token/container-create/container-create.component';
+import { ContentService } from '../content/content.service';
 
 const apiFilter = ['container_serial', 'type', 'user'];
 const advancedApiFilter = ['token_serial'];
@@ -57,16 +58,10 @@ export class ContainerService {
   stopPolling$ = new Subject<void>();
   containerBaseUrl = environment.proxyUrl + '/container/';
   eventPageSize = 10;
-  containerSerial = this.tokenService.containerSerial;
   states = signal<string[]>([]);
-  selectedContent = this.tokenService.selectedContent;
-  selectedContainer = linkedSignal({
-    source: () => ({
-      selectedContent: this.selectedContent(),
-      selectedType: this.tokenService.selectedTokenType(),
-    }),
-    computation: () => '',
-  });
+  selectedContent = this.contentService.selectedContent;
+  containerSerial = this.contentService.containerSerial;
+  selectedContainer = signal('');
 
   sort = signal<Sort>({ active: 'serial', direction: 'asc' });
 
@@ -195,7 +190,7 @@ export class ContainerService {
   });
 
   containerDetailResource = httpResource<any>(() => {
-    const serial = this.tokenService.containerSerial();
+    const serial = this.containerSerial();
 
     if (serial === '') {
       return undefined;
@@ -222,6 +217,7 @@ export class ContainerService {
     private tableUtilsService: TableUtilsService,
     private tokenService: TokenService,
     private notificationService: NotificationService,
+    private contentService: ContentService,
   ) {
     effect(() => {
       if (this.containerDetailResource.error()) {
@@ -245,17 +241,6 @@ export class ContainerService {
         this.notificationService.openSnackBar(error.message);
       }
     });
-  }
-
-  tokenSelected(serial: string) {
-    this.tokenService.isProgrammaticTabChange.set(true);
-    this.tokenService.tokenSerial.set(serial);
-    this.tokenService.selectedContent.set('token_details');
-  }
-
-  containerSelected(containerSerial: string) {
-    this.tokenService.containerSerial.set(containerSerial);
-    this.tokenService.selectedContent.set('container_details');
   }
 
   assignContainer(tokenSerial: string, containerSerial: string) {

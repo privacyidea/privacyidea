@@ -22,7 +22,6 @@ import { forkJoin, Observable, switchMap } from 'rxjs';
 import { OverflowService } from '../../../../services/overflow/overflow.service';
 import { EditButtonsComponent } from '../../../shared/edit-buttons/edit-buttons.component';
 import { ContainerService } from '../../../../services/container/container.service';
-import { TokenService } from '../../../../services/token/token.service';
 
 @Component({
   selector: 'app-container-details-info',
@@ -48,7 +47,7 @@ import { TokenService } from '../../../../services/token/token.service';
 })
 export class ContainerDetailsInfoComponent {
   protected readonly Object = Object;
-  containerSerial = this.tokenService.containerSerial;
+  containerSerial = this.containerService.containerSerial;
   @Input() infoData!: WritableSignal<
     {
       value: any;
@@ -76,7 +75,6 @@ export class ContainerDetailsInfoComponent {
   constructor(
     private containerService: ContainerService,
     protected overflowService: OverflowService,
-    private tokenService: TokenService,
   ) {}
 
   toggleInfoEdit(): void {

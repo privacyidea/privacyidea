@@ -1,16 +1,11 @@
 import { computed, effect, Injectable, signal } from '@angular/core';
-import {
-  HttpClient,
-  HttpErrorResponse,
-  httpResource,
-} from '@angular/common/http';
+import { HttpErrorResponse, httpResource } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { LocalService } from '../local/local.service';
 import { NotificationService } from '../notification/notification.service';
 import { TokenService } from '../token/token.service';
 import { ContainerService } from '../container/container.service';
-import { Observable, throwError } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { AuthService } from '../auth/auth.service';
 
 @Injectable({
   providedIn: 'root',
@@ -18,11 +13,16 @@ import { catchError, map } from 'rxjs/operators';
 export class RealmService {
   selectedRealms = signal<string[]>([]);
 
-  realmResource = httpResource<any>(() => ({
-    url: environment.proxyUrl + '/realm/',
-    method: 'GET',
-    headers: this.localService.getHeaders(),
-  }));
+  realmResource = httpResource<any>(() => {
+    if (this.authService.role() === 'user') {
+      return undefined;
+    }
+    return {
+      url: environment.proxyUrl + '/realm/',
+      method: 'GET',
+      headers: this.localService.getHeaders(),
+    };
+  });
   realmOptions = computed(() => {
     this.tokenService.selectedTokenType();
     this.containerService.selectedContainerType();
@@ -33,11 +33,16 @@ export class RealmService {
     );
   });
 
-  defaultRealmResource = httpResource<any>(() => ({
-    url: environment.proxyUrl + '/defaultrealm',
-    method: 'GET',
-    headers: this.localService.getHeaders(),
-  }));
+  defaultRealmResource = httpResource<any>(() => {
+    if (this.authService.role() === 'user') {
+      return undefined;
+    }
+    return {
+      url: environment.proxyUrl + '/defaultrealm',
+      method: 'GET',
+      headers: this.localService.getHeaders(),
+    };
+  });
   defaultRealm = computed<string>(() => {
     const data = this.defaultRealmResource.value();
     if (data?.result?.value) {
@@ -51,6 +56,7 @@ export class RealmService {
     private notificationService: NotificationService,
     private tokenService: TokenService,
     private containerService: ContainerService,
+    private authService: AuthService,
   ) {
     effect(() => {
       if (this.realmResource.error()) {

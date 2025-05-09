@@ -43,7 +43,8 @@
             @switch (column.key) {
               @case ("serial") {
                 <div>
-                  <a (click)="tokenSelected(element.serial)"> {{ element.serial }} </a>
+                  <a (click)="contentService.tokenSelected(element.serial)"> {{ element.serial }}
+                  </a>
                   @if (element.serial) {
                     <app-copy-button [copyText]="element.serial"></app-copy-button>
                   }

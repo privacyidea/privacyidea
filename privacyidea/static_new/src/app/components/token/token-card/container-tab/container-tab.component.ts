@@ -1,4 +1,4 @@
-import { Component, computed } from '@angular/core';
+import { Component, computed, effect } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { MatList, MatListItem } from '@angular/material/list';
 import { MatButton } from '@angular/material/button';
@@ -10,7 +10,7 @@ import { VersionService } from '../../../../services/version/version.service';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
 import { tabToggleState } from '../../../../../styles/animations/animations';
-import { TokenService } from '../../../../services/token/token.service';
+import { ContentService } from '../../../../services/content/content.service';
 
 @Component({
   selector: 'app-container-tab',
@@ -22,10 +22,11 @@ import { TokenService } from '../../../../services/token/token.service';
 })
 export class ContainerTabComponent {
   containerSelection = this.containerService.containerSelection;
-  selectedContent = this.tokenService.selectedContent;
-  containerSerial = this.tokenService.containerSerial;
+  selectedContent = this.contentService.selectedContent;
+  containerSerial = this.containerService.containerSerial;
+  selectedContainer = this.containerService.selectedContainer;
   containerIsSelected = computed(() => this.containerSerial() !== '');
-  isProgrammaticChange = this.tokenService.isProgrammaticTabChange;
+  isProgrammaticTabChange = this.contentService.isProgrammaticTabChange;
   states = computed(() => {
     const containerDetail =
       this.containerService.containerDetailResource.value();
@@ -35,7 +36,7 @@ export class ContainerTabComponent {
 
   constructor(
     private containerService: ContainerService,
-    private tokenService: TokenService,
+    private contentService: ContentService,
     protected versioningService: VersionService,
     private dialog: MatDialog,
   ) {}
@@ -124,21 +125,19 @@ export class ContainerTabComponent {
     // TODO: Missing API endpoint
   }
 
-  onClickContainerTab = () => this.onClickOverview();
+  onClickContainerTab = () => this.onClickContainerOverview();
 
-  onClickOverview() {
+  onClickContainerOverview() {
     this.selectedContent.set('container_overview');
-    this.containerSerial.set('');
   }
 
   enrollTokenInContainer() {
+    this.selectedContainer.set(this.containerSerial());
+    this.isProgrammaticTabChange.set(true);
     this.selectedContent.set('token_enrollment');
-    this.isProgrammaticChange.set(true);
-    this.containerService.selectedContainer.set(this.containerSerial());
   }
 
   onClickCreateContainer() {
     this.selectedContent.set('container_create');
-    this.containerSerial.set('');
   }
 }

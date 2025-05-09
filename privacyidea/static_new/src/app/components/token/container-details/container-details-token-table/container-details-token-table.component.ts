@@ -2,7 +2,6 @@ import {
   Component,
   effect,
   Input,
-  signal,
   ViewChild,
   WritableSignal,
 } from '@angular/core';
@@ -30,6 +29,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { CopyButtonComponent } from '../../../shared/copy-button/copy-button.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { ContentService } from '../../../../services/content/content.service';
 
 const columnsKeyMap = [
   { key: 'serial', label: 'Serial' },
@@ -76,10 +76,10 @@ export class ContainerDetailsTokenTableComponent {
   filterValue = '';
   @Input() containerTokenData!: WritableSignal<any>;
   dataSource = new MatTableDataSource<any>([]);
-  containerSerial = this.tokenService.containerSerial;
+  containerSerial = this.containerService.containerSerial;
   tokenSerial = this.tokenService.tokenSerial;
-  isProgrammaticTabChange = this.tokenService.isProgrammaticTabChange;
-  selectedContent = this.tokenService.selectedContent;
+  isProgrammaticTabChange = this.contentService.isProgrammaticTabChange;
+  selectedContent = this.contentService.selectedContent;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
@@ -89,6 +89,7 @@ export class ContainerDetailsTokenTableComponent {
     protected tableUtilsService: TableUtilsService,
     protected overflowService: OverflowService,
     private dialog: MatDialog,
+    protected contentService: ContentService,
   ) {
     effect(() => {
       const containerDetails = this.containerTokenData();

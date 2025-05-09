@@ -20,6 +20,7 @@ import { LoadingService } from '../../../services/loading/loading-service';
 import { MatDialog } from '@angular/material/dialog';
 import { GetSerialResultDialogComponent } from './get-serial-result-dialog/get-serial-result-dialog.component';
 import { ConfirmationDialogComponent } from '../../shared/confirmation-dialog/confirmation-dialog.component';
+import { ContentService } from '../../../services/content/content.service';
 
 @Component({
   selector: 'app-token-get-serial',
@@ -41,7 +42,7 @@ import { ConfirmationDialogComponent } from '../../shared/confirmation-dialog/co
   styleUrl: './token-get-serial.component.scss',
 })
 export class TokenGetSerial {
-  selectedContent = this.tokenService.selectedContent;
+  selectedContent = this.contentService.selectedContent;
   tokenSerial = this.tokenService.tokenSerial;
   otpValue = signal<string>('');
   tokenType = signal<string>('');
@@ -67,6 +68,7 @@ export class TokenGetSerial {
     private notificationService: NotificationService,
     private loadingService: LoadingService,
     private dialog: MatDialog,
+    private contentService: ContentService,
   ) {
     const tokenWithOTP = [
       'hotp',

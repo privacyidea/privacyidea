@@ -19,6 +19,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { FormsModule } from '@angular/forms';
 import { TokenService } from '../../../services/token/token.service';
 import { TokenSelectedContent } from '../token.component';
+import { ContentService } from '../../../services/content/content.service';
 
 const columnsKeyMap = [
   { key: 'select', label: '' },
@@ -122,6 +123,7 @@ export class ContainerTableComponent {
     protected containerService: ContainerService,
     protected tokenService: TokenService,
     protected tableUtilsService: TableUtilsService,
+    protected contentService: ContentService,
   ) {}
 
   isAllSelected() {
@@ -159,10 +161,6 @@ export class ContainerTableComponent {
           console.error('Failed to toggle active.', error);
         },
       });
-  }
-
-  containerSelected(containerSerial: string) {
-    this.containerService.containerSelected(containerSerial);
   }
 
   onPageEvent(event: PageEvent) {

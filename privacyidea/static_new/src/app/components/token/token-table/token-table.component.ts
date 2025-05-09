@@ -16,6 +16,7 @@ import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filt
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { FormsModule } from '@angular/forms';
+import { ContentService } from '../../../services/content/content.service';
 
 const columnsKeyMap = [
   { key: 'select', label: '' },
@@ -55,8 +56,8 @@ export class TokenTableComponent {
   readonly apiFilter = this.tokenService.apiFilter;
   readonly advancedApiFilter = this.tokenService.advancedApiFilter;
   tokenSelection = this.tokenService.tokenSelection;
-  selectedContent = this.tokenService.selectedContent;
-  isProgrammaticTabChange = this.tokenService.isProgrammaticTabChange;
+  selectedContent = this.contentService.selectedContent;
+  isProgrammaticTabChange = this.contentService.isProgrammaticTabChange;
 
   tokenResource = this.tokenService.tokenResource;
   filterValue = this.tokenService.filterValue;
@@ -111,6 +112,7 @@ export class TokenTableComponent {
   constructor(
     protected tokenService: TokenService,
     protected tableUtilsService: TableUtilsService,
+    protected contentService: ContentService,
   ) {}
 
   isAllSelected() {

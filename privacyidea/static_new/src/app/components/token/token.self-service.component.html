@@ -1,0 +1,92 @@
+<div aria-label="Token Selfservice Layout"
+     class="token-selfservice-layout">
+
+  <div class="main-content-div main-margin">
+    @if (contentService.selectedContent() !== 'token_self-service_menu') {
+      <button mat-fab
+              (click)="selectedContent.set('token_self-service_menu')"
+              class="back-button">
+        <mat-icon>keyboard_arrow_left</mat-icon>
+      </button>
+    }
+
+    <div class="token-selfservice-div">
+      @switch (contentService.selectedContent()) {
+        @case ("token_self-service_menu") {
+          <div class="selfservice-tile-layout">
+            <a class="tile-button"
+               mat-fab
+               (click)="selectedContent.set('token_overview')">
+              <div class="tile-title flex-column ali-center">
+                <mat-icon class="tile-icon">shield</mat-icon>
+                Token Overview
+              </div>
+            </a>
+
+            <a class="tile-button"
+               mat-fab
+               (click)="selectedContent.set('token_enrollment')">
+              <div class="tile-title flex-column ali-center">
+                <mat-icon class="tile-icon">add_moderator</mat-icon>
+                Token Enrollment
+              </div>
+            </a>
+
+            <a class="tile-button"
+               mat-fab>
+              <div class="tile-title flex-column ali-center">
+                <mat-icon class="tile-icon-2">admin_panel_settings</mat-icon>
+                Assign Token
+              </div>
+            </a>
+
+            <a class="tile-button"
+               mat-fab
+               (click)="selectedContent.set('container_overview')">
+              <div class="tile-title flex-column ali-center">
+                <mat-icon class="mdi--folder-search tile-icon" />
+                Container Overview
+              </div>
+            </a>
+
+            <a class="tile-button"
+               mat-fab
+               (click)="selectedContent.set('container_create')">
+              <div class="tile-title flex-column ali-center">
+                <mat-icon class="tile-icon">create_new_folder</mat-icon>
+                Create Container
+              </div>
+            </a>
+
+            <a class="tile-button"
+               mat-fab
+               (click)="versionService.openDocumentation('token_self-service_menu')">
+              <div class="tile-title flex-column ali-center">
+                <mat-icon class="tile-icon">info_outline</mat-icon>
+                Help
+              </div>
+            </a>
+          </div>
+        }
+        @case ("token_overview") {
+          <app-token-table />
+        }
+        @case ("token_enrollment") {
+          <app-token-enrollment-self-service />
+        }
+        @case ("token_details") {
+          <app-token-details />
+        }
+        @case ("container_overview") {
+          <app-container-table />
+        }
+        @case ("container_details") {
+          <app-container-details />
+        }
+        @case ("container_create") {
+          <app-container-create />
+        }
+      }
+    </div>
+  </div>
+</div>

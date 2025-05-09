@@ -8,6 +8,7 @@ import { NgClass } from '@angular/common';
 import { OverflowService } from '../../../services/overflow/overflow.service';
 import { TokenService } from '../../../services/token/token.service';
 import { ContainerService } from '../../../services/container/container.service';
+import { ContentService } from '../../../services/content/content.service';
 
 @Component({
   selector: 'app-token-card',
@@ -25,11 +26,11 @@ import { ContainerService } from '../../../services/container/container.service'
   styleUrls: ['./token-card.component.scss'],
 })
 export class TokenCardComponent {
-  containerSerial = this.tokenService.containerSerial;
-  selectedContent = this.tokenService.selectedContent;
+  containerSerial = this.containerService.containerSerial;
+  selectedContent = this.contentService.selectedContent;
   tokenSerial = this.tokenService.tokenSerial;
   states = this.containerService.states;
-  isProgrammaticChange = this.tokenService.isProgrammaticTabChange;
+  isProgrammaticChange = this.contentService.isProgrammaticTabChange;
   selectedTabIndex = linkedSignal({
     source: () => this.selectedContent(),
     computation: (selectedContent) => {
@@ -45,6 +46,7 @@ export class TokenCardComponent {
     protected overflowService: OverflowService,
     private tokenService: TokenService,
     private containerService: ContainerService,
+    private contentService: ContentService,
   ) {}
 
   onTabChange(): void {

@@ -20,6 +20,7 @@ import { ChallengesTableComponent } from './challenges-table/challenges-table.co
 import { LoadingService } from '../../services/loading/loading-service';
 import { ContainerCreateComponent } from './container-create/container-create.component';
 import { TokenService } from '../../services/token/token.service';
+import { ContentService } from '../../services/content/content.service';
 
 export type TokenType =
   | 'hotp'
@@ -58,7 +59,8 @@ export type TokenSelectedContent =
   | 'token_enrollment'
   | 'token_challenges'
   | 'token_applications'
-  | 'token_get_serial';
+  | 'token_get_serial'
+  | 'token_self-service_menu';
 
 @Component({
   selector: 'app-token-grid',
@@ -200,16 +202,16 @@ export class TokenComponent {
   @ViewChild('tokenTableComponent') tokenTableComponent!: TokenTableComponent;
   @ViewChild('containerTableComponent')
   containerTableComponent!: ContainerTableComponent;
-  @ViewChild('tokenGetSerial') tokenGetSerial!: TokenGetSerial;
   @ViewChild('drawer') drawer!: MatDrawer;
 
   constructor(
     protected overflowService: OverflowService,
     private loadingService: LoadingService,
     protected tokenService: TokenService,
+    protected contentService: ContentService,
   ) {
     effect(() => {
-      this.tokenService.selectedContent();
+      this.contentService.selectedContent();
       this.loadingService.clearAllLoadings();
       this.updateOverflowState();
     });

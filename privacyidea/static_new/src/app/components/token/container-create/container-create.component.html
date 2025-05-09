@@ -1,7 +1,7 @@
 <div aria-label="Create Container"
-     class="container-enrollment-container">
+     class="container-create-container">
   <h3 class="margin-left-1">Create Container</h3>
-  <mat-form-field class="width-100 margin-button-1">
+  <mat-form-field class="width-100 margin-bottom-1">
     <mat-select [(ngModel)]="containerService.selectedContainerType">
       @for (type of containerService.containerTypeOptions(); track type) {
         <mat-option class="type-option"
@@ -31,8 +31,8 @@
   </mat-form-field>
 
   <div class="enroll-button-container">
-    <button (click)="this.reopenEnrollmentDialog()"
-            [disabled]="this.registerResponse() === null"
+    <button (click)="reopenEnrollmentDialog()"
+            [disabled]="registerResponse() === null"
             mat-icon-button>
       <mat-icon>open_in_new</mat-icon>
     </button>
@@ -116,7 +116,7 @@
             passphrase the user should enter.
           </mat-hint>
         </mat-form-field>
-        <mat-form-field class="width-100 margin-top-2 margin-button-1">
+        <mat-form-field class="width-100 margin-top-2 margin-bottom-1">
           <mat-label> Passphrase Response</mat-label>
           <textarea [(ngModel)]="passphraseResponse"
                     matInput

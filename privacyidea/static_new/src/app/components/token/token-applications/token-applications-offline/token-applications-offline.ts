@@ -18,6 +18,7 @@ import { TableUtilsService } from '../../../../services/table-utils/table-utils.
 import { CopyButtonComponent } from '../../../shared/copy-button/copy-button.component';
 import { TokenService } from '../../../../services/token/token.service';
 import { FormsModule } from '@angular/forms';
+import { ContentService } from '../../../../services/content/content.service';
 
 export const columnsKeyMap = [
   { key: 'serial', label: 'Serial' },
@@ -47,7 +48,7 @@ export const columnsKeyMap = [
 export class TokenApplicationsOffline {
   static columnsKeyMap = columnsKeyMap;
   tokenSerial = this.tokenService.tokenSerial;
-  selectedContent = this.tokenService.selectedContent;
+  selectedContent = this.contentService.selectedContent;
   @Input() length!: WritableSignal<number>;
   @Input() pageSize!: WritableSignal<number>;
   @Input() pageIndex!: WritableSignal<number>;
@@ -66,6 +67,7 @@ export class TokenApplicationsOffline {
     protected tokenService: TokenService,
     protected tableUtilsService: TableUtilsService,
     protected machineService: MachineService,
+    protected contentService: ContentService,
   ) {}
 
   onFilterChange(newFilter: string) {

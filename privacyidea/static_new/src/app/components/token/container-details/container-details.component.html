@@ -7,7 +7,7 @@
       <app-copy-button [copyText]="containerSerial()"></app-copy-button>
     </div>
     <div [ngClass]="[
-        overflowService.isWidthOverflowing('.token-layout', 1310)
+        overflowService.isWidthOverflowing('body', 1310)
           ? 'flex-column'
           : 'flex-row',
       ]"
@@ -203,13 +203,13 @@
                                       [isEditingInfo]="isEditingInfo"
                                       [isEditingUser]="isEditingUser" />
         </div>
-        @if (overflowService.isWidthOverflowing(".token-layout", 1310)) {
+        @if (overflowService.isWidthOverflowing("body", 1310)) {
           <br />
           <mat-divider></mat-divider><br />
         }
       </div>
       <div [ngClass]="[
-          overflowService.isWidthOverflowing('.token-layout', 1310)
+          overflowService.isWidthOverflowing('body', 1310)
             ? ''
             : 'margin-left-1',
         ]"

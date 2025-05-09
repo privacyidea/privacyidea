@@ -7,7 +7,7 @@
       <app-copy-button [copyText]="tokenSerial()"></app-copy-button>
     </div>
     <div [ngClass]="[
-        overflowService.isWidthOverflowing('.token-layout', 1310)
+        overflowService.isWidthOverflowing('body', 1310)
           ? 'flex-column'
           : 'flex-row',
       ]"
@@ -44,7 +44,9 @@
                     </mat-form-field>
                   } @else {
                     <a attr.aria-label="{{ element.keyMap.label }} Link"
-                       (click)="tokenService.containerSelected(element.value)"> {{ element.value }} </a>
+                       (click)="contentService.containerSelected(element.value)"> {{
+                        element.value
+                      }} </a>
                     @if (element.value !== "") {
                       <app-copy-button [copyText]="element.value"></app-copy-button>
                     }
@@ -207,7 +209,7 @@
               mat-row></tr>
         </table>
       </div>
-      @if (overflowService.isWidthOverflowing(".token-layout", 1310)) {
+      @if (overflowService.isWidthOverflowing("body", 1310)) {
         <br style="margin: 10px" />
         <mat-divider /><br style="margin: 10px" />
       }
@@ -217,8 +219,8 @@
                                 [isEditingUser]="isEditingUser"
                                 [repeatPinValue]="repeatPinValue"
                                 [setPinValue]="setPinValue"
-                                [userData]="userData"
                                 [tokenSerial]="tokenSerial"
+                                [userData]="userData"
                                 class="flex"></app-token-details-user>
         <div [ngClass]="[
             overflowService.isWidthOverflowing('.token-layout', 1580)

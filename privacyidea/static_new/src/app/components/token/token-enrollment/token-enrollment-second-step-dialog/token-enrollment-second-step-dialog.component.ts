@@ -17,6 +17,7 @@ import {
 } from '@angular/material/expansion';
 import { MatIcon } from '@angular/material/icon';
 import { TokenService } from '../../../../services/token/token.service';
+import { ContentService } from '../../../../services/content/content.service';
 
 @Component({
   selector: 'app-token-enrollment-second-step-dialog',
@@ -41,6 +42,7 @@ export class TokenEnrollmentSecondStepDialogComponent {
 
   constructor(
     protected tokenService: TokenService,
+    private contentService: ContentService,
     private dialogRef: MatDialogRef<LostTokenComponent>,
     @Inject(MAT_DIALOG_DATA)
     public data: {
@@ -58,7 +60,7 @@ export class TokenEnrollmentSecondStepDialogComponent {
 
   tokenSelected(tokenSerial: string) {
     this.dialogRef.close();
-    this.tokenService.tokenSelected(tokenSerial);
+    this.contentService.tokenSelected(tokenSerial);
   }
 
   regenerateQRCode() {
@@ -68,7 +70,7 @@ export class TokenEnrollmentSecondStepDialogComponent {
 
   containerSelected(containerSerial: string) {
     this.dialogRef.close();
-    this.tokenService.containerSelected(containerSerial);
+    this.contentService.containerSelected(containerSerial);
   }
 
   printOtps(): void {

@@ -6,6 +6,7 @@ import { MatTableDataSource } from '@angular/material/table';
 import { MachineService } from '../../../services/machine/machine.service';
 import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
 import { TokenService } from '../../../services/token/token.service';
+import { ContentService } from '../../../services/content/content.service';
 
 @Component({
   selector: 'app-token-applications',
@@ -18,7 +19,7 @@ export class TokenApplications {
   sshColumnsKeyMap = TokenApplicationsSsh.columnsKeyMap;
   offlineColumnsKeyMap = TokenApplicationsOffline.columnsKeyMap;
   tokenApplicationResource = this.machineService.tokenApplicationResource;
-  selectedContent = this.tokenService.selectedContent;
+  selectedContent = this.contentService.selectedContent;
   tokenSerial = this.tokenService.tokenSerial;
   selectedApplicationType = this.machineService.selectedApplicationType;
   pageSize = this.machineService.pageSize;
@@ -86,5 +87,6 @@ export class TokenApplications {
     private machineService: MachineService,
     private tokenService: TokenService,
     private tableUtilsService: TableUtilsService,
+    private contentService: ContentService,
   ) {}
 }

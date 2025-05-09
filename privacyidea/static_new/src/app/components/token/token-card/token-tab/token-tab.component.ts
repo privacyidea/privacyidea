@@ -11,6 +11,7 @@ import { LostTokenComponent } from './lost-token/lost-token.component';
 import { VersionService } from '../../../../services/version/version.service';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { tabToggleState } from '../../../../../styles/animations/animations';
+import { ContentService } from '../../../../services/content/content.service';
 
 @Component({
   selector: 'app-token-tab',
@@ -21,7 +22,7 @@ import { tabToggleState } from '../../../../../styles/animations/animations';
   animations: [tabToggleState],
 })
 export class TokenTabComponent {
-  selectedContent = this.tokenService.selectedContent;
+  selectedContent = this.contentService.selectedContent;
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
   tokenSerial = this.tokenService.tokenSerial;
@@ -34,6 +35,7 @@ export class TokenTabComponent {
     private tokenService: TokenService,
     private dialog: MatDialog,
     protected versioningService: VersionService,
+    private contentService: ContentService,
   ) {}
 
   ngOnInit(): void {
@@ -151,30 +153,5 @@ export class TokenTabComponent {
         tokenSerial: this.tokenSerial,
       },
     });
-  }
-
-  onClickOverview() {
-    this.selectedContent.set('token_overview');
-    this.tokenSerial.set('');
-  }
-
-  onClickEnrollment() {
-    this.selectedContent.set('token_enrollment');
-    this.tokenSerial.set('');
-  }
-
-  onClickShowChallenges() {
-    this.selectedContent.set('token_challenges');
-    this.tokenSerial.set('');
-  }
-
-  onClickTokenApplications() {
-    this.selectedContent.set('token_applications');
-    this.tokenSerial.set('');
-  }
-
-  onClickGetSerial() {
-    this.selectedContent.set('token_get_serial');
-    this.tokenSerial.set('');
   }
 }

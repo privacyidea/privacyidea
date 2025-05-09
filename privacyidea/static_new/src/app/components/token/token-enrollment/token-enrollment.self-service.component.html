@@ -176,39 +176,26 @@
   }
   <div class="flex-row gap-1">
     <div class="flex-column width-100">
-      <h4 class="enroll-h4">Assign Token to User</h4>
-      <div class="assign-user-container">
-        <input style="display: none"
-               type="text" />
+      <input style="display: none"
+             type="text" />
 
-        <input style="display: none"
-               type="password" />
+      <input style="display: none"
+             type="password" />
 
-        <mat-form-field class="width-50 height-76-5">
-          <mat-label>Select Realm of User</mat-label>
-          <mat-select [(ngModel)]="userService.selectedUserRealm">
-            @for (option of realmService.realmOptions(); track option) {
-              <mat-option value="{{ option }}">{{ option }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-
-        <mat-form-field class="width-50 height-76-5">
-          <mat-label>Enter User</mat-label>
-          <input [(ngModel)]="userService.selectedUsername"
-                 [disabled]="onlyAddToRealm()"
-                 [matAutocomplete]="userAuto"
-                 [required]="userIsRequired()"
-                 matInput />
-          <mat-error>User is <strong>required</strong></mat-error>
-          <mat-autocomplete #userAuto="matAutocomplete">
-            @for (option of userService.filteredUserOptions(); track option) {
-              <mat-option [value]="option">{{ option }}</mat-option>
-            }
-          </mat-autocomplete>
-        </mat-form-field>
-      </div>
+      <h4 class="enroll-h4">Assign Token to a Container</h4>
+      <mat-form-field class="width-50 height-76-5">
+        <mat-label>Enter Container</mat-label>
+        <input [(ngModel)]="containerService.selectedContainer"
+               [matAutocomplete]="containerAuto"
+               matInput />
+        <mat-autocomplete #containerAuto="matAutocomplete">
+          @for (option of containerService.filteredContainerOptions(); track option) {
+            <mat-option [value]="option">{{ option }}</mat-option>
+          }
+        </mat-autocomplete>
+      </mat-form-field>
     </div>
+
     <div class="flex-column user-pin-container">
       <h4 class="enroll-h4">Set Pin</h4>
       <div class="user-pin-input">
@@ -224,79 +211,4 @@
       </div>
     </div>
   </div>
-
-  <h4 class="enroll-h4">Assign Token to a Container</h4>
-  <mat-form-field class="width-32 height-76-5">
-    <mat-label>Enter Container</mat-label>
-    <input [(ngModel)]="containerService.selectedContainer"
-           [matAutocomplete]="containerAuto"
-           matInput />
-    <mat-autocomplete #containerAuto="matAutocomplete">
-      @for (option of containerService.filteredContainerOptions(); track option) {
-        <mat-option [value]="option">{{ option }}</mat-option>
-      }
-    </mat-autocomplete>
-  </mat-form-field>
-
-  <mat-accordion>
-    <mat-expansion-panel class="expension-panel">
-      <mat-expansion-panel-header>
-        <mat-panel-title> Extended Attributes</mat-panel-title>
-      </mat-expansion-panel-header>
-      <div class="flex-row">
-        <mat-form-field class="date-picker">
-          <mat-label>Choose a Start Date</mat-label>
-          <input [(ngModel)]="selectedStartDate"
-                 [matDatepicker]="startPicker"
-                 matInput
-                 placeholder="Start date" />
-          <mat-hint>Date Format: YYYY-MM-DD</mat-hint>
-          <mat-datepicker-toggle [for]="startPicker"
-                                 matIconSuffix></mat-datepicker-toggle>
-          <mat-datepicker #startPicker></mat-datepicker>
-        </mat-form-field>
-
-        <mat-form-field class="time-picker">
-          <mat-label>Enter Start Time</mat-label>
-          <input [(ngModel)]="selectedStartTime"
-                 matInput
-                 max="23"
-                 min="0"
-                 placeholder="HH"
-                 type="time" />
-        </mat-form-field>
-
-        <mat-form-field class="zone-picker">
-          <mat-label>Timezone Offset</mat-label>
-          <mat-select [(ngModel)]="selectedTimezoneOffset">
-            @for (option of timezoneOptions; track option) {
-              <mat-option [value]="option.value">{{ option.label }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-      </div>
-      <div class="flex-row">
-        <mat-form-field class="date-picker">
-          <mat-label>Choose a End Date</mat-label>
-          <input [(ngModel)]="selectedEndDate"
-                 [matDatepicker]="endPicker"
-                 matInput
-                 placeholder="End date" />
-          <mat-hint>Date Format: YYYY-MM-DD</mat-hint>
-          <mat-datepicker-toggle [for]="endPicker"
-                                 matIconSuffix></mat-datepicker-toggle>
-          <mat-datepicker #endPicker></mat-datepicker>
-        </mat-form-field>
-
-        <mat-form-field class="time-picker">
-          <mat-label>Enter End Time</mat-label>
-          <input [(ngModel)]="selectedEndTime"
-                 matInput
-                 max="23"
-                 min="0"
-                 type="time" />
-        </mat-form-field>
-      </div>
-    </mat-expansion-panel>
-  </mat-accordion>
 </div>

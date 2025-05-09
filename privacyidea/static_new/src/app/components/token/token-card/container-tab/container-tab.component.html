@@ -111,7 +111,7 @@
         </mat-list-item><br />
         <mat-divider /><br />
         <mat-list-item>
-          <button (click)="this.toggleActive()"
+          <button (click)="toggleActive()"
                   [ngClass]="{
               'card-button-delete': states().includes('active'),
               'card-button-activate': !states().includes('active'),

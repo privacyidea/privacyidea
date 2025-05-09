@@ -1,7 +1,5 @@
 @use "../../../styles/styles";
-
-$gap-2rem: 2rem;
-$margin-bottom-main: 9.5rem;
+@use '@angular/material' as mat;
 
 .token-layout {
   display: flex;
@@ -11,7 +9,7 @@ $margin-bottom-main: 9.5rem;
 .token-drawer {
   border: solid 2px #efedec;
   height: fit-content;
-  box-shadow: var(--box-shadow-hover);
+  @include mat.elevation(5);
   border-radius: var(--border-radius);
   position: fixed;
   margin-top: 5.8rem;
@@ -20,7 +18,7 @@ $margin-bottom-main: 9.5rem;
 .token-drawer-overflow {
   border: solid 2px #efedec;
   height: auto;
-  box-shadow: var(--box-shadow-hover);
+  @include mat.elevation(5);
   border-radius: var(--border-radius);
   position: fixed;
   margin-top: 5.8rem;
@@ -28,16 +26,18 @@ $margin-bottom-main: 9.5rem;
   padding-bottom: 4rem;
 }
 
-main {
+.main-content-div {
+  display: flex;
   overflow: auto;
 }
 
+$margin-bottom-main: 8.5rem;
 .main-margin {
-  margin: $gap-2rem $gap-2rem $margin-bottom-main 4.75rem;
+  margin: 0 2rem $margin-bottom-main 4.75rem;
 }
 
 .main-margin-overflow {
-  margin: $gap-2rem $gap-2rem $margin-bottom-main 0;
+  margin: 0 2rem $margin-bottom-main 0;
 }
 
 .mat-drawer {
@@ -50,17 +50,6 @@ main {
 
 .mat-drawer-content {
   background: var(--background);
-}
-
-.drawer-button {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: white;
-  height: 48px;
-  width: 48px;
-  color: black;
-  box-shadow: var(--box-shadow);
 }
 
 .drawer-button-div {
@@ -85,4 +74,61 @@ main {
   .mat-drawer-backdrop {
     opacity: 0.5;
   }
+}
+
+.token-selfservice-layout {
+  display: flex;
+  flex: 1 1 auto;
+  justify-content: center;
+  align-items: flex-start;
+  overflow-y: auto;
+  height: 100vh;
+}
+
+.token-selfservice-div {
+  width: 100%;
+}
+
+.selfservice-tile-layout {
+  margin: var(--global-padding);
+  grid-template-columns: repeat(3, 280px);
+  display: grid;
+}
+
+.tile-button {
+  width: 240px;
+  height: 240px;
+  margin: var(--global-padding);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: calc(var(--border-radius) * 2);
+  @include mat.elevation(3);
+
+  &:hover {
+    @include mat.elevation(6);
+  }
+}
+
+.tile-header {
+  padding: 0;
+}
+
+.tile-title {
+  font-weight: bold;
+  font-size: 1.5rem;
+}
+
+.tile-icon {
+  margin-bottom: 1rem;
+  font-size: 3rem;
+  height: 3rem;
+  width: 3rem;
+}
+
+.tile-icon-2 {
+  margin-bottom: 1rem;
+  font-size: 3.7rem;
+  height: 3.7rem;
+  width: 3.7rem;
 }

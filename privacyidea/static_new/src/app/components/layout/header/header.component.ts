@@ -22,6 +22,7 @@ import { AuthService } from '../../../services/auth/auth.service';
   styleUrl: './header.component.scss',
 })
 export class HeaderComponent {
+  protected readonly AuthService = AuthService;
   profileText =
     this.authService.user() +
     ' @' +

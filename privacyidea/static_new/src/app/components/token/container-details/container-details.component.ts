@@ -101,7 +101,7 @@ export class ContainerDetailsComponent {
   isEditingUser = signal(false);
   isEditingInfo = signal(false);
   tokenSerial = this.tokenService.tokenSerial;
-  containerSerial = this.tokenService.containerSerial;
+  containerSerial = this.containerService.containerSerial;
   showOnlyTokenNotInContainer = this.tokenService.showOnlyTokenNotInContainer;
   filterValue = this.tokenService.filterValue;
 

@@ -1,4 +1,5 @@
 @use "../../../../styles";
+@use '@angular/material' as mat;
 
 $gap-small: 8px;
 $table-border-color: #e0e2ec;
@@ -9,10 +10,10 @@ $table-border-color: #e0e2ec;
   align-items: center;
   max-width: 100%;
   border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
+  @include mat.elevation(5);
   background-color: var(--table-color);
   padding: var(--global-padding);
-  margin-left: 1rem;
+  margin: 2rem 1rem 1rem;
   overflow: auto;
 
   .details-table {

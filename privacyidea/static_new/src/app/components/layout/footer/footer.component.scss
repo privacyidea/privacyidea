@@ -1,5 +1,6 @@
 @use "../../../../styles";
 @use "sass:color";
+@use '@angular/material' as mat;
 
 $footer-bg: #3f3f3f;
 $footer-text-color: white;
@@ -31,9 +32,9 @@ $border-radius: var(--border-radius);
 
   .footer-bottom {
     @include flex-center;
+    @include mat.elevation(3);
     background: $footer-bg;
     color: $footer-text-color;
-    box-shadow: $box-shadow;
     padding-bottom: 10px;
     padding-top: 10px;
     gap: 20px;
