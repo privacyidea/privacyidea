@@ -18,7 +18,7 @@
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from privacyidea.lib.container import (init_container, add_token_to_container,
-                                       find_container_by_serial)
+                                       find_container_by_serial, find_container_for_token)
 from .base import MyApiTestCase, PWFILE2
 import json
 import datetime
@@ -461,6 +461,49 @@ class API000TokenAdminRealmList(MyApiTestCase):
         t1_realms = t1.get_realms()
         self.assertIn(self.realm1, t1_realms)
         self.assertNotIn(self.realm2, t1_realms)
+
+    def test_04_init_token_with_container(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
+        container = find_container_by_serial(container_serial)
+
+        set_policy("policy", scope=SCOPE.ADMIN, action="enrollHOTP", realm=self.realm1)
+
+        # token owner = container owner
+        self.request_assert_200("/token/init", {"type": "hotp", "genkey": True, "user": "hans",
+                                                "realm": self.realm1, "container_serial": container_serial},
+                                self.at, "POST")
+
+        # Token owner != container owner
+        # Allowed: both in realm1
+        self.request_assert_200("/token/init", {"type": "hotp", "genkey": True, "user": "selfservice",
+                                                "realm": self.realm1, "container_serial": container_serial},
+                                self.at, "POST")
+        # Denied: token in different realm
+        self.request_denied_assert_403("/token/init", {"type": "hotp", "genkey": True, "user": "corny",
+                                                       "realm": self.realm3, "container_serial": container_serial},
+                                       self.at, "POST")
+
+        # no token owner, but container owner
+        self.request_denied_assert_403("/token/init", {"type": "hotp", "genkey": True,
+                                                       "container_serial": container_serial},
+                                       self.at, "POST")
+
+        # Init token allowed, but can not add container from different realm
+        container.remove_user(User(login="hans", realm=self.realm1))
+        container.add_user(User(login="corny", realm=self.realm3))
+        result = self.request_assert_200("/token/init", {"type": "hotp", "genkey": True, "user": "hans",
+                                                "realm": self.realm1, "container_serial": container_serial},
+                                self.at, "POST")
+        self.assertIsNone(find_container_for_token(result["detail"]["serial"]))
+
+        # no container owner but token_owner
+        container.remove_user(User(login="corny", realm=self.realm3))
+        result = self.request_assert_200("/token/init", {"type": "hotp", "genkey": True, "user": "hans",
+                                                         "realm": self.realm1, "container_serial": container_serial},
+                                         self.at, "POST")
+        self.assertIsNone(find_container_for_token(result["detail"]["serial"]))
 
 
 class APIAttestationTestCase(MyApiTestCase):

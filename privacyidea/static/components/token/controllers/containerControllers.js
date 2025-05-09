@@ -110,7 +110,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             $scope.initRegistration = $scope.container_wizard["registration"];
             $scope.form.containerType = $scope.container_wizard["type"];
         }
-        $scope.passphrase = {"prompt": "", "response": ""};
+        $scope.passphrase = {"user": false, "prompt": "", "response": ""};
 
         $scope.allowedTokenTypes = {
             list: [],
@@ -332,6 +332,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                     let registrationParams =
                         {
                             "container_serial": $scope.containerSerial,
+                            "passphrase_user": $scope.passphrase.user,
                             "passphrase_prompt": $scope.passphrase.prompt,
                             "passphrase_response": $scope.passphrase.response
                         };
@@ -429,6 +430,7 @@ myApp.controller("containerListController", ['$scope', '$http', '$q', 'Container
         $scope.loggedInUser = AuthFactory.getUser();
         $scope.params = {sortdir: "asc"};
         $scope.containerdata = [];
+        $scope.filter = {serial: "", type: "", realm: "", description: ""}
 
         // Change the pagination
         $scope.pageChanged = function () {
@@ -438,6 +440,12 @@ myApp.controller("containerListController", ['$scope', '$http', '$q', 'Container
         // Get all containers
         $scope.get = function () {
             $scope.expandedRows = [];
+
+            $scope.params.container_serial = "*" + $scope.filter.serial + "*";
+            $scope.params.container_realm = "*" + $scope.filter.realm + "*";
+            $scope.params.type = "*" + $scope.filter.type + "*";
+            $scope.params.description = "*" + $scope.filter.description + "*";
+
             $scope.params.sortby = $scope.sortby;
             if ($scope.reverse) {
                 $scope.params.sortdir = "desc";
@@ -706,12 +714,13 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         };
 
         $scope.registrationOptions = {"open": false};
-        $scope.passphrase = {"required": false, "prompt": "", "response": ""};
+        $scope.passphrase = {"user": false, "prompt": "", "response": ""};
         $scope.offline_tokens = [];
         $scope.registerContainer = function (rollover) {
             let registrationParams =
                 {
                     "container_serial": $scope.containerSerial,
+                    "passphrase_user": $scope.passphrase.user,
                     "passphrase_prompt": $scope.passphrase.prompt,
                     "passphrase_response": $scope.passphrase.response,
                     "rollover": rollover
