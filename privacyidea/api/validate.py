@@ -73,7 +73,7 @@ from flask import (Blueprint, request, g, current_app)
 from flask_babel import gettext
 
 from privacyidea.api.auth import admin_required
-from privacyidea.api.lib.decorators import add_serial_from_response_to_g
+from privacyidea.api.lib.decorators import add_risk_to_user, add_serial_from_response_to_g
 from privacyidea.api.lib.postpolicy import (postpolicy,
                                             check_tokentype, check_serial,
                                             check_tokeninfo,
@@ -243,6 +243,7 @@ def offlinerefill():
 @postpolicy(check_serial, request=request)
 @postpolicy(autoassign, request=request)
 @add_serial_from_response_to_g
+@add_risk_to_user(request)
 @prepolicy(check_application_tokentype, request=request)
 @prepolicy(pushtoken_validate, request=request)
 @prepolicy(set_realm, request=request)
