@@ -25,7 +25,7 @@ class ContainerStates(Enum):
     DAMAGED = "damaged"
 
     @classmethod
-    def get_exclusive_states(cls):
+    def get_exclusive_states(cls) -> dict["ContainerStates", list["ContainerStates"]]:
         """
         Returns a list of exclusive states.
         """
@@ -56,7 +56,7 @@ class ContainerStates(Enum):
         return False
 
     @classmethod
-    def get_supported_states(cls):
+    def get_supported_states(cls) -> list[str]:
         """
         Returns a list of the values for all supported states.
         """
