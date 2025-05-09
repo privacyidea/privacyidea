@@ -2436,8 +2436,7 @@ def hide_tokeninfo(request=None, action=None):
     :rtype: bool
     """
     hidden_fields = Match.admin_or_user(g, action=ACTION.HIDE_TOKENINFO,
-                                        user_obj=request.User) \
-        .action_values(unique=False)
+                                        user_obj=request.User).action_values(unique=False)
 
     request.all_data['hidden_tokeninfo'] = list(hidden_fields)
     return True
@@ -2462,8 +2461,10 @@ def hide_container_info(request=None, action=None):
     # is available) and not in the list view. But the info is still contained in the response for the list view.
     allowed_realms = getattr(request, "pi_allowed_container_realms", None)
     container_serial = request.all_data.get("container_serial")
-    hidden_fields = Match.generic(g=g, action=ACTION.HIDE_CONTAINER_INFO, user_object=request.User,
-                                        additional_realms=allowed_realms, container_serial=container_serial).action_values(unique=False)
+    container_realms = get_container_realms(container_serial) if container_serial else None
+    hidden_fields = Match.admin_or_user(g=g, action=ACTION.HIDE_CONTAINER_INFO, user_obj=request.User,
+                                        additional_realms=container_realms,
+                                        container_serial=container_serial).action_values(unique=False)
 
     request.all_data["hide_container_info"] = list(hidden_fields)
     return True

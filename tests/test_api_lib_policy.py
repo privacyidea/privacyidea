@@ -4748,12 +4748,13 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # ---- Helpdesk ----
         set_policy(name="admin", scope=SCOPE.ADMIN,
-                   action=f"{ACTION.HIDE_CONTAINER_INFO}=device", realm=self.realm3)
+                   action=f"{ACTION.HIDE_CONTAINER_INFO}=device", realm=self.realm1)
         # request including  user
         hide_container_info(req)
         self.assertSetEqual({"device"}, set(req.all_data["hide_container_info"]))
-        # request not including user, but the allowed realms for the helpdesk
+        # request not including user and container has no owner, but is in realm1
         req, container = self.mock_container_request_no_user("admin", "smartphone")
+        container.set_realms([self.realm1], add=True)
         req.pi_allowed_container_realms = [self.realm3]
         hide_container_info(req)
         self.assertSetEqual({"device"}, set(req.all_data["hide_container_info"]))

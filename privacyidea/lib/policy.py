@@ -3332,7 +3332,7 @@ class Match(object):
                    sort_by_priority=True, serial=serial, container_serial=container_serial,)
 
     @classmethod
-    def admin_or_user(cls, g, action, user_obj, allowed_realms=None):
+    def admin_or_user(cls, g, action, user_obj, additional_realms=None, container_serial: str = None):
         """
         Depending on the role of the currently logged-in user, match either scope=ADMIN or scope=USER policies.
         If the currently logged-in user is an admin, match policies against the username, adminrealm, the allowed
@@ -3343,7 +3343,9 @@ class Match(object):
         :param g: context object
         :param action: the policy action
         :param user_obj: the user_obj on which the administrator is acting
-        :param allowed_realms: list of realm names the admin is allowed to manage (None if all realms are allowed)
+        :param additional_realms: list of realms where at least one has to match the policy condition to be applied
+        :param container_serial: The serial of a container from the request data (used to check extended policy
+            conditions).
         :rtype: ``Match``
         """
         from privacyidea.lib.auth import ROLE
@@ -3364,7 +3366,8 @@ class Match(object):
         return cls(g, name=None, scope=scope, realm=userrealm, active=True,
                    resolver=None, user=username, user_object=user_obj,
                    client=g.client_ip, action=action, adminrealm=adminrealm, adminuser=adminuser,
-                   time=None, sort_by_priority=True, serial=g.serial, additional_realms=allowed_realms)
+                   time=None, sort_by_priority=True, serial=g.serial, additional_realms=additional_realms,
+                   container_serial=container_serial)
 
     @classmethod
     def generic(cls, g, scope: str = None, realm: str = None, resolver: str = None, user: str = None,
