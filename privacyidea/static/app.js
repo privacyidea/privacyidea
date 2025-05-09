@@ -86,6 +86,7 @@ myApp.constant("smtpServerUrl", backendUrl + instance + "/smtpserver");
 myApp.constant("radiusServerUrl", backendUrl + instance + "/radiusserver");
 myApp.constant("privacyideaServerUrl", backendUrl + instance + "/privacyideaserver");
 myApp.constant("recoveryUrl", backendUrl + instance + "/recover");
+myApp.constant("riskUrl",backendUrl + instance + "/riskbase");
 myApp.constant("resourceNamePatterns", {
     simple: {
         pattern: "^[a-zA-Z0-9_-][a-zA-Z0-9_.-]*$",

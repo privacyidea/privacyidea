@@ -46,6 +46,12 @@
                     <span class="glyphicon glyphicon-phone"
                           aria-hidden="true"></span>
                     <span translate>Tokens</span></a></li>
+                <li ng-class="{active: $state.includes('config.risk')}"
+                    ng-show="checkRight('configread') || checkRight('configwrite')">
+                    <a ui-sref="config.risk">
+                    <span class="glyphicon glyphicon-list"
+                          aria-hidden="true"></span>
+                    <span translate>Risk</span></a></li>
                 <li ng-class="{active: $state.includes('config.mresolvers')}"
                     ng-show="checkRight('mresolverread') || checkRight('mresolverwrite') || checkRight('mresolverdelete')">
                     <a ui-sref="config.mresolvers.list">

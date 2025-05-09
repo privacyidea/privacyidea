@@ -1,0 +1,42 @@
+<h2 class="form-signin-heading">Assign Risk Scores to Services</h2>
+<div class="table-responsive">
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Service</th>
+                <th>Risk Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr ng-repeat="element in form['service_risk']"
+                ng-if="hasDefinedServiceRisks()">
+                <td>{{element.name}}</td>
+                <td>{{element.risk_score}}</td>
+                <td>
+                    <button class="btn btn-danger"
+                            ng-click="deleteRisk('service',element.name)">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+            <tr ng-show="checkRight('policywrite')">
+                <td>
+                    <input type="text"
+                            class="form-control"
+                            ng-model="$parent.newServiceName"
+                            name="service"/>
+                </td>
+                <td>
+                    <input type="number" class="form-control"
+                            ng-model="$parent.newServiceRiskScore" name="riskScore"/>
+                </td>
+                <td>
+                    <button class="btn btn-default"
+                            ng-click="addServiceRisk()">
+                        Add new service risk score
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
