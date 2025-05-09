@@ -24,6 +24,7 @@ Like policies, that are supposed to read and pass parameters during enrollment o
 """
 from dataclasses import dataclass
 import logging
+from typing import Union
 
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial
 from privacyidea.lib.log import log_with
@@ -38,14 +39,14 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class UserAttributes:
-    role: str = None
-    username: str = None
-    realm: str = None
-    resolver: str = None
-    adminuser: str = None
-    adminrealm: str = None
-    additional_realms: list = None
-    user: User = None
+    role: Union[str, None] = None
+    username: Union[str, None] = None
+    realm: Union[str, None] = None
+    resolver: Union[str, None] = None
+    adminuser: Union[str, None] = None
+    adminrealm: Union[str, None] = None
+    additional_realms: Union[list, None] = None
+    user: Union[User, None] = None
 
 
 @log_with(log)
@@ -238,6 +239,12 @@ def check_token_action_allowed(g, action: str, serial: str, user_attributes: Use
     condition_check.remove(ConditionSection.CONTAINER)
     condition_check.remove(ConditionSection.CONTAINER_INFO)
 
+    if user_attributes.user:
+        # If we have a resolved user object, there is no need to pass the user attributes individually
+        user_attributes.username = None
+        user_attributes.realm = None
+        user_attributes.resolver = None
+
     # Check action for the token
     action_allowed = Match.generic(g,
                                    scope=user_attributes.role,
@@ -336,6 +343,12 @@ def check_container_action_allowed(g, action: str, container_serial: str, user_a
             is_owner = user_is_owner(user_attributes.user, container_owner_attributes.user, allow_no_owner=False)
         if not is_owner:
             return False
+
+    if user_attributes.user:
+        # If we have a resolved user object, there is no need to pass the user attributes individually
+        user_attributes.username = None
+        user_attributes.realm = None
+        user_attributes.resolver = None
 
     # Check action for container
     action_allowed = Match.generic(g,
