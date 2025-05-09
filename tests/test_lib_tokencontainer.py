@@ -92,7 +92,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # Check creation Date
         create_now = datetime.now(tz=timezone.utc)
-        with mock.patch("privacyidea.lib.container.datetime.datetime", wraps=datetime) as mock_datetime:
+        with mock.patch("privacyidea.lib.container.datetime", wraps=datetime) as mock_datetime:
             mock_datetime.now.return_value = create_now
             container_serial = init_container({"type": "generic"})["container_serial"]
         container = find_container_by_serial(container_serial)
