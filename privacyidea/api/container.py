@@ -45,7 +45,8 @@ from privacyidea.lib.container import (find_container_by_serial, init_container,
                                        get_container_realms,
                                        add_not_authorized_tokens_result, get_offline_token_serials,
                                        delete_container_info)
-from privacyidea.lib.containers.container_info import TokenContainerInfoData, PI_INTERNAL, RegistrationState
+from privacyidea.lib.containers.container_info import (TokenContainerInfoData, PI_INTERNAL, RegistrationState,
+    CHALLENGE_TTL, REGISTRATION_TTL, SERVER_URL, SSL_VERIFY)
 from privacyidea.lib.containers.container_states import ContainerStates
 from privacyidea.lib.error import ParameterError, ContainerNotRegistered, ContainerError
 from privacyidea.lib.event import event
@@ -635,10 +636,10 @@ def registration_init():
     container_rollover = getParam(params, "rollover", optional=True)
     container = find_container_by_serial(container_serial)
     # Params set by pre-policies
-    server_url = getParam(params, "server_url")
-    challenge_ttl = getParam(params, "challenge_ttl")
-    registration_ttl = getParam(params, "registration_ttl")
-    ssl_verify = getParam(params, "ssl_verify")
+    server_url = getParam(params, SERVER_URL)
+    challenge_ttl = getParam(params, CHALLENGE_TTL)
+    registration_ttl = getParam(params, REGISTRATION_TTL)
+    ssl_verify = getParam(params, SSL_VERIFY)
 
     # Audit log
     info_str = (f"server_url={server_url}, challenge_ttl={challenge_ttl}min, registration_ttl={registration_ttl}min, "
@@ -821,7 +822,7 @@ def create_challenge():
         raise ContainerNotRegistered(f"Container is not registered.")
 
     # validity time for the challenge in minutes
-    challenge_ttl = int(container_info.get("challenge_ttl", "2"))
+    challenge_ttl = int(container_info.get(CHALLENGE_TTL, "2"))
 
     # Create challenge
     res = container.create_challenge(scope, challenge_ttl)
@@ -993,10 +994,10 @@ def rollover():
     container_serial = getParam(params, "container_serial", optional=False)
     container = find_container_by_serial(container_serial)
     # Params set by pre-policies
-    server_url = getParam(params, "server_url")
-    challenge_ttl = getParam(params, "challenge_ttl")
-    registration_ttl = getParam(params, "registration_ttl")
-    ssl_verify = getParam(params, "ssl_verify")
+    server_url = getParam(params, SERVER_URL)
+    challenge_ttl = getParam(params, CHALLENGE_TTL)
+    registration_ttl = getParam(params, REGISTRATION_TTL)
+    ssl_verify = getParam(params, SSL_VERIFY)
 
     # Check registration state: rollover is only allowed for registered containers
     registration_state = RegistrationState(container.get_container_info_dict().get(RegistrationState.get_key()))

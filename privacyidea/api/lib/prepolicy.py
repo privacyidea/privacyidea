@@ -69,6 +69,7 @@ from typing import Union
 
 from privacyidea.lib import _
 from privacyidea.lib.container import find_container_by_serial, get_container_realms
+from privacyidea.lib.containers.container_info import CHALLENGE_TTL, REGISTRATION_TTL, SERVER_URL
 from privacyidea.lib.error import (PolicyError, RegistrationError,
                                    TokenAdminError, ResourceNotFoundError)
 from flask import g, current_app, Request
@@ -2460,8 +2461,9 @@ def hide_container_info(request=None, action=None):
     # That is not a problem as the container info is only displayed on the container details page (where a user object
     # is available) and not in the list view. But the info is still contained in the response for the list view.
     allowed_realms = getattr(request, "pi_allowed_container_realms", None)
-    hidden_fields = Match.admin_or_user(g=g, action=ACTION.HIDE_CONTAINER_INFO, user_obj=request.User,
-                                        allowed_realms=allowed_realms).action_values(unique=False)
+    container_serial = request.all_data.get("container_serial")
+    hidden_fields = Match.generic(g=g, action=ACTION.HIDE_CONTAINER_INFO, user_object=request.User,
+                                        additional_realms=allowed_realms, container_serial=container_serial).action_values(unique=False)
 
     request.all_data["hide_container_info"] = list(hidden_fields)
     return True
@@ -2564,7 +2566,7 @@ def container_registration_config(request, action=None):
                                            container_serial=container_serial).action_values(unique=True))
     if len(server_url_config) == 0:
         raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot register container.")
-    request.all_data["server_url"] = server_url_config[0]
+    request.all_data[SERVER_URL] = server_url_config[0]
 
     # Get validity time for the registration
     registration_ttl_config = list(Match.generic(g, scope=SCOPE.CONTAINER,
@@ -2572,12 +2574,12 @@ def container_registration_config(request, action=None):
                                                  user_object=user, additional_realms=container_realms,
                                                  container_serial=container_serial).action_values(unique=True))
     if len(registration_ttl_config) > 0:
-        request.all_data["registration_ttl"] = int(registration_ttl_config[0])
-        if request.all_data["registration_ttl"] <= 0:
+        request.all_data[REGISTRATION_TTL] = int(registration_ttl_config[0])
+        if request.all_data[REGISTRATION_TTL] <= 0:
             # default 10 min
-            request.all_data["registration_ttl"] = 10
+            request.all_data[REGISTRATION_TTL] = 10
     else:
-        request.all_data["registration_ttl"] = 10
+        request.all_data[REGISTRATION_TTL] = 10
 
     # Get validity time for further challenges
     challenge_ttl_config = list(Match.generic(g, scope=SCOPE.CONTAINER,
@@ -2585,12 +2587,12 @@ def container_registration_config(request, action=None):
                                               user_object=user, additional_realms=container_realms,
                                               container_serial=container_serial).action_values(unique=True))
     if len(challenge_ttl_config) > 0:
-        request.all_data["challenge_ttl"] = int(challenge_ttl_config[0])
-        if request.all_data["challenge_ttl"] <= 0:
+        request.all_data[CHALLENGE_TTL] = int(challenge_ttl_config[0])
+        if request.all_data[CHALLENGE_TTL] <= 0:
             # default 2 min
-            request.all_data["challenge_ttl"] = 2
+            request.all_data[CHALLENGE_TTL] = 2
     else:
-        request.all_data["challenge_ttl"] = 2
+        request.all_data[CHALLENGE_TTL] = 2
 
     # Get ssl verify
     ssl_verify_config = list(Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_SSL_VERIFY,

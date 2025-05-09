@@ -31,7 +31,8 @@ from privacyidea.api.lib.utils import send_result
 from privacyidea.lib.challenge import delete_challenges
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.containerclass import TokenContainerClass
-from privacyidea.lib.containers.container_info import PI_INTERNAL, TokenContainerInfoData, RegistrationState
+from privacyidea.lib.containers.container_info import (PI_INTERNAL, TokenContainerInfoData, RegistrationState,
+                                                       SERVER_URL, CHALLENGE_TTL)
 from privacyidea.lib.containertemplate.containertemplatebase import ContainerTemplateBase
 from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError
 from privacyidea.lib.log import log_with
@@ -1252,8 +1253,8 @@ def init_container_rollover(container: TokenContainerClass, server_url: str, cha
     # Set registration state
     info = [TokenContainerInfoData(key=RegistrationState.get_key(), value=RegistrationState.ROLLOVER.value,
                                    info_type=PI_INTERNAL),
-            TokenContainerInfoData(key="rollover_server_url", value=server_url, info_type=PI_INTERNAL),
-            TokenContainerInfoData(key="rollover_challenge_ttl", value=str(challenge_ttl), info_type=PI_INTERNAL)]
+            TokenContainerInfoData(key=f"rollover_{SERVER_URL}", value=server_url, info_type=PI_INTERNAL),
+            TokenContainerInfoData(key=f"rollover_{CHALLENGE_TTL}", value=str(challenge_ttl), info_type=PI_INTERNAL)]
     container.update_container_info(info)
 
     return res

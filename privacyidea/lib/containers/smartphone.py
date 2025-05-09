@@ -31,7 +31,7 @@ from privacyidea.lib.apps import _construct_extra_parameters
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.containers.container_info import (TokenContainerInfoData, PI_INTERNAL, RegistrationState,
-                                                       INITIALLY_SYNCHRONIZED)
+                                                       INITIALLY_SYNCHRONIZED, CHALLENGE_TTL, SERVER_URL)
 from privacyidea.lib.containers.smartphone_options import SmartphoneOptions
 from privacyidea.lib.crypto import (geturandom, encryptPassword, b64url_str_key_pair_to_ecc_obj,
                                     generate_keypair_ecc, encrypt_aes)
@@ -341,9 +341,9 @@ class SmartphoneContainer(TokenContainerClass):
         # Delete registration / synchronization info
         self.delete_container_info("public_key_client", keep_internal=False)
         self.delete_container_info("device", keep_internal=False)
-        self.delete_container_info("server_url", keep_internal=False)
+        self.delete_container_info(SERVER_URL, keep_internal=False)
         self.delete_container_info(RegistrationState.get_key(), keep_internal=False)
-        self.delete_container_info("challenge_ttl", keep_internal=False)
+        self.delete_container_info(CHALLENGE_TTL, keep_internal=False)
         self.delete_container_info(INITIALLY_SYNCHRONIZED, keep_internal=False)
 
     def create_challenge(self, scope: str, validity_time: int = 2, data: dict = None) -> dict[str, str]:

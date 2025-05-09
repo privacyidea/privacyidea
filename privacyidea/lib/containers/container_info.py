@@ -21,6 +21,10 @@ from enum import Enum
 
 PI_INTERNAL = "pi_internal"
 INITIALLY_SYNCHRONIZED = "initially_synchronized"
+CHALLENGE_TTL = "challenge_ttl"
+REGISTRATION_TTL = "registration_ttl"
+SERVER_URL = "server_url"
+SSL_VERIFY = "ssl_verify"
 
 @dataclass
 class TokenContainerInfoData:
