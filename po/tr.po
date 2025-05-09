@@ -6,8 +6,8 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-03-28 09:26+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"PO-Revision-Date: 2025-05-09 21:01+0000\n"
+"Last-Translator: Serhat <serhat@10lineweb.com>\n"
 "Language-Team: Turkish <https://hosted.weblate.org/projects/privacyidea/"
 "branch-3-11-webui/tr/>\n"
 "Language: tr\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.11-dev\n"
+"X-Generator: Weblate 5.12-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -3046,12 +3046,6 @@ msgstr "Lütfen PrivacyIDEA sunucusunun temel URL'sini sağlayın."
 
 #: privacyidea/static/components/token/views/token.containercreate.html:177
 #: privacyidea/static/components/token/views/token.containerdetails.html:275
-#, fuzzy
-#| msgid ""
-#| "Please scan the QR code with the privacyIDEA Authenticator App\n"
-#| "            or click <a href=\"{{ enrolledToken.pushurl.value }}\">this "
-#| "link</a> on your\n"
-#| "            smartphone."
 msgid ""
 "Please scan the QR code with the privacyIDEA Authenticator App\n"
 "                    or click <a href=\"{{ containerRegistrationURL }}\">this "
@@ -3060,10 +3054,12 @@ msgid ""
 "missing registration data to the configured\n"
 "                    endpoint."
 msgstr ""
-"Lütfen QR kodunu PrivacyIDEA Authenticator uygulamasıyla tarayın\n"
-"            Veya <a href=\"{{ enrolledToken.pushurl.value }}\">\"> Bu link </"
-"a>\n"
-"            akıllı telefon."
+"Lütfen QR kodunu PrivacyIDEA Authenticator uygulamasıyla tarayın  \n"
+"                    veya akıllı telefonunuzda bu <a href="
+"\"{{ containerRegistrationURL }}\">link</a>e tıklayın  \n"
+"                    konteynerinizi kaydetmek için. Bu, eksik kayıt "
+"verilerini yapılandırılmış  \n"
+"                    uç noktaya gönderecektir."
 
 #: privacyidea/static/components/token/views/token.enrolled.push.html:9
 msgid ""
@@ -5571,20 +5567,16 @@ msgid "Total Challenges:"
 msgstr "Toplam Zorluklar:"
 
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:77
-#, fuzzy
-#| msgid "Total Containers: {{ containerdata.count }}"
 msgid "Total Containers: {{ containerData.count }}"
-msgstr "Toplam belirteçler: {{ containerdata.count }}"
+msgstr "Toplam konteyner: {{ containerData.count }}"
 
 #: privacyidea/static/components/token/views/token.containerlist.html:30
 msgid "Total Containers: {{ containerdata.count }}"
 msgstr "Toplam belirteçler: {{ containerdata.count }}"
 
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:32
-#, fuzzy
-#| msgid "total tokens: {{ tokendata.count }}"
 msgid "Total Templates: {{ templatedata.count }}"
-msgstr "Toplam belirteçler: {{ tokendata.count }}"
+msgstr "Toplam şablonlar: {{ templatedata.count }}"
 
 #: privacyidea/static/components/token/views/token.challenges.html:34
 msgid "Transaction ID"
@@ -6047,10 +6039,8 @@ msgstr ""
 "                    belirteç modeli."
 
 #: privacyidea/static/components/token/views/token.details.html:525
-#, fuzzy
-#| msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgid "You will be logged in as: {{ loggedinUsername }}"
-msgstr "{{ myCountdown }} ikinci (ler) de oturum açacaksınız."
+msgstr "Oturum açılacak kullanıcı: {{ loggedinUsername }}"
 
 #: privacyidea/static/templates/menu.html:171
 msgid "You will be logged out in {{ myCountdown }} second(s)."
