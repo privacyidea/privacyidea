@@ -184,7 +184,7 @@
         <input style="display: none"
                type="password" />
 
-        <mat-form-field class="width-50 height-76-5">
+        <mat-form-field class="width-50 input-height">
           <mat-label>Select Realm of User</mat-label>
           <mat-select [(ngModel)]="userService.selectedUserRealm">
             @for (option of realmService.realmOptions(); track option) {
@@ -193,7 +193,7 @@
           </mat-select>
         </mat-form-field>
 
-        <mat-form-field class="width-50 height-76-5">
+        <mat-form-field class="width-50 input-height">
           <mat-label>Enter User</mat-label>
           <input [(ngModel)]="userService.selectedUsername"
                  [disabled]="onlyAddToRealm()"
@@ -226,7 +226,7 @@
   </div>
 
   <h4 class="enroll-h4">Assign Token to a Container</h4>
-  <mat-form-field class="width-32 height-76-5">
+  <mat-form-field class="width-32 input-height">
     <mat-label>Enter Container</mat-label>
     <input [(ngModel)]="containerService.selectedContainer"
            [matAutocomplete]="containerAuto"

@@ -3,13 +3,14 @@
 
   <div class="main-content-div main-margin">
     @if (contentService.selectedContent() !== 'token_self-service_menu') {
-      <button mat-fab
-              (click)="selectedContent.set('token_self-service_menu')"
-              class="back-button">
-        <mat-icon>keyboard_arrow_left</mat-icon>
-      </button>
+      <div class="back-button-div">
+        <button mat-fab
+                (click)="selectedContent.set('token_self-service_menu')"
+                class="back-button">
+          <mat-icon>keyboard_arrow_left</mat-icon>
+        </button>
+      </div>
     }
-
     <div class="token-selfservice-div">
       @switch (contentService.selectedContent()) {
         @case ("token_self-service_menu") {

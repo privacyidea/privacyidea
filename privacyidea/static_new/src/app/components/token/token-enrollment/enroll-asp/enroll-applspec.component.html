@@ -15,7 +15,7 @@
   </mat-checkbox>
 
   <div class="flex-row gap-1">
-    <mat-form-field class="width-64 height-76-5">
+    <mat-form-field class="width-64 input-height">
       <mat-label>Service ID</mat-label>
       <mat-select [(ngModel)]="serviceId"
                   [errorStateMatcher]="applspecErrorStateMatcher"
@@ -28,7 +28,7 @@
     </mat-form-field>
 
     @if (!generateOnServer()) {
-      <mat-form-field class="serviceid-input-form">
+      <mat-form-field class="serviceid-input-form input-height">
         <mat-label>Application Specific Password</mat-label>
         <input matInput
                [(ngModel)]="otpKey"

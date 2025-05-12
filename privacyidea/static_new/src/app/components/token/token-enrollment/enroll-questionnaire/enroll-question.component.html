@@ -8,7 +8,7 @@
   </span>
   <div class="margin-top-1 form-group">
     @for (question of configQuestions(); track question) {
-      <mat-form-field class="question-input-width">
+      <mat-form-field class="question-input-width input-height">
         <mat-label>{{ question.text }}</mat-label>
         <input type="text"
                [ngModel]="answers()[question.question]"

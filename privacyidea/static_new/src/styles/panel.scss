@@ -25,7 +25,7 @@
   .type-option.mdc-list-item--selected:not(
       .mdc-list-item--disabled
     ):not(.mat-mdc-option-multiple) {
-    background-color: #217fa8;
+    background-color: #217fa8 !important;
   }
 
   .type-option.mat-mdc-option.mdc-list-item {
@@ -35,7 +35,7 @@
   .type-option.mat-mdc-option.mdc-list-item--selected:not(
       .mdc-list-item--disabled
     ) .mdc-list-item__primary-text {
-    color: white;
+    color: white !important;
   }
 
   .type-option.mat-mdc-option:hover:not(.mdc-list-item--selected, .mdc-list-item--disabled) {

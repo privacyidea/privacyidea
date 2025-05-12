@@ -12,7 +12,7 @@
   </mat-checkbox>
   <div class="flex-row gap-1">
     @if (!readNumberDynamically()) {
-      <mat-form-field class="width-33 height-76-5">
+      <mat-form-field class="width-33 input-height">
         <mat-label>Phone number</mat-label>
         <input [(ngModel)]="phoneNumber"
                matInput
@@ -22,7 +22,7 @@
     } @else {
       <span class="width-33"></span>
     }
-    <mat-form-field class="width-66 height-76-5">
+    <mat-form-field class="width-66 input-height">
       <mat-label> A token specific SMS gateway</mat-label>
       <mat-hint>If this token should not use the system wide SMS gateway but an individual SMS
         gateway, you can select the gateway here.

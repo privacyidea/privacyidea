@@ -132,3 +132,10 @@ $margin-bottom-main: 8.5rem;
   height: 3.7rem;
   width: 3.7rem;
 }
+
+.back-button-div {
+  display: flex;
+  margin-left: -5rem;
+  height: 100%;
+  position: fixed;
+}
