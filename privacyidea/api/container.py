@@ -54,6 +54,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.token import regenerate_enroll_url
 from privacyidea.lib.user import get_user_from_param
+from privacyidea.lib.utils import is_true
 
 container_blueprint = Blueprint('container_blueprint', __name__)
 log = logging.getLogger(__name__)
@@ -108,6 +109,8 @@ def list_containers():
     description = getParam(param, "description", optional=True)
     resolver = getParam(param, "resolver", optional=True)
     assigned = getParam(param, "assigned", optional=True)
+    if assigned is not None:
+        assigned = is_true(assigned)
     info_key = getParam(param, "info_key", optional=True)
     info_value = getParam(param, "info_value", optional=True)
     last_auth_delta = getParam(param, "last_auth_delta", optional=True)

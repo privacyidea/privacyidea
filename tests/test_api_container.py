@@ -2933,6 +2933,12 @@ class APIContainer(APIContainerTest):
         for container in result["result"]["value"]["containers"]:
             self.assertEqual(container["type"], "generic")
 
+        # Filter for assigned containers
+        result = self.request_assert_success('/container/',
+                                             {"assigned": True, "pagesize": 15},
+                                             self.at, 'GET')
+        self.assertEqual(1, result["result"]["value"]["count"])
+
         # filter for realm the admin is not allowed to manage
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_LIST, realm=self.realm1)
         result = self.request_assert_success('/container/',
