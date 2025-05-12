@@ -27,7 +27,7 @@ from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy, check_u
                                            check_admin_tokenlist, check_container_action, check_token_list_action,
                                            check_container_register_rollover, container_registration_config,
                                            smartphone_config, check_client_container_action, hide_tokeninfo,
-                                           check_client_container_disabled_action)
+                                           check_client_container_disabled_action, hide_container_info)
 from privacyidea.api.lib.utils import send_result, getParam, required
 from privacyidea.lib.container import (find_container_by_serial, init_container, get_container_classes_descriptions,
                                        get_container_token_types, get_all_containers, add_container_info,
@@ -45,14 +45,16 @@ from privacyidea.lib.container import (find_container_by_serial, init_container,
                                        get_container_realms,
                                        add_not_authorized_tokens_result, get_offline_token_serials,
                                        delete_container_info)
-from privacyidea.lib.containerclass import TokenContainerClass
-from privacyidea.lib.containers.container_info import TokenContainerInfoData, PI_INTERNAL
+from privacyidea.lib.containers.container_info import (TokenContainerInfoData, PI_INTERNAL, RegistrationState,
+    CHALLENGE_TTL, REGISTRATION_TTL, SERVER_URL, SSL_VERIFY)
+from privacyidea.lib.containers.container_states import ContainerStates
 from privacyidea.lib.error import ParameterError, ContainerNotRegistered, ContainerError
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.token import regenerate_enroll_url
 from privacyidea.lib.user import get_user_from_param
+from privacyidea.lib.utils import is_true
 
 container_blueprint = Blueprint('container_blueprint', __name__)
 log = logging.getLogger(__name__)
@@ -66,6 +68,7 @@ API for managing token containers
 @prepolicy(check_base_action, request, action=ACTION.CONTAINER_LIST)
 @prepolicy(check_admin_tokenlist, request, ACTION.CONTAINER_LIST)
 @prepolicy(check_admin_tokenlist, request, ACTION.TOKENLIST)
+@prepolicy(hide_container_info, request)
 @prepolicy(hide_tokeninfo, request)
 @log_with(log)
 def list_containers():
@@ -74,39 +77,69 @@ def list_containers():
     at once.
 
     :query user: Username of a user assigned to the containers
-    :query container_serial: Serial of a single container
-    :query type: Type of the containers to return
-    :query token_serial: Serial of a token assigned to the container
-    :query template: Name of the template the container is created from
+    :query container_serial: Serial of a single container (case-insensitive, can contain '*' as wildcards)
+    :query type: Type of the containers to return (case-insensitive, can contain '*' as wildcards)
+    :query token_serial: Serial of a token assigned to the container (case-insensitive, can contain '*' as wildcards)
+    :query template: Name of the template the container is created from (case-sensitive, can contain '*' as wildcards)
+    :query container_realm: Name of the realm the container is assigned to (case-insensitive, can contain '*' as
+        wildcards)
+    :query description: Description of the container (case-insensitive, can contain '*' as wildcards)
+    :query resolver: Resolver of the user assigned to the container  (case-insensitive, can contain '*' as wildcards)
+    :query assigned: Filter for assigned or unassigned containers (True or False)
+    :query info_key: Key of the container info (case-sensitive, can contain '*' as wildcards)
+    :query info_value: Value of the container info (case-insensitive, can contain '*' as wildcards)
+    :query last_auth_delta: The maximum time difference the last authentication may have to now, e.g. "1y", "14d", "1h"
+        The following units are supported: y (years), d (days), h (hours), m (minutes), s (seconds)
+    :query last_sync_delta: The maximum time difference the last synchronization may have to now, e.g. "1y", "14d", "1h"
+        The following units are supported: y (years), d (days), h (hours), m (minutes), s (seconds)
+    :query state: State the container should have (case-insensitive and allows "*" as wildcard), optional
     :query sortby: Sort by a container attribute (serial or type)
     :query sortdir: Sort direction (asc or desc)
     :query pagesize: Number of containers per page
     :query page: Page number
-    :jsonparam no_token: no_token=1: Do not return tokens assigned to the container
+    :query no_token: no_token=1: Do not return tokens assigned to the container
     """
     param = request.all_data
     user = request.User
     cserial = getParam(param, "container_serial", optional=True)
     ctype = getParam(param, "type", optional=True)
     token_serial = getParam(param, "token_serial", optional=True)
+    template = getParam(param, "template", optional=True)
+    realm = getParam(param, "container_realm", optional=True)
+    description = getParam(param, "description", optional=True)
+    resolver = getParam(param, "resolver", optional=True)
+    assigned = getParam(param, "assigned", optional=True)
+    if assigned is not None:
+        assigned = is_true(assigned)
+    info_key = getParam(param, "info_key", optional=True)
+    info_value = getParam(param, "info_value", optional=True)
+    last_auth_delta = getParam(param, "last_auth_delta", optional=True)
+    last_sync_delta = getParam(param, "last_sync_delta", optional=True)
+    state = getParam(param, "state", optional=True)
     sortby = getParam(param, "sortby", optional=True, default="serial")
     sortdir = getParam(param, "sortdir", optional=True, default="asc")
     psize = int(getParam(param, "pagesize", optional=True) or 0)
     page = int(getParam(param, "page", optional=True) or 0)
     no_token = getParam(param, "no_token", optional=True, default=False)
-    template = getParam(param, "template", optional=True)
     logged_in_user_role = g.logged_in_user.get("role")
     allowed_container_realms = getattr(request, "pi_allowed_container_realms", None)
     allowed_token_realms = getattr(request, "pi_allowed_realms", None)
+    hide_container_info = getParam(param, "hide_container_info", optional=True)
     hide_token_info = getParam(param, "hidden_tokeninfo", optional=True)
 
+    # Set info dictionary (if either key or value is None, filter for all keys/values using * as wildcard)
+    info = None
+    if info_key or info_value:
+        info = {info_key or "*": info_value or "*"}
+
     result = get_all_containers(user=user, serial=cserial, ctype=ctype, token_serial=token_serial,
-                                realms=allowed_container_realms, template=template,
-                                sortby=sortby, sortdir=sortdir,
-                                pagesize=psize, page=page)
+                                realm=realm, allowed_realms=allowed_container_realms, template=template,
+                                description=description, resolver=resolver, assigned=assigned, info=info,
+                                last_auth_delta=last_auth_delta, last_sync_delta=last_sync_delta, state=state,
+                                sortby=sortby, sortdir=sortdir, pagesize=psize, page=page)
 
     containers = create_container_dict(result["containers"], no_token, user, logged_in_user_role, allowed_token_realms,
-                                       hide_token_info=hide_token_info)
+                                       hide_container_info=hide_container_info, hide_token_info=hide_token_info)
     result["containers"] = containers
 
     g.audit_object.log({"success": True,
@@ -478,7 +511,12 @@ def get_state_types():
     The types are the keys and the value is a list containing all states that are excluded when the key state is
     selected.
     """
-    state_types_exclusions = TokenContainerClass.get_state_types()
+    state_types_exclusions_enums = ContainerStates.get_exclusive_states()
+    # Get string representation from enums
+    state_types_exclusions = {}
+    for state_type, excluded_states in state_types_exclusions_enums.items():
+        state_types_exclusions[state_type.value] = [state.value for state in excluded_states]
+
     g.audit_object.log({"success": True})
     return send_result(state_types_exclusions)
 
@@ -567,7 +605,6 @@ def delete_container_info_entry(container_serial, key):
     return send_result(res[key])
 
 
-
 @container_blueprint.route('register/initialize', methods=['POST'])
 @prepolicy(check_container_register_rollover, request)
 @prepolicy(container_registration_config, request)
@@ -602,10 +639,10 @@ def registration_init():
     container_rollover = getParam(params, "rollover", optional=True)
     container = find_container_by_serial(container_serial)
     # Params set by pre-policies
-    server_url = getParam(params, "server_url")
-    challenge_ttl = getParam(params, "challenge_ttl")
-    registration_ttl = getParam(params, "registration_ttl")
-    ssl_verify = getParam(params, "ssl_verify")
+    server_url = getParam(params, SERVER_URL)
+    challenge_ttl = getParam(params, CHALLENGE_TTL)
+    registration_ttl = getParam(params, REGISTRATION_TTL)
+    ssl_verify = getParam(params, SSL_VERIFY)
 
     # Audit log
     info_str = (f"server_url={server_url}, challenge_ttl={challenge_ttl}min, registration_ttl={registration_ttl}min, "
@@ -617,11 +654,12 @@ def registration_init():
 
     # Check registration state: registration init is only allowed for None (not yet registered) and "client_wait"
     # otherwise do a rollover
-    registration_state = container.get_container_info_dict().get("registration_state")
+    registration_state = RegistrationState(container.get_container_info_dict().get(RegistrationState.get_key()))
     if container_rollover:
-        if registration_state not in ["registered", "rollover", "rollover_completed"]:
+        if registration_state not in [RegistrationState.REGISTERED, RegistrationState.ROLLOVER,
+                                      RegistrationState.ROLLOVER_COMPLETED]:
             raise ContainerNotRegistered("Container is not registered.")
-    elif registration_state and registration_state != "client_wait":
+    elif registration_state not in [RegistrationState.NOT_REGISTERED, RegistrationState.CLIENT_WAIT]:
         raise ContainerError("Container is already registered.")
 
     # Reset last synchronization and authentication time stamps from possible previous registration
@@ -634,7 +672,8 @@ def registration_init():
 
     if container_rollover:
         # Set registration state
-        info = [TokenContainerInfoData(key="registration_state", value="rollover", info_type=PI_INTERNAL),
+        info = [TokenContainerInfoData(key=RegistrationState.get_key(), value=RegistrationState.ROLLOVER.value,
+                                       info_type=PI_INTERNAL),
                 TokenContainerInfoData(key="rollover_server_url", value=server_url, info_type=PI_INTERNAL),
                 TokenContainerInfoData(key="rollover_challenge_ttl", value=challenge_ttl, info_type=PI_INTERNAL)]
     else:
@@ -780,12 +819,13 @@ def create_challenge():
                         "action_detail": f"scope={scope}"})
 
     container_info = container.get_container_info_dict()
-    registration_state = container_info.get("registration_state")
-    if registration_state not in ["registered", "rollover", "rollover_completed"]:
+    registration_state = RegistrationState(container_info.get(RegistrationState.get_key()))
+    if registration_state not in [RegistrationState.REGISTERED, RegistrationState.ROLLOVER,
+                                  RegistrationState.ROLLOVER_COMPLETED]:
         raise ContainerNotRegistered(f"Container is not registered.")
 
     # validity time for the challenge in minutes
-    challenge_ttl = int(container_info.get("challenge_ttl", "2"))
+    challenge_ttl = int(container_info.get(CHALLENGE_TTL, "2"))
 
     # Create challenge
     res = container.create_challenge(scope, challenge_ttl)
@@ -907,11 +947,12 @@ def synchronize():
     container.update_last_synchronization()
 
     # Rollover completed: Change registration state to registered
-    registration_state = container.get_container_info_dict().get("registration_state")
-    if registration_state == "rollover_completed":
-        container.update_container_info(
-            [TokenContainerInfoData(key="registration_state", value="registered", info_type=PI_INTERNAL)])
-    audit_info += f", rollover: {registration_state == 'rollover'}"
+    registration_state = RegistrationState(container.get_container_info_dict().get(RegistrationState.get_key()))
+    if registration_state == RegistrationState.ROLLOVER_COMPLETED:
+        container.update_container_info([TokenContainerInfoData(key=RegistrationState.get_key(),
+                                                                value=RegistrationState.REGISTERED.value,
+                                                                info_type=PI_INTERNAL)])
+    audit_info += f", rollover: {registration_state == RegistrationState.ROLLOVER}"
 
     # Audit log
     g.audit_object.log({"info": audit_info,
@@ -956,14 +997,15 @@ def rollover():
     container_serial = getParam(params, "container_serial", optional=False)
     container = find_container_by_serial(container_serial)
     # Params set by pre-policies
-    server_url = getParam(params, "server_url")
-    challenge_ttl = getParam(params, "challenge_ttl")
-    registration_ttl = getParam(params, "registration_ttl")
-    ssl_verify = getParam(params, "ssl_verify")
+    server_url = getParam(params, SERVER_URL)
+    challenge_ttl = getParam(params, CHALLENGE_TTL)
+    registration_ttl = getParam(params, REGISTRATION_TTL)
+    ssl_verify = getParam(params, SSL_VERIFY)
 
     # Check registration state: rollover is only allowed for registered containers
-    registration_state = container.get_container_info_dict().get("registration_state")
-    if registration_state != "registered" and registration_state != "rollover":
+    registration_state = RegistrationState(container.get_container_info_dict().get(RegistrationState.get_key()))
+    if registration_state not in [RegistrationState.REGISTERED, RegistrationState.ROLLOVER,
+                                  RegistrationState.ROLLOVER_COMPLETED]:
         raise ContainerNotRegistered(f"Container is not registered.")
 
     # Rollover
@@ -971,7 +1013,7 @@ def rollover():
 
     # Audit log
     info_str = (f"server_url={server_url}, challenge_ttl={challenge_ttl}min, registration_ttl={registration_ttl}min, "
-                f"ssl_verify={ssl_verify}, registration_state={registration_state}")
+                f"ssl_verify={ssl_verify}, registration_state={registration_state.value}")
     g.audit_object.log({"container_serial": container_serial,
                         "container_type": container.type,
                         "info": info_str,
@@ -1067,7 +1109,7 @@ def create_template_with_name(container_type, template_name):
         template = get_template_obj(template_name)
         template.template_options = template_options
         template_id = template.id
-        log.info(f"A template with the name '{template_name}' already exists. Updating template options.")
+        log.debug(f"A template with the name '{template_name}' already exists. Updating template options.")
         audit_info = "Updated existing template"
     else:
         # create new template

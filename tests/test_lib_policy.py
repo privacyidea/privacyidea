@@ -7,6 +7,8 @@ import dateutil
 import mock
 from werkzeug.datastructures.headers import Headers, EnvironHeaders
 
+from privacyidea.lib.container import init_container, find_container_by_serial
+from privacyidea.lib.containers.container_info import RegistrationState
 from privacyidea.lib.policies.policy_conditions import (PolicyConditionClass, ConditionSection,
                                                         ConditionHandleMissingData)
 from privacyidea.lib.token import init_token
@@ -2706,6 +2708,78 @@ class PolicyConditionClassTestCase(MyTestCase):
 
         token.delete_token()
 
+    def test_16_get_container_data_container(self):
+        condition = PolicyConditionClass(section=ConditionSection.CONTAINER, key="type",
+                                         comparator=Comparators.EQUALS, value="smartphone", active=True)
+        container_serial = init_container({"type": "smartphone"})["container_serial"]
+
+        # Everything available
+        data = condition.get_container_data(container_serial)
+        self.assertEqual("container", data.object_name)
+        self.assertTrue(data.object_available)
+        self.assertEqual("smartphone", data.value)
+        self.assertIsNone(data.available_keys)
+
+        # Key not available
+        condition = PolicyConditionClass(section=ConditionSection.CONTAINER, key="hashlib",
+                                         comparator=Comparators.EQUALS, value="sha256", active=True)
+        data = condition.get_container_data(container_serial)
+        self.assertEqual("container", data.object_name)
+        self.assertTrue(data.object_available)
+        self.assertIsNone(data.value)
+        self.assertTrue(isinstance(data.available_keys, list))
+
+        # container not available
+        # no serial provided
+        data = condition.get_container_data(None)
+        self.assertEqual("container", data.object_name)
+        self.assertFalse(data.object_available)
+        self.assertIsNone(data.value)
+        self.assertIsNone(data.available_keys)
+
+        # invalid serial provided
+        data = condition.get_container_data("invalid")
+        self.assertEqual("container", data.object_name)
+        self.assertFalse(data.object_available)
+        self.assertIsNone(data.value)
+        self.assertIsNone(data.available_keys)
+
+    def test_17_get_container_data_container_info(self):
+        condition = PolicyConditionClass(section=ConditionSection.CONTAINER_INFO, key="registration_state",
+                                         comparator=Comparators.EQUALS, value=RegistrationState.CLIENT_WAIT.value,
+                                         active=True)
+        container_serial = init_container({"type": "smartphone"})["container_serial"]
+        container = find_container_by_serial(container_serial)
+
+        # Key not available
+        data = condition.get_container_data(container_serial)
+        self.assertEqual("container", data.object_name)
+        self.assertTrue(data.object_available)
+        self.assertIsNone(data.value)
+        self.assertTrue(isinstance(data.available_keys, list))
+
+        # Everything available
+        container.set_container_info({"registration_state": RegistrationState.CLIENT_WAIT.value})
+        data = condition.get_container_data(container_serial)
+        self.assertEqual("container", data.object_name)
+        self.assertTrue(data.object_available)
+        self.assertEqual(RegistrationState.CLIENT_WAIT.value, data.value)
+        self.assertIsNone(data.available_keys)
+
+        # container not available
+        # no serial provided
+        data = condition.get_container_data(None)
+        self.assertEqual("container", data.object_name)
+        self.assertFalse(data.object_available)
+        self.assertIsNone(data.value)
+        self.assertIsNone(data.available_keys)
+
+        # invalid serial provided
+        data = condition.get_container_data("invalid")
+        self.assertEqual("container", data.object_name)
+        self.assertFalse(data.object_available)
+        self.assertIsNone(data.value)
+        self.assertIsNone(data.available_keys)
 
 class ConditionHandleMissingDataTestCase(MyTestCase):
 
