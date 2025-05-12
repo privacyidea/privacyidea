@@ -61,6 +61,9 @@ export class ChallengesService {
     },
   });
   challengesResource = httpResource<any>(() => {
+    if (this.selectedContent() !== 'token_challenges') {
+      return undefined;
+    }
     const { params: filterParams, serial } = this.filterParams();
     const url = serial
       ? `${this.tokenBaseUrl}challenges/${serial}`

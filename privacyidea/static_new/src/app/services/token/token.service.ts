@@ -99,16 +99,14 @@ export class TokenService {
     },
   });
   tokenDetailResource = httpResource<any>(() => {
-    const serial = this.tokenSerial();
-
-    if (serial === '') {
+    if (this.selectedContent() !== 'token_details') {
       return undefined;
     }
     return {
       url: this.tokenBaseUrl,
       method: 'GET',
       headers: this.localService.getHeaders(),
-      params: { serial: serial },
+      params: { serial: this.tokenSerial() },
     };
   });
   tokenTypesResource = httpResource<any>(() => ({
@@ -188,18 +186,23 @@ export class TokenService {
       {} as Record<string, string>,
     );
   });
-  tokenResource = httpResource<TokenResponse>(() => ({
-    url: this.tokenBaseUrl,
-    method: 'GET',
-    headers: this.localService.getHeaders(),
-    params: {
-      page: this.pageIndex() + 1,
-      pagesize: this.pageSize(),
-      sortby: this.sort()?.active || 'serial',
-      sortdir: this.sort()?.direction || 'asc',
-      ...this.filterParams(),
-    },
-  }));
+  tokenResource = httpResource<TokenResponse>(() => {
+    if (this.selectedContent() !== 'token_overview') {
+      return undefined;
+    }
+    return {
+      url: this.tokenBaseUrl,
+      method: 'GET',
+      headers: this.localService.getHeaders(),
+      params: {
+        page: this.pageIndex() + 1,
+        pagesize: this.pageSize(),
+        sortby: this.sort()?.active || 'serial',
+        sortdir: this.sort()?.direction || 'asc',
+        ...this.filterParams(),
+      },
+    };
+  });
 
   tokenSelection: WritableSignal<any> = linkedSignal({
     source: () => ({

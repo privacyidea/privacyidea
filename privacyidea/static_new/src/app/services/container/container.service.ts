@@ -61,7 +61,11 @@ export class ContainerService {
   states = signal<string[]>([]);
   selectedContent = this.contentService.selectedContent;
   containerSerial = this.contentService.containerSerial;
-  selectedContainer = signal('');
+  selectedContainer: WritableSignal<string> = linkedSignal({
+    source: this.selectedContent,
+    computation: (selectedContent, previous) =>
+      selectedContent !== 'token_enrollment' ? '' : (previous?.value ?? ''),
+  });
 
   sort = signal<Sort>({ active: 'serial', direction: 'asc' });
 
@@ -114,21 +118,30 @@ export class ContainerService {
       this.selectedContent() === 'token_enrollment'
     );
   });
-  containerResource = httpResource<ContainerResponse>(() => ({
-    url: this.containerBaseUrl,
-    method: 'GET',
-    headers: this.localService.getHeaders(),
-    params: {
-      ...(!this.loadAllContainers() && {
-        page: this.pageIndex() + 1,
-        pagesize: this.pageSize(),
-      }),
-      sortby: this.sort().active,
-      sortdir: this.sort().direction,
-      no_token: this.loadAllContainers() ? 1 : 0,
-      ...this.filterParams(),
-    },
-  }));
+  containerResource = httpResource<ContainerResponse>(() => {
+    if (
+      !['container_overview', 'token_detail', 'token_enrollment'].includes(
+        this.selectedContent(),
+      )
+    ) {
+      return undefined;
+    }
+    return {
+      url: this.containerBaseUrl,
+      method: 'GET',
+      headers: this.localService.getHeaders(),
+      params: {
+        ...(!this.loadAllContainers() && {
+          page: this.pageIndex() + 1,
+          pagesize: this.pageSize(),
+        }),
+        sortby: this.sort().active,
+        sortdir: this.sort().direction,
+        no_token: this.loadAllContainers() ? 1 : 0,
+        ...this.filterParams(),
+      },
+    };
+  });
   containerOptions = linkedSignal({
     source: this.containerResource.value,
     computation: (containerResource) => {

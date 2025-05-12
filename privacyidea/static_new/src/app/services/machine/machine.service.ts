@@ -6,6 +6,7 @@ import { TableUtilsService } from '../table-utils/table-utils.service';
 import { Sort } from '@angular/material/sort';
 import { Observable } from 'rxjs';
 import { PageEvent } from '@angular/material/paginator';
+import { ContentService } from '../content/content.service';
 
 @Injectable({
   providedIn: 'root',
@@ -16,6 +17,7 @@ export class MachineService {
   sshAdvancedApiFilter = ['hostname', 'machineid & resolver'];
   offlineApiFilter = ['serial', 'count', 'rounds'];
   offlineAdvancedApiFilter = ['hostname', 'machineid & resolver'];
+  selectedContent = this.contentService.selectedContent;
   selectedApplicationType = signal<'ssh' | 'offline'>('ssh');
   pageSize = linkedSignal({
     source: this.selectedApplicationType,
@@ -69,24 +71,30 @@ export class MachineService {
     }),
     computation: () => 0,
   });
-  tokenApplicationResource = httpResource<any>(() => ({
-    url: this.baseUrl + 'token',
-    method: 'GET',
-    headers: this.localService.getHeaders(),
-    params: {
-      application: this.selectedApplicationType(),
-      page: this.pageIndex() + 1,
-      pagesize: this.pageSize(),
-      sortby: this.sort()?.active || 'serial',
-      sortdir: this.sort()?.direction || 'asc',
-      ...this.filterParams(),
-    },
-  }));
+  tokenApplicationResource = httpResource<any>(() => {
+    if (this.selectedContent() !== 'token_applications') {
+      return undefined;
+    }
+    return {
+      url: this.baseUrl + 'token',
+      method: 'GET',
+      headers: this.localService.getHeaders(),
+      params: {
+        application: this.selectedApplicationType(),
+        page: this.pageIndex() + 1,
+        pagesize: this.pageSize(),
+        sortby: this.sort()?.active || 'serial',
+        sortdir: this.sort()?.direction || 'asc',
+        ...this.filterParams(),
+      },
+    };
+  });
 
   constructor(
     private http: HttpClient,
     private localService: LocalService,
     private tableUtilsService: TableUtilsService,
+    private contentService: ContentService,
   ) {}
 
   postTokenOption(
