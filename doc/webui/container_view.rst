@@ -39,7 +39,7 @@ Delete
 ......
 
 By clicking on the delete button, two options appear: Deleting only the container or deleting the container with all
-contained tokens.
+contained tokens. Tokens the user is not allowed to manage will not be deleted.
 
 States
 ......

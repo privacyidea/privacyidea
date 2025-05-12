@@ -503,8 +503,10 @@ myApp.controller("containerListController", ['$scope', '$http', '$q', 'Container
 
 myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams', '$q', 'ContainerFactory',
     'AuthFactory', 'ConfigFactory', 'TokenFactory', '$state', '$rootScope', '$timeout', '$location', 'ContainerUtils',
+    'inform', 'gettextCatalog',
     function containerDetailsController($scope, $http, $stateParams, $q, ContainerFactory, AuthFactory, ConfigFactory,
-                                        TokenFactory, $state, $rootScope, $timeout, $location, ContainerUtils) {
+                                        TokenFactory, $state, $rootScope, $timeout, $location, ContainerUtils, inform,
+                                        gettextCatalog) {
         $scope.init = true;
         $scope.containerSerial = $stateParams.containerSerial;
         $scope.loggedInUser = AuthFactory.getUser();
@@ -894,13 +896,21 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         $scope.showDialogAll = false;
         $scope.deleteAllTokens = function (callback) {
             let tokenSerialList = $scope.getAllTokenSerials();
-            angular.forEach(tokenSerialList, function (token, index) {
-                if (index == tokenSerialList.length - 1) {
-                    // last token: pass callback function
-                    TokenFactory.delete(token, callback);
-                } else {
-                    TokenFactory.delete(token, function () {
-                    });
+            let tokenSerialStr = tokenSerialList.join(',');
+            TokenFactory.deleteBatch({"serial": tokenSerialStr}, function (data) {
+                // Delete container
+                callback();
+                // Error message if some tokens could not be deleted
+                let failedTokens = []
+                angular.forEach(data.result.value, function (success, serial) {
+                    if (!success) {
+                        failedTokens.push(serial);
+                    }
+                });
+                if (failedTokens.length > 0) {
+                    console.warn("Some tokens could not be deleted: " + failedTokens.join(", "));
+                    inform.add(gettextCatalog.getString("Some tokens could not be deleted: " + failedTokens.join(", ")),
+                        {type: "danger", ttl: 10000});
                 }
             });
             $scope.showDialogAll = false;
