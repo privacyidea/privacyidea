@@ -2459,9 +2459,11 @@ def hide_container_info(request=None, action=None):
     # matching hide_container_info keys, but not specific to the returned containers.
     # That is not a problem as the container info is only displayed on the container details page (where a user object
     # is available) and not in the list view. But the info is still contained in the response for the list view.
-    allowed_realms = getattr(request, "pi_allowed_container_realms", None)
     container_serial = request.all_data.get("container_serial")
-    container_realms = get_container_realms(container_serial) if container_serial else None
+    try:
+        container_realms = get_container_realms(container_serial) if container_serial else None
+    except ResourceNotFoundError:
+        container_realms = None
     hidden_fields = Match.admin_or_user(g=g, action=ACTION.HIDE_CONTAINER_INFO, user_obj=request.User,
                                         additional_realms=container_realms,
                                         container_serial=container_serial).action_values(unique=False)

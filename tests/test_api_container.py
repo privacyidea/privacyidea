@@ -2551,6 +2551,8 @@ class APIContainer(APIContainerTest):
         self.assertEqual(905, error["code"])
         self.assertEqual("ERR905: Missing parameter: 'user'", error["message"])
 
+        delete_container_by_serial(container_serial)
+
     def test_04_assign_multiple_users_fails(self):
         # Arrange
         container_serial = init_container({"type": "generic"})["container_serial"]
@@ -2569,6 +2571,8 @@ class APIContainer(APIContainerTest):
         self.assertEqual(301, error["code"])
         self.assertEqual("ERR301: This container is already assigned to another user.", error["message"])
 
+        delete_container_by_serial(container_serial)
+
     def test_05_assign_unassign_user_success(self):
         # Arrange
         container_serial = init_container({"type": "generic"})["container_serial"]
@@ -2583,6 +2587,8 @@ class APIContainer(APIContainerTest):
         result = self.request_assert_success(f'/container/{container_serial}/unassign',
                                              payload, self.at, 'POST')
         self.assertTrue(result["result"]["value"])
+
+        delete_container_by_serial(container_serial)
 
     def test_06_assign_without_realm(self):
         # If no realm is passed the default realm is set in before_request
@@ -2610,6 +2616,8 @@ class APIContainer(APIContainerTest):
         error = result["result"]["error"]
         self.assertEqual(904, error["code"])
         self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
+
+        container.delete()
 
     def test_07_unassign_fail(self):
         # Arrange
@@ -2646,6 +2654,8 @@ class APIContainer(APIContainerTest):
                                              payload, self.at, 'POST')
         self.assertFalse(result["result"]["value"])
 
+        delete_container_by_serial(container_serial)
+
     def test_08_set_realms_success(self):
         # Arrange
         self.setUp_user_realms()
@@ -2670,12 +2680,16 @@ class APIContainer(APIContainerTest):
         self.assertNotIn(self.realm1, result["value"].keys())
         self.assertNotIn(self.realm2, result["value"].keys())
 
+        delete_container_by_serial(container_serial)
+
         # Automatically add the user realms
         container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
         payload = {"realms": self.realm2}
         result = self.request_assert_success(f'/container/{container_serial}/realms', payload, self.at, 'POST')
         self.assertTrue(result["result"]["value"][self.realm1])
         self.assertTrue(result["result"]["value"][self.realm2])
+
+        delete_container_by_serial(container_serial)
 
     def test_09_set_realms_fail(self):
         # Arrange
@@ -2699,6 +2713,8 @@ class APIContainer(APIContainerTest):
         # Missing container serial
         self.request_assert_405('/container/realms', {"realms": [self.realm1]}, self.at, 'POST')
 
+        delete_container_by_serial(container_serial)
+
     def test_10_set_description_success(self):
         # Arrange
         container_serial = init_container({"type": "generic", "description": "test container"})["container_serial"]
@@ -2714,6 +2730,8 @@ class APIContainer(APIContainerTest):
         result = self.request_assert_success(f'/container/{container_serial}/description',
                                              payload, self.at, 'POST')
         self.assertTrue(result["result"]["value"])
+
+        delete_container_by_serial(container_serial)
 
     def test_11_set_description_fail(self):
         # Arrange
@@ -2737,6 +2755,8 @@ class APIContainer(APIContainerTest):
         self.request_assert_405('/container/description', {"description": "new description"},
                                 self.at, 'POST')
 
+        delete_container_by_serial(container_serial)
+
     def test_12_set_states_success(self):
         # Arrange
         container_serial = init_container({"type": "generic", "description": "test container"})["container_serial"]
@@ -2749,6 +2769,8 @@ class APIContainer(APIContainerTest):
         self.assertTrue(result["result"]["value"]["active"])
         self.assertTrue(result["result"]["value"]["damaged"])
         self.assertTrue(result["result"]["value"]["lost"])
+
+        delete_container_by_serial(container_serial)
 
     def test_13_set_states_fail(self):
         # Arrange
@@ -2773,6 +2795,8 @@ class APIContainer(APIContainerTest):
         self.assertEqual(905, error["code"])
         self.assertEqual("ERR905: The state list ['active', 'disabled'] contains exclusive states!", error["message"])
 
+        delete_container_by_serial(container_serial)
+
     def test_14_set_container_info_success(self):
         # Arrange
         container_serial = init_container({"type": "generic", "description": "test container"})["container_serial"]
@@ -2780,6 +2804,8 @@ class APIContainer(APIContainerTest):
         # Set info
         self.request_assert_success(f'/container/{container_serial}/info/key1',
                                     {"value": "value1"}, self.at, 'POST')
+
+        delete_container_by_serial(container_serial)
 
     def test_15_set_container_info_fail(self):
         # Arrange
@@ -2798,6 +2824,8 @@ class APIContainer(APIContainerTest):
         # Missing key
         self.request_assert_404_no_result(f'/container/{container_serial}/info/',
                                           {"value": "value1"}, self.at, 'POST')
+
+        delete_container_by_serial(container_serial)
 
     def test_16_add_remove_token_success(self):
         # Arrange
@@ -2851,6 +2879,8 @@ class APIContainer(APIContainerTest):
         self.assertTrue(result["result"]["value"][hotp_02_serial])
         self.assertTrue(result["result"]["value"][hotp_03_serial])
 
+        delete_container_by_serial(container_serial)
+
     def test_17_add_token_fail(self):
         # Arrange
         container_serial = init_container({"type": "generic"})["container_serial"]
@@ -2866,6 +2896,8 @@ class APIContainer(APIContainerTest):
 
         # Add token without container serial
         self.request_assert_405('/container/add', {"serial": hotp_01_serial}, self.at, 'POST')
+
+        delete_container_by_serial(container_serial)
 
     def test_18_remove_token_fail(self):
         # Arrange
@@ -2883,6 +2915,8 @@ class APIContainer(APIContainerTest):
 
         # Remove token without container serial
         self.request_assert_405('/container/remove', {"serial": hotp_01_serial}, self.at, 'POST')
+
+        delete_container_by_serial(container_serial)
 
     def test_19_get_state_types(self):
         result = self.request_assert_success('/container/statetypes', {}, self.at, 'GET')
