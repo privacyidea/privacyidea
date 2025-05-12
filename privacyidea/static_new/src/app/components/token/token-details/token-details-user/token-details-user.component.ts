@@ -119,12 +119,12 @@ export class TokenDetailsUserComponent {
       return;
     }
     this.tokenService
-      .assignUser(
-        this.tokenSerial(),
-        this.userService.selectedUsername(),
-        this.userService.selectedUserRealm(),
-        this.setPinValue(),
-      )
+      .assignUser({
+        tokenSerial: this.tokenSerial(),
+        username: this.userService.selectedUsername(),
+        realm: this.userService.selectedUserRealm(),
+        pin: this.setPinValue(),
+      })
       .subscribe({
         next: () => {
           this.setPinValue.set('');

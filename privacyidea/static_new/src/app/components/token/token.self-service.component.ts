@@ -10,6 +10,7 @@ import { TokenDetailsComponent } from './token-details/token-details.component';
 import { TokenTableComponent } from './token-table/token-table.component';
 import { VersionService } from '../../services/version/version.service';
 import { TokenEnrollmentSelfServiceComponent } from './token-enrollment/token-enrollment.self-service.component';
+import { AssignTokenSelfServiceComponent } from './assign-token-self-service/assign-token-self-service.component';
 
 @Component({
   selector: 'app-token-self-service',
@@ -24,6 +25,7 @@ import { TokenEnrollmentSelfServiceComponent } from './token-enrollment/token-en
     TokenEnrollmentSelfServiceComponent,
     TokenTableComponent,
     MatFabButton,
+    AssignTokenSelfServiceComponent,
   ],
   templateUrl: './token.self-service.component.html',
   styleUrl: './token.component.scss',

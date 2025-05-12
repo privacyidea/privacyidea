@@ -34,23 +34,7 @@ $min-width-editable: 20rem;
   }
 
   .user-pin-container {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: $gap-small;
-    padding: 0 $padding-horizontal;
-    margin-top: auto;
-
-    .user-pin-input {
-      display: flex;
-      gap: $gap-small;
-    }
-
-    .user-pin-button {
-      display: flex;
-      flex-direction: column;
-      gap: $gap-small;
-    }
+    padding: 0 1rem;
   }
 
   ::ng-deep {

@@ -10,3 +10,26 @@ $focus-outline: 3px solid var(--blue-light);
     outline: $focus-outline;
   }
 }
+
+.input-height {
+  height: 76.5px;
+}
+
+.user-pin-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: auto;
+
+  .user-pin-input {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .user-pin-button {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}

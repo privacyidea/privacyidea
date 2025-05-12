@@ -60,7 +60,8 @@ export type TokenSelectedContent =
   | 'token_challenges'
   | 'token_applications'
   | 'token_get_serial'
-  | 'token_self-service_menu';
+  | 'token_self-service_menu'
+  | 'assign_token';
 
 @Component({
   selector: 'app-token-grid',

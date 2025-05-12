@@ -33,7 +33,8 @@
             </a>
 
             <a class="tile-button"
-               mat-fab>
+               mat-fab
+               (click)="selectedContent.set('assign_token')">
               <div class="tile-title flex-column ali-center">
                 <mat-icon class="tile-icon-2">admin_panel_settings</mat-icon>
                 Assign Token
@@ -85,6 +86,9 @@
         }
         @case ("container_create") {
           <app-container-create />
+        }
+        @case ("assign_token") {
+          <app-assign-token-self-service />
         }
       }
     </div>

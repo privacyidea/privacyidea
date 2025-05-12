@@ -16,7 +16,7 @@
   </mat-checkbox>
   <div class="otp-inputs-container">
     @if (!generateOnServer()) {
-      <mat-form-field class="otp-input-form">
+      <mat-form-field class="input-height width-33">
         <mat-label>OTP Key</mat-label>
         <input matInput
                [(ngModel)]="otpKey"
@@ -25,9 +25,9 @@
         <mat-error>OTP key is <strong>required</strong></mat-error>
       </mat-form-field>
     } @else {
-      <span class="otp-input-form"></span>
+      <span class="input-height width-33"></span>
     }
-    <mat-form-field class="otp-input-form">
+    <mat-form-field class="input-height width-33">
       <mat-label>OTP length</mat-label>
       <mat-select [(ngModel)]="otpLength">
         <mat-option [value]="6">6</mat-option>
@@ -38,7 +38,7 @@
         </mat-hint>
       }
     </mat-form-field>
-    <mat-form-field class="otp-input-form">
+    <mat-form-field class="input-height width-33">
       <mat-label>Hash algorithm</mat-label>
       <mat-select [(ngModel)]="hashAlgorithm">
         <mat-option value="sha1">sha1</mat-option>

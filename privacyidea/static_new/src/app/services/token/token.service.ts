@@ -70,6 +70,7 @@ export class TokenService {
   tokenIsActive = signal(true);
   tokenIsRevoked = signal(true);
   tokenSerial = this.contentService.tokenSerial;
+  selectedContent = this.contentService.selectedContent;
   showOnlyTokenNotInContainer = linkedSignal({
     source: this.contentService.selectedContent,
     computation: (selectedContent) => {
@@ -397,20 +398,21 @@ export class TokenService {
       );
   }
 
-  assignUser(
-    tokenSerial: string,
-    username: string,
-    realm: string,
-    pin: string,
-  ) {
+  assignUser(args: {
+    tokenSerial: string;
+    username: string;
+    realm: string;
+    pin: string;
+  }) {
+    const { tokenSerial, username, realm, pin } = args;
     const headers = this.localService.getHeaders();
     return this.http
       .post(
         `${this.tokenBaseUrl}assign`,
         {
           serial: tokenSerial,
-          user: username,
-          realm: realm,
+          user: username !== '' ? username : null,
+          realm: realm !== '' ? realm : null,
           pin: pin,
         },
         { headers },
