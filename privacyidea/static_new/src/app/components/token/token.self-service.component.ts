@@ -3,7 +3,6 @@ import { TokenComponent } from './token.component';
 import { MatCardModule } from '@angular/material/card';
 import { MatIcon } from '@angular/material/icon';
 import { MatFabAnchor, MatFabButton } from '@angular/material/button';
-import { ContainerCreateComponent } from './container-create/container-create.component';
 import { ContainerDetailsComponent } from './container-details/container-details.component';
 import { ContainerTableComponent } from './container-table/container-table.component';
 import { TokenDetailsComponent } from './token-details/token-details.component';
@@ -11,6 +10,7 @@ import { TokenTableComponent } from './token-table/token-table.component';
 import { VersionService } from '../../services/version/version.service';
 import { TokenEnrollmentSelfServiceComponent } from './token-enrollment/token-enrollment.self-service.component';
 import { AssignTokenSelfServiceComponent } from './assign-token-self-service/assign-token-self-service.component';
+import { ContainerCreateSelfServiceComponent } from './container-create/container-create.self-service.component';
 
 @Component({
   selector: 'app-token-self-service',
@@ -18,7 +18,6 @@ import { AssignTokenSelfServiceComponent } from './assign-token-self-service/ass
     MatCardModule,
     MatIcon,
     MatFabAnchor,
-    ContainerCreateComponent,
     ContainerDetailsComponent,
     ContainerTableComponent,
     TokenDetailsComponent,
@@ -26,6 +25,7 @@ import { AssignTokenSelfServiceComponent } from './assign-token-self-service/ass
     TokenTableComponent,
     MatFabButton,
     AssignTokenSelfServiceComponent,
+    ContainerCreateSelfServiceComponent,
   ],
   templateUrl: './token.self-service.component.html',
   styleUrl: './token.component.scss',
