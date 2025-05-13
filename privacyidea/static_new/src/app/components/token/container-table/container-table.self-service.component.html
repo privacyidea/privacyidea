@@ -1,0 +1,102 @@
+<div aria-label="Container Table"
+     class="container-table-container">
+  <div class="filter-paginator-container">
+    <mat-paginator (page)="onPageEvent($event)"
+                   [length]="total()"
+                   [pageIndex]="pageIndex()"
+                   [pageSizeOptions]="pageSizeOptions()"
+                   [pageSize]="pageSize()"
+                   showFirstLastButtons></mat-paginator>
+  </div>
+  <table (matSortChange)="onSortEvent($event)"
+         [dataSource]="containerDataSource()"
+         [matSortDisableClear]="false"
+         aria-label="Container Data Table"
+         class="container-table"
+         mat-table
+         matSort>
+    @for (column of columnKeysMapSelfService; track column) {
+      <ng-container [matColumnDef]="column.key">
+        @if (column.key === 'select') {
+          <th *matHeaderCellDef
+              mat-header-cell
+              class="table-checkbox">
+            <mat-checkbox (change)="$event ? toggleAllRows() : null"
+                          [checked]="isAllSelected()"
+                          [indeterminate]="containerSelection().length > 0 && !isAllSelected()"
+                          [disabled]="total() === 0"></mat-checkbox>
+          </th>
+        } @else {
+          <th *matHeaderCellDef
+              attr.aria-label="{{ column.label }} Header"
+              mat-header-cell
+              mat-sort-header>
+            {{ column.label }}
+          </th>
+        }
+        <td *matCellDef="let element; let row"
+            attr.aria-label="{{ column.label }} Cell"
+            mat-cell
+            [ngClass]="{
+              'width-18rem': column.key === 'description',
+              'table-checkbox': column.key === 'select'
+            }">
+          <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+            @switch (column.key) {
+              @case ('select') {
+                <mat-checkbox (change)="$event ? toggleRow(row) : null"
+                              (click)="$event.stopPropagation()"
+                              [checked]="containerSelection().includes(row)"
+                              [disabled]="total() === 0"></mat-checkbox>
+              }
+              @case ("serial") {
+                <a attr.aria-label="{{ column.label }} Link"
+                   (click)="contentService.containerSelected(element.serial)"> {{
+                    element[column.key]
+                  }} </a>
+                @if (element.serial !== "") {
+                  <app-copy-button [copyText]="element.serial"></app-copy-button>
+                }
+              }
+              @case ("realms") {
+                <div [ngClass]="(element[column.key]?.length || 0) > 1 ? 'realm-list' : 'realm'">
+                  @for (realm of element[column.key]; track realm; let idx = $index) {
+                    <a attr.aria-label="{{ column.label }} Link"
+                       href="#"> {{ realm }} </a><br style="margin-top: 3px" />
+                  }
+                </div>
+              }
+              @case ("states") {
+                <span (click)="handleStateClick(element)"
+                      [ngClass]="tableUtilsService.getSpanClassForState(element[column.key][0], true)">
+                  {{ tableUtilsService.getDisplayTextForState(element[column.key][0]) }}
+                </span>
+              }
+              @default {
+                @if (tableUtilsService.isLink(column.key)) {
+                  <a attr.aria-label="{{ column.label }} Link"
+                     href="#"> {{ element[column.key] }} </a>
+                } @else {
+                  {{ element[column.key] }}
+                }
+              }
+            }
+          </div>
+        </td>
+      </ng-container>
+    }
+    <tr *matHeaderRowDef="columnKeysSelfService"
+        aria-label="Header Row"
+        mat-header-row></tr>
+    <tr *matRowDef="let row; columns: columnKeysSelfService"
+        aria-label="Data Row"
+        mat-row></tr>
+    <tr *matNoDataRow
+        aria-label="No Data Row">
+      <td [attr.colspan]="columnKeysSelfService.length"
+          aria-label="No Data Cell">
+        No data matching the filter.
+      </td>
+    </tr>
+  </table>
+</div>
