@@ -57,7 +57,7 @@ def get_groups():
     
     return list(groups)
 
-def test_user_group_fetching_config(user_dn,resolver_name,dn,attr):
+def user_group_fetching_config_test(user_dn,resolver_name,dn,attr):
     resolver = _get_group_resolver(resolver_name)
     if not resolver:
         return [] 
@@ -204,7 +204,7 @@ def save_risk_score(key: str,risk_score: str,config_key: str):
     exists,_ = _check_if_key_exists(key,groups)
     
     if exists:
-        return ParameterError(f"{key} already has a risk score. Please remove it first.")
+        raise ParameterError(f"{key} already has a risk score. Please remove it first.")
     
     groups.append(f"{key};{score}")
     set_privacyidea_config(config_key,",".join(groups),typ="public")
@@ -215,7 +215,7 @@ def remove_risk_score(key: str,config_key: str):
     exists,i = _check_if_key_exists(key,groups)
     
     if not exists:
-        return ParameterError(f"{key} does not exist")
+        raise ParameterError(f"{key} does not exist")
     
     groups.pop(i)
     set_privacyidea_config(config_key,",".join(groups),typ="public")
@@ -289,7 +289,7 @@ def _check_if_key_exists(key: str,elements: list):
     for i,element in enumerate(elements):
         mch = match(rf"{key};(\d+(\.\d+)?)",element)
         if mch:
-            log.info(f"found match! {mch.groups()}")
+            log.debug(f"found match! {mch.groups()}")
             return True,i
             
     return False,None   

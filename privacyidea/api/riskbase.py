@@ -1,10 +1,9 @@
 from flask import (Blueprint, request)
 
-from privacyidea.api.auth import admin_required
 from privacyidea.lib.error import AuthError, ParameterError, PolicyError, ResourceNotFoundError, privacyIDEAError
 from privacyidea.api.lib.utils import required,send_result,getParam
 from privacyidea.lib.config import get_from_config, get_token_types,set_privacyidea_config,delete_privacyidea_config
-from privacyidea.lib.riskbase import LDAP_GROUP_RESOLVER_NAME_STR,LDAP_USER_GROUP_DN_STR,LDAP_USER_GROUP_SEARCH_ATTR_STR,CONFIG_GROUPS_RISK_SCORES_KEY,CONFIG_IP_RISK_SCORES_KEY,CONFIG_SERVICES_RISK_SCORES_KEY,ip_version,get_user_groups,calculate_risk,get_groups,get_risk_scores,save_risk_score,remove_risk_score,test_user_group_fetching_config
+from privacyidea.lib.riskbase import LDAP_GROUP_RESOLVER_NAME_STR,LDAP_USER_GROUP_DN_STR,LDAP_USER_GROUP_SEARCH_ATTR_STR,CONFIG_GROUPS_RISK_SCORES_KEY,CONFIG_IP_RISK_SCORES_KEY,CONFIG_SERVICES_RISK_SCORES_KEY,ip_version,calculate_risk,get_groups,get_risk_scores,save_risk_score,remove_risk_score,user_group_fetching_config_test
 from privacyidea.api.before_after import after_request, auth_error, before_admin_request, internal_error, not_implemented_error, policy_error, privacyidea_error, resource_not_found_error
 
 class RiskBaseBlueprint(Blueprint):
@@ -137,7 +136,7 @@ class RiskBaseBlueprint(Blueprint):
         attr = getParam(params,"user_to_group_search_attr",allow_empty=False)
         
         try:
-            groups = test_user_group_fetching_config(user_dn,resolver_name,base_dn,attr)
+            groups = user_group_fetching_config_test(user_dn,resolver_name,base_dn,attr)
             desc = f"Fetched {len(groups)} group(s). Check the browser console for a full list."
         except:
             desc = "Test failed. Check privacyIDEA's logs for more info."
@@ -161,7 +160,7 @@ class RiskBaseBlueprint(Blueprint):
         service = getParam(params,"service")
         ip = getParam(params,"ip")
         
-        r = calculate_risk(ip,service,[userType])
+        r = calculate_risk(ip,service,[userType] if userType != None else None)
         
         return send_result(r)
     
@@ -174,8 +173,8 @@ class RiskBaseBlueprint(Blueprint):
         """
         
         param = request.all_data
-        user_group = getParam(param,"user_group",required)
-        score = getParam(param,"risk_score",required)
+        user_group = getParam(param,"user_group",required,allow_empty=False)
+        score = getParam(param,"risk_score",required,allow_empty=False)
         
         save_risk_score(user_group,score,CONFIG_GROUPS_RISK_SCORES_KEY)
         
@@ -189,8 +188,8 @@ class RiskBaseBlueprint(Blueprint):
         :jsonparam risk_score: the risk score for the service
         """
         param = request.all_data
-        service = getParam(param,"service",required)
-        score = getParam(param,"risk_score",required)
+        service = getParam(param,"service",required,allow_empty=False)
+        score = getParam(param,"risk_score",required,allow_empty=False)
         
         save_risk_score(service,score,CONFIG_SERVICES_RISK_SCORES_KEY)
         
@@ -233,7 +232,7 @@ class RiskBaseBlueprint(Blueprint):
         :jsonparam identifier: the name of the group
         """
         param = request.all_data
-        identifier = getParam(param,"identifier")
+        identifier = getParam(param,"identifier",required,allow_empty=False)
         
         remove_risk_score(identifier,CONFIG_GROUPS_RISK_SCORES_KEY)
         
@@ -246,7 +245,7 @@ class RiskBaseBlueprint(Blueprint):
         :jsonparam identifier: the name of the service
         """
         param = request.all_data
-        identifier = getParam(param,"identifier")
+        identifier = getParam(param,"identifier",required,allow_empty=False)
         
         remove_risk_score(identifier,CONFIG_SERVICES_RISK_SCORES_KEY)
         
@@ -259,7 +258,7 @@ class RiskBaseBlueprint(Blueprint):
         :jsonparam identifier: the IP or subnet
         """
         param = request.all_data
-        identifier = getParam(param,"identifier")
+        identifier = getParam(param,"identifier",required,allow_empty=False)
         
         remove_risk_score(identifier,CONFIG_IP_RISK_SCORES_KEY)
         
