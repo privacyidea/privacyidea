@@ -1,36 +1,18 @@
-from privacyidea.lib.config import delete_privacyidea_config, set_privacyidea_config
+from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.realm import delete_realm, set_realm
 from privacyidea.lib.resolver import delete_resolver, save_resolver
 from tests import ldap3mock
 from tests.base import MyTestCase
-from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver
-from privacyidea.lib.riskbase import CONFIG_GROUPS_RISK_SCORES_KEY, CONFIG_IP_RISK_SCORES_KEY, CONFIG_SERVICES_RISK_SCORES_KEY, DEFAULT_IP_RISK, DEFAULT_SERVICE_RISK, DEFAULT_USER_RISK, _fetch_groups, _get_group_resolver,get_groups,LDAP_GROUP_RESOLVER_NAME_STR,LDAP_USER_GROUP_SEARCH_ATTR_STR,LDAP_USER_GROUP_DN_STR, get_ip_risk_score, get_risk_score, get_service_risk_score, get_user_groups, get_user_risk_score, ip_version, remove_risk_score, sanitize_risk_score, save_risk_score, user_group_fetching_config_test
+from privacyidea.lib.riskbase import CONFIG_GROUPS_RISK_SCORES_KEY, CONFIG_IP_RISK_SCORES_KEY, CONFIG_SERVICES_RISK_SCORES_KEY, DEFAULT_IP_RISK, DEFAULT_SERVICE_RISK, DEFAULT_USER_RISK, get_group_resolvers,get_groups, get_ip_risk_score, get_risk_score, get_service_risk_score, get_user_groups, get_user_risk_score, ip_version, remove_group_resolver, remove_risk_score, sanitize_risk_score, save_group_resolver, save_risk_score
 
 
-LDAPDirectory = [{"dn": "uid=jane.smith,ou=users,dc=example,dc=org",
-                 "attributes": {'cn': 'jane',
-                                "sn": "Smith",
-                                "uid": "jane.smith",
-                                'userPassword': 'janepassword',
-                                "email": "jane@example.org",
-                                "accountExpires": 131024988000000000,
-                                "objectClass": ["top","person","organizationalPerson","inetOrgPerson"]
-                                }},
-                 {"dn": 'uid=john.doe,ou=users,dc=example,dc=org',
+LDAPDirectory = [{"dn": 'uid=john.doe,ou=users,dc=example,dc=org',
                   "attributes": {'cn': 'john',
                                  "sn": "doe",
                                  "uid": "john.doe",
                                  "email": "john@example.org",
                                  'userPassword': 'johnpassword',
-                                 "accountExpires": 9223372036854775807,
-                                 "objectClass": ["top","person","organizationalPerson","inetOrgPerson"]
-                                 }},
-                 {"dn": 'uid=test.test,ou=users,dc=example,dc=org',
-                  "attributes": {'cn': 'test',
-                                 "sn": "test",
-                                 "email": "test.test@example.org",
-                                 'userPassword': 'test',
                                  "accountExpires": 9223372036854775807,
                                  "objectClass": ["top","person","organizationalPerson","inetOrgPerson"]
                                  }},
@@ -67,27 +49,53 @@ class RiskbaseTestCase(MyTestCase):
         params["type"] = "ldapresolver"
         rid = save_resolver(params)
         self.assertTrue(rid > 0)
-        (added, failed) = set_realm("ldap", [{'name': "ldapresolver"}])
-        self.assertEqual(len(added), 1)
+        
+        paramsUsers = ({'LDAPURI': 'ldap://localhost',
+                   'LDAPBASE': 'dc=example,dc=org',
+                   'BINDDN': 'uid=john.doe,ou=users,dc=example,dc=org',
+                   'BINDPW': 'johnpassword',
+                   'LOGINNAMEATTRIBUTE': 'cn',
+                   'LDAPSEARCHFILTER': '(objectClass=inetOrgPerson)', 
+                   'UIDTYPE': 'DN',
+                   })
+        
+        user_resolver_name = "users"
+
+        paramsUsers["resolver"] = user_resolver_name
+        paramsUsers["type"] = "ldapresolver"
+        rid = save_resolver(paramsUsers)
+        self.assertTrue(rid > 0)
+        
+        (added, failed) = set_realm("ldap", [{'name': "ldapresolver"},{"name": user_resolver_name}])
+        self.assertEqual(len(added), 2)
         self.assertEqual(len(failed), 0)
         
-        set_privacyidea_config(LDAP_GROUP_RESOLVER_NAME_STR,"ldapresolver")
+        save_group_resolver("ldapresolver",user_resolver_name)
         groups = get_groups()
         self.assertEqual(len(groups),3,len(groups))
         self.assertIn("professor",groups,"Professor was not fetched")
         self.assertIn("student",groups,"Student was not fetched")
         self.assertIn("admin",groups,"Admin was not fetched")
         
-        #test with no resolver
-        delete_privacyidea_config(LDAP_GROUP_RESOLVER_NAME_STR)
+        remove_group_resolver("ldapresolver",user_resolver_name)
+        
+        #non existing group resolver
+        save_group_resolver("none",user_resolver_name)
         groups = get_groups()
         self.assertEqual(len(groups),0,groups)
         
+        remove_group_resolver("none",user_resolver_name)
+        
+        #test with no resolver
+        # groups = get_groups()
+        # self.assertEqual(len(groups),0,groups)
+        
         delete_realm("ldap")
         delete_resolver("ldapresolver")
+        delete_resolver(user_resolver_name)
         
     @ldap3mock.activate
-    def test_01_test_user_group_fetch(self):
+    def test_01_group_resolver(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
         paramsGroup = ({'LDAPURI': 'ldap://localhost',
                    'LDAPBASE': 'dc=example,dc=org',
@@ -100,36 +108,58 @@ class RiskbaseTestCase(MyTestCase):
                    'MULTIVALUEATTRIBUTES': '["member"]',
                    })
         
-        resolver_name = "groups"
-        paramsGroup["resolver"] = resolver_name
+        group_resolver_name = "groups"
+        paramsGroup["resolver"] = group_resolver_name
         paramsGroup["type"] = "ldapresolver"
         rid = save_resolver(paramsGroup)
         self.assertTrue(rid > 0)
         
-        (added, failed) = set_realm("ldap", [{'name': resolver_name}])
-        self.assertEqual(len(added), 1)
+        paramsUsers = ({'LDAPURI': 'ldap://localhost',
+                   'LDAPBASE': 'dc=example,dc=org',
+                   'BINDDN': 'uid=john.doe,ou=users,dc=example,dc=org',
+                   'BINDPW': 'johnpassword',
+                   'LOGINNAMEATTRIBUTE': 'cn',
+                   'LDAPSEARCHFILTER': '(objectClass=inetOrgPerson)', 
+                   'UIDTYPE': 'DN',
+                   })
+        
+        user_resolver_name = "users"
+
+        paramsUsers["resolver"] = user_resolver_name
+        paramsUsers["type"] = "ldapresolver"
+        rid = save_resolver(paramsUsers)
+        self.assertTrue(rid > 0)
+        
+        (added, failed) = set_realm("ldap", [{'name': group_resolver_name},{"name": user_resolver_name}])
+        self.assertEqual(len(added), 2)
         self.assertEqual(len(failed), 0)
+    
+        resolvers = get_group_resolvers()
+        self.assertEqual(len(resolvers),0,resolvers)
         
-        #test with unexisting resolver
-        groups = user_group_fetching_config_test("jane.smith","resolver")
-        self.assertEqual(len(groups),0,groups)
+        save_group_resolver(group_resolver_name,user_resolver_name)
+        resolvers = get_group_resolvers()
+        self.assertEqual(len(resolvers),1,resolvers)
+        r = resolvers[0]
+        self.assertEqual(r[0],user_resolver_name,r[0])
+        self.assertEqual(r[1],group_resolver_name,r[1])
         
-        groups = user_group_fetching_config_test("jane.smith",resolver_name)
-        self.assertEqual(len(groups),2,groups)
-        self.assertIn("professor",groups)
-        self.assertIn("student",groups)
+        #try to attach the same resolvers
+        with self.assertRaises(ParameterError):
+            save_group_resolver(group_resolver_name,user_resolver_name)
+            
+        remove_group_resolver(group_resolver_name,user_resolver_name)
+        resolvers = get_group_resolvers()
+        self.assertEqual(len(resolvers),0,resolvers)
         
-        groups = user_group_fetching_config_test("test.test",resolver_name)
-        self.assertEqual(len(groups),1,groups)
-        self.assertIn("admin",groups)
-        
-        #try with a non existing user
-        groups = user_group_fetching_config_test("my.user",resolver_name)
-        self.assertEqual(len(groups),0,groups)
-        
+        #try to remove non existing resolvers
+        with self.assertRaises(ParameterError):
+            remove_group_resolver(group_resolver_name,user_resolver_name)
+            
         delete_realm("ldap")
-        delete_resolver(resolver_name)
-        
+        delete_resolver(group_resolver_name)
+        delete_resolver(user_resolver_name)
+    
     @ldap3mock.activate
     def test_02_get_user_groups(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
@@ -148,24 +178,48 @@ class RiskbaseTestCase(MyTestCase):
         params["type"] = "ldapresolver"
         rid = save_resolver(params)
         self.assertTrue(rid > 0)
-        (added, failed) = set_realm("ldap", [{'name': resolver_name}])
-        self.assertEqual(len(added), 1)
+        
+        paramsUsers = ({'LDAPURI': 'ldap://localhost',
+                   'LDAPBASE': 'dc=example,dc=org',
+                   'BINDDN': 'uid=john.doe,ou=users,dc=example,dc=org',
+                   'BINDPW': 'johnpassword',
+                   'LOGINNAMEATTRIBUTE': 'cn',
+                   'LDAPSEARCHFILTER': '(objectClass=inetOrgPerson)', 
+                   'UIDTYPE': 'DN',
+                   })
+        
+        user_resolver_name = "users"
+
+        paramsUsers["resolver"] = user_resolver_name
+        paramsUsers["type"] = "ldapresolver"
+        rid = save_resolver(paramsUsers)
+        self.assertTrue(rid > 0)
+        
+        (added, failed) = set_realm("ldap", [{'name': resolver_name},{"name": user_resolver_name}])
+        self.assertEqual(len(added), 2)
         self.assertEqual(len(failed), 0)
         
-        set_privacyidea_config(LDAP_GROUP_RESOLVER_NAME_STR,resolver_name)
+        save_group_resolver(resolver_name,user_resolver_name)
         
-        groups = get_user_groups("jane.smith")
+        groups = get_user_groups("jane.smith",user_resolver_name)
         self.assertEqual(len(groups),2,groups)
         self.assertIn("professor",groups)
         self.assertIn("student",groups)
         
-        #delete resolver name from config
-        delete_privacyidea_config(LDAP_GROUP_RESOLVER_NAME_STR)
-        groups = get_user_groups("jane.smith")
+        groups = get_user_groups("no.user",user_resolver_name)
         self.assertEqual(len(groups),0,groups)
 
+        groups = get_user_groups("jane.smith","no resolver")
+        self.assertEqual(len(groups),0,groups)
+
+        remove_group_resolver(resolver_name,user_resolver_name)
+        
+        groups = get_user_groups("jane.smith","no resolver")
+        self.assertEqual(len(groups),0,groups)
+        
         delete_realm("ldap")
         delete_resolver(resolver_name)
+        delete_resolver(user_resolver_name)
         
     def test_03_get_save_remove_risk_scores(self):
         key = "myKey"
@@ -348,5 +402,4 @@ class RiskbaseTestCase(MyTestCase):
         
         r = ip_version(invalid_subnetv6)
         self.assertEqual(r,0,r)
-        
         
