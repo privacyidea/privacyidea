@@ -1,6 +1,6 @@
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.realm import set_realm
-from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.realm import delete_realm, set_realm
+from privacyidea.lib.resolver import delete_resolver, save_resolver
 from privacyidea.lib.riskbase import DEFAULT_IP_RISK, DEFAULT_SERVICE_RISK, DEFAULT_USER_RISK, LDAP_GROUP_RESOLVER_NAME_STR, LDAP_USER_GROUP_DN_STR, LDAP_USER_GROUP_SEARCH_ATTR_STR, get_ip_risk_score, get_service_risk_score, get_user_risk_score
 from tests import ldap3mock
 from tests.base import MyApiTestCase
@@ -34,39 +34,22 @@ LDAPDirectory = [{"dn": "uid=jane.smith,ou=users,dc=example,dc=org",
                  #groups
                  {"dn": "cn=admin,ou=groups,dc=example,dc=org",
                   "attributes": {"cn": "admin",
-                                 "member": ["uid=test.test,ou=users,dc=example,dc=org"],
+                                 "member": ["test.test"], #the ldap3mock parser does not like filters with multiple "=", so we this instead of uid=test.test,ou=users,dc=example,dc=org
                                  "objectClass": ["top","groupOfNames"]
                                  }},
                  {"dn": "cn=professor,ou=groups,dc=example,dc=org",
                   "attributes": {"cn": "professor",
-                                 "member": ["uid=jane.smith,ou=users,dc=example,dc=org", "uid=john.doe,ou=users,dc=example,dc=org"],
+                                 "member": ["jane.smith", "john.doe"],
                                  "objectClass": ["top","groupOfNames"]
                                  }},
                  {"dn": "cn=student,ou=groups,dc=example,dc=org",
                   "attributes": {"cn": "student",
-                                 "member": ["uid=jane.smith,ou=users,dc=example,dc=org"],
+                                 "member": ["jane.smith"],
                                  "objectClass": ["top","groupOfNames"]
                                  }}]
 
 class RiskbaseTestCase(MyApiTestCase):
     def test_00_group_connection_config(self):
-        # ldap3mock.setLDAPDirectory(LDAPDirectory)
-        # params = ({'LDAPURI': 'ldap://localhost',
-        #            'LDAPBASE': 'dc=example,dc=org',
-        #            'BINDDN': 'uid=john.doe,ou=users,dc=example,dc=org',
-        #            'BINDPW': 'johnpassword',
-        #            'LOGINNAMEATTRIBUTE': 'cn',
-        #            'LDAPSEARCHFILTER': '(objectClass=groupOfNames)', 
-        #            'UIDTYPE': 'DN',
-        #            })
-        # params["resolver"] = "ldapresolver"
-        # params["type"] = "ldapresolver"
-        # rid = save_resolver(params)
-        # self.assertTrue(rid > 0)
-        # (added, failed) = set_realm("ldap", [{'name': "ldapresolver"}])
-        # self.assertEqual(len(added), 1)
-        # self.assertEqual(len(failed), 0)
-        
         #test with no parameters
         with self.app.test_request_context("/riskbase/groups",
                                            method="POST",
@@ -281,3 +264,60 @@ class RiskbaseTestCase(MyApiTestCase):
             self.assertEqual(res.status_code,200)
             r = res.json
             self.assertEqual(r["result"]["value"],DEFAULT_USER_RISK + DEFAULT_SERVICE_RISK + DEFAULT_IP_RISK)
+            
+    @ldap3mock.activate
+    def test_02_test_fetch_user_group(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        params = ({'LDAPURI': 'ldap://localhost',
+                   'LDAPBASE': 'dc=example,dc=org',
+                   'BINDDN': 'uid=john.doe,ou=users,dc=example,dc=org',
+                   'BINDPW': 'johnpassword',
+                   'LOGINNAMEATTRIBUTE': 'cn',
+                   'LDAPSEARCHFILTER': '(objectClass=groupOfNames)', 
+                   'UIDTYPE': 'DN',
+                   'USERINFO': '{ "member": "member" }',
+                   'MULTIVALUEATTRIBUTES': '["member"]',
+                   })
+        resolver_name = "groups"
+        params["resolver"] = resolver_name
+        params["type"] = "ldapresolver"
+        rid = save_resolver(params)
+        self.assertTrue(rid > 0)
+        (added, failed) = set_realm("ldap", [{'name': resolver_name}])
+        self.assertEqual(len(added), 1)
+        self.assertEqual(len(failed), 0)
+        
+        #non-existing resolver
+        with self.app.test_request_context("/riskbase/groups/test",method="POST",
+                                           headers={"Authorization": self.at},
+                                           data={"resolver_name": "my resolver",
+                                                 "user_dn": "jane.smith"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code,200)
+            groups = res.json["result"]["value"]
+            self.assertEqual(len(groups),0,groups)
+            
+        #non-existing user
+        with self.app.test_request_context("/riskbase/groups/test",method="POST",
+                                           headers={"Authorization": self.at},
+                                           data={"resolver_name": resolver_name,
+                                                 "user_dn": "my.user"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code,200)
+            groups = res.json["result"]["value"]
+            self.assertEqual(len(groups),0,groups)
+            
+        #existing resolver and user
+        with self.app.test_request_context("/riskbase/groups/test",method="POST",
+                                           headers={"Authorization": self.at},
+                                           data={"resolver_name": resolver_name,
+                                                 "user_dn": "jane.smith"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code,200)
+            groups = res.json["result"]["value"]
+            self.assertEqual(len(groups),2,groups)
+        
+        delete_realm("ldap")
+        delete_resolver(resolver_name)
+        
+        

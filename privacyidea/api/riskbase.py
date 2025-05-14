@@ -94,28 +94,8 @@ class RiskBaseBlueprint(Blueprint):
         """
         params = request.all_data
         resolver_name = getParam(params,"resolver_name",required,allow_empty=False)
-        user_to_group_search_attr = getParam(params,"user_to_group_search_attr") 
-        user_to_group_base_dn = getParam(params,"user_to_group_dn")
         
-        parameters = {LDAP_GROUP_RESOLVER_NAME_STR: resolver_name}
-        
-        if user_to_group_base_dn:
-            parameters[LDAP_USER_GROUP_DN_STR] = user_to_group_base_dn 
-        else:
-            # check if key exists in the DB before deleting
-            v = get_from_config(LDAP_USER_GROUP_DN_STR)
-            if v:
-                delete_privacyidea_config(LDAP_USER_GROUP_DN_STR)
-
-        if user_to_group_search_attr:
-            parameters[LDAP_USER_GROUP_SEARCH_ATTR_STR] = user_to_group_search_attr
-        else:
-            v = get_from_config(LDAP_USER_GROUP_SEARCH_ATTR_STR)
-            if v:
-                delete_privacyidea_config(LDAP_USER_GROUP_SEARCH_ATTR_STR)
-            
-        for key,value in parameters.items():
-            set_privacyidea_config(key,value)
+        set_privacyidea_config(LDAP_GROUP_RESOLVER_NAME_STR,resolver_name)
             
         return send_result(True)
         
@@ -131,12 +111,10 @@ class RiskBaseBlueprint(Blueprint):
         """
         params = request.all_data
         resolver_name = getParam(params,"resolver_name",required,allow_empty=False)
-        user_dn = getParam(params,"user_dn",allow_empty=False)
-        base_dn = getParam(params,"user_to_group_dn",allow_empty=False)
-        attr = getParam(params,"user_to_group_search_attr",allow_empty=False)
+        user_dn = getParam(params,"user_dn",required,allow_empty=False)
         
         try:
-            groups = user_group_fetching_config_test(user_dn,resolver_name,base_dn,attr)
+            groups = user_group_fetching_config_test(user_dn,resolver_name)
             desc = f"Fetched {len(groups)} group(s). Check the browser console for a full list."
         except:
             desc = "Test failed. Check privacyIDEA's logs for more info."

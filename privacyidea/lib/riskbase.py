@@ -57,14 +57,12 @@ def get_groups():
     
     return list(groups)
 
-def user_group_fetching_config_test(user_dn,resolver_name,dn,attr):
+def user_group_fetching_config_test(user_dn,resolver_name):
     resolver = _get_group_resolver(resolver_name)
     if not resolver:
         return [] 
     
-    base = dn or resolver.basedn
-    search_attr = attr or "member"
-    groups = _fetch_groups(user_dn,resolver,base,search_attr)
+    groups = _fetch_groups(user_dn,resolver)
     return groups
 
 def get_user_groups(user_dn):
@@ -80,10 +78,7 @@ def get_user_groups(user_dn):
     if not resolver:
         return []
 
-    base = get_from_config(LDAP_USER_GROUP_DN_STR,default=resolver.basedn)
-    search_attr = get_from_config(LDAP_USER_GROUP_SEARCH_ATTR_STR,default="member")
-    
-    groups = _fetch_groups(user_dn,resolver,base,search_attr)
+    groups = _fetch_groups(user_dn,resolver)
     return groups
 
 def get_ip_risk_score(ip: str):
@@ -262,25 +257,22 @@ def _get_group_resolver(resolver_name=None):
     resolver: IdResolver = get_resolver_object(rname)
     
     if not resolver:
-        log.error("Can not find resolver with name {0!s}!",rname)
+        log.error(f"Can not find resolver with name {rname}!")
+        return None
         
     return resolver 
 
-def _fetch_groups(user_dn,resolver,base,search_attr):
-    search_filter = f"({search_attr}={user_dn})"
-    entries = resolver._search(base,search_filter,resolver.loginname_attribute)
+def _fetch_groups(user_dn,resolver: IdResolver):
+    entries = resolver.getUserList({"member": user_dn})
     
     if len(entries) == 0:
-        log.debug(f"Found 0 entries for group search. Base: {base}. Attr: {search_attr}. Filter: {search_filter}")
         return []
-    
+
     groups = set()
     for entry in entries:
-        attrs = entry.get("attributes", {})
-        for loginname in resolver.loginname_attribute:
-            name = attrs.get(loginname,"")
-            if name:
-                groups.update(name)
+        name = entry.get("username",None)
+        if name:
+            groups.add(name)
     
     log.debug(f"Found groups: {list(groups)}")
     return list(groups)
