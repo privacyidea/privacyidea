@@ -73,7 +73,7 @@ export class ContainerCreateComponent {
   description = signal('');
   selectedTemplate = signal('');
   templateOptions = linkedSignal({
-    source: () => this.containerService.templatesResource.value(),
+    source: this.containerService.templatesResource.value,
     computation: (templates: any) => templates?.result?.value?.templates ?? [],
   });
   onlyAddToRealm = signal(false);

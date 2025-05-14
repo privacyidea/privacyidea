@@ -23,6 +23,7 @@ import { Observable, switchMap } from 'rxjs';
 import { EditButtonsComponent } from '../../../shared/edit-buttons/edit-buttons.component';
 import { NgClass } from '@angular/common';
 import { OverflowService } from '../../../../services/overflow/overflow.service';
+import { AuthService } from '../../../../services/auth/auth.service';
 
 @Component({
   selector: 'app-token-details-info',
@@ -49,7 +50,7 @@ import { OverflowService } from '../../../../services/overflow/overflow.service'
 })
 export class TokenDetailsInfoComponent {
   protected readonly Object = Object;
-  @Input() tokenSerial!: WritableSignal<string>;
+  tokenSerial = this.tokenService.tokenSerial;
   @Input() infoData!: WritableSignal<
     {
       value: any;
@@ -68,7 +69,7 @@ export class TokenDetailsInfoComponent {
   @Input() isEditingInfo!: WritableSignal<boolean>;
   @Input() isEditingUser!: WritableSignal<boolean>;
   newInfo: WritableSignal<{ key: string; value: string }> = linkedSignal({
-    source: () => this.isEditingInfo,
+    source: this.isEditingInfo,
     computation: () => {
       return { key: '', value: '' };
     },
@@ -77,9 +78,13 @@ export class TokenDetailsInfoComponent {
   constructor(
     private tokenService: TokenService,
     protected overflowService: OverflowService,
+    protected authService: AuthService,
   ) {}
 
   toggleInfoEdit(): void {
+    if (this.isEditingInfo()) {
+      this.tokenService.tokenDetailResource.reload();
+    }
     this.isEditingInfo.update((b) => !b);
   }
 

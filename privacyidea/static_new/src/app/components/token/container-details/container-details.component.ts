@@ -43,6 +43,7 @@ import { CopyButtonComponent } from '../../shared/copy-button/copy-button.compon
 import { UserService } from '../../../services/user/user.service';
 import { OverflowService } from '../../../services/overflow/overflow.service';
 import { TokenSelectedContent } from '../token.component';
+import { AuthService } from '../../../services/auth/auth.service';
 
 export const containerDetailsKeyMap = [
   { key: 'type', label: 'Type' },
@@ -242,6 +243,7 @@ export class ContainerDetailsComponent {
     protected realmService: RealmService,
     protected tokenService: TokenService,
     protected userService: UserService,
+    private authService: AuthService,
   ) {
     effect(() => {
       this.showOnlyTokenNotInContainer();
@@ -252,7 +254,12 @@ export class ContainerDetailsComponent {
   }
 
   isEditableElement(key: string) {
-    return key === 'description' || key === 'realms';
+    const role = this.authService.role();
+    if (role === 'admin') {
+      return key === 'description' || key === 'realms';
+    } else {
+      return key === 'description';
+    }
   }
 
   cancelContainerEdit(element: any) {

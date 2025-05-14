@@ -20,7 +20,7 @@ export class UserService {
   });
 
   selectedUsername = linkedSignal({
-    source: () => this.selectedUserRealm(),
+    source: this.selectedUserRealm,
     computation: () => '',
   });
 

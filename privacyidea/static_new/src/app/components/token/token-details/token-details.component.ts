@@ -36,6 +36,7 @@ import { OverflowService } from '../../../services/overflow/overflow.service';
 import { MatDivider } from '@angular/material/divider';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 import { ContentService } from '../../../services/content/content.service';
+import { AuthService } from '../../../services/auth/auth.service';
 
 export const tokenDetailsKeyMap = [
   { key: 'tokentype', label: 'Type' },
@@ -169,7 +170,7 @@ export class TokenDetailsComponent {
   tokengroupOptions = signal<string[]>([]);
   selectedTokengroup = signal<string[]>([]);
   tokenType = linkedSignal({
-    source: () => this.tokenDetails,
+    source: this.tokenDetails,
     computation: () => this.tokenDetails()?.tokentype ?? '',
   });
   userRealm = '';
@@ -190,6 +191,7 @@ export class TokenDetailsComponent {
     protected overflowService: OverflowService,
     protected tableUtilsService: TableUtilsService,
     protected contentService: ContentService,
+    private authService: AuthService,
   ) {
     effect(() => {
       if (!this.tokenDetails()) return;
@@ -301,16 +303,21 @@ export class TokenDetailsComponent {
   }
 
   isEditableElement(key: any) {
-    return (
-      key === 'maxfail' ||
-      key === 'count_window' ||
-      key === 'sync_window' ||
-      key === 'description' ||
-      key === 'info' ||
-      key === 'realms' ||
-      key === 'tokengroup' ||
-      key === 'container_serial'
-    );
+    const role = this.authService.role();
+    if (role === 'admin') {
+      return (
+        key === 'maxfail' ||
+        key === 'count_window' ||
+        key === 'sync_window' ||
+        key === 'description' ||
+        key === 'info' ||
+        key === 'realms' ||
+        key === 'tokengroup' ||
+        key === 'container_serial'
+      );
+    } else {
+      return key === 'description';
+    }
   }
 
   isNumberElement(key: any) {

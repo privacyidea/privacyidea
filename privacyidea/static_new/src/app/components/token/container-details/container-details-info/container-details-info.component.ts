@@ -66,7 +66,7 @@ export class ContainerDetailsInfoComponent {
   @Input() isEditingInfo!: WritableSignal<boolean>;
   @Input() isEditingUser!: WritableSignal<boolean>;
   newInfo: WritableSignal<{ key: string; value: string }> = linkedSignal({
-    source: () => this.isEditingInfo,
+    source: this.isEditingInfo,
     computation: () => {
       return { key: '', value: '' };
     },

@@ -32,7 +32,7 @@ export class TokenCardComponent {
   states = this.containerService.states;
   isProgrammaticChange = this.contentService.isProgrammaticTabChange;
   selectedTabIndex = linkedSignal({
-    source: () => this.selectedContent(),
+    source: this.selectedContent,
     computation: (selectedContent) => {
       if (selectedContent.startsWith('container')) {
         return 1;
