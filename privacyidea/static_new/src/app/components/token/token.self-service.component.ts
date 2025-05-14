@@ -11,6 +11,7 @@ import { TokenTableSelfServiceComponent } from './token-table/token-table.self-s
 import { ContainerTableSelfServiceComponent } from './container-table/container-table.self-service.component';
 import { TokenDetailsSelfServiceComponent } from './token-details/token-details.self-service.component';
 import { ContainerDetailsSelfServiceComponent } from './container-details/container-details.self-service.component';
+import { componentFadeAnimation } from '../../../styles/animations/animations';
 
 @Component({
   selector: 'app-token-self-service',
@@ -27,6 +28,7 @@ import { ContainerDetailsSelfServiceComponent } from './container-details/contai
     ContainerTableSelfServiceComponent,
     ContainerDetailsSelfServiceComponent,
   ],
+  animations: [componentFadeAnimation],
   templateUrl: './token.self-service.component.html',
   styleUrl: './token.component.scss',
 })

@@ -14,7 +14,8 @@
     <div class="token-selfservice-div">
       @switch (contentService.selectedContent()) {
         @case ("token_self-service_menu") {
-          <div class="selfservice-tile-layout">
+          <div class="selfservice-tile-layout"
+               [@componentFade]>
             <a class="tile-button"
                mat-fab
                (click)="selectedContent.set('token_overview')">
@@ -71,25 +72,39 @@
           </div>
         }
         @case ("token_overview") {
-          <app-token-table-self-service />
+          <div [@componentFade]>
+            <app-token-table-self-service />
+          </div>
         }
         @case ("token_enrollment") {
-          <app-token-enrollment-self-service />
+          <div [@componentFade]>
+            <app-token-enrollment-self-service />
+          </div>
         }
         @case ("token_details") {
-          <app-token-details-self-service />
+          <div [@componentFade]>
+            <app-token-details-self-service />
+          </div>
         }
         @case ("container_overview") {
-          <app-container-table-self-service />
+          <div [@componentFade]>
+            <app-container-table-self-service />
+          </div>
         }
         @case ("container_details") {
-          <app-container-details-self-service />
+          <div [@componentFade]>
+            <app-container-details-self-service />
+          </div>
         }
         @case ("container_create") {
-          <app-container-create-self-service />
+          <div [@componentFade]>
+            <app-container-create-self-service />
+          </div>
         }
         @case ("assign_token") {
-          <app-assign-token-self-service />
+          <div [@componentFade]>
+            <app-assign-token-self-service />
+          </div>
         }
       }
     </div>
