@@ -18,11 +18,11 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-
 import binascii
 import logging
 
 from cryptography import x509
+from webauthn.helpers import bytes_to_base64url
 
 from privacyidea.api.lib.utils import (attestation_certificate_allowed, get_required_one_of,
                                        get_optional_one_of, get_optional, get_required)
@@ -1181,7 +1181,24 @@ class WebAuthnTokenClass(TokenClass):
                 raise ValueError("When performing WebAuthn authorization, options must contain user")
 
             uv_req = get_optional(options, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT)
-            challenge = binascii.unhexlify(get_required(options, "challenge"))
+            # Check if challenge is base64 encoded to be able to use login via passkey with webauthn
+            challenge = get_required(options, "challenge")
+            challenge: str = challenge.replace("=", "")
+            challenge_decoded = None
+            if len(challenge) % 2 == 0:
+                try:
+                    challenge_decoded = binascii.unhexlify(challenge)
+                    challenge_decoded = webauthn_b64_encode(challenge_decoded)
+                except Exception as ex:
+                    log.warning(f"Challenge {get_required(options, 'challenge')} is not hex encoded. {ex}. Attempting"
+                                f" to decode it as base64.")
+            if not challenge_decoded:
+                try:
+                    challenge_decoded = bytes_to_base64url(challenge.encode("utf-8"))
+                except Exception as ex:
+                    log.warning(f"Challenge {get_required(options, 'challenge')} is not base64url encoded. {ex}.")
+                    raise AuthenticationRejectedException('Challenge is not hex or base64url encoded.')
+
             http_origin = get_required(options, "HTTP_ORIGIN")
             if not http_origin:
                 raise AuthenticationRejectedException('HTTP Origin header missing.')
@@ -1204,13 +1221,13 @@ class WebAuthnTokenClass(TokenClass):
                             if assertion_client_extensions
                             else None
                     },
-                    challenge=webauthn_b64_encode(challenge),
+                    challenge=challenge_decoded,
                     origin=http_origin,
                     allow_credentials=[user.credential_id],
                     uv_required=uv_req
                 ).verify())
-            except AuthenticationRejectedException as e:
-                log.warning(f"Checking response for token {self.token.serial} failed. {e}")
+            except Exception as ex:
+                log.warning(f"Checking response for token {self.token.serial} failed. {ex}")
                 return -1
 
             # Save the credential_id hash to an extra table to be able to find the token faster
@@ -1222,7 +1239,9 @@ class WebAuthnTokenClass(TokenClass):
                                                            credential_id_hash=credential_id_hash)
                 token_cred_id_hash.save()
 
-            return self.get_otp_count()
+            sign_count = self.get_otp_count()
+            # TODO returning int is not good
+            return sign_count if sign_count > 0 else 1
 
         else:
             # Not all necessary data provided.

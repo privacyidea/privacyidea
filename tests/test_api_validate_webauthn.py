@@ -1,4 +1,3 @@
-
 from mock.mock import patch
 from webauthn.helpers import bytes_to_base64url
 
@@ -25,10 +24,8 @@ class WebAuthn(MyApiTestCase):
         super(MyApiTestCase, self).setUp()
         self.setUp_user_realms()
 
-        set_policy("wan1", scope=SCOPE.ENROLL,
-                   action="webauthn_relying_party_id=example.com")
-        set_policy("wan2", scope=SCOPE.ENROLL,
-                   action="webauthn_relying_party_name=example")
+        set_policy("wan1", scope=SCOPE.ENROLL, action="webauthn_relying_party_id=example.com")
+        set_policy("wan2", scope=SCOPE.ENROLL, action="webauthn_relying_party_name=example")
 
     def test_01_enroll_token_custom_description(self):
         client_data = "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoibmgwaUJ6MFNNbmRsVnNQUkdM" \
@@ -69,6 +66,7 @@ class WebAuthn(MyApiTestCase):
             data = res.json
             webauthn_request = data.get("detail").get("webAuthnRegisterRequest")
             self.assertEqual("Please confirm with your WebAuthn token", webauthn_request.get("message"))
+            self.assertEqual(self.serial, webauthn_request.get("serialNumber"))
             transaction_id = webauthn_request.get("transaction_id")
 
         # We need to change the nonce in the challenge database to use our recorded WebAuthN enrollment data
@@ -139,9 +137,9 @@ class WebAuthn(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             data = res.json
-            webAuthnRequest = data.get("detail").get("webAuthnRegisterRequest")
-            self.assertEqual("Please confirm with your WebAuthn token", webAuthnRequest.get("message"))
-            transaction_id = webAuthnRequest.get("transaction_id")
+            webauthn_request = data.get("detail").get("webAuthnRegisterRequest")
+            self.assertEqual("Please confirm with your WebAuthn token", webauthn_request.get("message"))
+            transaction_id = webauthn_request.get("transaction_id")
 
         # We need to change the nonce in the challenge database to use our recorded WebAuthN enrollment data
         recorded_nonce = "nh0iBz0SMndlVsPRGLvOCQc-PprPxOJf30KeZmTXY94"
@@ -205,7 +203,7 @@ class WebAuthn(MyApiTestCase):
             self.assertEqual(self.serial, data.get("detail").get("serial"))
             self.assertEqual("Please confirm with your WebAuthn token (Yubico U2F EE Serial 61730834)",
                              data.get("detail").get("message"))
-
+            self.assertEqual("CHALLENGE", data.get("result").get("authentication"))
         remove_token(self.serial)
 
     def test_12_authenticate_multiple_tokens(self):
@@ -292,6 +290,7 @@ class WebAuthn(MyApiTestCase):
             multichallenge = detail.get("multi_challenge")
             self.assertEqual(3, len(multichallenge))
             transaction_id = detail.get("transaction_id")
+            self.assertEqual("CHALLENGE", j.get("result").get("authentication"))
 
         # Remove the TokenCredentialIdHash and TokenInfo entries so the token has to be found via the transaction_id
         # This simulates the case of webauthn token that are present pre 3.11. When they are used in 3.11, they will
@@ -321,10 +320,11 @@ class WebAuthn(MyApiTestCase):
         }
         with self.app.test_request_context('/validate/check', method='POST', data=data, headers=headers):
             res = self.app.full_dispatch_request()
-        self.assertEqual(200, res.status_code, res)
-        j = res.json
-        self.assertTrue(j.get("result").get("status"))
-        self.assertTrue(j.get("result").get("value"))
+            self.assertEqual(200, res.status_code, res)
+            j = res.json
+            self.assertTrue(j.get("result").get("status"))
+            self.assertTrue(j.get("result").get("value"))
+            self.assertEqual("ACCEPT", j.get("result").get("authentication"))
 
         delete_policy("challenge_response")
         remove_token(hotp.get_serial())
@@ -434,6 +434,115 @@ class WebAuthn(MyApiTestCase):
         delete_policy("trigpol")
         remove_token("hotpX1")
         remove_token(self.serial)
+
+    def test_30_sign_count_zero(self):
+        """
+        Some authenticators do not return a real sign count, but instead 0. This is allowed by the spec and should not
+        cause any problems. https://w3c.github.io/webauthn/#sctn-sign-counter
+        This test uses data recorded from using a passkey on a Macbook.
+        """
+        delete_policy("wan1")
+        delete_policy("wan2")
+        set_policy("wan1", scope=SCOPE.ENROLL, action="webauthn_relying_party_id=fritz.box")
+        set_policy("wan2", scope=SCOPE.ENROLL, action="webauthn_relying_party_name=fritz box")
+        # Required for Macbook passkey to work because of no or unsupported attestation format
+        set_policy("wan3", scope=SCOPE.ENROLL,
+                   action="webauthn_authenticator_attestation_level=none, webauthn_authenticator_attestation_form=none")
+        serial = "WAN00023620"
+        # First enrollment step
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"user": self.username,
+                                                 "pin": self.pin,
+                                                 "serial": serial,
+                                                 "type": "webauthn",
+                                                 "genkey": 1},
+                                           headers={"authorization": self.at,
+                                                    "Origin": "https://pi.fritz.box:5000"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            webauthn_request = data.get("detail").get("webAuthnRegisterRequest")
+            self.assertEqual("Please confirm with your WebAuthn token", webauthn_request.get("message"))
+            transaction_id = webauthn_request.get("transaction_id")
+
+            # Update the nonce in the challenge database.
+            from privacyidea.lib.challenge import get_challenges
+            recorded_nonce = "q6RYoDdiC8YUCqBas4MMx2663kKdZdYV1q8PJTzmNkE"
+            recorded_nonce_hex = hexlify_and_unicode(webauthn_b64_decode(recorded_nonce))
+            chal = get_challenges(serial=serial, transaction_id=transaction_id)[0]
+            chal.challenge = recorded_nonce_hex
+            chal.save()
+
+            client_data = ("eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoicTZSWW9EZGlDOFlVQ3FCYXM0TU14MjY2M2tLZFp"
+                           "kWVYxcThQSlR6bU5rRSIsIm9yaWdpbiI6Imh0dHBzOi8vcGkuZnJpdHouYm94OjUwMDAiLCJjcm9zc09yaWdpbiI6Zm"
+                           "Fsc2V9")
+            reg_data = (
+                "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YViY1kwVsywYDmugu2qhEi7LiS8tgyaE5XqILRqvKXkZ-1pdAAAAAAAAAAA"
+                "AAAAAAAAAAAAAAAAAFKv96-pAxzqutsqg657wFMw3JxY5pQECAyYgASFYIPsVTkUsjPCSLoBk2Yj1zEp8626I-_LobjfOI"
+                "aOdrTlfIlggSXIdmqO_aLKz71Qr-Xg3zMYabPYmUWtT3RsKyjZpTww")
+
+            # Second enrollment step
+            with self.app.test_request_context('/token/init',
+                                               method='POST',
+                                               data={"user": self.username,
+                                                     "serial": serial,
+                                                     "type": "webauthn",
+                                                     "transaction_id": transaction_id,
+                                                     "clientdata": client_data,
+                                                     "regdata": reg_data},
+                                               headers={"authorization": self.at,
+                                                        "Origin": "https://pi.fritz.box:5000"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+
+            # Authenticate
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": self.username,
+                                                     "pass": self.pin},
+                                               headers={"Origin": "https://kc.fritz.box:8443"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code)
+                data = res.json
+                self.assertTrue("transaction_id" in data.get("detail"))
+                transaction_id = data.get("detail").get("transaction_id")
+                self.assertEqual(serial, data.get("detail").get("serial"))
+                self.assertEqual("CHALLENGE", data.get("result").get("authentication"))
+
+            # Update the nonce in the challenge database.
+            from privacyidea.lib.challenge import get_challenges
+            recorded_nonce = "V9nbUxzEAyXkt1KzMHYQv6Wky78FNE9911xCo3akjUQ"
+            recorded_nonce_hex = hexlify_and_unicode(webauthn_b64_decode(recorded_nonce))
+            chal = get_challenges(serial=serial, transaction_id=transaction_id)[0]
+            chal.challenge = recorded_nonce_hex
+            chal.save()
+
+            user_handle = bytes_to_base64url(serial.encode("utf-8"))
+            data = {
+                "authenticatordata": "1kwVsywYDmugu2qhEi7LiS8tgyaE5XqILRqvKXkZ-1odAAAAAA",
+                "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiVjluYlV4ekVBeVhrdDFLek1IWVF2NldreTc4Rk5F"
+                              "OTkxMXhDbzNha2pVUSIsIm9yaWdpbiI6Imh0dHBzOi8va2MuZnJpdHouYm94Ojg0NDMiLCJjcm9zc09yaWdpbiI6"
+                              "ZmFsc2V9",
+                "credentialid": "q_3r6kDHOq62yqDrnvAUzDcnFjk",
+                "signaturedata": "MEUCIDeFbUlK_Clq2q2gUy1RqDRciMTpx2Ww7AEUwXysZaWfAiEAkvMWut17A5IiEWCO7CAOKMFZ44zIMNdBy"
+                                 "bGXfhujL_0",
+                "transaction_id": transaction_id,
+                "userHandle": user_handle,
+                "username": self.username
+            }
+            with self.app.test_request_context('/validate/check', method='POST', data=data,
+                                               headers={"Origin": "https://kc.fritz.box:8443"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                j = res.json
+                self.assertTrue(j.get("result").get("status"))
+                self.assertTrue(j.get("result").get("value"))
+                self.assertEqual("ACCEPT", j.get("result").get("authentication"))
+            delete_policy("wan1")
+            delete_policy("wan2")
+            delete_policy("wan3")
+            remove_token(serial=serial)
 
 
 class WebAuthnOfflineTestCase(MyApiTestCase):
