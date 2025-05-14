@@ -60,15 +60,12 @@ def add_risk_to_user(request):
             try:
                 user = request.User
                 if user:
-                    resolver = get_resolver_type(user.resolver)
                     utype = None
                     
-                    #groups are only supported on ldap resolvers
-                    if resolver == "ldapresolver":
-                        utype = get_user_groups(user.uid)
-                        if len(utype) == 0:
-                            utype = None
-                
+                    utype = get_user_groups(user.uid,user.resolver)
+                    if len(utype) == 0:
+                        utype = None
+                        
                     ip: str = request.headers.get("X-Forwarded-For",None)
                     if not ip:
                         log.debug("No IP found in headers. Using the IP of the request...")
@@ -85,7 +82,7 @@ def add_risk_to_user(request):
                     
                     score = int(calculate_risk(ip,service,utype))
                     user.set_attribute("risk",score)
-                    log.debug(f"Risk for user {str(user.uid)}: {str(user.info.get("risk","null"))}; type={type(user.info.get("risk","null"))}")
+                    log.info(f"Risk for user {str(user.uid)}: {str(user.info.get("risk","null"))}")
                 else:
                     log.debug("User not available on request. Skiping risk score.")
             except Exception as e:
