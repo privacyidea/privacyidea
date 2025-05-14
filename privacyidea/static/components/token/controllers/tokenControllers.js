@@ -667,7 +667,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                         token.subject
                             = (response.detail.u2fRegisterResponse || response.detail.webAuthnRegisterResponse).subject;
                         token.vendor = token.subject.split(" ")[0];
-                        console.log(token);
+                        //console.log(token);
                     });
             });
             $scope.click_wait = true;
