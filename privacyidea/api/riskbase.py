@@ -2,8 +2,9 @@ from flask import (Blueprint, request)
 
 from privacyidea.lib.error import AuthError, ParameterError, PolicyError, ResourceNotFoundError, privacyIDEAError
 from privacyidea.api.lib.utils import required,send_result,getParam
-from privacyidea.lib.config import get_from_config, get_token_types,set_privacyidea_config,delete_privacyidea_config
-from privacyidea.lib.riskbase import LDAP_GROUP_RESOLVER_NAME_STR,LDAP_USER_GROUP_DN_STR,LDAP_USER_GROUP_SEARCH_ATTR_STR,CONFIG_GROUPS_RISK_SCORES_KEY,CONFIG_IP_RISK_SCORES_KEY,CONFIG_SERVICES_RISK_SCORES_KEY,ip_version,calculate_risk,get_groups,get_risk_scores,save_risk_score,remove_risk_score,user_group_fetching_config_test
+from privacyidea.lib.config import get_token_types
+from privacyidea.lib.resolver import get_resolver_list
+from privacyidea.lib.riskbase import CONFIG_GROUPS_RISK_SCORES_KEY,CONFIG_IP_RISK_SCORES_KEY,CONFIG_SERVICES_RISK_SCORES_KEY, get_group_resolvers,ip_version,calculate_risk,get_groups,get_risk_scores, remove_group_resolver, save_group_resolver,save_risk_score,remove_risk_score
 from privacyidea.api.before_after import after_request, auth_error, before_admin_request, internal_error, not_implemented_error, policy_error, privacyidea_error, resource_not_found_error
 
 class RiskBaseBlueprint(Blueprint):
@@ -20,8 +21,7 @@ class RiskBaseBlueprint(Blueprint):
         
         #declare routes
         self.route("/",methods=["GET"])(self.get_risk_config)
-        self.route("/groups",methods=["POST"])(self.group_connection_config)
-        self.route("/groups/test",methods=["POST"])(self.test_fetch_user_group)
+        self.route("/groups",methods=["POST"])(self.attach_group_resolver)
         self.route("/check",methods=["POST"])(self.check)
         self.route("/user",methods=["POST"])(self.set_user_risk)
         self.route("/service",methods=["POST"])(self.set_service_risk)
@@ -29,6 +29,7 @@ class RiskBaseBlueprint(Blueprint):
         self.route("/user/delete",methods=["POST"])(self.delete_user_risk)
         self.route("/service/delete",methods=["POST"])(self.delete_service_risk)
         self.route("/ip/delete",methods=["POST"])(self.delete_ip_risk)
+        self.route("/groups/delete",methods=["POST"])(self.delete_user_group_resolvers)
         
     def get_risk_config(self):
         """
@@ -54,24 +55,19 @@ class RiskBaseBlueprint(Blueprint):
         users = get_risk_scores(CONFIG_GROUPS_RISK_SCORES_KEY)
         services = get_risk_scores(CONFIG_SERVICES_RISK_SCORES_KEY)
         ips = get_risk_scores(CONFIG_IP_RISK_SCORES_KEY)
+        group_resolvers = get_group_resolvers()
 
         r = {}
         
         r["user_groups"] = get_groups()
         r["token_types"] = get_token_types()
+        resolvers = get_resolver_list()
+        r["resolvers"] = list(resolvers.keys())
         
-        resolver = get_from_config(LDAP_GROUP_RESOLVER_NAME_STR)
-        if resolver:
-            r["group_resolver"] = resolver
-            
-        userGroupDN = get_from_config(LDAP_USER_GROUP_DN_STR)
-        if userGroupDN:
-            r["user_group_dn"] = userGroupDN
-            
-        userGroupAttr = get_from_config(LDAP_USER_GROUP_SEARCH_ATTR_STR)
-        if userGroupAttr:
-            r["user_group_attr"] = userGroupAttr
         
+        if len(group_resolvers) > 0:
+            r["group_resolvers"] = [{"user_resolver": entry[0], "group_resolver": entry[1]} for entry in group_resolvers]
+            
         if len(users) > 0:
             r["user_risk"] = [{"group": entry[0], "risk_score": entry[1]} for entry in users]
         
@@ -83,44 +79,33 @@ class RiskBaseBlueprint(Blueprint):
         
         return send_result(r)
     
-    def group_connection_config(self):
+    def attach_group_resolver(self):
         """
-        Sets the config parameters for the group search
+        Attachs the group resolver to the user resolver
         
-        :jsonparam resolver_name: The name of the base LDAP resolver to be used
-        :jsonparam user_to_group_search_attr: The name of the LDAP attribute that, along with the user DN, is used to fetch the groups 
-        the user belongs to. Used in the search filter.
-        :jsonparam user_to_group_dn: The base LDAP DN to use when searching for the group that a user belongs to
+        :jsonparam group_resolver_name: The name of the base LDAP resolver to be used to fetch groups
+        :jsonparam user_resolver_name: The name of the LDAP user resolver to be attached to this group resolver
         """
         params = request.all_data
-        resolver_name = getParam(params,"resolver_name",required,allow_empty=False)
+        group_resolver_name = getParam(params,"group_resolver_name",required,allow_empty=False)
+        user_resolver_name = getParam(params,"user_resolver_name",required,allow_empty=False)
         
-        set_privacyidea_config(LDAP_GROUP_RESOLVER_NAME_STR,resolver_name)
+        if group_resolver_name == user_resolver_name:
+            raise ParameterError("Group resolver and User resolver cannot be the same")
+
+        resolvers = get_resolver_list()
+        resolver_names = resolvers.keys()
+        
+        if group_resolver_name not in resolver_names:
+            raise ParameterError("Group resolver does not exist")
+        
+        if user_resolver_name not in resolver_names:
+            raise ParameterError("User resolver does not exist")
+
+        save_group_resolver(group_resolver_name,user_resolver_name)
             
         return send_result(True)
         
-    def test_fetch_user_group(self):
-        """
-        Tests the group search configuration.
-        
-        Parameters are the same as the /groups endpoint.
-        
-        :jsonparam user_dn: LDAP DN of a user to test the group search.
-        
-        :return: JSON with the groups found.
-        """
-        params = request.all_data
-        resolver_name = getParam(params,"resolver_name",required,allow_empty=False)
-        user_dn = getParam(params,"user_dn",required,allow_empty=False)
-        
-        try:
-            groups = user_group_fetching_config_test(user_dn,resolver_name)
-            desc = f"Fetched {len(groups)} group(s). Check the browser console for a full list."
-        except:
-            desc = "Test failed. Check privacyIDEA's logs for more info."
-        
-        return send_result(groups,details={"description": desc})
-    
     def check(self):
         """
         Calculates the risk score based on the provided user, service and IP.
@@ -239,6 +224,15 @@ class RiskBaseBlueprint(Blueprint):
         identifier = getParam(param,"identifier",required,allow_empty=False)
         
         remove_risk_score(identifier,CONFIG_IP_RISK_SCORES_KEY)
+        
+        return send_result(True)
+    
+    def delete_user_group_resolvers(self):
+        param = request.all_data
+        user_resolver = getParam(param,"user_resolver_name",required,allow_empty=False)
+        group_resolver = getParam(param,"group_resolver_name",required,allow_empty=False)
+        
+        remove_group_resolver(group_resolver,user_resolver)
         
         return send_result(True)
         

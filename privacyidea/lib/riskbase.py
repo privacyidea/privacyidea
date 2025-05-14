@@ -10,13 +10,10 @@ DEFAULT_USER_RISK = 3
 DEFAULT_IP_RISK = 1
 DEFAULT_SERVICE_RISK = 5
 
-LDAP_USER_GROUP_DN_STR = "ldap_user_group_base_dn"
-LDAP_USER_GROUP_SEARCH_ATTR_STR = "ldap_user_group_search_attr"
-LDAP_GROUP_RESOLVER_NAME_STR = "resolver_name"
-
 CONFIG_GROUPS_RISK_SCORES_KEY = "user_groups_risk_scores"
 CONFIG_SERVICES_RISK_SCORES_KEY = "services_risk_scores"
 CONFIG_IP_RISK_SCORES_KEY = "ip_risk_scores"
+CONFIG_GROUP_RESOLVERS_KEY = "user_group_resolvers"
 
 
 log = logging.getLogger(__name__) 
@@ -45,27 +42,21 @@ def get_groups():
     Returns:
         list: the groups retrieved
     """
-    resolver = _get_group_resolver()
-    if not resolver:
-        return []
-    
-    _groups = resolver.getUserList({})
     groups = set()
-    
-    for entry in _groups:
-        groups.add(entry["username"])
+    resolver_names = get_group_resolvers()
+    for resolver in resolver_names:
+        resolver = _get_group_resolver(resolver[0])
+        if not resolver:
+            return []
+        
+        _groups = resolver.getUserList({})
+        
+        for entry in _groups:
+            groups.add(entry["username"])
     
     return list(groups)
 
-def user_group_fetching_config_test(user_dn,resolver_name):
-    resolver = _get_group_resolver(resolver_name)
-    if not resolver:
-        return [] 
-    
-    groups = _fetch_groups(user_dn,resolver)
-    return groups
-
-def get_user_groups(user_dn):
+def get_user_groups(user_dn,user_resolver_name):
     """Retrieves the groups that the user belongs to
 
     Args:
@@ -74,7 +65,7 @@ def get_user_groups(user_dn):
     Returns:
         list: the groups retrieved
     """
-    resolver = _get_group_resolver()
+    resolver = _get_group_resolver(user_resolver_name)
     if not resolver:
         return []
 
@@ -247,9 +238,48 @@ def ip_version(subnet):
             return 6
         except:
             return 0
+        
+def get_group_resolvers():
+    return get_risk_scores(CONFIG_GROUP_RESOLVERS_KEY)
+        
+def save_group_resolver(group_resolver_name,user_resolver_name):
+    groups_str: str = get_from_config(CONFIG_GROUP_RESOLVERS_KEY)
+    groups = groups_str.split(",") if groups_str else []
+    exists,_ = _check_if_group_exists(group_resolver_name,user_resolver_name,groups)
     
-def _get_group_resolver(resolver_name=None):
-    rname = resolver_name or get_from_config(LDAP_GROUP_RESOLVER_NAME_STR)
+    if exists:
+        raise ParameterError(f"{group_resolver_name} already has a user resolver attached. Please remove it first.")
+    
+    groups.append(f"{user_resolver_name};{group_resolver_name}")
+    set_privacyidea_config(CONFIG_GROUP_RESOLVERS_KEY,",".join(groups),typ="public")
+    
+def remove_group_resolver(group_resolver_name,user_resolver_name):
+    groups_str = get_from_config(CONFIG_GROUP_RESOLVERS_KEY)
+    groups = groups_str.split(",") if groups_str else []
+    exists,i = _check_if_group_exists(group_resolver_name,user_resolver_name,groups)
+    
+    if not exists:
+        raise ParameterError(f"{user_resolver_name} is not attached to {group_resolver_name}")
+    
+    groups.pop(i)
+    set_privacyidea_config(CONFIG_GROUP_RESOLVERS_KEY,",".join(groups),typ="public")
+    
+def _get_group_resolver_name(user_resolver_name):
+    groups_str: str = get_from_config(CONFIG_GROUP_RESOLVERS_KEY)
+    groups = groups_str.split(",") if groups_str else []
+    if len(groups) == 0:
+        return None
+    
+    exists,i = _check_if_group_exists(".*",user_resolver_name,groups)
+    
+    if not exists:
+        return None
+    
+    mch = match(rf"{user_resolver_name};(.*)",groups[i])
+    return mch.group(1)
+    
+def _get_group_resolver(resolver_name):
+    rname = _get_group_resolver_name(resolver_name)
     if not rname:
         log.info("Name for group resolver not set. User group can not be fetched.")
         return None
@@ -284,7 +314,16 @@ def _check_if_key_exists(key: str,elements: list):
             log.debug(f"found match! {mch.groups()}")
             return True,i
             
-    return False,None   
+    return False,None  
+
+def _check_if_group_exists(group_resolver: str,user_resolver: str,groups: list):
+    for i,element in enumerate(groups):
+        mch = match(rf"{user_resolver};{group_resolver}",element)
+        if mch:
+            log.debug(f"found match! {mch.groups()}")
+            return True,i
+            
+    return False,None  
 
 def _ip_to_int(ip):
     return int(ipaddress.ip_address(ip))
