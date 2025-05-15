@@ -6,10 +6,10 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-04-04 01:39+0200\n"
-"PO-Revision-Date: 2025-03-28 09:26+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"PO-Revision-Date: 2025-05-16 19:02+0000\n"
+"Last-Translator: William Gutierres <william.gutierres@l8security.com.br>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "privacyidea/branch-3-11/pt_BR/>\n"
 "Language: pt_BR\n"
@@ -17,18 +17,16 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.11-dev\n"
+"X-Generator: Weblate 5.12-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:231
 msgid "Authentication with passkey disabled."
-msgstr ""
+msgstr "Autenticação com senha (palavra-passe) foi desativada."
 
 #: api/auth.py:236
-#, fuzzy
-#| msgid "Authentication failure. Missing Username"
 msgid "Authentication failure. The passkey is not registered."
-msgstr "Falha na autenticação. Usuário ausente"
+msgstr "Falha na autenticação. Usuário ausente."
 
 #: api/auth.py:239
 #, fuzzy
@@ -37,10 +35,8 @@ msgid "Authentication failure. Token has no user."
 msgstr "Falha na autenticação. Seu token expirou: {0!s}"
 
 #: api/auth.py:250
-#, fuzzy
-#| msgid "Authentication failure. Missing Username"
 msgid "Authentication failure using passkey."
-msgstr "Falha na autenticação. Usuário ausente"
+msgstr "Falha na autenticação. Usuário ausente."
 
 #: api/auth.py:255
 #, fuzzy
