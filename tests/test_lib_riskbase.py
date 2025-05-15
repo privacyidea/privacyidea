@@ -31,6 +31,17 @@ LDAPDirectory = [{"dn": 'uid=john.doe,ou=users,dc=example,dc=org',
                   "attributes": {"cn": "student",
                                  "member": ["jane.smith"],
                                  "objectClass": ["top","groupOfNames"]
+                                 }},
+                 #other groups, to simulate another directory
+                 {"dn": "cn=groupA,ou=groups,dc=example,dc=org",
+                  "attributes": {"cn": "groupA",
+                                 "member": ["user1.user","jane.smith"],
+                                 "objectClass": ["top","groupOfNames2"]
+                                 }},
+                  {"dn": "cn=groupB,ou=groups,dc=example,dc=org",
+                  "attributes": {"cn": "groupB",
+                                 "member": ["user2.user"],
+                                 "objectClass": ["top","groupOfNames2"]
                                  }}]
 
 class RiskbaseTestCase(MyTestCase):
@@ -66,18 +77,42 @@ class RiskbaseTestCase(MyTestCase):
         rid = save_resolver(paramsUsers)
         self.assertTrue(rid > 0)
         
-        (added, failed) = set_realm("ldap", [{'name': "ldapresolver"},{"name": user_resolver_name}])
-        self.assertEqual(len(added), 2)
+        params = ({'LDAPURI': 'ldap://localhost',
+                   'LDAPBASE': 'dc=example,dc=org',
+                   'BINDDN': 'uid=john.doe,ou=users,dc=example,dc=org',
+                   'BINDPW': 'johnpassword',
+                   'LOGINNAMEATTRIBUTE': 'cn',
+                   'LDAPSEARCHFILTER': '(objectClass=groupOfNames2)', 
+                   'UIDTYPE': 'DN',
+                   })
+        params["resolver"] = "groups2"
+        params["type"] = "ldapresolver"
+        rid = save_resolver(params)
+        self.assertTrue(rid > 0)
+        
+        (added, failed) = set_realm("ldap", [{'name': "ldapresolver"},{"name": user_resolver_name},{"name": "groups2"}])
+        self.assertEqual(len(added), 3)
         self.assertEqual(len(failed), 0)
         
         save_group_resolver("ldapresolver",user_resolver_name)
         groups = get_groups()
-        self.assertEqual(len(groups),3,len(groups))
+        self.assertEqual(len(groups),3,groups)
         self.assertIn("professor",groups,"Professor was not fetched")
         self.assertIn("student",groups,"Student was not fetched")
         self.assertIn("admin",groups,"Admin was not fetched")
         
+        #attach another group resolver to the user resolver
+        save_group_resolver("groups2",user_resolver_name)
+        groups = get_groups()
+        self.assertEqual(len(groups),5,groups)
+        self.assertIn("professor",groups,"Professor was not fetched")
+        self.assertIn("student",groups,"Student was not fetched")
+        self.assertIn("admin",groups,"Admin was not fetched")
+        self.assertIn("groupA",groups)
+        self.assertIn("groupB",groups)
+        
         remove_group_resolver("ldapresolver",user_resolver_name)
+        remove_group_resolver("groups2",user_resolver_name)
         
         #non existing group resolver
         save_group_resolver("none",user_resolver_name)
@@ -86,13 +121,10 @@ class RiskbaseTestCase(MyTestCase):
         
         remove_group_resolver("none",user_resolver_name)
         
-        #test with no resolver
-        # groups = get_groups()
-        # self.assertEqual(len(groups),0,groups)
-        
         delete_realm("ldap")
         delete_resolver("ldapresolver")
         delete_resolver(user_resolver_name)
+        delete_resolver("groups2")
         
     @ldap3mock.activate
     def test_01_group_resolver(self):
@@ -195,8 +227,23 @@ class RiskbaseTestCase(MyTestCase):
         rid = save_resolver(paramsUsers)
         self.assertTrue(rid > 0)
         
-        (added, failed) = set_realm("ldap", [{'name': resolver_name},{"name": user_resolver_name}])
-        self.assertEqual(len(added), 2)
+        params = ({'LDAPURI': 'ldap://localhost',
+                   'LDAPBASE': 'dc=example,dc=org',
+                   'BINDDN': 'uid=john.doe,ou=users,dc=example,dc=org',
+                   'BINDPW': 'johnpassword',
+                   'LOGINNAMEATTRIBUTE': 'cn',
+                   'LDAPSEARCHFILTER': '(objectClass=groupOfNames2)', 
+                   'UIDTYPE': 'DN',
+                   'USERINFO': '{ "member": "member" }',
+                   'MULTIVALUEATTRIBUTES': '["member"]',
+                   })
+        params["resolver"] = "groups2"
+        params["type"] = "ldapresolver"
+        rid = save_resolver(params)
+        self.assertTrue(rid > 0)
+        
+        (added, failed) = set_realm("ldap", [{'name': resolver_name},{"name": user_resolver_name},{"name": "groups2"}])
+        self.assertEqual(len(added), 3)
         self.assertEqual(len(failed), 0)
         
         save_group_resolver(resolver_name,user_resolver_name)
@@ -206,20 +253,29 @@ class RiskbaseTestCase(MyTestCase):
         self.assertIn("professor",groups)
         self.assertIn("student",groups)
         
+        save_group_resolver("groups2",user_resolver_name)
+        groups = get_user_groups("jane.smith",user_resolver_name)
+        self.assertEqual(len(groups),3,groups)
+        self.assertIn("professor",groups)
+        self.assertIn("student",groups)
+        self.assertIn("groupA",groups)
+        
         groups = get_user_groups("no.user",user_resolver_name)
         self.assertEqual(len(groups),0,groups)
 
         groups = get_user_groups("jane.smith","no resolver")
         self.assertEqual(len(groups),0,groups)
 
+        remove_group_resolver("groups2",user_resolver_name)
         remove_group_resolver(resolver_name,user_resolver_name)
         
-        groups = get_user_groups("jane.smith","no resolver")
+        groups = get_user_groups("jane.smith",user_resolver_name)
         self.assertEqual(len(groups),0,groups)
         
         delete_realm("ldap")
         delete_resolver(resolver_name)
         delete_resolver(user_resolver_name)
+        delete_resolver("groups2")
         
     def test_03_get_save_remove_risk_scores(self):
         key = "myKey"
