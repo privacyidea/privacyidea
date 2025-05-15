@@ -1006,6 +1006,21 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                     AuthFactory.authError(error.data)
                 });
             },
+            delGroup: function(user_resolver,group_resolver,callback) {
+                $http.post(riskUrl + "/groups/delete", {
+                    "user_resolver_name": user_resolver,
+                    "group_resolver_name": group_resolver
+                }, {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function(response) {
+                    callback(response.data)
+                }, function(error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
             addRiskScore: function(type,params,callback) {
                 $http.post(riskUrl + "/" + type,params, {
                     headers: {

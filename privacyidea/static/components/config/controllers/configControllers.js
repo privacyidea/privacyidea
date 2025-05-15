@@ -1321,11 +1321,38 @@ myApp.controller("riskController", ["$scope", "ConfigFactory",
             }
         };
 
+        $scope.addUserGroupResolver = function() {
+            if($scope.userResolver && $scope.groupResolver) {
+                param = {
+                    "user_resolver_name": $scope.userResolver,
+                    "group_resolver_name": $scope.groupResolver
+                }
+                ConfigFactory.addRiskScore("groups",param,function(data) {
+                    if(data.result.status === true) {
+                        inform.add(gettextCatalog.getString("User resolver attached to group resolver."),
+                            {type: "success"});
+                        $scope.userResolver = ""
+                        $scope.groupResolver = ""
+                        $scope.loadRiskConfig();
+                    }
+                })
+            }
+        }
+
         $scope.deleteRisk = function(type,key) {
             ConfigFactory.delRiskScore(type,key, function(data) {
                 if(data.result.status === true) {
                     inform.add(gettextCatalog.getString(type + " risk deleted."),
                             {type: "info"});
+                    $scope.loadRiskConfig();
+                }
+            })
+        };
+
+        $scope.deleteGroup = function(user_resolver,group_resolver) {
+            ConfigFactory.delGroup(user_resolver,group_resolver, function(data) {
+                if(data.result.status === true) {
+                    inform.add(gettextCatalog.getString("Attachment deleted."), {type: "info"});
                     $scope.loadRiskConfig();
                 }
             })

@@ -1,55 +1,44 @@
 <div>
     <h2 class="form-signin-heading"
-            translate>Configure LDAP Resolver to fetch user groups</h2>
-    
-    <form name="formResolverAddLdap" role="form" validate
-          class="form-horizontal">
-    
-        <div class="form-group">
-            <label for="resolvername" class="col-sm-3 control-label"
-                    translate>Base LDAP Resolver name</label>
-    
-            <div class="col-sm-9">
-                <input name="resolvername" id="resolvername" class="form-control"
-                       ng-model="$parent.resolvername" required placeholder="resolver1"
-                       autofocus/>
-            </div>
-        </div>
-        <div class="form-group">
-            <label for="userGroupDN" class="col-sm-3 control-label"
-                    translate>User to group DN</label>
-            <div class="col-sm-9">
-                <input name="userGroupDN" id="userGroupDN" class="form-control"
-                        ng-model="$parent.userGroupDN" placeholder="dc=example,dc=org"/>
-            </div>
-        </div>
-        <div class="form-group">
-            <label for="userGroupAttr" class="col-sm-3 control-label"
-                    translate>User to group search attribute</label>
-            <div class="col-sm-9">
-                <input name="userGroupAttr" id="userGroupAttr" class="form-control"
-                ng-model="$parent.userGroupAttr" placeholder="member"/>
-           </div>
-        </div>
-        <div class="form-group">
-            <label for="userDN" class="col-sm-3 control-label"
-                    translate>User DN for testing</label>
-            <div class="col-sm-9">
-                <input name="userDN" id="userDN" class="form-control"
-                ng-model="$parent.userDN" placeholder="uid=john.doe,ou=people,dc=example,dc=org"/>
-            </div>
-        </div>
-        <div class="text-center">
-            <button ng-click="testGroupResolver()"
-                    class="btn btn-success"
-                    translate>Test LDAP Group Resolver
-            </button>
-            <button ng-click="saveResolver()"
-                    ng-show="checkRight('resolverwrite')"
-                    ng-disabled="formResolver.$invalid"
-                    class="btn btn-primary"
-                    translate>Save
-            </button>
-        </div>
-    </form>
+            translate>Attach User Resolvers to Group Resolvers</h2>
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>User Resolver</th>
+                <th>Group Resolver</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr ng-repeat="element in form['group_resolvers']">
+                <td>{{element.user_resolver}}</td>
+                <td>{{element.group_resolver}}</td>
+                <td>
+                    <button class="btn btn-danger"
+                            ng-click="deleteGroup(element.user_resolver,element.group_resolver)">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+            <tr ng-show="checkRight('policywrite')">
+                <td>
+                    <select class="form-control"
+                        ng-model="$parent.userResolver" name="userResolver"
+                        ng-options="select for select in form['resolvers']">
+                    </select>
+                </td>
+                <td>
+                    <select class="form-control"
+                        ng-model="$parent.groupResolver" name="groupResolver"
+                        ng-options="select for select in form['resolvers']">
+                    </select>
+                </td>
+                <td>
+                    <button class="btn btn-default"
+                            ng-click="addUserGroupResolver()">
+                        Attach user resolver to group resolver
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
 </div>
