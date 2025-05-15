@@ -44,15 +44,16 @@ def get_groups():
     """
     groups = set()
     resolver_names = get_group_resolvers()
-    for resolver in resolver_names:
-        resolver = _get_group_resolver(resolver[0])
-        if not resolver:
+    for rname in resolver_names:
+        resolvers = _get_group_resolvers(rname[0])
+        if not resolvers:
             return []
         
-        _groups = resolver.getUserList({})
-        
-        for entry in _groups:
-            groups.add(entry["username"])
+        for resolver in resolvers:
+            _groups = resolver.getUserList({})
+            
+            for entry in _groups:
+                groups.add(entry["username"])
     
     return list(groups)
 
@@ -65,11 +66,14 @@ def get_user_groups(user_dn,user_resolver_name):
     Returns:
         list: the groups retrieved
     """
-    resolver = _get_group_resolver(user_resolver_name)
-    if not resolver:
+    resolvers = _get_group_resolvers(user_resolver_name)
+    if not resolvers:
         return []
 
-    groups = _fetch_groups(user_dn,resolver)
+    groups = []
+    for resolver in resolvers:
+        groups.extend(_fetch_groups(user_dn,resolver))
+        
     return groups
 
 def get_ip_risk_score(ip: str):
@@ -256,41 +260,52 @@ def save_group_resolver(group_resolver_name,user_resolver_name):
 def remove_group_resolver(group_resolver_name,user_resolver_name):
     groups_str = get_from_config(CONFIG_GROUP_RESOLVERS_KEY)
     groups = groups_str.split(",") if groups_str else []
-    exists,i = _check_if_group_exists(group_resolver_name,user_resolver_name,groups)
+    exists,group_indexs = _check_if_group_exists(group_resolver_name,user_resolver_name,groups)
     
     if not exists:
         raise ParameterError(f"{user_resolver_name} is not attached to {group_resolver_name}")
     
-    groups.pop(i)
+    for i in group_indexs:
+        groups.pop(i)
+        
     set_privacyidea_config(CONFIG_GROUP_RESOLVERS_KEY,",".join(groups),typ="public")
     
-def _get_group_resolver_name(user_resolver_name):
+def _get_group_resolver_names(user_resolver_name):
     groups_str: str = get_from_config(CONFIG_GROUP_RESOLVERS_KEY)
     groups = groups_str.split(",") if groups_str else []
     if len(groups) == 0:
         return None
     
-    exists,i = _check_if_group_exists(".*",user_resolver_name,groups)
+    exists,group_indexs = _check_if_group_exists(".*",user_resolver_name,groups)
     
     if not exists:
         return None
     
-    mch = match(rf"{user_resolver_name};(.*)",groups[i])
-    return mch.group(1)
+    gs = []
+    for i in group_indexs:
+        mch = match(rf"{user_resolver_name};(.*)",groups[i])
+        gs.append(mch.group(1))
+        
+    return gs
     
-def _get_group_resolver(resolver_name):
-    rname = _get_group_resolver_name(resolver_name)
-    if not rname:
+def _get_group_resolvers(resolver_name):
+    rnames = _get_group_resolver_names(resolver_name)
+    if not rnames:
         log.info("Name for group resolver not set. User group can not be fetched.")
         return None
     
-    resolver: IdResolver = get_resolver_object(rname)
+    resolvers = []
     
-    if not resolver:
-        log.error(f"Can not find resolver with name {rname}!")
-        return None
+    for rname in rnames:
+        resolver: IdResolver = get_resolver_object(rname)
+    
+        if not resolver:
+            log.error(f"Can not find resolver with name {rname}!")
+            continue
         
-    return resolver 
+        resolvers.append(resolver)  
+        
+    return resolvers
 
 def _fetch_groups(user_dn,resolver: IdResolver):
     entries = resolver.getUserList({"member": user_dn})
@@ -317,13 +332,17 @@ def _check_if_key_exists(key: str,elements: list):
     return False,None  
 
 def _check_if_group_exists(group_resolver: str,user_resolver: str,groups: list):
+    gs = []
     for i,element in enumerate(groups):
         mch = match(rf"{user_resolver};{group_resolver}",element)
         if mch:
             log.debug(f"found match! {mch.groups()}")
-            return True,i
-            
-    return False,None  
+            gs.append(i)
+
+    if len(gs) == 0:            
+        return False,None  
+    
+    return True,gs
 
 def _ip_to_int(ip):
     return int(ipaddress.ip_address(ip))
