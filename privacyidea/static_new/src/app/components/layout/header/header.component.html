@@ -12,19 +12,21 @@
   <div class="nav-div">
     <nav class="nav-menu">
       @if (authService.menus().includes("tokens")) {
-        <a class="active"
+        <a [ngClass]="{ active: isActive('/token') }"
            extended
            mat-fab
            routerLink="token">
           <mat-icon>shield</mat-icon>
           <h4>Tokens</h4></a>
       }
-      @if (authService.role() !== 'user') {
-        <a extended
+      @if (authService.menus().includes("users")) {
+        <a [ngClass]="{ active: isActive('/user') }"
+           extended
            href="#"
-           mat-fab>
+           mat-fab
+           routerLink="user">
           <mat-icon>supervised_user_circle</mat-icon>
-          <h4>Users</h4></a>
+          <h4>{{authService.role() === 'admin' ? "Users" : "User"}}</h4></a>
       }
       @if (authService.menus().includes("machines")) {
         <a extended

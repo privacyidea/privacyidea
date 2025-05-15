@@ -25,6 +25,14 @@ export class UserService {
   });
 
   userResource = httpResource<any>(() => {
+    return {
+      url: this.baseUrl,
+      method: 'GET',
+      headers: this.localService.getHeaders(),
+    };
+  });
+
+  usersResource = httpResource<any>(() => {
     const selectedUserRealm = this.selectedUserRealm();
     if (selectedUserRealm === '') {
       return undefined;
@@ -39,7 +47,7 @@ export class UserService {
     };
   });
   fetchedUsernames = computed<string[]>(() => {
-    const data = this.userResource.value();
+    const data = this.usersResource.value();
     if (!data?.result?.value) {
       return [];
     }

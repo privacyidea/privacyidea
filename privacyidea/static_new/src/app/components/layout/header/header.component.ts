@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { DatePipe, NgClass, NgOptimizedImage } from '@angular/common';
 import { MatFabAnchor, MatFabButton } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { SessionTimerService } from '../../../services/session-timer/session-timer.service';
 import { AuthService } from '../../../services/auth/auth.service';
 
@@ -34,7 +34,12 @@ export class HeaderComponent {
   constructor(
     protected sessionTimerService: SessionTimerService,
     protected authService: AuthService,
+    private router: Router,
   ) {}
+
+  isActive(link: string) {
+    return this.router.url.includes(link);
+  }
 
   refreshPage() {
     window.location.reload();
