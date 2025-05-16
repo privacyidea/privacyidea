@@ -519,8 +519,17 @@ def check():
                 log.debug(f"Could not find container for token {serial}: {e}")
 
     serials = ",".join(serial_list)
+
+    # Remove auditlog-only infos from details contained in response
+    audit_info = details.get("message", "")
+    if "audit_log" in details:
+        additional_audit_info = details.get("audit_log")
+        del details["audit_log"]
+        audit_info += ", " if audit_info else ""
+        audit_info += additional_audit_info
+
     ret = send_result(result, rid=2, details=details)
-    g.audit_object.log({"info": log_used_user(user, details.get("message")),
+    g.audit_object.log({"info": log_used_user(user, audit_info),
                         "success": success,
                         "authentication": ret.json.get("result").get("authentication") or "",
                         "serial": serials,

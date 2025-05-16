@@ -2461,6 +2461,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
     pin_matching_token_list = []
     invalid_token_list = []
     valid_token_list = []
+    tokens_exceeded_fail_count = []
 
     # Remove locked tokens from token_object_list
     if len(token_object_list) > 0:
@@ -2642,7 +2643,8 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
             # We did not find any successful response, so we need to increase the failcounters
             for token_obj in challenge_response_token_list:
                 if not token_obj.is_outofband():
-                    token_obj.inc_failcount()
+                    if token_obj.inc_failcount_exceeds_max_fail():
+                        tokens_exceeded_fail_count.append(token_obj.get_serial())
             if not matching_challenge:
                 if len(challenge_response_token_list) == 1:
                     reply_dict["serial"] = challenge_response_token_list[0].token.serial
@@ -2661,7 +2663,8 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
             for token_obj in challenge_request_token_list:
                 token_obj.check_reset_failcount()
                 if is_true(options.get("increase_failcounter_on_challenge")):
-                    token_obj.inc_failcount()
+                    if token_obj.inc_failcount_exceeds_max_fail():
+                        tokens_exceeded_fail_count.append(token_obj.get_serial())
             create_challenges_from_tokens(active_challenge_token, reply_dict, options)
 
     elif pin_matching_token_list:
@@ -2669,7 +2672,8 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
         # But there are tokens, with a matching pin.
         # So we increase the failcounter. Return failure.
         for token_object in pin_matching_token_list:
-            token_object.inc_failcount()
+            if token_object.inc_failcount_exceeds_max_fail():
+                tokens_exceeded_fail_count.append(token_object.get_serial())
             if get_from_config(SYSCONF.RESET_FAILCOUNTER_ON_PIN_ONLY, False, return_bool=True):
                 token_object.check_reset_failcount()
             reply_dict["message"] = _("wrong otp value")
@@ -2696,12 +2700,19 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
         reply_dict["message"] = _("wrong otp pin")
         if get_inc_fail_count_on_false_pin():
             for token_object in invalid_token_list:
-                token_object.inc_failcount()
+                if token_object.inc_failcount_exceeds_max_fail():
+                    tokens_exceeded_fail_count.append(token_object.get_serial())
                 if increase_auth_counters:
                     token_object.inc_count_auth()
     else:
         # There is no suitable token for authentication
         reply_dict["message"] = _("No suitable token found for authentication.")
+
+    if tokens_exceeded_fail_count:
+        # Write token serials to the log that exceed the fail counter due to this failed authentication
+        token_serials = ", ".join(tokens_exceeded_fail_count)
+        reply_dict["audit_log"] = "Failcounter exceeded: " + token_serials
+        log.debug(f"Failcounter exceeded for tokens: {token_serials}")
 
     return res, reply_dict
 

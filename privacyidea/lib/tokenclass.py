@@ -904,10 +904,16 @@ class TokenClass(object):
         self.add_tokeninfo("hashlib", hashlib)
 
     @check_token_locked
-    def inc_failcount(self):
+    def inc_failcount_exceeds_max_fail(self) -> bool:
+        """
+        Increases the failcounter if the maxfail is not yet reached. Returns True if the new failcounter exceeds the
+        maxfail and hence locks the token. Returns False otherwise or if the token was already locked.
+        """
+        exceeds_max_fail = False
         if self.token.failcount < self.token.maxfail:
             self.token.failcount = (self.token.failcount + 1)
             if self.token.failcount == self.token.maxfail:
+                exceeds_max_fail = True
                 self.add_tokeninfo(FAILCOUNTER_EXCEEDED,
                                    datetime.now(tzlocal()).strftime(
                                        DATE_FORMAT))
@@ -916,6 +922,10 @@ class TokenClass(object):
         except:  # pragma: no cover
             log.error('update failed')
             raise TokenAdminError("Token Fail Counter update failed", id=1106)
+        return exceeds_max_fail
+
+    def inc_failcount(self) -> int:
+        self.inc_failcount_exceeds_max_fail()
         return self.token.failcount
 
     @check_token_locked
