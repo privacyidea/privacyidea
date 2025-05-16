@@ -41,15 +41,19 @@
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("serial") {
-                    <a attr.aria-label="{{ column.label }} Link"
-                       (click)="contentService.tokenSelected(element.serial)"> {{
-                        element[column.key]
-                      }} </a>
+                    @if (element.username === authService.user() || authService.role() === "admin") {
+                      <a attr.aria-label="{{ column.label }} Link"
+                         (click)="contentService.tokenSelected(element.serial)"> {{
+                          element[column.key]
+                        }} </a>
+                    } @else {
+                      <span> {{ element[column.key] }} </span>
+                    }
                     <app-copy-button [copyText]="element.serial"></app-copy-button>
                   }
                   @case ("active") {
-                      <span (click)="toggleActive(element)"
-                            [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
+                    <span (click)="toggleActive(element)"
+                          [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
                         {{ tableUtilsService.getDisplayText(column.key, element) }}
                     </span>
                   }

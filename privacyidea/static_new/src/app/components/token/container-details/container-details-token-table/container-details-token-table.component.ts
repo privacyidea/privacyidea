@@ -30,6 +30,7 @@ import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog
 import { CopyButtonComponent } from '../../../shared/copy-button/copy-button.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ContentService } from '../../../../services/content/content.service';
+import { AuthService } from '../../../../services/auth/auth.service';
 
 const columnsKeyMap = [
   { key: 'serial', label: 'Serial' },
@@ -90,6 +91,7 @@ export class ContainerDetailsTokenTableComponent {
     protected overflowService: OverflowService,
     private dialog: MatDialog,
     protected contentService: ContentService,
+    protected authService: AuthService,
   ) {
     effect(() => {
       const containerDetails = this.containerTokenData();

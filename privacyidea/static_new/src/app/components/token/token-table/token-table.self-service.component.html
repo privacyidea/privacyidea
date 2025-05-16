@@ -38,6 +38,15 @@
                   }} </a>
                 <app-copy-button [copyText]="element.serial"></app-copy-button>
               }
+              @case ("container_serial") {
+                <a attr.aria-label="{{ column.label }} Link"
+                   (click)="contentService.containerSelected(element.container_serial)"> {{
+                    element[column.key]
+                  }} </a>
+                @if (element.container_serial !== "") {
+                  <app-copy-button [copyText]="element.container_serial"></app-copy-button>
+                }
+              }
               @case ("active") {
                 <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
                       (click)="toggleActive(element)">
@@ -50,14 +59,17 @@
                     {{ tableUtilsService.getDisplayText(column.key, element) }}
                   </span>
               }
-              @case ("container_serial") {
-                <a attr.aria-label="{{ column.label }} Link"
-                   (click)="contentService.containerSelected(element.container_serial)"> {{
-                    element[column.key]
-                  }} </a>
-                @if (element.container_serial !== "") {
-                  <app-copy-button [copyText]="element.container_serial"></app-copy-button>
-                }
+              @case ("revoke") {
+                <button (click)="revokeToken(element.serial)"
+                        mat-icon-button>
+                  <mat-icon>delete_forever</mat-icon>
+                </button>
+              }
+              @case ("delete") {
+                <button (click)="deleteToken(element.serial)"
+                        mat-icon-button>
+                  <mat-icon>delete_outlined</mat-icon>
+                </button>
               }
               @default {
                 @if (tableUtilsService.isLink(column.key)) {

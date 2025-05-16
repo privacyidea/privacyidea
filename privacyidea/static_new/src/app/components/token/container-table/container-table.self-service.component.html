@@ -72,6 +72,12 @@
                   {{ tableUtilsService.getDisplayTextForState(element[column.key][0]) }}
                 </span>
               }
+              @case ("delete") {
+                <button (click)="deleteContainer(element.serial)"
+                        mat-icon-button>
+                  <mat-icon>delete_outlined</mat-icon>
+                </button>
+              }
               @default {
                 @if (tableUtilsService.isLink(column.key)) {
                   <a attr.aria-label="{{ column.label }} Link"

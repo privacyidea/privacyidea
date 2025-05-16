@@ -24,6 +24,7 @@ import { AuditService } from '../../services/audit/audit.service';
 import { CopyButtonComponent } from '../shared/copy-button/copy-button.component';
 import { ContentService } from '../../services/content/content.service';
 import { RouterLink } from '@angular/router';
+import { AuthService } from '../../services/auth/auth.service';
 
 const columnKeysMap = [
   { key: 'number', label: 'Number' },
@@ -137,6 +138,7 @@ export class AuditComponent {
   constructor(
     private auditService: AuditService,
     protected contentService: ContentService,
+    protected authService: AuthService,
   ) {}
 
   onPageEvent(event: PageEvent) {
