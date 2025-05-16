@@ -243,9 +243,20 @@ class TokenBaseTestCase(MyTestCase):
     def test_09_failcount(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)
+        token.token.maxfail = 3
         start = token.token.failcount
         end = token.inc_failcount()
         self.assertTrue(end == start + 1, (end, start))
+
+        # Increase failcounter and get as answer if the new failcounter exceeds the max fail
+        # Max fail not reached
+        exceeds_max_fail = token.inc_failcount_exceeds_max_fail()
+        self.assertFalse(exceeds_max_fail)
+        self.assertEqual(start +2, token.token.failcount)
+
+        # Max fail reached
+        self.assertTrue(token.inc_failcount_exceeds_max_fail())
+        self.assertEqual(3, token.token.failcount)
 
     def test_10_get_hashlib(self):
         # check if functions are returned
