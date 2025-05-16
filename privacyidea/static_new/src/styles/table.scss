@@ -181,6 +181,7 @@ th:nth-child(even) {
   align-items: center;
   padding: 10px 76px 10px 0;
   width: fit-content;
+  flex-wrap: wrap;
 
   .filter-keyword-title {
     margin-top: -4px;

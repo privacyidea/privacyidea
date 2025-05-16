@@ -18,7 +18,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { FormsModule } from '@angular/forms';
 import { ContentService } from '../../../services/content/content.service';
 
-const columnsKeyMap = [
+const columnKeysMap = [
   { key: 'select', label: '' },
   { key: 'serial', label: 'Serial' },
   { key: 'tokentype', label: 'Type' },
@@ -51,8 +51,8 @@ const columnsKeyMap = [
   styleUrl: './token-table.component.scss',
 })
 export class TokenTableComponent {
-  readonly columnKeysMap = columnsKeyMap;
-  readonly columnKeys: string[] = columnsKeyMap.map((column) => column.key);
+  readonly columnKeysMap = columnKeysMap;
+  readonly columnKeys: string[] = columnKeysMap.map((column) => column.key);
   readonly apiFilter = this.tokenService.apiFilter;
   readonly advancedApiFilter = this.tokenService.advancedApiFilter;
   tokenSelection = this.tokenService.tokenSelection;
@@ -70,7 +70,7 @@ export class TokenTableComponent {
     computation: (pageSize: number) =>
       Array.from({ length: pageSize }, () => {
         const emptyRow: any = {};
-        columnsKeyMap.forEach((column) => {
+        columnKeysMap.forEach((column) => {
           emptyRow[column.key] = '';
         });
         return emptyRow;

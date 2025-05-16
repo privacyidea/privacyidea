@@ -159,7 +159,7 @@ export class TableUtilsService {
         return 'highlight-false';
       } else if (element['active'] === false) {
         return 'highlight-false-clickable';
-      } else {
+      } else if (element['active']) {
         return 'highlight-true-clickable';
       }
     } else if (columnKey === 'failcount') {
@@ -199,7 +199,7 @@ export class TableUtilsService {
         return 'locked';
       } else if (element['active']) {
         return 'active';
-      } else {
+      } else if (element['active'] === false) {
         return 'deactivated';
       }
     }

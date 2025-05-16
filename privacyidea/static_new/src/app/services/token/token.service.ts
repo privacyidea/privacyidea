@@ -187,7 +187,10 @@ export class TokenService {
     );
   });
   tokenResource = httpResource<TokenResponse>(() => {
-    if (this.selectedContent() !== 'token_overview') {
+    if (
+      this.selectedContent() !== 'token_overview' &&
+      this.selectedContent() !== 'container_details'
+    ) {
       return undefined;
     }
     return {

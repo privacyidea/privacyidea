@@ -7,6 +7,7 @@ import { LayoutComponent } from './components/layout/layout.component';
 import { TokenSelfServiceComponent } from './components/token/token.self-service.component';
 import { UserComponent } from './components/user/user.component';
 import { UserSelfServiceComponent } from './components/user/user.self-service.component';
+import { AuditComponent } from './components/audit/audit.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -23,17 +24,25 @@ export const routes: Routes = [
       {
         path: 'token',
         canMatch: [selfServiceMatch],
+        canActivate: [AuthGuard],
         component: TokenSelfServiceComponent,
       },
       {
         path: 'user',
         canMatch: [adminMatch],
+        canActivate: [AuthGuard],
         component: UserComponent,
       },
       {
         path: 'user',
         canMatch: [selfServiceMatch],
+        canActivate: [AuthGuard],
         component: UserSelfServiceComponent,
+      },
+      {
+        path: 'audit',
+        canActivate: [AuthGuard],
+        component: AuditComponent,
       },
       { path: '', redirectTo: '/login', pathMatch: 'full' },
     ],

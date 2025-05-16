@@ -1,16 +1,32 @@
-import { Injectable, linkedSignal, signal } from '@angular/core';
+import { inject, Injectable, linkedSignal, signal } from '@angular/core';
 import { TokenSelectedContent } from '../../components/token/token.component';
 import { AuthService } from '../auth/auth.service';
+import { NavigationEnd, Router } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { filter, map } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ContentService {
+  private router = inject(Router);
+  routeUrl = toSignal(
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      map(() => this.router.url),
+    ),
+    { initialValue: this.router.url },
+  );
   isProgrammaticTabChange = signal(false);
-  selectedContent = linkedSignal<string, TokenSelectedContent>({
-    source: this.authService.role,
-    computation: (role) => {
-      return role === 'user' ? 'token_self-service_menu' : 'token_overview';
+  selectedContent = linkedSignal<{ role: string }, TokenSelectedContent>({
+    source: () => ({
+      role: this.authService.role(),
+      routeUrl: this.isProgrammaticTabChange() ? null : this.routeUrl(),
+    }),
+    computation: (source: any) => {
+      return source.role === 'user'
+        ? 'token_self-service_menu'
+        : 'token_overview';
     },
   });
   tokenSerial = linkedSignal({
@@ -25,7 +41,10 @@ export class ContentService {
   constructor(private authService: AuthService) {}
 
   tokenSelected(serial: string) {
-    if (this.selectedContent().includes('container')) {
+    if (
+      this.selectedContent().includes('container') ||
+      !this.routeUrl().includes('token')
+    ) {
       this.isProgrammaticTabChange.set(true);
     }
     this.selectedContent.set('token_details');
@@ -33,7 +52,10 @@ export class ContentService {
   }
 
   containerSelected(containerSerial: string) {
-    if (this.selectedContent().includes('token')) {
+    if (
+      this.selectedContent().includes('token') ||
+      !this.routeUrl().includes('token')
+    ) {
       this.isProgrammaticTabChange.set(true);
     }
     this.selectedContent.set('container_details');

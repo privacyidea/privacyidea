@@ -48,8 +48,8 @@
                     <app-copy-button [copyText]="element.serial"></app-copy-button>
                   }
                   @case ("active") {
-                    <span (click)="toggleActive(element)"
-                          [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
+                      <span (click)="toggleActive(element)"
+                            [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
                         {{ tableUtilsService.getDisplayText(column.key, element) }}
                     </span>
                   }

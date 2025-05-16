@@ -22,7 +22,7 @@ import { TokenService } from '../../../services/token/token.service';
 import { ChallengesService } from '../../../services/token/challenges/challenges.service';
 import { ContentService } from '../../../services/content/content.service';
 
-export const columnsKeyMap = [
+export const columnKeysMap = [
   { key: 'timestamp', label: 'Timestamp' },
   { key: 'serial', label: 'Serial' },
   { key: 'transaction_id', label: 'Transaction ID' },
@@ -48,8 +48,8 @@ export const columnsKeyMap = [
   styleUrls: ['./challenges-table.component.scss'],
 })
 export class ChallengesTableComponent {
-  columnsKeyMap = columnsKeyMap;
-  displayedColumns = columnsKeyMap.map((c) => c.key);
+  columnsKeyMap = columnKeysMap;
+  displayedColumns = columnKeysMap.map((c) => c.key);
   pageSizeOptions = [5, 10, 15];
   apiFilter = this.challengesService.apiFilter;
   advancedApiFilter = this.challengesService.advancedApiFilter;

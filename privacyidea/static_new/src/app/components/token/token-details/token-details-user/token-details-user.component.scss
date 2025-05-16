@@ -33,7 +33,8 @@ $min-width-editable: 20rem;
     min-width: $min-width-editable;
   }
 
-  .user-pin-container {
+  .user-pin-container-padding {
+    margin-top: auto;
     padding: 0 1rem;
   }
 

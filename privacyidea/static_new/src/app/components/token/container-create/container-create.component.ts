@@ -129,24 +129,27 @@ export class ContainerCreateComponent {
       })
       .subscribe({
         next: (response: any) => {
-          this.containerSerial.set(response.result.value.container_serial);
           if (this.generateQRCode()) {
             this.containerService
               .registerContainer({
-                container_serial: this.containerSerial(),
+                container_serial: response.result.value.container_serial,
                 passphrase_response: this.passphraseResponse(),
                 passphrase_prompt: this.passphrasePrompt(),
               })
               .subscribe((registerResponse) => {
                 this.registerResponse.set(registerResponse);
                 this.openRegistrationDialog(registerResponse);
-                this.pollContainerRolloutState(this.containerSerial(), 5000);
+                this.pollContainerRolloutState(
+                  response.result.value.container_serial,
+                  5000,
+                );
               });
           } else {
             this.notificationService.openSnackBar(
-              `Container ${this.containerSerial()} enrolled successfully.`,
+              `Container ${response.result.value.container_serial} enrolled successfully.`,
             );
             this.selectedContent.set('container_details');
+            this.containerSerial.set(response.result.value.container_serial);
           }
         },
       });
