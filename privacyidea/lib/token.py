@@ -3058,7 +3058,7 @@ def export_tokens(tokens) -> str:
     return json_export
 
 
-def import_tokens(tokens) -> TokenImportResult:
+def import_tokens(tokens):
     """
     Import a list of token dictionaries.
 

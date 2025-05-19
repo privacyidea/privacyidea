@@ -647,9 +647,9 @@ class SmsTokenClass(HotpTokenClass):
         Import a sms token.
         """
         HotpTokenClass.import_token(self, token_information)
-        self.add_tokeninfo("dynamic_phone", token_information["dynamic_phone"])
-        if not token_information["dynamic_phone"]:
-            self.add_tokeninfo("phone", token_information["phone"])
+        self.add_tokeninfo("dynamic_phone", token_information.get("dynamic_phone", False))
+        if not token_information.get("dynamic_phone", False):
+            self.add_tokeninfo("phone", token_information.get("phone", False))
         self.save()
         pass
 
