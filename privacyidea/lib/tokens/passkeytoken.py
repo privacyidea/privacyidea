@@ -422,7 +422,7 @@ class PasskeyTokenClass(TokenClass):
             # TODO this vvv is horrible
             return True, message, transaction_id, challenge_details
         else:
-            return False, "", "", {}
+            return False, "", transactionid, {}
 
     @log_with(log)
     def use_for_authentication(self, options):
