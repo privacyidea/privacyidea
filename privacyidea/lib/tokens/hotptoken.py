@@ -918,7 +918,7 @@ class HotpTokenClass(TokenClass):
         Import a hotp token.
         """
         TokenClass.import_token(self, token_information)
-        self.token.otplen = int(token_information["otplen"])
-        self.token.count = token_information["count"]
-        self.save()
+        self.token.otplen = int(token_information.get("otplen", 6))
+        self.token.count = token_information.get("count", 0)
+        self.token.save()
         pass

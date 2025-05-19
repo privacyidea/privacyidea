@@ -524,7 +524,7 @@ class FourEyesTokenClass(TokenClass):
         Import a 4eyes token.
         """
         TokenClass.import_token(self, token_information)
-        self.add_tokeninfo("separator", token_information["separator"])
-        self.add_tokeninfo("4eyes", token_information["realms"])
+        self.add_tokeninfo("separator", token_information.get("separator", ","))
+        self.add_tokeninfo("4eyes", token_information.get("4eyes", ""))
         self.save()
         pass

@@ -2028,10 +2028,13 @@ class TokenClass(object):
         """
         Import a given token.
         """
-        self.token.set_otpkey(token_information["otpkey"])
-        self.add_tokeninfo("hashlib", token_information["hashlib"])
-        self.token.type = token_information["type"]
-        self.token.description = token_information["description"]
-        self.add_tokeninfo("tokenkind", token_information["tokenkind"])
-        self.save()
+        try:
+            self.token.set_otpkey(token_information["otpkey"])
+            self.add_tokeninfo("hashlib", token_information["hashlib"])
+            self.token.type = token_information["type"]
+            self.token.description = token_information["description"]
+            self.add_tokeninfo("tokenkind", token_information["tokenkind"])
+            self.save()
+        except Exception as exx:
+            log.error(f'Failed to import token: {exx}')
         pass

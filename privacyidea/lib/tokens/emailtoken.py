@@ -615,8 +615,8 @@ class EmailTokenClass(HotpTokenClass):
         Import a email token.
         """
         HotpTokenClass.import_token(self, token_information)
-        self.add_tokeninfo("dynamic_email", token_information["dynamic_email"])
-        if not token_information["dynamic_email"]:
-            self.add_tokeninfo("email", token_information["email"])
+        self.add_tokeninfo("dynamic_email", token_information.get("dynamic_email", False))
+        if not token_information.get("dynamic_email", False):
+            self.add_tokeninfo("email", token_information.get("email", None))
         self.save()
         pass

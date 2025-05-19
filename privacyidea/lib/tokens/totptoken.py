@@ -706,8 +706,8 @@ class TotpTokenClass(HotpTokenClass):
         Import a totp token.
         """
         HotpTokenClass.import_token(self, token_information)
-        self.add_tokeninfo("timeWindow", token_information["timeWindow"])
-        self.add_tokeninfo("timeShift", token_information["timeShift"])
-        self.add_tokeninfo("timeStep", token_information["timeStep"])
+        self.add_tokeninfo("timeWindow", token_information.get("timeWindow", 180))
+        self.add_tokeninfo("timeShift", token_information.get("timeShift", 0))
+        self.add_tokeninfo("timeStep", token_information.get("timeStep", 30))
         self.save()
         pass

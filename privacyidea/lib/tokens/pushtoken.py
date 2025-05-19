@@ -37,7 +37,7 @@ import traceback
 
 from privacyidea.api.lib.utils import getParam
 from privacyidea.api.lib.policyhelper import get_pushtoken_add_config, get_init_tokenlabel_parameters
-from privacyidea.lib.token import get_one_token, init_token
+from privacyidea.lib.token import get_one_token, init_token, remove_token
 from privacyidea.lib.utils import prepare_result, to_bytes, is_true, create_tag_dict
 from privacyidea.lib.error import (ResourceNotFoundError, ValidateError,
                                    privacyIDEAError, ConfigAdminError, PolicyError)
@@ -1229,11 +1229,16 @@ class PushTokenClass(TokenClass):
         Import a push token.
         """
         TokenClass.import_token(self, token_information)
-        self.add_tokeninfo("public_key_smartphone", token_information["public_key_smartphone"])
-        self.add_tokeninfo("public_key_server", token_information["public_key_server"])
-        self.add_tokeninfo("firebase_token", token_information["firebase_token"])
-        self.add_tokeninfo("private_key_server", token_information["private_key_server"], "password")
-        self.add_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG, token_information["push_firebase_config"])
-        self.save()
+        try:
+            self.add_tokeninfo("public_key_smartphone", token_information["public_key_smartphone"])
+            self.add_tokeninfo("public_key_server", token_information["public_key_server"])
+            self.add_tokeninfo("firebase_token", token_information["firebase_token"])
+            self.add_tokeninfo("private_key_server", token_information["private_key_server"], "password")
+            self.add_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG, token_information["push_firebase_config"])
+            self.save()
+        except KeyError as e:
+            remove_token(token_information["serial"])
+            raise ParameterError(f"Missing key {e} in token information. "
+                                 f"Please check the token information.")
         pass
 
