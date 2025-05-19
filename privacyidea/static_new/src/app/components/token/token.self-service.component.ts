@@ -3,7 +3,6 @@ import { TokenComponent } from './token.component';
 import { MatCardModule } from '@angular/material/card';
 import { MatIcon } from '@angular/material/icon';
 import { MatFabAnchor, MatFabButton } from '@angular/material/button';
-import { VersionService } from '../../services/version/version.service';
 import { TokenEnrollmentSelfServiceComponent } from './token-enrollment/token-enrollment.self-service.component';
 import { AssignTokenSelfServiceComponent } from './assign-token-self-service/assign-token-self-service.component';
 import { ContainerCreateSelfServiceComponent } from './container-create/container-create.self-service.component';
@@ -34,5 +33,4 @@ import { componentFadeAnimation } from '../../../styles/animations/animations';
 })
 export class TokenSelfServiceComponent extends TokenComponent {
   selectedContent = this.contentService.selectedContent;
-  versionService = inject(VersionService);
 }

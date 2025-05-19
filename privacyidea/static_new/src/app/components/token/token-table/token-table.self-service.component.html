@@ -1,11 +1,11 @@
 <div aria-label="Token Table"
      class="token-table-container">
-  <div class="filter-paginator-container">
+  <div class="selfservice-paginator-container">
     <mat-paginator (page)="onPageEvent($event)"
                    [length]="totalLength()"
                    [pageIndex]="pageIndex()"
-                   [pageSizeOptions]="pageSizeOptions()"
                    [pageSize]="pageSize()"
+                   hidePageSize
                    showFirstLastButtons></mat-paginator>
   </div>
   <table (matSortChange)="onSortEvent($event)"

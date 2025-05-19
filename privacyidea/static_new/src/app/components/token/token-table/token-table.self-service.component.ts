@@ -49,6 +49,10 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
     (column: { key: string; label: string }) => column.key,
   );
 
+  ngOnInit(): void {
+    this.pageSize.set(5);
+  }
+
   revokeToken(serial: string): void {
     this.dialog
       .open(ConfirmationDialogComponent, {

@@ -11,19 +11,13 @@
         </button>
       </div>
     }
-    <div class="token-selfservice-div">
+
+    <div class="token-selfservice-div flex-column">
       @switch (contentService.selectedContent()) {
         @case ("token_self-service_menu") {
-          <div class="selfservice-tile-layout"
+          <app-token-table-self-service />
+          <div class="selfservice-tile-layout flex-row"
                [@componentFade]>
-            <a class="tile-button"
-               mat-fab
-               (click)="selectedContent.set('token_overview')">
-              <div class="tile-title flex-column ali-center">
-                <mat-icon class="tile-icon">shield</mat-icon>
-                Token Overview
-              </div>
-            </a>
 
             <a class="tile-button"
                mat-fab
@@ -60,22 +54,9 @@
                 Create Container
               </div>
             </a>
+          </div>
+        }
 
-            <a class="tile-button"
-               mat-fab
-               (click)="versionService.openDocumentation('token_self-service_menu')">
-              <div class="tile-title flex-column ali-center">
-                <mat-icon class="tile-icon">info_outline</mat-icon>
-                Help
-              </div>
-            </a>
-          </div>
-        }
-        @case ("token_overview") {
-          <div [@componentFade]>
-            <app-token-table-self-service />
-          </div>
-        }
         @case ("token_enrollment") {
           <div [@componentFade]>
             <app-token-enrollment-self-service />

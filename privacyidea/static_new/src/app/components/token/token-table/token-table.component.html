@@ -23,7 +23,6 @@
                       [filterValue]="filterValue"></app-keyword-filter>
   <table (matSortChange)="onSortEvent($event)"
          [dataSource]="tokenDataSource()"
-         [matSortDisableClear]="false"
          aria-label="Token Data Table"
          class="token-table"
          mat-table

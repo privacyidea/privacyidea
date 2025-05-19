@@ -91,8 +91,6 @@ $margin-bottom-main: 8.5rem;
 
 .selfservice-tile-layout {
   margin: var(--global-padding);
-  grid-template-columns: repeat(3, 280px);
-  display: grid;
 }
 
 .tile-button {

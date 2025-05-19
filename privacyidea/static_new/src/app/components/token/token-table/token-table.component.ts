@@ -1,6 +1,7 @@
 import {
   Component,
   linkedSignal,
+  signal,
   ViewChild,
   WritableSignal,
 } from '@angular/core';
@@ -163,6 +164,10 @@ export class TokenTableComponent {
   }
 
   onSortEvent($event: Sort) {
+    if ($event.direction === '') {
+      this.sort.set({ active: 'serial', direction: 'asc' });
+      return;
+    }
     this.sort.set($event);
   }
 }

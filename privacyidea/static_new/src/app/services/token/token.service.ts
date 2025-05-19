@@ -189,7 +189,8 @@ export class TokenService {
   tokenResource = httpResource<TokenResponse>(() => {
     if (
       this.selectedContent() !== 'token_overview' &&
-      this.selectedContent() !== 'container_details'
+      this.selectedContent() !== 'container_details' &&
+      this.selectedContent() !== 'token_self-service_menu'
     ) {
       return undefined;
     }
