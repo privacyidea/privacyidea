@@ -1,7 +1,6 @@
 import {
   Component,
   linkedSignal,
-  signal,
   ViewChild,
   WritableSignal,
 } from '@angular/core';

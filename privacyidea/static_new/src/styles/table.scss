@@ -147,7 +147,8 @@ th:nth-child(even) {
 .highlight-false,
 .highlight-true-clickable,
 .highlight-warning-clickable,
-.highlight-false-clickable {
+.highlight-false-clickable,
+.highlight-disabled {
   border-radius: $border-radius;
   padding: $highlight-padding;
   color: $font-color_white;
@@ -166,6 +167,10 @@ th:nth-child(even) {
   &.highlight-false,
   &.highlight-false-clickable {
     background-color: var(--red-light);
+  }
+
+  &.highlight-disabled {
+    background-color: #969696;
   }
 
   &.highlight-true-clickable,

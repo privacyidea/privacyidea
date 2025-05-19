@@ -1,4 +1,5 @@
 import {
+  afterNextRender,
   Component,
   computed,
   effect,
@@ -44,6 +45,7 @@ import { UserService } from '../../../services/user/user.service';
 import { OverflowService } from '../../../services/overflow/overflow.service';
 import { TokenSelectedContent } from '../token.component';
 import { AuthService } from '../../../services/auth/auth.service';
+import { ContentService } from '../../../services/content/content.service';
 
 export const containerDetailsKeyMap = [
   { key: 'type', label: 'Type' },
@@ -234,7 +236,7 @@ export class ContainerDetailsComponent {
   filterHTMLInputElement!: ElementRef<HTMLInputElement>;
   @ViewChild('tokenAutoTrigger', { read: MatAutocompleteTrigger })
   tokenAutoTrigger!: MatAutocompleteTrigger;
-  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
+  selectedContent = this.contentService.selectedContent;
 
   constructor(
     protected overflowService: OverflowService,
@@ -244,11 +246,18 @@ export class ContainerDetailsComponent {
     protected tokenService: TokenService,
     protected userService: UserService,
     private authService: AuthService,
+    private contentService: ContentService,
   ) {
     effect(() => {
       this.showOnlyTokenNotInContainer();
       if (this.filterHTMLInputElement) {
         this.filterHTMLInputElement.nativeElement.focus();
+      }
+    });
+    effect(() => {
+      const res = this.containerDetailResource.value();
+      if (res && res.result.value.containers.length === 0) {
+        setTimeout(() => this.selectedContent.set('container_overview'));
       }
     });
   }

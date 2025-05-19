@@ -46,10 +46,6 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
     (column: { key: string; label: string }) => column.key,
   );
 
-  ngOnInit(): void {
-    this.pageSize.set(5);
-  }
-
   deleteContainer(serial: string): void {
     this.dialog
       .open(ConfirmationDialogComponent, {

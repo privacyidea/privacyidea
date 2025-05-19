@@ -1,10 +1,10 @@
 @use "../../../styles";
+@use '@angular/material' as mat;
 
 $login-bg: white;
 $btn-bg: var(--background-blue);
 $btn-hover-bg: var(--background-blue-inset);
 $btn-text-color: white;
-$box-shadow: var(--box-shadow-white);
 $border-radius: var(--border-radius);
 
 .login-container {
@@ -27,7 +27,7 @@ $border-radius: var(--border-radius);
     width: 8%;
     height: auto;
     border-radius: 50%;
-    box-shadow: $box-shadow;
+    @include mat.elevation(5);
     margin-bottom: 20px;
   }
 

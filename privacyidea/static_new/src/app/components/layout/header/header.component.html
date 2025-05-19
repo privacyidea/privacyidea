@@ -11,45 +11,40 @@
   </div>
   <div class="nav-div">
     <nav class="nav-menu">
-      @if (authService.menus().includes("tokens")) {
+      @if (authService.role() === 'admin') {
         <a [ngClass]="{ active: isActive('/token') }"
            extended
            mat-fab
            routerLink="token">
           <mat-icon>shield</mat-icon>
           <h4>Tokens</h4></a>
-      }
-      @if (authService.menus().includes("users")) {
+
         <a [ngClass]="{ active: isActive('/user') }"
            extended
            mat-fab
            routerLink="user">
           <mat-icon>supervised_user_circle</mat-icon>
           <h4>{{ authService.role() === 'admin' ? "Users" : "User" }}</h4></a>
-      }
-      @if (authService.menus().includes("machines")) {
+
         <a extended
            href="#"
            mat-fab>
           <mat-icon>dns</mat-icon>
           <h4>Machines</h4></a>
-      }
-      @if (authService.menus().includes("config")) {
+
         <a extended
            href="#"
            mat-fab>
           <mat-icon>miscellaneous_services</mat-icon>
           <h4>Configuration</h4></a>
-      }
-      @if (authService.menus().includes("audit")) {
+
         <a [ngClass]="{ active: isActive('/audit') }"
            extended
            mat-fab
            routerLink="audit">
           <mat-icon>manage_search</mat-icon>
           <h4>Audit</h4></a>
-      }
-      @if (authService.menus().includes("components")) {
+
         <a extended
            href="#"
            mat-fab>

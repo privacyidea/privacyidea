@@ -76,7 +76,10 @@ export class AuditService {
     computation: () => 0,
   });
   auditResource = httpResource<any>(() => {
-    if (this.contentService.routeUrl() !== '/audit') {
+    if (
+      this.contentService.routeUrl() !== '/audit' &&
+      this.contentService.selectedContent() !== 'audit'
+    ) {
       return undefined;
     }
     return {

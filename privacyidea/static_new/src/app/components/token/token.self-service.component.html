@@ -15,7 +15,10 @@
     <div class="token-selfservice-div flex-column">
       @switch (contentService.selectedContent()) {
         @case ("token_self-service_menu") {
-          <app-token-table-self-service />
+          <div class="flex-row">
+            <app-token-table-self-service />
+            <app-user-self-service />
+          </div>
           <div class="selfservice-tile-layout flex-row"
                [@componentFade]>
 
@@ -54,9 +57,17 @@
                 Create Container
               </div>
             </a>
+
+            <a class="tile-button"
+               mat-fab
+               (click)="selectedContent.set('audit')">
+              <div class="tile-title flex-column ali-center">
+                <mat-icon class="tile-icon">manage_search</mat-icon>
+                Audit Log
+              </div>
+            </a>
           </div>
         }
-
         @case ("token_enrollment") {
           <div [@componentFade]>
             <app-token-enrollment-self-service />
@@ -85,6 +96,11 @@
         @case ("assign_token") {
           <div [@componentFade]>
             <app-assign-token-self-service />
+          </div>
+        }
+        @case ("audit") {
+          <div [@componentFade]>
+            <app-audit />
           </div>
         }
       }

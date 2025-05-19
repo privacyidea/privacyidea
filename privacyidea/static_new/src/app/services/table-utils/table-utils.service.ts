@@ -151,13 +151,14 @@ export class TableUtilsService {
   }
 
   getClassForColumn(columnKey: string, element: any): string {
+    if (element['locked'] || element['revoked']) {
+      return 'highlight-disabled';
+    }
     if (columnKey === 'active') {
       if (element['active'] === '') {
         return '';
       }
-      if (element['locked'] || element['revoked']) {
-        return 'highlight-false';
-      } else if (element['active'] === false) {
+      if (element['active'] === false) {
         return 'highlight-false-clickable';
       } else if (element['active']) {
         return 'highlight-true-clickable';
@@ -172,17 +173,9 @@ export class TableUtilsService {
         element['failcount'] > 0 &&
         element['failcount'] < element['maxfail']
       ) {
-        if (element['locked'] || element['revoked']) {
-          return 'highlight-warning';
-        } else {
-          return 'highlight-warning-clickable';
-        }
+        return 'highlight-warning-clickable';
       } else {
-        if (element['locked'] || element['revoked']) {
-          return 'highlight-false';
-        } else {
-          return 'highlight-false-clickable';
-        }
+        return 'highlight-false-clickable';
       }
     }
     return '';

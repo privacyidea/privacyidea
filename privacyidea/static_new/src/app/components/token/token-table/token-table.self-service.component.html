@@ -17,12 +17,12 @@
          matSort>
     @for (column of columnKeysMapSelfService; track column) {
       <ng-container [matColumnDef]="column.key">
-          <th *matHeaderCellDef
-              attr.aria-label="{{ column.label }} Header"
-              mat-header-cell
-              mat-sort-header>
-            {{ column.label }}
-          </th>
+        <th *matHeaderCellDef
+            attr.aria-label="{{ column.label }} Header"
+            mat-header-cell
+            mat-sort-header>
+          {{ column.label }}
+        </th>
         <td *matCellDef="let element; let row"
             attr.aria-label="{{ column.label }} Cell"
             mat-cell
@@ -60,15 +60,17 @@
                   </span>
               }
               @case ("revoke") {
+                @if (!element.revoked) {
                 <button (click)="revokeToken(element.serial)"
                         mat-icon-button>
-                  <mat-icon>delete_forever</mat-icon>
+                  <mat-icon>undo</mat-icon>
                 </button>
+                }
               }
               @case ("delete") {
                 <button (click)="deleteToken(element.serial)"
                         mat-icon-button>
-                  <mat-icon>delete_outlined</mat-icon>
+                  <mat-icon>delete_forever</mat-icon>
                 </button>
               }
               @default {

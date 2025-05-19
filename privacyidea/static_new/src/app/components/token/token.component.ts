@@ -61,7 +61,8 @@ export type TokenSelectedContent =
   | 'token_applications'
   | 'token_get_serial'
   | 'token_self-service_menu'
-  | 'assign_token';
+  | 'assign_token'
+  | 'audit';
 
 @Component({
   selector: 'app-token-grid',

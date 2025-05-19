@@ -1,7 +1,7 @@
 <h2 mat-dialog-title>{{ data.title }}</h2>
 
 <mat-dialog-content>
-  @if (data.action === "remove" || data.action === "delete") {
+  @if (data.action === "remove" || data.action === "delete" || data.action === "revoke") {
     <p>
       Are you sure you want to {{ data.action }}
       @if (data.numberOfTokens > 1 && data.type === "token") {
