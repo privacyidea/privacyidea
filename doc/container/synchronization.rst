@@ -47,10 +47,12 @@ To set up the smartphone synchronization properly, the following steps are requi
    user to create the registration QR code.
 3. **Register Container**:
    To register the container on the smartphone, the user needs to scan the QR code. The QR code can be generated
-   during the container creation or on the container details page. Optionally, a passphrase prompt and response can be
-   set to secure the container registration. The passphrase prompt will be displayed to the user in the app, e.g.
-   "Enter the last four digits of your employee ID.", and the passphrase response is the correct answer to the prompt,
-   the actual passphrase.
+   during the container creation or on the container details page.
+   Optionally, the user can secure the registration with a passphrase. Either the passphrase from the user store
+   (beginning from version 3.12) or a manually defined passphrase can be used. When using an individual passphrase,
+   the passphrase prompt and response must be configured. The passphrase prompt will be displayed to the user in the
+   app, e.g. "Enter the last four digits of your employee ID.", and the passphrase response is the correct answer to
+   the prompt, the actual passphrase.
    The registration is completed if the user scans the QR code and enters the correct passphrase.
 4. **Synchronize Container**:
    After a successful registration, the pi Authenticator app triggers a synchronization automatically. The user
@@ -101,6 +103,9 @@ The following variables are included in the URI:
     * ``hash_algorithm``: The hash algorithm to be used to generate the key pair
     * ``ssl_verify``: Whether the SSL certificate of the privacyIDEA server should be verified
     * ``passphrase``: Optional passphrase prompt, displayed to the user to enter the corresponding passphrase
+    * ``send_passphrase``: Boolean value whether the passphrase should be sent to the server to finalize the
+      registration. It is "True" if the user store passphrase is used and "False" if the individual passphrase or no
+      passphrase at all is used. (Added in version 3.12)
 
 Example of a URI:
 
@@ -131,6 +136,7 @@ parameters:
     public_key: <ecc public key of the client in PEM format (curve secp384r1)>
     device_brand: <device brand>
     device_model: <device model>
+    passphrase: <passphrase response>
 
 The server verifies the signature. If it is valid the registration is completed. See also
 :meth:`privacyidea.lib.containers.smartphone.SmartphoneContainer.finalize_registration`

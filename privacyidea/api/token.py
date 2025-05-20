@@ -56,7 +56,7 @@
 
 from flask import (Blueprint, request, g, current_app)
 
-from ..lib.container import find_container_by_serial, add_token_to_container
+from ..lib.container import find_container_by_serial, add_token_to_container, add_not_authorized_tokens_result
 from ..lib.log import log_with
 from .lib.utils import optional, send_result, send_csv_result, required, getParam
 from ..lib.tokenclass import ROLLOUTSTATE
@@ -105,7 +105,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_t
                                            webauthntoken_request, required_piv_attestation,
                                            hide_tokeninfo, init_ca_connector, init_ca_template,
                                            init_subject_components, require_description,
-                                           check_container_action, check_user_params)
+                                           check_container_action, check_user_params, check_token_list_action)
 from privacyidea.api.lib.postpolicy import (save_pin_change, check_verify_enrollment,
                                             postpolicy)
 from privacyidea.lib.event import event
@@ -644,6 +644,37 @@ def delete_api(serial):
     user = request.User
     res = remove_token(serial, user=user)
     g.audit_object.log({"success": True})
+    return send_result(res)
+
+
+@token_blueprint.route('/batchdeletion', methods=['POST'])
+@prepolicy(check_token_list_action, request, action=ACTION.DELETE)
+@event("token_delete", request, g)
+@log_with(log)
+def batch_deletion():
+    """
+    Delete all passed tokens, e.g. all tokens of a container
+    All errors during the deletion of a token are fetched to be able to delete the remaining tokens.
+
+    :jsonparam serial: A comma separated list of token serials to delete
+    :return: Dictionary with the serials as keys and the success status of the deletion as values
+    """
+    serial_list = getParam(request.all_data, "serial", required)
+    serial_list = serial_list.replace(" ", "").split(",")
+    g.audit_object.log({"serial": serial_list})
+    ret = {}
+    for serial in serial_list:
+        try:
+            success = remove_token(serial)
+        except Exception as ex:
+            # We are catching the exception here to be able to delete the remaining tokens
+            log.error(f"Error deleting token {serial}: {ex}")
+            success = False
+        ret[serial] = success
+
+    not_authorized_serials = getParam(request.all_data, "not_authorized_serials", optional=True)
+    res = add_not_authorized_tokens_result(ret, not_authorized_serials)
+
     return send_result(res)
 
 
