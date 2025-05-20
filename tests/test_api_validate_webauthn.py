@@ -437,7 +437,7 @@ class WebAuthn(MyApiTestCase):
         remove_token("hotpX1")
         remove_token(self.serial)
 
-    def _enroll_webauthn(self, serial: str, client_data: str, reg_data: str, mock_nonce: str):
+    def _enroll_webauthn(self, serial, client_data, reg_data, mock_nonce):
         # First enrollment step
         with self.app.test_request_context('/token/init',
                                            method='POST',
@@ -471,7 +471,7 @@ class WebAuthn(MyApiTestCase):
                 res = self.app.full_dispatch_request()
                 self.assertTrue(res.status_code == 200, res)
 
-    def _authenticate_webauthn(self, data: dict):
+    def _authenticate_webauthn(self, data):
         with self.app.test_request_context('/validate/check', method='POST', data=data,
                                            headers={"Origin": "https://kc.fritz.box:8443"}):
             res = self.app.full_dispatch_request()
@@ -480,7 +480,7 @@ class WebAuthn(MyApiTestCase):
             self.assertTrue(res.json.get("result").get("value"))
             self.assertEqual("ACCEPT", res.json.get("result").get("authentication"))
 
-    def _change_challenge_nonce(self, transaction_id: str, new_nonce: str, serial: Union[str, None] = None):
+    def _change_challenge_nonce(self, transaction_id, new_nonce, serial = None):
         from privacyidea.lib.challenge import get_challenges
         challenge = get_challenges(serial=serial, transaction_id=transaction_id)[0]
         if not challenge:

@@ -1551,7 +1551,7 @@ def delete_policy(name):
     return fetch_one_resource(Policy, name=name).delete()
 
 @log_with(log)
-def delete_policies(names: list[str]) -> list[int]:
+def delete_policies(names):
     """
     Delete multiple policies. ResourceNotFoundErrors are suppressed.
 
