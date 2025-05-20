@@ -10,3 +10,10 @@
   margin: 2rem 1rem 1rem;
   overflow: auto;
 }
+
+.filter-paginator-container-selfservice {
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  gap: 1rem;
+}

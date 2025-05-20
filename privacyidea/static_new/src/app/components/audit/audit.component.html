@@ -63,6 +63,13 @@
                       }
                     </div>
                   }
+                  @case (column.key === 'sig_check' || column.key === 'missing_line'
+                    ? column.key : '') {
+                    <span [ngClass]="[element[column.key] === 'OK' ? 'highlight-true' :
+                        'highlight-false']">
+                      {{ element[column.key] }}
+                    </span>
+                  }
                   @case ('container_serial') {
                     <div class="flex-row ali-center">
                       <a attr.aria-label="{{ column.label }} Link"
