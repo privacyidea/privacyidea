@@ -1670,7 +1670,7 @@ class PolicyTestCase(MyTestCase):
         set_policy("wan2", scope=SCOPE.ENROLL, action="webauthn_relying_party_name=fritz box")
         policies = Policy.query.filter_by().all()
         self.assertEqual(2, len(policies), policies)
-        # Delete those and one that does not exist inbetween, which will NOT raise an error and still remove the
+        # Delete those and one that does not exist in between, which will NOT raise an error and still remove the
         # other 2, indicated by the returned ids
         deleted_ids = delete_policies(["wan1", "wan3", "wan2"])
         self.assertEqual(2, len(deleted_ids), deleted_ids)
