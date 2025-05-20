@@ -1182,8 +1182,7 @@ class WebAuthnTokenClass(TokenClass):
 
             uv_req = get_optional(options, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT)
             # Check if challenge is base64 encoded to be able to use login via passkey with webauthn
-            challenge = get_required(options, "challenge")
-            challenge: str = challenge.replace("=", "")
+            challenge = get_required(options, "challenge").rstrip("=")
             challenge_decoded = None
             if len(challenge) % 2 == 0:
                 try:
