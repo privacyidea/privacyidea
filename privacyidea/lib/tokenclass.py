@@ -1667,7 +1667,8 @@ class TokenClass(object):
 
     def challenge_janitor(self):
         """
-        Just clean up all challenges, for which the expiration has expired.
+        Clean up all challenges for this token, for which the expiration has
+        expired.
 
         :return: None
         """

@@ -1550,6 +1550,7 @@ def delete_policy(name):
     """
     return fetch_one_resource(Policy, name=name).delete()
 
+
 @log_with(log)
 def delete_policies(names):
     """
@@ -1567,6 +1568,7 @@ def delete_policies(names):
             log.warning(f"Policy with name '{name}' does not exist and therefore can not be deleted.")
             pass
     return ids
+
 
 @log_with(log)
 def delete_all_policies():

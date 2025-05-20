@@ -1196,7 +1196,7 @@ class WebAuthnTokenClass(TokenClass):
                     challenge_decoded = bytes_to_base64url(challenge.encode("utf-8"))
                 except Exception as ex:
                     log.warning(f"Challenge {get_required(options, 'challenge')} is not base64url encoded. {ex}.")
-                    raise AuthenticationRejectedException('Challenge is not hex or base64url encoded.')
+                    raise AuthenticationRejectedException('Challenge is neither hex nor base64url encoded.')
 
             http_origin = get_required(options, "HTTP_ORIGIN")
             if not http_origin:
