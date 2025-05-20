@@ -37,8 +37,7 @@ from webauthn.helpers.structs import (AttestationConveyancePreference, Authentic
 from webauthn.registration.verify_registration_response import VerifiedRegistration
 
 from privacyidea.api.lib.utils import get_optional, get_required, get_required_one_of, get_optional_one_of
-from privacyidea.lib import _
-from privacyidea.lib import fido2
+from privacyidea.lib import _, fido2
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.decorators import check_token_locked
@@ -422,7 +421,7 @@ class PasskeyTokenClass(TokenClass):
             # TODO this vvv is horrible
             return True, message, transaction_id, challenge_details
         else:
-            return False, "", "", {}
+            return False, "", transactionid, {}
 
     @log_with(log)
     def use_for_authentication(self, options):

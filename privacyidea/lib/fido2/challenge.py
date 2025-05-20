@@ -1,18 +1,19 @@
 from typing import Union
+import logging
 
 from webauthn.helpers import bytes_to_base64url
 
 from privacyidea.api.lib.utils import get_required_one_of, get_optional_one_of, get_required
-from privacyidea.lib import fido2
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.error import ResourceNotFoundError, AuthError
 from privacyidea.lib.fido2.config import FIDO2ConfigOptions
-from privacyidea.lib.token import log
 from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.models import Challenge
+from privacyidea.lib import fido2
+from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 
+log = logging.getLogger(__name__)
 
 def get_fido2_nonce() -> str:
     """

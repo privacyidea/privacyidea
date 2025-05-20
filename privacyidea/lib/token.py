@@ -2359,9 +2359,8 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
     for token in token_list:
         # Check if the max auth is succeeded
         if token.check_all(message_list):
-            challenge_created, message, transaction_id, challenge_info = token.create_challenge(
+            challenge_created, message, new_transaction_id, challenge_info = token.create_challenge(
                 transactionid=transaction_id, options=options)
-
             # We need to pass the info if a push token has been triggered, so that require presence can re-use the
             # challenge instead of creating a new one with a different answer
             # Also check the challenge info if the presence answer is returned to pass it on for tag replacement
@@ -2375,6 +2374,8 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
                                              additional_tags=additional_tags)
             message_list.append(message)
             if challenge_created:
+                if new_transaction_id:
+                    transaction_id = new_transaction_id
                 challenge_info = challenge_info or {}
                 challenge_info["transaction_id"] = transaction_id
                 challenge_info["serial"] = token.token.serial
@@ -2631,11 +2632,10 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                         token_object.reset()
                         token_object.post_success()
 
-                    # clean up all challenges from this and other tokens. I.e.
-                    # all challenges with this very transaction_id!
+                    # Clean up all challenges with this transaction_id
                     transaction_id = options.get("transaction_id") or options.get("state")
                     Challenge.query.filter(Challenge.transaction_id == '' + transaction_id).delete()
-                    # We have one successful authentication, so we bail out
+                    # Authentication is successful, stop here
                     break
 
         if not res and not further_challenge:

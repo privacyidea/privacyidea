@@ -1552,6 +1552,25 @@ def delete_policy(name):
 
 
 @log_with(log)
+def delete_policies(names):
+    """
+    Delete multiple policies. ResourceNotFoundErrors are suppressed.
+
+    :param names: the names of the policies to be deleted
+    :return: the IDs of the deleted policies
+    :rtype: list[int]
+    """
+    ids = []
+    for name in names:
+        try:
+            ids.append(delete_policy(name))
+        except ResourceNotFoundError:
+            log.warning(f"Policy with name '{name}' does not exist and therefore can not be deleted.")
+            pass
+    return ids
+
+
+@log_with(log)
 def delete_all_policies():
     policies = Policy.query.all()
     for p in policies:
