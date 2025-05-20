@@ -293,8 +293,6 @@ $header-bg: white;
 }
 
 .profile-btn {
-  margin-left: 1rem;
-  margin-right: 130px;
   height: 60px;
   justify-content: start;
   border: none;
@@ -310,6 +308,10 @@ $header-bg: white;
     color: white;
     transform: translateX(2px);
   }
+}
+
+.logout-btn {
+  color: lightgray;
 }
 
 .drawer-button {

@@ -74,12 +74,20 @@
           {{ sessionTimerService.remainingTime() | date: "mm" }}min
         }
       </div>
+      <div class="profile-logout-div flex-row">
       <button class="profile-btn"
               extended
               href="#"
               mat-fab>
         <mat-icon>account_box</mat-icon>
         <h4>{{ profileText }}</h4></button>
+        <button (click)="logout()"
+                class="logout-btn"
+                aria-label="Logout"
+                mat-icon-button>
+          <mat-icon>logout</mat-icon>
+        </button>
+      </div>
     </div>
   </div>
 </div>
