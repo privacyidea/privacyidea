@@ -10,6 +10,8 @@ from privacyidea.lib.error import ResourceNotFoundError, AuthError
 from privacyidea.lib.fido2.config import FIDO2ConfigOptions
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.models import Challenge
+from privacyidea.lib import fido2
+from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 
 log = logging.getLogger(__name__)
 

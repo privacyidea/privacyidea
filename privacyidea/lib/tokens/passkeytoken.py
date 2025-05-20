@@ -37,7 +37,7 @@ from webauthn.helpers.structs import (AttestationConveyancePreference, Authentic
 from webauthn.registration.verify_registration_response import VerifiedRegistration
 
 from privacyidea.api.lib.utils import get_optional, get_required, get_required_one_of, get_optional_one_of
-from privacyidea.lib import _
+from privacyidea.lib import _, fido2
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.decorators import check_token_locked
@@ -46,7 +46,6 @@ from privacyidea.lib.fido2.config import FIDO2ConfigOptions
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
 from privacyidea.lib.fido2.util import hash_credential_id, save_credential_id_hash
-from privacyidea.lib.fido2.challenge import get_fido2_nonce, create_fido2_challenge
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION, SCOPE
 from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE, AUTHENTICATIONMODE, CLIENTMODE
@@ -152,7 +151,7 @@ class PasskeyTokenClass(TokenClass):
 
             response_detail: dict = TokenClass.get_init_detail(self, params, token_user)
             response_detail['rollout_state'] = self.token.rollout_state
-            nonce_base64 = get_fido2_nonce()
+            nonce_base64 = fido2.challenge.get_fido2_nonce()
             challenge_validity: int = int(get_from_config(FIDO2ConfigOptions.CHALLENGE_VALIDITY_TIME,
                                                           get_from_config('DefaultChallengeValidityTime', 120)))
             challenge: Challenge = Challenge(serial=self.token.serial,
@@ -413,8 +412,8 @@ class PasskeyTokenClass(TokenClass):
         if options and PasskeyAction.EnableTriggerByPIN in options and options[PasskeyAction.EnableTriggerByPIN]:
             rp_id = get_required(options, FIDO2PolicyAction.RELYING_PARTY_ID)
             user_verification = get_optional(options, "user_verification", "preferred")
-            challenge = create_fido2_challenge(rp_id, user_verification=user_verification,
-                                               transaction_id=transactionid, serial=self.token.serial)
+            challenge = fido2.challenge.create_fido2_challenge(rp_id, user_verification=user_verification,
+                                                               transaction_id=transactionid, serial=self.token.serial)
             message = challenge["message"]
             transaction_id = challenge["transaction_id"]
             challenge_details = {"challenge": challenge["challenge"], "rpId": rp_id,

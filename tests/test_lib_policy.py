@@ -6,7 +6,7 @@ The lib.policy.py only depends on the database model.
 import dateutil
 import mock
 
-from privacyidea.models import PolicyDescription
+from privacyidea.models import PolicyDescription, Policy
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 
 from privacyidea.lib.auth import ROLE
@@ -17,7 +17,7 @@ from privacyidea.lib.policy import (set_policy, delete_policy,
                                     PolicyError, ACTION, MAIN_MENU,
                                     delete_all_policies,
                                     get_action_values_from_options, Match, MatchingError,
-                                    get_allowed_custom_attributes, convert_action_dict_to_python_dict)
+                                    get_allowed_custom_attributes, convert_action_dict_to_python_dict, delete_policies)
 from privacyidea.lib.realm import (set_realm, delete_realm, get_realms)
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list,
                                       delete_resolver)
@@ -1659,6 +1659,23 @@ class PolicyTestCase(MyTestCase):
         python_dict = convert_action_dict_to_python_dict(action_dict)
         self.assertEqual({}, python_dict)
 
+    def test_44_delete_policies_list(self):
+        # Clean up policies from previous tests...
+        delete_all_policies()
+        # No policies exist
+        policies = Policy.query.filter_by().all()
+        self.assertFalse(policies, policies)
+        # Create some policies
+        set_policy("wan1", scope=SCOPE.ENROLL, action="webauthn_relying_party_id=fritz.box")
+        set_policy("wan2", scope=SCOPE.ENROLL, action="webauthn_relying_party_name=fritz box")
+        policies = Policy.query.filter_by().all()
+        self.assertEqual(2, len(policies), policies)
+        # Delete those and one that does not exist inbetween, which will NOT raise an error and still remove the
+        # other 2, indicated by the returned ids
+        deleted_ids = delete_policies(["wan1", "wan3", "wan2"])
+        self.assertEqual(2, len(deleted_ids), deleted_ids)
+        policies = Policy.query.filter_by().all()
+        self.assertFalse(policies, policies)
 
 class PolicyMatchTestCase(MyTestCase):
     @classmethod
