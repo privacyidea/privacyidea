@@ -987,15 +987,15 @@ class WebAuthnTokenClass(TokenClass):
             }
 
             if credential_options.get("authenticatorSelection"):
-               register_request["authenticatorSelection"] = credential_options["authenticatorSelection"]
+                register_request["authenticatorSelection"] = credential_options["authenticatorSelection"]
             if credential_options.get("timeout"):
-               register_request["timeout"] = credential_options["timeout"]
+                register_request["timeout"] = credential_options["timeout"]
             if credential_options.get("attestation"):
-               register_request["attestation"] = credential_options["attestation"]
+                register_request["attestation"] = credential_options["attestation"]
             if (credential_options.get("extensions") or {}).get("authnSel"):
-               register_request["authenticatorSelectionList"] = credential_options["extensions"]["authnSel"]
+                register_request["authenticatorSelectionList"] = credential_options["extensions"]["authnSel"]
             if credential_options.get("excludeCredentials"):
-               register_request["excludeCredentials"] = credential_options.get("excludeCredentials")
+                register_request["excludeCredentials"] = credential_options.get("excludeCredentials")
 
             response_detail["webAuthnRegisterRequest"] = register_request
 
@@ -1187,11 +1187,10 @@ class WebAuthnTokenClass(TokenClass):
             challenge_decoded = None
             if len(challenge) % 2 == 0:
                 try:
-                    challenge_decoded = binascii.unhexlify(challenge)
-                    challenge_decoded = webauthn_b64_encode(challenge_decoded)
+                    challenge_decoded = webauthn_b64_encode(binascii.unhexlify(challenge))
                 except Exception as ex:
-                    log.warning(f"Challenge {get_required(options, 'challenge')} is not hex encoded. {ex}. Attempting"
-                                f" to decode it as base64.")
+                    log.warning(f"Challenge {get_required(options, 'challenge')} is not hex encoded. {ex}. "
+                                f"Attempting to decode it as base64url.")
             if not challenge_decoded:
                 try:
                     challenge_decoded = bytes_to_base64url(challenge.encode("utf-8"))

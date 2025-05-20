@@ -1,17 +1,19 @@
+from typing import Union
+
 from mock.mock import patch
 from webauthn.helpers import bytes_to_base64url
 
-from .base import MyApiTestCase
-from privacyidea.models import TokenCredentialIdHash, TokenInfo
 from privacyidea.lib.fido2.util import hash_credential_id
 from privacyidea.lib.machine import attach_token, detach_token
-from privacyidea.lib.policy import SCOPE, ACTION, set_policy, delete_policy
+from privacyidea.lib.policy import SCOPE, ACTION, set_policy, delete_policy, delete_policies
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    get_one_token)
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
 from privacyidea.lib.tokens.webauthn import webauthn_b64_decode
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
+from privacyidea.models import TokenCredentialIdHash, TokenInfo
+from .base import MyApiTestCase
 
 
 class WebAuthn(MyApiTestCase):
@@ -306,7 +308,7 @@ class WebAuthn(MyApiTestCase):
         token_info_entry.delete()
 
         # For WebAuthn token, the userHandle is the serial
-        user_handle = bytes_to_base64url(webauthn_serial.encode("utf-8"))
+        user_handle = bytes_to_base64url(webauthn_serial.encode())
         data = {
             "authenticatordata": "1kwVsywYDmugu2qhEi7LiS8tgyaE5XqILRqvKXkZ-1oBAAAACA",
             "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiWjFvc0hYVl9rYm1FMEpnNVMyemtCV1VLSTNaTzZVWU8t"
@@ -435,20 +437,7 @@ class WebAuthn(MyApiTestCase):
         remove_token("hotpX1")
         remove_token(self.serial)
 
-    def test_30_sign_count_zero(self):
-        """
-        Some authenticators do not return a real sign count, but instead 0. This is allowed by the spec and should not
-        cause any problems. https://w3c.github.io/webauthn/#sctn-sign-counter
-        This test uses data recorded from using a passkey on a Macbook.
-        """
-        delete_policy("wan1")
-        delete_policy("wan2")
-        set_policy("wan1", scope=SCOPE.ENROLL, action="webauthn_relying_party_id=fritz.box")
-        set_policy("wan2", scope=SCOPE.ENROLL, action="webauthn_relying_party_name=fritz box")
-        # Required for Macbook passkey to work because of no or unsupported attestation format
-        set_policy("wan3", scope=SCOPE.ENROLL,
-                   action="webauthn_authenticator_attestation_level=none, webauthn_authenticator_attestation_form=none")
-        serial = "WAN00023620"
+    def _enroll_webauthn(self, serial: str, client_data: str, reg_data: str, mock_nonce: str):
         # First enrollment step
         with self.app.test_request_context('/token/init',
                                            method='POST',
@@ -466,21 +455,7 @@ class WebAuthn(MyApiTestCase):
             self.assertEqual("Please confirm with your WebAuthn token", webauthn_request.get("message"))
             transaction_id = webauthn_request.get("transaction_id")
 
-            # Update the nonce in the challenge database.
-            from privacyidea.lib.challenge import get_challenges
-            recorded_nonce = "q6RYoDdiC8YUCqBas4MMx2663kKdZdYV1q8PJTzmNkE"
-            recorded_nonce_hex = hexlify_and_unicode(webauthn_b64_decode(recorded_nonce))
-            chal = get_challenges(serial=serial, transaction_id=transaction_id)[0]
-            chal.challenge = recorded_nonce_hex
-            chal.save()
-
-            client_data = ("eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoicTZSWW9EZGlDOFlVQ3FCYXM0TU14MjY2M2tLZFp"
-                           "kWVYxcThQSlR6bU5rRSIsIm9yaWdpbiI6Imh0dHBzOi8vcGkuZnJpdHouYm94OjUwMDAiLCJjcm9zc09yaWdpbiI6Zm"
-                           "Fsc2V9")
-            reg_data = (
-                "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YViY1kwVsywYDmugu2qhEi7LiS8tgyaE5XqILRqvKXkZ-1pdAAAAAAAAAAA"
-                "AAAAAAAAAAAAAAAAAFKv96-pAxzqutsqg657wFMw3JxY5pQECAyYgASFYIPsVTkUsjPCSLoBk2Yj1zEp8626I-_LobjfOI"
-                "aOdrTlfIlggSXIdmqO_aLKz71Qr-Xg3zMYabPYmUWtT3RsKyjZpTww")
+            self._change_challenge_nonce(transaction_id, mock_nonce, serial)
 
             # Second enrollment step
             with self.app.test_request_context('/token/init',
@@ -496,53 +471,136 @@ class WebAuthn(MyApiTestCase):
                 res = self.app.full_dispatch_request()
                 self.assertTrue(res.status_code == 200, res)
 
-            # Authenticate
-            with self.app.test_request_context('/validate/check',
-                                               method='POST',
-                                               data={"user": self.username,
-                                                     "pass": self.pin},
-                                               headers={"Origin": "https://kc.fritz.box:8443"}):
-                res = self.app.full_dispatch_request()
-                self.assertEqual(200, res.status_code)
-                data = res.json
-                self.assertTrue("transaction_id" in data.get("detail"))
-                transaction_id = data.get("detail").get("transaction_id")
-                self.assertEqual(serial, data.get("detail").get("serial"))
-                self.assertEqual("CHALLENGE", data.get("result").get("authentication"))
+    def _authenticate_webauthn(self, data: dict):
+        with self.app.test_request_context('/validate/check', method='POST', data=data,
+                                           headers={"Origin": "https://kc.fritz.box:8443"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertTrue(res.json.get("result").get("status"))
+            self.assertTrue(res.json.get("result").get("value"))
+            self.assertEqual("ACCEPT", res.json.get("result").get("authentication"))
 
-            # Update the nonce in the challenge database.
-            from privacyidea.lib.challenge import get_challenges
-            recorded_nonce = "V9nbUxzEAyXkt1KzMHYQv6Wky78FNE9911xCo3akjUQ"
-            recorded_nonce_hex = hexlify_and_unicode(webauthn_b64_decode(recorded_nonce))
-            chal = get_challenges(serial=serial, transaction_id=transaction_id)[0]
-            chal.challenge = recorded_nonce_hex
-            chal.save()
+    def _change_challenge_nonce(self, transaction_id: str, new_nonce: str, serial: Union[str, None] = None):
+        from privacyidea.lib.challenge import get_challenges
+        challenge = get_challenges(serial=serial, transaction_id=transaction_id)[0]
+        if not challenge:
+            self.fail("No challenge found")
+        challenge.challenge = new_nonce
+        challenge.save()
 
-            user_handle = bytes_to_base64url(serial.encode("utf-8"))
-            data = {
-                "authenticatordata": "1kwVsywYDmugu2qhEi7LiS8tgyaE5XqILRqvKXkZ-1odAAAAAA",
-                "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiVjluYlV4ekVBeVhrdDFLek1IWVF2NldreTc4Rk5F"
-                              "OTkxMXhDbzNha2pVUSIsIm9yaWdpbiI6Imh0dHBzOi8va2MuZnJpdHouYm94Ojg0NDMiLCJjcm9zc09yaWdpbiI6"
-                              "ZmFsc2V9",
-                "credentialid": "q_3r6kDHOq62yqDrnvAUzDcnFjk",
-                "signaturedata": "MEUCIDeFbUlK_Clq2q2gUy1RqDRciMTpx2Ww7AEUwXysZaWfAiEAkvMWut17A5IiEWCO7CAOKMFZ44zIMNdBy"
-                                 "bGXfhujL_0",
-                "transaction_id": transaction_id,
-                "userHandle": user_handle,
-                "username": self.username
-            }
-            with self.app.test_request_context('/validate/check', method='POST', data=data,
-                                               headers={"Origin": "https://kc.fritz.box:8443"}):
-                res = self.app.full_dispatch_request()
-                self.assertEqual(200, res.status_code, res)
-                j = res.json
-                self.assertTrue(j.get("result").get("status"))
-                self.assertTrue(j.get("result").get("value"))
-                self.assertEqual("ACCEPT", j.get("result").get("authentication"))
-            delete_policy("wan1")
-            delete_policy("wan2")
-            delete_policy("wan3")
-            remove_token(serial=serial)
+    def test_30_sign_count_zero(self):
+        """
+        Some authenticators do not return a real sign count, but instead 0. This is allowed by the spec and should not
+        cause any problems. https://w3c.github.io/webauthn/#sctn-sign-counter
+        This test uses data recorded from using a passkey on a Macbook.
+        """
+        delete_policies(["wan1", "wan2"])
+        set_policy("wan1", scope=SCOPE.ENROLL, action="webauthn_relying_party_id=fritz.box")
+        set_policy("wan2", scope=SCOPE.ENROLL, action="webauthn_relying_party_name=fritz box")
+        # Required for Macbook passkey to work because of no or unsupported attestation format
+        set_policy("wan3", scope=SCOPE.ENROLL,
+                   action="webauthn_authenticator_attestation_level=none, webauthn_authenticator_attestation_form=none")
+        serial = "WAN00023620"
+
+        mock_nonce = hexlify_and_unicode(webauthn_b64_decode("q6RYoDdiC8YUCqBas4MMx2663kKdZdYV1q8PJTzmNkE"))
+        client_data = ("eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoicTZSWW9EZGlDOFlVQ3FCYXM0TU14MjY2M2tLZFp"
+                       "kWVYxcThQSlR6bU5rRSIsIm9yaWdpbiI6Imh0dHBzOi8vcGkuZnJpdHouYm94OjUwMDAiLCJjcm9zc09yaWdpbiI6Zm"
+                       "Fsc2V9")
+        reg_data = (
+            "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YViY1kwVsywYDmugu2qhEi7LiS8tgyaE5XqILRqvKXkZ-1pdAAAAAAAAAAA"
+            "AAAAAAAAAAAAAAAAAFKv96-pAxzqutsqg657wFMw3JxY5pQECAyYgASFYIPsVTkUsjPCSLoBk2Yj1zEp8626I-_LobjfOI"
+            "aOdrTlfIlggSXIdmqO_aLKz71Qr-Xg3zMYabPYmUWtT3RsKyjZpTww")
+        self._enroll_webauthn(serial, client_data, reg_data, mock_nonce)
+
+        # Trigger the authentication
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": self.username,
+                                                 "pass": self.pin},
+                                           headers={"Origin": "https://kc.fritz.box:8443"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            data = res.json
+            self.assertTrue("transaction_id" in data.get("detail"))
+            transaction_id = data.get("detail").get("transaction_id")
+            self.assertEqual(serial, data.get("detail").get("serial"))
+            self.assertEqual("CHALLENGE", data.get("result").get("authentication"))
+
+        # Update the nonce in the challenge database. The nonce is converted to hex.
+        mock_nonce = hexlify_and_unicode(webauthn_b64_decode("V9nbUxzEAyXkt1KzMHYQv6Wky78FNE9911xCo3akjUQ"))
+        self._change_challenge_nonce(transaction_id, mock_nonce, serial)
+
+        user_handle = bytes_to_base64url(serial.encode())
+        data = {
+            "authenticatordata": "1kwVsywYDmugu2qhEi7LiS8tgyaE5XqILRqvKXkZ-1odAAAAAA",
+            "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiVjluYlV4ekVBeVhrdDFLek1IWVF2NldreTc4Rk5F"
+                          "OTkxMXhDbzNha2pVUSIsIm9yaWdpbiI6Imh0dHBzOi8va2MuZnJpdHouYm94Ojg0NDMiLCJjcm9zc09yaWdpbiI6"
+                          "ZmFsc2V9",
+            "credentialid": "q_3r6kDHOq62yqDrnvAUzDcnFjk",
+            "signaturedata": "MEUCIDeFbUlK_Clq2q2gUy1RqDRciMTpx2Ww7AEUwXysZaWfAiEAkvMWut17A5IiEWCO7CAOKMFZ44zIMNdBy"
+                             "bGXfhujL_0",
+            "transaction_id": transaction_id,
+            "userHandle": user_handle,
+            "username": self.username
+        }
+        self._authenticate_webauthn(data)
+
+        delete_policies(["wan1", "wan2", "wan3"])
+        remove_token(serial=serial)
+
+    def test_31_webauthn_passkey_login(self):
+        """
+        If a WebAuthn token is enrolled as a passkey, because the authenticator just always creates passkeys,
+        the WebAuthn token can be used with the passkey login. The difference is the encoding of the challenge, which is
+        base64url for passkey and hex for WebAuthn.
+        This test makes sure the WebAuthnTokenClass can validate challenges that were encoded in base64url.
+        """
+        delete_policies(["wan1", "wan2"])
+        set_policy("wan1", scope=SCOPE.ENROLL, action="webauthn_relying_party_id=fritz.box")
+        set_policy("wan2", scope=SCOPE.ENROLL, action="webauthn_relying_party_name=fritz box")
+        # Required for Macbook passkey to work because of no or unsupported attestation format
+        set_policy("wan3", scope=SCOPE.ENROLL,
+                   action="webauthn_authenticator_attestation_level=none, webauthn_authenticator_attestation_form=none")
+        serial = "WAN00037300"
+        mock_nonce = hexlify_and_unicode(webauthn_b64_decode("u2UUrVcqwF4tlKaZH7nfLM2V0wWZ-1-RPCF1rwsmhEo"))
+        reg_data = ("o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YViY1kwVsywYDmugu2qhEi7LiS8tgyaE5XqILRqvKXkZ-1pdAAAAAAAAAAAAAA"
+                    "AAAAAAAAAAAAAAFKyhLhHxRLvrqQY8OFUfwMDp5x5rpQECAyYgASFYIJohLFYLJp3Gk7h8oy5M9rjaGsyiffu1HU9plGWySuv-"
+                    "Ilgg4bJtPzLqiwWEZWIKIrNFkIoYT8SRwa4bCxUB2OFlba4")
+        client_data = ("eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoidTJVVXJWY3F3RjR0bEthWkg3bmZMTTJWMHdXWi0xLVJ"
+                       "QQ0YxcndzbWhFbyIsIm9yaWdpbiI6Imh0dHBzOi8vcGkuZnJpdHouYm94OjUwMDAiLCJjcm9zc09yaWdpbiI6ZmFsc2V9")
+        self._enroll_webauthn(serial, client_data, reg_data, mock_nonce)
+
+        # Trigger
+        with self.app.test_request_context('/validate/initialize',
+                                           method='POST',
+                                           data={"type": "passkey"},
+                                           headers={"Origin": "https://kc.fritz.box:8443"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            data = res.json
+            self.assertTrue("transaction_id" in data.get("detail"))
+            transaction_id = data.get("detail").get("transaction_id")
+            self.assertEqual("CHALLENGE", data.get("result").get("authentication"))
+
+        # Update the nonce in the challenge database. The nonce is base64url encoded for passkey challenges.
+        self._change_challenge_nonce(transaction_id, "0Bw6Kfs-i5-rqYvgykgQFpVD8jXYshoDeqKjOn_4x1c")
+        data = {
+            "userHandle": "V0FOMDAwMzczMDA=",
+            "transaction_id": transaction_id,
+            "credential_id": "rKEuEfFEu-upBjw4VR_AwOnnHms",
+            "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiTUVKM05rdG1jeTFwTlMxeWNWbDJaM2xyWjFGR2NG"
+                              "WkVPR3BZV1hOb2IwUmxjVXRxVDI1Zk5IZ3hZdyIsIm9yaWdpbiI6Imh0dHBzOi8va2MuZnJpdHouYm94Ojg0NDMi"
+                              "LCJjcm9zc09yaWdpbiI6ZmFsc2V9",
+            "signature": "MEYCIQCxSkkSc0wMwUdyfZq2sRnBQa2AuBbgz8I/B51wN0TiNQIhAIZplnq87VrRfHcJZBZvk0xuR5nVfg2YGVKoabiuH"
+                         "Vcm",
+            "authenticatorData": "1kwVsywYDmugu2qhEi7LiS8tgyaE5XqILRqvKXkZ+1odAAAAAA=="
+        }
+
+        # Authenticate
+        self._authenticate_webauthn(data)
+
+        delete_policies(["wan1", "wan2", "wan3"])
+        remove_token(serial=serial)
 
 
 class WebAuthnOfflineTestCase(MyApiTestCase):

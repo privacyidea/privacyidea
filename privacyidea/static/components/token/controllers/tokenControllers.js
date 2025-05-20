@@ -558,9 +558,11 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                     console.log(error);
                     inform.add("Error while registering passkey, the token will not be created!",
                         {type: "danger", ttl: 10000});
-                    TokenFactory.delete(data.detail.serial, function (response) {
-                        $state.go('token.list');
-                    });
+                    if (AuthFactory.checkRight("delete")) {
+                        TokenFactory.delete(data.detail.serial, function (response) {
+                            $state.go('token.list');
+                        });
+                    }
                 });
             }
             // End Passkey
@@ -594,7 +596,9 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
 
         $scope.pollTokenInfo = function () {
             TokenFactory.getTokenForSerial($scope.enrolledToken.serial, function (data) {
-                $scope.enrolledToken.rollout_state = data.result.value.tokens[0].rollout_state;
+                if (data.result.value && data.result.value.tokens && data.result.value.tokens.length > 0) {
+                    $scope.enrolledToken.rollout_state = data.result.value.tokens[0].rollout_state;
+                }
                 // Poll the data after 2.5 seconds again
                 if ($scope.enrolledToken.rollout_state === "clientwait" && $location.path().indexOf("/token/enroll") > -1) {
                     $timeout($scope.pollTokenInfo, 2500);
@@ -669,6 +673,12 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                         token.vendor = token.subject.split(" ")[0];
                         //console.log(token);
                     });
+            }, function (error) {
+                if (AuthFactory.checkRight("delete")) {
+                    TokenFactory.delete($scope.serial, function (response) {
+                        $state.go('token.list');
+                    });
+                }
             });
             $scope.click_wait = true;
         };

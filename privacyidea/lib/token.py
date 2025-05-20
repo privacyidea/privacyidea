@@ -2632,11 +2632,10 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                         token_object.reset()
                         token_object.post_success()
 
-                    # clean up all challenges from this and other tokens. I.e.
-                    # all challenges with this very transaction_id!
+                    # Clean up all challenges with this transaction_id
                     transaction_id = options.get("transaction_id") or options.get("state")
                     Challenge.query.filter(Challenge.transaction_id == '' + transaction_id).delete()
-                    # We have one successful authentication, so we bail out
+                    # Authentication is successful, stop here
                     break
 
         if not res and not further_challenge:
