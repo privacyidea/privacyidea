@@ -9,8 +9,5 @@ import { MatCardContent, MatCardModule } from '@angular/material/card';
   styleUrl: './user.component.scss',
 })
 export class UserSelfServiceComponent extends UserComponent {
-  userData = computed(() => {
-    const userResource = this.userService.userResource.value();
-    return userResource?.result?.value[0] ?? {};
-  });
+  userData = this.userService.user;
 }

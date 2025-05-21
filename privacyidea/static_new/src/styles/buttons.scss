@@ -141,6 +141,17 @@ $header-bg: white;
   );
 }
 
+.card-button-deactivated {
+  min-width: 240px;
+  @include button-base(
+      $button-height,
+      $button-width,
+      $button-border-radius,
+      var(--background-gray),
+      var(--box-shadow-gray)
+  );
+}
+
 .card-button-delete {
   min-width: 240px;
   @include button-base(

@@ -17,7 +17,10 @@ import {
   MatTableDataSource,
   MatTableModule,
 } from '@angular/material/table';
-import { ContainerService } from '../../../services/container/container.service';
+import {
+  ContainerDetailData,
+  ContainerService,
+} from '../../../services/container/container.service';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatListItem } from '@angular/material/list';
 import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
@@ -131,10 +134,32 @@ export class ContainerDetailsComponent {
   containerDetailResource = this.containerService.containerDetailResource;
   containerDetails = linkedSignal({
     source: this.containerDetailResource.value,
-    computation: (containerDetailResourceValue) =>
-      containerDetailResourceValue
-        ? containerDetailResourceValue.result.value.containers[0]
-        : null,
+    computation: (containerDetailResourceValue) => {
+      const value = containerDetailResourceValue?.result.value;
+      if (value && value.containers.length > 0) {
+        return value.containers[0];
+      }
+
+      const emptyContainerDetails: ContainerDetailData = {
+        type: '',
+        tokens: [],
+        states: [],
+        description: '',
+        select: '',
+        serial: '',
+        users: [
+          {
+            user_realm: '',
+            user_name: '',
+            user_resolver: '',
+            user_id: '',
+          },
+        ],
+        user_realm: '',
+        realms: [],
+      };
+      return emptyContainerDetails;
+    },
   });
   containerDetailData = linkedSignal({
     source: this.containerDetails,
@@ -149,7 +174,7 @@ export class ContainerDetailsComponent {
       return containerDetailsKeyMap
         .map((detail) => ({
           keyMap: detail,
-          value: containerDetails[detail.key],
+          value: (containerDetails as any)[detail.key],
           isEditing: signal(false),
         }))
         .filter((detail) => detail.value !== undefined);
@@ -168,7 +193,7 @@ export class ContainerDetailsComponent {
       return infoDetailsKeyMap
         .map((detail) => ({
           keyMap: detail,
-          value: containerDetails[detail.key],
+          value: (containerDetails as any)[detail.key],
           isEditing: signal(false),
         }))
         .filter((detail) => detail.value !== undefined);

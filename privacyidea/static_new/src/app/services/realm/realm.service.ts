@@ -6,6 +6,7 @@ import { NotificationService } from '../notification/notification.service';
 import { TokenService } from '../token/token.service';
 import { ContainerService } from '../container/container.service';
 import { AuthService } from '../auth/auth.service';
+import { PiResponse } from '../../app.component';
 
 @Injectable({
   providedIn: 'root',
@@ -13,7 +14,7 @@ import { AuthService } from '../auth/auth.service';
 export class RealmService {
   selectedRealms = signal<string[]>([]);
 
-  realmResource = httpResource<any>(() => {
+  realmResource = httpResource<PiResponse<Array<string>>>(() => {
     if (this.authService.role() === 'user') {
       return undefined;
     }
@@ -26,11 +27,7 @@ export class RealmService {
   realmOptions = computed(() => {
     this.tokenService.selectedTokenType();
     this.containerService.selectedContainerType();
-    return Object.keys(this.realmResource.value()?.result?.value ?? []).map(
-      (realm: string) => {
-        return realm;
-      },
-    );
+    return this.realmResource.value()?.result?.value ?? [];
   });
 
   defaultRealmResource = httpResource<any>(() => {

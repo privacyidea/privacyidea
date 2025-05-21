@@ -5,6 +5,23 @@ import { AuthService } from './services/auth/auth.service';
 import { NotificationService } from './services/notification/notification.service';
 import { SessionTimerService } from './services/session-timer/session-timer.service';
 
+export interface PiResponse<T> {
+  id: number;
+  jsonrpc: string;
+  result: {
+    status: boolean;
+    value?: T;
+    error?: {
+      code: number;
+      message: string;
+    };
+  };
+  signature: string;
+  time: number;
+  version: string;
+  versionnumber: string;
+}
+
 @Component({
   selector: 'app-root',
   standalone: true,

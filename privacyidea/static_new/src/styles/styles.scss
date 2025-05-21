@@ -73,6 +73,12 @@ body {
   --yellow-light: hsl(28, 85%, 55%);
   --yellow-light-active: hsl(28, 85%, 60%);
 
+  --grey-dark: hsl(0, 0%, 25%);
+  --grey-base: hsl(0, 0%, 50%);
+  --grey-light: hsl(0, 0%, 55%);
+  --grey-light-active: hsl(0, 0%, 60%);
+
+
   --box-shadow: var(--shadow-distance) var(--shadow-distance) var(--blur) var(--shadow),
   var(--light-distance) var(--light-distance) var(--blur) var(--light);
   --box-shadow-white: var(--shadow-distance) var(--shadow-distance) var(--blur) var(--shadow),
@@ -95,45 +101,32 @@ body {
   --box-shadow-blue-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--blue-dark),
   inset var(--light-distance) var(--light-distance) var(--blur) var(--blue-light-active);
 
-  --background-green: linear-gradient(
-      145deg,
-      var(--green-base),
-      var(--green-light)
-  );
-  --background-green-inset: linear-gradient(
-      145deg,
-      var(--green-light),
-      var(--green-base)
-  );
+  --background-green: linear-gradient(145deg, var(--green-base), var(--green-light));
+  --background-green-inset: linear-gradient(145deg, var(--green-light), var(--green-base));
   --box-shadow-green: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--green-light-active),
   inset var(--light-distance) var(--light-distance) var(--blur) var(--green-dark);
   --box-shadow-green-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--green-dark),
   inset var(--light-distance) var(--light-distance) var(--blur) var(--green-light-active);
 
   --background-red: linear-gradient(145deg, var(--red-base), var(--red-light));
-  --background-red-inset: linear-gradient(
-      145deg,
-      var(--red-light),
-      var(--red-base)
-  );
+  --background-red-inset: linear-gradient(145deg, var(--red-light), var(--red-base));
   --box-shadow-red: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--red-light-active),
   inset var(--light-distance) var(--light-distance) var(--blur) var(--red-dark);
   --box-shadow-red-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--red-dark),
   inset var(--light-distance) var(--light-distance) var(--blur) var(--red-light-active);
 
-  --background-yellow: linear-gradient(
-      145deg,
-      var(--yellow-base),
-      var(--yellow-light)
-  );
-  --background-yellow-inset: linear-gradient(
-      145deg,
-      var(--yellow-light),
-      var(--yellow-base)
-  );
+  --background-yellow: linear-gradient(145deg, var(--yellow-base), var(--yellow-light));
+  --background-yellow-inset: linear-gradient(145deg, var(--yellow-light), var(--yellow-base));
+
+  --background-gray: linear-gradient(145deg, var(--grey-base), var(--grey-light));
+  --background-gray-inset: linear-gradient(145deg, var(--grey-light), var(--grey-base));
+  --box-shadow-gray: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--grey-light-active),
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--grey-dark);
+  --box-shadow-gray-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--grey-dark),
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--grey-light-active);
 
   --box-shadow-header: 4px 2px var(--blur) var(--shadow);
-  --box-shadow-hover: 2px 2px 32px #656668;
+  --box-shadow-hover: 2px 2px 32px #656668; 
   --table-color: white;
 
   --mdc-filled-text-field-container-color: var(--light);

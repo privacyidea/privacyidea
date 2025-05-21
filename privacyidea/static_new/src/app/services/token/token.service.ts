@@ -31,6 +31,7 @@ import {
   TokenType,
 } from '../../components/token/token.component';
 import { ContentService } from '../content/content.service';
+import { PiResponse } from '../../app.component';
 
 const apiFilter = [
   'serial',
@@ -385,10 +386,32 @@ export class TokenService {
       );
   }
 
+  unassignUserFromAll(tokenSerials: string[]) {
+    if (tokenSerials.length === 0) {
+      return new Observable<PiResponse<number>[]>((subscriber) => {
+        subscriber.next([]);
+        subscriber.complete();
+      });
+    }
+    const observables = tokenSerials.map((tokenSerial) =>
+      this.unassignUser(tokenSerial),
+    );
+    return forkJoin(observables).pipe(
+      catchError((error) => {
+        console.error('Failed to unassign user from all tokens.', error);
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to unassign user from all tokens. ' + message,
+        );
+        return throwError(() => error);
+      }),
+    );
+  }
+
   unassignUser(tokenSerial: string) {
     const headers = this.localService.getHeaders();
     return this.http
-      .post(
+      .post<PiResponse<number>>(
         `${this.tokenBaseUrl}unassign`,
         { serial: tokenSerial },
         { headers },
@@ -404,6 +427,32 @@ export class TokenService {
         }),
       );
   }
+  assignUserToAll(args: {
+    tokenSerials: string[];
+    username: string;
+    realm: string;
+    pin?: string;
+  }) {
+    const { tokenSerials, username, realm, pin } = args;
+    var observables = tokenSerials.map((tokenSerial) =>
+      this.assignUser({
+        tokenSerial: tokenSerial,
+        username: username,
+        realm: realm,
+        pin: pin || '',
+      }),
+    );
+    return forkJoin(observables).pipe(
+      catchError((error) => {
+        console.error('Failed to assign user to all tokens.', error);
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          'Failed to assign user to all tokens. ' + message,
+        );
+        return throwError(() => error);
+      }),
+    );
+  }
 
   assignUser(args: {
     tokenSerial: string;
@@ -414,7 +463,7 @@ export class TokenService {
     const { tokenSerial, username, realm, pin } = args;
     const headers = this.localService.getHeaders();
     return this.http
-      .post(
+      .post<PiResponse<boolean>>(
         `${this.tokenBaseUrl}assign`,
         {
           serial: tokenSerial,
