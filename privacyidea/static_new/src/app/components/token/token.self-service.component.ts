@@ -12,7 +12,7 @@ import { TokenDetailsSelfServiceComponent } from './token-details/token-details.
 import { ContainerDetailsSelfServiceComponent } from './container-details/container-details.self-service.component';
 import { componentFadeAnimation } from '../../../styles/animations/animations';
 import { UserSelfServiceComponent } from '../user/user.self-service.component';
-import { AuditComponent } from '../audit/audit.component';
+import { AuditComponentSelfService } from '../audit/audit.self-service.component';
 
 @Component({
   selector: 'app-token-self-service',
@@ -29,7 +29,7 @@ import { AuditComponent } from '../audit/audit.component';
     ContainerTableSelfServiceComponent,
     ContainerDetailsSelfServiceComponent,
     UserSelfServiceComponent,
-    AuditComponent,
+    AuditComponentSelfService,
   ],
   animations: [componentFadeAnimation],
   templateUrl: './token.self-service.component.html',

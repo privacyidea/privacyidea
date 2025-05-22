@@ -227,10 +227,10 @@ export class ContainerService {
 
   containerTypeOptions = computed<ContainerType[]>(() => {
     const value = this.containerTypesResource.value()?.result.value;
-    if (!(value instanceof Map)) {
+    if (!value) {
       return [];
     }
-    return Array.from(value.entries()).map(([key, containerType]) => ({
+    return Array.from(Object.entries(value)).map(([key, containerType]) => ({
       containerType: key as ContainerTypeOption,
       description: containerType?.description ?? '',
       token_types: containerType?.token_types ?? [],

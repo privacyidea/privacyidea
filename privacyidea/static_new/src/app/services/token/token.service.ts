@@ -263,9 +263,6 @@ export class TokenService {
     private contentService: ContentService,
   ) {
     effect(() => {
-      console.log('tokenResource: ', this.tokenResource.value());
-    });
-    effect(() => {
       if (this.tokenResource.error()) {
         let tokensResourceError =
           this.tokenResource.error() as HttpErrorResponse;

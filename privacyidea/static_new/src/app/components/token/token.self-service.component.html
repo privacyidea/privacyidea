@@ -1,7 +1,6 @@
 <div aria-label="Token Selfservice Layout"
      class="token-selfservice-layout">
-
-  <div class="main-content-div main-margin">
+  <div class="main-content-div main-margin overflow">
     @if (contentService.selectedContent() !== 'token_self-service_menu') {
       <div class="back-button-div">
         <button mat-fab
@@ -100,7 +99,7 @@
         }
         @case ("audit") {
           <div [@componentFade]>
-            <app-audit />
+            <app-audit-self-service />
           </div>
         }
       }

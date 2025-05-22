@@ -54,7 +54,6 @@ export class UserService {
   user: WritableSignal<UserData> = linkedSignal({
     source: this.userResource.value,
     computation: (source, previous) => {
-      console.log('userResource', source?.result?.value);
       return (
         source?.result?.value?.[0] ??
         previous?.value ?? {
