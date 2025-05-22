@@ -1,10 +1,8 @@
 import {
-  afterNextRender,
   Component,
   computed,
   effect,
   ElementRef,
-  Input,
   linkedSignal,
   signal,
   ViewChild,
@@ -46,7 +44,6 @@ import { MatCheckbox } from '@angular/material/checkbox';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 import { UserService } from '../../../services/user/user.service';
 import { OverflowService } from '../../../services/overflow/overflow.service';
-import { TokenSelectedContent } from '../token.component';
 import { AuthService } from '../../../services/auth/auth.service';
 import { ContentService } from '../../../services/content/content.service';
 
@@ -281,7 +278,7 @@ export class ContainerDetailsComponent {
     });
     effect(() => {
       const res = this.containerDetailResource.value();
-      if (res && res.result.value.containers.length === 0) {
+      if (res && res?.result?.value?.containers.length === 0) {
         setTimeout(() => this.selectedContent.set('container_overview'));
       }
     });

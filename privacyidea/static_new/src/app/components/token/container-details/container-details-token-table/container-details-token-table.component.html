@@ -135,6 +135,7 @@
             ? 'card-button'
             : 'card-button-deactivated',
         ]"
+        [disabled]="!isAssignableToAllToken()"
         mat-flat-button>
         <mat-icon>playlist_add</mat-icon>
         {{ "Assign to All Token" }}
@@ -146,7 +147,7 @@
             ? 'card-button'
             : 'card-button-deactivated',
         ]"
-        class="card-button-active"
+        [disabled]="!isUnassignableFromAllToken()"
         mat-flat-button>
         <mat-icon>playlist_remove</mat-icon>
         {{ "Unassign from All Token" }}
