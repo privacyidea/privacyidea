@@ -3,10 +3,26 @@ import { HttpErrorResponse, httpResource } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { LocalService } from '../local/local.service';
 import { NotificationService } from '../notification/notification.service';
-import { TokenService } from '../token/token.service';
-import { ContainerService } from '../container/container.service';
 import { AuthService } from '../auth/auth.service';
 import { PiResponse } from '../../app.component';
+
+export type Realms = Map<string, Realm>;
+
+export interface Realm {
+  default: boolean;
+  id: number;
+  option: string;
+  resolver: RealmResolvers;
+}
+
+export type RealmResolvers = Array<RealmResolver>;
+
+export interface RealmResolver {
+  name: string;
+  node: string;
+  type: string;
+  priority: any;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -14,7 +30,7 @@ import { PiResponse } from '../../app.component';
 export class RealmService {
   selectedRealms = signal<string[]>([]);
 
-  realmResource = httpResource<PiResponse<Array<string>>>(() => {
+  realmResource = httpResource<PiResponse<Realms>>(() => {
     if (this.authService.role() === 'user') {
       return undefined;
     }
@@ -29,7 +45,7 @@ export class RealmService {
     return realms ? Object.keys(realms) : [];
   });
 
-  defaultRealmResource = httpResource<any>(() => {
+  defaultRealmResource = httpResource<PiResponse<Realms>>(() => {
     if (this.authService.role() === 'user') {
       return undefined;
     }
@@ -50,8 +66,6 @@ export class RealmService {
   constructor(
     private localService: LocalService,
     private notificationService: NotificationService,
-    private tokenService: TokenService,
-    private containerService: ContainerService,
     private authService: AuthService,
   ) {
     effect(() => {

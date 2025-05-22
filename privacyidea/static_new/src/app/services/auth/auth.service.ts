@@ -5,6 +5,7 @@ import { catchError, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { NotificationService } from '../notification/notification.service';
 import { VersionService } from '../version/version.service';
+import { PiResponse } from '../../app.component';
 
 @Injectable({
   providedIn: 'root',
@@ -23,11 +24,9 @@ export class AuthService {
     private versionService: VersionService,
   ) {}
 
-  authenticate(params: any): Observable<{
-    result: { status: boolean };
-  }> {
+  authenticate(params: any) {
     return this.http
-      .post(this.authUrl, JSON.stringify(params), {
+      .post<PiResponse<boolean>>(this.authUrl, JSON.stringify(params), {
         headers: new HttpHeaders({
           'Content-Type': 'application/json',
           Accept: 'application/json',

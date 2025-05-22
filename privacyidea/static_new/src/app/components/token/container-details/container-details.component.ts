@@ -68,6 +68,11 @@ interface TokenOption {
   username: string;
 }
 
+export interface EditableElement {
+  keyMap: { key: string };
+  isEditing: WritableSignal<boolean>;
+}
+
 @Component({
   selector: 'app-container-details',
   standalone: true,
@@ -293,7 +298,7 @@ export class ContainerDetailsComponent {
     }
   }
 
-  cancelContainerEdit(element: any) {
+  cancelContainerEdit(element: EditableElement) {
     switch (element.keyMap.key) {
       case 'realms':
         this.selectedRealms.set([]);
@@ -305,7 +310,7 @@ export class ContainerDetailsComponent {
     element.isEditing.set(!element.isEditing());
   }
 
-  saveContainerEdit(element: any) {
+  saveContainerEdit(element: EditableElement) {
     switch (element.keyMap.key) {
       case 'realms':
         this.saveRealms();
@@ -320,7 +325,7 @@ export class ContainerDetailsComponent {
     element.isEditing.set(!element.isEditing());
   }
 
-  toggleContainerEdit(element: any) {
+  toggleContainerEdit(element: EditableElement) {
     switch (element.keyMap.key) {
       case 'user_name':
         this.isEditingUser.update((b) => !b);

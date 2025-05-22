@@ -59,6 +59,43 @@ export interface TokenResponse {
   };
 }
 
+export interface Token {
+  active: boolean;
+  container_serial: string;
+  count: number;
+  count_window: number;
+  description: string;
+  failcount: number;
+  id: number;
+  info: TokenInfo;
+  locked: boolean;
+  maxfail: number;
+  otplen: number;
+  realms: string[];
+  resolver: string;
+  revoked: boolean;
+  rollout_state: string;
+  serial: string;
+  sync_window: number;
+  tokengroup: TokenGroup[];
+  tokentype: TokenType;
+  user_id: string;
+  user_realm: string;
+  username: string;
+}
+export interface TokenInfo {
+  hashlib: string;
+  timeStep: string;
+  tokenkind: string;
+}
+
+export type TokenGroups = Map<string, TokenGroup[]>;
+
+export interface TokenGroup {
+  id: number;
+  description: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -225,6 +262,9 @@ export class TokenService {
     private notificationService: NotificationService,
     private contentService: ContentService,
   ) {
+    effect(() => {
+      console.log('tokenResource: ', this.tokenResource.value());
+    });
     effect(() => {
       if (this.tokenResource.error()) {
         let tokensResourceError =
@@ -560,7 +600,7 @@ export class TokenService {
   setTokenRealm(tokenSerial: string, value: string[]) {
     const headers = this.localService.getHeaders();
     return this.http
-      .post(
+      .post<PiResponse<boolean>>(
         `${this.tokenBaseUrl}realm/` + tokenSerial,
         {
           realms: value,
@@ -764,18 +804,24 @@ export class TokenService {
 
   getTokengroups() {
     const headers = this.localService.getHeaders();
-    return this.http
-      .get(environment.proxyUrl + `/tokengroup/`, { headers })
-      .pipe(
-        catchError((error) => {
-          console.error('Failed to get token groups.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to get tokengroups. ' + message,
-          );
-          return throwError(() => error);
-        }),
-      );
+    return (
+      this.http
+        // description	"blabla"
+        // id	1
+        .get<PiResponse<TokenGroups>>(environment.proxyUrl + `/tokengroup/`, {
+          headers,
+        })
+        .pipe(
+          catchError((error) => {
+            console.error('Failed to get token groups.', error);
+            const message = error.error?.result?.error?.message || '';
+            this.notificationService.openSnackBar(
+              'Failed to get tokengroups. ' + message,
+            );
+            return throwError(() => error);
+          }),
+        )
+    );
   }
 
   getSerial(otp: string, params: HttpParams): Observable<any> {

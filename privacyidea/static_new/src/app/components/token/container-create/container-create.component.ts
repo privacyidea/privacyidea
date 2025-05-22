@@ -39,7 +39,7 @@ import { ContainerRegistrationDialogComponent } from './container-registration-d
 import { TokenService } from '../../../services/token/token.service';
 import { ContentService } from '../../../services/content/content.service';
 
-export type ContainerType = 'generic' | 'smartphone' | 'yubikey';
+export type ContainerTypeOption = 'generic' | 'smartphone' | 'yubikey';
 
 @Component({
   selector: 'app-container-create',
@@ -94,7 +94,10 @@ export class ContainerCreateComponent {
     private contentService: ContentService,
   ) {
     effect(() => {
-      if (this.containerService.selectedContainerType().key === 'smartphone') {
+      if (
+        this.containerService.selectedContainerType().containerType ===
+        'smartphone'
+      ) {
         this.generateQRCode.set(true);
       } else {
         this.generateQRCode.set(false);
@@ -118,7 +121,8 @@ export class ContainerCreateComponent {
     this.registerResponse.set(null);
     this.containerService
       .createContainer({
-        container_type: this.containerService.selectedContainerType().key,
+        container_type:
+          this.containerService.selectedContainerType().containerType,
         description: this.description(),
         user_realm: this.userService.selectedUserRealm(),
         template: this.selectedTemplate(),
