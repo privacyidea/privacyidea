@@ -22,7 +22,7 @@ import { ContainerCreateComponent } from './container-create/container-create.co
 import { TokenService } from '../../services/token/token.service';
 import { ContentService } from '../../services/content/content.service';
 
-export type TokenType =
+export type TokenTypeOption =
   | 'hotp'
   | 'totp'
   | 'spass'
