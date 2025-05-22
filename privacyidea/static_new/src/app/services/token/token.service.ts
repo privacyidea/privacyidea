@@ -59,6 +59,13 @@ export interface TokenResponse {
   };
 }
 
+export type TokenGroups = Map<string, TokenGroup[]>;
+
+export interface TokenGroup {
+  id: number;
+  description: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -411,11 +418,9 @@ export class TokenService {
   unassignUser(tokenSerial: string) {
     const headers = this.localService.getHeaders();
     return this.http
-      .post<PiResponse<number>>(
-        `${this.tokenBaseUrl}unassign`,
-        { serial: tokenSerial },
-        { headers },
-      )
+      .post<
+        PiResponse<number>
+      >(`${this.tokenBaseUrl}unassign`, { serial: tokenSerial }, { headers })
       .pipe(
         catchError((error) => {
           console.error('Failed to unassign user.', error);
@@ -561,7 +566,7 @@ export class TokenService {
   setTokenRealm(tokenSerial: string, value: string[]) {
     const headers = this.localService.getHeaders();
     return this.http
-      .post(
+      .post<PiResponse<boolean>>(
         `${this.tokenBaseUrl}realm/` + tokenSerial,
         {
           realms: value,
@@ -765,18 +770,24 @@ export class TokenService {
 
   getTokengroups() {
     const headers = this.localService.getHeaders();
-    return this.http
-      .get(environment.proxyUrl + `/tokengroup/`, { headers })
-      .pipe(
-        catchError((error) => {
-          console.error('Failed to get token groups.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to get tokengroups. ' + message,
-          );
-          return throwError(() => error);
-        }),
-      );
+    return (
+      this.http
+        // description	"blabla"
+        // id	1
+        .get<PiResponse<TokenGroups>>(environment.proxyUrl + `/tokengroup/`, {
+          headers,
+        })
+        .pipe(
+          catchError((error) => {
+            console.error('Failed to get token groups.', error);
+            const message = error.error?.result?.error?.message || '';
+            this.notificationService.openSnackBar(
+              'Failed to get tokengroups. ' + message,
+            );
+            return throwError(() => error);
+          }),
+        )
+    );
   }
 
   getSerial(otp: string, params: HttpParams): Observable<any> {

@@ -30,7 +30,7 @@ import {
   timer,
 } from 'rxjs';
 import { Sort } from '@angular/material/sort';
-import { ContainerType } from '../../components/token/container-create/container-create.component';
+import { ContainerTypeOption } from '../../components/token/container-create/container-create.component';
 import { ContentService } from '../content/content.service';
 import { PiResponse } from '../../app.component';
 
@@ -56,19 +56,46 @@ export interface ContainerDetail {
 
 export interface ContainerDetailData {
   type: string;
-  tokens: Array<any>;
+  tokens: Array<ContainerDetailToken>;
   states: string[];
   description: string;
   select: string;
   serial: string;
-  users: {
-    user_realm: string;
-    user_name: string;
-    user_resolver: string;
-    user_id: string;
-  }[];
+  users: ContainerDetailUser[];
   user_realm: string;
   realms: string[];
+}
+
+export interface ContainerDetailToken {
+  active: boolean;
+  container_serial: string;
+  count: number;
+  count_window: number;
+  description: string;
+  failcount: number;
+  id: number;
+  info: any;
+  revoked: boolean;
+  serial: string;
+}
+
+export interface ContainerDetailUser {
+  user_realm: string;
+  user_name: string;
+  user_resolver: string;
+  user_id: string;
+}
+
+export type ContainerTypesMap = Map<ContainerTypeOption, ContainerTypeMapValue>;
+export interface ContainerTypeMapValue {
+  description: string;
+  token_types: string[];
+}
+
+export interface ContainerType {
+  containerType: ContainerTypeOption;
+  description: string;
+  token_types: string[];
 }
 
 @Injectable({
@@ -192,24 +219,22 @@ export class ContainerService {
     computation: () => [],
   });
 
-  containerTypesResource = httpResource<any>(() => ({
+  containerTypesResource = httpResource<PiResponse<ContainerTypesMap>>(() => ({
     url: `${this.containerBaseUrl}types`,
     method: 'GET',
     headers: this.localService.getHeaders(),
   }));
 
-  containerTypeOptions = computed(() => {
-    return Object.keys(
-      this.containerTypesResource.value()?.result.value ?? [],
-    ).map((key: string) => {
-      return {
-        key: key as ContainerType,
-        description:
-          this.containerTypesResource.value().result.value[key].description,
-        token_types:
-          this.containerTypesResource.value().result.value[key].token_types,
-      };
-    });
+  containerTypeOptions = computed<ContainerType[]>(() => {
+    const value = this.containerTypesResource.value()?.result.value;
+    if (!(value instanceof Map)) {
+      return [];
+    }
+    return Array.from(value.entries()).map(([key, containerType]) => ({
+      containerType: key as ContainerTypeOption,
+      description: containerType?.description ?? '',
+      token_types: containerType?.token_types ?? [],
+    }));
   });
 
   selectedContainerType = linkedSignal({
@@ -294,11 +319,9 @@ export class ContainerService {
   assignContainer(tokenSerial: string, containerSerial: string) {
     const headers = this.localService.getHeaders();
     return this.http
-      .post(
-        `${this.containerBaseUrl}${containerSerial}/add`,
-        { serial: tokenSerial },
-        { headers },
-      )
+      .post<
+        PiResponse<boolean>
+      >(`${this.containerBaseUrl}${containerSerial}/add`, { serial: tokenSerial }, { headers })
       .pipe(
         catchError((error) => {
           console.error('Failed to assign container.', error);
@@ -314,11 +337,9 @@ export class ContainerService {
   unassignContainer(tokenSerial: string, containerSerial: string) {
     const headers = this.localService.getHeaders();
     return this.http
-      .post(
-        `${this.containerBaseUrl}${containerSerial}/remove`,
-        { serial: tokenSerial },
-        { headers },
-      )
+      .post<
+        PiResponse<boolean>
+      >(`${this.containerBaseUrl}${containerSerial}/remove`, { serial: tokenSerial }, { headers })
       .pipe(
         catchError((error) => {
           console.error('Failed to unassign container.', error);
@@ -550,7 +571,6 @@ export class ContainerService {
       this.notificationService.openSnackBar('No tokens for action.');
       return of(null);
     }
-
     return forkJoin(
       tokensForAction.map(
         (token: { serial: string; active: boolean; revoked: boolean }) => {
@@ -571,7 +591,7 @@ export class ContainerService {
     );
   }
 
-  removeAll(containerSerial: string): Observable<any> {
+  removeAll(containerSerial: string): Observable<PiResponse<number> | null> {
     const data = this.containerDetail();
 
     if (!data || !Array.isArray(data.containers[0].tokens)) {
@@ -595,11 +615,9 @@ export class ContainerService {
     const headers = this.localService.getHeaders();
 
     return this.http
-      .post(
-        `${this.containerBaseUrl}${containerSerial}/removeall`,
-        { serial: tokensForAction.join(',') },
-        { headers },
-      )
+      .post<
+        PiResponse<number>
+      >(`${this.containerBaseUrl}${containerSerial}/removeall`, { serial: tokensForAction.join(',') }, { headers })
       .pipe(
         catchError((error) => {
           console.error('Failed to remove all.', error);

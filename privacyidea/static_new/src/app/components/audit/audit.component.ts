@@ -87,7 +87,7 @@ const columnKeysMap = [
 export class AuditComponent {
   readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = this.columnKeysMap.map(
-    (column: any) => column.key,
+    (column) => column.key,
   );
   readonly apiFilter = this.auditService.apiFilter;
   readonly advancedApiFilter = this.auditService.advancedApiFilter;
@@ -118,7 +118,7 @@ export class AuditComponent {
     computation: (pageSize: number) =>
       Array.from({ length: pageSize }, () => {
         const emptyRow: any = {};
-        this.columnKeysMap.forEach((column: any) => {
+        this.columnKeysMap.forEach((column) => {
           emptyRow[column.key] = '';
         });
         return emptyRow;

@@ -136,6 +136,7 @@ export class ContainerDetailsComponent {
     computation: (containerDetailResourceValue) => {
       const value = containerDetailResourceValue?.result.value;
       if (value && value.containers.length > 0) {
+        console.log('Container details:', value.containers[0]);
         return value.containers[0];
       }
 

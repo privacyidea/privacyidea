@@ -40,7 +40,7 @@
             class="card-button"
             mat-flat-button>
       <mat-icon>add</mat-icon>
-      Create {{ containerService.selectedContainerType().key }} Container
+      Create {{ containerService.selectedContainerType().containerType }} Container
     </button>
   </div>
 
@@ -95,7 +95,7 @@
     </div>
   </div>
 
-  @if (containerService.selectedContainerType().key === 'smartphone') {
+  @if (containerService.selectedContainerType().containerType === 'smartphone') {
     <h4 class="enroll-h4"> Registration </h4>
     <mat-checkbox [(ngModel)]="generateQRCode">
       Generate a QR code to register the container on a smartphone.
