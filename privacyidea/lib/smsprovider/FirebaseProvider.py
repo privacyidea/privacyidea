@@ -21,17 +21,19 @@ Firebase Cloud Messaging Service.
 This provider is used for the push token and can be used for SMS tokens.
 """
 
-from google.auth.transport import requests
+import json
+import logging
+import time
 
-from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider)
+from google.auth.transport import requests
+from google.auth.transport.requests import AuthorizedSession
+from google.oauth2 import service_account
+from requests import Session
+
+from privacyidea.lib import _
 from privacyidea.lib.error import ConfigAdminError
 from privacyidea.lib.framework import get_app_local_store
-from privacyidea.lib import _
-import logging
-from google.oauth2 import service_account
-from google.auth.transport.requests import AuthorizedSession
-import json
-import time
+from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider)
 
 FIREBASE_URL_SEND = 'https://fcm.googleapis.com/v1/projects/{0!s}/messages:send'
 SCOPES = ['https://www.googleapis.com/auth/cloud-platform',
@@ -111,7 +113,7 @@ class FirebaseProvider(ISMSProvider):
         auth_request = None
         if self.smsgateway.option_dict.get(FirebaseConfig.HTTPS_PROXY):
             proxies["https"] = self.smsgateway.option_dict.get(FirebaseConfig.HTTPS_PROXY)
-            session = requests.requests.Session()
+            session = Session()
             session.proxies.update(proxies)
             auth_request = requests.Request(session=session)
 
