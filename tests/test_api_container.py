@@ -21,7 +21,7 @@ from privacyidea.lib.privacyideaserver import add_privacyideaserver
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.serviceid import set_serviceid
-from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
+from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from privacyidea.lib.token import (get_one_token, get_tokens_from_serial_or_user,
                                    get_tokeninfo, get_tokens)
@@ -3337,9 +3337,9 @@ class APIContainerSynchronization(APIContainerTest):
         smartphone.add_token(push_fb)
 
         # Firebase config
-        fb_config = {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
-                     FIREBASE_CONFIG.JSON_CONFIG: self.FIREBASE_FILE,
-                     FIREBASE_CONFIG.TTL: 10}
+        fb_config = {FirebaseConfig.REGISTRATION_URL: "http://test/ttype/push",
+                     FirebaseConfig.JSON_CONFIG: self.FIREBASE_FILE,
+                     FirebaseConfig.TTL: 10}
         set_smsgateway("fb1", 'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
                        fb_config)
         set_policy("push", scope=SCOPE.ENROLL, action={PUSH_ACTION.FIREBASE_CONFIG: "fb1",
@@ -4202,9 +4202,9 @@ class APIContainerSynchronization(APIContainerTest):
         set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://new-pi.net/",
                                                             ACTION.CONTAINER_REGISTRATION_TTL: 36})
         # Firebase config
-        fb_config = {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
-                     FIREBASE_CONFIG.JSON_CONFIG: self.FIREBASE_FILE,
-                     FIREBASE_CONFIG.TTL: 10}
+        fb_config = {FirebaseConfig.REGISTRATION_URL: "http://test/ttype/push",
+                     FirebaseConfig.JSON_CONFIG: self.FIREBASE_FILE,
+                     FirebaseConfig.TTL: 10}
         set_smsgateway("firebase", 'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
                        fb_config)
         set_policy("push", scope=SCOPE.ENROLL, action={PUSH_ACTION.FIREBASE_CONFIG: "firebase",
