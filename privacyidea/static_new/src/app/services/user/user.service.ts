@@ -1,9 +1,28 @@
-import { computed, Injectable, linkedSignal } from '@angular/core';
+import {
+  computed,
+  Injectable,
+  linkedSignal,
+  WritableSignal,
+} from '@angular/core';
 import { httpResource } from '@angular/common/http';
 import { LocalService } from '../local/local.service';
 import { environment } from '../../../environments/environment';
 import { RealmService } from '../realm/realm.service';
 import { ContentService } from '../content/content.service';
+import { PiResponse } from '../../app.component';
+
+export interface UserData {
+  description: string;
+  editable: boolean;
+  email: string;
+  givenname: string;
+  mobile: string;
+  phone: string;
+  resolver: string;
+  surname: string;
+  userid: string;
+  username: string;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -16,7 +35,7 @@ export class UserService {
       selectedContent: this.contentService.selectedContent(),
       defaultRealm: this.realmService.defaultRealm(),
     }),
-    computation: (source: any) => source.defaultRealm ?? '',
+    computation: (source) => source.defaultRealm,
   });
 
   selectedUsername = linkedSignal({
@@ -24,7 +43,7 @@ export class UserService {
     computation: () => '',
   });
 
-  userResource = httpResource<any>(() => {
+  userResource = httpResource<PiResponse<UserData>>(() => {
     return {
       url: this.baseUrl,
       method: 'GET',
@@ -32,7 +51,25 @@ export class UserService {
     };
   });
 
-  usersResource = httpResource<any>(() => {
+  user: WritableSignal<UserData> = linkedSignal({
+    source: this.userResource.value,
+    computation: (source, previous) =>
+      source?.result?.value ??
+      previous?.value ?? {
+        description: '',
+        editable: false,
+        email: '',
+        givenname: '',
+        mobile: '',
+        phone: '',
+        resolver: '',
+        surname: '',
+        userid: '',
+        username: '',
+      },
+  });
+
+  usersResource = httpResource<PiResponse<UserData[]>>(() => {
     const selectedUserRealm = this.selectedUserRealm();
     if (selectedUserRealm === '') {
       return undefined;
@@ -46,13 +83,31 @@ export class UserService {
       },
     };
   });
-  fetchedUsernames = computed<string[]>(() => {
-    const data = this.usersResource.value();
-    if (!data?.result?.value) {
-      return [];
-    }
-    return data.result.value.map((user: any) => user.username);
+
+  users: WritableSignal<UserData[]> = linkedSignal({
+    source: this.usersResource.value,
+    computation: (source, previous) =>
+      source?.result?.value ?? previous?.value ?? [],
   });
+
+  usersOfRealmResource = httpResource<PiResponse<UserData[]>>(() => {
+    const selectedUserRealm = this.selectedUserRealm();
+    if (selectedUserRealm === '') {
+      return undefined;
+    }
+    return {
+      url: this.baseUrl,
+      method: 'GET',
+      headers: this.localService.getHeaders(),
+      params: {
+        realm: selectedUserRealm,
+      },
+    };
+  });
+
+  fetchedUsernames = computed<string[]>(() =>
+    this.users().map((user) => user.username),
+  );
 
   userOptions = computed(() => this.fetchedUsernames());
 

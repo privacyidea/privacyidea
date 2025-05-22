@@ -1,7 +1,9 @@
 import {
   Component,
+  computed,
   effect,
   Input,
+  linkedSignal,
   ViewChild,
   WritableSignal,
 } from '@angular/core';
@@ -25,12 +27,13 @@ import { MatIcon } from '@angular/material/icon';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { ContainerService } from '../../../../services/container/container.service';
 import { OverflowService } from '../../../../services/overflow/overflow.service';
-import { MatDialog } from '@angular/material/dialog';
+import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { CopyButtonComponent } from '../../../shared/copy-button/copy-button.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ContentService } from '../../../../services/content/content.service';
 import { AuthService } from '../../../../services/auth/auth.service';
+import { UserAssignmentDialogComponent } from '../user-assignment-dialog/user-assignment-dialog.component';
 
 const columnsKeyMap = [
   { key: 'serial', label: 'Serial' },
@@ -78,11 +81,41 @@ export class ContainerDetailsTokenTableComponent {
   @Input() containerTokenData!: WritableSignal<any>;
   dataSource = new MatTableDataSource<any>([]);
   containerSerial = this.containerService.containerSerial;
+  assignedUser: WritableSignal<{
+    user_realm: string;
+    user_name: string;
+    user_resolver: string;
+    user_id: string;
+  }> = linkedSignal({
+    source: () => this.containerService.containerDetail(),
+    computation: (source, previous) =>
+      source.containers[0]?.users[0] ??
+      previous?.value ?? {
+        user_realm: '',
+        user_name: '',
+        user_resolver: '',
+        user_id: '',
+      },
+  });
   tokenSerial = this.tokenService.tokenSerial;
   isProgrammaticTabChange = this.contentService.isProgrammaticTabChange;
   selectedContent = this.contentService.selectedContent;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
+
+  isAssignableToAllToken = computed<boolean>(() => {
+    const assignedUser = this.assignedUser();
+    if (assignedUser.user_name === '') {
+      return false;
+    }
+    const tokens = this.containerTokenData().data;
+    return tokens.some((token: any) => token.username === '');
+  });
+
+  isUnassignableFromAllToken = computed<boolean>(() => {
+    const tokens = this.containerTokenData().data;
+    return tokens.some((token: any) => token.username !== '');
+  });
 
   constructor(
     protected containerService: ContainerService,
@@ -142,6 +175,104 @@ export class ContainerDetailsTokenTableComponent {
     if (columnKey === 'active') {
       this.toggleActive(element);
     }
+  }
+
+  unassignFromAllToken() {
+    const tokenToUnassign = this.containerTokenData().data.filter(
+      (token: any) => token.username !== '',
+    );
+    if (tokenToUnassign.length === 0) {
+      return;
+    }
+    const tokenSerials = tokenToUnassign.map((token: any) => token.serial);
+    this.dialog
+      .open(ConfirmationDialogComponent, {
+        data: {
+          type: 'token',
+          serial_list: tokenSerials,
+          title: 'Unassign User from All Tokens',
+          action: 'unassign',
+          numberOfTokens: tokenSerials.length,
+        },
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            this.tokenService.unassignUserFromAll(tokenSerials).subscribe({
+              next: () => {
+                this.containerService.containerDetailResource.reload();
+              },
+              error: (error) => {
+                console.error('Error unassigning user from token:', error);
+              },
+            });
+          }
+        },
+      });
+  }
+
+  assignToAllToken() {
+    var username = this.assignedUser().user_name;
+    var realm = this.assignedUser().user_realm;
+    if (username === '' || realm === '') {
+      this.dialog.open(ConfirmationDialogComponent, {
+        data: {
+          title: 'No User Assigned',
+          message: 'Please assign a user to the Container first.',
+        },
+      });
+      return;
+    }
+
+    var tokensToAssign = this.containerTokenData().data.filter((token: any) => {
+      return token.username !== username;
+    });
+    if (tokensToAssign.length === 0) {
+      return;
+    }
+    var tokensAssignedToOtherUser = tokensToAssign.filter(
+      (token: any) => token.username !== '',
+    );
+
+    this.dialog
+      .open(UserAssignmentDialogComponent)
+      .afterClosed()
+      .subscribe((pin: string | null) => {
+        if (pin === null) {
+          return;
+        }
+        const tokenSerialsAssignedToOtherUser = tokensAssignedToOtherUser.map(
+          (token: any) => token.serial,
+        );
+        this.tokenService
+          .unassignUserFromAll(tokenSerialsAssignedToOtherUser)
+          .subscribe({
+            next: () => {
+              const tokenSerialsToAssign = tokensToAssign.map(
+                (token: any) => token.serial,
+              );
+              this.tokenService
+                .assignUserToAll({
+                  tokenSerials: tokenSerialsToAssign,
+                  username: username,
+                  realm: realm,
+                  pin: pin,
+                })
+                .subscribe({
+                  next: () => {
+                    this.containerService.containerDetailResource.reload();
+                  },
+                  error: (error) => {
+                    console.error('Error assigning user to all tokens:', error);
+                  },
+                });
+            },
+            error: (error) => {
+              console.error('Error unassigning user from all tokens:', error);
+            },
+          });
+      });
   }
 
   toggleActive(element: any): void {

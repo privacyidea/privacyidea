@@ -32,6 +32,7 @@ import {
 import { Sort } from '@angular/material/sort';
 import { ContainerType } from '../../components/token/container-create/container-create.component';
 import { ContentService } from '../content/content.service';
+import { PiResponse } from '../../app.component';
 
 const apiFilter = ['container_serial', 'type', 'user'];
 const advancedApiFilter = ['token_serial'];
@@ -47,6 +48,27 @@ export interface ContainerResponse {
       count: number;
     };
   };
+}
+
+export interface ContainerDetail {
+  containers: Array<ContainerDetailData>;
+}
+
+export interface ContainerDetailData {
+  type: string;
+  tokens: Array<any>;
+  states: string[];
+  description: string;
+  select: string;
+  serial: string;
+  users: {
+    user_realm: string;
+    user_name: string;
+    user_resolver: string;
+    user_id: string;
+  }[];
+  user_realm: string;
+  realms: string[];
 }
 
 @Injectable({
@@ -202,7 +224,7 @@ export class ContainerService {
       ],
   });
 
-  containerDetailResource = httpResource<any>(() => {
+  containerDetailResource = httpResource<PiResponse<ContainerDetail>>(() => {
     const serial = this.containerSerial();
 
     if (serial === '') {
@@ -216,6 +238,19 @@ export class ContainerService {
         container_serial: serial,
       },
     };
+  });
+  containerDetail: WritableSignal<ContainerDetail> = linkedSignal({
+    source: this.containerDetailResource.value,
+    computation: (containerDetailResource, previous) => {
+      if (containerDetailResource?.result?.value) {
+        return containerDetailResource.result.value;
+      }
+      return (
+        previous?.value ?? {
+          containers: [],
+        }
+      );
+    },
   });
 
   templatesResource = httpResource<any>(() => ({
@@ -497,9 +532,9 @@ export class ContainerService {
     containerSerial: string,
     action: 'activate' | 'deactivate',
   ): Observable<any> {
-    const data = this.containerDetailResource.value();
+    const data = this.containerDetail();
 
-    if (!data || !Array.isArray(data.result.value.containers[0].tokens)) {
+    if (!data || !Array.isArray(data.containers[0].tokens)) {
       this.notificationService.openSnackBar(
         'No valid tokens array found in data.',
       );
@@ -508,12 +543,8 @@ export class ContainerService {
 
     const tokensForAction =
       action === 'activate'
-        ? data.result.value.containers[0].tokens.filter(
-            (token: any) => !token.active,
-          )
-        : data.result.value.containers[0].tokens.filter(
-            (token: any) => token.active,
-          );
+        ? data.containers[0].tokens.filter((token: any) => !token.active)
+        : data.containers[0].tokens.filter((token: any) => token.active);
 
     if (tokensForAction.length === 0) {
       this.notificationService.openSnackBar('No tokens for action.');
@@ -541,9 +572,9 @@ export class ContainerService {
   }
 
   removeAll(containerSerial: string): Observable<any> {
-    const data = this.containerDetailResource.value();
+    const data = this.containerDetail();
 
-    if (!data || !Array.isArray(data.result.value.containers[0].tokens)) {
+    if (!data || !Array.isArray(data.containers[0].tokens)) {
       console.error('No valid tokens array found in data.', data);
       this.notificationService.openSnackBar(
         'No valid tokens array found in data.',
@@ -551,7 +582,7 @@ export class ContainerService {
       return of(null);
     }
 
-    const tokensForAction = data.result.value.containers[0].tokens.map(
+    const tokensForAction = data.containers[0].tokens.map(
       (token: any) => token.serial,
     );
 
