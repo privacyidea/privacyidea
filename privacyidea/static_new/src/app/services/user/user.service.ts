@@ -43,7 +43,7 @@ export class UserService {
     computation: () => '',
   });
 
-  userResource = httpResource<PiResponse<UserData>>(() => {
+  userResource = httpResource<PiResponse<UserData[]>>(() => {
     return {
       url: this.baseUrl,
       method: 'GET',
@@ -53,20 +53,24 @@ export class UserService {
 
   user: WritableSignal<UserData> = linkedSignal({
     source: this.userResource.value,
-    computation: (source, previous) =>
-      source?.result?.value ??
-      previous?.value ?? {
-        description: '',
-        editable: false,
-        email: '',
-        givenname: '',
-        mobile: '',
-        phone: '',
-        resolver: '',
-        surname: '',
-        userid: '',
-        username: '',
-      },
+    computation: (source, previous) => {
+      console.log('userResource', source?.result?.value);
+      return (
+        source?.result?.value?.[0] ??
+        previous?.value ?? {
+          description: '',
+          editable: false,
+          email: '',
+          givenname: '',
+          mobile: '',
+          phone: '',
+          resolver: '',
+          surname: '',
+          userid: '',
+          username: '',
+        }
+      );
+    },
   });
 
   usersResource = httpResource<PiResponse<UserData[]>>(() => {

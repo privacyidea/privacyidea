@@ -59,6 +59,36 @@ export interface TokenResponse {
   };
 }
 
+export interface Token {
+  active: boolean;
+  container_serial: string;
+  count: number;
+  count_window: number;
+  description: string;
+  failcount: number;
+  id: number;
+  info: TokenInfo;
+  locked: boolean;
+  maxfail: number;
+  otplen: number;
+  realms: string[];
+  resolver: string;
+  revoked: boolean;
+  rollout_state: string;
+  serial: string;
+  sync_window: number;
+  tokengroup: TokenGroup[];
+  tokentype: TokenType;
+  user_id: string;
+  user_realm: string;
+  username: string;
+}
+export interface TokenInfo {
+  hashlib: string;
+  timeStep: string;
+  tokenkind: string;
+}
+
 export type TokenGroups = Map<string, TokenGroup[]>;
 
 export interface TokenGroup {
@@ -231,6 +261,9 @@ export class TokenService {
     private notificationService: NotificationService,
     private contentService: ContentService,
   ) {
+    effect(() => {
+      console.log('tokenResource: ', this.tokenResource.value());
+    });
     effect(() => {
       if (this.tokenResource.error()) {
         let tokensResourceError =
