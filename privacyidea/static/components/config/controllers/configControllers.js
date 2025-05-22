@@ -76,11 +76,8 @@ myApp.controller("policyListController", ["$scope", "$stateParams", "$location",
     }]);
 
 myApp.controller("policyDetailsController", ["$scope", "$stateParams",
-    "ConfigFactory", "$state",
-    "PolicyTemplateFactory",
-    function ($scope, $stateParams,
-              ConfigFactory, $state,
-              PolicyTemplateFactory) {
+    "ConfigFactory", "$state", "PolicyTemplateFactory", "hotkeys",
+    function ($scope, $stateParams, ConfigFactory, $state, PolicyTemplateFactory, hotkeys) {
         // init
         $scope.realms = [];
         $scope.adminRealms = [];
@@ -411,6 +408,15 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             // Jump to top when the policy is saved
             $('html,body').scrollTop(0);
         };
+
+        hotkeys.bindTo($scope).add({
+            combo: 'enter',
+            description: "Create the policy",
+            callback: function () {
+                $scope.createPolicy();
+            },
+            allowIn: ['INPUT', 'SELECT', 'TEXTAREA']
+        });
 
         $scope.presetEditValues2 = function (policy) {
             //debug: console.log(policy);

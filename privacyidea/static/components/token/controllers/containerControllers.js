@@ -90,9 +90,9 @@ myApp.service('ContainerUtils', function () {
 
 myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'ContainerFactory', '$stateParams',
     'AuthFactory', 'ConfigFactory', 'UserFactory', '$state', 'TokenFactory', 'ContainerUtils', '$timeout', '$location',
-    function createContainerController($scope, $http, $q, ContainerFactory, $stateParams,
-                                       AuthFactory, ConfigFactory, UserFactory, $state, TokenFactory, ContainerUtils,
-                                       $timeout, $location) {
+    'hotkeys',
+    function createContainerController($scope, $http, $q, ContainerFactory, $stateParams, AuthFactory, ConfigFactory,
+                                       UserFactory, $state, TokenFactory, ContainerUtils, $timeout, $location, hotkeys) {
         $scope.formData = {
             containerTypes: {},
         };
@@ -371,6 +371,14 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
 
             });
         };
+
+        hotkeys.bindTo($scope).add({
+            combo: 'enter',
+            description: "Create the container",
+            callback: function () {
+                $scope.createContainer();
+            }, allowIn: ['INPUT', 'SELECT', 'TEXTAREA']
+        });
 
         $scope.regenerateToken = function (serial) {
             let initParams = $scope.tokenInitData[serial].init_params;

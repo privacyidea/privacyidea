@@ -155,7 +155,15 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             description: gettextCatalog.getString('Roll the token'),
             callback: function () {
                 $scope.enrollToken();
-            }
+            }, allowIn: ['INPUT', 'SELECT', 'TEXTAREA']
+        });
+        hotkeys.del('enter');
+        hotkeys.bindTo($scope).add({
+            combo: 'enter',
+            description: gettextCatalog.getString('Roll the token'),
+            callback: function () {
+                $scope.enrollToken();
+            }, allowIn: ['INPUT', 'SELECT', 'TEXTAREA']
         });
 
         $scope.qrCodeWidth = 250;
@@ -304,7 +312,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                 $scope.form.genkey = false;
                 // Only fetch, if a preset_attribute is defined
                 if ($scope.tokensettings.indexedsecret.preset_attribute) {
-                    // In case of a normal logged in user, an empty params is fine
+                    // In case of a normal logged-in user, an empty params is fine
                     let params = {};
                     if (AuthFactory.getRole() === 'admin') {
                         params = {
@@ -436,6 +444,37 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
 
         // default enrollment callback
         $scope.callback = function (data) {
+            // If this is a 2step enrollment, change the 'enter' hotkey to submit the client part
+            if ($scope.form["2stepinit"]) {
+                hotkeys.del('enter');
+                hotkeys.bindTo($scope).add({
+                    combo: 'enter',
+                    description: "Submit the client part",
+                    callback: function () {
+                        $scope.sendClientPart();
+                    }, allowIn: ['INPUT', 'SELECT', 'TEXTAREA']
+                });
+            } else {
+                // If this is not a 2step enrollment, remove the 'enter' hotkey
+                hotkeys.del('enter');
+                hotkeys.bindTo($scope).add({
+                    combo: 'enter',
+                    description: "Submit the client part",
+                    callback: function () {
+                        $scope.enrolledToken = null;
+                        $scope.enrolling = false;
+                        hotkeys.del('enter');
+                        hotkeys.bindTo($scope).add({
+                            combo: 'enter',
+                            description: "Enroll the new token",
+                            callback: function () {
+                                $scope.enrollToken();
+                            }, allowIn: ['INPUT', 'SELECT', 'TEXTAREA']
+                        });
+                    }, allowIn: ['INPUT', 'SELECT', 'TEXTAREA']
+                });
+            }
+
             let blob;
             $scope.U2FToken = {};
             $scope.webAuthnToken = {};
@@ -586,9 +625,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                 delete $scope.form.container_serial;
             }
 
-            TokenFactory.enroll($scope.newUser,
-                $scope.form, $scope.callback,
-                function (data) {
+            TokenFactory.enroll($scope.newUser, $scope.form, $scope.callback, function (data) {
                     $scope.enrolling = false;
                 }
             );
@@ -627,6 +664,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             };
             TokenFactory.enroll($scope.newUser, params, function (data) {
                 $scope.clientpart = "";
+                $scope.form["2stepinit"] = false
                 $scope.callback(data);
             });
         };
