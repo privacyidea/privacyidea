@@ -160,6 +160,7 @@ export class TokenService {
       filterValue: this.filterValue(),
       pageSize: this.pageSize(),
       selectedContent: this.contentService.selectedContent(),
+      sort: this.sort(),
     }),
     computation: () => 0,
   });
@@ -411,11 +412,9 @@ export class TokenService {
   unassignUser(tokenSerial: string) {
     const headers = this.localService.getHeaders();
     return this.http
-      .post<PiResponse<number>>(
-        `${this.tokenBaseUrl}unassign`,
-        { serial: tokenSerial },
-        { headers },
-      )
+      .post<
+        PiResponse<number>
+      >(`${this.tokenBaseUrl}unassign`, { serial: tokenSerial }, { headers })
       .pipe(
         catchError((error) => {
           console.error('Failed to unassign user.', error);

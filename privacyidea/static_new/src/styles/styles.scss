@@ -73,7 +73,7 @@ body {
   --yellow-light: hsl(28, 85%, 55%);
   --yellow-light-active: hsl(28, 85%, 60%);
 
-  --grey-dark: hsl(0, 0%, 25%);
+  --grey-dark: hsl(0, 0%, 42%);
   --grey-base: hsl(0, 0%, 50%);
   --grey-light: hsl(0, 0%, 55%);
   --grey-light-active: hsl(0, 0%, 60%);
@@ -126,7 +126,7 @@ body {
   inset var(--light-distance) var(--light-distance) var(--blur) var(--grey-light-active);
 
   --box-shadow-header: 4px 2px var(--blur) var(--shadow);
-  --box-shadow-hover: 2px 2px 32px #656668; 
+  --box-shadow-hover: 2px 2px 32px #656668;
   --table-color: white;
 
   --mdc-filled-text-field-container-color: var(--light);

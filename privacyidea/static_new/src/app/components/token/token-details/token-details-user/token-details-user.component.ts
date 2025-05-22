@@ -95,11 +95,19 @@ export class TokenDetailsUserComponent {
       this.notificationService.openSnackBar('PINs do not match.');
       return;
     }
-    this.tokenService.setPin(this.tokenSerial(), this.setPinValue());
+    this.tokenService.setPin(this.tokenSerial(), this.setPinValue()).subscribe({
+      next: () => {
+        this.notificationService.openSnackBar('PIN set successfully.');
+      },
+    });
   }
 
   setRandomPin() {
-    this.tokenService.setRandomPin(this.tokenSerial());
+    this.tokenService.setRandomPin(this.tokenSerial()).subscribe({
+      next: () => {
+        this.notificationService.openSnackBar('PIN set successfully.');
+      },
+    });
   }
 
   toggleUserEdit(): void {

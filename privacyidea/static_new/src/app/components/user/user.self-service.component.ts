@@ -1,4 +1,4 @@
-import { Component, computed } from '@angular/core';
+import { Component } from '@angular/core';
 import { UserComponent } from './user.component';
 import { MatCardContent, MatCardModule } from '@angular/material/card';
 
