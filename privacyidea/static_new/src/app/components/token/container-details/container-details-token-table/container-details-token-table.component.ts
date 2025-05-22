@@ -89,7 +89,13 @@ export class ContainerDetailsTokenTableComponent {
   }> = linkedSignal({
     source: () => this.containerService.containerDetail(),
     computation: (source, previous) =>
-      source.containers[0]?.users[0] ?? previous?.value,
+      source.containers[0]?.users[0] ??
+      previous?.value ?? {
+        user_realm: '',
+        user_name: '',
+        user_resolver: '',
+        user_id: '',
+      },
   });
   tokenSerial = this.tokenService.tokenSerial;
   isProgrammaticTabChange = this.contentService.isProgrammaticTabChange;
@@ -97,7 +103,7 @@ export class ContainerDetailsTokenTableComponent {
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
-  isAssignableToAllToken = computed(() => {
+  isAssignableToAllToken = computed<boolean>(() => {
     const assignedUser = this.assignedUser();
     if (assignedUser.user_name === '') {
       return false;
@@ -106,7 +112,7 @@ export class ContainerDetailsTokenTableComponent {
     return tokens.some((token: any) => token.username === '');
   });
 
-  isUnassignableFromAllToken = computed(() => {
+  isUnassignableFromAllToken = computed<boolean>(() => {
     const tokens = this.containerTokenData().data;
     return tokens.some((token: any) => token.username !== '');
   });
