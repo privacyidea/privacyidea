@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { TokenComponent } from './token.component';
 import { MatCardModule } from '@angular/material/card';
 import { MatIcon } from '@angular/material/icon';

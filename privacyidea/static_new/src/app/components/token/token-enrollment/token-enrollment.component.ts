@@ -573,7 +573,7 @@ export class TokenEnrollmentComponent {
     });
   }
 
-  private openSecondStepDialog(response: any) {
+  protected openSecondStepDialog(response: any) {
     this.secondDialog.open(TokenEnrollmentSecondStepDialogComponent, {
       data: {
         response: response,
