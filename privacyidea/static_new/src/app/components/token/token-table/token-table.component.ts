@@ -80,7 +80,7 @@ export class TokenTableComponent {
   tokenDataSource: WritableSignal<MatTableDataSource<any>> = linkedSignal({
     source: this.tokenResource.value,
     computation: (tokenResource, previous) => {
-      if (tokenResource) {
+      if (tokenResource && tokenResource.result.value) {
         return new MatTableDataSource(tokenResource.result.value.tokens);
       }
       return previous?.value ?? new MatTableDataSource(this.emptyResource());
@@ -90,7 +90,7 @@ export class TokenTableComponent {
   totalLength: WritableSignal<number> = linkedSignal({
     source: this.tokenResource.value,
     computation: (tokenResource, previous) => {
-      if (tokenResource) {
+      if (tokenResource && tokenResource.result.value) {
         return tokenResource.result.value.count;
       }
       return previous?.value ?? 0;

@@ -69,6 +69,7 @@ interface TokenOption {
 }
 
 export interface EditableElement {
+  value?: any;
   keyMap: { key: string };
   isEditing: WritableSignal<boolean>;
 }
@@ -119,7 +120,7 @@ export class ContainerDetailsComponent {
   tokenDataSource: WritableSignal<MatTableDataSource<any>> = linkedSignal({
     source: this.tokenResource.value,
     computation: (tokenResource, previous) => {
-      if (tokenResource) {
+      if (tokenResource && tokenResource.result.value) {
         return new MatTableDataSource(tokenResource.result.value.tokens);
       }
       return previous?.value ?? new MatTableDataSource();
@@ -128,7 +129,7 @@ export class ContainerDetailsComponent {
   total: WritableSignal<number> = linkedSignal({
     source: this.tokenResource.value,
     computation: (tokenResource, previous) => {
-      if (tokenResource) {
+      if (tokenResource && tokenResource.result.value) {
         return tokenResource.result.value.count;
       }
       return previous?.value ?? 0;
