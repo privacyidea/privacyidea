@@ -25,9 +25,8 @@ export class RealmService {
     };
   });
   realmOptions = computed(() => {
-    this.tokenService.selectedTokenType();
-    this.containerService.selectedContainerType();
-    return this.realmResource.value()?.result?.value ?? [];
+    const realms = this.realmResource.value()?.result?.value;
+    return realms ? Object.keys(realms) : [];
   });
 
   defaultRealmResource = httpResource<any>(() => {
