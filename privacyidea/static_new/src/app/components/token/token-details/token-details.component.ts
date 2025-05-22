@@ -4,6 +4,7 @@ import {
   effect,
   linkedSignal,
   signal,
+  WritableSignal,
 } from '@angular/core';
 import {
   MatCell,
@@ -15,7 +16,10 @@ import {
 import { MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { MatListItem } from '@angular/material/list';
-import { TokenService } from '../../../services/token/token.service';
+import {
+  TokenDetails,
+  TokenService,
+} from '../../../services/token/token.service';
 import { ContainerService } from '../../../services/container/container.service';
 import { NgClass } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -37,6 +41,7 @@ import { MatDivider } from '@angular/material/divider';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 import { ContentService } from '../../../services/content/content.service';
 import { AuthService } from '../../../services/auth/auth.service';
+import { EditableElement } from '../container-details/container-details.component';
 
 export const tokenDetailsKeyMap = [
   { key: 'tokentype', label: 'Type' },
@@ -106,9 +111,36 @@ export class TokenDetailsComponent {
   repeatPinValue = signal('');
 
   tokenDetailResource = this.tokenService.tokenDetailResource;
-  tokenDetails = linkedSignal({
+  tokenDetails: WritableSignal<TokenDetails> = linkedSignal({
     source: this.tokenDetailResource.value,
-    computation: (res) => (res ? res.result.value.tokens[0] : null),
+    computation: (res) => {
+      return res && res.result.value?.tokens[0]
+        ? (res.result.value.tokens[0] as TokenDetails)
+        : {
+            active: false,
+            container_serial: '',
+            count: 0,
+            count_window: 0,
+            description: '',
+            failcount: 0,
+            id: 0,
+            info: {},
+            locked: false,
+            maxfail: 0,
+            otplen: 0,
+            realms: [],
+            resolver: '',
+            revoked: false,
+            rollout_state: '',
+            serial: '',
+            sync_window: 0,
+            tokengroup: [],
+            tokentype: 'hotp',
+            user_id: '',
+            user_realm: '',
+            username: '',
+          };
+    },
   });
   tokenDetailData = linkedSignal({
     source: this.tokenDetails,
@@ -123,7 +155,7 @@ export class TokenDetailsComponent {
       return tokenDetailsKeyMap
         .map((detail) => ({
           keyMap: detail,
-          value: details[detail.key],
+          value: details[detail.key as keyof TokenDetails],
           isEditing: signal(false),
         }))
         .filter((detail) => detail.value !== undefined);
@@ -142,7 +174,7 @@ export class TokenDetailsComponent {
       return infoDetailsKeyMap
         .map((detail) => ({
           keyMap: detail,
-          value: details[detail.key],
+          value: details[detail.key as keyof TokenDetails],
           isEditing: signal(false),
         }))
         .filter((detail) => detail.value !== undefined);
@@ -161,7 +193,7 @@ export class TokenDetailsComponent {
       return userDetailsKeyMap
         .map((detail) => ({
           keyMap: detail,
-          value: details[detail.key],
+          value: details[detail.key as keyof TokenDetails],
           isEditing: signal(false),
         }))
         .filter((detail) => detail.value !== undefined);
@@ -220,12 +252,12 @@ export class TokenDetailsComponent {
     });
   }
 
-  cancelTokenEdit(element: any) {
+  cancelTokenEdit(element: EditableElement) {
     this.resetEdit(element.keyMap.key);
     element.isEditing.set(!element.isEditing());
   }
 
-  saveTokenEdit(element: any) {
+  saveTokenEdit(element: EditableElement) {
     switch (element.keyMap.key) {
       case 'container_serial':
         this.containerService.selectedContainer.set(
@@ -246,7 +278,7 @@ export class TokenDetailsComponent {
     element.isEditing.set(!element.isEditing());
   }
 
-  toggleTokenEdit(element: any): void {
+  toggleTokenEdit(element: EditableElement): void {
     switch (element.keyMap.key) {
       case 'tokengroup':
         if (this.tokengroupOptions().length === 0) {

@@ -50,16 +50,15 @@ const advancedApiFilter = [
   'assigned',
 ];
 
-export interface TokenResponse {
-  result: {
-    value: {
-      tokens: any[];
-      count: number;
-    };
-  };
+export interface Tokens {
+  count: number;
+  current: number;
+  next?: number;
+  page?: number;
+  tokens: TokenDetails[];
 }
 
-export interface Token {
+export interface TokenDetails {
   active: boolean;
   container_serial: string;
   count: number;
@@ -67,7 +66,7 @@ export interface Token {
   description: string;
   failcount: number;
   id: number;
-  info: TokenInfo;
+  info: any;
   locked: boolean;
   maxfail: number;
   otplen: number;
@@ -82,11 +81,6 @@ export interface Token {
   user_id: string;
   user_realm: string;
   username: string;
-}
-export interface TokenInfo {
-  hashlib: string;
-  timeStep: string;
-  tokenkind: string;
 }
 
 export type TokenGroups = Map<string, TokenGroup[]>;
@@ -136,7 +130,7 @@ export class TokenService {
       }
     },
   });
-  tokenDetailResource = httpResource<any>(() => {
+  tokenDetailResource = httpResource<PiResponse<Tokens>>(() => {
     if (this.selectedContent() !== 'token_details') {
       return undefined;
     }
@@ -225,7 +219,7 @@ export class TokenService {
       {} as Record<string, string>,
     );
   });
-  tokenResource = httpResource<TokenResponse>(() => {
+  tokenResource = httpResource<PiResponse<Tokens>>(() => {
     if (
       this.selectedContent() !== 'token_overview' &&
       this.selectedContent() !== 'container_details' &&
