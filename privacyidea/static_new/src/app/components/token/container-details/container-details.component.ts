@@ -116,7 +116,7 @@ export class ContainerDetailsComponent {
 
   tokenResource = this.tokenService.tokenResource;
   pageIndex = this.tokenService.pageIndex;
-  pageSize = 10;
+  pageSize = this.tokenService.pageSize;
   tokenDataSource: WritableSignal<MatTableDataSource<any>> = linkedSignal({
     source: this.tokenResource.value,
     computation: (tokenResource, previous) => {
