@@ -7,6 +7,22 @@ import { Sort } from '@angular/material/sort';
 import { Observable } from 'rxjs';
 import { PageEvent } from '@angular/material/paginator';
 import { ContentService } from '../content/content.service';
+import { PiResponse } from '../../app.component';
+
+type TokenApplications = TokenApplication[];
+
+export interface TokenApplication {
+  application: string;
+  id: number;
+  serial: string;
+  machine_id?: any;
+  resolver?: any;
+  type: string;
+  options: {
+    service_id?: string;
+    user?: string;
+  };
+}
 
 @Injectable({
   providedIn: 'root',
@@ -71,7 +87,7 @@ export class MachineService {
     }),
     computation: () => 0,
   });
-  tokenApplicationResource = httpResource<any>(() => {
+  tokenApplicationResource = httpResource<PiResponse<TokenApplications>>(() => {
     if (this.selectedContent() !== 'token_applications') {
       return undefined;
     }

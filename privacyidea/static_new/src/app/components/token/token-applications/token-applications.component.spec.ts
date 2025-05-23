@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { TokenApplications } from './token-applications';
-import { TokenApplicationsSsh } from './token-applications-ssh/token-applications-ssh';
-import { TokenApplicationsOffline } from './token-applications-offline/token-applications-offline';
+import { TokenApplicationsComponent } from './token-applications.component';
+import { TokenApplicationsSshComponent } from './token-applications-ssh/token-applications-ssh.component';
+import { TokenApplicationsOfflineComponent } from './token-applications-offline/token-applications-offline.component';
 import { MatSelectModule } from '@angular/material/select';
 import { signal, WritableSignal } from '@angular/core';
 import {
@@ -12,8 +12,8 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { TokenSelectedContent } from '../token.component';
 
 describe('TokenApplications', () => {
-  let component: TokenApplications;
-  let fixture: ComponentFixture<TokenApplications>;
+  let component: TokenApplicationsComponent;
+  let fixture: ComponentFixture<TokenApplicationsComponent>;
   let tokenSerial: WritableSignal<string>;
   let selectedContent: WritableSignal<TokenSelectedContent>;
 
@@ -23,16 +23,16 @@ describe('TokenApplications', () => {
 
     await TestBed.configureTestingModule({
       imports: [
-        TokenApplicationsSsh,
-        TokenApplicationsOffline,
+        TokenApplicationsSshComponent,
+        TokenApplicationsOfflineComponent,
         MatSelectModule,
-        TokenApplications,
+        TokenApplicationsComponent,
         BrowserAnimationsModule,
       ],
       providers: [provideHttpClient(withInterceptorsFromDi())],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(TokenApplications);
+    fixture = TestBed.createComponent(TokenApplicationsComponent);
     component = fixture.componentInstance;
     component.tokenSerial = tokenSerial;
     component.selectedContent = selectedContent;
