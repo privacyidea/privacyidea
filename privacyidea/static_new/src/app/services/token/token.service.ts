@@ -147,26 +147,20 @@ export class TokenService {
       params: { serial: this.tokenSerial() },
     };
   });
-  tokenTypesResource = httpResource<PiResponse<Map<string, string>>>(() => ({
+  tokenTypesResource = httpResource<PiResponse<{}>>(() => ({
     url: environment.proxyUrl + '/auth/rights',
     method: 'GET',
     headers: this.localService.getHeaders(),
   }));
   tokenTypeOptions = computed<TokenType[]>(() => {
-    const map = this.tokenTypesResource.value()?.result.value;
-    if (!map) {
-      return [];
-    }
-    return Array.from(map.keys()).map((key: string) => {
-      const text =
-        TokenComponent.tokenTypeTexts.find((type) => type.key === key)?.text ||
-        '';
-      return {
-        key: key as TokenTypeKey,
-        info: map.get(key) ?? '',
-        text,
-      };
-    });
+    const obj = this.tokenTypesResource.value()?.result.value;
+    if (!obj) return [];
+    return Object.entries(obj).map(([key, info]) => ({
+      key: key as TokenTypeKey,
+      info: String(info),
+      text:
+        TokenComponent.tokenTypeTexts.find((t) => t.key === key)?.text || '',
+    }));
   });
   selectedTokenType = linkedSignal({
     source: () => ({
