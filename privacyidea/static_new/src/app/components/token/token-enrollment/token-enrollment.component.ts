@@ -1,7 +1,6 @@
 import {
   Component,
   computed,
-  effect,
   HostListener,
   Injectable,
   linkedSignal,

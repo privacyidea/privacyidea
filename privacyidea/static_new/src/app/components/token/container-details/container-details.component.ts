@@ -42,7 +42,10 @@ import { infoDetailsKeyMap } from '../token-details/token-details.component';
 import { ContainerDetailsInfoComponent } from './container-details-info/container-details-info.component';
 import { ContainerDetailsTokenTableComponent } from './container-details-token-table/container-details-token-table.component';
 import { MatPaginator, PageEvent } from '@angular/material/paginator';
-import { TokenService } from '../../../services/token/token.service';
+import {
+  TokenDetails,
+  TokenService,
+} from '../../../services/token/token.service';
 import { MatDivider } from '@angular/material/divider';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
@@ -115,15 +118,16 @@ export class ContainerDetailsComponent {
   tokenResource = this.tokenService.tokenResource;
   pageIndex = this.tokenService.pageIndex;
   pageSize = this.tokenService.pageSize;
-  tokenDataSource: WritableSignal<MatTableDataSource<any>> = linkedSignal({
-    source: this.tokenResource.value,
-    computation: (tokenResource, previous) => {
-      if (tokenResource && tokenResource.result.value) {
-        return new MatTableDataSource(tokenResource.result.value.tokens);
-      }
-      return previous?.value ?? new MatTableDataSource();
-    },
-  });
+  tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> =
+    linkedSignal({
+      source: this.tokenResource.value,
+      computation: (tokenResource, previous) => {
+        if (tokenResource && tokenResource.result.value) {
+          return new MatTableDataSource(tokenResource.result.value.tokens);
+        }
+        return previous?.value ?? new MatTableDataSource();
+      },
+    });
   total: WritableSignal<number> = linkedSignal({
     source: this.tokenResource.value,
     computation: (tokenResource, previous) => {

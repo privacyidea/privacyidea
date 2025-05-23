@@ -5,9 +5,31 @@ import { TokenService } from '../token.service';
 import { LocalService } from '../../local/local.service';
 import { TableUtilsService } from '../../table-utils/table-utils.service';
 import { ContentService } from '../../content/content.service';
+import { PiResponse } from '../../../app.component';
 
 const apiFilter = ['serial', 'transaction_id'];
 const advancedApiFilter: string[] = [];
+
+export interface Challenges {
+  challenges: Challenge[];
+  count: number;
+  current: number;
+  next?: number;
+  prev?: number;
+}
+
+export interface Challenge {
+  challenge: string;
+  data: string;
+  expiration: string;
+  id: number;
+  otp_received: boolean;
+  otp_valid: boolean;
+  received_count: number;
+  serial: string;
+  timestamp: string;
+  transaction_id: string;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -60,7 +82,7 @@ export class ChallengesService {
       return { active: 'timestamp', direction: 'asc' } as Sort;
     },
   });
-  challengesResource = httpResource<any>(() => {
+  challengesResource = httpResource<PiResponse<Challenges>>(() => {
     if (this.selectedContent() !== 'token_challenges') {
       return undefined;
     }
