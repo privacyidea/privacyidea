@@ -25,9 +25,12 @@ import { TableUtilsService } from '../../../../services/table-utils/table-utils.
 import { NgClass } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
 import { MatButton, MatIconButton } from '@angular/material/button';
-import { ContainerService } from '../../../../services/container/container.service';
+import {
+  ContainerDetailToken,
+  ContainerService,
+} from '../../../../services/container/container.service';
 import { OverflowService } from '../../../../services/overflow/overflow.service';
-import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { CopyButtonComponent } from '../../../shared/copy-button/copy-button.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -78,7 +81,9 @@ export class ContainerDetailsTokenTableComponent {
   pageSize = 10;
   pageSizeOptions = [5, 10, 15];
   filterValue = '';
-  @Input() containerTokenData!: WritableSignal<any>;
+  @Input() containerTokenData!: WritableSignal<
+    MatTableDataSource<ContainerDetailToken, MatPaginator>
+  >;
   dataSource = new MatTableDataSource<any>([]);
   containerSerial = this.containerService.containerSerial;
   assignedUser: WritableSignal<{
@@ -109,12 +114,12 @@ export class ContainerDetailsTokenTableComponent {
       return false;
     }
     const tokens = this.containerTokenData().data;
-    return tokens.some((token: any) => token.username === '');
+    return tokens.some((token) => token.username === '');
   });
 
   isUnassignableFromAllToken = computed<boolean>(() => {
     const tokens = this.containerTokenData().data;
-    return tokens.some((token: any) => token.username !== '');
+    return tokens.some((token) => token.username !== '');
   });
 
   constructor(
@@ -179,12 +184,12 @@ export class ContainerDetailsTokenTableComponent {
 
   unassignFromAllToken() {
     const tokenToUnassign = this.containerTokenData().data.filter(
-      (token: any) => token.username !== '',
+      (token) => token.username !== '',
     );
     if (tokenToUnassign.length === 0) {
       return;
     }
-    const tokenSerials = tokenToUnassign.map((token: any) => token.serial);
+    const tokenSerials = tokenToUnassign.map((token) => token.serial);
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
@@ -225,7 +230,7 @@ export class ContainerDetailsTokenTableComponent {
       return;
     }
 
-    var tokensToAssign = this.containerTokenData().data.filter((token: any) => {
+    var tokensToAssign = this.containerTokenData().data.filter((token) => {
       return token.username !== username;
     });
     if (tokensToAssign.length === 0) {
@@ -238,19 +243,19 @@ export class ContainerDetailsTokenTableComponent {
     this.dialog
       .open(UserAssignmentDialogComponent)
       .afterClosed()
-      .subscribe((pin: string | null) => {
-        if (pin === null) {
+      .subscribe((pin: string) => {
+        if (typeof pin !== 'string') {
           return;
         }
         const tokenSerialsAssignedToOtherUser = tokensAssignedToOtherUser.map(
-          (token: any) => token.serial,
+          (token) => token.serial,
         );
         this.tokenService
           .unassignUserFromAll(tokenSerialsAssignedToOtherUser)
           .subscribe({
             next: () => {
               const tokenSerialsToAssign = tokensToAssign.map(
-                (token: any) => token.serial,
+                (token) => token.serial,
               );
               this.tokenService
                 .assignUserToAll({
@@ -275,8 +280,8 @@ export class ContainerDetailsTokenTableComponent {
       });
   }
 
-  toggleActive(element: any): void {
-    this.tokenService.toggleActive(element.serial, element.active).subscribe({
+  toggleActive(token: ContainerDetailToken): void {
+    this.tokenService.toggleActive(token.serial, token.active).subscribe({
       next: () => {
         this.containerService.containerDetailResource.reload();
       },
@@ -293,7 +298,7 @@ export class ContainerDetailsTokenTableComponent {
 
   removeAll() {
     const serial_list = this.containerTokenData()
-      .data.map((token: any) => token.serial)
+      .data.map((token) => token.serial)
       .join(',');
     this.dialog
       .open(ConfirmationDialogComponent, {
@@ -321,7 +326,7 @@ export class ContainerDetailsTokenTableComponent {
 
   deleteAllTokens() {
     const serialList = this.containerTokenData()
-      .data.map((token: any) => token.serial)
+      .data.map((token) => token.serial)
       .join(',');
     this.dialog
       .open(ConfirmationDialogComponent, {

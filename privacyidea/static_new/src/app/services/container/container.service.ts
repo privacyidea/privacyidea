@@ -68,6 +68,7 @@ export interface ContainerDetailData {
 
 export interface ContainerDetailToken {
   active: boolean;
+  username: string;
   container_serial: string;
   count: number;
   count_window: number;
