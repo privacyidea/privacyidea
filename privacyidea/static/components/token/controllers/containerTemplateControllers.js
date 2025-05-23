@@ -116,9 +116,9 @@ myApp.controller("containerTemplateListController", ['$scope', '$http', '$q', 'C
     }]);
 
 myApp.controller("containerTemplateCreateController", ['$scope', '$http', '$q', 'ContainerFactory', 'AuthFactory',
-    'ConfigFactory', 'TokenFactory', '$location', '$state', 'ContainerUtils',
+    'ConfigFactory', 'TokenFactory', '$location', '$state', 'ContainerUtils', 'hotkeys',
     function containerTemplateCreateController($scope, $http, $q, ContainerFactory, AuthFactory, ConfigFactory,
-                                               TokenFactory, $location, $state, ContainerUtils) {
+                                               TokenFactory, $location, $state, ContainerUtils, hotkeys) {
         $scope.params = {};
         $scope.containerClassOptions = {};
 
@@ -163,11 +163,7 @@ myApp.controller("containerTemplateCreateController", ['$scope', '$http', '$q', 
         });
 
         $scope.$watch('selection.templateName', function (newName, oldName) {
-            if (newName && existingTemplateNames.includes(newName)) {
-                $scope.invalidName = true;
-            } else {
-                $scope.invalidName = false;
-            }
+            $scope.invalidName = newName && existingTemplateNames.includes(newName);
         }, true);
 
         $scope.createTemplate = function () {
@@ -187,6 +183,14 @@ myApp.controller("containerTemplateCreateController", ['$scope', '$http', '$q', 
                 $state.go("token.containertemplates.list");
             });
         };
+
+        hotkeys.bindTo($scope).add({
+            combo: 'enter',
+            description: "Create the container template",
+            callback: function () {
+                $scope.createTemplate();
+            }, allowIn: ['INPUT', 'SELECT', 'TEXTAREA']
+        });
 
         // listen to the reload broadcast
         $scope.$on("piReload", $scope.getAllContainerAndTokenTypes);

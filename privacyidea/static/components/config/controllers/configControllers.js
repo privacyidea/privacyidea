@@ -76,11 +76,8 @@ myApp.controller("policyListController", ["$scope", "$stateParams", "$location",
     }]);
 
 myApp.controller("policyDetailsController", ["$scope", "$stateParams",
-    "ConfigFactory", "$state",
-    "PolicyTemplateFactory",
-    function ($scope, $stateParams,
-              ConfigFactory, $state,
-              PolicyTemplateFactory) {
+    "ConfigFactory", "$state", "PolicyTemplateFactory", "hotkeys", "inform",
+    function ($scope, $stateParams, ConfigFactory, $state, PolicyTemplateFactory, hotkeys, inform) {
         // init
         $scope.realms = [];
         $scope.adminRealms = [];
@@ -323,7 +320,14 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
 
         $scope.createPolicy = function () {
             // This is called to save the policy
-            // get scope
+            if (!$scope.policyname || $scope.policyname.length === 0) {
+                inform.add("Please enter a name for the policy.", {type: "danger", ttl: 5000});
+                return;
+            }
+            if (!$scope.selectedScope || $scope.selectedScope.length === 0) {
+                inform.add("Select a scope to create a new policy.", {type: "danger", ttl: 5000});
+                return;
+            }
             var scope = $scope.selectedScope[0].name;
             var realms = [];
             var resolvers = [];
@@ -334,7 +338,6 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             $scope.params.action = actions;
             $scope.params.adminrealm = adminRealms;
             // get actions
-
             if ($scope.isActionValues) {
                 // we need to process the value-actions
                 // iterate through the checkboxes
@@ -411,6 +414,15 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             // Jump to top when the policy is saved
             $('html,body').scrollTop(0);
         };
+
+        hotkeys.bindTo($scope).add({
+            combo: 'enter',
+            description: "Create the policy",
+            callback: function () {
+                $scope.createPolicy();
+            },
+            allowIn: ['INPUT', 'SELECT', 'TEXTAREA']
+        });
 
         $scope.presetEditValues2 = function (policy) {
             //debug: console.log(policy);
@@ -710,6 +722,7 @@ myApp.controller("configController", ["$scope", "$location", "$rootScope",
         $scope.getResolvers();
         $scope.selectedResolvers = {};
         $scope.selectedPINodes = {};
+        $scope.selectedAdminRealms = {};
         $scope.getSmtpIdentifiers();
         $scope.getRADIUSIdentifiers();
 
