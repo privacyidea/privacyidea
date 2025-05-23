@@ -35,13 +35,16 @@ import {
 } from '@angular/material/autocomplete';
 import { TokenDetailsInfoComponent } from './token-details-info/token-details-info.component';
 import { TokenDetailsActionsComponent } from './token-details-actions/token-details-actions.component';
-import { EditButtonsComponent } from '../../shared/edit-buttons/edit-buttons.component';
+import {
+  EditableElement,
+  EditableValueElement,
+  EditButtonsComponent,
+} from '../../shared/edit-buttons/edit-buttons.component';
 import { OverflowService } from '../../../services/overflow/overflow.service';
 import { MatDivider } from '@angular/material/divider';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 import { ContentService } from '../../../services/content/content.service';
 import { AuthService } from '../../../services/auth/auth.service';
-import { EditableElement } from '../container-details/container-details.component';
 
 export const tokenDetailsKeyMap = [
   { key: 'tokentype', label: 'Type' },
@@ -257,7 +260,7 @@ export class TokenDetailsComponent {
     element.isEditing.set(!element.isEditing());
   }
 
-  saveTokenEdit(element: EditableElement) {
+  saveTokenEdit(element: EditableValueElement<string>) {
     switch (element.keyMap.key) {
       case 'container_serial':
         this.containerService.selectedContainer.set(
