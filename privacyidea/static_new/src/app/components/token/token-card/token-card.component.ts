@@ -30,7 +30,7 @@ export class TokenCardComponent {
   selectedContent = this.contentService.selectedContent;
   tokenSerial = this.tokenService.tokenSerial;
   states = this.containerService.states;
-  isProgrammaticChange = this.contentService.isProgrammaticTabChange;
+  isProgrammaticTabChange = this.contentService.isProgrammaticTabChange;
   selectedTabIndex = linkedSignal({
     source: this.selectedContent,
     computation: (selectedContent) => {
@@ -50,8 +50,8 @@ export class TokenCardComponent {
   ) {}
 
   onTabChange(): void {
-    if (this.isProgrammaticChange()) {
-      this.isProgrammaticChange.set(false);
+    if (this.isProgrammaticTabChange()) {
+      this.isProgrammaticTabChange.set(false);
       return;
     }
 

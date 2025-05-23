@@ -27,7 +27,7 @@ describe('TokenCardComponent', () => {
     component.states = signal([]);
     component.refreshTokenDetails = signal(false);
     component.refreshContainerDetails = signal(false);
-    component.isProgrammaticChange = signal(false);
+    component.isProgrammaticTabChange = signal(false);
     component.tokenSelection = new SelectionModel<any>(true, []);
     component.containerSelection = new SelectionModel<any>(true, []);
     component.refreshTokenOverview = signal(false);
@@ -42,7 +42,7 @@ describe('TokenCardComponent', () => {
 
   describe('onTabChange()', () => {
     it('should do nothing except reset `isProgrammaticChange` when it is true', () => {
-      component.isProgrammaticChange.set(true);
+      component.isProgrammaticTabChange.set(true);
       component.selectedTabIndex.set(1);
       component.selectedContent.set('token_overview');
       component.containerSerial.set('Mock serial');
@@ -50,7 +50,7 @@ describe('TokenCardComponent', () => {
 
       component.onTabChange();
 
-      expect(component.isProgrammaticChange()).toBeFalse();
+      expect(component.isProgrammaticTabChange()).toBeFalse();
       expect(component.selectedTabIndex()).toBe(1);
       expect(component.selectedContent()).toBe('token_overview');
       expect(component.containerSerial()).toBe('Mock serial');
@@ -58,7 +58,7 @@ describe('TokenCardComponent', () => {
     });
 
     it('should set selectedContent to "token_overview" and clear serials if selectedTabIndex is 0', () => {
-      component.isProgrammaticChange.set(false);
+      component.isProgrammaticTabChange.set(false);
       component.selectedTabIndex.set(0);
       component.selectedContent.set('container_details');
       component.containerSerial.set('Mock serial');
@@ -72,7 +72,7 @@ describe('TokenCardComponent', () => {
     });
 
     it('should set selectedContent to "container_overview" and clear serials if selectedTabIndex is 1', () => {
-      component.isProgrammaticChange.set(false);
+      component.isProgrammaticTabChange.set(false);
       component.selectedTabIndex.set(1);
       component.selectedContent.set('token_details');
       component.containerSerial.set('Mock serial');
@@ -88,11 +88,11 @@ describe('TokenCardComponent', () => {
 
   describe('TokenCardComponent - isProgrammaticChange reset', () => {
     it('should set isProgrammaticChange to false if it was true upon onTabChange()', () => {
-      component.isProgrammaticChange.set(true);
+      component.isProgrammaticTabChange.set(true);
 
       component.onTabChange();
 
-      expect(component.isProgrammaticChange()).toBe(false);
+      expect(component.isProgrammaticTabChange()).toBe(false);
     });
   });
 });
