@@ -186,7 +186,9 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                     callback(response.data);
                 }, function (error) {
                     AuthFactory.authError(error.data);
-                    error_callback(error.data, params["container_serial"])
+                    if (error_callback) {
+                        error_callback(error.data, params["container_serial"]);
+                    }
                 });
             },
             terminateRegistration: function (container_serial, callback) {

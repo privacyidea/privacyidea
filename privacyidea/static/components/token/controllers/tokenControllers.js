@@ -162,6 +162,11 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             combo: 'enter',
             description: gettextCatalog.getString('Roll the token'),
             callback: function () {
+                // Do not enroll the token if the focus was in an autocomplete field. The enter press was likely to
+                // confirm the autocomplete.
+                if (["username"].indexOf(document.activeElement.id) >= 0) {
+                    return;
+                }
                 $scope.enrollToken();
             }, allowIn: ['INPUT', 'SELECT', 'TEXTAREA']
         });
