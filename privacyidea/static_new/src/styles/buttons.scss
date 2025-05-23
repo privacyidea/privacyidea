@@ -285,10 +285,10 @@ $header-bg: white;
   background: $header-bg;
   color: #767676;
   box-shadow: none !important;
-}
 
-.refresh-btn:hover mat-icon {
-  color: black;
+  &:hover mat-icon {
+    color: black;
+  }
 }
 
 .type-help-button {
@@ -322,7 +322,11 @@ $header-bg: white;
 }
 
 .logout-btn {
-  color: lightgray;
+  color: #767676;
+
+  &:hover {
+    color: black;
+  }
 }
 
 .drawer-button {

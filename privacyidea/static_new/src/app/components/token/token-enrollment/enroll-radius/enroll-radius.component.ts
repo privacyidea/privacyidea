@@ -1,8 +1,8 @@
 import {
   Component,
   computed,
+  effect,
   Input,
-  signal,
   WritableSignal,
 } from '@angular/core';
 import { MatCheckbox } from '@angular/material/checkbox';
@@ -17,6 +17,7 @@ import { TokenService } from '../../../../services/token/token.service';
 
 @Component({
   selector: 'app-enroll-radius',
+  standalone: true,
   imports: [
     MatCheckbox,
     MatFormField,
@@ -41,29 +42,29 @@ export class EnrollRadiusComponent {
   @Input() radiusServerConfiguration!: WritableSignal<string>;
   @Input() checkPinLocally!: WritableSignal<boolean>;
   radiusServerConfigurationOptions = computed(() => {
-    const rawValue =
+    const raw =
       this.radiusServerService.radiusServerConfigurationResource.value()?.result
         ?.value;
-    const options =
-      rawValue && typeof rawValue === 'object'
-        ? Object.keys(rawValue).map((option: any) => option)
-        : [];
-    return options ?? [];
+    return raw && typeof raw === 'object' ? Object.keys(raw) : [];
   });
-  defaultRadiusServerIsSet = signal(false);
+
+  defaultRadiusServerIsSet = computed(() => {
+    const cfg = this.systemService.systemConfigResource.value()?.result?.value;
+    return !!cfg?.['radius.identifier'];
+  });
 
   constructor(
     private radiusServerService: RadiusServerService,
     private systemService: SystemService,
     private tokenService: TokenService,
-  ) {}
-
-  ngOnInit(): void {
-    this.systemService.getSystemConfig().subscribe((response) => {
-      const config = response?.result?.value;
-      if (config && config['radius.identifier']) {
-        this.defaultRadiusServerIsSet.set(true);
-        this.radiusServerConfiguration.set(config['radius.identifier']);
+  ) {
+    effect(() => {
+      const id =
+        this.systemService.systemConfigResource.value()?.result?.value?.[
+          'radius.identifier'
+        ];
+      if (id) {
+        this.radiusServerConfiguration.set(id);
       }
     });
   }

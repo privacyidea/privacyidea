@@ -1,4 +1,4 @@
-import { Component, Input, signal, WritableSignal } from '@angular/core';
+import { Component, computed, Input, WritableSignal } from '@angular/core';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -12,28 +12,22 @@ import { TokenService } from '../../../../services/token/token.service';
   styleUrl: './enroll-tiqr.component.scss',
 })
 export class EnrollTiqrComponent {
+  @Input() description!: WritableSignal<string>;
+  defaultTiQRIsSet = computed(() => {
+    const cfg = this.systemService.systemConfigResource.value()?.result?.value;
+    return !!(
+      cfg?.['tiqr.infoUrl'] &&
+      cfg?.['tiqr.logoUrl'] &&
+      cfg?.['tiqr.regServer']
+    );
+  });
+
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'tiqr')?.text;
-  @Input() description!: WritableSignal<string>;
-  @Input() defaultTiQRIsSet = signal(false);
 
   constructor(
     private systemService: SystemService,
     private tokenService: TokenService,
   ) {}
-
-  ngOnInit(): void {
-    this.systemService.getSystemConfig().subscribe((response) => {
-      const config = response?.result?.value;
-      if (
-        config &&
-        config['tiqr.infoUrl'] &&
-        config['tiqr.logoUrl'] &&
-        config['tiqr.regServer']
-      ) {
-        this.defaultTiQRIsSet.set(true);
-      }
-    });
-  }
 }

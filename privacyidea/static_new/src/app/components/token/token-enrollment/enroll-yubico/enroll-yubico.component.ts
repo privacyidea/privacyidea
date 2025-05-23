@@ -1,4 +1,4 @@
-import { Component, Input, signal, WritableSignal } from '@angular/core';
+import { Component, computed, Input, WritableSignal } from '@angular/core';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -29,30 +29,24 @@ export class YubicoErrorStateMatcher implements ErrorStateMatcher {
   styleUrl: './enroll-yubico.component.scss',
 })
 export class EnrollYubicoComponent {
+  @Input() description!: WritableSignal<string>;
+  @Input() yubikeyIdentifier!: WritableSignal<string>;
+  yubicoErrorStatematcher = new YubicoErrorStateMatcher();
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'yubico')?.text;
-  @Input() description!: WritableSignal<string>;
-  @Input() yubikeyIdentifier!: WritableSignal<string>;
-  yubicoIsConfigured = signal(false);
-  yubicoErrorStatematcher = new YubicoErrorStateMatcher();
+
+  yubicoIsConfigured = computed(() => {
+    const cfg = this.systemService.systemConfigResource.value()?.result?.value;
+    return !!(
+      cfg?.['yubico.id'] &&
+      cfg?.['yubico.url'] &&
+      cfg?.['yubico.secret']
+    );
+  });
 
   constructor(
     private systemService: SystemService,
     private tokenService: TokenService,
   ) {}
-
-  ngOnInit(): void {
-    this.systemService.getSystemConfig().subscribe((response) => {
-      const config = response?.result?.value;
-      if (
-        config &&
-        config['yubico.id'] &&
-        config['yubico.url'] &&
-        config['yubico.secret']
-      ) {
-        this.yubicoIsConfigured.set(true);
-      }
-    });
-  }
 }
