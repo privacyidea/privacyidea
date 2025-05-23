@@ -1,5 +1,6 @@
 import {
   Component,
+  computed,
   Input,
   signal,
   Signal,
@@ -72,9 +73,13 @@ export class TokenDetailsUserComponent {
   @Input() isEditingUser!: WritableSignal<boolean>;
   @Input() isEditingInfo!: WritableSignal<boolean>;
   @Input() isAnyEditingOrRevoked!: Signal<boolean>;
+  tokenType = computed(() => {
+    const tokenDetail = this.tokenService.tokenDetailResource.value();
+    return tokenDetail?.result?.value?.tokens?.[0].tokentype;
+  });
 
   constructor(
-    private tokenService: TokenService,
+    protected tokenService: TokenService,
     protected realmService: RealmService,
     protected userService: UserService,
     private notificationService: NotificationService,

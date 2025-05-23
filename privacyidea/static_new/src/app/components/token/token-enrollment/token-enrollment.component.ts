@@ -1,6 +1,7 @@
 import {
   Component,
   computed,
+  effect,
   HostListener,
   Injectable,
   linkedSignal,
@@ -534,6 +535,18 @@ export class TokenEnrollmentComponent {
     );
   }
 
+  protected openSecondStepDialog(response: any) {
+    this.secondDialog.open(TokenEnrollmentSecondStepDialogComponent, {
+      data: {
+        response: response,
+        enrollToken: this.enrollToken.bind(this),
+        username: this.userService.selectedUsername(),
+        userRealm: this.userService.selectedUserRealm(),
+        onlyAddToRealm: this.onlyAddToRealm(),
+      },
+    });
+  }
+
   private handleEnrollmentResponse(response: any): void {
     const detail = response.detail || {};
     const rolloutState = detail.rollout_state;
@@ -575,18 +588,6 @@ export class TokenEnrollmentComponent {
     this.firstDialog.open(TokenEnrollmentFirstStepDialogComponent, {
       data: {
         response: response,
-      },
-    });
-  }
-
-  protected openSecondStepDialog(response: any) {
-    this.secondDialog.open(TokenEnrollmentSecondStepDialogComponent, {
-      data: {
-        response: response,
-        enrollToken: this.enrollToken.bind(this),
-        username: this.userService.selectedUsername(),
-        userRealm: this.userService.selectedUserRealm(),
-        onlyAddToRealm: this.onlyAddToRealm(),
       },
     });
   }

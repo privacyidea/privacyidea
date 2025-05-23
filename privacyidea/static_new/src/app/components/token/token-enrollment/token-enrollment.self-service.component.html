@@ -196,19 +196,23 @@
       </mat-form-field>
     </div>
 
-    <div class="flex-column user-pin-container">
-      <h4 class="enroll-h4">Set Pin</h4>
-      <div class="user-pin-input">
-        <input [(ngModel)]="setPinValue"
-               [type]="'password'"
-               class="input"
-               placeholder="Pin" />
+    @if (selectedTokenType().key !== 'passkey') {
+      <div class="flex-column user-pin-container">
+        <h4 class="enroll-h4">Set Pin</h4>
+        <div class="user-pin-input">
+          <input [(ngModel)]="setPinValue"
+                 [type]="'password'"
+                 class="input"
+                 placeholder="Pin" />
 
-        <input [(ngModel)]="repeatPinValue"
-               [type]="'password'"
-               class="input"
-               placeholder="Repeat Pin" />
+          <input [(ngModel)]="repeatPinValue"
+                 [type]="'password'"
+                 class="input"
+                 placeholder="Repeat Pin" />
+        </div>
       </div>
-    </div>
+    } @else {
+      <div class="width-33"></div>
+    }
   </div>
 </div>
