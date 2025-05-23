@@ -85,7 +85,6 @@ myApp.service('ContainerUtils', function () {
         });
         return templateContainerDiff;
     };
-
 });
 
 myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'ContainerFactory', '$stateParams',
@@ -336,11 +335,16 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                             "passphrase_response": $scope.passphrase.response
                         };
                     ContainerFactory.initializeRegistration(registrationParams, function (registrationData) {
-                        $scope.containerRegister = true;
-                        $scope.containerRegistrationURL = registrationData.result.value['container_url']['value'];
-                        $scope.containerRegistrationQR = registrationData.result.value['container_url']['img'];
-                        $scope.pollContainerDetails();
-                    });
+                            $scope.containerRegister = true;
+                            $scope.containerRegistrationURL = registrationData.result.value['container_url']['value'];
+                            $scope.containerRegistrationQR = registrationData.result.value['container_url']['img'];
+                            $scope.pollContainerDetails();
+                        },
+                        function (error, container_serial) {
+                            if (error && error.result && error.result.error && error.result.error.code === 303) {
+                                $state.go("token.containerdetails", {"containerSerial": container_serial});
+                            }
+                        });
                     stay = true;
                 }
                 if (data.result.value.tokens) {
@@ -368,7 +372,6 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                 if (!stay) {
                     $state.go("token.containerdetails", {"containerSerial": $scope.containerSerial});
                 }
-
             });
         };
 

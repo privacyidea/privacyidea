@@ -17,7 +17,7 @@
  * SPDX-FileCopyrightText: 2024 Nils Behlen <nils.behlen@netknights.it>
  * SPDX-FileCopyrightText: 2024 Jelina Unger <jelina.unger@netknights.it>
  * SPDX-License-Identifier: AGPL-3.0-or-later
-**/
+ **/
 
 myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q', '$state', '$rootScope',
     function (AuthFactory, $http, containerUrl, $q, $state, $rootScope) {
@@ -179,13 +179,14 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                     AuthFactory.authError(error.data)
                 });
             },
-            initializeRegistration: function (params, callback) {
+            initializeRegistration: function (params, callback, error_callback) {
                 $http.post(containerUrl + "/register/initialize", params, {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).then(function (response) {
                     callback(response.data);
                 }, function (error) {
                     AuthFactory.authError(error.data);
+                    error_callback(error.data, params["container_serial"])
                 });
             },
             terminateRegistration: function (container_serial, callback) {
