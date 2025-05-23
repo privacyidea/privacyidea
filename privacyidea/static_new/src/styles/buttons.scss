@@ -286,8 +286,11 @@ $header-bg: white;
   color: #767676;
   box-shadow: none !important;
 
-  &:hover mat-icon {
-    color: black;
+  &:hover {
+    background: #f8f8f8;
+    mat-icon {
+      color: black;
+    }
   }
 }
 

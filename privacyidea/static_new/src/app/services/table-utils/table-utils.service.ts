@@ -32,7 +32,7 @@ export class TableUtilsService {
     filterPairs: FilterPair[];
     remainingFilterText: string;
   } {
-    const lowerFilterValue = filterValue.trim();
+    const lowerFilterValue = filterValue.trim().toLowerCase();
     const filterLabels = apiFilter.flatMap((column) => {
       if (column === 'infokey & infovalue') {
         return ['infokey:', 'infovalue:'];
@@ -49,9 +49,9 @@ export class TableUtilsService {
     let currentValue = '';
     let remainingFilterText = '';
 
-    const findMatchingLabel = (filterValueSplit: string[]): string | null => {
-      for (let i = 1; i <= filterValueSplit.length; i++) {
-        const possibleLabel = filterValueSplit.slice(0, i).join(' ');
+    const findMatchingLabel = (parts: string[]): string | null => {
+      for (let i = 1; i <= parts.length; i++) {
+        const possibleLabel = parts.slice(0, i).join(' ');
         if (filterLabels.includes(possibleLabel)) {
           return possibleLabel;
         }
@@ -61,8 +61,30 @@ export class TableUtilsService {
 
     let i = 0;
     while (i < filterValueSplit.length) {
-      const remainingFilterValues = filterValueSplit.slice(i);
-      const matchingLabel = findMatchingLabel(remainingFilterValues);
+      const parts = filterValueSplit.slice(i);
+      let matchingLabel = findMatchingLabel(parts);
+
+      if (!matchingLabel) {
+        const token = parts[0];
+        for (const label of filterLabels) {
+          if (token.startsWith(label)) {
+            matchingLabel = label;
+            if (currentLabel && currentValue) {
+              filterPairs.push({
+                key: currentLabel.slice(0, -1),
+                value: currentValue.trim(),
+              });
+            }
+            currentLabel = matchingLabel;
+            currentValue = token.slice(label.length) + ' ';
+            i += 1;
+            break;
+          }
+        }
+        if (matchingLabel === currentLabel) {
+          continue;
+        }
+      }
 
       if (matchingLabel) {
         if (currentLabel && currentValue) {
@@ -107,8 +129,8 @@ export class TableUtilsService {
     );
     if (keywordPattern.test(currentValue)) {
       return currentValue
-        .replace(keywordPattern, '')
-        .trim()
+        .replace(keywordPattern, ' ')
+        .trimStart()
         .replace(/\s{2,}/g, ' ');
     } else {
       if (currentValue.length > 0) {

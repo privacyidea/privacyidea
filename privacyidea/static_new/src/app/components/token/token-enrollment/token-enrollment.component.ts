@@ -1,6 +1,7 @@
 import {
   Component,
   computed,
+  HostListener,
   Injectable,
   linkedSignal,
   ViewChild,
@@ -467,6 +468,11 @@ export class TokenEnrollmentComponent {
     protected versioningService: VersionService,
     private contentService: ContentService,
   ) {}
+
+  @HostListener('document:keydown.enter', ['$event'])
+  onEnter() {
+    this.enrollToken();
+  }
 
   formatDateTimeOffset(date: Date, time: string, offset: string): string {
     const timeMatch = time.match(/^(\d{2}):(\d{2})$/);
