@@ -116,11 +116,8 @@ class FirebaseProvider(ISMSProvider):
             session = Session()
             session.proxies.update(proxies)
             auth_request = requests.Request(session=session)
-
-        if auth_request:
-            authed_session = AuthorizedSession(credentials, auth_request=auth_request)
-        else:
-            authed_session = AuthorizedSession(credentials)
+        
+        authed_session = AuthorizedSession(credentials, auth_request=auth_request)      
 
         headers = {'Content-Type': 'application/json; UTF-8'}
         fcm_message = {
