@@ -20,7 +20,7 @@ import { FormsModule } from '@angular/forms';
 import { MatInput } from '@angular/material/input';
 import { NgClass } from '@angular/common';
 import { MatPaginator, PageEvent } from '@angular/material/paginator';
-import { AuditService } from '../../services/audit/audit.service';
+import { AuditData, AuditService } from '../../services/audit/audit.service';
 import { CopyButtonComponent } from '../shared/copy-button/copy-button.component';
 import { ContentService } from '../../services/content/content.service';
 import { RouterLink } from '@angular/router';
@@ -99,7 +99,7 @@ export class AuditComponent {
     source: this.auditResource.value,
     computation: (auditResource, previous) => {
       if (auditResource) {
-        return auditResource.result.value.count;
+        return auditResource.result.value?.count ?? 0;
       }
       return previous?.value ?? 0;
     },
@@ -125,15 +125,17 @@ export class AuditComponent {
       }),
   });
 
-  auditDataSource: WritableSignal<MatTableDataSource<any>> = linkedSignal({
-    source: this.auditResource.value,
-    computation: (auditResource, previous) => {
-      if (auditResource) {
-        return new MatTableDataSource(auditResource.result.value.auditdata);
-      }
-      return previous?.value ?? new MatTableDataSource(this.emptyResource());
+  auditDataSource: WritableSignal<MatTableDataSource<AuditData>> = linkedSignal(
+    {
+      source: this.auditResource.value,
+      computation: (auditResource, previous) => {
+        if (auditResource) {
+          return new MatTableDataSource(auditResource.result.value?.auditdata);
+        }
+        return previous?.value ?? new MatTableDataSource(this.emptyResource());
+      },
     },
-  });
+  );
 
   constructor(
     private auditService: AuditService,

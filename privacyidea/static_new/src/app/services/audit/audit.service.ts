@@ -5,6 +5,46 @@ import { environment } from '../../../environments/environment';
 import { Sort } from '@angular/material/sort';
 import { ContentService } from '../content/content.service';
 import { TableUtilsService } from '../table-utils/table-utils.service';
+import { PiResponse } from '../../app.component';
+
+export interface Audit {
+  auditcolumns: string[];
+  auditdata: AuditData[];
+  count: number;
+  current: number;
+  next?: number;
+  prev?: number;
+}
+
+export interface AuditData {
+  action?: string;
+  action_detail?: string;
+  administrator?: string;
+  authentication?: string;
+  clearance_level?: string;
+  client?: string;
+  container_serial?: string;
+  container_type?: string;
+  date?: string;
+  duration?: number;
+  info?: string;
+  log_level?: any;
+  missing_line?: string;
+  number?: number;
+  policies?: any;
+  privacyidea_server?: string;
+  realm?: any;
+  resolver?: any;
+  serial?: string;
+  sig_check?: string;
+  startdate?: string;
+  success?: boolean;
+  thread_id?: string;
+  token_type?: any;
+  user?: any;
+  user_agent?: string;
+  user_agent_version?: string;
+}
 
 const apiFilter = [
   'action',
@@ -75,7 +115,7 @@ export class AuditService {
     }),
     computation: () => 0,
   });
-  auditResource = httpResource<any>(() => {
+  auditResource = httpResource<PiResponse<Audit>>(() => {
     if (
       this.contentService.routeUrl() !== '/audit' &&
       this.contentService.selectedContent() !== 'audit'
