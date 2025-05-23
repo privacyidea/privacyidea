@@ -19,7 +19,10 @@ import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filt
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
 import { TokenService } from '../../../services/token/token.service';
-import { ChallengesService } from '../../../services/token/challenges/challenges.service';
+import {
+  Challenge,
+  ChallengesService,
+} from '../../../services/token/challenges/challenges.service';
 import { ContentService } from '../../../services/content/content.service';
 
 export const columnKeysMap = [
@@ -68,17 +71,18 @@ export class ChallengesTableComponent {
       return prev?.value ?? 0;
     },
   });
-  challengesDataSource: WritableSignal<any> = linkedSignal({
-    source: this.challengesService.challengesResource.value,
-    computation: (challengesResource, previous) => {
-      if (challengesResource) {
-        return new MatTableDataSource(
-          challengesResource.result.value?.challenges,
-        );
-      }
-      return previous?.value ?? new MatTableDataSource([]);
-    },
-  });
+  challengesDataSource: WritableSignal<MatTableDataSource<Challenge>> =
+    linkedSignal({
+      source: this.challengesService.challengesResource.value,
+      computation: (challengesResource, previous) => {
+        if (challengesResource) {
+          return new MatTableDataSource(
+            challengesResource.result.value?.challenges,
+          );
+        }
+        return previous?.value ?? new MatTableDataSource<Challenge>([]);
+      },
+    });
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
