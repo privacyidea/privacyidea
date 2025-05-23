@@ -249,7 +249,7 @@ export class TokenService {
     };
   });
 
-  tokenSelection = linkedSignal({
+  tokenSelection: WritableSignal<any> = linkedSignal({
     source: () => ({
       selectedContent: this.contentService.selectedContent(),
       tokenResource: this.tokenResource.value(),
@@ -827,7 +827,7 @@ export class TokenService {
   getSerial(otp: string, params: HttpParams) {
     const headers = this.localService.getHeaders();
     return this.http
-      .get<{ count: number; serial?: string }>(
+      .get<PiResponse<{ count: number; serial?: string }>>(
         `${this.tokenBaseUrl}getserial/${otp}`,
         {
           params: params,

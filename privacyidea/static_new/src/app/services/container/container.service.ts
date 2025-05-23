@@ -591,7 +591,7 @@ export class ContainerService {
     );
   }
 
-  removeAll(containerSerial: string) {
+  removeAll(containerSerial: string): Observable<PiResponse<boolean> | null> {
     const data = this.containerDetail();
 
     if (!data || !Array.isArray(data.containers[0].tokens)) {
