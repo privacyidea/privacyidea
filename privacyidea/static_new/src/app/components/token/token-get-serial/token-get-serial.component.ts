@@ -140,7 +140,11 @@ export class TokenGetSerial {
     this.currentStep.set('counting');
     this.tokenService.getSerial(this.otpValue(), params).subscribe({
       next: (response) => {
-        this.tokenCount.set(response.result.value.count);
+        this.tokenCount.set(
+          response?.result?.value?.count !== undefined
+            ? String(response.result.value.count)
+            : '',
+        );
         this.currentStep.set('countDone');
         if (this.countIsLarge()) {
           this.dialog
@@ -183,12 +187,13 @@ export class TokenGetSerial {
       .getSerial(this.otpValue(), params)
       .subscribe({
         next: (response) => {
+          const serial = response.result?.value?.serial ?? '';
           this.dialog.open(GetSerialResultDialogComponent, {
             data: {
-              foundSerial: response.result.value.serial,
+              foundSerial: serial,
               otpValue: this.otpValue(),
               onClickSerial: () => {
-                this.tokenSerial.set(response.result.value.serial);
+                this.tokenSerial.set(serial);
                 this.selectedContent.set('token_details');
                 this.dialog.closeAll();
               },
@@ -197,7 +202,7 @@ export class TokenGetSerial {
               },
             },
           });
-          this.foundSerial.set(response.result.value.serial);
+          this.foundSerial.set(serial);
           this.currentStep.set('found');
         },
       });

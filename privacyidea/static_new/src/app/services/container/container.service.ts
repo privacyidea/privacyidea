@@ -591,7 +591,7 @@ export class ContainerService {
     );
   }
 
-  removeAll(containerSerial: string): Observable<PiResponse<number> | null> {
+  removeAll(containerSerial: string): Observable<PiResponse<boolean> | null> {
     const data = this.containerDetail();
 
     if (!data || !Array.isArray(data.containers[0].tokens)) {
@@ -616,7 +616,7 @@ export class ContainerService {
 
     return this.http
       .post<
-        PiResponse<number>
+        PiResponse<boolean>
       >(`${this.containerBaseUrl}${containerSerial}/removeall`, { serial: tokensForAction.join(',') }, { headers })
       .pipe(
         catchError((error) => {
