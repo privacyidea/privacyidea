@@ -84,7 +84,7 @@ export class ContainerDetailsTokenTableComponent {
   @Input() containerTokenData!: WritableSignal<
     MatTableDataSource<ContainerDetailToken, MatPaginator>
   >;
-  dataSource = new MatTableDataSource<any>([]);
+  dataSource = new MatTableDataSource<ContainerDetailToken>([]);
   containerSerial = this.containerService.containerSerial;
   assignedUser: WritableSignal<{
     user_realm: string;
@@ -176,9 +176,9 @@ export class ContainerDetailsTokenTableComponent {
       });
   }
 
-  handleColumnClick(columnKey: string, element: any) {
+  handleColumnClick(columnKey: string, token: ContainerDetailToken) {
     if (columnKey === 'active') {
-      this.toggleActive(element);
+      this.toggleActive(token);
     }
   }
 
@@ -237,7 +237,7 @@ export class ContainerDetailsTokenTableComponent {
       return;
     }
     var tokensAssignedToOtherUser = tokensToAssign.filter(
-      (token: any) => token.username !== '',
+      (token) => token.username !== '',
     );
 
     this.dialog

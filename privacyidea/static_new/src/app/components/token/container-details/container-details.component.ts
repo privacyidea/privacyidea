@@ -24,7 +24,10 @@ import {
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatListItem } from '@angular/material/list';
 import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
-import { EditButtonsComponent } from '../../shared/edit-buttons/edit-buttons.component';
+import {
+  EditableElement,
+  EditButtonsComponent,
+} from '../../shared/edit-buttons/edit-buttons.component';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { RealmService } from '../../../services/realm/realm.service';
@@ -67,12 +70,6 @@ interface TokenOption {
   tokentype: string;
   active: boolean;
   username: string;
-}
-
-export interface EditableElement {
-  value?: any;
-  keyMap: { key: string };
-  isEditing: WritableSignal<boolean>;
 }
 
 @Component({
