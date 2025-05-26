@@ -190,7 +190,7 @@ export class ContainerDetailsComponent {
   infoData = linkedSignal({
     source: this.containerDetails,
     computation: (containerDetails) => {
-      if (!containerDetails) {
+      if (containerDetails.serial === '') {
         return infoDetailsKeyMap.map((detail) => ({
           keyMap: detail,
           value: '',

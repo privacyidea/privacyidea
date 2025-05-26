@@ -121,18 +121,20 @@ export class TokenService {
       selectedContent: this.contentService.selectedContent(),
     }),
     computation: (source: any, previous) => {
-      if (
-        !previous ||
-        source.selectedContent !== previous.source.selectedContent
-      ) {
-        return source.selectedContent === 'container_details'
-          ? 'container_serial:'
-          : '';
-      }
-      if (source.showOnlyTokenNotInContainer) {
-        return previous.value + ' container_serial:';
-      } else {
-        return previous.value.replace(/container_serial:\S*/g, '').trim();
+      switch (source.selectedContent) {
+        case 'container_details':
+          if (
+            !previous ||
+            source.selectedContent !== previous.source.selectedContent
+          ) {
+            return 'container_serial:';
+          } else {
+            return source.showOnlyTokenNotInContainer
+              ? previous.value + ' container_serial:'
+              : previous.value.replace(/container_serial:\S*/g, '').trim();
+          }
+        default:
+          return '';
       }
     },
   });
@@ -457,6 +459,7 @@ export class TokenService {
         }),
       );
   }
+
   assignUserToAll(args: {
     tokenSerials: string[];
     username: string;

@@ -170,7 +170,7 @@ export class ContainerService {
   });
   containerResource = httpResource<ContainerResponse>(() => {
     if (
-      !['container_overview', 'token_detail', 'token_enrollment'].includes(
+      !['container_overview', 'token_details', 'token_enrollment'].includes(
         this.selectedContent(),
       )
     ) {
@@ -293,6 +293,9 @@ export class ContainerService {
     private notificationService: NotificationService,
     private contentService: ContentService,
   ) {
+    effect(() => {
+      this.selectedContainer(); // Trigger recomputation for enrollment from container details
+    });
     effect(() => {
       if (this.containerDetailResource.error()) {
         const containerDetailError =
