@@ -39,15 +39,9 @@ export class EnrollApplspecComponent {
   @Input() serviceId!: WritableSignal<string>;
   @Input() generateOnServer!: WritableSignal<boolean>;
   @Input() otpKey!: WritableSignal<string>;
-  serviceIdOptions = computed(() => {
-    const rawValue =
-      this.serviceIdService.serviceIdResource.value()?.result?.value;
-    const options =
-      rawValue && typeof rawValue === 'object'
-        ? Object.keys(rawValue).map((option: any) => option)
-        : [];
-    return options ?? [];
-  });
+  serviceIdOptions = computed(
+    () => this.serviceIdService.serviceIds().map((s) => s.name) || [],
+  );
   applspecErrorStateMatcher = new ApplspecErrorStateMatcher();
 
   constructor(
