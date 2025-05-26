@@ -245,7 +245,7 @@ export class TokenService {
     };
   });
 
-  tokenSelection: WritableSignal<any> = linkedSignal({
+  tokenSelection: WritableSignal<TokenDetails[]> = linkedSignal({
     source: () => ({
       selectedContent: this.contentService.selectedContent(),
       tokenResource: this.tokenResource.value(),

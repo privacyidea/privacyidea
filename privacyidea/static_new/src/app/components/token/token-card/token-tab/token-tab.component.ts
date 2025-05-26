@@ -118,7 +118,7 @@ export class TokenTabComponent {
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: selectedTokens.map((token: any) => token.serial),
+          serial_list: selectedTokens.map((token) => token.serial),
           title: 'Delete All Tokens',
           type: 'token',
           action: 'delete',
@@ -130,7 +130,7 @@ export class TokenTabComponent {
         next: (result) => {
           if (result) {
             forkJoin(
-              selectedTokens.map((token: any) =>
+              selectedTokens.map((token) =>
                 this.tokenService.deleteToken(token.serial),
               ),
             ).subscribe({

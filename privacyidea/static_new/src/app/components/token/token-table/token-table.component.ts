@@ -10,7 +10,11 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatInputModule } from '@angular/material/input';
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { NgClass } from '@angular/common';
-import { TokenService } from '../../../services/token/token.service';
+import {
+  TokenDetails,
+  Tokens,
+  TokenService,
+} from '../../../services/token/token.service';
 import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
@@ -77,15 +81,16 @@ export class TokenTableComponent {
       }),
   });
 
-  tokenDataSource: WritableSignal<MatTableDataSource<any>> = linkedSignal({
-    source: this.tokenResource.value,
-    computation: (tokenResource, previous) => {
-      if (tokenResource && tokenResource.result.value) {
-        return new MatTableDataSource(tokenResource.result.value.tokens);
-      }
-      return previous?.value ?? new MatTableDataSource(this.emptyResource());
-    },
-  });
+  tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> =
+    linkedSignal({
+      source: this.tokenResource.value,
+      computation: (tokenResource, previous) => {
+        if (tokenResource && tokenResource.result.value) {
+          return new MatTableDataSource(tokenResource.result.value.tokens);
+        }
+        return previous?.value ?? new MatTableDataSource(this.emptyResource());
+      },
+    });
 
   totalLength: WritableSignal<number> = linkedSignal({
     source: this.tokenResource.value,
@@ -127,28 +132,30 @@ export class TokenTableComponent {
     }
   }
 
-  toggleRow(row: any): void {
+  toggleRow(tokenDetails: TokenDetails): void {
     const current = this.tokenSelection();
-    if (current.includes(row)) {
-      this.tokenSelection.set(current.filter((r: any) => r !== row));
+    if (current.includes(tokenDetails)) {
+      this.tokenSelection.set(current.filter((r) => r !== tokenDetails));
     } else {
-      this.tokenSelection.set([...current, row]);
+      this.tokenSelection.set([...current, tokenDetails]);
     }
   }
 
-  toggleActive(element: any): void {
-    if (!element.revoked && !element.locked) {
-      this.tokenService.toggleActive(element.serial, element.active).subscribe({
-        next: () => {
-          this.tokenResource.reload();
-        },
-      });
+  toggleActive(tokenDetails: TokenDetails): void {
+    if (!tokenDetails.revoked && !tokenDetails.locked) {
+      this.tokenService
+        .toggleActive(tokenDetails.serial, tokenDetails.active)
+        .subscribe({
+          next: () => {
+            this.tokenResource.reload();
+          },
+        });
     }
   }
 
-  resetFailCount(element: any): void {
-    if (!element.revoked && !element.locked) {
-      this.tokenService.resetFailCount(element.serial).subscribe({
+  resetFailCount(tokenDetails: TokenDetails): void {
+    if (!tokenDetails.revoked && !tokenDetails.locked) {
+      this.tokenService.resetFailCount(tokenDetails.serial).subscribe({
         next: () => {
           this.tokenResource.reload();
         },

@@ -46,7 +46,7 @@
             {{ column.label }}
           </th>
         }
-        <td *matCellDef="let element; let row"
+        <td *matCellDef="let tokenDetails"
             attr.aria-label="{{ column.label }} Cell"
             mat-cell
             [ngClass]="{
@@ -56,33 +56,33 @@
           <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
             @switch (column.key) {
               @case ('select') {
-                <mat-checkbox (change)="$event ? toggleRow(row) : null"
+                <mat-checkbox (change)="$event ? toggleRow(tokenDetails) : null"
                               (click)="$event.stopPropagation()"
-                              [checked]="tokenSelection().includes(row)"
+                              [checked]="tokenSelection().includes(tokenDetails)"
                               [disabled]="totalLength() === 0"></mat-checkbox>
               }
               @case ("serial") {
                 <a attr.aria-label="{{ column.label }} Link"
-                   (click)="contentService.tokenSelected(element.serial)"> {{
-                    element[column.key]
+                   (click)="contentService.tokenSelected(tokenDetails.serial)"> {{
+                    tokenDetails[column.key]
                   }} </a>
-                <app-copy-button [copyText]="element.serial"></app-copy-button>
+                <app-copy-button [copyText]="tokenDetails.serial"></app-copy-button>
               }
               @case ("active") {
-                <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
-                      (click)="toggleActive(element)">
-                    {{ tableUtilsService.getDisplayText(column.key, element) }}
+                <span [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)"
+                      (click)="toggleActive(tokenDetails)">
+                    {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
                   </span>
               }
               @case ("failcount") {
-                <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
-                      (click)="resetFailCount(element)">
-                    {{ tableUtilsService.getDisplayText(column.key, element) }}
+                <span [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)"
+                      (click)="resetFailCount(tokenDetails)">
+                    {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
                   </span>
               }
               @case ("realms") {
-                <div [ngClass]="(element[column.key]?.length || 0) > 1 ? 'realm-list' : 'realm'">
-                  @for (realm of element[column.key]; track realm; let idx = $index) {
+                <div [ngClass]="(tokenDetails[column.key]?.length || 0) > 1 ? 'realm-list' : 'realm'">
+                  @for (realm of tokenDetails[column.key]; track realm; let idx = $index) {
                     <a attr.aria-label="{{ column.label }} Link"
                        href="#"> {{ realm }} </a><br style="margin-top: 3px" />
                   }
@@ -90,20 +90,20 @@
               }
               @case ("container_serial") {
                 <a attr.aria-label="{{ column.label }} Link"
-                   (click)="contentService.containerSelected(element.container_serial)"> {{
-                    element[column.key]
+                   (click)="contentService.containerSelected(tokenDetails.container_serial)"> {{
+                    tokenDetails[column.key]
                   }} </a>
-                @if (element.container_serial !== "") {
-                  <app-copy-button [copyText]="element.container_serial"></app-copy-button>
+                @if (tokenDetails.container_serial !== "") {
+                  <app-copy-button [copyText]="tokenDetails.container_serial"></app-copy-button>
                 }
               }
               @default {
                 @if (tableUtilsService.isLink(column.key)) {
                   <a attr.aria-label="{{ column.label }} Link"
-                     href="#"> {{ element[column.key] }} </a>
+                     href="#"> {{ tokenDetails[column.key] }} </a>
                 } @else {
                   <span>
-                    {{ element[column.key] }}
+                    {{ tokenDetails[column.key] }}
                   </span>
                 }
               }
