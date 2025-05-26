@@ -50,7 +50,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { VersionService } from '../../../services/version/version.service';
 import { ContentService } from '../../../services/content/content.service';
 import { TokenEnrollmentSecondStepDialogWizardComponent } from './token-enrollment-second-step-dialog/token-enrollment-second-step-dialog.wizrad.component';
-import { async, map } from 'rxjs';
+import { map } from 'rxjs';
 
 @Component({
   selector: 'app-token-enrollment-wizard',
@@ -152,6 +152,4 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
       },
     });
   }
-
-  protected readonly async = async;
 }

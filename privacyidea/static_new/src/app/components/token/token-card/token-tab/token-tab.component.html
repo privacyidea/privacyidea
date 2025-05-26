@@ -84,7 +84,7 @@
                     (click)="deleteSelectedTokens()"
                     [disabled]="tokenSelection().length === 0"
                     mat-flat-button>
-              <mat-icon>delete_outlined</mat-icon>
+              <mat-icon>delete_forever</mat-icon>
               Delete Selected
             </button>
           </mat-list-item>
@@ -130,7 +130,7 @@
                   [disabled]="tokenIsRevoked()"
                   color="alert"
                   mat-flat-button
-                  [ngClass]="[tokenIsRevoked() ? 'card-button-deactivated' :
+                  [ngClass]="[tokenIsRevoked() ? 'card-button-disabled' :
                    tokenIsActive() ? 'card-button-delete':  'card-button-activate']">
             <mat-icon>{{ tokenIsActive() ? "auto_delete" : "play_circle" }}</mat-icon>
             {{ tokenIsActive() ? "Deactivate" : "Activate" }}
@@ -141,17 +141,17 @@
                   class="card-button-delete"
                   color="alert"
                   mat-flat-button>
-            <mat-icon>delete_outlined</mat-icon>
+            <mat-icon>delete_forever</mat-icon>
             Delete
           </button>
         </mat-list-item>
         <mat-list-item>
           <button (click)="revokeToken()"
                   [disabled]="tokenIsRevoked()"
-                  [ngClass]="[tokenIsRevoked() ? 'card-button-deactivated': 'card-button-delete']"
+                  [ngClass]="[tokenIsRevoked() ? 'card-button-disabled': 'card-button-delete']"
                   color="alert"
                   mat-flat-button>
-            <mat-icon>delete_forever</mat-icon>
+            <mat-icon>undo</mat-icon>
             Revoke
           </button>
         </mat-list-item>

@@ -133,7 +133,7 @@
         [ngClass]="[
           isAssignableToAllToken()
             ? 'card-button'
-            : 'card-button-deactivated',
+            : 'card-button-disabled',
         ]"
         [disabled]="!isAssignableToAllToken()"
         mat-flat-button>
@@ -145,7 +145,7 @@
         [ngClass]="[
           isUnassignableFromAllToken()
             ? 'card-button'
-            : 'card-button-deactivated',
+            : 'card-button-disabled',
         ]"
         [disabled]="!isUnassignableFromAllToken()"
         mat-flat-button>

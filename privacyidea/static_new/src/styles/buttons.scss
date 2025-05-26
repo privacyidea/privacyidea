@@ -97,13 +97,6 @@ $header-bg: white;
   }
 }
 
-.disabled-button {
-  color: var(
-      --mdc-filled-button-disabled-label-text-color,
-      color-mix(in srgb, var(--mat-sys-on-surface) 38%, transparent)
-  ) !important;
-}
-
 .card-button {
   min-width: 240px;
   @include button-base(
@@ -141,7 +134,7 @@ $header-bg: white;
   );
 }
 
-.card-button-deactivated {
+.card-button-disabled {
   min-width: 240px;
   @include button-base(
       $button-height,

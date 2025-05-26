@@ -21,7 +21,7 @@ import { ContentService } from '../../../../services/content/content.service';
 import { LostTokenComponent } from '../../token-card/token-tab/lost-token/lost-token.component';
 import { HttpClient } from '@angular/common/http';
 import { DomSanitizer } from '@angular/platform-browser';
-import { async, map } from 'rxjs';
+import { map } from 'rxjs';
 import { AsyncPipe } from '@angular/common';
 
 @Component({
@@ -73,6 +73,4 @@ export class TokenEnrollmentSecondStepDialogWizardComponent extends TokenEnrollm
   ) {
     super(tokenService, contentService, dialogRef, data);
   }
-
-  protected readonly async = async;
 }
