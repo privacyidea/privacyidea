@@ -24,7 +24,7 @@ from privacyidea.lib.container import (get_container_classes, delete_container_b
                                        set_container_description, add_container_info, delete_container_info,
                                        assign_user, unassign_user, set_container_info,
                                        unregister, add_token_to_container)
-from privacyidea.lib.containerclass import TokenContainerClass
+from privacyidea.lib.containers.container_states import ContainerStates
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib import _
 import logging
@@ -81,7 +81,7 @@ class ContainerEventHandler(BaseEventHandler):
         :return: dictionary of actions.
         """
         container_types = list(get_container_classes().keys())
-        container_states = list(TokenContainerClass.get_state_types().keys())
+        container_states = ContainerStates.get_supported_states()
         action_states = {}
         for state in container_states:
             action_states[state] = {"type": "bool",
@@ -210,7 +210,7 @@ class ContainerEventHandler(BaseEventHandler):
                         assign_user(container_serial, c_user)
 
                 elif action.lower() == ACTION_TYPE.SET_STATES:
-                    container_states = list(TokenContainerClass.get_state_types().keys())
+                    container_states = ContainerStates.get_supported_states()
                     selected_states = []
                     for state in container_states:
                         if handler_options.get(state):
@@ -224,7 +224,7 @@ class ContainerEventHandler(BaseEventHandler):
                             f"to set in container {container_serial}")
 
                 elif action.lower() == ACTION_TYPE.ADD_STATES:
-                    container_states = list(TokenContainerClass.get_state_types().keys())
+                    container_states = ContainerStates.get_supported_states()
                     selected_states = []
                     for state in container_states:
                         if handler_options.get(state):

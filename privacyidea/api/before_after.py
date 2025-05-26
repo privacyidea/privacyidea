@@ -186,8 +186,9 @@ def before_container_request():
             # if an auth token is present, but it is not mandatory for the endpoint, write it in the params to be
             # verified later
             request.all_data["auth_token"] = auth_token
-        # Client requests does not provide a logged-in user, hence it cannot be resolved is set to None
-        request.User = None
+        # Client requests does not provide a logged-in user, hence it cannot be resolved
+        # (container owner will be set later)
+        request.User = User()
 
     get_before_request_config()
     g.serial = None
