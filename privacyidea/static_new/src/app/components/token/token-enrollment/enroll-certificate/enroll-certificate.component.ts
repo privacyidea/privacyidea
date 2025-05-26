@@ -47,24 +47,23 @@ export class EnrollCertificateComponent {
     .find((type) => type.key === 'certificate')?.text;
 
   caConnectorOptions = linkedSignal({
-    source: this.caConnectorService.caConnectorServiceResource.value,
-    computation: (data) => {
-      const rawValue = data?.result?.value;
-      return rawValue && typeof rawValue === 'object'
-        ? Object.values(rawValue).map((option: any) => option.connectorname)
-        : [];
-    },
+    source: this.caConnectorService.caConnectors,
+    computation: (caConnectors) =>
+      typeof caConnectors === 'object'
+        ? Object.values(caConnectors).map(
+            (caConnector) => caConnector.connectorname,
+          )
+        : [],
   });
 
   certTemplateOptions = linkedSignal({
-    source: this.caConnectorService.caConnectorServiceResource.value,
-    computation: (data) => {
-      const rawValue = data?.result?.value;
-      return Array.isArray(rawValue) && rawValue.length && rawValue[0].templates
-        ? Object.keys(rawValue[0].templates)
-        : [];
-    },
+    source: this.caConnectorService.caConnectors,
+    computation: (caConnectors) =>
+      caConnectors.length && caConnectors[0].templates
+        ? Object.keys(caConnectors[0].templates)
+        : [],
   });
+
   @Input() caConnector!: WritableSignal<string>;
   @Input() certTemplate!: WritableSignal<string>;
   @Input() pem!: WritableSignal<string>;
