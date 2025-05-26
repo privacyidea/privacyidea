@@ -75,8 +75,8 @@ export interface ContainerDetailUser {
   user_id: string;
 }
 
-export type ContainerTypesMap = Map<ContainerTypeOption, ContainerTypeMapValue>;
-export interface ContainerTypeMapValue {
+export type ContainerTypes = Map<ContainerTypeOption, _ContainerType>;
+interface _ContainerType {
   description: string;
   token_types: string[];
 }
@@ -85,6 +85,25 @@ export interface ContainerType {
   containerType: ContainerTypeOption;
   description: string;
   token_types: string[];
+}
+
+export interface ContainerTemplate {
+  container_type: string;
+  default: boolean;
+  name: string;
+  template_options: {
+    options: any;
+    tokens: Array<ContainerTemplateToken>;
+  };
+}
+
+export interface ContainerTemplateToken {
+  genkey: boolean;
+  hashlib: string;
+  otplen: number;
+  timeStep: number;
+  type: string;
+  user: boolean;
 }
 
 @Injectable({
@@ -207,7 +226,7 @@ export class ContainerService {
     computation: () => [],
   });
 
-  containerTypesResource = httpResource<PiResponse<ContainerTypesMap>>(() => ({
+  containerTypesResource = httpResource<PiResponse<ContainerTypes>>(() => ({
     url: `${this.containerBaseUrl}types`,
     method: 'GET',
     headers: this.localService.getHeaders(),
@@ -267,11 +286,19 @@ export class ContainerService {
     },
   });
 
-  templatesResource = httpResource<any>(() => ({
+  templatesResource = httpResource<
+    PiResponse<{ templates: ContainerTemplate[] }>
+  >(() => ({
     url: `${this.containerBaseUrl}templates`,
     method: 'GET',
     headers: this.localService.getHeaders(),
   }));
+
+  templates: WritableSignal<ContainerTemplate[]> = linkedSignal({
+    source: this.templatesResource.value,
+    computation: (templatesResource, previous) =>
+      templatesResource?.result?.value?.templates ?? previous?.value ?? [],
+  });
 
   constructor(
     private http: HttpClient,
