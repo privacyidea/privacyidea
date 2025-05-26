@@ -41,12 +41,12 @@ export class EnrollRadiusComponent {
   @Input() radiusUser!: WritableSignal<string>;
   @Input() radiusServerConfiguration!: WritableSignal<string>;
   @Input() checkPinLocally!: WritableSignal<boolean>;
-  radiusServerConfigurationOptions = computed(() => {
-    const raw =
-      this.radiusServerService.radiusServerConfigurationResource.value()?.result
-        ?.value;
-    return raw && typeof raw === 'object' ? Object.keys(raw) : [];
-  });
+  radiusServerConfigurationOptions = computed(
+    () =>
+      this.radiusServerService
+        .radiusServerConfigurations()
+        ?.map((config) => config.name) ?? [],
+  );
 
   defaultRadiusServerIsSet = computed(() => {
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
