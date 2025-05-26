@@ -34,7 +34,7 @@ export class NotificationService {
     });
   }
 
-  private startTimer(snackBarRef: MatSnackBarRef<any>): void {
+  private startTimer<T>(snackBarRef: MatSnackBarRef<T>): void {
     this.clearTimer();
     this.timerSub = timer(this.remainingTime).subscribe(() => {
       snackBarRef.dismiss();
@@ -53,7 +53,7 @@ export class NotificationService {
     this.remainingTime = Math.max(this.remainingTime - elapsed, 0);
   }
 
-  private onMouseLeave(snackBarRef: MatSnackBarRef<any>): void {
+  private onMouseLeave<T>(snackBarRef: MatSnackBarRef<T>): void {
     if (this.remainingTime > 0) {
       this.startTime = Date.now();
       this.startTimer(snackBarRef);

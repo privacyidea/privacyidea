@@ -5,7 +5,10 @@ import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ErrorStateMatcher, MatOption } from '@angular/material/core';
 import { MatError, MatSelect } from '@angular/material/select';
 import { MatCheckbox } from '@angular/material/checkbox';
-import { PrivacyideaServerService } from '../../../../services/privavyidea-server/privacyidea-server.service';
+import {
+  PrivacyideaServerService,
+  RemoteServer,
+} from '../../../../services/privavyidea-server/privacyidea-server.service';
 import { TokenService } from '../../../../services/token/token.service';
 
 export class RemoteErrorStateMatcher implements ErrorStateMatcher {
@@ -37,23 +40,13 @@ export class EnrollRemoteComponent {
     .find((type) => type.key === 'remote')?.text;
   @Input() checkPinLocally!: WritableSignal<boolean>;
   @Input() description!: WritableSignal<string>;
-  @Input() remoteServer!: WritableSignal<{ url: string; id: string }>;
+  @Input() remoteServer!: WritableSignal<RemoteServer>;
   @Input() remoteSerial!: WritableSignal<string>;
   @Input() remoteUser!: WritableSignal<string>;
   @Input() remoteRealm!: WritableSignal<string>;
   @Input() remoteResolver!: WritableSignal<string>;
-  remoteServerOptions = computed(() => {
-    const rawValue =
-      this.privacyideaServerService.remoteServerResource.value()?.result?.value;
-    const options =
-      rawValue && typeof rawValue === 'object'
-        ? Object.values(rawValue).map((option: any) => ({
-            url: option.url,
-            id: option.id,
-          }))
-        : [];
-    return options ?? [];
-  });
+
+  remoteServerOptions = this.privacyideaServerService.remoteServerOptions;
   remoteErrorStateMatcher = new RemoteErrorStateMatcher();
 
   constructor(
