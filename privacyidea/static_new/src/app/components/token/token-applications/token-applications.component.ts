@@ -1,6 +1,6 @@
 import { Component, linkedSignal, WritableSignal } from '@angular/core';
-import { TokenApplicationsSsh } from './token-applications-ssh/token-applications-ssh';
-import { TokenApplicationsOffline } from './token-applications-offline/token-applications-offline';
+import { TokenApplicationsSshComponent } from './token-applications-ssh/token-applications-ssh.component';
+import { TokenApplicationsOfflineComponent } from './token-applications-offline/token-applications-offline.component';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTableDataSource } from '@angular/material/table';
 import { MachineService } from '../../../services/machine/machine.service';
@@ -11,13 +11,17 @@ import { ContentService } from '../../../services/content/content.service';
 @Component({
   selector: 'app-token-applications',
   standalone: true,
-  imports: [TokenApplicationsSsh, TokenApplicationsOffline, MatSelectModule],
-  templateUrl: './token-applications.html',
-  styleUrls: ['./token-applications.scss'],
+  imports: [
+    TokenApplicationsSshComponent,
+    TokenApplicationsOfflineComponent,
+    MatSelectModule,
+  ],
+  templateUrl: './token-applications.component.html',
+  styleUrls: ['./token-applications.component.scss'],
 })
-export class TokenApplications {
-  sshColumnsKeyMap = TokenApplicationsSsh.columnsKeyMap;
-  offlineColumnsKeyMap = TokenApplicationsOffline.columnsKeyMap;
+export class TokenApplicationsComponent {
+  sshColumnsKeyMap = TokenApplicationsSshComponent.columnsKeyMap;
+  offlineColumnsKeyMap = TokenApplicationsOfflineComponent.columnsKeyMap;
   tokenApplicationResource = this.machineService.tokenApplicationResource;
   selectedContent = this.contentService.selectedContent;
   tokenSerial = this.tokenService.tokenSerial;
@@ -29,12 +33,8 @@ export class TokenApplications {
 
   totalLength: WritableSignal<number> = linkedSignal({
     source: this.tokenApplicationResource.value,
-    computation: (tokenApplicationResource, previous) => {
-      if (tokenApplicationResource) {
-        return tokenApplicationResource.result.value.length;
-      }
-      return previous?.value ?? 0;
-    },
+    computation: (tokenApplicationResource, previous) =>
+      tokenApplicationResource?.result.value?.length ?? previous?.value ?? 0,
   });
 
   sshDataSource: WritableSignal<MatTableDataSource<any>> = linkedSignal({

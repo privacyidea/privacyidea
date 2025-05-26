@@ -2,15 +2,10 @@ import { Component, Input, Signal, WritableSignal } from '@angular/core';
 import { MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 
-export interface EditableValueElement<V> extends EditableElement {
+export interface EditableElement<V = unknown> {
   keyMap: { key: string };
   isEditing: WritableSignal<boolean>;
   value: V;
-}
-
-export interface EditableElement {
-  keyMap: { key: string };
-  isEditing: WritableSignal<boolean>;
 }
 
 @Component({

@@ -15,7 +15,7 @@ import { OverflowService } from '../../services/overflow/overflow.service';
 import { TokenCardComponent } from './token-card/token-card.component';
 import { TokenGetSerial } from './token-get-serial/token-get-serial.component';
 import { TokenEnrollmentComponent } from './token-enrollment/token-enrollment.component';
-import { TokenApplications } from './token-applications/token-applications';
+import { TokenApplicationsComponent } from './token-applications/token-applications.component';
 import { ChallengesTableComponent } from './challenges-table/challenges-table.component';
 import { LoadingService } from '../../services/loading/loading-service';
 import { ContainerCreateComponent } from './container-create/container-create.component';
@@ -81,7 +81,7 @@ export type TokenSelectedContent =
     MatIcon,
     MatFabButton,
     TokenEnrollmentComponent,
-    TokenApplications,
+    TokenApplicationsComponent,
     ChallengesTableComponent,
     ContainerCreateComponent,
   ],

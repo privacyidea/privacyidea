@@ -37,7 +37,6 @@ import { TokenDetailsInfoComponent } from './token-details-info/token-details-in
 import { TokenDetailsActionsComponent } from './token-details-actions/token-details-actions.component';
 import {
   EditableElement,
-  EditableValueElement,
   EditButtonsComponent,
 } from '../../shared/edit-buttons/edit-buttons.component';
 import { OverflowService } from '../../../services/overflow/overflow.service';
@@ -260,7 +259,7 @@ export class TokenDetailsComponent {
     element.isEditing.set(!element.isEditing());
   }
 
-  saveTokenEdit(element: EditableValueElement<string>) {
+  saveTokenEdit(element: EditableElement<string>) {
     switch (element.keyMap.key) {
       case 'container_serial':
         this.containerService.selectedContainer.set(

@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { TokenApplicationsOffline } from './token-applications-offline';
+import { TokenApplicationsOfflineComponent } from './token-applications-offline.component';
 import { signal } from '@angular/core';
 import {
   provideHttpClient,
@@ -11,8 +11,8 @@ import { MachineService } from '../../../../services/machine/machine.service';
 import { MatTableDataSource } from '@angular/material/table';
 
 describe('TokenApplicationsOffline', () => {
-  let component: TokenApplicationsOffline;
-  let fixture: ComponentFixture<TokenApplicationsOffline>;
+  let component: TokenApplicationsOfflineComponent;
+  let fixture: ComponentFixture<TokenApplicationsOfflineComponent>;
   let machineService: jasmine.SpyObj<MachineService>;
 
   beforeEach(async () => {
@@ -28,7 +28,7 @@ describe('TokenApplicationsOffline', () => {
       ],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(TokenApplicationsOffline);
+    fixture = TestBed.createComponent(TokenApplicationsOfflineComponent);
     component = fixture.componentInstance;
     component.length = signal(0);
     component.pageSize = signal(10);
@@ -42,7 +42,7 @@ describe('TokenApplicationsOffline', () => {
       new MatTableDataSource(
         Array.from({ length: component.pageSize() }, () => {
           const emptyRow: any = {};
-          TokenApplicationsOffline.columnsKeyMap.forEach((column) => {
+          TokenApplicationsOfflineComponent.columnsKeyMap.forEach((column) => {
             emptyRow[column.key] = '';
           });
           return emptyRow;

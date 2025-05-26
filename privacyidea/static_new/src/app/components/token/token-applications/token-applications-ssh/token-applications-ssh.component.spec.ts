@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { TokenApplicationsSsh } from './token-applications-ssh';
+import { TokenApplicationsSshComponent } from './token-applications-ssh.component';
 import { MatTabsModule } from '@angular/material/tabs';
 import { signal } from '@angular/core';
 import {
@@ -10,8 +10,8 @@ import { TokenSelectedContent } from '../../token.component';
 import { MachineService } from '../../../../services/machine/machine.service';
 
 describe('TokenApplicationsSsh', () => {
-  let component: TokenApplicationsSsh;
-  let fixture: ComponentFixture<TokenApplicationsSsh>;
+  let component: TokenApplicationsSshComponent;
+  let fixture: ComponentFixture<TokenApplicationsSshComponent>;
   let machineService: jasmine.SpyObj<MachineService>;
 
   beforeEach(async () => {
@@ -20,14 +20,14 @@ describe('TokenApplicationsSsh', () => {
     ]);
 
     await TestBed.configureTestingModule({
-      imports: [MatTabsModule, TokenApplicationsSsh],
+      imports: [MatTabsModule, TokenApplicationsSshComponent],
       providers: [
         { provide: MachineService, useValue: machineServiceSpy },
         provideHttpClient(withInterceptorsFromDi()),
       ],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(TokenApplicationsSsh);
+    fixture = TestBed.createComponent(TokenApplicationsSshComponent);
     component = fixture.componentInstance;
     machineService = TestBed.inject(
       MachineService,

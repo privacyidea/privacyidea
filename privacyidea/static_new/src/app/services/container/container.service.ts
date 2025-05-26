@@ -37,20 +37,8 @@ import { PiResponse } from '../../app.component';
 const apiFilter = ['container_serial', 'type', 'user'];
 const advancedApiFilter = ['token_serial'];
 
-export interface ContainerResponse {
-  result: {
-    value: {
-      containers: [
-        {
-          states: string[];
-        },
-      ];
-      count: number;
-    };
-  };
-}
-
 export interface ContainerDetail {
+  count: number;
   containers: Array<ContainerDetailData>;
 }
 
@@ -168,7 +156,7 @@ export class ContainerService {
       this.selectedContent() === 'token_enrollment'
     );
   });
-  containerResource = httpResource<ContainerResponse>(() => {
+  containerResource = httpResource<PiResponse<ContainerDetail>>(() => {
     if (
       !['container_overview', 'token_details', 'token_enrollment'].includes(
         this.selectedContent(),
@@ -195,12 +183,11 @@ export class ContainerService {
   containerOptions = linkedSignal({
     source: this.containerResource.value,
     computation: (containerResource) => {
-      if (containerResource) {
-        return containerResource.result.value.containers.map(
+      return (
+        containerResource?.result.value?.containers.map(
           (container: any) => container.serial,
-        );
-      }
-      return [];
+        ) ?? []
+      );
     },
   });
   filteredContainerOptions = computed(() => {
@@ -274,6 +261,7 @@ export class ContainerService {
       return (
         previous?.value ?? {
           containers: [],
+          count: 0,
         }
       );
     },

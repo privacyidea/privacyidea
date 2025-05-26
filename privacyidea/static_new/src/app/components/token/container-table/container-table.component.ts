@@ -11,7 +11,10 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatInputModule } from '@angular/material/input';
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { NgClass } from '@angular/common';
-import { ContainerService } from '../../../services/container/container.service';
+import {
+  ContainerDetailToken,
+  ContainerService,
+} from '../../../services/container/container.service';
 import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
@@ -31,6 +34,18 @@ const columnsKeyMap = [
   { key: 'user_realm', label: 'Realm' },
   { key: 'realms', label: 'Container Realms' },
 ];
+
+interface ContainerRow {
+  users: string;
+  user_realm: string;
+  type: string;
+  tokens: Array<ContainerDetailToken>;
+  states: string[];
+  description: string;
+  select: string;
+  serial: string;
+  realms: string[];
+}
 
 @Component({
   selector: 'app-container-table',
@@ -74,34 +89,34 @@ export class ContainerTableComponent {
       }),
   });
 
-  containerDataSource: WritableSignal<MatTableDataSource<any>> = linkedSignal({
-    source: this.containerResource.value,
-    computation: (containerResource, previous) => {
-      if (containerResource) {
-        const processedData = containerResource.result.value.containers.map(
-          (item: any) => ({
-            ...item,
-            users:
-              item.users && item.users.length > 0
-                ? item.users[0]['user_name']
-                : '',
-            user_realm:
-              item.users && item.users.length > 0
-                ? item.users[0]['user_realm']
-                : '',
-          }),
-        );
-        return new MatTableDataSource(processedData);
-      }
-      return previous?.value ?? new MatTableDataSource(this.emptyResource());
-    },
-  });
+  containerDataSource: WritableSignal<MatTableDataSource<ContainerRow>> =
+    linkedSignal({
+      source: this.containerResource.value,
+      computation: (containerResource, previous) => {
+        if (containerResource) {
+          const processedData =
+            containerResource?.result.value?.containers.map((item) => ({
+              ...item,
+              users:
+                item.users && item.users.length > 0
+                  ? item.users[0]['user_name']
+                  : '',
+              user_realm:
+                item.users && item.users.length > 0
+                  ? item.users[0]['user_realm']
+                  : '',
+            })) ?? [];
+          return new MatTableDataSource(processedData);
+        }
+        return previous?.value ?? new MatTableDataSource(this.emptyResource());
+      },
+    });
 
   total: WritableSignal<number> = linkedSignal({
     source: this.containerResource.value,
     computation: (containerResource, previous) => {
       if (containerResource) {
-        return containerResource.result.value.count;
+        return containerResource.result.value?.count ?? 0;
       }
       return previous?.value ?? 0;
     },
