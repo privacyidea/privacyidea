@@ -10,7 +10,12 @@ export type RadiusServerConfigurations = {
 
 export interface RadiusServerConfiguration {
   name: string;
-  [key: string]: any; // Allow any additional properties
+  description: string;
+  dictionary: string;
+  port: number;
+  retries: number;
+  server: string;
+  timeout: number;
 }
 
 @Injectable({
@@ -30,9 +35,9 @@ export class RadiusServerService {
       source: this.radiusServerConfigurationResource.value,
       computation: (source, previous) =>
         Object.entries(source?.result.value ?? {}).map(
-          ([name, properties]) => ({ key: name, ...properties }),
-        ) ||
-        previous?.value ||
+          ([name, properties]) => ({ name, ...properties }),
+        ) ??
+        previous?.value ??
         [],
     });
 
