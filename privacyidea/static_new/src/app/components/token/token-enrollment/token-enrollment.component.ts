@@ -451,7 +451,6 @@ export class TokenEnrollmentComponent {
       useVascoSerial: this.useVascoSerial(),
     };
   });
-
   @ViewChild(EnrollPasskeyComponent)
   enrollPasskeyComponent!: EnrollPasskeyComponent;
   @ViewChild(EnrollWebauthnComponent)
@@ -470,8 +469,18 @@ export class TokenEnrollmentComponent {
   ) {}
 
   @HostListener('document:keydown.enter', ['$event'])
-  onEnter() {
-    this.enrollToken();
+  onEnter(event: KeyboardEvent) {
+    const target = event.target as HTMLElement;
+
+    if (target.tagName === 'TEXTAREA') {
+      return;
+    }
+    if (
+      this.firstDialog.openDialogs.length === 0 &&
+      this.secondDialog.openDialogs.length === 0
+    ) {
+      this.enrollToken();
+    }
   }
 
   formatDateTimeOffset(date: Date, time: string, offset: string): string {
