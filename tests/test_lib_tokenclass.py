@@ -17,7 +17,7 @@ from privacyidea.lib.error import TokenAdminError
 from privacyidea.models import (Token,
                                 Config,
                                 Challenge)
-import datetime
+from datetime import datetime, timezone, timedelta
 from dateutil.tz import tzlocal
 
 PWFILE = "tests/testdata/passwords"
@@ -80,14 +80,16 @@ class TokenBaseTestCase(MyTestCase):
                         token.token.tokentype)
         self.assertTrue(token.type == "newtype", token.type)
 
-        token.add_user(User(login="cornelius",
-                            realm=self.realm1))
+        token.add_user(User(login="cornelius", realm=self.realm1))
 
         user_object = token.user
-        self.assertTrue(user_object.login == "cornelius",
-                        user_object)
-        self.assertTrue(user_object.resolver == self.resolvername1,
-                        user_object)
+        self.assertTrue(user_object.login == "cornelius", user_object)
+        self.assertTrue(user_object.resolver == self.resolvername1, user_object)
+        assignment_date = token.get_tokeninfo("assignment_date")
+        self.assertTrue(assignment_date, assignment_date)
+        current_date = datetime.now(timezone.utc)
+        delta = current_date - datetime.fromisoformat(assignment_date)
+        self.assertTrue(delta.total_seconds() < 10, delta)
 
     def test_03_reset_failcounter(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -316,7 +318,7 @@ class TokenBaseTestCase(MyTestCase):
         self.assertTrue(token.check_validity_period())
 
         # try the same for the validity period start
-        start_date_5d = datetime.datetime.now(tzlocal()) + datetime.timedelta(5)
+        start_date_5d = datetime.now(tzlocal()) + timedelta(5)
         token.set_validity_period_start(start_date_5d.strftime(DATE_FORMAT))
         self.assertFalse(token.check_validity_period())
         token.set_validity_period_start('')
@@ -332,33 +334,33 @@ class TokenBaseTestCase(MyTestCase):
 
         # check validity period
         # +5 days
-        end_date = datetime.datetime.now(tzlocal()) + datetime.timedelta(5)
+        end_date = datetime.now(tzlocal()) + timedelta(5)
         end = end_date.strftime(DATE_FORMAT)
         token.set_validity_period_end(end)
         # - 5 days
-        start_date = datetime.datetime.now(tzlocal()) - datetime.timedelta(5)
+        start_date = datetime.now(tzlocal()) - timedelta(5)
         start = start_date.strftime(DATE_FORMAT)
         token.set_validity_period_start(start)
         self.assertTrue(token.check_validity_period())
 
         # check before start date
         # +5 days
-        end_date = datetime.datetime.now(tzlocal()) + datetime.timedelta(5)
+        end_date = datetime.now(tzlocal()) + timedelta(5)
         end = end_date.strftime(DATE_FORMAT)
         token.set_validity_period_end(end)
         # + 2 days
-        start_date = datetime.datetime.now(tzlocal()) + datetime.timedelta(2)
+        start_date = datetime.now(tzlocal()) + timedelta(2)
         start = start_date.strftime(DATE_FORMAT)
         token.set_validity_period_start(start)
         self.assertFalse(token.check_validity_period())
 
         # check after enddate
         # -1 day
-        end_date = datetime.datetime.now(tzlocal()) - datetime.timedelta(1)
+        end_date = datetime.now(tzlocal()) - timedelta(1)
         end = end_date.strftime(DATE_FORMAT)
         token.set_validity_period_end(end)
         # - 10 days
-        start_date = datetime.datetime.now(tzlocal()) - datetime.timedelta(10)
+        start_date = datetime.now(tzlocal()) - timedelta(10)
         start = start_date.strftime(DATE_FORMAT)
         token.set_validity_period_start(start)
         self.assertFalse(token.check_validity_period())
@@ -379,8 +381,8 @@ class TokenBaseTestCase(MyTestCase):
         self.assertTrue(s.startswith("2017-04-11T22:00"), s)
 
         # old date format has problems with check_validity_date
-        start_date = datetime.datetime.now() - datetime.timedelta(days=15)
-        end_date = datetime.datetime.now() + datetime.timedelta(days=15)
+        start_date = datetime.now() - timedelta(days=15)
+        end_date = datetime.now() + timedelta(days=15)
         start = start_date.strftime("%d/%m/%Y")
         end = end_date.strftime("%d/%m/%Y")
         # Need to write the old format to the database
@@ -705,14 +707,14 @@ class TokenBaseTestCase(MyTestCase):
         token = TokenClass(db_token)
         token.set_next_pin_change("12d")
         r = token.get_tokeninfo("next_pin_change")
-        self.assertLessEqual(datetime.datetime.strptime(r, DATE_FORMAT),
-                             datetime.datetime.now(tzlocal()) + datetime.timedelta(days=12),
+        self.assertLessEqual(datetime.strptime(r, DATE_FORMAT),
+                             datetime.now(tzlocal()) + timedelta(days=12),
                              r)
 
         token.set_next_pin_change("12d", password=True)
         r = token.get_tokeninfo("next_password_change")
-        self.assertLessEqual(datetime.datetime.strptime(r, DATE_FORMAT),
-                             datetime.datetime.now(tzlocal()) + datetime.timedelta(days=12),
+        self.assertLessEqual(datetime.strptime(r, DATE_FORMAT),
+                             datetime.now(tzlocal()) + timedelta(days=12),
                              r)
         # The password must not be changed
         r = token.is_pin_change(password=True)
@@ -797,26 +799,26 @@ class TokenBaseTestCase(MyTestCase):
                            user=User(login="root", realm=self.realm1, resolver=self.resolvername1))
 
         # set last auth and check correct format
-        last_auth = datetime.datetime(year=2025, month=3, day=21, hour=7, minute=24, second=12, microsecond=164578,
-                                      tzinfo=datetime.timezone.utc)
+        last_auth = datetime(year=2025, month=3, day=21, hour=7, minute=24, second=12, microsecond=164578,
+                                      tzinfo=timezone.utc)
         token.add_tokeninfo(ACTION.LASTAUTH, last_auth.strftime(AUTH_DATE_FORMAT))
         self.assertEqual("2025-03-21 07:24:12.164578+0000", token.get_tokeninfo(ACTION.LASTAUTH))
         # microseconds are also included if they are 0
-        last_auth = datetime.datetime(year=2025, month=3, day=21, hour=16, minute=3, second=8, microsecond=0,
-                                      tzinfo=datetime.timezone.utc)
+        last_auth = datetime(year=2025, month=3, day=21, hour=16, minute=3, second=8, microsecond=0,
+                                      tzinfo=timezone.utc)
         token.add_tokeninfo(ACTION.LASTAUTH, last_auth.strftime(AUTH_DATE_FORMAT))
         self.assertEqual("2025-03-21 16:03:08.000000+0000", token.get_tokeninfo(ACTION.LASTAUTH))
 
-        tdelta = datetime.timedelta(days=1)
-        token.add_tokeninfo(ACTION.LASTAUTH, datetime.datetime.now(tzlocal()) - tdelta)
+        tdelta = timedelta(days=1)
+        token.add_tokeninfo(ACTION.LASTAUTH, datetime.now(tzlocal()) - tdelta)
         r = token.check_last_auth_newer("10h")
         self.assertFalse(r)
         r = token.check_last_auth_newer("2d")
         self.assertTrue(r)
 
         # Old time format
-        # lastauth_alt = datetime.datetime.utcnow().isoformat()
-        token.add_tokeninfo(ACTION.LASTAUTH, datetime.datetime.now(datetime.timezone.utc) - tdelta)
+        # lastauth_alt = datetime.utcnow().isoformat()
+        token.add_tokeninfo(ACTION.LASTAUTH, datetime.now(timezone.utc) - tdelta)
         r = token.check_last_auth_newer("10h")
         self.assertFalse(r)
         r = token.check_last_auth_newer("2d")
@@ -842,9 +844,7 @@ class TokenBaseTestCase(MyTestCase):
 
         # Now run the init/update process
         # 1. step
-        token_obj.update({"2stepinit": "1",
-                          "genkey": "1"
-                          })
+        token_obj.update({"2stepinit": "1", "genkey": "1"})
 
         self.assertEqual(db_token.rollout_state, "clientwait")
         self.assertEqual(db_token.active, False)
@@ -853,9 +853,7 @@ class TokenBaseTestCase(MyTestCase):
 
         # 2. step
         client_component = "AAAAAA"
-        token_obj.update({"serial": serial,
-                          "otpkey": client_component
-                          })
+        token_obj.update({"serial": serial, "otpkey": client_component })
         self.assertEqual(db_token.rollout_state, "")
         self.assertEqual(db_token.active, True)
 
@@ -865,8 +863,7 @@ class TokenBaseTestCase(MyTestCase):
         server_component = details.get("otpkey")[:-len(client_component)]
         expected_otpkey = server_component + client_component
 
-        self.assertEqual(to_unicode(db_token.get_otpkey().getKey()),
-                         expected_otpkey)
+        self.assertEqual(to_unicode(db_token.get_otpkey().getKey()), expected_otpkey)
 
         token_obj.delete_token()
 
@@ -878,7 +875,7 @@ class TokenBaseTestCase(MyTestCase):
         token_obj = TokenClass(db_token)
         for i in range(0, 11):
             token_obj.inc_failcount()
-        now = datetime.datetime.now(tzlocal()).strftime(DATE_FORMAT)
+        now = datetime.now(tzlocal()).strftime(DATE_FORMAT)
         # Now the FAILCOUNTER_EXCEEDED is set
         ti = token_obj.get_tokeninfo(FAILCOUNTER_EXCEEDED)
         # We only compare the date
@@ -893,8 +890,8 @@ class TokenBaseTestCase(MyTestCase):
         # Now check with failcounter clear, with timeout 5 minutes
         set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 5)
         token_obj.set_failcount(10)
-        failed_recently = (datetime.datetime.now(tzlocal()) -
-                           datetime.timedelta(minutes=3)).strftime(DATE_FORMAT)
+        failed_recently = (datetime.now(tzlocal()) -
+                           timedelta(minutes=3)).strftime(DATE_FORMAT)
         token_obj.add_tokeninfo(FAILCOUNTER_EXCEEDED, failed_recently)
 
         r = token_obj.check_reset_failcount()
