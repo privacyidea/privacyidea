@@ -1,13 +1,17 @@
-Version 3.11.3 TBD
+Version 3.11.3, 2025-05-28
 
 Enhancements:
-* WebAuthn: The WebAuthn Token can validate challenges that were created by /validate/initialize. This can happen when the authenticator does create a passkey anyway and that webauthn token is then used as a passkey (#4400)
+* WebAuthn: The WebAuthn Token can validate challenges that were created by /validate/initialize.
+  This can happen when the authenticator does create a passkey anyway and that webauthn token is then used as a passkey.
+  Therefore, WebAuthn token that were created as passkeys in the authenticator, can now be used for passkey logins (#4400)
 * Added assignment_date to token info when assigning a user (#4351)
 
 Fixes:
 * WebAuthn: sign_count of 0 will result in a successful authentication (#4391)
-* Fixed a bug that would cause different transaction_ids to be generated when the user has a passkey and /validate/triggerchallenge is used (4399)
 * WebUI: Cancelling WebAuthn enrollment will delete the unfinished token and redirect to the token list (#4402)
+* FirebaseProvider: Use proxy setting for authorization (#4403)
+* Fixed a bug that would cause different transaction_ids to be generated when the user has a passkey and /validate/triggerchallenge is used (4399)
+* Fixed a bug that would cause unknown users not be displayed in the audit (#4382)
 
 Version 3.11.2, 2025-04-25
 
