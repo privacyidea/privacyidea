@@ -42,7 +42,11 @@ import {
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
-import { TokenService } from '../../../services/token/token.service';
+import {
+  EnrollmentResponse,
+  TokenDetails,
+  TokenService,
+} from '../../../services/token/token.service';
 import { EnrollTotpComponent } from './enroll-totp/enroll-totp.component';
 import { MatDialog } from '@angular/material/dialog';
 import { TokenEnrollmentFirstStepDialogComponent } from './token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component';
@@ -74,6 +78,7 @@ import { EnrollPasskeyComponent } from './enroll-passkey/enroll-passkey.componen
 import { VersionService } from '../../../services/version/version.service';
 import { TokenEnrollmentSecondStepDialogComponent } from './token-enrollment-second-step-dialog/token-enrollment-second-step-dialog.component';
 import { ContentService } from '../../../services/content/content.service';
+import { PiResponse } from '../../../app.component';
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -508,7 +513,7 @@ export class TokenEnrollmentComponent {
     this.pollResponse.set(null);
     this.enrollResponse.set(null);
     this.tokenService.enrollToken(this.enrollmentOptions()).subscribe({
-      next: (response: any) => {
+      next: (response) => {
         this.enrollResponse.set(response);
         this.handleEnrollmentResponse(response);
       },
@@ -555,7 +560,7 @@ export class TokenEnrollmentComponent {
     });
   }
 
-  private handleEnrollmentResponse(response: any): void {
+  private handleEnrollmentResponse(response: EnrollmentResponse): void {
     const detail = response.detail || {};
     const rolloutState = detail.rollout_state;
 
@@ -592,7 +597,7 @@ export class TokenEnrollmentComponent {
     }
   }
 
-  private openFirstStepDialog(response: any) {
+  private openFirstStepDialog(response: EnrollmentResponse) {
     this.firstDialog.open(TokenEnrollmentFirstStepDialogComponent, {
       data: {
         response: response,
@@ -604,10 +609,10 @@ export class TokenEnrollmentComponent {
     return this.tokenService
       .pollTokenRolloutState(tokenSerial, startTime)
       .subscribe({
-        next: (pollResponse: any) => {
+        next: (pollResponse) => {
           this.pollResponse.set(pollResponse);
           if (
-            pollResponse.result.value.tokens[0].rollout_state !== 'clientwait'
+            pollResponse.result?.value?.tokens[0].rollout_state !== 'clientwait'
           ) {
             this.firstDialog.closeAll();
             this.openSecondStepDialog(this.enrollResponse());

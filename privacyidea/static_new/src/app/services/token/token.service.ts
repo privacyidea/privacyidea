@@ -96,6 +96,20 @@ export interface TokenType {
   text: string;
 }
 
+export interface EnrollmentResponse {
+  detail: EnrollmentResponseDetail;
+  [key: string]: any;
+}
+export interface EnrollmentResponseDetail {
+  serial: string;
+  rollout_state: string;
+  passkey_registration?: boolean;
+  webAuthnRegisterRequest?: any;
+  u2fRegisterRequest?: any;
+  pushurl?: any;
+  [key: string]: any;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -779,9 +793,7 @@ export class TokenService {
     }
 
     return this.http
-      .post<
-        PiResponse<boolean>
-      >(`${this.tokenBaseUrl}init`, params, { headers })
+      .post<EnrollmentResponse>(`${this.tokenBaseUrl}init`, params, { headers })
       .pipe(
         catchError((error) => {
           console.error('Failed to enroll token.', error);

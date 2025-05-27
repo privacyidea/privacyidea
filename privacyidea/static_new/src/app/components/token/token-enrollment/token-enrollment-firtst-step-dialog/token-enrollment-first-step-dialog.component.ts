@@ -9,7 +9,10 @@ import {
   MatDialogTitle,
 } from '@angular/material/dialog';
 import { LostTokenComponent } from '../../token-card/token-tab/lost-token/lost-token.component';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  EnrollmentResponse,
+  TokenService,
+} from '../../../../services/token/token.service';
 import { ContentService } from '../../../../services/content/content.service';
 
 @Component({
@@ -33,7 +36,7 @@ export class TokenEnrollmentFirstStepDialogComponent {
     private dialogRef: MatDialogRef<LostTokenComponent>,
     @Inject(MAT_DIALOG_DATA)
     public data: {
-      response: any;
+      response: EnrollmentResponse;
     },
   ) {
     this.dialogRef.afterClosed().subscribe(() => {

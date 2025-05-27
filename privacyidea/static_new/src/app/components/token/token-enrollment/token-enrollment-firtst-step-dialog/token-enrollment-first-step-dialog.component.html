@@ -1,7 +1,7 @@
 <h2 mat-dialog-title>Take action on your authenticator</h2>
 <mat-dialog-content>
-  @if (data.response.detail?.webAuthnRegisterRequest ||
-  data.response.detail?.passkey_registration) {
+  @if (data.response.detail.webAuthnRegisterRequest ||
+  data.response.detail.passkey_registration) {
     <p class="max-width-600">
       You need to confirm the registration with your authenticator. For an external authenticator,
       this usually means pushing the button on the authenticator, or replugging it (if there is no
@@ -9,12 +9,12 @@
       device, look for a dialog box from your operating system. If you do not see anything, please
       make sure that your authenticator supports WebAuthn. </p>
   }
-  @if (data.response.detail?.u2fRegisterRequest) {
+  @if (data.response.detail.u2fRegisterRequest) {
     <p class="max-width-600">
       You need to confirm the registration with your token either by pushing the blinking button or
       by religging your token. This depends on the actual token model. </p>
   }
-  @if (data.response.detail?.pushurl) {
+  @if (data.response.detail.pushurl) {
     <div class="flex-row gap-1">
       <img alt="QR Code"
            class="qr-code"
