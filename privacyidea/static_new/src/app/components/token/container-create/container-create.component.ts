@@ -72,10 +72,7 @@ export class ContainerCreateComponent {
   containerSerial = this.containerService.containerSerial;
   description = signal('');
   selectedTemplate = signal('');
-  templateOptions = linkedSignal({
-    source: this.containerService.templatesResource.value,
-    computation: (templates: any) => templates?.result?.value?.templates ?? [],
-  });
+  templateOptions = this.containerService.templates;
   onlyAddToRealm = signal(false);
   generateQRCode = signal(false);
   passphrasePrompt = signal('');

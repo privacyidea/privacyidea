@@ -37,35 +37,55 @@ import { PiResponse } from '../../app.component';
 const apiFilter = ['container_serial', 'type', 'user'];
 const advancedApiFilter = ['token_serial'];
 
-export interface ContainerDetail {
-  count: number;
+export interface ContainerDetails {
+  count?: number;
   containers: Array<ContainerDetailData>;
 }
 
 export interface ContainerDetailData {
-  type: string;
-  tokens: Array<ContainerDetailToken>;
-  states: string[];
-  description: string;
-  select: string;
-  serial: string;
-  users: ContainerDetailUser[];
-  user_realm: string;
+  description?: string;
+  info?: any;
+  internal_info_keys?: any[];
+  last_authentication?: any;
+  last_synchronization?: any;
   realms: string[];
+  serial: string;
+  states: string[];
+  template?: string;
+  tokens: ContainerDetailToken[];
+  type: string;
+  users: ContainerDetailUser[];
+  select?: string;
+  user_realm?: string;
 }
 
 export interface ContainerDetailToken {
   active: boolean;
-  username: string;
   container_serial: string;
   count: number;
   count_window: number;
   description: string;
   failcount: number;
   id: number;
-  info: any;
+  info?: {
+    hashlib: string;
+    tokenkind: string;
+  };
+  locked?: boolean;
+  maxfail?: number;
+  otplen?: number;
+  realms?: string[];
+  resolver?: string;
   revoked: boolean;
+  rollout_state?: string;
   serial: string;
+  sync_window: number;
+  tokengroup: any[];
+  tokentype: string;
+  user_editable: false;
+  user_id: string;
+  user_realm: string;
+  username: string;
 }
 
 export interface ContainerDetailUser {
@@ -75,8 +95,8 @@ export interface ContainerDetailUser {
   user_id: string;
 }
 
-export type ContainerTypesMap = Map<ContainerTypeOption, ContainerTypeMapValue>;
-export interface ContainerTypeMapValue {
+export type ContainerTypes = Map<ContainerTypeOption, _ContainerType>;
+interface _ContainerType {
   description: string;
   token_types: string[];
 }
@@ -85,6 +105,25 @@ export interface ContainerType {
   containerType: ContainerTypeOption;
   description: string;
   token_types: string[];
+}
+
+export interface ContainerTemplate {
+  container_type: string;
+  default: boolean;
+  name: string;
+  template_options: {
+    options: any;
+    tokens: Array<ContainerTemplateToken>;
+  };
+}
+
+export interface ContainerTemplateToken {
+  genkey: boolean;
+  hashlib: string;
+  otplen: number;
+  timeStep: number;
+  type: string;
+  user: boolean;
 }
 
 @Injectable({
@@ -155,7 +194,7 @@ export class ContainerService {
       this.selectedContent(),
     );
   });
-  containerResource = httpResource<PiResponse<ContainerDetail>>(() => {
+  containerResource = httpResource<PiResponse<ContainerDetails>>(() => {
     if (
       !['container_overview', 'token_details', 'token_enrollment'].includes(
         this.selectedContent(),
@@ -208,7 +247,7 @@ export class ContainerService {
     computation: () => [],
   });
 
-  containerTypesResource = httpResource<PiResponse<ContainerTypesMap>>(() => ({
+  containerTypesResource = httpResource<PiResponse<ContainerTypes>>(() => ({
     url: `${this.containerBaseUrl}types`,
     method: 'GET',
     headers: this.localService.getHeaders(),
@@ -238,7 +277,7 @@ export class ContainerService {
       ],
   });
 
-  containerDetailResource = httpResource<PiResponse<ContainerDetail>>(() => {
+  containerDetailResource = httpResource<PiResponse<ContainerDetails>>(() => {
     const serial = this.containerSerial();
 
     if (serial === '') {
@@ -253,7 +292,7 @@ export class ContainerService {
       },
     };
   });
-  containerDetail: WritableSignal<ContainerDetail> = linkedSignal({
+  containerDetail: WritableSignal<ContainerDetails> = linkedSignal({
     source: this.containerDetailResource.value,
     computation: (containerDetailResource, previous) => {
       if (containerDetailResource?.result?.value) {
@@ -268,11 +307,19 @@ export class ContainerService {
     },
   });
 
-  templatesResource = httpResource<any>(() => ({
+  templatesResource = httpResource<
+    PiResponse<{ templates: ContainerTemplate[] }>
+  >(() => ({
     url: `${this.containerBaseUrl}templates`,
     method: 'GET',
     headers: this.localService.getHeaders(),
   }));
+
+  templates: WritableSignal<ContainerTemplate[]> = linkedSignal({
+    source: this.templatesResource.value,
+    computation: (templatesResource, previous) =>
+      templatesResource?.result?.value?.templates ?? previous?.value ?? [],
+  });
 
   constructor(
     private http: HttpClient,
@@ -366,7 +413,7 @@ export class ContainerService {
       );
   }
 
-  setContainerDescription(containerSerial: string, value: any) {
+  setContainerDescription(containerSerial: string, value: string) {
     const headers = this.localService.getHeaders();
     return this.http
       .post(
@@ -386,7 +433,7 @@ export class ContainerService {
       );
   }
 
-  toggleActive(containerSerial: string, states: string[]): Observable<any> {
+  toggleActive(containerSerial: string, states: string[]) {
     const headers = this.localService.getHeaders();
     let new_states = states
       .map((state) => {
@@ -403,11 +450,9 @@ export class ContainerService {
       new_states = states.concat('active').join(',');
     }
     return this.http
-      .post(
-        `${this.containerBaseUrl}${containerSerial}/states`,
-        { states: new_states },
-        { headers },
-      )
+      .post<
+        PiResponse<{ disabled: boolean } | { active: boolean }>
+      >(`${this.containerBaseUrl}${containerSerial}/states`, { states: new_states }, { headers })
       .pipe(
         catchError((error) => {
           console.error('Failed to toggle active.', error);
@@ -727,10 +772,13 @@ export class ContainerService {
     this.stopPolling$.next();
   }
 
-  getContainerDetails(containerSerial: string): Observable<any> {
+  getContainerDetails(containerSerial: string) {
     const headers = this.localService.getHeaders();
     let params = new HttpParams().set('container_serial', containerSerial);
-    return this.http.get(this.containerBaseUrl, { headers, params });
+    return this.http.get<PiResponse<ContainerDetails>>(this.containerBaseUrl, {
+      headers,
+      params,
+    });
   }
 
   pollContainerRolloutState(
