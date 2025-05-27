@@ -27,7 +27,8 @@
          aria-label="Container Data Table"
          class="container-table"
          mat-table
-         matSort>
+         matSort
+         multiTemplateDataRows>
     @for (column of columnsKeyMap; track column) {
       <ng-container [matColumnDef]="column.key">
         @if (column.key === 'select') {
@@ -98,16 +99,46 @@
         </td>
       </ng-container>
     }
+    <ng-container matColumnDef="expandedDetail">
+      <td *matCellDef="let element"
+          [attr.colspan]="columnKeys.length"
+          mat-cell>
+        <div [@detailExpand]="expandedElement === element ? 'expanded' : 'collapsed'"
+             class="expanded-detail">
+          <div class="expanded-token-list">
+            @for (token of element.tokens; track token) {
+              <div class="token-item">
+                <a (click)="contentService.tokenSelected(token.serial)"> {{
+                    token.serial
+                  }} </a>
+                [{{token.tokentype}}]
+              </div>
+            }
+            @if (element.tokens?.length === 0) {
+              <div class="flex ali-center">
+                Container has no tokens.
+              </div>
+            }
+          </div>
+        </div>
+      </td>
+    </ng-container>
+
     <tr *matHeaderRowDef="columnKeys"
-        aria-label="Header Row"
         mat-header-row></tr>
-    <tr *matRowDef="let row; columns: columnKeys"
-        aria-label="Data Row"
+
+    <tr (click)="expandedElement = expandedElement === row ? null : row"
+        *matRowDef="let row; columns: columnKeys"
+        [class.example-expanded-row]="expandedElement === row"
+        class="example-element-row"
         mat-row></tr>
-    <tr *matNoDataRow
-        aria-label="No Data Row">
-      <td [attr.colspan]="columnKeys.length"
-          aria-label="No Data Cell">
+
+    <tr *matRowDef="let row; columns: ['expandedDetail']"
+        class="example-detail-row"
+        mat-row></tr>
+
+    <tr *matNoDataRow>
+      <td [attr.colspan]="columnKeys.length">
         No data matching the filter.
       </td>
     </tr>

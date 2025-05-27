@@ -151,9 +151,8 @@ export class ContainerService {
     computation: () => 0,
   });
   loadAllContainers = computed(() => {
-    return (
-      this.selectedContent() === 'token_details' ||
-      this.selectedContent() === 'token_enrollment'
+    return ['token_details', 'token_enrollment'].includes(
+      this.selectedContent(),
     );
   });
   containerResource = httpResource<PiResponse<ContainerDetail>>(() => {
@@ -173,9 +172,11 @@ export class ContainerService {
           page: this.pageIndex() + 1,
           pagesize: this.pageSize(),
         }),
+        ...(this.loadAllContainers() && {
+          no_token: 1,
+        }),
         sortby: this.sort().active,
         sortdir: this.sort().direction,
-        no_token: this.loadAllContainers() ? 1 : 0,
         ...this.filterParams(),
       },
     };

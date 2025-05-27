@@ -23,6 +23,13 @@ import { FormsModule } from '@angular/forms';
 import { TokenService } from '../../../services/token/token.service';
 import { TokenSelectedContent } from '../token.component';
 import { ContentService } from '../../../services/content/content.service';
+import {
+  animate,
+  state,
+  style,
+  transition,
+  trigger,
+} from '@angular/animations';
 
 const columnsKeyMap = [
   { key: 'select', label: '' },
@@ -64,6 +71,16 @@ interface ContainerRow {
   ],
   templateUrl: './container-table.component.html',
   styleUrl: './container-table.component.scss',
+  animations: [
+    trigger('detailExpand', [
+      state('collapsed', style({ height: '0px', minHeight: '0' })),
+      state('expanded', style({ height: '*' })),
+      transition(
+        'expanded <=> collapsed',
+        animate('225ms cubic-bezier(0.4, 0.0, 0.2, 1)'),
+      ),
+    ]),
+  ],
 })
 export class ContainerTableComponent {
   readonly columnsKeyMap = columnsKeyMap;
@@ -133,6 +150,7 @@ export class ContainerTableComponent {
   @ViewChild('filterHTMLInputElement', { static: true })
   filterInput!: HTMLInputElement;
   @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
+  expandedElement: ContainerRow | null = null;
 
   constructor(
     protected containerService: ContainerService,
