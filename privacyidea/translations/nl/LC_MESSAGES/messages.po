@@ -3,50 +3,43 @@
 # This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
 # Paul Lettich <paul.lettich@netknights.it>, 2025.
+# Koen Roggemans <koen@roggemans.net>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-04-09 14:24+0200\n"
-"PO-Revision-Date: 2025-03-28 09:26+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"PO-Revision-Date: 2025-05-28 10:05+0000\n"
+"Last-Translator: Koen Roggemans <koen@roggemans.net>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
-"branch-3-11/nl/>\n"
+"privacyidea-server/nl/>\n"
 "Language: nl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.11-dev\n"
+"X-Generator: Weblate 5.12-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:231
 msgid "Authentication with passkey disabled."
-msgstr ""
+msgstr "Authenticatie met passkey uitgeschakeld."
 
 #: api/auth.py:236
-#, fuzzy
-#| msgid "Authentication failure. Missing Username"
 msgid "Authentication failure. The passkey is not registered."
-msgstr "Authenticatie mislukt. Ontbrekende gebruikersnaam"
+msgstr "Authenticatie mislukt. De passkey is niet geregistreerd."
 
 #: api/auth.py:239
-#, fuzzy
-#| msgid "Authentication failure. Your token has expired: {0!s}"
 msgid "Authentication failure. Token has no user."
-msgstr "Authenticatie mislukt. Je token is vervallen: {0!s}"
+msgstr "Authenticatie mislukt. Het token heeft geen gebruiker."
 
 #: api/auth.py:250
-#, fuzzy
-#| msgid "Authentication failure. Missing Username"
 msgid "Authentication failure using passkey."
-msgstr "Authenticatie mislukt. Ontbrekende gebruikersnaam"
+msgstr "Authenticatie mislukt met passkey."
 
 #: api/auth.py:255
-#, fuzzy
-#| msgid "Authentication failure. Unknown realm: {0!s}."
 msgid "Authentication failure. Unknown realm:"
-msgstr "Authenticatie mislukt. Onbekende realm: {0!s}."
+msgstr "Authenticatie mislukt. Onbekende realm:"
 
 #: api/auth.py:259
 msgid "Authentication failure. Missing Username"
@@ -57,14 +50,12 @@ msgid "Authentication failure. Wrong credentials"
 msgstr "Authenticatie mislukt. Foute aanmeldgegevens"
 
 #: api/realm.py:528
-#, fuzzy
-#| msgid "The tokengroup does not exist."
 msgid "The given node does not exist!"
-msgstr "De token-groep bestaat niet."
+msgstr "Het opgegeven knooppunt bestaat niet!"
 
 #: api/realm.py:534 api/realm.py:544
 msgid "Could not verify data in request!"
-msgstr ""
+msgstr "Kon gegevens in aanvraag niet verifiëren!"
 
 #: api/validate.py:467 lib/token.py:2608
 msgid "Found matching challenge"
@@ -82,62 +73,59 @@ msgid ""
 "Subscriber: {subscriber_name}\n"
 "Subscriptions: {subscriptions}\n"
 msgstr ""
+"\n"
+"<--- Beschrijf je probleem in detail --->\n"
+"\n"
+"<--- Geef- zoveel mogelijk bijkomende informatie --->\n"
+"\n"
+"privacyIDEA Versie: {version}\n"
+"Abonnee-naam: {subscriber_name}\n"
+"Abonnement: {subscriptions}\n"
 
 #: api/lib/prepolicy.py:2478
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Missing description for {} token."
-msgstr "De nieuwe beschrijving van het token."
+msgstr "Ontbrekende beschrijving van {} token."
 
 #: api/lib/prepolicy.py:2479
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Description required for {} token."
-msgstr "De nieuwe beschrijving van het token."
+msgstr "Beschrijving van {} token vereist."
 
 #: api/lib/utils.py:400
 msgid "Authentication failure. Missing Authorization header."
 msgstr "Authenticatie mislukt. Ontbrekende autorisatie-header."
 
 #: api/lib/utils.py:405 api/lib/utils.py:436
-#, fuzzy
-#| msgid "Authentication failure. Error during decoding your token: {0!s}"
 msgid "Authentication failure. Error decoding the Authorization token:"
-msgstr "Authenticatie mislukt. Fout tijdens het decoderen van je token: {0!s}"
+msgstr ""
+"Authenticatie mislukt. Fout tijdens het decoderen van het authorisatie-token:"
 
 #: api/lib/utils.py:429 api/lib/utils.py:439
-#, fuzzy
-#| msgid "Authentication failure. Your token has expired: {0!s}"
 msgid "Authentication failure. Your token has expired:"
-msgstr "Authenticatie mislukt. Je token is vervallen: {0!s}"
+msgstr "Authenticatie mislukt. Je token is vervallen:"
 
 #: api/lib/utils.py:442
-#, fuzzy, python-brace-format
-#| msgid ""
-#| "Authentication failure. The username {0!s} is not allowed to impersonate "
-#| "via JWT."
+#, python-brace-format
 msgid ""
 "Authentication failure. The username {wrong_username} is not allowed to "
 "impersonate via JWT."
 msgstr ""
-"Authenticatie mislukt. De gebruikersnaam {0!s} is mag zich niet "
+"Authenticatie mislukt. De gebruikersnaam {wrong_username} mag zich niet "
 "verpersoonlijken via JWT."
 
 #: api/lib/utils.py:447
-#, fuzzy, python-brace-format
-#| msgid ""
-#| "Authentication failure. You do not have the necessary role ({0!s}) to "
-#| "access this resource!"
+#, python-brace-format
 msgid ""
 "Authentication failure. You do not have the necessary role ({required_role}) "
 "to access this resource!"
 msgstr ""
-"Authenticatie mislukt. Je hebt niet de juiste rol {0!s} om toegang te "
-"krijgen tot deze bron!"
+"Authenticatie mislukt. Je hebt niet de juiste rol ({required_role}) om "
+"toegang te krijgen tot deze bron!"
 
 #: api/lib/utils.py:464
-#, fuzzy
-#| msgid "'{0!s}' is an invalid policy name."
 msgid "Invalid policy name:"
-msgstr "'{0!s}' is een ongeldige beleidsnaam."
+msgstr "Ongeldige beleidsnaam:"
 
 #: api/lib/utils.py:467
 msgid "The name of the policy may only contain the characters a-zA-Z0-9_. -"
@@ -159,6 +147,8 @@ msgstr "Geef de volgende OTP-waarde om je token opnieuw te synchroniseren"
 msgid ""
 "General purpose container that can hold any type and any number of token."
 msgstr ""
+"Container voor algemeen gebruik dat elk type en elk aantal tokens kan "
+"bevatten."
 
 #: lib/decorators.py:43 lib/token.py:2468
 msgid "This action is not possible, since the token is locked"
@@ -169,10 +159,8 @@ msgid "You either need to provide user or serial"
 msgstr "Je moet een gebruiker of een serienummer geven"
 
 #: lib/decorators.py:114
-#, fuzzy
-#| msgid "You need to specify a serial or a user."
 msgid "You need to specify a serial, user or credential_id."
-msgstr "Je moet een serienummer of een gebruiker opgeven."
+msgstr "Je moet een serienummer, gebruiker of credential_id opgeven."
 
 #: lib/decorators.py:116
 msgid "Invalid serial number."
@@ -187,6 +175,8 @@ msgid ""
 "Note: If you use a comma in the message, you need to escape it with a "
 "backslash."
 msgstr ""
+"Opmerking: als je een komma in het bericht gebruikt, moet je het escapen met "
+"een backslash."
 
 #: lib/policy.py:1455
 msgid "Invalid client definition!"
@@ -577,60 +567,44 @@ msgid "The Admin is allowed delete a tokengroup."
 msgstr "Admin mag een token-groep verwijderen."
 
 #: lib/policy.py:2086
-#, fuzzy
 msgid "The Admin is allowed list the available service ID definitions."
-msgstr "Admin mag de beschikbare token-groepen oplijsten."
+msgstr "Admin mag de beschikbare service-ID definities oplijsten."
 
 #: lib/policy.py:2091
-#, fuzzy
 msgid "The Admin is allowed to add a new service ID definition."
-msgstr "Admin mag RADIUS-servedefinities lezen."
+msgstr "Admin mag een nieuwe service ID-definitie toevoegen."
 
 #: lib/policy.py:2096
-#, fuzzy
 msgid "The Admin is allowed delete a service ID definition."
-msgstr "Admin mag de CA connectordefinities wijzigen."
+msgstr "Admin mag een service ID-definitie verwijderen."
 
 #: lib/policy.py:2101
 msgid "The Admin is allowed to manage the tokengroups of a token."
 msgstr "Admin mag de token-groepen van een token beheren."
 
 #: lib/policy.py:2105
-#, fuzzy
-#| msgid "Admin is allowed to reset the Failcounter of a token."
 msgid "Admin is allowed to edit the container info."
-msgstr ""
-"Admin mag de mislukte aanmeldingenteller van een token opnieuw instellen."
+msgstr "Admin mag de containerinfo bewerken."
 
 #: lib/policy.py:2109
-#, fuzzy
-#| msgid "Admin is allowed to reset the Failcounter of a token."
 msgid "Admin is allowed to edit the container state."
-msgstr ""
-"Admin mag de mislukte aanmeldingenteller van een token opnieuw instellen."
+msgstr "Admin mag de container-status bewerken."
 
 #: lib/policy.py:2113
-#, fuzzy
 msgid "Admin is allowed to edit the container description."
-msgstr "De gebruiker mag een beschrijving bij een token zetten."
+msgstr "Admin mag de containerbeschrijving bewerken."
 
 #: lib/policy.py:2117
-#, fuzzy
-#| msgid "Admin is allowed to read policies."
 msgid "Admin is allowed to create containers."
-msgstr "Admin mag beleid lezen."
+msgstr "Admin mag containers maken."
 
 #: lib/policy.py:2121
-#, fuzzy
-#| msgid "Admin is allowed to delete policies."
 msgid "Admin is allowed to delete containers."
-msgstr "Admin mag beleid verwijderen."
+msgstr "Admin mag containers verwijderen."
 
 #: lib/policy.py:2125
-#, fuzzy
-#| msgid "Admin is allowed to assign a token to a user."
 msgid "Admin is allowed to add tokens to containers."
-msgstr "Admin mag een token aan een gebruiker toekennen."
+msgstr "Admin mag tokens aan een container toevoegen."
 
 #: lib/policy.py:2129
 #, fuzzy
@@ -912,10 +886,8 @@ msgid "Users are allowed to create and edit container templates."
 msgstr "De gebruiker mag zijn eigen tokens inschakelen."
 
 #: lib/policy.py:2347
-#, fuzzy
-#| msgid "The user is allowed to delete his own tokens."
 msgid "Users are allowed to delete templates."
-msgstr "De gebruiker mag zijn eigen tokens verwijderen."
+msgstr "Gebruikers mogen sjablonen verwijderden."
 
 #: lib/policy.py:2351
 #, fuzzy
@@ -932,6 +904,8 @@ msgid ""
 "During the rollout process, this policy makes the description required for "
 "all selected tokentypes."
 msgstr ""
+"Tijdens het uitrolproces maakt dit beleid de beschrijving vereist voor alle "
+"tokentypes."
 
 #: lib/policy.py:2370
 msgid "Limit the number of tokens a user may have assigned."
@@ -987,6 +961,9 @@ msgid ""
 "</code>, <code>{realm}</code>, <code>{serial}</code>, <code>{givenname}</"
 "code> and <code>{surname}</code>."
 msgstr ""
+"Het label voor een nieuw uitgerold smartphonetoken. Mogelijke tags zijn "
+"<code>{user}</code>, <code>{realm}</code>, <code>{serial}</code>, "
+"<code>{givenname}</code> en <code>{surname}</code>."
 
 #: lib/policy.py:2415
 #, python-brace-format
@@ -995,6 +972,9 @@ msgid ""
 "<code>{user}</code>, <code>{realm}</code>, <code>{serial}</code>, "
 "<code>{givenname}</code> and <code>{surname}</code>."
 msgstr ""
+"De uitgever voor een nieuw uitgerold smartphone-token. Mogelijke tags zijn "
+"<code>{user}</code>, <code>{realm}</code>, <code>{serial}</code>, "
+"<code>{givenname}</code> en <code>{surname}</code>."
 
 #: lib/policy.py:2422
 msgid ""
@@ -1058,27 +1038,19 @@ msgstr ""
 "lijst met toegestane tekens [1234567890]"
 
 #: lib/policy.py:2474
-#, fuzzy
-#| msgid ""
-#| "Specify a white space separated list of token types, that should be "
-#| "verified during enrollment."
 msgid ""
 "Specify the email validator that should be used to validate email addresses "
 "during enrollment."
 msgstr ""
-"Dit is een door spaties gescheiden lijst van token-types die tijdens de "
-"registratie geverifieerd zouden moeten worden."
+"Geef de e-mailvalidator die gebruikt moet worden om het e-mailadres te "
+"valideren tijdens het aanmelden."
 
 #: lib/policy.py:2480
-#, fuzzy
-#| msgid ""
-#| "Specify a white space separated list of token types, that should be "
-#| "verified during enrollment."
 msgid ""
 "Specify the list of token types, that must be verified during enrollment."
 msgstr ""
-"Dit is een door spaties gescheiden lijst van token-types die tijdens de "
-"registratie geverifieerd zouden moeten worden."
+"Geef de lijst met token-types die tijdens de registratie geverifieerd zouden "
+"moeten worden."
 
 #: lib/policy.py:2493
 msgid ""
@@ -1089,28 +1061,21 @@ msgstr ""
 "vaste wachtwoordcomponent."
 
 #: lib/policy.py:2498
-#, fuzzy
-#| msgid ""
-#| "This is a whitespace separated list of tokentypes, that can be used with "
-#| "challenge response."
 msgid ""
 "Specify the list of token types, that must be used with challenge response."
 msgstr ""
-"Dit is een door spaties gescheiden lijst van token-types die gebruikt kunnen "
-"worden met challenge-response."
+"Geef de lijst met token-types die gebruikt moeten worden met challenge-"
+"response."
 
 #: lib/policy.py:2506
-#, fuzzy
-#| msgid ""
-#| "Use an alternate challenge text for telling the user to enter the code "
-#| "from the eMail."
 msgid ""
 "Use an alternative challenge text for telling the user to enter an OTP "
 "value. You can also use tags for automated replacement. Check out the "
 "documentation for more details."
 msgstr ""
 "Gebruik een alternatieve challenge tekst om te gebruiker te vertellen dat "
-"hij de code van de e-mail moet ingeven."
+"een OTP-waarde moet ingeven. Je kunt ook tags voor automatisch vervangen "
+"gebruiken. Bekijk de documentatie voor meer details."
 
 #: lib/policy.py:2513
 msgid ""
@@ -1157,6 +1122,8 @@ msgstr ""
 #: lib/policy.py:2539
 msgid "Change the default text that is shown during enrolling a token."
 msgstr ""
+"Wijzig de standaard tekst die getoond wordt tijdens het registreren van een "
+"token."
 
 #: lib/policy.py:2544
 msgid ""
@@ -1231,15 +1198,14 @@ msgstr ""
 "zoals 4h of 4h/5m."
 
 #: lib/policy.py:2591
-#, fuzzy
 msgid ""
 "You can set the client modes in the order that you prefer. For example: "
 "\"interactive webauthn poll u2f\". Accepted values are: <code>interactive "
 "webauthn poll u2f</code>"
 msgstr ""
 "Je kunt de cliënt-modi instellen in volgorde van jouw keuze. Bijvoorbeeld: "
-"\"intereactive webauthn poll u2f\". Aanvaarde waarden zijn: 'interactive, "
-"webauthn, poll, u2f\""
+"\"intereactive webauthn poll u2f\". Aanvaarde waarden zijn: "
+"<code>interactive webauthn poll u2f</code>"
 
 #: lib/policy.py:2597
 msgid ""
@@ -1247,6 +1213,10 @@ msgid ""
 "or the answer to a challenge. PIN concatenated with OTP can not be used "
 "anymore! Does only work when authenticating with a username."
 msgstr ""
+"Wanneer ingeschakeld zullen authenticatiepogingen geïnterpreteerd worden als "
+"ofwel de PIN of het antwoord op een challenge. PIN samengevoegd met OTP kan "
+"niet meer gebruikt worden! Werkt enkel bij authenticatie met een "
+"gebruikersnaam."
 
 #: lib/policy.py:2603
 msgid ""
@@ -1254,6 +1224,10 @@ msgid ""
 "attributes. For the next authentication the last used token type is used to "
 "identify the preferred client mode."
 msgstr ""
+"Bewaar het laatst gebruikte token-type per gebruiker en applicatie bij de "
+"aangepaste gebruikersattributen. Voor de volgende authenticatie zal het "
+"laatst gebruikte authenticatietype gebruikt worden om de geprefereerde "
+"client modus te bepalen."
 
 #: lib/policy.py:2611
 #, python-brace-format
@@ -1319,16 +1293,12 @@ msgstr ""
 "token overeenkomt met deze regex-uitdrukking."
 
 #: lib/policy.py:2662
-#, fuzzy
-#| msgid ""
-#| "The user will only be authenticated if the tokeninfo field matches the "
-#| "regexp. key/&lt;regexp&gt;/"
 msgid ""
 "The user will only be authenticated if the tokeninfo field matches the "
 "regexp (key/&lt;regexp&gt;/)."
 msgstr ""
 "De gebruiker zal enkel geauthenticeerd worden als het token info-veld "
-"overeenkomt met volgende regexp. key/&lt;regexp&gt;/"
+"overeenkomt met volgende regexp (key/&lt;regexp&gt;/)."
 
 #: lib/policy.py:2669
 msgid ""
@@ -1442,6 +1412,9 @@ msgid ""
 "default validity is 1 hour. You can specify different validity times in "
 "seconds."
 msgstr ""
+"privacyIDEA geeft een JWT uit wanneer de gebruiker of beheerders aanmelden "
+"in de WebUI. De standaard geldigheid is 1 uur. Je kunt een andere "
+"geldigheidsduur opgeven in seconden."
 
 #: lib/policy.py:2760
 msgid "Set how many tokens should be displayed in the token view on one page."
@@ -1534,10 +1507,8 @@ msgid "This is the default token type in the token enrollment dialog."
 msgstr "Dit is het standaard token-type in de token registratiedialoog."
 
 #: lib/policy.py:2833
-#, fuzzy
-#| msgid "This is the default token type in the token enrollment dialog."
 msgid "This is the default container type in the container create dialog."
-msgstr "Dit is het standaard token-type in de token registratiedialoog."
+msgstr "Dit is het standaard container-type in de maak container-dialoog."
 
 #: lib/policy.py:2838
 msgid ""
@@ -1552,6 +1523,7 @@ msgid ""
 "If this is checked, the administrator will not see the welcome dialog "
 "anymore."
 msgstr ""
+"Als dit is aangevinkt zal de beheerder het welkomstbericht niet meer zien."
 
 #: lib/policy.py:2849
 msgid ""
@@ -1567,6 +1539,9 @@ msgid ""
 "If this is checked, there will be a confirmation prompt when deleting "
 "policies, events, mresolver, resolver or periodic tasks!"
 msgstr ""
+"Als dit is aangevinkt zal er een bevestigingsprompt getoond worden wanneer "
+"beleid, gebeurtenissen, mresolver, resolver of periodieke taken verwijderd "
+"worden!"
 
 #: lib/policy.py:2859
 msgid ""
@@ -1616,12 +1591,17 @@ msgid ""
 "The RSS feeds fetched for the user defined in the format: "
 "<code>'Title':'URL'-'Title':'URL'</code> "
 msgstr ""
+"De RSS-feeds opgehaald voor de gebruiker en gedefinieerd met als opmaak: "
+"<code>'Title':'URL'-'Title':'URL'</code> "
 
 #: lib/policy.py:2891
 msgid ""
 "The age of the RSS feed entries in days. Use <code>0</code> to hide the news "
 "feed. For admins the default is 180 days and for users 0 days."
 msgstr ""
+"De leeftijd van de RSS-feeditems in dagen. Gebruik <code>0</code> om de "
+"nieuwsfeed te verbergen. Voor beheerders is de standaard 180 dagen en voor "
+"gebruikers 0 dagen."
 
 #: lib/policy.py:2895
 msgid ""
@@ -1629,6 +1609,10 @@ msgid ""
 "set at least this option to enable the container wizard. As long as the user "
 "has no container assigned he will only see the container wizard in the UI."
 msgstr ""
+"Containertype dat met de container wizard gemaakt moet worden. Je moet "
+"minstens deze optie kiezen om de containerwizard in te schakelen. Zo lang de "
+"gebruiker geen container heeft toegewezen gekregen, zal hij de "
+"containerwizard in de UI zien."
 
 #: lib/policy.py:2902
 msgid ""
@@ -1636,6 +1620,9 @@ msgid ""
 "container wizard (optional). Note that the template must be of the same type "
 "as selected in the container_wizard_type."
 msgstr ""
+"De naam van het containersjabloon dat gebruikt moet worden om een container "
+"te maken in de container wizard (optioneel). Merk op dat het sjabloon van "
+"hetzelde type moet zijn als geselecteerd in container_wizard_type."
 
 #: lib/policy.py:2908
 msgid ""
@@ -1882,7 +1869,7 @@ msgstr "foute otp pin"
 
 #: lib/token.py:2701
 msgid "No suitable token found for authentication."
-msgstr ""
+msgstr "Geen geschikt token gevonden voor authenticatie."
 
 #: lib/token.py:2726
 #, python-brace-format
@@ -1920,47 +1907,48 @@ msgstr "De token-groep bestaat niet."
 #: lib/token.py:2976
 #, python-brace-format
 msgid " Please press: {presence_answer}"
-msgstr ""
+msgstr " Klik op: {presence_answer}"
 
 #: lib/tokenclass.py:1698
 msgid "please enter otp: "
 msgstr "geef otp: "
 
 #: lib/applications/ssh.py:105
-#, fuzzy
 msgid "The username on the SSH server."
-msgstr "Verplicht het genereren van de sleutel op de server."
+msgstr "De gebruikersnaam op de SSH-server."
 
 #: lib/applications/ssh.py:107
 msgid ""
 "The service ID of the SSH server. Several servers can have the same service "
 "ID."
 msgstr ""
+"De service ID van de SSH-server. Meerder servers kunnen dezelfde service ID "
+"hebben."
 
 #: lib/containers/smartphone.py:123
 msgid "A smartphone that uses an authenticator app."
-msgstr ""
+msgstr "Een smartphone die een authenticatie-app gebruikt."
 
 #: lib/containers/smartphone.py:219
-#, fuzzy
-#| msgid "URL for privacyIDEA Push Token"
 msgid "URL for privacyIDEA Container Registration"
-msgstr "URL voor privacyIDEA Push Token"
+msgstr "URL voor privacyIDEA containerregistratie"
 
 #: lib/containers/yubikey.py:62
 msgid ""
 "Yubikey hardware device that can hold HOTP, certificate and webauthn token"
-msgstr ""
+msgstr "Yubikey hardware die HOTP, certificaat en webauthn-token kan bewaren"
 
 #: lib/eventhandler/base.py:175
 msgid ""
 "The challenge session matches the string or regular expression (like "
 "'challenge_declined' or 'enrollment')"
 msgstr ""
+"De challenge-sessie komt overeen met de string of reguliere expressie (zoals "
+"'challenge_declined' of 'enrollment')"
 
 #: lib/eventhandler/base.py:182
 msgid "The challenge of a token during the authentication process is expired."
-msgstr ""
+msgstr "De challenge van een token is tijdens het authenticatieproces verlopen."
 
 #: lib/eventhandler/base.py:190
 msgid ""
@@ -2004,10 +1992,8 @@ msgid "The result.status within the response is True or False."
 msgstr "De result.status in het antwoord is True of False."
 
 #: lib/eventhandler/base.py:256
-#, fuzzy
-#| msgid "The result.value within the response is True or False."
 msgid "The result.authentication within the response is the given value."
-msgstr "De result.value in het antwoord is True of False."
+msgstr "De result.authentication binnen het antwoord is de gegeven waarde."
 
 #: lib/eventhandler/base.py:264
 msgid "Check if the max failcounter of the token is reached."
@@ -2038,29 +2024,23 @@ msgstr ""
 "expressie."
 
 #: lib/eventhandler/base.py:301
-#, fuzzy
-#| msgid "The token has a user assigned."
 msgid "The token is in a container."
-msgstr "Aan dit token is een gebruiker toegewezen."
+msgstr "Het token is in een container."
 
 #: lib/eventhandler/base.py:308
-#, fuzzy
-#| msgid "Action is triggered, if the user has this number of tokens assigned."
 msgid ""
 "Action is triggered, if the user has this number of tokens assigned. > and < "
 "can be used, like <8."
 msgstr ""
 "Actie wordt gestart als de gebruiker dit aantal tokens toegewezen gekregen "
-"heeft."
+"heeft. > and < kan gebruikt worden, evenals <8."
 
 #: lib/eventhandler/base.py:315
-#, fuzzy
-#| msgid "Action is triggered, if the user has this number of tokens assigned."
 msgid ""
 "Action is triggered, if the user has this number of containers assigned."
 msgstr ""
-"Actie wordt gestart als de gebruiker dit aantal tokens toegewezen gekregen "
-"heeft."
+"Actie wordt gestart als de gebruiker dit aantal containers toegewezen "
+"gekregen heeft."
 
 #: lib/eventhandler/base.py:322
 msgid ""
@@ -2162,30 +2142,24 @@ msgid ""
 "The container is in the specified states, but can additionally be in other "
 "states."
 msgstr ""
+"De container is in de opgegeven status, maar kan bijkomend nog in andere "
+"statussen zijn."
 
 #: lib/eventhandler/base.py:418
-#, fuzzy
-#| msgid "The admin will not see the specified columns in the audit."
 msgid "The container is only in the specified states."
-msgstr "De beheerder zal de opgegeven kolommen niet zien in de audit."
+msgstr "De container is enkel in de opgegeven status."
 
 #: lib/eventhandler/base.py:425
-#, fuzzy
-#| msgid "The token has a user assigned."
 msgid "The container has a user assigned."
-msgstr "Aan dit token is een gebruiker toegewezen."
+msgstr "Er is een gebruiker aan de container toegewezen."
 
 #: lib/eventhandler/base.py:432
-#, fuzzy
-#| msgid "The user has no tokens assigned"
 msgid "The container has at least one token assigned."
-msgstr "De gebruiker heeft geen toegewezen token"
+msgstr "De container heeft minstens één toegewezen token"
 
 #: lib/eventhandler/base.py:439
-#, fuzzy
-#| msgid "The logged in user is of the following type."
 msgid "The container is of a certain type."
-msgstr "De aangemelde gebruiker is van het volgende type."
+msgstr "De container is van een bepaald type."
 
 #: lib/eventhandler/base.py:446
 msgid ""
@@ -2194,6 +2168,10 @@ msgid ""
 "realm of the list. The condition is not checked if the container has no "
 "realm, hence the action would be triggered."
 msgstr ""
+"De container is in deze realm of helemaal in geen realm. Als meerder realms "
+"geselecteerd zijn, dan is aan de voorwaarde voldaan als de container in "
+"minstens één realm uit de lijst zit. De voorwaarde is niet voldaan als de "
+"container geen realm heeft als de actie gestart zou worden."
 
 #: lib/eventhandler/base.py:456
 msgid ""
@@ -2202,21 +2180,20 @@ msgid ""
 "resolver. The condition is not checked if the container has no owner, hence "
 "the action would be triggered."
 msgstr ""
+"Een eigenaar van de container zit in deze resolver. Als meerdere resolvers "
+"geselecteerd zijn, dan is aan de voorwaarde voldaan als er minstens één "
+"eigenaar in één resolver zit. Er is niet aan de voorwaarde voldaan als de "
+"container geen eigenaar heeft, wanneer de actie wordt gestart."
 
 #: lib/eventhandler/base.py:465
-#, fuzzy
-#| msgid ""
-#| "This condition can check any arbitrary tokeninfo field. You need to enter "
-#| "something like '<fieldname> == <fieldvalue>', '<fieldname> > "
-#| "<fieldvalue>' or '<fieldname> < <fieldvalue>'."
 msgid ""
 "This condition can check any arbitrary container info field. You need to "
 "enter something like 'fieldname == fieldvalue', 'fieldname > fieldvalue' or "
 "'fieldname < fieldvalue'."
 msgstr ""
-"Deze voorwaarde kan een willekeurig token infoveld controleren. Je moet iets "
-"ingeven zoals '<fieldname> == <fieldvalue>', '<fieldname> > <fieldvalue>' or "
-"'<fieldname> < <fieldvalue>'."
+"Deze voorwaarde kan elk willekeurig container infoveld controleren. Je moet "
+"iets ingeven zoals 'fieldname == fieldvalue', 'fieldname > fieldvalue' or "
+"'fieldname < fieldvalue'."
 
 #: lib/eventhandler/base.py:474
 msgid ""
@@ -2226,6 +2203,11 @@ msgid ""
 "'m' (minutes), 's' (seconds). Only one unit is allowed. Examples: '8h', "
 "'7d', '1y'"
 msgstr ""
+"Een actie wordt gestart als de laatste authenticatie van de container ouder "
+"is dan de opgegeven tijd. De tijdswaarde moet een geheel getal zijn, gevolgd "
+"door een tijdseenheid. Ondersteunde eenheden zijn 'y' (jaren), 'd' (dagen), "
+"'h' (uren), 'm' (minuten), 's' (seconden). Slechts één eenheid is "
+"toegestaan. Voorbeelden: '8h', '7d', '1y'"
 
 #: lib/eventhandler/base.py:485
 msgid ""
@@ -2235,53 +2217,48 @@ msgid ""
 "'m' (minutes), 's' (seconds). Only one unit is allowed. Examples: '8h', "
 "'7d', '1y'"
 msgstr ""
+"Een actie wordt gestart als de laatste synchronisatie van de container ouder "
+"is dan de opgegeven tijd. De tijdswaarde moet een geheel getal zijn, gevolgd "
+"door een tijdseenheid. Ondersteunde eenheden zijn 'y' (jaren), 'd' (dagen), "
+"'h' (uren), 'm' (minuten), 's' (seconden). Slechts één eenheid is "
+"toegestaan. Voorbeelden: '8h', '7d', '1y'"
 
 #: lib/eventhandler/containerhandler.py:89
 #, python-brace-format
 msgid "Set the state {state}"
-msgstr ""
+msgstr "Zet de status {state}"
 
 #: lib/eventhandler/containerhandler.py:96
-#, fuzzy
-#| msgid "Token type to create"
 msgid "Container type to create"
-msgstr "Te maken token-type"
+msgstr "Te maken container-type"
 
 #: lib/eventhandler/containerhandler.py:102
 #: lib/eventhandler/containerhandler.py:124
-#, fuzzy
-#| msgid "The new description of the token."
 msgid "Description of the container"
-msgstr "De nieuwe beschrijving van het token."
+msgstr "Beschrijving van de container"
 
 #: lib/eventhandler/containerhandler.py:107
-#, fuzzy
-#| msgid "Assign token to user in request or to tokenowner."
 msgid "Assign container to user in request or to token/container owner"
 msgstr ""
-"Wijs een toeken toe aan de gebruiker in de vraag of aan de token eigenaar."
+"Wijs een container toe aan de gebruiker in de vraag of aan de token/"
+"container eigenaar."
 
 #: lib/eventhandler/containerhandler.py:112
-#, fuzzy
-#| msgid "Assign token to user in request or to tokenowner."
 msgid "Add token from request to container"
-msgstr ""
-"Wijs een toeken toe aan de gebruiker in de vraag of aan de token eigenaar."
+msgstr "Voeg een token toe aan de container"
 
 #: lib/eventhandler/containerhandler.py:132
 msgid "Set this container info key (deletes all existing keys)."
-msgstr ""
+msgstr "Zet deze containerinfosleutel (verwijdert alle bestaande sleutels)."
 
 #: lib/eventhandler/containerhandler.py:136
 #: lib/eventhandler/containerhandler.py:146
-#, fuzzy
-#| msgid "Set the failcounter of the token."
 msgid "Set the value for the key above."
-msgstr "Stel de teller voor mislukte aanmeldingen met dit token in."
+msgstr "Zet de waarde voor bovenstaand sleutel."
 
 #: lib/eventhandler/containerhandler.py:142
 msgid "Add this key to the container info."
-msgstr ""
+msgstr "Voeg deze sleutel toe aan de container-info."
 
 #: lib/eventhandler/counterhandler.py:67 lib/eventhandler/counterhandler.py:72
 #: lib/eventhandler/counterhandler.py:80
@@ -2392,6 +2369,9 @@ msgid ""
 "If the parameter is 'username', 'user' or 'realm', the user will be reset. "
 "This can have an effect on any further actions on the user!"
 msgstr ""
+"Als de parameter 'username', 'user' of 'realm' is, dan zal de gebruiker "
+"opnieuw ingesteld worden. Dit kan een gevolg hebben voor volgende acties van "
+"de gebruiker!"
 
 #: lib/eventhandler/responsemangler.py:79
 msgid ""
@@ -2532,6 +2512,8 @@ msgstr ""
 msgid ""
 "Add the token to the container if there is one identifiable in the request."
 msgstr ""
+"Voeg het token toe aan de container als er een identificeerbaar is in de "
+"vraag."
 
 #: lib/eventhandler/tokenhandler.py:252
 msgid "The new description of the token."
@@ -2587,12 +2569,16 @@ msgid ""
 "Interpret the tokeninfo as 'int' and increase the tokeninfo value by the "
 "given offset."
 msgstr ""
+"Interpreteer de tokeninformatie als 'int' en verhoog de tokeninfowaarde met "
+"de gegeven compensatie."
 
 #: lib/eventhandler/tokenhandler.py:343
 msgid ""
 "The increment the tokeninfo key should be increased. Can be positive or "
 "negative, s.th. like +1 or -7."
 msgstr ""
+"De toename die waarmee de tokeninfosleutel zou moeten verhogen. Kan positief "
+"of negatief zijn, zoals +1 of -7."
 
 #: lib/eventhandler/tokenhandler.py:353
 msgid "Delete this tokeninfo key."
@@ -2608,25 +2594,27 @@ msgstr "Verwijder een token-groep van het token."
 
 #: lib/eventhandler/tokenhandler.py:382
 msgid "The ID of the machine you want to attach the token to"
-msgstr ""
+msgstr "De ID van de machine waaraan je het token wil hangen"
 
 #: lib/eventhandler/tokenhandler.py:389
 msgid "Set the service_id for an SSH application."
-msgstr ""
+msgstr "Stel de service_id in voor een SSH-applicatie."
 
 #: lib/eventhandler/tokenhandler.py:398
 msgid ""
 "Set a token application like 'offline' or 'SSH'. Note: Not all tokens work "
 "well with all applications!"
 msgstr ""
+"Stel een tokenapplicatie in zoals 'offline' of 'SSH'. Merk op: niet alle "
+"tokens werken goed met alle applicaties!"
 
 #: lib/eventhandler/tokenhandler.py:408
 msgid "The number of offline OTP values available"
-msgstr ""
+msgstr "Het aantal beschikbare offline OTP-waardes"
 
 #: lib/eventhandler/tokenhandler.py:416
 msgid "The number of rounds for password hashing"
-msgstr ""
+msgstr "Het aantal rondes voor wachtwoordhashing"
 
 #: lib/eventhandler/usernotification.py:146
 msgid "Send notification email via this email server."
@@ -2665,6 +2653,14 @@ msgid ""
 "{container_url_img}, {time}, {date}, {client_ip}, {ua_browser}, {ua_string}, "
 "{pin}.</code>"
 msgstr ""
+"Het sjabloon van de e-mail die verstuurd zal worden. Dit kan volgende tags "
+"bevatten, zoals opgegeven in de documentatie: <code>{admin}, {realm}, "
+"{action}, {serial}, {url}, {user}, {givenname}, {surname}, {username}, "
+"{userrealm}, {tokentype}, {tokendescription}, {registrationcode}, "
+"{recipient_givenname}, {recipient_surname}, {googleurl_value}, "
+"{googleurl_img}, {pushurl_value}, {pushurl_img}, {container_url_value}, "
+"{container_url_img}, {time}, {date}, {client_ip}, {ua_browser}, {ua_string}, "
+"{pin}.</code>"
 
 #: lib/eventhandler/usernotification.py:203
 #: lib/eventhandler/usernotification.py:248
@@ -2687,6 +2683,13 @@ msgid ""
 "{pushurl_img}, {container_url_value}, {container_url_img}, {time}, {date}, "
 "{client_ip}, {ua_browser}, {ua_string}, {pin}.</code>"
 msgstr ""
+"Het tekstsjabloon voor de SMS. Dit kan volgende tags bevatten, zoals "
+"opgegeven in de documentatie: <code>{admin}, {realm}, {action}, {serial}, "
+"{url}, {user}, {givenname}, {surname}, {username}, {userrealm}, {tokentype}, "
+"{tokendescription}, {registrationcode}, {recipient_givenname}, "
+"{recipient_surname}, {googleurl_value}, {googleurl_img}, {pushurl_value}, "
+"{pushurl_img}, {container_url_value}, {container_url_img}, {time}, {date}, "
+"{client_ip}, {ua_browser}, {ua_string}, {pin}.</code>"
 
 #: lib/eventhandler/usernotification.py:255
 #, python-brace-format
@@ -2699,6 +2702,14 @@ msgid ""
 "{pushurl_img}, {container_url_value}, {container_url_img}, {time}, {date}, "
 "{client_ip}, {ua_browser}, {ua_string}, {pin}.</code>"
 msgstr ""
+"Dit is de sjablooninhoud voor een nieuw bestand. Dit kan volgende tags "
+"bevatten, zoals opgegeven in de documentatie: <code>{admin}, {realm}, "
+"{action}, {serial}, {url}, {user}, {givenname}, {surname}, {username}, "
+"{userrealm}, {tokentype}, {tokendescription}, {registrationcode}, "
+"{recipient_givenname}, {recipient_surname}, {googleurl_value}, "
+"{googleurl_img}, {pushurl_value}, {pushurl_img}, {container_url_value}, "
+"{container_url_img}, {time}, {date}, {client_ip}, {ua_browser}, {ua_string}, "
+"{pin}.</code>"
 
 #: lib/eventhandler/usernotification.py:266
 #, python-brace-format
@@ -2726,6 +2737,9 @@ msgid ""
 "{surname}, {token_owner}, {user_realm}, {token_serial}. However, tag "
 "availability is depending on the endpoint."
 msgstr ""
+"Je kunt volgende plaatshouders gebruiken: {logged_in_user}, {realm}, "
+"{surname}, {token_owner}, {user_realm}, {token_serial}. De "
+"tagbeschikbaarheid hangt af van het eindpunt."
 
 #: lib/eventhandler/webhookeventhandler.py:102
 msgid "The data posted in the WebHook"
@@ -2737,22 +2751,18 @@ msgid "Your LDAP config seems to be OK, %i machine objects found."
 msgstr "Jouw LDAP-configuratie lijkt OK, %i machine-objecten gevonden."
 
 #: lib/resolvers/LDAPIdResolver.py:1158
-#, fuzzy, python-brace-format
-#| msgid ""
-#| "Your LDAP config found {0!s} user objects, but only {1!s} with the "
-#| "specified uidtype"
+#, python-brace-format
 msgid ""
 "Your LDAP config found {0!s} user objects in {2:.4f}s, but only {1!s} with "
 "the specified uidtype."
 msgstr ""
-"Jouw LDAP-configuratie vond{0!s} gebruikers, maar slechts {1!s} met het "
-"opgegeven uid-type"
+"Jouw LDAP-configuratie vond{0!s} gebruikersobjecen  in {2:.4f}s,, maar "
+"slechts {1!s} met het opgegeven uid-type."
 
 #: lib/resolvers/LDAPIdResolver.py:1162
-#, fuzzy, python-brace-format
-#| msgid "Your LDAP config seems to be OK, {0!s} user objects found."
+#, python-brace-format
 msgid "Your LDAP config seems to be OK, {0!s} user objects found in {1:.4f}s."
-msgstr "Jouw LDAP-configuratie lijkt OK, {0!s} gebruikers gevonden."
+msgstr "Jouw LDAP-configuratie lijkt OK, {0!s} gebruikers gevonden in {1:.4f}s."
 
 #: lib/smsprovider/FirebaseProvider.py:199
 msgid ""
@@ -2826,7 +2836,6 @@ msgid "The timeout in seconds."
 msgstr "De time-out in seconden."
 
 #: lib/smsprovider/SMSProvider.py:74
-#, fuzzy
 msgid ""
 "Regular expression to modify the phone number to make it compatible with the "
 "provider. For example to remove pluses and slashes enter something like '/[\\"
@@ -2925,24 +2934,24 @@ msgid ""
 "Application Specific Password: A token with a fixed password. Can be used "
 "for certain applications or services."
 msgstr ""
+"Applicatie specifiek wachtwoord: een token met een vast wachtwoord. Kan "
+"gebruikt worden voor bepaalde applicaties en services."
 
 #: lib/tokens/applicationspecificpasswordtoken.py:85
-#, fuzzy
 msgid ""
 "The user may only have this maximum number of application specific password "
 "tokens assigned."
 msgstr ""
-"De gebruiker mag slechts dit maximaal aantal actieve wachtwoord-tokens "
+"De gebruiker mag slechts dit maximaal aantal applicatiespeciefieke tokens "
 "toegewezen hebben."
 
 #: lib/tokens/applicationspecificpasswordtoken.py:91
-#, fuzzy
 msgid ""
 "The user may only have this maximum number of active application specific "
 "password tokens assigned."
 msgstr ""
-"De gebruiker mag slechts dit maximaal aantal actieve wachtwoord-tokens "
-"toegewezen hebben."
+"De gebruiker mag slechts dit maximaal aantal actieve applicatie specifieke "
+"wachtwoordtokens toegewezen hebben."
 
 #: lib/tokens/certificatetoken.py:287
 msgid "Certificate: Enroll an x509 Certificate Token."
