@@ -45,7 +45,6 @@ export interface ContainerDetails {
 export interface ContainerDetailData {
   description?: string;
   info?: any;
-
   internal_info_keys?: any[];
   last_authentication?: any;
   last_synchronization?: any;

@@ -36,15 +36,20 @@ const columnsKeyMap = [
 ];
 
 interface ContainerRow {
-  users: string;
-  user_realm: string;
-  type: string;
-  tokens: Array<ContainerDetailToken>;
-  states: string[];
-  description: string;
-  select: string;
-  serial: string;
+  description?: string;
+  info?: any;
+  internal_info_keys?: any[];
+  last_authentication?: any;
+  last_synchronization?: any;
   realms: string[];
+  serial: string;
+  states: string[];
+  template?: string;
+  tokens: ContainerDetailToken[];
+  type: string;
+  users: string;
+  select?: string;
+  user_realm?: string;
 }
 
 @Component({
@@ -77,7 +82,7 @@ export class ContainerTableComponent {
   sort = this.containerService.sort;
   containerResource = this.containerService.containerResource;
 
-  emptyResource = linkedSignal({
+  emptyResource: WritableSignal<ContainerRow[]> = linkedSignal({
     source: this.pageSize,
     computation: (pageSize: number) =>
       Array.from({ length: pageSize }, () => {
@@ -99,14 +104,14 @@ export class ContainerTableComponent {
               ...item,
               users:
                 item.users && item.users.length > 0
-                  ? item.users[0]['user_name']
+                  ? item.users[0].user_name
                   : '',
               user_realm:
                 item.users && item.users.length > 0
-                  ? item.users[0]['user_realm']
+                  ? item.users[0].user_realm
                   : '',
             })) ?? [];
-          return new MatTableDataSource(processedData);
+          return new MatTableDataSource<ContainerRow>(processedData);
         }
         return previous?.value ?? new MatTableDataSource(this.emptyResource());
       },
