@@ -48,7 +48,7 @@ from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
 from privacyidea.lib.fido2.util import hash_credential_id, save_credential_id_hash
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION, SCOPE
-from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE, AUTHENTICATIONMODE, CLIENTMODE
+from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE, CLIENTMODE
 from privacyidea.models import Challenge
 
 log = logging.getLogger(__name__)
@@ -65,8 +65,7 @@ class PasskeyTokenClass(TokenClass):
         - USER_VERIFICATION_REQUIREMENT (default: PREFERRED)
         - PUBLIC_KEY_CREDENTIAL_ALGORITHMS (default: ECDSA_SHA_256, RSASSA_PKCS1_v1_5_SHA_256)
     """
-
-    mode = [AUTHENTICATIONMODE.CHALLENGE]
+    mode = []
     client_mode = CLIENTMODE.WEBAUTHN
 
     def __init__(self, db_token):

@@ -1113,11 +1113,14 @@ class WebAuthnTokenClass(TokenClass):
         ).assertion_dict
 
         data_image = convert_imagefile_to_dataimage(user.icon_url) if user.icon_url else ""
-        reply_dict = {"attributes": {"webAuthnSignRequest": public_key_credential_request_options,
-                                     "hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE,
-                                     "img": data_image},
-                      "image": data_image}
 
+        reply_dict = {}
+        sign_request = {"webAuthnSignRequest": public_key_credential_request_options,
+                        "hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE}
+        if data_image:
+            sign_request["img"] = data_image
+            reply_dict["image"] = data_image
+        reply_dict["attributes"] = sign_request
         return True, message, db_challenge.transaction_id, reply_dict
 
     @check_token_locked
