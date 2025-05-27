@@ -6,7 +6,8 @@ import { catchError } from 'rxjs/operators';
 import { from, Observable, switchMap, throwError } from 'rxjs';
 import { NotificationService } from '../notification/notification.service';
 import { Base64Service } from '../base64/base64.service';
-import { AuthService } from '../auth/auth.service';
+import { AuthData, AuthService } from '../auth/auth.service';
+import { PiResponse } from '../../app.component';
 
 @Injectable({
   providedIn: 'root',
@@ -50,7 +51,7 @@ export class ValidateService {
       );
   }
 
-  authenticatePasskey(args?: { isTest?: boolean }): Observable<any> {
+  authenticatePasskey(args?: { isTest?: boolean }) {
     if (!window.PublicKeyCredential) {
       this.notificationService.openSnackBar(
         'WebAuthn is not supported by this browser.',
@@ -97,7 +98,10 @@ export class ValidateService {
               ),
             };
             return args?.isTest
-              ? this.http.post(`${this.baseUrl}check`, params)
+              ? this.http.post<PiResponse<AuthData>>(
+                  `${this.baseUrl}check`,
+                  params,
+                )
               : this.authenticationService.authenticate(params);
           }),
         );

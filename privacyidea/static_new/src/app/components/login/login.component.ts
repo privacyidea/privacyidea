@@ -52,7 +52,7 @@ export class LoginComponent {
     const password = this.password();
 
     this.authService.authenticate({ username, password }).subscribe({
-      next: (response: any) => {
+      next: (response) => {
         if (
           response.result &&
           response.result.value &&
@@ -87,7 +87,7 @@ export class LoginComponent {
 
   loginPasskey(): void {
     this.validateService.authenticatePasskey().subscribe({
-      next: (response: any) => {
+      next: (response) => {
         if (
           response.result &&
           response.result.value &&

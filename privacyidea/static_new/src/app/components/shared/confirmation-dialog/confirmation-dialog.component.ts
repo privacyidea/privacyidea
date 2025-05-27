@@ -27,7 +27,7 @@ export class ConfirmationDialogComponent {
     @Inject(MAT_DIALOG_DATA)
     public data: {
       type: string;
-      serial_list: any;
+      serial_list: string[];
       title: string;
       action: string;
       numberOfTokens: number;
