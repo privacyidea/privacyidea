@@ -50,12 +50,9 @@ def get_groups():
     """
     groups = set()
     resolver_names = get_group_resolvers()
-    print(resolver_names)
     for rname in resolver_names:
-        print(f"name: {rname[0]}")
         resolvers = _get_group_resolvers(rname[0])
         if not resolvers:
-            print("null resolver")
             return []
         
         for resolver in resolvers:
@@ -112,7 +109,7 @@ def get_ip_risk_score(ip: str):
     if len(subnets) == 0:
         return default
     
-    subnet_highest_mask = max(subnets,key=lambda subnet: int(ipaddress.ip_address(subnet.network_address)))
+    subnet_highest_mask = max(subnets,key=lambda subnet: subnet.prefixlen)
     #fetch the risk score for the subnet
     ip_risk_score = get_risk_score(subnet_highest_mask,CONFIG_IP_RISK_SCORES_KEY)
     return ip_risk_score
@@ -156,7 +153,7 @@ def get_user_risk_score(ugroups: list):
     groups = []
     for t in ugroups:
         score = get_risk_score(t,CONFIG_GROUPS_RISK_SCORES_KEY)
-        if score:
+        if score is not None:
             groups.append((t,score)) 
             
     if len(groups) == 0:

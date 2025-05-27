@@ -83,7 +83,7 @@ def add_risk_to_user(request):
                     score = int(calculate_risk(ip,service,utype))
                     user.set_attribute("risk",score)
                 else:
-                    log.debug("User not available on request. Skiping risk score.")
+                    log.debug("User not available on request. Skipping risk score.")
             except Exception as e:
                 log.error(f"Can't calculate the risk score: {e}")
             return func(*args,**kwargs)

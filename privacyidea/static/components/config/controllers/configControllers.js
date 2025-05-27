@@ -1327,7 +1327,7 @@ myApp.controller("riskController", ["$scope", "ConfigFactory",
                     "user_resolver_name": $scope.userResolver,
                     "group_resolver_name": $scope.groupResolver
                 }
-                ConfigFactory.addRiskScore("groups",param,function(data) {
+                ConfigFactory.saveGroupResolver(param,function(data) {
                     if(data.result.status === true) {
                         inform.add(gettextCatalog.getString("User resolver attached to group resolver."),
                             {type: "success"});

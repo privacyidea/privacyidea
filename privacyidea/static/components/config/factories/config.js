@@ -60,7 +60,7 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
     "radiusServerUrl", "smsgatewayUrl",
     "defaultRealmUrl", "systemUrl", "periodicTaskUrl",
     "privacyideaServerUrl", "CAConnectorUrl", "tokengroupUrl",
-    "serviceidUrl","riskUrl",
+    "serviceidUrl", "riskUrl",
     function (AuthFactory, $http, $state, $rootScope,
               resolverUrl, realmUrl, machineResolverUrl,
               policyUrl, eventUrl, smtpServerUrl,
@@ -1030,6 +1030,18 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                 }).then(function(response) {
                     callback(response.data)
                 },function(error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            saveGroupResolver: function(params,callback) {
+                $http.post(riskUrl + "/groups", params, {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function(response) {
+                    callback(response.data)
+                }, function(error) {
                     AuthFactory.authError(error.data)
                 });
             },

@@ -16,7 +16,7 @@ LDAPDirectory = [{"dn": 'uid=john.doe,ou=users,dc=example,dc=org',
                  #groups
                  {"dn": "cn=admin,ou=groups,dc=example,dc=org",
                   "attributes": {"cn": "admin",
-                                 "member": ["test.test"], #the ldap3mock parser does not like filters with multiple "=", so we this instead of uid=test.test,ou=users,dc=example,dc=org
+                                 "member": ["test.test"], #the ldap3mock parser does not like filters with multiple "=", so we use this instead of uid=test.test,ou=users,dc=example,dc=org
                                  "objectClass": ["top","groupOfNames"]
                                  }},
                  {"dn": "cn=professor,ou=groups,dc=example,dc=org",
