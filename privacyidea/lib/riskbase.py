@@ -3,7 +3,7 @@ import logging
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.resolver import get_resolver_object
 from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver
-from privacyidea.lib.config import get_from_config,set_privacyidea_config
+from privacyidea.lib.config import get_from_config,set_privacyidea_config,delete_privacyidea_config
 from re import match
 
 DEFAULT_USER_RISK = 3
@@ -14,6 +14,12 @@ CONFIG_GROUPS_RISK_SCORES_KEY = "user_groups_risk_scores"
 CONFIG_SERVICES_RISK_SCORES_KEY = "services_risk_scores"
 CONFIG_IP_RISK_SCORES_KEY = "ip_risk_scores"
 CONFIG_GROUP_RESOLVERS_KEY = "user_group_resolvers"
+
+config_key_to_prefix = {
+    CONFIG_IP_RISK_SCORES_KEY: "ip",
+    CONFIG_GROUPS_RISK_SCORES_KEY: "group",
+    CONFIG_SERVICES_RISK_SCORES_KEY: "service"
+}
 
 
 log = logging.getLogger(__name__) 
@@ -44,9 +50,12 @@ def get_groups():
     """
     groups = set()
     resolver_names = get_group_resolvers()
+    print(resolver_names)
     for rname in resolver_names:
+        print(f"name: {rname[0]}")
         resolvers = _get_group_resolvers(rname[0])
         if not resolvers:
+            print("null resolver")
             return []
         
         for resolver in resolvers:
@@ -103,7 +112,7 @@ def get_ip_risk_score(ip: str):
     if len(subnets) == 0:
         return default
     
-    subnet_highest_mask = _get_subnet_with_highest_mask(subnets)
+    subnet_highest_mask = max(subnets,key=lambda subnet: int(ipaddress.ip_address(subnet.network_address)))
     #fetch the risk score for the subnet
     ip_risk_score = get_risk_score(subnet_highest_mask,CONFIG_IP_RISK_SCORES_KEY)
     return ip_risk_score
@@ -166,49 +175,41 @@ def get_user_risk_score(ugroups: list):
 
 #possibly cache the result
 def get_risk_score(key: str,config_key: str):
-    groups_str: str = get_from_config(config_key)
-    groups = groups_str.split(",") if groups_str else []
-    if len(groups) == 0:
-        return None
+    _key = f"{config_key_to_prefix[config_key]}_{key}"
+    score = get_from_config(_key)
     
-    exists,i = _check_if_key_exists(key,groups)
-    
-    if not exists:
-        return None
-    
-    mch = match(rf"{key};(\d+(\.\d+)?)",groups[i])
-    score = float(mch.group(1))
-    
-    return score
+    return float(score) if score else None
 
 def get_risk_scores(config_key: str):
     groups_str: str = get_from_config(config_key)
     groups = groups_str.split(",") if groups_str else []
     
-    return [tuple(group.split(";")) for group in groups]
+    return [(group, get_from_config(f"{config_key_to_prefix[config_key]}_{group}")) for group in groups]
 
 def save_risk_score(key: str,risk_score: str,config_key: str):
+    _key = f"{config_key_to_prefix[config_key]}_{key}"
+    if get_from_config(_key):
+        raise ParameterError(f"{key} already has a risk score. Please remove it first.")
+
     score = sanitize_risk_score(risk_score)
     groups_str: str = get_from_config(config_key)
     groups = groups_str.split(",") if groups_str else []
-    exists,_ = _check_if_key_exists(key,groups)
+    groups.append(key)
     
-    if exists:
-        raise ParameterError(f"{key} already has a risk score. Please remove it first.")
-    
-    groups.append(f"{key};{score}")
+    set_privacyidea_config(_key,score)
     set_privacyidea_config(config_key,",".join(groups),typ="public")
     
 def remove_risk_score(key: str,config_key: str):
-    groups_str = get_from_config(config_key)
-    groups = groups_str.split(",") if groups_str else []
-    exists,i = _check_if_key_exists(key,groups)
-    
-    if not exists:
+    _key = f"{config_key_to_prefix[config_key]}_{key}"
+    if not get_from_config(_key):
         raise ParameterError(f"{key} does not exist")
     
-    groups.pop(i)
+    groups_str = get_from_config(config_key)
+    groups = groups_str.split(",") if groups_str else []
+    groups.remove(key)
+    
     set_privacyidea_config(config_key,",".join(groups),typ="public")
+    delete_privacyidea_config(_key)
     
 def sanitize_risk_score(risk_score):
     """Checks if the risk score is a positive number.
@@ -244,7 +245,9 @@ def ip_version(subnet):
             return 0
         
 def get_group_resolvers():
-    return get_risk_scores(CONFIG_GROUP_RESOLVERS_KEY)
+    resolvers_str: str = get_from_config(CONFIG_GROUP_RESOLVERS_KEY)
+    resolvers = resolvers_str.split(",") if resolvers_str else []
+    return [tuple(s.split(";")) for s in resolvers]
         
 def save_group_resolver(group_resolver_name,user_resolver_name):
     groups_str: str = get_from_config(CONFIG_GROUP_RESOLVERS_KEY)
@@ -322,15 +325,6 @@ def _fetch_groups(user_dn,resolver: IdResolver):
     log.debug(f"Found groups: {list(groups)}")
     return list(groups)
 
-def _check_if_key_exists(key: str,elements: list):
-    for i,element in enumerate(elements):
-        mch = match(rf"{key};(\d+(\.\d+)?)",element)
-        if mch:
-            log.debug(f"found match! {mch.groups()}")
-            return True,i
-            
-    return False,None  
-
 def _check_if_group_exists(group_resolver: str,user_resolver: str,groups: list):
     gs = []
     for i,element in enumerate(groups):
@@ -344,16 +338,10 @@ def _check_if_group_exists(group_resolver: str,user_resolver: str,groups: list):
     
     return True,gs
 
-def _ip_to_int(ip):
-    return int(ipaddress.ip_address(ip))
-
 def _matches_subnet(ip, subnet):
-    ip_int = _ip_to_int(ip)
-    network_int = _ip_to_int(subnet.network_address)
-    netmask_int = _ip_to_int(subnet.netmask)
+    ip_int = int(ipaddress.ip_address(ip))
+    network_int = int(ipaddress.ip_address(subnet.network_address))
+    netmask_int = int(ipaddress.ip_address(subnet.netmask))
     
     # Apply bitwise AND to the IP and the subnet mask, then compare to the network address
     return (ip_int & netmask_int) == (network_int & netmask_int)
-
-def _get_subnet_with_highest_mask(subnets):
-    return max(subnets,key=lambda subnet: _ip_to_int(subnet.network_address))
