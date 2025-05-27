@@ -12,22 +12,22 @@
                     subscriptSizing="dynamic">
       <mat-label>Enter Filter</mat-label>
       <input #filterInput
-             [(ngModel)]="filterValue"
+             [(ngModel)]="machineService.filterValue"
              aria-label="Filter Input"
              matInput
              placeholder="Example query: 'service_id: myService'" />
     </mat-form-field>
     <mat-paginator (page)="machineService.onPageEvent($event)"
                    [length]="length()"
-                   [pageIndex]="pageIndex()"
+                   [pageIndex]="machineService.pageIndex()"
                    [pageSizeOptions]="pageSizeOptions"
-                   [pageSize]="pageSize()"
+                   [pageSize]="machineService.pageSize()"
                    showFirstLastButtons></mat-paginator>
   </div>
-  <app-keyword-filter [advancedApiFilter]="advancedApiFilter"
-                      [apiFilter]="apiFilter"
+  <app-keyword-filter [advancedApiFilter]="machineService.offlineAdvancedApiFilter"
+                      [apiFilter]="machineService.offlineApiFilter"
                       [filterHTMLInputElement]="filterInput"
-                      [filterValue]="filterValue"></app-keyword-filter>
+                      [filterValue]="machineService.filterValue"></app-keyword-filter>
   <table (matSortChange)="machineService.onSortEvent($event)"
          [dataSource]="dataSource()"
          [matSortDisableClear]="false"

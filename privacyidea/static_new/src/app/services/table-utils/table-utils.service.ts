@@ -10,10 +10,10 @@ interface FilterPair {
   providedIn: 'root',
 })
 export class TableUtilsService {
-  emptyDataSource = (
+  emptyDataSource<T>(
     pageSize: number,
     columnsKeyMap: { key: string; label: string }[],
-  ) => {
+  ): MatTableDataSource<T> {
     return new MatTableDataSource(
       Array.from({ length: pageSize }, () => {
         const emptyRow: any = {};
@@ -23,7 +23,7 @@ export class TableUtilsService {
         return emptyRow;
       }),
     );
-  };
+  }
 
   parseFilterString(
     filterValue: string,

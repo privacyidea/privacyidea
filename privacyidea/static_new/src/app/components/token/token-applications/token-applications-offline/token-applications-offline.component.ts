@@ -1,15 +1,12 @@
-import {
-  Component,
-  Input,
-  Signal,
-  ViewChild,
-  WritableSignal,
-} from '@angular/core';
+import { Component, computed } from '@angular/core';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatSortModule, Sort } from '@angular/material/sort';
-import { MachineService } from '../../../../services/machine/machine.service';
+import {
+  MachineService,
+  TokenApplication,
+} from '../../../../services/machine/machine.service';
 import { KeywordFilterComponent } from '../../../shared/keyword-filter/keyword-filter.component';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
@@ -20,7 +17,7 @@ import { TokenService } from '../../../../services/token/token.service';
 import { FormsModule } from '@angular/forms';
 import { ContentService } from '../../../../services/content/content.service';
 
-export const columnsKeyMap = [
+const _offlineColumnsKeyMap = [
   { key: 'serial', label: 'Serial' },
   { key: 'count', label: 'Count' },
   { key: 'rounds', label: 'Rounds' },
@@ -46,32 +43,32 @@ export const columnsKeyMap = [
   styleUrls: ['./token-applications-offline.component.scss'],
 })
 export class TokenApplicationsOfflineComponent {
-  static columnsKeyMap = columnsKeyMap;
-  tokenSerial = this.tokenService.tokenSerial;
-  selectedContent = this.contentService.selectedContent;
-  @Input() length!: WritableSignal<number>;
-  @Input() pageSize!: WritableSignal<number>;
-  @Input() pageIndex!: WritableSignal<number>;
-  @Input() filterValue!: WritableSignal<string>;
-  @Input() sort!: WritableSignal<Sort>;
-  @Input() dataSource!: Signal<MatTableDataSource<any>>;
-  columnsKeyMap = columnsKeyMap;
-  displayedColumns: string[] = columnsKeyMap.map((c) => c.key);
+  columnsKeyMap = _offlineColumnsKeyMap;
   pageSizeOptions = [5, 10, 15];
-  apiFilter = this.machineService.offlineApiFilter;
-  advancedApiFilter = this.machineService.offlineAdvancedApiFilter;
-  @ViewChild('filterInput', { static: true })
-  filterInput!: HTMLInputElement;
+  length = computed(() => this.machineService.tokenApplications().length ?? 0);
+  displayedColumns: string[] = _offlineColumnsKeyMap.map(
+    (column) => column.key,
+  );
 
   constructor(
-    protected tokenService: TokenService,
-    protected tableUtilsService: TableUtilsService,
     protected machineService: MachineService,
+    protected tableUtilsService: TableUtilsService,
+    protected tokenService: TokenService,
     protected contentService: ContentService,
   ) {}
 
-  onFilterChange(newFilter: string) {
-    this.filterValue.set(newFilter);
-    this.pageIndex.set(0);
+  dataSource = computed(() => {
+    var data = this.machineService.tokenApplications();
+    if (data) {
+      return new MatTableDataSource<TokenApplication>(data);
+    }
+    return this.tableUtilsService.emptyDataSource(
+      this.machineService.pageSize(),
+      _offlineColumnsKeyMap,
+    );
+  });
+
+  getObjectStrings(options: object) {
+    return Object.entries(options).map(([key, value]) => `${key}: ${value}`);
   }
 }

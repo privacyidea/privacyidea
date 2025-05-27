@@ -1,6 +1,9 @@
-import { Component, Input, ViewChild, WritableSignal } from '@angular/core';
+import { Component, computed } from '@angular/core';
 import { MatTabsModule } from '@angular/material/tabs';
-import { MachineService } from '../../../../services/machine/machine.service';
+import {
+  MachineService,
+  TokenApplication,
+} from '../../../../services/machine/machine.service';
 import { KeywordFilterComponent } from '../../../shared/keyword-filter/keyword-filter.component';
 import {
   MatCell,
@@ -19,7 +22,7 @@ import { TokenService } from '../../../../services/token/token.service';
 import { FormsModule } from '@angular/forms';
 import { ContentService } from '../../../../services/content/content.service';
 
-export const columnsKeyMap = [
+const _sshColumnsKeyMap = [
   { key: 'serial', label: 'Serial' },
   { key: 'service_id', label: 'Service ID' },
   { key: 'user', label: 'SSH User' },
@@ -47,22 +50,10 @@ export const columnsKeyMap = [
   styleUrls: ['./token-applications-ssh.component.scss'],
 })
 export class TokenApplicationsSshComponent {
-  static columnsKeyMap = columnsKeyMap;
-  tokenSerial = this.tokenService.tokenSerial;
-  selectedContent = this.contentService.selectedContent;
-  @Input() length!: WritableSignal<number>;
-  @Input() pageSize!: WritableSignal<number>;
-  @Input() pageIndex!: WritableSignal<number>;
-  @Input() filterValue!: WritableSignal<string>;
-  @Input() sort!: WritableSignal<Sort>;
-  @Input() dataSource!: WritableSignal<MatTableDataSource<any>>;
-  columnsKeyMap = columnsKeyMap;
-  displayedColumns: string[] = columnsKeyMap.map((column) => column.key);
+  columnsKeyMap = _sshColumnsKeyMap;
   pageSizeOptions = [5, 10, 15];
-  apiFilter = this.machineService.sshApiFilter;
-  advancedApiFilter = this.machineService.sshAdvancedApiFilter;
-  @ViewChild('filterInput', { static: true })
-  filterInput!: HTMLInputElement;
+  length = computed(() => this.machineService.tokenApplications().length ?? 0);
+  displayedColumns: string[] = _sshColumnsKeyMap.map((column) => column.key);
 
   constructor(
     protected machineService: MachineService,
@@ -70,6 +61,17 @@ export class TokenApplicationsSshComponent {
     protected tokenService: TokenService,
     protected contentService: ContentService,
   ) {}
+
+  dataSource = computed(() => {
+    var data = this.machineService.tokenApplications();
+    if (data) {
+      return new MatTableDataSource<TokenApplication>(data);
+    }
+    return this.tableUtilsService.emptyDataSource(
+      this.machineService.pageSize(),
+      _sshColumnsKeyMap,
+    );
+  });
 
   getObjectStrings(options: object) {
     return Object.entries(options).map(([key, value]) => `${key}: ${value}`);

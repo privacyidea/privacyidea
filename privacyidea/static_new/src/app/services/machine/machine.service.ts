@@ -1,5 +1,11 @@
 import { HttpClient, HttpParams, httpResource } from '@angular/common/http';
-import { computed, Injectable, linkedSignal, signal } from '@angular/core';
+import {
+  computed,
+  Injectable,
+  linkedSignal,
+  signal,
+  WritableSignal,
+} from '@angular/core';
 import { LocalService } from '../local/local.service';
 import { environment } from '../../../environments/environment';
 import { TableUtilsService } from '../table-utils/table-utils.service';
@@ -91,19 +97,26 @@ export class MachineService {
     if (this.selectedContent() !== 'token_applications') {
       return undefined;
     }
+    const params = {
+      application: this.selectedApplicationType(),
+      page: this.pageIndex() + 1,
+      pagesize: this.pageSize(),
+      sortby: this.sort()?.active || 'serial',
+      sortdir: this.sort()?.direction || 'asc',
+      ...this.filterParams(),
+    };
+    console.log('Params:', params);
     return {
       url: this.baseUrl + 'token',
       method: 'GET',
       headers: this.localService.getHeaders(),
-      params: {
-        application: this.selectedApplicationType(),
-        page: this.pageIndex() + 1,
-        pagesize: this.pageSize(),
-        sortby: this.sort()?.active || 'serial',
-        sortdir: this.sort()?.direction || 'asc',
-        ...this.filterParams(),
-      },
+      params: params,
     };
+  });
+  tokenApplications: WritableSignal<TokenApplications> = linkedSignal({
+    source: this.tokenApplicationResource.value,
+    computation: (tokenApplicationResource, previous) =>
+      tokenApplicationResource?.result.value ?? previous?.value ?? [],
   });
 
   constructor(
