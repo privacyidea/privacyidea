@@ -227,6 +227,14 @@ class RiskbaseTestCase(MyApiTestCase):
             r = get_ip_risk_score("192.168.3.3")
             self.assertEqual(r,DEFAULT_IP_RISK)
             
+        with self.app.test_request_context("/riskbase/ip/delete",method="POST",
+                                           headers={"Authorization": self.at},
+                                           data={"identifier": "192.168.1.0/24"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code,200)
+            r = get_ip_risk_score("192.168.1.0/24")
+            self.assertEqual(r,DEFAULT_IP_RISK)
+            
         #further check the values have been deleted
         with self.app.test_request_context("/riskbase/check",method="POST",
                                            headers={"Authorization": self.at},
@@ -237,9 +245,9 @@ class RiskbaseTestCase(MyApiTestCase):
             self.assertEqual(r["result"]["value"],DEFAULT_USER_RISK + DEFAULT_SERVICE_RISK + DEFAULT_IP_RISK)
             
     @ldap3mock.activate
-    def test_02_test_fetch_user_group(self):
+    def test_02_get_config(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
-        params = ({'LDAPURI': 'ldap://localhost',
+        paramsGroup = ({'LDAPURI': 'ldap://localhost',
                    'LDAPBASE': 'dc=example,dc=org',
                    'BINDDN': 'uid=john.doe,ou=users,dc=example,dc=org',
                    'BINDPW': 'johnpassword',
@@ -249,16 +257,116 @@ class RiskbaseTestCase(MyApiTestCase):
                    'USERINFO': '{ "member": "member" }',
                    'MULTIVALUEATTRIBUTES': '["member"]',
                    })
-        resolver_name = "groups"
-        params["resolver"] = resolver_name
-        params["type"] = "ldapresolver"
-        rid = save_resolver(params)
+        
+        group_resolver_name = "groups"
+        paramsGroup["resolver"] = group_resolver_name
+        paramsGroup["type"] = "ldapresolver"
+        rid = save_resolver(paramsGroup)
         self.assertTrue(rid > 0)
-        (added, failed) = set_realm("ldap", [{'name': resolver_name}])
-        self.assertEqual(len(added), 1)
+        
+        paramsUsers = ({'LDAPURI': 'ldap://localhost',
+                   'LDAPBASE': 'dc=example,dc=org',
+                   'BINDDN': 'uid=john.doe,ou=users,dc=example,dc=org',
+                   'BINDPW': 'johnpassword',
+                   'LOGINNAMEATTRIBUTE': 'cn',
+                   'LDAPSEARCHFILTER': '(objectClass=inetOrgPerson)', 
+                   'UIDTYPE': 'DN',
+                   })
+        
+        user_resolver_name = "users"
+
+        paramsUsers["resolver"] = user_resolver_name
+        paramsUsers["type"] = "ldapresolver"
+        rid = save_resolver(paramsUsers)
+        self.assertTrue(rid > 0)
+        
+        (added, failed) = set_realm("ldap", [{'name': group_resolver_name},{"name": user_resolver_name}])
+        self.assertEqual(len(added), 2)
         self.assertEqual(len(failed), 0)
         
-        delete_realm("ldap")
-        delete_resolver(resolver_name)
+        with self.app.test_request_context("/riskbase/groups",method="POST",
+                                           headers={"Authorization": self.at},
+                                           data={"group_resolver_name": group_resolver_name,
+                                                 "user_resolver_name": user_resolver_name}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code,200)
         
+        with self.app.test_request_context("/riskbase/user",method="POST",
+                                           headers={"Authorization": self.at},
+                                           data={"user_group": "groupA","risk_score": 10}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code,200)
+        
+        with self.app.test_request_context("/riskbase/ip",method="POST",
+                                           headers={"Authorization": self.at},
+                                           data={"ip": "192.168.3.3","risk_score":12}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code,200)
+        
+        
+        with self.app.test_request_context("/riskbase/service",method="POST",
+                                           headers={"Authorization": self.at},
+                                           data={"service": "myService","risk_score": 11}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code,200)
+        
+        with self.app.test_request_context("/riskbase/",method="GET",
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code,200)
+            values = res.json["result"]["value"]
+            
+            self.assertIn("group_resolvers",values)
+            self.assertIn("user_risk",values)
+            self.assertIn("service_risk",values)
+            self.assertIn("ip_risk",values)
+            
+            self.assertEqual(values["group_resolvers"],[{"user_resolver": user_resolver_name, "group_resolver": group_resolver_name}],values["group_resolvers"])
+            self.assertEqual(values["user_risk"],[{"group": "groupA", "risk_score": str(float(10))}],values["user_risk"])
+            self.assertEqual(values["service_risk"],[{"name": "myService", "risk_score": str(float(11))}],values["service_risk"])
+            self.assertEqual(values["ip_risk"],[{"ip": "192.168.3.3/32", "risk_score": str(float(12))}],values["ip_risk"])
+            
+        #clear risk scores
+        with self.app.test_request_context("/riskbase/ip/delete",method="POST",
+                                           headers={"Authorization": self.at},
+                                           data={"identifier": "192.168.3.3/32"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code,200)        
+            
+        with self.app.test_request_context("/riskbase/service/delete",method="POST",
+                                           headers={"Authorization": self.at},
+                                           data={"identifier": "myService"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code,200)
+            
+        with self.app.test_request_context("/riskbase/user/delete",method="POST",
+                                           headers={"Authorization": self.at},
+                                           data={"identifier": "groupA"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code,200)
+            
+        #clear user and group attach
+        with self.app.test_request_context("/riskbase/groups/delete",method="POST",
+                                           headers={"Authorization": self.at},
+                                           data={"group_resolver_name": group_resolver_name,
+                                                 "user_resolver_name": user_resolver_name}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code,200)
+    
+        #check everything is clear
+        with self.app.test_request_context("/riskbase/",method="GET",
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code,200)
+            values = res.json["result"]["value"]
+            
+            self.assertNotIn("group_resolvers",values)
+            self.assertNotIn("user_risk",values)
+            self.assertNotIn("service_risk",values)
+            self.assertNotIn("ip_risk",values)
+            
+    
+        delete_realm("ldap")
+        delete_resolver(group_resolver_name)
+        delete_resolver(user_resolver_name)
         
