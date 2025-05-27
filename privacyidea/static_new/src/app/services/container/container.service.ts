@@ -587,7 +587,9 @@ export class ContainerService {
       );
   }
 
-  toggleAll(action: 'activate' | 'deactivate'): Observable<any> {
+  toggleAll(
+    action: 'activate' | 'deactivate',
+  ): Observable<(PiResponse<boolean> | null)[] | null> {
     const data = this.containerDetail();
 
     if (!data || !Array.isArray(data.containers[0].tokens)) {
@@ -599,8 +601,8 @@ export class ContainerService {
 
     const tokensForAction =
       action === 'activate'
-        ? data.containers[0].tokens.filter((token: any) => !token.active)
-        : data.containers[0].tokens.filter((token: any) => token.active);
+        ? data.containers[0].tokens.filter((token) => !token.active)
+        : data.containers[0].tokens.filter((token) => token.active);
 
     if (tokensForAction.length === 0) {
       this.notificationService.openSnackBar('No tokens for action.');
@@ -638,7 +640,7 @@ export class ContainerService {
     }
 
     const tokensForAction = data.containers[0].tokens.map(
-      (token: any) => token.serial,
+      (token) => token.serial,
     );
 
     if (tokensForAction.length === 0) {

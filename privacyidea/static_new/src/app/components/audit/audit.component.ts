@@ -113,16 +113,12 @@ export class AuditComponent {
     },
   });
 
-  emptyResource = linkedSignal({
+  emptyResource: WritableSignal<AuditData[]> = linkedSignal({
     source: this.pageSize,
     computation: (pageSize: number) =>
-      Array.from({ length: pageSize }, () => {
-        const emptyRow: any = {};
-        this.columnKeysMap.forEach((column) => {
-          emptyRow[column.key] = '';
-        });
-        return emptyRow;
-      }),
+      Array.from({ length: pageSize }, () =>
+        Object.fromEntries(this.columnKeysMap.map((col) => [col.key, ''])),
+      ),
   });
 
   auditDataSource: WritableSignal<MatTableDataSource<AuditData>> = linkedSignal(
