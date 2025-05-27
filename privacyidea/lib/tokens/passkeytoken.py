@@ -65,6 +65,9 @@ class PasskeyTokenClass(TokenClass):
         - USER_VERIFICATION_REQUIREMENT (default: PREFERRED)
         - PUBLIC_KEY_CREDENTIAL_ALGORITHMS (default: ECDSA_SHA_256, RSASSA_PKCS1_v1_5_SHA_256)
     """
+    # Remove modes, so passkey token are not included in challenge-response token lists, because they can not
+    # explicitly be triggered.
+    # TODO mode and client_mode are the same and should be merged when reworking token class (baseclasses).
     mode = []
     client_mode = CLIENTMODE.WEBAUTHN
 
