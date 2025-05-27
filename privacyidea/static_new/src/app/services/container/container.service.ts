@@ -587,10 +587,7 @@ export class ContainerService {
       );
   }
 
-  toggleAll(
-    containerSerial: string,
-    action: 'activate' | 'deactivate',
-  ): Observable<any> {
+  toggleAll(action: 'activate' | 'deactivate'): Observable<any> {
     const data = this.containerDetail();
 
     if (!data || !Array.isArray(data.containers[0].tokens)) {

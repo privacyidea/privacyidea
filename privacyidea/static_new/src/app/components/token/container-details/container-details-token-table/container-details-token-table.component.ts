@@ -289,7 +289,7 @@ export class ContainerDetailsTokenTableComponent {
   }
 
   toggleAll(action: 'activate' | 'deactivate') {
-    this.containerService.toggleAll(this.containerSerial(), action).subscribe({
+    this.containerService.toggleAll(action).subscribe({
       next: () => {
         this.containerService.containerDetailResource.reload();
       },

@@ -251,7 +251,7 @@ export class TokenEnrollmentComponent {
     source: this.selectedTokenType,
     computation: () => 30,
   });
-  enrollResponse: WritableSignal<any> = linkedSignal({
+  enrollResponse: WritableSignal<EnrollmentResponse | null> = linkedSignal({
     source: this.selectedTokenType,
     computation: () => null,
   });
@@ -527,18 +527,19 @@ export class TokenEnrollmentComponent {
   }
 
   reopenEnrollmentDialog() {
+    const enrollResponse = this.enrollResponse();
     let waitingForClient =
-      ((this.enrollResponse().detail?.rollout_state === 'clientwait' ||
-        this.enrollResponse().detail?.passkey_registration ||
-        this.enrollResponse().detail?.webAuthnRegisterRequest) &&
+      ((enrollResponse?.detail?.rollout_state === 'clientwait' ||
+        enrollResponse?.detail?.passkey_registration ||
+        enrollResponse?.detail?.webAuthnRegisterRequest) &&
         !this.pollResponse()) ||
       this.pollResponse()?.result?.value?.tokens[0]?.rollout_state ===
         'clientwait';
     if (waitingForClient) {
-      this.openFirstStepDialog(this.enrollResponse());
-      this.pollTokenRolloutState(this.enrollResponse().detail?.serial, 2000);
+      this.openFirstStepDialog(enrollResponse!);
+      this.pollTokenRolloutState(enrollResponse!.detail?.serial, 2000);
     } else {
-      this.openSecondStepDialog(this.enrollResponse());
+      this.openSecondStepDialog(enrollResponse);
     }
   }
 
