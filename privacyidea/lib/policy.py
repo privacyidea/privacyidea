@@ -165,6 +165,7 @@ Time formats are::
 and any combination of it. ``dow`` being day of week Mon, Tue, Wed, Thu, Fri,
 Sat, Sun.
 """
+from datetime import datetime
 from typing import Union
 
 from werkzeug.datastructures.headers import EnvironHeaders
@@ -445,6 +446,7 @@ class ACTION(object):
     CONTAINER_WIZARD_TEMPLATE = "container_wizard_template"
     CONTAINER_WIZARD_REGISTRATION = "container_wizard_registration"
     CLIENT_MODE_PER_USER = "client_mode_per_user"
+    HIDE_CONTAINER_INFO = "hide_container_info"
 
 
 class TYPE(object):
@@ -781,11 +783,13 @@ class PolicyClass(object):
         return reduced_policies
 
     @log_with(log)
-    def match_policies(self, name=None, scope=None, realm=None, active=None,
-                       resolver=None, user=None, user_object=None, pinode=None,
-                       client=None, action=None, adminrealm=None, adminuser=None, time=None,
-                       sort_by_priority=True, audit_data=None, request_headers=None, serial=None,
-                       extended_condition_check=None, additional_realms: list = None):
+    def match_policies(self, name: str = None, scope: str = None, realm: str = None, active: bool = None,
+                       resolver: str = None, user: str = None, user_object: User = None, pinode: str = None,
+                       client: str = None, action: str = None, adminrealm: str = None, adminuser: str = None,
+                       time: datetime = None, sort_by_priority: bool = True, audit_data: dict = None,
+                       request_headers=None, serial: str = None,
+                       extended_condition_check: Union[int, list[str], None] = None, additional_realms: list = None,
+                       container_serial: str = None) -> list[dict]:
         """
         Return all policies matching the given context.
         Optionally, write the matching policies to the audit log.
@@ -803,24 +807,25 @@ class PolicyClass(object):
         :param realm: see ``list_policies``
         :param active: see ``list_policies``
         :param resolver: see ``list_policies``
-        :param user: see ``list_policies``
+        :param user: the user name
+        :param user_object: the currently active user, or None
+        :param pinode: the privacyIDEA node name
         :param client: see ``list_policies``
         :param action: see ``list_policies``
         :param adminrealm: see ``list_policies``
         :param adminuser: see ``list_policies``
-        :param pinode: see ``list_policies``
-        :param sort_by_priority:
-        :param user_object: the currently active user, or None
-        :type user_object: User or None
         :param time: return only policies that are valid at the specified time.
             Defaults to the current time.
-        :type time: datetime or None
+        :param sort_by_priority:
         :param audit_data: A dictionary with audit data collected during a request. This
             method will add found policies to the dictionary.
-        :type audit_data: dict or None
         :param request_headers: A dict with HTTP headers
+        :param serial: The serial number of the token
+        :param extended_condition_check: One of ConditionCheck (1 - no condition check, None - check all conditions)
+            or a list of conditions to check for the policies
         :param additional_realms: A list of realms that should be additionally checked besides the user realm
             combination
+        :param container_serial: The container serial from the request if available
         :return: a list of policy dictionaries
         """
         if user_object is not None:
@@ -867,7 +872,8 @@ class PolicyClass(object):
         if extended_condition_check != ConditionCheck.DO_NOT_CHECK_AT_ALL:
             try:
                 reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object, request_headers,
-                                                                      serial, extended_condition_check)
+                                                                      serial, extended_condition_check,
+                                                                      container_serial)
             except PolicyError:
                 # Add the information on which actions triggered the error to the logs
                 log.error(f"Error checking extended conditions for action '{action}'.")
@@ -913,7 +919,8 @@ class PolicyClass(object):
 
     def filter_policies_by_conditions(self, policies: list[dict], user_object: User = None,
                                       request_headers: EnvironHeaders = None, serial: str = None,
-                                      extended_condition_check: Union[None, int, list[str]] = None) -> list[dict]:
+                                      extended_condition_check: Union[None, int, list[str]] = None,
+                                      container_serial: str = None) -> list[dict]:
         """
         Evaluates for each policy condition if it matches the actual request (user / token / request headers) and
         returns a list of all matching policies.
@@ -926,6 +933,7 @@ class PolicyClass(object):
         :param serial: The serial of a token or None if not contained in the request data
         :param extended_condition_check: One of CONDITION_CHECK (1 - not check, list of sections to check,
             None - check all).
+        :param container_serial: The serial of a container or None if not contained in the request data
         :return: a list of matching policy dictionaries
         """
         reduced_policies = []
@@ -945,7 +953,8 @@ class PolicyClass(object):
                         or condition.section in extended_condition_check):
                     # We check conditions, either if we are supposed to check everything or if
                     # the section is contained in the extended condition check
-                    include_policy = condition.match(policy_name, user_object, serial, request_headers)
+                    include_policy = condition.match(policy_name, user_object, serial, request_headers,
+                                                     container_serial)
 
                     if not include_policy:
                         # condition does not match request, no need to check the remaining conditions
@@ -2173,7 +2182,11 @@ def get_static_policy_definitions(scope=None):
             ACTION.CONTAINER_TEMPLATE_LIST: {'type': 'bool',
                                              'desc': _('Admin is allowed to list templates and view their details.'),
                                              'mainmenu': [MAIN_MENU.TOKENS],
-                                             'group': GROUP.CONTAINER}
+                                             'group': GROUP.CONTAINER},
+            ACTION.HIDE_CONTAINER_INFO: {'type': TYPE.STRING,
+                                         'desc': _('A whitespace-separated list of container info keys that shall '
+                                                   'not be displayed to the admin.'),
+                                         'group': GROUP.CONTAINER}
         },
         SCOPE.USER: {
             ACTION.ASSIGN: {
@@ -2354,7 +2367,11 @@ def get_static_policy_definitions(scope=None):
             ACTION.CONTAINER_TEMPLATE_LIST: {'type': 'bool',
                                              'desc': _('Users are allowed to list templates and view their details.'),
                                              'mainmenu': [MAIN_MENU.TOKENS],
-                                             'group': GROUP.CONTAINER}
+                                             'group': GROUP.CONTAINER},
+            ACTION.HIDE_CONTAINER_INFO: {'type': TYPE.STRING,
+                                         'desc': _('A whitespace-separated list of container info keys that shall '
+                                                   'not be displayed to the users.'),
+                                         'group': GROUP.CONTAINER}
         },
         SCOPE.ENROLL: {
             ACTION.MAXTOKENREALM: {
@@ -3022,7 +3039,13 @@ def get_policy_condition_sections():
         },
         ConditionSection.HTTP_ENVIRONMENT: {
             "description": _("The policy only matches if certain conditions on the HTTP Environment are fulfilled.")
-        }
+        },
+        ConditionSection.CONTAINER: {
+            "description": _("The policy only matches if certain conditions on the container attributes are fulfilled.")
+        },
+        ConditionSection.CONTAINER_INFO: {
+            "description": _("The policy only matches if certain conditions on the container info are fulfilled.")
+        },
     }
 
 
@@ -3280,7 +3303,7 @@ class Match(object):
                 return cls.action_only(g, scope, action)
 
     @classmethod
-    def admin(cls, g, action, user_obj=None):
+    def admin(cls, g, action: str, user_obj: User = None, serial: str = None, container_serial: str = None) -> "Match":
         """
         Match admin policies with an action and, optionally, a realm.
         Assumes that the currently logged-in user is an admin, and throws an error otherwise.
@@ -3292,6 +3315,8 @@ class Match(object):
         :param action: the policy action
         :param user_obj: the user against which policies should be matched. Can be None.
         :type user_obj: User or None
+        :param serial: The serial of a token from the request
+        :param container_serial: The serial of a container from the request data.
         :rtype: ``Match``
         """
         adminuser = g.logged_in_user["username"]
@@ -3299,23 +3324,28 @@ class Match(object):
         from privacyidea.lib.auth import ROLE
         if g.logged_in_user["role"] != ROLE.ADMIN:
             raise MatchingError("Policies with scope ADMIN can only be retrieved by admins")
+        if not serial:
+            serial = g.serial
         return cls(g, name=None, scope=SCOPE.ADMIN, user_object=user_obj, active=True,
                    resolver=None, client=g.client_ip, action=action,
                    adminuser=adminuser, adminrealm=adminrealm, time=None,
-                   sort_by_priority=True, serial=g.serial)
+                   sort_by_priority=True, serial=serial, container_serial=container_serial,)
 
     @classmethod
-    def admin_or_user(cls, g, action, user_obj):
+    def admin_or_user(cls, g, action, user_obj, additional_realms=None, container_serial: str = None):
         """
         Depending on the role of the currently logged-in user, match either scope=ADMIN or scope=USER policies.
-        If the currently logged-in user is an admin, match policies against the username, adminrealm
-        and the given user_obj on which the admin is acting.
+        If the currently logged-in user is an admin, match policies against the username, adminrealm, the allowed
+        user realms (if any) for the admin and the given user_obj on which the admin is acting.
         If the currently logged-in user is a user, match policies against the username and the given realm.
         The client IP is matched implicitly.
 
         :param g: context object
         :param action: the policy action
         :param user_obj: the user_obj on which the administrator is acting
+        :param additional_realms: list of realms where at least one has to match the policy condition to be applied
+        :param container_serial: The serial of a container from the request data (used to check extended policy
+            conditions).
         :rtype: ``Match``
         """
         from privacyidea.lib.auth import ROLE
@@ -3330,18 +3360,21 @@ class Match(object):
                 # Otherwise, we take the user from the logged-in user.
                 username = g.logged_in_user["username"]
                 userrealm = g.logged_in_user["realm"]
+            allowed_realms = None  # admin only attribute
         else:
             raise MatchingError("Unknown role")
         return cls(g, name=None, scope=scope, realm=userrealm, active=True,
                    resolver=None, user=username, user_object=user_obj,
                    client=g.client_ip, action=action, adminrealm=adminrealm, adminuser=adminuser,
-                   time=None, sort_by_priority=True, serial=g.serial)
+                   time=None, sort_by_priority=True, serial=g.serial, additional_realms=additional_realms,
+                   container_serial=container_serial)
 
     @classmethod
     def generic(cls, g, scope: str = None, realm: str = None, resolver: str = None, user: str = None,
-                user_object: User = None, client=None, action=None, adminrealm: str = None, adminuser: str = None,
-                time=None, active: bool = True, sort_by_priority: bool = True, serial: str = None,
-                extended_condition_check: list = None, additional_realms: list = None):
+                user_object: User = None, client: str = None, action: str = None, adminrealm: str = None,
+                adminuser: str = None, time: datetime = None, active: bool = True, sort_by_priority: bool = True,
+                serial: str = None, extended_condition_check: Union[list[str], int, None] = None,
+                additional_realms: list = None, container_serial: str = None) -> "Match":
         """
         Low-level legacy policy matching interface: Search for active policies and return
         them sorted by priority. All parameters that should be used for matching have to
@@ -3360,7 +3393,7 @@ class Match(object):
                    client=client, action=action, adminrealm=adminrealm,
                    adminuser=adminuser, time=time, serial=serial,
                    sort_by_priority=sort_by_priority, extended_condition_check=extended_condition_check,
-                   additional_realms=additional_realms)
+                   additional_realms=additional_realms, container_serial=container_serial)
 
 
 def get_allowed_custom_attributes(g, user_obj):

@@ -21,6 +21,9 @@ The container list displays all containers that the user or administrator is all
 contained in a container, click on the plus sign in front of the container serial number. Clicking on the container
 serial will open the container details page.
 
+The container list can be filtered by the serial, type, description, and container realms. The list can also be sorted
+by the serial, type, and description in ascending and descending order.
+
 Container Details
 ~~~~~~~~~~~~~~~~~
 
@@ -36,7 +39,7 @@ Delete
 ......
 
 By clicking on the delete button, two options appear: Deleting only the container or deleting the container with all
-contained tokens.
+contained tokens. Tokens the user is not allowed to manage will not be deleted.
 
 States
 ......
@@ -74,10 +77,15 @@ Synchronization
 Beginning from version 3.11, smartphones can be synchronized with the container on the privacyIDEA server. To enable
 the synchronization, registration is required first.
 The registration can be initiated in the dropdown `Registration Configuration`.
+
 Optionally, the user can secure the registration with a passphrase. For this, a prompt that will be displayed to the
-user in the authenticator app, and the correct passphrase response can be configured. After clicking the button
-`Register Container on Device`, a QR code is displayed. The user has to scan this QR code with the privacyIDEA
-Authenticator app to complete the registration.
+user in the authenticator app, and the correct passphrase response can be configured. Another possibility is to simply
+use the passphrase from the user store (Added in version 3.12). This requires that the container is assigned to a user.
+When the passphrase shall be evaluated against the user store you can optionally specify a prompt, otherwise a default
+prompt will be displayed.
+
+After clicking the button `Register Container on Device`, a QR code is displayed. The user has to
+scan this QR code with the privacyIDEA Authenticator app to complete the registration.
 
 .. note:: It is required to configure a container policy specifying at least the :ref:`container_policy_server_url`
     action. See :ref:`container_policies` for more information.

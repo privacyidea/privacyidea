@@ -42,7 +42,7 @@ from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import get_token_types
 from privacyidea.lib.container import (find_container_by_serial, find_container_for_token, get_all_containers,
                                        get_container_classes, get_container_realms)
-from privacyidea.lib.containerclass import TokenContainerClass
+from privacyidea.lib.containers.container_states import ContainerStates
 from privacyidea.lib.counter import read as counter_read
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
@@ -167,7 +167,7 @@ class BaseEventHandler(object):
         """
         realms = get_realms()
         resolvers = get_resolver_list()
-        container_states = [{"name": state} for state in TokenContainerClass.get_state_types().keys()]
+        container_states = [{"name": state} for state in ContainerStates.get_supported_states()]
         cond = {
             CONDITION.CHALLENGE_SESSION:
                 {

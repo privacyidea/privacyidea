@@ -151,13 +151,6 @@ class TimestampMethodsMixin(object):
         return ret
 
 
-# token_container_association_table = (
-#     db.Table('tokencontainertoken',
-#              db.metadata,
-#              db.Column('token_id', db.Integer, db.ForeignKey('token.id'), primary_key=True),
-#              db.Column('container_id', db.Integer, db.ForeignKey('tokencontainer.id'), primary_key=True)))
-#
-
 class TokenContainerToken(MethodsMixin, db.Model):
     """
     Association table to link tokens to containers.
