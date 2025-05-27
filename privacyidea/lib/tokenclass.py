@@ -80,7 +80,7 @@ import logging
 import traceback
 from base64 import b32encode
 from binascii import unhexlify
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from dateutil.parser import parse as parse_date_string, ParserError
 from dateutil.tz import tzlocal, tzutc
@@ -241,6 +241,7 @@ class TokenClass(object):
                        realmname=user.realm).save()
         # set the tokenrealm
         self.set_realms([user.realm], add=True)
+        self.add_tokeninfo("assignment_date", datetime.now(timezone.utc).isoformat(timespec="seconds"))
 
     def add_tokengroup(self, tokengroup=None, tokengroup_id=None):
         """
