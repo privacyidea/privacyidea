@@ -2363,7 +2363,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
                 transactionid=transaction_id, options=options)
 
             if challenge_created:
-                # We need to pass the info if a push token has been triggered, so that require presence can re-use the
+                # We need to pass the info if a push token has been triggered, so that require presence can reuse the
                 # challenge instead of creating a new one with a different answer
                 # Also check the challenge info if the presence answer is returned to pass it on for tag replacement
                 additional_tags = {}
