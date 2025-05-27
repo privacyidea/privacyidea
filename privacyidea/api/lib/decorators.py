@@ -82,7 +82,6 @@ def add_risk_to_user(request):
                     
                     score = int(calculate_risk(ip,service,utype))
                     user.set_attribute("risk",score)
-                    log.info(f"Risk for user {str(user.uid)}: {str(user.info.get("risk","null"))}")
                 else:
                     log.debug("User not available on request. Skiping risk score.")
             except Exception as e:
