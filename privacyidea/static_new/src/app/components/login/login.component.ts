@@ -90,8 +90,8 @@ export class LoginComponent {
       next: (response) => {
         if (
           response.result &&
-          response.result?.value &&
-          response.result?.value.token &&
+          response.result.value &&
+          response.result.value.token &&
           this.authService.isAuthenticatedUser()
         ) {
           this.localService.saveData(

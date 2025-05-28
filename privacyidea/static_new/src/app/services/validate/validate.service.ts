@@ -121,7 +121,7 @@ export class ValidateService {
               ),
             };
             return args?.isTest
-              ? this.http.post<ValidateCheckResponse>(
+              ? this.http.post<PiResponse<AuthData>>(
                   `${this.baseUrl}check`,
                   params,
                 )
