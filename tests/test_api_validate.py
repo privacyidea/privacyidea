@@ -2469,6 +2469,10 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 400)
             result = res.json.get("result")
             self.assertFalse(result.get("status"))
+        # Check that we have a failed attempt with the username in the audit
+        ae = self.find_most_recent_audit_entry(action='* /validate/radiuscheck')
+        self.assertEqual(0,  ae.get("success"), ae)
+        self.assertEqual("unknown",  ae.get("user"), ae)
 
     def test_29_several_CR_one_locked(self):
         # A user has several CR tokens. One of the tokens is locked.
@@ -4904,7 +4908,8 @@ class AChallengeResponse(MyApiTestCase):
         self.assertEqual(entry["action_detail"], "transaction_id: 123456")
         self.assertEqual(entry["info"], "status: pending")
         self.assertEqual(entry["serial"], None)
-        self.assertEqual(entry["user"], None)
+        # Instead of None the "user" entry is now (v3.11.3) an empty string
+        self.assertEqual(entry["user"], "")
 
         # polling the transaction returns false, because no challenge has been answered
         with self.app.test_request_context("/validate/polltransaction", method="GET",

@@ -82,7 +82,7 @@ privacyIDEA. You can get the latest version tag from the `GitHub release page <h
 .com/privacyidea/privacyidea/releases>`_ or the `PyPI package history <https://pypi
 .org/project/privacyIDEA/#history>`_ (e.g. "3.3.1")::
 
-        (privacyidea)$ export PI_VERSION=3.3.1
+        (privacyidea)$ export PI_VERSION=3.11.3
         (privacyidea)$ pip install -r https://raw.githubusercontent.com/privacyidea/privacyidea/v${PI_VERSION}/requirements.txt
 
 Then just install the targeted privacyIDEA version with::
