@@ -12,13 +12,13 @@
         alt="QR Code"
         class="qr-code"
         height="300px"
-        src="{{ data.response.result?.value.container_url.img }}"
+        src="{{ data.response.result?.value?.container_url?.img }}"
         width="300px" />
     }
     <p class="width-36">
       Please scan the QR code with the privacyIDEA Authenticator App or click
       this
-      <a href="{{ data.response.result?.value.container_url.value }}">link</a>
+      <a href="{{ data.response.result?.value?.container_url?.value }}">link</a>
       on your smartphone to register your container. It will send the missing
       registration data to the configured endpoint.
     </p>

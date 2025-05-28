@@ -126,6 +126,23 @@ export interface ContainerTemplateToken {
   user: boolean;
 }
 
+export interface ContainerRegisterData {
+  container_url: {
+    description: string;
+    img: string;
+    value: string;
+  };
+  hash_algorithm: string;
+  key_algorithm: string;
+  nonce: string;
+  offline_tokens: any[];
+  passphrase_prompt: string;
+  server_url: string;
+  ssl_verify: boolean;
+  time_stamp: string;
+  ttl: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -714,7 +731,7 @@ export class ContainerService {
   }) {
     const headers = this.localService.getHeaders();
     return this.http
-      .post(
+      .post<PiResponse<{ container_serial: string }>>(
         `${this.containerBaseUrl}init`,
         {
           type: param.container_type,
@@ -745,7 +762,7 @@ export class ContainerService {
   }) {
     const headers = this.localService.getHeaders();
     return this.http
-      .post(
+      .post<PiResponse<ContainerRegisterData>>(
         `${this.containerBaseUrl}register/initialize`,
         {
           container_serial: params.container_serial,
@@ -780,17 +797,14 @@ export class ContainerService {
     });
   }
 
-  pollContainerRolloutState(
-    containerSerial: string,
-    startTime: number,
-  ): Observable<any> {
+  pollContainerRolloutState(containerSerial: string, startTime: number) {
     this.containerSerial.set(containerSerial);
     return timer(startTime, 2000).pipe(
       takeUntil(this.stopPolling$),
       switchMap(() => this.getContainerDetails(this.containerSerial())),
       takeWhile(
-        (response: any) =>
-          response.result?.value.containers[0].info.registration_state ===
+        (response) =>
+          response.result?.value?.containers[0].info.registration_state ===
           'client_wait',
         true,
       ),

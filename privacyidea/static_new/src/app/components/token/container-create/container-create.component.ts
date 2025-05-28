@@ -26,12 +26,16 @@ import {
 import { UserService } from '../../../services/user/user.service';
 import { RealmService } from '../../../services/realm/realm.service';
 import { MatCheckbox } from '@angular/material/checkbox';
-import { ContainerService } from '../../../services/container/container.service';
+import {
+  ContainerRegisterData,
+  ContainerService,
+} from '../../../services/container/container.service';
 import { NotificationService } from '../../../services/notification/notification.service';
 import { MatDialog } from '@angular/material/dialog';
 import { ContainerRegistrationDialogComponent } from './container-registration-dialog/container-registration-dialog.component';
 import { TokenService } from '../../../services/token/token.service';
 import { ContentService } from '../../../services/content/content.service';
+import { PiResponse } from '../../../app.component';
 
 export type ContainerTypeOption = 'generic' | 'smartphone' | 'yubikey';
 
@@ -71,7 +75,7 @@ export class ContainerCreateComponent {
   generateQRCode = signal(false);
   passphrasePrompt = signal('');
   passphraseResponse = signal('');
-  registerResponse = signal<any>(null);
+  registerResponse = signal<PiResponse<ContainerRegisterData> | null>(null);
   pollResponse = signal<any>(null);
 
   constructor(
@@ -103,8 +107,11 @@ export class ContainerCreateComponent {
   }
 
   reopenEnrollmentDialog() {
-    this.openRegistrationDialog(this.registerResponse());
-    this.pollContainerRolloutState(this.containerSerial(), 2000);
+    const currentResponse = this.registerResponse();
+    if (currentResponse) {
+      this.openRegistrationDialog(currentResponse);
+      this.pollContainerRolloutState(this.containerSerial(), 2000);
+    }
   }
 
   createContainer() {
@@ -123,28 +130,32 @@ export class ContainerCreateComponent {
           : '',
       })
       .subscribe({
-        next: (response: any) => {
+        next: (response) => {
+          const containerSerial = response.result?.value?.container_serial;
+          if (!containerSerial) {
+            this.notificationService.openSnackBar(
+              'Container creation failed. No container serial returned.',
+            );
+            return;
+          }
           if (this.generateQRCode()) {
             this.containerService
               .registerContainer({
-                container_serial: response.result?.value.container_serial,
+                container_serial: containerSerial,
                 passphrase_response: this.passphraseResponse(),
                 passphrase_prompt: this.passphrasePrompt(),
               })
               .subscribe((registerResponse) => {
                 this.registerResponse.set(registerResponse);
                 this.openRegistrationDialog(registerResponse);
-                this.pollContainerRolloutState(
-                  response.result?.value.container_serial,
-                  5000,
-                );
+                this.pollContainerRolloutState(containerSerial, 5000);
               });
           } else {
             this.notificationService.openSnackBar(
-              `Container ${response.result?.value.container_serial} enrolled successfully.`,
+              `Container ${containerSerial} enrolled successfully.`,
             );
             this.selectedContent.set('container_details');
-            this.containerSerial.set(response.result?.value.container_serial);
+            this.containerSerial.set(containerSerial);
           }
         },
       });
@@ -159,7 +170,7 @@ export class ContainerCreateComponent {
     this.selectedTemplate.set('');
   };
 
-  private openRegistrationDialog(response: any) {
+  private openRegistrationDialog(response: PiResponse<ContainerRegisterData>) {
     this.registrationDialog.open(ContainerRegistrationDialogComponent, {
       data: {
         response: response,
@@ -176,11 +187,11 @@ export class ContainerCreateComponent {
     return this.containerService
       .pollContainerRolloutState(containerSerial, startTime)
       .subscribe({
-        next: (pollResponse: any) => {
+        next: (pollResponse) => {
           this.pollResponse.set(pollResponse);
           if (
-            pollResponse.result?.value.containers[0].info.registration_state !==
-            'client_wait'
+            pollResponse.result?.value?.containers[0].info
+              .registration_state !== 'client_wait'
           ) {
             this.registrationDialog.closeAll();
             this.selectedContent.set('container_details');
