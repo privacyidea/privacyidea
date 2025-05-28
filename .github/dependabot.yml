@@ -1,26 +1,19 @@
 version: 2
 updates:
-  - package-ecosystem: github-actions
-    directory: /
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
-      interval: weekly
+      interval: "weekly"
 
-  - package-ecosystem: pip
-    directory: /
+  - package-ecosystem: "pip"
+    directories:
+      - "/"
+      - "/doc"
+      - "/tests"
     schedule:
-      interval: daily
+      interval: "daily"
 
-  - package-ecosystem: pip
-    directory: /doc
+  - package-ecosystem: "npm"
+    directory: "/privacyidea/static"
     schedule:
-      interval: daily
-
-  - package-ecosystem: pip
-    directory: /tests
-    schedule:
-      interval: daily
-
-  - package-ecosystem: npm
-    directory: /privacyidea/static
-    schedule:
-      interval: daily
+      interval: "daily"
