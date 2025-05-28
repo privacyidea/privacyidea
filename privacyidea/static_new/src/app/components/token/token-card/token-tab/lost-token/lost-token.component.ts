@@ -8,7 +8,10 @@ import {
 } from '@angular/material/dialog';
 import { MatButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
-import { TokenService } from '../../../../../services/token/token.service';
+import {
+  LostTokenData,
+  TokenService,
+} from '../../../../../services/token/token.service';
 import { MatCard, MatCardContent } from '@angular/material/card';
 import { NotificationService } from '../../../../../services/notification/notification.service';
 
@@ -27,7 +30,7 @@ import { NotificationService } from '../../../../../services/notification/notifi
   styleUrl: './lost-token.component.scss',
 })
 export class LostTokenComponent {
-  response: any;
+  lostTokenData?: LostTokenData;
 
   constructor(
     protected tokenService: TokenService,
@@ -52,7 +55,7 @@ export class LostTokenComponent {
     this.tokenService.lostToken(this.data.tokenSerial()).subscribe({
       next: (response) => {
         this.data.isLost.set(true);
-        this.response = response;
+        this.lostTokenData = response?.result?.value;
         this.notificationService.openSnackBar(
           'Token marked as lost: ' + this.data.tokenSerial(),
         );
@@ -60,7 +63,13 @@ export class LostTokenComponent {
     });
   }
 
-  tokenSelected(tokenSerial: string) {
+  tokenSelected(tokenSerial?: string) {
+    if (!tokenSerial) {
+      this.notificationService.openSnackBar(
+        'No token selected, please select a token.',
+      );
+      return;
+    }
     this.dialogRef.close();
     this.data.tokenSerial.set(tokenSerial);
   }

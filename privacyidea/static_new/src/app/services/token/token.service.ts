@@ -110,6 +110,18 @@ export interface EnrollmentResponseDetail {
   [key: string]: any;
 }
 
+export type LostTokenResponse = PiResponse<LostTokenData>;
+export interface LostTokenData {
+  disable: number;
+  end_date: string;
+  init: boolean;
+  password: string;
+  pin: boolean;
+  serial: string;
+  user: boolean;
+  valid_to: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -653,7 +665,11 @@ export class TokenService {
   lostToken(tokenSerial: string) {
     const headers = this.localService.getHeaders();
     return this.http
-      .post(`${this.tokenBaseUrl}lost/` + tokenSerial, {}, { headers })
+      .post<LostTokenResponse>(
+        `${this.tokenBaseUrl}lost/` + tokenSerial,
+        {},
+        { headers },
+      )
       .pipe(
         catchError((error) => {
           console.error('Failed to mark token as lost.', error);
