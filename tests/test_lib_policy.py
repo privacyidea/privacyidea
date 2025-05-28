@@ -18,7 +18,7 @@ from privacyidea.models import PolicyDescription, Policy, PolicyCondition, db, N
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 
 from privacyidea.lib.auth import ROLE
-from privacyidea.lib.policy import (set_policy, delete_policy,
+from privacyidea.lib.policy import (set_policy, delete_policy, delete_policies,
                                     import_policies, export_policies,
                                     get_static_policy_definitions,
                                     PolicyClass, SCOPE, enable_policy,
@@ -242,17 +242,17 @@ class PolicyTestCase(MyTestCase):
         # Invalid resolver
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="invalid", action=ACTION.ENABLE, resolver="invalid_resolver")
-            self.assertEqual(f"Undefined resolvers ['invalid_resolver']!", exception.exception.message)
+            self.assertEqual("Undefined resolvers ['invalid_resolver']!", exception.exception.message)
 
         # Invalid node
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="invalid", action=ACTION.ENABLE, pinode="invalid_node")
-            self.assertEqual(f"Undefined nodes ['invalid_node']!", exception.exception.message)
+            self.assertEqual("Undefined nodes ['invalid_node']!", exception.exception.message)
 
         # Invalid time
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="invalid", action=ACTION.ENABLE, time="Monday: 12-18")
-            self.assertEqual(f"Invalid time format!", exception.exception.message)
+            self.assertEqual("Invalid time format!", exception.exception.message)
 
     def test_04_delete_policy(self):
         d1 = PolicyDescription.query.filter_by().all()
@@ -1878,7 +1878,25 @@ class PolicyTestCase(MyTestCase):
         python_dict = convert_action_dict_to_python_dict(action_dict)
         self.assertEqual({}, python_dict)
 
-    def test_44_filter_by_condition_missing_data_error(self):
+    def test_44_delete_policies_list(self):
+        # Clean up policies from previous tests...
+        delete_all_policies()
+        # No policies exist
+        policies = Policy.query.filter_by().all()
+        self.assertFalse(policies, policies)
+        # Create some policies
+        set_policy("wan1", scope=SCOPE.ENROLL, action="webauthn_relying_party_id=fritz.box")
+        set_policy("wan2", scope=SCOPE.ENROLL, action="webauthn_relying_party_name=fritz box")
+        policies = Policy.query.filter_by().all()
+        self.assertEqual(2, len(policies), policies)
+        # Delete those and one that does not exist in between, which will NOT raise an error and still remove the
+        # other 2, indicated by the returned ids
+        deleted_ids = delete_policies(["wan1", "wan3", "wan2"])
+        self.assertEqual(2, len(deleted_ids), deleted_ids)
+        policies = Policy.query.filter_by().all()
+        self.assertFalse(policies, policies)
+
+    def test_45_filter_by_condition_missing_data_error(self):
         """
         This test checks the behaviour to raise an error if any data is missing to check the condition.
         """
@@ -1912,7 +1930,7 @@ class PolicyTestCase(MyTestCase):
 
         delete_policy("policy")
 
-    def test_45_filter_by_condition_missing_data_true(self):
+    def test_46_filter_by_condition_missing_data_true(self):
         """
         This test checks the behaviour to evaluate the condition to true if any data is missing.
         """
@@ -1943,7 +1961,7 @@ class PolicyTestCase(MyTestCase):
 
         delete_policy("policy")
 
-    def test_46_filter_by_condition_missing_data_false(self):
+    def test_47_filter_by_condition_missing_data_false(self):
         """
         This test checks the behaviour to evaluate the condition to false if any data is missing.
         """
@@ -1974,7 +1992,7 @@ class PolicyTestCase(MyTestCase):
 
         delete_policy("policy")
 
-    def test_47_filter_by_condition_user_info(self):
+    def test_48_filter_by_condition_user_info(self):
         cornelius = User(login="cornelius", realm=self.realm1)
         selfservice = User(login="selfservice", realm=self.realm1)
         policy_class = PolicyClass()
@@ -2027,13 +2045,13 @@ class PolicyTestCase(MyTestCase):
 
         delete_policy("policy")
 
-    def test_48_condition_handle_missing_data_get_selection_dict(self):
+    def test_49_condition_handle_missing_data_get_selection_dict(self):
         # check that all enums are included in get_selection_dict (dict for the UI)
         enum_members = {member.value for member in ConditionHandleMissingData.__members__.values()}
         dict_members = set(ConditionHandleMissingData.get_selection_dict().keys())
         self.assertSetEqual(enum_members, dict_members)
 
-    def test_49_get_policy_condition_from_tuple(self):
+    def test_50_get_policy_condition_from_tuple(self):
         # No handle missing data
         condition_tuple = (ConditionSection.USERINFO, "email", Comparators.MATCHES, ".*@example.com", True)
         condition = PolicyClass.get_policy_condition_from_tuple(condition_tuple, "policy")
@@ -2065,7 +2083,7 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue(condition.active)
         self.assertEqual(ConditionHandleMissingData.IS_TRUE, condition.handle_missing_data)
 
-    def test_50_set_policy_conditions(self):
+    def test_51_set_policy_conditions(self):
         # Success
         policy = Policy(name="policy", scope=SCOPE.USER, action=ACTION.ENABLE)
         policy.save()
@@ -2110,7 +2128,7 @@ class PolicyTestCase(MyTestCase):
 
         delete_policy("policy")
 
-    def test_51_validate_actions(self):
+    def test_52_validate_actions(self):
         action_dict = {ACTION.ENABLE: True, ACTION.HIDE_TOKENINFO: "hashlib private_server_key", ACTION.DISABLE: True}
         action_str = f"{ACTION.ENABLE}, {ACTION.HIDE_TOKENINFO}=hashlib private_server_key ,{ACTION.DISABLE}"
         action_list = [ACTION.ENABLE, ACTION.TOKENINFO, ACTION.DISABLE]
@@ -2173,7 +2191,7 @@ class PolicyTestCase(MyTestCase):
             self.assertEqual(f"Invalid actions: ['{ACTION.HIDE_TOKENINFO}:hashlib private_server_key', "
                              f"'{ACTION.DISABLE}; {ACTION.DELETE}']", exception.exception.message)
 
-    def test_52_set_policy_validate_realms(self):
+    def test_53_set_policy_validate_realms(self):
         """
         This test checks that the realm parameter is evaluated correctly in the set_policy function
         """
@@ -2206,7 +2224,7 @@ class PolicyTestCase(MyTestCase):
 
         delete_policy("test")
 
-    def test_53_set_policy_validate_resolvers(self):
+    def test_54_set_policy_validate_resolvers(self):
         # Valid single resolver
         set_policy(name="test", scope=SCOPE.ADMIN, resolver=self.resolvername1)
 
@@ -2239,7 +2257,7 @@ class PolicyTestCase(MyTestCase):
 
         delete_policy("test")
 
-    def test_54_set_policy_validate_nodes(self):
+    def test_55_set_policy_validate_nodes(self):
         node1 = "pinode1"
         node2 = "pinode2"
         db.session.add(NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a8", name=node1))

@@ -188,7 +188,7 @@ database engine. If ``PI_AUDIT_SQL_OPTIONS`` is not set,
 ``SQLALCHEMY_ENGINE_OPTIONS`` will be used.
 
 ``PI_AUDIT_SQL_TRUNCATE = True`` lets you truncate audit entries to the length
-of the database fields.
+of the database fields (See :ref:`Audit table size <audit_table_size>`).
 
 In certain cases when you experiencing problems you may use the parameters
 ``PI_AUDIT_POOL_SIZE`` and ``PI_AUDIT_POOL_RECYCLE``. However, they are only

@@ -60,7 +60,7 @@ class Audit(AuditBase):
     def has_data(self):
         return any([x.has_data for x in self.write_modules])
 
-    def log(self, param: dict[str, str]):
+    def log(self, param):
         """
         Call the log method for all writeable modules
         """

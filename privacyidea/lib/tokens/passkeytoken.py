@@ -37,8 +37,7 @@ from webauthn.helpers.structs import (AttestationConveyancePreference, Authentic
 from webauthn.registration.verify_registration_response import VerifiedRegistration
 
 from privacyidea.api.lib.utils import get_optional, get_required, get_required_one_of, get_optional_one_of
-from privacyidea.lib import _
-from privacyidea.lib import fido2
+from privacyidea.lib import _, fido2
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.decorators import check_token_locked
@@ -49,7 +48,7 @@ from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
 from privacyidea.lib.fido2.util import hash_credential_id, save_credential_id_hash
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION, SCOPE
-from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE, AUTHENTICATIONMODE, CLIENTMODE
+from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE, CLIENTMODE, AUTHENTICATIONMODE
 from privacyidea.models import Challenge
 
 log = logging.getLogger(__name__)
@@ -66,7 +65,6 @@ class PasskeyTokenClass(TokenClass):
         - USER_VERIFICATION_REQUIREMENT (default: PREFERRED)
         - PUBLIC_KEY_CREDENTIAL_ALGORITHMS (default: ECDSA_SHA_256, RSASSA_PKCS1_v1_5_SHA_256)
     """
-
     mode = [AUTHENTICATIONMODE.CHALLENGE]
     client_mode = CLIENTMODE.WEBAUTHN
 
@@ -422,7 +420,7 @@ class PasskeyTokenClass(TokenClass):
             # TODO this vvv is horrible
             return True, message, transaction_id, challenge_details
         else:
-            return False, "", "", {}
+            return False, "", transactionid, {}
 
     @log_with(log)
     def use_for_authentication(self, options):

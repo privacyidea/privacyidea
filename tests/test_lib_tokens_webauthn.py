@@ -833,7 +833,8 @@ class MultipleWebAuthnTokenTestCase(MyTestCase):
     auth_options = {
         FIDO2PolicyAction.ALLOWED_TRANSPORTS: ALLOWED_TRANSPORTS,
         FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: DEFAULT_USER_VERIFICATION_REQUIREMENT,
-        FIDO2PolicyAction.TIMEOUT: TIMEOUT}
+        FIDO2PolicyAction.TIMEOUT: TIMEOUT
+    }
 
     def setUp(self):
         self.setUp_user_realms()
@@ -909,7 +910,9 @@ class MultipleWebAuthnTokenTestCase(MyTestCase):
         self.assertIn('multi_challenge', reply, reply)
         self.assertEqual(len(reply['multi_challenge']), 2, reply['multi_challenge'])
         self.assertIn('messages', reply, reply)
-        self.assertEqual(len(reply['messages']), 2, reply['messages'])
+        # Messages are empty because there is no message passed in options
+        # The message is added by the policy decorator which is not in use here
+        self.assertEqual(len(reply['messages']), 0, reply['messages'])
         # check that the serials of the challenges are different
         chal1 = reply['multi_challenge'][0]
         chal2 = reply['multi_challenge'][1]

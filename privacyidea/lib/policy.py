@@ -839,8 +839,8 @@ class PolicyClass(object):
                             "{1!s} - {2!s}@{3!s} in resolver {4!s}".format((name, scope, action),
                                                                            user_object, user, realm, resolver))
                 log.warning("Possible programming error: {0!s}".format(tb_str))
-                raise ParameterError("Cannot pass user_object ({1!s}) as well as user ({2!s}),"
-                                     " resolver ({3!s}), realm ({4!s})"
+                raise ParameterError("Cannot pass user_object ({1!s}) as well as user ({2!s}), "
+                                     "resolver ({3!s}), realm ({4!s}) "
                                      "in policy {0!s}".format((name, scope, action), user_object,
                                                               user, resolver, realm))
             user = user_object.login
@@ -1562,6 +1562,25 @@ def delete_policy(name):
     :rtype: int
     """
     return fetch_one_resource(Policy, name=name).delete()
+
+
+@log_with(log)
+def delete_policies(names):
+    """
+    Delete multiple policies. ResourceNotFoundErrors are suppressed.
+
+    :param names: the names of the policies to be deleted
+    :return: the IDs of the deleted policies
+    :rtype: list[int]
+    """
+    ids = []
+    for name in names:
+        try:
+            ids.append(delete_policy(name))
+        except ResourceNotFoundError:
+            log.warning(f"Policy with name '{name}' does not exist and therefore can not be deleted.")
+            pass
+    return ids
 
 
 @log_with(log)
