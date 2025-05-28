@@ -142,7 +142,7 @@ export class TokenGetSerial {
       next: (response) => {
         this.tokenCount.set(
           response?.result?.value?.count !== undefined
-            ? String(response.result.value.count)
+            ? String(response.result?.value.count)
             : '',
         );
         this.currentStep.set('countDone');

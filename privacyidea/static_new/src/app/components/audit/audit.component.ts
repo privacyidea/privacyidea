@@ -99,7 +99,7 @@ export class AuditComponent {
     source: this.auditResource.value,
     computation: (auditResource, previous) => {
       if (auditResource) {
-        return auditResource.result.value?.count ?? 0;
+        return auditResource.result?.value?.count ?? 0;
       }
       return previous?.value ?? 0;
     },
@@ -126,7 +126,7 @@ export class AuditComponent {
       source: this.auditResource.value,
       computation: (auditResource, previous) => {
         if (auditResource) {
-          return new MatTableDataSource(auditResource.result.value?.auditdata);
+          return new MatTableDataSource(auditResource.result?.value?.auditdata);
         }
         return previous?.value ?? new MatTableDataSource(this.emptyResource());
       },

@@ -66,7 +66,7 @@ export class ChallengesTableComponent {
     source: this.challengesService.challengesResource.value,
     computation: (res, prev) => {
       if (res) {
-        return res.result.value?.count;
+        return res.result?.value?.count;
       }
       return prev?.value ?? 0;
     },
@@ -77,7 +77,7 @@ export class ChallengesTableComponent {
       computation: (challengesResource, previous) => {
         if (challengesResource) {
           return new MatTableDataSource(
-            challengesResource.result.value?.challenges,
+            challengesResource.result?.value?.challenges,
           );
         }
         return previous?.value ?? new MatTableDataSource<Challenge>([]);

@@ -169,7 +169,7 @@ export class TokenService {
     headers: this.localService.getHeaders(),
   }));
   tokenTypeOptions = computed<TokenType[]>(() => {
-    const obj = this.tokenTypesResource.value()?.result.value;
+    const obj = this.tokenTypesResource?.value()?.result?.value;
     if (!obj) return [];
     return Object.entries(obj).map(([key, info]) => ({
       key: key as TokenTypeKey,
@@ -865,7 +865,7 @@ export class TokenService {
       switchMap(() => this.getTokenDetails(this.tokenSerial())),
       takeWhile(
         (response: any) =>
-          response.result.value.tokens[0].rollout_state === 'clientwait',
+          response.result?.value.tokens[0].rollout_state === 'clientwait',
         true,
       ),
       catchError((error) => {

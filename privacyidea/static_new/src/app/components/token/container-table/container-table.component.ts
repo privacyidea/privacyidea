@@ -117,7 +117,7 @@ export class ContainerTableComponent {
       computation: (containerResource, previous) => {
         if (containerResource) {
           const processedData =
-            containerResource?.result.value?.containers.map((item) => ({
+            containerResource.result?.value?.containers.map((item) => ({
               ...item,
               users:
                 item.users && item.users.length > 0
@@ -138,7 +138,7 @@ export class ContainerTableComponent {
     source: this.containerResource.value,
     computation: (containerResource, previous) => {
       if (containerResource) {
-        return containerResource.result.value?.count ?? 0;
+        return containerResource.result?.value?.count ?? 0;
       }
       return previous?.value ?? 0;
     },

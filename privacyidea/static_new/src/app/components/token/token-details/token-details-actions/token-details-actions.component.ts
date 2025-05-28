@@ -75,7 +75,7 @@ export class TokenDetailsActionsComponent {
   testPasskey() {
     this.validateService.authenticatePasskey({ isTest: true }).subscribe({
       next: (checkResponse: any) => {
-        if (checkResponse.result.value) {
+        if (checkResponse.result?.value) {
           this.notificationService.openSnackBar(
             'Test successful. You would have been logged in as: ' +
               checkResponse.detail.username,

@@ -29,7 +29,7 @@ export class ServiceIdService {
   serviceIds: WritableSignal<ServiceId[]> = linkedSignal({
     source: this.serviceIdResource.value,
     computation: (source, previous) => {
-      const value = source?.result.value;
+      const value = source?.result?.value;
       console.log('value', value);
       console.log('previous', previous?.value);
       if (!value) {

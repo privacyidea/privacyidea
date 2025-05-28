@@ -34,7 +34,7 @@ export class RadiusServerService {
     linkedSignal({
       source: this.radiusServerConfigurationResource.value,
       computation: (source, previous) =>
-        Object.entries(source?.result.value ?? {}).map(
+        Object.entries(source?.result?.value ?? {}).map(
           ([name, properties]) => ({ name, ...properties }),
         ) ??
         previous?.value ??

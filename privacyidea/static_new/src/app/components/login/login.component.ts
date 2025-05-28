@@ -55,13 +55,13 @@ export class LoginComponent {
       next: (response) => {
         if (
           response.result &&
-          response.result.value &&
-          response.result.value.token &&
+          response.result?.value &&
+          response.result?.value.token &&
           this.authService.isAuthenticatedUser()
         ) {
           this.localService.saveData(
             this.localService.bearerTokenKey,
-            response.result.value.token,
+            response.result?.value.token,
           );
           this.sessionTimerService.startRefreshingRemainingTime();
           this.sessionTimerService.startTimer();
@@ -90,13 +90,13 @@ export class LoginComponent {
       next: (response) => {
         if (
           response.result &&
-          response.result.value &&
-          response.result.value.token &&
+          response.result?.value &&
+          response.result?.value.token &&
           this.authService.isAuthenticatedUser()
         ) {
           this.localService.saveData(
             this.localService.bearerTokenKey,
-            response.result.value.token,
+            response.result?.value.token,
           );
           this.sessionTimerService.startRefreshingRemainingTime();
           this.sessionTimerService.startTimer();

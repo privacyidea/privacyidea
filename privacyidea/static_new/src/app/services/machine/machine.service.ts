@@ -116,7 +116,7 @@ export class MachineService {
   tokenApplications: WritableSignal<TokenApplications> = linkedSignal({
     source: this.tokenApplicationResource.value,
     computation: (tokenApplicationResource, previous) =>
-      tokenApplicationResource?.result.value ?? previous?.value ?? [],
+      tokenApplicationResource?.result?.value ?? previous?.value ?? [],
   });
 
   constructor(

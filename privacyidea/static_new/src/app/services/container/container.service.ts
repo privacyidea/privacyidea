@@ -224,7 +224,7 @@ export class ContainerService {
     source: this.containerResource.value,
     computation: (containerResource) => {
       return (
-        containerResource?.result.value?.containers.map(
+        containerResource?.result?.value?.containers.map(
           (container: any) => container.serial,
         ) ?? []
       );
@@ -254,7 +254,7 @@ export class ContainerService {
   }));
 
   containerTypeOptions = computed<ContainerType[]>(() => {
-    const value = this.containerTypesResource.value()?.result.value;
+    const value = this.containerTypesResource.value()?.result?.value;
     if (!value) {
       return [];
     }
@@ -296,7 +296,7 @@ export class ContainerService {
     source: this.containerDetailResource.value,
     computation: (containerDetailResource, previous) => {
       if (containerDetailResource?.result?.value) {
-        return containerDetailResource.result.value;
+        return containerDetailResource.result?.value;
       }
       return (
         previous?.value ?? {
@@ -790,7 +790,7 @@ export class ContainerService {
       switchMap(() => this.getContainerDetails(this.containerSerial())),
       takeWhile(
         (response: any) =>
-          response.result.value.containers[0].info.registration_state ===
+          response.result?.value.containers[0].info.registration_state ===
           'client_wait',
         true,
       ),

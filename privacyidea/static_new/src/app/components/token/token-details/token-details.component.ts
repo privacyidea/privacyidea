@@ -116,8 +116,8 @@ export class TokenDetailsComponent {
   tokenDetails: WritableSignal<TokenDetails> = linkedSignal({
     source: this.tokenDetailResource.value,
     computation: (res) => {
-      return res && res.result.value?.tokens[0]
-        ? (res.result.value.tokens[0] as TokenDetails)
+      return res && res.result?.value?.tokens[0]
+        ? (res.result?.value.tokens[0] as TokenDetails)
         : {
             active: false,
             container_serial: '',
@@ -286,7 +286,9 @@ export class TokenDetailsComponent {
         if (this.tokengroupOptions().length === 0) {
           this.tokenService.getTokengroups().subscribe({
             next: (tokengroups: any) => {
-              this.tokengroupOptions.set(Object.keys(tokengroups.result.value));
+              this.tokengroupOptions.set(
+                Object.keys(tokengroups.result?.value),
+              );
               this.selectedTokengroup.set(
                 this.tokenDetailData().find(
                   (detail) => detail.keyMap.key === 'tokengroup',

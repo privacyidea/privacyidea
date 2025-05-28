@@ -133,7 +133,7 @@ export class ContainerCreateComponent {
           if (this.generateQRCode()) {
             this.containerService
               .registerContainer({
-                container_serial: response.result.value.container_serial,
+                container_serial: response.result?.value.container_serial,
                 passphrase_response: this.passphraseResponse(),
                 passphrase_prompt: this.passphrasePrompt(),
               })
@@ -141,16 +141,16 @@ export class ContainerCreateComponent {
                 this.registerResponse.set(registerResponse);
                 this.openRegistrationDialog(registerResponse);
                 this.pollContainerRolloutState(
-                  response.result.value.container_serial,
+                  response.result?.value.container_serial,
                   5000,
                 );
               });
           } else {
             this.notificationService.openSnackBar(
-              `Container ${response.result.value.container_serial} enrolled successfully.`,
+              `Container ${response.result?.value.container_serial} enrolled successfully.`,
             );
             this.selectedContent.set('container_details');
-            this.containerSerial.set(response.result.value.container_serial);
+            this.containerSerial.set(response.result?.value.container_serial);
           }
         },
       });
@@ -185,7 +185,7 @@ export class ContainerCreateComponent {
         next: (pollResponse: any) => {
           this.pollResponse.set(pollResponse);
           if (
-            pollResponse.result.value.containers[0].info.registration_state !==
+            pollResponse.result?.value.containers[0].info.registration_state !==
             'client_wait'
           ) {
             this.registrationDialog.closeAll();

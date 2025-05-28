@@ -28,7 +28,7 @@ export class PrivacyideaServerService {
     source: this.remoteServerResource.value,
     computation: (source, previous) =>
       Array.isArray(source?.result?.value)
-        ? source.result.value
+        ? source.result?.value
         : (previous?.value ?? []),
   });
 

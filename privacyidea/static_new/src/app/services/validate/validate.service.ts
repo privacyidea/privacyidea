@@ -9,6 +9,33 @@ import { Base64Service } from '../base64/base64.service';
 import { AuthData, AuthService } from '../auth/auth.service';
 import { PiResponse } from '../../app.component';
 
+export interface ValidateCheckDetail {
+  attributes?: {
+    hideResponseInput?: boolean;
+  };
+  client_mode?: 'poll' | 'push';
+  message?: string;
+  messages?: string[];
+  multi_challenge?: {
+    attributes?: {
+      hideResponseInput?: boolean;
+    };
+    client_mode?: 'poll' | 'push';
+    message?: string;
+    serial?: string;
+    transaction_id?: string;
+    type?: 'push' | 'poll';
+  }[];
+  serial?: string;
+  threadid?: number;
+  transaction_id?: string;
+  transaction_ids?: string[];
+  type?: 'push' | 'poll';
+  preferred_client_mode?: 'poll' | 'push';
+}
+
+export type ValidateCheckResponse = PiResponse<boolean, ValidateCheckDetail>;
+
 @Injectable({
   providedIn: 'root',
 })
@@ -23,14 +50,10 @@ export class ValidateService {
     private authenticationService: AuthService,
   ) {}
 
-  testToken(
-    tokenSerial: string,
-    otpOrPinToTest: string,
-    otponly?: string,
-  ): any {
+  testToken(tokenSerial: string, otpOrPinToTest: string, otponly?: string) {
     const headers = this.localService.getHeaders();
     return this.http
-      .post(
+      .post<ValidateCheckResponse>(
         `${this.baseUrl}check`,
         {
           serial: tokenSerial,
@@ -98,7 +121,7 @@ export class ValidateService {
               ),
             };
             return args?.isTest
-              ? this.http.post<PiResponse<AuthData>>(
+              ? this.http.post<ValidateCheckResponse>(
                   `${this.baseUrl}check`,
                   params,
                 )

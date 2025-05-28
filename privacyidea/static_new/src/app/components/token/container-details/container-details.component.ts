@@ -122,8 +122,8 @@ export class ContainerDetailsComponent {
     linkedSignal({
       source: this.tokenResource.value,
       computation: (tokenResource, previous) => {
-        if (tokenResource && tokenResource.result.value) {
-          return new MatTableDataSource(tokenResource.result.value.tokens);
+        if (tokenResource && tokenResource.result?.value) {
+          return new MatTableDataSource(tokenResource.result?.value.tokens);
         }
         return previous?.value ?? new MatTableDataSource();
       },
@@ -131,8 +131,8 @@ export class ContainerDetailsComponent {
   total: WritableSignal<number> = linkedSignal({
     source: this.tokenResource.value,
     computation: (tokenResource, previous) => {
-      if (tokenResource && tokenResource.result.value) {
-        return tokenResource.result.value.count;
+      if (tokenResource && tokenResource.result?.value) {
+        return tokenResource.result?.value.count;
       }
       return previous?.value ?? 0;
     },
@@ -142,7 +142,7 @@ export class ContainerDetailsComponent {
   containerDetails = linkedSignal({
     source: this.containerDetailResource.value,
     computation: (containerDetailResourceValue) => {
-      const value = containerDetailResourceValue?.result.value;
+      const value = containerDetailResourceValue?.result?.value;
       if (value && value.containers.length > 0) {
         return value.containers[0];
       }
