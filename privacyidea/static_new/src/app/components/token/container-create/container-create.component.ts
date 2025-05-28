@@ -1,10 +1,4 @@
-import {
-  Component,
-  effect,
-  linkedSignal,
-  signal,
-  untracked,
-} from '@angular/core';
+import { Component, effect, signal, untracked } from '@angular/core';
 import {
   MatAccordion,
   MatExpansionPanel,
