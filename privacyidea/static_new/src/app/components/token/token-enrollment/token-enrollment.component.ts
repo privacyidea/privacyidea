@@ -218,7 +218,7 @@ export class TokenEnrollmentComponent {
       sshPublicKey: this.sshPublicKey(),
       selectedType: this.selectedTokenType(),
     }),
-    computation: (source: any) => {
+    computation: (source) => {
       const parts = source.sshPublicKey?.split(' ') ?? [];
       return parts.length >= 3 ? parts[2] : '';
     },

@@ -20,16 +20,13 @@ import { MatIcon } from '@angular/material/icon';
 import { MatDivider } from '@angular/material/divider';
 import { TokenService } from '../../../../services/token/token.service';
 import { Observable, switchMap } from 'rxjs';
-import { EditButtonsComponent } from '../../../shared/edit-buttons/edit-buttons.component';
+import {
+  EditableElement,
+  EditButtonsComponent,
+} from '../../../shared/edit-buttons/edit-buttons.component';
 import { NgClass } from '@angular/common';
 import { OverflowService } from '../../../../services/overflow/overflow.service';
 import { AuthService } from '../../../../services/auth/auth.service';
-
-export interface TokenInfoDetail<T = any> {
-  value: T;
-  keyMap: { key: string; label: string };
-  isEditing: WritableSignal<boolean>;
-}
 
 @Component({
   selector: 'app-token-details-info',
@@ -57,8 +54,8 @@ export interface TokenInfoDetail<T = any> {
 export class TokenDetailsInfoComponent {
   protected readonly Object = Object;
   tokenSerial = this.tokenService.tokenSerial;
-  @Input() infoData!: WritableSignal<TokenInfoDetail[]>;
-  @Input() detailData!: WritableSignal<TokenInfoDetail[]>;
+  @Input() infoData!: WritableSignal<EditableElement[]>;
+  @Input() detailData!: WritableSignal<EditableElement[]>;
   @Input() isAnyEditingOrRevoked!: Signal<boolean>;
   @Input() isEditingInfo!: WritableSignal<boolean>;
   @Input() isEditingUser!: WritableSignal<boolean>;
@@ -82,7 +79,7 @@ export class TokenDetailsInfoComponent {
     this.isEditingInfo.update((b) => !b);
   }
 
-  saveInfo(element: TokenInfoDetail): void {
+  saveInfo(element: EditableElement<Record<string, string>>): void {
     if (
       this.newInfo().key.trim() !== '' &&
       this.newInfo().value.trim() !== ''

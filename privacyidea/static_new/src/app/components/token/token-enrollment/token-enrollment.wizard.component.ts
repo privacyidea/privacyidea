@@ -45,7 +45,10 @@ import { ContainerService } from '../../../services/container/container.service'
 import { RealmService } from '../../../services/realm/realm.service';
 import { NotificationService } from '../../../services/notification/notification.service';
 import { UserService } from '../../../services/user/user.service';
-import { TokenService } from '../../../services/token/token.service';
+import {
+  EnrollmentResponse,
+  TokenService,
+} from '../../../services/token/token.service';
 import { MatDialog } from '@angular/material/dialog';
 import { VersionService } from '../../../services/version/version.service';
 import { ContentService } from '../../../services/content/content.service';
@@ -141,7 +144,7 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
     );
   }
 
-  protected override openSecondStepDialog(response: any) {
+  protected override openSecondStepDialog(response: EnrollmentResponse) {
     this.secondDialog.open(TokenEnrollmentSecondStepDialogWizardComponent, {
       data: {
         response,

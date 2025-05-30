@@ -3,7 +3,11 @@ import { FormsModule } from '@angular/forms';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { NotificationService } from '../../../../services/notification/notification.service';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  EnrollmentResponse,
+  EnrollmentResponseDetail,
+  TokenService,
+} from '../../../../services/token/token.service';
 import { Base64Service } from '../../../../services/base64/base64.service';
 import { from, Observable, switchMap, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -20,7 +24,7 @@ export class EnrollPasskeyComponent {
     .tokenTypeOptions()
     .find((type) => type.key === 'passkey')?.text;
   @Input() description!: WritableSignal<string>;
-  @Input() enrollResponse!: WritableSignal<any>;
+  @Input() enrollResponse!: WritableSignal<EnrollmentResponse | null>;
   @Input() firstDialog!: MatDialog;
 
   constructor(
@@ -29,7 +33,7 @@ export class EnrollPasskeyComponent {
     private base64Service: Base64Service,
   ) {}
 
-  registerPasskey(detail: any): Observable<any> {
+  registerPasskey(detail: EnrollmentResponseDetail): Observable<any> {
     const options = detail.passkey_registration;
 
     const excludedCredentials = options.excludeCredentials.map((cred: any) => ({
@@ -60,7 +64,14 @@ export class EnrollPasskeyComponent {
     return from(
       navigator.credentials.create({ publicKey: publicKeyOptions }),
     ).pipe(
+      // The any type is used here to avoid TypeScript errors, as the type of publicKeyCred is not strictly defined.
       switchMap((publicKeyCred: any) => {
+        if (!publicKeyCred) {
+          this.notificationService.openSnackBar(
+            'No passkey was created, please try again.',
+          );
+          return throwError(() => new Error('No passkey created'));
+        }
         const params: any = {
           type: 'passkey',
           transaction_id: detail.transaction_id,

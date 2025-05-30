@@ -16,7 +16,10 @@ import {
 } from '@angular/material/expansion';
 import { MatIcon } from '@angular/material/icon';
 import { TokenEnrollmentSecondStepDialogComponent } from './token-enrollment-second-step-dialog.component';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  EnrollmentResponse,
+  TokenService,
+} from '../../../../services/token/token.service';
 import { ContentService } from '../../../../services/content/content.service';
 import { LostTokenComponent } from '../../token-card/token-tab/lost-token/lost-token.component';
 import { HttpClient } from '@angular/common/http';
@@ -66,7 +69,7 @@ export class TokenEnrollmentSecondStepDialogWizardComponent extends TokenEnrollm
     data: {
       enrollToken: () => void;
       onlyAddToRealm: WritableSignal<boolean>;
-      response: any;
+      response: EnrollmentResponse;
       userRealm: string;
       username: string;
     },

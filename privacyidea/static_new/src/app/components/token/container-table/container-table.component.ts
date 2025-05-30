@@ -171,7 +171,7 @@ export class ContainerTableComponent {
     }
   }
 
-  toggleRow(row: any): void {
+  toggleRow(row: ContainerDetailData): void {
     const current = this.containerSelection();
     if (current.includes(row)) {
       this.containerSelection.set(current.filter((r) => r !== row));
@@ -180,7 +180,7 @@ export class ContainerTableComponent {
     }
   }
 
-  handleStateClick(element: any) {
+  handleStateClick(element: ContainerDetailData) {
     this.containerService
       .toggleActive(element.serial, element.states)
       .subscribe({

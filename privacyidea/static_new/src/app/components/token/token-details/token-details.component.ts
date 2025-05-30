@@ -281,10 +281,9 @@ export class TokenDetailsComponent {
       case 'tokengroup':
         if (this.tokengroupOptions().length === 0) {
           this.tokenService.getTokengroups().subscribe({
-            next: (tokengroups: any) => {
-              this.tokengroupOptions.set(
-                Object.keys(tokengroups.result?.value),
-              );
+            next: (response) => {
+              const tokengroups = response.result?.value || {};
+              this.tokengroupOptions.set(Object.keys(tokengroups));
               this.selectedTokengroup.set(
                 this.tokenDetailData().find(
                   (detail) => detail.keyMap.key === 'tokengroup',
@@ -334,7 +333,7 @@ export class TokenDetailsComponent {
       });
   }
 
-  isEditableElement(key: any) {
+  isEditableElement(key: string) {
     const role = this.authService.role();
     if (role === 'admin') {
       return (
@@ -352,7 +351,7 @@ export class TokenDetailsComponent {
     }
   }
 
-  isNumberElement(key: any) {
+  isNumberElement(key: string) {
     return key === 'maxfail' || key === 'count_window' || key === 'sync_window';
   }
 
@@ -397,7 +396,7 @@ export class TokenDetailsComponent {
       });
   }
 
-  private saveTokengroup(value: any) {
+  private saveTokengroup(value: string[]) {
     this.tokenService.setTokengroup(this.tokenSerial(), value).subscribe({
       next: () => {
         this.tokenDetailResource.reload();

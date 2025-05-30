@@ -6,7 +6,7 @@ import { catchError } from 'rxjs/operators';
 import { from, Observable, switchMap, throwError } from 'rxjs';
 import { NotificationService } from '../notification/notification.service';
 import { Base64Service } from '../base64/base64.service';
-import { AuthData, AuthService } from '../auth/auth.service';
+import { AuthData, AuthDetail, AuthResponse, AuthService } from '../auth/auth.service';
 import { PiResponse } from '../../app.component';
 
 export interface ValidateCheckDetail {
@@ -121,7 +121,7 @@ export class ValidateService {
               ),
             };
             return args?.isTest
-              ? this.http.post<PiResponse<AuthData>>(
+              ? this.http.post<AuthResponse>(
                   `${this.baseUrl}check`,
                   params,
                 )

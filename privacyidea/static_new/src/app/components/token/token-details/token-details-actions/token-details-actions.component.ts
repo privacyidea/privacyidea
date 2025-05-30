@@ -74,11 +74,11 @@ export class TokenDetailsActionsComponent {
 
   testPasskey() {
     this.validateService.authenticatePasskey({ isTest: true }).subscribe({
-      next: (checkResponse: any) => {
+      next: (checkResponse) => {
         if (checkResponse.result?.value) {
           this.notificationService.openSnackBar(
             'Test successful. You would have been logged in as: ' +
-              checkResponse.detail.username,
+              (checkResponse.detail?.username ?? 'Unknown User'),
           );
         } else {
           this.notificationService.openSnackBar('No user found.');

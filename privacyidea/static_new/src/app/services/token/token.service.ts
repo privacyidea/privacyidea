@@ -103,15 +103,16 @@ export interface EnrollmentResponse {
 export interface EnrollmentResponseDetail {
   serial: string;
   rollout_state: string;
-  passkey_registration?: boolean;
+  passkey_registration?: any;
   webAuthnRegisterRequest?: any;
   u2fRegisterRequest?: any;
   pushurl?: EnrollmentUrl;
-  [key: string]: any;
+  transaction_id?: string;
   googleurl?: EnrollmentUrl;
   otpkey?: EnrollmentUrl;
   motpurl?: EnrollmentUrl;
   tiqrenroll?: EnrollmentUrl;
+  [key: string]: any;
 }
 
 export interface EnrollmentUrl {
@@ -649,7 +650,7 @@ export class TokenService {
       );
   }
 
-  setTokengroup(tokenSerial: string, value: any) {
+  setTokengroup(tokenSerial: string, value: string | string[]) {
     const headers = this.localService.getHeaders();
     const valueArray = Array.isArray(value) ? value : Object.values(value);
     return this.http

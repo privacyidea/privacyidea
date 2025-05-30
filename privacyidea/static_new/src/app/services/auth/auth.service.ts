@@ -7,6 +7,8 @@ import { NotificationService } from '../notification/notification.service';
 import { VersionService } from '../version/version.service';
 import { PiResponse } from '../../app.component';
 
+export type AuthResponse = PiResponse<AuthData, AuthDetail>;
+
 export interface AuthData {
   log_level: number;
   menus: string[];
@@ -47,6 +49,11 @@ export interface AuthData {
     enabled: boolean;
   };
 }
+
+export interface AuthDetail {
+  username: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -66,7 +73,7 @@ export class AuthService {
 
   authenticate(params: any) {
     return this.http
-      .post<PiResponse<AuthData>>(this.authUrl, JSON.stringify(params), {
+      .post<AuthResponse>(this.authUrl, JSON.stringify(params), {
         headers: new HttpHeaders({
           'Content-Type': 'application/json',
           Accept: 'application/json',

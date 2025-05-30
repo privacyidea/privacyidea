@@ -26,7 +26,10 @@ import { MatIcon } from '@angular/material/icon';
 import { MatDivider } from '@angular/material/divider';
 import { TokenService } from '../../../../services/token/token.service';
 import { RealmService } from '../../../../services/realm/realm.service';
-import { EditButtonsComponent } from '../../../shared/edit-buttons/edit-buttons.component';
+import {
+  EditableElement,
+  EditButtonsComponent,
+} from '../../../shared/edit-buttons/edit-buttons.component';
 import { UserService } from '../../../../services/user/user.service';
 import { NgClass } from '@angular/common';
 import { OverflowService } from '../../../../services/overflow/overflow.service';
@@ -60,13 +63,7 @@ import { NotificationService } from '../../../../services/notification/notificat
   styleUrl: './token-details-user.component.scss',
 })
 export class TokenDetailsUserComponent {
-  @Input() userData = signal<
-    {
-      value: any;
-      keyMap: { label: string; key: string };
-      isEditing: WritableSignal<boolean>;
-    }[]
-  >([]);
+  @Input() userData = signal<EditableElement[]>([]);
   @Input() tokenSerial!: WritableSignal<string>;
   @Input() setPinValue!: WritableSignal<string>;
   @Input() repeatPinValue!: WritableSignal<string>;
