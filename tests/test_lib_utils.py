@@ -1023,8 +1023,8 @@ class UtilsTestCase(MyTestCase):
         dataimage = convert_imagefile_to_dataimage(file)
         self.assertEqual("", dataimage)
 
-        # Try to read a grazy file with an unknown mime-type
-        file = "./tests/testdata/logging.yml"
+        # Try to read a crazy file with an unknown mime-type (it seems, YAML is now known, as well)
+        file = "./tests/testdata/import.oath"
         dataimage = convert_imagefile_to_dataimage(file)
         self.assertEqual("", dataimage)
 
