@@ -43,7 +43,7 @@ export class EnrollSmsComponent {
   smsGatewayOptions = computed(() => {
     const raw =
       this.smsGatewayService.smsGatewayResource.value()?.result?.value;
-    return raw && Array.isArray(raw) ? raw.map((gw: any) => gw.name) : [];
+    return raw && Array.isArray(raw) ? raw.map((gw) => gw.name) : [];
   });
 
   defaultSMSGatewayIsSet = computed(() => {

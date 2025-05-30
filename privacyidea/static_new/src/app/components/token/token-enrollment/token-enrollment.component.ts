@@ -549,7 +549,13 @@ export class TokenEnrollmentComponent {
     );
   }
 
-  protected openSecondStepDialog(response: any) {
+  protected openSecondStepDialog(response: EnrollmentResponse | null) {
+    if (!response) {
+      this.notificationService.openSnackBar(
+        'No enrollment response available.',
+      );
+      return;
+    }
     this.secondDialog.open(TokenEnrollmentSecondStepDialogComponent, {
       data: {
         response: response,

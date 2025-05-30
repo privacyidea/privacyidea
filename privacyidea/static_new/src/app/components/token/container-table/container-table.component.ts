@@ -12,7 +12,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { NgClass } from '@angular/common';
 import {
-  ContainerDetailToken,
+  ContainerDetailData,
   ContainerService,
 } from '../../../services/container/container.service';
 import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
@@ -41,23 +41,6 @@ const columnsKeyMap = [
   { key: 'user_realm', label: 'Realm' },
   { key: 'realms', label: 'Container Realms' },
 ];
-
-interface ContainerRow {
-  description?: string;
-  info?: any;
-  internal_info_keys?: any[];
-  last_authentication?: any;
-  last_synchronization?: any;
-  realms: string[];
-  serial: string;
-  states: string[];
-  template?: string;
-  tokens: ContainerDetailToken[];
-  type: string;
-  users: string;
-  select?: string;
-  user_realm?: string;
-}
 
 @Component({
   selector: 'app-container-table',
@@ -99,19 +82,28 @@ export class ContainerTableComponent {
   sort = this.containerService.sort;
   containerResource = this.containerService.containerResource;
 
-  emptyResource: WritableSignal<ContainerRow[]> = linkedSignal({
+  emptyResource: WritableSignal<ContainerDetailData[]> = linkedSignal({
     source: this.pageSize,
     computation: (pageSize: number) =>
       Array.from({ length: pageSize }, () => {
-        const emptyRow: any = {};
-        columnsKeyMap.forEach((column) => {
-          emptyRow[column.key] = '';
-        });
-        return emptyRow;
+        return {
+          serial: '',
+          type: '',
+          states: [],
+          description: '',
+          users: [],
+          user_realm: '',
+          realms: [],
+          tokens: [],
+          info: {},
+          internal_info_keys: [],
+          last_authentication: null,
+          last_synchronization: null,
+        } as ContainerDetailData;
       }),
   });
 
-  containerDataSource: WritableSignal<MatTableDataSource<ContainerRow>> =
+  containerDataSource: WritableSignal<MatTableDataSource<ContainerDetailData>> =
     linkedSignal({
       source: this.containerResource.value,
       computation: (containerResource, previous) => {
@@ -119,7 +111,7 @@ export class ContainerTableComponent {
           const processedData =
             containerResource.result?.value?.containers.map((item) => ({
               ...item,
-              users:
+              user_name:
                 item.users && item.users.length > 0
                   ? item.users[0].user_name
                   : '',
@@ -128,7 +120,7 @@ export class ContainerTableComponent {
                   ? item.users[0].user_realm
                   : '',
             })) ?? [];
-          return new MatTableDataSource<ContainerRow>(processedData);
+          return new MatTableDataSource<ContainerDetailData>(processedData);
         }
         return previous?.value ?? new MatTableDataSource(this.emptyResource());
       },
@@ -155,7 +147,7 @@ export class ContainerTableComponent {
   @ViewChild('filterHTMLInputElement', { static: true })
   filterInput!: HTMLInputElement;
   @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
-  expandedElement: ContainerRow | null = null;
+  expandedElement: ContainerDetailData | null = null;
 
   constructor(
     protected containerService: ContainerService,

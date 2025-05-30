@@ -16,7 +16,10 @@ import {
   MatExpansionPanelTitle,
 } from '@angular/material/expansion';
 import { MatIcon } from '@angular/material/icon';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  EnrollmentResponse,
+  TokenService,
+} from '../../../../services/token/token.service';
 import { ContentService } from '../../../../services/content/content.service';
 
 @Component({
@@ -46,7 +49,7 @@ export class TokenEnrollmentSecondStepDialogComponent {
     private dialogRef: MatDialogRef<LostTokenComponent>,
     @Inject(MAT_DIALOG_DATA)
     public data: {
-      response: any;
+      response: EnrollmentResponse;
       enrollToken: () => void;
       username: string;
       userRealm: string;

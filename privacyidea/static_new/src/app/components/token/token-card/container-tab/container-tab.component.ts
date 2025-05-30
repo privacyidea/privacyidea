@@ -86,9 +86,7 @@ export class ContainerTabComponent {
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: selectedContainers.map(
-            (container: any) => container.serial,
-          ),
+          serial_list: selectedContainers.map((container) => container.serial),
           title: 'Delete All Containers',
           type: 'container',
           action: 'delete',
@@ -100,7 +98,7 @@ export class ContainerTabComponent {
         next: (result) => {
           if (result) {
             forkJoin(
-              selectedContainers.map((container: any) =>
+              selectedContainers.map((container) =>
                 this.containerService.deleteContainer(container.serial),
               ),
             ).subscribe({

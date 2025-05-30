@@ -16,7 +16,7 @@ import { environment } from '../../../environments/environment';
 import { LocalService } from '../local/local.service';
 import { NotificationService } from '../notification/notification.service';
 import { TableUtilsService } from '../table-utils/table-utils.service';
-import { TokenService } from '../token/token.service';
+import { EnrollmentUrl, TokenService } from '../token/token.service';
 import {
   catchError,
   forkJoin,
@@ -56,6 +56,7 @@ export interface ContainerDetailData {
   type: string;
   users: ContainerDetailUser[];
   select?: string;
+  user_name?: string;
   user_realm?: string;
 }
 
@@ -127,11 +128,7 @@ export interface ContainerTemplateToken {
 }
 
 export interface ContainerRegisterData {
-  container_url: {
-    description: string;
-    img: string;
-    value: string;
-  };
+  container_url: EnrollmentUrl;
   hash_algorithm: string;
   key_algorithm: string;
   nonce: string;
@@ -254,7 +251,7 @@ export class ContainerService {
     );
   });
 
-  containerSelection: WritableSignal<any[]> = linkedSignal({
+  containerSelection: WritableSignal<ContainerDetailData[]> = linkedSignal({
     source: () => ({
       pageIndex: this.pageIndex(),
       pageSize: this.pageSize(),

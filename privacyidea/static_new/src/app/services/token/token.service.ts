@@ -106,10 +106,20 @@ export interface EnrollmentResponseDetail {
   passkey_registration?: boolean;
   webAuthnRegisterRequest?: any;
   u2fRegisterRequest?: any;
-  pushurl?: any;
+  pushurl?: EnrollmentUrl;
   [key: string]: any;
+  googleurl?: EnrollmentUrl;
+  otpkey?: EnrollmentUrl;
+  motpurl?: EnrollmentUrl;
+  tiqrenroll?: EnrollmentUrl;
 }
 
+export interface EnrollmentUrl {
+  description: string;
+  img: string;
+  value: string;
+  value_b32?: string;
+}
 export type LostTokenResponse = PiResponse<LostTokenData>;
 export interface LostTokenData {
   disable: number;

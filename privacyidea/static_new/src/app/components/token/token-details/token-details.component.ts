@@ -242,10 +242,6 @@ export class TokenDetailsComponent {
     });
   }
 
-  isObject(value: any): boolean {
-    return typeof value === 'object' && value !== null;
-  }
-
   resetFailCount(): void {
     this.tokenService.resetFailCount(this.tokenSerial()).subscribe({
       next: () => {
