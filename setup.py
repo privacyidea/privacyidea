@@ -97,7 +97,6 @@ setup(
     version=VERSION,
     description='privacyIDEA: multifactor authentication management system',
     author='privacyidea.org',
-    license='AGPLv3',
     author_email='cornelius@privacyidea.org',
     url='https://www.privacyidea.org',
     keywords='OTP, two factor authentication, management, security',
@@ -147,14 +146,12 @@ setup(
                 ('lib/privacyidea/', ['requirements.txt'])
                 ],
     classifiers=["Framework :: Flask",
-                 "License :: OSI Approved :: "
-                 "GNU Affero General Public License v3",
+                 "License-Expression :: AGPL-3.0-or-later",
                  "Programming Language :: Python",
                  "Development Status :: 5 - Production/Stable",
                  "Topic :: Internet",
                  "Topic :: Security",
-                 "Topic :: System ::"
-                 " Systems Administration :: Authentication/Directory",
+                 "Topic :: System :: Systems Administration :: Authentication/Directory",
                  'Programming Language :: Python',
                  'Programming Language :: Python :: 3',
                  'Programming Language :: Python :: 3.9',

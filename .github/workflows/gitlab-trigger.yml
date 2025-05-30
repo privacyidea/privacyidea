@@ -5,6 +5,9 @@ on:
     tags:
       - '*'
 
+# No permissions needed for this action
+permissions: {}
+
 jobs:
   trigger-gitlab:
     runs-on: ubuntu-latest

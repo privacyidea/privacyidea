@@ -1,5 +1,8 @@
 name: codespell
 on: [pull_request]
+
+permissions: {}
+
 jobs:
   reviewdog-codespell:
     permissions:
@@ -9,12 +12,14 @@ jobs:
     name: reviewdog / codespell
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - name: Install codespell
         run: |
           python -m pip install -U codespell
       - name: Setup reviewdog
-        uses: reviewdog/action-setup@v1
+        uses: reviewdog/action-setup@e04ffabe3898a0af8d0fb1af00c188831c4b5893 # v1.3.2
       - name: Run reviewdog
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
