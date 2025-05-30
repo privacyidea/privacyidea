@@ -25,6 +25,12 @@ import { NgClass } from '@angular/common';
 import { OverflowService } from '../../../../services/overflow/overflow.service';
 import { AuthService } from '../../../../services/auth/auth.service';
 
+export interface TokenInfoDetail<T = any> {
+  value: T;
+  keyMap: { key: string; label: string };
+  isEditing: WritableSignal<boolean>;
+}
+
 @Component({
   selector: 'app-token-details-info',
   standalone: true,
@@ -51,20 +57,8 @@ import { AuthService } from '../../../../services/auth/auth.service';
 export class TokenDetailsInfoComponent {
   protected readonly Object = Object;
   tokenSerial = this.tokenService.tokenSerial;
-  @Input() infoData!: WritableSignal<
-    {
-      value: any;
-      keyMap: { label: string; key: string };
-      isEditing: WritableSignal<boolean>;
-    }[]
-  >;
-  @Input() detailData!: WritableSignal<
-    {
-      keyMap: { key: string; label: string };
-      value: any;
-      isEditing: WritableSignal<boolean>;
-    }[]
-  >;
+  @Input() infoData!: WritableSignal<TokenInfoDetail[]>;
+  @Input() detailData!: WritableSignal<TokenInfoDetail[]>;
   @Input() isAnyEditingOrRevoked!: Signal<boolean>;
   @Input() isEditingInfo!: WritableSignal<boolean>;
   @Input() isEditingUser!: WritableSignal<boolean>;
@@ -88,7 +82,7 @@ export class TokenDetailsInfoComponent {
     this.isEditingInfo.update((b) => !b);
   }
 
-  saveInfo(element: any): void {
+  saveInfo(element: TokenInfoDetail): void {
     if (
       this.newInfo().key.trim() !== '' &&
       this.newInfo().value.trim() !== ''
@@ -103,6 +97,7 @@ export class TokenDetailsInfoComponent {
           this.tokenService.tokenDetailResource.reload();
         },
       });
+    this.isEditingInfo.set(false);
   }
 
   deleteInfo(key: string): void {

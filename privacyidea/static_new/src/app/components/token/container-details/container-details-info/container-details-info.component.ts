@@ -23,6 +23,12 @@ import { OverflowService } from '../../../../services/overflow/overflow.service'
 import { EditButtonsComponent } from '../../../shared/edit-buttons/edit-buttons.component';
 import { ContainerService } from '../../../../services/container/container.service';
 
+export interface ContainerInfoDetail<T = any> {
+  value: T;
+  keyMap: { label: string; key: string };
+  isEditing: WritableSignal<boolean>;
+}
+
 @Component({
   selector: 'app-container-details-info',
   standalone: true,
@@ -48,20 +54,8 @@ import { ContainerService } from '../../../../services/container/container.servi
 export class ContainerDetailsInfoComponent {
   protected readonly Object = Object;
   containerSerial = this.containerService.containerSerial;
-  @Input() infoData!: WritableSignal<
-    {
-      value: any;
-      keyMap: { label: string; key: string };
-      isEditing: WritableSignal<boolean>;
-    }[]
-  >;
-  @Input() detailData!: WritableSignal<
-    {
-      keyMap: { key: string; label: string };
-      value: any;
-      isEditing: WritableSignal<boolean>;
-    }[]
-  >;
+  @Input() infoData!: WritableSignal<ContainerInfoDetail[]>;
+  @Input() detailData!: WritableSignal<ContainerInfoDetail[]>;
   @Input() isAnyEditingOrRevoked!: Signal<boolean>;
   @Input() isEditingInfo!: WritableSignal<boolean>;
   @Input() isEditingUser!: WritableSignal<boolean>;
@@ -82,7 +76,7 @@ export class ContainerDetailsInfoComponent {
     this.newInfo.set({ key: '', value: '' });
   }
 
-  saveInfo(element: any): void {
+  saveInfo(element: ContainerInfoDetail): void {
     if (
       this.newInfo().key.trim() !== '' &&
       this.newInfo().value.trim() !== ''
@@ -99,6 +93,7 @@ export class ContainerDetailsInfoComponent {
         this.containerService.containerDetailResource.reload();
       },
     });
+    this.isEditingInfo.set(false);
   }
 
   deleteInfo(key: string): void {
