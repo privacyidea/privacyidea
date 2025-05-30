@@ -4,6 +4,7 @@ import {
   HostListener,
   Injectable,
   linkedSignal,
+  Signal,
   ViewChild,
   WritableSignal,
 } from '@angular/core';
@@ -43,6 +44,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import {
+  EnrollmentOptions,
   EnrollmentResponse,
   TokenDetails,
   TokenService,
@@ -78,7 +80,6 @@ import { EnrollPasskeyComponent } from './enroll-passkey/enroll-passkey.componen
 import { VersionService } from '../../../services/version/version.service';
 import { TokenEnrollmentSecondStepDialogComponent } from './token-enrollment-second-step-dialog/token-enrollment-second-step-dialog.component';
 import { ContentService } from '../../../services/content/content.service';
-import { PiResponse } from '../../../app.component';
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -380,82 +381,80 @@ export class TokenEnrollmentComponent {
     source: this.selectedTokenType,
     computation: () => 'sha1',
   });
-  enrollmentOptions = computed(() => {
-    return {
-      type: this.selectedTokenType().key,
-      description: this.description(),
-      container_serial: this.containerService.selectedContainer().trim(),
-      validity_period_start: this.formatDateTimeOffset(
-        this.selectedStartDate(),
-        this.selectedStartTime(),
-        this.selectedTimezoneOffset(),
-      ),
-      validity_period_end: this.formatDateTimeOffset(
-        this.selectedEndDate(),
-        this.selectedEndTime(),
-        this.selectedTimezoneOffset(),
-      ),
-      user: this.userService.selectedUsername().trim(),
-      pin: this.setPinValue(),
+  enrollmentOptions: Signal<EnrollmentOptions> = computed(() => ({
+    type: this.selectedTokenType().key,
+    description: this.description(),
+    container_serial: this.containerService.selectedContainer().trim(),
+    validity_period_start: this.formatDateTimeOffset(
+      this.selectedStartDate(),
+      this.selectedStartTime(),
+      this.selectedTimezoneOffset(),
+    ),
+    validity_period_end: this.formatDateTimeOffset(
+      this.selectedEndDate(),
+      this.selectedEndTime(),
+      this.selectedTimezoneOffset(),
+    ),
+    user: this.userService.selectedUsername().trim(),
+    pin: this.setPinValue(),
 
-      // hotp, totp, motp, applspec
-      generateOnServer: this.generateOnServer(),
-      otpLength: this.otpLength(),
-      otpKey: this.otpKey(),
-      hashAlgorithm: this.hashAlgorithm(),
-      timeStep: this.timeStep(),
+    // hotp, totp, motp, applspec
+    generateOnServer: this.generateOnServer(),
+    otpLength: this.otpLength(),
+    otpKey: this.otpKey(),
+    hashAlgorithm: this.hashAlgorithm(),
+    timeStep: this.timeStep(),
 
-      // motp
-      motpPin: this.motpPin(),
+    // motp
+    motpPin: this.motpPin(),
 
-      // sshkey
-      sshPublicKey: this.sshPublicKey(),
+    // sshkey
+    sshPublicKey: this.sshPublicKey(),
 
-      // remote
-      remoteServer: this.remoteServer(),
-      remoteSerial: this.remoteSerial(),
-      remoteUser: this.remoteUser().trim(),
-      remoteRealm: this.remoteRealm().trim(),
-      remoteResolver: this.remoteResolver().trim(),
-      checkPinLocally: this.checkPinLocally(),
+    // remote
+    remoteServer: this.remoteServer(),
+    remoteSerial: this.remoteSerial(),
+    remoteUser: this.remoteUser().trim(),
+    remoteRealm: this.remoteRealm().trim(),
+    remoteResolver: this.remoteResolver().trim(),
+    checkPinLocally: this.checkPinLocally(),
 
-      // yubico
-      yubicoIdentifier: this.yubikeyIdentifier(),
+    // yubico
+    yubicoIdentifier: this.yubikeyIdentifier(),
 
-      // radius
-      radiusServerConfiguration: this.radiusServerConfiguration(),
-      radiusUser: this.radiusUser().trim(),
+    // radius
+    radiusServerConfiguration: this.radiusServerConfiguration(),
+    radiusUser: this.radiusUser().trim(),
 
-      // sms
-      smsGateway: this.smsGateway(),
-      phoneNumber: this.phoneNumber(),
+    // sms
+    smsGateway: this.smsGateway(),
+    phoneNumber: this.phoneNumber(),
 
-      // 4eyes
-      separator: this.separator(),
-      requiredTokenOfRealms: this.requiredTokenOfRealms(),
-      onlyAddToRealm: this.onlyAddToRealm(),
-      userRealm: this.userService.selectedUserRealm(),
+    // 4eyes
+    separator: this.separator(),
+    requiredTokenOfRealms: this.requiredTokenOfRealms(),
+    onlyAddToRealm: this.onlyAddToRealm(),
+    userRealm: this.userService.selectedUserRealm(),
 
-      // applspec
-      serviceId: this.serviceId(),
+    // applspec
+    serviceId: this.serviceId(),
 
-      // certificate
-      caConnector: this.caConnector(),
-      certTemplate: this.certTemplate(),
-      pem: this.pem(),
+    // certificate
+    caConnector: this.caConnector(),
+    certTemplate: this.certTemplate(),
+    pem: this.pem(),
 
-      // email
-      emailAddress: this.emailAddress().trim(),
-      readEmailDynamically: this.readEmailDynamically(),
+    // email
+    emailAddress: this.emailAddress().trim(),
+    readEmailDynamically: this.readEmailDynamically(),
 
-      // question
-      answers: this.answers(),
+    // question
+    answers: this.answers(),
 
-      // vasco
-      vascoSerial: this.vascoSerial(),
-      useVascoSerial: this.useVascoSerial(),
-    };
-  });
+    // vasco
+    vascoSerial: this.vascoSerial(),
+    useVascoSerial: this.useVascoSerial(),
+  }));
   @ViewChild(EnrollPasskeyComponent)
   enrollPasskeyComponent!: EnrollPasskeyComponent;
   @ViewChild(EnrollWebauthnComponent)

@@ -239,7 +239,7 @@ export class ContainerService {
     computation: (containerResource) => {
       return (
         containerResource?.result?.value?.containers.map(
-          (container: any) => container.serial,
+          (container) => container.serial,
         ) ?? []
       );
     },

@@ -133,6 +133,54 @@ export interface LostTokenData {
   valid_to: string;
 }
 
+export interface EnrollmentOptions {
+  type: string;
+  description: string;
+  container_serial: string;
+  validity_period_start: string;
+  validity_period_end: string;
+  user: string;
+  pin: string;
+  generateOnServer: boolean;
+  otpLength: number;
+  otpKey: string;
+  hashAlgorithm: string;
+  timeStep: number;
+  motpPin?: string;
+  sshPublicKey?: string;
+  remoteServer?: { url: string; id: string };
+  remoteSerial?: string;
+  remoteUser?: string;
+  remoteRealm?: string;
+  remoteResolver?: string;
+  checkPinLocally?: boolean;
+  yubicoIdentifier?: string;
+  radiusServerConfiguration?: string;
+  radiusUser?: string;
+  smsGateway?: string;
+  phoneNumber?: string;
+  separator?: string;
+  requiredTokenOfRealms?: {
+    realm: string;
+    tokens: number;
+  }[];
+  onlyAddToRealm?: boolean;
+  userRealm?: string;
+  serviceId?: string;
+  caConnector?: string;
+  certTemplate?: string;
+  pem?: string;
+  emailAddress?: string;
+  readEmailDynamically?: boolean;
+  answers?: Record<string, string>;
+  vascoSerial?: string;
+  useVascoSerial?: boolean;
+  readNumberDynamically?: boolean;
+  setPinValue?: string;
+  repeatPinValue?: string;
+  credential_id?: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -693,7 +741,7 @@ export class TokenService {
       );
   }
 
-  enrollToken(options: any) {
+  enrollToken(options: EnrollmentOptions) {
     const headers = this.localService.getHeaders();
 
     const params: any = {
@@ -779,7 +827,10 @@ export class TokenService {
       case '4eyes':
         params.separator = options.separator;
         params['4eyes'] = options.requiredTokenOfRealms?.reduce(
-          (acc: any, curr: any) => {
+          (
+            acc: { [key: string]: { count: number; selected: boolean } },
+            curr,
+          ) => {
             acc[curr.realm] = {
               count: curr.tokens,
               selected: true,
