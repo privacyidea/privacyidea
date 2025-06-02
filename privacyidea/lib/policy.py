@@ -830,19 +830,17 @@ class PolicyClass(object):
         """
         if user_object is not None:
             # if a user_object is passed, we check, if it differs from potentially passed user, resolver, realm:
-            if (user and user.lower() not in {user_object.login.lower(), user_object.used_login.lower()}) \
-                    or (resolver and resolver.lower() != user_object.resolver.lower()) \
-                    or (realm and realm.lower() != user_object.realm):
+            if ((user and user.lower().strip() not in {user_object.login.lower().strip(),
+                                                       user_object.used_login.lower().strip()})
+                    or (resolver and resolver.lower() != user_object.resolver.lower())
+                    or (realm and realm.lower() != user_object.realm)):
                 tb_str = ''.join(traceback.format_stack())
-                log.warning("Cannot pass user_object as well as user, resolver, realm "
-                            "in policy {0!s}. "
-                            "{1!s} - {2!s}@{3!s} in resolver {4!s}".format((name, scope, action),
-                                                                           user_object, user, realm, resolver))
+                log.warning(
+                    f"Cannot pass user_object as well as user, resolver, realm in policy {(name, scope, action)}. "
+                    f"{user_object} - {user}@{realm} in resolver {resolver}")
                 log.warning("Possible programming error: {0!s}".format(tb_str))
-                raise ParameterError("Cannot pass user_object ({1!s}) as well as user ({2!s}), "
-                                     "resolver ({3!s}), realm ({4!s}) "
-                                     "in policy {0!s}".format((name, scope, action), user_object,
-                                                              user, resolver, realm))
+                raise ParameterError(f"Cannot pass user_object ({user_object}) as well as user ({user}), "
+                                     f"resolver ({resolver}), realm ({realm}) in policy {(name, scope, action)}")
             user = user_object.login
             realm = user_object.realm
             resolver = user_object.resolver
@@ -3348,7 +3346,7 @@ class Match(object):
         return cls(g, name=None, scope=SCOPE.ADMIN, user_object=user_obj, active=True,
                    resolver=None, client=g.client_ip, action=action,
                    adminuser=adminuser, adminrealm=adminrealm, time=None,
-                   sort_by_priority=True, serial=serial, container_serial=container_serial,)
+                   sort_by_priority=True, serial=serial, container_serial=container_serial)
 
     @classmethod
     def admin_or_user(cls, g, action, user_obj, additional_realms=None, container_serial: str = None):
