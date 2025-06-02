@@ -884,7 +884,7 @@ class TOTPTokenTestCase(MyTestCase):
         self.assertEqual(totptoken.export_token()["issuer"], token_data[0]["issuer"])
         self.assertEqual(totptoken.export_token()["timeWindow"], token_data[0]["timeWindow"])
         self.assertEqual(totptoken.export_token()["timeStep"], token_data[0]["timeStep"])
-        self.assertEqual(totptoken.export_token()["timeShift"], token_data[0]["timeShift"])
+        self.assertEqual(int(totptoken.export_token()["timeShift"]), token_data[0]["timeShift"])
 
         #Check that token works
         with mock.patch('time.time') as MockTime:
