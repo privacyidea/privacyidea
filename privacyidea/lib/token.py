@@ -59,7 +59,6 @@ tokenclass implementations like lib.tokens.hotptoken)
 This is the middleware/glue between the HTTP API and the database
 """
 
-from dataclasses import dataclass
 import base64
 import datetime
 import json
@@ -69,6 +68,7 @@ import random
 import string
 import traceback
 from collections import defaultdict
+from dataclasses import dataclass
 from typing import Union
 
 from dateutil.tz import tzlocal
@@ -3045,10 +3045,10 @@ def regenerate_enroll_url(serial: str, request: Request, g) -> Union[str, None]:
 
 def export_tokens(tokens) -> str:
     """
-    Takes a list of tokens and returns an exportable json object
+    Takes a list of tokens and returns an exportable JSON string.
 
     :param tokens: list of token objects
-    :return: list of dict with tokens
+    :return: JSON string representing a list of token dictionaries
     """
     exported_tokens = []
     for token in tokens:
@@ -3062,7 +3062,7 @@ def import_tokens(tokens):
     """
     Import a list of token dictionaries.
 
-    :param tokens: list of token dictionaries # TODO list does not work with json.loads
+    :param tokens: JSON string representing a list of token dictionaries
     :return: list of token objects
     """
     successful_tokens = []
@@ -3083,6 +3083,5 @@ def import_tokens(tokens):
             successful_tokens.append(serial)
         except Exception as e:
             log.error(f"Could not import token {serial}: {e}")
-            print(e)
             failed_tokens.append(serial)
     return TokenImportResult(successful_tokens=successful_tokens, failed_tokens=failed_tokens)

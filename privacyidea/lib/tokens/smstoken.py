@@ -651,5 +651,4 @@ class SmsTokenClass(HotpTokenClass):
         if not token_information.get("dynamic_phone", False):
             self.add_tokeninfo("phone", token_information.get("phone", False))
         self.save()
-        pass
 

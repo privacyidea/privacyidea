@@ -696,7 +696,7 @@ class TotpTokenClass(HotpTokenClass):
         Create a dictionary with the token information that can be exported.
         """
         token_dict = HotpTokenClass.export_token(self)
-        token_dict["timeShift"] = self.timeshift
+        token_dict["timeShift"] = self.get_tokeninfo("timeShift")
         token_dict["timeStep"] = self.timestep
         token_dict["timeWindow"] = self.timewindow
         return token_dict
@@ -710,4 +710,3 @@ class TotpTokenClass(HotpTokenClass):
         self.add_tokeninfo("timeShift", token_information.get("timeShift", 0))
         self.add_tokeninfo("timeStep", token_information.get("timeStep", 30))
         self.save()
-        pass
