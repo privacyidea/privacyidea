@@ -2037,4 +2037,3 @@ class TokenClass(object):
             self.save()
         except Exception as exx:
             log.error(f'Failed to import token: {exx}')
-        pass

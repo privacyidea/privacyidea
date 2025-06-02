@@ -619,4 +619,3 @@ class EmailTokenClass(HotpTokenClass):
         if not token_information.get("dynamic_email", False):
             self.add_tokeninfo("email", token_information.get("email", None))
         self.save()
-        pass

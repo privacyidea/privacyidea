@@ -1230,11 +1230,14 @@ class PushTokenClass(TokenClass):
         """
         TokenClass.import_token(self, token_information)
         try:
-            self.add_tokeninfo("public_key_smartphone", token_information["public_key_smartphone"])
-            self.add_tokeninfo("public_key_server", token_information["public_key_server"])
-            self.add_tokeninfo("firebase_token", token_information["firebase_token"])
+            self.add_tokeninfo_dict(
+                {
+                    "public_key_smartphone": token_information["public_key_smartphone"],
+                    "public_key_server": token_information["public_key_server"],
+                    "firebase_token": token_information["firebase_token"],
+                    PUSH_ACTION.FIREBASE_CONFIG: token_information["push_firebase_config"],
+                })
             self.add_tokeninfo("private_key_server", token_information["private_key_server"], "password")
-            self.add_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG, token_information["push_firebase_config"])
             self.save()
         except KeyError as e:
             remove_token(token_information["serial"])
