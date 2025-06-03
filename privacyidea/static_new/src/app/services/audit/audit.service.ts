@@ -138,6 +138,5 @@ export class AuditService {
   constructor(
     private localService: LocalService,
     private contentService: ContentService,
-    private tableUtilsService: TableUtilsService,
   ) {}
 }
