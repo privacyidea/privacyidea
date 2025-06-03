@@ -45,16 +45,17 @@ export class KeywordFilterComponent {
     keyword: string,
     currentValue: Record<string, string>,
   ): string {
-    if (keyword === 'active') {
-      const activeMatch = currentValue['active'];
-      if (!activeMatch) {
+    if (keyword === 'active' || keyword === 'assigned') {
+      const value = currentValue[keyword]?.toLowerCase();
+      console.log(
+        `getFilterIconName: keyword=${keyword}, value=${value}, currentValue=${JSON.stringify(currentValue)}`,
+      );
+      if (!value) {
         return 'add_circle';
       }
-
-      const activeValue = activeMatch[1].toLowerCase();
-      return activeValue === 'true'
+      return value === 'true'
         ? 'change_circle'
-        : activeValue === 'false'
+        : value === 'false'
           ? 'remove_circle'
           : 'add_circle';
     } else {
@@ -66,8 +67,11 @@ export class KeywordFilterComponent {
   toggleFilter(filterKeyword: string, inputElement: HTMLInputElement): void {
     let newValue;
     var textValue = inputElement.value.trim();
-    if (filterKeyword === 'active') {
-      newValue = this.tableUtilsService.toggleActiveInFilter(textValue);
+    if (filterKeyword === 'active' || filterKeyword === 'assigned') {
+      newValue = this.tableUtilsService.toggleBooleanInFilter({
+        keyword: filterKeyword,
+        currentValue: textValue,
+      });
     } else {
       newValue = this.tableUtilsService.toggleKeywordInFilter(
         textValue,

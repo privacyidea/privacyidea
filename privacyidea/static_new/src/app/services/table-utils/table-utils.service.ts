@@ -141,22 +141,32 @@ export class TableUtilsService {
     }
   }
 
-  public toggleActiveInFilter(currentValue: string): string {
-    const activeRegex = /active:\s?([\w\d]*)(?![\w\d]*:)/i;
-    const match = currentValue.match(activeRegex);
+  public toggleBooleanInFilter(args: {
+    keyword: string;
+    currentValue: string;
+  }): string {
+    const { keyword, currentValue } = args;
+    console.debug(
+      `Toggling boolean for keyword: ${keyword}, currentValue: ${currentValue}`,
+    );
+    const regex = new RegExp(
+      `\\b${keyword}:\\s?([\\w\\d]*)(?![\\w\\d]*:)`,
+      'i',
+    );
+    const match = currentValue.match(regex);
 
     if (!match) {
-      return (currentValue.trim() + ' active: true').trim();
+      return (currentValue.trim() + ` ${keyword}: true`).trim();
     } else {
       const existingValue = match[1].toLowerCase();
 
       if (existingValue === 'true') {
-        return currentValue.replace(activeRegex, 'active: false');
+        return currentValue.replace(regex, keyword + ': false');
       } else if (existingValue === 'false') {
-        const removed = currentValue.replace(activeRegex, '').trim();
+        const removed = currentValue.replace(regex, '').trim();
         return removed.replace(/\s{2,}/g, ' ');
       } else {
-        return currentValue.replace(activeRegex, 'active: true');
+        return currentValue.replace(regex, keyword + ': true');
       }
     }
   }
