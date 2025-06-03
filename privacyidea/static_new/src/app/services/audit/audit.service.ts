@@ -78,14 +78,15 @@ export class AuditService {
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
   auditBaseUrl = environment.proxyUrl + '/audit/';
-  filterValue = signal('');
+  filterValue = signal({} as Record<string, string>);
   filterParams = computed<Record<string, string>>(() => {
-    const combinedFilters = [...this.apiFilter, ...this.advancedApiFilter];
-    const { filterPairs, remainingFilterText } =
-      this.tableUtilsService.parseFilterString(
-        this.filterValue()!,
-        combinedFilters,
-      );
+    const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
+    const filterPairs = Object.entries(this.filterValue())
+      .map(([key, value]) => ({ key, value }))
+      .filter(({ key }) => allowedFilters.includes(key));
+    if (filterPairs.length === 0) {
+      return {};
+    }
     return filterPairs.reduce(
       (acc, { key, value }) => ({
         ...acc,

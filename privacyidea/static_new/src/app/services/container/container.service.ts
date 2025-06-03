@@ -160,15 +160,21 @@ export class ContainerService {
 
   sort = signal<Sort>({ active: 'serial', direction: 'asc' });
 
-  filterValue: WritableSignal<string> = linkedSignal({
+  filterValue: WritableSignal<Record<string, string>> = linkedSignal({
     source: this.selectedContent,
-    computation: () => '',
+    computation: () => ({}),
   });
   filterParams = computed<Record<string, string>>(() => {
-    const { filterPairs } = this.tableUtilsService.parseFilterString(
-      this.filterValue(),
-      [...this.apiFilter, ...this.advancedApiFilter],
-    );
+    const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
+    const filterValue = this.filterValue();
+    const filterPairs = Object.entries(filterValue)
+      .filter(([key]) => allowedFilters.includes(key))
+      .map(([key, value]) => {
+        if (value === '') {
+          return { key, value: '*' };
+        }
+        return { key, value };
+      });
     return filterPairs.reduce(
       (acc, { key, value }) => {
         if (

@@ -96,7 +96,8 @@ export class ChallengesTableComponent {
   ) {}
 
   onFilterChange(newFilter: string) {
-    this.filterValue.set(newFilter);
+    const recordsFromText = this.tableUtilsService.recordsFromText(newFilter);
+    this.filterValue.set(recordsFromText);
     this.pageIndex.set(0);
   }
 

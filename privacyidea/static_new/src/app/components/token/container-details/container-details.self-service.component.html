@@ -234,8 +234,8 @@
         <mat-form-field class="add-token">
           <mat-label>Add Token to Container</mat-label>
           <input #filterHTMLInputElement
+                 [(ngModel)]="filterValueString"
                  #tokenAutoTrigger="matAutocompleteTrigger"
-                 (keyup)="onFilterEvent(filterHTMLInputElement.value)"
                  [matAutocomplete]="tokenAuto"
                  matInput
                  placeholder="Example query: 'type: hotp serial: 123'" />

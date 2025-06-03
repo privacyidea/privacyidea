@@ -45,19 +45,22 @@ export class MachineService {
     source: this.selectedApplicationType,
     computation: () => 10,
   });
-  filterValue = linkedSignal({
+  filterValue: WritableSignal<Record<string, string>> = linkedSignal({
     source: this.selectedApplicationType,
-    computation: () => '',
+    computation: () => ({}),
   });
   private filterParams = computed(() => {
-    let combined =
+    let allowedKeywords =
       this.selectedApplicationType() === 'ssh'
         ? [...this.sshApiFilter, ...this.sshAdvancedApiFilter]
         : [...this.offlineApiFilter, ...this.offlineAdvancedApiFilter];
-    let { filterPairs } = this.tableUtilsService.parseFilterString(
-      this.filterValue(),
-      combined,
-    );
+
+    const filterPairs = Object.entries(this.filterValue())
+      .map(([key, value]) => ({ key, value }))
+      .filter(({ key }) => allowedKeywords.includes(key));
+    if (filterPairs.length === 0) {
+      return {};
+    }
     let params: any = {};
     filterPairs.forEach(({ key, value }) => {
       if (['serial'].includes(key)) {
@@ -105,7 +108,6 @@ export class MachineService {
       sortdir: this.sort()?.direction || 'asc',
       ...this.filterParams(),
     };
-    console.log('Params:', params);
     return {
       url: this.baseUrl + 'token',
       method: 'GET',

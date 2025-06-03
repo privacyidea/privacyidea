@@ -15,7 +15,7 @@ export class KeywordFilterComponent {
   @Input() apiFilter!: string[];
   @Input() advancedApiFilter!: string[];
   @Input() filterHTMLInputElement!: HTMLInputElement;
-  @Input() filterValue!: WritableSignal<string>;
+  @Input() filterValue!: WritableSignal<Record<string, string>>;
   showAdvancedFilter = signal(false);
 
   constructor(private tableUtilsService: TableUtilsService) {}
@@ -28,24 +28,25 @@ export class KeywordFilterComponent {
     this.showAdvancedFilter.update((b) => !b);
   }
 
-  isFilterSelected(filter: string, inputValue: string): boolean {
+  isFilterSelected(
+    filter: string,
+    inputValue: Record<string, string>,
+  ): boolean {
     if (filter === 'infokey & infovalue') {
-      const regexKey = new RegExp(`\\binfokey:`, 'i');
-      const regexValue = new RegExp(`\\binfovalue:`, 'i');
-      return regexKey.test(inputValue) || regexValue.test(inputValue);
+      return 'infokey' in inputValue || 'infovalue' in inputValue;
     }
     if (filter === 'machineid & resolver') {
-      const regexKey = new RegExp(`\\bmachineid:`, 'i');
-      const regexValue = new RegExp(`\\bresolver:`, 'i');
-      return regexKey.test(inputValue) || regexValue.test(inputValue);
+      return 'machineid' in inputValue || 'resolver' in inputValue;
     }
-    const regex = new RegExp(`\\b${filter}:`, 'i');
-    return regex.test(inputValue);
+    return filter in inputValue;
   }
 
-  getFilterIconName(keyword: string, currentValue: string): string {
+  getFilterIconName(
+    keyword: string,
+    currentValue: Record<string, string>,
+  ): string {
     if (keyword === 'active') {
-      const activeMatch = currentValue.match(/active:\s*(\S+)/i);
+      const activeMatch = currentValue['active'];
       if (!activeMatch) {
         return 'add_circle';
       }
@@ -64,18 +65,27 @@ export class KeywordFilterComponent {
 
   toggleFilter(filterKeyword: string, inputElement: HTMLInputElement): void {
     let newValue;
+    var textValue = inputElement.value.trim();
     if (filterKeyword === 'active') {
-      newValue = this.tableUtilsService.toggleActiveInFilter(
-        inputElement.value,
-      );
+      newValue = this.tableUtilsService.toggleActiveInFilter(textValue);
     } else {
       newValue = this.tableUtilsService.toggleKeywordInFilter(
-        inputElement.value.trim(),
+        textValue,
         filterKeyword,
       );
     }
     inputElement.value = newValue;
-    this.filterValue.set(newValue);
+    const recordsFromText = this.tableUtilsService.recordsFromText(newValue);
+    const recordValueFromText: Record<string, string> = { ...recordsFromText };
+
+    this.filterValue.set(recordValueFromText);
     inputElement.focus();
+  }
+
+  filterIsEmpty(): boolean {
+    return (
+      this.filterHTMLInputElement.value.trim() === '' &&
+      Object.keys(this.filterValue()).length === 0
+    );
   }
 }

@@ -1,4 +1,9 @@
-import { computed, Injectable, linkedSignal } from '@angular/core';
+import {
+  computed,
+  Injectable,
+  linkedSignal,
+  WritableSignal,
+} from '@angular/core';
 import { Sort } from '@angular/material/sort';
 import { httpResource } from '@angular/common/http';
 import { TokenService } from '../token.service';
@@ -41,14 +46,13 @@ export class ChallengesService {
   tokenBaseUrl = this.tokenService.tokenBaseUrl;
   filterValue = linkedSignal({
     source: this.selectedContent,
-    computation: () => '',
+    computation: () => ({}) as Record<string, string>,
   });
   private filterParams = computed(() => {
-    const combined = [...this.apiFilter, ...this.advancedApiFilter];
-    const { filterPairs } = this.tableUtilsService.parseFilterString(
-      this.filterValue(),
-      combined,
-    );
+    const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
+    const filterPairs = Object.entries(this.filterValue())
+      .map(([key, value]) => ({ key, value }))
+      .filter(({ key }) => allowedFilters.includes(key));
     return filterPairs.reduce(
       (acc, { key, value }) => {
         if (key === 'serial') {

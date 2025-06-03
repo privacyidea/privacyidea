@@ -53,6 +53,7 @@ import { UserService } from '../../../services/user/user.service';
 import { OverflowService } from '../../../services/overflow/overflow.service';
 import { AuthService } from '../../../services/auth/auth.service';
 import { ContentService } from '../../../services/content/content.service';
+import { map } from 'rxjs';
 
 export const containerDetailsKeyMap = [
   { key: 'type', label: 'Type' },
@@ -68,6 +69,14 @@ const containerUserDetailsKeyMap = [
   { key: 'user_id', label: 'User ID' },
 ];
 
+const allowedTokenTypesMap = new Map<string, string | string[]>([
+  [
+    'yubikey',
+    ['certificate', 'hotp', 'passkey', 'webauthn', 'yubico', 'yubikey'],
+  ],
+  ['smartphone', ['daypassword', 'hotp', 'push', 'sms', 'totp']],
+  ['generic', 'all'], // generic: all = no filter
+]);
 interface TokenOption {
   serial: string;
   tokentype: string;
@@ -114,6 +123,18 @@ export class ContainerDetailsComponent {
   containerSerial = this.containerService.containerSerial;
   showOnlyTokenNotInContainer = this.tokenService.showOnlyTokenNotInContainer;
   filterValue = this.tokenService.filterValue;
+  filterValueString: WritableSignal<string> = linkedSignal(() => {
+    const _filterValue: Record<string, string> = { ...this.filterValue() };
+    delete _filterValue['container_serial'];
+    delete _filterValue['type_list'];
+    if (Object.keys(_filterValue).length === 0) {
+      return '';
+    }
+    const filterEntries = Object.entries(_filterValue);
+    return filterEntries
+      .map(([key, value]: [string, string]) => `${key}: ${value}`)
+      .join(' ');
+  });
 
   tokenResource = this.tokenService.tokenResource;
   pageIndex = this.tokenService.pageIndex;
@@ -297,6 +318,53 @@ export class ContainerDetailsComponent {
         setTimeout(() => this.selectedContent.set('container_overview'));
       }
     });
+    effect(() => {
+      const currentFilter = this.filterValue();
+
+      let recordsFromText = this.tableUtilsService.recordsFromText(
+        this.filterValueString(),
+      );
+      if (this.showOnlyTokenNotInContainer()) {
+        recordsFromText['container_serial'] = '';
+      }
+      recordsFromText = this._addTypeListToFilter(recordsFromText);
+      const objValueFromText: Record<string, string> = {};
+      Object.entries(recordsFromText).forEach(([key, value]) => {
+        objValueFromText[key] = value as string;
+      });
+      if (JSON.stringify(currentFilter) !== JSON.stringify(objValueFromText)) {
+        this.filterValue.set(objValueFromText);
+      }
+    });
+  }
+
+  _addTypeListToFilter(
+    currentFilter: Record<string, string>,
+  ): Record<string, string> {
+    const containerDetails = this.containerDetails();
+    const containerType = containerDetails?.type;
+    const allowedTokenTypes = allowedTokenTypesMap.get(containerType);
+    const _currentFilter = { ...currentFilter } as Record<string, string>;
+    if (
+      !allowedTokenTypes ||
+      allowedTokenTypes === 'all' ||
+      !Array.isArray(allowedTokenTypes) ||
+      allowedTokenTypes.length === 0
+    ) {
+      delete _currentFilter['type'];
+      delete _currentFilter['type_list'];
+      return _currentFilter;
+    }
+    if (allowedTokenTypes.length === 1) {
+      _currentFilter['type'] = allowedTokenTypes[0];
+      delete _currentFilter['type_list'];
+    } else {
+      const allowedTokenTypesString = allowedTokenTypes.join(',');
+      _currentFilter['type_list'] = allowedTokenTypesString;
+
+      delete _currentFilter['type'];
+    }
+    return _currentFilter;
   }
 
   isEditableElement(key: string) {
@@ -388,13 +456,6 @@ export class ContainerDetailsComponent {
       this.filterHTMLInputElement.nativeElement.focus();
       this.tokenAutoTrigger.openPanel();
     }, 0);
-  }
-
-  onFilterEvent(newFilter: string) {
-    if (this.showOnlyTokenNotInContainer()) {
-      newFilter = newFilter + ' container_serial:';
-    }
-    this.filterValue.set(newFilter);
   }
 
   addTokenToContainer(option: TokenOption) {

@@ -1,5 +1,6 @@
 import {
   Component,
+  effect,
   Input,
   linkedSignal,
   ViewChild,
@@ -37,7 +38,7 @@ const columnsKeyMap = [
   { key: 'type', label: 'Type' },
   { key: 'states', label: 'Status' },
   { key: 'description', label: 'Description' },
-  { key: 'users', label: 'User' },
+  { key: 'user_name', label: 'User' },
   { key: 'user_realm', label: 'Realm' },
   { key: 'realms', label: 'Container Realms' },
 ];
@@ -77,6 +78,11 @@ export class ContainerTableComponent {
   readonly advancedApiFilter = this.containerService.advancedApiFilter;
   containerSelection = this.containerService.containerSelection;
   filterValue = this.containerService.filterValue;
+  filterValueString: WritableSignal<string> = linkedSignal(() =>
+    Object.entries(this.filterValue())
+      .map(([key, value]) => `${key}: ${value}`)
+      .join(' '),
+  );
   pageSize = this.containerService.pageSize;
   pageIndex = this.containerService.pageIndex;
   sort = this.containerService.sort;
@@ -154,7 +160,22 @@ export class ContainerTableComponent {
     protected tokenService: TokenService,
     protected tableUtilsService: TableUtilsService,
     protected contentService: ContentService,
-  ) {}
+  ) {
+    effect(() => {
+      const filterValueString = this.filterValueString();
+      if (this.filterInput) {
+        this.filterInput.value = filterValueString;
+      }
+      const recordsFromText =
+        this.tableUtilsService.recordsFromText(filterValueString);
+      if (
+        JSON.stringify(this.filterValue()) !== JSON.stringify(recordsFromText)
+      ) {
+        this.filterValue.set(recordsFromText);
+      }
+      this.pageIndex.set(0);
+    });
+  }
 
   isAllSelected() {
     return (

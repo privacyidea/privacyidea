@@ -49,6 +49,7 @@ const advancedApiFilter = [
   'resolver',
   'assigned',
 ];
+const hiddenApiFilter = ['type_list'];
 
 export interface Tokens {
   count: number;
@@ -187,6 +188,7 @@ export interface EnrollmentOptions {
 export class TokenService {
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
+  readonly hiddenApiFilter = hiddenApiFilter;
   tokenBaseUrl = environment.proxyUrl + '/token/';
   eventPageSize = 10;
   stopPolling$ = new Subject<void>();
@@ -200,26 +202,30 @@ export class TokenService {
       return selectedContent === 'container_details';
     },
   });
-  filterValue: WritableSignal<string> = linkedSignal({
+  filterValue: WritableSignal<Record<string, string>> = linkedSignal({
     source: () => ({
       showOnlyTokenNotInContainer: this.showOnlyTokenNotInContainer(),
       selectedContent: this.contentService.selectedContent(),
     }),
-    computation: (source: any, previous) => {
+    computation: (source, previous) => {
       switch (source.selectedContent) {
         case 'container_details':
           if (
             !previous ||
             source.selectedContent !== previous.source.selectedContent
           ) {
-            return 'container_serial:';
+            return { container_serial: '' };
           } else {
-            return source.showOnlyTokenNotInContainer
-              ? previous.value + ' container_serial:'
-              : previous.value.replace(/container_serial:\S*/g, '').trim();
+            const current = { ...previous.value };
+            if (source.showOnlyTokenNotInContainer) {
+              current['container_serial'] = '';
+            } else {
+              delete current['container_serial'];
+            }
+            return current;
           }
         default:
-          return '';
+          return {};
       }
     },
   });
@@ -285,12 +291,15 @@ export class TokenService {
     computation: () => 0,
   });
   filterParams = computed<Record<string, string>>(() => {
-    const combinedFilters = [...this.apiFilter, ...this.advancedApiFilter];
-    const { filterPairs, remainingFilterText } =
-      this.tableUtilsService.parseFilterString(
-        this.filterValue()!,
-        combinedFilters,
-      );
+    const allowedFilters = [
+      ...this.apiFilter,
+      ...this.advancedApiFilter,
+      ...this.hiddenApiFilter,
+    ];
+    const filterPairs = Object.entries(this.filterValue())
+      .filter(([key]) => allowedFilters.includes(key))
+      .map(([key, value]) => ({ key, value }));
+
     return filterPairs.reduce(
       (acc, { key, value }) => ({
         ...acc,
@@ -341,7 +350,6 @@ export class TokenService {
   constructor(
     private http: HttpClient,
     private localService: LocalService,
-    private tableUtilsService: TableUtilsService,
     private notificationService: NotificationService,
     private contentService: ContentService,
   ) {

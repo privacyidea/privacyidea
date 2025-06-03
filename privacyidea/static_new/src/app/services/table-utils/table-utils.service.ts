@@ -142,7 +142,7 @@ export class TableUtilsService {
   }
 
   public toggleActiveInFilter(currentValue: string): string {
-    const activeRegex = /active:\s*(\S+)/i;
+    const activeRegex = /active:\s?([\w\d]*)(?![\w\d]*:)/i;
     const match = currentValue.match(activeRegex);
 
     if (!match) {
@@ -159,6 +159,20 @@ export class TableUtilsService {
         return currentValue.replace(activeRegex, 'active: true');
       }
     }
+  }
+
+  public recordsFromText(textValue: string): Record<string, string> {
+    const mapValue = {} as Record<string, string>;
+    const regex = /(\w+):\s*([^:]*?)(?=\s+\w+:|$)/g;
+    let match;
+    while ((match = regex.exec(textValue)) !== null) {
+      const key = match[1].trim();
+      const value = match[2].trim();
+      if (key) {
+        mapValue[key] = value;
+      }
+    }
+    return mapValue;
   }
 
   isLink(columnKey: string) {

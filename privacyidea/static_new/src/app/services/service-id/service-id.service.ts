@@ -30,8 +30,6 @@ export class ServiceIdService {
     source: this.serviceIdResource.value,
     computation: (source, previous) => {
       const value = source?.result?.value;
-      console.log('value', value);
-      console.log('previous', previous?.value);
       if (!value) {
         return previous?.value ?? [];
       }
@@ -42,7 +40,6 @@ export class ServiceIdService {
           id,
         }),
       );
-      console.log('list', array);
       return array;
     },
   });

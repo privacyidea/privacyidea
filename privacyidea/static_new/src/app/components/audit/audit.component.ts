@@ -1,4 +1,4 @@
-import { Component, linkedSignal, WritableSignal } from '@angular/core';
+import { Component, effect, linkedSignal, WritableSignal } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { KeywordFilterComponent } from '../shared/keyword-filter/keyword-filter.component';
 import {
@@ -25,6 +25,7 @@ import { CopyButtonComponent } from '../shared/copy-button/copy-button.component
 import { ContentService } from '../../services/content/content.service';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth/auth.service';
+import { TableUtilsService } from '../../services/table-utils/table-utils.service';
 
 const columnKeysMap = [
   { key: 'number', label: 'Number' },
@@ -93,6 +94,11 @@ export class AuditComponent {
   readonly advancedApiFilter = this.auditService.advancedApiFilter;
   auditResource = this.auditService.auditResource;
   filterValue = this.auditService.filterValue;
+  filterValueString: WritableSignal<string> = linkedSignal(() =>
+    Object.entries(this.filterValue())
+      .map(([key, value]) => `${key}: ${value}`)
+      .join(' '),
+  );
   pageSize = this.auditService.pageSize;
   pageIndex = this.auditService.pageIndex;
   totalLength: WritableSignal<number> = linkedSignal({
@@ -135,9 +141,18 @@ export class AuditComponent {
 
   constructor(
     private auditService: AuditService,
+    private tableUtilsService: TableUtilsService,
     protected contentService: ContentService,
     protected authService: AuthService,
-  ) {}
+  ) {
+    effect(() => {
+      const recordsFromText = this.tableUtilsService.recordsFromText(
+        this.filterValueString(),
+      );
+      this.filterValue.set(recordsFromText);
+      this.pageIndex.set(0);
+    });
+  }
 
   onPageEvent(event: PageEvent) {
     this.pageSize.set(event.pageSize);

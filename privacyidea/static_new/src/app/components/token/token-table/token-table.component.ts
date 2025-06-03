@@ -1,5 +1,6 @@
 import {
   Component,
+  effect,
   linkedSignal,
   ViewChild,
   WritableSignal,
@@ -64,7 +65,15 @@ export class TokenTableComponent {
   isProgrammaticTabChange = this.contentService.isProgrammaticTabChange;
 
   tokenResource = this.tokenService.tokenResource;
+
   filterValue = this.tokenService.filterValue;
+  filterValueString: WritableSignal<string> = linkedSignal(() => {
+    const filterMap = this.filterValue();
+    return Object.entries(filterMap)
+      .map(([key, value]) => `${key}: ${value}`)
+      .join(' ');
+  });
+
   pageSize = this.tokenService.pageSize;
   pageIndex = this.tokenService.pageIndex;
   sort = this.tokenService.sort;
@@ -118,7 +127,22 @@ export class TokenTableComponent {
     protected tokenService: TokenService,
     protected tableUtilsService: TableUtilsService,
     protected contentService: ContentService,
-  ) {}
+  ) {
+    effect(() => {
+      const filterValueString = this.filterValueString();
+      if (this.filterInput) {
+        this.filterInput.value = filterValueString;
+      }
+      const recordsFromText =
+        this.tableUtilsService.recordsFromText(filterValueString);
+      if (
+        JSON.stringify(this.filterValue()) !== JSON.stringify(recordsFromText)
+      ) {
+        this.filterValue.set(recordsFromText);
+      }
+      this.pageIndex.set(0);
+    });
+  }
 
   isAllSelected() {
     return this.tokenSelection().length === this.tokenDataSource().data.length;
