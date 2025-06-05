@@ -104,21 +104,25 @@ class FourEyesTokenTestCase(MyTestCase):
         # Test that all expected keys are present in the exported dictionary
         exported_data = foureyetoken.export_token()
         expected_keys = [
-            "serial", "type", "description", "hashlib", "otpkey", "separator", "realms", "tokenkind", "issuer"
+            "serial", "type", "description", "otpkey", "issuer"
         ]
 
         for key in expected_keys:
             self.assertIn(key, exported_data)
 
+        expected_tokeninfo_keys = ["4eyes", "separator", "hashlib", "tokenkind"]
+        for key in expected_tokeninfo_keys:
+            self.assertIn(key, exported_data["tokeninfo"])
+
         # Test that the exported values match the token's data
         self.assertEqual(exported_data["serial"], "FOUR12345678")
         self.assertEqual(exported_data["type"], "4eyes")
         self.assertEqual(exported_data["description"], "this is a four-eye token export test")
-        self.assertEqual(exported_data["hashlib"], "sha256")
+        self.assertEqual(exported_data["tokeninfo"]["hashlib"], "sha256")
         self.assertEqual(exported_data["otpkey"], '12345')
-        self.assertEqual(exported_data["separator"], ":")
-        self.assertEqual(exported_data["realms"], "realm1,realm2")
-        self.assertEqual(exported_data["tokenkind"], "virtual")
+        self.assertEqual(exported_data["tokeninfo"]["separator"], ":")
+        self.assertEqual(exported_data["tokeninfo"]["4eyes"], "realm1,realm2")
+        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "virtual")
         self.assertEqual(exported_data["issuer"], "privacyIDEA")
 
         # Clean up
@@ -131,11 +135,8 @@ class FourEyesTokenTestCase(MyTestCase):
             "type": "4eyes",
             "description": "this is a four-eye token import test",
             "otpkey": "12345",
-            "separator": "|",
-            "4eyes": "realm1:2",
-            "hashlib": "sha256",
-            "tokenkind": "virtual",
-            "issuer": "privacyIDEA"
+            "issuer": "privacyIDEA",
+            "tokeninfo": {"separator": "|", "4eyes": "realm1:2", "hashlib": "sha256", "tokenkind": "virtual"}
         }]
 
         # Import the token
@@ -149,10 +150,10 @@ class FourEyesTokenTestCase(MyTestCase):
         self.assertEqual(foureyetoken.type, token_data[0]["type"])
         self.assertEqual(foureyetoken.token.description, token_data[0]["description"])
         self.assertEqual(foureyetoken.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
-        self.assertEqual(foureyetoken.get_tokeninfo("separator"), token_data[0]["separator"])
-        self.assertEqual(foureyetoken.get_tokeninfo("4eyes"), token_data[0]["4eyes"])
-        self.assertEqual(foureyetoken.get_tokeninfo("hashlib"), token_data[0]["hashlib"])
-        self.assertEqual(foureyetoken.get_tokeninfo("tokenkind"), token_data[0]["tokenkind"])
+        self.assertEqual(foureyetoken.get_tokeninfo("separator"), token_data[0]["tokeninfo"]["separator"])
+        self.assertEqual(foureyetoken.get_tokeninfo("4eyes"), token_data[0]["tokeninfo"]["4eyes"])
+        self.assertEqual(foureyetoken.get_tokeninfo("hashlib"), token_data[0]["tokeninfo"]["hashlib"])
+        self.assertEqual(foureyetoken.get_tokeninfo("tokenkind"), token_data[0]["tokeninfo"]["tokenkind"])
         self.assertEqual(foureyetoken.export_token()["issuer"], token_data[0]["issuer"])
 
         self.setUp_user_realms()

@@ -832,21 +832,25 @@ class TOTPTokenTestCase(MyTestCase):
         # Test that all expected keys are present in the exported dictionary
         exported_data = totptoken.export_token()
         expected_keys = [
-            "serial", "type", "description", "hashlib", "count", "otplen", "otpkey", "tokenkind", "issuer",
-            "timeWindow", "timeStep", "timeShift"
+            "serial", "type", "description", "count", "otplen", "otpkey"
         ]
         for key in expected_keys:
             self.assertIn(key, exported_data)
+
+
+        expected_tokeninfo_keys = ["hashlib", "tokenkind", "timeWindow", "timeStep", "timeShift"]
+        for key in expected_tokeninfo_keys:
+            self.assertIn(key, exported_data["tokeninfo"])
 
         # Test that the exported values match the token's data
         exported_data = totptoken.export_token()
         self.assertEqual(exported_data["serial"], "TOTP12345678")
         self.assertEqual(exported_data["type"], "totp")
         self.assertEqual(exported_data["description"], "this is a totp token export test")
-        self.assertEqual(exported_data["hashlib"], "sha256")
+        self.assertEqual(exported_data["tokeninfo"]["hashlib"], "sha256")
         self.assertEqual(exported_data["otplen"], 8)
         self.assertEqual(exported_data["otpkey"], '12345')
-        self.assertEqual(exported_data["tokenkind"], "software")
+        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
         self.assertEqual(exported_data["issuer"], "privacyIDEA")
 
         # Clean up
@@ -859,14 +863,10 @@ class TOTPTokenTestCase(MyTestCase):
             "type": "totp",
             "description": "this is a totp token import test",
             "otpkey": self.otpkey,
-            "hashlib": "sha256",
             "otplen": 8,
-            "tokenkind": "software",
             "issuer": "privacyIDEA",
-            "timeWindow": 180,
-            "timeStep": 60,
-            "timeShift": 0,
-            "count": 0
+            "count": 0,
+            "tokeninfo": {"hashlib": "sha256", "timeShift": 0, "timeStep": 60, "timeWindow": 180, "tokenkind": "software"}
         }]
 
         # Import the token
@@ -880,13 +880,12 @@ class TOTPTokenTestCase(MyTestCase):
         self.assertEqual(totptoken.type, token_data[0]["type"])
         self.assertEqual(totptoken.token.description, token_data[0]["description"])
         self.assertEqual(totptoken.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
-        self.assertEqual(totptoken.get_tokeninfo("hashlib"), token_data[0]["hashlib"])
-        self.assertEqual(totptoken.export_token()["otplen"], token_data[0]["otplen"])
-        self.assertEqual(totptoken.get_tokeninfo("tokenkind"), token_data[0]["tokenkind"])
-        self.assertEqual(totptoken.export_token()["issuer"], token_data[0]["issuer"])
-        self.assertEqual(totptoken.export_token()["timeWindow"], token_data[0]["timeWindow"])
-        self.assertEqual(totptoken.export_token()["timeStep"], token_data[0]["timeStep"])
-        self.assertEqual(int(totptoken.export_token()["timeShift"]), token_data[0]["timeShift"])
+        self.assertEqual(totptoken.get_tokeninfo("hashlib"), "sha256")
+        self.assertEqual(totptoken.token.otplen, token_data[0]["otplen"])
+        self.assertEqual(totptoken.get_tokeninfo("tokenkind"), "software")
+        self.assertEqual(totptoken.get_tokeninfo("timeWindow"), "180")
+        self.assertEqual(totptoken.get_tokeninfo("timeStep"), "60")
+        self.assertEqual(totptoken.get_tokeninfo("timeShift"), "0")
 
         #Check that token works
         with mock.patch('time.time') as MockTime:

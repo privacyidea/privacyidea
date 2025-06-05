@@ -867,20 +867,24 @@ class HOTPTokenTestCase(MyTestCase):
         # Test that all expected keys are present in the exported dictionary
         exported_data = hotptoken.export_token()
         expected_keys = [
-            "serial", "type", "description", "hashlib", "count", "otplen", "otpkey", "tokenkind", "issuer"
+            "serial", "type", "description", "count", "otplen", "otpkey", "issuer"
         ]
         for key in expected_keys:
             self.assertIn(key, exported_data)
+
+        expected_tokeninfo_keys = ["hashlib", "tokenkind"]
+        for key in expected_tokeninfo_keys:
+            self.assertIn(key, exported_data["tokeninfo"])
 
         # Test that the exported values match the token's data
         exported_data = hotptoken.export_token()
         self.assertEqual(exported_data["serial"], "OATH12345678")
         self.assertEqual(exported_data["type"], "hotp")
         self.assertEqual(exported_data["description"], "this is a hotp token export test")
-        self.assertEqual(exported_data["hashlib"], "sha256")
+        self.assertEqual(exported_data["tokeninfo"]["hashlib"], "sha256")
         self.assertEqual(exported_data["otplen"], 6)
         self.assertEqual(exported_data["otpkey"], '12345')
-        self.assertEqual(exported_data["tokenkind"], "software")
+        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
         self.assertEqual(exported_data["issuer"], "privacyIDEA")
         self.assertEqual(exported_data["count"], 0)
 
@@ -895,10 +899,9 @@ class HOTPTokenTestCase(MyTestCase):
             "description": "this is a hotp token import test",
             "otpkey": self.otpkey,
             "otplen": 8,
-            "hashlib": "sha256",
-            "tokenkind": "software",
             "issuer": "privacyIDEA",
-            "count": 7
+            "count": 7,
+            "tokeninfo": {"hashlib": "sha256", "tokenkind": "software"}
         }]
 
         # Import the token
@@ -912,9 +915,8 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertEqual(hotptoken.type, token_data[0]["type"])
         self.assertEqual(hotptoken.token.description, token_data[0]["description"])
         self.assertEqual(hotptoken.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
-        self.assertEqual(hotptoken.get_tokeninfo("hashlib"), token_data[0]["hashlib"])
-        self.assertEqual(hotptoken.get_tokeninfo("tokenkind"), token_data[0]["tokenkind"])
-        self.assertEqual(hotptoken.export_token()["issuer"], token_data[0]["issuer"])
+        self.assertEqual(hotptoken.get_tokeninfo("hashlib"), token_data[0]["tokeninfo"]["hashlib"])
+        self.assertEqual(hotptoken.get_tokeninfo("tokenkind"), token_data[0]["tokeninfo"]["tokenkind"])
         self.assertEqual(hotptoken.export_token()["otplen"], token_data[0]["otplen"])
         self.assertEqual(hotptoken.token.count, token_data[0]["count"])
 

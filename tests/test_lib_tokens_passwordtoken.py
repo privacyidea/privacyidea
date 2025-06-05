@@ -65,18 +65,22 @@ class PasswordTokenTestCase(MyTestCase):
         # Test that all expected keys are present in the exported dictionary
         exported_data = passwordtoken.export_token()
         expected_keys = [
-            "serial", "type", "description", "hashlib", "otpkey", "tokenkind", "issuer"
+            "serial", "type", "description", "otpkey", "issuer"
         ]
         for key in expected_keys:
             self.assertIn(key, exported_data)
+
+        expected_tokeninfo_keys = ["hashlib", "tokenkind"]
+        for key in expected_tokeninfo_keys:
+            self.assertIn(key, exported_data["tokeninfo"])
 
         # Test that the exported values match the token's data
         self.assertEqual(exported_data["serial"], "PASS12345678")
         self.assertEqual(exported_data["type"], "pw")
         self.assertEqual(exported_data["description"], "this is a password token export test")
-        self.assertEqual(exported_data["hashlib"], "sha256")
+        self.assertEqual(exported_data["tokeninfo"]["hashlib"], "sha256")
         self.assertEqual(exported_data["otpkey"], '12345')
-        self.assertEqual(exported_data["tokenkind"], "software")
+        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
         self.assertEqual(exported_data["issuer"], "privacyIDEA")
 
         # Clean up
@@ -89,8 +93,7 @@ class PasswordTokenTestCase(MyTestCase):
             "type": "pw",
             "description": "this is a password token import test",
             "otpkey": "topsecret",
-            "hashlib": "sha256",
-            "tokenkind": "software",
+            "tokeninfo": {"hashlib": "sha256", "tokenkind": "software"},
             "issuer": "privacyIDEA"
         }]
 
@@ -105,9 +108,8 @@ class PasswordTokenTestCase(MyTestCase):
         self.assertEqual(passwordtoken.type, token_data[0]["type"])
         self.assertEqual(passwordtoken.token.description, token_data[0]["description"])
         self.assertEqual(passwordtoken.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
-        self.assertEqual(passwordtoken.get_tokeninfo("hashlib"), token_data[0]["hashlib"])
-        self.assertEqual(passwordtoken.get_tokeninfo("tokenkind"), token_data[0]["tokenkind"])
-        self.assertEqual(passwordtoken.export_token()["issuer"], token_data[0]["issuer"])
+        self.assertEqual(passwordtoken.get_tokeninfo("hashlib"), token_data[0]["tokeninfo"]["hashlib"])
+        self.assertEqual(passwordtoken.get_tokeninfo("tokenkind"), token_data[0]["tokeninfo"]["tokenkind"])
 
         #check that the token works
         r = passwordtoken.check_otp(self.password)
