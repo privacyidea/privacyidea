@@ -37,7 +37,7 @@ import traceback
 
 from privacyidea.api.lib.utils import getParam
 from privacyidea.api.lib.policyhelper import get_pushtoken_add_config, get_init_tokenlabel_parameters
-from privacyidea.lib.token import get_one_token, init_token, remove_token
+from privacyidea.lib.token import get_one_token, init_token
 from privacyidea.lib.utils import prepare_result, to_bytes, is_true, create_tag_dict
 from privacyidea.lib.error import (ResourceNotFoundError, ValidateError,
                                    privacyIDEAError, ConfigAdminError, PolicyError)
