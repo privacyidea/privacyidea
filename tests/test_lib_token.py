@@ -12,29 +12,27 @@ getTokens4UserOrSerial
 gettokensoftype
 getToken....
 """
+import binascii
+import datetime
+import hashlib
+import json
 import logging
+import warnings
+
+import mock
+from dateutil import parser
+from dateutil.tz import tzlocal
 from testfixtures import LogCapture
-from privacyidea.lib.container import init_container, add_token_to_container, find_container_by_serial
-from .base import MyTestCase, FakeAudit, FakeFlaskG
-from privacyidea.lib.user import (User)
-from privacyidea.lib.tokenclass import (TokenClass, TOKENKIND,
-                                        FAILCOUNTER_EXCEEDED,
-                                        FAILCOUNTER_CLEAR_TIMEOUT)
-from privacyidea.lib.token import weigh_token_type
-from privacyidea.lib.tokens.totptoken import TotpTokenClass
-from privacyidea.models import (db, Token, Challenge, TokenRealm)
+
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
                                     delete_privacyidea_config, SYSCONF)
+from privacyidea.lib.container import init_container, add_token_to_container, find_container_by_serial
+from privacyidea.lib.error import PolicyError
+from privacyidea.lib.error import (TokenAdminError, ParameterError,
+                                   privacyIDEAError, ResourceNotFoundError)
+from privacyidea.lib.framework import get_app_config
 from privacyidea.lib.policy import (set_policy, SCOPE, ACTION, PolicyClass,
                                     delete_policy)
-from privacyidea.lib.utils import b32encode_and_unicode, hexlify_and_unicode
-from privacyidea.lib.error import PolicyError
-import datetime
-from dateutil import parser
-import hashlib
-import binascii
-import warnings
-import mock
 from privacyidea.lib.token import (create_tokenclass_object,
                                    get_tokens, list_tokengroups,
                                    get_token_type, check_serial,
@@ -66,12 +64,17 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    get_tokens_from_serial_or_user,
                                    get_tokens_paginated_generator,
                                    assign_tokengroup, unassign_tokengroup)
-from privacyidea.lib.tokengroup import set_tokengroup, delete_tokengroup
-from privacyidea.lib.error import (TokenAdminError, ParameterError,
-                                   privacyIDEAError, ResourceNotFoundError)
+from privacyidea.lib.token import weigh_token_type, import_tokens
 from privacyidea.lib.tokenclass import DATE_FORMAT
-from privacyidea.lib.framework import get_app_config
-from dateutil.tz import tzlocal
+from privacyidea.lib.tokenclass import (TokenClass, TOKENKIND,
+                                        FAILCOUNTER_EXCEEDED,
+                                        FAILCOUNTER_CLEAR_TIMEOUT)
+from privacyidea.lib.tokengroup import set_tokengroup, delete_tokengroup
+from privacyidea.lib.tokens.totptoken import TotpTokenClass
+from privacyidea.lib.user import (User)
+from privacyidea.lib.utils import b32encode_and_unicode, hexlify_and_unicode
+from privacyidea.models import (db, Token, Challenge, TokenRealm)
+from .base import MyTestCase, FakeAudit, FakeFlaskG
 
 PWFILE = "tests/testdata/passwords"
 OTPKEY = "3132333435363738393031323334353637383930"
@@ -1750,6 +1753,25 @@ class TokenTestCase(MyTestCase):
         totp_init = totp.get_init_detail(totp_params, User())
         totp_enroll_url = totp.get_enroll_url(User(), {})
         self.assertEqual(totp_init["googleurl"]["value"], totp_enroll_url)
+
+    def test_61_import_list_of_tokens(self):
+        # Import a list of tokens
+        tokens = [
+            {"serial": "12345678901234567890", "type": "hotp","otplen": "6"},
+            {"serial": "12345678901234567890123456789012","type": "totp","otplen": "8"},
+            {"serial": "987654321","type": "hotp","otplen": "6", "otpkey": "12345"}
+        ]
+        a = import_tokens(json.dumps(tokens))
+        imported_tokens = get_tokens()
+        for token in tokens:
+            serial = token["serial"]
+            self.assertEqual(get_tokens(serial=serial)[0].token.serial, serial)
+
+        #Clean up the imported tokens
+        remove_token(imported_tokens[0].token.serial)
+        remove_token(imported_tokens[1].token.serial)
+        remove_token(imported_tokens[2].token.serial)
+
 
 class TokenOutOfBandTestCase(MyTestCase):
 

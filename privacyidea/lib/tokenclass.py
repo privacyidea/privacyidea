@@ -2008,3 +2008,30 @@ class TokenClass(object):
         Return the URL to enroll this token. It is not supported by all token types.
         """
         return None
+
+    def export_token(self) -> dict:
+        """
+        Create a dictionary with the token information that can be exported.
+        """
+        token_dict = {}
+        token_dict["type"] = self.type.lower()
+        token_dict["issuer"] = "privacyIDEA"
+        token_dict["description"] = self.token.description
+        token_dict["serial"] = self.token.serial
+        token_dict["otpkey"] = self.token.get_otpkey().getKey().decode("utf-8")
+        token_dict["tokeninfo"] = self.get_tokeninfo()
+
+        return token_dict
+
+    def import_token(self, token_information: dict):
+        """
+        Import a given token.
+        """
+        try:
+            self.token.set_otpkey(token_information["otpkey"])
+            self.token.type = token_information["type"]
+            self.token.description = token_information["description"]
+            self.add_tokeninfo_dict(token_information["tokeninfo"])
+            self.save()
+        except Exception as exx:
+            log.error(f'Failed to import token: {exx}')
