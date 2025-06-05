@@ -1899,18 +1899,23 @@ class PushTokenTestCase(MyTestCase):
         # Test that all expected keys are present in the exported dictionary
         exported_data = pushtoken.export_token()
         expected_keys = [
-            "serial", "type", "description", "hashlib", "otpkey", "tokenkind", "issuer"
+            "serial", "type", "description", "otpkey", "issuer"
         ]
 
         for key in expected_keys:
             self.assertIn(key, exported_data)
+
+        expected_tokeninfo_keys = ["tokenkind", PUBLIC_KEY_SMARTPHONE, PUBLIC_KEY_SERVER,
+                                   "firebase_token", PRIVATE_KEY_SERVER, "push_firebase_configuration"]
+        for key in expected_tokeninfo_keys:
+            self.assertIn(key, exported_data["tokeninfo"])
 
         # Test that the exported values match the token's data
         self.assertEqual(exported_data["serial"], pushtoken.token.serial)
         self.assertEqual(exported_data["type"], "push")
         self.assertEqual(exported_data["description"], "this is a push token export test")
         self.assertEqual(exported_data["otpkey"], pushtoken.token.get_otpkey().getKey().decode("utf-8"))
-        self.assertEqual(exported_data["tokenkind"], "software")
+        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
         self.assertEqual(exported_data["issuer"], "privacyIDEA")
 
         # Clean up
@@ -1930,7 +1935,7 @@ class PushTokenTestCase(MyTestCase):
                           PUBLIC_KEY_SERVER: self.server_public_key_pem,
                           "firebase_token": "firebaseT",
                           PRIVATE_KEY_SERVER: self.server_private_key_pem,
-                          "push_firebase_config": self.firebase_config_name,
+                          "push_firebase_configuration": self.firebase_config_name,
                           'private_key_server.type': 'password'}
         }]
 
