@@ -24,4 +24,3 @@ def upgrade():
 
 def downgrade():
     op.drop_column('policy', 'pinode')
-

@@ -83,6 +83,12 @@ migrate = Migrate()
 babel = Babel()
 
 
+@migrate.configure
+def configure_alembic(alembic_config):
+    alembic_config.set_main_option("script_location", "privacyidea:migrations")
+    return alembic_config
+
+
 def _register_blueprints(app):
     """Register the available Flask blueprints"""
     app.register_blueprint(validate_blueprint, url_prefix='/validate')

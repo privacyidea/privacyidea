@@ -58,4 +58,3 @@ def downgrade():
     op.drop_index(op.f('ix_subscription_id'), table_name='subscription')
     op.drop_index(op.f('ix_subscription_application'), table_name='subscription')
     op.drop_table('subscription')
-

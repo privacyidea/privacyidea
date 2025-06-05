@@ -41,4 +41,3 @@ def downgrade():
     op.drop_index(op.f('ix_authcache_resolver'), table_name='authcache')
     op.drop_index(op.f('ix_authcache_realm'), table_name='authcache')
     op.drop_table('authcache')
-

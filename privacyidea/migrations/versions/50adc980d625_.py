@@ -50,4 +50,3 @@ def upgrade():
 def downgrade():
     op.drop_table('eventhandleroption')
     op.drop_table('eventhandler')
-

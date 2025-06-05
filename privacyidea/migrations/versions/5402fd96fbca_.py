@@ -53,4 +53,3 @@ def downgrade():
     op.drop_index(op.f('ix_smsgatewayoption_gateway_id'), table_name='smsgatewayoption')
     op.drop_table('smsgatewayoption')
     op.drop_table('smsgateway')
-

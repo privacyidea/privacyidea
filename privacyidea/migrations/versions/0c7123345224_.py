@@ -12,7 +12,6 @@ down_revision = 'd756b34061ff'
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy import orm
 
 from privacyidea.lib.config import get_privacyidea_node
 

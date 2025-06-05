@@ -11,8 +11,8 @@ revision = 'a28f2733897b'
 down_revision = '89e57ed16379'
 
 from alembic import op, context
-import sqlalchemy as sa
 from sqlalchemy.schema import Sequence, CreateSequence
+
 
 def dialect_supports_sequences():
     migration_context = context.get_context()

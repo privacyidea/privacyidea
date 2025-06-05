@@ -153,7 +153,7 @@ def upgrade():
                         if len(found_realm_ids) > 1:
                             sys.stderr.write(u"{serial!s}, {userid!s}, {resolver!s}, Can not assign token. "
                                              u"Your realm configuration for the token is not distinct! "
-                                             u"The tokenowner could be in multiple realms! "                                  
+                                             u"The tokenowner could be in multiple realms! "
                                              u"The token is assigned to the following realms and the resolver is also "
                                              u"contained in these realm IDs: {realms!s}.\n".format(serial=token.serial,
                                                                                                    userid=token.user_id,

@@ -517,4 +517,3 @@ def upgrade():
 
 def downgrade():
     print("We do not support downgrading to version 1.5.")
-

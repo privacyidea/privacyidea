@@ -4,21 +4,20 @@
 
 [project]
 name = "privacyIDEA"
-version = "3.10dev1"
 description="privacyIDEA: multifactor authentication management system"
 readme = "README.rst"
-requires-python = ">=3.7"
-license = {file = "LICENSE"}
+requires-python = ">=3.9"
+license = "AGPL-3.0-or-later"
+license-files = ["LICENSE"]
 keywords = ["OTP", "two-factor authentication", "management", "security", "2fa", "mfa"]
 authors = [
     {name = "Cornelius Kölbel", email = "cornelius@privacyidea.org"}
 ]
 maintainers = [
-  {name = "Cornelius Kölbel", email = "cornelius@privacyidea.org"}
+    {name = "Cornelius Kölbel", email = "cornelius@privacyidea.org"}
 ]
 classifiers = [
     "Framework :: Flask",
-    "License :: OSI Approved :: GNU Affero General Public License v3",
     "Programming Language :: Python",
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: System Administrators",
@@ -35,67 +34,67 @@ classifiers = [
     'Programming Language :: Python :: 3.10'
 ]
 
+dynamic = ["version"]
+
 dependencies = [
-    "argon2_cffi>=20.1.0",
-    "beautifulsoup4[lxml]>=4.3.2",
-    "cbor2>=5.0.1",
-    "configobj>=5.0.6",
-    "croniter>=0.3.8",
-    "cryptography>=2.4.2",
-    "defusedxml>=0.4.1",
-    "Flask>=0.10.1,<2.0",
-    "Flask-Babel>=0.9,<3.0",
-    "Flask-Migrate>=1.2.0,<3.0",
-    "Flask-Script>=2.0.5",
-    "Flask-SQLAlchemy>=2.0,<3.0",
-    "Flask-Versioned>=0.9.4",
-    "google-auth>=1.23.0",
-    "grpcio>=1.46",
-    "huey[redis]>=1.11.0",
-    "importlib_metadata>=2.1.1; python_version=='3.7'",
-    "ldap3>=2.8,<2.9",
-    "MarkupSafe<2.1",
-    "netaddr>=0.7.12",
-    "passlib[bcrypt]>=1.7.0",
-    "protobuf>=3.20",
-    "pydash>=4.7.4",
-    "PyJWT>=1.3.0",
-    "PyMySQL>=0.6.6",
-    "pyOpenSSL>=17.5",
-    "pyrad>=2.0",
-    "python-dateutil>=2.7.3",
-    "python-gnupg>=0.4.4",
-    "PyYAML>=5.1",
-    "requests>=2.7.0",
-    "segno>=1.5",
-    "smpplib>=2.0",
-    "SQLAlchemy>=1.4.0,<2.0"
+    "argon2_cffi",
+    "beautifulsoup4[lxml]",
+    "cbor2",
+    "configobj",
+    "croniter",
+    "cryptography",
+    "defusedxml",
+    "Flask",
+    "Flask-Babel",
+    "Flask-Migrate",
+    "Flask-SQLAlchemy",
+    "Flask-Versioned",
+    "feedparser",
+    "google-auth",
+    "grpcio",
+    "huey[redis]",
+    "ldap3<2.9",
+    "netaddr",
+    "passlib[bcrypt]",
+    "protobuf",
+    "pydash",
+    "PyJWT",
+    "PyMySQL",
+    "pyOpenSSL",
+    "pyrad",
+    "python-dateutil",
+    "python-gnupg",
+    "PyYAML",
+    "requests",
+    "segno",
+    "smpplib",
+    "SQLAlchemy<2.0",
+    "webauthn"
 ]
 
 [project.optional-dependencies]
 test = [
-    "mock>=2.0.0",
-    "pyparsing>=3.0",
-    "pytest>=3.6.0",
-    "pytest-cov>=2.5.1",
-    "responses>=0.9.0",
-    "testfixtures>=6.14.2"
+    "mock",
+    "pyparsing",
+    "pytest",
+    "pytest-cov",
+    "responses",
+    "testfixtures"
 ]
 doc = [
-    "Pallets-Sphinx-Themes>=1.2.3",
-    "Sphinx>=1.3.1",
-    "sphinxcontrib-httpdomain>=1.3.0",
-    "sphinxcontrib-plantuml>=0.18",
-    "sphinxcontrib-spelling>=7.0.0"
+    "Pallets-Sphinx-Themes",
+    "Sphinx",
+    "sphinxcontrib-httpdomain",
+    "sphinxcontrib-spelling"
 ]
 postgres = [
-    'psycopg2>=2.8.3'
+    "psycopg2"
 ]
 hsm = [
-    'PyKCS11>=1.5.10'
+    "PyKCS11"
 ]
 kerberos = [
-    'gssapi>=1.7.0'
+    "gssapi"
 ]
 
 [project.urls]
@@ -105,10 +104,32 @@ kerberos = [
 "Changelog" = "https://github.com/privacyidea/privacyidea/blob/master/Changelog"
 "Forum" = "https://community.privacyidea.org"
 
+[project.scripts]
+pi-manage = "privacyidea.cli.pimanage:cli"
+privacyidea-token-janitor = "privacyidea.cli.privacyideatokenjanitor:cli"
+privacyidea-standalone = "privacyidea.cli.tools.standalone:cli"
+privacyidea-get-serial = "privacyidea.cli.tools.get_serial:byotp_call"
+privacyidea-usercache-cleanup = "privacyidea.cli.tools.usercache_cleanup:delete_call"
+privacyidea-get-unused-tokens = "privacyidea.cli.tools.get_unused_tokens:cli"
+privacyidea-expired-users = "privacyidea.cli.tools.expired_users:expire_call"
+privacyidea-cron = "privacyidea.cli.tools.cron:cli"
+pi-tokenjanitor = "privacyidea.cli.pitokenjanitor:cli"
+
+#[build-system]
+#requires = ["flit_core >=3.11,<4"]
+#build-backend = "flit_core.buildapi"
+
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools.packages.find]
-where = ["."]
-exclude = ["tests*", "doc*", "deploy*"]
+#[tool.setuptools.packages.find]
+#where = ["."]
+#include = ["privacyidea"]
+#exclude = [".git*", ".cicleci", ".codespell*"]
+
+[tool.setuptools]
+packages = ["privacyidea"]
+
+[tool.setuptools_scm]
+version_file = "privacyidea/_version.py"

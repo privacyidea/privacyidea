@@ -80,4 +80,3 @@ def downgrade():
     op.drop_constraint(None, 'machineresolver')
     op.create_index('ix_clientapplication_id', 'clientapplication', ['id'], unique=False)
     op.drop_constraint(None, 'caconnector')
-

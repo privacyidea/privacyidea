@@ -26,4 +26,3 @@ def upgrade():
 def downgrade():
     op.drop_index(op.f('ix_usercache_used_login'), table_name='usercache')
     op.drop_column('usercache', 'used_login')
-
