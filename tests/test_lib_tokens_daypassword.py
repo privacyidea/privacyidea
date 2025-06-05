@@ -681,18 +681,22 @@ class DayPasswordTokenTestCase(MyTestCase):
         # Test that all expected keys are present in the exported dictionary
         exported_data = daypasswordtoken.export_token()
         expected_keys = [
-            "serial", "type", "description", "hashlib", "otpkey", "tokenkind", "issuer"
+            "serial", "type", "description", "otpkey", "issuer"
         ]
         for key in expected_keys:
             self.assertIn(key, exported_data)
+
+        expected_tokeninfo_keys = ["hashlib", "tokenkind"]
+        for key in expected_tokeninfo_keys:
+            self.assertIn(key, exported_data["tokeninfo"])
 
         # Test that the exported values match the token's data
         self.assertEqual(exported_data["serial"], "DAYPASS12345678")
         self.assertEqual(exported_data["type"], "daypassword")
         self.assertEqual(exported_data["description"], "this is a day password token export test")
-        self.assertEqual(exported_data["hashlib"], "sha256")
+        self.assertEqual(exported_data["tokeninfo"]["hashlib"], "sha256")
         self.assertEqual(exported_data["otpkey"], '12345')
-        self.assertEqual(exported_data["tokenkind"], "software")
+        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
         self.assertEqual(exported_data["issuer"], "privacyIDEA")
 
         # Clean up
@@ -705,11 +709,10 @@ class DayPasswordTokenTestCase(MyTestCase):
             "type": "daypassword",
             "description": "this is a day password token import test",
             "otpkey": self.otpkey,
-            "hashlib": "sha1",
-            "tokenkind": "software",
             "issuer": "privacyIDEA",
-            "timeStep": "3600",
-            "count": 470184
+            "count": 470184,
+            "tokeninfo": {"hashlib": "sha1", "timeShift": 0, "timeStep": 3600, "timeWindow": 180,
+                          "tokenkind": "software"}
         }]
 
         # Import the token
@@ -723,9 +726,8 @@ class DayPasswordTokenTestCase(MyTestCase):
         self.assertEqual(daypasswordtoken.type, token_data[0]["type"])
         self.assertEqual(daypasswordtoken.token.description, token_data[0]["description"])
         self.assertEqual(daypasswordtoken.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
-        self.assertEqual(daypasswordtoken.get_tokeninfo("hashlib"), token_data[0]["hashlib"])
-        self.assertEqual(daypasswordtoken.get_tokeninfo("tokenkind"), token_data[0]["tokenkind"])
-        self.assertEqual(daypasswordtoken.export_token()["issuer"], token_data[0]["issuer"])
+        self.assertEqual(daypasswordtoken.get_tokeninfo("hashlib"), token_data[0]["tokeninfo"]["hashlib"])
+        self.assertEqual(daypasswordtoken.get_tokeninfo("tokenkind"), token_data[0]["tokeninfo"]["tokenkind"])
         self.assertEqual(daypasswordtoken.token.count, token_data[0]["count"])
 
         with mock.patch('time.time') as MockTime:

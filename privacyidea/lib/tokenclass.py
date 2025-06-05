@@ -2019,8 +2019,7 @@ class TokenClass(object):
         token_dict["description"] = self.token.description
         token_dict["serial"] = self.token.serial
         token_dict["otpkey"] = self.token.get_otpkey().getKey().decode("utf-8")
-        token_dict["hashlib"] = self.get_tokeninfo("hashlib")
-        token_dict["tokenkind"] = self.get_tokeninfo("tokenkind")
+        token_dict["tokeninfo"] = self.get_tokeninfo()
 
         return token_dict
 
@@ -2030,10 +2029,9 @@ class TokenClass(object):
         """
         try:
             self.token.set_otpkey(token_information["otpkey"])
-            self.add_tokeninfo("hashlib", token_information["hashlib"])
             self.token.type = token_information["type"]
             self.token.description = token_information["description"]
-            self.add_tokeninfo("tokenkind", token_information["tokenkind"])
+            self.add_tokeninfo_dict(token_information["tokeninfo"])
             self.save()
         except Exception as exx:
             log.error(f'Failed to import token: {exx}')

@@ -921,4 +921,3 @@ class HotpTokenClass(TokenClass):
         self.token.otplen = int(token_information.get("otplen", 6))
         self.token.count = token_information.get("count", 0)
         self.token.save()
-        pass

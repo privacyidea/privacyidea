@@ -535,20 +535,24 @@ class EmailTokenTestCase(MyTestCase):
         # Test that all expected keys are present in the exported dictionary
         exported_data = emailtoken.export_token()
         expected_keys = [
-            "serial", "type", "email", "description", "hashlib", "otpkey", "tokenkind", "issuer"
+            "serial", "type", "description", "otpkey", "issuer"
         ]
         for key in expected_keys:
             self.assertIn(key, exported_data)
+
+        expected_tokeninfo_keys = ["email", "hashlib", "tokenkind"]
+        for key in expected_tokeninfo_keys:
+            self.assertIn(key, exported_data["tokeninfo"])
 
         # Test that the exported values match the token's data
         exported_data = emailtoken.export_token()
         self.assertEqual(exported_data["serial"], "PIEM12345678")
         self.assertEqual(exported_data["type"], "email")
-        self.assertEqual(exported_data["email"], "test@example.com")
+        self.assertEqual(exported_data["tokeninfo"]["email"], "test@example.com")
         self.assertEqual(exported_data["description"], "this is a email token export test")
-        self.assertEqual(exported_data["hashlib"], "sha512")
+        self.assertEqual(exported_data["tokeninfo"]["hashlib"], "sha512")
         self.assertEqual(exported_data["otpkey"], '12345')
-        self.assertEqual(exported_data["tokenkind"], "software")
+        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
         self.assertEqual(exported_data["issuer"], "privacyIDEA")
 
         # Clean up
@@ -565,7 +569,9 @@ class EmailTokenTestCase(MyTestCase):
             "email": self.email,
             "hashlib": "sha512",
             "tokenkind": "software",
-            "issuer": "privacyIDEA"
+            "issuer": "privacyIDEA",
+            "tokeninfo": {"hashlib": "sha512", "timeWindow": 180, "email": self.email,
+                          "tokenkind": "software"}
         }]
 
         # Import the token
@@ -579,10 +585,9 @@ class EmailTokenTestCase(MyTestCase):
         self.assertEqual(emailtoken.type, token_data[0]["type"])
         self.assertEqual(emailtoken.token.description, token_data[0]["description"])
         self.assertEqual(emailtoken.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
-        self.assertEqual(emailtoken.get_tokeninfo("email"), token_data[0]["email"])
-        self.assertEqual(emailtoken.get_tokeninfo("hashlib"), token_data[0]["hashlib"])
-        self.assertEqual(emailtoken.get_tokeninfo("tokenkind"), token_data[0]["tokenkind"])
-        self.assertEqual(emailtoken.export_token()["issuer"], token_data[0]["issuer"])
+        self.assertEqual(emailtoken.get_tokeninfo("email"), token_data[0]["tokeninfo"]["email"])
+        self.assertEqual(emailtoken.get_tokeninfo("hashlib"), token_data[0]["tokeninfo"]["hashlib"])
+        self.assertEqual(emailtoken.get_tokeninfo("tokenkind"), token_data[0]["tokeninfo"]["tokenkind"])
 
         # Check that token works
         self.assertEqual(0, emailtoken.check_otp('125165'))

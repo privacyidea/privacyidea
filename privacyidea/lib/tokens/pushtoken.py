@@ -1211,37 +1211,3 @@ class PushTokenClass(TokenClass):
         init_details = self.get_init_detail(params, user)
         enroll_url = init_details.get("pushurl").get("value")
         return enroll_url
-
-    def export_token(self) -> dict:
-        """
-        Create a dictionary with the token information that can be exported.
-        """
-        token_dict = TokenClass.export_token(self)
-        token_dict["public_key_smartphone"] = self.get_tokeninfo("public_key_smartphone")
-        token_dict["public_key_server"] = self.get_tokeninfo("public_key_server")
-        token_dict["firebase_token"] = self.get_tokeninfo("firebase_token")
-        token_dict["private_key_server"] = self.get_tokeninfo("private_key_server")
-        token_dict["push_firebase_config"] = self.get_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
-        return token_dict
-
-    def import_token(self, token_information: dict):
-        """
-        Import a push token.
-        """
-        TokenClass.import_token(self, token_information)
-        try:
-            self.add_tokeninfo_dict(
-                {
-                    "public_key_smartphone": token_information["public_key_smartphone"],
-                    "public_key_server": token_information["public_key_server"],
-                    "firebase_token": token_information["firebase_token"],
-                    PUSH_ACTION.FIREBASE_CONFIG: token_information["push_firebase_config"],
-                })
-            self.add_tokeninfo("private_key_server", token_information["private_key_server"], "password")
-            self.save()
-        except KeyError as e:
-            remove_token(token_information["serial"])
-            raise ParameterError(f"Missing key {e} in token information. "
-                                 f"Please check the token information.")
-        pass
-

@@ -513,20 +513,24 @@ class SMSTokenTestCase(MyTestCase):
         # Test that all expected keys are present in the exported dictionary
         exported_data = smstoken.export_token()
         expected_keys = [
-            "serial", "type", "phone", "description", "hashlib", "otpkey", "tokenkind", "issuer"
+            "serial", "type", "description", "otpkey", "issuer"
         ]
         for key in expected_keys:
             self.assertIn(key, exported_data)
+
+        expected_tokeninfo_keys = ["phone", "hashlib", "tokenkind"]
+        for key in expected_tokeninfo_keys:
+            self.assertIn(key, exported_data["tokeninfo"])
 
         # Test that the exported values match the token's data
         exported_data = smstoken.export_token()
         self.assertEqual(exported_data["serial"], "SMS12345678")
         self.assertEqual(exported_data["type"], "sms")
-        self.assertEqual(exported_data["phone"], "+49123456789")
+        self.assertEqual(exported_data["tokeninfo"]["phone"], "+49123456789")
         self.assertEqual(exported_data["description"], "this is a sms token export test")
-        self.assertEqual(exported_data["hashlib"], "sha256")
+        self.assertEqual(exported_data["tokeninfo"]["hashlib"], "sha256")
         self.assertEqual(exported_data["otpkey"], '12345')
-        self.assertEqual(exported_data["tokenkind"], "software")
+        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
         self.assertEqual(exported_data["issuer"], "privacyIDEA")
 
         # Clean up
@@ -539,9 +543,7 @@ class SMSTokenTestCase(MyTestCase):
             "type": "sms",
             "description": "this is a sms token import test",
             "otpkey": self.otpkey,
-            "phone": "+49123456789",
-            "hashlib": "sha256",
-            "tokenkind": "software",
+            "tokeninfo": {"phone": "+49123456789", "hashlib": "sha256", "tokenkind": "software"},
             "issuer": "privacyIDEA"
         }]
 
@@ -556,10 +558,9 @@ class SMSTokenTestCase(MyTestCase):
         self.assertEqual(smstoken.type, token_data[0]["type"])
         self.assertEqual(smstoken.token.description, token_data[0]["description"])
         self.assertEqual(smstoken.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
-        self.assertEqual(smstoken.get_tokeninfo("phone"), token_data[0]["phone"])
-        self.assertEqual(smstoken.get_tokeninfo("hashlib"), token_data[0]["hashlib"])
-        self.assertEqual(smstoken.get_tokeninfo("tokenkind"), token_data[0]["tokenkind"])
-        self.assertEqual(smstoken.export_token()["issuer"], token_data[0]["issuer"])
+        self.assertEqual(smstoken.get_tokeninfo("phone"), token_data[0]["tokeninfo"]["phone"])
+        self.assertEqual(smstoken.get_tokeninfo("hashlib"), token_data[0]["tokeninfo"]["hashlib"])
+        self.assertEqual(smstoken.get_tokeninfo("tokenkind"), token_data[0]["tokeninfo"]["tokenkind"])
 
         # Check that token works
         self.assertEqual(0, smstoken.check_otp('875740'))

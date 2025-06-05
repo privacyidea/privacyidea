@@ -1923,14 +1923,15 @@ class PushTokenTestCase(MyTestCase):
             "type": "push",
             "description": "this is a push token import test",
             "otpkey": "12345",
-            "hashlib": "sha256",
-            "tokenkind": "software",
             "issuer": "privacyIDEA",
-            PUBLIC_KEY_SMARTPHONE: self.smartphone_public_key_pem_urlsafe,
-            PUBLIC_KEY_SERVER: self.server_public_key_pem,
-            "firebase_token": "firebaseT",
-            PRIVATE_KEY_SERVER: self.server_private_key_pem,
-            "push_firebase_config": self.firebase_config_name
+            "tokeninfo": {"hashlib": "sha256",
+                          "tokenkind": "software",
+                          PUBLIC_KEY_SMARTPHONE: self.smartphone_public_key_pem_urlsafe,
+                          PUBLIC_KEY_SERVER: self.server_public_key_pem,
+                          "firebase_token": "firebaseT",
+                          PRIVATE_KEY_SERVER: self.server_private_key_pem,
+                          "push_firebase_config": self.firebase_config_name,
+                          'private_key_server.type': 'password'}
         }]
 
         # Import the token
@@ -1944,9 +1945,8 @@ class PushTokenTestCase(MyTestCase):
         self.assertEqual(pushtoken.type, token_data[0]["type"])
         self.assertEqual(pushtoken.token.description, token_data[0]["description"])
         self.assertEqual(pushtoken.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
-        self.assertEqual(pushtoken.get_tokeninfo("hashlib"), token_data[0]["hashlib"])
-        self.assertEqual(pushtoken.get_tokeninfo("tokenkind"), token_data[0]["tokenkind"])
-        self.assertEqual(pushtoken.export_token()["issuer"], token_data[0]["issuer"])
+        self.assertEqual(pushtoken.get_tokeninfo("hashlib"), token_data[0]["tokeninfo"]["hashlib"])
+        self.assertEqual(pushtoken.get_tokeninfo("tokenkind"), token_data[0]["tokeninfo"]["tokenkind"])
 
         # Clean up
         remove_token(pushtoken.token.serial)
