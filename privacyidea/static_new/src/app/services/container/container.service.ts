@@ -15,7 +15,6 @@ import {
 import { environment } from '../../../environments/environment';
 import { LocalService } from '../local/local.service';
 import { NotificationService } from '../notification/notification.service';
-import { TableUtilsService } from '../table-utils/table-utils.service';
 import { EnrollmentUrl, TokenService } from '../token/token.service';
 import {
   catchError,
@@ -344,7 +343,6 @@ export class ContainerService {
   constructor(
     private http: HttpClient,
     private localService: LocalService,
-    private tableUtilsService: TableUtilsService,
     private tokenService: TokenService,
     private notificationService: NotificationService,
     private contentService: ContentService,

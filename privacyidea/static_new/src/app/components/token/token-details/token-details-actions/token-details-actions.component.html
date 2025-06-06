@@ -53,6 +53,15 @@
         <mat-icon class="detail-button-icon">help_outline</mat-icon>
         Verify OTP Value
       </button>
+      @if(tokenType() === 'sshkey') {
+        <button (click)="assignSSHMachineDialog()"
+                class="detail-button"
+                extended
+                mat-fab>
+          <mat-icon class="detail-button-icon">computer</mat-icon>
+          Assign SSH Machine
+        </button>
+      }
     </div>
   } @else {
     <button (click)="testPasskey()"

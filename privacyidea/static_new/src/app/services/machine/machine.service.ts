@@ -17,6 +17,15 @@ import { PiResponse } from '../../app.component';
 
 type TokenApplications = TokenApplication[];
 
+export type Machines = Machine[];
+
+export interface Machine {
+  hostname: string[];
+  id: string;
+  ip: string;
+  resolver_name: string;
+}
+
 export interface TokenApplication {
   application: string;
   id: number;
@@ -45,6 +54,34 @@ export class MachineService {
     source: this.selectedApplicationType,
     computation: () => 10,
   });
+
+  machinesResource = httpResource<PiResponse<Machines>>(() => ({
+    url: `${this.baseUrl}`,
+    method: 'GET',
+    headers: this.localService.getHeaders(),
+    params: {
+      any: '',
+    },
+  }));
+
+  machines: WritableSignal<Machines> = linkedSignal({
+    source: this.machinesResource.value,
+    computation: (machinesResource, previous) =>
+      machinesResource?.result?.value ?? previous?.value ?? [],
+  });
+
+  postAssignMachineToToken(args: {
+    service_id: string;
+    user: string;
+    serial: string;
+    application: string;
+    machineid: string;
+    resolver: string;
+  }): Observable<any> {
+    const headers = this.localService.getHeaders();
+    return this.http.post(`${this.baseUrl}token`, args, { headers });
+  }
+
   filterValue: WritableSignal<Record<string, string>> = linkedSignal({
     source: this.selectedApplicationType,
     computation: () => ({}),
@@ -179,21 +216,25 @@ export class MachineService {
     );
   }
 
-  getMachine(
-    hostname: string,
-    ip: string,
-    id: string,
-    resolver: string,
-    any: string,
-  ): Observable<any> {
+  getMachine(args: {
+    hostname?: string;
+    ip?: string;
+    id?: string;
+    resolver?: string;
+    any?: string;
+  }) {
+    const { hostname, ip, id, resolver, any } = args;
     const headers = this.localService.getHeaders();
-    let params = new HttpParams()
-      .set('hostname', hostname)
-      .set('ip', ip)
-      .set('id', id)
-      .set('resolver', resolver)
-      .set('any', any);
-    return this.http.get(`${this.baseUrl}`, { headers, params });
+    let params = new HttpParams();
+    if (hostname !== undefined) params = params.set('hostname', hostname);
+    if (ip !== undefined) params = params.set('ip', ip);
+    if (id !== undefined) params = params.set('id', id);
+    if (resolver !== undefined) params = params.set('resolver', resolver);
+    if (any !== undefined) params = params.set('any', any);
+    return this.http.get<PiResponse<Machines>>(`${this.baseUrl}`, {
+      headers,
+      params,
+    });
   }
 
   deleteToken(

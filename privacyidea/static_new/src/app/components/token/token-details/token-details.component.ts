@@ -44,6 +44,8 @@ import { MatDivider } from '@angular/material/divider';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 import { ContentService } from '../../../services/content/content.service';
 import { AuthService } from '../../../services/auth/auth.service';
+import { MatDialog } from '@angular/material/dialog';
+import { TokenSshMachineAssignDialogComponent } from './token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog';
 
 export const tokenDetailsKeyMap = [
   { key: 'tokentype', label: 'Type' },
@@ -226,6 +228,7 @@ export class TokenDetailsComponent {
     protected tableUtilsService: TableUtilsService,
     protected contentService: ContentService,
     private authService: AuthService,
+    protected matDialog: MatDialog,
   ) {
     effect(() => {
       if (!this.tokenDetails()) return;
@@ -400,6 +403,17 @@ export class TokenDetailsComponent {
     this.tokenService.setTokengroup(this.tokenSerial(), value).subscribe({
       next: () => {
         this.tokenDetailResource.reload();
+      },
+    });
+  }
+
+  openSshMachineAssignDialog() {
+    this.matDialog.open(TokenSshMachineAssignDialogComponent, {
+      data: {
+        tokenSerial: this.tokenSerial(),
+        tokenDetails: this.tokenDetails(),
+        containerSerial: this.containerSerial(),
+        tokenType: this.tokenType(),
       },
     });
   }

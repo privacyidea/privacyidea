@@ -8,6 +8,8 @@ import { MatDivider } from '@angular/material/divider';
 import { MatSuffix } from '@angular/material/form-field';
 import { OverflowService } from '../../../../services/overflow/overflow.service';
 import { NotificationService } from '../../../../services/notification/notification.service';
+import { MatDialog } from '@angular/material/dialog';
+import { TokenSshMachineAssignDialogComponent } from '../token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog';
 
 @Component({
   selector: 'app-token-details-actions',
@@ -33,6 +35,7 @@ export class TokenDetailsActionsComponent {
 
   constructor(
     private tokenService: TokenService,
+    private matDialog: MatDialog,
     protected validateService: ValidateService,
     protected overflowService: OverflowService,
     protected notificationService: NotificationService,
@@ -84,6 +87,19 @@ export class TokenDetailsActionsComponent {
           this.notificationService.openSnackBar('No user found.');
         }
       },
+    });
+  }
+
+  assignSSHMachineDialog() {
+    this.matDialog.open(TokenSshMachineAssignDialogComponent, {
+      width: '600px',
+      data: {
+        tokenSerial: this.tokenSerial(),
+        tokenDetails: this.tokenService.getTokenDetails(this.tokenSerial()),
+        tokenType: this.tokenType(),
+      },
+      autoFocus: false,
+      restoreFocus: false,
     });
   }
 }
