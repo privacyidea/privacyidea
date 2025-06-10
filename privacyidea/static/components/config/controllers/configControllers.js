@@ -322,6 +322,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
 
         function _buildParamsForSave(targetName) {
             const p = angular.copy($scope.params);
+            // get scope
             p.scope    = $scope.selectedScope[0].name;
             p.name     = targetName;
             p.action   = [];
@@ -330,9 +331,15 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             p.adminrealm = [];
             p.pinode   = [];
 
+            // get actions
             if ($scope.isActionValues) {
+                // we need to process the value-actions
+                // iterate through the checkboxes
                 angular.forEach($scope.actionCheckBox, function (checked, key) {
                     if (!checked) { return; }
+                    // The action is checked. So try to get an action value.
+                    // The type is given in the $scope.actions array
+                    // It is either a string/text, a num or only a bool
                     const meta = $scope.actions.find(o => o.name === key);
                     switch (meta.type) {
                         case "bool":
@@ -357,6 +364,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
                     }
                 });
             } else {
+                // We only have boolean actions...
                 angular.forEach($scope.selectedActions, function (a) {
                     p.action.push(a.name);
                 });
@@ -373,6 +381,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
         }
 
         $scope.createPolicy = function () {
+            // This is called to save the policy
             const paramsToSave = _buildParamsForSave($scope.policyname);
             ConfigFactory.setPolicy($scope.policyname, paramsToSave, function () {
                 // Return to the policy list
@@ -389,7 +398,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             }
 
             const paramsToSave = _buildParamsForSave(newName);
-
+            // Save renamed policy and delete the old policy
             ConfigFactory.setPolicy(newName, paramsToSave, function () {
                 ConfigFactory.delPolicy(oldName, function () {
                     $scope.existingPolicyname = $scope.policyname = newName;
