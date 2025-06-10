@@ -133,6 +133,14 @@
             <span class="glyphicon glyphicon-plus"></span>
             <span translate>Save Policy</span>
         </button>
+             <button class="btn btn-primary"
+             ng-show="existingPolicyname
+                 && policyname !== existingPolicyname
+                 && !formPolicyAdd.$invalid"
+             ng-click="renamePolicy(existingPolicyname, policyname)">
+    <span class="glyphicon glyphicon-pencil"></span>
+    <span translate>Rename Policy</span>
+    </button>
     </div>
 
     <ul class="nav nav-tabs">
