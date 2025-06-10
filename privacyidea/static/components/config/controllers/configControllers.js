@@ -323,20 +323,22 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
         function _buildParamsForSave(targetName) {
             const p = angular.copy($scope.params);
             // get scope
-            p.scope    = $scope.selectedScope[0].name;
-            p.name     = targetName;
-            p.action   = [];
-            p.realm    = [];
+            p.scope = $scope.selectedScope[0].name;
+            p.name = targetName;
+            p.action = [];
+            p.realm = [];
             p.resolver = [];
             p.adminrealm = [];
-            p.pinode   = [];
+            p.pinode = [];
 
             // get actions
             if ($scope.isActionValues) {
                 // we need to process the value-actions
                 // iterate through the checkboxes
                 angular.forEach($scope.actionCheckBox, function (checked, key) {
-                    if (!checked) { return; }
+                    if (!checked) {
+                        return;
+                    }
                     // The action is checked. So try to get an action value.
                     // The type is given in the $scope.actions array
                     // It is either a string/text, a num or only a bool
@@ -370,13 +372,13 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
                 });
             }
             // get realms
-            angular.forEach($scope.selectedRealms,    r => p.realm.push(r.name));
+            angular.forEach($scope.selectedRealms, r => p.realm.push(r.name));
             // get resolvers
             angular.forEach($scope.selectedResolvers, r => p.resolver.push(r.name));
             // get admin realms
             angular.forEach($scope.selectedAdminRealms, r => p.adminrealm.push(r.name));
             // get PINodes
-            angular.forEach($scope.selectedPINodes,   n => p.pinode.push(n.name));
+            angular.forEach($scope.selectedPINodes, n => p.pinode.push(n.name));
             return p;
         }
 
