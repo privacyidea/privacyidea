@@ -338,6 +338,18 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                     AuthFactory.authError(error.data)
                 });
             },
+            renamePolicy: function (oldname, newname, callback) {
+                $http.post(policyUrl + "/rename/" + oldname, {newname: newname}, {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
             enablePolicy: function (policyname, callback) {
                 $http.post(policyUrl + "/enable/" + policyname, {}, {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}

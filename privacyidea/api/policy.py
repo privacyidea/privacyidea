@@ -97,6 +97,25 @@ def disable_policy_api(name):
     g.audit_object.log({"success": True})
     return send_result(p)
 
+@policy_blueprint.route('/rename/<name>', methods=['POST'])
+@log_with(log)
+@prepolicy(check_base_action, request, ACTION.POLICYWRITE)
+def rename_policy_api(name=None):
+    """
+    Rename a given policy by its name.
+
+    :jsonparam name: The name of the policy
+    :jsonparam newname: The new name of the policy
+    :return: ID in the database
+    """
+    param = request.all_data
+    newname = getParam(param, "newname", required)
+    check_policy_name(newname)
+
+    p = set_policy(name=name, newname=newname)
+    g.audit_object.log({"success": True})
+    return send_result(p)
+
 
 @policy_blueprint.route('/<name>', methods=['POST'])
 @log_with(log)

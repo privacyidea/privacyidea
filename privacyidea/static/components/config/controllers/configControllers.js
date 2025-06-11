@@ -399,22 +399,12 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
                 return;
             }
 
-            const paramsToSave = _buildParamsForSave(newName);
-            // Save renamed policy and delete the old policy
-            ConfigFactory.setPolicy(newName, paramsToSave, function () {
-                ConfigFactory.delPolicy(oldName, function () {
-                    $scope.existingPolicyname = $scope.policyname = newName;
+            ConfigFactory.renamePolicy(oldName, newName, function (data) {
+                if (data.result.status === true) {
+                    // Return to the policy list
                     $scope.getPolicies();
-                    if (typeof inform !== "undefined") {
-                        inform.add(
-                            gettextCatalog.getString(
-                                "Policy successfully renamed to «%(name)s».",
-                                {name: newName}
-                            ),
-                            {type: "success", ttl: 6000}
-                        );
-                    }
-                });
+                    $state.go("config.policies.list");
+                }
             });
         };
 

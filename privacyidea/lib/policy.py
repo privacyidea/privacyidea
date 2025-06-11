@@ -170,6 +170,8 @@ from configobj import ConfigObj
 
 from operator import itemgetter
 import logging
+
+from ..api.lib.utils import check_policy_name
 from ..models import (Policy, db, save_config_timestamp, Token, PolicyDescription)
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     get_config_object, get_privacyidea_node,
@@ -1376,17 +1378,19 @@ class PolicyClass(object):
 #
 
 @log_with(log)
-def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
+def set_policy(name=None, newname=None, scope=None, action=None, realm=None, resolver=None,
                user=None, time=None, client=None, active=True,
                adminrealm=None, adminuser=None, priority=None, check_all_resolvers=False,
                conditions=None, pinode=None, description=None, user_case_insensitive=False):
     """
-    Function to set a policy.
+    Function to create, update or rename a policy.
 
-    If the policy with this name already exists, it updates the policy.
-    It expects a dict of with the following keys:
+    If *name* exists the policy is updated, otherwise it is created.
+    If *newname* is given the existing policy called *name* is renamed
+    to *newname* (after validating that no policy with *newname* exists).
 
     :param name: The name of the policy
+    :param newname:  Optional – the new name the policy should receive
     :param scope: The scope of the policy. Something like "admin" or "authentication"
     :param action: A scope specific action or a comma separated list of actions
     :type active: basestring
@@ -1420,6 +1424,8 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         priority = int(priority)
     if priority is not None and priority <= 0:
         raise ParameterError("Priority must be at least 1")
+    if newname:
+        check_policy_name(newname)
     check_all_resolvers = is_true(check_all_resolvers)
     user_case_insensitive = is_true(user_case_insensitive)
     if isinstance(action, dict):
@@ -1467,6 +1473,13 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                     condition))
     p1 = Policy.query.filter_by(name=name).first()
     if p1:
+        if newname and newname != name:
+            # ensure uniqueness
+            if Policy.query.filter_by(name=newname).first():
+                raise ParameterError(
+                    f"A policy with name '{newname}' already exists")
+            p1.name = newname
+
         # The policy already exist, we need to update
         if action is not None:
             p1.action = action
@@ -1500,7 +1513,8 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         ret = p1.id
     else:
         # Create a new policy
-        ret = Policy(name, action=action, scope=scope, realm=realm,
+        create_name = newname if newname else name
+        ret = Policy(create_name, action=action, scope=scope, realm=realm,
                      user=user, time=time, client=client, active=active,
                      resolver=resolver, adminrealm=adminrealm,
                      adminuser=adminuser, priority=priority,
