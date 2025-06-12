@@ -68,15 +68,12 @@ class SpassTokenTestCase(MyTestCase):
 
         # Test that all expected keys are present in the exported dictionary
         exported_data = spasstoken.export_token()
-        expected_keys = [
-            "serial", "type", "description", "otpkey", "issuer"
-        ]
-        for key in expected_keys:
-            self.assertIn(key, exported_data)
+
+        expected_keys = ["serial", "type", "description", "otpkey", "issuer"]
+        self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
 
         expected_tokeninfo_keys = ["hashlib", "tokenkind"]
-        for key in expected_tokeninfo_keys:
-            self.assertIn(key, exported_data["tokeninfo"])
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
 
         # Test that the exported values match the token's data
         self.assertEqual(exported_data["serial"], "SPASS12345678")

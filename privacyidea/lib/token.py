@@ -140,8 +140,9 @@ class clob_to_varchar(FunctionElement):
 
 @dataclass(frozen=True)
 class TokenImportResult:
-    successful_tokens: list
-    failed_tokens: list
+    successful_tokens: list[str]
+    updated_tokens: list[str]
+    failed_tokens: list[str]
 
 
 @compiles(clob_to_varchar)
@@ -3055,7 +3056,7 @@ def regenerate_enroll_url(serial: str, request: Request, g) -> Union[str, None]:
     return enroll_url
 
 
-def export_tokens(tokens) -> str:
+def export_tokens(tokens: list[Token]) -> str:
     """
     Takes a list of tokens and returns an exportable JSON string.
 
@@ -3070,7 +3071,7 @@ def export_tokens(tokens) -> str:
     return json_export
 
 
-def import_tokens(tokens):
+def import_tokens(tokens: str):
     """
     Import a list of token dictionaries.
 
@@ -3078,22 +3079,27 @@ def import_tokens(tokens):
     :return: list of token objects
     """
     successful_tokens = []
+    updated_tokens = []
     failed_tokens = []
-    tokens = json.loads(tokens)
-    for token_info_dict in tokens:
-        serial = token_info_dict.get("serial")
-        try:
-            serial_not_exists, a = check_serial(serial)  # replace check_serial
-            if serial_not_exists:
-                token_type = token_info_dict.get("type")
-                db_token = Token(serial, tokentype=token_type.lower())
-                token = create_tokenclass_object(db_token)
-                token.import_token(token_info_dict)
-            else:
-                token = get_tokens_from_serial_or_user(serial=serial, user=None)
-                token[0].update(token_info_dict)
-            successful_tokens.append(serial)
-        except Exception as e:
-            log.error(f"Could not import token {serial}: {e}")
-            failed_tokens.append(serial)
-    return TokenImportResult(successful_tokens=successful_tokens, failed_tokens=failed_tokens)
+    try:
+        tokens = json.loads(tokens)
+        for token_info_dict in tokens:
+            serial = token_info_dict.get("serial")
+            try:
+                serial_not_exists, a = check_serial(serial)  # replace check_serial
+                if serial_not_exists:
+                    token_type = token_info_dict.get("type")
+                    db_token = Token(serial, tokentype=token_type.lower())
+                    token = create_tokenclass_object(db_token)
+                    token.import_token(token_info_dict)
+                    successful_tokens.append(serial)
+                else:
+                    token = get_tokens_from_serial_or_user(serial=serial, user=None)
+                    token[0].update(token_info_dict)
+                    updated_tokens.append(serial)
+            except Exception as e:
+                log.error(f"Could not import token {serial}: {e}")
+                failed_tokens.append(serial)
+    except Exception as ex:
+        raise TokenAdminError(f"Could not parse the token import data from JSON: {ex}")
+    return TokenImportResult(successful_tokens=successful_tokens, updated_tokens=updated_tokens, failed_tokens=failed_tokens)
