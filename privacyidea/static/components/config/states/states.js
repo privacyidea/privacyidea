@@ -366,5 +366,30 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
                     templateUrl: configpath + "config.periodictasks.details.html" + versioningSuffixProviderProvider.$get().$get(),
                     controller: "periodicTaskDetailController"
                 })
+                .state('config.risk', {
+                    url: "/risk",
+                    templateUrl: configpath + "config.risk.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "riskController"
+                })
+                .state('config.risk.user', {
+                    url: "/user",
+                    templateUrl: configpath + "config.risk.user.html" + versioningSuffixProviderProvider.$get().$get()
+                })
+                .state('config.risk.service', {
+                    url: "/service",
+                    templateUrl: configpath + "config.risk.service.html" + versioningSuffixProviderProvider.$get().$get()
+                })
+                .state('config.risk.ip', {
+                    url: "/ip",
+                    templateUrl: configpath + "config.risk.ip.html" + versioningSuffixProviderProvider.$get().$get()
+                })
+                .state('config.risk.test', {
+                    url: "/check",
+                    templateUrl: configpath + "config.risk.test.html" + versioningSuffixProviderProvider.$get().$get()
+                })
+                .state('config.risk.groups', {
+                    url: "/groups",
+                    templateUrl: configpath + "config.risk.group.html" + versioningSuffixProviderProvider.$get().$get()
+                })
             ;
         }]);
