@@ -1756,7 +1756,7 @@ class TokenTestCase(MyTestCase):
             serial = token["serial"]
             self.assertEqual(get_tokens(serial=serial)[0].token.serial, serial)
 
-        #Clean up the imported tokens
+        # Clean up the imported tokens
         remove_token(imported_tokens[0].token.serial)
         remove_token(imported_tokens[1].token.serial)
         remove_token(imported_tokens[2].token.serial)

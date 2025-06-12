@@ -2031,6 +2031,7 @@ class TokenClass(object):
             self.token.type = token_information["type"]
             self.token.description = token_information["description"]
             self.add_tokeninfo_dict(token_information["tokeninfo"])
+            self.add_tokeninfo("improrted", datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"))
             self.save()
         except Exception as exx:
             log.error(f'Failed to import token: {exx}')
