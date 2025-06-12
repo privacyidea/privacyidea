@@ -69,12 +69,12 @@ from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from privacyidea.lib.token import init_token, check_user_pass, remove_token
-from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, RegistrationRejectedException,
+from privacyidea.lib.tokens.webauthn import (CoseAlgorithm, RegistrationRejectedException,
                                              WebAuthnMakeCredentialOptions, AuthenticationRejectedException,
                                              webauthn_b64_decode, webauthn_b64_encode,
                                              WebAuthnRegistrationResponse, ATTESTATION_REQUIREMENT_LEVEL,
-                                             ATTESTATION_LEVEL, AuthenticatorDataFlags, WebAuthnAssertionResponse,
-                                             WebAuthnUser, USER_VERIFICATION_LEVEL)
+                                             AttestationLevel, AuthenticatorDataFlags, WebAuthnAssertionResponse,
+                                             WebAuthnUser, UserVerificationLevel)
 from privacyidea.lib.tokens.webauthntoken import (WebAuthnTokenClass, DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT)
 from privacyidea.lib.user import User
@@ -129,9 +129,9 @@ TIMEOUT = 60000
 ATTESTATION_FORM = 'direct'
 USER_VERIFICATION = None
 PUBLIC_KEY_CREDENTIAL_ALGORITHMS = [
-    COSE_ALGORITHM.ES256,
-    COSE_ALGORITHM.RS256,
-    COSE_ALGORITHM.PS256
+    CoseAlgorithm.ES256,
+    CoseAlgorithm.RS256,
+    CoseAlgorithm.PS256
 ]
 EXPECTED_REGISTRATION_CLIENT_EXTENSIONS = {
     'appid': None,
@@ -139,8 +139,8 @@ EXPECTED_REGISTRATION_CLIENT_EXTENSIONS = {
 }
 APP_ID = "http://localhost:5000"
 PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE = [
-    COSE_ALGORITHM.ES256,
-    COSE_ALGORITHM.PS256
+    CoseAlgorithm.ES256,
+    CoseAlgorithm.PS256
 ]
 ALLOWED_TRANSPORTS = "usb ble nfc"
 CRED_ID = 'ilNaaY5fYJoR1sg5IB7FL2Zoa-qBd_5Q95ZcyxNkmjkoDhiLCLgEKoKfCUElLt6_6Dmj_EUuOHZUI6x_gC32LQ'
@@ -229,7 +229,7 @@ class WebAuthnTokenTestCase(MyTestCase):
             'regdata': REGISTRATION_RESPONSE_TMPL['attObj'],
             'clientdata': REGISTRATION_RESPONSE_TMPL['clientData'],
             FIDO2PolicyAction.RELYING_PARTY_ID: RP_ID,
-            FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL: ATTESTATION_LEVEL.NONE,
+            FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL: AttestationLevel.NONE,
             'HTTP_ORIGIN': ORIGIN
         })
 
@@ -300,7 +300,7 @@ class WebAuthnTokenTestCase(MyTestCase):
         self.assertEqual('public-key',
                          web_authn_register_request.get("pubKeyCredAlgorithms")[0].get("type"),
                          web_authn_register_request)
-        self.assertEqual(COSE_ALGORITHM.ES256,
+        self.assertEqual(CoseAlgorithm.ES256,
                          web_authn_register_request.get("pubKeyCredAlgorithms")[0].get("alg"),
                          web_authn_register_request)
         self.assertEqual(USER_NAME, web_authn_register_request.get("name"))
@@ -397,7 +397,7 @@ class WebAuthnTokenTestCase(MyTestCase):
             'regdata': NONE_ATTESTATION_REGISTRATION_RESPONSE_TMPL['attObj'],
             'clientdata': NONE_ATTESTATION_REGISTRATION_RESPONSE_TMPL['clientData'],
             FIDO2PolicyAction.RELYING_PARTY_ID: RP_ID,
-            FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL: ATTESTATION_LEVEL.NONE,
+            FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL: AttestationLevel.NONE,
             'HTTP_ORIGIN': ORIGIN
         })
         self.token.get_init_detail().get('webAuthnRegisterResponse')
@@ -417,7 +417,7 @@ class WebAuthnTokenTestCase(MyTestCase):
                 'regdata': NONE_ATTESTATION_REGISTRATION_RESPONSE_TMPL['attObj'],
                 'clientdata': NONE_ATTESTATION_REGISTRATION_RESPONSE_TMPL['clientData'],
                 FIDO2PolicyAction.RELYING_PARTY_ID: RP_ID,
-                FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL: ATTESTATION_LEVEL.UNTRUSTED,
+                FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL: AttestationLevel.UNTRUSTED,
                 'HTTP_ORIGIN': ORIGIN
             })
 
@@ -543,7 +543,7 @@ class WebAuthnTestCase(unittest.TestCase):
             origin=ORIGIN,
             registration_response=copy(REGISTRATION_RESPONSE_TMPL),
             challenge=REGISTRATION_CHALLENGE,
-            attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[ATTESTATION_LEVEL.NONE],
+            attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[AttestationLevel.NONE],
             trust_anchor_dir=TRUST_ANCHOR_DIR,
             uv_required=False,
             expected_registration_client_extensions=EXPECTED_REGISTRATION_CLIENT_EXTENSIONS,
@@ -612,7 +612,7 @@ class WebAuthnTestCase(unittest.TestCase):
             origin=ORIGIN,
             registration_response=copy(REGISTRATION_RESPONSE_TMPL),
             challenge=REGISTRATION_CHALLENGE,
-            attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[ATTESTATION_LEVEL.NONE],
+            attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[AttestationLevel.NONE],
             uv_required=False,
             expected_registration_client_extensions=EXPECTED_REGISTRATION_CLIENT_EXTENSIONS,
         ).verify()
@@ -627,7 +627,7 @@ class WebAuthnTestCase(unittest.TestCase):
             origin=ORIGIN,
             registration_response=copy(REGISTRATION_RESPONSE_TMPL),
             challenge=REGISTRATION_CHALLENGE,
-            attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[ATTESTATION_LEVEL.UNTRUSTED],
+            attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[AttestationLevel.UNTRUSTED],
             trust_anchor_dir=TRUST_ANCHOR_DIR,
             uv_required=True,
             expected_registration_client_extensions=EXPECTED_REGISTRATION_CLIENT_EXTENSIONS
@@ -708,7 +708,7 @@ class WebAuthnTestCase(unittest.TestCase):
             origin='http://localhost:3000',
             registration_response=copy(SELF_ATTESTATION_REGISTRATION_RESPONSE_TMPL),
             challenge='AXkXWXPP3gLx8OLlpkJ3aRRhFWntnSENggnjDpBql1ngKol7xWwevUYvrpBDP3LEvdr2EOStOFpGGxnMvXk-Vw',
-            attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[ATTESTATION_LEVEL.UNTRUSTED],
+            attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[AttestationLevel.UNTRUSTED],
             trust_anchor_dir=TRUST_ANCHOR_DIR,
             expected_registration_client_extensions=EXPECTED_REGISTRATION_CLIENT_EXTENSIONS
         ).verify()
@@ -725,7 +725,7 @@ class WebAuthnTestCase(unittest.TestCase):
                 origin='http://localhost:3000',
                 registration_response=copy(SELF_ATTESTATION_REGISTRATION_RESPONSE_BAD_COSE_ALG),
                 challenge='AXkXWXPP3gLx8OLlpkJ3aRRhFWntnSENggnjDpBql1ngKol7xWwevUYvrpBDP3LEvdr2EOStOFpGGxnMvXk-Vw',
-                attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[ATTESTATION_LEVEL.UNTRUSTED],
+                attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[AttestationLevel.UNTRUSTED],
                 trust_anchor_dir=TRUST_ANCHOR_DIR,
                 expected_registration_client_extensions=EXPECTED_REGISTRATION_CLIENT_EXTENSIONS
             ).verify)
@@ -739,7 +739,7 @@ class WebAuthnTestCase(unittest.TestCase):
                 origin='http://localhost:3000',
                 registration_response=copy(SELF_ATTESTATION_REGISTRATION_RESPONSE_ALG_MISMATCH),
                 challenge='AXkXWXPP3gLx8OLlpkJ3aRRhFWntnSENggnjDpBql1ngKol7xWwevUYvrpBDP3LEvdr2EOStOFpGGxnMvXk-Vw',
-                attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[ATTESTATION_LEVEL.UNTRUSTED],
+                attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[AttestationLevel.UNTRUSTED],
                 trust_anchor_dir=TRUST_ANCHOR_DIR,
                 expected_registration_client_extensions=EXPECTED_REGISTRATION_CLIENT_EXTENSIONS
             ).verify)
@@ -753,7 +753,7 @@ class WebAuthnTestCase(unittest.TestCase):
                 origin='http://localhost:3000',
                 registration_response=copy(SELF_ATTESTATION_REGISTRATION_RESPONSE_BROKEN_SIG),
                 challenge='AXkXWXPP3gLx8OLlpkJ3aRRhFWntnSENggnjDpBql1ngKol7xWwevUYvrpBDP3LEvdr2EOStOFpGGxnMvXk-Vw',
-                attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[ATTESTATION_LEVEL.UNTRUSTED],
+                attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[AttestationLevel.UNTRUSTED],
                 trust_anchor_dir=TRUST_ANCHOR_DIR,
                 expected_registration_client_extensions=EXPECTED_REGISTRATION_CLIENT_EXTENSIONS
             ).verify)
@@ -833,7 +833,8 @@ class MultipleWebAuthnTokenTestCase(MyTestCase):
     auth_options = {
         FIDO2PolicyAction.ALLOWED_TRANSPORTS: ALLOWED_TRANSPORTS,
         FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: DEFAULT_USER_VERIFICATION_REQUIREMENT,
-        FIDO2PolicyAction.TIMEOUT: TIMEOUT}
+        FIDO2PolicyAction.TIMEOUT: TIMEOUT
+    }
 
     def setUp(self):
         self.setUp_user_realms()
@@ -864,7 +865,7 @@ class MultipleWebAuthnTokenTestCase(MyTestCase):
             'regdata': self.reg_data1,
             'clientdata': self.client_data1,
             FIDO2PolicyAction.RELYING_PARTY_ID: self.rp_id,
-            FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL: ATTESTATION_LEVEL.NONE,
+            FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL: AttestationLevel.NONE,
             'HTTP_ORIGIN': self.app_id
         })
         res = self.token1.get_init_detail()
@@ -888,7 +889,7 @@ class MultipleWebAuthnTokenTestCase(MyTestCase):
             'regdata': self.reg_data2,
             'clientdata': self.client_data2,
             FIDO2PolicyAction.RELYING_PARTY_ID: self.rp_id,
-            FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL: ATTESTATION_LEVEL.NONE,
+            FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL: AttestationLevel.NONE,
             'HTTP_ORIGIN': self.app_id
         })
         res = self.token2.get_init_detail()
@@ -909,7 +910,9 @@ class MultipleWebAuthnTokenTestCase(MyTestCase):
         self.assertIn('multi_challenge', reply, reply)
         self.assertEqual(len(reply['multi_challenge']), 2, reply['multi_challenge'])
         self.assertIn('messages', reply, reply)
-        self.assertEqual(len(reply['messages']), 2, reply['messages'])
+        # Messages are empty because there is no message passed in options
+        # The message is added by the policy decorator which is not in use here
+        self.assertEqual(len(reply['messages']), 0, reply['messages'])
         # check that the serials of the challenges are different
         chal1 = reply['multi_challenge'][0]
         chal2 = reply['multi_challenge'][1]

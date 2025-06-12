@@ -75,36 +75,33 @@ In case of 2stepinit the key is generated from the server_component and the
 client_component using the TokenClass method generate_symmetric_key.
 This method is supposed to be overwritten by the corresponding token classes.
 """
-import logging
 import hashlib
+import logging
 import traceback
-from datetime import datetime, timedelta
+from base64 import b32encode
+from binascii import unhexlify
+from datetime import datetime, timedelta, timezone
 
-from .error import (TokenAdminError,
-                    ParameterError)
-from .machineresolver import get_resolver_object
-
-from ..api.lib.utils import getParam
-from .log import log_with
-
-from .config import (get_from_config, get_prepend_pin)
-from .user import (User,
-                   get_username)
-from ..models import (TokenOwner, TokenTokengroup, Challenge, cleanup_challenges)
-from .challenge import get_challenges
-from privacyidea.lib.crypto import (encryptPassword, decryptPassword,
-                                    generate_otpkey)
-from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
-from .decorators import check_token_locked
 from dateutil.parser import parse as parse_date_string, ParserError
 from dateutil.tz import tzlocal, tzutc
+
+from privacyidea.lib import _
+from privacyidea.lib.crypto import (encryptPassword, decryptPassword,
+                                    generate_otpkey)
+from privacyidea.lib.policy import (get_action_values_from_options, SCOPE, ACTION)
 from privacyidea.lib.utils import (is_true, decode_base32check,
                                    to_unicode, create_img, parse_timedelta,
                                    parse_legacy_time, split_pin_pass)
-from privacyidea.lib import _
-from privacyidea.lib.policy import (get_action_values_from_options, SCOPE, ACTION)
-from base64 import b32encode
-from binascii import unhexlify
+from .challenge import get_challenges
+from .config import (get_from_config, get_prepend_pin)
+from .decorators import check_token_locked
+from .error import (TokenAdminError,
+                    ParameterError)
+from .log import log_with
+from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
+from .user import (User)
+from ..api.lib.utils import getParam
+from ..models import (TokenOwner, TokenTokengroup, Challenge, cleanup_challenges)
 
 DATE_FORMAT = '%Y-%m-%dT%H:%M%z'
 AUTH_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f%z"
@@ -244,6 +241,7 @@ class TokenClass(object):
                        realmname=user.realm).save()
         # set the tokenrealm
         self.set_realms([user.realm], add=True)
+        self.add_tokeninfo("assignment_date", datetime.now(timezone.utc).isoformat(timespec="seconds"))
 
     def add_tokengroup(self, tokengroup=None, tokengroup_id=None):
         """
@@ -291,10 +289,9 @@ class TokenClass(object):
         user_object = None
         tokenowner = self.token.first_owner
         if tokenowner:
-            username = get_username(tokenowner.user_id, tokenowner.resolver)
-            user_object = User(login=username,
-                               resolver=tokenowner.resolver,
-                               realm=tokenowner.realm.name)
+            user_object = User(resolver=tokenowner.resolver,
+                               realm=tokenowner.realm.name,
+                               uid=tokenowner.user_id)
         return user_object
 
     def is_orphaned(self, orphaned_on_error=True):
@@ -641,11 +638,11 @@ class TokenClass(object):
 
         pin = getParam(param, "pin", optional)
         if pin is not None:
-            storeHashed = True
-            enc = getParam(param, "encryptpin", optional)
-            if enc is not None and (enc is True or enc.lower() == "true"):
-                storeHashed = False
-            self.token.set_pin(pin, storeHashed)
+            store_hashed = True
+            encrypt_pin = getParam(param, "encryptpin", optional)
+            if is_true(encrypt_pin):
+                store_hashed = False
+            self.token.set_pin(pin, store_hashed)
 
         otplen = getParam(param, 'otplen', optional)
         if otplen is not None:
@@ -1632,7 +1629,15 @@ class TokenClass(object):
                         otp_counter = 0
                     else:
                         # Now see if the OTP matches:
-                        otp_counter = self.check_otp(passw, options=options)
+                        try:
+                            otp_counter = self.check_otp(passw, options=options)
+                        except ParameterError as e:
+                            # ParameterError can be expected because options does not contain the data for every token
+                            # type to do a successful check. This is the case if the user has multiple token, e.g.
+                            # push and passkey, and uses push. In the final call with the push token, there is obviously
+                            # no data for the passkey in the options
+                            log.debug(e)
+                            otp_counter = -1
                         if otp_counter >= 0:
                             # We found the matching challenge, so lets return the
                             # successful result and delete the challenge object.
@@ -1660,7 +1665,8 @@ class TokenClass(object):
 
     def challenge_janitor(self):
         """
-        Just clean up all challenges, for which the expiration has expired.
+        Clean up all challenges for this token, for which the expiration has
+        expired.
 
         :return: None
         """

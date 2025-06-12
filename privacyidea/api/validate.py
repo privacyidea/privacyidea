@@ -104,7 +104,7 @@ from privacyidea.lib.error import ParameterError, PolicyError
 from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens
-from privacyidea.lib.policy import ACTION
+from privacyidea.lib.policy import ACTION, Match
 from privacyidea.lib.policy import PolicyClass, SCOPE
 from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
@@ -117,10 +117,11 @@ from privacyidea.lib.user import get_user_from_param, log_used_user, User
 from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.utils import required
-from .lib.utils import send_result, getParam, get_required, get_optional
+from .lib.utils import send_result, getParam, get_required
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.fido2.policy_action import FIDO2PolicyAction
 from ..lib.framework import get_app_config_value
+from ..lib.users.custom_user_attributes import InternalCustomUserAttributes, INTERNAL_USAGE
 
 log = logging.getLogger(__name__)
 
@@ -161,6 +162,11 @@ def before_request():
                         "action": "{0!s} {1!s}".format(request.method, request.url_rule),
                         "thread_id": "{0!s}".format(threading.current_thread().ident),
                         "info": ""})
+    # Add preliminary user to audit in case we fail with an error
+    g.audit_object.log({
+        "user": request.User.login,
+        "resolver": request.User.resolver,
+        "realm": request.User.realm})
 
 
 @validate_blueprint.route('/offlinerefill', methods=['POST'])
@@ -510,6 +516,7 @@ def check():
         serial_list = []
 
     if success:
+        # update container last_auth
         for serial in serial_list:
             try:
                 container = find_container_for_token(serial)
@@ -517,6 +524,19 @@ def check():
                     container.update_last_authentication()
             except Exception as e:
                 log.debug(f"Could not find container for token {serial}: {e}")
+
+            # check policy if client mode per user shall be set
+            client_mode_per_user_pol = Match.user(g, scope=SCOPE.AUTH, action=ACTION.CLIENT_MODE_PER_USER,
+                                                  user_object=user).allowed()
+            if client_mode_per_user_pol:
+                # set the used token type as the preferred one for the user to indicate the preferred client mode for
+                # the next authentication
+                token = get_one_token(serial=serial, silent_fail=True)
+                if token:
+                    token_type = token.get_tokentype()
+                    user_agent, _, _ = get_plugin_info_from_useragent(request.user_agent.string)
+                    user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_{user_agent}",
+                                       token_type, INTERNAL_USAGE)
 
     serials = ",".join(serial_list)
     ret = send_result(result, rid=2, details=details)
@@ -655,23 +675,20 @@ def trigger_challenge():
     user = request.User
     serial = getParam(request.all_data, "serial")
     token_type = getParam(request.all_data, "type")
-    details = {"messages": [],
-               "transaction_ids": []}
-    options = {"g": g,
-               "clientip": g.client_ip,
-               "user": user}
-    # Add all params to the options
-    for key, value in request.all_data.items():
-        if value and key not in ["g", "clientip", "user"]:
-            options[key] = value
+    details = {"messages": [], "transaction_ids": []}
 
-    token_objs = get_tokens(serial=serial, user=user, active=True, revoked=False, locked=False, tokentype=token_type)
-    # Only use the tokens, that are allowed to do challenge response
-    chal_resp_tokens = [token_obj for token_obj in token_objs if "challenge" in token_obj.mode]
+    # Add all params to the options
+    options: dict = {}
+    options.update(request.all_data)
+    options.update({"g": g, "clientip": g.client_ip, "user": user})
+
+    tokens = get_tokens(serial=serial, user=user, active=True, revoked=False, locked=False, tokentype=token_type)
+    # Only use the tokens that are allowed to do challenge
+    challenge_response_token = [token for token in tokens if "challenge" in token.mode]
     if is_true(options.get("increase_failcounter_on_challenge")):
-        for token_obj in chal_resp_tokens:
-            token_obj.inc_failcount()
-    create_challenges_from_tokens(chal_resp_tokens, details, options)
+        for token in challenge_response_token:
+            token.inc_failcount()
+    create_challenges_from_tokens(challenge_response_token, details, options)
     result_obj = len(details.get("multi_challenge"))
 
     challenge_serials = [challenge_info["serial"] for challenge_info in details["multi_challenge"]]
@@ -765,7 +782,7 @@ def initialize():
     Start an authentication by requesting a challenge for a token type. Currently, supports only type passkey
     :jsonparam type: The type of the token, for which a challenge should be created.
     """
-    token_type = get_optional(request.all_data, "type")
+    token_type = get_required(request.all_data, "type")
     details = {}
     if token_type.lower() == "passkey":
         rp_id = get_first_policy_value(policy_action=FIDO2PolicyAction.RELYING_PARTY_ID, default="", scope=SCOPE.ENROLL)
@@ -778,9 +795,9 @@ def initialize():
         if f"passkey_{ACTION.CHALLENGETEXT}" in request.all_data:
             challenge["message"] = request.all_data[f"passkey_{ACTION.CHALLENGETEXT}"]
         details["passkey"] = challenge
-
+        details["transaction_id"] = challenge["transaction_id"]
     else:
-        raise ParameterError("Unsupported token type for authentication initialization!")
+        raise ParameterError(f"Unsupported token type '{token_type}' for authentication initialization!")
     g.audit_object.log({"success": True})
     response = send_result(False, rid=2, details=details)
     return response

@@ -70,6 +70,7 @@ from privacyidea.lib.tokengroup import set_tokengroup, delete_tokengroup
 from privacyidea.lib.error import (TokenAdminError, ParameterError,
                                    privacyIDEAError, ResourceNotFoundError)
 from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.framework import get_app_config
 from dateutil.tz import tzlocal
 
 PWFILE = "tests/testdata/passwords"
@@ -147,7 +148,14 @@ class TokenTestCase(MyTestCase):
         self.assertTrue(len(tokenobject_list) > 0, tokenobject_list)
         # get tokens of type TOTP and HOTP
         spass_token = init_token(param={'serial': 'SPAS01', 'type': 'spass'})
-        hotp_token = init_token(param={'serial': 'HOTP01', 'type': 'hotp', 'otpkey': '123'})
+        self.assertIn("creation_date", spass_token.get_tokeninfo(), spass_token)
+        create_now = datetime.datetime.now(tz=datetime.timezone.utc)
+        with mock.patch("privacyidea.lib.resolvers.LDAPIdResolver.datetime.datetime",
+                        wraps=datetime.datetime) as mock_datetime:
+            mock_datetime.now.return_value = create_now
+            hotp_token = init_token(param={'serial': 'HOTP01', 'type': 'hotp', 'otpkey': '123'})
+        self.assertEqual(hotp_token.get_tokeninfo("creation_date"),
+                         create_now.isoformat(timespec="seconds"), hotp_token)
         tokenobject_list = get_tokens(token_type_list=["hotp", "totp"])
         self.assertTrue(len(tokenobject_list) > 0, tokenobject_list)
         for token in tokenobject_list:
@@ -297,23 +305,43 @@ class TokenTestCase(MyTestCase):
         db_token.delete()
 
     def test_14_gen_serial(self):
+        hotp_token_count = get_tokens(tokentype="hotp", count=True)
         serial = gen_serial(tokentype="hotp")
         # check the beginning of the serial
-        self.assertTrue("OATH0001" in serial, serial)
+        self.assertTrue(serial.startswith(f"OATH000{hotp_token_count}"), serial)
+        self.assertEqual(12, len(serial), serial)
 
         serial = gen_serial(tokentype="hotp", prefix="blah")
         # check the beginning of the serial
-        self.assertTrue("blah0001" in serial, serial)
+        self.assertTrue(serial.startswith(f"blah000{hotp_token_count}"), serial)
 
-        serial = gen_serial()
-        # check the beginning of the serial
-        self.assertTrue("PIUN0000" in serial, serial)
+        # Try a non-existing token type
+        serial = gen_serial(tokentype="non-existing")
+        self.assertTrue(serial.startswith("NON-EXISTING0000"), serial)
 
         set_privacyidea_config("SerialLength", 12)
         serial = gen_serial(tokentype="hotp")
-        self.assertTrue("OATH0001" in serial, serial)
+        self.assertTrue(serial.startswith(f"OATH000{hotp_token_count}"), serial)
         self.assertEqual(len(serial), len("OATH") + 12)
         set_privacyidea_config("SerialLength", 8)
+
+        # Test the random serial configuration
+        get_app_config()["PI_TOKEN_SERIAL_RANDOM"] = True
+        serial = gen_serial(tokentype="hotp")
+        # check the beginning of the serial
+        self.assertTrue(serial.startswith("OATH"), serial)
+        self.assertEqual(12, len(serial), serial)
+
+        serial = gen_serial(tokentype="hotp", prefix="blah")
+        # check the beginning of the serial
+        self.assertTrue(serial.startswith("blah"), serial)
+
+        set_privacyidea_config("SerialLength", 12)
+        serial = gen_serial(tokentype="yubikey")
+        self.assertTrue(serial.startswith("UBAM"), serial)
+        self.assertEqual(16, len(serial), serial)
+        set_privacyidea_config("SerialLength", 8)
+        del get_app_config()["PI_TOKEN_SERIAL_RANDOM"]
 
     def test_15_init_token(self):
         count = get_tokens(count=True)
@@ -917,6 +945,10 @@ class TokenTestCase(MyTestCase):
         self.assertTrue("spass_otp_pin_maxlength" in p, p)
         self.assertTrue("spass_otp_pin_minlength" in p, p)
 
+        # invalid scope returns empty dict
+        p = get_dynamic_policy_definitions(scope="invalid")
+        self.assertDictEqual({}, p)
+
     def test_41_get_tokens_paginate(self):
         # create some tokens
         for serial in ["S1", "S2", "S3", "A8", "B", "X"]:
@@ -1027,6 +1059,18 @@ class TokenTestCase(MyTestCase):
         self.assertEqual(token_in_container.get_serial(), tokens[0]["serial"])
         container.delete()
         token_in_container.delete_token()
+
+        # filter for realm
+        self.setUp_user_realm2()
+        token = init_token({"type": "hotp", "genkey": True}, user=User("hans", self.realm2))
+        token.set_realms([self.realm1, self.realm2])
+        # if realm is not contained in allowed_realms, the query does not find any token
+        tokens = get_tokens_paginate(realm=self.realm2, allowed_realms=[self.realm1])["tokens"]
+        self.assertEqual(0, len(tokens))
+        # filter for a user which is not contained in the allowed realms, but the token itself is
+        tokens = get_tokens_paginate(user=User(login="hans", realm=self.realm2), allowed_realms=[self.realm1])["tokens"]
+        self.assertEqual(1, len(tokens))
+        token.delete_token()
 
     def test_42_sort_tokens(self):
         # return pagination

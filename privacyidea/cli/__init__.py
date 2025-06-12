@@ -21,7 +21,9 @@
 """Utility functions for CLI tools"""
 import click
 from flask.cli import FlaskGroup
+import importlib
 import platform
+
 from privacyidea.app import create_app
 from privacyidea.lib.utils import get_version_number
 
@@ -53,7 +55,6 @@ def get_version(ctx, param, value):
     if not value or ctx.resilient_parsing:
         return
 
-    import werkzeug
     from flask import __version__
 
     message = "Python %(python)s\nFlask %(flask)s\nWerkzeug %(werkzeug)s\nprivacyIDEA %(privacyIDEA)s"
@@ -62,7 +63,7 @@ def get_version(ctx, param, value):
         % {
             "python": platform.python_version(),
             "flask": __version__,
-            "werkzeug": werkzeug.__version__,
+            "werkzeug": importlib.metadata.version("werkzeug"),
             "privacyIDEA": get_version_number(),
         },
         color=ctx.color,

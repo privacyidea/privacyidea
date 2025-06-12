@@ -70,7 +70,7 @@ class Paginate(object):
         self.page = 1
         # the total entry numbers
         self.total = 0
-    
+
 
 class Audit(object):  # pragma: no cover
 
@@ -199,7 +199,7 @@ class Audit(object):  # pragma: no cover
         """
         if "policies" not in self.audit_data:
             self.audit_data["policies"] = []
-        if type(policyname) == list:
+        if isinstance(policyname, list):
             for p in policyname:
                 self.audit_data["policies"].append(p)
         else:

@@ -305,6 +305,12 @@
                        translate>Additional conditions</label>
 
                 <div class="col-sm-9">
+                    <div class="text text-right">
+                        <a target="_external" href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                                            privacyideaVersionNumber+'/policies/conditions.html' }}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                        </a>
+                    </div>
                     <pi-policy-conditions conditions="params.conditions"
                                           defs="policyConditionDefs"></pi-policy-conditions>
                 </div>

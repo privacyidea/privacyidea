@@ -216,7 +216,6 @@ class APIU2fTestCase(MyApiTestCase):
             self.assertTrue("challenge" in u2f_sign_request)
             challenge = u2f_sign_request.get("challenge")
             self.assertTrue("keyHandle" in u2f_sign_request)
-            key_handle = u2f_sign_request.get("keyHandle")
             self.assertEqual(u2f_sign_request.get("version"), "U2F_V2")
 
         # private key from the registration example
@@ -427,6 +426,7 @@ class APIU2fTestCase(MyApiTestCase):
         remove_token(serial)
 
     def test_06_u2f_enrollment_fails_wrong_issuer(self):
+        self.setUp_user_realms()
         # test data taken from
         # https://fidoalliance.org/specs/fido-u2f-v1.0-ps-20141009/fido-u2f-raw-message-formats-ps-20141009.html#examples
         serial = "U2F0010BF6F"
@@ -445,9 +445,8 @@ class APIU2fTestCase(MyApiTestCase):
                                                  "serial": serial},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(res.status_code, 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 

@@ -152,6 +152,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
                     action: data.action || [],
                     resolver: data.resolver || [],
                     adminrealm: data.adminrealm || [],
+                    conditions: data.conditions || [],
                     pinode: []
                 });
             });

@@ -56,7 +56,7 @@
 
 from flask import (Blueprint, request, g, current_app)
 
-from ..lib.container import find_container_by_serial, add_token_to_container
+from ..lib.container import find_container_by_serial, add_token_to_container, add_not_authorized_tokens_result
 from ..lib.log import log_with
 from .lib.utils import optional, send_result, send_csv_result, required, getParam
 from ..lib.tokenclass import ROLLOUTSTATE
@@ -105,7 +105,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_t
                                            webauthntoken_request, required_piv_attestation,
                                            hide_tokeninfo, init_ca_connector, init_ca_template,
                                            init_subject_components, require_description,
-                                           check_container_action, check_user_params)
+                                           check_container_action, check_user_params, check_token_list_action)
 from privacyidea.api.lib.postpolicy import (save_pin_change, check_verify_enrollment,
                                             postpolicy)
 from privacyidea.lib.event import event
@@ -507,12 +507,13 @@ def assign_api():
     user = get_user_from_param(request.all_data, required)
     serial = getParam(request.all_data, "serial", required, allow_empty=False)
     pin = getParam(request.all_data, "pin")
-    encrypt_pin = getParam(request.all_data, "encryptpin")
+    encrypt_pin_param = getParam(request.all_data, "encryptpin")
     if g.logged_in_user.get("role") == "user":
         err_message = "Token already assigned to another user."
     else:
         err_message = None
-    res = assign_token(serial, user, pin=pin, encrypt_pin=encrypt_pin, error_message=err_message)
+    res = assign_token(serial, user, pin=pin, encrypt_pin=encrypt_pin_param,
+                       error_message=err_message)
     g.audit_object.log({"success": True})
     return send_result(res)
 
@@ -646,6 +647,37 @@ def delete_api(serial):
     return send_result(res)
 
 
+@token_blueprint.route('/batchdeletion', methods=['POST'])
+@prepolicy(check_token_list_action, request, action=ACTION.DELETE)
+@event("token_delete", request, g)
+@log_with(log)
+def batch_deletion():
+    """
+    Delete all passed tokens, e.g. all tokens of a container
+    All errors during the deletion of a token are fetched to be able to delete the remaining tokens.
+
+    :jsonparam serial: A comma separated list of token serials to delete
+    :return: Dictionary with the serials as keys and the success status of the deletion as values
+    """
+    serial_list = getParam(request.all_data, "serial", required)
+    serial_list = serial_list.replace(" ", "").split(",")
+    g.audit_object.log({"serial": serial_list})
+    ret = {}
+    for serial in serial_list:
+        try:
+            success = remove_token(serial)
+        except Exception as ex:
+            # We are catching the exception here to be able to delete the remaining tokens
+            log.error(f"Error deleting token {serial}: {ex}")
+            success = False
+        ret[serial] = success
+
+    not_authorized_serials = getParam(request.all_data, "not_authorized_serials", optional=True)
+    res = add_not_authorized_tokens_result(ret, not_authorized_serials)
+
+    return send_result(res)
+
+
 @token_blueprint.route('/reset', methods=['POST'])
 @token_blueprint.route('/reset/<serial>', methods=['POST'])
 @prepolicy(check_token_action, request, action=ACTION.RESET)
@@ -729,7 +761,7 @@ def setpin_api(serial=None):
     sopin = getParam(request.all_data, "sopin")
     otppin = getParam(request.all_data, "otppin")
     user = request.User
-    encrypt_pin = getParam(request.all_data, "encryptpin")
+    encrypt_pin_param = getParam(request.all_data, "encryptpin")
 
     res = 0
     if userpin is not None:
@@ -742,7 +774,7 @@ def setpin_api(serial=None):
 
     if otppin is not None:
         g.audit_object.add_to_log({'action_detail': "otppin, "})
-        res += set_pin(serial, otppin, user=user, encrypt_pin=encrypt_pin)
+        res += set_pin(serial, otppin, user=user, encrypt_pin=encrypt_pin_param)
 
     g.audit_object.log({"success": True})
     return send_result(res)
@@ -772,13 +804,13 @@ def setrandompin_api(serial=None):
         serial = getParam(request.all_data, "serial", required)
     g.audit_object.log({"serial": serial})
     user = request.User
-    encrypt_pin = getParam(request.all_data, "encryptpin")
+    encrypt_pin_param = getParam(request.all_data, "encryptpin")
     pin = getParam(request.all_data, "pin")
     if not pin:
         raise TokenAdminError("We have an empty PIN. Please check your policy 'otp_pin_set_random'.")
 
     g.audit_object.add_to_log({'action_detail': "otppin, "})
-    res = set_pin(serial, pin, user=user, encrypt_pin=encrypt_pin)
+    res = set_pin(serial, pin, user=user, encrypt_pin=encrypt_pin_param)
     g.audit_object.log({"success": True})
     return send_result(res, details={"pin": pin})
 

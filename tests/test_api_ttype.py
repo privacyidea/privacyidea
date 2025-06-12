@@ -7,7 +7,7 @@ from privacyidea.lib.config import (set_privacyidea_config)
 from privacyidea.lib.token import (get_tokens, init_token, remove_token)
 from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy)
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
-from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
+from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
@@ -19,11 +19,13 @@ from privacyidea.lib.tokens.pushtoken import (PUSH_ACTION,
                                               POLL_ONLY)
 from privacyidea.lib.utils import b32encode_and_unicode
 from datetime import datetime
-from base64 import b32encode
+from base64 import b32encode, b64encode, b64decode
+from hashlib import sha1
+import hmac
 import mock
 import responses
+import urllib
 from .test_lib_tokens_push import _check_firebase_params, _create_credential_mock
-
 
 PWFILE = "tests/testdata/passwords"
 HOSTSFILE = "tests/testdata/hosts"
@@ -31,7 +33,7 @@ DICT_FILE = "tests/testdata/dictionary"
 FIREBASE_FILE = "tests/testdata/firebase-test.json"
 CLIENT_FILE = "tests/testdata/google-services.json"
 FB_CONFIG_VALS = {
-    FIREBASE_CONFIG.JSON_CONFIG: FIREBASE_FILE}
+    FirebaseConfig.JSON_CONFIG: FIREBASE_FILE}
 REGISTRATION_URL = "http://test/ttype/push"
 TTL = "10"
 
@@ -92,6 +94,70 @@ class TtypeAPITestCase(MyApiTestCase):
                                                  "session": "12345"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res.status_code)
+
+    def test_04_yubikey(self):
+        # ---- Verify signature with test vectors from yubico ----
+        init_token({"type": "yubikey",
+                    "otpkey": "000102030405060708090a0b0c0d0e0f",
+                    "otplen": 44,
+                    "yubikey.prefix": "vvungrrdhvtklk"})
+
+        # Add API key to the config
+        api_1_key = "mG5be6ZJU1qBGz24yPh/ESM3UdU="
+        set_privacyidea_config("yubikey.apiid.1", api_1_key)
+
+        # Test the ttype endpoint for yubikey
+        parameters = {"id": "1", "otp": "vvungrrdhvtklknvrtvuvbbkeidikkvgglrvdgrfcdft",
+                      "nonce": "jrFwbaYFhn0HoxZIsd9LQ6w2ceU",
+                      "h": "%2Bja8S3IjbX593%2FLAgTBixwPNGX4%3D"}
+        with self.app.test_request_context('/ttype/yubikey',
+                                           query_string=parameters,
+                                           method='GET'):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            # The signature is valid, but it is not a valid OTP
+            self.assertIn(b"status=BAD_OTP", res.data)
+
+        # ---- Verify signature + otp successfully ----
+        init_token({"type": "yubikey",
+                    "otpkey": "000102030405060708090a0b0c0d0e0f",
+                    "otplen": 44,
+                    "yubikey.prefix": "vvungrrdhvtk"})
+
+        # Test the ttype endpoint for yubikey
+        parameters = {"id": "1", "otp": "vvungrrdhvtkdvgtiblfkbgturecfllberrvkinnctnn",
+                      "nonce": "jrFwbaYFhn0HoxZIsd9LQ6w2ceU"}
+        # sign parameters
+        data_string = f"id={parameters['id']}&nonce={parameters['nonce']}&otp={parameters['otp']}"
+        signature = b64encode(to_bytes(hmac.new(b64decode(api_1_key), to_bytes(data_string), sha1).digest()))
+        parameters["h"] = urllib.parse.quote_plus(signature.decode("utf-8"))
+        with self.app.test_request_context('/ttype/yubikey',
+                                           query_string=parameters,
+                                           method='GET'):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            # The signature is valid, but it is not a valid OTP
+            self.assertIn(b"status=OK", res.data)
+
+        # ---- Check OTP without sending h (signature) ----
+        # create yubikey token
+        init_token({"type": "yubikey",
+                    "otpkey": "cc17a4d77eaed96e9d14b5c87a02e718",
+                    "otplen": 48,
+                    "yubikey.prefix": "ebedeeefegeheiej"})
+
+        # Add API key to the config
+        set_privacyidea_config("yubikey.apiid.2", "1YMEbMZijD3DzL21UfKGnOOI13c=")
+
+        # Test the ttype endpoint for yubikey
+        parameters = {"id": "2", "otp": "ebedeeefegeheiejtjtrutblehenfjljrirgdihrfuetljtt",
+                      "nonce": "random nonce"}
+        with self.app.test_request_context('/ttype/yubikey',
+                                           query_string=parameters,
+                                           method='GET'):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertIn(b"status=OK", res.data)
 
 
 class TtypePushAPITestCase(MyApiTestCase):

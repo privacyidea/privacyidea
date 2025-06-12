@@ -7,7 +7,7 @@ The ways described here to install privacyIDEA are
 
  * the installation via the :ref:`pip_install`, which can be used on
    any Linux distribution and
- * ready made :ref:`install_ubuntu` for Ubuntu 18.04 LTS, 20.04 LTS, 22.04 LTS and 24.04 LTS.
+ * ready made :ref:`install_ubuntu` for Ubuntu 20.04 LTS, 22.04 LTS and 24.04 LTS.
 
 If you want to upgrade please read :ref:`upgrade`.
 

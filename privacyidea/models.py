@@ -151,13 +151,6 @@ class TimestampMethodsMixin(object):
         return ret
 
 
-# token_container_association_table = (
-#     db.Table('tokencontainertoken',
-#              db.metadata,
-#              db.Column('token_id', db.Integer, db.ForeignKey('token.id'), primary_key=True),
-#              db.Column('container_id', db.Integer, db.ForeignKey('tokencontainer.id'), primary_key=True)))
-#
-
 class TokenContainerToken(MethodsMixin, db.Model):
     """
     Association table to link tokens to containers.
@@ -1648,22 +1641,7 @@ class Policy(TimestampMethodsMixin, db.Model):
         self.time = time
         self.priority = priority
         self.check_all_resolvers = check_all_resolvers
-        if conditions is None:
-            self.conditions = []
-        else:
-            self.set_conditions(conditions)
-
-    def set_conditions(self, conditions):
-        """
-        Replace the list of conditions of this policy with a new list
-        of conditions, i.e. a list of 5-tuples (section, key, comparator, value, active).
-        """
         self.conditions = []
-        for section, key, comparator, value, active in conditions:
-            condition_object = PolicyCondition(
-                section=section, Key=key, comparator=comparator, Value=value, active=active,
-            )
-            self.conditions.append(condition_object)
 
     def get_conditions_tuples(self):
         """
@@ -1748,14 +1726,23 @@ class PolicyCondition(MethodsMixin, db.Model):
     comparator = db.Column(db.Unicode(255), nullable=False, default='equals')
     Value = db.Column(db.Unicode(2000), nullable=False, default='')
     active = db.Column(db.Boolean, nullable=False, default=True)
+    handle_missing_data = db.Column(db.Unicode(255), nullable=True)
 
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
 
+    def __init__(self, section, Key, comparator, Value, active=True, handle_missing_data=None):
+        self.section = section
+        self.Key = Key
+        self.comparator = comparator
+        self.Value = Value
+        self.active = active
+        self.handle_missing_data = handle_missing_data
+
     def as_tuple(self):
         """
-        :return: the condition as a tuple (section, key, comparator, value, active)
+        :return: the condition as a tuple (section, key, comparator, value, active, handle_missing_data)
         """
-        return self.section, self.Key, self.comparator, self.Value, self.active
+        return self.section, self.Key, self.comparator, self.Value, self.active, self.handle_missing_data
 
 
 # ------------------------------------------------------------------
