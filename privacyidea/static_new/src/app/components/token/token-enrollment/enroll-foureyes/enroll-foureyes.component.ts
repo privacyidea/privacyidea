@@ -16,7 +16,18 @@ import {
 } from '@angular/material/core';
 import { MatError, MatSelect } from '@angular/material/select';
 import { MatCheckbox } from '@angular/material/checkbox';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  BasicEnrollmentOptions,
+  TokenService,
+} from '../../../../services/token/token.service';
+
+export interface FourEyesEnrollmentOptions extends BasicEnrollmentOptions {
+  type: '4eyes';
+  separator: string;
+  requiredTokenOfRealms: { realm: string; tokens: number }[];
+  onlyAddToRealm: boolean;
+  userRealm?: string; // Optional, only if onlyAddToRealm is true
+}
 
 export class RequiredRealmsErrorStateMatcher implements ErrorStateMatcher {
   isErrorState(control: FormControl | null): boolean {

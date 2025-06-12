@@ -1,9 +1,11 @@
 import {
   Component,
   computed,
+  effect,
   HostListener,
   Injectable,
   linkedSignal,
+  signal,
   Signal,
   ViewChild,
   WritableSignal,
@@ -16,7 +18,12 @@ import {
   MatSuffix,
 } from '@angular/material/form-field';
 import { MatOption, MatSelect } from '@angular/material/select';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import {
+  FormControl,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+} from '@angular/forms';
 import { EnrollHotpComponent } from './enroll-hotp/enroll-hotp.component';
 import { MatInput } from '@angular/material/input';
 import {
@@ -44,6 +51,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import {
+  BasicEnrollmentOptions,
   EnrollmentOptions,
   EnrollmentResponse,
   TokenDetails,
@@ -80,6 +88,7 @@ import { EnrollPasskeyComponent } from './enroll-passkey/enroll-passkey.componen
 import { VersionService } from '../../../services/version/version.service';
 import { TokenEnrollmentSecondStepDialogComponent } from './token-enrollment-second-step-dialog/token-enrollment-second-step-dialog.component';
 import { ContentService } from '../../../services/content/content.service';
+import { Observable } from 'rxjs';
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -202,7 +211,7 @@ export class TokenEnrollmentComponent {
       if (testYubiKey.length > 0) {
         return testYubiKey.length;
       } else {
-        return this.selectedTokenType().key === 'yubikey' ? 44 : 6;
+        return this.selectedTokenType()?.key === 'yubikey' ? 44 : 6;
       }
     },
   });
@@ -210,18 +219,14 @@ export class TokenEnrollmentComponent {
     source: this.selectedTokenType,
     computation: () => '',
   });
-  sshPublicKey = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => '',
+  description = new FormControl<string>('', {
+    nonNullable: true,
+    validators: [],
   });
-  description = linkedSignal({
-    source: () => ({
-      sshPublicKey: this.sshPublicKey(),
-      selectedType: this.selectedTokenType(),
-    }),
-    computation: (source) => {
-      const parts = source.sshPublicKey?.split(' ') ?? [];
-      return parts.length >= 3 ? parts[2] : '';
+  descriptionSignal = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => {
+      return this.description.value;
     },
   });
   generateOnServer = linkedSignal({
@@ -383,7 +388,7 @@ export class TokenEnrollmentComponent {
   });
   enrollmentOptions: Signal<EnrollmentOptions> = computed(() => ({
     type: this.selectedTokenType().key,
-    description: this.description(),
+    description: this.description.value.trim(),
     container_serial: this.containerService.selectedContainer().trim(),
     validity_period_start: this.formatDateTimeOffset(
       this.selectedStartDate(),
@@ -407,9 +412,6 @@ export class TokenEnrollmentComponent {
 
     // motp
     motpPin: this.motpPin(),
-
-    // sshkey
-    sshPublicKey: this.sshPublicKey(),
 
     // remote
     remoteServer: this.remoteServer(),
@@ -455,6 +457,54 @@ export class TokenEnrollmentComponent {
     vascoSerial: this.vascoSerial(),
     useVascoSerial: this.useVascoSerial(),
   }));
+
+  clickEnroll?: (
+    enrollementOptions: BasicEnrollmentOptions,
+  ) => Observable<EnrollmentResponse> | undefined;
+  updateClickEnroll(
+    event: (
+      enrollementOptions: BasicEnrollmentOptions,
+    ) => Observable<EnrollmentResponse> | undefined,
+  ): void {
+    this.clickEnroll = event;
+  }
+
+  basicFormFields: WritableSignal<{
+    [key: string]: FormControl<any>;
+  }> = signal({
+    description: this.description,
+  });
+  additionalFormFields: WritableSignal<{
+    [key: string]: FormControl<any>;
+  }> = signal({});
+  updateAdditionalFormFields(event: {
+    [key: string]: FormControl<any> | undefined | null; // Allow undefined/null temporarily for safety
+  }): void {
+    // Filter out any null or undefined controls before setting the signal
+    const validControls: { [key: string]: FormControl<any> } = {};
+    for (const key in event) {
+      if (event.hasOwnProperty(key) && event[key] instanceof FormControl) {
+        validControls[key] = event[key];
+      } else {
+        console.warn(
+          `Ignoring invalid form control for key "${key}" emitted by child component.`,
+        );
+      }
+    }
+    this.additionalFormFields.set(validControls);
+  }
+
+  formGroup = new FormGroup({
+    ...this.basicFormFields(),
+  });
+
+  formGroupSignal = computed(() => {
+    return new FormGroup({
+      ...this.basicFormFields(),
+      // ...this.additionalFormFields(),
+    });
+  });
+
   @ViewChild(EnrollPasskeyComponent)
   enrollPasskeyComponent!: EnrollPasskeyComponent;
   @ViewChild(EnrollWebauthnComponent)
@@ -470,7 +520,16 @@ export class TokenEnrollmentComponent {
     protected secondDialog: MatDialog,
     protected versioningService: VersionService,
     private contentService: ContentService,
-  ) {}
+  ) {
+    effect(() => {
+      const tokenType = this.selectedTokenType();
+      if (tokenType) {
+        this.description.setValue('');
+        // Reset additional form fields when token type changes
+        this.additionalFormFields.set({});
+      }
+    });
+  }
 
   @HostListener('document:keydown.enter', ['$event'])
   onEnter(event: KeyboardEvent) {
@@ -509,6 +568,55 @@ export class TokenEnrollmentComponent {
   }
 
   enrollToken(): void {
+    if (this.formGroupSignal().invalid) {
+      this.notificationService.openSnackBar(
+        'Please fill in all required fields.',
+      );
+      this.formGroupSignal().markAllAsTouched();
+      this.formGroupSignal().markAsDirty();
+      return;
+    }
+    if (this.clickEnroll !== undefined) {
+      const response = this.clickEnroll({
+        type: this.selectedTokenType().key,
+        description: this.description.value.trim(),
+        container_serial: this.containerService.selectedContainer().trim(),
+        validity_period_start: this.formatDateTimeOffset(
+          this.selectedStartDate(),
+          this.selectedStartTime(),
+          this.selectedTimezoneOffset(),
+        ),
+        validity_period_end: this.formatDateTimeOffset(
+          this.selectedEndDate(),
+          this.selectedEndTime(),
+          this.selectedTimezoneOffset(),
+        ),
+        user: this.userService.selectedUsername().trim(),
+        pin: this.setPinValue(),
+      });
+      if (!response) {
+        this.notificationService.openSnackBar(
+          'Failed to enroll token. No response returned.',
+        );
+        console.error('Failed to enroll token. No response returned.');
+        return;
+      }
+      response.subscribe({
+        next: (enrollmentResponse) => {
+          this.enrollResponse.set(enrollmentResponse);
+          this.handleEnrollmentResponse(enrollmentResponse);
+        },
+        error: (error) => {
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to enroll token. ' + message,
+          );
+        },
+      });
+
+      return;
+    }
+
     this.pollResponse.set(null);
     this.enrollResponse.set(null);
     this.tokenService.enrollToken(this.enrollmentOptions()).subscribe({

@@ -13,7 +13,17 @@ import { MatError, MatSelect } from '@angular/material/select';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RadiusServerService } from '../../../../services/radius-server/radius-server.service';
 import { SystemService } from '../../../../services/system/system.service';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  BasicEnrollmentOptions,
+  TokenService,
+} from '../../../../services/token/token.service';
+
+export interface RadiusEnrollmentOptions extends BasicEnrollmentOptions {
+  type: 'radius';
+  radiusServerConfiguration: string;
+  radiusUser: string;
+  checkPinLocally: boolean;
+}
 
 @Component({
   selector: 'app-enroll-radius',

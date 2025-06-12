@@ -1,12 +1,17 @@
 import { Component, Input, WritableSignal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  BasicEnrollmentOptions,
+  TokenService,
+} from '../../../../services/token/token.service';
 
+export interface SpassEnrollmentOptions extends BasicEnrollmentOptions {
+  type: 'spass';
+  // Keine typspezifischen Felder für die Initialisierung über EnrollmentOptions
+}
 @Component({
   selector: 'app-enroll-spass',
-  imports: [FormsModule, MatFormField, MatInput, MatLabel],
+  imports: [FormsModule],
   templateUrl: './enroll-spass.component.html',
   styleUrl: './enroll-spass.component.scss',
 })

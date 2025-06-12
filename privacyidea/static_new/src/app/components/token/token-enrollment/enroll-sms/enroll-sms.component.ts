@@ -13,7 +13,17 @@ import { MatError, MatSelect } from '@angular/material/select';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { SmsGatewayService } from '../../../../services/sms-gateway/sms-gateway.service';
 import { SystemService } from '../../../../services/system/system.service';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  BasicEnrollmentOptions,
+  TokenService,
+} from '../../../../services/token/token.service';
+
+export interface SmsEnrollmentOptions extends BasicEnrollmentOptions {
+  type: 'sms';
+  smsGateway: string;
+  phoneNumber?: string; // Optional if readNumberDynamically is true
+  readNumberDynamically: boolean;
+}
 
 @Component({
   selector: 'app-enroll-sms',

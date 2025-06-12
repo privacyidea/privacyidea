@@ -6,35 +6,28 @@
   <div class="otp-inputs-container">
     <mat-form-field class="input-height width-33">
       <mat-label>Test Yubikey</mat-label>
-      <input [(ngModel)]="testYubiKey"
-             matInput
-             placeholder="Push Yubikey button here" />
+      <input
+        [formControl]="testYubiKeyControl"
+        matInput
+        placeholder="Push Yubikey button here" />
     </mat-form-field>
     <mat-form-field class="input-height width-33">
       <mat-label>OTP Key</mat-label>
-      <input [(ngModel)]="otpKey"
-             matInput
-             placeholder="Enter OTP key"
-             required />
+      <input
+        [formControl]="otpKeyControl"
+        matInput
+        placeholder="Enter OTP key"
+        required />
       <mat-error>OTP key is <strong>required</strong></mat-error>
-      @if (otpKey().length !== 32) {
-        <mat-hint>OTP key must be 32 characters long for yubikey token in AES mode
+      @if (otpKeyControl.value && otpKeyControl.value.length !== 32) {
+        <mat-hint
+          >OTP key must be 32 characters long for yubikey token in AES mode
         </mat-hint>
       }
     </mat-form-field>
     <mat-form-field class="input-height width-33">
       <mat-label>OTP length</mat-label>
-      <input [(ngModel)]="otpLength"
-             matInput
-             type="number" />
+      <input [formControl]="otpLengthControl" matInput type="number" />
     </mat-form-field>
   </div>
-  <mat-form-field class="width-66 margin-top-2">
-    <mat-label>Description</mat-label>
-    <textarea [(ngModel)]="description"
-              [maxlength]="80"
-              matInput
-              placeholder="Enter description"
-              rows="3"></textarea>
-  </mat-form-field>
 </div>

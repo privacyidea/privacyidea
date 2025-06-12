@@ -1,5 +1,5 @@
 @use "../../../../styles";
-@use '@angular/material' as mat;
+@use "@angular/material" as mat;
 
 .token-enrollment-container {
   @include styles.table-container-styles;
@@ -57,12 +57,17 @@ h5 {
   margin-top: 1rem;
 }
 
+.description-form {
+  width: 100%;
+  margin-top: 1rem;
+}
+
 ::ng-deep {
   .multi-column-panel.mat-mdc-select-panel {
     column-count: 3;
     max-height: unset;
     column-gap: 0;
     background: #dedcdf;
-    padding: 12px 4px 16px 12px
+    padding: 12px 4px 16px 12px;
   }
 }

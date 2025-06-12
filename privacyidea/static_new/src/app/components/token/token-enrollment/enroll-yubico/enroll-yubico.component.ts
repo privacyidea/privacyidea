@@ -5,7 +5,15 @@ import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { SystemService } from '../../../../services/system/system.service';
 import { ErrorStateMatcher } from '@angular/material/core';
 import { MatError } from '@angular/material/select';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  BasicEnrollmentOptions,
+  TokenService,
+} from '../../../../services/token/token.service';
+
+export interface YubicoEnrollmentOptions extends BasicEnrollmentOptions {
+  type: 'yubico';
+  yubicoIdentifier: string;
+}
 
 export class YubicoErrorStateMatcher implements ErrorStateMatcher {
   isErrorState(control: FormControl | null): boolean {

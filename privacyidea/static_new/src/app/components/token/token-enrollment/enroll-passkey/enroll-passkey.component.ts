@@ -1,11 +1,10 @@
 import { Component, Input, WritableSignal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
 import { NotificationService } from '../../../../services/notification/notification.service';
 import {
   EnrollmentResponse,
   EnrollmentResponseDetail,
+  BasicEnrollmentOptions,
   TokenService,
 } from '../../../../services/token/token.service';
 import { Base64Service } from '../../../../services/base64/base64.service';
@@ -13,9 +12,28 @@ import { from, Observable, switchMap, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { MatDialog } from '@angular/material/dialog';
 
+// Interface für die Initialisierungsoptionen des Passkey Tokens (erster Schritt)
+export interface PasskeyEnrollmentOptions extends BasicEnrollmentOptions {
+  type: 'passkey';
+  // Keine zusätzlichen typspezifischen Felder für den *ersten* Enrollment-Aufruf (init)
+}
+
+// Interface für die Parameter des *zweiten* Enrollment-Aufrufs (nach Browser-Interaktion)
+export interface PasskeyRegistrationParams extends BasicEnrollmentOptions {
+  type: 'passkey';
+  transaction_id: string;
+  serial: string;
+  credential_id: string; // ArrayBuffer
+  rawId: string; // base64
+  authenticatorAttachment: string | null;
+  attestationObject: string; // base64
+  clientDataJSON: string; // base64
+  credProps?: any;
+}
+
 @Component({
   selector: 'app-enroll-passkey',
-  imports: [FormsModule, MatFormField, MatInput, MatLabel],
+  imports: [FormsModule],
   templateUrl: './enroll-passkey.component.html',
   styleUrl: './enroll-passkey.component.scss',
 })
@@ -72,7 +90,8 @@ export class EnrollPasskeyComponent {
           );
           return throwError(() => new Error('No passkey created'));
         }
-        const params: any = {
+        const params: PasskeyRegistrationParams = {
+          ...options,
           type: 'passkey',
           transaction_id: detail.transaction_id,
           serial: detail.serial,

@@ -1,13 +1,18 @@
 import { Component, computed, Input, WritableSignal } from '@angular/core';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { SystemService } from '../../../../services/system/system.service';
 import { TokenService } from '../../../../services/token/token.service';
+import { BasicEnrollmentOptions } from '../../../../services/token/token.service';
 
+export interface TiqrEnrollmentOptions extends BasicEnrollmentOptions {
+  type: 'tiqr';
+  // Keine typspezifischen Felder für die Initialisierung über EnrollmentOptions
+  // Die TIQR-spezifischen Daten (tiqr.infoUrl etc.) kommen aus der Systemkonfiguration
+  // und werden nicht direkt als EnrollmentOptions übergeben.
+}
 @Component({
   selector: 'app-enroll-tiqr',
-  imports: [MatFormField, MatInput, MatLabel, ReactiveFormsModule, FormsModule],
+  imports: [ReactiveFormsModule, FormsModule],
   templateUrl: './enroll-tiqr.component.html',
   styleUrl: './enroll-tiqr.component.scss',
 })

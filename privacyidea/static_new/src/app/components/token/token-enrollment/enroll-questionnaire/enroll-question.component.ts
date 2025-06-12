@@ -2,8 +2,16 @@ import { Component, computed, Input, WritableSignal } from '@angular/core';
 import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  BasicEnrollmentOptions,
+  TokenService,
+} from '../../../../services/token/token.service';
 import { SystemService } from '../../../../services/system/system.service';
+
+export interface QuestionEnrollmentOptions extends BasicEnrollmentOptions {
+  type: 'question';
+  answers: Record<string, string>;
+}
 
 @Component({
   selector: 'app-enroll-question',

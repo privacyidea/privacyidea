@@ -3,7 +3,17 @@ import { FormsModule } from '@angular/forms';
 import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatCheckbox } from '@angular/material/checkbox';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  BasicEnrollmentOptions,
+  TokenService,
+} from '../../../../services/token/token.service';
+
+export interface MotpEnrollmentOptions extends BasicEnrollmentOptions {
+  type: 'motp';
+  generateOnServer: boolean;
+  otpKey?: string;
+  motpPin: string;
+}
 
 @Component({
   selector: 'app-enroll-motp',

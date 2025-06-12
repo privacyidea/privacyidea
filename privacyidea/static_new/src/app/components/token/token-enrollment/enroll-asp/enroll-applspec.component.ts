@@ -6,7 +6,17 @@ import { MatCheckbox } from '@angular/material/checkbox';
 import { ServiceIdService } from '../../../../services/service-id/service-id.service';
 import { ErrorStateMatcher, MatOption } from '@angular/material/core';
 import { MatError, MatSelect } from '@angular/material/select';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  BasicEnrollmentOptions,
+  TokenService,
+} from '../../../../services/token/token.service';
+
+export interface ApplspecEnrollmentOptions extends BasicEnrollmentOptions {
+  type: 'applspec';
+  serviceId: string;
+  generateOnServer: boolean;
+  otpKey?: string;
+}
 
 export class ApplspecErrorStateMatcher implements ErrorStateMatcher {
   isErrorState(control: FormControl | null): boolean {

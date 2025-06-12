@@ -134,7 +134,7 @@ export interface LostTokenData {
   valid_to: string;
 }
 
-export interface EnrollmentOptions {
+export type BasicEnrollmentOptions = {
   type: string;
   description: string;
   container_serial: string;
@@ -142,11 +142,16 @@ export interface EnrollmentOptions {
   validity_period_end: string;
   user: string;
   pin: string;
-  generateOnServer: boolean;
-  otpLength: number;
-  otpKey: string;
-  hashAlgorithm: string;
-  timeStep: number;
+  [key: string]: any; // TODO: remove this when all types are defined
+};
+
+// Deprecated: Use and extend `BasicEnrollmentOptions` instead
+export interface EnrollmentOptions extends BasicEnrollmentOptions {
+  generateOnServer?: boolean;
+  otpLength?: number;
+  otpKey?: string;
+  hashAlgorithm?: string;
+  timeStep?: number;
   motpPin?: string;
   sshPublicKey?: string;
   remoteServer?: { url: string; id: string };
@@ -260,12 +265,13 @@ export class TokenService {
       tokenTypeOptions: this.tokenTypeOptions(),
       selectedContent: this.contentService.selectedContent(),
     }),
-    computation: (source: any) =>
-      source.tokenTypeOptions.find((type: any) => type.key === 'hotp'),
+    computation: (source) =>
+      source.tokenTypeOptions.find((type) => type.key === 'hotp') ||
+      source.tokenTypeOptions[0],
   });
   pageSize = linkedSignal({
     source: this.filterValue,
-    computation: (): any => {
+    computation: () => {
       if (![5, 10, 15].includes(this.eventPageSize)) {
         return 10;
       }
@@ -749,23 +755,15 @@ export class TokenService {
       );
   }
 
-  enrollToken(options: EnrollmentOptions) {
+  enrollToken<T extends BasicEnrollmentOptions>(options: T) {
     const headers = this.localService.getHeaders();
 
-    const params: any = {
-      type: options.type,
-      description: options.description,
-      container_serial: options.container_serial,
-      validity_period_start: options.validity_period_start,
-      validity_period_end: options.validity_period_end,
-      user: options.user,
-      pin: options.pin,
-    };
+    const params: any = options;
 
     switch (options.type) {
       case 'webauthn':
       case 'passkey':
-        if (options.credential_id) {
+        if (options['credential_id']) {
           Object.entries(options).forEach(([key, value]) => {
             params[key] = value;
           });
@@ -775,69 +773,66 @@ export class TokenService {
       case 'totp':
       case 'motp':
       case 'applspec':
-        params.otpkey = options.generateOnServer ? null : options.otpKey;
-        params.genkey = options.generateOnServer ? 1 : 0;
+        params.otpkey = options['generateOnServer'] ? null : options['otpKey'];
+        params.genkey = options['generateOnServer'] ? 1 : 0;
         if (options.type === 'motp') {
-          params.motppin = options.motpPin;
+          params.motppin = options['motpPin'];
         }
         if (options.type === 'hotp' || options.type === 'totp') {
-          params.otplen = Number(options.otpLength);
-          params.hashlib = options.hashAlgorithm;
+          params.otplen = Number(options['otpLength']);
+          params.hashlib = options['hashAlgorithm'];
         }
         if (options.type === 'totp') {
-          params.timeStep = options.timeStep;
+          params.timeStep = options['timeStep'];
         }
         if (options.type === 'applspec') {
-          params.service_id = options.serviceId;
+          params.service_id = options['serviceId'];
         }
         break;
       case 'push':
         params.genkey = 1;
         break;
       case 'daypassword':
-        params.otpkey = options.otpKey;
-        params.otplen = Number(options.otpLength);
-        params.hashlib = options.hashAlgorithm;
-        params.timeStep = options.timeStep;
+        params.otpkey = options['otpKey'];
+        params.otplen = Number(options['otpLength']);
+        params.hashlib = options['hashAlgorithm'];
+        params.timeStep = options['timeStep'];
         break;
       case 'indexedsecret':
-        params.otpkey = options.otpKey;
-        break;
-      case 'sshkey':
-        params.sshkey = options.sshPublicKey;
+        params.otpkey = options['otpKey'];
         break;
       case 'yubikey':
-        params.otplen = Number(options.otpLength);
-        params.otpkey = options.otpKey;
+        params.otplen = Number(options['otpLength']);
+        params.otpkey = options['otpKey'];
         break;
       case 'yubico':
-        params['yubico.tokenid'] = options.yubicoIdentifier;
+        params['yubico.tokenid'] = options['yubicoIdentifier'];
         break;
       case 'radius':
-        params['radius.identifier'] = options.radiusServerConfiguration;
-        params['radius.user'] = options.radiusUser;
+        params['radius.identifier'] = options['radiusServerConfiguration'];
+        params['radius.user'] = options['radiusUser'];
         break;
       case 'remote':
-        params['remote.server_id'] = options.remoteServer;
-        params['remote.serial'] = options.remoteSerial;
-        params['remote.user'] = options.remoteUser;
-        params['remote.realm'] = options.remoteRealm;
-        params['remote.resolver'] = options.remoteResolver;
-        params['remote.local_checkpin'] = options.checkPinLocally;
+        params['remote.server_id'] = options['remoteServer'];
+        params['remote.serial'] = options['remoteSerial'];
+        params['remote.user'] = options['remoteUser'];
+        params['remote.realm'] = options['remoteRealm'];
+        params['remote.resolver'] = options['remoteResolver'];
+        params['remote.local_checkpin'] = options['checkPinLocally'];
         break;
       case 'sms':
-        params['sms.identifier'] = options.smsGateway;
-        params['phone'] = options.readNumberDynamically
+        params['sms.identifier'] = options['smsGateway'];
+        params['phone'] = options['readNumberDynamically']
           ? null
-          : options.phoneNumber;
-        params['dynamic_phone'] = options.readNumberDynamically;
+          : options['phoneNumber'];
+        params['dynamic_phone'] = options['readNumberDynamically'];
         break;
       case '4eyes':
-        params.separator = options.separator;
-        params['4eyes'] = options.requiredTokenOfRealms?.reduce(
+        params.separator = options['separator'];
+        params['4eyes'] = options['requiredTokenOfRealms']?.reduce(
           (
             acc: { [key: string]: { count: number; selected: boolean } },
-            curr,
+            curr: any,
           ) => {
             acc[curr.realm] = {
               count: curr.tokens,
@@ -847,31 +842,31 @@ export class TokenService {
           },
           {},
         );
-        if (options.onlyAddToRealm) {
-          params.realm = options.userRealm;
+        if (options['onlyAddToRealm']) {
+          params.realm = options['userRealm'];
           params.user = null;
         }
         break;
       case 'certificate':
         params.genkey = 1;
-        params.ca = options.caConnector;
-        params.template = options.certTemplate;
-        params.pem = options.pem;
+        params.ca = options['caConnector'];
+        params.template = options['certTemplate'];
+        params.pem = options['pem'];
         break;
       case 'email':
-        params.email = options.emailAddress;
-        params.dynamic_email = options.readEmailDynamically;
+        params.email = options['emailAddress'];
+        params.dynamic_email = options['readEmailDynamically'];
         break;
 
       case 'question':
-        params.questions = options.answers;
+        params.questions = options['answers'];
         break;
 
       case 'vasco':
-        if (options.useVascoSerial) {
-          params.serial = options.vascoSerial;
+        if (options['useVascoSerial']) {
+          params.serial = options['vascoSerial'];
         }
-        params.otpkey = options.otpKey;
+        params.otpkey = options['otpKey'];
         params.genkey = 0;
         break;
       default:
@@ -879,7 +874,9 @@ export class TokenService {
     }
 
     return this.http
-      .post<EnrollmentResponse>(`${this.tokenBaseUrl}init`, params, { headers })
+      .post<EnrollmentResponse>(`${this.tokenBaseUrl}init`, params, {
+        headers,
+      })
       .pipe(
         catchError((error) => {
           console.error('Failed to enroll token.', error);

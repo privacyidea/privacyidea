@@ -4,7 +4,17 @@ import { MatInput } from '@angular/material/input';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { ErrorStateMatcher } from '@angular/material/core';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  BasicEnrollmentOptions,
+  TokenService,
+} from '../../../../services/token/token.service';
+
+export interface VascoEnrollmentOptions extends BasicEnrollmentOptions {
+  type: 'vasco';
+  otpKey?: string; // Optional, wenn useVascoSerial true ist
+  useVascoSerial: boolean;
+  vascoSerial?: string; // Optional, wenn useVascoSerial false ist oder otpKey verwendet wird
+}
 
 export class VascoErrorStateMatcher implements ErrorStateMatcher {
   isErrorState(control: FormControl | null): boolean {

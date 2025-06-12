@@ -4,7 +4,16 @@ import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { SystemService } from '../../../../services/system/system.service';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  BasicEnrollmentOptions,
+  TokenService,
+} from '../../../../services/token/token.service';
+
+export interface EmailEnrollmentOptions extends BasicEnrollmentOptions {
+  type: 'email';
+  emailAddress?: string; // Optional if readEmailDynamically is true
+  readEmailDynamically: boolean;
+}
 
 @Component({
   selector: 'app-enroll-email',

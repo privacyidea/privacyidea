@@ -9,7 +9,20 @@ import {
   PrivacyideaServerService,
   RemoteServer,
 } from '../../../../services/privavyidea-server/privacyidea-server.service';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  BasicEnrollmentOptions,
+  TokenService,
+} from '../../../../services/token/token.service';
+
+export interface RemoteEnrollmentOptions extends BasicEnrollmentOptions {
+  type: 'remote';
+  remoteServer: RemoteServer | null; // or specific type if RemoteServer is complex
+  remoteSerial: string;
+  remoteUser: string;
+  remoteRealm: string;
+  remoteResolver: string;
+  checkPinLocally: boolean;
+}
 
 export class RemoteErrorStateMatcher implements ErrorStateMatcher {
   isErrorState(control: FormControl | null): boolean {

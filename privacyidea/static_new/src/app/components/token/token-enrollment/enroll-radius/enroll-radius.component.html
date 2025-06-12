@@ -4,8 +4,10 @@
   </div>
   <h4 class="enroll-h4">Token Configuration</h4>
   @if (!defaultRadiusServerIsSet()) {
-    <span class="inline-hint">To ease the enrolling of RADIUS tokens you can set default values in the
-      <a href="#">RADIUS Token Config</a>.</span>
+    <span class="inline-hint"
+      >To ease the enrolling of RADIUS tokens you can set default values in the
+      <a href="#">RADIUS Token Config</a>.</span
+    >
   }
   <mat-checkbox [(ngModel)]="checkPinLocally">
     Check the PIN locally
@@ -14,11 +16,10 @@
     <mat-form-field class="width-66">
       <mat-label>RADIUS server configuration</mat-label>
       <mat-hint>
-        Select a predefined <a href="#">RADIUS server configuration</a>. The RADIUS request will be
-        forwarded to this RADIUS server.
+        Select a predefined <a href="#">RADIUS server configuration</a>. The
+        RADIUS request will be forwarded to this RADIUS server.
       </mat-hint>
-      <mat-select [(ngModel)]="radiusServerConfiguration"
-                  required>
+      <mat-select [(ngModel)]="radiusServerConfiguration" required>
         @for (option of radiusServerConfigurationOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
         }
@@ -27,18 +28,8 @@
     </mat-form-field>
     <mat-form-field class="input-height width-33">
       <mat-label>RADIUS User</mat-label>
-      <input [(ngModel)]="radiusUser"
-             matInput
-             required />
+      <input [(ngModel)]="radiusUser" matInput required />
       <mat-error>RADIUS User is <strong>required</strong></mat-error>
     </mat-form-field>
   </div>
-  <mat-form-field class="width-66 margin-top-2">
-    <mat-label>Description</mat-label>
-    <textarea [(ngModel)]="description"
-              [maxlength]="80"
-              matInput
-              placeholder="Enter description"
-              rows="3"></textarea>
-  </mat-form-field>
 </div>

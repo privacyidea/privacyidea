@@ -10,8 +10,19 @@ import {
 import { MatInput } from '@angular/material/input';
 import { MatOption } from '@angular/material/core';
 import { MatSelect } from '@angular/material/select';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  BasicEnrollmentOptions,
+  TokenService,
+} from '../../../../services/token/token.service';
 
+export interface TotpEnrollmentOptions extends BasicEnrollmentOptions {
+  type: 'totp';
+  generateOnServer: boolean;
+  otpLength: number;
+  otpKey?: string;
+  hashAlgorithm: string;
+  timeStep: number | string;
+}
 @Component({
   selector: 'app-enroll-totp',
   imports: [

@@ -1,28 +1,101 @@
-import { Component, Input, WritableSignal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
-import { MatError } from '@angular/material/select';
-import { TokenService } from '../../../../services/token/token.service';
+import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import {
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import {
+  BasicEnrollmentOptions,
+  EnrollmentResponse,
+  TokenService,
+} from '../../../../services/token/token.service';
+import { Observable } from 'rxjs';
+
+export interface YubikeyEnrollmentOptions extends BasicEnrollmentOptions {
+  type: 'yubikey';
+  otpKey: string | null;
+  otpLength: number | null;
+}
 
 @Component({
   selector: 'app-enroll-yubikey',
-  imports: [FormsModule, MatFormField, MatInput, MatLabel, MatHint, MatError],
   templateUrl: './enroll-yubikey.component.html',
-  styleUrl: './enroll-yubikey.component.scss',
+  // styleUrls: ['./enroll-yubikey.component.scss'], // Falls vorhanden
+  standalone: true,
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    // Weitere Module
+  ],
 })
-export class EnrollYubikeyComponent {
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === 'yubikey')?.text;
-  @Input() description!: WritableSignal<string>;
-  @Input() otpKey!: WritableSignal<string>;
-  @Input() otpLength!: WritableSignal<number>;
-  @Input() testYubiKey!: WritableSignal<string>;
+export class EnrollYubikeyComponent implements OnInit {
+  @Output() aditionalFormFieldsChange = new EventEmitter<{
+    [key: string]: FormControl<any>;
+  }>();
+  @Output() clickEnrollChange = new EventEmitter<
+    (
+      basicOptions: BasicEnrollmentOptions,
+    ) => Observable<EnrollmentResponse> | undefined
+  >();
+
+  testYubiKeyControl = new FormControl('');
+  otpKeyControl = new FormControl('', [
+    Validators.required,
+    Validators.minLength(32),
+    Validators.maxLength(32),
+  ]);
+  otpLengthControl = new FormControl<number | null>(44, [Validators.required]);
+
+  // FormGroup zur Bündelung und einfacheren Wertüberwachung
+  yubikeyForm = new FormGroup({
+    testYubiKey: this.testYubiKeyControl,
+    otpKey: this.otpKeyControl,
+    otpLength: this.otpLengthControl,
+  });
+
+  // Beispieltext, falls weiterhin benötigt und nicht von außen kommt
+  text =
+    this.tokenService.tokenTypeOptions().find((type) => type.key === 'yubikey')
+      ?.text || 'The Yubikey token can be used in AES encryption mode...';
 
   constructor(private tokenService: TokenService) {}
 
-  ngOnInit() {
-    this.otpLength.set(44);
+  ngOnInit(): void {
+    this.aditionalFormFieldsChange.emit({
+      testYubiKey: this.testYubiKeyControl,
+      otpKey: this.otpKeyControl,
+      otpLength: this.otpLengthControl,
+    });
+    this.clickEnrollChange.emit(this.onClickEnroll);
+
+    this.testYubiKeyControl.valueChanges.subscribe((value) => {
+      if (value && value.length > 0) {
+        this.otpLengthControl.setValue(value.length);
+      }
+    });
   }
+
+  onClickEnroll = (
+    basicOptions: BasicEnrollmentOptions,
+  ): Observable<EnrollmentResponse> | undefined => {
+    if (this.yubikeyForm.invalid) {
+      this.yubikeyForm.markAllAsTouched();
+      return undefined;
+    }
+
+    const enrollmentData: YubikeyEnrollmentOptions = {
+      ...basicOptions,
+      type: 'yubikey',
+      otpKey: this.otpKeyControl.value,
+      otpLength: this.otpLengthControl.value,
+    };
+
+    return this.tokenService.enrollToken(enrollmentData);
+  };
 }

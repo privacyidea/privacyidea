@@ -4,15 +4,9 @@
   </div>
   <h4 class="enroll-h4">Token Configuration</h4>
   @if (!defaultTiQRIsSet()) {
-    <span class="inline-warning">For TiQR tokens to work properly you need to set the
-      <a href="#">TiQR Token Config</a>!</span>
+    <span class="inline-warning"
+      >For TiQR tokens to work properly you need to set the
+      <a href="#">TiQR Token Config</a>!</span
+    >
   }
-  <mat-form-field class="width-66">
-    <mat-label>Description</mat-label>
-    <textarea [(ngModel)]="description"
-              [maxlength]="80"
-              matInput
-              placeholder="Enter description"
-              rows="3"></textarea>
-  </mat-form-field>
 </div>

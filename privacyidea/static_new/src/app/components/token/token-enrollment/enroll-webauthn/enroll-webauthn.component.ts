@@ -1,17 +1,38 @@
 import { Component, Input, WritableSignal } from '@angular/core';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NotificationService } from '../../../../services/notification/notification.service';
 import { Base64Service } from '../../../../services/base64/base64.service';
 import { from, Observable, switchMap, throwError } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  BasicEnrollmentOptions,
+  TokenService,
+} from '../../../../services/token/token.service';
 import { catchError } from 'rxjs/operators';
+
+// Interface für die Initialisierungsoptionen des WebAuthn Tokens (erster Schritt)
+export interface WebauthnEnrollmentOptions extends BasicEnrollmentOptions {
+  type: 'webauthn';
+  // Keine zusätzlichen typspezifischen Felder für den *ersten* Enrollment-Aufruf (init)
+  // Die komplexeren Daten werden im zweiten Schritt nach der Browser-Interaktion gesendet.
+}
+
+// Interface für die Parameter des *zweiten* Enrollment-Aufrufs (nach Browser-Interaktion)
+export interface WebauthnRegistrationParams {
+  type: 'webauthn';
+  transaction_id: string;
+  serial: string;
+  credential_id: string; // ArrayBuffer
+  rawId: string; // base64
+  authenticatorAttachment: string | null;
+  regdata: string; // base64 (attestationObject)
+  clientdata: string; // base64 (clientDataJSON)
+  credProps?: any;
+}
 
 @Component({
   selector: 'app-enroll-webauthn',
-  imports: [MatFormField, MatInput, MatLabel, ReactiveFormsModule, FormsModule],
+  imports: [ReactiveFormsModule, FormsModule],
   templateUrl: './enroll-webauthn.component.html',
   styleUrl: './enroll-webauthn.component.scss',
 })
@@ -39,7 +60,7 @@ export class EnrollWebauthnComponent {
     const request = detail.webAuthnRegisterRequest;
     const publicKeyOptions: PublicKeyCredentialCreationOptions = {
       rp: {
-        id: request.relyingParty.id,
+        id: request.relyingParty?.id, // Optional chaining für Sicherheit
         name: request.relyingParty.name,
       },
       user: {

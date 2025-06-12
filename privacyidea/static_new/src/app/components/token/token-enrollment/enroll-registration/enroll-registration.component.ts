@@ -1,12 +1,17 @@
 import { Component, Input, WritableSignal } from '@angular/core';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  BasicEnrollmentOptions,
+  TokenService,
+} from '../../../../services/token/token.service';
 
+export interface RegistrationEnrollmentOptions extends BasicEnrollmentOptions {
+  type: 'registration';
+  // Keine typspezifischen Felder für die Initialisierung über EnrollmentOptions
+}
 @Component({
   selector: 'app-enroll-registration',
-  imports: [MatFormField, MatInput, MatLabel, ReactiveFormsModule, FormsModule],
+  imports: [ReactiveFormsModule, FormsModule],
   templateUrl: './enroll-registration.component.html',
   styleUrl: './enroll-registration.component.scss',
 })

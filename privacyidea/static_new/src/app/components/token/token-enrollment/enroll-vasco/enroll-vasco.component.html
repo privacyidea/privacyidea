@@ -5,38 +5,31 @@
   <h4 class="enroll-h4">Token Configuration</h4>
   <mat-form-field class="width-100">
     <mat-label>VASCO Token blob</mat-label>
-    <textarea [(ngModel)]="otpKey"
-              [errorStateMatcher]="vascoErrorStatematcher"
-              matInput
-              placeholder="Enter blob"
-              required
-              rows="6">
+    <textarea
+      [(ngModel)]="otpKey"
+      [errorStateMatcher]="vascoErrorStatematcher"
+      matInput
+      placeholder="Enter blob"
+      required
+      rows="6">
     </textarea>
-    <mat-error>Expected VASCO Token blob as <strong>496-character hex string</strong>, but length
-      is {{ otpKey().length }}
+    <mat-error
+      >Expected VASCO Token blob as <strong>496-character hex string</strong>,
+      but length is {{ otpKey().length }}
     </mat-error>
   </mat-form-field>
   <div class="flex-row gap-1">
-    <mat-checkbox [(ngModel)]="useVascoSerial"
-                  class="server-checkbox">
+    <mat-checkbox [(ngModel)]="useVascoSerial" class="server-checkbox">
       use VASCO Serial
     </mat-checkbox>
     <mat-form-field class="width-33">
       <mat-label>Vasco Serial</mat-label>
-      <input [(ngModel)]="vascoSerial"
-             [disabled]="true"
-             matInput />
+      <input [(ngModel)]="vascoSerial" [disabled]="true" matInput />
     </mat-form-field>
   </div>
-  <span class="margin-bottom-1">The VASCO serial is read from the VASCO blob. If you want to use this VASCO
+  <span class="margin-bottom-1"
+    >The VASCO serial is read from the VASCO blob. If you want to use this VASCO
     serial number within privacyIDEA, activate the checkbox. Otherwise
-    privacyIDEA will create a new unique serial number.</span>
-  <mat-form-field class="width-66">
-    <mat-label>Description</mat-label>
-    <textarea [(ngModel)]="description"
-              [maxlength]="80"
-              matInput
-              placeholder="Enter description"
-              rows="3"></textarea>
-  </mat-form-field>
+    privacyIDEA will create a new unique serial number.</span
+  >
 </div>
