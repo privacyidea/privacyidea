@@ -1353,19 +1353,41 @@ def validate_values(values: Union[str, list, None], allowed_values: list, name: 
 
 
 @log_with(log)
-def set_policy(name=None, newname=None, scope=None, action=None, realm=None, resolver=None,
+def rename_policy(name, newname):
+    """
+    Rename a policy.
+
+    :param name: The name of the policy to be renamed
+    :param newname: The new name of the policy
+    :return: The database ID of the renamed policy
+    :rtype: int
+    """
+    check_policy_name(newname)
+    p1 = Policy.query.filter_by(name=name).first()
+    if not p1:
+        raise ParameterError(f"Policy '{name}' does not exist!")
+    if Policy.query.filter_by(name=newname).first():
+        raise ParameterError(f"Policy '{newname}' already exists!")
+
+    p1.name = newname
+    save_config_timestamp()
+    db.session.commit()
+
+    return p1.id
+
+
+@log_with(log)
+def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                user=None, time=None, client=None, active=True,
                adminrealm=None, adminuser=None, priority=None, check_all_resolvers=False,
                conditions=None, pinode=None, description=None, user_case_insensitive=False):
     """
-    Function to create, update or rename a policy.
+    Function to set a policy.
 
-    If *name* exists the policy is updated, otherwise it is created.
-    If *newname* is given the existing policy called *name* is renamed
-    to *newname* (after validating that no policy with *newname* exists).
+    If the policy with this name already exists, it updates the policy.
+    It expects a dict of with the following keys:
 
     :param name: The name of the policy
-    :param newname:  Optional – the new name the policy should receive
     :param scope: The scope of the policy. Something like "admin" or "authentication"
     :param action: A scope specific action or a comma separated list of actions
     :type active: basestring
@@ -1406,8 +1428,6 @@ def set_policy(name=None, newname=None, scope=None, action=None, realm=None, res
         priority = int(priority)
     if priority is not None and priority <= 0:
         raise ParameterError("Priority must be at least 1")
-    if newname:
-        check_policy_name(newname)
 
     # check for valid realms
     valid_realms = list(get_realms().keys())
@@ -1481,13 +1501,6 @@ def set_policy(name=None, newname=None, scope=None, action=None, realm=None, res
         action = ", ".join(action_list)
 
     if p1:
-        if newname and newname != name:
-            # ensure uniqueness
-            if Policy.query.filter_by(name=newname).first():
-                raise ParameterError(
-                    f"A policy with name '{newname}' already exists")
-            p1.name = newname
-
         # The policy already exist, we need to update
         if action is not None:
             p1.action = action
@@ -1522,13 +1535,12 @@ def set_policy(name=None, newname=None, scope=None, action=None, realm=None, res
         ret = p1.id
     else:
         # Create a new policy
-        create_name = newname if newname else name
-        policy = Policy(create_name, action=action, scope=scope, realm=realm,
-                     user=user, time=time, client=client, active=active,
-                     resolver=resolver, adminrealm=adminrealm,
-                     adminuser=adminuser, priority=priority,
-                     check_all_resolvers=check_all_resolvers,
-                     pinode=pinode, user_case_insensitive=user_case_insensitive)
+        policy = Policy(name, action=action, scope=scope, realm=realm,
+                        user=user, time=time, client=client, active=active,
+                        resolver=resolver, adminrealm=adminrealm,
+                        adminuser=adminuser, priority=priority,
+                        check_all_resolvers=check_all_resolvers,
+                        pinode=pinode, user_case_insensitive=user_case_insensitive)
         ret = policy.save()
         # Since we create a new policy we always set the conditions, even if the list is empty
         set_policy_conditions(conditions_data, policy)

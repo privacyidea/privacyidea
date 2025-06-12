@@ -37,10 +37,10 @@ from .lib.utils import (getParam,
                         optional,
                         required,
                         send_result,
-                        check_policy_name, send_file)
+                        check_policy_name, send_file, get_required)
 from ..lib.log import log_with
 from ..lib.policies.policy_conditions import ConditionHandleMissingData
-from ..lib.policy import (set_policy, ACTION,
+from ..lib.policy import (set_policy, ACTION, rename_policy,
                           export_policies, import_policies,
                           delete_policy, get_static_policy_definitions,
                           enable_policy, get_policy_condition_sections,
@@ -109,10 +109,9 @@ def rename_policy_api(name=None):
     :return: ID in the database
     """
     param = request.all_data
-    newname = getParam(param, "newname", required)
+    newname = get_required(param, "newname")
     check_policy_name(newname)
-
-    p = set_policy(name=name, newname=newname)
+    p = rename_policy(name=name, newname=newname)
     g.audit_object.log({"success": True})
     return send_result(p)
 
