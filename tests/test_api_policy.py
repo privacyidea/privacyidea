@@ -424,6 +424,63 @@ class APIPolicyTestCase(MyApiTestCase):
             result = data.get("result")
             self.assertEqual(result['error'], {'code': 302, 'message': 'ERR302: Invalid client definition!'})
 
+    def test_02_rename_policy(self):
+        # create a policy pol_old
+        with self.app.test_request_context(
+                '/policy/pol_old',
+                method='POST',
+                json={
+                    "action": ACTION.NODETAILFAIL,
+                    "client": "10.1.2.3",
+                    "scope": SCOPE.AUTHZ,
+                    "realm": "realm1"},
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+
+        # rename pol_old to pol_new
+        with self.app.test_request_context(
+                '/policy/rename/pol_old',
+                method='POST',
+                json={"newname": "pol_new"},
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            self.assertTrue(res.json["result"]["status"], res.json)
+
+        # verify the list now contains only pol_new
+        with self.app.test_request_context(
+                '/policy/',
+                method='GET',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            policies = res.json["result"]["value"]
+            self.assertEqual(len(policies), 1, policies)
+            self.assertEqual(policies[0]["name"], "pol_new", policies)
+
+        # verify GET /policy/pol_new works
+        with self.app.test_request_context(
+                '/policy/pol_new',
+                method='GET',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            self.assertTrue(res.json["result"]["status"], res.json)
+
+        # verify GET /policy/pol_old returns 404
+        with self.app.test_request_context(
+                '/policy/pol_old',
+                method='GET',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertIn(res.status_code, (200, 404), res)
+            if res.status_code == 200:
+                self.assertEqual(res.json["result"]["value"], [], res.json)
+
+        # clean up
+        delete_policy("pol_new")
+
 
 class APIPolicyConditionTestCase(MyApiTestCase):
 

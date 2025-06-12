@@ -401,9 +401,11 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
 
             ConfigFactory.renamePolicy(oldName, newName, function (data) {
                 if (data.result.status === true) {
-                    // Return to the policy list
+                    // Reload the policy list and the details page of the policy
                     $scope.getPolicies();
-                    $state.go("config.policies.list");
+                    $state.go("config.policies.details", {
+                        'policyname': $scope.policyname
+                    });
                 }
             });
         };
