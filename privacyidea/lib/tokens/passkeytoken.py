@@ -387,7 +387,7 @@ class PasskeyTokenClass(TokenClass):
                 credential_public_key=base64url_to_bytes(self.get_tokeninfo("public_key")),
             )
         except InvalidAuthenticationResponse as ex:
-            log.info(f"Passkey authentication failed: {ex}")
+            log.error(f"Passkey authentication failed: {ex}")
             return -1
 
         self.add_tokeninfo("sign_count", verified_authentication.new_sign_count)
