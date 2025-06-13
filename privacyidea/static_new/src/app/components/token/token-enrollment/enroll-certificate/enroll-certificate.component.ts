@@ -78,7 +78,7 @@ export class EnrollCertificateComponent implements OnInit {
   >();
 
   caConnectorControl = new FormControl<string>('', [Validators.required]);
-  certTemplateControl = new FormControl<string>('', [Validators.required]);
+  certTemplateControl = new FormControl<string>('');
   pemControl = new FormControl<string>(''); // Validator is set dynamically
   intentionToggleControl = new FormControl<'generate' | 'upload'>('generate', [
     Validators.required,
