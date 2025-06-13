@@ -1353,23 +1353,23 @@ def validate_values(values: Union[str, list, None], allowed_values: list, name: 
 
 
 @log_with(log)
-def rename_policy(name, newname):
+def rename_policy(name: str, new_name: str):
     """
     Rename a policy.
 
     :param name: The name of the policy to be renamed
-    :param newname: The new name of the policy
+    :param new_name: The new name of the policy
     :return: The database ID of the renamed policy
     :rtype: int
     """
-    check_policy_name(newname)
+    check_policy_name(new_name)
     p1 = Policy.query.filter_by(name=name).first()
     if not p1:
-        raise ParameterError(f"Policy '{name}' does not exist!")
-    if Policy.query.filter_by(name=newname).first():
-        raise ParameterError(f"Policy '{newname}' already exists!")
+        raise ParameterError(_("Policy does not exist:") + f" {name}")
+    if Policy.query.filter_by(name=new_name).first():
+        raise ParameterError(_("Policy already exists:") + f" {new_name}")
 
-    p1.name = newname
+    p1.name = new_name
     save_config_timestamp()
     db.session.commit()
 

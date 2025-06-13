@@ -338,8 +338,8 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                     AuthFactory.authError(error.data)
                 });
             },
-            renamePolicy: function (oldname, newname, callback) {
-                $http.post(policyUrl + "/rename/" + oldname, {newname: newname}, {
+            renamePolicy: function (old_name, new_name, callback) {
+                $http.patch(policyUrl + "/rename/" + old_name, {name: new_name}, {
                     headers: {
                         'PI-Authorization': AuthFactory.getAuthToken(),
                         'Content-Type': 'application/json'
