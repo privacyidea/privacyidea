@@ -8,7 +8,6 @@ import {
 import { NotificationService } from '../../../../services/notification/notification.service';
 import {
   EnrollmentResponse,
-  EnrollmentResponseDetail,
   BasicEnrollmentOptions,
   TokenService,
 } from '../../../../services/token/token.service';

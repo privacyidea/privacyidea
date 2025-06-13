@@ -6,7 +6,6 @@ import {
   Injectable,
   linkedSignal,
   signal,
-  ViewChild,
   WritableSignal,
 } from '@angular/core';
 import {
@@ -21,6 +20,8 @@ import {
   FormControl,
   FormGroup,
   FormsModule,
+  ValidationErrors,
+  AbstractControl,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
@@ -55,6 +56,7 @@ import {
   EnrollmentResponse,
   TokenDetails,
   TokenService,
+  TokenType,
 } from '../../../services/token/token.service';
 import { EnrollTotpComponent } from './enroll-totp/enroll-totp.component';
 import { MatDialog } from '@angular/material/dialog';
@@ -214,24 +216,20 @@ export class TokenEnrollmentComponent {
   // For simplicity and consistency with formGroup driving state:
 
   // FormControls for the main enrollment form
-  selectedTokenTypeControl = new FormControl(
-    this.tokenService.selectedTokenType(),
-    [Validators.required],
-  );
   descriptionControl = new FormControl<string>('', { nonNullable: true });
   selectedUserRealmControl = new FormControl(
     this.userService.selectedUserRealm(),
-    [Validators.required],
   );
-  userNameFilterControl = new FormControl(this.userService.userNameFilter(), [
-    Validators.required,
-  ]);
-  setPinControl = new FormControl<string>('', this.pinValidator.bind(this));
-  repeatPinControl = new FormControl<string>('', this.pinValidator.bind(this));
+  userNameFilterControl = new FormControl(this.userService.userNameFilter());
+  setPinControl = new FormControl<string>('');
+  repeatPinControl = new FormControl<string>('');
 
-  pinValidator(): { [key: string]: boolean } | null {
-    return this.formGroup.get('setPin')?.value !==
-      this.formGroup.get('repeatPin')?.value
+  static pinMismatchValidator(
+    group: AbstractControl,
+  ): { [key: string]: boolean } | null {
+    const setPin = group.get('setPin');
+    const repeatPin = group.get('repeatPin');
+    return setPin && repeatPin && setPin.value !== repeatPin.value
       ? { pinMismatch: true }
       : null;
   }
@@ -240,14 +238,14 @@ export class TokenEnrollmentComponent {
     this.containerService.selectedContainer(),
   );
 
-  selectedStartDateControl = new FormControl<Date | null>(new Date());
+  selectedStartDateControl = new FormControl<Date | null>(null);
   selectedStartTimeControl = new FormControl<string>('00:00');
   selectedTimezoneOffsetControl = new FormControl<string>('+00:00');
-  selectedEndDateControl = new FormControl<Date | null>(new Date());
+  selectedEndDateControl = new FormControl<Date | null>(null);
   selectedEndTimeControl = new FormControl<string>('23:59');
 
   onlyAddToRealm = computed(() => {
-    if (this.selectedTokenTypeControl.value?.key === '4eyes') {
+    if (this.tokenService.selectedTokenType()?.key === '4eyes') {
       const foureyesControls = this.additionalFormFields();
       const control = foureyesControls[
         'onlyAddToRealm'
@@ -287,22 +285,41 @@ export class TokenEnrollmentComponent {
       }
     }
     this.additionalFormFields.set(validControls);
+    this.formGroup = new FormGroup(
+      {
+        description: this.descriptionControl,
+        selectedUserRealm: this.selectedUserRealmControl,
+        userNameFilter: this.userNameFilterControl,
+        setPin: this.setPinControl,
+        repeatPin: this.repeatPinControl,
+        selectedContainer: this.selectedContainerControl,
+        selectedStartDate: this.selectedStartDateControl,
+        selectedStartTime: this.selectedStartTimeControl,
+        selectedTimezoneOffset: this.selectedTimezoneOffsetControl,
+        selectedEndDate: this.selectedEndDateControl,
+        selectedEndTime: this.selectedEndTimeControl,
+        ...validControls, // Spread valid controls into the formGroup
+      },
+      { validators: TokenEnrollmentComponent.pinMismatchValidator },
+    );
   }
 
-  formGroup = new FormGroup({
-    selectedTokenType: this.selectedTokenTypeControl,
-    description: this.descriptionControl,
-    selectedUserRealm: this.selectedUserRealmControl,
-    userNameFilter: this.userNameFilterControl,
-    setPin: this.setPinControl,
-    repeatPin: this.repeatPinControl,
-    selectedContainer: this.selectedContainerControl,
-    selectedStartDate: this.selectedStartDateControl,
-    selectedStartTime: this.selectedStartTimeControl,
-    selectedTimezoneOffset: this.selectedTimezoneOffsetControl,
-    selectedEndDate: this.selectedEndDateControl,
-    selectedEndTime: this.selectedEndTimeControl,
-  });
+  formGroup = new FormGroup(
+    {
+      description: this.descriptionControl,
+      selectedUserRealm: this.selectedUserRealmControl,
+      userNameFilter: this.userNameFilterControl,
+      setPin: this.setPinControl,
+      repeatPin: this.repeatPinControl,
+      selectedContainer: this.selectedContainerControl,
+      selectedStartDate: this.selectedStartDateControl,
+      selectedStartTime: this.selectedStartTimeControl,
+      selectedTimezoneOffset: this.selectedTimezoneOffsetControl,
+      selectedEndDate: this.selectedEndDateControl,
+      selectedEndTime: this.selectedEndTimeControl,
+    },
+    { validators: TokenEnrollmentComponent.pinMismatchValidator },
+  );
 
   constructor(
     protected containerService: ContainerService,
@@ -315,39 +332,69 @@ export class TokenEnrollmentComponent {
     protected versioningService: VersionService,
     private contentService: ContentService,
   ) {
+    // The effect will call resetForm on initialization and on subsequent changes to selectedTokenType
     effect(() => {
-      const tokenType = this.selectedTokenTypeControl.value;
-      if (tokenType) {
-        // Reset enrollResponse when token type changes
-        // This replaces the linkedSignal behavior if its source was this.selectedTokenTypeControl
-        if (this.enrollResponse() !== null) {
-          this.enrollResponse.set(null);
-        }
-        this.descriptionControl.setValue('');
-        this.setPinControl.setValue('');
-        this.repeatPinControl.setValue('');
-        // Reset other relevant controls if needed when token type changes
-        // Reset additional form fields when token type changes
-        this.additionalFormFields.set({});
-      }
+      this.tokenService.selectedTokenType(); // Establish dependency on the signal
+      this.resetForm();
     });
+  }
 
-    // Sync signal with FormControl for selectedTokenType
-    this.selectedTokenTypeControl.valueChanges.subscribe((value) => {
-      if (value) {
-        this.tokenService.selectedTokenType.set(value);
-      }
-    });
+  ngOnInit(): void {
     // Sync FormControls with service states for user/realm/container
-    this.selectedUserRealmControl.valueChanges.subscribe((value) =>
-      this.userService.selectedUserRealm.set(value ?? ''),
-    );
+    this.selectedUserRealmControl.valueChanges.subscribe((value) => {
+      this.userService.userNameFilter.set(''); // Reset userNameFilter when realm changes
+      if (!value) {
+        this.userNameFilterControl.disable({ emitEvent: false });
+      } else {
+        this.userNameFilterControl.enable({ emitEvent: false });
+      }
+      return this.userService.selectedUserRealm.set(value ?? '');
+    });
     this.userNameFilterControl.valueChanges.subscribe((value) =>
       this.userService.userNameFilter.set(value ?? ''),
     );
     this.selectedContainerControl.valueChanges.subscribe((value) =>
       this.containerService.selectedContainer.set(value ?? ''),
     );
+  }
+
+  resetForm(): void {
+    this.userService.selectedUserRealm.set('');
+    this.userService.userNameFilter.set('');
+
+    this.formGroup.reset({
+      description: '',
+      selectedUserRealm: '',
+      userNameFilter: '',
+      setPin: '',
+      repeatPin: '',
+      selectedContainer: this.containerService.selectedContainer(),
+      selectedStartDate: new Date(),
+      selectedStartTime: '00:00',
+      selectedTimezoneOffset: '+00:00',
+      selectedEndDate: new Date(),
+      selectedEndTime: '23:59',
+    });
+    this.enrollResponse.set(null);
+    this.pollResponse.set(null);
+    this.additionalFormFields.set({});
+    this.formGroup.markAsPristine();
+    this.formGroup.markAsUntouched();
+    // Reset the pollResponse signal
+    this.pollResponse.set(null);
+    // Reset the enrollResponse signal
+    this.enrollResponse.set(null);
+
+    const isUserRequiredByTokenType = this.userIsRequired();
+    // _userInOptionsValidator is now checked only on enrollToken()
+    this.selectedUserRealmControl.setValidators(
+      isUserRequiredByTokenType ? [Validators.required] : [],
+    );
+    this.selectedUserRealmControl.updateValueAndValidity({ emitEvent: false });
+    this.userNameFilterControl.setValidators(
+      isUserRequiredByTokenType ? [Validators.required] : [],
+    );
+    this.userNameFilterControl.updateValueAndValidity({ emitEvent: false });
   }
 
   @HostListener('document:keydown.enter', ['$event'])
@@ -387,16 +434,46 @@ export class TokenEnrollmentComponent {
   }
 
   enrollToken(): void {
+    const currentTokenType = this.tokenService.selectedTokenType();
+    var everythingIsValid = true;
+    if (!currentTokenType) {
+      this.notificationService.openSnackBar('Please select a token type.');
+      return;
+    }
+
+    if (!this.validateUserNameFilterControl()) {
+      everythingIsValid = false;
+    }
+
+    // Validate username against options if a username is entered
+    const userNameValue = this.userNameFilterControl.value?.trim();
+    if (
+      userNameValue &&
+      !this.userService.userOptions().includes(userNameValue) &&
+      !everythingIsValid
+    ) {
+      everythingIsValid = false;
+      if (!this.userNameFilterControl.hasError('userNotInOptions')) {
+        this.userNameFilterControl.setErrors({ userNotInOptions: true });
+      }
+    } else if (this.userNameFilterControl.hasError('userNotInOptions')) {
+      const currentErrors = { ...this.userNameFilterControl.errors };
+      delete currentErrors['userNotInOptions'];
+      this.userNameFilterControl.setErrors(
+        Object.keys(currentErrors).length > 0 ? currentErrors : null,
+      );
+    }
+
     if (this.formGroup.invalid) {
       this.notificationService.openSnackBar(
-        'Please fill in all required fields.',
+        'Please fill in all required fields or correct invalid entries.',
       );
       this.formGroup.markAllAsTouched();
       return;
     }
-    if (this.clickEnroll !== undefined) {
+    if (this.clickEnroll) {
       const basicOptions: BasicEnrollmentOptions = {
-        type: this.selectedTokenTypeControl.value!.key, // Already validated by formGroup
+        type: currentTokenType.key,
         description: this.descriptionControl.value.trim(),
         container_serial: this.selectedContainerControl.value?.trim() ?? '',
         validity_period_start: this.formatDateTimeOffset(
@@ -440,6 +517,30 @@ export class TokenEnrollmentComponent {
     }
   }
 
+  validateUserNameFilterControl(): boolean {
+    // Validate username against options if a username is entered
+    const userNameValue = this.userNameFilterControl.value;
+    if (
+      userNameValue &&
+      !this.userService.userOptions().includes(userNameValue)
+    ) {
+      // Validation failed, set 'userNotInOptions' error when needed
+      if (!this.userNameFilterControl.hasError('userNotInOptions')) {
+        this.userNameFilterControl.setErrors({ userNotInOptions: true });
+      }
+      return false; // Indicate that validation failed
+    }
+    // Validation passed, clear any existing 'userNotInOptions' error
+    if (this.userNameFilterControl.hasError('userNotInOptions')) {
+      const currentErrors = { ...this.userNameFilterControl.errors };
+      delete currentErrors['userNotInOptions'];
+      this.userNameFilterControl.setErrors(
+        Object.keys(currentErrors).length > 0 ? currentErrors : null,
+      );
+    }
+    return true; // Indicate that validation passed
+  }
+
   reopenEnrollmentDialog() {
     const enrollResponse = this.enrollResponse();
     let waitingForClient =
@@ -459,7 +560,7 @@ export class TokenEnrollmentComponent {
 
   userIsRequired() {
     return ['tiqr', 'webauthn', 'passkey', 'certificate'].includes(
-      this.selectedTokenTypeControl.value?.key ?? '',
+      this.tokenService.selectedTokenType()?.key ?? '',
     );
   }
 
@@ -491,7 +592,7 @@ export class TokenEnrollmentComponent {
       );
     }
 
-    switch (this.selectedTokenTypeControl.value?.key) {
+    switch (this.tokenService.selectedTokenType()?.key) {
       case 'webauthn':
       case 'passkey':
       case 'push':

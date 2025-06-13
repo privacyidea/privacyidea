@@ -7,14 +7,14 @@ import {
 } from '@angular/forms';
 import { NotificationService } from '../../../../services/notification/notification.service';
 import { Base64Service } from '../../../../services/base64/base64.service';
-import { from, Observable, switchMap, throwError, of } from 'rxjs';
+import { from, Observable, switchMap, throwError } from 'rxjs';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import {
   BasicEnrollmentOptions,
   EnrollmentResponse,
   TokenService,
 } from '../../../../services/token/token.service';
-import { catchError, finalize, tap } from 'rxjs/operators';
+import { catchError, finalize } from 'rxjs/operators';
 import { TokenEnrollmentFirstStepDialogComponent } from '../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component';
 
 // Interface for the initialization options of the WebAuthn token (first step)

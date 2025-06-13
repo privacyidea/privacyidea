@@ -7,12 +7,7 @@ import {
   WritableSignal,
 } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import {
-  MatCell,
-  MatColumnDef,
-  MatRow,
-  MatTableModule,
-} from '@angular/material/table';
+import { MatCell, MatColumnDef, MatTableModule } from '@angular/material/table';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import {
@@ -41,6 +36,7 @@ import { NotificationService } from '../../../../services/notification/notificat
   imports: [
     MatTableModule,
     MatColumnDef,
+    MatLabel,
     MatCell,
     MatFormField,
     MatInput,
@@ -54,8 +50,6 @@ import { NotificationService } from '../../../../services/notification/notificat
     MatIcon,
     MatDivider,
     MatFabButton,
-    MatRow,
-    MatLabel,
     EditButtonsComponent,
     NgClass,
   ],

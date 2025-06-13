@@ -1,29 +1,30 @@
 <div aria-label="Token Enrollment" class="token-enrollment-container">
   <h3 class="margin-left-1">Token Enrollment</h3>
+
+  <mat-form-field class="width-100">
+    <mat-select
+      [(ngModel)]="selectedTokenType"
+      [panelClass]="'multi-column-panel'">
+      @for (type of tokenService.tokenTypeOptions(); track type) {
+        <mat-option class="token-type-option type-option" [value]="type"
+          >{{ type.info.split(":")[0] }}
+        </mat-option>
+      }
+      <button
+        (click)="versioningService.openDocumentation('tokentypes')"
+        class="card-button type-help-button"
+        mat-flat-button>
+        <mat-icon>info_outline</mat-icon>
+        Help About Tokentypes
+      </button>
+    </mat-select>
+    <mat-hint class="token-type-hint">
+      @if (selectedTokenType().info) {
+        {{ selectedTokenType().info.split(":")[1] }}
+      }
+    </mat-hint>
+  </mat-form-field>
   <form [formGroup]="formGroup">
-    <mat-form-field class="width-100">
-      <mat-select
-        [formControl]="selectedTokenTypeControl"
-        [panelClass]="'multi-column-panel'">
-        @for (type of tokenService.tokenTypeOptions(); track type) {
-          <mat-option class="token-type-option type-option" [value]="type"
-            >{{ type.info.split(":")[0] }}
-          </mat-option>
-        }
-        <button
-          (click)="versioningService.openDocumentation('tokentypes')"
-          class="card-button type-help-button"
-          mat-flat-button>
-          <mat-icon>info_outline</mat-icon>
-          Help About Tokentypes
-        </button>
-      </mat-select>
-      <mat-hint class="token-type-hint">
-        @if (selectedTokenTypeControl.value?.info) {
-          {{ selectedTokenTypeControl.value?.info?.split(":")?.[1] }}
-        }
-      </mat-hint>
-    </mat-form-field>
     <div class="enroll-button-container">
       <button
         (click)="reopenEnrollmentDialog()"
@@ -33,17 +34,16 @@
       </button>
       <button
         (click)="enrollToken()"
-        [disabled]="formGroup.invalid"
         [ngClass]="{
           'disabled-button': formGroup.invalid,
           'card-button': true,
         }"
         mat-flat-button>
         <mat-icon>add</mat-icon>
-        Enroll {{ selectedTokenTypeControl.value?.key }} Token
+        Enroll {{ selectedTokenType().key }} Token
       </button>
     </div>
-    @switch (selectedTokenTypeControl.value?.key) {
+    @switch (selectedTokenType().key) {
       @case ("hotp") {
         <app-enroll-hotp
           (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
@@ -208,7 +208,7 @@
         </mat-form-field>
       </div>
 
-      @if (selectedTokenTypeControl.value?.key !== "passkey") {
+      @if (selectedTokenType().key !== "passkey") {
         <div class="flex-column user-pin-container">
           <h4 class="enroll-h4">Set Pin</h4>
           <div class="user-pin-input">

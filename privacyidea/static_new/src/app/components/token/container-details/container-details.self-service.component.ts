@@ -1,15 +1,10 @@
 import { Component } from '@angular/core';
 import { NgClass } from '@angular/common';
-import {
-  MatCell,
-  MatColumnDef,
-  MatRow,
-  MatTableModule,
-} from '@angular/material/table';
+import { MatCell, MatColumnDef, MatTableModule } from '@angular/material/table';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatListItem } from '@angular/material/list';
 import { EditButtonsComponent } from '../../shared/edit-buttons/edit-buttons.component';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatFormField } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatInput } from '@angular/material/input';
 import {
@@ -31,11 +26,9 @@ import { ContainerDetailsComponent } from './container-details.component';
   standalone: true,
   imports: [
     NgClass,
-    MatLabel,
     MatTableModule,
     MatCell,
     MatColumnDef,
-    MatRow,
     ReactiveFormsModule,
     MatListItem,
     EditButtonsComponent,

@@ -1,29 +1,29 @@
 <div aria-label="Token Enrollment" class="token-enrollment-container">
   <h3 class="margin-left-1">Token Enrollment</h3>
+  <mat-form-field class="width-100">
+    <mat-select
+      [(ngModel)]="selectedTokenType"
+      [panelClass]="'multi-column-panel'">
+      @for (type of tokenService.tokenTypeOptions(); track type) {
+        <mat-option class="token-type-option type-option" [value]="type"
+          >{{ type.info.split(":")[0] }}
+        </mat-option>
+      }
+      <button
+        (click)="versioningService.openDocumentation('tokentypes')"
+        class="card-button type-help-button"
+        mat-flat-button>
+        <mat-icon>info_outline</mat-icon>
+        Help About Tokentypes
+      </button>
+    </mat-select>
+    <mat-hint class="token-type-hint">
+      @if (selectedTokenType().info) {
+        {{ selectedTokenType().info.split(":")[1] }}
+      }
+    </mat-hint>
+  </mat-form-field>
   <form [formGroup]="formGroup">
-    <mat-form-field class="width-100">
-      <mat-select
-        [formControl]="selectedTokenTypeControl"
-        [panelClass]="'multi-column-panel'">
-        @for (type of tokenService.tokenTypeOptions(); track type) {
-          <mat-option class="token-type-option type-option" [value]="type"
-            >{{ type.info.split(":")[0] }}
-          </mat-option>
-        }
-        <button
-          (click)="versioningService.openDocumentation('tokentypes')"
-          class="card-button type-help-button"
-          mat-flat-button>
-          <mat-icon>info_outline</mat-icon>
-          Help About Tokentypes
-        </button>
-      </mat-select>
-      <mat-hint class="token-type-hint">
-        @if (selectedTokenTypeControl.value?.info) {
-          {{ selectedTokenTypeControl.value?.info?.split(":")?.[1] }}
-        }
-      </mat-hint>
-    </mat-form-field>
     <div class="enroll-button-container">
       <button
         (click)="reopenEnrollmentDialog()"
@@ -34,12 +34,16 @@
       <button
         (click)="enrollToken()"
         [ngClass]="{
-          'disabled-button': formGroup.invalid,
+          'disabled-button': formGroup.invalid || !selectedTokenType(),
           'card-button': true,
         }"
         mat-flat-button>
         <mat-icon>add</mat-icon>
-        Enroll {{ selectedTokenTypeControl.value?.key }} Token
+        @if (selectedTokenType(); as tt) {
+          Enroll {{ tt.key }} Token
+        } @else {
+          Enroll Token
+        }
       </button>
     </div>
     @switch (selectedTokenType().key) {
@@ -193,7 +197,7 @@
             <mat-label>Select Realm of User</mat-label>
             <mat-select [formControl]="selectedUserRealmControl">
               @for (option of realmService.realmOptions(); track option) {
-                <mat-option value="{{ option }}">{{ option }}</mat-option>
+                <mat-option [value]="option">{{ option }}</mat-option>
               }
             </mat-select>
           </mat-form-field>
@@ -201,20 +205,35 @@
             <mat-label>Enter User</mat-label>
             <input
               [formControl]="userNameFilterControl"
-              [disabled]="onlyAddToRealm()"
               [matAutocomplete]="userAuto"
-              [required]="userIsRequired()"
               matInput />
-            <mat-error>User is <strong>required</strong></mat-error>
             <mat-autocomplete #userAuto="matAutocomplete">
               @for (option of userService.filteredUserOptions(); track option) {
                 <mat-option [value]="option">{{ option }}</mat-option>
               }
             </mat-autocomplete>
+            @if (selectedUserRealmControl.hasError("required")) {
+              <mat-error>User Realm is <strong>required</strong></mat-error>
+            }
+            @if (
+              !selectedUserRealmControl.value &&
+              !onlyAddToRealm() &&
+              selectedTokenType()
+            ) {
+              <mat-hint>
+                Select a realm first to enable user selection.
+              </mat-hint>
+            }
+            @if (userNameFilterControl.hasError("required")) {
+              <mat-error>User is <strong>required</strong></mat-error>
+            }
+            @if (userNameFilterControl.hasError("userNotInOptions")) {
+              <mat-error>User must be selected from the list.</mat-error>
+            }
           </mat-form-field>
         </div>
       </div>
-      @if (selectedTokenTypeControl.value?.key !== "passkey") {
+      @if (selectedTokenType().key !== "passkey") {
         <div class="flex-column user-pin-container">
           <h4 class="enroll-h4">Set Pin</h4>
           <div class="user-pin-input">

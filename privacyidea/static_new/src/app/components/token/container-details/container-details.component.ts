@@ -12,7 +12,6 @@ import { NgClass } from '@angular/common';
 import {
   MatCell,
   MatColumnDef,
-  MatRow,
   MatTableDataSource,
   MatTableModule,
 } from '@angular/material/table';
@@ -28,7 +27,7 @@ import {
   EditableElement,
   EditButtonsComponent,
 } from '../../shared/edit-buttons/edit-buttons.component';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatFormField } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { RealmService } from '../../../services/realm/realm.service';
 import { MatInput } from '@angular/material/input';
@@ -53,7 +52,6 @@ import { UserService } from '../../../services/user/user.service';
 import { OverflowService } from '../../../services/overflow/overflow.service';
 import { AuthService } from '../../../services/auth/auth.service';
 import { ContentService } from '../../../services/content/content.service';
-import { map } from 'rxjs';
 
 export const containerDetailsKeyMap = [
   { key: 'type', label: 'Type' },
@@ -89,11 +87,9 @@ interface TokenOption {
   standalone: true,
   imports: [
     NgClass,
-    MatLabel,
     MatTableModule,
     MatCell,
     MatColumnDef,
-    MatRow,
     ReactiveFormsModule,
     MatListItem,
     EditButtonsComponent,
