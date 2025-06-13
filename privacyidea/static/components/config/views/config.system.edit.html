@@ -91,10 +91,18 @@
 
     <div class="form-group">
         <label for="UserCacheExpiration"
-               class="col-sm-9 control-label" translate>User Cache
+               class="col-sm-7 control-label" translate>User Cache
             expiration in seconds
         </label>
 
+        <div class="col-sm-2">
+            <button type="button"
+                    ng-click="deleteUserCache()"
+                    class="btn btn-primary"
+                    translate>
+            Delete User Cache
+            </button>
+        </div>
         <div class="col-sm-3">
             <input name="UserCacheExpiration" class="form-control"
                    ng-model="params.UserCacheExpiration"

@@ -16,6 +16,8 @@ from privacyidea.lib.realm import delete_realm, get_realms
 from privacyidea.models import db, NodeName
 from .test_lib_resolver import LDAPDirectory, ldap3mock
 from .test_lib_caconnector import CACERT, CAKEY, WORKINGDIR, OPENSSLCNF
+from privacyidea.models import UserCache, db
+from sqlalchemy import func, select
 
 PWFILE = "tests/testdata/passwords"
 POLICYFILE = "tests/testdata/policy.cfg"
@@ -1235,6 +1237,29 @@ class APIConfigTestCase(MyApiTestCase):
         delete_policy("user")
         delete_policy("admin")
         delete_caconnector("localCA")
+
+    def test_24_delete_user_cache_endpoint(self):
+        db.session.execute(UserCache.__table__.insert(), [dict({"username": "alice"}),
+                                                         dict({"username": "bob"})])
+        db.session.commit()
+
+        count = db.session.execute(
+                select(func.count()).select_from(UserCache)).scalar_one()
+        self.assertEqual(count, 2, f"expected 2 cache rows, found {count}")
+
+        with self.app.test_request_context('/system/usercache',
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res.data)
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertTrue(result["value"]["status"], result)
+
+        remaining = db.session.execute(
+            select(func.count()).select_from(UserCache)).scalar_one()
+        self.assertEqual(remaining, 0,
+                         f"user-cache still contains {remaining} rows")
 
     def test_30_realms_with_nodes(self):
         nd1_uuid = "8e4272a9-9037-40df-8aa3-976e4a04b5a9"
