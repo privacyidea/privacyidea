@@ -2,242 +2,243 @@
   <div class="margin-top-1" [innerHTML]="preTopHtml$ | async"></div>
 
   <h3 class="margin-left-1">Token Enrollment</h3>
-  <mat-form-field class="width-100">
-    <mat-select
-      [(ngModel)]="selectedTokenType"
-      [ngModelOptions]="{ standalone: true }"
-      [panelClass]="'multi-column-panel'">
-      @for (type of tokenService.tokenTypeOptions(); track type) {
-        <mat-option class="token-type-option type-option" [value]="type"
-          >{{ type.info.split(":")[0] }}
-        </mat-option>
-      }
+  <form [formGroup]="formGroup">
+    <mat-form-field class="width-100">
+      <mat-select
+        [formControl]="selectedTokenTypeControl"
+        [panelClass]="'multi-column-panel'">
+        @for (type of tokenService.tokenTypeOptions(); track type) {
+          <mat-option class="token-type-option type-option" [value]="type"
+            >{{ type.info.split(":")[0] }}
+          </mat-option>
+        }
+        <button
+          (click)="versioningService.openDocumentation('tokentypes')"
+          class="card-button type-help-button"
+          mat-flat-button>
+          <mat-icon>info_outline</mat-icon>
+          Help About Tokentypes
+        </button>
+      </mat-select>
+      <mat-hint class="token-type-hint">
+        @if (selectedTokenTypeControl.value?.info) {
+          {{ selectedTokenTypeControl.value?.info?.split(":")?.[1] }}
+        }
+      </mat-hint>
+    </mat-form-field>
+    <div class="enroll-button-container">
       <button
-        (click)="versioningService.openDocumentation('tokentypes')"
-        class="card-button type-help-button"
-        mat-flat-button>
-        <mat-icon>info_outline</mat-icon>
-        Help About Tokentypes
+        (click)="reopenEnrollmentDialog()"
+        [disabled]="enrollResponse() === null"
+        mat-icon-button>
+        <mat-icon>open_in_new</mat-icon>
       </button>
-    </mat-select>
-    <mat-hint class="token-type-hint">
-      @if (selectedTokenType().info) {
-        {{ selectedTokenType().info.split(":")[1] }}
+      <button
+        (click)="enrollToken()"
+        [disabled]="formGroup.invalid"
+        [ngClass]="{
+          'disabled-button': formGroup.invalid,
+          'card-button': true,
+        }"
+        mat-flat-button>
+        <mat-icon>add</mat-icon>
+        Enroll {{ selectedTokenTypeControl.value?.key }} Token
+      </button>
+    </div>
+
+    @switch (selectedTokenTypeControl.value?.key) {
+      @case ("hotp") {
+        <app-enroll-hotp
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
       }
-    </mat-hint>
-  </mat-form-field>
-  <div class="enroll-button-container">
-    <button
-      (click)="reopenEnrollmentDialog()"
-      [disabled]="enrollResponse() === null"
-      mat-icon-button>
-      <mat-icon>open_in_new</mat-icon>
-    </button>
-    <button
-      (click)="enrollToken()"
-      [disabled]="
-        motpPin() !== repeatMotpPin() || setPinValue() !== repeatPinValue()
-      "
-      [ngClass]="{
-        'disabled-button':
-          motpPin() !== repeatMotpPin() || setPinValue() !== repeatPinValue(),
-        'card-button': true,
-      }"
-      mat-flat-button>
-      <mat-icon>add</mat-icon>
-      Enroll {{ selectedTokenType().key }} Token
-    </button>
-  </div>
+      @case ("totp") {
+        <app-enroll-totp
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
+      }
+      @case ("spass") {
+        <app-enroll-spass
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
+      }
+      @case ("motp") {
+        <app-enroll-motp
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
+      }
+      @case ("sshkey") {
+        <app-enroll-sshkey
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
+      }
+      @case ("yubikey") {
+        <app-enroll-yubikey
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
+      }
+      @case ("remote") {
+        <app-enroll-remote
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
+      }
+      @case ("yubico") {
+        <app-enroll-yubico
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
+      }
+      @case ("radius") {
+        <app-enroll-radius
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
+      }
+      @case ("sms") {
+        <app-enroll-sms
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
+      }
+      @case ("4eyes") {
+        <app-enroll-foureyes
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
+      }
+      @case ("applspec") {
+        <app-enroll-applspec
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
+      }
+      @case ("daypassword") {
+        <app-enroll-daypassword
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
+      }
+      @case ("certificate") {
+        <app-enroll-certificate
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
+      }
+      @case ("email") {
+        <app-enroll-email
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
+      }
+      @case ("indexedsecret") {
+        <app-enroll-indexedsecret
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
+      }
+      @case ("paper") {
+        <app-enroll-paper
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
+      }
+      @case ("push") {
+        <app-enroll-push
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
+      }
+      @case ("question") {
+        <app-enroll-question
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
+      }
+      @case ("registration") {
+        <app-enroll-registration
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
+      }
+      @case ("tan") {
+        <app-enroll-tan
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
+      }
+      @case ("tiqr") {
+        <app-enroll-tiqr
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
+      }
+      @case ("u2f") {
+        <app-enroll-u2f
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
+      }
+      @case ("vasco") {
+        <app-enroll-vasco
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
+      }
+      @case ("webauthn") {
+        <app-enroll-webauthn
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
+      }
+      @case ("passkey") {
+        <app-enroll-passkey
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
+      }
+    }
+    <mat-form-field class="description-form">
+      <mat-label>Description</mat-label>
+      <textarea
+        [formControl]="descriptionControl"
+        [maxlength]="80"
+        matInput
+        placeholder="Enter description"
+        rows="3"></textarea>
+    </mat-form-field>
+    <div class="flex-row gap-1">
+      <div class="flex-column width-100">
+        <input style="display: none" type="text" />
 
-  @switch (selectedTokenType().key) {
-    @case ("hotp") {
-      <app-enroll-hotp
-        (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        (clickEnrollChange)="updateClickEnroll($event)" />
-    }
-    @case ("totp") {
-      <app-enroll-totp
-        [generateOnServer]="generateOnServer"
-        [otpLength]="otpLength"
-        [otpKey]="otpKey"
-        [hashAlgorithm]="hashAlgorithm"
-        [description]="descriptionSignal"
-        [timeStep]="timeStep" />
-    }
-    @case ("spass") {
-      <app-enroll-spass [description]="descriptionSignal" />
-    }
-    @case ("motp") {
-      <app-enroll-motp
-        [motpPin]="motpPin"
-        [repeatMotpPin]="repeatMotpPin"
-        [generateOnServer]="generateOnServer"
-        [description]="descriptionSignal" />
-    }
-    @case ("sshkey") {
-      <app-enroll-sshkey />
-    }
-    @case ("yubikey") {
-      <app-enroll-yubikey
-        (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        (clickEnrollChange)="updateClickEnroll($event)" />
-    }
-    @case ("remote") {
-      <app-enroll-remote
-        [remoteSerial]="remoteSerial"
-        [remoteServer]="remoteServer"
-        [remoteRealm]="remoteRealm"
-        [remoteUser]="remoteUser"
-        [remoteResolver]="remoteResolver"
-        [checkPinLocally]="checkPinLocally"
-        [description]="descriptionSignal" />
-    }
-    @case ("yubico") {
-      <app-enroll-yubico
-        [yubikeyIdentifier]="yubikeyIdentifier"
-        [description]="descriptionSignal" />
-    }
-    @case ("radius") {
-      <app-enroll-radius
-        [checkPinLocally]="checkPinLocally"
-        [radiusServerConfiguration]="radiusServerConfiguration"
-        [radiusUser]="radiusUser"
-        [description]="descriptionSignal" />
-    }
-    @case ("sms") {
-      <app-enroll-sms
-        [phoneNumber]="phoneNumber"
-        [smsGateway]="smsGateway"
-        [description]="descriptionSignal"
-        [readNumberDynamically]="readNumberDynamically" />
-    }
-    @case ("4eyes") {
-      <app-enroll-foureyes
-        [separator]="separator"
-        [description]="descriptionSignal"
-        [onlyAddToRealm]="onlyAddToRealm"
-        [requiredTokensOfRealms]="requiredTokenOfRealms" />
-    }
-    @case ("applspec") {
-      <app-enroll-applspec
-        [serviceId]="serviceId"
-        [generateOnServer]="generateOnServer"
-        [otpKey]="otpKey"
-        [description]="descriptionSignal" />
-    }
-    @case ("daypassword") {
-      <app-enroll-daypassword
-        [otpKey]="otpKey"
-        [otpLength]="otpLength"
-        [hashAlgorithm]="hashAlgorithm"
-        [description]="descriptionSignal"
-        [timeStep]="timeStep" />
-    }
-    @case ("certificate") {
-      <app-enroll-certificate
-        [caConnector]="caConnector"
-        [certTemplate]="certTemplate"
-        [pem]="pem"
-        [description]="descriptionSignal" />
-    }
-    @case ("email") {
-      <app-enroll-email
-        [emailAddress]="emailAddress"
-        [readEmailDynamically]="readEmailDynamically"
-        [description]="descriptionSignal" />
-    }
-    @case ("indexedsecret") {
-      <app-enroll-indexedsecret
-        [otpKey]="otpKey"
-        [description]="descriptionSignal" />
-    }
-    @case ("paper") {
-      <app-enroll-paper [description]="descriptionSignal" />
-    }
-    @case ("push") {
-      <app-enroll-push [description]="descriptionSignal" />
-    }
-    @case ("question") {
-      <app-enroll-question
-        [answers]="answers"
-        [description]="descriptionSignal" />
-    }
-    @case ("registration") {
-      <app-enroll-registration [description]="descriptionSignal" />
-    }
-    @case ("tan") {
-      <app-enroll-tan [description]="descriptionSignal" />
-    }
-    @case ("tiqr") {
-      <app-enroll-tiqr [description]="descriptionSignal" />
-    }
-    @case ("u2f") {
-      <app-enroll-u2f [description]="descriptionSignal" />
-    }
-    @case ("vasco") {
-      <app-enroll-vasco
-        [vascoSerial]="vascoSerial"
-        [useVascoSerial]="useVascoSerial"
-        [otpKey]="otpKey"
-        [description]="descriptionSignal" />
-    }
-    @case ("webauthn") {
-      <app-enroll-webauthn
-        [firstDialog]="firstDialog"
-        [enrollResponse]="enrollResponse"
-        [description]="descriptionSignal" />
-    }
-    @case ("passkey") {
-      <app-enroll-passkey
-        [firstDialog]="firstDialog"
-        [enrollResponse]="enrollResponse"
-        [description]="descriptionSignal" />
-    }
-  }
-  <div class="flex-row gap-1">
-    <div class="flex-column width-100">
-      <input style="display: none" type="text" />
+        <input style="display: none" type="password" />
 
-      <input style="display: none" type="password" />
-
-      <h4 class="enroll-h4">Assign Token to a Container</h4>
-      <mat-form-field class="width-50 input-height">
-        <mat-label>Enter Container</mat-label>
-        <input
-          [(ngModel)]="containerService.selectedContainer"
-          [ngModelOptions]="{ standalone: true }"
-          [matAutocomplete]="containerAuto"
-          matInput />
-        <mat-autocomplete #containerAuto="matAutocomplete">
-          @for (
-            option of containerService.filteredContainerOptions();
-            track option
-          ) {
-            <mat-option [value]="option">{{ option }}</mat-option>
-          }
-        </mat-autocomplete>
-      </mat-form-field>
-    </div>
-
-    <div class="flex-column user-pin-container">
-      <h4 class="enroll-h4">Set Pin</h4>
-      <div class="user-pin-input">
-        <input
-          [(ngModel)]="setPinValue"
-          [ngModelOptions]="{ standalone: true }"
-          [type]="'password'"
-          class="input"
-          placeholder="Pin" />
-
-        <input
-          [(ngModel)]="repeatPinValue"
-          [ngModelOptions]="{ standalone: true }"
-          [type]="'password'"
-          class="input"
-          placeholder="Repeat Pin" />
+        <h4 class="enroll-h4">Assign Token to a Container</h4>
+        <mat-form-field class="width-50 input-height">
+          <mat-label>Enter Container</mat-label>
+          <input
+            [formControl]="selectedContainerControl"
+            [matAutocomplete]="containerAuto"
+            matInput />
+          <mat-autocomplete #containerAuto="matAutocomplete">
+            @for (
+              option of containerService.filteredContainerOptions();
+              track option
+            ) {
+              <mat-option [value]="option">{{ option }}</mat-option>
+            }
+          </mat-autocomplete>
+        </mat-form-field>
       </div>
-    </div>
-  </div>
 
+      @if (selectedTokenTypeControl.value?.key !== "passkey") {
+        <div class="flex-column user-pin-container">
+          <h4 class="enroll-h4">Set Pin</h4>
+          <div class="user-pin-input">
+            <input
+              [formControl]="setPinControl"
+              [type]="'password'"
+              class="input"
+              placeholder="Pin" />
+
+            <input
+              [formControl]="repeatPinControl"
+              [type]="'password'"
+              class="input"
+              placeholder="Repeat Pin" />
+          </div>
+          @if (
+            formGroup.hasError("pinMismatch") &&
+            (formGroup.get("setPin")?.touched ||
+              formGroup.get("repeatPin")?.touched)
+          ) {
+            <mat-error class="pin-error">PINs do not match.</mat-error>
+          }
+        </div>
+      } @else {
+        <div class="width-33"></div>
+      }
+    </div>
+  </form>
   <div class="margin-bottom-1" [innerHTML]="preBottomHtml$ | async"></div>
 </div>

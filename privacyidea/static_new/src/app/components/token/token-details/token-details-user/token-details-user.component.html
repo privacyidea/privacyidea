@@ -25,7 +25,7 @@
               <mat-form-field>
                 <mat-label>Enter User</mat-label>
                 <input matInput
-                       [(ngModel)]="userService.selectedUsername"
+                       [(ngModel)]="userService.userNameFilter"
                        [matAutocomplete]="userAuto" />
                 <mat-autocomplete #userAuto="matAutocomplete">
                   @for (option of userService.filteredUserOptions(); track option) {

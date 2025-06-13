@@ -1,13 +1,21 @@
-import { Component, Input, WritableSignal } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
-import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import {
+  FormControl,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { ErrorStateMatcher } from '@angular/material/core';
 import {
   BasicEnrollmentOptions,
+  EnrollmentResponse,
   TokenService,
 } from '../../../../services/token/token.service';
+import { Observable } from 'rxjs';
 
 export interface VascoEnrollmentOptions extends BasicEnrollmentOptions {
   type: 'vasco';
@@ -26,6 +34,7 @@ export class VascoErrorStateMatcher implements ErrorStateMatcher {
 
 @Component({
   selector: 'app-enroll-vasco',
+  standalone: true,
   imports: [
     MatFormField,
     MatInput,
@@ -38,23 +47,95 @@ export class VascoErrorStateMatcher implements ErrorStateMatcher {
   templateUrl: './enroll-vasco.component.html',
   styleUrl: './enroll-vasco.component.scss',
 })
-export class EnrollVascoComponent {
+export class EnrollVascoComponent implements OnInit {
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'vasco')?.text;
-  @Input() description!: WritableSignal<string>;
-  @Input() otpKey!: WritableSignal<string>;
-  @Input() useVascoSerial!: WritableSignal<boolean>;
-  @Input() vascoSerial!: WritableSignal<string>;
+
+  @Output() aditionalFormFieldsChange = new EventEmitter<{
+    [key: string]: FormControl<any>;
+  }>();
+  @Output() clickEnrollChange = new EventEmitter<
+    (
+      basicOptions: BasicEnrollmentOptions,
+    ) => Observable<EnrollmentResponse> | undefined
+  >();
+
+  otpKeyControl = new FormControl<string>(''); // Validator is set dynamically
+  useVascoSerialControl = new FormControl<boolean>(false, [
+    Validators.required,
+  ]);
+  vascoSerialControl = new FormControl<string>(''); // Validator is set dynamically
+
+  vascoForm = new FormGroup({
+    otpKey: this.otpKeyControl,
+    useVascoSerial: this.useVascoSerialControl,
+    vascoSerial: this.vascoSerialControl,
+  });
+
   vascoErrorStatematcher = new VascoErrorStateMatcher();
 
   constructor(private tokenService: TokenService) {}
 
+  ngOnInit(): void {
+    this.aditionalFormFieldsChange.emit({
+      otpKey: this.otpKeyControl,
+      useVascoSerial: this.useVascoSerialControl,
+      vascoSerial: this.vascoSerialControl,
+    });
+    this.clickEnrollChange.emit(this.onClickEnroll);
+
+    this.useVascoSerialControl.valueChanges.subscribe((useSerial) => {
+      if (useSerial) {
+        this.vascoSerialControl.setValidators([Validators.required]);
+        this.otpKeyControl.clearValidators();
+      } else {
+        this.otpKeyControl.setValidators([
+          Validators.required,
+          Validators.minLength(496), // Vasco OTP key length
+          Validators.maxLength(496),
+        ]);
+        this.vascoSerialControl.clearValidators();
+      }
+      this.otpKeyControl.updateValueAndValidity();
+      this.vascoSerialControl.updateValueAndValidity();
+    });
+    // Initial call to set validators based on default useVascoSerialControl value
+    this.useVascoSerialControl.updateValueAndValidity();
+  }
+
   static convertOtpKeyToVascoSerial(otpHex: string): string {
     let vascoOtpStr = '';
+    if (!otpHex || otpHex.length !== 496) {
+      // Expecting 248 bytes hex encoded
+      return ''; // Or handle error appropriately
+    }
     for (let i = 0; i < otpHex.length; i += 2) {
       vascoOtpStr += String.fromCharCode(parseInt(otpHex.slice(i, i + 2), 16));
     }
     return vascoOtpStr.slice(0, 10);
   }
+
+  onClickEnroll = (
+    basicOptions: BasicEnrollmentOptions,
+  ): Observable<EnrollmentResponse> | undefined => {
+    if (this.vascoForm.invalid) {
+      this.vascoForm.markAllAsTouched();
+      return undefined;
+    }
+
+    const enrollmentData: VascoEnrollmentOptions = {
+      ...basicOptions,
+      type: 'vasco',
+      useVascoSerial: !!this.useVascoSerialControl.value,
+    };
+
+    if (enrollmentData.useVascoSerial) {
+      enrollmentData.vascoSerial = this.vascoSerialControl.value ?? '';
+    } else {
+      enrollmentData.otpKey = this.otpKeyControl.value ?? '';
+    }
+
+    return this.tokenService.enrollToken(enrollmentData);
+  };
 }

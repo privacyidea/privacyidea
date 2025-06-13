@@ -24,14 +24,14 @@ export interface YubikeyEnrollmentOptions extends BasicEnrollmentOptions {
 @Component({
   selector: 'app-enroll-yubikey',
   templateUrl: './enroll-yubikey.component.html',
-  // styleUrls: ['./enroll-yubikey.component.scss'], // Falls vorhanden
+  styleUrls: ['./enroll-yubikey.component.scss'], // If present
   standalone: true,
   imports: [
     CommonModule,
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
-    // Weitere Module
+    // Other modules
   ],
 })
 export class EnrollYubikeyComponent implements OnInit {
@@ -52,14 +52,14 @@ export class EnrollYubikeyComponent implements OnInit {
   ]);
   otpLengthControl = new FormControl<number | null>(44, [Validators.required]);
 
-  // FormGroup zur Bündelung und einfacheren Wertüberwachung
+  // FormGroup for bundling and easier value monitoring
   yubikeyForm = new FormGroup({
     testYubiKey: this.testYubiKeyControl,
     otpKey: this.otpKeyControl,
     otpLength: this.otpLengthControl,
   });
 
-  // Beispieltext, falls weiterhin benötigt und nicht von außen kommt
+  // Example text, if still needed and not coming from outside
   text =
     this.tokenService.tokenTypeOptions().find((type) => type.key === 'yubikey')
       ?.text || 'The Yubikey token can be used in AES encryption mode...';

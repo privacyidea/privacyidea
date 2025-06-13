@@ -420,12 +420,12 @@ export class ContainerDetailsComponent {
     this.containerService
       .assignUser({
         containerSerial: this.containerSerial(),
-        username: this.userService.selectedUsername(),
+        username: this.userService.userNameFilter(),
         userRealm: this.userService.selectedUserRealm(),
       })
       .subscribe({
         next: () => {
-          this.userService.selectedUsername.set('');
+          this.userService.userNameFilter.set('');
           this.userService.selectedUserRealm.set('');
           this.isEditingUser.update((b) => !b);
           this.containerDetailResource.reload();

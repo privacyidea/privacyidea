@@ -134,7 +134,7 @@
                     <mat-form-field class="width-18rem">
                       <mat-label>Enter User</mat-label>
                       <input matInput
-                             [(ngModel)]="userService.selectedUsername"
+                             [(ngModel)]="userService.userNameFilter"
                              [matAutocomplete]="userAuto" />
                       <mat-autocomplete #userAuto="matAutocomplete"
                                         class="user-selection-autocomplete">

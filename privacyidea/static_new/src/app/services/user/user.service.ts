@@ -38,7 +38,7 @@ export class UserService {
     computation: (source) => source.defaultRealm,
   });
 
-  selectedUsername = linkedSignal({
+  userNameFilter = linkedSignal({
     source: this.selectedUserRealm,
     computation: () => '',
   });
@@ -115,8 +115,8 @@ export class UserService {
   userOptions = computed(() => this.fetchedUsernames());
 
   filteredUserOptions = computed(() => {
-    const filterValue = (this.selectedUsername() || '').toLowerCase();
-    return this.userOptions().filter((option: any) =>
+    const filterValue = this.userNameFilter().toLowerCase();
+    return this.userOptions().filter((option) =>
       option.toLowerCase().includes(filterValue),
     );
   });

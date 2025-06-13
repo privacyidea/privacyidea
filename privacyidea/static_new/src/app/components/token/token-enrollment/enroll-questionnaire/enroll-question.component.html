@@ -4,29 +4,29 @@
   </div>
   <h4 class="enroll-h4">Token Configuration</h4>
   <span>
-    Please answer at least {{ configMinNumberOfAnswers() }} of the following questions.
+    Please answer at least {{ configMinNumberOfAnswers() }} of the following
+    questions.
   </span>
-  <div class="margin-top-1 form-group">
-    @for (question of configQuestions(); track question) {
-      <mat-form-field class="question-input-width input-height">
-        <mat-label>{{ question.text }}</mat-label>
-        <input type="text"
-               [ngModel]="answers()[question.question]"
-               (ngModelChange)="onAnswerChange($event, question.question)"
-               matInput
-               [required]="isRequired(question.question)" />
-        <mat-error>
-          At least {{ configMinNumberOfAnswers() }} are <strong>required</strong>
-        </mat-error>
-      </mat-form-field>
+  <div class="margin-top-1 form-group" [formGroup]="questionForm">
+    @for (question of configQuestions(); track question; let i = $index) {
+      @if (questionControlNames[i]) {
+        <!-- Ensure control name exists -->
+        <mat-form-field class="question-input-width input-height">
+          <mat-label>{{ question.text }}</mat-label>
+          <input
+            type="text"
+            [formControlName]="questionControlNames[i]"
+            matInput
+            required />
+          <!-- Individual controls are required -->
+        </mat-form-field>
+      }
     }
-    <mat-form-field class="question-description">
-      <mat-label>Description</mat-label>
-      <textarea [(ngModel)]="description"
-                [maxlength]="80"
-                matInput
-                placeholder="Enter description"
-                rows="3"></textarea>
-    </mat-form-field>
   </div>
+  @if (questionForm.hasError("minAnswers") && questionForm.touched) {
+    <mat-error
+      >At least {{ configMinNumberOfAnswers() }} answers are
+      <strong>required</strong>.</mat-error
+    >
+  }
 </div>

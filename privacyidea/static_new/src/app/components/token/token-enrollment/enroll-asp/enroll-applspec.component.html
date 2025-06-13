@@ -3,9 +3,9 @@
     <p>{{ text }}</p>
   </div>
   <h4 class="enroll-h4">Token Configuration</h4>
-  <mat-checkbox [(ngModel)]="generateOnServer" class="server-checkbox">
+  <mat-checkbox [formControl]="generateOnServerControl" class="server-checkbox">
     Generate the static password on the Server
-    @if (generateOnServer()) {
+    @if (generateOnServerControl.value) {
       <span class="dot">.</span
       ><span>
         <br />
@@ -18,7 +18,7 @@
     <mat-form-field class="width-64 input-height">
       <mat-label>Service ID</mat-label>
       <mat-select
-        [(ngModel)]="serviceId"
+        [formControl]="serviceIdControl"
         [errorStateMatcher]="applspecErrorStateMatcher"
         required>
         @for (option of serviceIdOptions(); track option) {
@@ -28,12 +28,12 @@
       <mat-error>Service ID is <strong>required</strong></mat-error>
     </mat-form-field>
 
-    @if (!generateOnServer()) {
+    @if (!generateOnServerControl.value) {
       <mat-form-field class="serviceid-input-form input-height">
         <mat-label>Application Specific Password</mat-label>
         <input
           matInput
-          [(ngModel)]="otpKey"
+          [formControl]="otpKeyControl"
           placeholder="Enter static password" />
       </mat-form-field>
     }

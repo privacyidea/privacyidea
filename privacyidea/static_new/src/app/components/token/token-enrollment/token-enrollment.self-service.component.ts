@@ -1,6 +1,11 @@
 import { Component } from '@angular/core';
 import { TokenEnrollmentComponent } from './token-enrollment.component';
-import { MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
+import {
+  MatError,
+  MatFormField,
+  MatHint,
+  MatLabel,
+} from '@angular/material/form-field';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { EnrollHotpComponent } from './enroll-hotp/enroll-hotp.component';
@@ -85,6 +90,7 @@ import { EnrollPasskeyComponent } from './enroll-passkey/enroll-passkey.componen
     EnrollVascoComponent,
     EnrollWebauthnComponent,
     EnrollPasskeyComponent,
+    MatError,
   ],
   templateUrl: './token-enrollment.self-service.component.html',
   styleUrl: './token-enrollment.component.scss',

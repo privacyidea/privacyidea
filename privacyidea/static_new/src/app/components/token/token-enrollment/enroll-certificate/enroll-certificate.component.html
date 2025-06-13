@@ -4,7 +4,7 @@
   </div>
   <h4 class="enroll-h4">Token Configuration</h4>
   <mat-button-toggle-group
-    [(ngModel)]="intentionToggle"
+    [formControl]="intentionToggleControl"
     [hideSingleSelectionIndicator]="true"
     class="button-toggle-group">
     <mat-button-toggle value="generate">Generate Request</mat-button-toggle>
@@ -16,7 +16,7 @@
     <mat-form-field class="width-33">
       <mat-label>CA Connector</mat-label>
       <mat-select
-        [(ngModel)]="caConnector"
+        [formControl]="caConnectorControl"
         [errorStateMatcher]="caConnectorErrorStateMatcher"
         required>
         @for (option of caConnectorOptions(); track option) {
@@ -28,7 +28,7 @@
 
     <mat-form-field class="width-33">
       <mat-label>Certificate Template</mat-label>
-      <mat-select [(ngModel)]="certTemplate">
+      <mat-select [formControl]="certTemplateControl">
         @for (option of certTemplateOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
         }
@@ -38,7 +38,7 @@
     <span class="width-33"></span>
   </div>
 
-  @switch (intentionToggle()) {
+  @switch (intentionToggleControl.value) {
     @case ("generate") {
       <span class="margin-bottom-1"
         >The server will create the private RSA key and store it in the
@@ -46,21 +46,11 @@
         You can later download the PKCS#12 file.</span
       >
     }
-    @case ("uploadRequest") {
+    @case ("upload") {
       <mat-form-field class="width-66">
         <mat-label> Certificate Signing Request (PEM)</mat-label>
         <textarea
-          [(ngModel)]="pem"
-          matInput
-          placeholder="Paste the Certificate Signing Request here"
-          rows="3"></textarea>
-      </mat-form-field>
-    }
-    @case ("uploadCert") {
-      <mat-form-field class="width-66">
-        <mat-label> Certificate (PEM)</mat-label>
-        <textarea
-          [(ngModel)]="pem"
+          [formControl]="pemControl"
           matInput
           placeholder="Paste the Certificate Signing Request here"
           rows="3"></textarea>

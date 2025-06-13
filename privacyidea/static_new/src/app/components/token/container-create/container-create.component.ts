@@ -124,7 +124,7 @@ export class ContainerCreateComponent {
         description: this.description(),
         user_realm: this.userService.selectedUserRealm(),
         template: this.selectedTemplate(),
-        user: this.userService.selectedUsername(),
+        user: this.userService.userNameFilter(),
         realm: this.onlyAddToRealm()
           ? this.userService.selectedUserRealm()
           : '',

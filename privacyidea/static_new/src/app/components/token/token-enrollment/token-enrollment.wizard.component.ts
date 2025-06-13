@@ -1,6 +1,11 @@
 import { Component } from '@angular/core';
 import { TokenEnrollmentComponent } from './token-enrollment.component';
-import { MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
+import {
+  MatError,
+  MatFormField,
+  MatHint,
+  MatLabel,
+} from '@angular/material/form-field';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { EnrollHotpComponent } from './enroll-hotp/enroll-hotp.component';
@@ -101,6 +106,7 @@ import { map } from 'rxjs';
     EnrollWebauthnComponent,
     EnrollPasskeyComponent,
     AsyncPipe,
+    MatError,
   ],
   templateUrl: './token-enrollment.wizard.component.html',
   styleUrl: './token-enrollment.component.scss',
@@ -149,7 +155,7 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
       data: {
         response,
         enrollToken: this.enrollToken.bind(this),
-        username: this.userService.selectedUsername(),
+        username: this.userService.userNameFilter(),
         userRealm: this.userService.selectedUserRealm(),
         onlyAddToRealm: this.onlyAddToRealm(),
       },

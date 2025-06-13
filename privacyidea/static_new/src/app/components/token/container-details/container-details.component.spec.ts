@@ -346,7 +346,7 @@ describe('ContainerDetailsComponent', () => {
     component.toggleContainerEdit(element);
     expect(component.isEditingUser()).toBeTrue();
 
-    userService.selectedUsername.set('alice');
+    userService.selectedUserFilter.set('alice');
     userService.selectedUserRealm.set('realmUser');
 
     component.saveUser();

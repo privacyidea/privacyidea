@@ -6,7 +6,6 @@ import {
   Injectable,
   linkedSignal,
   signal,
-  Signal,
   ViewChild,
   WritableSignal,
 } from '@angular/core';
@@ -23,6 +22,7 @@ import {
   FormGroup,
   FormsModule,
   ReactiveFormsModule,
+  Validators,
 } from '@angular/forms';
 import { EnrollHotpComponent } from './enroll-hotp/enroll-hotp.component';
 import { MatInput } from '@angular/material/input';
@@ -52,7 +52,6 @@ import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import {
   BasicEnrollmentOptions,
-  EnrollmentOptions,
   EnrollmentResponse,
   TokenDetails,
   TokenService,
@@ -199,264 +198,64 @@ export class TokenEnrollmentComponent {
   tokenSerial = this.tokenService.tokenSerial;
   containerSerial = this.containerService.containerSerial;
   selectedContent = this.contentService.selectedContent;
+
+  // Signals for basic enrollment options, to be replaced by FormControls
   tokenTypeOptions = this.tokenService.tokenTypeOptions;
-  selectedTokenType = this.tokenService.selectedTokenType;
-  testYubiKey = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => '',
-  });
-  otpLength = linkedSignal({
-    source: this.testYubiKey,
-    computation: (testYubiKey) => {
-      if (testYubiKey.length > 0) {
-        return testYubiKey.length;
-      } else {
-        return this.selectedTokenType()?.key === 'yubikey' ? 44 : 6;
-      }
-    },
-  });
-  otpKey = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => '',
-  });
-  description = new FormControl<string>('', {
-    nonNullable: true,
-    validators: [],
-  });
-  descriptionSignal = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => {
-      return this.description.value;
-    },
-  });
-  generateOnServer = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => true,
-  });
-  selectedTimezoneOffset = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => '+01:00',
-  });
-  selectedStartTime = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => '',
-  });
-  selectedEndTime = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => '',
-  });
-  selectedStartDate = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => new Date(),
-  });
-  selectedEndDate = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => new Date(),
-  });
-  timeStep = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => 30,
-  });
-  enrollResponse: WritableSignal<EnrollmentResponse | null> = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => null,
-  });
+  selectedTokenType = this.tokenService.selectedTokenType; // This will become a FormControl
+
   pollResponse: WritableSignal<any> = linkedSignal({
     source: this.selectedTokenType,
     computation: () => null,
   });
-  motpPin = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => '',
-  });
-  repeatMotpPin = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => '',
-  });
-  checkPinLocally = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => false,
-  });
-  remoteServer = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => ({ url: '', id: '' }),
-  });
-  remoteSerial = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => '',
-  });
-  remoteUser = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => '',
-  });
-  remoteRealm = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => '',
-  });
-  remoteResolver = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => '',
-  });
-  yubikeyIdentifier = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => '',
-  });
-  radiusServerConfiguration = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => '',
-  });
-  radiusUser = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => '',
-  });
-  readNumberDynamically = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => false,
-  });
-  smsGateway = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => '',
-  });
-  phoneNumber = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => '',
-  });
-  separator = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => '',
-  });
-  requiredTokenOfRealms = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => [] as { realm: string; tokens: number }[],
-  });
-  serviceId = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => '',
-  });
-  caConnector = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => '',
-  });
-  certTemplate = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => '',
-  });
-  pem = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => '',
-  });
-  emailAddress = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => '',
-  });
-  readEmailDynamically = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => false,
-  });
-  answers = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => ({}) as Record<string, string>,
-  });
-  useVascoSerial = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => false,
-  });
-  vascoSerial = linkedSignal({
-    source: this.otpKey,
-    computation: (otpKey) => {
-      if (this.selectedTokenType().key === 'vasco' && this.useVascoSerial()) {
-        return EnrollVascoComponent.convertOtpKeyToVascoSerial(otpKey);
-      }
-      return '';
-    },
-  });
-  onlyAddToRealm = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => false,
-  });
-  setPinValue = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => '',
-  });
-  repeatPinValue = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => '',
-  });
-  hashAlgorithm = linkedSignal({
-    source: this.selectedTokenType,
-    computation: () => 'sha1',
-  });
-  enrollmentOptions: Signal<EnrollmentOptions> = computed(() => ({
-    type: this.selectedTokenType().key,
-    description: this.description.value.trim(),
-    container_serial: this.containerService.selectedContainer().trim(),
-    validity_period_start: this.formatDateTimeOffset(
-      this.selectedStartDate(),
-      this.selectedStartTime(),
-      this.selectedTimezoneOffset(),
-    ),
-    validity_period_end: this.formatDateTimeOffset(
-      this.selectedEndDate(),
-      this.selectedEndTime(),
-      this.selectedTimezoneOffset(),
-    ),
-    user: this.userService.selectedUsername().trim(),
-    pin: this.setPinValue(),
 
-    // hotp, totp, motp, applspec
-    generateOnServer: this.generateOnServer(),
-    otpLength: this.otpLength(),
-    otpKey: this.otpKey(),
-    hashAlgorithm: this.hashAlgorithm(),
-    timeStep: this.timeStep(),
+  enrollResponse: WritableSignal<EnrollmentResponse | null> = signal(null);
+  // Effect to reset enrollResponse when token type changes, if selectedTokenTypeControl is used as source
+  // Alternatively, keep linkedSignal if selectedTokenType (service signal) is the desired source.
+  // For simplicity and consistency with formGroup driving state:
 
-    // motp
-    motpPin: this.motpPin(),
+  // FormControls for the main enrollment form
+  selectedTokenTypeControl = new FormControl(
+    this.tokenService.selectedTokenType(),
+    [Validators.required],
+  );
+  descriptionControl = new FormControl<string>('', { nonNullable: true });
+  selectedUserRealmControl = new FormControl(
+    this.userService.selectedUserRealm(),
+    [Validators.required],
+  );
+  userNameFilterControl = new FormControl(this.userService.userNameFilter(), [
+    Validators.required,
+  ]);
+  setPinControl = new FormControl<string>('', this.pinValidator.bind(this));
+  repeatPinControl = new FormControl<string>('', this.pinValidator.bind(this));
 
-    // remote
-    remoteServer: this.remoteServer(),
-    remoteSerial: this.remoteSerial(),
-    remoteUser: this.remoteUser().trim(),
-    remoteRealm: this.remoteRealm().trim(),
-    remoteResolver: this.remoteResolver().trim(),
-    checkPinLocally: this.checkPinLocally(),
+  pinValidator(): { [key: string]: boolean } | null {
+    return this.formGroup.get('setPin')?.value !==
+      this.formGroup.get('repeatPin')?.value
+      ? { pinMismatch: true }
+      : null;
+  }
 
-    // yubico
-    yubicoIdentifier: this.yubikeyIdentifier(),
+  selectedContainerControl = new FormControl(
+    this.containerService.selectedContainer(),
+  );
 
-    // radius
-    radiusServerConfiguration: this.radiusServerConfiguration(),
-    radiusUser: this.radiusUser().trim(),
+  selectedStartDateControl = new FormControl<Date | null>(new Date());
+  selectedStartTimeControl = new FormControl<string>('00:00');
+  selectedTimezoneOffsetControl = new FormControl<string>('+00:00');
+  selectedEndDateControl = new FormControl<Date | null>(new Date());
+  selectedEndTimeControl = new FormControl<string>('23:59');
 
-    // sms
-    smsGateway: this.smsGateway(),
-    phoneNumber: this.phoneNumber(),
-
-    // 4eyes
-    separator: this.separator(),
-    requiredTokenOfRealms: this.requiredTokenOfRealms(),
-    onlyAddToRealm: this.onlyAddToRealm(),
-    userRealm: this.userService.selectedUserRealm(),
-
-    // applspec
-    serviceId: this.serviceId(),
-
-    // certificate
-    caConnector: this.caConnector(),
-    certTemplate: this.certTemplate(),
-    pem: this.pem(),
-
-    // email
-    emailAddress: this.emailAddress().trim(),
-    readEmailDynamically: this.readEmailDynamically(),
-
-    // question
-    answers: this.answers(),
-
-    // vasco
-    vascoSerial: this.vascoSerial(),
-    useVascoSerial: this.useVascoSerial(),
-  }));
+  onlyAddToRealm = computed(() => {
+    if (this.selectedTokenTypeControl.value?.key === '4eyes') {
+      const foureyesControls = this.additionalFormFields();
+      const control = foureyesControls[
+        'onlyAddToRealm'
+      ] as FormControl<boolean>; // Key from EnrollFoureyesComponent
+      return !!control?.value;
+    }
+    return false;
+  });
 
   clickEnroll?: (
     enrollementOptions: BasicEnrollmentOptions,
@@ -469,11 +268,7 @@ export class TokenEnrollmentComponent {
     this.clickEnroll = event;
   }
 
-  basicFormFields: WritableSignal<{
-    [key: string]: FormControl<any>;
-  }> = signal({
-    description: this.description,
-  });
+  // This signal might not be needed if children manage their forms entirely.
   additionalFormFields: WritableSignal<{
     [key: string]: FormControl<any>;
   }> = signal({});
@@ -495,20 +290,19 @@ export class TokenEnrollmentComponent {
   }
 
   formGroup = new FormGroup({
-    ...this.basicFormFields(),
+    selectedTokenType: this.selectedTokenTypeControl,
+    description: this.descriptionControl,
+    selectedUserRealm: this.selectedUserRealmControl,
+    userNameFilter: this.userNameFilterControl,
+    setPin: this.setPinControl,
+    repeatPin: this.repeatPinControl,
+    selectedContainer: this.selectedContainerControl,
+    selectedStartDate: this.selectedStartDateControl,
+    selectedStartTime: this.selectedStartTimeControl,
+    selectedTimezoneOffset: this.selectedTimezoneOffsetControl,
+    selectedEndDate: this.selectedEndDateControl,
+    selectedEndTime: this.selectedEndTimeControl,
   });
-
-  formGroupSignal = computed(() => {
-    return new FormGroup({
-      ...this.basicFormFields(),
-      // ...this.additionalFormFields(),
-    });
-  });
-
-  @ViewChild(EnrollPasskeyComponent)
-  enrollPasskeyComponent!: EnrollPasskeyComponent;
-  @ViewChild(EnrollWebauthnComponent)
-  enrollWebauthnComponent!: EnrollWebauthnComponent;
 
   constructor(
     protected containerService: ContainerService,
@@ -522,13 +316,38 @@ export class TokenEnrollmentComponent {
     private contentService: ContentService,
   ) {
     effect(() => {
-      const tokenType = this.selectedTokenType();
+      const tokenType = this.selectedTokenTypeControl.value;
       if (tokenType) {
-        this.description.setValue('');
+        // Reset enrollResponse when token type changes
+        // This replaces the linkedSignal behavior if its source was this.selectedTokenTypeControl
+        if (this.enrollResponse() !== null) {
+          this.enrollResponse.set(null);
+        }
+        this.descriptionControl.setValue('');
+        this.setPinControl.setValue('');
+        this.repeatPinControl.setValue('');
+        // Reset other relevant controls if needed when token type changes
         // Reset additional form fields when token type changes
         this.additionalFormFields.set({});
       }
     });
+
+    // Sync signal with FormControl for selectedTokenType
+    this.selectedTokenTypeControl.valueChanges.subscribe((value) => {
+      if (value) {
+        this.tokenService.selectedTokenType.set(value);
+      }
+    });
+    // Sync FormControls with service states for user/realm/container
+    this.selectedUserRealmControl.valueChanges.subscribe((value) =>
+      this.userService.selectedUserRealm.set(value ?? ''),
+    );
+    this.userNameFilterControl.valueChanges.subscribe((value) =>
+      this.userService.userNameFilter.set(value ?? ''),
+    );
+    this.selectedContainerControl.valueChanges.subscribe((value) =>
+      this.containerService.selectedContainer.set(value ?? ''),
+    );
   }
 
   @HostListener('document:keydown.enter', ['$event'])
@@ -568,40 +387,41 @@ export class TokenEnrollmentComponent {
   }
 
   enrollToken(): void {
-    if (this.formGroupSignal().invalid) {
+    if (this.formGroup.invalid) {
       this.notificationService.openSnackBar(
         'Please fill in all required fields.',
       );
-      this.formGroupSignal().markAllAsTouched();
-      this.formGroupSignal().markAsDirty();
+      this.formGroup.markAllAsTouched();
       return;
     }
     if (this.clickEnroll !== undefined) {
-      const response = this.clickEnroll({
-        type: this.selectedTokenType().key,
-        description: this.description.value.trim(),
-        container_serial: this.containerService.selectedContainer().trim(),
+      const basicOptions: BasicEnrollmentOptions = {
+        type: this.selectedTokenTypeControl.value!.key, // Already validated by formGroup
+        description: this.descriptionControl.value.trim(),
+        container_serial: this.selectedContainerControl.value?.trim() ?? '',
         validity_period_start: this.formatDateTimeOffset(
-          this.selectedStartDate(),
-          this.selectedStartTime(),
-          this.selectedTimezoneOffset(),
+          this.selectedStartDateControl.value ?? new Date(),
+          this.selectedStartTimeControl.value ?? '00:00',
+          this.selectedTimezoneOffsetControl.value ?? '+00:00',
         ),
         validity_period_end: this.formatDateTimeOffset(
-          this.selectedEndDate(),
-          this.selectedEndTime(),
-          this.selectedTimezoneOffset(),
+          this.selectedEndDateControl.value ?? new Date(),
+          this.selectedEndTimeControl.value ?? '23:59',
+          this.selectedTimezoneOffsetControl.value ?? '+00:00',
         ),
-        user: this.userService.selectedUsername().trim(),
-        pin: this.setPinValue(),
-      });
-      if (!response) {
+        user: this.userNameFilterControl.value!.trim(), // Already validated
+        pin: this.setPinControl.value ?? '',
+      };
+
+      const enrollObservable = this.clickEnroll(basicOptions);
+      if (!enrollObservable) {
         this.notificationService.openSnackBar(
           'Failed to enroll token. No response returned.',
         );
         console.error('Failed to enroll token. No response returned.');
         return;
       }
-      response.subscribe({
+      enrollObservable.subscribe({
         next: (enrollmentResponse) => {
           this.enrollResponse.set(enrollmentResponse);
           this.handleEnrollmentResponse(enrollmentResponse);
@@ -613,24 +433,11 @@ export class TokenEnrollmentComponent {
           );
         },
       });
-
-      return;
+    } else {
+      this.notificationService.openSnackBar(
+        'Enrollment action is not available for the selected token type.',
+      );
     }
-
-    this.pollResponse.set(null);
-    this.enrollResponse.set(null);
-    this.tokenService.enrollToken(this.enrollmentOptions()).subscribe({
-      next: (response) => {
-        this.enrollResponse.set(response);
-        this.handleEnrollmentResponse(response);
-      },
-      error: (error) => {
-        const message = error.error?.result?.error?.message || '';
-        this.notificationService.openSnackBar(
-          'Failed to enroll token. ' + message,
-        );
-      },
-    });
   }
 
   reopenEnrollmentDialog() {
@@ -652,7 +459,7 @@ export class TokenEnrollmentComponent {
 
   userIsRequired() {
     return ['tiqr', 'webauthn', 'passkey', 'certificate'].includes(
-      this.selectedTokenType().key,
+      this.selectedTokenTypeControl.value?.key ?? '',
     );
   }
 
@@ -667,7 +474,7 @@ export class TokenEnrollmentComponent {
       data: {
         response: response,
         enrollToken: this.enrollToken.bind(this),
-        username: this.userService.selectedUsername(),
+        username: this.userService.userNameFilter(),
         userRealm: this.userService.selectedUserRealm(),
         onlyAddToRealm: this.onlyAddToRealm(),
       },
@@ -684,24 +491,13 @@ export class TokenEnrollmentComponent {
       );
     }
 
-    switch (this.selectedTokenType().key) {
+    switch (this.selectedTokenTypeControl.value?.key) {
       case 'webauthn':
-        this.openFirstStepDialog(response);
-        this.enrollWebauthnComponent.registerWebauthn(detail).subscribe({
-          next: () => {
-            this.pollTokenRolloutState(detail.serial, 2000);
-          },
-        });
-        break;
       case 'passkey':
-        this.openFirstStepDialog(response);
-        this.enrollPasskeyComponent.registerPasskey(detail).subscribe({
-          next: () => {
-            this.pollTokenRolloutState(detail.serial, 2000);
-          },
-        });
-        break;
       case 'push':
+        // The multi-step logic for webauthn, passkey, push is now
+        // encapsulated within their respective onClickEnroll methods.
+        // The parent component just needs to know when to poll.
         this.openFirstStepDialog(response);
         this.pollTokenRolloutState(detail.serial, 5000);
         break;

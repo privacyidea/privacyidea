@@ -2,12 +2,21 @@ import {
   Component,
   computed,
   Input,
+  OnInit,
+  Output,
+  EventEmitter,
   Signal,
   WritableSignal,
 } from '@angular/core';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
-import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import {
+  FormControl,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { RealmService } from '../../../../services/realm/realm.service';
 import {
   ErrorStateMatcher,
@@ -18,8 +27,10 @@ import { MatError, MatSelect } from '@angular/material/select';
 import { MatCheckbox } from '@angular/material/checkbox';
 import {
   BasicEnrollmentOptions,
+  EnrollmentResponse,
   TokenService,
 } from '../../../../services/token/token.service';
+import { Observable } from 'rxjs';
 
 export interface FourEyesEnrollmentOptions extends BasicEnrollmentOptions {
   type: '4eyes';
@@ -39,6 +50,7 @@ export class RequiredRealmsErrorStateMatcher implements ErrorStateMatcher {
 
 @Component({
   selector: 'app-enroll-foureyes',
+  standalone: true,
   imports: [
     MatFormField,
     MatInput,
@@ -53,20 +65,45 @@ export class RequiredRealmsErrorStateMatcher implements ErrorStateMatcher {
   templateUrl: './enroll-foureyes.component.html',
   styleUrl: './enroll-foureyes.component.scss',
 })
-export class EnrollFoureyesComponent {
+export class EnrollFoureyesComponent implements OnInit {
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === '4eyes')?.text;
-  @Input() description!: WritableSignal<string>;
-  @Input() separator!: WritableSignal<string>;
-  @Input() requiredTokensOfRealms!: WritableSignal<
-    { realm: string; tokens: number }[]
-  >;
-  @Input() onlyAddToRealm!: WritableSignal<boolean>;
 
+  @Output() aditionalFormFieldsChange = new EventEmitter<{
+    [key: string]: FormControl<any>;
+  }>();
+  @Output() clickEnrollChange = new EventEmitter<
+    (
+      basicOptions: BasicEnrollmentOptions,
+    ) => Observable<EnrollmentResponse> | undefined
+  >();
+
+  separatorControl = new FormControl<string>(':', [Validators.required]);
+  requiredTokensOfRealmsControl = new FormControl<
+    { realm: string; tokens: number }[]
+  >([], [Validators.required, Validators.minLength(1)]);
+  onlyAddToRealmControl = new FormControl<boolean>(false, [
+    Validators.required,
+  ]);
+  // userRealmControl is needed if onlyAddToRealm is true,
+  // but this value comes from the parent component (userService.selectedUserRealm)
+  // and is passed in basicOptions.
+
+  foureyesForm = new FormGroup({
+    separator: this.separatorControl,
+    requiredTokensOfRealms: this.requiredTokensOfRealmsControl,
+    onlyAddToRealm: this.onlyAddToRealmControl,
+  });
+
+  // Options for the template
   realmOptions = this.realmService.realmOptions;
   tokenCountMapping: Signal<Record<string, number>> = computed(() => {
-    return this.requiredTokensOfRealms().reduce(
+    const realms = this.requiredTokensOfRealmsControl.value;
+    if (!realms) {
+      return {};
+    }
+    return realms.reduce(
       (acc, curr) => {
         acc[curr.realm] = curr.tokens;
         return acc;
@@ -81,21 +118,43 @@ export class EnrollFoureyesComponent {
     private tokenService: TokenService,
   ) {}
 
+  ngOnInit(): void {
+    this.aditionalFormFieldsChange.emit({
+      separator: this.separatorControl,
+      requiredTokensOfRealms: this.requiredTokensOfRealmsControl,
+      onlyAddToRealm: this.onlyAddToRealmControl,
+    });
+    this.clickEnrollChange.emit(this.onClickEnroll);
+  }
+
   getTokenCount(realm: string): number {
-    const tokensArray = this.requiredTokensOfRealms();
+    const tokensArray = this.requiredTokensOfRealmsControl.value;
+    if (!tokensArray) return 0;
     const tokenObj = tokensArray.find((item) => item.realm === realm);
     return tokenObj ? tokenObj.tokens : 0;
   }
 
   updateTokenCount(realm: string, tokens: number): void {
-    const tokensArray = this.requiredTokensOfRealms();
+    let tokensArray = this.requiredTokensOfRealmsControl.value;
+    if (!tokensArray) tokensArray = [];
+
     const index = tokensArray.findIndex((item) => item.realm === realm);
     if (index > -1) {
-      tokensArray[index] = { realm, tokens };
+      if (tokens === 0) {
+        // Remove if count is 0
+        tokensArray.splice(index, 1);
+      } else {
+        tokensArray[index] = { realm, tokens };
+      }
     } else {
-      tokensArray.push({ realm, tokens });
+      if (tokens > 0) {
+        // Add only if count is > 0
+        tokensArray.push({ realm, tokens });
+      }
     }
-    this.requiredTokensOfRealms.set([...tokensArray]);
+    this.requiredTokensOfRealmsControl.setValue([...tokensArray]);
+    this.requiredTokensOfRealmsControl.markAsDirty();
+    this.requiredTokensOfRealmsControl.updateValueAndValidity();
   }
 
   onRealmSelectionChange(event: MatOptionSelectionChange, realm: string): void {
@@ -103,6 +162,26 @@ export class EnrollFoureyesComponent {
       if (this.getTokenCount(realm) === 0) {
         this.updateTokenCount(realm, 1);
       }
+    } else if (event.isUserInput && !event.source.selected) {
+      this.updateTokenCount(realm, 0); // Remove from selection
     }
   }
+
+  onClickEnroll = (
+    basicOptions: BasicEnrollmentOptions,
+  ): Observable<EnrollmentResponse> | undefined => {
+    if (this.foureyesForm.invalid) {
+      this.foureyesForm.markAllAsTouched();
+      return undefined;
+    }
+    const enrollmentData: FourEyesEnrollmentOptions = {
+      ...basicOptions,
+      type: '4eyes',
+      separator: this.separatorControl.value ?? ':',
+      requiredTokenOfRealms: this.requiredTokensOfRealmsControl.value ?? [],
+      onlyAddToRealm: !!this.onlyAddToRealmControl.value,
+      // userRealm wird von basicOptions übernommen, falls onlyAddToRealm true ist
+    };
+    return this.tokenService.enrollToken(enrollmentData);
+  };
 }

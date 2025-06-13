@@ -3,8 +3,7 @@
   <form [formGroup]="formGroup">
     <mat-form-field class="width-100">
       <mat-select
-        [(ngModel)]="selectedTokenType"
-        [ngModelOptions]="{ standalone: true }"
+        [formControl]="selectedTokenTypeControl"
         [panelClass]="'multi-column-panel'">
         @for (type of tokenService.tokenTypeOptions(); track type) {
           <mat-option class="token-type-option type-option" [value]="type"
@@ -20,8 +19,8 @@
         </button>
       </mat-select>
       <mat-hint class="token-type-hint">
-        @if (selectedTokenType().info) {
-          {{ selectedTokenType().info.split(":")[1] }}
+        @if (selectedTokenTypeControl.value?.info) {
+          {{ selectedTokenTypeControl.value?.info?.split(":")?.[1] }}
         }
       </mat-hint>
     </mat-form-field>
@@ -34,17 +33,13 @@
       </button>
       <button
         (click)="enrollToken()"
-        [disabled]="
-          motpPin() !== repeatMotpPin() || setPinValue() !== repeatPinValue()
-        "
         [ngClass]="{
-          'disabled-button':
-            motpPin() !== repeatMotpPin() || setPinValue() !== repeatPinValue(),
+          'disabled-button': formGroup.invalid,
           'card-button': true,
         }"
         mat-flat-button>
         <mat-icon>add</mat-icon>
-        Enroll {{ selectedTokenType().key }} Token
+        Enroll {{ selectedTokenTypeControl.value?.key }} Token
       </button>
     </div>
     @switch (selectedTokenType().key) {
@@ -55,22 +50,18 @@
       }
       @case ("totp") {
         <app-enroll-totp
-          [generateOnServer]="generateOnServer"
-          [otpLength]="otpLength"
-          [otpKey]="otpKey"
-          [hashAlgorithm]="hashAlgorithm"
-          [description]="descriptionSignal"
-          [timeStep]="timeStep" />
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("spass") {
-        <app-enroll-spass [description]="descriptionSignal" />
+        <app-enroll-spass
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("motp") {
         <app-enroll-motp
-          [motpPin]="motpPin"
-          [repeatMotpPin]="repeatMotpPin"
-          [generateOnServer]="generateOnServer"
-          [description]="descriptionSignal" />
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("sshkey") {
         <app-enroll-sshkey
@@ -84,120 +75,109 @@
       }
       @case ("remote") {
         <app-enroll-remote
-          [remoteSerial]="remoteSerial"
-          [remoteServer]="remoteServer"
-          [remoteRealm]="remoteRealm"
-          [remoteUser]="remoteUser"
-          [remoteResolver]="remoteResolver"
-          [checkPinLocally]="checkPinLocally"
-          [description]="descriptionSignal" />
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("yubico") {
         <app-enroll-yubico
-          [yubikeyIdentifier]="yubikeyIdentifier"
-          [description]="descriptionSignal" />
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("radius") {
         <app-enroll-radius
-          [checkPinLocally]="checkPinLocally"
-          [radiusServerConfiguration]="radiusServerConfiguration"
-          [radiusUser]="radiusUser"
-          [description]="descriptionSignal" />
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("sms") {
         <app-enroll-sms
-          [phoneNumber]="phoneNumber"
-          [smsGateway]="smsGateway"
-          [description]="descriptionSignal"
-          [readNumberDynamically]="readNumberDynamically" />
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("4eyes") {
         <app-enroll-foureyes
-          [separator]="separator"
-          [description]="descriptionSignal"
-          [onlyAddToRealm]="onlyAddToRealm"
-          [requiredTokensOfRealms]="requiredTokenOfRealms" />
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("applspec") {
         <app-enroll-applspec
-          [serviceId]="serviceId"
-          [generateOnServer]="generateOnServer"
-          [otpKey]="otpKey"
-          [description]="descriptionSignal" />
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("daypassword") {
         <app-enroll-daypassword
-          [otpKey]="otpKey"
-          [otpLength]="otpLength"
-          [hashAlgorithm]="hashAlgorithm"
-          [description]="descriptionSignal"
-          [timeStep]="timeStep" />
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("certificate") {
         <app-enroll-certificate
-          [caConnector]="caConnector"
-          [certTemplate]="certTemplate"
-          [pem]="pem"
-          [description]="descriptionSignal" />
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("email") {
         <app-enroll-email
-          [emailAddress]="emailAddress"
-          [readEmailDynamically]="readEmailDynamically"
-          [description]="descriptionSignal" />
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("indexedsecret") {
         <app-enroll-indexedsecret
-          [otpKey]="otpKey"
-          [description]="descriptionSignal" />
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("paper") {
-        <app-enroll-paper [description]="descriptionSignal" />
+        <app-enroll-paper
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("push") {
-        <app-enroll-push [description]="descriptionSignal" />
+        <app-enroll-push
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("question") {
         <app-enroll-question
-          [answers]="answers"
-          [description]="descriptionSignal" />
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("registration") {
-        <app-enroll-registration [description]="descriptionSignal" />
+        <app-enroll-registration
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("tan") {
-        <app-enroll-tan [description]="descriptionSignal" />
+        <app-enroll-tan
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("tiqr") {
-        <app-enroll-tiqr [description]="descriptionSignal" />
+        <app-enroll-tiqr
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("u2f") {
-        <app-enroll-u2f [description]="descriptionSignal" />
+        <app-enroll-u2f
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("vasco") {
         <app-enroll-vasco
-          [vascoSerial]="vascoSerial"
-          [useVascoSerial]="useVascoSerial"
-          [otpKey]="otpKey"
-          [description]="descriptionSignal" />
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("webauthn") {
         <app-enroll-webauthn
-          [firstDialog]="firstDialog"
-          [enrollResponse]="enrollResponse"
-          [description]="descriptionSignal" />
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("passkey") {
         <app-enroll-passkey
-          [firstDialog]="firstDialog"
-          [enrollResponse]="enrollResponse"
-          [description]="descriptionSignal" />
+          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (clickEnrollChange)="updateClickEnroll($event)" />
       }
     }
     <mat-form-field class="description-form">
       <mat-label>Description</mat-label>
       <textarea
-        [formControl]="description"
+        [formControl]="descriptionControl"
         [maxlength]="80"
         matInput
         placeholder="Enter description"
@@ -211,9 +191,7 @@
           <input style="display: none" type="password" />
           <mat-form-field class="width-50 input-height">
             <mat-label>Select Realm of User</mat-label>
-            <mat-select
-              [(ngModel)]="userService.selectedUserRealm"
-              [ngModelOptions]="{ standalone: true }">
+            <mat-select [formControl]="selectedUserRealmControl">
               @for (option of realmService.realmOptions(); track option) {
                 <mat-option value="{{ option }}">{{ option }}</mat-option>
               }
@@ -222,8 +200,7 @@
           <mat-form-field class="width-50 input-height">
             <mat-label>Enter User</mat-label>
             <input
-              [(ngModel)]="userService.selectedUsername"
-              [ngModelOptions]="{ standalone: true }"
+              [formControl]="userNameFilterControl"
               [disabled]="onlyAddToRealm()"
               [matAutocomplete]="userAuto"
               [required]="userIsRequired()"
@@ -237,24 +214,29 @@
           </mat-form-field>
         </div>
       </div>
-      @if (selectedTokenType().key !== "passkey") {
+      @if (selectedTokenTypeControl.value?.key !== "passkey") {
         <div class="flex-column user-pin-container">
           <h4 class="enroll-h4">Set Pin</h4>
           <div class="user-pin-input">
             <input
-              [(ngModel)]="setPinValue"
-              [ngModelOptions]="{ standalone: true }"
+              [formControl]="setPinControl"
               [type]="'password'"
               class="input"
               placeholder="Pin" />
 
             <input
-              [(ngModel)]="repeatPinValue"
-              [ngModelOptions]="{ standalone: true }"
+              [formControl]="repeatPinControl"
               [type]="'password'"
               class="input"
               placeholder="Repeat Pin" />
           </div>
+          @if (
+            formGroup.hasError("pinMismatch") &&
+            (formGroup.get("setPin")?.touched ||
+              formGroup.get("repeatPin")?.touched)
+          ) {
+            <mat-error class="pin-error">PINs do not match.</mat-error>
+          }
         </div>
       } @else {
         <div class="width-33"></div>
@@ -265,8 +247,7 @@
     <mat-form-field class="width-32 input-height">
       <mat-label>Enter Container</mat-label>
       <input
-        [(ngModel)]="containerService.selectedContainer"
-        [ngModelOptions]="{ standalone: true }"
+        [formControl]="selectedContainerControl"
         [matAutocomplete]="containerAuto"
         matInput />
       <mat-autocomplete #containerAuto="matAutocomplete">
@@ -288,8 +269,7 @@
           <mat-form-field class="date-picker">
             <mat-label>Choose a Start Date</mat-label>
             <input
-              [(ngModel)]="selectedStartDate"
-              [ngModelOptions]="{ standalone: true }"
+              [formControl]="selectedStartDateControl"
               [matDatepicker]="startPicker"
               matInput
               placeholder="Start date" />
@@ -303,8 +283,7 @@
           <mat-form-field class="time-picker">
             <mat-label>Enter Start Time</mat-label>
             <input
-              [(ngModel)]="selectedStartTime"
-              [ngModelOptions]="{ standalone: true }"
+              [formControl]="selectedStartTimeControl"
               matInput
               max="23"
               min="0"
@@ -314,9 +293,7 @@
 
           <mat-form-field class="zone-picker">
             <mat-label>Timezone Offset</mat-label>
-            <mat-select
-              [(ngModel)]="selectedTimezoneOffset"
-              [ngModelOptions]="{ standalone: true }">
+            <mat-select [formControl]="selectedTimezoneOffsetControl">
               @for (option of timezoneOptions; track option) {
                 <mat-option [value]="option.value">{{
                   option.label
@@ -329,8 +306,7 @@
           <mat-form-field class="date-picker">
             <mat-label>Choose a End Date</mat-label>
             <input
-              [(ngModel)]="selectedEndDate"
-              [ngModelOptions]="{ standalone: true }"
+              [formControl]="selectedEndDateControl"
               [matDatepicker]="endPicker"
               matInput
               placeholder="End date" />
@@ -344,8 +320,7 @@
           <mat-form-field class="time-picker">
             <mat-label>Enter End Time</mat-label>
             <input
-              [(ngModel)]="selectedEndTime"
-              [ngModelOptions]="{ standalone: true }"
+              [formControl]="selectedEndTimeControl"
               matInput
               max="23"
               min="0"

@@ -1,13 +1,22 @@
 import {
   Component,
+  EventEmitter,
   Input,
   linkedSignal,
+  OnInit,
+  Output,
   signal,
   WritableSignal,
 } from '@angular/core';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
-import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import {
+  FormControl,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import {
   MatButtonToggle,
   MatButtonToggleGroup,
@@ -15,8 +24,12 @@ import {
 import { ErrorStateMatcher, MatOption } from '@angular/material/core';
 import { MatError, MatSelect } from '@angular/material/select';
 import { CaConnectorService } from '../../../../services/ca-connector/ca-connector.service';
-import { TokenService } from '../../../../services/token/token.service';
-import { BasicEnrollmentOptions } from '../../../../services/token/token.service';
+import {
+  BasicEnrollmentOptions,
+  EnrollmentResponse,
+  TokenService,
+} from '../../../../services/token/token.service';
+import { Observable } from 'rxjs';
 
 export interface CertificateEnrollmentOptions extends BasicEnrollmentOptions {
   type: 'certificate';
@@ -34,6 +47,7 @@ export class CaConnectorErrorStateMatcher implements ErrorStateMatcher {
 
 @Component({
   selector: 'app-enroll-certificate',
+  standalone: true,
   imports: [
     MatFormField,
     MatInput,
@@ -49,11 +63,35 @@ export class CaConnectorErrorStateMatcher implements ErrorStateMatcher {
   templateUrl: './enroll-certificate.component.html',
   styleUrl: './enroll-certificate.component.scss',
 })
-export class EnrollCertificateComponent {
+export class EnrollCertificateComponent implements OnInit {
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'certificate')?.text;
 
+  @Output() aditionalFormFieldsChange = new EventEmitter<{
+    [key: string]: FormControl<any>;
+  }>();
+  @Output() clickEnrollChange = new EventEmitter<
+    (
+      basicOptions: BasicEnrollmentOptions,
+    ) => Observable<EnrollmentResponse> | undefined
+  >();
+
+  caConnectorControl = new FormControl<string>('', [Validators.required]);
+  certTemplateControl = new FormControl<string>('', [Validators.required]);
+  pemControl = new FormControl<string>(''); // Validator is set dynamically
+  intentionToggleControl = new FormControl<'generate' | 'upload'>('generate', [
+    Validators.required,
+  ]);
+
+  certificateForm = new FormGroup({
+    caConnector: this.caConnectorControl,
+    certTemplate: this.certTemplateControl,
+    pem: this.pemControl,
+    intentionToggle: this.intentionToggleControl,
+  });
+
+  // Options for the template
   caConnectorOptions = linkedSignal({
     source: this.caConnectorService.caConnectors,
     computation: (caConnectors) =>
@@ -66,21 +104,67 @@ export class EnrollCertificateComponent {
 
   certTemplateOptions = linkedSignal({
     source: this.caConnectorService.caConnectors,
-    computation: (caConnectors) =>
-      caConnectors.length && caConnectors[0].templates
-        ? Object.keys(caConnectors[0].templates)
-        : [],
+    computation: (caConnectors) => {
+      // Find the selected connector
+      const selectedConnectorName = this.caConnectorControl.value;
+      const selectedConnector = Object.values(caConnectors).find(
+        (c) => c.connectorname === selectedConnectorName,
+      );
+      return selectedConnector && selectedConnector.templates
+        ? Object.keys(selectedConnector.templates)
+        : [];
+    },
   });
 
-  @Input() caConnector!: WritableSignal<string>;
-  @Input() certTemplate!: WritableSignal<string>;
-  @Input() pem!: WritableSignal<string>;
-  @Input() description!: WritableSignal<string>;
-  intentionToggle = signal('generate');
   caConnectorErrorStateMatcher = new CaConnectorErrorStateMatcher();
 
   constructor(
     private caConnectorService: CaConnectorService,
     private tokenService: TokenService,
   ) {}
+
+  ngOnInit(): void {
+    this.aditionalFormFieldsChange.emit({
+      caConnector: this.caConnectorControl,
+      certTemplate: this.certTemplateControl,
+      pem: this.pemControl,
+      intentionToggle: this.intentionToggleControl,
+    });
+    this.clickEnrollChange.emit(this.onClickEnroll);
+
+    this.intentionToggleControl.valueChanges.subscribe((intention) => {
+      if (intention === 'upload') {
+        this.pemControl.setValidators([Validators.required]);
+        this.caConnectorControl.clearValidators();
+        this.certTemplateControl.clearValidators();
+      } else {
+        this.pemControl.clearValidators();
+        this.caConnectorControl.setValidators([Validators.required]);
+        this.certTemplateControl.setValidators([Validators.required]);
+      }
+      this.pemControl.updateValueAndValidity();
+      this.caConnectorControl.updateValueAndValidity();
+      this.certTemplateControl.updateValueAndValidity();
+    });
+  }
+
+  onClickEnroll = (
+    basicOptions: BasicEnrollmentOptions,
+  ): Observable<EnrollmentResponse> | undefined => {
+    if (this.certificateForm.invalid) {
+      this.certificateForm.markAllAsTouched();
+      return undefined;
+    }
+    const enrollmentData: CertificateEnrollmentOptions = {
+      ...basicOptions,
+      type: 'certificate',
+      caConnector: this.caConnectorControl.value ?? '',
+      certTemplate: this.certTemplateControl.value ?? '',
+    };
+    if (this.intentionToggleControl.value === 'upload') {
+      enrollmentData.pem = this.pemControl.value ?? '';
+    }
+    // 'genkey' is set server-side based on 'pem'.
+    return this.tokenService.enrollToken(enrollmentData);
+  };
 }

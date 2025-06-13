@@ -3,11 +3,11 @@
     <p>{{ text }}</p>
   </div>
   <h4 class="enroll-h4">Token Configuration</h4>
-  <mat-checkbox [(ngModel)]="generateOnServer"
-                class="server-checkbox">
+  <mat-checkbox [formControl]="generateOnServerControl" class="server-checkbox">
     Generate OTP key on the server
-    @if (generateOnServer()) {
-      <span class="dot">.</span><span>
+    @if (generateOnServerControl.value) {
+      <span class="dot">.</span
+      ><span>
         <br />
         The server will create the OTP key and a QR Code will be displayed to
         you to be scanned.
@@ -15,56 +15,59 @@
     }
   </mat-checkbox>
   <div class="otp-inputs-container">
-    @if (!generateOnServer()) {
+    @if (!generateOnServerControl.value) {
       <mat-form-field class="input-height width-33">
         <mat-label>OTP Key</mat-label>
-        <input matInput
-               [(ngModel)]="otpKey"
-               placeholder="Enter OTP key"
-               required />
-        <mat-error>OTP key is <strong>required</strong></mat-error>
+        <input
+          matInput
+          [formControl]="otpKeyControl"
+          placeholder="Enter OTP key"
+          required />
+        @if (otpKeyControl.hasError("required")) {
+          <mat-error>OTP key is <strong>required</strong></mat-error>
+        }
+        @if (otpKeyControl.hasError("minlength")) {
+          <mat-error>OTP key must be at least 16 characters</mat-error>
+        }
       </mat-form-field>
     } @else {
       <span class="input-height width-33"></span>
     }
     <mat-form-field class="input-height width-33">
       <mat-label>OTP length</mat-label>
-      <mat-select [(ngModel)]="otpLength">
-        <mat-option [value]="6">6</mat-option>
-        <mat-option [value]="8">8</mat-option>
+      <mat-select [formControl]="otpLengthControl">
+        @for (len of otpLengthOptions; track len) {
+          <mat-option [value]="len">{{ len }}</mat-option>
+        }
       </mat-select>
-      @if (generateOnServer()) {
-        <mat-hint>Some Authenticator Apps only support an OTP length of 6.
+      @if (generateOnServerControl.value) {
+        <mat-hint
+          >Some Authenticator Apps only support an OTP length of 6.
         </mat-hint>
       }
     </mat-form-field>
     <mat-form-field class="input-height width-33">
       <mat-label>Hash algorithm</mat-label>
-      <mat-select [(ngModel)]="hashAlgorithm">
-        <mat-option value="sha1">sha1</mat-option>
-        <mat-option value="sha256">sha256</mat-option>
-        <mat-option value="sha512">sha512</mat-option>
+      <mat-select [formControl]="hashAlgorithmControl">
+        @for (alg of hashAlgorithmOptions; track alg.value) {
+          <mat-option [value]="alg.value">{{ alg.viewValue }}</mat-option>
+        }
       </mat-select>
-      @if (generateOnServer()) {
-        <mat-hint>Some Authenticator Apps only support the SHA1 algorithm.
+      @if (generateOnServerControl.value) {
+        <mat-hint
+          >Some Authenticator Apps only support the SHA1 algorithm.
         </mat-hint>
       }
     </mat-form-field>
   </div>
-  <div class="flex-row gap-1">
-    <mat-form-field class="width-66 margin-top-2">
-      <mat-label>Description</mat-label>
-      <textarea [(ngModel)]="description"
-                [maxlength]="80"
-                matInput
-                placeholder="Enter description"
-                rows="3"></textarea>
-    </mat-form-field>
-    <mat-form-field class="width-32 input-height margin-top-2">
+  <div class="otp-inputs-container">
+    <mat-form-field class="width-33 input-height">
+      <!-- Adjusted width to fit in a 3-column layout -->
       <mat-label>Timestep</mat-label>
-      <mat-select [(ngModel)]="timeStep">
-        <mat-option [value]="30">30</mat-option>
-        <mat-option [value]="60">60</mat-option>
+      <mat-select [formControl]="timeStepControl">
+        @for (step of timeStepOptions; track step) {
+          <mat-option [value]="step">{{ step }}</mat-option>
+        }
       </mat-select>
     </mat-form-field>
   </div>

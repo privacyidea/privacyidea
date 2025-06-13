@@ -3,18 +3,19 @@
     <p>{{ text }}</p>
   </div>
   <h4 class="enroll-h4">Token Configuration</h4>
-  <mat-checkbox [(ngModel)]="checkPinLocally">
+  <mat-checkbox [formControl]="checkPinLocallyControl">
     Check the PIN locally
   </mat-checkbox>
   <div class="flex-row gap-1">
     <mat-form-field class="remote-description-form">
       <mat-label>Remote Server</mat-label>
       <mat-select
-        [(ngModel)]="remoteServer"
+        [formControl]="remoteServerControl"
         [errorStateMatcher]="remoteErrorStateMatcher"
         required>
         @for (option of remoteServerOptions(); track option) {
-          <mat-option [value]="option.id">{{ option.url }}</mat-option>
+          <mat-option [value]="option">{{ option.url }}</mat-option>
+          <!-- Assuming option is the RemoteServer object -->
         }
       </mat-select>
       <mat-error class="red">
@@ -23,23 +24,25 @@
     </mat-form-field>
     <mat-form-field class="input-height width-33">
       <mat-label>Remote Serial</mat-label>
-      <input [(ngModel)]="remoteSerial" matInput required />
+      <input [formControl]="remoteSerialControl" matInput required />
       <mat-error>Remote Serial is <strong>required</strong></mat-error>
     </mat-form-field>
   </div>
   <div class="otp-inputs-container">
     <mat-form-field class="input-height width-33">
       <mat-label>Remote User</mat-label>
-      <input [(ngModel)]="remoteUser" matInput required />
+      <input [formControl]="remoteUserControl" matInput />
+      <!-- Assuming optional based on TS -->
       <mat-error>Remote User is <strong>required</strong></mat-error>
     </mat-form-field>
     <mat-form-field class="input-height width-33">
       <mat-label>Remote Realm</mat-label>
-      <input [(ngModel)]="remoteRealm" matInput />
+      <input [formControl]="remoteRealmControl" matInput />
     </mat-form-field>
     <mat-form-field class="input-height width-33">
       <mat-label>Remote Resolver</mat-label>
-      <input [(ngModel)]="remoteResolver" matInput />
+      <input [formControl]="remoteResolverControl" matInput required />
+      <mat-error>Remote Resolver is <strong>required</strong></mat-error>
     </mat-form-field>
   </div>
 </div>

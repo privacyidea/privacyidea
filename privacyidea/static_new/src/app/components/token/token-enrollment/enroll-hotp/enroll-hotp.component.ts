@@ -66,13 +66,13 @@ export class EnrollHotpComponent implements OnInit {
     Validators.required,
   ]);
   otpLengthFormControl = new FormControl<number>(6, [Validators.required]);
-  otpKeyFormControl = new FormControl<string>(''); // Validator wird dynamisch in onClickEnroll geprüft
+  otpKeyFormControl = new FormControl<string>(''); // Validator is checked dynamically in onClickEnroll
   hashAlgorithmFormControl = new FormControl<string>('sha1', [
     Validators.required,
   ]);
 
-  // Optionen für das Template
-  readonly otpLengthOptions = [6, 7, 8];
+  // Options for the template
+  readonly otpLengthOptions = [6, 8];
   readonly hashAlgorithmOptions = [
     { value: 'sha1', viewValue: 'SHA1' },
     { value: 'sha256', viewValue: 'SHA256' },
@@ -90,7 +90,7 @@ export class EnrollHotpComponent implements OnInit {
     });
     this.clickEnrollChange.emit(this.onClickEnroll);
 
-    // OTP-Key Validierung basierend auf generateOnServer
+    // OTP key validation based on generateOnServer
     this.generateOnServerFormControl.valueChanges.subscribe((generate) => {
       if (!generate) {
         this.otpKeyFormControl.setValidators([Validators.required]);
@@ -123,9 +123,9 @@ export class EnrollHotpComponent implements OnInit {
     const enrollmentData: HotpEnrollmentOptions = {
       ...basicOptions,
       type: 'hotp',
-      generateOnServer: !!this.generateOnServerFormControl.value, // Sicherstellen, dass es boolean ist
-      otpLength: this.otpLengthFormControl.value ?? 6, // Standardwert, falls null
-      hashAlgorithm: this.hashAlgorithmFormControl.value ?? 'sha1', // Standardwert, falls null
+      generateOnServer: !!this.generateOnServerFormControl.value, // Ensure it is boolean
+      otpLength: this.otpLengthFormControl.value ?? 6, // Default value if null
+      hashAlgorithm: this.hashAlgorithmFormControl.value ?? 'sha1', // Default value if null
     };
 
     if (!enrollmentData.generateOnServer) {
