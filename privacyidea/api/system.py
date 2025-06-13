@@ -486,3 +486,33 @@ def list_nodes():
     nodes = get_privacyidea_nodes()
     g.audit_object.log({"success": True})
     return send_result(nodes)
+
+@system_blueprint.route("/usercache", methods=['DELETE'])
+@admin_required
+def delete_user_cache():
+    """
+    Delete the user cache. It will delete all entries in the user cache.
+
+    :>json bool status: Status of the request
+    :reqheader PI-Authorization: The authorization token
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+        HTTP/1.1 200 OK
+        Content-Type: application/json
+
+        {
+          "id": 1,
+          "jsonrpc": "2.0",
+          "result": {
+            "status": true
+          },
+          "version": "privacyIDEA unknown"
+        }
+    """
+    from privacyidea.lib.usercache import delete_user_cache
+    rowcount = delete_user_cache()
+    g.audit_object.log({"success": True, "info": f"Deleted {rowcount} entries from user cache"})
+    return send_result({"status": True})
