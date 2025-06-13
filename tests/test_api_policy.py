@@ -499,8 +499,8 @@ class APIPolicyTestCase(MyApiTestCase):
         # rename pol_old to pol_new
         with self.app.test_request_context(
                 '/policy/rename/pol_old',
-                method='POST',
-                json={"newname": "pol_new"},
+                method='PATCH',
+                json={"name": "pol_new"},
                 headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200, res)
@@ -539,12 +539,12 @@ class APIPolicyTestCase(MyApiTestCase):
         # renaming a non‐existent policy should raise ParameterError
         with self.assertRaises(ParameterError) as cm1:
             rename_policy("no_such", "newname")
-        self.assertIn("Policy 'no_such' does not exist!", str(cm1.exception))
+        self.assertIn("Policy does not exist: no_such", str(cm1.exception))
 
         with self.app.test_request_context(
                 '/policy/rename/no_such',
-                method='POST',
-                json={"newname": "newname"},
+                method='PATCH',
+                json={"name": "newname"},
                 headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400)
@@ -577,12 +577,12 @@ class APIPolicyTestCase(MyApiTestCase):
 
         with self.assertRaises(ParameterError) as cm2:
             rename_policy("pol_a", "pol_b")
-        self.assertIn("Policy 'pol_b' already exists!", str(cm2.exception))
+        self.assertIn("Policy already exists: pol_b", str(cm2.exception))
 
         with self.app.test_request_context(
                 "/policy/rename/pol_a",
-                method="POST",
-                json={"newname": "pol_b"},
+                method="PATCH",
+                json={"name": "pol_b"},
                 headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
 
