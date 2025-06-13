@@ -97,7 +97,7 @@ def disable_policy_api(name):
     g.audit_object.log({"success": True})
     return send_result(p)
 
-@policy_blueprint.route('/rename/<name>', methods=['PATCH'])
+@policy_blueprint.route('/<name>', methods=['PATCH'])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.POLICYWRITE)
 def patch_policy_name_api(name):

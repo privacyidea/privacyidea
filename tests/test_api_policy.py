@@ -498,7 +498,7 @@ class APIPolicyTestCase(MyApiTestCase):
 
         # rename pol_old to pol_new
         with self.app.test_request_context(
-                '/policy/rename/pol_old',
+                '/policy/pol_old',
                 method='PATCH',
                 json={"name": "pol_new"},
                 headers={'Authorization': self.at}):
@@ -542,7 +542,7 @@ class APIPolicyTestCase(MyApiTestCase):
         self.assertIn("Policy does not exist: no_such", str(cm1.exception))
 
         with self.app.test_request_context(
-                '/policy/rename/no_such',
+                '/policy/no_such',
                 method='PATCH',
                 json={"name": "newname"},
                 headers={'Authorization': self.at}):
@@ -580,7 +580,7 @@ class APIPolicyTestCase(MyApiTestCase):
         self.assertIn("Policy already exists: pol_b", str(cm2.exception))
 
         with self.app.test_request_context(
-                "/policy/rename/pol_a",
+                "/policy/pol_a",
                 method="PATCH",
                 json={"name": "pol_b"},
                 headers={"Authorization": self.at}):

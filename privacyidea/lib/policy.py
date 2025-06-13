@@ -1353,7 +1353,7 @@ def validate_values(values: Union[str, list, None], allowed_values: list, name: 
 
 
 @log_with(log)
-def rename_policy(name: str, new_name: str):
+def rename_policy(name: str, new_name: str) -> int:
     """
     Rename a policy.
 
