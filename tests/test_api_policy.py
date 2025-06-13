@@ -1,10 +1,11 @@
 import logging
 from testfixtures import LogCapture
 
+from privacyidea.lib.error import ParameterError
 from privacyidea.lib.policies.policy_conditions import ConditionSection, ConditionHandleMissingData
 from privacyidea.lib.utils.compare import Comparators
 from .base import MyApiTestCase
-from privacyidea.lib.policy import (set_policy, SCOPE, ACTION, delete_policy)
+from privacyidea.lib.policy import (set_policy, SCOPE, ACTION, delete_policy, rename_policy)
 from privacyidea.lib.token import init_token
 from privacyidea.lib.user import User
 from privacyidea.models import db, NodeName
@@ -535,9 +536,65 @@ class APIPolicyTestCase(MyApiTestCase):
             if res.status_code == 200:
                 self.assertEqual(res.json["result"]["value"], [], res.json)
 
+        # renaming a non‐existent policy should raise ParameterError
+        with self.assertRaises(ParameterError) as cm1:
+            rename_policy("no_such", "newname")
+        self.assertIn("Policy 'no_such' does not exist!", str(cm1.exception))
+
+        with self.app.test_request_context(
+                '/policy/rename/no_such',
+                method='POST',
+                json={"newname": "newname"},
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 400)
+            self.assertIn("does not exist",
+                          res.json["result"]["error"]["message"])
+            self.assertEqual(905, res.json["result"]["error"]["code"])
+
+        # renaming to a name that already exists should raise ParameterError
+        with self.app.test_request_context(
+                "/policy/pol_a",
+                method="POST",
+                json={
+                    "action": ACTION.NODETAILFAIL,
+                    "client": "10.1.2.3",
+                    "scope": SCOPE.AUTHZ,
+                    "realm": "realm1"},
+                headers={"Authorization": self.at}):
+            self.app.full_dispatch_request()
+
+        with self.app.test_request_context(
+                "/policy/pol_b",
+                method="POST",
+                json={
+                    "action": ACTION.NODETAILFAIL,
+                    "client": "10.1.2.3",
+                    "scope": SCOPE.AUTHZ,
+                    "realm": "realm1"},
+                headers={"Authorization": self.at}):
+            self.app.full_dispatch_request()
+
+        with self.assertRaises(ParameterError) as cm2:
+            rename_policy("pol_a", "pol_b")
+        self.assertIn("Policy 'pol_b' already exists!", str(cm2.exception))
+
+        with self.app.test_request_context(
+                "/policy/rename/pol_a",
+                method="POST",
+                json={"newname": "pol_b"},
+                headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+
+            self.assertEqual(res.status_code, 400)
+            self.assertEqual(res.json["result"]["error"]["code"], 905)
+            self.assertIn("already exists",
+                          res.json["result"]["error"]["message"])
+
         # clean up
         delete_policy("pol_new")
-
+        delete_policy("pol_a")
+        delete_policy("pol_b")
 
 class APIPolicyConditionTestCase(MyApiTestCase):
 
