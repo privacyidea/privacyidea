@@ -106,7 +106,7 @@ def patch_policy_name_api(oldname):
 
     Only the policy’s name is modified; all other attributes remain unchanged.
 
-    :param name: Current name of the policy (from the URL).
+    :param oldname: Current name of the policy (from the URL).
     :jsonparam name: New name to assign to the policy (in the JSON body).
     :return: Database ID of the renamed policy.
     """
