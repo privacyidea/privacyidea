@@ -27,9 +27,27 @@ export interface TotpEnrollmentPayload extends TokenEnrollmentPayload {
 export class TotpApiPayloadMapper
   implements TokenApiPayloadMapper<TotpEnrollmentData>
 {
-  toApiPayload(data: TotpEnrollmentData): any {
-    // Placeholder: Implement transformation to API payload. We will replace this later.
-    return { ...data };
+  toApiPayload(data: TotpEnrollmentData): TotpEnrollmentPayload {
+    const payload: TotpEnrollmentPayload = {
+      type: data.type,
+      description: data.description,
+      container_serial: data.containerSerial,
+      validity_period_start: data.validityPeriodStart,
+      validity_period_end: data.validityPeriodEnd,
+      user: data.user,
+      pin: data.pin,
+      otpkey: data.generateOnServer ? null : (data.otpKey ?? null),
+      genkey: data.generateOnServer ? 1 : 0,
+      otplen: data.otpLength !== undefined ? Number(data.otpLength) : undefined,
+      hashlib: data.hashAlgorithm,
+      timeStep: data.timeStep !== undefined ? Number(data.timeStep) : undefined,
+    };
+
+    if (payload.otplen === undefined) delete payload.otplen;
+    if (payload.hashlib === undefined) delete payload.hashlib;
+    if (payload.timeStep === undefined) delete payload.timeStep;
+
+    return payload;
   }
 
   fromApiPayload(payload: any): TotpEnrollmentData {

@@ -17,9 +17,20 @@ export interface YubikeyEnrollmentPayload extends TokenEnrollmentPayload {
 export class YubikeyApiPayloadMapper
   implements TokenApiPayloadMapper<YubikeyEnrollmentData>
 {
-  toApiPayload(data: YubikeyEnrollmentData): any {
-    // Placeholder: Implement transformation to API payload. We will replace this later.
-    return { ...data };
+  toApiPayload(data: YubikeyEnrollmentData): YubikeyEnrollmentPayload {
+    return {
+      type: data.type,
+      description: data.description,
+      container_serial: data.containerSerial,
+      validity_period_start: data.validityPeriodStart,
+      validity_period_end: data.validityPeriodEnd,
+      user: data.user,
+      pin: data.pin,
+      // otpLength from component is number | null. Payload otplen is number | null.
+      otplen: data.otpLength,
+      // otpKey from component is string | null. Payload otpkey is string | null.
+      otpkey: data.otpKey,
+    };
   }
 
   fromApiPayload(payload: any): YubikeyEnrollmentData {

@@ -26,9 +26,29 @@ export interface DaypasswordEnrollmentPayload extends TokenEnrollmentPayload {
 export class DaypasswordApiPayloadMapper
   implements TokenApiPayloadMapper<DaypasswordEnrollmentData>
 {
-  toApiPayload(data: DaypasswordEnrollmentData): any {
-    // Placeholder: Implement transformation to API payload. We will replace this later.
-    return { ...data };
+  toApiPayload(data: DaypasswordEnrollmentData): DaypasswordEnrollmentPayload {
+    const payload: DaypasswordEnrollmentPayload = {
+      type: data.type,
+      description: data.description,
+      container_serial: data.containerSerial,
+      validity_period_start: data.validityPeriodStart,
+      validity_period_end: data.validityPeriodEnd,
+      user: data.user,
+      pin: data.pin,
+      // otpKey is set based on component logic:
+      // if generateOnServer is true, data.otpKey is undefined.
+      // if generateOnServer is false, data.otpKey is the key.
+      otpkey: data.otpKey,
+      otplen: data.otpLength !== undefined ? Number(data.otpLength) : undefined,
+      hashlib: data.hashAlgorithm,
+      timeStep: data.timeStep !== undefined ? Number(data.timeStep) : undefined,
+    };
+
+    if (payload.otpkey === undefined) delete payload.otpkey;
+    if (payload.otplen === undefined) delete payload.otplen;
+    if (payload.hashlib === undefined) delete payload.hashlib;
+    if (payload.timeStep === undefined) delete payload.timeStep;
+    return payload;
   }
 
   fromApiPayload(payload: any): DaypasswordEnrollmentData {

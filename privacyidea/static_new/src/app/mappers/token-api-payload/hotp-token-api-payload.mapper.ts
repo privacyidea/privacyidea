@@ -25,9 +25,25 @@ export interface HotpEnrollmentPayload extends TokenEnrollmentPayload {
 export class HotpApiPayloadMapper
   implements TokenApiPayloadMapper<HotpEnrollmentData>
 {
-  toApiPayload(data: HotpEnrollmentData): any {
-    // Placeholder: Implement transformation to API payload. We will replace this later.
-    return { ...data };
+  toApiPayload(data: HotpEnrollmentData): HotpEnrollmentPayload {
+    const payload: HotpEnrollmentPayload = {
+      type: data.type,
+      description: data.description,
+      container_serial: data.containerSerial,
+      validity_period_start: data.validityPeriodStart,
+      validity_period_end: data.validityPeriodEnd,
+      user: data.user,
+      pin: data.pin,
+      otpkey: data.generateOnServer ? null : (data.otpKey ?? null),
+      genkey: data.generateOnServer ? 1 : 0,
+      otplen: data.otpLength !== undefined ? Number(data.otpLength) : undefined,
+      hashlib: data.hashAlgorithm,
+    };
+
+    if (payload.otplen === undefined) delete payload.otplen;
+    if (payload.hashlib === undefined) delete payload.hashlib;
+
+    return payload;
   }
 
   fromApiPayload(payload: any): HotpEnrollmentData {

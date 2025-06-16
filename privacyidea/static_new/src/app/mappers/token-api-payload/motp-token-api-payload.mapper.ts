@@ -23,9 +23,24 @@ export interface MotpEnrollmentPayload extends TokenEnrollmentPayload {
 export class MotpApiPayloadMapper
   implements TokenApiPayloadMapper<MotpEnrollmentData>
 {
-  toApiPayload(data: MotpEnrollmentData): any {
-    // Placeholder: Implement transformation to API payload. We will replace this later.
-    return { ...data };
+  toApiPayload(data: MotpEnrollmentData): MotpEnrollmentPayload {
+    const payload: MotpEnrollmentPayload = {
+      type: data.type,
+      description: data.description,
+      container_serial: data.containerSerial,
+      validity_period_start: data.validityPeriodStart,
+      validity_period_end: data.validityPeriodEnd,
+      user: data.user,
+      pin: data.pin,
+      otpkey: data.generateOnServer ? null : (data.otpKey ?? null),
+      genkey: data.generateOnServer ? 1 : 0,
+      motppin: data.motpPin,
+    };
+
+    if (payload.motppin === undefined) {
+      delete payload.motppin;
+    }
+    return payload;
   }
 
   fromApiPayload(payload: any): MotpEnrollmentData {

@@ -30,9 +30,22 @@ export interface RemoteEnrollmentPayload extends TokenEnrollmentPayload {
 export class RemoteApiPayloadMapper
   implements TokenApiPayloadMapper<RemoteEnrollmentData>
 {
-  toApiPayload(data: RemoteEnrollmentData): any {
-    // Placeholder: Implement transformation to API payload. We will replace this later.
-    return { ...data };
+  toApiPayload(data: RemoteEnrollmentData): RemoteEnrollmentPayload {
+    return {
+      type: data.type,
+      description: data.description,
+      container_serial: data.containerSerial,
+      validity_period_start: data.validityPeriodStart,
+      validity_period_end: data.validityPeriodEnd,
+      user: data.user,
+      pin: data.pin,
+      'remote.server_id': data.remoteServer?.id ?? null,
+      'remote.serial': data.remoteSerial,
+      'remote.user': data.remoteUser,
+      'remote.realm': data.remoteRealm,
+      'remote.resolver': data.remoteResolver,
+      'remote.local_checkpin': data.checkPinLocally,
+    };
   }
 
   fromApiPayload(payload: any): RemoteEnrollmentData {

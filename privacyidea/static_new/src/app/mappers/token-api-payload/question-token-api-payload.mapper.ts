@@ -19,9 +19,22 @@ export interface QuestionEnrollmentPayload extends TokenEnrollmentPayload {
 export class QuestionApiPayloadMapper
   implements TokenApiPayloadMapper<QuestionEnrollmentData>
 {
-  toApiPayload(data: QuestionEnrollmentData): any {
-    // Placeholder: Implement transformation to API payload. We will replace this later.
-    return { ...data };
+  toApiPayload(data: QuestionEnrollmentData): QuestionEnrollmentPayload {
+    const payload: QuestionEnrollmentPayload = {
+      type: data.type,
+      description: data.description,
+      container_serial: data.containerSerial,
+      validity_period_start: data.validityPeriodStart,
+      validity_period_end: data.validityPeriodEnd,
+      user: data.user,
+      pin: data.pin,
+      questions: data.answers,
+    };
+
+    if (payload.questions === undefined) {
+      delete payload.questions;
+    }
+    return payload;
   }
 
   fromApiPayload(payload: any): QuestionEnrollmentData {

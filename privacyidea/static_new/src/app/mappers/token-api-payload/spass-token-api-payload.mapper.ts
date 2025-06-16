@@ -17,9 +17,17 @@ export interface SpassEnrollmentPayload extends TokenEnrollmentPayload {}
 export class SpassApiPayloadMapper
   implements TokenApiPayloadMapper<SpassEnrollmentData>
 {
-  toApiPayload(data: SpassEnrollmentData): any {
-    // Placeholder: Implement transformation to API payload.
-    return { ...data };
+  toApiPayload(data: SpassEnrollmentData): SpassEnrollmentPayload {
+    // No type-specific fields in switch statement for 'spass'
+    return {
+      type: data.type,
+      description: data.description,
+      container_serial: data.containerSerial,
+      validity_period_start: data.validityPeriodStart,
+      validity_period_end: data.validityPeriodEnd,
+      user: data.user,
+      pin: data.pin,
+    };
   }
 
   fromApiPayload(payload: any): SpassEnrollmentData {

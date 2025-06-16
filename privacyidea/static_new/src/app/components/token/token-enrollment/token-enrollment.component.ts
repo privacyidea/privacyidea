@@ -474,13 +474,13 @@ export class TokenEnrollmentComponent {
       const basicOptions: TokenEnrollmentData = {
         type: currentTokenType.key,
         description: this.descriptionControl.value.trim(),
-        container_serial: this.selectedContainerControl.value?.trim() ?? '',
-        validity_period_start: this.formatDateTimeOffset(
+        containerSerial: this.selectedContainerControl.value?.trim() ?? '',
+        validityPeriodStart: this.formatDateTimeOffset(
           this.selectedStartDateControl.value ?? new Date(),
           this.selectedStartTimeControl.value ?? '00:00',
           this.selectedTimezoneOffsetControl.value ?? '+00:00',
         ),
-        validity_period_end: this.formatDateTimeOffset(
+        validityPeriodEnd: this.formatDateTimeOffset(
           this.selectedEndDateControl.value ?? new Date(),
           this.selectedEndTimeControl.value ?? '23:59',
           this.selectedTimezoneOffsetControl.value ?? '+00:00',

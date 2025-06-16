@@ -21,9 +21,23 @@ export interface PaperTokenEnrollmentPayload extends TokenEnrollmentPayload {
 export class PaperTokenApiPayloadMapper
   implements TokenApiPayloadMapper<PaperTokenEnrollmentData>
 {
-  toApiPayload(data: PaperTokenEnrollmentData): any {
-    // Placeholder: Implement transformation to API payload. We will replace this later.
-    return { ...data };
+  toApiPayload(data: PaperTokenEnrollmentData): PaperTokenEnrollmentPayload {
+    // 'papertoken' type is not in the main switch statement.
+    // Mapping based on defined interfaces.
+    const payload: PaperTokenEnrollmentPayload = {
+      type: data.type,
+      description: data.description,
+      container_serial: data.containerSerial,
+      validity_period_start: data.validityPeriodStart,
+      validity_period_end: data.validityPeriodEnd,
+      user: data.user,
+      pin: data.pin,
+      otplen: data.otpLength,
+      otpcount: data.otpCount,
+    };
+    if (payload.otplen === undefined) delete payload.otplen;
+    if (payload.otpcount === undefined) delete payload.otpcount;
+    return payload;
   }
 
   fromApiPayload(payload: any): PaperTokenEnrollmentData {

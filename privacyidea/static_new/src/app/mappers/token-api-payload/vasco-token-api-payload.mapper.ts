@@ -24,9 +24,28 @@ export interface VascoEnrollmentPayload extends TokenEnrollmentPayload {
 export class VascoApiPayloadMapper
   implements TokenApiPayloadMapper<VascoEnrollmentData>
 {
-  toApiPayload(data: VascoEnrollmentData): any {
-    // Placeholder: Implement transformation to API payload. We will replace this later.
-    return { ...data };
+  toApiPayload(data: VascoEnrollmentData): VascoEnrollmentPayload {
+    const payload: VascoEnrollmentPayload = {
+      type: data.type,
+      description: data.description,
+      container_serial: data.containerSerial,
+      validity_period_start: data.validityPeriodStart,
+      validity_period_end: data.validityPeriodEnd,
+      user: data.user,
+      pin: data.pin,
+      genkey: 0, // Hardcoded as per switch statement
+      // otpkey is always set from data.otpKey as per switch (will be undefined if useVascoSerial is true, based on component logic)
+      otpkey: data.otpKey,
+    };
+
+    if (data.useVascoSerial) {
+      payload.serial = data.vascoSerial;
+    }
+
+    if (payload.serial === undefined) delete payload.serial;
+    if (payload.otpkey === undefined) delete payload.otpkey;
+
+    return payload;
   }
 
   fromApiPayload(payload: any): VascoEnrollmentData {

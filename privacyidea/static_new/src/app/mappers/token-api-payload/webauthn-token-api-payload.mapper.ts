@@ -19,9 +19,25 @@ export interface WebAuthnEnrollmentPayload extends TokenEnrollmentPayload {
 export class WebAuthnApiPayloadMapper
   implements TokenApiPayloadMapper<WebAuthnEnrollmentData>
 {
-  toApiPayload(data: WebAuthnEnrollmentData): any {
-    // Placeholder: Implement transformation to API payload. We will replace this later.
-    return { ...data };
+  toApiPayload(data: WebAuthnEnrollmentData): WebAuthnEnrollmentPayload {
+    const payload: WebAuthnEnrollmentPayload = {
+      type: data.type,
+      description: data.description,
+      container_serial: data.containerSerial,
+      validity_period_start: data.validityPeriodStart,
+      validity_period_end: data.validityPeriodEnd,
+      user: data.user,
+      pin: data.pin,
+    };
+
+    if (data.credential_id) {
+      // Switch logic copies all of `data` if credential_id is present.
+      // Adhering to WebAuthnEnrollmentPayload which only adds credential_id.
+      payload.credential_id = data.credential_id;
+    }
+
+    if (payload.credential_id === undefined) delete payload.credential_id;
+    return payload;
   }
 
   fromApiPayload(payload: any): WebAuthnEnrollmentData {

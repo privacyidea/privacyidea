@@ -21,10 +21,23 @@ export interface TanEnrollmentPayload extends TokenEnrollmentPayload {
 export class TanApiPayloadMapper
   implements TokenApiPayloadMapper<TanEnrollmentData>
 {
-  toApiPayload(data: TanEnrollmentData): any {
-    // Placeholder: Implement transformation to API payload.
-    // EnrollTanComponent uses 'tancount' and 'tanlength'.
-    return { ...data, tancount: data.tanCount, tanlength: data.tanLength };
+  toApiPayload(data: TanEnrollmentData): TanEnrollmentPayload {
+    // 'tan' type is not in the main switch statement.
+    // Mapping based on defined interfaces.
+    const payload: TanEnrollmentPayload = {
+      type: data.type,
+      description: data.description,
+      container_serial: data.containerSerial,
+      validity_period_start: data.validityPeriodStart,
+      validity_period_end: data.validityPeriodEnd,
+      user: data.user,
+      pin: data.pin,
+      tancount: data.tanCount,
+      tanlength: data.tanLength,
+    };
+    if (payload.tancount === undefined) delete payload.tancount;
+    if (payload.tanlength === undefined) delete payload.tanlength;
+    return payload;
   }
 
   fromApiPayload(payload: any): TanEnrollmentData {

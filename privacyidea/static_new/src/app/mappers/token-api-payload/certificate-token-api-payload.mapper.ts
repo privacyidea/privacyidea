@@ -25,9 +25,26 @@ export interface CertificateEnrollmentPayload extends TokenEnrollmentPayload {
 export class CertificateApiPayloadMapper
   implements TokenApiPayloadMapper<CertificateEnrollmentData>
 {
-  toApiPayload(data: CertificateEnrollmentData): any {
-    // Placeholder: Implement transformation to API payload. We will replace this later.
-    return { ...data };
+  toApiPayload(data: CertificateEnrollmentData): CertificateEnrollmentPayload {
+    const payload: CertificateEnrollmentPayload = {
+      type: data.type,
+      description: data.description,
+      container_serial: data.containerSerial,
+      validity_period_start: data.validityPeriodStart,
+      validity_period_end: data.validityPeriodEnd,
+      user: data.user,
+      pin: data.pin,
+      genkey: 1, // As per switch statement
+      ca: data.caConnector,
+      template: data.certTemplate,
+      pem: data.pem,
+    };
+
+    if (payload.ca === undefined) delete payload.ca;
+    if (payload.template === undefined) delete payload.template;
+    if (payload.pem === undefined) delete payload.pem;
+
+    return payload;
   }
 
   fromApiPayload(payload: any): CertificateEnrollmentData {

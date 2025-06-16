@@ -19,9 +19,22 @@ export interface YubicoEnrollmentPayload extends TokenEnrollmentPayload {
 export class YubicoApiPayloadMapper
   implements TokenApiPayloadMapper<YubicoEnrollmentData>
 {
-  toApiPayload(data: YubicoEnrollmentData): any {
-    // Placeholder: Implement transformation to API payload. We will replace this later.
-    return { ...data };
+  toApiPayload(data: YubicoEnrollmentData): YubicoEnrollmentPayload {
+    const payload: YubicoEnrollmentPayload = {
+      type: data.type,
+      description: data.description,
+      container_serial: data.containerSerial,
+      validity_period_start: data.validityPeriodStart,
+      validity_period_end: data.validityPeriodEnd,
+      user: data.user,
+      pin: data.pin,
+      'yubico.tokenid': data.yubicoIdentifier,
+    };
+
+    if (payload['yubico.tokenid'] === undefined) {
+      delete payload['yubico.tokenid'];
+    }
+    return payload;
   }
 
   fromApiPayload(payload: any): YubicoEnrollmentData {

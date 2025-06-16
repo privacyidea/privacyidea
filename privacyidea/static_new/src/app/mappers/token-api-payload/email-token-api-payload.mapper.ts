@@ -21,9 +21,24 @@ export interface EmailEnrollmentPayload extends TokenEnrollmentPayload {
 export class EmailApiPayloadMapper
   implements TokenApiPayloadMapper<EmailEnrollmentData>
 {
-  toApiPayload(data: EmailEnrollmentData): any {
-    // Placeholder: Implement transformation to API payload. We will replace this later.
-    return { ...data };
+  toApiPayload(data: EmailEnrollmentData): EmailEnrollmentPayload {
+    const payload: EmailEnrollmentPayload = {
+      type: data.type,
+      description: data.description,
+      container_serial: data.containerSerial,
+      validity_period_start: data.validityPeriodStart,
+      validity_period_end: data.validityPeriodEnd,
+      user: data.user,
+      pin: data.pin,
+      // Based on component logic, data.emailAddress is set if !readEmailDynamically
+      email: data.emailAddress,
+      dynamic_email: !!data.readEmailDynamically,
+    };
+
+    if (payload.email === undefined) {
+      delete payload.email;
+    }
+    return payload;
   }
 
   fromApiPayload(payload: any): EmailEnrollmentData {

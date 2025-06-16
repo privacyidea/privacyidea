@@ -23,9 +23,24 @@ export interface ApplspecEnrollmentPayload extends TokenEnrollmentPayload {
 export class ApplspecApiPayloadMapper
   implements TokenApiPayloadMapper<ApplspecEnrollmentData>
 {
-  toApiPayload(data: ApplspecEnrollmentData): any {
-    // Placeholder: Implement transformation to API payload. We will replace this later.
-    return { ...data };
+  toApiPayload(data: ApplspecEnrollmentData): ApplspecEnrollmentPayload {
+    const payload: ApplspecEnrollmentPayload = {
+      type: data.type,
+      description: data.description,
+      container_serial: data.containerSerial,
+      validity_period_start: data.validityPeriodStart,
+      validity_period_end: data.validityPeriodEnd,
+      user: data.user,
+      pin: data.pin,
+      otpkey: data.generateOnServer ? null : (data.otpKey ?? null),
+      genkey: data.generateOnServer ? 1 : 0,
+      service_id: data.serviceId,
+    };
+
+    if (payload.service_id === undefined) {
+      delete payload.service_id;
+    }
+    return payload;
   }
 
   fromApiPayload(payload: any): ApplspecEnrollmentData {

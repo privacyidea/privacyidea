@@ -16,9 +16,19 @@ export interface RegistrationEnrollmentPayload extends TokenEnrollmentPayload {}
 export class RegistrationApiPayloadMapper
   implements TokenApiPayloadMapper<RegistrationEnrollmentData>
 {
-  toApiPayload(data: RegistrationEnrollmentData): any {
-    // Placeholder: Implement transformation to API payload.
-    return { ...data };
+  toApiPayload(
+    data: RegistrationEnrollmentData,
+  ): RegistrationEnrollmentPayload {
+    // No type-specific fields in switch statement for 'registration'
+    return {
+      type: data.type,
+      description: data.description,
+      container_serial: data.containerSerial,
+      validity_period_start: data.validityPeriodStart,
+      validity_period_end: data.validityPeriodEnd,
+      user: data.user,
+      pin: data.pin,
+    };
   }
 
   fromApiPayload(payload: any): RegistrationEnrollmentData {
