@@ -198,7 +198,7 @@ def set_policy_api(name=None):
         }
     """
     res = {}
-    param = 
+    param = request.all_data
     check_policy_name(name)
 
     action = getParam(param, "action", required)
@@ -304,7 +304,7 @@ def get_policy(name=None, export=None):
           "version": "privacyIDEA unknown"
         }
     """
-    param = getLowerParams()
+    param = getLowerParams(request.all_data)
     realm = getParam(param, "realm")
     scope = getParam(param, "scope")
     active = getParam(param, "active")
@@ -507,7 +507,7 @@ def check_policy_api():
 
     """
     res = {}
-    param = getLowerParams()
+    param = getLowerParams(request.all_data)
 
     user = getParam(param, "user", required)
     realm = getParam(param, "realm", required)
