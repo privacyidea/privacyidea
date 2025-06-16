@@ -1240,11 +1240,11 @@ class APIConfigTestCase(MyApiTestCase):
 
     def test_24_delete_user_cache_endpoint(self):
         db.session.execute(UserCache.__table__.insert(), [dict({"username": "alice"}),
-                                                         dict({"username": "bob"})])
+                                                          dict({"username": "bob"})])
         db.session.commit()
 
         count = db.session.execute(
-                select(func.count()).select_from(UserCache)).scalar_one()
+            select(func.count()).select_from(UserCache)).scalar_one()
         self.assertEqual(count, 2, f"expected 2 cache rows, found {count}")
 
         with self.app.test_request_context('/system/usercache',
@@ -1260,6 +1260,69 @@ class APIConfigTestCase(MyApiTestCase):
             select(func.count()).select_from(UserCache)).scalar_one()
         self.assertEqual(remaining, 0,
                          f"user-cache still contains {remaining} rows")
+
+    def test_25_delete_challenge_cache_endpoint(self):
+        from privacyidea.models import Challenge
+        import datetime as dt
+        from sqlalchemy import func, select
+
+        # seed the DB with two expired challenges
+        now = dt.datetime.utcnow()
+        db.session.execute(
+            Challenge.__table__.insert(),
+            [
+                dict(
+                    transaction_id="tx1",
+                    data="",
+                    challenge="123456",
+                    session="sess1",
+                    serial="serial1",
+                    timestamp=now,
+                    expiration=now - dt.timedelta(minutes=5),
+                    received_count=0,
+                    otp_valid=False,
+                ),
+                dict(
+                    transaction_id="tx2",
+                    data="",
+                    challenge="abcdef",
+                    session="sess2",
+                    serial="serial2",
+                    timestamp=now,
+                    expiration=now - dt.timedelta(minutes=5),
+                    received_count=0,
+                    otp_valid=False,
+                )
+            ]
+        )
+        db.session.commit()
+
+        start_cnt = db.session.execute(
+            select(func.count()).select_from(Challenge)
+        ).scalar_one()
+        self.assertEqual(
+            start_cnt, 2,
+            f"expected two challenges before deletion, found {start_cnt}")
+
+        # delete the challenge cache
+        with self.app.test_request_context(
+                '/system/challengecache',
+                method='DELETE',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res.data)
+
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertTrue(result["value"]["status"], result)
+
+        # verify that the table is empty
+        remaining = db.session.execute(
+            select(func.count()).select_from(Challenge)
+        ).scalar_one()
+        self.assertEqual(
+            remaining, 0,
+            f"challenge-cache still contains {remaining} rows")
 
     def test_30_realms_with_nodes(self):
         nd1_uuid = "8e4272a9-9037-40df-8aa3-976e4a04b5a9"

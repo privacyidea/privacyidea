@@ -490,7 +490,7 @@ def list_nodes():
 
 @system_blueprint.route("/usercache", methods=['DELETE'])
 @admin_required
-def delete_user_cache():
+def delete_user_cache_api():
     """
     Delete the user cache. It will delete all entries in the user cache.
 
