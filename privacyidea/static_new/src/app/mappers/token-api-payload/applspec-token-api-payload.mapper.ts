@@ -1,5 +1,6 @@
 import {
   TokenApiPayloadMapper,
+  TokenEnrollmentPayload,
   TokenEnrollmentData,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
@@ -10,6 +11,12 @@ export interface ApplspecEnrollmentData extends TokenEnrollmentData {
   generateOnServer?: boolean;
   otpKey?: string;
   serviceId?: string;
+}
+
+export interface ApplspecEnrollmentPayload extends TokenEnrollmentPayload {
+  otpkey: string | null;
+  genkey: 0 | 1;
+  service_id?: string;
 }
 
 @Injectable({ providedIn: 'root' })

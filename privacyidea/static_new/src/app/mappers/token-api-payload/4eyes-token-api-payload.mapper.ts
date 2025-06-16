@@ -1,5 +1,6 @@
 import {
   TokenApiPayloadMapper,
+  TokenEnrollmentPayload,
   TokenEnrollmentData,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
@@ -14,6 +15,12 @@ export interface FourEyesEnrollmentData extends TokenEnrollmentData {
   }[]; // Mapped to '4eyes' object in payload
   onlyAddToRealm?: boolean;
   userRealm?: string; // Used if onlyAddToRealm is true
+}
+
+export interface FourEyesEnrollmentPayload extends TokenEnrollmentPayload {
+  separator: string;
+  '4eyes': { [key: string]: { count: number; selected: boolean } };
+  realm?: string; // Conditionally set if onlyAddToRealm is true
 }
 
 @Injectable({ providedIn: 'root' })

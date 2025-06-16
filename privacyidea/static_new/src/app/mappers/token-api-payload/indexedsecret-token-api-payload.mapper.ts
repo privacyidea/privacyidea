@@ -1,5 +1,6 @@
 import {
   TokenApiPayloadMapper,
+  TokenEnrollmentPayload,
   TokenEnrollmentData,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
@@ -8,6 +9,10 @@ import { Injectable } from '@angular/core';
 export interface IndexedSecretEnrollmentData extends TokenEnrollmentData {
   type: 'indexedsecret';
   otpKey?: string;
+}
+
+export interface IndexedSecretEnrollmentPayload extends TokenEnrollmentPayload {
+  otpkey?: string;
 }
 
 @Injectable({ providedIn: 'root' })

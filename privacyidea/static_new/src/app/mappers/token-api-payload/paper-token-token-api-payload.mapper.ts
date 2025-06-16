@@ -1,5 +1,6 @@
 import {
   TokenApiPayloadMapper,
+  TokenEnrollmentPayload,
   TokenEnrollmentData,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
@@ -9,6 +10,11 @@ export interface PaperTokenEnrollmentData extends TokenEnrollmentData {
   type: 'papertoken';
   otpLength?: number;
   otpCount?: number; // Number of OTPs to generate for the paper token
+}
+
+export interface PaperTokenEnrollmentPayload extends TokenEnrollmentPayload {
+  otplen?: number; // Assuming API field name if different from otpLength
+  otpcount?: number; // Assuming API field name if different from otpCount
 }
 
 @Injectable({ providedIn: 'root' })

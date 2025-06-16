@@ -1,5 +1,6 @@
 import {
   TokenApiPayloadMapper,
+  TokenEnrollmentPayload,
   TokenEnrollmentData,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
@@ -9,6 +10,10 @@ export interface PushEnrollmentData extends TokenEnrollmentData {
   type: 'push';
   // No type-specific fields from EnrollmentOptions are directly used for params in TokenService.
   // genkey=1 is hardcoded.
+}
+
+export interface PushEnrollmentPayload extends TokenEnrollmentPayload {
+  genkey: 1;
 }
 
 @Injectable({ providedIn: 'root' })

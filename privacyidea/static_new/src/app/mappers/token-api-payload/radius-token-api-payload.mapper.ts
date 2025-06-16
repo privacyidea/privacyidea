@@ -1,5 +1,6 @@
 import {
   TokenApiPayloadMapper,
+  TokenEnrollmentPayload,
   TokenEnrollmentData,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
@@ -9,6 +10,11 @@ export interface RadiusEnrollmentData extends TokenEnrollmentData {
   type: 'radius';
   radiusServerConfiguration?: string; // Mapped to 'radius.identifier'
   radiusUser?: string; // Mapped to 'radius.user'
+}
+
+export interface RadiusEnrollmentPayload extends TokenEnrollmentPayload {
+  'radius.identifier'?: string;
+  'radius.user'?: string;
 }
 
 @Injectable({ providedIn: 'root' })

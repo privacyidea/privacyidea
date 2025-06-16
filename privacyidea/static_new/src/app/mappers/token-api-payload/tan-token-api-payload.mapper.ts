@@ -1,5 +1,6 @@
 import {
   TokenApiPayloadMapper,
+  TokenEnrollmentPayload,
   TokenEnrollmentData,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
@@ -9,6 +10,11 @@ export interface TanEnrollmentData extends TokenEnrollmentData {
   type: 'tan';
   tanCount?: number; // Corresponds to 'tancount' in EnrollTanComponent
   tanLength?: number; // Corresponds to 'tanlength' in EnrollTanComponent
+}
+
+export interface TanEnrollmentPayload extends TokenEnrollmentPayload {
+  tancount?: number;
+  tanlength?: number;
 }
 
 @Injectable({ providedIn: 'root' })

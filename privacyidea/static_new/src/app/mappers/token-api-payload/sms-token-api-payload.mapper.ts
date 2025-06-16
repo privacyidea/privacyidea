@@ -1,5 +1,6 @@
 import {
   TokenApiPayloadMapper,
+  TokenEnrollmentPayload,
   TokenEnrollmentData,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
@@ -10,6 +11,12 @@ export interface SmsEnrollmentData extends TokenEnrollmentData {
   smsGateway?: string; // Mapped to 'sms.identifier'
   phoneNumber?: string;
   readNumberDynamically?: boolean; // Mapped to 'dynamic_phone'
+}
+
+export interface SmsEnrollmentPayload extends TokenEnrollmentPayload {
+  'sms.identifier'?: string;
+  phone: string | null;
+  dynamic_phone?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })

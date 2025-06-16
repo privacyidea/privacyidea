@@ -1,6 +1,7 @@
 import { RemoteServer } from '../../services/privavyidea-server/privacyidea-server.service';
 import {
   TokenApiPayloadMapper,
+  TokenEnrollmentPayload,
   TokenEnrollmentData,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
@@ -14,6 +15,15 @@ export interface RemoteEnrollmentData extends TokenEnrollmentData {
   remoteRealm: string;
   remoteResolver: string; // Keep original type
   checkPinLocally: boolean;
+}
+
+export interface RemoteEnrollmentPayload extends TokenEnrollmentPayload {
+  'remote.server_id': string | null; // Extracted from RemoteServer object
+  'remote.serial': string;
+  'remote.user': string;
+  'remote.realm': string;
+  'remote.resolver': string;
+  'remote.local_checkpin': boolean;
 }
 
 @Injectable({ providedIn: 'root' })

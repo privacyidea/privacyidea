@@ -1,5 +1,6 @@
 import {
   TokenApiPayloadMapper,
+  TokenEnrollmentPayload,
   TokenEnrollmentData,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
@@ -8,6 +9,10 @@ import { Injectable } from '@angular/core';
 export interface YubicoEnrollmentData extends TokenEnrollmentData {
   type: 'yubico';
   yubicoIdentifier?: string; // This will be mapped to 'yubico.tokenid' in toApiPayload
+}
+
+export interface YubicoEnrollmentPayload extends TokenEnrollmentPayload {
+  'yubico.tokenid'?: string;
 }
 
 @Injectable({ providedIn: 'root' })

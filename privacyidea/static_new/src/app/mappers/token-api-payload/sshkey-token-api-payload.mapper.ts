@@ -1,5 +1,6 @@
 import {
   TokenApiPayloadMapper,
+  TokenEnrollmentPayload,
   TokenEnrollmentData,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
@@ -8,6 +9,10 @@ import { Injectable } from '@angular/core';
 export interface SshkeyEnrollmentData extends TokenEnrollmentData {
   type: 'sshkey';
   sshPublicKey?: string; // Corresponds to 'sshkey' in API payload (from TokenService)
+}
+
+export interface SshkeyEnrollmentPayload extends TokenEnrollmentPayload {
+  sshkey?: string;
 }
 
 @Injectable({ providedIn: 'root' })

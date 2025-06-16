@@ -1,5 +1,6 @@
 import {
   TokenApiPayloadMapper,
+  TokenEnrollmentPayload,
   TokenEnrollmentData,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
@@ -9,6 +10,8 @@ export interface TiqrEnrollmentData extends TokenEnrollmentData {
   type: 'tiqr';
   // No type-specific fields identified from EnrollTiqrComponent or TokenService handling
 }
+
+export interface TiqrEnrollmentPayload extends TokenEnrollmentPayload {}
 
 @Injectable({ providedIn: 'root' })
 export class TiqrApiPayloadMapper

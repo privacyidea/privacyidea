@@ -1,5 +1,6 @@
 import {
   TokenApiPayloadMapper,
+  TokenEnrollmentPayload,
   TokenEnrollmentData,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
@@ -11,6 +12,13 @@ export interface CertificateEnrollmentData extends TokenEnrollmentData {
   certTemplate?: string;
   pem?: string;
   // genkey=1 is hardcoded in TokenService
+}
+
+export interface CertificateEnrollmentPayload extends TokenEnrollmentPayload {
+  genkey: 1;
+  ca?: string;
+  template?: string;
+  pem?: string;
 }
 
 @Injectable({ providedIn: 'root' })

@@ -1,5 +1,6 @@
 import {
   TokenApiPayloadMapper,
+  TokenEnrollmentPayload,
   TokenEnrollmentData,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
@@ -8,6 +9,10 @@ import { Injectable } from '@angular/core';
 export interface QuestionEnrollmentData extends TokenEnrollmentData {
   type: 'question';
   answers?: Record<string, string>; // Mapped to 'questions' in payload
+}
+
+export interface QuestionEnrollmentPayload extends TokenEnrollmentPayload {
+  questions?: Record<string, string>;
 }
 
 @Injectable({ providedIn: 'root' })

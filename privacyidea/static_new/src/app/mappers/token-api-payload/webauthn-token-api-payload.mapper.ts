@@ -1,5 +1,6 @@
 import {
   TokenApiPayloadMapper,
+  TokenEnrollmentPayload,
   TokenEnrollmentData,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
@@ -8,6 +9,10 @@ import { Injectable } from '@angular/core';
 export interface WebAuthnEnrollmentData extends TokenEnrollmentData {
   type: 'webauthn';
   credential_id?: string;
+}
+
+export interface WebAuthnEnrollmentPayload extends TokenEnrollmentPayload {
+  credential_id?: string; // If present, all fields from WebAuthnEnrollmentData are part of payload
 }
 
 @Injectable({ providedIn: 'root' })

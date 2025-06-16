@@ -1,5 +1,6 @@
 import {
   TokenApiPayloadMapper,
+  TokenEnrollmentPayload,
   TokenEnrollmentData,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
@@ -9,6 +10,11 @@ export interface EmailEnrollmentData extends TokenEnrollmentData {
   type: 'email';
   emailAddress?: string;
   readEmailDynamically?: boolean;
+}
+
+export interface EmailEnrollmentPayload extends TokenEnrollmentPayload {
+  email?: string; // Set if readEmailDynamically is false
+  dynamic_email: boolean;
 }
 
 @Injectable({ providedIn: 'root' })

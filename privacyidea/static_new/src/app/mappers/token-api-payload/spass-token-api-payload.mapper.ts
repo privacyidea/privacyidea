@@ -1,5 +1,6 @@
 import {
   TokenApiPayloadMapper,
+  TokenEnrollmentPayload,
   TokenEnrollmentData,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
@@ -9,6 +10,8 @@ export interface SpassEnrollmentData extends TokenEnrollmentData {
   type: 'spass';
   // No type-specific fields identified from EnrollSpassComponent or TokenService handling
 }
+
+export interface SpassEnrollmentPayload extends TokenEnrollmentPayload {}
 
 @Injectable({ providedIn: 'root' })
 export class SpassApiPayloadMapper

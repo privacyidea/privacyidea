@@ -1,5 +1,6 @@
 import {
   TokenApiPayloadMapper,
+  TokenEnrollmentPayload,
   TokenEnrollmentData,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
@@ -11,6 +12,12 @@ export interface VascoEnrollmentData extends TokenEnrollmentData {
   vascoSerial?: string; // Used if useVascoSerial is true
   otpKey?: string;
   // genkey=0 is hardcoded in TokenService
+}
+
+export interface VascoEnrollmentPayload extends TokenEnrollmentPayload {
+  serial?: string; // This is the Vasco device serial, conditionally set
+  otpkey?: string;
+  genkey: 0;
 }
 
 @Injectable({ providedIn: 'root' })

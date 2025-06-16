@@ -1,5 +1,6 @@
 import {
   TokenApiPayloadMapper,
+  TokenEnrollmentPayload,
   TokenEnrollmentData,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
@@ -10,6 +11,14 @@ export interface DaypasswordEnrollmentData extends TokenEnrollmentData {
   otpKey?: string;
   otpLength?: number;
   hashAlgorithm?: string;
+  timeStep?: number; // from component this is number | string
+  generateOnServer?: boolean; // This is from component options, influences otpKey
+}
+
+export interface DaypasswordEnrollmentPayload extends TokenEnrollmentPayload {
+  otpkey?: string; // Set if generateOnServer is false
+  otplen?: number;
+  hashlib?: string;
   timeStep?: number;
 }
 

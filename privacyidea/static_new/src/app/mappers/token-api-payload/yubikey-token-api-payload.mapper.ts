@@ -1,5 +1,6 @@
 import {
   TokenApiPayloadMapper,
+  TokenEnrollmentPayload,
   TokenEnrollmentData,
 } from './_token-api-payload.mapper';
 
@@ -8,6 +9,11 @@ export interface YubikeyEnrollmentData extends TokenEnrollmentData {
   otpKey: string | null;
   otpLength: number | null;
 }
+export interface YubikeyEnrollmentPayload extends TokenEnrollmentPayload {
+  otpkey: string | null;
+  otplen: number | null;
+}
+
 export class YubikeyApiPayloadMapper
   implements TokenApiPayloadMapper<YubikeyEnrollmentData>
 {

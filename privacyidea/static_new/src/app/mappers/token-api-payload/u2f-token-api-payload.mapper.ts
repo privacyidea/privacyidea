@@ -1,5 +1,6 @@
 import {
   TokenApiPayloadMapper,
+  TokenEnrollmentPayload,
   TokenEnrollmentData,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
@@ -10,6 +11,9 @@ export interface U2fEnrollmentData extends TokenEnrollmentData {
   // Specific U2F parameters (like u2fRegisterRequest) are handled post-initial enrollment
   // or would be part of a more complex payload structure if this mapper handled the full flow.
 }
+
+export interface U2fEnrollmentPayload extends TokenEnrollmentPayload {}
+
 @Injectable({ providedIn: 'root' })
 export class U2fApiPayloadMapper
   implements TokenApiPayloadMapper<U2fEnrollmentData>
