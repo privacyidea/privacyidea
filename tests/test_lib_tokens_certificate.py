@@ -2,6 +2,8 @@
 This test file tests the lib.tokens.certificatetoken
 """
 import base64
+import json
+
 from cryptography import x509
 from cryptography.hazmat.primitives.serialization import pkcs12
 import pytest
@@ -10,7 +12,7 @@ from testfixtures import LogCapture
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.models import Token
 from privacyidea.lib.caconnector import save_caconnector
-from privacyidea.lib.token import get_tokens, remove_token
+from privacyidea.lib.token import get_tokens, remove_token, import_tokens
 from privacyidea.lib.error import ParameterError, privacyIDEAError
 from privacyidea.lib.utils import int_to_hex
 from privacyidea.lib.tokens.certificatetoken import (parse_chainfile, ACTION,
@@ -310,6 +312,7 @@ class CertificateTokenTestCase(MyTestCase):
     serial1 = "CRT0001"
     serial2 = "CRT0002"
     serial3 = "CRT0003"
+    serial4 = "CRT0004"
 
     def test_001_parse_cert_chain(self):
         chain = parse_chainfile("tests/testdata/attestation/yubico.pem")
@@ -570,6 +573,71 @@ class CertificateTokenTestCase(MyTestCase):
         p = CertificateTokenClass.get_default_settings(g, params)
         self.assertEqual(["/etc/privacyidea/trusted_attestation_ca"],
                          p.get(ACTION.TRUSTED_CA_PATH))
+
+    def test_06_certificate_token_export(self):
+        # Set up the certificate token for testing
+        db_token = Token(self.serial4, tokentype="certificate")
+        db_token.save()
+        token = CertificateTokenClass(db_token)
+        token.update({"certificate": CERT, "description": "this is a certificate token export test"})
+
+
+        # Test that all expected keys are present in the exported dictionary
+        exported_data = token.export_token()
+        expected_keys = [
+            "serial", "type", "description", "otpkey", "issuer",
+        ]
+        self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
+
+        expected_tokeninfo_keys = ["tokenkind", "certificate"]
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+
+        # Test that the exported values match the token's data
+        exported_data = token.export_token()
+        self.assertEqual(exported_data["serial"], self.serial4)
+        self.assertEqual(exported_data["type"], "certificate")
+        self.assertEqual(exported_data["description"], "this is a certificate token export test")
+        self.assertEqual(exported_data["otpkey"], '')
+        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
+        self.assertEqual(exported_data["issuer"], "privacyIDEA")
+        self.assertEqual(exported_data["tokeninfo"]["certificate"], CERT)
+
+        # Clean up
+        remove_token(token.token.serial)
+
+    def test_07_certificate_token_import(self):
+        # Define the token data to be imported
+        token_data = [{
+            "serial": "CRT0001",
+            "type": "certificate",
+            "description": "this is a certificate token export test",
+            "issuer": "privacyIDEA",
+            "tokeninfo": {"certificate": CERT, "tokenkind": "software"}
+        }]
+
+        # Import the token
+        import_tokens(json.dumps(token_data))
+
+        # Retrieve the imported token
+        token = get_tokens(serial=token_data[0]["serial"])[0]
+
+        # Verify that the token data matches the imported data
+        self.assertTrue(token.token.serial == self.serial1, token)
+        self.assertTrue(token.token.tokentype == "certificate",
+                        token.token.tokentype)
+        self.assertTrue(token.type == "certificate", token)
+        class_prefix = token.get_class_prefix()
+        self.assertTrue(class_prefix == "CRT", class_prefix)
+        self.assertEqual(token.get_class_type(), "certificate")
+
+        detail = token.get_init_detail()
+        self.assertEqual(detail.get("certificate"), CERT)
+        # Check that the certificate is available in the token details
+        cert = token.get_tokeninfo("certificate")
+        self.assertEqual(cert, CERT)
+
+        # Clean up
+        remove_token(token.token.serial)
 
 
 class MSCACertTestCase(MyTestCase):

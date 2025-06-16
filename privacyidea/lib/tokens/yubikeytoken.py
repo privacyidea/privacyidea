@@ -489,3 +489,11 @@ h={h}
             raise EnrollmentError("The otpkey must be 32 characters long for yubikey token in AES mode")
         TokenClass.update(self, update_params, reset_failcount)
         self.add_tokeninfo("tokenkind", TOKENKIND.HARDWARE)
+
+    def import_token(self, token_information: dict):
+        """
+        Import a yubikey token.
+        """
+        TokenClass.import_token(self, token_information)
+        self.token.otplen = int(token_information.get("otplen", 44))
+        self.token.save()

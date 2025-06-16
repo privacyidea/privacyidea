@@ -33,27 +33,29 @@ The code is tested in test_lib_tokens_certificate.py.
 
 import logging
 import pathlib
-from cryptography import x509
-from cryptography.x509 import (load_pem_x509_certificate, load_pem_x509_csr,
-                               Certificate)
-from cryptography.hazmat.primitives.asymmetric import padding, rsa
-from cryptography.hazmat.primitives import serialization, hashes
-from cryptography.hazmat.primitives.serialization import pkcs12, BestAvailableEncryption
-from cryptography.exceptions import InvalidSignature
 import secrets
 import traceback
+from datetime import datetime
 
-from privacyidea.lib.utils import b64encode_and_unicode, to_byte_string
-from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE
-from privacyidea.lib.log import log_with
+from cryptography import x509
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
+from cryptography.hazmat.primitives.serialization import pkcs12, BestAvailableEncryption
+from cryptography.x509 import (load_pem_x509_certificate, load_pem_x509_csr,
+                               Certificate)
+
 from privacyidea.api.lib.utils import getParam, get_optional
-from privacyidea.lib.caconnector import get_caconnector_object, get_caconnector_list
-from privacyidea.lib.user import get_user_from_param
-from privacyidea.lib.utils import determine_logged_in_userparams
-from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib import _
-from privacyidea.lib.policy import SCOPE, ACTION as BASE_ACTION, GROUP, Match
+from privacyidea.lib.caconnector import get_caconnector_object, get_caconnector_list
+from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import privacyIDEAError, CSRError, CSRPending, CAError
+from privacyidea.lib.log import log_with
+from privacyidea.lib.policy import SCOPE, ACTION as BASE_ACTION, GROUP, Match
+from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE
+from privacyidea.lib.user import get_user_from_param
+from privacyidea.lib.utils import b64encode_and_unicode, to_byte_string
+from privacyidea.lib.utils import determine_logged_in_userparams
 
 optional = True
 required = False
@@ -682,3 +684,16 @@ class CertificateTokenClass(TokenClass):
         log.info("CRL {0!s} created.".format(crl))
 
         return revoked
+
+    def import_token(self, token_information: dict):
+        """
+        Imports a certificate token.
+        """
+        try:
+            self.token.type = token_information["type"]
+            self.token.description = token_information["description"]
+            self.add_tokeninfo_dict(token_information["tokeninfo"])
+            self.add_tokeninfo("import_date", datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"))
+            self.save()
+        except Exception as exx:
+            log.error(f'Failed to import token: {exx}')
