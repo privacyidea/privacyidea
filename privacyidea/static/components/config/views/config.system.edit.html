@@ -91,7 +91,7 @@
 
     <div class="form-group">
         <label for="UserCacheExpiration"
-               class="col-sm-7 control-label" translate>User Cache
+               class="col-sm-5 control-label" translate>User Cache
             expiration in seconds
         </label>
 
@@ -101,6 +101,14 @@
                     class="btn btn-primary"
                     translate>
             Delete User Cache
+            </button>
+        </div>
+        <div class="col-sm-2">
+            <button type="button"
+                    ng-click="deleteChallengeCache()"
+                    class="btn btn-primary"
+                    translate>
+            Delete Challenge Cache
             </button>
         </div>
         <div class="col-sm-3">

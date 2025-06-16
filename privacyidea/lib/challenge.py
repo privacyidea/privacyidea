@@ -24,9 +24,11 @@ It is used by the lib.tokenclass
 
 The method is tested in test_lib_challenges
 """
-
+import datetime
 import logging
+import dateutil.tz
 from .log import log_with
+from .sqlutils import delete_matching_rows
 from ..models import Challenge, db
 
 log = logging.getLogger(__name__)
@@ -176,3 +178,30 @@ def delete_challenges(serial: str = None, transaction_id: str = None) -> int:
     for challenge in challenges:
         challenge.delete()
     return len(challenges)
+
+def _build_challenge_criterion(age):
+    """
+    Return an SQLAlchemy binary expression selecting the right rows.
+
+    :param age: If given, delete challenges older than this many minutes.
+    :return: SQLAlchemy binary expression
+    """
+    if age:
+        cutoff = datetime.datetime.utcnow() - datetime.timedelta(minutes=age)
+        return Challenge.timestamp < cutoff
+    else:
+        cutoff = datetime.datetime.now(tz=dateutil.tz.tzlocal())
+        return Challenge.expiration < cutoff
+
+
+def cleanup_expired_challenges(chunksize, age):
+    """
+    Delete all expired challenges from the challenge table
+
+    :param chunksize: Delete entries in chunks of the given size to avoid deadlocks
+    :param age: Instead of deleting expired challenges, delete challenge entries older than these number of minutes.
+    :return: number of deleted entries
+    """
+    criterion = _build_challenge_criterion(age)
+    return delete_matching_rows(db.session, Challenge.__table__, criterion, chunksize)
+

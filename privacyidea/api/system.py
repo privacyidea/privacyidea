@@ -73,7 +73,8 @@ from privacyidea.lib.auth import get_db_admins
 from privacyidea.lib.crypto import geturandom, set_hsm_password, get_hsm
 from privacyidea.lib.importotp import GPGImport
 from privacyidea.lib.utils import hexlify_and_unicode, b64encode_and_unicode
-
+from privacyidea.lib.usercache import delete_user_cache
+from privacyidea.lib.challenge import cleanup_expired_challenges
 
 log = logging.getLogger(__name__)
 
@@ -512,7 +513,35 @@ def delete_user_cache():
           "version": "privacyIDEA unknown"
         }
     """
-    from privacyidea.lib.usercache import delete_user_cache
-    rowcount = delete_user_cache()
-    g.audit_object.log({"success": True, "info": f"Deleted {rowcount} entries from user cache"})
+    row_count = delete_user_cache()
+    g.audit_object.log({"success": True, "info": f"Deleted {row_count} entries from user cache"})
+    return send_result({"status": True})
+
+@system_blueprint.route("/challengecache", methods=['DELETE'])
+@admin_required
+def delete_challenge_cache():
+    """
+    Delete the challenge cache. It will delete all entries in the challenge cache.
+
+    :>json bool status: Status of the request
+    :reqheader PI-Authorization: The authorization token
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+        HTTP/1.1 200 OK
+        Content-Type: application/json
+
+        {
+          "id": 1,
+          "jsonrpc": "2.0",
+          "result": {
+            "status": true
+          },
+          "version": "privacyIDEA unknown"
+        }
+    """
+    row_count = cleanup_expired_challenges(chunksize=None, age=None)
+    g.audit_object.log({"success": True, "info": f"Deleted {row_count} entries from challenge cache"})
     return send_result({"status": True})

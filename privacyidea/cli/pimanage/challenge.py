@@ -18,13 +18,11 @@
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
-import dateutil.tz
 import click
 from flask.cli import AppGroup
 
-from privacyidea.models import Challenge, db
-from privacyidea.lib.sqlutils import delete_matching_rows
-
+from privacyidea.models import Challenge
+from privacyidea.lib.challenge import _build_challenge_criterion, cleanup_expired_challenges
 
 challenge_cli = AppGroup("challenge", help="Manage challenge data")
 
@@ -46,16 +44,15 @@ def cleanup_challenge(chunksize, age, dryrun=False):
         # Delete challenges created earlier than age minutes ago
         now = datetime.datetime.utcnow() - datetime.timedelta(minutes=age)
         click.echo("Deleting challenges older than {0!s}".format(now))
-        criterion = Challenge.timestamp < now
     else:
         # Delete expired challenges
         click.echo("Deleting expired challenges.")
-        now = datetime.datetime.now(tz=dateutil.tz.tzlocal())
-        criterion = Challenge.expiration < now
+
+    criterion = _build_challenge_criterion(age)
 
     if dryrun:
         r = Challenge.query.filter(criterion).count()
         click.echo("Would delete {0!s} challenge entries.".format(r))
     else:
-        r = delete_matching_rows(db.session, Challenge.__table__, criterion, chunksize)
+        r = cleanup_expired_challenges(criterion, chunksize)
         click.echo("{0!s} entries deleted.".format(r))
