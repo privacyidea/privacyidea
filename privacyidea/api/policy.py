@@ -110,7 +110,7 @@ def patch_policy_name_api(name):
     :jsonparam name: New name to assign to the policy (in the JSON body).
     :return: Database ID of the renamed policy.
     """
-    new_name = get_required(, "name")
+    new_name = get_required(request.all_data, "name")
     check_policy_name(new_name)
 
     result = rename_policy(name=name, new_name=new_name)
