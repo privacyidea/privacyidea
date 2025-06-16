@@ -11,17 +11,19 @@ import {
 import { MatCheckbox } from '@angular/material/checkbox';
 import { ErrorStateMatcher } from '@angular/material/core';
 import {
-  BasicEnrollmentOptions,
   EnrollmentResponse,
   TokenService,
 } from '../../../../services/token/token.service';
-import { Observable } from 'rxjs';
 
-export interface VascoEnrollmentOptions extends BasicEnrollmentOptions {
+import { Observable } from 'rxjs';
+import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import { VascoApiPayloadMapper } from '../../../../mappers/token-api-payload/vasco-token-api-payload.mapper';
+
+export interface VascoEnrollmentOptions extends TokenEnrollmentData {
   type: 'vasco';
-  otpKey?: string; // Optional, wenn useVascoSerial true ist
-  useVascoSerial: boolean;
-  vascoSerial?: string; // Optional, wenn useVascoSerial false ist oder otpKey verwendet wird
+  otpKey?: string;
+  useVascoSerial: boolean; // Keep original type
+  vascoSerial?: string;
 }
 
 export class VascoErrorStateMatcher implements ErrorStateMatcher {
@@ -57,7 +59,7 @@ export class EnrollVascoComponent implements OnInit {
   }>();
   @Output() clickEnrollChange = new EventEmitter<
     (
-      basicOptions: BasicEnrollmentOptions,
+      basicOptions: TokenEnrollmentData,
     ) => Observable<EnrollmentResponse> | undefined
   >();
 
@@ -75,7 +77,10 @@ export class EnrollVascoComponent implements OnInit {
 
   vascoErrorStatematcher = new VascoErrorStateMatcher();
 
-  constructor(private tokenService: TokenService) {}
+  constructor(
+    private tokenService: TokenService,
+    private enrollmentMapper: VascoApiPayloadMapper,
+  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({
@@ -117,7 +122,7 @@ export class EnrollVascoComponent implements OnInit {
   }
 
   onClickEnroll = (
-    basicOptions: BasicEnrollmentOptions,
+    basicOptions: TokenEnrollmentData,
   ): Observable<EnrollmentResponse> | undefined => {
     if (this.vascoForm.invalid) {
       this.vascoForm.markAllAsTouched();
@@ -135,7 +140,9 @@ export class EnrollVascoComponent implements OnInit {
     } else {
       enrollmentData.otpKey = this.otpKeyControl.value ?? '';
     }
-
-    return this.tokenService.enrollToken(enrollmentData);
+    return this.tokenService.enrollToken({
+      data: enrollmentData,
+      mapper: this.enrollmentMapper,
+    });
   };
 }

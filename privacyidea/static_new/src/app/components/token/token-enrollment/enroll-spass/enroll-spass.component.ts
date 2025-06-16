@@ -6,13 +6,15 @@ import {
   ReactiveFormsModule,
 } from '@angular/forms';
 import {
-  BasicEnrollmentOptions,
   EnrollmentResponse,
   TokenService,
 } from '../../../../services/token/token.service';
-import { Observable } from 'rxjs';
 
-export interface SpassEnrollmentOptions extends BasicEnrollmentOptions {
+import { Observable } from 'rxjs';
+import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import { SpassApiPayloadMapper } from '../../../../mappers/token-api-payload/spass-token-api-payload.mapper';
+
+export interface SpassEnrollmentOptions extends TokenEnrollmentData {
   type: 'spass';
   // No type-specific fields for initialization via EnrollmentOptions
 }
@@ -33,13 +35,16 @@ export class EnrollSpassComponent implements OnInit {
   }>();
   @Output() clickEnrollChange = new EventEmitter<
     (
-      basicOptions: BasicEnrollmentOptions,
+      basicOptions: TokenEnrollmentData,
     ) => Observable<EnrollmentResponse> | undefined
   >();
 
   spassForm = new FormGroup({});
 
-  constructor(private tokenService: TokenService) {}
+  constructor(
+    private tokenService: TokenService,
+    private enrollmentMapper: SpassApiPayloadMapper,
+  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({});
@@ -47,12 +52,15 @@ export class EnrollSpassComponent implements OnInit {
   }
 
   onClickEnroll = (
-    basicOptions: BasicEnrollmentOptions,
+    basicOptions: TokenEnrollmentData,
   ): Observable<EnrollmentResponse> | undefined => {
     const enrollmentData: SpassEnrollmentOptions = {
       ...basicOptions,
       type: 'spass',
     };
-    return this.tokenService.enrollToken(enrollmentData);
+    return this.tokenService.enrollToken({
+      data: enrollmentData,
+      mapper: this.enrollmentMapper,
+    });
   };
 }

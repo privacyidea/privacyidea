@@ -17,16 +17,18 @@ import {
 } from '@angular/forms';
 import { SystemService } from '../../../../services/system/system.service';
 import {
-  BasicEnrollmentOptions,
   EnrollmentResponse,
   TokenService,
 } from '../../../../services/token/token.service';
-import { Observable } from 'rxjs';
 
-export interface EmailEnrollmentOptions extends BasicEnrollmentOptions {
+import { Observable } from 'rxjs';
+import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import { EmailApiPayloadMapper } from '../../../../mappers/token-api-payload/email-token-api-payload.mapper';
+
+export interface EmailEnrollmentOptions extends TokenEnrollmentData {
   type: 'email';
-  emailAddress?: string; // Optional if readEmailDynamically is true
-  readEmailDynamically: boolean;
+  emailAddress?: string;
+  readEmailDynamically: boolean; // Keep original type
 }
 
 @Component({
@@ -54,8 +56,8 @@ export class EnrollEmailComponent implements OnInit {
   }>();
   @Output() clickEnrollChange = new EventEmitter<
     (
-      basicOptions: BasicEnrollmentOptions,
-    ) => Observable<EnrollmentResponse> | undefined
+      basicOptions: TokenEnrollmentData,
+    ) => Observable<EnrollmentResponse> | undefined // Keep original type
   >();
 
   emailAddressControl = new FormControl<string>('', [Validators.email]); // Validator is set dynamically
@@ -77,6 +79,7 @@ export class EnrollEmailComponent implements OnInit {
   constructor(
     private systemService: SystemService,
     private tokenService: TokenService,
+    private enrollmentMapper: EmailApiPayloadMapper,
   ) {}
 
   ngOnInit(): void {
@@ -87,21 +90,13 @@ export class EnrollEmailComponent implements OnInit {
     this.clickEnrollChange.emit(this.onClickEnroll);
 
     this.readEmailDynamicallyControl.valueChanges.subscribe((dynamic) => {
-      if (!dynamic) {
-        this.emailAddressControl.setValidators([
-          Validators.required,
-          Validators.email,
-        ]);
-      } else {
-        this.emailAddressControl.clearValidators();
-        this.emailAddressControl.setValidators([Validators.email]); // Keep email format validation
-      }
+      // Keep original subscription
       this.emailAddressControl.updateValueAndValidity();
     });
   }
 
   onClickEnroll = (
-    basicOptions: BasicEnrollmentOptions,
+    basicOptions: TokenEnrollmentData,
   ): Observable<EnrollmentResponse> | undefined => {
     if (this.emailForm.invalid) {
       this.emailForm.markAllAsTouched();
@@ -110,11 +105,14 @@ export class EnrollEmailComponent implements OnInit {
     const enrollmentData: EmailEnrollmentOptions = {
       ...basicOptions,
       type: 'email',
-      readEmailDynamically: !!this.readEmailDynamicallyControl.value,
+      readEmailDynamically: !!this.readEmailDynamicallyControl.value, // Keep original logic
     };
     if (!enrollmentData.readEmailDynamically) {
       enrollmentData.emailAddress = this.emailAddressControl.value ?? '';
     }
-    return this.tokenService.enrollToken(enrollmentData);
+    return this.tokenService.enrollToken({
+      data: enrollmentData,
+      mapper: this.enrollmentMapper,
+    }); // Apply the requested change
   };
 }

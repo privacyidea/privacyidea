@@ -6,13 +6,15 @@ import {
   ReactiveFormsModule,
 } from '@angular/forms';
 import {
-  BasicEnrollmentOptions,
   EnrollmentResponse,
   TokenService,
 } from '../../../../services/token/token.service';
-import { Observable } from 'rxjs';
 
-export interface TanEnrollmentOptions extends BasicEnrollmentOptions {
+import { Observable } from 'rxjs';
+import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import { TanApiPayloadMapper } from '../../../../mappers/token-api-payload/tan-token-api-payload.mapper';
+
+export interface TanEnrollmentOptions extends TokenEnrollmentData {
   type: 'tan';
   // No type-specific fields for initialization via EnrollmentOptions
 }
@@ -32,13 +34,16 @@ export class EnrollTanComponent implements OnInit {
   }>();
   @Output() clickEnrollChange = new EventEmitter<
     (
-      basicOptions: BasicEnrollmentOptions,
+      basicOptions: TokenEnrollmentData,
     ) => Observable<EnrollmentResponse> | undefined
   >();
 
   tanForm = new FormGroup({});
 
-  constructor(private tokenService: TokenService) {}
+  constructor(
+    private tokenService: TokenService,
+    private enrollmentMapper: TanApiPayloadMapper,
+  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({});
@@ -46,12 +51,15 @@ export class EnrollTanComponent implements OnInit {
   }
 
   onClickEnroll = (
-    basicOptions: BasicEnrollmentOptions,
+    basicOptions: TokenEnrollmentData,
   ): Observable<EnrollmentResponse> | undefined => {
     const enrollmentData: TanEnrollmentOptions = {
       ...basicOptions,
       type: 'tan',
     };
-    return this.tokenService.enrollToken(enrollmentData);
+    return this.tokenService.enrollToken({
+      data: enrollmentData,
+      mapper: this.enrollmentMapper,
+    });
   };
 }

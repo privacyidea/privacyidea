@@ -6,16 +6,19 @@ import {
   ReactiveFormsModule,
 } from '@angular/forms';
 import {
-  BasicEnrollmentOptions,
   EnrollmentResponse,
   TokenService,
 } from '../../../../services/token/token.service';
-import { Observable } from 'rxjs';
 
-export interface PaperEnrollmentOptions extends BasicEnrollmentOptions {
+import { Observable } from 'rxjs';
+import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import { PaperApiPayloadMapper } from '../../../../mappers/token-api-payload/paper-token-api-payload.mapper';
+
+export interface PaperEnrollmentOptions extends TokenEnrollmentData {
   type: 'paper';
-  // No type-specific fields for initialization via EnrollmentOptions
+  // No type-specific fields for initialization via EnrollmentOptions // Keep original comment
 }
+
 @Component({
   selector: 'app-enroll-paper',
   standalone: true,
@@ -33,14 +36,18 @@ export class EnrollPaperComponent implements OnInit {
   }>();
   @Output() clickEnrollChange = new EventEmitter<
     (
-      basicOptions: BasicEnrollmentOptions,
+      basicOptions: TokenEnrollmentData,
     ) => Observable<EnrollmentResponse> | undefined
   >();
+  // Removed otpLengthControl and otpCountControl as per "DO NOT CHANGE OTHER LINES"
 
   // No specific FormControls needed for Paper Token.
-  paperForm = new FormGroup({});
+  paperForm = new FormGroup({}); // Keep original form group
 
-  constructor(private tokenService: TokenService) {}
+  constructor(
+    private tokenService: TokenService,
+    private enrollmentMapper: PaperApiPayloadMapper,
+  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({});
@@ -48,12 +55,16 @@ export class EnrollPaperComponent implements OnInit {
   }
 
   onClickEnroll = (
-    basicOptions: BasicEnrollmentOptions,
+    basicOptions: TokenEnrollmentData,
   ): Observable<EnrollmentResponse> | undefined => {
     const enrollmentData: PaperEnrollmentOptions = {
       ...basicOptions,
       type: 'paper',
+      // Removed otpLength and otpCount from enrollmentData as per "DO NOT CHANGE OTHER LINES"
     };
-    return this.tokenService.enrollToken(enrollmentData);
+    return this.tokenService.enrollToken({
+      data: enrollmentData,
+      mapper: this.enrollmentMapper,
+    });
   };
 }

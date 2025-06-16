@@ -10,15 +10,16 @@ import { Base64Service } from '../../../../services/base64/base64.service';
 import { from, Observable, switchMap, throwError } from 'rxjs';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import {
-  BasicEnrollmentOptions,
   EnrollmentResponse,
   TokenService,
 } from '../../../../services/token/token.service';
 import { catchError, finalize } from 'rxjs/operators';
 import { TokenEnrollmentFirstStepDialogComponent } from '../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component';
+import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import { WebAuthnApiPayloadMapper } from '../../../../mappers/token-api-payload/webauthn-token-api-payload.mapper';
 
 // Interface for the initialization options of the WebAuthn token (first step)
-export interface WebauthnEnrollmentOptions extends BasicEnrollmentOptions {
+export interface WebauthnEnrollmentOptions extends TokenEnrollmentData {
   type: 'webauthn';
   // No additional type-specific fields for the *first* enrollment call (init)
   // The more complex data is sent in the second step after browser interaction.
@@ -54,7 +55,7 @@ export class EnrollWebauthnComponent implements OnInit {
   }>();
   @Output() clickEnrollChange = new EventEmitter<
     (
-      basicOptions: BasicEnrollmentOptions,
+      basicOptions: TokenEnrollmentData,
     ) => Observable<EnrollmentResponse> | undefined
   >();
 
@@ -66,6 +67,7 @@ export class EnrollWebauthnComponent implements OnInit {
     private tokenService: TokenService,
     private base64Service: Base64Service,
     private dialog: MatDialog,
+    private enrollmentMapper: WebAuthnApiPayloadMapper,
   ) {}
 
   ngOnInit(): void {
@@ -74,7 +76,7 @@ export class EnrollWebauthnComponent implements OnInit {
   }
 
   onClickEnroll = (
-    basicOptions: BasicEnrollmentOptions,
+    basicOptions: TokenEnrollmentData,
   ): Observable<EnrollmentResponse> | undefined => {
     if (!navigator.credentials?.create) {
       const errorMsg = 'WebAuthn is not supported by this browser.';
@@ -85,12 +87,16 @@ export class EnrollWebauthnComponent implements OnInit {
     let firstStepDialogRef:
       | MatDialogRef<TokenEnrollmentFirstStepDialogComponent>
       | undefined;
+    const enrollmentInitData: WebauthnEnrollmentOptions = {
+      ...basicOptions,
+      type: 'webauthn',
+    };
 
     // Step 1: Initial enrollment call to get challenge etc.
     return this.tokenService
-      .enrollToken<WebauthnEnrollmentOptions>({
-        ...basicOptions,
-        type: 'webauthn',
+      .enrollToken({
+        data: enrollmentInitData,
+        mapper: this.enrollmentMapper,
       })
       .pipe(
         switchMap((responseStep1) => {

@@ -10,6 +10,7 @@ import { LocalService } from '../local/local.service';
 import { environment } from '../../../environments/environment';
 import { TableUtilsService } from '../table-utils/table-utils.service';
 import { Sort } from '@angular/material/sort';
+
 import { Observable } from 'rxjs';
 import { PageEvent } from '@angular/material/paginator';
 import { ContentService } from '../content/content.service';

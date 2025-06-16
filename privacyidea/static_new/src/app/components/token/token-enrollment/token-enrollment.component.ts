@@ -52,11 +52,8 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import {
-  BasicEnrollmentOptions,
   EnrollmentResponse,
-  TokenDetails,
   TokenService,
-  TokenType,
 } from '../../../services/token/token.service';
 import { EnrollTotpComponent } from './enroll-totp/enroll-totp.component';
 import { MatDialog } from '@angular/material/dialog';
@@ -89,7 +86,9 @@ import { EnrollPasskeyComponent } from './enroll-passkey/enroll-passkey.componen
 import { VersionService } from '../../../services/version/version.service';
 import { TokenEnrollmentSecondStepDialogComponent } from './token-enrollment-second-step-dialog/token-enrollment-second-step-dialog.component';
 import { ContentService } from '../../../services/content/content.service';
+
 import { Observable } from 'rxjs';
+import { TokenEnrollmentData } from '../../../mappers/token-api-payload/_token-api-payload.mapper';
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -256,11 +255,11 @@ export class TokenEnrollmentComponent {
   });
 
   clickEnroll?: (
-    enrollementOptions: BasicEnrollmentOptions,
+    enrollementOptions: TokenEnrollmentData,
   ) => Observable<EnrollmentResponse> | undefined;
   updateClickEnroll(
     event: (
-      enrollementOptions: BasicEnrollmentOptions,
+      enrollementOptions: TokenEnrollmentData,
     ) => Observable<EnrollmentResponse> | undefined,
   ): void {
     this.clickEnroll = event;
@@ -472,7 +471,7 @@ export class TokenEnrollmentComponent {
       return;
     }
     if (this.clickEnroll) {
-      const basicOptions: BasicEnrollmentOptions = {
+      const basicOptions: TokenEnrollmentData = {
         type: currentTokenType.key,
         description: this.descriptionControl.value.trim(),
         container_serial: this.selectedContainerControl.value?.trim() ?? '',

@@ -9,17 +9,16 @@ import { CommonModule } from '@angular/common';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import {
-  BasicEnrollmentOptions,
   EnrollmentResponse,
   TokenService,
 } from '../../../../services/token/token.service';
-import { Observable } from 'rxjs';
 
-export interface YubikeyEnrollmentOptions extends BasicEnrollmentOptions {
-  type: 'yubikey';
-  otpKey: string | null;
-  otpLength: number | null;
-}
+import { Observable } from 'rxjs';
+import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import {
+  YubikeyApiPayloadMapper,
+  YubikeyEnrollmentData,
+} from '../../../../mappers/token-api-payload/yubikey-token-api-payload.mapper';
 
 @Component({
   selector: 'app-enroll-yubikey',
@@ -40,7 +39,7 @@ export class EnrollYubikeyComponent implements OnInit {
   }>();
   @Output() clickEnrollChange = new EventEmitter<
     (
-      basicOptions: BasicEnrollmentOptions,
+      basicOptions: TokenEnrollmentData,
     ) => Observable<EnrollmentResponse> | undefined
   >();
 
@@ -64,7 +63,10 @@ export class EnrollYubikeyComponent implements OnInit {
     this.tokenService.tokenTypeOptions().find((type) => type.key === 'yubikey')
       ?.text || 'The Yubikey token can be used in AES encryption mode...';
 
-  constructor(private tokenService: TokenService) {}
+  constructor(
+    private tokenService: TokenService,
+    private enrollmentMapper: YubikeyApiPayloadMapper,
+  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({
@@ -82,20 +84,23 @@ export class EnrollYubikeyComponent implements OnInit {
   }
 
   onClickEnroll = (
-    basicOptions: BasicEnrollmentOptions,
+    basicOptions: TokenEnrollmentData,
   ): Observable<EnrollmentResponse> | undefined => {
     if (this.yubikeyForm.invalid) {
       this.yubikeyForm.markAllAsTouched();
       return undefined;
     }
 
-    const enrollmentData: YubikeyEnrollmentOptions = {
+    const enrollmentData: YubikeyEnrollmentData = {
       ...basicOptions,
       type: 'yubikey',
       otpKey: this.otpKeyControl.value,
       otpLength: this.otpLengthControl.value,
     };
 
-    return this.tokenService.enrollToken(enrollmentData);
+    return this.tokenService.enrollToken({
+      data: enrollmentData,
+      mapper: this.enrollmentMapper,
+    });
   };
 }

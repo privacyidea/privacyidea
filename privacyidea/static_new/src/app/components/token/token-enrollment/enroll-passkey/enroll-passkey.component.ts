@@ -8,7 +8,6 @@ import {
 import { NotificationService } from '../../../../services/notification/notification.service';
 import {
   EnrollmentResponse,
-  BasicEnrollmentOptions,
   TokenService,
 } from '../../../../services/token/token.service';
 import { Base64Service } from '../../../../services/base64/base64.service';
@@ -16,16 +15,18 @@ import { from, Observable, switchMap, throwError, of } from 'rxjs';
 import { catchError, finalize, tap } from 'rxjs/operators';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { TokenEnrollmentFirstStepDialogComponent } from '../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component';
+import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import { PasskeyApiPayloadMapper } from '../../../../mappers/token-api-payload/passkey-token-api-payload.mapper';
 
 // Interface for the initialization options of the Passkey token (first step)
-export interface PasskeyEnrollmentOptions extends BasicEnrollmentOptions {
+export interface PasskeyEnrollmentOptions extends TokenEnrollmentData {
   type: 'passkey';
   // No additional type-specific fields for the *first* enrollment call (init)
 }
 
 // Interface for the parameters of the *second* enrollment call (after browser interaction)
 export interface PasskeyRegistrationParams {
-  // Does not extend BasicEnrollmentOptions as it's a specific payload
+  // Does not extend TokenEnrollmentData as it's a specific payload
   type: 'passkey';
   transaction_id: string;
   serial: string;
@@ -54,7 +55,7 @@ export class EnrollPasskeyComponent implements OnInit {
   }>();
   @Output() clickEnrollChange = new EventEmitter<
     (
-      basicOptions: BasicEnrollmentOptions,
+      basicOptions: TokenEnrollmentData,
     ) => Observable<EnrollmentResponse> | undefined
   >();
 
@@ -65,6 +66,7 @@ export class EnrollPasskeyComponent implements OnInit {
     private tokenService: TokenService,
     private base64Service: Base64Service,
     private dialog: MatDialog,
+    private enrollmentMapper: PasskeyApiPayloadMapper,
   ) {}
 
   ngOnInit(): void {
@@ -73,7 +75,7 @@ export class EnrollPasskeyComponent implements OnInit {
   }
 
   onClickEnroll = (
-    basicOptions: BasicEnrollmentOptions,
+    basicOptions: TokenEnrollmentData,
   ): Observable<EnrollmentResponse> | undefined => {
     if (!navigator.credentials?.create) {
       const errorMsg = 'Passkey/WebAuthn is not supported by this browser.';
@@ -84,11 +86,15 @@ export class EnrollPasskeyComponent implements OnInit {
     let firstStepDialogRef:
       | MatDialogRef<TokenEnrollmentFirstStepDialogComponent>
       | undefined;
+    const enrollmentInitData: PasskeyEnrollmentOptions = {
+      ...basicOptions,
+      type: 'passkey',
+    };
 
     return this.tokenService
-      .enrollToken<PasskeyEnrollmentOptions>({
-        ...basicOptions,
-        type: 'passkey',
+      .enrollToken({
+        data: enrollmentInitData,
+        mapper: this.enrollmentMapper,
       })
       .pipe(
         switchMap((responseStep1) => {

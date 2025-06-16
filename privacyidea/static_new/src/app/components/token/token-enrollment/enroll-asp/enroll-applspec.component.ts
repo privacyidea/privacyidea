@@ -19,16 +19,18 @@ import { ServiceIdService } from '../../../../services/service-id/service-id.ser
 import { ErrorStateMatcher, MatOption } from '@angular/material/core';
 import { MatError, MatSelect } from '@angular/material/select';
 import {
-  BasicEnrollmentOptions,
   EnrollmentResponse,
   TokenService,
 } from '../../../../services/token/token.service';
-import { Observable } from 'rxjs';
 
-export interface ApplspecEnrollmentOptions extends BasicEnrollmentOptions {
+import { Observable } from 'rxjs';
+import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import { ApplspecApiPayloadMapper } from '../../../../mappers/token-api-payload/applspec-token-api-payload.mapper';
+
+export interface ApplspecEnrollmentOptions extends TokenEnrollmentData {
   type: 'applspec';
-  serviceId: string;
-  generateOnServer: boolean;
+  serviceId: string; // Keep original type
+  generateOnServer: boolean; // Keep original type
   otpKey?: string;
 }
 
@@ -66,7 +68,7 @@ export class EnrollApplspecComponent implements OnInit {
   }>();
   @Output() clickEnrollChange = new EventEmitter<
     (
-      basicOptions: BasicEnrollmentOptions,
+      basicOptions: TokenEnrollmentData,
     ) => Observable<EnrollmentResponse> | undefined
   >();
 
@@ -90,6 +92,7 @@ export class EnrollApplspecComponent implements OnInit {
   constructor(
     private serviceIdService: ServiceIdService,
     private tokenService: TokenService,
+    private enrollmentMapper: ApplspecApiPayloadMapper,
   ) {}
 
   ngOnInit(): void {
@@ -111,7 +114,7 @@ export class EnrollApplspecComponent implements OnInit {
   }
 
   onClickEnroll = (
-    basicOptions: BasicEnrollmentOptions,
+    basicOptions: TokenEnrollmentData,
   ): Observable<EnrollmentResponse> | undefined => {
     if (this.applspecForm.invalid) {
       this.applspecForm.markAllAsTouched();
@@ -126,6 +129,9 @@ export class EnrollApplspecComponent implements OnInit {
     if (!enrollmentData.generateOnServer) {
       enrollmentData.otpKey = this.otpKeyControl.value ?? '';
     }
-    return this.tokenService.enrollToken(enrollmentData);
+    return this.tokenService.enrollToken({
+      data: enrollmentData,
+      mapper: this.enrollmentMapper,
+    });
   };
 }

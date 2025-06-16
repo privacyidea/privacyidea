@@ -16,13 +16,15 @@ import {
 } from '@angular/material/select';
 import { MatInput } from '@angular/material/input';
 import {
-  BasicEnrollmentOptions,
   EnrollmentResponse,
   TokenService,
 } from '../../../../services/token/token.service';
-import { Observable } from 'rxjs';
 
-export interface HotpEnrollmentOptions extends BasicEnrollmentOptions {
+import { Observable } from 'rxjs';
+import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import { HotpApiPayloadMapper } from '../../../../mappers/token-api-payload/hotp-token-api-payload.mapper';
+
+export interface HotpEnrollmentOptions extends TokenEnrollmentData {
   type: 'hotp';
   generateOnServer: boolean;
   otpLength: number;
@@ -55,7 +57,7 @@ export class EnrollHotpComponent implements OnInit {
 
   @Output() clickEnrollChange = new EventEmitter<
     (
-      basicOptions: BasicEnrollmentOptions,
+      basicOptions: TokenEnrollmentData,
     ) => Observable<EnrollmentResponse> | undefined
   >();
   @Output() aditionalFormFieldsChange = new EventEmitter<{
@@ -79,7 +81,10 @@ export class EnrollHotpComponent implements OnInit {
     { value: 'sha512', viewValue: 'SHA512' },
   ];
 
-  constructor(private tokenService: TokenService) {}
+  constructor(
+    private tokenService: TokenService,
+    private enrollmentMapper: HotpApiPayloadMapper,
+  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({
@@ -102,7 +107,7 @@ export class EnrollHotpComponent implements OnInit {
   }
 
   onClickEnroll = (
-    basicOptions: BasicEnrollmentOptions,
+    basicOptions: TokenEnrollmentData,
   ): Observable<EnrollmentResponse> | undefined => {
     if (
       this.generateOnServerFormControl.invalid ||
@@ -131,7 +136,9 @@ export class EnrollHotpComponent implements OnInit {
     if (!enrollmentData.generateOnServer) {
       enrollmentData.otpKey = this.otpKeyFormControl.value?.trim() ?? '';
     }
-
-    return this.tokenService.enrollToken(enrollmentData);
+    return this.tokenService.enrollToken({
+      data: enrollmentData,
+      mapper: this.enrollmentMapper,
+    });
   };
 }

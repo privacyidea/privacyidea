@@ -32,6 +32,10 @@ import {
 } from '../../components/token/token.component';
 import { ContentService } from '../content/content.service';
 import { PiResponse } from '../../app.component';
+import {
+  TokenApiPayloadMapper,
+  TokenEnrollmentData,
+} from '../../mappers/token-api-payload/_token-api-payload.mapper';
 
 const apiFilter = [
   'serial',
@@ -134,19 +138,8 @@ export interface LostTokenData {
   valid_to: string;
 }
 
-export type BasicEnrollmentOptions = {
-  type: string;
-  description: string;
-  container_serial: string;
-  validity_period_start: string;
-  validity_period_end: string;
-  user: string;
-  pin: string;
-  [key: string]: any; // TODO: remove this when all types are defined
-};
-
-// Deprecated: Use and extend `BasicEnrollmentOptions` instead
-export interface EnrollmentOptions extends BasicEnrollmentOptions {
+// Deprecated: Use and extend `TokenEnrollmentData` instead
+export interface EnrollmentOptions extends TokenEnrollmentData {
   generateOnServer?: boolean;
   otpLength?: number;
   otpKey?: string;
@@ -755,16 +748,19 @@ export class TokenService {
       );
   }
 
-  enrollToken<T extends BasicEnrollmentOptions>(options: T) {
+  enrollToken<T extends TokenEnrollmentData>(args: {
+    data: T;
+    mapper: TokenApiPayloadMapper<T>;
+  }) {
+    const { data, mapper } = args;
     const headers = this.localService.getHeaders();
+    const params = mapper.toApiPayload(data);
 
-    const params: any = options;
-
-    switch (options.type) {
+    switch (data.type) {
       case 'webauthn':
       case 'passkey':
-        if (options['credential_id']) {
-          Object.entries(options).forEach(([key, value]) => {
+        if (data['credential_id']) {
+          Object.entries(data).forEach(([key, value]) => {
             params[key] = value;
           });
         }
@@ -773,63 +769,63 @@ export class TokenService {
       case 'totp':
       case 'motp':
       case 'applspec':
-        params.otpkey = options['generateOnServer'] ? null : options['otpKey'];
-        params.genkey = options['generateOnServer'] ? 1 : 0;
-        if (options.type === 'motp') {
-          params.motppin = options['motpPin'];
+        params.otpkey = data['generateOnServer'] ? null : data['otpKey'];
+        params.genkey = data['generateOnServer'] ? 1 : 0;
+        if (data.type === 'motp') {
+          params.motppin = data['motpPin'];
         }
-        if (options.type === 'hotp' || options.type === 'totp') {
-          params.otplen = Number(options['otpLength']);
-          params.hashlib = options['hashAlgorithm'];
+        if (data.type === 'hotp' || data.type === 'totp') {
+          params.otplen = Number(data['otpLength']);
+          params.hashlib = data['hashAlgorithm'];
         }
-        if (options.type === 'totp') {
-          params.timeStep = options['timeStep'];
+        if (data.type === 'totp') {
+          params.timeStep = data['timeStep'];
         }
-        if (options.type === 'applspec') {
-          params.service_id = options['serviceId'];
+        if (data.type === 'applspec') {
+          params.service_id = data['serviceId'];
         }
         break;
       case 'push':
         params.genkey = 1;
         break;
       case 'daypassword':
-        params.otpkey = options['otpKey'];
-        params.otplen = Number(options['otpLength']);
-        params.hashlib = options['hashAlgorithm'];
-        params.timeStep = options['timeStep'];
+        params.otpkey = data['otpKey'];
+        params.otplen = Number(data['otpLength']);
+        params.hashlib = data['hashAlgorithm'];
+        params.timeStep = data['timeStep'];
         break;
       case 'indexedsecret':
-        params.otpkey = options['otpKey'];
+        params.otpkey = data['otpKey'];
         break;
       case 'yubikey':
-        params.otplen = Number(options['otpLength']);
-        params.otpkey = options['otpKey'];
+        params.otplen = Number(data['otpLength']);
+        params.otpkey = data['otpKey'];
         break;
       case 'yubico':
-        params['yubico.tokenid'] = options['yubicoIdentifier'];
+        params['yubico.tokenid'] = data['yubicoIdentifier'];
         break;
       case 'radius':
-        params['radius.identifier'] = options['radiusServerConfiguration'];
-        params['radius.user'] = options['radiusUser'];
+        params['radius.identifier'] = data['radiusServerConfiguration'];
+        params['radius.user'] = data['radiusUser'];
         break;
       case 'remote':
-        params['remote.server_id'] = options['remoteServer'];
-        params['remote.serial'] = options['remoteSerial'];
-        params['remote.user'] = options['remoteUser'];
-        params['remote.realm'] = options['remoteRealm'];
-        params['remote.resolver'] = options['remoteResolver'];
-        params['remote.local_checkpin'] = options['checkPinLocally'];
+        params['remote.server_id'] = data['remoteServer'];
+        params['remote.serial'] = data['remoteSerial'];
+        params['remote.user'] = data['remoteUser'];
+        params['remote.realm'] = data['remoteRealm'];
+        params['remote.resolver'] = data['remoteResolver'];
+        params['remote.local_checkpin'] = data['checkPinLocally'];
         break;
       case 'sms':
-        params['sms.identifier'] = options['smsGateway'];
-        params['phone'] = options['readNumberDynamically']
+        params['sms.identifier'] = data['smsGateway'];
+        params['phone'] = data['readNumberDynamically']
           ? null
-          : options['phoneNumber'];
-        params['dynamic_phone'] = options['readNumberDynamically'];
+          : data['phoneNumber'];
+        params['dynamic_phone'] = data['readNumberDynamically'];
         break;
       case '4eyes':
-        params.separator = options['separator'];
-        params['4eyes'] = options['requiredTokenOfRealms']?.reduce(
+        params.separator = data['separator'];
+        params['4eyes'] = data['requiredTokenOfRealms']?.reduce(
           (
             acc: { [key: string]: { count: number; selected: boolean } },
             curr: any,
@@ -842,31 +838,31 @@ export class TokenService {
           },
           {},
         );
-        if (options['onlyAddToRealm']) {
-          params.realm = options['userRealm'];
+        if (data['onlyAddToRealm']) {
+          params.realm = data['userRealm'];
           params.user = null;
         }
         break;
       case 'certificate':
         params.genkey = 1;
-        params.ca = options['caConnector'];
-        params.template = options['certTemplate'];
-        params.pem = options['pem'];
+        params.ca = data['caConnector'];
+        params.template = data['certTemplate'];
+        params.pem = data['pem'];
         break;
       case 'email':
-        params.email = options['emailAddress'];
-        params.dynamic_email = options['readEmailDynamically'];
+        params.email = data['emailAddress'];
+        params.dynamic_email = data['readEmailDynamically'];
         break;
 
       case 'question':
-        params.questions = options['answers'];
+        params.questions = data['answers'];
         break;
 
       case 'vasco':
-        if (options['useVascoSerial']) {
-          params.serial = options['vascoSerial'];
+        if (data['useVascoSerial']) {
+          params.serial = data['vascoSerial'];
         }
-        params.otpkey = options['otpKey'];
+        params.otpkey = data['otpKey'];
         params.genkey = 0;
         break;
       default:

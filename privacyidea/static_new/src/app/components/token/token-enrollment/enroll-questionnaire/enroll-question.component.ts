@@ -16,14 +16,15 @@ import {
   Validators,
 } from '@angular/forms';
 import {
-  BasicEnrollmentOptions,
   EnrollmentResponse,
   TokenService,
 } from '../../../../services/token/token.service';
 import { SystemService } from '../../../../services/system/system.service';
-import { Observable } from 'rxjs';
 
-export interface QuestionEnrollmentOptions extends BasicEnrollmentOptions {
+import { Observable } from 'rxjs';
+import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import { QuestionApiPayloadMapper } from '../../../../mappers/token-api-payload/question-token-api-payload.mapper';
+export interface QuestionEnrollmentOptions extends TokenEnrollmentData {
   type: 'question';
   answers: Record<string, string>;
 }
@@ -52,7 +53,7 @@ export class EnrollQuestionComponent implements OnInit {
   }>();
   @Output() clickEnrollChange = new EventEmitter<
     (
-      basicOptions: BasicEnrollmentOptions,
+      basicOptions: TokenEnrollmentData,
     ) => Observable<EnrollmentResponse> | undefined
   >();
 
@@ -89,8 +90,10 @@ export class EnrollQuestionComponent implements OnInit {
   }
 
   constructor(
+    // private questionService: QuestionService,
     private tokenService: TokenService,
     private systemService: SystemService,
+    private enrollmentMapper: QuestionApiPayloadMapper,
   ) {}
 
   ngOnInit(): void {
@@ -131,7 +134,7 @@ export class EnrollQuestionComponent implements OnInit {
   }
 
   onClickEnroll = (
-    basicOptions: BasicEnrollmentOptions,
+    basicOptions: TokenEnrollmentData,
   ): Observable<EnrollmentResponse> | undefined => {
     if (this.questionForm.invalid) {
       this.questionForm.markAllAsTouched();
@@ -149,6 +152,9 @@ export class EnrollQuestionComponent implements OnInit {
       type: 'question',
       answers: answers,
     };
-    return this.tokenService.enrollToken(enrollmentData);
+    return this.tokenService.enrollToken({
+      data: enrollmentData,
+      mapper: this.enrollmentMapper,
+    });
   };
 }

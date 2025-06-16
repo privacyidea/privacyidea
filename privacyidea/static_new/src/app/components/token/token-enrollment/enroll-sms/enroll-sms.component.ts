@@ -23,16 +23,18 @@ import {
 import { SmsGatewayService } from '../../../../services/sms-gateway/sms-gateway.service';
 import { SystemService } from '../../../../services/system/system.service';
 import {
-  BasicEnrollmentOptions,
   EnrollmentResponse,
   TokenService,
 } from '../../../../services/token/token.service';
-import { Observable } from 'rxjs';
 
-export interface SmsEnrollmentOptions extends BasicEnrollmentOptions {
+import { Observable } from 'rxjs';
+import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import { SmsApiPayloadMapper } from '../../../../mappers/token-api-payload/sms-token-api-payload.mapper';
+
+export interface SmsEnrollmentOptions extends TokenEnrollmentData {
   type: 'sms';
-  smsGateway: string;
-  phoneNumber?: string; // Optional if readNumberDynamically is true
+  smsGateway: string; // Keep original type
+  phoneNumber?: string;
   readNumberDynamically: boolean;
 }
 
@@ -63,7 +65,7 @@ export class EnrollSmsComponent implements OnInit {
   }>();
   @Output() clickEnrollChange = new EventEmitter<
     (
-      basicOptions: BasicEnrollmentOptions,
+      basicOptions: TokenEnrollmentData,
     ) => Observable<EnrollmentResponse> | undefined
   >();
 
@@ -94,6 +96,7 @@ export class EnrollSmsComponent implements OnInit {
     private smsGatewayService: SmsGatewayService,
     private systemService: SystemService,
     private tokenService: TokenService,
+    private enrollmentMapper: SmsApiPayloadMapper,
   ) {
     effect(() => {
       const id =
@@ -125,7 +128,7 @@ export class EnrollSmsComponent implements OnInit {
   }
 
   onClickEnroll = (
-    basicOptions: BasicEnrollmentOptions,
+    basicOptions: TokenEnrollmentData,
   ): Observable<EnrollmentResponse> | undefined => {
     if (this.smsForm.invalid) {
       this.smsForm.markAllAsTouched();
@@ -143,6 +146,9 @@ export class EnrollSmsComponent implements OnInit {
       enrollmentData.phoneNumber = this.phoneNumberControl.value ?? '';
     }
 
-    return this.tokenService.enrollToken(enrollmentData);
+    return this.tokenService.enrollToken({
+      data: enrollmentData,
+      mapper: this.enrollmentMapper,
+    });
   };
 }

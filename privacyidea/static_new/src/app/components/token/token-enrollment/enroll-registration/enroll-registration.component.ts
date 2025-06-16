@@ -6,13 +6,15 @@ import {
   ReactiveFormsModule,
 } from '@angular/forms';
 import {
-  BasicEnrollmentOptions,
   EnrollmentResponse,
   TokenService,
 } from '../../../../services/token/token.service';
-import { Observable } from 'rxjs';
 
-export interface RegistrationEnrollmentOptions extends BasicEnrollmentOptions {
+import { Observable } from 'rxjs';
+import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import { RegistrationApiPayloadMapper } from '../../../../mappers/token-api-payload/registration-token-api-payload.mapper';
+
+export interface RegistrationEnrollmentOptions extends TokenEnrollmentData {
   type: 'registration';
   // No type-specific fields for initialization via EnrollmentOptions
 }
@@ -33,13 +35,16 @@ export class EnrollRegistrationComponent implements OnInit {
   }>();
   @Output() clickEnrollChange = new EventEmitter<
     (
-      basicOptions: BasicEnrollmentOptions,
+      basicOptions: TokenEnrollmentData,
     ) => Observable<EnrollmentResponse> | undefined
   >();
 
   registrationForm = new FormGroup({});
 
-  constructor(private tokenService: TokenService) {}
+  constructor(
+    private tokenService: TokenService,
+    private enrollmentMapper: RegistrationApiPayloadMapper,
+  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({});
@@ -47,12 +52,15 @@ export class EnrollRegistrationComponent implements OnInit {
   }
 
   onClickEnroll = (
-    basicOptions: BasicEnrollmentOptions,
+    basicOptions: TokenEnrollmentData,
   ): Observable<EnrollmentResponse> | undefined => {
     const enrollmentData: RegistrationEnrollmentOptions = {
       ...basicOptions,
       type: 'registration',
     };
-    return this.tokenService.enrollToken(enrollmentData);
+    return this.tokenService.enrollToken({
+      data: enrollmentData,
+      mapper: this.enrollmentMapper,
+    });
   };
 }

@@ -10,13 +10,15 @@ import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatCheckbox } from '@angular/material/checkbox';
 import {
-  BasicEnrollmentOptions,
   EnrollmentResponse,
   TokenService,
 } from '../../../../services/token/token.service';
-import { Observable } from 'rxjs';
 
-export interface MotpEnrollmentOptions extends BasicEnrollmentOptions {
+import { Observable } from 'rxjs';
+import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import { MotpApiPayloadMapper } from '../../../../mappers/token-api-payload/motp-token-api-payload.mapper';
+
+export interface MotpEnrollmentOptions extends TokenEnrollmentData {
   type: 'motp';
   generateOnServer: boolean;
   otpKey?: string;
@@ -48,7 +50,7 @@ export class EnrollMotpComponent implements OnInit {
   }>();
   @Output() clickEnrollChange = new EventEmitter<
     (
-      basicOptions: BasicEnrollmentOptions,
+      basicOptions: TokenEnrollmentData,
     ) => Observable<EnrollmentResponse> | undefined
   >();
 
@@ -69,7 +71,10 @@ export class EnrollMotpComponent implements OnInit {
     repeatMotpPin: this.repeatMotpPinControl,
   });
 
-  constructor(private tokenService: TokenService) {}
+  constructor(
+    private tokenService: TokenService,
+    private enrollmentMapper: MotpApiPayloadMapper,
+  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({
@@ -91,7 +96,7 @@ export class EnrollMotpComponent implements OnInit {
   }
 
   onClickEnroll = (
-    basicOptions: BasicEnrollmentOptions,
+    basicOptions: TokenEnrollmentData,
   ): Observable<EnrollmentResponse> | undefined => {
     if (
       this.motpForm.invalid ||
@@ -109,6 +114,9 @@ export class EnrollMotpComponent implements OnInit {
     if (!enrollmentData.generateOnServer) {
       enrollmentData.otpKey = this.otpKeyControl.value ?? '';
     }
-    return this.tokenService.enrollToken(enrollmentData);
+    return this.tokenService.enrollToken({
+      data: enrollmentData,
+      mapper: this.enrollmentMapper,
+    });
   };
 }

@@ -22,21 +22,16 @@ import {
   RemoteServer,
 } from '../../../../services/privavyidea-server/privacyidea-server.service';
 import {
-  BasicEnrollmentOptions,
   EnrollmentResponse,
   TokenService,
 } from '../../../../services/token/token.service';
-import { Observable } from 'rxjs';
 
-export interface RemoteEnrollmentOptions extends BasicEnrollmentOptions {
-  type: 'remote';
-  remoteServer: RemoteServer | null; // or specific type if RemoteServer is complex
-  remoteSerial: string;
-  remoteUser: string;
-  remoteRealm: string;
-  remoteResolver: string;
-  checkPinLocally: boolean;
-}
+import { Observable } from 'rxjs';
+import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import {
+  RemoteApiPayloadMapper,
+  RemoteEnrollmentData,
+} from '../../../../mappers/token-api-payload/remote-token-api-payload.mapper';
 
 export class RemoteErrorStateMatcher implements ErrorStateMatcher {
   isErrorState(control: FormControl | null): boolean {
@@ -72,7 +67,7 @@ export class EnrollRemoteComponent implements OnInit {
   }>();
   @Output() clickEnrollChange = new EventEmitter<
     (
-      basicOptions: BasicEnrollmentOptions,
+      basicOptions: TokenEnrollmentData,
     ) => Observable<EnrollmentResponse> | undefined
   >();
 
@@ -80,6 +75,7 @@ export class EnrollRemoteComponent implements OnInit {
     Validators.required,
   ]);
   remoteServerControl = new FormControl<RemoteServer | null>(null, [
+    // Keep original type
     Validators.required,
   ]);
   remoteSerialControl = new FormControl<string>('', [Validators.required]);
@@ -101,7 +97,8 @@ export class EnrollRemoteComponent implements OnInit {
 
   constructor(
     private privacyideaServerService: PrivacyideaServerService,
-    private tokenService: TokenService,
+    private tokenService: TokenService, // Keep original service name
+    private enrollmentMapper: RemoteApiPayloadMapper,
   ) {}
 
   ngOnInit(): void {
@@ -117,14 +114,14 @@ export class EnrollRemoteComponent implements OnInit {
   }
 
   onClickEnroll = (
-    basicOptions: BasicEnrollmentOptions,
+    basicOptions: TokenEnrollmentData,
   ): Observable<EnrollmentResponse> | undefined => {
     if (this.remoteForm.invalid) {
       this.remoteForm.markAllAsTouched();
       return undefined;
     }
 
-    const enrollmentData: RemoteEnrollmentOptions = {
+    const enrollmentData: RemoteEnrollmentData = {
       ...basicOptions,
       type: 'remote',
       checkPinLocally: !!this.checkPinLocallyControl.value,
@@ -135,6 +132,9 @@ export class EnrollRemoteComponent implements OnInit {
       remoteResolver: this.remoteResolverControl.value ?? '',
     };
 
-    return this.tokenService.enrollToken(enrollmentData);
+    return this.tokenService.enrollToken({
+      data: enrollmentData,
+      mapper: this.enrollmentMapper,
+    });
   };
 }

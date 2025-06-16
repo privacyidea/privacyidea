@@ -23,13 +23,15 @@ import {
 import { RadiusServerService } from '../../../../services/radius-server/radius-server.service';
 import { SystemService } from '../../../../services/system/system.service';
 import {
-  BasicEnrollmentOptions,
   EnrollmentResponse,
   TokenService,
 } from '../../../../services/token/token.service';
-import { Observable } from 'rxjs';
 
-export interface RadiusEnrollmentOptions extends BasicEnrollmentOptions {
+import { Observable } from 'rxjs';
+import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import { RadiusApiPayloadMapper } from '../../../../mappers/token-api-payload/radius-token-api-payload.mapper';
+
+export interface RadiusEnrollmentOptions extends TokenEnrollmentData {
   type: 'radius';
   radiusServerConfiguration: string;
   radiusUser: string;
@@ -64,7 +66,7 @@ export class EnrollRadiusComponent implements OnInit {
   }>();
   @Output() clickEnrollChange = new EventEmitter<
     (
-      basicOptions: BasicEnrollmentOptions,
+      basicOptions: TokenEnrollmentData,
     ) => Observable<EnrollmentResponse> | undefined
   >();
 
@@ -98,6 +100,7 @@ export class EnrollRadiusComponent implements OnInit {
     private radiusServerService: RadiusServerService,
     private systemService: SystemService,
     private tokenService: TokenService,
+    private enrollmentMapper: RadiusApiPayloadMapper,
   ) {
     effect(() => {
       const id =
@@ -120,7 +123,7 @@ export class EnrollRadiusComponent implements OnInit {
   }
 
   onClickEnroll = (
-    basicOptions: BasicEnrollmentOptions,
+    basicOptions: TokenEnrollmentData,
   ): Observable<EnrollmentResponse> | undefined => {
     if (this.radiusForm.invalid) {
       this.radiusForm.markAllAsTouched();
@@ -136,6 +139,9 @@ export class EnrollRadiusComponent implements OnInit {
       checkPinLocally: !!this.checkPinLocallyControl.value,
     };
 
-    return this.tokenService.enrollToken(enrollmentData);
+    return this.tokenService.enrollToken({
+      data: enrollmentData,
+      mapper: this.enrollmentMapper,
+    });
   };
 }

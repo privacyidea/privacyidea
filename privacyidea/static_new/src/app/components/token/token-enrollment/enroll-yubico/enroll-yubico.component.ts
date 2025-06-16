@@ -18,13 +18,15 @@ import { SystemService } from '../../../../services/system/system.service';
 import { ErrorStateMatcher } from '@angular/material/core';
 import { MatError } from '@angular/material/select';
 import {
-  BasicEnrollmentOptions,
   EnrollmentResponse,
   TokenService,
 } from '../../../../services/token/token.service';
-import { Observable } from 'rxjs';
 
-export interface YubicoEnrollmentOptions extends BasicEnrollmentOptions {
+import { Observable } from 'rxjs';
+import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import { YubicoApiPayloadMapper } from '../../../../mappers/token-api-payload/yubico-token-api-payload.mapper';
+
+export interface YubicoEnrollmentOptions extends TokenEnrollmentData {
   type: 'yubico';
   yubicoIdentifier: string;
 }
@@ -62,7 +64,7 @@ export class EnrollYubicoComponent implements OnInit {
   }>();
   @Output() clickEnrollChange = new EventEmitter<
     (
-      basicOptions: BasicEnrollmentOptions,
+      basicOptions: TokenEnrollmentData,
     ) => Observable<EnrollmentResponse> | undefined
   >();
 
@@ -88,6 +90,7 @@ export class EnrollYubicoComponent implements OnInit {
   constructor(
     private systemService: SystemService,
     private tokenService: TokenService,
+    private enrollmentMapper: YubicoApiPayloadMapper,
   ) {}
 
   ngOnInit(): void {
@@ -98,7 +101,7 @@ export class EnrollYubicoComponent implements OnInit {
   }
 
   onClickEnroll = (
-    basicOptions: BasicEnrollmentOptions,
+    basicOptions: TokenEnrollmentData,
   ): Observable<EnrollmentResponse> | undefined => {
     if (this.yubicoForm.invalid) {
       this.yubicoForm.markAllAsTouched();
@@ -110,6 +113,9 @@ export class EnrollYubicoComponent implements OnInit {
       type: 'yubico',
       yubicoIdentifier: this.yubikeyIdentifierControl.value ?? '',
     };
-    return this.tokenService.enrollToken(enrollmentData);
+    return this.tokenService.enrollToken({
+      data: enrollmentData,
+      mapper: this.enrollmentMapper,
+    });
   };
 }

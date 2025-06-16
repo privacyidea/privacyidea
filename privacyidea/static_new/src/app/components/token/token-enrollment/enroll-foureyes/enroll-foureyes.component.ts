@@ -26,13 +26,15 @@ import {
 import { MatError, MatSelect } from '@angular/material/select';
 import { MatCheckbox } from '@angular/material/checkbox';
 import {
-  BasicEnrollmentOptions,
   EnrollmentResponse,
   TokenService,
 } from '../../../../services/token/token.service';
-import { Observable } from 'rxjs';
 
-export interface FourEyesEnrollmentOptions extends BasicEnrollmentOptions {
+import { Observable } from 'rxjs';
+import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import { FourEyesApiPayloadMapper } from '../../../../mappers/token-api-payload/4eyes-token-api-payload.mapper';
+
+export interface FourEyesEnrollmentOptions extends TokenEnrollmentData {
   type: '4eyes';
   separator: string;
   requiredTokenOfRealms: { realm: string; tokens: number }[];
@@ -75,7 +77,7 @@ export class EnrollFoureyesComponent implements OnInit {
   }>();
   @Output() clickEnrollChange = new EventEmitter<
     (
-      basicOptions: BasicEnrollmentOptions,
+      basicOptions: TokenEnrollmentData,
     ) => Observable<EnrollmentResponse> | undefined
   >();
 
@@ -116,6 +118,7 @@ export class EnrollFoureyesComponent implements OnInit {
   constructor(
     private realmService: RealmService,
     private tokenService: TokenService,
+    private enrollmentMapper: FourEyesApiPayloadMapper,
   ) {}
 
   ngOnInit(): void {
@@ -168,7 +171,7 @@ export class EnrollFoureyesComponent implements OnInit {
   }
 
   onClickEnroll = (
-    basicOptions: BasicEnrollmentOptions,
+    basicOptions: TokenEnrollmentData,
   ): Observable<EnrollmentResponse> | undefined => {
     if (this.foureyesForm.invalid) {
       this.foureyesForm.markAllAsTouched();
@@ -182,6 +185,9 @@ export class EnrollFoureyesComponent implements OnInit {
       onlyAddToRealm: !!this.onlyAddToRealmControl.value,
       // userRealm wird von basicOptions übernommen, falls onlyAddToRealm true ist
     };
-    return this.tokenService.enrollToken(enrollmentData);
+    return this.tokenService.enrollToken({
+      data: enrollmentData,
+      mapper: this.enrollmentMapper,
+    });
   };
 }

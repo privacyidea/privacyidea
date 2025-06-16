@@ -9,13 +9,15 @@ import {
   Validators,
 } from '@angular/forms';
 import {
-  BasicEnrollmentOptions,
   EnrollmentResponse,
   TokenService,
 } from '../../../../services/token/token.service';
-import { Observable } from 'rxjs';
 
-export interface IndexedSecretEnrollmentOptions extends BasicEnrollmentOptions {
+import { Observable } from 'rxjs';
+import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import { IndexedSecretApiPayloadMapper } from '../../../../mappers/token-api-payload/indexedsecret-token-api-payload.mapper';
+
+export interface IndexedSecretEnrollmentOptions extends TokenEnrollmentData {
   type: 'indexedsecret';
   otpKey: string;
 }
@@ -44,7 +46,7 @@ export class EnrollIndexedsecretComponent implements OnInit {
   }>();
   @Output() clickEnrollChange = new EventEmitter<
     (
-      basicOptions: BasicEnrollmentOptions,
+      basicOptions: TokenEnrollmentData,
     ) => Observable<EnrollmentResponse> | undefined
   >();
 
@@ -57,7 +59,10 @@ export class EnrollIndexedsecretComponent implements OnInit {
     otpKey: this.otpKeyControl,
   });
 
-  constructor(private tokenService: TokenService) {}
+  constructor(
+    private tokenService: TokenService,
+    private enrollmentMapper: IndexedSecretApiPayloadMapper,
+  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({
@@ -67,7 +72,7 @@ export class EnrollIndexedsecretComponent implements OnInit {
   }
 
   onClickEnroll = (
-    basicOptions: BasicEnrollmentOptions,
+    basicOptions: TokenEnrollmentData,
   ): Observable<EnrollmentResponse> | undefined => {
     if (this.indexedSecretForm.invalid) {
       this.indexedSecretForm.markAllAsTouched();
@@ -78,6 +83,9 @@ export class EnrollIndexedsecretComponent implements OnInit {
       type: 'indexedsecret',
       otpKey: this.otpKeyControl.value ?? '',
     };
-    return this.tokenService.enrollToken(enrollmentData);
+    return this.tokenService.enrollToken({
+      data: enrollmentData,
+      mapper: this.enrollmentMapper,
+    });
   };
 }

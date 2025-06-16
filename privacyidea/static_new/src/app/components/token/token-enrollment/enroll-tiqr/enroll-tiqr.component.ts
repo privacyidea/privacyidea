@@ -13,13 +13,15 @@ import {
 } from '@angular/forms';
 import { SystemService } from '../../../../services/system/system.service';
 import {
-  BasicEnrollmentOptions,
   EnrollmentResponse,
   TokenService,
 } from '../../../../services/token/token.service';
-import { Observable } from 'rxjs';
 
-export interface TiqrEnrollmentOptions extends BasicEnrollmentOptions {
+import { Observable } from 'rxjs';
+import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import { TiqrApiPayloadMapper } from '../../../../mappers/token-api-payload/tiqr-token-api-payload.mapper';
+
+export interface TiqrEnrollmentOptions extends TokenEnrollmentData {
   type: 'tiqr';
   // No type-specific fields for initialization via EnrollmentOptions
   // TIQR-specific data (tiqr.infoUrl etc.) comes from the system configuration
@@ -42,7 +44,7 @@ export class EnrollTiqrComponent implements OnInit {
   }>();
   @Output() clickEnrollChange = new EventEmitter<
     (
-      basicOptions: BasicEnrollmentOptions,
+      basicOptions: TokenEnrollmentData,
     ) => Observable<EnrollmentResponse> | undefined
   >();
 
@@ -60,6 +62,7 @@ export class EnrollTiqrComponent implements OnInit {
   constructor(
     private systemService: SystemService,
     private tokenService: TokenService,
+    private enrollmentMapper: TiqrApiPayloadMapper,
   ) {}
 
   ngOnInit(): void {
@@ -68,12 +71,15 @@ export class EnrollTiqrComponent implements OnInit {
   }
 
   onClickEnroll = (
-    basicOptions: BasicEnrollmentOptions,
+    basicOptions: TokenEnrollmentData,
   ): Observable<EnrollmentResponse> | undefined => {
     const enrollmentData: TiqrEnrollmentOptions = {
       ...basicOptions,
       type: 'tiqr',
     };
-    return this.tokenService.enrollToken(enrollmentData);
+    return this.tokenService.enrollToken({
+      data: enrollmentData,
+      mapper: this.enrollmentMapper,
+    });
   };
 }

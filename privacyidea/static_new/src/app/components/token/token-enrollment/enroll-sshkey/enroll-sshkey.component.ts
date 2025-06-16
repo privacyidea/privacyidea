@@ -10,11 +10,13 @@ import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatError } from '@angular/material/select';
 import {
-  BasicEnrollmentOptions,
   EnrollmentResponse,
   TokenService,
 } from '../../../../services/token/token.service';
+
 import { Observable } from 'rxjs';
+import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import { SshkeyApiPayloadMapper } from '../../../../mappers/token-api-payload/sshkey-token-api-payload.mapper';
 
 /*
 Old ui request body example:
@@ -34,10 +36,9 @@ Old ui request body example:
 }
 */
 
-interface SshEnrollmentOptions extends BasicEnrollmentOptions {
+export interface SshkeyEnrollmentOptions extends TokenEnrollmentData {
   type: 'sshkey';
-  sshkey: string;
-  hashlib: string;
+  sshPublicKey: string;
   // 'radius.system_settings': boolean;
 }
 
@@ -52,7 +53,6 @@ interface SshEnrollmentOptions extends BasicEnrollmentOptions {
     ReactiveFormsModule,
   ],
   templateUrl: './enroll-sshkey.component.html',
-  styleUrl: './enroll-sshkey.component.scss',
 })
 export class EnrollSshkeyComponent {
   text = this.tokenService
@@ -66,37 +66,33 @@ export class EnrollSshkeyComponent {
 
   @Output() clickEnrollChange = new EventEmitter<
     (
-      basicOptions: BasicEnrollmentOptions,
+      basicOptions: TokenEnrollmentData,
     ) => Observable<EnrollmentResponse> | undefined
   >();
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
 
-  constructor(private tokenService: TokenService) {}
+  constructor(
+    private tokenService: TokenService,
+    private enrollmentMapper: SshkeyApiPayloadMapper,
+  ) {}
 
   ngOnInit() {
     this.aditionalFormFieldsChange.emit({
+      // Keep original emit
       sshPublicKey: this.sshPublicKeyFormControl,
     });
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
   onClickEnroll = (
-    basicOptions: BasicEnrollmentOptions,
+    basicOptions: TokenEnrollmentData,
   ): Observable<EnrollmentResponse> | undefined => {
-    console.log('clickEnroll called');
     if (this.sshPublicKeyFormControl.invalid) {
-      console.log(
-        'SSH Public Key form control is invalid:',
-        this.sshPublicKeyFormControl.errors,
-      );
-      return;
+      this.sshPublicKeyFormControl.markAsTouched(); // Keep original touch logic
+      return undefined;
     }
-    console.log(
-      'SSH Public Key form control is valid:',
-      this.sshPublicKeyFormControl.value,
-    );
 
     const sshPublicKey = this.sshPublicKeyFormControl?.value?.trim() ?? '';
     const parts = sshPublicKey.split(' ');
@@ -104,22 +100,18 @@ export class EnrollSshkeyComponent {
     const fullDescription = basicOptions.description
       ? `${basicOptions.description}\n\n${sshKeyDescriptionPart}`.trim()
       : sshKeyDescriptionPart;
-    console.log('Full description:', fullDescription);
-    console.log('sskkey:', sshPublicKey);
 
-    const response = this.tokenService.enrollToken<SshEnrollmentOptions>({
-      sshkey: sshPublicKey,
-      hashlib: 'sha1', // Default value, can be changed if needed
-      // 'radius.system_settings': true, // Default value, can be changed if needed
+    const enrollmentData: SshkeyEnrollmentOptions = {
+      // Keep original data structure
+      ...basicOptions,
       type: 'sshkey',
+      sshPublicKey: sshPublicKey,
       description: fullDescription,
-      container_serial: basicOptions.container_serial,
-      validity_period_start: basicOptions.validity_period_start,
-      validity_period_end: basicOptions.validity_period_end,
-      user: basicOptions.user,
-      pin: basicOptions.pin,
-    });
-    return response;
+    };
+    return this.tokenService.enrollToken({
+      data: enrollmentData,
+      mapper: this.enrollmentMapper,
+    }); // Apply the requested change
   };
 
   static sshKeyValidator(

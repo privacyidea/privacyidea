@@ -17,19 +17,20 @@ import { MatInput } from '@angular/material/input';
 import { MatOption } from '@angular/material/core';
 import { MatSelect } from '@angular/material/select';
 import {
-  BasicEnrollmentOptions,
   EnrollmentResponse,
   TokenService,
 } from '../../../../services/token/token.service';
+import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { Observable } from 'rxjs';
+import { TotpApiPayloadMapper } from '../../../../mappers/token-api-payload/totp-token-api-payload.mapper';
 
-export interface TotpEnrollmentOptions extends BasicEnrollmentOptions {
+export interface TotpEnrollmentOptions extends TokenEnrollmentData {
   type: 'totp';
   generateOnServer: boolean;
   otpLength: number;
   otpKey?: string;
   hashAlgorithm: string;
-  timeStep: number | string;
+  timeStep: number;
 }
 @Component({
   selector: 'app-enroll-totp',
@@ -59,7 +60,7 @@ export class EnrollTotpComponent implements OnInit {
   }>();
   @Output() clickEnrollChange = new EventEmitter<
     (
-      basicOptions: BasicEnrollmentOptions,
+      basicOptions: TokenEnrollmentData,
     ) => Observable<EnrollmentResponse> | undefined
   >();
 
@@ -81,13 +82,17 @@ export class EnrollTotpComponent implements OnInit {
 
   readonly otpLengthOptions = [6, 8];
   readonly hashAlgorithmOptions = [
+    // Keep original options
     { value: 'sha1', viewValue: 'SHA1' },
     { value: 'sha256', viewValue: 'SHA256' },
     { value: 'sha512', viewValue: 'SHA512' },
   ];
   readonly timeStepOptions = [30, 60];
 
-  constructor(private tokenService: TokenService) {}
+  constructor(
+    private tokenService: TokenService,
+    private enrollmentMapper: TotpApiPayloadMapper,
+  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({
@@ -113,23 +118,31 @@ export class EnrollTotpComponent implements OnInit {
   }
 
   onClickEnroll = (
-    basicOptions: BasicEnrollmentOptions,
+    basicOptions: TokenEnrollmentData,
   ): Observable<EnrollmentResponse> | undefined => {
     if (this.totpForm.invalid) {
       this.totpForm.markAllAsTouched();
       return undefined;
     }
+    const timeStepValue =
+      typeof this.timeStepControl.value === 'string'
+        ? parseInt(this.timeStepControl.value, 10)
+        : (this.timeStepControl.value ?? 30);
+
     const enrollmentData: TotpEnrollmentOptions = {
       ...basicOptions,
       type: 'totp',
       generateOnServer: !!this.generateOnServerControl.value,
       otpLength: this.otpLengthControl.value ?? 6,
       hashAlgorithm: this.hashAlgorithmControl.value ?? 'sha1',
-      timeStep: this.timeStepControl.value ?? 30,
+      timeStep: timeStepValue,
     };
     if (!enrollmentData.generateOnServer) {
       enrollmentData.otpKey = this.otpKeyControl.value ?? '';
     }
-    return this.tokenService.enrollToken(enrollmentData);
+    return this.tokenService.enrollToken({
+      data: enrollmentData,
+      mapper: this.enrollmentMapper,
+    });
   };
 }
