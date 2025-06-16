@@ -97,25 +97,23 @@ def disable_policy_api(name):
     g.audit_object.log({"success": True})
     return send_result(p)
 
-@policy_blueprint.route('/<name>', methods=['PATCH'])
+@policy_blueprint.route('/<oldname>', methods=['PATCH'])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.POLICYWRITE)
-def patch_policy_name_api(name):
+def patch_policy_name_api(oldname):
     """
     Rename an existing policy.
 
     Only the policy’s name is modified; all other attributes remain unchanged.
 
-    :param name: Current name of the policy (from the URL).
+    :param oldname: Current name of the policy (from the URL).
     :jsonparam name: New name to assign to the policy (in the JSON body).
     :return: Database ID of the renamed policy.
     """
-    data = request.get_json(force=True, silent=False) or {}
-    new_name = get_required(data, "name")
-    check_policy_name(new_name)
+    new_name = get_required(request.all_data, "name")
 
-    result = rename_policy(name=name, new_name=new_name)
-    g.audit_object.log({"success": True, "action_detail": f"{name} ➜ {new_name}"})
+    result = rename_policy(name=oldname, new_name=new_name)
+    g.audit_object.log({"success": True, "action_detail": f"{oldname} renamed to {new_name}"})
     return send_result(result)
 
 @policy_blueprint.route('/<name>', methods=['POST'])

@@ -114,8 +114,8 @@
                 class="btn btn-primary"
                 style="width: 121.667px">
             <span class="glyphicon glyphicon-plus"></span>
-            <span ng-style="{'margin-left': (policyname === existingPolicyname ? '4.667px' : '0px')}" translate>
-                 {{ (policyname === existingPolicyname ? 'Save' : 'Clone') | translate }} Policy</span>
+            <span ng-style="{'margin-left': (!existingPolicyname || policyname === existingPolicyname ? '4.667px' : '0px')}" translate>
+                 {{ (!existingPolicyname || policyname === existingPolicyname ? 'Save' : 'Clone') | translate }} Policy</span>
         </button>
         <button class="btn btn-primary"
                 ng-disabled="!existingPolicyname
