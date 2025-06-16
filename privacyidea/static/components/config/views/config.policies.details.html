@@ -1,24 +1,6 @@
 <h2 class="form-signin-heading"
     ng-show="existingPolicyname">
     <translate>Edit Policy {{ existingPolicyname }}</translate>
-    <span ng-show="checkRight('policywrite')">
-    <button class="btn btn-danger"
-            ng-click="disablePolicy(existingPolicyname)"
-            ng-show="params.active" translate>
-        Disable
-    </button>
-    <button class="btn btn-success"
-            ng-click="enablePolicy(existingPolicyname)"
-            ng-show="!params.active" translate>
-        Enable
-    </button>
-    <button class="btn btn-danger"
-            aria-label="{{ 'Do you really want to delete this policy?' | translate }}"
-            ng-click="confirmDelete(delPolicy, existingPolicyname)">
-        <span class="glyphicon glyphicon-trash"></span>
-        <span translate>Delete</span>
-    </button>
-    </span>
 </h2>
 
 <h2 class="form-signin-heading"
@@ -129,10 +111,38 @@
         <button ng-click="createPolicy()"
                 id="topSavePolicyButton"
                 ng-disabled="formPolicyAdd.$invalid || selectedScope.length === 0"
-                class="btn btn-primary">
+                class="btn btn-primary"
+                style="width: 121.667px">
             <span class="glyphicon glyphicon-plus"></span>
-            <span translate>Save Policy</span>
+            <span ng-style="{'margin-left': (!existingPolicyname || policyname === existingPolicyname ? '4.667px' : '0px')}" translate>
+                 {{ (!existingPolicyname || policyname === existingPolicyname ? 'Save' : 'Clone') | translate }} Policy</span>
         </button>
+        <button class="btn btn-primary"
+                ng-disabled="!existingPolicyname
+                     || policyname == existingPolicyname
+                     || formPolicyAdd.$invalid"
+                ng-click="renamePolicy(existingPolicyname, policyname)">
+            <span class="glyphicon glyphicon-pencil"></span>
+            <span translate>Rename Policy</span>
+        </button>
+        <span ng-show="checkRight('policywrite')">
+            <button class="btn btn-danger"
+                    ng-click="disablePolicy(existingPolicyname)"
+                    ng-show="params.active" translate>
+                Disable
+            </button>
+            <button class="btn btn-success"
+                    ng-click="enablePolicy(existingPolicyname)"
+                    ng-show="!params.active" translate>
+                Enable
+            </button>
+            <button class="btn btn-danger"
+                    aria-label="{{ 'Do you really want to delete this policy?' | translate }}"
+                    ng-click="confirmDelete(delPolicy, existingPolicyname)">
+                <span class="glyphicon glyphicon-trash"></span>
+                <span translate>Delete</span>
+            </button>
+        </span>
     </div>
 
     <ul class="nav nav-tabs">

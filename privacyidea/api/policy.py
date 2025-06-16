@@ -37,10 +37,10 @@ from .lib.utils import (getParam,
                         optional,
                         required,
                         send_result,
-                        check_policy_name, send_file)
+                        check_policy_name, send_file, get_required)
 from ..lib.log import log_with
 from ..lib.policies.policy_conditions import ConditionHandleMissingData
-from ..lib.policy import (set_policy, ACTION,
+from ..lib.policy import (set_policy, ACTION, rename_policy,
                           export_policies, import_policies,
                           delete_policy, get_static_policy_definitions,
                           enable_policy, get_policy_condition_sections,
@@ -97,6 +97,23 @@ def disable_policy_api(name):
     g.audit_object.log({"success": True})
     return send_result(p)
 
+@policy_blueprint.route('/<old_name>', methods=['PATCH'])
+@log_with(log)
+@prepolicy(check_base_action, request, ACTION.POLICYWRITE)
+def patch_policy_name_api(old_name):
+    """
+    Rename an existing policy.
+
+    Only the policy’s name is modified; all other attributes remain unchanged.
+
+    :param old_name: Current name of the policy (from the URL).
+    :jsonparam name: New name to assign to the policy (in the JSON body).
+    :return: Database ID of the renamed policy.
+    """
+    new_name = get_required(request.all_data, "name")
+    result = rename_policy(name=old_name, new_name=new_name)
+    g.audit_object.log({"success": True, "action_detail": f"{old_name} renamed to {new_name}"})
+    return send_result(result)
 
 @policy_blueprint.route('/<name>', methods=['POST'])
 @log_with(log)

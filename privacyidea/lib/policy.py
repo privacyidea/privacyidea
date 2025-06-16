@@ -176,8 +176,9 @@ from configobj import ConfigObj
 from operator import itemgetter
 import logging
 
+from ..api.lib.utils import check_policy_name
 from .policies.policy_conditions import PolicyConditionClass, ConditionCheck, ConditionSection
-from ..models import (Policy, db, save_config_timestamp, PolicyDescription, PolicyCondition)
+from ..models import (Policy, db, save_config_timestamp, Token, PolicyDescription, PolicyCondition)
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     get_config_object, get_privacyidea_node,
                                     get_multichallenge_enrollable_tokentypes,
@@ -1349,6 +1350,29 @@ def validate_values(values: Union[str, list, None], allowed_values: list, name: 
         if undefined_values:
             raise ParameterError(f"Undefined {name.capitalize()}: {undefined_values}!")
     return True
+
+
+@log_with(log)
+def rename_policy(name: str, new_name: str) -> int:
+    """
+    Rename a policy and invalidate the config object so that policies are reloaded.
+
+    :param name: The name of the policy to be renamed
+    :param new_name: The new name of the policy
+    :return: The database ID of the renamed policy
+    """
+    check_policy_name(new_name)
+    policy = Policy.query.filter_by(name=name).first()
+    if not policy:
+        raise ParameterError(_("Policy does not exist:") + f" {name}")
+    if Policy.query.filter_by(name=new_name).first():
+        raise ParameterError(_("Policy already exists:") + f" {new_name}")
+
+    policy.name = new_name
+    save_config_timestamp()
+    db.session.commit()
+
+    return policy.id
 
 
 @log_with(log)
