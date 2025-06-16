@@ -4,6 +4,8 @@ import {
   FormGroup,
   FormsModule,
   ReactiveFormsModule,
+  ValidationErrors,
+  AbstractControl,
   Validators,
 } from '@angular/forms';
 import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
@@ -62,14 +64,36 @@ export class EnrollMotpComponent implements OnInit {
     Validators.required,
     Validators.minLength(4),
   ]);
-  repeatMotpPinControl = new FormControl<string>('', [Validators.required]);
+  repeatMotpPinControl = new FormControl<string>('', [
+    Validators.required,
+    (control: AbstractControl) =>
+      EnrollMotpComponent.motpPinMismatchValidator(
+        this.motpPinControl,
+        control,
+      ),
+  ]);
 
-  motpForm = new FormGroup({
-    generateOnServer: this.generateOnServerControl,
-    otpKey: this.otpKeyControl,
-    motpPin: this.motpPinControl,
-    repeatMotpPin: this.repeatMotpPinControl,
-  });
+  static motpPinMismatchValidator(
+    motpPin: AbstractControl,
+    repeatMotpPin: AbstractControl,
+  ): ValidationErrors | null {
+    console.log('Validating motpPin: ', motpPin?.value);
+    console.log('Validating repeatMotpPin: ', repeatMotpPin?.value);
+    if (motpPin && repeatMotpPin && motpPin.value !== repeatMotpPin.value) {
+      console.log(
+        'Validating motpPin mismatch: ',
+        motpPin.value,
+        repeatMotpPin.value,
+      );
+      return { motpPinMismatch: true };
+    }
+    console.log(
+      'Validating motpPin match: ',
+      motpPin?.value,
+      repeatMotpPin?.value,
+    );
+    return null;
+  }
 
   constructor(
     private tokenService: TokenService,
@@ -93,18 +117,16 @@ export class EnrollMotpComponent implements OnInit {
       }
       this.otpKeyControl.updateValueAndValidity();
     });
+
+    // Explicitly trigger form re-validation when PIN controls change
+    this.motpPinControl.valueChanges.subscribe(() => {
+      this.repeatMotpPinControl.updateValueAndValidity();
+    });
   }
 
   onClickEnroll = (
     basicOptions: TokenEnrollmentData,
   ): Observable<EnrollmentResponse> | undefined => {
-    if (
-      this.motpForm.invalid ||
-      this.motpPinControl.value !== this.repeatMotpPinControl.value
-    ) {
-      this.motpForm.markAllAsTouched();
-      return undefined;
-    }
     const enrollmentData: MotpEnrollmentOptions = {
       ...basicOptions,
       type: 'motp',

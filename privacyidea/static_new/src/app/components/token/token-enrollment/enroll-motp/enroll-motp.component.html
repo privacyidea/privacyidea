@@ -39,16 +39,35 @@
     device.</span
   >
   <div class="motp-pin-input">
-    <input
-      [formControl]="motpPinControl"
-      [type]="'password'"
-      class="motp-input"
-      placeholder="Enter Password" />
-
-    <input
-      [formControl]="repeatMotpPinControl"
-      [type]="'password'"
-      class="motp-input"
-      placeholder="Repeat Password" />
+    <mat-form-field class="motp-input">
+      <mat-label>Enter Password</mat-label>
+      <input matInput [formControl]="motpPinControl" [type]="'password'" />
+      @if (
+        motpPinControl.hasError("required") &&
+        (motpPinControl.touched || motpPinControl.dirty)
+      ) {
+        <mat-error>Password is <strong>required</strong></mat-error>
+      }
+      @if (
+        motpPinControl.hasError("minlength") &&
+        (motpPinControl.touched || motpPinControl.dirty)
+      ) {
+        <mat-error>Password must be at least 4 characters long</mat-error>
+      }
+    </mat-form-field>
+    <mat-form-field class="motp-input">
+      <mat-label>Repeat Password</mat-label>
+      <input
+        matInput
+        [formControl]="repeatMotpPinControl"
+        [type]="'password'"
+        placeholder="Repeat Password" />
+      @if (
+        repeatMotpPinControl.hasError("motpPinMismatch") &&
+        (repeatMotpPinControl.touched || repeatMotpPinControl.dirty)
+      ) {
+        <mat-error>mOTP PINs do not match.</mat-error>
+      }
+    </mat-form-field>
   </div>
 </div>
