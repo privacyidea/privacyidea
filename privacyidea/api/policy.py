@@ -110,8 +110,7 @@ def patch_policy_name_api(name):
     :jsonparam name: New name to assign to the policy (in the JSON body).
     :return: Database ID of the renamed policy.
     """
-    data = request.get_json(force=True, silent=False) or {}
-    new_name = get_required(data, "name")
+    new_name = get_required(, "name")
     check_policy_name(new_name)
 
     result = rename_policy(name=name, new_name=new_name)
@@ -199,7 +198,7 @@ def set_policy_api(name=None):
         }
     """
     res = {}
-    param = request.all_data
+    param = 
     check_policy_name(name)
 
     action = getParam(param, "action", required)
@@ -305,7 +304,7 @@ def get_policy(name=None, export=None):
           "version": "privacyIDEA unknown"
         }
     """
-    param = getLowerParams(request.all_data)
+    param = getLowerParams()
     realm = getParam(param, "realm")
     scope = getParam(param, "scope")
     active = getParam(param, "active")
@@ -508,7 +507,7 @@ def check_policy_api():
 
     """
     res = {}
-    param = getLowerParams(request.all_data)
+    param = getLowerParams()
 
     user = getParam(param, "user", required)
     realm = getParam(param, "realm", required)
