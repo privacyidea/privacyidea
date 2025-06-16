@@ -1355,25 +1355,24 @@ def validate_values(values: Union[str, list, None], allowed_values: list, name: 
 @log_with(log)
 def rename_policy(name: str, new_name: str) -> int:
     """
-    Rename a policy.
+    Rename a policy and invalidate the config object so that policies are reloaded.
 
     :param name: The name of the policy to be renamed
     :param new_name: The new name of the policy
     :return: The database ID of the renamed policy
-    :rtype: int
     """
     check_policy_name(new_name)
-    p1 = Policy.query.filter_by(name=name).first()
-    if not p1:
+    policy = Policy.query.filter_by(name=name).first()
+    if not policy:
         raise ParameterError(_("Policy does not exist:") + f" {name}")
     if Policy.query.filter_by(name=new_name).first():
         raise ParameterError(_("Policy already exists:") + f" {new_name}")
 
-    p1.name = new_name
+    policy.name = new_name
     save_config_timestamp()
     db.session.commit()
 
-    return p1.id
+    return policy.id
 
 
 @log_with(log)
