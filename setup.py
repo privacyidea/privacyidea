@@ -7,6 +7,9 @@ from setuptools import setup
 # The pyproject.toml format does not (yet) provide a way to install stand-alone
 # scripts so we (mis)use the setup.py
 setup(
+    data_files=[
+        ('lib/privacyidea/', ['requirements.txt']),
+    ],
     scripts=[
         "tools/creategoogleauthenticator-file",
         "tools/getgooglecodes",
@@ -17,7 +20,6 @@ setup(
         "tools/privacyidea-create-ad-users",
         "tools/privacyidea-create-certificate",
         "tools/privacyidea-create-pwidresolver-user",
-        "tools/privacyidea-create-sqlidresolver-user",
         "tools/privacyidea-create-userdb",
         "tools/privacyidea-diag",
         "tools/privacyidea-export-linotp-counter.py",

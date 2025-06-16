@@ -115,21 +115,14 @@ privacyidea-expired-users = "privacyidea.cli.tools.expired_users:expire_call"
 privacyidea-cron = "privacyidea.cli.tools.cron:cli"
 pi-tokenjanitor = "privacyidea.cli.pitokenjanitor:cli"
 
-#[build-system]
-#requires = ["flit_core >=3.11,<4"]
-#build-backend = "flit_core.buildapi"
-
 [build-system]
 requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
-#[tool.setuptools.packages.find]
-#where = ["."]
-#include = ["privacyidea"]
-#exclude = [".git*", ".cicleci", ".codespell*"]
-
 [tool.setuptools]
-packages = ["privacyidea"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["privacyidea*"]
 
 [tool.setuptools_scm]
-version_file = "privacyidea/_version.py"

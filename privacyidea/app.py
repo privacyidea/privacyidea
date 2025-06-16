@@ -83,12 +83,6 @@ migrate = Migrate()
 babel = Babel()
 
 
-@migrate.configure
-def configure_alembic(alembic_config):
-    alembic_config.set_main_option("script_location", "privacyidea:migrations")
-    return alembic_config
-
-
 def _register_blueprints(app):
     """Register the available Flask blueprints"""
     app.register_blueprint(validate_blueprint, url_prefix='/validate')
@@ -233,7 +227,7 @@ def create_app(config_name="development",
     # Set up Plug-Ins
     db.init_app(app)
     # TODO: This is not necessary except for pi-manage
-    migrate.init_app(app, db)
+    migrate.init_app(app, db, directory="privacyidea/migrations")
 
     Versioned(app, format='%(path)s?v=%(version)s')
 

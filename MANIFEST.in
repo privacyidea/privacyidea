@@ -3,10 +3,10 @@ graft tests
 graft tools
 graft deploy
 graft authmodules
-graft migrations
 
-# We need to exclude files at the end
-# otherwise they get included again
+include requirements.txt
+
+# We need to exclude files at the end otherwise they get included again
 prune venv*
 prune privacyidea/static/node_modules
 
@@ -15,4 +15,4 @@ prune .circleci
 prune .github
 
 global-exclude *.pyc
-exclude .git* .codespell* .readthedocs.yaml .dockerignore .pep8speaks.yml Gruntfile.js coveragerc pi-manage
+exclude .git* .codespell* .readthedocs.yaml .dockerignore .pep8speaks.yml Gruntfile.js coveragerc pi-manage .travis* Procfile
