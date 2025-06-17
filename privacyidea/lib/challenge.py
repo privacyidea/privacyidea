@@ -179,22 +179,20 @@ def delete_challenges(serial: str = None, transaction_id: str = None) -> int:
         challenge.delete()
     return len(challenges)
 
-def _build_challenge_criterion(age):
+
+def _build_challenge_criterion(age: int = None) -> 'sqlalchemy.sql.expression.BinaryExpression':
     """
     Return an SQLAlchemy binary expression selecting the right rows.
 
     :param age: If given, delete challenges older than this many minutes.
     :return: SQLAlchemy binary expression
     """
-    if age:
-        cutoff = datetime.datetime.utcnow() - datetime.timedelta(minutes=age)
-        return Challenge.timestamp < cutoff
-    else:
-        cutoff = datetime.datetime.now(tz=dateutil.tz.tzlocal())
-        return Challenge.expiration < cutoff
+    utc_now = datetime.datetime.utcnow()
+    cutoff = utc_now - datetime.timedelta(minutes=age or 0)
+    return Challenge.expiration < cutoff
 
 
-def cleanup_expired_challenges(chunksize, age):
+def cleanup_expired_challenges(chunksize: int = None, age: int = None) -> int:
     """
     Delete all expired challenges from the challenge table
 
@@ -204,4 +202,3 @@ def cleanup_expired_challenges(chunksize, age):
     """
     criterion = _build_challenge_criterion(age)
     return delete_matching_rows(db.session, Challenge.__table__, criterion, chunksize)
-

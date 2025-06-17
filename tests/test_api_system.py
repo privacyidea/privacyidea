@@ -1247,7 +1247,7 @@ class APIConfigTestCase(MyApiTestCase):
             select(func.count()).select_from(UserCache)).scalar_one()
         self.assertEqual(count, 2, f"expected 2 cache rows, found {count}")
 
-        with self.app.test_request_context('/system/usercache',
+        with self.app.test_request_context('/system/user-cache',
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -1266,7 +1266,7 @@ class APIConfigTestCase(MyApiTestCase):
         import datetime as dt
         from sqlalchemy import func, select
 
-        # seed the DB with two expired challenges
+        # seed the DB with two expired challenges and one valid challenge
         now = dt.datetime.utcnow()
         db.session.execute(
             Challenge.__table__.insert(),
@@ -1292,6 +1292,17 @@ class APIConfigTestCase(MyApiTestCase):
                     expiration=now - dt.timedelta(minutes=5),
                     received_count=0,
                     otp_valid=False,
+                ),
+                dict(
+                    transaction_id="tx3",
+                    data="",
+                    challenge="ghijkl",
+                    session="sess3",
+                    serial="serial3",
+                    timestamp=now,
+                    expiration=now + dt.timedelta(minutes=5),
+                    received_count=0,
+                    otp_valid=True,
                 )
             ]
         )
@@ -1301,12 +1312,12 @@ class APIConfigTestCase(MyApiTestCase):
             select(func.count()).select_from(Challenge)
         ).scalar_one()
         self.assertEqual(
-            start_cnt, 2,
+            start_cnt, 3,
             f"expected two challenges before deletion, found {start_cnt}")
 
         # delete the challenge cache
         with self.app.test_request_context(
-                '/system/challengecache',
+                '/system/challenge-cache',
                 method='DELETE',
                 headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -1321,8 +1332,8 @@ class APIConfigTestCase(MyApiTestCase):
             select(func.count()).select_from(Challenge)
         ).scalar_one()
         self.assertEqual(
-            remaining, 0,
-            f"challenge-cache still contains {remaining} rows")
+            remaining, 1,
+            f"challenge-cache contains {remaining} rows")
 
     def test_30_realms_with_nodes(self):
         nd1_uuid = "8e4272a9-9037-40df-8aa3-976e4a04b5a9"

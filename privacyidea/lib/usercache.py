@@ -53,6 +53,7 @@ class user_cache(object):
         :param wrapped_function: The function, that is decorated.
         :return: None
         """
+
         @functools.wraps(wrapped_function)
         def cache_wrapper(*args, **kwds):
             if is_cache_enabled():
@@ -84,7 +85,7 @@ def is_cache_enabled():
     return bool(get_cache_time())
 
 
-def delete_user_cache(resolver=None, username=None, expired=None):
+def delete_user_cache(resolver: str = None, username: str = None, expired: bool = None) -> int:
     """
     This completely deletes the user cache.
     If no parameter is given, it deletes the user cache completely.
@@ -99,12 +100,12 @@ def delete_user_cache(resolver=None, username=None, expired=None):
     """
     filter_condition = create_filter(username=username, resolver=resolver,
                                      expired=expired)
-    rowcount = db.session.query(UserCache).filter(filter_condition).delete()
+    row_count = db.session.query(UserCache).filter(filter_condition).delete()
     db.session.commit()
     log.info('Deleted {} entries from the user cache (resolver={!r}, username={!r}, expired={!r})'.format(
-        rowcount, resolver, username, expired
+        row_count, resolver, username, expired
     ))
-    return rowcount
+    return row_count
 
 
 def add_to_cache(username, used_login, resolver, user_id):

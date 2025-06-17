@@ -488,7 +488,7 @@ def list_nodes():
     g.audit_object.log({"success": True})
     return send_result(nodes)
 
-@system_blueprint.route("/usercache", methods=['DELETE'])
+@system_blueprint.route("/user-cache", methods=['DELETE'])
 @admin_required
 def delete_user_cache_api():
     """
@@ -517,9 +517,9 @@ def delete_user_cache_api():
     g.audit_object.log({"success": True, "info": f"Deleted {row_count} entries from user cache"})
     return send_result({"status": True})
 
-@system_blueprint.route("/challengecache", methods=['DELETE'])
+@system_blueprint.route("/challenge-cache", methods=['DELETE'])
 @admin_required
-def delete_challenge_cache():
+def delete_challenge_cache_api():
     """
     Delete the challenge cache. It will delete all entries in the challenge cache.
 

@@ -678,7 +678,7 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                 });
             },
             deleteUserCache: function (callback) {
-                $http.delete(systemUrl + "/usercache", {
+                $http.delete(systemUrl + "/user-cache", {
                     headers: {
                         'PI-Authorization': AuthFactory.getAuthToken(),
                         'Content-Type': 'application/json'
@@ -690,7 +690,7 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                 });
             },
             deleteChallengeCache: function (callback) {
-                $http.delete(systemUrl + "/challengecache", {
+                $http.delete(systemUrl + "/challenge-cache", {
                     headers: {
                         'PI-Authorization': AuthFactory.getAuthToken(),
                         'Content-Type': 'application/json'
