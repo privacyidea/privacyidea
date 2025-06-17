@@ -1,4 +1,4 @@
-@use '@angular/material' as mat;
+@use "@angular/material" as mat;
 
 $button-height: 40px;
 $button-width: 240px;
@@ -35,14 +35,18 @@ $header-bg: white;
   background: $background;
   box-shadow: $box-shadow;
   cursor: $cursor;
-  transition: background 400ms, box-shadow 400ms;
+  transition:
+    background 400ms,
+    box-shadow 400ms;
 }
 
 @mixin button-hover($background, $box-shadow) {
   &:hover {
     background: $background;
     box-shadow: $box-shadow;
-    transition: background 400ms, box-shadow 400ms;
+    transition:
+      background 400ms,
+      box-shadow 400ms;
   }
 }
 
@@ -78,7 +82,6 @@ $header-bg: white;
   }
 }
 
-
 .support-btn {
   height: 40px;
   margin: 0 20px;
@@ -93,55 +96,55 @@ $header-bg: white;
   }
 
   &:active {
-    transform: scale(0.98)
+    transform: scale(0.98);
   }
 }
 
 .card-button {
   min-width: 240px;
   @include button-base(
-      $button-height,
-      $button-width,
-      $button-border-radius,
-      var(--background-blue),
-      var(--box-shadow-blue)
+    $button-height,
+    $button-width,
+    $button-border-radius,
+    var(--background-blue),
+    var(--box-shadow-blue)
   );
   @include button-hover(
-      var(--background-blue-inset),
-      var(--box-shadow-blue-inset)
+    var(--background-blue-inset),
+    var(--box-shadow-blue-inset)
   );
 }
 
 .card-button-reset {
   min-width: 240px;
   @include button-base(
-      $button-height,
-      $button-width,
-      $button-border-radius,
-      var(--background-green),
-      var(--box-shadow-green)
+    $button-height,
+    $button-width,
+    $button-border-radius,
+    var(--background-green),
+    var(--box-shadow-green)
   );
 }
 
 .card-button-active {
   min-width: 240px;
   @include button-base(
-      $button-height,
-      $button-width,
-      $button-border-radius,
-      var(--background-blue-inset),
-      var(--box-shadow-blue-inset)
+    $button-height,
+    $button-width,
+    $button-border-radius,
+    var(--background-blue-inset),
+    var(--box-shadow-blue-inset)
   );
 }
 
 .card-button-disabled {
   min-width: 240px;
   @include button-base(
-      $button-height,
-      $button-width,
-      $button-border-radius,
-      var(--background-gray),
-      var(--box-shadow-gray)
+    $button-height,
+    $button-width,
+    $button-border-radius,
+    var(--background-gray),
+    var(--box-shadow-gray)
   );
   color: #5b5b5b;
 }
@@ -149,11 +152,11 @@ $header-bg: white;
 .card-button-delete {
   min-width: 240px;
   @include button-base(
-      $button-height,
-      $button-width,
-      $button-border-radius,
-      var(--background-red),
-      var(--box-shadow-red)
+    $button-height,
+    $button-width,
+    $button-border-radius,
+    var(--background-red),
+    var(--box-shadow-red)
   );
   transition: 0ms;
 
@@ -161,18 +164,20 @@ $header-bg: white;
   &:hover {
     background: var(--background-red-inset);
     box-shadow: var(--box-shadow-red-inset);
-    transition: background 400ms, box-shadow 400ms;
+    transition:
+      background 400ms,
+      box-shadow 400ms;
   }
 }
 
 .card-button-activate {
   min-width: 240px;
   @include button-base(
-      $button-height,
-      $button-width,
-      $button-border-radius,
-      var(--background-green),
-      var(--box-shadow-green)
+    $button-height,
+    $button-width,
+    $button-border-radius,
+    var(--background-green),
+    var(--box-shadow-green)
   );
   transition: 0ms;
 
@@ -180,7 +185,9 @@ $header-bg: white;
   &:hover {
     background: var(--background-green-inset);
     box-shadow: var(--box-shadow-green-inset);
-    transition: background 400ms, box-shadow 400ms;
+    transition:
+      background 400ms,
+      box-shadow 400ms;
   }
 }
 
@@ -188,15 +195,15 @@ $header-bg: white;
   min-width: 240px;
   color: white;
   @include button-base(
-      $button-height,
-      $button-width,
-      $button-border-radius,
-      var(--background-blue),
-      var(--box-shadow-blue)
+    $button-height,
+    $button-width,
+    $button-border-radius,
+    var(--background-blue),
+    var(--box-shadow-blue)
   );
   @include button-hover(
-      var(--background-blue-inset),
-      var(--box-shadow-blue-inset)
+    var(--background-blue-inset),
+    var(--box-shadow-blue-inset)
   );
 }
 
@@ -296,8 +303,15 @@ $header-bg: white;
 .enroll-button-container {
   display: flex;
   flex-direction: row;
-  margin-left: 497px;
+  justify-content: center;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
   gap: 8px;
+}
+
+.enroll-button-spacer {
+  width: 40px; // Standard width of a mat-icon-button
+  height: 40px; // Standard height of a mat-icon-button, ensures alignment
 }
 
 .profile-btn {
@@ -346,7 +360,6 @@ $header-bg: white;
     @include mat.elevation(8);
   }
 }
-
 
 .mdi--folder-search {
   display: inline-block;

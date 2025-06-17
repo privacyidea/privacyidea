@@ -19,6 +19,7 @@ import {
   YubikeyApiPayloadMapper,
   YubikeyEnrollmentData,
 } from '../../../../mappers/token-api-payload/yubikey-token-api-payload.mapper';
+import { MatOptionModule } from '@angular/material/core';
 
 @Component({
   selector: 'app-enroll-yubikey',
@@ -30,7 +31,7 @@ import {
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
-    // Other modules
+    MatOptionModule,
   ],
 })
 export class EnrollYubikeyComponent implements OnInit {
@@ -75,12 +76,6 @@ export class EnrollYubikeyComponent implements OnInit {
       otpLength: this.otpLengthControl,
     });
     this.clickEnrollChange.emit(this.onClickEnroll);
-
-    this.testYubiKeyControl.valueChanges.subscribe((value) => {
-      if (value && value.length > 0) {
-        this.otpLengthControl.setValue(value.length);
-      }
-    });
   }
 
   onClickEnroll = (

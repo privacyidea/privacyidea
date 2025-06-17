@@ -1,3 +1,4 @@
+import { Injectable } from '@angular/core';
 import {
   TokenApiPayloadMapper,
   TokenEnrollmentPayload,
@@ -13,7 +14,7 @@ export interface YubikeyEnrollmentPayload extends TokenEnrollmentPayload {
   otpkey: string | null;
   otplen: number | null;
 }
-
+@Injectable({ providedIn: 'root' })
 export class YubikeyApiPayloadMapper
   implements TokenApiPayloadMapper<YubikeyEnrollmentData>
 {

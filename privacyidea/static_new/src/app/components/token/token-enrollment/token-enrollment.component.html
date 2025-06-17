@@ -24,28 +24,6 @@
     </mat-hint>
   </mat-form-field>
   <form [formGroup]="formGroup">
-    <div class="enroll-button-container">
-      <button
-        (click)="reopenEnrollmentDialog()"
-        [disabled]="enrollResponse() === null"
-        mat-icon-button>
-        <mat-icon>open_in_new</mat-icon>
-      </button>
-      <button
-        (click)="enrollToken()"
-        [ngClass]="{
-          'disabled-button': formGroup.invalid || !selectedTokenType(),
-          'card-button': true,
-        }"
-        mat-flat-button>
-        <mat-icon>add</mat-icon>
-        @if (selectedTokenType(); as tt) {
-          Enroll {{ tt.key }} Token
-        } @else {
-          Enroll Token
-        }
-      </button>
-    </div>
     @switch (selectedTokenType().key) {
       @case ("hotp") {
         <app-enroll-hotp
@@ -348,5 +326,28 @@
         </div>
       </mat-expansion-panel>
     </mat-accordion>
+    <div class="enroll-button-container">
+      <div class="enroll-button-spacer"></div>
+      <button
+        (click)="enrollToken()"
+        [ngClass]="{
+          'disabled-button': formGroup.invalid || !selectedTokenType(),
+          'card-button': true,
+        }"
+        mat-flat-button>
+        <mat-icon>add</mat-icon>
+        @if (selectedTokenType(); as tt) {
+          Enroll {{ tt.key }} Token
+        } @else {
+          Enroll Token
+        }
+      </button>
+      <button
+        (click)="reopenEnrollmentDialog()"
+        [disabled]="enrollResponse() === null"
+        mat-icon-button>
+        <mat-icon>open_in_new</mat-icon>
+      </button>
+    </div>
   </form>
 </div>
