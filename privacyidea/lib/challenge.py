@@ -188,8 +188,11 @@ def _build_challenge_criterion(age: int = None) -> 'sqlalchemy.sql.expression.Bi
     :return: SQLAlchemy binary expression
     """
     utc_now = datetime.datetime.utcnow()
-    cutoff = utc_now - datetime.timedelta(minutes=age or 0)
-    return Challenge.expiration < cutoff
+    if age is not None:
+        cutoff = utc_now - datetime.timedelta(minutes=age)
+        return Challenge.timestamp < cutoff
+
+    return Challenge.expiration < utc_now
 
 
 def cleanup_expired_challenges(chunksize: int = None, age: int = None) -> int:

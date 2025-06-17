@@ -54,6 +54,6 @@ def cleanup_challenge(chunksize: int, age: int, dryrun: bool) -> int:
         row_count = Challenge.query.filter(criterion).count()
         click.echo("Would delete {0!s} challenge entries.".format(row_count))
     else:
-        row_count = cleanup_expired_challenges(criterion, chunksize)
+        row_count = cleanup_expired_challenges(chunksize=chunksize, age=age)
         click.echo("{0!s} entries deleted.".format(row_count))
     return row_count
