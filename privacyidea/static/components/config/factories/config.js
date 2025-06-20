@@ -413,6 +413,15 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                     AuthFactory.authError(error.data)
                 });
             },
+            getDefaultResolverConfig: function (resolvertype, callback) {
+                $http.get(resolverUrl + "/" + resolvertype + "/default", {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
             getMachineResolver: function (resolvername, callback) {
                 $http.get(machineResolverUrl + "/" + resolvername, {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}

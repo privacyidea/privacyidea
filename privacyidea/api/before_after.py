@@ -113,10 +113,55 @@ def before_user_request():
     before_request()
 
 
+def before_create_user_request():
+    """
+    This function is executed before the create user endpoint.
+    It removes the user parameter from the request to avoid that before_request tries to resolve the user.
+    """
+    ensure_no_config_object()
+    request.all_data = get_all_params(request)
+    request.User = None
+    get_before_request_config()
+
+    privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
+
+    # Already get some typical parameters to log
+    audit_realm = getParam(request.all_data, "realm")
+    audit_resolver = getParam(request.all_data, "resolver")
+    audit_username = getParam(request.all_data, "user")
+
+    ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
+    g.audit_object.log({"success": False,
+                        "user": audit_username,
+                        "realm": audit_realm,
+                        "resolver": audit_resolver,
+                        "client": g.client_ip,
+                        "user_agent": ua_name,
+                        "user_agent_version": ua_version,
+                        "privacyidea_server": privacyidea_server,
+                        "action": "{0!s} {1!s}".format(request.method, request.url_rule),
+                        "action_detail": "",
+                        "thread_id": "{0!s}".format(threading.current_thread().ident),
+                        "info": ""})
+
+    if g.logged_in_user.get("role") == "admin":
+        # An administrator is calling this API
+        g.audit_object.log({"administrator": g.logged_in_user.get("username")})
+        # TODO: Check if there are realm specific admin policies, so that the
+        #  admin is only allowed to act on certain realms
+        #  If now realm is specified, we need to add "filterrealms".
+        #  If the admin tries to view realms, he is not allowed to, we need to
+        #  raise an exception.
+
+
+
 @user_blueprint.before_request
 @user_required
 def before_userendpoint_request():
-    before_request()
+    if request.endpoint == "user_blueprint.create_user_api":
+        before_create_user_request()
+    else:
+        before_request()
     # DEL /user/ has no realm parameter, and thus we need to create the user object this way.
     if not request.User and request.method == "DELETE":
         resolvername = getParam(request.all_data, "resolvername")
