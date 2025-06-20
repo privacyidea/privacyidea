@@ -378,7 +378,9 @@ cryptography==44.0.2 \
     --hash=sha256:efcfe97d1b3c79e486554efddeb8f6f53a4cdd4cf6086642784fa31fc384e1d7 \
     --hash=sha256:f514ef4cd14bb6fb484b4a60203e912cfcb64f2ab139e88c2274511514bf7308
     # via
+    #   msal
     #   privacyIDEA (setup.py)
+    #   pyjwt
     #   pyopenssl
     #   webauthn
 defusedxml==0.7.1 \
@@ -788,6 +790,10 @@ markupsafe==3.0.2 \
     #   jinja2
     #   mako
     #   werkzeug
+msal==1.32.3 \
+    --hash=sha256:5eea038689c78a5a70ca8ecbe1245458b55a857bd096efb6989c69ba15985d35 \
+    --hash=sha256:b2798db57760b1961b142f027ffb7c8169536bf77316e99a0df5c4aaebb11569
+    # via privacyIDEA (setup.py)
 netaddr==1.3.0 \
     --hash=sha256:5c3c3d9895b551b763779ba7db7a03487dc1f8e3b385af819af341ae9ef6e48a \
     --hash=sha256:c2c6a8ebe5554ce33b7d5b3a306b71bbb373e000bbbf2350dd5213cc56e3dbbe
@@ -830,10 +836,12 @@ pydash==8.0.5 \
     --hash=sha256:7cc44ebfe5d362f4f5f06c74c8684143c5ac481376b059ff02570705523f9e2e \
     --hash=sha256:b2625f8981862e19911daa07f80ed47b315ce20d9b5eb57aaf97aaf570c3892f
     # via privacyIDEA (setup.py)
-pyjwt==2.10.1 \
+pyjwt[crypto]==2.10.1 \
     --hash=sha256:3cc5772eb20009233caf06e9d8a0577824723b44e6648ee0a2aedb6cf9381953 \
     --hash=sha256:dcdd193e30abefd5debf142f9adfcdd2b58004e644f25406ffaebd50bd98dacb
-    # via privacyIDEA (setup.py)
+    # via
+    #   msal
+    #   privacyIDEA (setup.py)
 pymysql==1.1.1 \
     --hash=sha256:4de15da4c61dc132f4fb9ab763063e693d521a80fd0e87943b9a453dd4c19d6c \
     --hash=sha256:e127611aaf2b417403c60bf4dc570124aeb4a57f5f37b8e95ae399a42f904cd0
@@ -926,7 +934,9 @@ redis==5.2.1 \
 requests==2.32.3 \
     --hash=sha256:55365417734eb18255590a9ff9eb97e9e1da868d4ccd6402399eaf68af20a760 \
     --hash=sha256:70761cfe03c773ceb22aa2f671b4757976145175cdfca038c02654d061d6dcc6
-    # via privacyIDEA (setup.py)
+    # via
+    #   msal
+    #   privacyIDEA (setup.py)
 rsa==4.9 \
     --hash=sha256:90260d9058e514786967344d0ef75fa8727eed8a7d2e43ce9f4bcf1b536174f7 \
     --hash=sha256:e38464a49c6c85d7f1351b0126661487a7e0a14a50f1675ec50eb34d4f20ef21

@@ -45,6 +45,7 @@ install_requires = [
     "grpcio",
     "huey[redis]",
     "ldap3<2.9",
+    "msal",
     "netaddr",
     "passlib[bcrypt]",
     "protobuf",
