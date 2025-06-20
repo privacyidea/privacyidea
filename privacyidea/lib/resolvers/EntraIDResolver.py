@@ -231,7 +231,7 @@ class EntraIDResolver(HTTPResolver):
             access_token = result["access_token"]
         else:
             log.warning(
-                f"Failed to get access token with error {result.get("error")} {result.get("error_description")}")
+                f"Failed to get access token with error {result.get('error')} {result.get('error_description')}")
             raise ResolverError(f"Failed to get access token to resolve users from EntraID: {result.get('error')}")
 
         header = {"Authorization": f"Bearer {access_token}"}
@@ -278,7 +278,7 @@ class EntraIDResolver(HTTPResolver):
                         else:
                             filter_values.append(f"startswith({entra_key}, '{value}')")
                     else:
-                        filter_values.append(f"{entra_key} eq '{value.replace("*", self.wildcard)}'")
+                        filter_values.append(f"{entra_key} eq '{value.replace('*', self.wildcard)}'")
                 else:
                     log.debug(
                         f"Search parameter '{key}' not found in attribute mapping. Search without this parameter.")
