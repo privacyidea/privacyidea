@@ -77,21 +77,9 @@ export class EnrollMotpComponent implements OnInit {
     motpPin: AbstractControl,
     repeatMotpPin: AbstractControl,
   ): ValidationErrors | null {
-    console.log('Validating motpPin: ', motpPin?.value);
-    console.log('Validating repeatMotpPin: ', repeatMotpPin?.value);
     if (motpPin && repeatMotpPin && motpPin.value !== repeatMotpPin.value) {
-      console.log(
-        'Validating motpPin mismatch: ',
-        motpPin.value,
-        repeatMotpPin.value,
-      );
       return { motpPinMismatch: true };
     }
-    console.log(
-      'Validating motpPin match: ',
-      motpPin?.value,
-      repeatMotpPin?.value,
-    );
     return null;
   }
 

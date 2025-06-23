@@ -151,7 +151,7 @@
                         #userAuto="matAutocomplete"
                         class="user-selection-autocomplete">
                         @for (
-                          option of userService.filteredUserOptions();
+                          option of userService.filteredUsernames();
                           track option
                         ) {
                           <mat-option [value]="option">{{ option }}</mat-option>

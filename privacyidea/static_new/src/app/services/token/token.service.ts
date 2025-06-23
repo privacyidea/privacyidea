@@ -756,118 +756,118 @@ export class TokenService {
     const headers = this.localService.getHeaders();
     const params = mapper.toApiPayload(data);
 
-    switch (data.type) {
-      case 'webauthn':
-      case 'passkey':
-        if (data['credential_id']) {
-          Object.entries(data).forEach(([key, value]) => {
-            params[key] = value;
-          });
-        }
-        break;
-      case 'hotp':
-      case 'totp':
-      case 'motp':
-      case 'applspec':
-        params.otpkey = data['generateOnServer'] ? null : data['otpKey'];
-        params.genkey = data['generateOnServer'] ? 1 : 0;
-        if (data.type === 'motp') {
-          params.motppin = data['motpPin'];
-        }
-        if (data.type === 'hotp' || data.type === 'totp') {
-          params.otplen = Number(data['otpLength']);
-          params.hashlib = data['hashAlgorithm'];
-        }
-        if (data.type === 'totp') {
-          params.timeStep = data['timeStep'];
-        }
-        if (data.type === 'applspec') {
-          params.service_id = data['serviceId'];
-        }
-        break;
-      case 'push':
-        params.genkey = 1;
-        break;
-      case 'daypassword':
-        params.otpkey = data['otpKey'];
-        params.otplen = Number(data['otpLength']);
-        params.hashlib = data['hashAlgorithm'];
-        params.timeStep = data['timeStep'];
-        break;
-      case 'indexedsecret':
-        params.otpkey = data['otpKey'];
-        break;
-      case 'yubikey':
-        params.otplen = Number(data['otpLength']);
-        params.otpkey = data['otpKey'];
-        break;
-      case 'yubico':
-        params['yubico.tokenid'] = data['yubicoIdentifier'];
-        break;
-      case 'radius':
-        params['radius.identifier'] = data['radiusServerConfiguration'];
-        params['radius.user'] = data['radiusUser'];
-        break;
-      case 'remote':
-        params['remote.server_id'] = data['remoteServer'];
-        params['remote.serial'] = data['remoteSerial'];
-        params['remote.user'] = data['remoteUser'];
-        params['remote.realm'] = data['remoteRealm'];
-        params['remote.resolver'] = data['remoteResolver'];
-        params['remote.local_checkpin'] = data['checkPinLocally'];
-        break;
-      case 'sms':
-        params['sms.identifier'] = data['smsGateway'];
-        params['phone'] = data['readNumberDynamically']
-          ? null
-          : data['phoneNumber'];
-        params['dynamic_phone'] = data['readNumberDynamically'];
-        break;
-      case '4eyes':
-        params.separator = data['separator'];
-        params['4eyes'] = data['requiredTokenOfRealms']?.reduce(
-          (
-            acc: { [key: string]: { count: number; selected: boolean } },
-            curr: any,
-          ) => {
-            acc[curr.realm] = {
-              count: curr.tokens,
-              selected: true,
-            };
-            return acc;
-          },
-          {},
-        );
-        if (data['onlyAddToRealm']) {
-          params.realm = data['userRealm'];
-          params.user = null;
-        }
-        break;
-      case 'certificate':
-        params.genkey = 1;
-        params.ca = data['caConnector'];
-        params.template = data['certTemplate'];
-        params.pem = data['pem'];
-        break;
-      case 'email':
-        params.email = data['emailAddress'];
-        params.dynamic_email = data['readEmailDynamically'];
-        break;
+    // switch (data.type) {
+    //   case 'webauthn':
+    //   case 'passkey':
+    //     if (data['credential_id']) {
+    //       Object.entries(data).forEach(([key, value]) => {
+    //         params[key] = value;
+    //       });
+    //     }
+    //     break;
+    //   case 'hotp':
+    //   case 'totp':
+    //   case 'motp':
+    //   case 'applspec':
+    //     params.otpkey = data['generateOnServer'] ? null : data['otpKey'];
+    //     params.genkey = data['generateOnServer'] ? 1 : 0;
+    //     if (data.type === 'motp') {
+    //       params.motppin = data['motpPin'];
+    //     }
+    //     if (data.type === 'hotp' || data.type === 'totp') {
+    //       params.otplen = Number(data['otpLength']);
+    //       params.hashlib = data['hashAlgorithm'];
+    //     }
+    //     if (data.type === 'totp') {
+    //       params.timeStep = data['timeStep'];
+    //     }
+    //     if (data.type === 'applspec') {
+    //       params.service_id = data['serviceId'];
+    //     }
+    //     break;
+    //   case 'push':
+    //     params.genkey = 1;
+    //     break;
+    //   case 'daypassword':
+    //     params.otpkey = data['otpKey'];
+    //     params.otplen = Number(data['otpLength']);
+    //     params.hashlib = data['hashAlgorithm'];
+    //     params.timeStep = data['timeStep'];
+    //     break;
+    //   case 'indexedsecret':
+    //     params.otpkey = data['otpKey'];
+    //     break;
+    //   case 'yubikey':
+    //     params.otplen = Number(data['otpLength']);
+    //     params.otpkey = data['otpKey'];
+    //     break;
+    //   case 'yubico':
+    //     params['yubico.tokenid'] = data['yubicoIdentifier'];
+    //     break;
+    //   case 'radius':
+    //     params['radius.identifier'] = data['radiusServerConfiguration'];
+    //     params['radius.user'] = data['radiusUser'];
+    //     break;
+    //   case 'remote':
+    //     params['remote.server_id'] = data['remoteServer'];
+    //     params['remote.serial'] = data['remoteSerial'];
+    //     params['remote.user'] = data['remoteUser'];
+    //     params['remote.realm'] = data['remoteRealm'];
+    //     params['remote.resolver'] = data['remoteResolver'];
+    //     params['remote.local_checkpin'] = data['checkPinLocally'];
+    //     break;
+    //   case 'sms':
+    //     params['sms.identifier'] = data['smsGateway'];
+    //     params['phone'] = data['readNumberDynamically']
+    //       ? null
+    //       : data['phoneNumber'];
+    //     params['dynamic_phone'] = data['readNumberDynamically'];
+    //     break;
+    //   case '4eyes':
+    //     params.separator = data['separator'];
+    //     params['4eyes'] = data['requiredTokenOfRealms']?.reduce(
+    //       (
+    //         acc: { [key: string]: { count: number; selected: boolean } },
+    //         curr: any,
+    //       ) => {
+    //         acc[curr.realm] = {
+    //           count: curr.tokens,
+    //           selected: true,
+    //         };
+    //         return acc;
+    //       },
+    //       {},
+    //     );
+    //     if (data['onlyAddToRealm']) {
+    //       params.realm = data['userRealm'];
+    //       params.user = null;
+    //     }
+    //     break;
+    //   case 'certificate':
+    //     params.genkey = 1;
+    //     params.ca = data['caConnector'];
+    //     params.template = data['certTemplate'];
+    //     params.pem = data['pem'];
+    //     break;
+    //   case 'email':
+    //     params.email = data['emailAddress'];
+    //     params.dynamic_email = data['readEmailDynamically'];
+    //     break;
 
-      case 'question':
-        params.questions = data['answers'];
-        break;
+    //   case 'question':
+    //     params.questions = data['answers'];
+    //     break;
 
-      case 'vasco':
-        if (data['useVascoSerial']) {
-          params.serial = data['vascoSerial'];
-        }
-        params.otpkey = data['otpKey'];
-        params.genkey = 0;
-        break;
-      default:
-        break;
-    }
+    //   case 'vasco':
+    //     if (data['useVascoSerial']) {
+    //       params.serial = data['vascoSerial'];
+    //     }
+    //     params.otpkey = data['otpKey'];
+    //     params.genkey = 0;
+    //     break;
+    //   default:
+    //     break;
+    // }
 
     return this.http
       .post<EnrollmentResponse>(`${this.tokenBaseUrl}init`, params, {

@@ -94,7 +94,7 @@
           matInput />
         <mat-error>User is <strong>required</strong></mat-error>
         <mat-autocomplete #userAuto="matAutocomplete">
-          @for (option of userService.filteredUserOptions(); track option) {
+          @for (option of userService.filteredUsernames(); track option) {
             <mat-option [value]="option">{{ option }}</mat-option>
           }
         </mat-autocomplete>

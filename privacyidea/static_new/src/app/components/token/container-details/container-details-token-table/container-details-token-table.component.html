@@ -3,17 +3,19 @@
   class="container-details-token-table-container">
   <div class="flex-column">
     <h3 class="margin-left-1">Token in Container</h3>
-    <mat-form-field
-      class="container-details-token-table-filter"
-      subscriptSizing="dynamic">
-      <mat-label>Enter Filter</mat-label>
-      <input
-        #filterInput
-        (keyup)="handleFilterInput($event)"
-        aria-label="Filter Input"
-        matInput
-        placeholder="Filter across all columns." />
-    </mat-form-field>
+    @if (dataSource.data.length > 1) {
+      <mat-form-field
+        class="container-details-token-table-filter"
+        subscriptSizing="dynamic">
+        <mat-label>Enter Filter</mat-label>
+        <input
+          #filterInput
+          (keyup)="handleFilterInput($event)"
+          aria-label="Filter Input"
+          matInput
+          placeholder="Filter across all columns." />
+      </mat-form-field>
+    }
     <mat-paginator
       [pageSizeOptions]="pageSizeOptions"
       [pageSize]="pageSize"
@@ -131,9 +133,7 @@
       <button
         (click)="assignToAllToken()"
         [ngClass]="[
-          isAssignableToAllToken()
-            ? 'card-button'
-            : 'card-button-disabled',
+          isAssignableToAllToken() ? 'card-button' : 'card-button-disabled',
         ]"
         [disabled]="!isAssignableToAllToken()"
         mat-flat-button>
@@ -143,9 +143,7 @@
       <button
         (click)="unassignFromAllToken()"
         [ngClass]="[
-          isUnassignableFromAllToken()
-            ? 'card-button'
-            : 'card-button-disabled',
+          isUnassignableFromAllToken() ? 'card-button' : 'card-button-disabled',
         ]"
         [disabled]="!isUnassignableFromAllToken()"
         mat-flat-button>

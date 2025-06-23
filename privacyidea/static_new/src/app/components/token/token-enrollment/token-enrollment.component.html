@@ -1,6 +1,6 @@
 <div aria-label="Token Enrollment" class="token-enrollment-container">
   <h3 class="margin-left-1">Token Enrollment</h3>
-  <mat-form-field class="width-100">
+  <mat-form-field class="width-100 margin-bottom-1">
     <mat-select
       [(ngModel)]="selectedTokenType"
       [panelClass]="'multi-column-panel'">
@@ -182,12 +182,14 @@
           <mat-form-field class="width-50 input-height">
             <mat-label>Enter User</mat-label>
             <input
-              [formControl]="userNameFilterControl"
+              [formControl]="userFilterControl"
               [matAutocomplete]="userAuto"
               matInput />
-            <mat-autocomplete #userAuto="matAutocomplete">
-              @for (option of userService.filteredUserOptions(); track option) {
-                <mat-option [value]="option">{{ option }}</mat-option>
+            <mat-autocomplete
+              #userAuto="matAutocomplete"
+              [displayWith]="userService.displayUser">
+              @for (user of userService.filteredUsers(); track user) {
+                <mat-option [value]="user">{{ user.username }}</mat-option>
               }
             </mat-autocomplete>
             @if (selectedUserRealmControl.hasError("required")) {
@@ -202,10 +204,10 @@
                 Select a realm first to enable user selection.
               </mat-hint>
             }
-            @if (userNameFilterControl.hasError("required")) {
+            @if (userFilterControl.hasError("required")) {
               <mat-error>User is <strong>required</strong></mat-error>
             }
-            @if (userNameFilterControl.hasError("userNotInOptions")) {
+            @if (userFilterControl.hasError("userNotInOptions")) {
               <mat-error>User must be selected from the list.</mat-error>
             }
           </mat-form-field>

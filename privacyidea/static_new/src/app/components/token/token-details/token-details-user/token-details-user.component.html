@@ -1,34 +1,40 @@
-<div [ngClass]="[
+<div
+  [ngClass]="[
     overflowService.isWidthOverflowing('body', 1580)
       ? 'flex-column'
       : 'flex-row',
     overflowService.isWidthOverflowing('body', 1310) ? 'pad-0' : '',
   ]"
-     class="user-container ali-center">
-  <table [dataSource]="userData()"
-         aria-label="User Detail Data Table"
-         class="user-details-table"
-         mat-table>
+  class="user-container ali-center">
+  <table
+    [dataSource]="userData()"
+    aria-label="User Detail Data Table"
+    class="user-details-table"
+    mat-table>
     <ng-container matColumnDef="key">
-      <td *matCellDef="let element"
-          class="details-key-row"
-          mat-cell>{{ element.keyMap.label }}
+      <td *matCellDef="let element" class="details-key-row" mat-cell
+        >{{ element.keyMap.label }}
       </td>
     </ng-container>
     <ng-container matColumnDef="value">
-      <td *matCellDef="let element"
-          class="user-editable-row height-52 fix-width-20-padr-0"
-          mat-cell>
+      <td
+        *matCellDef="let element"
+        class="user-editable-row height-52 fix-width-20-padr-0"
+        mat-cell>
         @switch (element.keyMap.key) {
           @case ("username") {
             @if (isEditingUser() && userService.selectedUserRealm() !== "") {
               <mat-form-field>
                 <mat-label>Enter User</mat-label>
-                <input matInput
-                       [(ngModel)]="userService.userNameFilter"
-                       [matAutocomplete]="userAuto" />
+                <input
+                  matInput
+                  [(ngModel)]="userService.userNameFilter"
+                  [matAutocomplete]="userAuto" />
                 <mat-autocomplete #userAuto="matAutocomplete">
-                  @for (option of userService.filteredUserOptions(); track option) {
+                  @for (
+                    option of userService.filteredUsernames();
+                    track option
+                  ) {
                     <mat-option [value]="option">{{ option }}</mat-option>
                   }
                 </mat-autocomplete>
@@ -58,63 +64,58 @@
       </td>
     </ng-container>
     <ng-container matColumnDef="edit">
-      <td *matCellDef="let element"
-          class="edit-column-cell"
-          mat-cell>
+      <td *matCellDef="let element" class="edit-column-cell" mat-cell>
         @switch (element.keyMap.key) {
           @case ("username") {
             @if (!(isAnyEditingOrRevoked() && !isEditingUser())) {
               @if (element.value) {
                 <div class="edit-button-container">
-                  <button mat-icon-button
-                          class="yellow"
-                          (click)="unassignUser()">
+                  <button
+                    mat-icon-button
+                    class="yellow"
+                    (click)="unassignUser()">
                     <mat-icon>person_remove</mat-icon>
                   </button>
                 </div>
               } @else {
-                <app-edit-buttons [toggleEdit]="toggleUserEdit.bind(this)"
-                                  [saveEdit]="saveUser.bind(this)"
-                                  [cancelEdit]="cancelUserEdit.bind(this)"
-                                  [shouldHideEdit]="isAnyEditingOrRevoked"
-                                  [isEditingUser]="isEditingUser"
-                                  [isEditingInfo]="isEditingInfo"
-                                  [element]="element"></app-edit-buttons>
+                <app-edit-buttons
+                  [toggleEdit]="toggleUserEdit.bind(this)"
+                  [saveEdit]="saveUser.bind(this)"
+                  [cancelEdit]="cancelUserEdit.bind(this)"
+                  [shouldHideEdit]="isAnyEditingOrRevoked"
+                  [isEditingUser]="isEditingUser"
+                  [isEditingInfo]="isEditingInfo"
+                  [element]="element"></app-edit-buttons>
               }
             }
           }
         }
       </td>
     </ng-container>
-    <tr *matRowDef="let row; columns: ['key', 'value', 'edit']"
-        mat-row></tr>
+    <tr *matRowDef="let row; columns: ['key', 'value', 'edit']" mat-row></tr>
   </table>
   <div class="user-pin-container user-pin-container-padding">
-    @if (tokenType() !== 'passkey') {
+    @if (tokenType() !== "passkey") {
       <div class="user-pin-input">
-        <input style="display: none"
-               type="text" /> <input style="display: none"
-                                     type="password" /> <input [(ngModel)]="setPinValue"
-                                                               [type]="'password'"
-                                                               class="input"
-                                                               placeholder="Token Pin" />
-        <input [(ngModel)]="repeatPinValue"
-               [type]="'password'"
-               class="input"
-               placeholder="Repeat Pin" />
+        <input style="display: none" type="text" />
+        <input style="display: none" type="password" />
+        <input
+          [(ngModel)]="setPinValue"
+          [type]="'password'"
+          class="input"
+          placeholder="Token Pin" />
+        <input
+          [(ngModel)]="repeatPinValue"
+          [type]="'password'"
+          class="input"
+          placeholder="Repeat Pin" />
       </div>
       <div class="user-pin-button">
-        <button (click)="setPin()"
-                class="detail-button"
-                extended
-                mat-fab>
+        <button (click)="setPin()" class="detail-button" extended mat-fab>
           <mat-icon class="detail-button-icon">password</mat-icon>
           Set Pin
         </button>
-        <button (click)="setRandomPin()"
-                class="detail-button"
-                extended
-                mat-fab>
+        <button (click)="setRandomPin()" class="detail-button" extended mat-fab>
           <mat-icon class="detail-button-icon">casino</mat-icon>
           Random Pin
         </button>

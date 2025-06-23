@@ -155,7 +155,7 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
       data: {
         response,
         enrollToken: this.enrollToken.bind(this),
-        username: this.userService.userNameFilter(),
+        username: this.userService.userFilter(),
         userRealm: this.userService.selectedUserRealm(),
         onlyAddToRealm: this.onlyAddToRealm(),
       },

@@ -113,7 +113,7 @@ export class TokenDetailsUserComponent {
 
   cancelUserEdit(): void {
     this.isEditingUser.update((b) => !b);
-    this.userService.userNameFilter.set('');
+    this.userService.userFilter.set('');
   }
 
   saveUser() {
@@ -133,7 +133,7 @@ export class TokenDetailsUserComponent {
         next: () => {
           this.setPinValue.set('');
           this.repeatPinValue.set('');
-          this.userService.userNameFilter.set('');
+          this.userService.userFilter.set('');
           this.userService.selectedUserRealm.set('');
           this.isEditingUser.update((b) => !b);
           this.tokenService.tokenDetailResource.reload();

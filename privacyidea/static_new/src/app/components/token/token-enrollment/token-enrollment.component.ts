@@ -20,7 +20,6 @@ import {
   FormControl,
   FormGroup,
   FormsModule,
-  ValidationErrors,
   AbstractControl,
   ReactiveFormsModule,
   Validators,
@@ -56,7 +55,7 @@ import {
   TokenService,
 } from '../../../services/token/token.service';
 import { EnrollTotpComponent } from './enroll-totp/enroll-totp.component';
-import { MatDialog } from '@angular/material/dialog';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { TokenEnrollmentFirstStepDialogComponent } from './token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component';
 import { EnrollSpassComponent } from './enroll-spass/enroll-spass.component';
 import { EnrollMotpComponent } from './enroll-motp/enroll-motp.component';
@@ -87,7 +86,7 @@ import { VersionService } from '../../../services/version/version.service';
 import { TokenEnrollmentSecondStepDialogComponent } from './token-enrollment-second-step-dialog/token-enrollment-second-step-dialog.component';
 import { ContentService } from '../../../services/content/content.service';
 
-import { Observable } from 'rxjs';
+import { from, Observable } from 'rxjs';
 import { TokenEnrollmentData } from '../../../mappers/token-api-payload/_token-api-payload.mapper';
 
 export const CUSTOM_DATE_FORMATS = {
@@ -200,6 +199,11 @@ export class TokenEnrollmentComponent {
   containerSerial = this.containerService.containerSerial;
   selectedContent = this.contentService.selectedContent;
 
+  refStepOneDialog: MatDialogRef<
+    TokenEnrollmentFirstStepDialogComponent,
+    any
+  > | null = null; // Reference to the first step dialog
+
   // Signals for basic enrollment options, to be replaced by FormControls
   tokenTypeOptions = this.tokenService.tokenTypeOptions;
   selectedTokenType = this.tokenService.selectedTokenType; // This will become a FormControl
@@ -217,9 +221,9 @@ export class TokenEnrollmentComponent {
   // FormControls for the main enrollment form
   descriptionControl = new FormControl<string>('', { nonNullable: true });
   selectedUserRealmControl = new FormControl(
-    this.userService.selectedUserRealm(),
+    this.userService.selectedUserRealm() || this.realmService.defaultRealm(),
   );
-  userNameFilterControl = new FormControl(this.userService.userNameFilter());
+  userFilterControl = new FormControl(this.userService.userFilter());
   setPinControl = new FormControl<string>('');
   repeatPinControl = new FormControl<string>('');
 
@@ -256,11 +260,14 @@ export class TokenEnrollmentComponent {
 
   clickEnroll?: (
     enrollementOptions: TokenEnrollmentData,
-  ) => Observable<EnrollmentResponse> | undefined;
+  ) => Observable<EnrollmentResponse> | Promise<EnrollmentResponse> | undefined;
   updateClickEnroll(
     event: (
       enrollementOptions: TokenEnrollmentData,
-    ) => Observable<EnrollmentResponse> | undefined,
+    ) =>
+      | Observable<EnrollmentResponse>
+      | Promise<EnrollmentResponse>
+      | undefined,
   ): void {
     this.clickEnroll = event;
   }
@@ -288,7 +295,7 @@ export class TokenEnrollmentComponent {
       {
         description: this.descriptionControl,
         selectedUserRealm: this.selectedUserRealmControl,
-        userNameFilter: this.userNameFilterControl,
+        userFilter: this.userFilterControl,
         setPin: this.setPinControl,
         repeatPin: this.repeatPinControl,
         selectedContainer: this.selectedContainerControl,
@@ -307,7 +314,7 @@ export class TokenEnrollmentComponent {
     {
       description: this.descriptionControl,
       selectedUserRealm: this.selectedUserRealmControl,
-      userNameFilter: this.userNameFilterControl,
+      userFilter: this.userFilterControl,
       setPin: this.setPinControl,
       repeatPin: this.repeatPinControl,
       selectedContainer: this.selectedContainerControl,
@@ -341,16 +348,16 @@ export class TokenEnrollmentComponent {
   ngOnInit(): void {
     // Sync FormControls with service states for user/realm/container
     this.selectedUserRealmControl.valueChanges.subscribe((value) => {
-      this.userService.userNameFilter.set(''); // Reset userNameFilter when realm changes
+      this.userService.userFilter.set(''); // Reset userFilter when realm changes
       if (!value) {
-        this.userNameFilterControl.disable({ emitEvent: false });
+        this.userFilterControl.disable({ emitEvent: false });
       } else {
-        this.userNameFilterControl.enable({ emitEvent: false });
+        this.userFilterControl.enable({ emitEvent: false });
       }
       return this.userService.selectedUserRealm.set(value ?? '');
     });
-    this.userNameFilterControl.valueChanges.subscribe((value) =>
-      this.userService.userNameFilter.set(value ?? ''),
+    this.userFilterControl.valueChanges.subscribe((value) =>
+      this.userService.userFilter.set(value ?? ''),
     );
     this.selectedContainerControl.valueChanges.subscribe((value) =>
       this.containerService.selectedContainer.set(value ?? ''),
@@ -359,12 +366,12 @@ export class TokenEnrollmentComponent {
 
   resetForm(): void {
     this.userService.selectedUserRealm.set('');
-    this.userService.userNameFilter.set('');
+    this.userService.userFilter.set('');
 
     this.formGroup.reset({
       description: '',
-      selectedUserRealm: '',
-      userNameFilter: '',
+      selectedUserRealm: this.realmService.defaultRealm(),
+      userFilter: '',
       setPin: '',
       repeatPin: '',
       selectedContainer: this.containerService.selectedContainer(),
@@ -390,10 +397,10 @@ export class TokenEnrollmentComponent {
       isUserRequiredByTokenType ? [Validators.required] : [],
     );
     this.selectedUserRealmControl.updateValueAndValidity({ emitEvent: false });
-    this.userNameFilterControl.setValidators(
+    this.userFilterControl.setValidators(
       isUserRequiredByTokenType ? [Validators.required] : [],
     );
-    this.userNameFilterControl.updateValueAndValidity({ emitEvent: false });
+    this.userFilterControl.updateValueAndValidity({ emitEvent: false });
   }
 
   @HostListener('document:keydown.enter', ['$event'])
@@ -440,100 +447,110 @@ export class TokenEnrollmentComponent {
       return;
     }
 
+    // Validate username against options if a username is entered
     if (!this.validateUserNameFilterControl()) {
       everythingIsValid = false;
     }
 
-    // Validate username against options if a username is entered
-    const userNameValue = this.userNameFilterControl.value?.trim();
-    if (
-      userNameValue &&
-      !this.userService.userOptions().includes(userNameValue) &&
-      !everythingIsValid
-    ) {
-      everythingIsValid = false;
-      if (!this.userNameFilterControl.hasError('userNotInOptions')) {
-        this.userNameFilterControl.setErrors({ userNotInOptions: true });
-      }
-    } else if (this.userNameFilterControl.hasError('userNotInOptions')) {
-      const currentErrors = { ...this.userNameFilterControl.errors };
-      delete currentErrors['userNotInOptions'];
-      this.userNameFilterControl.setErrors(
-        Object.keys(currentErrors).length > 0 ? currentErrors : null,
-      );
+    const userFilter = this.userFilterControl.value;
+    var userNameValue = '';
+    if (typeof userFilter === 'string') {
+      userNameValue = userFilter.trim();
+    } else if (userFilter) {
+      userNameValue = userFilter.username?.trim() || '';
     }
 
     if (this.formGroup.invalid) {
+      this.formGroup.markAllAsTouched();
+      everythingIsValid = false;
+    }
+
+    if (!everythingIsValid) {
       this.notificationService.openSnackBar(
         'Please fill in all required fields or correct invalid entries.',
       );
-      this.formGroup.markAllAsTouched();
       return;
     }
-    if (this.clickEnroll) {
-      const basicOptions: TokenEnrollmentData = {
-        type: currentTokenType.key,
-        description: this.descriptionControl.value.trim(),
-        containerSerial: this.selectedContainerControl.value?.trim() ?? '',
-        validityPeriodStart: this.formatDateTimeOffset(
-          this.selectedStartDateControl.value ?? new Date(),
-          this.selectedStartTimeControl.value ?? '00:00',
-          this.selectedTimezoneOffsetControl.value ?? '+00:00',
-        ),
-        validityPeriodEnd: this.formatDateTimeOffset(
-          this.selectedEndDateControl.value ?? new Date(),
-          this.selectedEndTimeControl.value ?? '23:59',
-          this.selectedTimezoneOffsetControl.value ?? '+00:00',
-        ),
-        user: this.userNameFilterControl.value!.trim(), // Already validated
-        pin: this.setPinControl.value ?? '',
-      };
 
-      const enrollObservable = this.clickEnroll(basicOptions);
-      if (!enrollObservable) {
-        this.notificationService.openSnackBar(
-          'Failed to enroll token. No response returned.',
-        );
-        console.error('Failed to enroll token. No response returned.');
-        return;
-      }
-      enrollObservable.subscribe({
-        next: (enrollmentResponse) => {
-          this.enrollResponse.set(enrollmentResponse);
-          this.handleEnrollmentResponse(enrollmentResponse);
-        },
-        error: (error) => {
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to enroll token. ' + message,
-          );
-        },
-      });
-    } else {
+    if (!this.clickEnroll) {
       this.notificationService.openSnackBar(
         'Enrollment action is not available for the selected token type.',
       );
+      return;
     }
+    const basicOptions: TokenEnrollmentData = {
+      type: currentTokenType.key,
+      description: this.descriptionControl.value.trim(),
+      containerSerial: this.selectedContainerControl.value?.trim() ?? '',
+      validityPeriodStart: this.formatDateTimeOffset(
+        this.selectedStartDateControl.value ?? new Date(),
+        this.selectedStartTimeControl.value ?? '00:00',
+        this.selectedTimezoneOffsetControl.value ?? '+00:00',
+      ),
+      validityPeriodEnd: this.formatDateTimeOffset(
+        this.selectedEndDateControl.value ?? new Date(),
+        this.selectedEndTimeControl.value ?? '23:59',
+        this.selectedTimezoneOffsetControl.value ?? '+00:00',
+      ),
+      user: userNameValue,
+      pin: this.setPinControl.value ?? '',
+    };
+
+    const enrollResponse = this.clickEnroll(basicOptions);
+    var enrollObservable: Observable<EnrollmentResponse> | undefined =
+      undefined;
+    if (enrollResponse instanceof Promise) {
+      enrollObservable = from(enrollResponse);
+    } else if (enrollResponse instanceof Observable) {
+      enrollObservable = enrollResponse;
+    } else {
+      this.notificationService.openSnackBar(
+        'Failed to enroll token. No response returned.',
+      );
+      console.error('Failed to enroll token. No response returned.');
+      return;
+    }
+    enrollObservable.subscribe({
+      next: (enrollmentResponse) => {
+        this.enrollResponse.set(enrollmentResponse);
+        this.handleEnrollmentResponse(enrollmentResponse);
+      },
+      error: (error) => {
+        const message = error.error?.result?.error?.message || '';
+        this.notificationService.openSnackBar(
+          `Failed to enroll token: ${message || error.message || error}`,
+        );
+      },
+      complete: () => {
+        this.closeStepOneDialog();
+      },
+    });
   }
 
   validateUserNameFilterControl(): boolean {
     // Validate username against options if a username is entered
-    const userNameValue = this.userNameFilterControl.value;
+    const userFilter = this.userFilterControl.value;
+    var userNameValue = '';
+    if (typeof userFilter === 'string') {
+      userNameValue = userFilter.trim();
+    } else if (userFilter) {
+      userNameValue = userFilter.username?.trim() || '';
+    }
     if (
       userNameValue &&
-      !this.userService.userOptions().includes(userNameValue)
+      !this.userService.allUsernames().includes(userNameValue)
     ) {
       // Validation failed, set 'userNotInOptions' error when needed
-      if (!this.userNameFilterControl.hasError('userNotInOptions')) {
-        this.userNameFilterControl.setErrors({ userNotInOptions: true });
+      if (!this.userFilterControl.hasError('userNotInOptions')) {
+        this.userFilterControl.setErrors({ userNotInOptions: true });
       }
       return false; // Indicate that validation failed
     }
     // Validation passed, clear any existing 'userNotInOptions' error
-    if (this.userNameFilterControl.hasError('userNotInOptions')) {
-      const currentErrors = { ...this.userNameFilterControl.errors };
+    if (this.userFilterControl.hasError('userNotInOptions')) {
+      const currentErrors = { ...this.userFilterControl.errors };
       delete currentErrors['userNotInOptions'];
-      this.userNameFilterControl.setErrors(
+      this.userFilterControl.setErrors(
         Object.keys(currentErrors).length > 0 ? currentErrors : null,
       );
     }
@@ -574,7 +591,7 @@ export class TokenEnrollmentComponent {
       data: {
         response: response,
         enrollToken: this.enrollToken.bind(this),
-        username: this.userService.userNameFilter(),
+        username: this.userService.userFilter(),
         userRealm: this.userService.selectedUserRealm(),
         onlyAddToRealm: this.onlyAddToRealm(),
       },
@@ -608,11 +625,14 @@ export class TokenEnrollmentComponent {
   }
 
   private openFirstStepDialog(response: EnrollmentResponse) {
-    this.firstDialog.open(TokenEnrollmentFirstStepDialogComponent, {
-      data: {
-        response: response,
+    this.refStepOneDialog = this.firstDialog.open(
+      TokenEnrollmentFirstStepDialogComponent,
+      {
+        data: {
+          response: response,
+        },
       },
-    });
+    );
   }
 
   private pollTokenRolloutState(tokenSerial: string, startTime: number) {
@@ -632,5 +652,13 @@ export class TokenEnrollmentComponent {
           }
         },
       });
+  }
+
+  /// Closes the first step dialog if it is open
+  closeStepOneDialog() {
+    if (this.refStepOneDialog) {
+      this.refStepOneDialog.close();
+      this.refStepOneDialog = null;
+    }
   }
 }

@@ -421,7 +421,7 @@ export class ContainerDetailsComponent {
       })
       .subscribe({
         next: () => {
-          this.userService.userNameFilter.set('');
+          this.userService.userFilter.set('');
           this.userService.selectedUserRealm.set('');
           this.isEditingUser.update((b) => !b);
           this.containerDetailResource.reload();
