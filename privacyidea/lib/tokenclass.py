@@ -75,34 +75,33 @@ In case of 2stepinit the key is generated from the server_component and the
 client_component using the TokenClass method generate_symmetric_key.
 This method is supposed to be overwritten by the corresponding token classes.
 """
-import logging
 import hashlib
+import logging
 import traceback
-from datetime import datetime, timedelta
+from base64 import b32encode
+from binascii import unhexlify
+from datetime import datetime, timedelta, timezone
 
-from .error import (TokenAdminError,
-                    ParameterError)
-
-from ..api.lib.utils import getParam
-from .log import log_with
-
-from .config import (get_from_config, get_prepend_pin)
-from .user import User
-from ..models import (TokenOwner, TokenTokengroup, Challenge, cleanup_challenges)
-from .challenge import get_challenges
-from privacyidea.lib.crypto import (encryptPassword, decryptPassword,
-                                    generate_otpkey)
-from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
-from .decorators import check_token_locked
 from dateutil.parser import parse as parse_date_string, ParserError
 from dateutil.tz import tzlocal, tzutc
+
+from privacyidea.lib import _
+from privacyidea.lib.crypto import (encryptPassword, decryptPassword,
+                                    generate_otpkey)
+from privacyidea.lib.policy import (get_action_values_from_options, SCOPE, ACTION)
 from privacyidea.lib.utils import (is_true, decode_base32check,
                                    to_unicode, create_img, parse_timedelta,
                                    parse_legacy_time, split_pin_pass)
-from privacyidea.lib import _
-from privacyidea.lib.policy import (get_action_values_from_options, SCOPE, ACTION)
-from base64 import b32encode
-from binascii import unhexlify
+from .challenge import get_challenges
+from .config import (get_from_config, get_prepend_pin)
+from .decorators import check_token_locked
+from .error import (TokenAdminError,
+                    ParameterError)
+from .log import log_with
+from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
+from .user import (User)
+from ..api.lib.utils import getParam
+from ..models import (TokenOwner, TokenTokengroup, Challenge, cleanup_challenges)
 
 DATE_FORMAT = '%Y-%m-%dT%H:%M%z'
 AUTH_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f%z"
@@ -242,6 +241,7 @@ class TokenClass(object):
                        realmname=user.realm).save()
         # set the tokenrealm
         self.set_realms([user.realm], add=True)
+        self.add_tokeninfo("assignment_date", datetime.now(timezone.utc).isoformat(timespec="seconds"))
 
     def add_tokengroup(self, tokengroup=None, tokengroup_id=None):
         """
@@ -1665,7 +1665,8 @@ class TokenClass(object):
 
     def challenge_janitor(self):
         """
-        Just clean up all challenges, for which the expiration has expired.
+        Clean up all challenges for this token, for which the expiration has
+        expired.
 
         :return: None
         """

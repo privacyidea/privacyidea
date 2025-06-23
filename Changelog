@@ -2,9 +2,34 @@ Version 3.12dev1, 2025-03-14
 
   Enhancements:
   * Remember last used token type per user and application for multi-challenge (#4179)
+  * Add option 'handle_missing_data' to the extended policy conditions (#4339)
 
   Fixes:
   * Reduce PyOpenSSL dependencies for certificate token (#4212)
+
+Version 3.11.3, 2025-05-28
+
+Enhancements:
+* WebAuthn: The WebAuthn Token can validate challenges that were created by /validate/initialize.
+  This can happen when the authenticator does create a passkey anyway and that webauthn token is then used as a passkey.
+  Therefore, WebAuthn token that were created as passkeys in the authenticator, can now be used for passkey logins (#4400)
+* Added assignment_date to token info when assigning a user (#4351)
+
+Fixes:
+* WebAuthn: sign_count of 0 will result in a successful authentication (#4391)
+* WebUI: Cancelling WebAuthn enrollment will delete the unfinished token and redirect to the token list (#4402)
+* FirebaseProvider: Use proxy setting for authorization (#4403)
+* Fixed a bug that would cause different transaction_ids to be generated when the user has a passkey and /validate/triggerchallenge is used (4399)
+* Fixed a bug that would cause unknown users not be displayed in the audit (#4382)
+
+Version 3.11.2, 2025-04-25
+
+  Fixes:
+  * API: `/validate/initialize` require `type` parameter and add transaction id to details (#4366)
+  * UI: Fix pre-filled user for assigning tokens during rollout (#4355)
+  * WebAuthn: Correct format for evaluation of userHandle parameter (#4357)
+  * Add creation date to token and container info (#4360, #4376)
+  * Fix broken audit entry during enrollment via validate (#4362)
 
 Version 3.11.1, 2025-04-08
 

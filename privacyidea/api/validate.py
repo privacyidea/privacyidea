@@ -117,7 +117,7 @@ from privacyidea.lib.user import get_user_from_param, log_used_user, User
 from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.utils import required
-from .lib.utils import send_result, getParam, get_required, get_optional
+from .lib.utils import send_result, getParam, get_required
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.fido2.policy_action import FIDO2PolicyAction
 from ..lib.framework import get_app_config_value
@@ -162,6 +162,11 @@ def before_request():
                         "action": "{0!s} {1!s}".format(request.method, request.url_rule),
                         "thread_id": "{0!s}".format(threading.current_thread().ident),
                         "info": ""})
+    # Add preliminary user to audit in case we fail with an error
+    g.audit_object.log({
+        "user": request.User.login,
+        "resolver": request.User.resolver,
+        "realm": request.User.realm})
 
 
 @validate_blueprint.route('/offlinerefill', methods=['POST'])
@@ -777,7 +782,7 @@ def initialize():
     Start an authentication by requesting a challenge for a token type. Currently, supports only type passkey
     :jsonparam type: The type of the token, for which a challenge should be created.
     """
-    token_type = get_optional(request.all_data, "type")
+    token_type = get_required(request.all_data, "type")
     details = {}
     if token_type.lower() == "passkey":
         rp_id = get_first_policy_value(policy_action=FIDO2PolicyAction.RELYING_PARTY_ID, default="", scope=SCOPE.ENROLL)
@@ -790,9 +795,9 @@ def initialize():
         if f"passkey_{ACTION.CHALLENGETEXT}" in request.all_data:
             challenge["message"] = request.all_data[f"passkey_{ACTION.CHALLENGETEXT}"]
         details["passkey"] = challenge
-
+        details["transaction_id"] = challenge["transaction_id"]
     else:
-        raise ParameterError("Unsupported token type for authentication initialization!")
+        raise ParameterError(f"Unsupported token type '{token_type}' for authentication initialization!")
     g.audit_object.log({"success": True})
     response = send_result(False, rid=2, details=details)
     return response

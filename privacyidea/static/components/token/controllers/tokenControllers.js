@@ -375,17 +375,12 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             ConfigFactory.getRealms(function (data) {
                 $scope.realms = data.result.value;
                 // Set the default realm
-                const size = Object.keys($scope.realms).length;
-                if (size === 1) {
-                    $scope.newUser = {user: "", realm: realmname};
-                } else {
-                    angular.forEach($scope.realms, function (realm, realmname) {
-                        // if there is a default realm, preset the default realm
-                        if (realm.default && !$stateParams.realmname) {
-                            $scope.newUser = {user: "", realm: realmname};
-                        }
-                    });
-                }
+                angular.forEach($scope.realms, function (realm, realmname) {
+                    // if there is a default realm, preset the default realm
+                    if (realm.default && !$stateParams.realmname) {
+                        $scope.newUser = {user: "", realm: realmname};
+                    }
+                });
 
                 // init the user, if token.enroll was called from the user.details
                 if ($stateParams.realmname) {
@@ -563,9 +558,11 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                     console.log(error);
                     inform.add("Error while registering passkey, the token will not be created!",
                         {type: "danger", ttl: 10000});
-                    TokenFactory.delete(data.detail.serial, function (response) {
-                        $state.go('token.list');
-                    });
+                    if (AuthFactory.checkRight("delete")) {
+                        TokenFactory.delete(data.detail.serial, function (response) {
+                            $state.go('token.list');
+                        });
+                    }
                 });
             }
             // End Passkey
@@ -599,7 +596,9 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
 
         $scope.pollTokenInfo = function () {
             TokenFactory.getTokenForSerial($scope.enrolledToken.serial, function (data) {
-                $scope.enrolledToken.rollout_state = data.result.value.tokens[0].rollout_state;
+                if (data.result.value && data.result.value.tokens && data.result.value.tokens.length > 0) {
+                    $scope.enrolledToken.rollout_state = data.result.value.tokens[0].rollout_state;
+                }
                 // Poll the data after 2.5 seconds again
                 if ($scope.enrolledToken.rollout_state === "clientwait" && $location.path().indexOf("/token/enroll") > -1) {
                     $timeout($scope.pollTokenInfo, 2500);
@@ -672,8 +671,14 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                         token.subject
                             = (response.detail.u2fRegisterResponse || response.detail.webAuthnRegisterResponse).subject;
                         token.vendor = token.subject.split(" ")[0];
-                        console.log(token);
+                        //console.log(token);
                     });
+            }, function (error) {
+                if (AuthFactory.checkRight("delete")) {
+                    TokenFactory.delete($scope.serial, function (response) {
+                        $state.go('token.list');
+                    });
+                }
             });
             $scope.click_wait = true;
         };

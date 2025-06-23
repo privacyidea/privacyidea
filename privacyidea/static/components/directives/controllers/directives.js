@@ -447,7 +447,7 @@ myApp.directive("piPolicyConditions", ["instanceUrl", "versioningSuffixProvider"
             // Called when the user clicks on the "add condition" button.
             // Adds a condition with default values
             scope.addCondition = function () {
-                scope.policyConditions.push(["userinfo", "", "equals", "", false]);
+                scope.policyConditions.push(["userinfo", "", "equals", "", false, "raise_error"]);
                 scope.editIndex = scope.policyConditions.length - 1;
             };
         },
@@ -681,11 +681,26 @@ myApp.directive("registerContainer", ["instanceUrl", "versioningSuffixProvider",
     function (instanceUrl, versioningSuffixProvider, $http) {
         return {
             scope: {
-                passphrase: "="
+                passphrase: "=",
+                users: "="
             },
             templateUrl: instanceUrl + "/static/components/directives/views/directive.registerContainer.html" + versioningSuffixProvider.$get(),
             link: function (scope, element, attr) {
-
+                const defaultUserPrompt = "Please enter the passphrase of your user store.";
+                scope.$watch('passphrase.user', function (newVal, oldVal) {
+                    if (newVal) {
+                        // clear response and set default prompt
+                        scope.passphrase.response = "";
+                        if (scope.passphrase.prompt === "") {
+                            scope.passphrase.prompt = defaultUserPrompt;
+                        }
+                    } else if (newVal === false) {
+                        // clear default prompt
+                        if (scope.passphrase.prompt === defaultUserPrompt) {
+                            scope.passphrase.prompt = "";
+                        }
+                    }
+                });
             }
         };
     }]);

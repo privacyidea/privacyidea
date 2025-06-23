@@ -18,7 +18,8 @@
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from privacyidea.lib.container import (init_container, add_token_to_container,
-                                       find_container_by_serial)
+                                       find_container_by_serial, find_container_for_token)
+from privacyidea.lib.error import ResourceNotFoundError
 from .base import MyApiTestCase, PWFILE2
 import json
 import datetime
@@ -127,12 +128,12 @@ class API000TokenAdminRealmList(MyApiTestCase):
         # admin is allowed to see realm1
         set_policy(name="pol-realm1",
                    scope=SCOPE.ADMIN,
-                   action=ACTION.TOKENLIST, user=self.testadmin, realm=self.realm1)
+                   action=ACTION.TOKENLIST, adminuser=self.testadmin, realm=self.realm1)
 
         # admin is allowed to list all realms
         set_policy(name="pol-all-realms",
                    scope=SCOPE.ADMIN,
-                   action=ACTION.TOKENLIST, user=self.testadmin)
+                   action=ACTION.TOKENLIST, adminuser=self.testadmin)
 
         # admin is allowed to only init, not list
         set_policy(name="pol-only-init",
@@ -462,6 +463,75 @@ class API000TokenAdminRealmList(MyApiTestCase):
         self.assertIn(self.realm1, t1_realms)
         self.assertNotIn(self.realm2, t1_realms)
 
+        delete_policy("pol-reso1")
+
+    def test_04_init_token_with_container(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
+        container = find_container_by_serial(container_serial)
+
+        set_policy("policy", scope=SCOPE.ADMIN, action="enrollHOTP", realm=self.realm1)
+
+        # token owner = container owner
+        self.request_assert_200("/token/init", {"type": "hotp", "genkey": True, "user": "hans",
+                                                "realm": self.realm1, "container_serial": container_serial},
+                                self.at, "POST")
+
+        # Token owner != container owner
+        # Allowed: both in realm1
+        self.request_assert_200("/token/init", {"type": "hotp", "genkey": True, "user": "selfservice",
+                                                "realm": self.realm1, "container_serial": container_serial},
+                                self.at, "POST")
+        # Denied: token in different realm
+        self.request_denied_assert_403("/token/init", {"type": "hotp", "genkey": True, "user": "corny",
+                                                       "realm": self.realm3, "container_serial": container_serial},
+                                       self.at, "POST")
+
+        # no token owner, but container owner
+        self.request_denied_assert_403("/token/init", {"type": "hotp", "genkey": True,
+                                                       "container_serial": container_serial},
+                                       self.at, "POST")
+
+        # Init token allowed, but can not add container from different realm
+        container.remove_user(User(login="hans", realm=self.realm1))
+        container.add_user(User(login="corny", realm=self.realm3))
+        result = self.request_assert_200("/token/init", {"type": "hotp", "genkey": True, "user": "hans",
+                                                "realm": self.realm1, "container_serial": container_serial},
+                                self.at, "POST")
+        self.assertIsNone(find_container_for_token(result["detail"]["serial"]))
+
+        # no container owner but token_owner
+        container.remove_user(User(login="corny", realm=self.realm3))
+        result = self.request_assert_200("/token/init", {"type": "hotp", "genkey": True, "user": "hans",
+                                                         "realm": self.realm1, "container_serial": container_serial},
+                                         self.at, "POST")
+        self.assertIsNone(find_container_for_token(result["detail"]["serial"]))
+
+        delete_policy("policy")
+
+    def test_05_helpdesk_delete_batch(self):
+        # helpdesk is allowed to manage realm1
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.DELETE, realm=self.realm1)
+
+        # create tokens
+        token1 = init_token({"type": "hotp", "genkey": True, "realm": self.realm1})
+        token2 = init_token({"type": "hotp", "genkey": True, "realm": self.realm2})
+        token3 = init_token({"type": "hotp", "genkey": True, "realm": self.realm1})
+        token_serials = ",".join([token1.get_serial(), token2.get_serial(), token3.get_serial()])
+
+        # Try to delete all tokens will only delete token1 and token3 from realm1
+        result = self.request_assert_200("/token/batchdeletion", {"serial": token_serials}, self.at, "POST")
+        result = result.get("result").get("value")
+        self.assertTrue(result.get(token1.get_serial()))
+        self.assertFalse(result.get(token2.get_serial()))
+        self.assertTrue(result.get(token3.get_serial()))
+        self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, token1.get_serial(), None)
+        self.assertEqual(1, len(get_tokens_from_serial_or_user(token2.get_serial(), None)))
+        self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, token3.get_serial(), None)
+
+        delete_policy("policy")
+
 
 class APIAttestationTestCase(MyApiTestCase):
     @pytest.mark.usefixtures("setup_local_ca")
@@ -533,6 +603,7 @@ class APITokenTestCase(MyApiTestCase):
     def setUp(self):
         super(APITokenTestCase, self).setUp()
         self.setUp_user_realms()
+        self.setUp_user_realm2()
 
     def _create_temp_token(self, serial):
         with self.app.test_request_context('/token/init',
@@ -550,7 +621,7 @@ class APITokenTestCase(MyApiTestCase):
                                            data={"type": "hmac"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 400, res)
+            self.assertEqual(400, res.status_code, res)
 
         # missing parameter otpkey
         with self.app.test_request_context('/token/init',
@@ -558,7 +629,7 @@ class APITokenTestCase(MyApiTestCase):
                                            data={"type": "hotp"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 400, res)
+            self.assertEqual(400, res.status_code, res)
 
         with self.app.test_request_context('/token/init',
                                            method='POST',
@@ -574,6 +645,8 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(result.get("value"), result)
             self.assertTrue("value" in detail.get("googleurl"), detail)
             self.assertTrue("OATH" in serial, detail)
+            token = get_one_token(serial=serial)
+            self.assertIn("creation_date", token.get_tokeninfo(), token)
             remove_token(serial)
 
         with self.app.test_request_context('/token/init',
@@ -633,16 +706,19 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(result.get("status"), result)
             self.assertGreaterEqual(len(tokenlist), 1, tokenlist)
             self.assertGreaterEqual(count, 1, result)
-            self.assertTrue(next_tokens is None, next_tokens)
-            self.assertTrue(prev is None, prev)
+            self.assertIsNone(next_tokens, next_tokens)
+            self.assertIsNone(prev, prev)
             token0 = tokenlist[0]
-            self.assertTrue(token0.get("username") == "", token0)
-            self.assertTrue(token0.get("count") == 0, token0)
-            self.assertTrue(token0.get("tokentype") == "hotp", token0)
-            self.assertTrue(token0.get("tokentype") == "hotp", token0)
-            self.assertTrue(token0.get("count_window") == 10, token0)
-            self.assertTrue(token0.get("realms") == [], token0)
-            self.assertTrue(token0.get("user_realm") == "", token0)
+            self.assertEqual("", token0.get("username"), token0)
+            self.assertEqual(0, token0.get("count"), token0)
+            self.assertEqual("hotp", token0.get("tokentype"), token0)
+            self.assertEqual(10, token0.get("count_window"), token0)
+            self.assertEqual([], token0.get("realms"), token0)
+            self.assertEqual("", token0.get("user_realm"), token0)
+            self.assertIn("creation_date", token0.get("info"), token0)
+            self.assertGreaterEqual(datetime.datetime.now(tz=datetime.timezone.utc),
+                                    datetime.datetime.fromisoformat(token0.get("info").get("creation_date")),
+                                    token0)
 
         # get assigned tokens
         with self.app.test_request_context('/token/',
@@ -996,6 +1072,39 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertEqual(res.status_code, 404)
             self.assertFalse(result.get("status"))
+
+    def test_05b_batch_deletion(self):
+        self._create_temp_token("Token1")
+        self._create_temp_token("Token2")
+        serial_list = "Token1,Token2"
+        with self.app.test_request_context(f"/token/batchdeletion",
+                                           method="POST",
+                                           data={"serial": serial_list},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value").get("Token1"))
+            self.assertTrue(result.get("value").get("Token2"))
+        self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, "Token1", None)
+        self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, "Token2", None)
+
+        # Try to remove token, that does not exist fails silently
+        self._create_temp_token("Token1")
+        self._create_temp_token("Token2")
+        serial_list = "Token1,Token1234,Token2"
+        with self.app.test_request_context(f"/token/batchdeletion",
+                                           method="POST",
+                                           data={"serial": serial_list},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value").get("Token1"))
+            self.assertFalse(result.get("value").get("Token1234"))
+            self.assertTrue(result.get("value").get("Token2"))
+        self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, "Token1", None)
+        self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, "Token2", None)
 
     def test_06_disable_enable_token(self):
         self._create_temp_token("EToken")
@@ -1361,7 +1470,7 @@ class APITokenTestCase(MyApiTestCase):
 
         with self.app.test_request_context('/token/realm/REALM001',
                                            method="POST",
-                                           data={"realms": "realm1, realm2"},
+                                           data={"realms": f"{self.realm1}, non-existin-realm"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -1378,7 +1487,7 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             value = result.get("value")
             token = value.get("tokens")[0]
-            self.assertTrue(token.get("realms") == ["realm1"], token)
+            self.assertTrue(token.get("realms") == [self.realm1], token)
 
     def test_11_load_tokens(self):
         # Set dummy policy to check if token upload still works (see #2209)
@@ -1530,6 +1639,7 @@ class APITokenTestCase(MyApiTestCase):
         delete_event(event_id)
 
     def test_11_load_tokens_only_to_specific_realm(self):
+
         # Load token to a realm
         def _clean_up_tokens():
             remove_token("token01")
@@ -1575,7 +1685,7 @@ class APITokenTestCase(MyApiTestCase):
         self.assertIn(self.realm1, r)
 
         # Now define a policy, that allows the user to upload tokens to some other realm
-        set_policy(name="tokupload", scope=SCOPE.ADMIN, action=ACTION.IMPORT, realm="otherrealm",
+        set_policy(name="tokupload", scope=SCOPE.ADMIN, action=ACTION.IMPORT, realm=self.realm2,
                    adminuser="testadmin")
         _clean_up_tokens()
         with self.app.test_request_context('/token/load/import.oath',
@@ -1913,8 +2023,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 400, res)
 
     def test_19_get_challenges(self):
-        set_policy("chalresp", scope=SCOPE.AUTHZ,
-                   action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+        set_policy("chalresp", scope=SCOPE.AUTH, action=f"{ACTION.CHALLENGERESPONSE}=hotp")
         token = init_token({"genkey": 1, "serial": "CHAL1", "pin": "pin"})
         serial = token.token.serial
         r = check_serial_pass(serial, "pin")
@@ -2067,12 +2176,11 @@ class APITokenTestCase(MyApiTestCase):
         # Check if a realm admin can not delete a token in another realm
         # Admin is only allowed to delete tokens in "testrealm"
         set_policy("deleteToken", scope=SCOPE.ADMIN,
-                   action="delete",
+                   action=ACTION.DELETE,
                    user="testadmin",
-                   realm="testrealm"
-                   )
+                   realm=self.realm1)
         init_token({"type": "SPASS", "serial": "SP001"},
-                   user=User("cornelius", self.realm1))
+                   user=User("cornelius", self.realm2))
 
         # Now testadmin tries to delete a token from realm1, which he can not
         #  access.

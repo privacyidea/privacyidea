@@ -90,12 +90,12 @@ msgid ""
 "                    </li>"
 msgstr ""
 "<li> உதவி மற்றும்\n"
-" <a target = \"netknights\" href = "
-"\"https://netknights.it/en/leistungen/service-level-agrements/\">\n"
+" <a target = \"netknights\" href = \"https://netknights.it/en/leistungen/"
+"service-level-agrements/\">\n"
 " நெட்நைட்சின் பணி நிலை ஒப்பந்தங்கள் </a>, செர்மனி.\n"
 " </li>\n"
-" <li> உபுண்டு மற்றும் RHEL க்கான நிலையான நிறுவன தொகுப்புகள் எளிதான புதுப்பிப்பு மற்றும்"
-" பாதுகாப்பை அனுமதிக்கின்றன\n"
+" <li> உபுண்டு மற்றும் RHEL க்கான நிலையான நிறுவன தொகுப்புகள் எளிதான புதுப்பிப்பு "
+"மற்றும் பாதுகாப்பை அனுமதிக்கின்றன\n"
 " செயல்பாடுகள்.\n"
 " </li>\n"
 " <li> ஒரு பிரத்யேக <b> பயன்பாடு </b>-டூல், இது எளிதாக அனுமதிக்கிறது\n"
@@ -106,11 +106,10 @@ msgstr ""
 " <li> உதவி நிலையைப் பொறுத்து நீங்கள் புதுப்பிப்புகள் மற்றும் வருடாந்திர ஆலோசனைக்கு உதவி "
 "பெறுவீர்கள். </li>\n"
 " <li> வாங்குவதன் மூலம்\n"
-" <a target = \"netknights\" HREF = "
-"\"https://netknights.it/en/produkte/privacyidea/\"> தனியுரிமிடியா நிறுவன "
-"பதிப்பு </a>\n"
-" தொழில்முறை உருவாக்குபவர்கள் முழுநேர வேலை செய்ய முடியும் என்பதை நீங்கள் உறுதி செய்கிறீர்கள்"
-"\n"
+" <a target = \"netknights\" HREF = \"https://netknights.it/en/produkte/"
+"privacyidea/\"> தனியுரிமிடியா நிறுவன பதிப்பு </a>\n"
+" தொழில்முறை உருவாக்குபவர்கள் முழுநேர வேலை செய்ய முடியும் என்பதை நீங்கள் உறுதி "
+"செய்கிறீர்கள்\n"
 " தனியுரிமையில், புதிய அம்சங்களைச் சேர்த்து, பிழைகளை சரியான நேரத்தில் சரிசெய்யவும். "
 "கூடுதலாக, நீங்கள் அனுமதிக்கிறீர்கள்\n"
 " வெளிப்புற சேவைகள்\n"
@@ -199,14 +198,12 @@ msgstr ""
 "<p> <b> நீங்கள் 50 க்கும் மேற்பட்ட பயனர்களுடன் தனியுரிமைப் பயன்படுத்துகிறீர்கள். </b> </p>\n"
 " <p> உங்கள் நம்பிக்கைக்கு நன்றி! </p>\n"
 " <p> விளைவாக்கம் நிறுவன பயன்பாட்டிற்கு நாங்கள் பரிந்துரைக்கிறோம்\n"
-" <a target = \"netknights\" HREF = "
-"\"https://netknights.it/en/produkte/privacyidea/\"> தனியுரிமிடியா நிறுவன "
-"பதிப்பு </a>.\n"
+" <a target = \"netknights\" HREF = \"https://netknights.it/en/produkte/"
+"privacyidea/\"> தனியுரிமிடியா நிறுவன பதிப்பு </a>.\n"
 " </p>\n"
 " <p> நெட்நைட்ச் வழங்குகிறது\n"
-" <a target = \"netknights\" HREF = "
-"\"https://netknights.it/en/produkte/privacyidea/\"> தனியுரிமிடியா நிறுவன "
-"பதிப்பு </a>\n"
+" <a target = \"netknights\" HREF = \"https://netknights.it/en/produkte/"
+"privacyidea/\"> தனியுரிமிடியா நிறுவன பதிப்பு </a>\n"
 " <b> உதவி மற்றும் பணி நிலை ஒப்பந்தங்கள் </b> உட்பட.\n"
 " மேலும், நெட்நைட்ச் சேவைகள், அறிவுரை மற்றும்\n"
 " புதிய அம்சங்களின் கட்டண நிரலாக்க.\n"
@@ -235,9 +232,8 @@ msgstr ""
 " மல்டி காரணி அங்கீகார அமைப்பு. இது திறந்த மூலமாகும்.\n"
 " முக்கிய உருவாக்குபவர்கள் செர்மனியின் நெட்நைட்ச் சி.எம்.பி.எச்.\n"
 " நெட்நைட்ச் வழங்குகிறது\n"
-" <a target = \"netknights\" HREF = "
-"\"https://netknights.it/en/produkte/privacyidea/\"> தனியுரிமிடியா நிறுவன "
-"பதிப்பு </a>\n"
+" <a target = \"netknights\" HREF = \"https://netknights.it/en/produkte/"
+"privacyidea/\"> தனியுரிமிடியா நிறுவன பதிப்பு </a>\n"
 " <b> உதவி மற்றும் பணி நிலை ஒப்பந்தங்கள் </b> உட்பட.\n"
 " மேலும், நெட்நைட்ச் சேவைகள், அறிவுரை மற்றும்\n"
 " புதிய அம்சங்களின் கட்டண நிரலாக்க.\n"
@@ -291,7 +287,7 @@ msgstr "பநிஇ விசை"
 msgid "API client ID"
 msgstr "பநிஇ வாங்கி ஐடி"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:801
+#: privacyidea/static/components/token/controllers/tokenControllers.js:808
 msgid "Abort operation on unverifiable token"
 msgstr "சரிபார்க்க முடியாத டோக்கனில் அறுவை சிகிச்சையை நிறுத்துங்கள்"
 
@@ -1360,7 +1356,7 @@ msgstr "உள்ளே முழுக்கு!"
 msgid "Do not use an authentication counter per token."
 msgstr "ஒரு டோக்கனுக்கு அங்கீகார கவுண்டரைப் பயன்படுத்த வேண்டாம்."
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:799
+#: privacyidea/static/components/token/controllers/tokenControllers.js:806
 msgid "Do not verify the authenticity"
 msgstr "நம்பகத்தன்மையை சரிபார்க்க வேண்டாம்"
 
@@ -2877,6 +2873,10 @@ msgstr "பின்/கடவுச்சொல்"
 msgid "PKCS12"
 msgstr "PKCS12"
 
+#: privacyidea/static/components/token/controllers/tokenControllers.js:776
+msgid "PKCS12 Password copied to clipboard"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.smsgateway.edit.html:62
 msgid "Parameters"
 msgstr "அளவுருக்கள்"
@@ -3863,6 +3863,12 @@ msgstr "ஒத்திசைவு சாளரத்தை அமைக்க�
 msgid "Show"
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.enrolled.certificate.html:32
+#, fuzzy
+#| msgid "Show password"
+msgid "Show PKCS12 password"
+msgstr "கடவுச்சொல்லைக் காட்டு"
+
 #: privacyidea/static/components/config/views/config.policies.details.html:51
 msgid "Show Policy templates"
 msgstr "கொள்கை வார்ப்புருக்களைக் காட்டு"
@@ -3892,7 +3898,7 @@ msgstr "தேர்ந்தெடுக்கப்பட்ட நிபந�
 msgid "Size Limit"
 msgstr "அளவு வரம்பு"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:800
+#: privacyidea/static/components/token/controllers/tokenControllers.js:807
 msgid "Skip tokens that can not be verified"
 msgstr "சரிபார்க்க முடியாத டோக்கன்களைத் தவிர்க்கவும்"
 
@@ -4255,6 +4261,14 @@ msgstr "OTP விசை"
 msgid "The OTP values"
 msgstr "OTP மதிப்புகள்"
 
+#: privacyidea/static/components/token/views/token.enrolled.certificate.html:26
+msgid ""
+"The PKCS12 container contains the public and private key of the\n"
+"        certificate. The container will also be available for download in "
+"the\n"
+"        token details."
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.enroll.paper.html:1
 msgid ""
 "The Paper token will let you print a list of OTP values.\n"
@@ -4560,9 +4574,8 @@ msgid ""
 "                    are:"
 msgstr ""
 "சேர்க்கப்பட்ட மதிப்புகள்\n"
-" <a target = \"netknights\" HREF = "
-"\"https://netknights.it/en/produkte/privacyidea/\"> தனியுரிமிடியா நிறுவன "
-"பதிப்பு </a>\n"
+" <a target = \"netknights\" HREF = \"https://netknights.it/en/produkte/"
+"privacyidea/\"> தனியுரிமிடியா நிறுவன பதிப்பு </a>\n"
 " அவை:"
 
 #: privacyidea/static/components/config/views/config.token.yubikey.html:7
@@ -4578,14 +4591,12 @@ msgid ""
 "        Yubico Validation Protocol</a>."
 msgstr ""
 "அங்கீகார கோரிக்கையை இயல்புநிலை தனியுரிமை மூலம் கையாளலாம்\n"
-" <a href = "
-"\"https://privacyidea.readthedocs.io/en/latest/modules/api/validate.html\" "
-"இலக்கு = \"_ வெற்று\">\n"
+" <a href = \"https://privacyidea.readthedocs.io/en/latest/modules/api/"
+"validate.html\" இலக்கு = \"_ வெற்று\">\n"
 " பநிஇ ஐ சரிபார்க்கவும் </a> ஆனால் ஆனால் கையாளலாம்\n"
 " <a href = \"https://privacyidea.readthedocs.io/en/latest/modules/lib/"
-"tokentypes/"
-"yubikey.html#privacyidea.lib.tokens.yubikeytoken.yubikeytokytoketokenclass."
-"api_api_endpont\"> \"_\"\n"
+"tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken."
+"yubikeytokytoketokenclass.api_api_endpont\"> \"_\"\n"
 " யூபிகோ சரிபார்ப்பு நெறிமுறை </a>."
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:8
@@ -4598,8 +4609,8 @@ msgid ""
 msgstr ""
 "அங்கீகார கோரிக்கை யூபிக்ளவுட்டுக்கு அனுப்பப்படுகிறது. அணுக\n"
 " யூபிக்ளவுட் நீங்கள் ஒரு பநிஇ வாங்கி ஐடி மற்றும் பநிஇ விசையை உள்ளிட வேண்டும், இது\n"
-" நீங்கள் <a href = \"https://upgrade.yubico.com/getapikey/\" இலக்கு = "
-"\"_ வெளிப்புற\"> இங்கே </a> ஐ கோரலாம்."
+" நீங்கள் <a href = \"https://upgrade.yubico.com/getapikey/\" இலக்கு = \"_ "
+"வெளிப்புற\"> இங்கே </a> ஐ கோரலாம்."
 
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:1
 msgid "The certificate was enrolled successfully."
@@ -4703,6 +4714,16 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.lost.html:48
 msgid "The password can not be shown again, later!"
 msgstr "கடவுச்சொல்லை மீண்டும் காட்ட முடியாது, பின்னர்!"
+
+#: privacyidea/static/components/token/views/token.enrolled.certificate.html:45
+msgid ""
+"The password for the PKCS12 container is shown here only once. Make sure\n"
+"            to keep the password safe now."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enrolled.certificate.html:50
+msgid "The password of the PKCS12 container is the given token PIN"
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.lost.html:44
 msgid ""
@@ -4844,9 +4865,13 @@ msgstr ""
 " ச்கேன் செய்ய உங்களுக்கு காட்டப்படும்."
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:73
+#, fuzzy
+#| msgid ""
+#| "The server will create the private RSA key and store it in\n"
+#| "                    the database. You can later download the PKCS#12 file."
 msgid ""
-"The server will create the private RSA key and store it in\n"
-"                    the database. You can later download the PKCS#12 file."
+"The server will create the private RSA key and return it with\n"
+"                    the certificate in an encrypted PKCS#12 container."
 msgstr ""
 "சேவையகம் தனிப்பட்ட RSA விசையை உருவாக்கி அதை சேமிக்கும்\n"
 " தரவுத்தளம். நீங்கள் பின்னர் PKCS#12 கோப்பை பதிவிறக்கம் செய்யலாம்."
@@ -4925,12 +4950,12 @@ msgid ""
 "    ."
 msgstr ""
 "கிள்ளாக்கு தற்போது கொள்கலனுக்கு ஒதுக்கப்பட்டுள்ளது\n"
-" <a Ui-sref = \"token.containerdetails ({containerSerial: containerSerial})\""
-" ng-Hide = \"! CheckRight ('கொள்கலன்_ல மேலும்')\">\n"
+" <a Ui-sref = \"token.containerdetails ({containerSerial: "
+"containerSerial})\" ng-Hide = \"! CheckRight ('கொள்கலன்_ல மேலும்')\">\n"
 " {{ containerSerial }}}\n"
 " </a>\n"
-" <span ng-hide = \"checkright ('கொள்கலன்_ல்ட்')\"> {{ containerSerial }} </span>"
-"\n"
+" <span ng-hide = \"checkright ('கொள்கலன்_ல்ட்')\"> {{ containerSerial }} </"
+"span>\n"
 " ."
 
 #: privacyidea/static/components/token/views/token.details.html:614

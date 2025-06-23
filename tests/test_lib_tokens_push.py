@@ -25,7 +25,7 @@ from privacyidea.lib.error import ParameterError, privacyIDEAError, PolicyError
 from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy, ACTION,
                                     LOGINMODE, PolicyClass)
-from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
+from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, delete_smsgateway
 from privacyidea.lib.token import get_tokens, remove_token, init_token, import_tokens
 from privacyidea.lib.tokenclass import CHALLENGE_SESSION
@@ -47,7 +47,7 @@ CLIENT_FILE = "tests/testdata/google-services.json"
 REGISTRATION_URL = "http://test/ttype/push"
 TTL = 10
 FB_CONFIG_VALS = {
-    FIREBASE_CONFIG.JSON_CONFIG: FIREBASE_FILE}
+    FirebaseConfig.JSON_CONFIG: FIREBASE_FILE}
 
 
 def _create_credential_mock():
@@ -135,9 +135,9 @@ class PushTokenTestCase(MyTestCase):
         # Unknown config
         self.assertRaises(ParameterError, token.get_init_detail, params={"firebase_config": "bla"})
 
-        fb_config = {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
-                     FIREBASE_CONFIG.JSON_CONFIG: CLIENT_FILE,
-                     FIREBASE_CONFIG.TTL: 10}
+        fb_config = {FirebaseConfig.REGISTRATION_URL: "http://test/ttype/push",
+                     FirebaseConfig.JSON_CONFIG: CLIENT_FILE,
+                     FirebaseConfig.TTL: 10}
 
         # Wrong JSON file
         self.assertRaises(ConfigAdminError, set_smsgateway,
@@ -145,7 +145,7 @@ class PushTokenTestCase(MyTestCase):
                           fb_config)
 
         # Everything is fine
-        fb_config[FIREBASE_CONFIG.JSON_CONFIG] = FIREBASE_FILE
+        fb_config[FirebaseConfig.JSON_CONFIG] = FIREBASE_FILE
         r = set_smsgateway("fb1", 'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
                            fb_config)
         self.assertTrue(r > 0)
@@ -396,7 +396,7 @@ class PushTokenTestCase(MyTestCase):
         token.add_user(User("cornelius", self.realm1))
 
         cached_fbtoken = {
-            "firebase_token": {FB_CONFIG_VALS[FIREBASE_CONFIG.JSON_CONFIG]: _create_credential_mock()}}
+            "firebase_token": {FB_CONFIG_VALS[FirebaseConfig.JSON_CONFIG]: _create_credential_mock()}}
         self.app.config.setdefault("_app_local_store", {}).update(cached_fbtoken)
         # We mock the ServiceAccountCredentials, since we can not directly contact the Google API
         with mock.patch("privacyidea.lib.smsprovider.FirebaseProvider.service_account"
@@ -585,7 +585,7 @@ class PushTokenTestCase(MyTestCase):
 
         cached_fbtoken = {
             'firebase_token': {
-                FB_CONFIG_VALS[FIREBASE_CONFIG.JSON_CONFIG]: _create_credential_mock()}}
+                FB_CONFIG_VALS[FirebaseConfig.JSON_CONFIG]: _create_credential_mock()}}
         self.app.config.setdefault('_app_local_store', {}).update(cached_fbtoken)
         # We mock the ServiceAccountCredentials, since we can not directly contact the Google API
         with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account'
@@ -1795,7 +1795,7 @@ class PushTokenTestCase(MyTestCase):
 
         cached_fbtoken = {
             'firebase_token': {
-                FB_CONFIG_VALS[FIREBASE_CONFIG.JSON_CONFIG]: _create_credential_mock()}}
+                FB_CONFIG_VALS[FirebaseConfig.JSON_CONFIG]: _create_credential_mock()}}
         self.app.config.setdefault('_app_local_store', {}).update(cached_fbtoken)
         # We mock the ServiceAccountCredentials, since we can not directly contact the Google API
         with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account'

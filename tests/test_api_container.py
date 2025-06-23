@@ -9,19 +9,21 @@ from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
 from privacyidea.lib.applications.offline import MachineApplication, REFILLTOKEN_LENGTH
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.container import (create_container_template, get_template_obj, delete_container_by_serial,
-                                       get_container_realms)
-from privacyidea.lib.containers.container_info import PI_INTERNAL, TokenContainerInfoData
+                                       get_container_realms, set_container_states, unregister)
+from privacyidea.lib.containers.container_info import PI_INTERNAL, TokenContainerInfoData, RegistrationState
+from privacyidea.lib.containers.container_states import ContainerStates
 from privacyidea.lib.containers.smartphone import SmartphoneOptions
 from privacyidea.lib.crypto import generate_keypair_ecc, decrypt_aes
 from privacyidea.lib.container import (init_container, find_container_by_serial, add_token_to_container, assign_user,
                                        add_container_realms, remove_token_from_container)
 from privacyidea.lib.machine import attach_token
+from privacyidea.lib.policies.policy_conditions import ConditionSection, ConditionHandleMissingData
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from privacyidea.lib.privacyideaserver import add_privacyideaserver
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.serviceid import set_serviceid
-from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
+from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from privacyidea.lib.token import (get_one_token, get_tokens_from_serial_or_user,
                                    get_tokeninfo, get_tokens)
@@ -30,6 +32,7 @@ from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
 from privacyidea.lib.tokens.tantoken import TANACTION
 from privacyidea.lib.token import init_token, get_tokens_paginate, unassign_token
 from privacyidea.lib.user import User
+from privacyidea.lib.utils.compare import Comparators
 from tests.base import MyApiTestCase
 from tests.test_lib_tokencontainer import MockSmartphone
 
@@ -455,10 +458,10 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
 
     def test_18_user_container_list_allowed(self):
         # Arrange
+        self.setUp_user_realms()
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_LIST)
 
         # container with token from another user: reduce token info
-        set_policy("policy2", scope=SCOPE.USER, action=ACTION.TOKENLIST)
         container_serial = init_container({"type": "generic"})["container_serial"]
         me = User("selfservice", self.realm1, self.resolvername1)
         assign_user(container_serial, me)
@@ -486,7 +489,6 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         self.assertNotIn("tokentype", tokens[1].keys())
 
         delete_policy("policy")
-        delete_policy("policy2")
 
     def test_19_user_container_list_denied(self):
         # User does not have CONTAINER_LIST rights
@@ -494,6 +496,8 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         self.request_denied_assert_403('/container/', {}, self.at_user, 'GET')
 
     def test_20_user_container_register_allowed(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
         container_serial = self.create_container_for_user("smartphone")
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_REGISTER)
         # set two policies, but only one applicable for the realm of the user
@@ -560,8 +564,9 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
     def test_24_user_container_rollover_allowed(self):
         container_serial = self.create_container_for_user("smartphone")
         container = find_container_by_serial(container_serial)
-        container.update_container_info(
-            [TokenContainerInfoData(key="registration_state", value="registered", info_type=PI_INTERNAL)])
+        container.update_container_info([TokenContainerInfoData(key=RegistrationState.get_key(),
+                                                                value=RegistrationState.REGISTERED.value,
+                                                                info_type=PI_INTERNAL)])
         set_policy("policy", scope=SCOPE.USER,
                    action={ACTION.CONTAINER_ROLLOVER: True})
         set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
@@ -575,8 +580,9 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         # User has no CONTAINER_ROLLOVER rights
         container_serial = self.create_container_for_user("smartphone")
         container = find_container_by_serial(container_serial)
-        container.update_container_info(
-            [TokenContainerInfoData(key="registration_state", value="registered", info_type=PI_INTERNAL)])
+        container.update_container_info([TokenContainerInfoData(key=RegistrationState.get_key(),
+                                                                value=RegistrationState.REGISTERED.value,
+                                                                info_type=PI_INTERNAL)])
         set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
         set_policy("policy", scope=SCOPE.USER,
                    action={ACTION.CONTAINER_REGISTER: True})
@@ -597,7 +603,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         # User does not have CONTAINER_TEMPLATE_CREATE rights
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_CREATE)
         data = {"template_options": {}}
-        self.request_denied_assert_403(f'/container/generic/template/test', data, self.at_user, 'POST')
+        self.request_denied_assert_403('/container/generic/template/test', data, self.at_user, 'POST')
         delete_policy("policy")
 
     def test_28_user_container_template_delete_allowed(self):
@@ -967,8 +973,9 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
     def test_27_admin_container_rollover_allowed(self):
         container_serial = self.create_container_for_user("smartphone")
         container = find_container_by_serial(container_serial)
-        container.update_container_info(
-            [TokenContainerInfoData(key="registration_state", value="registered", info_type=PI_INTERNAL)])
+        container.update_container_info([TokenContainerInfoData(key=RegistrationState.get_key(),
+                                                                value=RegistrationState.REGISTERED.value,
+                                                                info_type=PI_INTERNAL)])
         set_policy("policy", scope=SCOPE.ADMIN,
                    action={ACTION.CONTAINER_ROLLOVER: True})
         set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
@@ -982,8 +989,9 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         # Admin has no CONTAINER_ROLLOVER rights
         container_serial = self.create_container_for_user("smartphone")
         container = find_container_by_serial(container_serial)
-        container.update_container_info(
-            [TokenContainerInfoData("registration_state", "registered", info_type=PI_INTERNAL)])
+        container.update_container_info([TokenContainerInfoData(RegistrationState.get_key(),
+                                                                RegistrationState.REGISTERED.value,
+                                                                info_type=PI_INTERNAL)])
         set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
         set_policy("policy", scope=SCOPE.ADMIN,
                    action={ACTION.CONTAINER_REGISTER: True})
@@ -1004,7 +1012,7 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         # Admin does not have CONTAINER_TEMPLATE_CREATE rights
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE)
         data = {"template_options": {}}
-        self.request_denied_assert_403(f'/container/generic/template/test', data, self.at, 'POST')
+        self.request_denied_assert_403('/container/generic/template/test', data, self.at, 'POST')
         delete_policy("policy")
 
     def test_31_admin_container_template_delete_allowed(self):
@@ -1328,6 +1336,12 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         set_policy("policy_realm", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN, realm=self.realm3)
         set_policy("policy_resolver", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN, resolver=self.resolvername3)
         token = init_token({"genkey": "1", "realm": self.realm1})
+        token_serial = token.get_serial()
+        self.request_denied_assert_403(f"/container/{c_serial_user}/add", {"serial": token_serial}, self.at,
+                                       method='POST')
+
+        # helpdesk of user realm realm3: only container is in realm1
+        token = init_token({"genkey": "1", "realm": self.realm3})
         token_serial = token.get_serial()
         self.request_denied_assert_403(f"/container/{c_serial_user}/add", {"serial": token_serial}, self.at,
                                        method='POST')
@@ -1752,8 +1766,9 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
     def test_24_helpdesk_container_rollover_allowed(self):
         container_serial = self.create_container_for_user("smartphone")
         container = find_container_by_serial(container_serial)
-        container.update_container_info(
-            [TokenContainerInfoData(key="registration_state", value="registered", info_type=PI_INTERNAL)])
+        container.update_container_info([TokenContainerInfoData(key=RegistrationState.get_key(),
+                                                                value=RegistrationState.REGISTERED.value,
+                                                                info_type=PI_INTERNAL)])
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ROLLOVER, realm=self.realm1)
         set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
         data = {"container_serial": container_serial, "rollover": True}
@@ -1766,8 +1781,9 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         # Helpdesk has no CONTAINER_ROLLOVER rights for the realm of the container
         container_serial = self.create_container_for_user("smartphone")
         container = find_container_by_serial(container_serial)
-        container.update_container_info(
-            [TokenContainerInfoData(key="registration_state", value="registered", info_type=PI_INTERNAL)])
+        container.update_container_info([TokenContainerInfoData(key=RegistrationState.get_key(),
+                                                                value=RegistrationState.REGISTERED.value,
+                                                                info_type=PI_INTERNAL)])
         set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REGISTER, realm=self.realm2)
         data = {"container_serial": container_serial, "rollover": True}
@@ -2032,6 +2048,430 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         delete_policy("policy")
 
 
+class ContainerPolicyConditions(APIContainerAuthorization):
+    """
+    This class tests that the endpoints work as expected for extended policy conditions.
+    It does not cover all possible combinations, but some useful scenarios.
+    """
+
+    def test_01_create(self):
+        # condition on container fails as the container does not yet exist
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE,
+                   conditions=[(ConditionSection.CONTAINER, "type", Comparators.EQUALS, "generic", True)])
+        self.request_assert_error(403, '/container/init', {"type": "generic"}, self.at, 'POST')
+        delete_policy("policy")
+
+    def test_02_delete(self):
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE,
+                   conditions=[(ConditionSection.CONTAINER, "type", Comparators.IN, "generic,smartphone", True)])
+
+        # Delete smartphone is allowed
+        container_serial = init_container({"type": "smartphone"})["container_serial"]
+        self.request_assert_success(f"/container/{container_serial}", {}, self.at, "DELETE")
+
+        # Delete yubikey fails
+        container_serial = init_container({"type": "yubikey"})["container_serial"]
+        self.request_assert_error(403, f"/container/{container_serial}", {}, self.at, "DELETE")
+        delete_policy("policy")
+        delete_container_by_serial(container_serial)
+
+    def test_03_assign_unassign(self):
+        self.setUp_user_realms()
+        # Only allowed to assign users with a phone number to smartphone containers and all users to other containers
+        set_policy("assign", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER,
+                   conditions=[(ConditionSection.CONTAINER, "type", Comparators.NOT_EQUALS, "smartphone", True)])
+        set_policy("assign_smph", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER,
+                   conditions=[(ConditionSection.USERINFO, "phone", Comparators.MATCHES, ".+", True,
+                                ConditionHandleMissingData.IS_FALSE.value),
+                               (ConditionSection.CONTAINER, "type", Comparators.EQUALS, "smartphone", True)])
+        # Unassignment only allowed for not registered containers
+        set_policy("unassign", scope=SCOPE.ADMIN,
+                   action=ACTION.CONTAINER_UNASSIGN_USER,
+                   conditions=[(ConditionSection.CONTAINER_INFO, "registration_state", Comparators.NOT_EQUALS,
+                                "registered", True, ConditionHandleMissingData.IS_TRUE.value)])
+
+        generic_serial = init_container({"type": "generic"})["container_serial"]
+        smph_serial = init_container({"type": "smartphone"})["container_serial"]
+        smartphone = find_container_by_serial(smph_serial)
+
+        # Assign user without phone to generic container is allowed
+        self.request_assert_success(f"/container/{generic_serial}/assign",
+                                    {"user": "selfservice", "realm": self.realm1}, self.at, "POST")
+
+        # Assign user without phone to smartphone container fails
+        self.request_assert_error(403, f"/container/{smph_serial}/assign",
+                                  {"user": "selfservice", "realm": self.realm1}, self.at, "POST")
+        # Assign user with phone to smartphone is allowed
+        self.request_assert_success(f"/container/{smph_serial}/assign",
+                                    {"user": "cornelius", "realm": self.realm1}, self.at, "POST")
+
+        # Simulate registration
+        smartphone.set_container_info({"registration_state": RegistrationState.REGISTERED.value})
+
+        # Unassign user from (not registered) generic container is allowed
+        self.request_assert_success(f"/container/{generic_serial}/unassign",
+                                    {"user": "selfservice", "realm": self.realm1}, self.at, "POST")
+
+        # Unassign user from registered smartphone is not allowed
+        self.request_assert_error(403, f"/container/{smph_serial}/unassign",
+                                  {"user": "cornelius", "realm": self.realm1}, self.at, "POST")
+
+        delete_policy("assign")
+        delete_policy("assign_smph")
+        delete_policy("unassign")
+        delete_container_by_serial(generic_serial)
+        smartphone.delete()
+
+    def test_04_list_containers(self):
+        # extended policy conditions do not work for list containers as most often this involves multiple containers
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_LIST,
+                   conditions=[(ConditionSection.CONTAINER, "type", Comparators.EQUALS, "generic", True)])
+        container_serial = init_container({"type": "generic"})["container_serial"]
+        self.request_assert_error(403, "/container/", {}, self.at, "GET")
+        self.request_assert_error(403, "/container/", {"type": "generic"}, self.at, "GET")
+        self.request_assert_error(403, "/container/", {"container_serial": container_serial}, self.at, "GET")
+
+        delete_policy("policy")
+        delete_container_by_serial(container_serial)
+
+    def test_05_add_token(self):
+        # only tokens of a specific type and hashlib can be added to smartphones
+        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_ADD_TOKEN,
+                   conditions=[(ConditionSection.CONTAINER, "type", Comparators.EQUALS, "smartphone", True),
+                               (ConditionSection.TOKEN, "tokentype", Comparators.IN, "hotp,totp", True),
+                               (ConditionSection.TOKENINFO, "hashlib", Comparators.EQUALS, "sha256", True,
+                                ConditionHandleMissingData.IS_FALSE.value)])
+        selfservice = User("selfservice", self.realm1)
+        hotp_sha1 = init_token({"type": "hotp", "genkey": True, "hashlib": "sha1"}, selfservice)
+        hotp_sha256 = init_token({"type": "hotp", "genkey": True, "hashlib": "sha256"}, selfservice)
+        totp_sha1 = init_token({"type": "totp", "genkey": True, "hashlib": "sha1"}, selfservice)
+        totp_sha256 = init_token({"type": "totp", "genkey": True, "hashlib": "sha256"}, selfservice)
+        sms = init_token({"type": "sms", "phone": "12345689"}, selfservice)
+        container_serial = init_container({"type": "smartphone", "user": "selfservice", "realm": self.realm1})[
+            "container_serial"]
+
+        # ---- Add single tokens ----
+        # hotp and totp with sha256 are allowed
+        self.request_assert_success(f"/container/{container_serial}/add", {"serial": hotp_sha256.get_serial()},
+                                    self.at_user, "POST")
+        self.request_assert_success(f"/container/{container_serial}/add", {"serial": totp_sha256.get_serial()},
+                                    self.at_user, "POST")
+        # hotp and totp with sha1 are not allowed
+        self.request_assert_error(403, f"/container/{container_serial}/add", {"serial": hotp_sha1.get_serial()},
+                                  self.at_user, "POST")
+        self.request_assert_error(403, f"/container/{container_serial}/add", {"serial": totp_sha1.get_serial()},
+                                  self.at_user, "POST")
+        # sms also not allowed
+        self.request_assert_error(403, f"/container/{container_serial}/add", {"serial": sms.get_serial()},
+                                  self.at_user, "POST")
+
+        # ---- Add all tokens ----
+        remove_token_from_container(container_serial, hotp_sha256.get_serial())
+        remove_token_from_container(container_serial, totp_sha256.get_serial())
+
+        result = self.request_assert_success(f"/container/{container_serial}/addall",
+                                             {"serial": f"{hotp_sha256.get_serial()},{hotp_sha1.get_serial()},"
+                                                        f"{sms.get_serial()},{totp_sha256.get_serial()},"
+                                                        f"{totp_sha1.get_serial()}"},
+                                             self.at_user, "POST")
+        self.assertTrue(result["result"]["value"][hotp_sha256.get_serial()])
+        self.assertTrue(result["result"]["value"][totp_sha256.get_serial()])
+        self.assertFalse(result["result"]["value"][hotp_sha1.get_serial()])
+        self.assertFalse(result["result"]["value"][totp_sha1.get_serial()])
+        self.assertFalse(result["result"]["value"][sms.get_serial()])
+
+        delete_policy("policy")
+
+        # ---- user info condition ----
+        # user condition is applied to the token and container owner
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN,
+                   conditions=[(ConditionSection.USERINFO, "phone", Comparators.MATCHES, ".+", True)])
+
+        cornelius = User("cornelius", self.realm1)
+        container = find_container_by_serial(container_serial)
+        container.remove_user(selfservice)
+        container.add_user(cornelius)
+
+        # Add token of a user without phone number to a container with phone number fails
+        self.request_assert_error(403, f"/container/{container_serial}/add", {"serial": hotp_sha1.get_serial()},
+                                  self.at, "POST")
+
+        # Both users (same user) have phone number works
+        unassign_token(hotp_sha1.get_serial())
+        hotp_sha1.add_user(cornelius)
+        self.request_assert_success(f"/container/{container_serial}/add", {"serial": hotp_sha1.get_serial()},
+                                    self.at, "POST")
+
+        delete_policy("policy")
+        hotp_sha1.delete_token()
+        hotp_sha256.delete_token()
+        totp_sha1.delete_token()
+        totp_sha256.delete_token()
+        sms.delete_token()
+        delete_container_by_serial(container_serial)
+
+    def test_06_set_realms(self):
+        # Only allow to set the realms for disabled containers
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REALMS,
+                   conditions=[(ConditionSection.CONTAINER, "states", Comparators.CONTAINS,
+                                ContainerStates.DISABLED.value, True)])
+        container_serial = init_container({"type": "generic"})["container_serial"]
+
+        # set realms for active container fails
+        self.request_assert_error(403, f"/container/{container_serial}/realms", {"realms": self.realm1}, self.at,
+                                  "POST")
+
+        # Set realms for disabled container is allowed
+        set_container_states(container_serial, [ContainerStates.DISABLED.value])
+        self.request_assert_success(f"/container/{container_serial}/realms", {"realms": self.realm1}, self.at, "POST")
+
+        delete_policy("policy")
+        delete_container_by_serial(container_serial)
+
+    def test_07_register(self):
+        # only allow registration if state != lost/damaged
+        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_REGISTER,
+                   conditions=[(ConditionSection.CONTAINER, "states", Comparators.NOT_CONTAINS,
+                                ContainerStates.LOST.value, True),
+                               (ConditionSection.CONTAINER, "states", Comparators.NOT_CONTAINS,
+                                ContainerStates.DAMAGED.value, True)
+                               ])
+        # users should register at different pi servers
+        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"},
+                   conditions=[(ConditionSection.USERINFO, "email", Comparators.MATCHES, ".*@localhost.localdomain",
+                                True, ConditionHandleMissingData.IS_FALSE.value)])
+        set_policy("registration_external", scope=SCOPE.CONTAINER,
+                   action={ACTION.PI_SERVER_URL: "https://pi-external.net/"},
+                   conditions=[(ConditionSection.USERINFO, "email", Comparators.NOT_MATCHES,
+                                ".*@localhost.localdomain", True, ConditionHandleMissingData.IS_TRUE.value)])
+        container_serial = init_container({"type": "smartphone", "user": "selfservice", "realm": self.realm1})[
+            "container_serial"]
+        container = find_container_by_serial(container_serial)
+
+        # Registration not allowed
+        container.add_states([ContainerStates.LOST.value])
+        self.request_assert_error(403, "container/register/initialize", {"container_serial": container_serial},
+                                  self.at_user, "POST")
+
+        # Registration allowed
+        container.set_states([ContainerStates.ACTIVE.value])
+        # external user
+        result = self.request_assert_success("container/register/initialize", {"container_serial": container_serial},
+                                             self.at_user, "POST")
+        self.assertEqual("https://pi-external.net/", result["result"]["value"]["server_url"])
+        # internal user
+        unregister(container)
+        container.remove_user(User("selfservice", self.realm1))
+        container.add_user(User("cornelius", self.realm1))
+        result = self.request_assert_success("container/register/initialize", {"container_serial": container_serial},
+                                             self.at, "POST")
+        self.assertEqual("https://pi.net/", result["result"]["value"]["server_url"])
+
+        delete_policy("policy")
+        delete_policy("registration")
+        delete_policy("registration_external")
+        container.delete()
+
+    def test_08_server_rollover(self):
+        # only allow server rollover if state == lost and user has a phone number
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ROLLOVER,
+                   conditions=[
+                       (ConditionSection.CONTAINER, "states", Comparators.CONTAINS, ContainerStates.LOST.value, True),
+                       (ConditionSection.USERINFO, "phone", Comparators.MATCHES, ".+", True,
+                        ConditionHandleMissingData.IS_FALSE.value)])
+        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"})
+        container_serial = init_container({"type": "smartphone", "user": "selfservice", "realm": self.realm1})[
+            "container_serial"]
+        container = find_container_by_serial(container_serial)
+
+        # Register smartphone
+        container.set_container_info(
+            {"registration_state": RegistrationState.REGISTERED.value, "server_url": "https://pi.net/"})
+
+        # Rollover fails
+        self.request_assert_error(403, "container/register/initialize",
+                                  {"container_serial": container_serial, "rollover": True}, self.at, "POST")
+
+        # Change user: Rollover still fails
+        container.remove_user(User("selfservice", self.realm1))
+        container.add_user(User("cornelius", self.realm1))
+        self.request_assert_error(403, "container/register/initialize",
+                                  {"container_serial": container_serial, "rollover": True}, self.at, "POST")
+
+        # Rollover success
+        container.set_states([ContainerStates.LOST.value])
+        data = {"container_serial": container_serial, "rollover": True}
+        self.request_assert_success("container/register/initialize", data, self.at, "POST")
+
+        delete_policy("policy")
+        delete_policy("registration")
+        container.delete()
+
+    def test_09_register_finalize(self):
+        # initially add tokens only allowed if container was not created from a template
+        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"})
+        set_policy("initially_add_tokens", scope=SCOPE.CONTAINER, action=ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
+                   conditions=[(ConditionSection.CONTAINER, "template", Comparators.NOT_MATCHES, ".+", True)])
+        container_serial = init_container({"type": "smartphone", "user": "selfservice", "realm": self.realm1})[
+            "container_serial"]
+        container = find_container_by_serial(container_serial)
+
+        # --- container without template: initially add tokens allowed ---
+        # Register init
+        result = self.request_assert_success("container/register/initialize", {"container_serial": container_serial},
+                                             self.at, "POST")
+        init_response_data = result["result"]["value"]
+
+        # Finalize
+        mock_smph = MockSmartphone()
+        params = mock_smph.register_finalize(init_response_data["nonce"], init_response_data["time_stamp"],
+                                             "https://pi.net/container/register/finalize", container_serial)
+        result = self.request_assert_success("container/register/finalize",
+                                             params,
+                                             None, 'POST')
+        self.assertTrue(result["result"]["value"]["policies"][ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+
+        # --- container with template: initially add tokens not allowed ---
+        unregister(container)
+        create_container_template(container.type, "test", {}, False)
+        container.template = "test"
+        # Register init
+        result = self.request_assert_success("container/register/initialize", {"container_serial": container_serial},
+                                             self.at, "POST")
+        init_response_data = result["result"]["value"]
+
+        # Finalize
+        mock_smph = MockSmartphone()
+        params = mock_smph.register_finalize(init_response_data["nonce"], init_response_data["time_stamp"],
+                                             "https://pi.net/container/register/finalize", container_serial)
+        result = self.request_assert_success("container/register/finalize", params, None, "POST")
+        self.assertFalse(result["result"]["value"]["policies"][ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+
+        delete_policy("registration")
+        delete_policy("initially_add_tokens")
+        container.delete()
+
+    def test_10_synchronization(self):
+        # initially add tokens only allowed for internal users (specific mail domain) + specific client
+        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"})
+        set_policy("initially_add_tokens", scope=SCOPE.CONTAINER, action=ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
+                   conditions=[(ConditionSection.USERINFO, "email", Comparators.MATCHES, ".+@localhost.localdomain",
+                                True, ConditionHandleMissingData.IS_FALSE.value)])
+        container_serial = init_container({"type": "smartphone", "user": "selfservice", "realm": self.realm1})[
+            "container_serial"]
+        container = find_container_by_serial(container_serial)
+
+        # Registration
+        result = self.request_assert_success("container/register/initialize", {"container_serial": container_serial},
+                                             self.at, "POST")
+        init_response_data = result["result"]["value"]
+        # Finalize
+        mock_smph = MockSmartphone()
+        params = mock_smph.register_finalize(init_response_data["nonce"], init_response_data["time_stamp"],
+                                             "https://pi.net/container/register/finalize", container_serial)
+        self.request_assert_success("container/register/finalize", params, None, "POST")
+
+        # Synchronize with external user
+        scope = "https://pi.net/container/synchronize"
+        result = self.request_assert_success("container/challenge",
+                                             {"scope": scope, "container_serial": mock_smph.container_serial}, None,
+                                             "POST")
+        params = mock_smph.synchronize(result["result"]["value"], scope)
+        result = self.request_assert_success("container/synchronize", params, None, "POST")
+        self.assertFalse(result["result"]["value"]["policies"][ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+
+        # Synchronize with internal user
+        container.remove_user(User("selfservice", self.realm1))
+        container.add_user(User("cornelius", self.realm1))
+        scope = "https://pi.net/container/synchronize"
+        result = self.request_assert_success("container/challenge",
+                                             {"scope": scope, "container_serial": mock_smph.container_serial}, None,
+                                             "POST")
+        params = mock_smph.synchronize(result["result"]["value"], scope)
+        result = self.request_assert_success("container/synchronize", params, None, "POST")
+        self.assertTrue(result["result"]["value"]["policies"][ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+
+        delete_policy("registration")
+        delete_policy("initially_add_tokens")
+        container.delete()
+
+    def test_11_client_rollover(self):
+        # Only allowed if state != lost && userinfo
+        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"})
+        set_policy("rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER,
+                   conditions=[(ConditionSection.CONTAINER, "states", Comparators.NOT_CONTAINS,
+                                ContainerStates.LOST.value, True),
+                               (ConditionSection.USERINFO, "email", Comparators.MATCHES, ".+@localhost.localdomain",
+                                True, ConditionHandleMissingData.IS_FALSE.value)])
+        container_serial = init_container({"type": "smartphone", "user": "selfservice", "realm": self.realm1})[
+            "container_serial"]
+        container = find_container_by_serial(container_serial)
+
+        # Registration
+        result = self.request_assert_success("container/register/initialize", {"container_serial": container_serial},
+                                             self.at, "POST")
+        init_response_data = result["result"]["value"]
+        mock_smph = MockSmartphone()
+        params = mock_smph.register_finalize(init_response_data["nonce"], init_response_data["time_stamp"],
+                                             "https://pi.net/container/register/finalize", container_serial)
+        self.request_assert_success("container/register/finalize", params, None, "POST")
+
+        container.set_states([ContainerStates.LOST.value])
+
+        # Client rollover: User and state not allowed
+        scope = "https://pi.net/container/rollover"
+        result = self.request_assert_success("container/challenge",
+                                             {"scope": scope, "container_serial": container_serial}, None,
+                                             "POST")
+        challenge_data = result["result"]["value"]
+        rollover_scope = "https://pi.net/container/rollover"
+        params = mock_smph.register_finalize(challenge_data["nonce"], challenge_data["time_stamp"],
+                                             rollover_scope, mock_smph.container_serial)
+        self.request_assert_error(403,"container/rollover", params, None, "POST")
+
+        # Client rollover: User not allowed
+        container.set_states([ContainerStates.ACTIVE.value])
+        scope = "https://pi.net/container/rollover"
+        result = self.request_assert_success("container/challenge",
+                                             {"scope": scope, "container_serial": container_serial}, None,
+                                             "POST")
+        challenge_data = result["result"]["value"]
+        rollover_scope = "https://pi.net/container/rollover"
+        params = mock_smph.register_finalize(challenge_data["nonce"], challenge_data["time_stamp"],
+                                             rollover_scope, mock_smph.container_serial)
+        self.request_assert_error(403, "container/rollover", params, None, "POST")
+
+        # Client rollover: State not allowed
+        container.remove_user(User("selfservice", self.realm1))
+        container.add_user(User("cornelius", self.realm1))
+        container.set_states([ContainerStates.LOST.value])
+        scope = "https://pi.net/container/rollover"
+        result = self.request_assert_success("container/challenge",
+                                             {"scope": scope, "container_serial": container_serial}, None,
+                                             "POST")
+        challenge_data = result["result"]["value"]
+        rollover_scope = "https://pi.net/container/rollover"
+        params = mock_smph.register_finalize(challenge_data["nonce"], challenge_data["time_stamp"],
+                                             rollover_scope, mock_smph.container_serial)
+        self.request_assert_error(403, "container/rollover", params, None, "POST")
+
+        # Client rollover: Success
+        container.set_states([ContainerStates.ACTIVE.value])
+        scope = "https://pi.net/container/rollover"
+        result = self.request_assert_success("container/challenge",
+                                             {"scope": scope, "container_serial": container_serial}, None,
+                                             "POST")
+        challenge_data = result["result"]["value"]
+        rollover_scope = "https://pi.net/container/rollover"
+        params = mock_smph.register_finalize(challenge_data["nonce"], challenge_data["time_stamp"],
+                                             rollover_scope, mock_smph.container_serial)
+        self.request_assert_success("container/rollover", params, None, "POST")
+
+        delete_policy("registration")
+        delete_policy("rollover")
+        container.delete()
+
+
 class APIContainer(APIContainerTest):
 
     def test_00_init_delete_container_success(self):
@@ -2040,6 +2480,10 @@ class APIContainer(APIContainerTest):
         res = self.request_assert_success('/container/init', payload, self.at, 'POST')
         cserial = res["result"]["value"]["container_serial"]
         self.assertTrue(len(cserial) > 1)
+
+        # Check creation date is set
+        container = find_container_by_serial(cserial)
+        self.assertIn("creation_date", list(container.get_container_info_dict().keys()))
 
         # Delete the container
         result = self.request_assert_success(f"container/{cserial}", {}, self.at, 'DELETE')
@@ -2107,6 +2551,8 @@ class APIContainer(APIContainerTest):
         self.assertEqual(905, error["code"])
         self.assertEqual("ERR905: Missing parameter: 'user'", error["message"])
 
+        delete_container_by_serial(container_serial)
+
     def test_04_assign_multiple_users_fails(self):
         # Arrange
         container_serial = init_container({"type": "generic"})["container_serial"]
@@ -2125,6 +2571,8 @@ class APIContainer(APIContainerTest):
         self.assertEqual(301, error["code"])
         self.assertEqual("ERR301: This container is already assigned to another user.", error["message"])
 
+        delete_container_by_serial(container_serial)
+
     def test_05_assign_unassign_user_success(self):
         # Arrange
         container_serial = init_container({"type": "generic"})["container_serial"]
@@ -2139,6 +2587,8 @@ class APIContainer(APIContainerTest):
         result = self.request_assert_success(f'/container/{container_serial}/unassign',
                                              payload, self.at, 'POST')
         self.assertTrue(result["result"]["value"])
+
+        delete_container_by_serial(container_serial)
 
     def test_06_assign_without_realm(self):
         # If no realm is passed the default realm is set in before_request
@@ -2166,6 +2616,8 @@ class APIContainer(APIContainerTest):
         error = result["result"]["error"]
         self.assertEqual(904, error["code"])
         self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
+
+        container.delete()
 
     def test_07_unassign_fail(self):
         # Arrange
@@ -2202,6 +2654,8 @@ class APIContainer(APIContainerTest):
                                              payload, self.at, 'POST')
         self.assertFalse(result["result"]["value"])
 
+        delete_container_by_serial(container_serial)
+
     def test_08_set_realms_success(self):
         # Arrange
         self.setUp_user_realms()
@@ -2226,12 +2680,16 @@ class APIContainer(APIContainerTest):
         self.assertNotIn(self.realm1, result["value"].keys())
         self.assertNotIn(self.realm2, result["value"].keys())
 
+        delete_container_by_serial(container_serial)
+
         # Automatically add the user realms
         container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
         payload = {"realms": self.realm2}
         result = self.request_assert_success(f'/container/{container_serial}/realms', payload, self.at, 'POST')
         self.assertTrue(result["result"]["value"][self.realm1])
         self.assertTrue(result["result"]["value"][self.realm2])
+
+        delete_container_by_serial(container_serial)
 
     def test_09_set_realms_fail(self):
         # Arrange
@@ -2255,6 +2713,8 @@ class APIContainer(APIContainerTest):
         # Missing container serial
         self.request_assert_405('/container/realms', {"realms": [self.realm1]}, self.at, 'POST')
 
+        delete_container_by_serial(container_serial)
+
     def test_10_set_description_success(self):
         # Arrange
         container_serial = init_container({"type": "generic", "description": "test container"})["container_serial"]
@@ -2270,6 +2730,8 @@ class APIContainer(APIContainerTest):
         result = self.request_assert_success(f'/container/{container_serial}/description',
                                              payload, self.at, 'POST')
         self.assertTrue(result["result"]["value"])
+
+        delete_container_by_serial(container_serial)
 
     def test_11_set_description_fail(self):
         # Arrange
@@ -2293,6 +2755,8 @@ class APIContainer(APIContainerTest):
         self.request_assert_405('/container/description', {"description": "new description"},
                                 self.at, 'POST')
 
+        delete_container_by_serial(container_serial)
+
     def test_12_set_states_success(self):
         # Arrange
         container_serial = init_container({"type": "generic", "description": "test container"})["container_serial"]
@@ -2305,6 +2769,8 @@ class APIContainer(APIContainerTest):
         self.assertTrue(result["result"]["value"]["active"])
         self.assertTrue(result["result"]["value"]["damaged"])
         self.assertTrue(result["result"]["value"]["lost"])
+
+        delete_container_by_serial(container_serial)
 
     def test_13_set_states_fail(self):
         # Arrange
@@ -2329,6 +2795,8 @@ class APIContainer(APIContainerTest):
         self.assertEqual(905, error["code"])
         self.assertEqual("ERR905: The state list ['active', 'disabled'] contains exclusive states!", error["message"])
 
+        delete_container_by_serial(container_serial)
+
     def test_14_set_container_info_success(self):
         # Arrange
         container_serial = init_container({"type": "generic", "description": "test container"})["container_serial"]
@@ -2336,6 +2804,8 @@ class APIContainer(APIContainerTest):
         # Set info
         self.request_assert_success(f'/container/{container_serial}/info/key1',
                                     {"value": "value1"}, self.at, 'POST')
+
+        delete_container_by_serial(container_serial)
 
     def test_15_set_container_info_fail(self):
         # Arrange
@@ -2354,6 +2824,8 @@ class APIContainer(APIContainerTest):
         # Missing key
         self.request_assert_404_no_result(f'/container/{container_serial}/info/',
                                           {"value": "value1"}, self.at, 'POST')
+
+        delete_container_by_serial(container_serial)
 
     def test_16_add_remove_token_success(self):
         # Arrange
@@ -2407,6 +2879,8 @@ class APIContainer(APIContainerTest):
         self.assertTrue(result["result"]["value"][hotp_02_serial])
         self.assertTrue(result["result"]["value"][hotp_03_serial])
 
+        delete_container_by_serial(container_serial)
+
     def test_17_add_token_fail(self):
         # Arrange
         container_serial = init_container({"type": "generic"})["container_serial"]
@@ -2422,6 +2896,8 @@ class APIContainer(APIContainerTest):
 
         # Add token without container serial
         self.request_assert_405('/container/add', {"serial": hotp_01_serial}, self.at, 'POST')
+
+        delete_container_by_serial(container_serial)
 
     def test_18_remove_token_fail(self):
         # Arrange
@@ -2439,6 +2915,8 @@ class APIContainer(APIContainerTest):
 
         # Remove token without container serial
         self.request_assert_405('/container/remove', {"serial": hotp_01_serial}, self.at, 'POST')
+
+        delete_container_by_serial(container_serial)
 
     def test_19_get_state_types(self):
         result = self.request_assert_success('/container/statetypes', {}, self.at, 'GET')
@@ -2489,12 +2967,49 @@ class APIContainer(APIContainerTest):
         for container in result["result"]["value"]["containers"]:
             self.assertEqual(container["type"], "generic")
 
+        # Filter for assigned containers
+        result = self.request_assert_success('/container/',
+                                             {"assigned": True, "pagesize": 15},
+                                             self.at, 'GET')
+        self.assertEqual(1, result["result"]["value"]["count"])
+
+        # filter for realm the admin is not allowed to manage
+        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_LIST, realm=self.realm1)
+        result = self.request_assert_success('/container/',
+                                             {"container_realm": self.realm2, "pagesize": 15},
+                                             self.at, 'GET')
+        self.assertEqual(0, result["result"]["value"]["count"])
+        delete_policy("policy")
+
         # Filter for token serial
         result = self.request_assert_success('/container/',
                                              {"token_serial": token_serial, "pagesize": 15},
                                              self.at, 'GET')
         self.assertTrue(container_serials[1], result["result"]["value"]["containers"][0]["serial"])
         self.assertEqual(result["result"]["value"]["count"], 1)
+
+        # Set hide_container_info_policy
+        set_policy("hide_info", scope=SCOPE.ADMIN,
+                   action=f"{ACTION.HIDE_CONTAINER_INFO}=encrypt_algorithm device,{ACTION.CONTAINER_LIST}")
+        container3 = find_container_by_serial(container_serials[3])
+        container3.set_container_info({"encrypt_algorithm": "AES", "encrypt_mode": "GCM", "device": "ABC1234",
+                                       RegistrationState.get_key(): RegistrationState.REGISTERED.value})
+        # Filter for container serial
+        result = self.request_assert_success('/container/',
+                                             {"container_serial": container_serials[3], "pagesize": 15},
+                                             self.at, 'GET')
+        result_container = result["result"]["value"]["containers"][0]
+        self.assertTrue(container_serials[3], result_container["serial"])
+        self.assertSetEqual({"encrypt_mode", RegistrationState.get_key(), "creation_date"},
+                            set(result_container["info"].keys()))
+        # Get all containers
+        result = self.request_assert_success('/container/', {"pagesize": 15}, self.at, 'GET')
+        result_containers = result["result"]["value"]["containers"]
+        for container in result_containers:
+            info_keys = container["info"].keys()
+            self.assertNotIn("encrypt_algorithm", info_keys)
+            self.assertNotIn("device", info_keys)
+        delete_policy("hide_info")
 
         # Test output
         result = self.request_assert_success('/container/',
@@ -2875,8 +3390,8 @@ class APIContainerSynchronization(APIContainerTest):
         mock_smph = registration.mock_smph
 
         # Init
-        scope = f"https://pi.net/container/synchronize"
-        result = self.request_assert_success(f'container/challenge',
+        scope = "https://pi.net/container/synchronize"
+        result = self.request_assert_success('container/challenge',
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              'POST')
 
@@ -2928,15 +3443,15 @@ class APIContainerSynchronization(APIContainerTest):
         mock_smph = registration.mock_smph
 
         # Challenge
-        scope = f"https://pi.net/container/register/terminate/client"
-        result = self.request_assert_success(f'container/challenge',
+        scope = "https://pi.net/container/register/terminate/client"
+        result = self.request_assert_success('container/challenge',
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              'POST')
 
         params = mock_smph.register_terminate(result["result"]["value"], scope)
 
         # Terminate
-        res = self.request_assert_success(f'container/register/terminate/client',
+        res = self.request_assert_success('container/register/terminate/client',
                                           params,
                                           None, 'POST')
         self.assertTrue(res["result"]["value"]["success"])
@@ -3066,7 +3581,7 @@ class APIContainerSynchronization(APIContainerTest):
 
         # Challenge
         scope = "https://pi.net/container/register/terminate/client"
-        self.request_assert_success(f'container/challenge',
+        self.request_assert_success('container/challenge',
                                     {"scope": scope, "container_serial": mock_smph.container_serial}, None, 'POST')
 
         # Terminate without signature
@@ -3102,7 +3617,7 @@ class APIContainerSynchronization(APIContainerTest):
         mock_smph = registration.mock_smph
 
         # Challenge
-        scope = f"https://pi.net/container/register/terminate/client"
+        scope = "https://pi.net/container/register/terminate/client"
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              'POST')
@@ -3123,7 +3638,7 @@ class APIContainerSynchronization(APIContainerTest):
         mock_smph = registration.mock_smph
 
         # Challenge
-        scope = f"https://pi.net/container/register/terminate/client"
+        scope = "https://pi.net/container/register/terminate/client"
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
@@ -3203,7 +3718,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertFalse(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
 
         # Challenge
-        scope = f"https://pi.net/container/synchronize"
+        scope = "https://pi.net/container/synchronize"
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
@@ -3266,7 +3781,7 @@ class APIContainerSynchronization(APIContainerTest):
         mock_smph = registration.mock_smph
 
         # Challenge
-        scope = f"https://pi.net/container/synchronize"
+        scope = "https://pi.net/container/synchronize"
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
@@ -3333,9 +3848,9 @@ class APIContainerSynchronization(APIContainerTest):
         smartphone.add_token(push_fb)
 
         # Firebase config
-        fb_config = {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
-                     FIREBASE_CONFIG.JSON_CONFIG: self.FIREBASE_FILE,
-                     FIREBASE_CONFIG.TTL: 10}
+        fb_config = {FirebaseConfig.REGISTRATION_URL: "http://test/ttype/push",
+                     FirebaseConfig.JSON_CONFIG: self.FIREBASE_FILE,
+                     FirebaseConfig.TTL: 10}
         set_smsgateway("fb1", 'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
                        fb_config)
         set_policy("push", scope=SCOPE.ENROLL, action={PUSH_ACTION.FIREBASE_CONFIG: "fb1",
@@ -4088,7 +4603,8 @@ class APIContainerSynchronization(APIContainerTest):
         self.request_assert_success('container/register/finalize',
                                     params,
                                     None, 'POST')
-        self.assertEqual("rollover_completed", smartphone.get_container_info_dict().get("registration_state"))
+        self.assertEqual(RegistrationState.ROLLOVER_COMPLETED.value,
+                         smartphone.get_container_info_dict().get(RegistrationState.get_key()))
 
         # Challenge for Sync
         scope = "https://new-pi.net/container/synchronize"
@@ -4115,7 +4631,8 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertEqual(0, len(token_diff["update"]))
 
         # smartphone got new token secrets: rollover completed
-        self.assertEqual("registered", smartphone.get_container_info_dict().get("registration_state"))
+        self.assertEqual(RegistrationState.REGISTERED.value,
+                         smartphone.get_container_info_dict().get(RegistrationState.get_key()))
 
         delete_policy("policy")
 
@@ -4198,9 +4715,9 @@ class APIContainerSynchronization(APIContainerTest):
         set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://new-pi.net/",
                                                             ACTION.CONTAINER_REGISTRATION_TTL: 36})
         # Firebase config
-        fb_config = {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
-                     FIREBASE_CONFIG.JSON_CONFIG: self.FIREBASE_FILE,
-                     FIREBASE_CONFIG.TTL: 10}
+        fb_config = {FirebaseConfig.REGISTRATION_URL: "http://test/ttype/push",
+                     FirebaseConfig.JSON_CONFIG: self.FIREBASE_FILE,
+                     FirebaseConfig.TTL: 10}
         set_smsgateway("firebase", 'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
                        fb_config)
         set_policy("push", scope=SCOPE.ENROLL, action={PUSH_ACTION.FIREBASE_CONFIG: "firebase",
@@ -4243,7 +4760,8 @@ class APIContainerSynchronization(APIContainerTest):
         self.request_assert_success('container/register/finalize',
                                     params,
                                     None, 'POST')
-        self.assertEqual("rollover_completed", smartphone.get_container_info_dict().get("registration_state"))
+        self.assertEqual(RegistrationState.ROLLOVER_COMPLETED.value,
+                         smartphone.get_container_info_dict().get(RegistrationState.get_key()))
 
         # Try to sync with old smartphone
         scope = "https://pi.net/container/synchronize"
@@ -4254,7 +4772,8 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_error(400, "container/synchronize",
                                            params, None, 'POST')
         self.assertEqual(3002, result["result"]["error"]["code"])
-        self.assertEqual("rollover_completed", smartphone.get_container_info_dict().get("registration_state"))
+        self.assertEqual(RegistrationState.ROLLOVER_COMPLETED.value,
+                         smartphone.get_container_info_dict().get(RegistrationState.get_key()))
 
         # Sync with new smartphone
         scope = "https://new-pi.net/container/synchronize"
@@ -4293,7 +4812,8 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertEqual("firebase", push.get_tokeninfo()[PUSH_ACTION.FIREBASE_CONFIG])
 
         # smartphone got new token secrets: rollover completed
-        self.assertEqual("registered", smartphone.get_container_info_dict().get("registration_state"))
+        self.assertEqual(RegistrationState.REGISTERED.value,
+                         smartphone.get_container_info_dict().get(RegistrationState.get_key()))
 
         delete_policy("policy")
 
@@ -4691,8 +5211,9 @@ class APIContainerSynchronization(APIContainerTest):
         registration = self.register_smartphone_success()
         mock_smph = registration.mock_smph
         smartphone = find_container_by_serial(mock_smph.container_serial)
-        smartphone.update_container_info(
-            [TokenContainerInfoData(key="registration_state", value="rollover_completed", info_type=PI_INTERNAL)])
+        smartphone.update_container_info([TokenContainerInfoData(key=RegistrationState.get_key(),
+                                                                 value=RegistrationState.ROLLOVER_COMPLETED.value,
+                                                                 info_type=PI_INTERNAL)])
 
         # tokens
         server_token = init_token({"genkey": "1", "type": "hotp", "otplen": 8, "hashlib": "sha256"})
@@ -4803,7 +5324,7 @@ class APIContainerTemplate(APIContainerTest):
 
     def test_02_create_template_fail(self):
         # Create template without name
-        self.request_assert_404_no_result(f'/container/smartphone/template',
+        self.request_assert_404_no_result('/container/smartphone/template',
                                           {}, self.at, 'POST')
 
     def test_03_delete_template_fail(self):
@@ -5433,7 +5954,7 @@ class APIContainerTemplate(APIContainerTest):
         container.add_token(totp2)
 
         # Compare template with all containers
-        result = self.request_assert_success(f"/container/template/test/compare", {}, self.at, "GET")
+        result = self.request_assert_success("/container/template/test/compare", {}, self.at, "GET")
         # Check result for equal container
         container_diff = result["result"]["value"][equal_cserial]
         token_diff = container_diff["tokens"]
@@ -5448,7 +5969,7 @@ class APIContainerTemplate(APIContainerTest):
         self.assertFalse(token_diff["equal"])
 
         # Compare template with specific container
-        result = self.request_assert_success(f"/container/template/test/compare", {"container_serial": cserial},
+        result = self.request_assert_success("/container/template/test/compare", {"container_serial": cserial},
                                              self.at, "GET")
         # Check result for unequal container
         container_diff = result["result"]["value"][cserial]

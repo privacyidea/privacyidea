@@ -2469,6 +2469,10 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 400)
             result = res.json.get("result")
             self.assertFalse(result.get("status"))
+        # Check that we have a failed attempt with the username in the audit
+        ae = self.find_most_recent_audit_entry(action='* /validate/radiuscheck')
+        self.assertEqual(0,  ae.get("success"), ae)
+        self.assertEqual("unknown",  ae.get("user"), ae)
 
     def test_29_several_CR_one_locked(self):
         # A user has several CR tokens. One of the tokens is locked.
@@ -3832,11 +3836,9 @@ class MultiChallenge(MyApiTestCase):
                     "type": "hotp",
                     "otpkey": self.otpkey,
                     "pin": pin}, user)
-        set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=hotp".format(
-            ACTION.CHALLENGERESPONSE))
+        set_policy("test49", scope=SCOPE.AUTH, action=f"{ACTION.CHALLENGERESPONSE}=hotp")
         # both tokens will be a valid challenge response token!
-        set_policy("test", scope=SCOPE.AUTH, action="{0!s}=wrong, falsch, Chigau, sbagliato".format(
-            ACTION.PREFERREDCLIENTMODE))
+        set_policy("test", scope=SCOPE.AUTH, action=f"{ACTION.PREFERREDCLIENTMODE}=wrong falsch Chigau sbagliato")
 
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -4727,7 +4729,7 @@ class AChallengeResponse(MyApiTestCase):
                        user=User("cornelius", self.realm1))
         self.assertTrue(r)
 
-        set_policy("chalresp", scope=SCOPE.AUTHZ, action="{0!s}=hotp".format(ACTION.TRIGGERCHALLENGE))
+        set_policy("chalresp", scope=SCOPE.ADMIN, action=f"{ACTION.TRIGGERCHALLENGE}=hotp")
 
         with self.app.test_request_context('/validate/triggerchallenge',
                                            method='POST',
@@ -4906,7 +4908,8 @@ class AChallengeResponse(MyApiTestCase):
         self.assertEqual(entry["action_detail"], "transaction_id: 123456")
         self.assertEqual(entry["info"], "status: pending")
         self.assertEqual(entry["serial"], None)
-        self.assertEqual(entry["user"], None)
+        # Instead of None the "user" entry is now (v3.11.3) an empty string
+        self.assertEqual(entry["user"], "")
 
         # polling the transaction returns false, because no challenge has been answered
         with self.app.test_request_context("/validate/polltransaction", method="GET",
@@ -6069,7 +6072,27 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         user = User("hans", "realm1")
         spass = "12"
         token1 = init_token({"type": "spass", "pin": spass}, user)
-        self.assertTrue(token1.get_serial())
+        self.assertTrue(token1.get_serial().startswith("PISP"))
+        # Check that we do not have a failed audit entry if the policy is set
+        set_policy("max_token_per_user", scope=SCOPE.ENROLL, action=f"{ACTION.MAXTOKENUSER}=1")
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": user.login, "realm": user.realm, "pass": spass}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertTrue(res.json.get("result").get("status"))
+            self.assertTrue(res.json.get("result").get("value"))
+            self.assertEqual(res.json.get("result").get("authentication"), "ACCEPT")
+            self.assertNotIn("transaction_id", res.json.get("detail"))
+            self.assertNotIn("multi_challenge", res.json.get("detail"))
+        # Check that we have the proper log message (action_detail) in the audit
+        audit_entry = self.find_most_recent_audit_entry(action='POST /validate/check')
+        self.assertIsNotNone(audit_entry)
+        self.assertFalse(audit_entry["action_detail"], audit_entry)
+        self.assertEqual(audit_entry["authentication"], AUTH_RESPONSE.ACCEPT, audit_entry)
+        self.assertEqual(audit_entry["success"], 1, audit_entry)
+        delete_policy("max_token_per_user")
+
         set_policy("enroll_via_multichallenge", scope=SCOPE.AUTH,
                    action=f"{ACTION.ENROLL_VIA_MULTICHALLENGE}=hotp")
 
@@ -6173,6 +6196,12 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             detail = data.get("detail")
             self.assertNotIn("transaction_id", detail)
             self.assertNotIn("multi_challenge", detail)
+        # Check that we have the proper log message (action_detail) in the audit
+        audit_entry = self.find_most_recent_audit_entry(action='POST /validate/check')
+        self.assertIsNotNone(audit_entry)
+        self.assertTrue(audit_entry["action_detail"].startswith("ERR303: The number of "), audit_entry)
+        self.assertEqual(audit_entry["authentication"], AUTH_RESPONSE.ACCEPT, audit_entry)
+        self.assertEqual(audit_entry["success"], 1, audit_entry)
 
 
 class ValidateShortPasswordTestCase(MyApiTestCase):
@@ -6237,3 +6266,19 @@ class ValidateShortPasswordTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
+
+class Initialize(MyApiTestCase):
+
+    def test01_no_type(self):
+        with self.app.test_request_context('/validate/initialize',
+                                           method='POST',
+                                           data={"type": ""}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res)
+            self.assertIn("result", res.json)
+            self.assertIn("error", res.json["result"])
+            error = res.json["result"]["error"]
+            self.assertIn("code", error)
+            self.assertIn("message", error)
+            self.assertEqual(905, error["code"], error)
+            self.assertEqual("ERR905: Missing parameter: type", error["message"], error)

@@ -152,6 +152,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
                     action: data.action || [],
                     resolver: data.resolver || [],
                     adminrealm: data.adminrealm || [],
+                    conditions: data.conditions || [],
                     pinode: []
                 });
             });
@@ -320,95 +321,94 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             pinode: []
         };
 
-        $scope.createPolicy = function () {
-            // This is called to save the policy
+        function _buildParamsForSave(targetName) {
+            const p = angular.copy($scope.params);
             // get scope
-            var scope = $scope.selectedScope[0].name;
-            var realms = [];
-            var resolvers = [];
-            var adminRealms = [];
-            var pinodes = [];
-            var actions = [];
-            $scope.params.scope = scope;
-            $scope.params.action = actions;
-            $scope.params.adminrealm = adminRealms;
-            // get actions
+            p.scope = $scope.selectedScope[0].name;
+            p.name = targetName;
+            p.action = [];
+            p.realm = [];
+            p.resolver = [];
+            p.adminrealm = [];
+            p.pinode = [];
 
+            // get actions
             if ($scope.isActionValues) {
                 // we need to process the value-actions
                 // iterate through the checkboxes
-                angular.forEach($scope.actionCheckBox, function (value, key) {
-                    if (value) {
-                        // The action is checked. So try to get an action value.
-                        // The type is given in the $scope.actions array
-                        // It is either a string/text, a num or only a bool
-                        let vtype = $scope.actions.find(o => o.name === key)['type'];
-                        let aval = undefined;
-                        switch (vtype) {
-                            case 'bool':
-                                $scope.params.action.push(key);
-                                break;
-                            case 'int':
-                                aval = $scope.actionValuesNum[key];
-                                $scope.params.action.push(key + "=" + aval);
-                                break;
-                            case 'text':
-                                aval = $scope.actionValuesText[key];
-                                $scope.params.action.push(key + "=" + aval);
-                                break;
-                            case 'str':
-                                aval = $scope.actionValuesStr[key];
-                                if (Array.isArray(aval))
-                                    $scope.params.action.push(key + '=' + aval.map((o) => {
-                                        return o.name
-                                    }).join(' '));
-                                else
-                                    $scope.params.action.push(key + "=" + aval);
-                                break;
-                            default:
-                                console.error('Unknown policy value type: ' + vtype);
-                        }
+                angular.forEach($scope.actionCheckBox, function (checked, key) {
+                    if (!checked) {
+                        return;
+                    }
+                    // The action is checked. So try to get an action value.
+                    // The type is given in the $scope.actions array
+                    // It is either a string/text, a num or only a bool
+                    const meta = $scope.actions.find(o => o.name === key);
+                    switch (meta.type) {
+                        case "bool":
+                            p.action.push(key);
+                            break;
+                        case "int":
+                            p.action.push(key + "=" + $scope.actionValuesNum[key]);
+                            break;
+                        case "text":
+                            p.action.push(key + "=" + $scope.actionValuesText[key]);
+                            break;
+                        case "str":
+                            const val = $scope.actionValuesStr[key];
+                            if (Array.isArray(val)) {
+                                p.action.push(key + "=" + val.map(v => v.name).join(" "));
+                            } else {
+                                p.action.push(key + "=" + val);
+                            }
+                            break;
+                        default:
+                            console.error('Unknown policy value type: ' + meta.type);
                     }
                 });
             } else {
                 // We only have boolean actions...
-                angular.forEach($scope.selectedActions, function (value, key) {
-                    //debug: console.log(value);
-                    $scope.params.action.push(value.name);
+                angular.forEach($scope.selectedActions, function (a) {
+                    p.action.push(a.name);
                 });
             }
             // get realms
-            angular.forEach($scope.selectedRealms, function (value, key) {
-                //debug: console.log(value);
-                realms.push(value.name);
-                $scope.params.realm = realms;
-            });
-            // get PINodes
-            angular.forEach($scope.selectedPINodes, function (value, key) {
-                pinodes.push(value.name);
-                $scope.params.pinode = pinodes;
-            });
+            angular.forEach($scope.selectedRealms, r => p.realm.push(r.name));
             // get resolvers
-            angular.forEach($scope.selectedResolvers, function (value, key) {
-                //debug: console.log(value);
-                resolvers.push(value.name);
-                $scope.params.resolver = resolvers;
-            });
+            angular.forEach($scope.selectedResolvers, r => p.resolver.push(r.name));
             // get admin realms
-            angular.forEach($scope.selectedAdminRealms, function (value, key) {
-                //debug: console.log(value);
-                adminRealms.push(value.name);
-                $scope.params.adminrealm = adminRealms;
+            angular.forEach($scope.selectedAdminRealms, r => p.adminrealm.push(r.name));
+            // get PINodes
+            angular.forEach($scope.selectedPINodes, n => p.pinode.push(n.name));
+            return p;
+        }
+
+        $scope.createPolicy = function () {
+            // This is called to save the policy
+            const paramsToSave = _buildParamsForSave($scope.policyname);
+            ConfigFactory.setPolicy($scope.policyname, paramsToSave, function () {
+                // Return to the policy list
+                $scope.getPolicies();
+                $state.go("config.policies.list");
             });
-            ConfigFactory.setPolicy($scope.policyname, $scope.params,
-                function (data) {
-                    //debug: console.log(data);
-                    // Return to the policy list
-                    $scope.getPolicies();
-                    $state.go("config.policies.list");
-                });
             // Jump to top when the policy is saved
             $('html,body').scrollTop(0);
+        };
+
+        $scope.renamePolicy = function (oldName, newName) {
+            if (!newName || newName === oldName) {
+                return;
+            }
+
+            ConfigFactory.renamePolicy(oldName, newName, function (data) {
+                if (data.result.status === true) {
+                    // Reload the policy list and the details page of the policy
+                    $scope.getPolicies();
+                    $state.go("config.policies.details", {
+                        'policyname': $scope.policyname
+                    });
+                }
+            });
         };
 
         $scope.presetEditValues2 = function (policy) {

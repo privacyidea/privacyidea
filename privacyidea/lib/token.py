@@ -1358,6 +1358,9 @@ def init_token(param, user=None, tokenrealms=None, tokenkind=None):
     if validity_period_start:
         token.set_validity_period_start(validity_period_start)
 
+    # Creation Date
+    token.add_tokeninfo("creation_date", datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"))
+
     # Safe the token object to make sure all changes are persisted in the db
     token.save()
     return token
@@ -2366,22 +2369,26 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
     for token in token_list:
         # Check if the max auth is succeeded
         if token.check_all(message_list):
-            challenge_created, message, transaction_id, challenge_info = token.create_challenge(
+            challenge_created, message, new_transaction_id, challenge_info = token.create_challenge(
                 transactionid=transaction_id, options=options)
 
-            # We need to pass the info if a push token has been triggered, so that require presence can re-use the
-            # challenge instead of creating a new one with a different answer
-            # Also check the challenge info if the presence answer is returned to pass it on for tag replacement
-            additional_tags = {}
-            if token.get_type() == "push":
-                options["push_triggered"] = True
-                if "presence_answer" in challenge_info:
-                    additional_tags["presence_answer"] = challenge_info["presence_answer"]
-            # Add the reply to the response
-            message = challenge_text_replace(message, user=token.user, token_obj=token,
-                                             additional_tags=additional_tags)
-            message_list.append(message)
+            if message:
+                # We need to pass the info if a push token has been triggered, so that require presence can re-use the
+                # challenge instead of creating a new one with a different answer
+                # Also check the challenge info if the presence answer is returned to pass it on for tag replacement
+                additional_tags = {}
+                if token.get_type() == "push":
+                    options["push_triggered"] = True
+                    if "presence_answer" in challenge_info:
+                        additional_tags["presence_answer"] = challenge_info["presence_answer"]
+                # Add the reply to the response
+                message = challenge_text_replace(message, user=token.user, token_obj=token,
+                                                 additional_tags=additional_tags)
+                message_list.append(message)
+
             if challenge_created:
+                if new_transaction_id:
+                    transaction_id = new_transaction_id
                 challenge_info = challenge_info or {}
                 challenge_info["transaction_id"] = transaction_id
                 challenge_info["serial"] = token.token.serial
@@ -2407,7 +2414,8 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
     # The "messages" element is needed by some decorators
     reply_dict["messages"] = message_list
     # TODO: This line is deprecated: Add the information for the old administrative triggerchallenge
-    reply_dict["transaction_ids"] = [challenge.get("transaction_id") for challenge in reply_dict.get("multi_challenge", [])]
+    reply_dict["transaction_ids"] = [challenge.get("transaction_id") for challenge in
+                                     reply_dict.get("multi_challenge", [])]
 
 
 def weigh_token_type(token_obj):
@@ -2638,11 +2646,10 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                         token_object.reset()
                         token_object.post_success()
 
-                    # clean up all challenges from this and other tokens. I.e.
-                    # all challenges with this very transaction_id!
+                    # Clean up all challenges with this transaction_id
                     transaction_id = options.get("transaction_id") or options.get("state")
                     Challenge.query.filter(Challenge.transaction_id == '' + transaction_id).delete()
-                    # We have one successful authentication, so we bail out
+                    # Authentication is successful, stop here
                     break
 
         if not res and not further_challenge:
@@ -2713,13 +2720,13 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
     return res, reply_dict
 
 
-def get_dynamic_policy_definitions(scope=None):
+def get_dynamic_policy_definitions(scope: str = None) -> dict:
     """
     This returns the dynamic policy definitions that come with the new loaded
     token classes.
 
     :param scope: an optional scope parameter. Only return the policies of
-        this scope.
+        this scope. If the scope is not defined, an empty dictionary is returned.
     :return: The policy definition for the token or only for the scope.
     """
     from privacyidea.lib.policy import SCOPE, MAIN_MENU, GROUP
@@ -2793,10 +2800,11 @@ def get_dynamic_policy_definitions(scope=None):
             }
 
     # return subsection, if scope is defined
-    # make sure that scope is in the policy key
-    # e.g. scope='_' is undefined and would break
-    if scope and scope in pol:
-        pol = pol[scope]
+    # return empty dict for invalid scopes
+    if scope:
+        if scope not in pol:
+            log.debug(f"Scope '{scope}' is not defined in the dynamic policy definitions.")
+        pol = pol.get(scope, {})
 
     return pol
 

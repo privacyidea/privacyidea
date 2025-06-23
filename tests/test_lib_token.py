@@ -151,7 +151,14 @@ class TokenTestCase(MyTestCase):
         self.assertTrue(len(tokenobject_list) > 0, tokenobject_list)
         # get tokens of type TOTP and HOTP
         spass_token = init_token(param={'serial': 'SPAS01', 'type': 'spass'})
-        hotp_token = init_token(param={'serial': 'HOTP01', 'type': 'hotp', 'otpkey': '123'})
+        self.assertIn("creation_date", spass_token.get_tokeninfo(), spass_token)
+        create_now = datetime.datetime.now(tz=datetime.timezone.utc)
+        with mock.patch("privacyidea.lib.resolvers.LDAPIdResolver.datetime.datetime",
+                        wraps=datetime.datetime) as mock_datetime:
+            mock_datetime.now.return_value = create_now
+            hotp_token = init_token(param={'serial': 'HOTP01', 'type': 'hotp', 'otpkey': '123'})
+        self.assertEqual(hotp_token.get_tokeninfo("creation_date"),
+                         create_now.isoformat(timespec="seconds"), hotp_token)
         tokenobject_list = get_tokens(token_type_list=["hotp", "totp"])
         self.assertTrue(len(tokenobject_list) > 0, tokenobject_list)
         for token in tokenobject_list:
@@ -940,6 +947,10 @@ class TokenTestCase(MyTestCase):
         self.assertTrue("spass_otp_pin_contents" in p, p)
         self.assertTrue("spass_otp_pin_maxlength" in p, p)
         self.assertTrue("spass_otp_pin_minlength" in p, p)
+
+        # invalid scope returns empty dict
+        p = get_dynamic_policy_definitions(scope="invalid")
+        self.assertDictEqual({}, p)
 
     def test_41_get_tokens_paginate(self):
         # create some tokens
