@@ -516,32 +516,3 @@ def delete_user_cache_api():
     row_count = delete_user_cache()
     g.audit_object.log({"success": True, "info": f"Deleted {row_count} entries from user cache"})
     return send_result({"status": True})
-
-@system_blueprint.route("/challenge-cache", methods=['DELETE'])
-@admin_required
-def delete_challenge_cache_api():
-    """
-    Delete expired entries in the challenge cache.
-
-    :>json bool status: Status of the request
-    :reqheader PI-Authorization: The authorization token
-
-    **Example response**:
-
-    .. sourcecode:: http
-
-        HTTP/1.1 200 OK
-        Content-Type: application/json
-
-        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true
-          },
-          "version": "privacyIDEA unknown"
-        }
-    """
-    row_count = cleanup_expired_challenges(chunksize=None, age=None)
-    g.audit_object.log({"success": True, "info": f"Deleted {row_count} entries from challenge cache"})
-    return send_result({"status": True})

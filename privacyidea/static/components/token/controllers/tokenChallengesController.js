@@ -39,15 +39,15 @@ myApp.controller("tokenChallengesController", ['$scope', 'TokenFactory',
         $scope.get();
     };
 
-     $scope.deleteChallengeCache = function () {
-        TokenFactory.deleteChallengeCache(function (data) {
+     $scope.deleteExpiredChallenges = function () {
+        TokenFactory.deleteExpiredChallenges(function (data) {
             if (data.result.status === true) {
                 inform.add(gettextCatalog.getString(
-                            "Challenge cache successfully deleted."),
+                            "Expired challenges successfully deleted."),
                                               {type: "success", ttl: 4000});
             } else {
                 inform.add(gettextCatalog.getString(
-                            "Could not delete challenge cache."),
+                            "Could not delete expired challenges."),
                            {type: "danger", ttl: 8000});
             }
         });

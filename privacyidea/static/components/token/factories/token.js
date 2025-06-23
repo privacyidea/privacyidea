@@ -379,8 +379,8 @@ angular.module("TokenModule", ["privacyideaAuth"])
                         AuthFactory.authError(error.data)
                     });
                 },
-                deleteChallengeCache: function (callback) {
-                    $http.delete("system/challenge-cache", {
+                deleteExpiredChallenges: function (callback) {
+                    $http.delete(tokenUrl + "/challenges/expired", {
                         headers: {
                             'PI-Authorization': AuthFactory.getAuthToken(),
                             'Content-Type': 'application/json'

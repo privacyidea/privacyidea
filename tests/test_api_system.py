@@ -1243,7 +1243,6 @@ class APIConfigTestCase(MyApiTestCase):
                   user_id='', timestamp=None).save()
         UserCache(username='bob', used_login='', resolver='',
                   user_id='', timestamp=None).save()
-        db.session.commit()
 
         count = UserCache.query.count()
         self.assertEqual(count, 2, f"expected 2 cache rows, found {count}")
@@ -1260,38 +1259,6 @@ class APIConfigTestCase(MyApiTestCase):
         remaining = UserCache.query.count()
         self.assertEqual(remaining, 0,
                          f"user-cache still contains {remaining} rows")
-
-    def test_25_delete_challenge_cache_endpoint(self):
-        from privacyidea.models import Challenge
-        import datetime as dt
-
-        # seed the DB with two expired challenges and one valid challenge
-        Challenge(serial='0',validitytime=0).save()
-        Challenge(serial='1',validitytime=0).save()
-        Challenge(serial='2',validitytime=300).save()
-
-        start_cnt = Challenge.query.count()
-        self.assertEqual(
-            start_cnt, 3,
-            f"expected two challenges before deletion, found {start_cnt}")
-
-        # delete the challenge cache
-        with self.app.test_request_context(
-                '/system/challenge-cache',
-                method='DELETE',
-                headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200, res.data)
-
-            result = res.json.get("result")
-            self.assertTrue(result["status"], result)
-            self.assertTrue(result["value"]["status"], result)
-
-        # verify that the table is empty
-        remaining = Challenge.query.count()
-        self.assertEqual(
-            remaining, 1,
-            f"challenge-cache contains {remaining} rows")
 
     def test_30_realms_with_nodes(self):
         nd1_uuid = "8e4272a9-9037-40df-8aa3-976e4a04b5a9"
