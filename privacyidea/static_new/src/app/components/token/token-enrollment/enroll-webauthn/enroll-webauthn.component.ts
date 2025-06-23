@@ -165,7 +165,12 @@ export class EnrollWebauthnComponent implements OnInit {
       params.credProps = extResults.credProps;
     }
 
-    return firstValueFrom(this.tokenService.enrollToken(params));
+    return firstValueFrom(
+      this.tokenService.enrollToken({
+        data: params,
+        mapper: this.enrollmentMapper,
+      }),
+    );
   };
 
   // registerWebauthnNEW = async (

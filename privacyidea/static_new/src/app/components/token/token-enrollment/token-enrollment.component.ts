@@ -368,19 +368,18 @@ export class TokenEnrollmentComponent {
     this.userService.selectedUserRealm.set('');
     this.userService.userFilter.set('');
 
-    this.formGroup.reset({
-      description: '',
-      selectedUserRealm: this.realmService.defaultRealm(),
-      userFilter: '',
-      setPin: '',
-      repeatPin: '',
-      selectedContainer: this.containerService.selectedContainer(),
-      selectedStartDate: new Date(),
-      selectedStartTime: '00:00',
-      selectedTimezoneOffset: '+00:00',
-      selectedEndDate: new Date(),
-      selectedEndTime: '23:59',
-    });
+    this.descriptionControl.setValue('');
+    this.setPinControl.setValue('');
+    this.repeatPinControl.setValue('');
+    this.selectedUserRealmControl.setValue(this.realmService.defaultRealm());
+    this.userFilterControl.setValue('');
+    this.selectedContainerControl.setValue('');
+    this.selectedStartDateControl.setValue(new Date());
+    this.selectedStartTimeControl.setValue('00:00');
+    this.selectedTimezoneOffsetControl.setValue('+00:00');
+    this.selectedEndDateControl.setValue(new Date());
+    this.selectedEndTimeControl.setValue('23:59');
+
     this.enrollResponse.set(null);
     this.pollResponse.set(null);
     this.additionalFormFields.set({});
