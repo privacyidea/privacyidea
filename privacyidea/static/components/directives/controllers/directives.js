@@ -993,3 +993,23 @@ myApp.directive("containerTemplateDiff", ["instanceUrl", "versioningSuffixProvid
             }
         }
     }]);
+
+myApp.directive("httpResolverEndpointConfig", ["instanceUrl", "versioningSuffixProvider",
+    function (instanceUrl, versioningSuffixProvider) {
+        return {
+            scope: {
+                params: "=",
+                placeholders: "=",
+                tags: "="
+            },
+            templateUrl: instanceUrl + "/static/components/directives/views/directive.httpResolverEndpointConfig.html" + versioningSuffixProvider.$get(),
+            link: function (scope, element, attr) {
+                scope.methods = {"get": "GET", "post": "POST", "put": "PUT", "patch": "PATCH", "delete": "DELETE"};
+                scope.$watch('params.method', function (newVal, oldVal) {
+                    if (scope.params["method"]) {
+                        scope.params["method"] = scope.params["method"].toLowerCase();
+                    }
+                }, true);
+            }
+        }
+    }]);

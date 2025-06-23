@@ -8,6 +8,10 @@ lib.resolvers.ldapresolver
 The lib.resolver.py only depends on the database model.
 """
 
+from privacyidea.lib.crypto import encryptPassword
+from privacyidea.lib.resolvers.EntraIDResolver import (CLIENT_ID, TENANT, CLIENT_CREDENTIAL_TYPE, ClientCredentialType,
+                                                       CLIENT_CERTIFICATE, PRIVATE_KEY_FILE, PRIVATE_KEY_PASSWORD,
+                                                       CERTIFICATE_FINGERPRINT)
 from .base import MyTestCase
 from . import ldap3mock
 from ldap3.core.exceptions import LDAPOperationResult
@@ -26,7 +30,8 @@ from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
 from privacyidea.lib.resolvers.SCIMIdResolver import IdResolver as SCIMResolver
 from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
 from privacyidea.lib.resolvers.LDAPIdResolver import (SERVERPOOL_ROUNDS, SERVERPOOL_SKIP)
-from privacyidea.lib.resolvers.HTTPResolver import HTTPResolver
+from privacyidea.lib.resolvers.HTTPResolver import (HEADERS, METHOD, ENDPOINT, EDITABLE, CONFIG_GET_USER_BY_NAME,
+                                                    HTTPMethod, CONFIG_GET_USER_BY_ID)
 
 from privacyidea.lib.resolver import (save_resolver,
                                       delete_resolver,
@@ -35,9 +40,8 @@ from privacyidea.lib.resolver import (save_resolver,
                                       get_resolver_object, pretestresolver,
                                       CENSORED)
 from privacyidea.lib.realm import (set_realm, delete_realm)
-from privacyidea.models import ResolverConfig
+from privacyidea.models import ResolverConfig, Resolver
 from privacyidea.lib.utils import to_bytes, to_unicode
-from requests import HTTPError
 
 PWFILE = "tests/testdata/passwords"
 
@@ -48,18 +52,17 @@ objectGUIDs = [
     '7dd0533c-afe3-4c6f-b49e-af82eaed045c'
 ]
 
-
 LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
-                 "attributes": {'cn': 'alice',
-                                "sn": "Cooper",
-                                "givenName": "Alice",
-                                'userPassword': 'alicepw',
-                                'oid': "2",
-                                "homeDirectory": "/home/alice",
-                                "email": "alice@test.com",
-                                "accountExpires": 131024988000000000,
-                                "objectGUID": objectGUIDs[0],
-                                'mobile': ["1234", "45678"]}},
+                  "attributes": {'cn': 'alice',
+                                 "sn": "Cooper",
+                                 "givenName": "Alice",
+                                 'userPassword': 'alicepw',
+                                 'oid': "2",
+                                 "homeDirectory": "/home/alice",
+                                 "email": "alice@test.com",
+                                 "accountExpires": 131024988000000000,
+                                 "objectGUID": objectGUIDs[0],
+                                 'mobile': ["1234", "45678"]}},
                  {"dn": 'cn=bob,ou=example,o=test',
                   "attributes": {'cn': 'bob',
                                  "sn": "Marley",
@@ -683,9 +686,8 @@ class SCIMResolverTestCase(MyTestCase):
                       content_type='application/json',
                       body=self.BODY_ACCESSTOKEN)
         y = SCIMResolver()
-        y.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver':
-            self.RESOURCESERVER, 'Client': self.CLIENT, 'Secret':
-            self.SECRET, 'Mapping': "{}"})
+        y.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER, 'Client': self.CLIENT,
+                      'Secret': self.SECRET, 'Mapping': "{}"})
 
         rid = y.getResolverId()
         self.assertEqual(rid, self.AUTHSERVER)
@@ -703,9 +705,8 @@ class SCIMResolverTestCase(MyTestCase):
                       content_type='application/json',
                       body=self.BODY_ACCESSTOKEN)
         y = SCIMResolver()
-        y.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver':
-            self.RESOURCESERVER, 'Client': self.CLIENT, 'Secret':
-            self.SECRET, 'Mapping': "{}"})
+        y.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER, 'Client': self.CLIENT,
+                      'Secret': self.SECRET, 'Mapping': "{}"})
 
         r = y.checkPass("uid", "password")
         self.assertFalse(r)
@@ -715,14 +716,13 @@ class SCIMResolverTestCase(MyTestCase):
         responses.add(responses.GET, self.TOKEN_URL, status=200,
                       content_type='application/json',
                       body=self.BODY_ACCESSTOKEN)
-        responses.add(responses.GET, self.USER_URL+"/bjensen",
+        responses.add(responses.GET, self.USER_URL + "/bjensen",
                       status=200, content_type='application/json',
                       body=self.BODY_SINGLE_USER)
 
         y = SCIMResolver()
-        y.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver':
-            self.RESOURCESERVER, 'Client': self.CLIENT, 'Secret':
-            self.SECRET, 'Mapping': "{username: 'userName'}"})
+        y.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER, 'Client': self.CLIENT,
+                      'Secret': self.SECRET, 'Mapping': "{username: 'userName'}"})
 
         r = y.getUserInfo("bjensen")
         self.assertEqual(r.get("username"), "bjensen")
@@ -747,9 +747,8 @@ class SCIMResolverTestCase(MyTestCase):
                       body=self.BODY_USERS)
 
         y = SCIMResolver()
-        y.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver':
-            self.RESOURCESERVER, 'Client': self.CLIENT, 'Secret':
-            self.SECRET, 'Mapping': "{}"})
+        y.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER, 'Client': self.CLIENT,
+                      'Secret': self.SECRET, 'Mapping': "{}"})
 
         r = y.getUserList()
         self.assertEqual(len(r), 2)
@@ -761,11 +760,11 @@ class SCIMResolverTestCase(MyTestCase):
         responses.add(responses.GET, self.TOKEN_URL,
                       status=200, content_type='application/json',
                       body=self.BODY_ACCESSTOKEN)
-        responses.add(responses.GET, self.USER_URL+"/jbensen",
+        responses.add(responses.GET, self.USER_URL + "/jbensen",
                       status=402, content_type='application/json',
                       body=self.BODY_SINGLE_USER)
         # Failed to retrieve access token
-        #SCIMResolver._get_user(resource_server=self.RESOURCESERVER,
+        # SCIMResolver._get_user(resource_server=self.RESOURCESERVER,
         #                       access_token="", userid="jbensen")
         self.assertRaises(Exception, SCIMResolver._get_user,
                           resource_server=self.RESOURCESERVER,
@@ -780,7 +779,7 @@ class SCIMResolverTestCase(MyTestCase):
                       status=402, content_type='application/json',
                       body=self.BODY_SINGLE_USER)
         # Failed to retrieve access token
-        #SCIMResolver._search_users(resource_server=self.RESOURCESERVER,
+        # SCIMResolver._search_users(resource_server=self.RESOURCESERVER,
         #                           access_token="")
         self.assertRaises(Exception, SCIMResolver._search_users,
                           resource_server=self.RESOURCESERVER,
@@ -838,7 +837,7 @@ class LDAPResolverTestCase(MyTestCase):
                                   '"surname" : "sn", '
                                   '"givenname" : "givenName" }',
                       'UIDTYPE': 'DN',
-        })
+                      })
 
         result = y.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
@@ -908,7 +907,7 @@ class LDAPResolverTestCase(MyTestCase):
                                   '"surname" : "sn", '
                                   '"givenname" : "givenName" }',
                       'UIDTYPE': 'DN',
-        })
+                      })
 
         result = y.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
@@ -959,7 +958,6 @@ class LDAPResolverTestCase(MyTestCase):
         res = y.checkPass(user_id, "wrong pw")
         self.assertFalse(res)
 
-
     @ldap3mock.activate
     def test_01_broken_uidtype(self):
         # checkPass with wrong UIDtype
@@ -979,7 +977,7 @@ class LDAPResolverTestCase(MyTestCase):
                                   '"givenname" : "givenName" }',
                       'UIDTYPE': 'unknownType',
                       'CACHE_TIMEOUT': 0
-        })
+                      })
 
         result = y.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
@@ -1017,7 +1015,7 @@ class LDAPResolverTestCase(MyTestCase):
                                   '"givenname" : "givenName" }',
                       'UIDTYPE': 'oid',
                       'CACHE_TIMEOUT': 0
-        })
+                      })
 
         result = y.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
@@ -1070,7 +1068,7 @@ class LDAPResolverTestCase(MyTestCase):
                                             '"givenname" : "givenName" }',
                                 'UIDTYPE': 'oid',
                                 'CACHE_TIMEOUT': 0
-        })
+                                })
 
         self.assertTrue(res[0], res)
         self.assertTrue("{!s}".format(len(LDAPDirectory)) in res[1], res[1])
@@ -1141,7 +1139,7 @@ class LDAPResolverTestCase(MyTestCase):
                                             '"givenname" : "givenName" }',
                                 'UIDTYPE': 'oid',
                                 'CACHE_TIMEOUT': 0
-        })
+                                })
 
         self.assertFalse(res[0], res)
         self.assertTrue("Authtype unknown not supported" in res[1], res)
@@ -1238,7 +1236,7 @@ class LDAPResolverTestCase(MyTestCase):
                       'UIDTYPE': 'oid',
                       'NOREFERRALS': True,
                       'CACHE_TIMEOUT': 0
-        })
+                      })
         r = y._trim_result([{"type": "searchResEntry",
                              "DN": "blafoo"},
                             {"type": "searchResEntry",
@@ -1268,7 +1266,7 @@ class LDAPResolverTestCase(MyTestCase):
                       'UIDTYPE': 'objectGUID',
                       'NOREFERRALS': True,
                       'CACHE_TIMEOUT': 0
-        })
+                      })
         user_id = y.getUserId("bob")
         res = y.checkPass(user_id, "bobpwééé")
         self.assertTrue(res)
@@ -1301,7 +1299,7 @@ class LDAPResolverTestCase(MyTestCase):
                       'UIDTYPE': 'objectGUID',
                       'NOREFERRALS': True,
                       'CACHE_TIMEOUT': 0
-        })
+                      })
         user_id = y.getUserId("bob")
         res = y.checkPass(user_id, "bobpwééé")
         self.assertTrue(res)
@@ -1372,7 +1370,7 @@ class LDAPResolverTestCase(MyTestCase):
                       'UIDTYPE': 'DN',
                       'NOREFERRALS': True,
                       'CACHE_TIMEOUT': 0
-        })
+                      })
         res = y.getUserList({"accountExpires": 1})
         self.assertEqual(len(res), 1)
         self.assertEqual(res[0].get("username"), "alice")
@@ -1401,7 +1399,7 @@ class LDAPResolverTestCase(MyTestCase):
                       'UIDTYPE': 'DN',
                       'NOREFERRALS': True,
                       'CACHE_TIMEOUT': 0
-        })
+                      })
 
         user = "achmed"
 
@@ -1483,7 +1481,7 @@ class LDAPResolverTestCase(MyTestCase):
                       'OBJECT_CLASSES': classes,
                       'NOREFERRALS': True,
                       'CACHE_TIMEOUT': 0
-        })
+                      })
 
         user = "achmed"
         uid_bin = uuid.uuid4().bytes
@@ -1611,7 +1609,7 @@ class LDAPResolverTestCase(MyTestCase):
                   'CACHE_TIMEOUT': 0,
                   'START_TLS': '1',
                   'TLS_VERIFY': '1'
-        }
+                  }
         start_tls_resolver = LDAPResolver()
         start_tls_resolver.loadConfig(config)
         result = start_tls_resolver.getUserList({'username': '*'})
@@ -2065,7 +2063,7 @@ class LDAPResolverTestCase(MyTestCase):
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
                       'LOGINNAMEATTRIBUTE': 'cn',
-                      'LDAPSEARCHFILTER': '(&(cn=*))', # we use this weird search filter to get a unique resolver ID
+                      'LDAPSEARCHFILTER': '(&(cn=*))',  # we use this weird search filter to get a unique resolver ID
                       'USERINFO': '{ "username": "cn",'
                                   '"phone" : "telephoneNumber", '
                                   '"mobile" : "mobile"'
@@ -2121,7 +2119,7 @@ class LDAPResolverTestCase(MyTestCase):
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
                       'LOGINNAMEATTRIBUTE': 'cn',
-                      'LDAPSEARCHFILTER': '(|(cn=*))', # we use this weird search filter to get a unique resolver ID
+                      'LDAPSEARCHFILTER': '(|(cn=*))',  # we use this weird search filter to get a unique resolver ID
                       'USERINFO': '{ "username": "cn",'
                                   '"phone" : "telephoneNumber", '
                                   '"mobile" : "mobile"'
@@ -2180,18 +2178,18 @@ class LDAPResolverTestCase(MyTestCase):
     def test_35_persistent_serverpool(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
         params = {'LDAPURI': 'ldap://localhost, ldap://127.0.0.1, ldap://127.0.1.1',
-                      'LDAPBASE': 'o=test',
-                      'BINDDN': 'cn=manager,ou=example,o=test',
-                      'BINDPW': 'ldaptest',
-                      'LOGINNAMEATTRIBUTE': 'cn',
-                      'LDAPSEARCHFILTER': '(cn=*)',
-                      'USERINFO': '{ "username": "cn", "phone": "telephoneNumber", '
-                                  '"mobile" : "mobile", "email": "mail", '
-                                  '"surname" : "sn", "givenname": "givenName" }',
-                      'UIDTYPE': 'DN',
-                      'CACHE_TIMEOUT': '0', # to disable the per-process cache
-                      'resolver': 'testpool',
-                      'type': 'ldapresolver'}
+                  'LDAPBASE': 'o=test',
+                  'BINDDN': 'cn=manager,ou=example,o=test',
+                  'BINDPW': 'ldaptest',
+                  'LOGINNAMEATTRIBUTE': 'cn',
+                  'LDAPSEARCHFILTER': '(cn=*)',
+                  'USERINFO': '{ "username": "cn", "phone": "telephoneNumber", '
+                              '"mobile" : "mobile", "email": "mail", '
+                              '"surname" : "sn", "givenname": "givenName" }',
+                  'UIDTYPE': 'DN',
+                  'CACHE_TIMEOUT': '0',  # to disable the per-process cache
+                  'resolver': 'testpool',
+                  'type': 'ldapresolver'}
         y1 = LDAPResolver()
         y1.loadConfig(params)
         y2 = LDAPResolver()
@@ -2277,6 +2275,7 @@ class BaseResolverTestCase(MyTestCase):
         self.assertEqual(r[0], False)
         self.assertEqual(r[1], "Not implemented")
 
+
 class ResolverTestCase(MyTestCase):
     """
     Test the Passwdresolver
@@ -2286,11 +2285,27 @@ class ResolverTestCase(MyTestCase):
 
     def test_01_create_resolver(self):
         rid = save_resolver({"resolver": self.resolvername1,
-                               "type": "passwdresolver",
-                               "fileName": "/etc/passwd",
-                               "type.fileName": "string",
-                               "desc.fileName": "The name of the file"})
+                             "type": "passwdresolver",
+                             "fileName": "/etc/passwd",
+                             "type.fileName": "string",
+                             "desc.fileName": "The name of the file"})
         self.assertTrue(rid > 0, rid)
+
+        # Do not save empty values
+        rid = save_resolver({"resolver": self.resolvername1,
+                             "type": "passwdresolver",
+                             "test": "",
+                             "description": "Test description"})
+        self.assertTrue(rid > 0, rid)
+        self.assertIsNone(ResolverConfig.query.filter_by(resolver_id=rid, Key="test").first())
+        # But if the key already exists, delete it
+        self.assertEqual("Test description",
+                         ResolverConfig.query.filter_by(resolver_id=rid, Key="description").first().Value)
+        rid = save_resolver({"resolver": self.resolvername1,
+                             "type": "passwdresolver",
+                             "description": ""})
+        self.assertTrue(rid > 0, rid)
+        self.assertIsNone(ResolverConfig.query.filter_by(resolver_id=rid, Key="description").first())
 
         # description with missing main key
         params = {"resolver": "reso2",
@@ -2354,7 +2369,51 @@ class ResolverTestCase(MyTestCase):
         reso_list = get_resolver_list()
         self.assertTrue(self.resolvername2 in reso_list)
 
-    def test_02_get_resolver_list(self):
+    def test_02_create_entraid_resolver(self):
+        # Test that the password in the certificate dict is also encrypted
+        config = {"resolver": "EntraID", "type": "entraidresolver", CLIENT_ID: "1234",
+                  CLIENT_CREDENTIAL_TYPE: ClientCredentialType.CERTIFICATE.value,
+                  CLIENT_CERTIFICATE: {PRIVATE_KEY_FILE: "tests/testdata/cert.pem", PRIVATE_KEY_PASSWORD: "Test1234",
+                                       CERTIFICATE_FINGERPRINT: "1234567890abcdef1234567890abcdef12345678"},
+                  TENANT: "organization"}
+
+        db_id = save_resolver(config)
+        self.assertGreater(db_id, 0)
+        reso_config = ResolverConfig.query.filter_by(resolver_id=db_id, Key=CLIENT_CERTIFICATE).first()
+        self.assertIsNotNone(reso_config)
+        certificate_config = json.loads(reso_config.Value)
+        # Encryption contains a random part, hence we can not directly compare the two values
+        encrypted_pw = encryptPassword("Test1234")
+        self.assertNotEqual("Test1234", certificate_config[PRIVATE_KEY_PASSWORD])
+        self.assertEqual(len(encrypted_pw), len(certificate_config[PRIVATE_KEY_PASSWORD]))
+
+        # Updating the config, but without changing the password (password value is __CENSORED__) keeps the old password
+        config = {"resolver": "EntraID", "type": "entraidresolver", EDITABLE: True,
+                  CLIENT_CERTIFICATE: {PRIVATE_KEY_FILE: "tests/testdata/cert.pem", PRIVATE_KEY_PASSWORD: CENSORED,
+                                       CERTIFICATE_FINGERPRINT: "1234567890abcdef1234567890abcdef12345678"}}
+        new_db_id = save_resolver(config)
+        self.assertEqual(db_id, new_db_id)
+        reso_config = ResolverConfig.query.filter_by(resolver_id=db_id, Key=CLIENT_CERTIFICATE).all()
+        self.assertEqual(1, len(reso_config))
+        certificate_config = json.loads(reso_config[0].Value)
+        # Encryption contains a random part, hence we can not directly compare the two values
+        encrypted_pw = encryptPassword("Test1234")
+        self.assertNotEqual("Test1234", certificate_config[PRIVATE_KEY_PASSWORD])
+        self.assertEqual(len(encrypted_pw), len(certificate_config[PRIVATE_KEY_PASSWORD]))
+
+        # But if no password is contained in the config, the old one will be removed
+        config = {"resolver": "EntraID", "type": "entraidresolver",
+                  CLIENT_CERTIFICATE: {PRIVATE_KEY_FILE: "tests/testdata/cert.pem",
+                                       CERTIFICATE_FINGERPRINT: "1234567890abcdef1234567890abcdef12345678"}}
+        new_db_id = save_resolver(config)
+        self.assertEqual(db_id, new_db_id)
+        reso_config = ResolverConfig.query.filter_by(resolver_id=db_id, Key=CLIENT_CERTIFICATE).all()
+        self.assertEqual(1, len(reso_config))
+        certificate_config = json.loads(reso_config[0].Value)
+        self.assertNotIn(PRIVATE_KEY_PASSWORD, certificate_config)
+        delete_resolver("EntraID")
+
+    def test_03_get_resolver_list(self):
         reso_list = get_resolver_list(filter_resolver_name=self.resolvername1)
         self.assertTrue(self.resolvername1 in reso_list, reso_list)
         self.assertTrue(self.resolvername2 not in reso_list, reso_list)
@@ -2386,16 +2445,42 @@ class ResolverTestCase(MyTestCase):
         reso_list = get_resolver_list(filter_resolver_type="passwdresolver")
         self.assertTrue(len(reso_list) == 2)
 
-    def test_03_get_resolver_config(self):
+        # Check format of resolver data (EntraID)
+        config = {"resolver": "EntraID", "type": "entraidresolver", CLIENT_ID: "1234", TENANT: "organization",
+                  CLIENT_CREDENTIAL_TYPE: ClientCredentialType.CERTIFICATE.value,
+                  CLIENT_CERTIFICATE: {PRIVATE_KEY_FILE: "tests/testdata/cert.pem", PRIVATE_KEY_PASSWORD: "Test1234",
+                                       CERTIFICATE_FINGERPRINT: "1234567890abcdef1234567890abcdef12345678"},
+                  HEADERS: {"Content-Type": "application/json"},
+                  CONFIG_GET_USER_BY_NAME: {METHOD: HTTPMethod.GET.value, ENDPOINT: "/users/{username}"}}
+        save_resolver(config)
+        reso_list = get_resolver_list(filter_resolver_name="EntraID")
+        reso_data = reso_list["EntraID"]["data"]
+        # Dicts are already loaded (for advanced HTTPResolvers also the headers)
+        self.assertTrue(isinstance(reso_data[CLIENT_CERTIFICATE], dict))
+        self.assertTrue(isinstance(reso_data[CONFIG_GET_USER_BY_NAME], dict))
+        self.assertDictEqual({"Content-Type": "application/json"}, config[HEADERS])
+        # Data should not be censored
+        self.assertEqual("Test1234", reso_data[CLIENT_CERTIFICATE][PRIVATE_KEY_PASSWORD])
+
+        # Invalid JSON format are not loaded
+        entra_resolver = Resolver.query.filter_by(name="EntraID").first()
+        ResolverConfig(entra_resolver.id, Key=CONFIG_GET_USER_BY_ID,
+                       Value="{'method': 'GET', 'endpoint': '/users/{userid}'}", Type="dict").save()
+        reso_list = get_resolver_list(filter_resolver_name="EntraID")
+        reso_data = reso_list["EntraID"]["data"]
+        self.assertTrue(isinstance(reso_data[CONFIG_GET_USER_BY_ID], str))
+        delete_resolver("EntraID")
+
+    def test_04_get_resolver_config(self):
         reso_config = get_resolver_config(self.resolvername2)
         self.assertTrue("UnknownKey" in reso_config, reso_config)
 
-    def test_04_if_a_resolver_exists(self):
+    def test_05_if_a_resolver_exists(self):
         reso_list = get_resolver_list()
         self.assertTrue(self.resolvername1 in reso_list)
         self.assertTrue("some other" not in reso_list)
 
-    def test_05_create_resolver_object(self):
+    def test_06_create_resolver_object(self):
         from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver
 
         reso_obj = get_resolver_object(self.resolvername1)
@@ -2450,10 +2535,10 @@ class ResolverTestCase(MyTestCase):
         # Create a resolver with an empty filename
         # will use the filename /etc/passwd
         rid = save_resolver({"resolver": self.resolvername1,
-                               "type": "passwdresolver",
-                               "fileName": "",
-                               "type.fileName": "string",
-                               "desc.fileName": "The name of the file"})
+                             "type": "passwdresolver",
+                             "fileName": "",
+                             "type.fileName": "string",
+                             "desc.fileName": "The name of the file"})
         self.assertTrue(rid > 0, rid)
         y = get_resolver_object(self.resolvername1)
         y.loadFile()
@@ -2461,10 +2546,10 @@ class ResolverTestCase(MyTestCase):
 
         # Load a file with an empty line
         rid = save_resolver({"resolver": self.resolvername1,
-                               "type": "passwdresolver",
-                               "fileName": PWFILE,
-                               "type.fileName": "string",
-                               "desc.fileName": "The name of the file"})
+                             "type": "passwdresolver",
+                             "fileName": PWFILE,
+                             "type.fileName": "string",
+                             "desc.fileName": "The name of the file"})
         self.assertTrue(rid > 0, rid)
         y = get_resolver_object(self.resolvername1)
         y.loadFile()
@@ -2537,28 +2622,28 @@ class ResolverTestCase(MyTestCase):
         # --------------------------------
         # First we create an LDAP resolver
         rid = save_resolver({"resolver": "myLDAPres",
-                               "type": "ldapresolver",
-                               'LDAPURI': 'ldap://localhost',
-                               'LDAPBASE': 'o=test',
-                               'BINDDN': 'cn=manager,ou=example,o=test',
-                               'BINDPW': 'ldaptest',
-                               'LOGINNAMEATTRIBUTE': 'cn',
-                               'LDAPSEARCHFILTER': '(cn=*)',
-                               'USERINFO': '{ "username": "cn",'
-                                           '"phone" : "telephoneNumber", '
-                                           '"mobile" : "mobile"'
-                                           ', "email" : "mail", '
-                                           '"surname" : "sn", '
-                                           '"givenname" : "givenName" }',
-                               'UIDTYPE': 'DN',
-                               'CACHE_TIMEOUT': 0
-        })
+                             "type": "ldapresolver",
+                             'LDAPURI': 'ldap://localhost',
+                             'LDAPBASE': 'o=test',
+                             'BINDDN': 'cn=manager,ou=example,o=test',
+                             'BINDPW': 'ldaptest',
+                             'LOGINNAMEATTRIBUTE': 'cn',
+                             'LDAPSEARCHFILTER': '(cn=*)',
+                             'USERINFO': '{ "username": "cn",'
+                                         '"phone" : "telephoneNumber", '
+                                         '"mobile" : "mobile"'
+                                         ', "email" : "mail", '
+                                         '"surname" : "sn", '
+                                         '"givenname" : "givenName" }',
+                             'UIDTYPE': 'DN',
+                             'CACHE_TIMEOUT': 0
+                             })
 
         self.assertTrue(rid > 0, rid)
         reso_list = get_resolver_list()
         self.assertTrue("myLDAPres" in reso_list, reso_list)
         ui = ResolverConfig.query.filter(
-            ResolverConfig.Key=='USERINFO').first().Value
+            ResolverConfig.Key == 'USERINFO').first().Value
         # Check that the email is contained in the UI
         self.assertTrue("email" in ui, ui)
 
@@ -2567,18 +2652,18 @@ class ResolverTestCase(MyTestCase):
         rid = save_resolver({"resolver": "myLDAPres",
                              "type": "ldapresolver",
                              'LDAPURI': 'ldap://localhost',
-                               'LDAPBASE': 'o=test',
-                               'BINDDN': 'cn=manager,ou=example,o=test',
-                               'BINDPW': 'ldaptest',
-                               'LOGINNAMEATTRIBUTE': 'cn',
-                               'LDAPSEARCHFILTER': '(cn=*)',
-                               'USERINFO': '{ "username": "cn",'
-                                           '"phone" : "telephoneNumber", '
-                                           '"surname" : "sn", '
-                                           '"givenname" : "givenName" }',
-                               'UIDTYPE': 'DN',
+                             'LDAPBASE': 'o=test',
+                             'BINDDN': 'cn=manager,ou=example,o=test',
+                             'BINDPW': 'ldaptest',
+                             'LOGINNAMEATTRIBUTE': 'cn',
+                             'LDAPSEARCHFILTER': '(cn=*)',
+                             'USERINFO': '{ "username": "cn",'
+                                         '"phone" : "telephoneNumber", '
+                                         '"surname" : "sn", '
+                                         '"givenname" : "givenName" }',
+                             'UIDTYPE': 'DN',
                              'CACHE_TIMEOUT': 0
-        })
+                             })
         self.assertTrue(rid > 0, rid)
         reso_list = get_resolver_list(filter_resolver_name="myLDAPres")
         reso_conf = reso_list.get("myLDAPres").get("data")
@@ -2591,6 +2676,17 @@ class ResolverTestCase(MyTestCase):
         self.assertEqual(reso_list.get("myLDAPres").get("data").get("BINDPW"), "ldaptest")
         reso_list = get_resolver_list(censor=True)
         self.assertEqual(reso_list.get("myLDAPres").get("data").get("BINDPW"), "__CENSORED__")
+
+        # Check that passwords in dicts are also censored
+        config = {"resolver": "EntraID", "type": "entraidresolver", CLIENT_ID: "1234", TENANT: "organization",
+                  CLIENT_CREDENTIAL_TYPE: ClientCredentialType.CERTIFICATE.value,
+                  CLIENT_CERTIFICATE: {PRIVATE_KEY_FILE: "tests/testdata/cert.pem", PRIVATE_KEY_PASSWORD: "Test1234",
+                                       CERTIFICATE_FINGERPRINT: "1234567890abcdef1234567890abcdef12345678"}}
+        save_resolver(config)
+        reso_list = get_resolver_list(filter_resolver_name="EntraID", censor=True)
+        self.assertEqual(1, len(reso_list))
+        self.assertEqual(CENSORED, reso_list["EntraID"]["data"][CLIENT_CERTIFICATE][PRIVATE_KEY_PASSWORD])
+        delete_resolver("EntraID")
 
     def test_15_try_to_delete_used_resolver(self):
         rid = save_resolver({"resolver": self.resolvername1,
@@ -2606,299 +2702,3 @@ class ResolverTestCase(MyTestCase):
         self.assertRaises(Exception, delete_resolver, self.resolvername1)
         delete_realm("myrealm")
         delete_resolver(self.resolvername1)
-
-
-class HTTPResolverTestCase(MyTestCase):
-
-    ENDPOINT = 'http://localhost:8080/get-data'
-    METHOD = responses.GET
-    REQUEST_MAPPING = """
-        {"id": "{userid}"}
-    """
-    HEADERS = """
-        {"Content-Type": "application/json", "charset": "UTF-8"}
-    """
-    RESPONSE_MAPPING = """
-        {
-            "username": "{data.the_username}",
-            "email": "{data.the_email}",
-            "mobile": "{data.the_phones.mobile}",
-            "a_static_key": "a static value"
-        }
-    """
-    HAS_SPECIAL_ERROR_HANDLER = True
-    ERROR_RESPONSE_MAPPING = """
-        {"success": false}
-    """
-
-    BODY_RESPONSE_OK = """
-    {
-        "success": true,
-        "data": {
-            "the_username": "PepePerez",
-            "the_email": "pepe@perez.com",
-            "the_full_name": "Pepe Perez",
-            "the_phones": {
-                "mobile": "+1123568974",
-                "other": "+1154525894"
-            }
-        }
-    }
-    """
-
-    BODY_RESPONSE_NOK = """
-    {
-        "success": false,
-        "data": null
-    }
-    """
-
-    def test_01_load_config(self):
-        params = {
-            'endpoint': self.ENDPOINT,
-            'method': self.METHOD,
-            'headers': self.HEADERS,
-            'requestMapping': self.REQUEST_MAPPING,
-            'responseMapping': self.RESPONSE_MAPPING,
-            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponse': self.ERROR_RESPONSE_MAPPING
-        }
-
-        # Test with valid data
-        instance = HTTPResolver()
-        instance.loadConfig(params)
-        rid = instance.getResolverId()
-        self.assertEqual(rid, self.ENDPOINT)
-        r_type = instance.getResolverClassDescriptor()
-        self.assertTrue("httpresolver" in r_type)
-        r_type = instance.getResolverDescriptor()
-        self.assertTrue("httpresolver" in r_type)
-        r_type = instance.getResolverType()
-        self.assertEqual("httpresolver", r_type)
-
-    def test_02_get_user_list(self):
-        instance = HTTPResolver()
-        instance.loadConfig({
-            'endpoint': self.ENDPOINT,
-            'method': self.METHOD,
-            'headers': self.HEADERS,
-            'requestMapping': self.REQUEST_MAPPING,
-            'responseMapping': self.RESPONSE_MAPPING,
-            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponse': self.ERROR_RESPONSE_MAPPING
-        })
-        users = instance.getUserList()
-        self.assertEqual(len(users), 0)
-
-    def test_03_get_username(self):
-        instance = HTTPResolver()
-        instance.loadConfig({
-            'endpoint': self.ENDPOINT,
-            'method': self.METHOD,
-            'headers': self.HEADERS,
-            'requestMapping': self.REQUEST_MAPPING,
-            'responseMapping': self.RESPONSE_MAPPING,
-            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponse': self.ERROR_RESPONSE_MAPPING
-        })
-        username = instance.getUsername('pepe_perez')
-        self.assertEqual(username, 'pepe_perez')
-
-    def test_04_get_user_id(self):
-        instance = HTTPResolver()
-        instance.loadConfig({
-            'endpoint': self.ENDPOINT,
-            'method': self.METHOD,
-            'headers': self.HEADERS,
-            'requestMapping': self.REQUEST_MAPPING,
-            'responseMapping': self.RESPONSE_MAPPING,
-            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponse': self.ERROR_RESPONSE_MAPPING
-        })
-        userid = instance.getUserId('pepe_perez')
-        self.assertEqual(userid, 'pepe_perez')
-
-    def test_05_get_resolver_id(self):
-        instance = HTTPResolver()
-        rid = instance.getResolverId()
-        self.assertEqual(rid, "")
-        instance.loadConfig({
-            'endpoint': self.ENDPOINT,
-            'method': self.METHOD,
-            'headers': self.HEADERS,
-            'requestMapping': self.REQUEST_MAPPING,
-            'responseMapping': self.RESPONSE_MAPPING,
-            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponse': self.ERROR_RESPONSE_MAPPING
-        })
-        rid = instance.getResolverId()
-        self.assertEqual(rid, self.ENDPOINT)
-
-    @responses.activate
-    def test_06_get_user(self):
-        responses.add(
-            self.METHOD,
-            self.ENDPOINT,
-            status=200,
-            adding_headers=json.loads(self.HEADERS),
-            body=self.BODY_RESPONSE_OK
-        )
-        responses.add(
-            responses.POST,
-            self.ENDPOINT,
-            status=200,
-            adding_headers=json.loads(self.HEADERS),
-            body=self.BODY_RESPONSE_OK
-        )
-
-        # Test with valid data (method get)
-        instance = HTTPResolver()
-        instance.loadConfig({
-            'endpoint': self.ENDPOINT,
-            'method': self.METHOD,
-            'requestMapping': self.REQUEST_MAPPING,
-            'headers': self.HEADERS,
-            'responseMapping': self.RESPONSE_MAPPING,
-            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponse': self.ERROR_RESPONSE_MAPPING
-        })
-        response = instance._getUser('PepePerez')
-        self.assertEqual(response.get('username'), 'PepePerez')
-        self.assertEqual(response.get('email'), 'pepe@perez.com')
-        self.assertEqual(response.get('mobile'), '+1123568974')
-        self.assertEqual(response.get('a_static_key'), 'a static value')
-
-        # Test with valid data (method post)
-        instance = HTTPResolver()
-        instance.loadConfig({
-            'endpoint': self.ENDPOINT,
-            'method': 'POST',
-            'requestMapping': self.REQUEST_MAPPING,
-            'headers': self.HEADERS,
-            'responseMapping': self.RESPONSE_MAPPING,
-            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponse': self.ERROR_RESPONSE_MAPPING
-        })
-        response = instance._getUser('PepePerez')
-        self.assertEqual(response.get('username'), 'PepePerez')
-        self.assertEqual(response.get('email'), 'pepe@perez.com')
-        self.assertEqual(response.get('mobile'), '+1123568974')
-        self.assertEqual(response.get('a_static_key'), 'a static value')
-
-    @responses.activate
-    def test_06_get_user_especial_error_handling(self):
-        responses.add(
-            self.METHOD,
-            self.ENDPOINT,
-            status=200,
-            adding_headers=json.loads(self.HEADERS),
-            body=self.BODY_RESPONSE_NOK
-        )
-        instance = HTTPResolver()
-        instance.loadConfig({
-            'endpoint': self.ENDPOINT,
-            'method': self.METHOD,
-            'requestMapping': self.REQUEST_MAPPING,
-            'headers': self.HEADERS,
-            'responseMapping': self.RESPONSE_MAPPING,
-            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponse': self.ERROR_RESPONSE_MAPPING
-        })
-        self.assertRaises(Exception, instance._getUser, userid='PepePerez')
-
-    @responses.activate
-    def test_06_get_user_internal_error(self):
-        responses.add(
-            self.METHOD,
-            self.ENDPOINT,
-            status=500,
-            adding_headers=json.loads(self.HEADERS),
-        )
-        instance = HTTPResolver()
-        instance.loadConfig({
-            'endpoint': self.ENDPOINT,
-            'method': self.METHOD,
-            'requestMapping': self.REQUEST_MAPPING,
-            'headers': self.HEADERS,
-            'responseMapping': self.RESPONSE_MAPPING,
-            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponse': self.ERROR_RESPONSE_MAPPING
-        })
-        self.assertRaises(HTTPError, instance._getUser, userid='PepePerez')
-
-    @responses.activate
-    def test_07_testconnection(self):
-        responses.add(
-            self.METHOD,
-            self.ENDPOINT,
-            status=200,
-            adding_headers=json.loads(self.HEADERS),
-            body=self.BODY_RESPONSE_OK
-        )
-        responses.add(
-            self.METHOD,
-            self.ENDPOINT,
-            status=200,
-            adding_headers=json.loads(self.HEADERS),
-            body=self.BODY_RESPONSE_NOK
-        )
-        param = {
-            'endpoint': self.ENDPOINT,
-            'method': self.METHOD,
-            'requestMapping': self.REQUEST_MAPPING,
-            'headers': self.HEADERS,
-            'responseMapping': self.RESPONSE_MAPPING,
-            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponse': self.ERROR_RESPONSE_MAPPING,
-            'testUser': 'PepePerez'
-        }
-        success, response = HTTPResolver.testconnection(param)
-        self.assertTrue(success)
-        self.assertEqual(response.get('username'), 'PepePerez')
-
-        # Test with invalid params
-        invalidParam = param.copy()
-        invalidParam['testUser'] = None
-        success, _ = HTTPResolver.testconnection(invalidParam)
-        self.assertFalse(success)
-
-    @responses.activate
-    def test_08_get_user_info(self):
-        responses.add(
-            self.METHOD,
-            self.ENDPOINT,
-            status=200,
-            adding_headers=json.loads(self.HEADERS),
-            body=self.BODY_RESPONSE_OK
-        )
-        responses.add(
-            self.METHOD,
-            self.ENDPOINT,
-            status=200,
-            adding_headers=json.loads(self.HEADERS),
-            body=self.BODY_RESPONSE_NOK
-        )
-
-        # Test with valid response
-        instance = HTTPResolver()
-        instance.loadConfig({
-            'endpoint': self.ENDPOINT,
-            'method': self.METHOD,
-            'headers': self.HEADERS,
-            'requestMapping': self.REQUEST_MAPPING,
-            'responseMapping': self.RESPONSE_MAPPING,
-            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponse': self.ERROR_RESPONSE_MAPPING
-        })
-        response = instance.getUserInfo('PepePerez')
-        self.assertEqual(response.get('username'), 'PepePerez')
-        self.assertEqual(response.get('email'), 'pepe@perez.com')
-        self.assertEqual(response.get('mobile'), '+1123568974')
-        self.assertEqual(response.get('a_static_key'), 'a static value')
-
-        # Test with invalid response
-        self.assertRaisesRegex(
-            Exception,
-            'Received an error while searching for user: PepePerez',
-            instance.getUserInfo, 'PepePerez'
-        )

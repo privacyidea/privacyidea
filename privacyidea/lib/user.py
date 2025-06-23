@@ -456,9 +456,14 @@ class User(object):
             res = self._get_resolvers()
             # Now we know, the resolvers of this user, and we can verify the password
             if len(res) == 1:
+                from .resolvers.HTTPResolver import HTTPResolver
                 y = get_resolver_object(self.resolver)
                 uid, _rtype, _rname = self.get_user_identifiers()
-                if y.checkPass(uid, password):
+                if isinstance(y, HTTPResolver):
+                    valid_credentials = y.checkPass(uid, password, self.login)
+                else:
+                    valid_credentials = y.checkPass(uid, password)
+                if valid_credentials:
                     success = f"{self.login}@{self.realm}"
                     log.debug(f"Successfully authenticated user {self}.")
                     self._checked_passwords[password_hash] = True

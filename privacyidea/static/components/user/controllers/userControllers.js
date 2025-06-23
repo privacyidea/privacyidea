@@ -254,6 +254,7 @@ angular.module("privacyideaApp")
                             // ...and update the user details
                             $scope.getUserDetails();
                             $scope.getUserContainer()
+                            $scope.editUser = false;
                         } else {
                             inform.add(gettextCatalog.getString("Failed to update user."), {type: "danger"});
                         }
@@ -509,6 +510,13 @@ angular.module("privacyideaApp")
                             userinfo = JSON.parse(resolver.data.Map);
                             delete userinfo["userid"];
                             break;
+                        case "httpresolver":
+                        case "keycloakresolver":
+                        case "entraidresolver":
+                            userinfo = resolver.data.ATTRIBUTE_MAPPING || {};
+                            delete userinfo["userid"];
+                            userinfo["password"] = "";
+                            break;
                     }
                     const fields = [];
                     const r = {};
@@ -518,11 +526,12 @@ angular.module("privacyideaApp")
                             "name": key,
                             "label": gettextCatalog.getString(key),
                             "data": "",
-                            "required": true
+                            "required": false
                         };
                         switch (key) {
                             case "username":
                                 this.push(field);
+                                field["required"] = true;
                                 break;
                             case "email":
                                 field["type"] = "email";
@@ -533,7 +542,6 @@ angular.module("privacyideaApp")
                                 this.push(field);
                                 break;
                             default:
-                                field["required"] = false;
                                 this.push(field);
                                 break;
                         }

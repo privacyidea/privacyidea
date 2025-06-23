@@ -33,7 +33,7 @@ from privacyidea.lib.containers.container_info import (TokenContainerInfoData, P
                                                        INITIALLY_SYNCHRONIZED)
 from privacyidea.lib.containers.container_states import ContainerStates
 from privacyidea.lib.crypto import verify_ecc, decryptPassword, FAILED_TO_DECRYPT_PASSWORD
-from privacyidea.lib.error import ParameterError, ResourceNotFoundError, TokenAdminError
+from privacyidea.lib.error import ParameterError, ResourceNotFoundError, TokenAdminError, UserError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.machine import is_offline_token
 from privacyidea.lib.token import (create_tokenclass_object, get_tokens, get_serial_by_otp_list,
@@ -350,7 +350,12 @@ class TokenContainerClass:
         users: list[User] = []
         for owner in db_container_owners:
             realm = Realm.query.filter_by(id=owner.realm_id).first()
-            user = User(uid=owner.user_id, realm=realm.name, resolver=owner.resolver)
+            try:
+                user = User(uid=owner.user_id, realm=realm.name, resolver=owner.resolver)
+            except Exception:
+                log.warning(f"Could not resolve user with the id '{owner.user_id}', realm '{realm.name}', "
+                            f"resolver '{owner.resolver}' in container {self.serial}.")
+                raise UserError("Invalid container owner!")
             users.append(user)
 
         return users
