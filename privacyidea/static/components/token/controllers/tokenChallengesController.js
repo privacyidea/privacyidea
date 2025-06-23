@@ -51,6 +51,7 @@ myApp.controller("tokenChallengesController", ['$scope', 'TokenFactory',
                            {type: "danger", ttl: 8000});
             }
         });
+        $scope.get();
     };
 
     $scope.return_to = function () {
