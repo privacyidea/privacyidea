@@ -521,7 +521,7 @@ def delete_user_cache_api():
 @admin_required
 def delete_challenge_cache_api():
     """
-    Delete the challenge cache. It will delete all entries in the challenge cache.
+    Delete expired entries in the challenge cache.
 
     :>json bool status: Status of the request
     :reqheader PI-Authorization: The authorization token

@@ -1239,12 +1239,13 @@ class APIConfigTestCase(MyApiTestCase):
         delete_caconnector("localCA")
 
     def test_24_delete_user_cache_endpoint(self):
-        db.session.execute(UserCache.__table__.insert(), [dict({"username": "alice"}),
-                                                          dict({"username": "bob"})])
+        UserCache(username='alice', used_login='', resolver='',
+                  user_id='', timestamp=None).save()
+        UserCache(username='bob', used_login='', resolver='',
+                  user_id='', timestamp=None).save()
         db.session.commit()
 
-        count = db.session.execute(
-            select(func.count()).select_from(UserCache)).scalar_one()
+        count = UserCache.query.count()
         self.assertEqual(count, 2, f"expected 2 cache rows, found {count}")
 
         with self.app.test_request_context('/system/user-cache',
@@ -1256,61 +1257,20 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertTrue(result["status"], result)
             self.assertTrue(result["value"]["status"], result)
 
-        remaining = db.session.execute(
-            select(func.count()).select_from(UserCache)).scalar_one()
+        remaining = UserCache.query.count()
         self.assertEqual(remaining, 0,
                          f"user-cache still contains {remaining} rows")
 
     def test_25_delete_challenge_cache_endpoint(self):
         from privacyidea.models import Challenge
         import datetime as dt
-        from sqlalchemy import func, select
 
         # seed the DB with two expired challenges and one valid challenge
-        now = dt.datetime.utcnow()
-        db.session.execute(
-            Challenge.__table__.insert(),
-            [
-                dict(
-                    transaction_id="tx1",
-                    data="",
-                    challenge="123456",
-                    session="sess1",
-                    serial="serial1",
-                    timestamp=now,
-                    expiration=now - dt.timedelta(minutes=5),
-                    received_count=0,
-                    otp_valid=False,
-                ),
-                dict(
-                    transaction_id="tx2",
-                    data="",
-                    challenge="abcdef",
-                    session="sess2",
-                    serial="serial2",
-                    timestamp=now,
-                    expiration=now - dt.timedelta(minutes=5),
-                    received_count=0,
-                    otp_valid=False,
-                ),
-                dict(
-                    transaction_id="tx3",
-                    data="",
-                    challenge="ghijkl",
-                    session="sess3",
-                    serial="serial3",
-                    timestamp=now,
-                    expiration=now + dt.timedelta(minutes=5),
-                    received_count=0,
-                    otp_valid=True,
-                )
-            ]
-        )
-        db.session.commit()
+        Challenge(serial='0',validitytime=0).save()
+        Challenge(serial='1',validitytime=0).save()
+        Challenge(serial='2',validitytime=300).save()
 
-        start_cnt = db.session.execute(
-            select(func.count()).select_from(Challenge)
-        ).scalar_one()
+        start_cnt = Challenge.query.count()
         self.assertEqual(
             start_cnt, 3,
             f"expected two challenges before deletion, found {start_cnt}")
@@ -1328,9 +1288,7 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertTrue(result["value"]["status"], result)
 
         # verify that the table is empty
-        remaining = db.session.execute(
-            select(func.count()).select_from(Challenge)
-        ).scalar_one()
+        remaining = Challenge.query.count()
         self.assertEqual(
             remaining, 1,
             f"challenge-cache contains {remaining} rows")

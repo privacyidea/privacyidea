@@ -36,7 +36,7 @@ challenge_cli = AppGroup("challenge", help="Manage challenge data")
                    "delete challenge entries older than these number of minutes.")
 @click.option('--dryrun', is_flag=True,
               help="Do not actually delete, only show what would be done.")
-def cleanup_challenge(chunksize: int, age: int, dryrun: bool) -> int:
+def cleanup_challenge(chunksize: int, age: int, dry_run: bool = False) -> int:
     """
     Delete all expired challenges from the challenge table
     """
@@ -50,7 +50,7 @@ def cleanup_challenge(chunksize: int, age: int, dryrun: bool) -> int:
 
     criterion = _build_challenge_criterion(age)
 
-    if dryrun:
+    if dry_run:
         row_count = Challenge.query.filter(criterion).count()
         click.echo("Would delete {0!s} challenge entries.".format(row_count))
     else:

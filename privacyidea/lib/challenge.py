@@ -197,7 +197,7 @@ def _build_challenge_criterion(age: int = None) -> 'sqlalchemy.sql.expression.Bi
 
 def cleanup_expired_challenges(chunksize: int = None, age: int = None) -> int:
     """
-    Delete all expired challenges from the challenge table
+    Delete only expired challenges from the challenge table, or delete expired challenges older than the given age.
 
     :param chunksize: Delete entries in chunks of the given size to avoid deadlocks
     :param age: Instead of deleting expired challenges, delete challenge entries older than these number of minutes.

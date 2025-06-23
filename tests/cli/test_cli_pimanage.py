@@ -241,53 +241,11 @@ class PIManageChallengeTestCase(CliTestCase):
     Tests for ``pi-manage config challenge cleanup``.
     """
 
-    def _init_challenges(self, *, expiry_delta_min: int = 5, valid_delta_min: int = 5):
+    def _init_challenges(self):
         # Insert two expired and one still-valid challenge.
-        now = dt.datetime.utcnow()
-        db.session.execute(
-            Challenge.__table__.insert(),
-            [
-                dict(
-                    transaction_id="exp-1",
-                    data="",
-                    challenge="111111",
-                    session="sess-1",
-                    serial="serial-1",
-                    timestamp=now,
-                    expiration=now - dt.timedelta(minutes=expiry_delta_min),
-                    received_count=0,
-                    otp_valid=False,
-                ),
-                dict(
-                    transaction_id="exp-2",
-                    data="",
-                    challenge="222222",
-                    session="sess-2",
-                    serial="serial-2",
-                    timestamp=now,
-                    expiration=now - dt.timedelta(minutes=expiry_delta_min),
-                    received_count=0,
-                    otp_valid=False,
-                ),
-                dict(
-                    transaction_id="ok-1",
-                    data="",
-                    challenge="333333",
-                    session="sess-3",
-                    serial="serial-3",
-                    timestamp=now,
-                    expiration=now + dt.timedelta(minutes=valid_delta_min),
-                    received_count=0,
-                    otp_valid=True,
-                ),
-            ],
-        )
-        db.session.commit()
-
-    def _count(self) -> int:
-        return db.session.execute(
-            select(func.count()).select_from(Challenge)
-        ).scalar_one()
+        Challenge(serial='0',validitytime=0).save()
+        Challenge(serial='1',validitytime=0).save()
+        Challenge(serial='2',validitytime=300).save()
 
     def tearDown(self):
         Challenge.query.delete()
@@ -302,7 +260,7 @@ class PIManageChallengeTestCase(CliTestCase):
 
     def test_02_dryrun(self):
         self._init_challenges()
-        before = self._count()
+        before = Challenge.query.count()
 
         runner = self.app.test_cli_runner()
         res = runner.invoke(
@@ -312,7 +270,7 @@ class PIManageChallengeTestCase(CliTestCase):
 
         self.assertEqual(res.exit_code, 0, res.output)
         self.assertIn("Would delete 2 challenge entries", res.output, res)
-        self.assertEqual(self._count(), before, "rows were deleted during --dryrun")
+        self.assertEqual(Challenge.query.count(), before, "rows were deleted during --dryrun")
 
     def test_03_cleanup_expired(self):
         self._init_challenges()
@@ -321,7 +279,7 @@ class PIManageChallengeTestCase(CliTestCase):
         res = runner.invoke(pi_manage, ["config", "challenge", "cleanup"])
 
         self.assertEqual(res.exit_code, 0, res.output)
-        self.assertEqual(self._count(), 1, "exactly one valid challenge must remain")
+        self.assertEqual(Challenge.query.count(), 1, "exactly one valid challenge must remain")
         self.assertIn("entries deleted.", res.output, res)
 
     def test_04_cleanup_age(self):
@@ -338,5 +296,5 @@ class PIManageChallengeTestCase(CliTestCase):
         )
 
         self.assertEqual(res.exit_code, 0, res.output)
-        self.assertEqual(self._count(), 0, "table should be empty after --age")
+        self.assertEqual(Challenge.query.count(), 0, "table should be empty after --age")
         self.assertIn("entries deleted", res.output, res)

@@ -87,7 +87,8 @@ def is_cache_enabled():
 
 def delete_user_cache(resolver: str = None, username: str = None, expired: bool = None) -> int:
     """
-    This completely deletes the user cache.
+    Delete entries from the user cache. If a resolver and/or username is given,
+    it only deletes entries for this resolver and/or username.
     If no parameter is given, it deletes the user cache completely.
 
     :param resolver: Will only delete entries of this resolver
