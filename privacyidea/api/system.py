@@ -515,4 +515,4 @@ def delete_user_cache_api():
     """
     row_count = delete_user_cache()
     g.audit_object.log({"success": True, "info": f"Deleted {row_count} entries from user cache"})
-    return send_result({"status": True})
+    return send_result({"status": True, "deleted": row_count})

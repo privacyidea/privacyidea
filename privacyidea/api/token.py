@@ -411,7 +411,7 @@ def delete_challenge_cache_api():
     """
     row_count = cleanup_expired_challenges(chunksize=None, age=None)
     g.audit_object.log({"success": True, "info": f"Deleted {row_count} entries from challenges"})
-    return send_result({"status": True})
+    return send_result({"status": True, "deleted": row_count})
 
 
 @token_blueprint.route('/', methods=['GET'])

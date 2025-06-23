@@ -42,9 +42,21 @@ myApp.controller("tokenChallengesController", ['$scope', 'TokenFactory',
      $scope.deleteExpiredChallenges = function () {
         TokenFactory.deleteExpiredChallenges(function (data) {
             if (data.result.status === true) {
-                inform.add(gettextCatalog.getString(
-                            "Expired challenges successfully deleted."),
-                                              {type: "success", ttl: 4000});
+                if (data.result.value.deleted > 1) {
+                   inform.add(gettextCatalog.getString(
+                       data.result.value.deleted + " expired challenges successfully deleted."),
+                                                                            {type: "success", ttl: 4000});
+                }
+                else if (data.result.value.delete === 1) {
+                        inform.add(gettextCatalog.getString(
+                        "1 expired challenge successfully deleted."),
+                                                    {type: "success", ttl: 4000});
+                }
+                else {
+                      inform.add(gettextCatalog.getString(
+                        "No expired challenges were deleted."),
+                                                  {type: "info", ttl: 4000});
+                }
             } else {
                 inform.add(gettextCatalog.getString(
                             "Could not delete expired challenges."),

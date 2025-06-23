@@ -756,9 +756,21 @@ myApp.controller("configController", ["$scope", "$location", "$rootScope",
         $scope.deleteUserCache = function () {
            ConfigFactory.deleteUserCache(function (data) {
                if (data.result.status === true) {
-                   inform.add(gettextCatalog.getString(
-                               "User cache successfully deleted."),
-                                                     {type: "success", ttl: 4000});
+                   if (data.result.value.deleted > 1) {
+                       inform.add(gettextCatalog.getString(
+                           data.result.value.deleted + " user cache entries successfully deleted."),
+                                                                                {type: "success", ttl: 4000});
+                   }
+                   else if (data.result.value.delete === 1) {
+                            inform.add(gettextCatalog.getString(
+                            "1 user cache entry successfully deleted."),
+                                                        {type: "success", ttl: 4000});
+                   }
+                   else {
+                          inform.add(gettextCatalog.getString(
+                            "No user cache entries were deleted."),
+                                                      {type: "info", ttl: 4000});
+                   }
                } else {
                    inform.add(gettextCatalog.getString(
                                "Could not delete user cache."),
