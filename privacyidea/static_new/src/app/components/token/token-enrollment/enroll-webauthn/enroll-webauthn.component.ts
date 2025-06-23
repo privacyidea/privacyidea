@@ -107,6 +107,7 @@ export class EnrollWebauthnComponent implements OnInit {
           firstStepDialogRef.close();
         }
       });
+    this.openStepOneDialog(enrollmentInitResponse);
     return this.registerWebauthn(enrollmentInitResponse.detail);
   };
 
@@ -172,109 +173,6 @@ export class EnrollWebauthnComponent implements OnInit {
       }),
     );
   };
-
-  // registerWebauthnNEW = async (
-  //   webAuthnInitResponse: EnrollmentResponse,
-  // ): Promise<EnrollmentResponse> => {
-  //   const detail = webAuthnInitResponse.detail;
-  //   const requestFromStep1 = detail?.webAuthnRegisterRequest;
-
-  //   if (!requestFromStep1) {
-  //     this.notificationService.openSnackBar(
-  //       'Failed to initiate WebAuthn registration: Invalid server response.',
-  //     );
-  //     throw new Error('Invalid server response for WebAuthn initiation.');
-  //   }
-
-  //   const firstStepDialogRef = this.openStepOneDialog(webAuthnInitResponse);
-
-  //   const publicKeyOptions: PublicKeyCredentialCreationOptions = {
-  //     rp: {
-  //       id: requestFromStep1.relyingParty?.id,
-  //       name: requestFromStep1.relyingParty.name,
-  //     },
-  //     user: {
-  //       id: new TextEncoder().encode(requestFromStep1.serialNumber),
-  //       name: requestFromStep1.name,
-  //       displayName: requestFromStep1.displayName,
-  //     },
-  //     challenge: this.base64Service.base64URLToBytes(requestFromStep1.nonce),
-  //     pubKeyCredParams: requestFromStep1.pubKeyCredAlgorithms,
-  //     timeout: requestFromStep1.timeout,
-  //     excludeCredentials: requestFromStep1.excludeCredentials
-  //       ? requestFromStep1.excludeCredentials.map((cred: any) => ({
-  //           id: this.base64Service.base64URLToBytes(cred.id),
-  //           type: cred.type,
-  //           transports: cred.transports,
-  //         }))
-  //       : [],
-  //     authenticatorSelection: requestFromStep1.authenticatorSelection,
-  //     attestation: requestFromStep1.attestation,
-  //     extensions: requestFromStep1.extensions,
-  //   };
-
-  //   // Step 2: Browser API interaction
-
-  //   const publicKeyCred = (await navigator.credentials.create({
-  //     publicKey: publicKeyOptions,
-  //   })) as any; // Type assertion to any for compatibility
-
-  //   // Step 3: Final enrollment call with browser response
-
-  //   if (!publicKeyCred) {
-  //     throw new Error('WebAuthn credential creation failed.');
-  //   }
-  //   const params: any = {
-  //     // Parameters for the second /token/init call (finalize registration)
-  //     type: 'webauthn',
-  //     transaction_id: requestFromStep1.transaction_id,
-  //     serial: requestFromStep1.serialNumber,
-  //     credential_id: publicKeyCred.id, // This is an ArrayBuffer
-  //     rawId: this.base64Service.bytesToBase64(
-  //       new Uint8Array(publicKeyCred.rawId),
-  //     ),
-  //     authenticatorAttachment: publicKeyCred.authenticatorAttachment,
-  //     regdata: this.webauthnEncodingService.encodeWebAuthnBase64(
-  //       new Uint8Array(publicKeyCred.response.attestationObject), // attestationObject is ArrayBuffer, needs web-safe base64
-  //     ),
-  //     clientdata: this.webauthnEncodingService.encodeWebAuthnBase64(
-  //       new Uint8Array(publicKeyCred.response.clientDataJSON),
-  //     ), // clientDataJSON is ArrayBuffer, needs web-safe base64
-  //   };
-
-  //   const extResults = publicKeyCred.getClientExtensionResults();
-  //   if (extResults?.credProps) {
-  //     params.credProps = extResults.credProps;
-  //   }
-  //   const observable = this.tokenService.enrollToken(params).pipe(
-  //     catchError((errorStep3) => {
-  //       // Attempt to delete the token if the finalization fails
-  //       // The serial number is available from the first step response
-  //       const serialToDelete = requestFromStep1.serialNumber;
-  //       this.notificationService.openSnackBar(
-  //         'Error during final WebAuthn registration step. Attempting to clean up token.',
-  //       );
-  //       return from(
-  //         this.tokenService.deleteToken(requestFromStep1.serialNumber),
-  //       ).pipe(
-  //         switchMap(() => {
-  //           this.notificationService.openSnackBar(
-  //             `Token ${serialToDelete} deleted due to registration error.`,
-  //           );
-  //           return throwError(() => errorStep3);
-  //         }),
-  //         catchError((deleteError) => {
-  //           this.notificationService.openSnackBar(
-  //             `Failed to delete token ${serialToDelete} after registration error. Please check manually.`,
-  //           );
-  //           return throwError(() => errorStep3);
-  //         }),
-  //       );
-  //     }),
-  //   );
-  //   return firstValueFrom(observable);
-  // };
-
   openStepOneDialog = (response: EnrollmentResponse): void => {
     this.dialog.open(TokenEnrollmentFirstStepDialogComponent, {
       data: { response },
@@ -282,6 +180,108 @@ export class EnrollWebauthnComponent implements OnInit {
     });
   };
 }
+
+// registerWebauthnNEW = async (
+//   webAuthnInitResponse: EnrollmentResponse,
+// ): Promise<EnrollmentResponse> => {
+//   const detail = webAuthnInitResponse.detail;
+//   const requestFromStep1 = detail?.webAuthnRegisterRequest;
+
+//   if (!requestFromStep1) {
+//     this.notificationService.openSnackBar(
+//       'Failed to initiate WebAuthn registration: Invalid server response.',
+//     );
+//     throw new Error('Invalid server response for WebAuthn initiation.');
+//   }
+
+//   const firstStepDialogRef = this.openStepOneDialog(webAuthnInitResponse);
+
+//   const publicKeyOptions: PublicKeyCredentialCreationOptions = {
+//     rp: {
+//       id: requestFromStep1.relyingParty?.id,
+//       name: requestFromStep1.relyingParty.name,
+//     },
+//     user: {
+//       id: new TextEncoder().encode(requestFromStep1.serialNumber),
+//       name: requestFromStep1.name,
+//       displayName: requestFromStep1.displayName,
+//     },
+//     challenge: this.base64Service.base64URLToBytes(requestFromStep1.nonce),
+//     pubKeyCredParams: requestFromStep1.pubKeyCredAlgorithms,
+//     timeout: requestFromStep1.timeout,
+//     excludeCredentials: requestFromStep1.excludeCredentials
+//       ? requestFromStep1.excludeCredentials.map((cred: any) => ({
+//           id: this.base64Service.base64URLToBytes(cred.id),
+//           type: cred.type,
+//           transports: cred.transports,
+//         }))
+//       : [],
+//     authenticatorSelection: requestFromStep1.authenticatorSelection,
+//     attestation: requestFromStep1.attestation,
+//     extensions: requestFromStep1.extensions,
+//   };
+
+//   // Step 2: Browser API interaction
+
+//   const publicKeyCred = (await navigator.credentials.create({
+//     publicKey: publicKeyOptions,
+//   })) as any; // Type assertion to any for compatibility
+
+//   // Step 3: Final enrollment call with browser response
+
+//   if (!publicKeyCred) {
+//     throw new Error('WebAuthn credential creation failed.');
+//   }
+//   const params: any = {
+//     // Parameters for the second /token/init call (finalize registration)
+//     type: 'webauthn',
+//     transaction_id: requestFromStep1.transaction_id,
+//     serial: requestFromStep1.serialNumber,
+//     credential_id: publicKeyCred.id, // This is an ArrayBuffer
+//     rawId: this.base64Service.bytesToBase64(
+//       new Uint8Array(publicKeyCred.rawId),
+//     ),
+//     authenticatorAttachment: publicKeyCred.authenticatorAttachment,
+//     regdata: this.webauthnEncodingService.encodeWebAuthnBase64(
+//       new Uint8Array(publicKeyCred.response.attestationObject), // attestationObject is ArrayBuffer, needs web-safe base64
+//     ),
+//     clientdata: this.webauthnEncodingService.encodeWebAuthnBase64(
+//       new Uint8Array(publicKeyCred.response.clientDataJSON),
+//     ), // clientDataJSON is ArrayBuffer, needs web-safe base64
+//   };
+
+//   const extResults = publicKeyCred.getClientExtensionResults();
+//   if (extResults?.credProps) {
+//     params.credProps = extResults.credProps;
+//   }
+//   const observable = this.tokenService.enrollToken(params).pipe(
+//     catchError((errorStep3) => {
+//       // Attempt to delete the token if the finalization fails
+//       // The serial number is available from the first step response
+//       const serialToDelete = requestFromStep1.serialNumber;
+//       this.notificationService.openSnackBar(
+//         'Error during final WebAuthn registration step. Attempting to clean up token.',
+//       );
+//       return from(
+//         this.tokenService.deleteToken(requestFromStep1.serialNumber),
+//       ).pipe(
+//         switchMap(() => {
+//           this.notificationService.openSnackBar(
+//             `Token ${serialToDelete} deleted due to registration error.`,
+//           );
+//           return throwError(() => errorStep3);
+//         }),
+//         catchError((deleteError) => {
+//           this.notificationService.openSnackBar(
+//             `Failed to delete token ${serialToDelete} after registration error. Please check manually.`,
+//           );
+//           return throwError(() => errorStep3);
+//         }),
+//       );
+//     }),
+//   );
+//   return firstValueFrom(observable);
+// };
 
 /*
         this.openFirstStepDialog(response);
