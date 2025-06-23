@@ -743,6 +743,7 @@ class TiQRTokenTestCase(MyApiTestCase):
         self.assertTrue(r < 0, r)
 
     def test_06_tiqr_token_export(self):
+        #This test can't be run alone
         # Set up the tiqr token for testing
         self._test_create_token('cornelius')
         token = get_tokens(serial="TIQR1")[0]
