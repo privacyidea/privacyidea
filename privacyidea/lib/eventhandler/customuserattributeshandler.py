@@ -18,7 +18,7 @@
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 __doc__ = """This is the event handler module for custom user attributes.
-You can set or delete custom your attributes
+You can set or delete your custom attributes
 
 """
 
