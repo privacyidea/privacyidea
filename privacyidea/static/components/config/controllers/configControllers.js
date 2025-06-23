@@ -767,19 +767,6 @@ myApp.controller("configController", ["$scope", "$location", "$rootScope",
            });
        };
 
-        $scope.deleteChallengeCache = function () {
-            ConfigFactory.deleteChallengeCache(function (data) {
-                if (data.result.status === true) {
-                    inform.add(gettextCatalog.getString(
-                                "Challenge cache successfully deleted."),
-                                                  {type: "success", ttl: 4000});
-                } else {
-                    inform.add(gettextCatalog.getString(
-                                "Could not delete challenge cache."),
-                               {type: "danger", ttl: 8000});
-                }
-            });
-        };
     }]);
 
 myApp.controller("PasswdResolverController", ["$scope", "ConfigFactory",

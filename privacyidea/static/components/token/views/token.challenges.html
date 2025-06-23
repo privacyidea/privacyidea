@@ -1,6 +1,12 @@
 <p><translate>Total Challenges:</translate>
     {{ challengedata.count }}
 </p>
+<button type="button"
+        ng-click="deleteChallengeCache()"
+        class="btn btn-primary"
+        translate>
+Delete Expired Challenges
+</button>
 
 <div uib-pagination ng-show="challengedata.count > 15"
      total-items="challengedata.count" ng-model="params.page"

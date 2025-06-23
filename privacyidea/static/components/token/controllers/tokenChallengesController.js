@@ -3,11 +3,12 @@ myApp.controller("tokenChallengesController", ['$scope', 'TokenFactory',
                                                'UserFactory', '$stateParams',
                                                '$state', '$rootScope',
                                                'ValidateFactory', 'AuthFactory',
+                                               'inform', 'gettextCatalog',
                                                function ($scope, TokenFactory,
                                                          UserFactory, $stateParams,
                                                          $state, $rootScope,
                                                          ValidateFactory,
-                                                         AuthFactory) {
+                                                         AuthFactory, inform, gettextCatalog) {
     $scope.tokenSerial = "";
     // This is the parents object
     $scope.loggedInUser = AuthFactory.getUser();
@@ -36,6 +37,20 @@ myApp.controller("tokenChallengesController", ['$scope', 'TokenFactory',
     $scope.challengePageChanged = function () {
         //debug: console.log('Page changed to: ' + $scope.params.page);
         $scope.get();
+    };
+
+     $scope.deleteChallengeCache = function () {
+        TokenFactory.deleteChallengeCache(function (data) {
+            if (data.result.status === true) {
+                inform.add(gettextCatalog.getString(
+                            "Challenge cache successfully deleted."),
+                                              {type: "success", ttl: 4000});
+            } else {
+                inform.add(gettextCatalog.getString(
+                            "Could not delete challenge cache."),
+                           {type: "danger", ttl: 8000});
+            }
+        });
     };
 
     $scope.return_to = function () {
