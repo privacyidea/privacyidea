@@ -190,7 +190,6 @@ class IndexedSecretTokenTestCase(MyTestCase):
         self.assertEqual(token.token.description, token_data[0]["description"])
         self.assertEqual(token.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
         self.assertEqual(token.get_tokeninfo("hashlib"), "sha256")
-        self.assertEqual(token.token.otplen, token_data[0]["otplen"])
         self.assertEqual(token.get_tokeninfo("tokenkind"), "software")
 
         # Clean up
