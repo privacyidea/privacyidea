@@ -1,4 +1,4 @@
-import { Component, Inject, WritableSignal } from '@angular/core';
+import { Component, Inject } from '@angular/core';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import {
   MAT_DIALOG_DATA,
@@ -8,7 +8,6 @@ import {
   MatDialogRef,
   MatDialogTitle,
 } from '@angular/material/dialog';
-import { LostTokenComponent } from '../../token-card/token-tab/lost-token/lost-token.component';
 import {
   MatAccordion,
   MatExpansionPanel,
@@ -21,6 +20,15 @@ import {
   TokenService,
 } from '../../../../services/token/token.service';
 import { ContentService } from '../../../../services/content/content.service';
+import { UserData } from '../../../../services/user/user.service';
+
+export type TokenEnrollmentLastStepDialogData = {
+  response: EnrollmentResponse;
+  enrollToken: () => void;
+  user: UserData;
+  userRealm: string;
+  onlyAddToRealm: boolean;
+};
 
 @Component({
   selector: 'app-token-enrollment-second-step-dialog',
@@ -37,24 +45,18 @@ import { ContentService } from '../../../../services/content/content.service';
     MatIcon,
     MatIconButton,
   ],
-  templateUrl: './token-enrollment-second-step-dialog.component.html',
-  styleUrl: './token-enrollment-second-step-dialog.component.scss',
+  templateUrl: './token-enrollment-last-step-dialog.component.html',
+  styleUrl: './token-enrollment-last-step-dialog.component.scss',
 })
-export class TokenEnrollmentSecondStepDialogComponent {
+export class TokenEnrollmentLastStepDialogComponent {
   protected readonly Object = Object;
 
   constructor(
     protected tokenService: TokenService,
     private contentService: ContentService,
-    private dialogRef: MatDialogRef<LostTokenComponent>,
+    private dialogRef: MatDialogRef<TokenEnrollmentLastStepDialogComponent>,
     @Inject(MAT_DIALOG_DATA)
-    public data: {
-      response: EnrollmentResponse;
-      enrollToken: () => void;
-      username: string;
-      userRealm: string;
-      onlyAddToRealm: WritableSignal<boolean>;
-    },
+    public data: TokenEnrollmentLastStepDialogData,
   ) {
     this.dialogRef.afterClosed().subscribe(() => {
       this.tokenService.stopPolling();

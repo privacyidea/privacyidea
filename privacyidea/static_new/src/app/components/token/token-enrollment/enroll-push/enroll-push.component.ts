@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, signal } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -7,12 +7,15 @@ import {
 } from '@angular/forms';
 import {
   EnrollmentResponse,
+  Tokens,
   TokenService,
 } from '../../../../services/token/token.service';
 
-import { Observable } from 'rxjs';
+import { from, lastValueFrom, Observable } from 'rxjs';
 import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { PushApiPayloadMapper } from '../../../../mappers/token-api-payload/push-token-api-payload.mapper';
+import { DialogService } from '../../../../services/dialog/dialog.service';
+import { PiResponse } from '../../../../app.component';
 
 export interface PushEnrollmentOptions extends TokenEnrollmentData {
   type: 'push';
@@ -27,6 +30,8 @@ export interface PushEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: './enroll-push.component.scss',
 })
 export class EnrollPushComponent implements OnInit {
+  pollResponse = signal<PiResponse<Tokens> | undefined>(undefined);
+
   text = this.tokenService // Keep original initialization
     .tokenTypeOptions()
     .find((type) => type.key === 'push')?.text; // Corrected from 'spass' to 'push'
@@ -37,7 +42,7 @@ export class EnrollPushComponent implements OnInit {
   @Output() clickEnrollChange = new EventEmitter<
     (
       basicOptions: TokenEnrollmentData,
-    ) => Observable<EnrollmentResponse> | undefined
+    ) => Promise<EnrollmentResponse> | undefined
   >();
 
   // No specific FormControls needed for Push Token that the user sets directly.
@@ -47,6 +52,7 @@ export class EnrollPushComponent implements OnInit {
   constructor(
     private tokenService: TokenService,
     private enrollmentMapper: PushApiPayloadMapper,
+    private dialogService: DialogService,
   ) {}
 
   ngOnInit(): void {
@@ -54,17 +60,54 @@ export class EnrollPushComponent implements OnInit {
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
-  onClickEnroll = (
+  onClickEnroll = async (
     basicOptions: TokenEnrollmentData,
-  ): Observable<EnrollmentResponse> | undefined => {
+  ): Promise<EnrollmentResponse> => {
     const enrollmentData: PushEnrollmentOptions = {
       ...basicOptions,
       type: 'push',
       // Removed generateOnServer as per "DO NOT CHANGE OTHER LINES"
     };
-    return this.tokenService.enrollToken({
-      data: enrollmentData,
-      mapper: this.enrollmentMapper,
-    });
+    const initResponse = await lastValueFrom(
+      this.tokenService.enrollToken({
+        data: enrollmentData,
+        mapper: this.enrollmentMapper,
+      }),
+    );
+    await this.pollTokenRolloutStat(initResponse, 5000);
+    return initResponse;
   };
+
+  private pollTokenRolloutStat(
+    initResponse: EnrollmentResponse,
+    initDelay: number,
+  ) {
+    this.dialogService
+      .openTokenEnrollmentFirstStepDialog({
+        data: {
+          response: initResponse,
+        },
+      })
+      .afterClosed()
+      .subscribe(() => {
+        this.tokenService.stopPolling();
+        this.pollResponse.set(undefined);
+      });
+    const tokenSerial = initResponse.detail.serial;
+    const observable = this.tokenService.pollTokenRolloutState(
+      tokenSerial,
+      initDelay,
+    );
+    observable.subscribe({
+      next: (pollResponse) => {
+        this.pollResponse.set(pollResponse);
+        if (
+          pollResponse.result?.value?.tokens[0].rollout_state !== 'clientwait'
+        ) {
+          this.dialogService.closeTokenEnrollmentFirstStepDialog();
+        }
+      },
+    });
+    return lastValueFrom(observable);
+  }
 }

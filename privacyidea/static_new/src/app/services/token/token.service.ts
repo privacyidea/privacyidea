@@ -20,7 +20,7 @@ import {
   throwError,
   timer,
 } from 'rxjs';
-import { catchError, takeUntil, takeWhile } from 'rxjs/operators';
+import { catchError, shareReplay, takeUntil, takeWhile } from 'rxjs/operators';
 import { LocalService } from '../local/local.service';
 import { Sort } from '@angular/material/sort';
 import { TableUtilsService } from '../table-utils/table-utils.service';
@@ -936,12 +936,15 @@ export class TokenService {
 
   pollTokenRolloutState(
     tokenSerial: string,
-    startTime: number,
+    initDelay: number,
   ): Observable<PiResponse<Tokens>> {
+    const randomNumber = Math.floor(Math.random() * 1000);
     this.tokenSerial.set(tokenSerial);
-    return timer(startTime, 2000).pipe(
+    return timer(initDelay, 2000).pipe(
       takeUntil(this.stopPolling$),
-      switchMap(() => this.getTokenDetails(this.tokenSerial())),
+      switchMap(() => {
+        return this.getTokenDetails(this.tokenSerial());
+      }),
       takeWhile(
         (response: any) =>
           response.result?.value.tokens[0].rollout_state === 'clientwait',
@@ -955,6 +958,7 @@ export class TokenService {
         );
         return throwError(() => error);
       }),
+      shareReplay({ bufferSize: 1, refCount: true }),
     );
   }
 

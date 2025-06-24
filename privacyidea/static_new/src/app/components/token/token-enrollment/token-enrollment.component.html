@@ -215,19 +215,19 @@
       </div>
       @if (selectedTokenType().key !== "passkey") {
         <div class="flex-column user-pin-container">
-          <h4 class="enroll-h4">Set Pin</h4>
+          <h4 class="enroll-h4">Set PIN</h4>
           <div class="user-pin-input">
             <input
               [formControl]="setPinControl"
               [type]="'password'"
               class="input"
-              placeholder="Pin" />
+              placeholder="PIN" />
 
             <input
               [formControl]="repeatPinControl"
               [type]="'password'"
               class="input"
-              placeholder="Repeat Pin" />
+              placeholder="Repeat PIN" />
           </div>
           @if (
             formGroup.hasError("pinMismatch") &&

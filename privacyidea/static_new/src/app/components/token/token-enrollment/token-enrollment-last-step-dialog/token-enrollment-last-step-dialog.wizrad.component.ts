@@ -15,16 +15,16 @@ import {
   MatExpansionPanelTitle,
 } from '@angular/material/expansion';
 import { MatIcon } from '@angular/material/icon';
-import { TokenEnrollmentSecondStepDialogComponent } from './token-enrollment-second-step-dialog.component';
+import { TokenEnrollmentLastStepDialogComponent } from './token-enrollment-last-step-dialog.component';
 import {
   EnrollmentResponse,
   TokenService,
 } from '../../../../services/token/token.service';
 import { ContentService } from '../../../../services/content/content.service';
-import { LostTokenComponent } from '../../token-card/token-tab/lost-token/lost-token.component';
 import { HttpClient } from '@angular/common/http';
 import { DomSanitizer } from '@angular/platform-browser';
 import { map } from 'rxjs';
+import { UserData } from '../../../../services/user/user.service';
 import { AsyncPipe } from '@angular/common';
 
 @Component({
@@ -43,10 +43,10 @@ import { AsyncPipe } from '@angular/common';
     MatIconButton,
     AsyncPipe,
   ],
-  templateUrl: './token-enrollment-second-step-dialog.wizard.component.html',
-  styleUrl: './token-enrollment-second-step-dialog.component.scss',
+  templateUrl: './token-enrollment-last-step-dialog.wizard.component.html',
+  styleUrl: './token-enrollment-last-step-dialog.component.scss',
 })
-export class TokenEnrollmentSecondStepDialogWizardComponent extends TokenEnrollmentSecondStepDialogComponent {
+export class TokenEnrollmentSecondStepDialogWizardComponent extends TokenEnrollmentLastStepDialogComponent {
   readonly postTopHtml$ = this.http
     .get('/customize/token-enrollment.wizard.post.top.html', {
       responseType: 'text',
@@ -64,14 +64,14 @@ export class TokenEnrollmentSecondStepDialogWizardComponent extends TokenEnrollm
     private sanitizer: DomSanitizer,
     tokenService: TokenService,
     contentService: ContentService,
-    dialogRef: MatDialogRef<LostTokenComponent>,
+    dialogRef: MatDialogRef<TokenEnrollmentLastStepDialogComponent>,
     @Inject(MAT_DIALOG_DATA)
     data: {
       enrollToken: () => void;
-      onlyAddToRealm: WritableSignal<boolean>;
+      onlyAddToRealm: boolean;
       response: EnrollmentResponse;
       userRealm: string;
-      username: string;
+      user: UserData;
     },
   ) {
     super(tokenService, contentService, dialogRef, data);

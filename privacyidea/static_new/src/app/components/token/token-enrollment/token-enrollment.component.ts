@@ -55,8 +55,6 @@ import {
   TokenService,
 } from '../../../services/token/token.service';
 import { EnrollTotpComponent } from './enroll-totp/enroll-totp.component';
-import { MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { TokenEnrollmentFirstStepDialogComponent } from './token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component';
 import { EnrollSpassComponent } from './enroll-spass/enroll-spass.component';
 import { EnrollMotpComponent } from './enroll-motp/enroll-motp.component';
 import { NgClass } from '@angular/common';
@@ -83,11 +81,11 @@ import { EnrollVascoComponent } from './enroll-vasco/enroll-vasco.component';
 import { EnrollWebauthnComponent } from './enroll-webauthn/enroll-webauthn.component';
 import { EnrollPasskeyComponent } from './enroll-passkey/enroll-passkey.component';
 import { VersionService } from '../../../services/version/version.service';
-import { TokenEnrollmentSecondStepDialogComponent } from './token-enrollment-second-step-dialog/token-enrollment-second-step-dialog.component';
 import { ContentService } from '../../../services/content/content.service';
 
 import { from, Observable } from 'rxjs';
 import { TokenEnrollmentData } from '../../../mappers/token-api-payload/_token-api-payload.mapper';
+import { DialogService } from '../../../services/dialog/dialog.service';
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -199,10 +197,10 @@ export class TokenEnrollmentComponent {
   containerSerial = this.containerService.containerSerial;
   selectedContent = this.contentService.selectedContent;
 
-  refStepOneDialog: MatDialogRef<
-    TokenEnrollmentFirstStepDialogComponent,
-    any
-  > | null = null; // Reference to the first step dialog
+  // refStepOneDialog: MatDialogRef<
+  //   TokenEnrollmentFirstStepDialogComponent,
+  //   any
+  // > | null = null; // Reference to the first step dialog
 
   // Signals for basic enrollment options, to be replaced by FormControls
   tokenTypeOptions = this.tokenService.tokenTypeOptions;
@@ -330,13 +328,12 @@ export class TokenEnrollmentComponent {
   constructor(
     protected containerService: ContainerService,
     protected realmService: RealmService,
-    private notificationService: NotificationService,
+    protected notificationService: NotificationService,
     protected userService: UserService,
     protected tokenService: TokenService,
-    protected firstDialog: MatDialog,
-    protected secondDialog: MatDialog,
     protected versioningService: VersionService,
-    private contentService: ContentService,
+    protected contentService: ContentService,
+    protected dialogService: DialogService,
   ) {
     // The effect will call resetForm on initialization and on subsequent changes to selectedTokenType
     effect(() => {
@@ -409,10 +406,7 @@ export class TokenEnrollmentComponent {
     if (target.tagName === 'TEXTAREA') {
       return;
     }
-    if (
-      this.firstDialog.openDialogs.length === 0 &&
-      this.secondDialog.openDialogs.length === 0
-    ) {
+    if (!this.dialogService.isAnyDialogOpen()) {
       this.enrollToken();
     }
   }
@@ -521,7 +515,7 @@ export class TokenEnrollmentComponent {
         );
       },
       complete: () => {
-        this.closeStepOneDialog();
+        this.dialogService.closeTokenEnrollmentFirstStepDialog();
       },
     });
   }
@@ -566,8 +560,8 @@ export class TokenEnrollmentComponent {
       this.pollResponse()?.result?.value?.tokens[0]?.rollout_state ===
         'clientwait';
     if (waitingForClient) {
-      this.openFirstStepDialog(enrollResponse!);
-      this.pollTokenRolloutState(enrollResponse!.detail?.serial, 2000);
+      // this.openFirstStepDialog(enrollResponse!);
+      // this.pollTokenRolloutState(enrollResponse!.detail?.serial, 2000);
     } else {
       this.openSecondStepDialog(enrollResponse);
     }
@@ -586,11 +580,19 @@ export class TokenEnrollmentComponent {
       );
       return;
     }
-    this.secondDialog.open(TokenEnrollmentSecondStepDialogComponent, {
+    const user = this.userService.userFilter();
+    if (typeof user === 'string' || !user) {
+      this.notificationService.openSnackBar(
+        'Please select a user before enrolling the token.',
+      );
+      return;
+    }
+
+    this.dialogService.openTokenEnrollmentLastStepDialog({
       data: {
         response: response,
         enrollToken: this.enrollToken.bind(this),
-        username: this.userService.userFilter(),
+        user: user,
         userRealm: this.userService.selectedUserRealm(),
         onlyAddToRealm: this.onlyAddToRealm(),
       },
@@ -614,8 +616,8 @@ export class TokenEnrollmentComponent {
         // The multi-step logic for webauthn, passkey, push is now
         // encapsulated within their respective onClickEnroll methods.
         // The parent component just needs to know when to poll.
-        this.openFirstStepDialog(response);
-        this.pollTokenRolloutState(detail.serial, 5000);
+        // this.openFirstStepDialog(response);
+        // this.pollTokenRolloutState(detail.serial, 5000);
         break;
       default:
         this.openSecondStepDialog(response);
@@ -623,41 +625,14 @@ export class TokenEnrollmentComponent {
     }
   }
 
-  private openFirstStepDialog(response: EnrollmentResponse) {
-    this.refStepOneDialog = this.firstDialog.open(
-      TokenEnrollmentFirstStepDialogComponent,
-      {
-        data: {
-          response: response,
-        },
-      },
-    );
-  }
-
-  private pollTokenRolloutState(tokenSerial: string, startTime: number) {
-    return this.tokenService
-      .pollTokenRolloutState(tokenSerial, startTime)
-      .subscribe({
-        next: (pollResponse) => {
-          this.pollResponse.set(pollResponse);
-          if (
-            pollResponse.result?.value?.tokens[0].rollout_state !== 'clientwait'
-          ) {
-            this.firstDialog.closeAll();
-            this.openSecondStepDialog(this.enrollResponse());
-            this.notificationService.openSnackBar(
-              `Token ${tokenSerial} enrolled successfully.`,
-            );
-          }
-        },
-      });
-  }
-
-  /// Closes the first step dialog if it is open
-  closeStepOneDialog() {
-    if (this.refStepOneDialog) {
-      this.refStepOneDialog.close();
-      this.refStepOneDialog = null;
-    }
-  }
+  // private openFirstStepDialog(response: EnrollmentResponse) {
+  //   this.refStepOneDialog = this.firstDialog.open(
+  //     TokenEnrollmentFirstStepDialogComponent,
+  //     {
+  //       data: {
+  //         response: response,
+  //       },
+  //     },
+  //   );
+  // }
 }

@@ -103,21 +103,21 @@
           [(ngModel)]="setPinValue"
           [type]="'password'"
           class="input"
-          placeholder="Token Pin" />
+          placeholder="Token PIN" />
         <input
           [(ngModel)]="repeatPinValue"
           [type]="'password'"
           class="input"
-          placeholder="Repeat Pin" />
+          placeholder="Repeat PIN" />
       </div>
       <div class="user-pin-button">
         <button (click)="setPin()" class="detail-button" extended mat-fab>
           <mat-icon class="detail-button-icon">password</mat-icon>
-          Set Pin
+          Set PIN
         </button>
         <button (click)="setRandomPin()" class="detail-button" extended mat-fab>
           <mat-icon class="detail-button-icon">casino</mat-icon>
-          Random Pin
+          Random PIN
         </button>
       </div>
     }

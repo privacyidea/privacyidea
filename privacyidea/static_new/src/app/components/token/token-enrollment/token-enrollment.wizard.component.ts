@@ -54,11 +54,10 @@ import {
   EnrollmentResponse,
   TokenService,
 } from '../../../services/token/token.service';
-import { MatDialog } from '@angular/material/dialog';
 import { VersionService } from '../../../services/version/version.service';
 import { ContentService } from '../../../services/content/content.service';
-import { TokenEnrollmentSecondStepDialogWizardComponent } from './token-enrollment-second-step-dialog/token-enrollment-second-step-dialog.wizrad.component';
 import { map } from 'rxjs';
+import { DialogService } from '../../../services/dialog/dialog.service';
 
 @Component({
   selector: 'app-token-enrollment-wizard',
@@ -132,10 +131,9 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
     notificationService: NotificationService,
     userService: UserService,
     tokenService: TokenService,
-    firstDialog: MatDialog,
-    secondDialog: MatDialog,
-    versioningService: VersionService,
     contentService: ContentService,
+    versioningService: VersionService,
+    dialogService: DialogService,
   ) {
     super(
       containerService,
@@ -143,19 +141,23 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
       notificationService,
       userService,
       tokenService,
-      firstDialog,
-      secondDialog,
       versioningService,
       contentService,
+      dialogService,
     );
   }
 
   protected override openSecondStepDialog(response: EnrollmentResponse) {
-    this.secondDialog.open(TokenEnrollmentSecondStepDialogWizardComponent, {
+    const user = this.userService.userFilter();
+    if (!user || typeof user === 'string') {
+      return;
+    }
+
+    this.dialogService.openTokenEnrollmentLastStepDialog({
       data: {
         response,
         enrollToken: this.enrollToken.bind(this),
-        username: this.userService.userFilter(),
+        user: user,
         userRealm: this.userService.selectedUserRealm(),
         onlyAddToRealm: this.onlyAddToRealm(),
       },
