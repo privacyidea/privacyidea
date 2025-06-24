@@ -934,11 +934,11 @@ export class TokenService {
       );
   }
 
-  pollTokenRolloutState(
-    tokenSerial: string,
-    initDelay: number,
-  ): Observable<PiResponse<Tokens>> {
-    const randomNumber = Math.floor(Math.random() * 1000);
+  pollTokenRolloutState(args: {
+    tokenSerial: string;
+    initDelay: number;
+  }): Observable<PiResponse<Tokens>> {
+    const { tokenSerial, initDelay } = args;
     this.tokenSerial.set(tokenSerial);
     return timer(initDelay, 2000).pipe(
       takeUntil(this.stopPolling$),

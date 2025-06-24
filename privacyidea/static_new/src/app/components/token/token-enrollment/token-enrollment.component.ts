@@ -86,6 +86,7 @@ import { ContentService } from '../../../services/content/content.service';
 import { from, Observable } from 'rxjs';
 import { TokenEnrollmentData } from '../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { DialogService } from '../../../services/dialog/dialog.service';
+import { TokenEnrollmentLastStepDialogData } from './token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component';
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -197,11 +198,6 @@ export class TokenEnrollmentComponent {
   containerSerial = this.containerService.containerSerial;
   selectedContent = this.contentService.selectedContent;
 
-  // refStepOneDialog: MatDialogRef<
-  //   TokenEnrollmentFirstStepDialogComponent,
-  //   any
-  // > | null = null; // Reference to the first step dialog
-
   // Signals for basic enrollment options, to be replaced by FormControls
   tokenTypeOptions = this.tokenService.tokenTypeOptions;
   selectedTokenType = this.tokenService.selectedTokenType; // This will become a FormControl
@@ -268,6 +264,22 @@ export class TokenEnrollmentComponent {
       | undefined,
   ): void {
     this.clickEnroll = event;
+  }
+  reopenCurrentEnrollmentDialog: WritableSignal<
+    | (() =>
+        | Promise<EnrollmentResponse | void>
+        | Observable<EnrollmentResponse | void>)
+    | undefined
+  > = signal(undefined);
+  updateReopenCurrentEnrollmentDialog(
+    event:
+      | (() =>
+          | Promise<EnrollmentResponse | void>
+          | Observable<EnrollmentResponse | void>)
+      | undefined,
+  ): void {
+    console.log('Updating reopenCurrentEnrollmentDialog: ', event);
+    this.reopenCurrentEnrollmentDialog.set(event);
   }
 
   // This signal might not be needed if children manage their forms entirely.
@@ -550,20 +562,24 @@ export class TokenEnrollmentComponent {
     return true; // Indicate that validation passed
   }
 
+  _lastTokenEnrollmentLastStepDialogData: TokenEnrollmentLastStepDialogData | null =
+    null;
+  canReopenEnrollmentDialog(): boolean {
+    return (
+      this.reopenCurrentEnrollmentDialog !== null ||
+      this._lastTokenEnrollmentLastStepDialogData !== null
+    );
+  }
   reopenEnrollmentDialog() {
-    const enrollResponse = this.enrollResponse();
-    let waitingForClient =
-      ((enrollResponse?.detail?.rollout_state === 'clientwait' ||
-        enrollResponse?.detail?.passkey_registration ||
-        enrollResponse?.detail?.webAuthnRegisterRequest) &&
-        !this.pollResponse()) ||
-      this.pollResponse()?.result?.value?.tokens[0]?.rollout_state ===
-        'clientwait';
-    if (waitingForClient) {
-      // this.openFirstStepDialog(enrollResponse!);
-      // this.pollTokenRolloutState(enrollResponse!.detail?.serial, 2000);
-    } else {
-      this.openSecondStepDialog(enrollResponse);
+    if (this.reopenCurrentEnrollmentDialog) {
+      this.reopenCurrentEnrollmentDialog();
+      return;
+    }
+    if (this._lastTokenEnrollmentLastStepDialogData) {
+      this.dialogService.openTokenEnrollmentLastStepDialog({
+        data: this._lastTokenEnrollmentLastStepDialogData,
+      });
+      return;
     }
   }
 
@@ -609,30 +625,19 @@ export class TokenEnrollmentComponent {
       );
     }
 
-    switch (this.tokenService.selectedTokenType()?.key) {
-      case 'webauthn':
-      case 'passkey':
-      case 'push':
-        // The multi-step logic for webauthn, passkey, push is now
-        // encapsulated within their respective onClickEnroll methods.
-        // The parent component just needs to know when to poll.
-        // this.openFirstStepDialog(response);
-        // this.pollTokenRolloutState(detail.serial, 5000);
-        break;
-      default:
-        this.openSecondStepDialog(response);
-        break;
-    }
+    // switch (this.tokenService.selectedTokenType()?.key) {
+    //   case 'webauthn':
+    //   case 'passkey':
+    //   case 'push':
+    //     // The multi-step logic for webauthn, passkey, push is now
+    //     // encapsulated within their respective onClickEnroll methods.
+    //     // The parent component just needs to know when to poll.
+    //     // this.openFirstStepDialog(response);
+    //     // this.pollTokenRolloutState(detail.serial, 5000);
+    //     break;
+    //   default:
+    //     break;
+    //   }
+    this.openSecondStepDialog(response);
   }
-
-  // private openFirstStepDialog(response: EnrollmentResponse) {
-  //   this.refStepOneDialog = this.firstDialog.open(
-  //     TokenEnrollmentFirstStepDialogComponent,
-  //     {
-  //       data: {
-  //         response: response,
-  //       },
-  //     },
-  //   );
-  // }
 }

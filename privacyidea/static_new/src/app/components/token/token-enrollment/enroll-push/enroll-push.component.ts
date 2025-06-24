@@ -16,6 +16,8 @@ import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_toke
 import { PushApiPayloadMapper } from '../../../../mappers/token-api-payload/push-token-api-payload.mapper';
 import { DialogService } from '../../../../services/dialog/dialog.service';
 import { PiResponse } from '../../../../app.component';
+import { TokenEnrollmentFirstStepDialogComponent } from '../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component';
+import { MatDialogRef } from '@angular/material/dialog';
 
 export interface PushEnrollmentOptions extends TokenEnrollmentData {
   type: 'push';
@@ -44,7 +46,11 @@ export class EnrollPushComponent implements OnInit {
       basicOptions: TokenEnrollmentData,
     ) => Promise<EnrollmentResponse> | undefined
   >();
-
+  @Output() reopenCurrentEnrollmentDialogChange = new EventEmitter<
+    () =>
+      | Promise<EnrollmentResponse | void>
+      | Observable<EnrollmentResponse | void>
+  >();
   // No specific FormControls needed for Push Token that the user sets directly.
   // generateOnServer is implicit or can be treated as a constant.
   pushForm = new FormGroup({});
@@ -74,30 +80,24 @@ export class EnrollPushComponent implements OnInit {
         mapper: this.enrollmentMapper,
       }),
     );
-    await this.pollTokenRolloutStat(initResponse, 5000);
+    await this.pollTokenRolloutState(initResponse, 5000);
     return initResponse;
   };
 
-  private pollTokenRolloutStat(
+  private pollTokenRolloutState(
     initResponse: EnrollmentResponse,
     initDelay: number,
-  ) {
-    this.dialogService
-      .openTokenEnrollmentFirstStepDialog({
-        data: {
-          response: initResponse,
-        },
-      })
+  ): Promise<PiResponse<Tokens>> {
+    this._openStepOneDialog(initResponse)
       .afterClosed()
       .subscribe(() => {
         this.tokenService.stopPolling();
         this.pollResponse.set(undefined);
       });
-    const tokenSerial = initResponse.detail.serial;
-    const observable = this.tokenService.pollTokenRolloutState(
-      tokenSerial,
+    const observable = this.tokenService.pollTokenRolloutState({
+      tokenSerial: initResponse.detail.serial,
       initDelay,
-    );
+    });
     observable.subscribe({
       next: (pollResponse) => {
         this.pollResponse.set(pollResponse);
@@ -109,5 +109,27 @@ export class EnrollPushComponent implements OnInit {
       },
     });
     return lastValueFrom(observable);
+  }
+
+  private _openStepOneDialog(
+    initResponse: EnrollmentResponse,
+  ): MatDialogRef<TokenEnrollmentFirstStepDialogComponent, any> {
+    console.log('Opening enrollment dialog for Push Token');
+    this.reopenCurrentEnrollmentDialogChange.emit(async () => {
+      console.log('Reopening enrollment dialog for Push Token');
+      if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen()) {
+        await this.pollTokenRolloutState(initResponse, 0);
+        return initResponse;
+      }
+      return undefined;
+    });
+
+    return this.dialogService.openTokenEnrollmentFirstStepDialog({
+      data: { response: initResponse },
+    });
+  }
+  private _closeStepOneDialog(): void {
+    this.reopenCurrentEnrollmentDialogChange.emit(undefined);
+    this.dialogService.closeTokenEnrollmentFirstStepDialog();
   }
 }

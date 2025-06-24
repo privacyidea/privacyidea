@@ -14,11 +14,9 @@ import {
   EnrollmentResponseDetail,
   TokenService,
 } from '../../../../services/token/token.service';
-import { catchError, finalize, first } from 'rxjs/operators';
-import { TokenEnrollmentFirstStepDialogComponent } from '../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component';
 import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
-import { WebauthnEncodingService } from '../../../../services/webauthn-encoding/webauthn-encoding.service';
 import { WebAuthnApiPayloadMapper } from '../../../../mappers/token-api-payload/webauthn-token-api-payload.mapper';
+import { DialogService } from '../../../../services/dialog/dialog.service';
 
 // Interface for the initialization options of the WebAuthn token (first step)
 export interface WebauthnEnrollmentData extends TokenEnrollmentData {
@@ -60,6 +58,11 @@ export class EnrollWebauthnComponent implements OnInit {
       basicOptions: TokenEnrollmentData,
     ) => Observable<EnrollmentResponse> | undefined
   >();
+  @Output() reopenCurrentEnrollmentDialogChange = new EventEmitter<
+    () =>
+      | Promise<EnrollmentResponse | void>
+      | Observable<EnrollmentResponse | void>
+  >();
 
   // WebAuthn has no form fields in this component to be filled directly by the user
   webauthnForm = new FormGroup({});
@@ -69,8 +72,8 @@ export class EnrollWebauthnComponent implements OnInit {
     private tokenService: TokenService,
     private base64Service: Base64Service,
     private dialog: MatDialog,
-    private webauthnEncodingService: WebauthnEncodingService,
     private enrollmentMapper: WebAuthnApiPayloadMapper,
+    private dialogService: DialogService,
   ) {}
 
   ngOnInit(): void {
@@ -81,9 +84,6 @@ export class EnrollWebauthnComponent implements OnInit {
   onClickEnroll = async (
     enrollmentData: TokenEnrollmentData,
   ): Promise<EnrollmentResponse> => {
-    let firstStepDialogRef:
-      | MatDialogRef<TokenEnrollmentFirstStepDialogComponent>
-      | undefined;
     const webauthnEnrollmentData: WebauthnEnrollmentData = {
       ...enrollmentData,
       type: 'webauthn',
@@ -95,20 +95,20 @@ export class EnrollWebauthnComponent implements OnInit {
         data: webauthnEnrollmentData,
         mapper: this.enrollmentMapper,
       }),
-    )
-      .catch((error) => {
-        this.notificationService.openSnackBar(
-          `WebAuthn registration process failed: ${error.message || error}`,
-        );
-        throw error;
-      })
-      .finally(() => {
-        if (firstStepDialogRef) {
-          firstStepDialogRef.close();
-        }
-      });
+    ).catch((error) => {
+      this.notificationService.openSnackBar(
+        `WebAuthn registration process failed: ${error.message || error}`,
+      );
+      throw error;
+    });
     this.openStepOneDialog(enrollmentInitResponse);
-    return this.registerWebauthn(enrollmentInitResponse.detail);
+    const finalEnrollmentResponse = await this.registerWebauthn(
+      enrollmentInitResponse.detail,
+    ).finally(() => {
+      this.closeStepOneDialog();
+    });
+
+    return finalEnrollmentResponse;
   };
 
   registerWebauthn = async (
@@ -173,10 +173,25 @@ export class EnrollWebauthnComponent implements OnInit {
       }),
     );
   };
-  openStepOneDialog = (response: EnrollmentResponse): void => {
-    this.dialog.open(TokenEnrollmentFirstStepDialogComponent, {
+  openStepOneDialog(response: EnrollmentResponse): void {
+    this.reopenCurrentEnrollmentDialogChange.emit(async () => {
+      if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen()) {
+        this.dialogService.openTokenEnrollmentFirstStepDialog({
+          data: { response },
+          disableClose: true,
+        });
+        return response;
+      }
+      return undefined;
+    });
+
+    this.dialogService.openTokenEnrollmentFirstStepDialog({
       data: { response },
       disableClose: true,
     });
-  };
+  }
+  closeStepOneDialog(): void {
+    this.reopenCurrentEnrollmentDialogChange.emit(undefined);
+    this.dialogService.closeTokenEnrollmentFirstStepDialog();
+  }
 }

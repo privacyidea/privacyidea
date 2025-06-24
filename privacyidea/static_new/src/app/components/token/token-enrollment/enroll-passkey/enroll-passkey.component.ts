@@ -8,15 +8,16 @@ import {
 import { NotificationService } from '../../../../services/notification/notification.service';
 import {
   EnrollmentResponse,
+  EnrollmentResponseDetail,
   TokenService,
 } from '../../../../services/token/token.service';
 import { Base64Service } from '../../../../services/base64/base64.service';
-import { from, Observable, switchMap, throwError, of } from 'rxjs';
-import { catchError, finalize, tap } from 'rxjs/operators';
-import { MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { TokenEnrollmentFirstStepDialogComponent } from '../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component';
+import { lastValueFrom, Observable } from 'rxjs';
 import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { PasskeyApiPayloadMapper } from '../../../../mappers/token-api-payload/passkey-token-api-payload.mapper';
+import { DialogService } from '../../../../services/dialog/dialog.service';
+import { MatDialogRef } from '@angular/material/dialog';
+import { TokenEnrollmentFirstStepDialogComponent } from '../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component';
 
 // Interface for the initialization options of the Passkey token (first step)
 export interface PasskeyEnrollmentOptions extends TokenEnrollmentData {
@@ -56,7 +57,12 @@ export class EnrollPasskeyComponent implements OnInit {
   @Output() clickEnrollChange = new EventEmitter<
     (
       basicOptions: TokenEnrollmentData,
-    ) => Observable<EnrollmentResponse> | undefined
+    ) => Promise<EnrollmentResponse> | undefined
+  >();
+  @Output() reopenCurrentEnrollmentDialogChange = new EventEmitter<
+    () =>
+      | Promise<EnrollmentResponse | void>
+      | Observable<EnrollmentResponse | void>
   >();
 
   passkeyForm = new FormGroup({});
@@ -65,8 +71,8 @@ export class EnrollPasskeyComponent implements OnInit {
     private notificationService: NotificationService,
     private tokenService: TokenService,
     private base64Service: Base64Service,
-    private dialog: MatDialog,
     private enrollmentMapper: PasskeyApiPayloadMapper,
+    private dialogService: DialogService,
   ) {}
 
   ngOnInit(): void {
@@ -74,150 +80,178 @@ export class EnrollPasskeyComponent implements OnInit {
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
-  onClickEnroll = (
+  onClickEnroll = async (
     basicOptions: TokenEnrollmentData,
-  ): Observable<EnrollmentResponse> | undefined => {
+  ): Promise<EnrollmentResponse> => {
     if (!navigator.credentials?.create) {
       const errorMsg = 'Passkey/WebAuthn is not supported by this browser.';
       this.notificationService.openSnackBar(errorMsg);
-      return throwError(() => new Error(errorMsg));
+      throw new Error(errorMsg);
     }
 
-    let firstStepDialogRef:
-      | MatDialogRef<TokenEnrollmentFirstStepDialogComponent>
-      | undefined;
     const enrollmentInitData: PasskeyEnrollmentOptions = {
       ...basicOptions,
       type: 'passkey',
     };
 
-    return this.tokenService
-      .enrollToken({
+    const responseStepOne = await lastValueFrom(
+      this.tokenService.enrollToken({
         data: enrollmentInitData,
         mapper: this.enrollmentMapper,
-      })
-      .pipe(
-        switchMap((responseStep1) => {
-          const detail = responseStep1.detail;
-          const passkeyRegOptions = detail?.passkey_registration;
+      }),
+    ).catch((error: any) => {
+      const errMsg = `Passkey registration process failed: ${error.message || error}`;
+      this.notificationService.openSnackBar(errMsg);
+      throw new Error(error);
+    });
 
-          if (!passkeyRegOptions) {
-            this.notificationService.openSnackBar(
-              'Failed to initiate Passkey registration: Invalid server response.',
-            );
-            return throwError(
-              () =>
-                new Error('Invalid server response for Passkey initiation.'),
-            );
-          }
-
-          firstStepDialogRef = this.dialog.open(
-            TokenEnrollmentFirstStepDialogComponent,
-            {
-              data: { response: responseStep1 },
-              disableClose: true,
-            },
-          );
-
-          const excludedCredentials = passkeyRegOptions.excludeCredentials.map(
-            (cred: any) => ({
-              id: this.base64Service.base64URLToBytes(cred.id),
-              type: cred.type,
-            }),
-          );
-
-          const publicKeyOptions: PublicKeyCredentialCreationOptions = {
-            rp: passkeyRegOptions.rp,
-            user: {
-              id: this.base64Service.base64URLToBytes(
-                passkeyRegOptions.user.id,
-              ),
-              name: passkeyRegOptions.user.name,
-              displayName: passkeyRegOptions.user.displayName,
-            },
-            challenge: this.base64Service.base64URLToBytes(
-              passkeyRegOptions.challenge,
-            ),
-            pubKeyCredParams: passkeyRegOptions.pubKeyCredParams,
-            excludeCredentials: excludedCredentials,
-            authenticatorSelection: passkeyRegOptions.authenticatorSelection,
-            timeout: passkeyRegOptions.timeout,
-            extensions: { credProps: true, ...passkeyRegOptions.extensions },
-            attestation: passkeyRegOptions.attestation,
-          };
-
-          return from(
-            navigator.credentials.create({ publicKey: publicKeyOptions }),
-          ).pipe(
-            switchMap((publicKeyCred: any) => {
-              if (!publicKeyCred) {
-                return throwError(
-                  () => new Error('Passkey credential creation failed.'),
-                );
-              }
-              const params: any = {
-                type: 'passkey',
-                transaction_id: detail.transaction_id!,
-                serial: detail.serial,
-                credential_id: publicKeyCred.id,
-                rawId: this.base64Service.bytesToBase64(
-                  new Uint8Array(publicKeyCred.rawId),
-                ),
-                authenticatorAttachment: publicKeyCred.authenticatorAttachment,
-                attestationObject: this.base64Service.bytesToBase64(
-                  new Uint8Array(publicKeyCred.response.attestationObject),
-                ),
-                clientDataJSON: this.base64Service.bytesToBase64(
-                  new Uint8Array(publicKeyCred.response.clientDataJSON),
-                ),
-              };
-
-              const extResults = publicKeyCred.getClientExtensionResults();
-              if (extResults?.credProps) {
-                params.credProps = extResults.credProps;
-              }
-              return this.tokenService.enrollToken(params).pipe(
-                catchError((errorStep3) => {
-                  this.notificationService.openSnackBar(
-                    'Error during final Passkey registration step. Attempting to clean up token.',
-                  );
-                  return from(
-                    this.tokenService.deleteToken(detail.serial),
-                  ).pipe(
-                    switchMap(() => {
-                      this.notificationService.openSnackBar(
-                        `Token ${detail.serial} deleted due to registration error.`,
-                      );
-                      return throwError(() => errorStep3);
-                    }),
-                    catchError((deleteError) => {
-                      this.notificationService.openSnackBar(
-                        `Failed to delete token ${detail.serial} after registration error. Please check manually.`,
-                      );
-                      return throwError(() => errorStep3);
-                    }),
-                  );
-                }),
-              );
-            }),
-            catchError((browserOrCredentialError) => {
-              this.notificationService.openSnackBar(
-                `Passkey credential creation failed: ${browserOrCredentialError.message}`,
-              );
-              return throwError(() => browserOrCredentialError);
-            }),
-          );
-        }),
-        catchError((error: any) => {
-          const errMsg = `Passkey registration process failed: ${error.message || error}`;
-          this.notificationService.openSnackBar(errMsg);
-          return throwError(() => error);
-        }),
-        finalize(() => {
-          if (firstStepDialogRef) {
-            firstStepDialogRef.close();
-          }
-        }),
+    const detail = responseStepOne.detail;
+    const passkeyRegOptions = detail?.passkey_registration;
+    if (!passkeyRegOptions) {
+      this.notificationService.openSnackBar(
+        'Failed to initiate Passkey registration: Invalid server response.',
       );
+      throw new Error('Invalid server response for Passkey initiation.');
+    }
+    this.openStepOneDialog({ responseStepOne, detail });
+    const publicKeyCred = this.readPublicKeyCred(responseStepOne);
+    const resposeLastStep = await this.finalizeEnrollment({
+      detail,
+      publicKeyCred,
+    });
+    return resposeLastStep;
   };
+
+  private async finalizeEnrollment(args: {
+    detail: EnrollmentResponseDetail;
+    publicKeyCred: any;
+  }): Promise<EnrollmentResponse> {
+    const { detail, publicKeyCred } = args;
+    const params: any = {
+      type: 'passkey',
+      transaction_id: detail.transaction_id!,
+      serial: detail.serial,
+      credential_id: publicKeyCred.id,
+      rawId: this.base64Service.bytesToBase64(
+        new Uint8Array(publicKeyCred.rawId),
+      ),
+      authenticatorAttachment: publicKeyCred.authenticatorAttachment,
+      attestationObject: this.base64Service.bytesToBase64(
+        new Uint8Array(publicKeyCred.response.attestationObject),
+      ),
+      clientDataJSON: this.base64Service.bytesToBase64(
+        new Uint8Array(publicKeyCred.response.clientDataJSON),
+      ),
+    };
+
+    const extResults = publicKeyCred.getClientExtensionResults();
+    if (extResults?.credProps) {
+      params.credProps = extResults.credProps;
+    }
+    return lastValueFrom(this.tokenService.enrollToken(params)).catch(
+      async (errorStep3) => {
+        this.notificationService.openSnackBar(
+          'Error during final Passkey registration step. Attempting to clean up token.',
+        );
+        await lastValueFrom(this.tokenService.deleteToken(detail.serial)).catch(
+          () => {
+            this.notificationService.openSnackBar(
+              `Failed to delete token ${detail.serial} after registration error. Please check manually.`,
+            );
+            throw new Error(errorStep3);
+          },
+        ),
+          this.notificationService.openSnackBar(
+            `Token ${detail.serial} deleted due to registration error.`,
+          );
+        throw Error(errorStep3);
+      },
+    );
+  }
+
+  private async readPublicKeyCred(
+    responseStepOne: EnrollmentResponse,
+  ): Promise<any> {
+    const detail = responseStepOne.detail;
+    const passkeyRegOptions = detail?.passkey_registration;
+    if (!passkeyRegOptions) {
+      this.notificationService.openSnackBar(
+        'Failed to initiate Passkey registration: Invalid server response.',
+      );
+      throw new Error('Invalid server response for Passkey initiation.');
+    }
+    const excludedCredentials = passkeyRegOptions.excludeCredentials.map(
+      (cred: any) => ({
+        id: this.base64Service.base64URLToBytes(cred.id),
+        type: cred.type,
+      }),
+    );
+
+    const publicKeyOptions: PublicKeyCredentialCreationOptions = {
+      rp: passkeyRegOptions.rp,
+      user: {
+        id: this.base64Service.base64URLToBytes(passkeyRegOptions.user.id),
+        name: passkeyRegOptions.user.name,
+        displayName: passkeyRegOptions.user.displayName,
+      },
+      challenge: this.base64Service.base64URLToBytes(
+        passkeyRegOptions.challenge,
+      ),
+      pubKeyCredParams: passkeyRegOptions.pubKeyCredParams,
+      excludeCredentials: excludedCredentials,
+      authenticatorSelection: passkeyRegOptions.authenticatorSelection,
+      timeout: passkeyRegOptions.timeout,
+      extensions: { credProps: true, ...passkeyRegOptions.extensions },
+      attestation: passkeyRegOptions.attestation,
+    };
+
+    const publicKeyCred = (await navigator.credentials
+      .create({ publicKey: publicKeyOptions })
+      .catch((browserOrCredentialError) => {
+        this.notificationService.openSnackBar(
+          `Passkey credential creation failed: ${browserOrCredentialError.message}`,
+        );
+        throw new Error(browserOrCredentialError);
+      })
+      .finally(() => {
+        // Ensure the dialog is closed regardless of success or failure
+        this.closeStepOneDialog();
+      })) as any; // Type assertion to any for compatibility
+
+    if (!publicKeyCred) {
+      throw new Error('Passkey credential creation failed.');
+    }
+    return publicKeyCred;
+  }
+
+  openStepOneDialog(args: {
+    responseStepOne: EnrollmentResponse;
+    detail: EnrollmentResponseDetail;
+  }): MatDialogRef<TokenEnrollmentFirstStepDialogComponent, any> {
+    const { responseStepOne, detail } = args;
+    this.reopenCurrentEnrollmentDialogChange.emit(async () => {
+      if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen()) {
+        this.dialogService.openTokenEnrollmentFirstStepDialog({
+          data: { response: responseStepOne },
+          disableClose: true,
+        });
+        const publicKeyCred = this.readPublicKeyCred(responseStepOne);
+        const resposeLastStep = await this.finalizeEnrollment({
+          detail,
+          publicKeyCred,
+        });
+        return resposeLastStep;
+      }
+      return undefined;
+    });
+
+    return this.dialogService.openTokenEnrollmentFirstStepDialog({
+      data: { response: responseStepOne },
+      disableClose: true,
+    });
+  }
+  closeStepOneDialog(): void {
+    this.reopenCurrentEnrollmentDialogChange.emit(undefined);
+    this.dialogService.closeTokenEnrollmentFirstStepDialog();
+  }
 }
