@@ -4,7 +4,7 @@ graft tools
 graft deploy
 graft authmodules
 
-include requirements.txt
+include requirements.txt pyproject.toml
 
 # We need to exclude files at the end otherwise they get included again
 prune venv*

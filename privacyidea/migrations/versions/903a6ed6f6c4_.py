@@ -17,7 +17,7 @@ down_revision = 'c128c01a5520'
 def upgrade():
     try:
         op.create_table('tokencredentialidhash',
-                        sa.Column('id', sa.Integer(), primary_key=True),
+                        sa.Column('id', sa.Integer(), sa.Identity(), primary_key=True),
                         sa.Column('credential_id_hash', sa.String(length=256), nullable=False),
                         sa.Column('token_id', sa.Integer(), nullable=False),
                         sa.ForeignKeyConstraint(['token_id'], ['token.id'], ),

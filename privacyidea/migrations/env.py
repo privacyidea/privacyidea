@@ -97,6 +97,10 @@ def run_migrations_online():
     connectable = get_engine()
 
     with connectable.connect() as connection:
+        # Add AUTOCOMMIT isolation level to commit to db after every migration
+        # step (needed for PostgreSQL)
+        connection = connection.execution_options(
+            isolation_level="AUTOCOMMIT")
         context.configure(
             connection=connection,
             target_metadata=get_metadata(),
