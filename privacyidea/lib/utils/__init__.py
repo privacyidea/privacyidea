@@ -45,10 +45,7 @@ from netaddr import IPAddress, IPNetwork, AddrFormatError
 
 from privacyidea.lib.framework import get_app_config_value
 
-try:
-    from importlib import metadata
-except ImportError:
-    import importlib_metadata as metadata
+from importlib import metadata
 import time
 import html
 import segno
@@ -478,14 +475,14 @@ def parse_timelimit(limit):
     time_specifier = limit[-1].lower()
     if time_specifier not in ["m", "s", "h"]:
         raise Exception("Invalid time specifier")
-    l = limit[:-1].split("/")
-    count = int(l[0])
-    time = int(l[1])
-    td = timedelta(minutes=time)
+    time_limit = limit[:-1].split("/")
+    count = int(time_limit[0])
+    time_delta = int(time_limit[1])
+    td = timedelta(minutes=time_delta)
     if time_specifier == "s":
-        td = timedelta(seconds=time)
+        td = timedelta(seconds=time_delta)
     if time_specifier == "h":
-        td = timedelta(hours=time)
+        td = timedelta(hours=time_delta)
 
     return count, td
 
@@ -861,7 +858,7 @@ def compare_value_value(value1, comparator, value2):
     except Exception:
         log.debug("can not compare values as integers.")
 
-    if type(value1) != int and type(value2) != int:
+    if not isinstance(value1, int) and not isinstance(value2, int):
         # try to convert both values to a timestamp
         try:
             date1 = parse_date(value1)
@@ -1246,7 +1243,7 @@ def check_pin_contents(pin, policy):
 
     # check for not allowed characters
     for char in pin:
-        if not char in charlists_dict["base"]:
+        if char not in charlists_dict["base"]:
             ret = False
     if not ret:
         comment.append("Not allowed character in PIN!")
