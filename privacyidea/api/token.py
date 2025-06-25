@@ -386,7 +386,7 @@ def get_challenges_api(serial=None):
 @token_blueprint.route("/challenges/expired", methods=['DELETE'])
 @admin_required
 @log_with(log)
-def delete_challenge_cache_api():
+def delete_expired_challenges_api():
     """
     Delete expired entries in the challenge table.
 
