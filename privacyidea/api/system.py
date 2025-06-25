@@ -508,7 +508,8 @@ def delete_user_cache_api():
           "id": 1,
           "jsonrpc": "2.0",
           "result": {
-            "status": true
+            "status": true,
+            "deleted": 42
           },
           "version": "privacyIDEA unknown"
         }
