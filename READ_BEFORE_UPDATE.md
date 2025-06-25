@@ -5,6 +5,8 @@
   The secret key will not be saved to the tokeninfo anymore. Instead, only the PKCS12 container will contain
   the secret key. The PKCS12 container will be available in the tokeninfo and will be encrypted either with
   the token PIN or a generated password which is shown to the user during rollout, but only once!
+* The directory containing the database schema update scripts moved into the `privacyidea` package.
+  The parameter `-d` is not required anymore to run database migration commands.
 
 ## Update from 3.10 to 3.11
 * To improve consistency of conditions for policies and eventhandlers, tokens that are not in any realm will not be
