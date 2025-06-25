@@ -1281,35 +1281,35 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
                 params["headers"] = "";
             }
 
-            $scope.advancedSettings = params["ADVANCED"] || false;
+            $scope.advancedSettings = params["advanced"] || false;
             if ($scope.advancedSettings) {
                 $scope.params.type = params.type;
                 $scope.advancedParams = params;
-                $scope.advancedParams["EDITABLE"] = isTrue(params["EDITABLE"]);
-                $scope.advancedParams["VERIFY_TLS"] = isTrue(params["VERIFY_TLS"]);
-                $scope.serviceAccount["username"] = params["USERNAME"] || "";
-                $scope.serviceAccount["password"] = params["PASSWORD"] || "";
-                $scope.updateEndpointConfig("checkPass", params["CONFIG_USER_AUTH"]);
-                $scope.updateEndpointConfig("userList", params["CONFIG_GET_USER_LIST"]);
-                $scope.updateEndpointConfig("userById", params["CONFIG_GET_USER_BY_ID"]);
-                $scope.updateEndpointConfig("userByName", params["CONFIG_GET_USER_BY_NAME"]);
+                $scope.advancedParams["Editable"] = isTrue(params["Editable"]);
+                $scope.advancedParams["verify_tls"] = isTrue(params["verify_tls"]);
+                $scope.serviceAccount["username"] = params["username"] || "";
+                $scope.serviceAccount["password"] = params["password"] || "";
+                $scope.updateEndpointConfig("checkPass", params["config_user_auth"]);
+                $scope.updateEndpointConfig("userList", params["config_get_user_list"]);
+                $scope.updateEndpointConfig("userById", params["config_get_user_by_id"]);
+                $scope.updateEndpointConfig("userByName", params["config_get_user_by_name"]);
 
-                $scope.updateEndpointConfig("createUser", params["CONFIG_CREATE_USER"]);
-                $scope.updateEndpointConfig("editUser", params["CONFIG_EDIT_USER"]);
-                $scope.updateEndpointConfig("deleteUser", params["CONFIG_DELETE_USER"]);
+                $scope.updateEndpointConfig("createUser", params["config_create_user"]);
+                $scope.updateEndpointConfig("editUser", params["config_edit_user"]);
+                $scope.updateEndpointConfig("deleteUser", params["config_delete_user"]);
 
                 if ($scope.params.type === "entraidresolver") {
-                    $scope.authorizationConfig["authority"] = params["AUTHORITY"];
-                    $scope.authorizationConfig["clientId"] = params["CLIENT_ID"];
-                    $scope.authorizationConfig["clientCredentialType"] = params["CLIENT_CREDENTIAL_TYPE"];
-                    if (params["CLIENT_CREDENTIAL_TYPE"] === "certificate") {
-                        $scope.authorizationConfig["clientCertificate"] = params["CLIENT_CERTIFICATE"];
+                    $scope.authorizationConfig["authority"] = params["authority"];
+                    $scope.authorizationConfig["clientId"] = params["client_id"];
+                    $scope.authorizationConfig["clientCredentialType"] = params["client_credential_type"];
+                    if (params["client_credential_type"] === "certificate") {
+                        $scope.authorizationConfig["clientCertificate"] = params["client_certificate"];
                     } else {
-                        $scope.authorizationConfig["clientSecret"] = params["CLIENT_SECRET"];
+                        $scope.authorizationConfig["clientSecret"] = params["client_secret"];
                     }
-                    $scope.authorizationConfig["tenant"] = params["TENANT"];
-                } else if (params["CONFIG_AUTHORIZATION"]) {
-                    const auth_params = params["CONFIG_AUTHORIZATION"];
+                    $scope.authorizationConfig["tenant"] = params["tenant"];
+                } else if (params["config_authorization"]) {
+                    const auth_params = params["config_authorization"];
                     $scope.authorizationConfig = {
                         "method": auth_params["method"],
                         "endpoint": auth_params["endpoint"],
@@ -1346,34 +1346,34 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
             if ($scope.advancedSettings) {
                 if ($scope.authorizationConfig["clientCredentialType"] === "certificate") {
                     // checkPass is not supported for EntraID when using certificates
-                    delete $scope.advancedParams["CONFIG_USER_AUTH"];
+                    delete $scope.advancedParams["config_user_auth"];
                 } else {
-                    $scope.advancedParams["CONFIG_USER_AUTH"] = $scope.endpointConfig["checkPass"];
+                    $scope.advancedParams["config_user_auth"] = $scope.endpointConfig["checkPass"];
                 }
-                $scope.advancedParams["CONFIG_GET_USER_LIST"] = $scope.endpointConfig["userList"];
-                $scope.advancedParams["CONFIG_GET_USER_BY_ID"] = $scope.endpointConfig["userById"];
-                $scope.advancedParams["CONFIG_GET_USER_BY_NAME"] = $scope.endpointConfig["userByName"];
-                if ($scope.advancedParams["EDITABLE"]) {
-                    $scope.advancedParams["CONFIG_CREATE_USER"] = $scope.endpointConfig["createUser"];
-                    $scope.advancedParams["CONFIG_EDIT_USER"] = $scope.endpointConfig["editUser"];
-                    $scope.advancedParams["CONFIG_DELETE_USER"] = $scope.endpointConfig["deleteUser"];
+                $scope.advancedParams["config_get_user_list"] = $scope.endpointConfig["userList"];
+                $scope.advancedParams["config_get_user_by_id"] = $scope.endpointConfig["userById"];
+                $scope.advancedParams["config_get_user_by_name"] = $scope.endpointConfig["userByName"];
+                if ($scope.advancedParams["Editable"]) {
+                    $scope.advancedParams["config_create_user"] = $scope.endpointConfig["createUser"];
+                    $scope.advancedParams["config_edit_user"] = $scope.endpointConfig["editUser"];
+                    $scope.advancedParams["config_delete_user"] = $scope.endpointConfig["deleteUser"];
                 }
 
                 // Set authorization config
                 if ($scope.advancedParams.type === "entraidresolver") {
-                    $scope.advancedParams["CLIENT_ID"] = $scope.authorizationConfig["clientId"];
-                    $scope.advancedParams["CLIENT_CREDENTIAL_TYPE"] = $scope.authorizationConfig["clientCredentialType"];
-                    if ($scope.advancedParams["CLIENT_CREDENTIAL_TYPE"] === "certificate") {
-                        $scope.advancedParams["CLIENT_CERTIFICATE"] = $scope.authorizationConfig["clientCertificate"];
+                    $scope.advancedParams["client_id"] = $scope.authorizationConfig["clientId"];
+                    $scope.advancedParams["client_credential_type"] = $scope.authorizationConfig["clientCredentialType"];
+                    if ($scope.advancedParams["client_credential_type"] === "certificate") {
+                        $scope.advancedParams["client_certificate"] = $scope.authorizationConfig["clientCertificate"];
                     } else {
-                        $scope.advancedParams["CLIENT_SECRET"] = $scope.authorizationConfig["clientSecret"];
+                        $scope.advancedParams["client_secret"] = $scope.authorizationConfig["clientSecret"];
                     }
-                    $scope.advancedParams["AUTHORITY"] = $scope.authorizationConfig["authority"];
-                    $scope.advancedParams["TENANT"] = $scope.authorizationConfig["tenant"];
+                    $scope.advancedParams["authority"] = $scope.authorizationConfig["authority"];
+                    $scope.advancedParams["tenant"] = $scope.authorizationConfig["tenant"];
                 } else {
-                    $scope.advancedParams["CONFIG_AUTHORIZATION"] = $scope.authorizationConfig;
-                    $scope.advancedParams["USERNAME"] = $scope.serviceAccount["username"];
-                    $scope.advancedParams["PASSWORD"] = $scope.serviceAccount["password"];
+                    $scope.advancedParams["config_authorization"] = $scope.authorizationConfig;
+                    $scope.advancedParams["username"] = $scope.serviceAccount["username"];
+                    $scope.advancedParams["password"] = $scope.serviceAccount["password"];
                 }
                 serverParams = $scope.advancedParams;
             } else {
@@ -1388,9 +1388,9 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
                 }
             });
             // Set empty endpoint configs to empty dicts, to indicate that an old config can be removed
-            const endpointConfigNames = ["CONFIG_GET_USER_LIST", "CONFIG_GET_USER_BY_ID",
-                "CONFIG_GET_USER_BY_NAME", "CONFIG_USER_AUTH", "CONFIG_CREATE_USER", "CONFIG_EDIT_USER",
-                "CONFIG_DELETE_USER"];
+            const endpointConfigNames = ["config_get_user_list", "config_get_user_by_id",
+                "config_get_user_by_name", "config_user_auth", "config_create_user", "config_edit_user",
+                "config_delete_user"];
             angular.forEach(endpointConfigNames, function (configName) {
                 if ($scope.endpointConfigIsEmpty(cleaned_params[configName])) {
                     cleaned_params[configName] = {};
@@ -1403,13 +1403,13 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
         // ------ ADVANCED SETTINGS ------
         $scope.advancedSettings = false;
         $scope.advancedParams = {
-            "ADVANCED": true,
+            "advanced": true,
             "type": $scope.params.type,
-            "BASE_URL": "",
-            "ATTRIBUTE_MAPPING": {"username": "", "userid": ""},
-            "EDITABLE": false,
-            "VERIFY_TLS": true,
-            "TLS_CA_PATH": "",
+            "base_url": "",
+            "attribute_mapping": {"username": "", "userid": ""},
+            "editable": false,
+            "verify_tls": true,
+            "tls_ca_path": "",
         };
 
         $scope.authorizationPlaceholders = {
@@ -1430,7 +1430,7 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
         $scope.getRemainingAttributes = function () {
             let remainingAttributes = [];
             angular.forEach($scope.piAttributes, function (attribute) {
-                if (!$scope.advancedParams.ATTRIBUTE_MAPPING.hasOwnProperty(attribute)) {
+                if (!$scope.advancedParams.attribute_mapping.hasOwnProperty(attribute)) {
                     remainingAttributes.push(attribute);
                 }
             });
@@ -1439,13 +1439,13 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
 
         $scope.addAttribute = function (attribute) {
             if (attribute && $scope.piAttributes.indexOf(attribute) > -1) {
-                $scope.advancedParams.ATTRIBUTE_MAPPING[attribute] = "";
+                $scope.advancedParams.attribute_mapping[attribute] = "";
             }
         };
 
         $scope.removeAttribute = function (attribute) {
-            if (attribute && $scope.advancedParams.ATTRIBUTE_MAPPING.hasOwnProperty(attribute)) {
-                delete $scope.advancedParams.ATTRIBUTE_MAPPING[attribute];
+            if (attribute && $scope.advancedParams.attribute_mapping.hasOwnProperty(attribute)) {
+                delete $scope.advancedParams.attribute_mapping[attribute];
             }
         };
 
@@ -1467,7 +1467,7 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
             }
         }
 
-        $scope.$watch('advancedParams.EDITABLE;',
+        $scope.$watch('advancedParams.Editable;',
             function (newValue, oldValue) {
                 if (newValue === true) {
                     $scope.userEndpointNames = {

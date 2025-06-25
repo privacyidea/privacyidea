@@ -513,7 +513,7 @@ angular.module("privacyideaApp")
                         case "httpresolver":
                         case "keycloakresolver":
                         case "entraidresolver":
-                            userinfo = resolver.data.ATTRIBUTE_MAPPING || {};
+                            userinfo = resolver.data.attribute_mapping || {};
                             delete userinfo["userid"];
                             userinfo["password"] = "";
                             break;

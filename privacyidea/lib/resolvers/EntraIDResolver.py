@@ -35,15 +35,15 @@ from privacyidea.lib.resolvers.HTTPResolver import (HTTPResolver, METHOD, ENDPOI
                                                     Error)
 import msal
 
-CLIENT_ID = "CLIENT_ID"
-CLIENT_CREDENTIAL_TYPE = "CLIENT_CREDENTIAL_TYPE"
-CLIENT_SECRET = "CLIENT_SECRET"
-CLIENT_CERTIFICATE = "CLIENT_CERTIFICATE"
-PRIVATE_KEY_FILE = "PRIVATE_KEY_FILE"
-PRIVATE_KEY_PASSWORD = "PRIVATE_KEY_PASSWORD"
-CERTIFICATE_FINGERPRINT = "CERTIFICATE_FINGERPRINT"
-TENANT = "TENANT"
-AUTHORITY = "AUTHORITY"
+CLIENT_ID = "client_id"
+CLIENT_CREDENTIAL_TYPE = "client_credential_type"
+CLIENT_SECRET = "client_secret"
+CLIENT_CERTIFICATE = "client_certificate"
+PRIVATE_KEY_FILE = "private_key_file"
+PRIVATE_KEY_PASSWORD = "private_key_password"
+CERTIFICATE_FINGERPRINT = "certificate_fingerprint"
+TENANT = "tenant"
+AUTHORITY = "authority"
 
 log = logging.getLogger(__name__)
 

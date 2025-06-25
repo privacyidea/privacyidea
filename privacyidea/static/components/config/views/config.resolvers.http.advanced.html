@@ -19,7 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     <div class="form-group row">
         <label for="baseUrl" class="col-sm-3 control-label text-right" translate>Base URL</label>
         <div class="col-sm-9">
-            <input type="text" id="baseUrl" class="form-control" ng-model="advancedParams.BASE_URL"
+            <input type="text" id="baseUrl" class="form-control" ng-model="advancedParams.base_url"
                    required
                    placeholder="http://example.com/path/to/users"/>
             <p class="help-block" translate>
@@ -53,11 +53,11 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 </tr>
                 </thead>
                 <tbody>
-                <tr ng-repeat="(piAttribute, userStoreAttribute) in advancedParams.ATTRIBUTE_MAPPING">
+                <tr ng-repeat="(piAttribute, userStoreAttribute) in advancedParams.attribute_mapping">
                     <td>{{ piAttribute }}</td>
                     <td>
                         <input type="text" class="form-control"
-                               ng-model="advancedParams.ATTRIBUTE_MAPPING[piAttribute]"
+                               ng-model="advancedParams.attribute_mapping[piAttribute]"
                                placeholder="{{ piAttribute }}"/>
                     </td>
                     <td>
@@ -100,7 +100,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <label class="col-sm-3 control-label text-right" for="editUserStore" translate>Edit user store</label>
 
         <div class="col-sm-9">
-            <input type="checkbox" id="editUserStore" ng-model="advancedParams.EDITABLE"/>
+            <input type="checkbox" id="editUserStore" ng-model="advancedParams.Editable"/>
             <p class="help-block" translate>
                 The user data in this user store can be modified from within privacyIDEA.
             </p>
@@ -111,17 +111,17 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <label class="col-sm-3 control-label text-right" for="verifyTLS" translate>Verify TLS</label>
 
         <div class="col-sm-9">
-            <input type="checkbox" id="verifyTLS" ng-model="advancedParams.VERIFY_TLS"/>
+            <input type="checkbox" id="verifyTLS" ng-model="advancedParams.verify_tls"/>
             <span class="help-block" translate>
                 Verify the TLS certificate of the server.
             </span>
 
-            <div class="well" ng-show="advancedParams.VERIFY_TLS">
+            <div class="well" ng-show="advancedParams.verify_tls">
                 <label for="tls_ca_file" class="control-label" translate>
                     The file containing the CA certificate which signed the TLS certificate of the server.
                 </label>
                 <input type="text" id="tls_ca_file" class="form-control"
-                       ng-model="advancedParams.TLS_CA_PATH"
+                       ng-model="advancedParams.tls_ca_path"
                        placeholder="path/to/resolver-server-ca.crt"/>
             </div>
         </div>
@@ -130,7 +130,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     <div class="form-group row">
         <label for="timeout" class="col-sm-3 control-label text-right" translate>Timeout (seconds)</label>
         <div class="col-sm-9">
-            <input type="text" name="timeout" id="timeout" ng-model="advancedParams.TIMEOUT"
+            <input type="text" name="timeout" id="timeout" ng-model="advancedParams.timeout"
                    placeholder='60' class="form-control"/>
             <p class="help-block" translate>
                 Time in seconds privacyIDEA tries to reach the user store server.
@@ -229,7 +229,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                                 <div class="col-sm-9">
                                     <input type="text"
                                            id="private_key_file" class="form-control"
-                                           ng-model="authorizationConfig.clientCertificate['PRIVATE_KEY_FILE']"
+                                           ng-model="authorizationConfig.clientCertificate['private_key_file']"
                                            ng-required="authorizationConfig['clientCredentialType'] === 'certificate'"/>
                                 </div>
                             </div>
@@ -239,7 +239,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                                 <div class="col-sm-9">
                                     <input type="password"
                                            id="private_key_password" class="form-control"
-                                           ng-model="authorizationConfig.clientCertificate['PRIVATE_KEY_PASSWORD']"/>
+                                           ng-model="authorizationConfig.clientCertificate['private_key_password']"/>
                                 </div>
                             </div>
                             <div class="form-group row">
@@ -248,7 +248,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                                 <div class="col-sm-9">
                                     <input type="text"
                                            id="certificate_fingerprint" class="form-control"
-                                           ng-model="authorizationConfig.clientCertificate['CERTIFICATE_FINGERPRINT']"
+                                           ng-model="authorizationConfig.clientCertificate['certificate_fingerprint']"
                                            ng-required="authorizationConfig['clientCredentialType'] === 'certificate'"/>
                                 </div>
                             </div>

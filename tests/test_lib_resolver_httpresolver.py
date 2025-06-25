@@ -5,7 +5,6 @@ from typing import Optional
 import mock
 import responses
 from _pytest.python_api import raises
-from requests import HTTPError
 
 from privacyidea.api.lib.utils import get_required
 from privacyidea.lib.error import ResolverError, ParameterError
