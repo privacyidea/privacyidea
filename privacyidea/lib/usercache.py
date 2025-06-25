@@ -210,7 +210,7 @@ def user_init(wrapped_function, self):
         resolvers = self.get_ordered_resolvers()
     for resolvername in resolvers:
         # If we could figure out a resolver, we can query the user cache
-        filter_conditions = create_filter(used_login=self.used_login, resolver=resolvername)
+        filter_conditions = create_filter(used_login=self.used_login, resolver=resolvername, user_id=self.uid)
         result = retrieve_latest_entry(filter_conditions)
         if result:
             # Cached user exists, retrieve information and exit early
