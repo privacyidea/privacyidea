@@ -11,7 +11,7 @@ import {
   TokenService,
 } from '../../../../services/token/token.service';
 
-import { from, lastValueFrom, Observable } from 'rxjs';
+import { lastValueFrom, Observable } from 'rxjs';
 import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { PushApiPayloadMapper } from '../../../../mappers/token-api-payload/push-token-api-payload.mapper';
 import { DialogService } from '../../../../services/dialog/dialog.service';
@@ -42,9 +42,7 @@ export class EnrollPushComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (
-      basicOptions: TokenEnrollmentData,
-    ) => Promise<EnrollmentResponse> | undefined
+    (basicOptions: TokenEnrollmentData) => Promise<EnrollmentResponse | null>
   >();
   @Output() reopenCurrentEnrollmentDialogChange = new EventEmitter<
     () =>
@@ -68,26 +66,40 @@ export class EnrollPushComponent implements OnInit {
 
   onClickEnroll = async (
     basicOptions: TokenEnrollmentData,
-  ): Promise<EnrollmentResponse> => {
+  ): Promise<EnrollmentResponse | null> => {
     const enrollmentData: PushEnrollmentOptions = {
       ...basicOptions,
       type: 'push',
-      // Removed generateOnServer as per "DO NOT CHANGE OTHER LINES"
     };
     const initResponse = await lastValueFrom(
       this.tokenService.enrollToken({
         data: enrollmentData,
         mapper: this.enrollmentMapper,
       }),
-    );
-    await this.pollTokenRolloutState(initResponse, 5000);
-    return initResponse;
+    ).catch((error) => {
+      return null;
+    });
+    if (!initResponse) {
+      return null;
+    }
+    const pollResponse = await this.pollTokenRolloutState(
+      initResponse,
+      5000,
+    ).catch((error) => {
+      console.log('Rollout aborted');
+      return null;
+    });
+    if (!pollResponse) {
+      return null;
+    } else {
+      return initResponse;
+    }
   };
 
-  private pollTokenRolloutState(
+  private pollTokenRolloutState = (
     initResponse: EnrollmentResponse,
     initDelay: number,
-  ): Promise<PiResponse<Tokens>> {
+  ): Promise<PiResponse<Tokens>> => {
     this._openStepOneDialog(initResponse)
       .afterClosed()
       .subscribe(() => {
@@ -109,7 +121,7 @@ export class EnrollPushComponent implements OnInit {
       },
     });
     return lastValueFrom(observable);
-  }
+  };
 
   private _openStepOneDialog(
     initResponse: EnrollmentResponse,

@@ -55,9 +55,7 @@ export class EnrollPasskeyComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (
-      basicOptions: TokenEnrollmentData,
-    ) => Promise<EnrollmentResponse> | undefined
+    (basicOptions: TokenEnrollmentData) => Promise<EnrollmentResponse | null>
   >();
   @Output() reopenCurrentEnrollmentDialogChange = new EventEmitter<
     () =>
@@ -82,7 +80,7 @@ export class EnrollPasskeyComponent implements OnInit {
 
   onClickEnroll = async (
     basicOptions: TokenEnrollmentData,
-  ): Promise<EnrollmentResponse> => {
+  ): Promise<EnrollmentResponse | null> => {
     if (!navigator.credentials?.create) {
       const errorMsg = 'Passkey/WebAuthn is not supported by this browser.';
       this.notificationService.openSnackBar(errorMsg);
@@ -114,7 +112,11 @@ export class EnrollPasskeyComponent implements OnInit {
       throw new Error('Invalid server response for Passkey initiation.');
     }
     this.openStepOneDialog({ responseStepOne, detail });
-    const publicKeyCred = this.readPublicKeyCred(responseStepOne);
+    const publicKeyCred = await this.readPublicKeyCred(responseStepOne);
+    if (publicKeyCred === null) {
+      console.log('Returning null due to credential creation failure');
+      return null;
+    }
     const resposeLastStep = await this.finalizeEnrollment({
       detail,
       publicKeyCred,
@@ -171,14 +173,14 @@ export class EnrollPasskeyComponent implements OnInit {
 
   private async readPublicKeyCred(
     responseStepOne: EnrollmentResponse,
-  ): Promise<any> {
+  ): Promise<any | null> {
     const detail = responseStepOne.detail;
     const passkeyRegOptions = detail?.passkey_registration;
     if (!passkeyRegOptions) {
       this.notificationService.openSnackBar(
         'Failed to initiate Passkey registration: Invalid server response.',
       );
-      throw new Error('Invalid server response for Passkey initiation.');
+      return null; // Return null to handle the error gracefully
     }
     const excludedCredentials = passkeyRegOptions.excludeCredentials.map(
       (cred: any) => ({
@@ -204,23 +206,22 @@ export class EnrollPasskeyComponent implements OnInit {
       extensions: { credProps: true, ...passkeyRegOptions.extensions },
       attestation: passkeyRegOptions.attestation,
     };
-
-    const publicKeyCred = (await navigator.credentials
+    console.log('PublicKeyCredentialCreationOptions:', publicKeyOptions);
+    const publicKeyCred = await navigator.credentials
       .create({ publicKey: publicKeyOptions })
       .catch((browserOrCredentialError) => {
         this.notificationService.openSnackBar(
           `Passkey credential creation failed: ${browserOrCredentialError.message}`,
         );
-        throw new Error(browserOrCredentialError);
+        return null; // Return null to handle the error gracefully
       })
       .finally(() => {
         // Ensure the dialog is closed regardless of success or failure
+        console.log('Closing Step One dialog after credential creation');
         this.closeStepOneDialog();
-      })) as any; // Type assertion to any for compatibility
+      }); // Type assertion to any for compatibility
 
-    if (!publicKeyCred) {
-      throw new Error('Passkey credential creation failed.');
-    }
+    console.log('PublicKeyCredential created:', publicKeyCred);
     return publicKeyCred;
   }
 

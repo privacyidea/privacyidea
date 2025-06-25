@@ -10,7 +10,7 @@ import {
   TokenService,
 } from '../../../../services/token/token.service';
 
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { U2fApiPayloadMapper } from '../../../../mappers/token-api-payload/u2f-token-api-payload.mapper';
 
@@ -33,9 +33,7 @@ export class EnrollU2fComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (
-      basicOptions: TokenEnrollmentData,
-    ) => Observable<EnrollmentResponse> | undefined
+    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
   u2fForm = new FormGroup({}); // No specific controls for U2F
@@ -52,7 +50,7 @@ export class EnrollU2fComponent implements OnInit {
 
   onClickEnroll = (
     basicOptions: TokenEnrollmentData,
-  ): Observable<EnrollmentResponse> | undefined => {
+  ): Observable<EnrollmentResponse | null> => {
     const enrollmentData: U2fEnrollmentOptions = {
       ...basicOptions,
       type: 'u2f',

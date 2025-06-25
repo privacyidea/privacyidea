@@ -27,7 +27,7 @@ import {
   TokenService,
 } from '../../../../services/token/token.service';
 
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { RadiusApiPayloadMapper } from '../../../../mappers/token-api-payload/radius-token-api-payload.mapper';
 
@@ -65,9 +65,7 @@ export class EnrollRadiusComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (
-      basicOptions: TokenEnrollmentData,
-    ) => Observable<EnrollmentResponse> | undefined
+    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
   radiusUserControl = new FormControl<string>(''); // Optional, depending on configuration
@@ -124,10 +122,10 @@ export class EnrollRadiusComponent implements OnInit {
 
   onClickEnroll = (
     basicOptions: TokenEnrollmentData,
-  ): Observable<EnrollmentResponse> | undefined => {
+  ): Observable<EnrollmentResponse | null> => {
     if (this.radiusForm.invalid) {
       this.radiusForm.markAllAsTouched();
-      return undefined;
+      return of(null);
     }
 
     const enrollmentData: RadiusEnrollmentOptions = {

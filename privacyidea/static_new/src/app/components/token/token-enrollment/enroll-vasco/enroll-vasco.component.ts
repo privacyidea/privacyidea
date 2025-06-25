@@ -15,7 +15,7 @@ import {
   TokenService,
 } from '../../../../services/token/token.service';
 
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { VascoApiPayloadMapper } from '../../../../mappers/token-api-payload/vasco-token-api-payload.mapper';
 
@@ -58,9 +58,7 @@ export class EnrollVascoComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (
-      basicOptions: TokenEnrollmentData,
-    ) => Observable<EnrollmentResponse> | undefined
+    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
   otpKeyControl = new FormControl<string>(''); // Validator is set dynamically
@@ -123,10 +121,10 @@ export class EnrollVascoComponent implements OnInit {
 
   onClickEnroll = (
     basicOptions: TokenEnrollmentData,
-  ): Observable<EnrollmentResponse> | undefined => {
+  ): Observable<EnrollmentResponse | null> => {
     if (this.vascoForm.invalid) {
       this.vascoForm.markAllAsTouched();
-      return undefined;
+      return of(null);
     }
 
     const enrollmentData: VascoEnrollmentOptions = {

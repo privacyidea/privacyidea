@@ -14,7 +14,7 @@ import {
   TokenService,
 } from '../../../../services/token/token.service';
 
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { SshkeyApiPayloadMapper } from '../../../../mappers/token-api-payload/sshkey-token-api-payload.mapper';
 
@@ -65,9 +65,7 @@ export class EnrollSshkeyComponent {
   ]);
 
   @Output() clickEnrollChange = new EventEmitter<
-    (
-      basicOptions: TokenEnrollmentData,
-    ) => Observable<EnrollmentResponse> | undefined
+    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
@@ -88,10 +86,10 @@ export class EnrollSshkeyComponent {
 
   onClickEnroll = (
     basicOptions: TokenEnrollmentData,
-  ): Observable<EnrollmentResponse> | undefined => {
+  ): Observable<EnrollmentResponse | null> => {
     if (this.sshPublicKeyFormControl.invalid) {
       this.sshPublicKeyFormControl.markAsTouched(); // Keep original touch logic
-      return undefined;
+      return of(null);
     }
 
     const sshPublicKey = this.sshPublicKeyFormControl?.value?.trim() ?? '';

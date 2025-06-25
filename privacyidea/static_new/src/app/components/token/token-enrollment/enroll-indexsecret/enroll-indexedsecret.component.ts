@@ -13,7 +13,7 @@ import {
   TokenService,
 } from '../../../../services/token/token.service';
 
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { IndexedSecretApiPayloadMapper } from '../../../../mappers/token-api-payload/indexedsecret-token-api-payload.mapper';
 
@@ -45,9 +45,7 @@ export class EnrollIndexedsecretComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (
-      basicOptions: TokenEnrollmentData,
-    ) => Observable<EnrollmentResponse> | undefined
+    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
   otpKeyControl = new FormControl<string>('', [
@@ -73,10 +71,10 @@ export class EnrollIndexedsecretComponent implements OnInit {
 
   onClickEnroll = (
     basicOptions: TokenEnrollmentData,
-  ): Observable<EnrollmentResponse> | undefined => {
+  ): Observable<EnrollmentResponse | null> => {
     if (this.indexedSecretForm.invalid) {
       this.indexedSecretForm.markAllAsTouched();
-      return undefined;
+      return of(null);
     }
     const enrollmentData: IndexedSecretEnrollmentOptions = {
       ...basicOptions,

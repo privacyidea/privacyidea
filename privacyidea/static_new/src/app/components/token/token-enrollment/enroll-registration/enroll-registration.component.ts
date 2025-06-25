@@ -10,7 +10,7 @@ import {
   TokenService,
 } from '../../../../services/token/token.service';
 
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { RegistrationApiPayloadMapper } from '../../../../mappers/token-api-payload/registration-token-api-payload.mapper';
 
@@ -34,9 +34,7 @@ export class EnrollRegistrationComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (
-      basicOptions: TokenEnrollmentData,
-    ) => Observable<EnrollmentResponse> | undefined
+    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
   registrationForm = new FormGroup({});
@@ -53,7 +51,7 @@ export class EnrollRegistrationComponent implements OnInit {
 
   onClickEnroll = (
     basicOptions: TokenEnrollmentData,
-  ): Observable<EnrollmentResponse> | undefined => {
+  ): Observable<EnrollmentResponse | null> => {
     const enrollmentData: RegistrationEnrollmentOptions = {
       ...basicOptions,
       type: 'registration',

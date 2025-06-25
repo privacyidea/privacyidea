@@ -20,7 +20,7 @@ import {
   TokenService,
 } from '../../../../services/token/token.service';
 
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { HotpApiPayloadMapper } from '../../../../mappers/token-api-payload/hotp-token-api-payload.mapper';
 
@@ -56,9 +56,7 @@ export class EnrollHotpComponent implements OnInit {
     .find((type) => type.key === 'hotp')?.text;
 
   @Output() clickEnrollChange = new EventEmitter<
-    (
-      basicOptions: TokenEnrollmentData,
-    ) => Observable<EnrollmentResponse> | undefined
+    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
@@ -108,7 +106,7 @@ export class EnrollHotpComponent implements OnInit {
 
   onClickEnroll = (
     basicOptions: TokenEnrollmentData,
-  ): Observable<EnrollmentResponse> | undefined => {
+  ): Observable<EnrollmentResponse | null> => {
     if (
       this.generateOnServerFormControl.invalid ||
       this.otpLengthFormControl.invalid ||
@@ -122,7 +120,7 @@ export class EnrollHotpComponent implements OnInit {
       if (!this.generateOnServerFormControl.value) {
         this.otpKeyFormControl.markAsTouched();
       }
-      return undefined;
+      return of(null); // Return an observable with null if the form is invalid
     }
 
     const enrollmentData: HotpEnrollmentOptions = {

@@ -147,7 +147,7 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
     );
   }
 
-  protected override openSecondStepDialog(response: EnrollmentResponse) {
+  protected override openSecondLastDialog(response: EnrollmentResponse) {
     const user = this.userService.userFilter();
     if (!user || typeof user === 'string') {
       return;

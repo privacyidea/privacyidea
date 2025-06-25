@@ -21,7 +21,7 @@ import {
 } from '../../../../services/token/token.service';
 import { SystemService } from '../../../../services/system/system.service';
 
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { QuestionApiPayloadMapper } from '../../../../mappers/token-api-payload/question-token-api-payload.mapper';
 export interface QuestionEnrollmentOptions extends TokenEnrollmentData {
@@ -52,9 +52,7 @@ export class EnrollQuestionComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (
-      basicOptions: TokenEnrollmentData,
-    ) => Observable<EnrollmentResponse> | undefined
+    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
   // FormGroup that is dynamically filled with FormControls for each question
@@ -135,10 +133,10 @@ export class EnrollQuestionComponent implements OnInit {
 
   onClickEnroll = (
     basicOptions: TokenEnrollmentData,
-  ): Observable<EnrollmentResponse> | undefined => {
+  ): Observable<EnrollmentResponse | null> => {
     if (this.questionForm.invalid) {
       this.questionForm.markAllAsTouched();
-      return undefined;
+      return of(null);
     }
 
     const answers: Record<string, string> = {};

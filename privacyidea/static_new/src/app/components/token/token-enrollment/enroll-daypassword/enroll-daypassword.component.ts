@@ -20,7 +20,7 @@ import {
   TokenService,
 } from '../../../../services/token/token.service';
 import { MatCheckbox } from '@angular/material/checkbox';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { DaypasswordApiPayloadMapper } from '../../../../mappers/token-api-payload/daypassword-token-api-payload.mapper';
 export interface DaypasswordEnrollmentOptions extends TokenEnrollmentData {
@@ -60,9 +60,7 @@ export class EnrollDaypasswordComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (
-      basicOptions: TokenEnrollmentData,
-    ) => Observable<EnrollmentResponse> | undefined
+    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
   otpKeyControl = new FormControl<string>(''); // Validators set dynamically
@@ -134,10 +132,10 @@ export class EnrollDaypasswordComponent implements OnInit {
 
   onClickEnroll = (
     basicOptions: TokenEnrollmentData,
-  ): Observable<EnrollmentResponse> | undefined => {
+  ): Observable<EnrollmentResponse | null> => {
     if (this.daypasswordForm.invalid) {
       this.daypasswordForm.markAllAsTouched();
-      return undefined;
+      return of(null);
     }
     const enrollmentData: DaypasswordEnrollmentOptions = {
       ...basicOptions,

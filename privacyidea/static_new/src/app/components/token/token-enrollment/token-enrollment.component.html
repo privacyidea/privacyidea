@@ -352,7 +352,7 @@
       </button>
       <button
         (click)="reopenEnrollmentDialog()"
-        [disabled]="enrollResponse() === null"
+        [disabled]="!canReopenEnrollmentDialog()"
         mat-icon-button>
         <mat-icon>open_in_new</mat-icon>
       </button>

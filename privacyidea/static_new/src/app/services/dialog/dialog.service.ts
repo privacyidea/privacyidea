@@ -45,9 +45,9 @@ export class DialogService {
       TokenEnrollmentFirstStepDialogComponent,
       config,
     );
-    this._tokenEnrollmentFirstStepRef
-      .afterClosed()
-      .subscribe(() => (this._tokenEnrollmentFirstStepRef = null));
+    this._tokenEnrollmentFirstStepRef.afterClosed().subscribe(() => {
+      this._tokenEnrollmentFirstStepRef = null;
+    });
     return this._tokenEnrollmentFirstStepRef;
   }
 
@@ -57,6 +57,7 @@ export class DialogService {
     }
   }
   isTokenEnrollmentFirstStepDialogOpen(): boolean {
+    console.log('First step dialog open:', !!this._tokenEnrollmentFirstStepRef);
     return !!this._tokenEnrollmentFirstStepRef;
   }
 
@@ -78,9 +79,9 @@ export class DialogService {
       TokenEnrollmentLastStepDialogComponent,
       config,
     );
-    this._tokenEnrollmentLastStepRef
-      .afterClosed()
-      .subscribe(() => (this._tokenEnrollmentLastStepRef = null));
+    this._tokenEnrollmentLastStepRef.afterClosed().subscribe(() => {
+      this._tokenEnrollmentLastStepRef = null;
+    });
     return this._tokenEnrollmentLastStepRef;
   }
   closeTokenEnrollmentLastStepDialog(): void {

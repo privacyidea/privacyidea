@@ -23,7 +23,7 @@ import {
   TokenService,
 } from '../../../../services/token/token.service';
 
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { ApplspecApiPayloadMapper } from '../../../../mappers/token-api-payload/applspec-token-api-payload.mapper';
 
@@ -67,9 +67,7 @@ export class EnrollApplspecComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (
-      basicOptions: TokenEnrollmentData,
-    ) => Observable<EnrollmentResponse> | undefined
+    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
   serviceIdControl = new FormControl<string>('', [Validators.required]);
@@ -115,10 +113,10 @@ export class EnrollApplspecComponent implements OnInit {
 
   onClickEnroll = (
     basicOptions: TokenEnrollmentData,
-  ): Observable<EnrollmentResponse> | undefined => {
+  ): Observable<EnrollmentResponse | null> => {
     if (this.applspecForm.invalid) {
       this.applspecForm.markAllAsTouched();
-      return undefined;
+      return of(null);
     }
     const enrollmentData: ApplspecEnrollmentOptions = {
       ...basicOptions,

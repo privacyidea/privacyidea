@@ -83,7 +83,7 @@ import { EnrollPasskeyComponent } from './enroll-passkey/enroll-passkey.componen
 import { VersionService } from '../../../services/version/version.service';
 import { ContentService } from '../../../services/content/content.service';
 
-import { from, Observable } from 'rxjs';
+import { from, lastValueFrom, Observable } from 'rxjs';
 import { TokenEnrollmentData } from '../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { DialogService } from '../../../services/dialog/dialog.service';
 import { TokenEnrollmentLastStepDialogData } from './token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component';
@@ -252,20 +252,25 @@ export class TokenEnrollmentComponent {
     return false;
   });
 
-  clickEnroll?: (
-    enrollementOptions: TokenEnrollmentData,
-  ) => Observable<EnrollmentResponse> | Promise<EnrollmentResponse> | undefined;
+  clickEnroll?:
+    | ((
+        enrollementOptions: TokenEnrollmentData,
+      ) =>
+        | Observable<EnrollmentResponse | null>
+        | Promise<EnrollmentResponse | null>)
+    | undefined;
   updateClickEnroll(
-    event: (
-      enrollementOptions: TokenEnrollmentData,
-    ) =>
-      | Observable<EnrollmentResponse>
-      | Promise<EnrollmentResponse>
+    event:
+      | ((
+          enrollementOptions: TokenEnrollmentData,
+        ) =>
+          | Promise<EnrollmentResponse | null>
+          | Observable<EnrollmentResponse | null>)
       | undefined,
   ): void {
     this.clickEnroll = event;
   }
-  reopenCurrentEnrollmentDialog: WritableSignal<
+  reopenCurrentEnrollmentDialogSignal: WritableSignal<
     | (() =>
         | Promise<EnrollmentResponse | void>
         | Observable<EnrollmentResponse | void>)
@@ -279,7 +284,7 @@ export class TokenEnrollmentComponent {
       | undefined,
   ): void {
     console.log('Updating reopenCurrentEnrollmentDialog: ', event);
-    this.reopenCurrentEnrollmentDialog.set(event);
+    this.reopenCurrentEnrollmentDialogSignal.set(event);
   }
 
   // This signal might not be needed if children manage their forms entirely.
@@ -444,7 +449,7 @@ export class TokenEnrollmentComponent {
     return `${year}-${month}-${day}T${formattedHours}:${formattedMinutes}${offsetNoColon}`;
   }
 
-  enrollToken(): void {
+  protected async enrollToken(): Promise<void> {
     const currentTokenType = this.tokenService.selectedTokenType();
     var everythingIsValid = true;
     if (!currentTokenType) {
@@ -502,12 +507,11 @@ export class TokenEnrollmentComponent {
     };
 
     const enrollResponse = this.clickEnroll(basicOptions);
-    var enrollObservable: Observable<EnrollmentResponse> | undefined =
-      undefined;
+    var enrollPromise: Promise<EnrollmentResponse | null>;
     if (enrollResponse instanceof Promise) {
-      enrollObservable = from(enrollResponse);
+      enrollPromise = enrollResponse;
     } else if (enrollResponse instanceof Observable) {
-      enrollObservable = enrollResponse;
+      enrollPromise = lastValueFrom(enrollResponse);
     } else {
       this.notificationService.openSnackBar(
         'Failed to enroll token. No response returned.',
@@ -515,21 +519,17 @@ export class TokenEnrollmentComponent {
       console.error('Failed to enroll token. No response returned.');
       return;
     }
-    enrollObservable.subscribe({
-      next: (enrollmentResponse) => {
-        this.enrollResponse.set(enrollmentResponse);
-        this.handleEnrollmentResponse(enrollmentResponse);
-      },
-      error: (error) => {
-        const message = error.error?.result?.error?.message || '';
-        this.notificationService.openSnackBar(
-          `Failed to enroll token: ${message || error.message || error}`,
-        );
-      },
-      complete: () => {
-        this.dialogService.closeTokenEnrollmentFirstStepDialog();
-      },
+    enrollPromise.catch((error) => {
+      const message = error.error?.result?.error?.message || '';
+      this.notificationService.openSnackBar(
+        `Failed to enroll token: ${message || error.message || error}`,
+      );
     });
+    const enrollmentResponse = await enrollPromise;
+    this.enrollResponse.set(enrollmentResponse);
+    if (enrollmentResponse) {
+      this.handleEnrollmentResponse(enrollmentResponse);
+    }
   }
 
   validateUserNameFilterControl(): boolean {
@@ -564,15 +564,17 @@ export class TokenEnrollmentComponent {
 
   _lastTokenEnrollmentLastStepDialogData: TokenEnrollmentLastStepDialogData | null =
     null;
-  canReopenEnrollmentDialog(): boolean {
-    return (
-      this.reopenCurrentEnrollmentDialog !== null ||
-      this._lastTokenEnrollmentLastStepDialogData !== null
-    );
-  }
+
+  canReopenEnrollmentDialog = computed(
+    () =>
+      !!this.reopenCurrentEnrollmentDialogSignal() ||
+      !!this._lastTokenEnrollmentLastStepDialogData,
+  );
+
   reopenEnrollmentDialog() {
-    if (this.reopenCurrentEnrollmentDialog) {
-      this.reopenCurrentEnrollmentDialog();
+    const reopenFunction = this.reopenCurrentEnrollmentDialogSignal();
+    if (reopenFunction) {
+      reopenFunction();
       return;
     }
     if (this._lastTokenEnrollmentLastStepDialogData) {
@@ -589,7 +591,7 @@ export class TokenEnrollmentComponent {
     );
   }
 
-  protected openSecondStepDialog(response: EnrollmentResponse | null) {
+  protected openSecondLastDialog(response: EnrollmentResponse | null) {
     if (!response) {
       this.notificationService.openSnackBar(
         'No enrollment response available.',
@@ -638,6 +640,6 @@ export class TokenEnrollmentComponent {
     //   default:
     //     break;
     //   }
-    this.openSecondStepDialog(response);
+    this.openSecondLastDialog(response);
   }
 }

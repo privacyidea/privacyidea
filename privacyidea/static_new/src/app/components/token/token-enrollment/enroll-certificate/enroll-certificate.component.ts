@@ -1,12 +1,9 @@
 import {
   Component,
   EventEmitter,
-  Input,
   linkedSignal,
   OnInit,
   Output,
-  signal,
-  WritableSignal,
 } from '@angular/core';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
@@ -29,7 +26,7 @@ import {
   TokenService,
 } from '../../../../services/token/token.service';
 
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { CertificateApiPayloadMapper } from '../../../../mappers/token-api-payload/certificate-token-api-payload.mapper';
 
@@ -74,9 +71,7 @@ export class EnrollCertificateComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (
-      basicOptions: TokenEnrollmentData,
-    ) => Observable<EnrollmentResponse> | undefined
+    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
   caConnectorControl = new FormControl<string>('', [Validators.required]);
@@ -153,10 +148,10 @@ export class EnrollCertificateComponent implements OnInit {
 
   onClickEnroll = (
     basicOptions: TokenEnrollmentData,
-  ): Observable<EnrollmentResponse> | undefined => {
+  ): Observable<EnrollmentResponse | null> => {
     if (this.certificateForm.invalid) {
       this.certificateForm.markAllAsTouched();
-      return undefined;
+      return of(null);
     }
     const enrollmentData: CertificateEnrollmentOptions = {
       ...basicOptions,

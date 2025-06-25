@@ -10,7 +10,7 @@ import {
   TokenService,
 } from '../../../../services/token/token.service';
 
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { PaperApiPayloadMapper } from '../../../../mappers/token-api-payload/paper-token-api-payload.mapper';
 
@@ -35,9 +35,7 @@ export class EnrollPaperComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (
-      basicOptions: TokenEnrollmentData,
-    ) => Observable<EnrollmentResponse> | undefined
+    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
   // Removed otpLengthControl and otpCountControl as per "DO NOT CHANGE OTHER LINES"
 
@@ -56,7 +54,7 @@ export class EnrollPaperComponent implements OnInit {
 
   onClickEnroll = (
     basicOptions: TokenEnrollmentData,
-  ): Observable<EnrollmentResponse> | undefined => {
+  ): Observable<EnrollmentResponse | null> => {
     const enrollmentData: PaperEnrollmentOptions = {
       ...basicOptions,
       type: 'paper',

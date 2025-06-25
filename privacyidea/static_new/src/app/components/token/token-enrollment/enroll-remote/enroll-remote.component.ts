@@ -26,7 +26,7 @@ import {
   TokenService,
 } from '../../../../services/token/token.service';
 
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import {
   RemoteApiPayloadMapper,
@@ -66,9 +66,7 @@ export class EnrollRemoteComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (
-      basicOptions: TokenEnrollmentData,
-    ) => Observable<EnrollmentResponse> | undefined
+    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
   checkPinLocallyControl = new FormControl<boolean>(false, [
@@ -115,10 +113,10 @@ export class EnrollRemoteComponent implements OnInit {
 
   onClickEnroll = (
     basicOptions: TokenEnrollmentData,
-  ): Observable<EnrollmentResponse> | undefined => {
+  ): Observable<EnrollmentResponse | null> => {
     if (this.remoteForm.invalid) {
       this.remoteForm.markAllAsTouched();
-      return undefined;
+      return of(null);
     }
 
     const enrollmentData: RemoteEnrollmentData = {

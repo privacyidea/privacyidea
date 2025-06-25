@@ -54,9 +54,7 @@ export class EnrollWebauthnComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (
-      basicOptions: TokenEnrollmentData,
-    ) => Observable<EnrollmentResponse> | undefined
+    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
   @Output() reopenCurrentEnrollmentDialogChange = new EventEmitter<
     () =>
