@@ -5939,8 +5939,8 @@ class MultiChallengeEnrollTest(MyApiTestCase):
 
         # Test that the max token policies are not checked if there is no need to enroll a new token
         token2 = init_token({"type": "hotp", "genkey": True}, user)
-        with (mock.patch("privacyidea.api.lib.prepolicy.check_max_token_user") as mock_check_max_token_user,
-              mock.patch("privacyidea.api.lib.prepolicy.check_max_token_realm") as mock_check_max_token_realm):
+        with mock.patch("privacyidea.api.lib.prepolicy.check_max_token_user") as mock_check_max_token_user, mock.patch(
+                "privacyidea.api.lib.prepolicy.check_max_token_realm") as mock_check_max_token_realm:
             self._authenticate_no_token_enrolled(user, spass, check_audit=False)
             self.assertEqual(0, mock_check_max_token_user.call_count)
             self.assertEqual(0, mock_check_max_token_realm.call_count)
