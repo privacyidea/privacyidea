@@ -1,5 +1,8 @@
+import mock
+import responses
 
-from privacyidea.lib.resolvers.EntraIDResolver import AUTHORITY
+from privacyidea.lib.resolvers.EntraIDResolver import (AUTHORITY, CLIENT_ID, CLIENT_CREDENTIAL_TYPE,
+                                                       ClientCredentialType, CLIENT_SECRET, TENANT)
 from privacyidea.lib.resolvers.HTTPResolver import (ATTRIBUTE_MAPPING, CONFIG_GET_USER_LIST, CONFIG_GET_USER_BY_ID,
                                                     CONFIG_GET_USER_BY_NAME, EDITABLE, HEADERS, ADVANCED,
                                                     CONFIG_AUTHORIZATION)
@@ -7,6 +10,7 @@ from privacyidea.models import (Resolver,
                                 ResolverConfig,
                                 db)
 from .base import MyTestCase, MyApiTestCase
+from .test_lib_resolver_httpresolver import ConfidentialClientApplicationMock
 
 
 class ResolverModelTestCase(MyTestCase):
@@ -103,6 +107,36 @@ class APIResolverTestCase(MyApiTestCase):
             self.assertIn(CONFIG_GET_USER_BY_NAME, config)
             self.assertIn(CONFIG_AUTHORIZATION, config)
             self.assertNotIn(AUTHORITY, config)  # Keycloak does not use AUTHORITY
+
+    @responses.activate
+    def test_03_test_resolver(self):
+        # user list response
+        responses.add(responses.GET, "https://graph.microsoft.com/v1.0/users", status=200,
+                      body="""{"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users",
+                                        "value": [{"businessPhones": ["425-555-0100"],
+                                                   "displayName": "MOD Administrator",
+                                                   "givenName": "MOD",
+                                                   "jobTitle": null,
+                                                   "mail": null,
+                                                   "mobilePhone": "425-555-0101",
+                                                   "officeLocation": null,
+                                                   "preferredLanguage": "en-US",
+                                                   "surname": "Administrator",
+                                                   "userPrincipalName": "admin@contoso.com",
+                                                   "id": "4562bcc8-c436-4f95-b7c0-4f8ce89dca5e"}]}""")
+
+        params = {CLIENT_ID: "1234", CLIENT_CREDENTIAL_TYPE: ClientCredentialType.SECRET.value, CLIENT_SECRET: "secret",
+                  TENANT: "organization", "type": "entraidresolver"}
+        with self.app.test_request_context('/resolver/test',
+                                           data=params,
+                                           method='POST',
+                                           headers={"Authorization": self.at}):
+            with mock.patch("privacyidea.lib.resolvers.EntraIDResolver.msal.ConfidentialClientApplication",
+                            new=ConfidentialClientApplicationMock):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                self.assertTrue(res.json['result']['status'], res.json)
+                self.assertTrue(res.json['result']['value'], res.json)
 
     def test_02_create_realm(self):
         realm = "realm1"

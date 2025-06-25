@@ -30,9 +30,8 @@ import copy
 from dataclasses import dataclass
 from enum import Enum
 from typing import Union, Optional
-from urllib.error import HTTPError
 
-from requests import Response
+from requests import Response, HTTPError
 
 from .UserIdResolver import UserIdResolver
 import requests
@@ -832,7 +831,7 @@ class HTTPResolver(UserIdResolver):
 
             response = self._do_request(config, config.request_mapping)
 
-            success = self._default_error_handling(response, config)
+            success = self._auth_header_error_handling(response, config)
             if success:
                 json_result = response.json()
                 auth_header = self._apply_response_mapping(config, json_result)
@@ -997,6 +996,22 @@ class HTTPResolver(UserIdResolver):
 
     # Error Handling
 
+    def _custom_error_handling(self, response: Response, config: RequestConfig) -> bool:
+        """
+        Checks if all entries of the custom error response are contained in the response.
+        """
+        success = True
+        if response.status_code != 204:
+            # If the response is not empty, we can check for custom error handling
+            if config.has_error_handler:
+                json_result = response.json()
+                # verify if error response mapping is a subset of the json http response
+                if isinstance(json_result, dict) and config.error_response is not None:
+                    if all([x in json_result.items() for x in config.error_response.items()]):
+                        log.error(json_result)
+                        success = False
+        return success
+
     def _default_error_handling(self, response: Response, config: RequestConfig) -> bool:
         """
         Checks if an HTTP error occurred and raise it or if the custom error handling fits the response.
@@ -1005,22 +1020,14 @@ class HTTPResolver(UserIdResolver):
         :param config: Configuration for the endpoint containing information about special error handling
         :return: True if the request was successful, False otherwise
         """
-        success = True
+        try:
+            # Raises HTTPError, if one occurred.
+            response.raise_for_status()
+        except HTTPError as error:
+            log.info(f"HTTP error occurred: {error}")
+            return False
 
-        # Raises HTTPError, if one occurred.
-        # TODO: Raise HTTP Error or Resolver Error with custom status code checking?
-        response.raise_for_status()
-
-        if response.status_code != 204:
-            # If the response is not empty, we can check for custom error handling
-            json_result = response.json()
-
-            # Custom Error handling
-            if config.has_error_handler:
-                # verify if error response mapping is a subset of the json http response
-                if all([x in json_result.items() for x in config.error_response.items()]):
-                    log.error(json_result)
-                    success = False
+        success = self._custom_error_handling(response, config)
         return success
 
     def _get_user_list_error_handling(self, response: Response, config: RequestConfig):
@@ -1084,6 +1091,17 @@ class HTTPResolver(UserIdResolver):
         success = self._default_error_handling(response, config)
         return success
 
+    def _auth_header_error_handling(self, response: Response, config: RequestConfig) -> bool:
+        """
+        Handles the error response from the user store when trying to get the authorization header.
+
+        :param response: The response object from the HTTP request
+        :param config: Configuration for the endpoint containing information about special error handling
+        :return: True if the password check was successful, False otherwise
+        """
+        success = self._default_error_handling(response, config)
+        return success
+
     def _user_auth_error_handling(self, response: Response, config: RequestConfig, user_identifier: str) -> bool:
         """
         Handles the error response from the user store when checking a user's password
@@ -1093,8 +1111,5 @@ class HTTPResolver(UserIdResolver):
         :param user_identifier: The user identifier (username or user id)
         :return: True if the password check was successful, False otherwise
         """
-        try:
-            success = self._default_error_handling(response, config)
-        except HTTPError:
-            success = False
+        success = self._default_error_handling(response, config)
         return success

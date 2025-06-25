@@ -31,7 +31,7 @@ from privacyidea.lib.resolvers.SCIMIdResolver import IdResolver as SCIMResolver
 from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
 from privacyidea.lib.resolvers.LDAPIdResolver import (SERVERPOOL_ROUNDS, SERVERPOOL_SKIP)
 from privacyidea.lib.resolvers.HTTPResolver import (HEADERS, METHOD, ENDPOINT, EDITABLE, CONFIG_GET_USER_BY_NAME,
-                                                    HTTPMethod, CONFIG_GET_USER_BY_ID)
+                                                    HTTPMethod, CONFIG_GET_USER_BY_ID, ADVANCED)
 
 from privacyidea.lib.resolver import (save_resolver,
                                       delete_resolver,
@@ -2450,7 +2450,7 @@ class ResolverTestCase(MyTestCase):
                   CLIENT_CREDENTIAL_TYPE: ClientCredentialType.CERTIFICATE.value,
                   CLIENT_CERTIFICATE: {PRIVATE_KEY_FILE: "tests/testdata/cert.pem", PRIVATE_KEY_PASSWORD: "Test1234",
                                        CERTIFICATE_FINGERPRINT: "1234567890abcdef1234567890abcdef12345678"},
-                  HEADERS: {"Content-Type": "application/json"},
+                  HEADERS: {"Content-Type": "application/json"}, ADVANCED: True,
                   CONFIG_GET_USER_BY_NAME: {METHOD: HTTPMethod.GET.value, ENDPOINT: "/users/{username}"}}
         save_resolver(config)
         reso_list = get_resolver_list(filter_resolver_name="EntraID")
@@ -2458,7 +2458,7 @@ class ResolverTestCase(MyTestCase):
         # Dicts are already loaded (for advanced HTTPResolvers also the headers)
         self.assertTrue(isinstance(reso_data[CLIENT_CERTIFICATE], dict))
         self.assertTrue(isinstance(reso_data[CONFIG_GET_USER_BY_NAME], dict))
-        self.assertDictEqual({"Content-Type": "application/json"}, config[HEADERS])
+        self.assertDictEqual({"Content-Type": "application/json"}, reso_data[HEADERS])
         # Data should not be censored
         self.assertEqual("Test1234", reso_data[CLIENT_CERTIFICATE][PRIVATE_KEY_PASSWORD])
 
@@ -2466,9 +2466,13 @@ class ResolverTestCase(MyTestCase):
         entra_resolver = Resolver.query.filter_by(name="EntraID").first()
         ResolverConfig(entra_resolver.id, Key=CONFIG_GET_USER_BY_ID,
                        Value="{'method': 'GET', 'endpoint': '/users/{userid}'}", Type="dict").save()
+        ResolverConfig(entra_resolver.id, Key=CLIENT_CERTIFICATE,
+                       Value="{'PRIVATE_KEY_FILE': 'tests/tesdata/cert.pem', 'PRIVATE_KEY_PASSWORD': 'Test123', 'CERTIFICATE_FINGERPRINT': '123456'}",
+                       Type="dict").save()
         reso_list = get_resolver_list(filter_resolver_name="EntraID")
         reso_data = reso_list["EntraID"]["data"]
         self.assertTrue(isinstance(reso_data[CONFIG_GET_USER_BY_ID], str))
+        self.assertTrue(isinstance(reso_data[CLIENT_CERTIFICATE], str))
         delete_resolver("EntraID")
 
     def test_04_get_resolver_config(self):

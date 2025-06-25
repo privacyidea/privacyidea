@@ -19,7 +19,7 @@ from privacyidea.lib.resolvers.HTTPResolver import (HTTPResolver, RequestConfig,
                                                     CONFIG_AUTHORIZATION, PASSWORD, USERNAME, VERIFY_TLS, TLS_CA_PATH,
                                                     TIMEOUT, CONFIG_GET_USER_LIST, CONFIG_GET_USER_BY_ID,
                                                     CONFIG_GET_USER_BY_NAME, ADVANCED, CONFIG_CREATE_USER,
-                                                    CONFIG_USER_AUTH, CONFIG_DELETE_USER, CONFIG_EDIT_USER)
+                                                    CONFIG_USER_AUTH, CONFIG_DELETE_USER, CONFIG_EDIT_USER, HTTPMethod)
 from privacyidea.lib.resolvers.KeycloakResolver import KeycloakResolver, REALM
 from tests.base import MyTestCase
 
@@ -69,6 +69,21 @@ class RequestConfigTestCase(MyTestCase):
         self.assertTrue(config.has_error_handler)
         self.assertDictEqual({"success": False}, config.error_response)
 
+        # Empty strings for dicts are handled as empty dicts
+        config_dict = {ENDPOINT: "http://example.com/users/{username}",
+                       METHOD: "get",
+                       HEADERS: '',
+                       REQUEST_MAPPING: '',
+                       RESPONSE_MAPPING: '',
+                       HAS_ERROR_HANDLER: True,
+                       ERROR_RESPONSE: ''
+                       }
+        config = RequestConfig(config_dict, {})
+        self.assertDictEqual({}, config.headers)
+        self.assertDictEqual({}, config.request_mapping)
+        self.assertDictEqual({}, config.response_mapping)
+        self.assertDictEqual({}, config.error_response)
+
         # different content type
         config_dict = {ENDPOINT: "http://example.com/checkPass",
                        METHOD: "post",
@@ -105,10 +120,16 @@ class RequestConfigTestCase(MyTestCase):
         # Invalid response mapping JSON format
         config_dict[RESPONSE_MAPPING] = '{"username": "{Username}"; "email": "{Email}"}'
         self.assertRaises(ParameterError, RequestConfig, config_dict, {}, {"userid": "1234", "username": "test"})
+        # Invalid datatype
+        config_dict[RESPONSE_MAPPING] = ["username", "{Username}", "email", "{Email}"]
+        self.assertRaises(ParameterError, RequestConfig, config_dict, {}, {"userid": "1234", "username": "test"})
         config_dict[RESPONSE_MAPPING] = '{"username": "{Username}", "email": "{Email}"}'
 
         # Invalid error response
         config_dict[ERROR_RESPONSE] = '{"success": False}'
+        self.assertRaises(ParameterError, RequestConfig, config_dict, {}, {"userid": "1234", "username": "test"})
+        # invalid datatype
+        config_dict[ERROR_RESPONSE] = ["success", False]
         self.assertRaises(ParameterError, RequestConfig, config_dict, {}, {"userid": "1234", "username": "test"})
 
     def test_03_init_missing_params(self):
@@ -172,20 +193,42 @@ class HTTPResolverTestCase(MyTestCase):
     }
     """
 
-    def test_01_load_basic_config_success(self):
-        params = {
-            'endpoint': self.ENDPOINT,
-            'method': self.METHOD,
-            'headers': self.HEADERS,
-            'requestMapping': self.REQUEST_MAPPING,
-            'responseMapping': self.RESPONSE_MAPPING,
-            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponse': self.ERROR_RESPONSE_MAPPING
-        }
+    def setUp(self):
+        self.basic_config = {'endpoint': self.ENDPOINT,
+                             'method': self.METHOD,
+                             'headers': self.HEADERS,
+                             'requestMapping': self.REQUEST_MAPPING,
+                             'responseMapping': self.RESPONSE_MAPPING,
+                             'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
+                             'errorResponse': self.ERROR_RESPONSE_MAPPING}
 
+        self.advanced_config = {BASE_URL: "https://example.com", EDITABLE: True,
+                                ATTRIBUTE_MAPPING: {"username": "login", "userid": "id", "givenname": "first_name",
+                                                    "surname": "last_name"},
+                                CONFIG_GET_USER_BY_ID: {METHOD: HTTPMethod.GET.value, ENDPOINT: "/users/{userid}",
+                                                        HAS_ERROR_HANDLER: True, ERROR_RESPONSE: '{"success": false}'},
+                                CONFIG_GET_USER_BY_NAME: {METHOD: HTTPMethod.GET.value, ENDPOINT: "/users/{username}",
+                                                          HAS_ERROR_HANDLER: True,
+                                                          ERROR_RESPONSE: '{"success": false}'},
+                                CONFIG_GET_USER_LIST: {METHOD: HTTPMethod.GET.value, ENDPOINT: "/users",
+                                                       HAS_ERROR_HANDLER: True, ERROR_RESPONSE: '{"success": false}'},
+                                CONFIG_CREATE_USER: {METHOD: HTTPMethod.POST.value, ENDPOINT: "/users",
+                                                     REQUEST_MAPPING: '{"enabled": true}', HAS_ERROR_HANDLER: True,
+                                                     ERROR_RESPONSE: '{"success": false}'},
+                                CONFIG_EDIT_USER: {METHOD: HTTPMethod.PUT.value, ENDPOINT: "/users/{userid}",
+                                                   HAS_ERROR_HANDLER: True, ERROR_RESPONSE: '{"success": false}'},
+                                CONFIG_DELETE_USER: {METHOD: HTTPMethod.DELETE.value, ENDPOINT: "/users/{userid}",
+                                                     HAS_ERROR_HANDLER: True, ERROR_RESPONSE: '{"success": false}'},
+                                CONFIG_USER_AUTH: {METHOD: HTTPMethod.POST.value, ENDPOINT: "/auth",
+                                                   REQUEST_MAPPING: '{"grant_type": "password", "username": "{username}", "password": "{password}"}',
+                                                   RESPONSE_MAPPING: '{"access_token": "{access_token}"}',
+                                                   HAS_ERROR_HANDLER: True, ERROR_RESPONSE: '{"success": false}'}
+                                }
+
+    def test_01_load_basic_config_success(self):
         # Test with valid data
         instance = HTTPResolver()
-        instance.loadConfig(params)
+        instance.loadConfig(self.basic_config)
         rid = instance.getResolverId()
         self.assertEqual(rid, self.ENDPOINT)
         r_type = instance.getResolverClassDescriptor()
@@ -265,6 +308,11 @@ class HTTPResolverTestCase(MyTestCase):
         self.assertFalse(resolver.tls)
         self.assertEqual(60, resolver.timeout)
 
+        # Empty string for headers is handled as empty dict
+        config[HEADERS] = ''
+        resolver.loadConfig(config)
+        self.assertDictEqual({}, resolver.headers)
+
     def test_04_load_advanced_config_fails(self):
         config = {BASE_URL: "https://example.com/api",
                   ATTRIBUTE_MAPPING: {"username": "login", "userid": "id"},
@@ -294,71 +342,102 @@ class HTTPResolverTestCase(MyTestCase):
         config[TIMEOUT] = "30.5"
         self.assertRaises(ParameterError, HTTPResolver().loadConfig, config)
 
+    @responses.activate
     def test_05_get_user_list(self):
+        # Basic resolver without user list config returns empty list
         instance = HTTPResolver()
-        instance.loadConfig({
-            'endpoint': self.ENDPOINT,
-            'method': self.METHOD,
-            'headers': self.HEADERS,
-            'requestMapping': self.REQUEST_MAPPING,
-            'responseMapping': self.RESPONSE_MAPPING,
-            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponse': self.ERROR_RESPONSE_MAPPING
-        })
+        instance.loadConfig(self.basic_config)
         users = instance.getUserList()
         self.assertEqual(len(users), 0)
 
+        # success
+        instance.loadConfig(self.advanced_config)
+        responses.add(responses.GET, "https://example.com/users", status=200,
+                      body="""[{"login": "testuser", "first_name": "Test", "last_name": "User", "id": "1234", "businessPhone": "+1234567890"},
+                                {"login": "corny", "first_name": "Corny", "last_name": "Meier", "id": "5678"}]""")
+        users = instance.getUserList()
+        self.assertEqual(len(users), 2)
+        self.assertEqual(users[0]['username'], 'testuser')
+        self.assertEqual(users[0]['givenname'], 'Test')
+        self.assertEqual(users[0]['surname'], 'User')
+        self.assertEqual(users[0]['userid'], '1234')
+        self.assertEqual(4, len(users[0]))
+
+        # success with filter
+        responses.add(responses.GET, "https://example.com/users?first_name=Test", status=200,
+                        body="""[{"login": "testuser", "first_name": "Test", "last_name": "User", "id": "1234"}]""")
+        users = instance.getUserList({"givenname": "Test", "favorite_color": "blue"})
+        self.assertEqual(len(users), 1)
+        self.assertEqual(users[0]['username'], 'testuser')
+
+        # fails
+        responses.add(responses.GET, "https://example.com/users", status=400,
+                      body="""{"error": "Bad Request", "message": "Invalid request"}""")
+        self.assertRaises(ResolverError, instance.getUserList)
+
+        # custom error handling
+        responses.add(responses.GET, "https://example.com/users", status=200, body="""{"success": false}""")
+        self.assertRaises(ResolverError, instance.getUserList)
+
     @responses.activate
     def test_06_get_username(self):
-        responses.add(
-            self.METHOD,
-            self.ENDPOINT,
-            status=200,
-            adding_headers=json.loads(self.HEADERS),
-            body=self.BODY_RESPONSE_OK
-        )
-
+        # Basic resolver
+        responses.add(self.METHOD, self.ENDPOINT, status=200, adding_headers=json.loads(self.HEADERS),
+                      body=self.BODY_RESPONSE_OK)
         instance = HTTPResolver()
-        instance.loadConfig({
-            'endpoint': self.ENDPOINT,
-            'method': self.METHOD,
-            'headers': self.HEADERS,
-            'requestMapping': self.REQUEST_MAPPING,
-            'responseMapping': self.RESPONSE_MAPPING,
-            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponse': self.ERROR_RESPONSE_MAPPING
-        })
+        instance.loadConfig(self.basic_config)
         username = instance.getUsername('pepe_perez')
         self.assertEqual(username, 'PepePerez')
 
+        # Advanced resolver success
+        resolver = HTTPResolver()
+        resolver.loadConfig(self.advanced_config)
+        responses.add(responses.GET, "https://example.com/users/1234", status=200,
+                      body="""{"login": "testuser", "first_name": "Test", "last_name": "User", "id": "1234"}""")
+        username = resolver.getUsername('1234')
+        self.assertEqual('testuser', username)
+
+        # Error
+        responses.add(responses.GET, "https://example.com/users/1234", status=404,
+                      body="""{"error": "Not Found"}""")
+        self.assertRaises(ResolverError, resolver.getUsername, '1234')
+
+        # Custom error handling
+        responses.add(responses.GET, "https://example.com/users/1234", status=200,
+                      body="""{"success": false}""")
+        self.assertRaises(ResolverError, resolver.getUsername, '1234')
+
     @responses.activate
     def test_07_get_user_id(self):
+        # Basic resolver (no get user by name config) only echos the username
         instance = HTTPResolver()
-        instance.loadConfig({
-            'endpoint': self.ENDPOINT,
-            'method': self.METHOD,
-            'headers': self.HEADERS,
-            'requestMapping': self.REQUEST_MAPPING,
-            'responseMapping': self.RESPONSE_MAPPING,
-            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponse': self.ERROR_RESPONSE_MAPPING
-        })
+        instance.loadConfig(self.basic_config)
         userid = instance.getUserId('pepe_perez')
         self.assertEqual(userid, 'pepe_perez')
+
+        # success
+        resolver = HTTPResolver()
+        resolver.loadConfig(self.advanced_config)
+        responses.add(responses.GET, "https://example.com/users/testuser", status=200,
+                      body="""{"login": "testuser", "first_name": "Test", "last_name": "User", "id": "1234"}""")
+        user_id = resolver.getUserId("testuser")
+        self.assertEqual("1234", user_id)
+
+        # Error
+        responses.add(responses.GET, "https://example.com/users/testuser", status=404,
+                      body="""{"error": "Not Found"}""")
+        self.assertRaises(ResolverError, resolver.getUserId, 'testuser')
+
+        # Custom error handling
+        responses.add(responses.GET, "https://example.com/users/testuser", status=200,
+                      body="""{"success": false}""")
+        self.assertRaises(ResolverError, resolver.getUserId, 'testuser')
 
     def test_08_get_resolver_id(self):
         instance = HTTPResolver()
         rid = instance.getResolverId()
         self.assertEqual(rid, "")
-        instance.loadConfig({
-            'endpoint': self.ENDPOINT,
-            'method': self.METHOD,
-            'headers': self.HEADERS,
-            'requestMapping': self.REQUEST_MAPPING,
-            'responseMapping': self.RESPONSE_MAPPING,
-            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponse': self.ERROR_RESPONSE_MAPPING
-        })
+        instance.loadConfig(self.basic_config)
         rid = instance.getResolverId()
         self.assertEqual(rid, self.ENDPOINT)
 
@@ -382,15 +461,7 @@ class HTTPResolverTestCase(MyTestCase):
 
         # Test with valid data (method get)
         instance = HTTPResolver()
-        instance.loadConfig({
-            'endpoint': self.ENDPOINT,
-            'method': self.METHOD,
-            'requestMapping': self.REQUEST_MAPPING,
-            'headers': self.HEADERS,
-            'responseMapping': self.RESPONSE_MAPPING,
-            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponse': self.ERROR_RESPONSE_MAPPING
-        })
+        instance.loadConfig(self.basic_config)
         config = RequestConfig(instance.config_get_user_by_id, instance.headers, {"{userid}": user_id})
         response = instance._get_user(user_id, config)
         self.assertEqual(response.get('username'), 'PepePerez')
@@ -426,15 +497,7 @@ class HTTPResolverTestCase(MyTestCase):
             body=self.BODY_RESPONSE_NOK
         )
         instance = HTTPResolver()
-        instance.loadConfig({
-            'endpoint': self.ENDPOINT,
-            'method': self.METHOD,
-            'requestMapping': self.REQUEST_MAPPING,
-            'headers': self.HEADERS,
-            'responseMapping': self.RESPONSE_MAPPING,
-            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponse': self.ERROR_RESPONSE_MAPPING
-        })
+        instance.loadConfig(self.basic_config)
         config = RequestConfig(instance.config_get_user_by_id, instance.headers, {"{userid}": "PepePerez"})
         self.assertRaises(Exception, instance._get_user, user_identifier='PepePerez', config=config)
 
@@ -447,17 +510,9 @@ class HTTPResolverTestCase(MyTestCase):
             adding_headers=json.loads(self.HEADERS),
         )
         instance = HTTPResolver()
-        instance.loadConfig({
-            'endpoint': self.ENDPOINT,
-            'method': self.METHOD,
-            'requestMapping': self.REQUEST_MAPPING,
-            'headers': self.HEADERS,
-            'responseMapping': self.RESPONSE_MAPPING,
-            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponse': self.ERROR_RESPONSE_MAPPING
-        })
+        instance.loadConfig(self.basic_config)
         config = RequestConfig(instance.config_get_user_by_id, instance.headers, {"{userid}": "PepePerez"})
-        self.assertRaises(HTTPError, instance._get_user, user_identifier='PepePerez', config=config)
+        self.assertRaises(ResolverError, instance._get_user, user_identifier='PepePerez', config=config)
 
     @responses.activate
     def test_12_testconnection_basic(self):
@@ -672,32 +727,14 @@ class HTTPResolverTestCase(MyTestCase):
 
     @responses.activate
     def test_14_get_user_info(self):
-        responses.add(
-            self.METHOD,
-            self.ENDPOINT,
-            status=200,
-            adding_headers=json.loads(self.HEADERS),
-            body=self.BODY_RESPONSE_OK
-        )
-        responses.add(
-            self.METHOD,
-            self.ENDPOINT,
-            status=200,
-            adding_headers=json.loads(self.HEADERS),
-            body=self.BODY_RESPONSE_NOK
-        )
+        responses.add(self.METHOD, self.ENDPOINT, status=200, adding_headers=json.loads(self.HEADERS),
+            body=self.BODY_RESPONSE_OK)
+        responses.add(self.METHOD, self.ENDPOINT, status=200, adding_headers=json.loads(self.HEADERS),
+            body=self.BODY_RESPONSE_NOK)
 
         # Test with valid response
         instance = HTTPResolver()
-        instance.loadConfig({
-            'endpoint': self.ENDPOINT,
-            'method': self.METHOD,
-            'headers': self.HEADERS,
-            'requestMapping': self.REQUEST_MAPPING,
-            'responseMapping': self.RESPONSE_MAPPING,
-            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponse': self.ERROR_RESPONSE_MAPPING
-        })
+        instance.loadConfig(self.basic_config)
         response = instance.getUserInfo('PepePerez')
         self.assertEqual(response.get('username'), 'PepePerez')
         self.assertEqual(response.get('email'), 'pepe@perez.com')
@@ -727,6 +764,174 @@ class HTTPResolverTestCase(MyTestCase):
         self.assertNotIn(CONFIG_GET_USER_BY_NAME, default_config)
         self.assertNotIn(ATTRIBUTE_MAPPING, default_config)
         self.assertNotIn(BASE_URL, default_config)
+
+    def test_16_map(self):
+        resolver = HTTPResolver()
+        config = {CONFIG_GET_USER_BY_ID: {ENDPOINT: "http://example.com/users/{userid}", METHOD: HTTPMethod.GET.value},
+                  ATTRIBUTE_MAPPING: {"username": "name", "userid": "id"}}
+        resolver.loadConfig(config)
+        mapping = resolver.map
+        self.assertEqual(3, len(mapping))
+        self.assertSetEqual({"username", "userid", "password"}, set(mapping.keys()))
+
+    @responses.activate
+    def test_17_add_user_success(self):
+        resolver = HTTPResolver()
+        resolver.loadConfig(self.advanced_config)
+        user_data = {"username": "testuser", "givenname": "Test", "surname": "User"}
+
+        # JSON response
+        def add_user_callback(request):
+            body = json.loads(request.body)
+            self.assertEqual(body["login"], "testuser")
+            self.assertEqual(body["first_name"], "Test")
+            self.assertEqual(body["last_name"], "User")
+            self.assertTrue(body["enabled"])
+            return 201, {"Content-Type": "application/json"}, '{"id": "1234"}'
+
+        responses.add_callback(responses.POST, "https://example.com/users", callback=add_user_callback)
+        self.assertEqual("1234", resolver.add_user(user_data))
+
+        # No content response
+        responses.add(responses.POST, "https://example.com/users", status=204)
+        responses.add(responses.GET, "https://example.com/users/testuser", status=200, body='{"id": "1234"}')
+        self.assertEqual("1234", resolver.add_user(user_data))
+
+        # No create config
+        resolver = HTTPResolver()
+        resolver.loadConfig(self.basic_config)
+        self.assertEqual("", resolver.add_user(user_data))
+
+    @responses.activate
+    def test_18_add_user_fails(self):
+        resolver = HTTPResolver()
+        resolver.loadConfig(self.advanced_config)
+        user_data = {"username": "testuser", "givenname": "Test", "surname": "User"}
+
+        # HTTP error
+        responses.add(responses.POST, "https://example.com/users", status=400, body='{"error": "User already exist"}')
+        self.assertRaises(ResolverError, resolver.add_user, user_data)
+
+        # custom error handling
+        responses.add(responses.POST, "https://example.com/users", status=200,
+                      body='{"success": false}')
+        self.assertRaises(ResolverError, resolver.add_user, user_data)
+
+    @responses.activate
+    def test_19_update_user_success(self):
+        resolver = HTTPResolver()
+        resolver.loadConfig(self.advanced_config)
+        uid = "1234"
+        user_data = {"username": "testuser", "givenname": "Test", "surname": "User"}
+
+        # JSON response
+        def update_user_callback(request):
+            body = json.loads(request.body)
+            self.assertEqual(body["login"], "testuser")
+            self.assertEqual(body["first_name"], "Test")
+            self.assertEqual(body["last_name"], "User")
+            return 200, {"Content-Type": "application/json"}, '{"id": "1234"}'
+
+        responses.add_callback(responses.PUT, "https://example.com/users/1234", callback=update_user_callback)
+        self.assertTrue(resolver.update_user(uid, user_data))
+
+        # No content response
+        responses.add(responses.PUT, "https://example.com/users/1234", status=204)
+        self.assertTrue(resolver.update_user(uid, user_data))
+
+    @responses.activate
+    def test_20_update_user_fails(self):
+        resolver = HTTPResolver()
+        resolver.loadConfig(self.advanced_config)
+        uid = "1234"
+        user_data = {"username": "testuser", "givenname": "Test", "surname": "User"}
+
+        # HTTP error
+        responses.add(responses.PUT, "https://example.com/users/1234", status=400, body='{"error": "Bad Request"}')
+        self.assertFalse(resolver.update_user(uid, user_data))
+
+        # custom error handling
+        responses.add(responses.POST, "https://example.com/users", status=200,
+                      body='{"success": false}')
+        self.assertFalse(resolver.update_user(uid, user_data))
+
+        # No update config
+        resolver = HTTPResolver()
+        resolver.loadConfig(self.basic_config)
+        self.assertFalse(resolver.update_user(uid, user_data))
+
+    @responses.activate
+    def test_21_delete_user_success(self):
+        resolver = HTTPResolver()
+        resolver.loadConfig(self.advanced_config)
+        uid = "1234"
+
+        responses.add(responses.DELETE, "https://example.com/users/1234", status=200, body='{"success": true}')
+        self.assertTrue(resolver.delete_user(uid))
+
+        # No content response
+        responses.add(responses.DELETE, "https://example.com/users/1234", status=204)
+        self.assertTrue(resolver.delete_user(uid))
+
+    @responses.activate
+    def test_22_delete_user_fails(self):
+        resolver = HTTPResolver()
+        resolver.loadConfig(self.advanced_config)
+        uid = "1234"
+
+        # HTTP error
+        responses.add(responses.DELETE, "https://example.com/users/1234", status=400, body='{"error": "Bad Request"}')
+        self.assertFalse(resolver.delete_user(uid))
+
+        # custom error handling
+        responses.add(responses.DELETE, "https://example.com/users", status=200,
+                      body='{"success": false, "message": "Unknown user"}')
+        self.assertFalse(resolver.delete_user(uid))
+
+        # No delete config
+        resolver = HTTPResolver()
+        resolver.loadConfig(self.basic_config)
+        self.assertFalse(resolver.delete_user(uid))
+
+    def check_pass_callback(self, request):
+        params = json.loads(request.body)
+        if params.get("username") == "testuser" and params.get("password") == "testpassword" and params.get(
+                "grant_type") == "password":
+            return 200, {}, json.dumps({"token_type": "Bearer", "access_token": "12345"})
+        else:
+            return 401, {}, json.dumps({"error": "invalid_grant",
+                                        "error_description": "Invalid user credentials"})
+
+    @responses.activate
+    def test_23_check_pass_success(self):
+        resolver = HTTPResolver()
+        resolver.loadConfig(self.advanced_config)
+
+        # Mock user auth
+        responses.add_callback(responses.POST, "https://example.com/auth", callback=self.check_pass_callback)
+
+        self.assertTrue(resolver.checkPass("111-aaa-333", "testpassword", "testuser"))
+
+    @responses.activate
+    def test_24_check_pass_fails(self):
+        resolver = HTTPResolver()
+        resolver.loadConfig(self.advanced_config)
+
+        # Mock user auth
+        responses.add_callback(responses.POST, "https://example.com/auth", callback=self.check_pass_callback)
+        self.assertFalse(resolver.checkPass("111-aaa-333", "wrongPassword", "testuser"))
+
+        # Custom error handling
+        resolver.config_user_auth[HAS_ERROR_HANDLER] = True
+        resolver.config_user_auth[ERROR_RESPONSE] = {"success": False, "description": "Invalid credentials"}
+        responses.add(responses.POST, "https://example.com/auth", status=200,
+                      body="""{"success": false, "description": "Invalid credentials"}""")
+        self.assertFalse(resolver.checkPass("111-aaa-333", "wrongPassword", "testuser"))
+
+        # No user auth config
+        resolver = HTTPResolver()
+        resolver.loadConfig(self.basic_config)
+        self.assertFalse(resolver.checkPass("111-aaa-333", "testpassword", "testuser"))
 
 
 class ConfidentialClientApplicationMock:
@@ -798,8 +1003,15 @@ class EntraIDResolverTestCase(MyTestCase):
         self.assertIn("-----BEGIN RSA PRIVATE KEY-----", resolver.client_credential["private_key"])
         self.assertEqual(config[CLIENT_CERTIFICATE][CERTIFICATE_FINGERPRINT],
                          resolver.client_credential["thumbprint"])
-        self.assertNotIn("passphrase", resolver.client_credential)
+        self.assertNotIn("passphrase", resolver.client_credential)  # Do not include passphrase if not available
         self.assertFalse(resolver._editable)
+
+        # certificate with password
+        config[CLIENT_CERTIFICATE][PRIVATE_KEY_PASSWORD] = "Test123"
+        with mock.patch("privacyidea.lib.resolvers.EntraIDResolver.msal.ConfidentialClientApplication",
+                        new=ConfidentialClientApplicationMock):
+            resolver.loadConfig(config)
+        self.assertEqual("Test123", resolver.client_credential["passphrase"])
 
     def test_02_load_config_fails(self):
         # Invalid authority
@@ -859,6 +1071,16 @@ class EntraIDResolverTestCase(MyTestCase):
                                               CLIENT_CREDENTIAL_TYPE: ClientCredentialType.CERTIFICATE.value,
                                               CLIENT_CERTIFICATE: {CERTIFICATE_FINGERPRINT: "fingerprint"},
                                               TENANT: "organization"})
+        # path to certificate is not valid
+        with mock.patch("privacyidea.lib.resolvers.EntraIDResolver.msal.ConfidentialClientApplication",
+                        new=ConfidentialClientApplicationMock):
+            with mock.patch("privacyidea.lib.resolvers.EntraIDResolver.open", side_effect=FileNotFoundError):
+                self.assertRaises(ParameterError, EntraIDResolver().loadConfig, {CLIENT_ID: "1234",
+                                                                                 CLIENT_CREDENTIAL_TYPE: ClientCredentialType.CERTIFICATE.value,
+                                                                                 CLIENT_CERTIFICATE: {
+                                                                                     PRIVATE_KEY_FILE: "tests/testdata/private.pem",
+                                                                                     CERTIFICATE_FINGERPRINT: "fingerprint"},
+                                                                                 TENANT: "organization"})
 
     def test_03_getResolverClassDescriptor(self):
         descriptor = EntraIDResolver().getResolverClassDescriptor()
@@ -955,10 +1177,23 @@ class EntraIDResolverTestCase(MyTestCase):
         user_list = resolver.getUserList()
         self.assertEqual(2, len(user_list))
 
+    @responses.activate
     def test_07_getUserList_fails(self):
         resolver = self.set_up_resolver()
 
-        # Invalid authority
+        # Mock an error response from the API
+        responses.add(responses.GET, "https://graph.microsoft.com/v1.0/users", status=501,
+                      body="""{"error": {"code": "NotImplemented", "message": "Property can not be returned within a user collection."}}""")
+        self.assertRaises(ResolverError, resolver.getUserList)
+
+        # Error response with no error code
+        responses.add(responses.GET, "https://graph.microsoft.com/v1.0/users", status=400, body="""{}""")
+        self.assertRaises(ResolverError, resolver.getUserList)
+
+        # Custom error handling for successful response without users in the response
+        resolver.config[CONFIG_GET_USER_LIST][HAS_ERROR_HANDLER] = True
+        resolver.config[CONFIG_GET_USER_LIST][ERROR_RESPONSE] = {}
+        responses.add(responses.GET, "https://graph.microsoft.com/v1.0/users", status=200, body="""{}""")
         self.assertRaises(ResolverError, resolver.getUserList)
 
     @responses.activate
@@ -993,14 +1228,30 @@ class EntraIDResolverTestCase(MyTestCase):
     @responses.activate
     def test_09_get_UserInfo_fails(self):
         resolver = self.set_up_resolver()
+        user_id = "12345789"
 
         # User ID does not exists
-        user_id = "12345789"
         responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_id}", status=404,
                       body="""{"error": {"code": "Request_ResourceNotFound", 
                                "message": "Resource '12345789' does not exist or one of its queried reference-property objects are not present."}}"""
                       )
+        self.assertRaises(ResolverError, resolver.getUserInfo, user_id)
+        responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_id}", status=404, body="{}")
+        self.assertRaises(ResolverError, resolver.getUserInfo, user_id)
 
+        # Server is busy
+        responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_id}", status=202, body="{}")
+        self.assertRaises(ResolverError, resolver.getUserInfo, user_id)
+
+        # Missing error message in response
+        responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_id}", status=400, body="{}")
+        self.assertRaises(ResolverError, resolver.getUserInfo, user_id)
+
+        # Custom error handling for successful response without user info
+        resolver.config[CONFIG_GET_USER_BY_ID][HAS_ERROR_HANDLER] = True
+        resolver.config[CONFIG_GET_USER_BY_ID][ERROR_RESPONSE] = {"success": False, "message": "User not found"}
+        responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_id}", status=200,
+                      body="""{"success": false, "message": "User not found"}""")
         self.assertRaises(ResolverError, resolver.getUserInfo, user_id)
 
     @responses.activate
@@ -1266,8 +1517,8 @@ class EntraIDResolverTestCase(MyTestCase):
         self.assertIn("Failed to get authorization header", description)
 
     def test_14_get_search_params(self):
+        # Advanced query is enabled by default
         resolver = EntraIDResolver()
-
         search_dict = {"username": "*test*", "userid": "1234", "givenname": "*", "email": "test*",
                        "favorite_color": "blue"}
         with mock.patch("logging.Logger.debug") as mock_log:
@@ -1277,6 +1528,20 @@ class EntraIDResolverTestCase(MyTestCase):
             self.assertEqual(correct_query, search_params["$filter"])
             mock_log.assert_called_with("Search parameter 'favorite_color' not found in attribute mapping. Search "
                                         "without this parameter.")
+
+        # Do not allow advanced queries
+        resolver.config[CONFIG_GET_USER_LIST][HEADERS] = ""
+        search_params = resolver._get_search_params(search_dict)
+        self.assertIn("$filter", search_params)
+        correct_query = "startswith(userPrincipalName, 'test') and id eq '1234' and startswith(mail, 'test')"
+        self.assertEqual(correct_query, search_params["$filter"])
+
+        # Invalid Header also results in simple queries
+        resolver.config[CONFIG_GET_USER_LIST][HEADERS] = "{'ConsistencyLevel': 'eventual'}"
+        search_params = resolver._get_search_params(search_dict)
+        self.assertIn("$filter", search_params)
+        correct_query = "startswith(userPrincipalName, 'test') and id eq '1234' and startswith(mail, 'test')"
+        self.assertEqual(correct_query, search_params["$filter"])
 
     def test_15_get_config(self):
         resolver = EntraIDResolver()
@@ -1306,6 +1571,14 @@ class EntraIDResolverTestCase(MyTestCase):
         config = resolver.get_config()
         self.assertIn(CLIENT_ID, config)
         self.assertEqual("__CENSORED__", config[CLIENT_SECRET])
+        with mock.patch("privacyidea.lib.resolvers.EntraIDResolver.msal.ConfidentialClientApplication",
+                        new=ConfidentialClientApplicationMock):
+            resolver.loadConfig({CLIENT_ID: "1234", CLIENT_CREDENTIAL_TYPE: ClientCredentialType.CERTIFICATE.value,
+                                 CLIENT_CERTIFICATE: {PRIVATE_KEY_FILE: "tests/testdata/private.pem",
+                                                      PRIVATE_KEY_PASSWORD: "Test1234",
+                                                      CERTIFICATE_FINGERPRINT: "123456"}, TENANT: "organization"})
+        config = resolver.get_config()
+        self.assertEqual("__CENSORED__", config[CLIENT_CERTIFICATE][PRIVATE_KEY_PASSWORD])
 
     # Mock response for access token
     @staticmethod
@@ -1383,6 +1656,17 @@ class EntraIDResolverTestCase(MyTestCase):
                                                                 '"passwordProfile": {"password": ""}}')
         self.assertRaises(ResolverError, resolver.add_user, user_data)
 
+        # Unknown error response
+        responses.add(responses.POST, "https://graph.microsoft.com/v1.0/users", status=400, body="{}")
+        self.assertRaises(ResolverError, resolver.add_user, user_data)
+
+        # Custom error handling
+        resolver.config[CONFIG_CREATE_USER][HAS_ERROR_HANDLER] = True
+        resolver.config[CONFIG_CREATE_USER][ERROR_RESPONSE] = {"success": False, "message": "User already exists"}
+        responses.add(responses.POST, "https://graph.microsoft.com/v1.0/users", status=201,
+                      body="""{"success": false, "message": "User already exists"}""")
+        self.assertRaises(ResolverError, resolver.add_user, user_data)
+
     @responses.activate
     def test_18_add_user_no_permission(self):
         resolver = self.set_up_resolver()
@@ -1415,22 +1699,24 @@ class EntraIDResolverTestCase(MyTestCase):
         self.assertTrue(resolver.update_user(uid, new_params))
 
     @responses.activate
-    def test_20_update_user_denied(self):
+    def test_20_update_user_fails(self):
         resolver = self.set_up_resolver()
         uid = "87d349ed-44d7-43e1-9a83-5f2406dee5bd"
+        new_params = {"surname": "Smith"}
 
         # No permission
         responses.add(responses.PATCH, f"https://graph.microsoft.com/v1.0/users/{uid}", status=403,
                       body="""{"error": {"code": "Authorization_RequestDenied", 
                                "message": "Insufficient privileges to complete the operation."}}""")
-
-        new_params = {"surname": "Smith"}
         self.assertFalse(resolver.update_user(uid, new_params))
 
         # User does not exist
         responses.add(responses.PATCH, f"https://graph.microsoft.com/v1.0/users/{uid}", status=404,
                       body="""{"error": {"code": "Request_ResourceNotFound", "message": "Resource not found."}}""")
-        new_params = {"surname": "Smith"}
+        self.assertFalse(resolver.update_user(uid, new_params))
+
+        # Error without error message
+        responses.add(responses.PATCH, f"https://graph.microsoft.com/v1.0/users/{uid}", status=400, body="{}")
         self.assertFalse(resolver.update_user(uid, new_params))
 
     @responses.activate
@@ -1456,6 +1742,11 @@ class EntraIDResolverTestCase(MyTestCase):
         # User does not exist
         responses.add(responses.DELETE, f"https://graph.microsoft.com/v1.0/users/{uid}", status=404,
                       body="""{"error": {"code": "Request_ResourceNotFound", "message": "Resource not found."}}""")
+        self.assertFalse(resolver.delete_user(uid))
+
+        # Error with different error message format
+        responses.add(responses.DELETE, f"https://graph.microsoft.com/v1.0/users/{uid}", status=400,
+                      body="""{"success": false, "description": "User not found"}""")
         self.assertFalse(resolver.delete_user(uid))
 
     def check_pass_callback(self, request):
@@ -1485,8 +1776,27 @@ class EntraIDResolverTestCase(MyTestCase):
         # Mock user auth
         responses.add_callback(responses.POST, "https://login.microsoftonline.com/organization/oauth2/v2.0/token",
                                callback=self.check_pass_callback)
-
         self.assertFalse(resolver.checkPass("111-aaa-333", "wrong_password", "testuser"))
+
+        # Error with different format
+        responses.add(responses.POST, "https://login.microsoftonline.com/organization/oauth2/v2.0/token",
+                      status=400, body="""{"success": false, "description": "Invalid credentials"}""")
+        self.assertFalse(resolver.checkPass("111-aaa-333", "wrong_password", "testuser"))
+
+        # Custom error handling
+        resolver.config_user_auth[HAS_ERROR_HANDLER] = True
+        resolver.config_user_auth[ERROR_RESPONSE] = {"success": False, "description": "Invalid credentials"}
+        responses.add(responses.POST, "https://login.microsoftonline.com/organization/oauth2/v2.0/token",
+                      status=200, body="""{"success": false, "description": "Invalid credentials"}""")
+        self.assertFalse(resolver.checkPass("111-aaa-333", "wrong_password", "testuser"))
+
+        # checkPass is not supported when using certificate as client credential
+        resolver = self.set_up_resolver({CLIENT_CREDENTIAL_TYPE: ClientCredentialType.CERTIFICATE.value,
+                                         CLIENT_CERTIFICATE: {PRIVATE_KEY_FILE: "tests/testdata/private.pem",
+                                                              CERTIFICATE_FINGERPRINT: "123456"}})
+        with raises(ResolverError,
+                    match="User authentication with password is not supported when using a certificate for the client"):
+            resolver.checkPass("111-aaa-333", "testpassword", "testuser")
 
 
 class KeycloakResolverTestCase(MyTestCase):
@@ -1550,7 +1860,20 @@ class KeycloakResolverTestCase(MyTestCase):
 
         # Fails
         resolver.password = "wrong"
-        self.assertRaises(HTTPError, resolver._get_auth_header)
+        self.assertRaises(ResolverError, resolver._get_auth_header)
+        resolver.password = "testpassword"
+
+        # Unexpected error response
+        responses.add(responses.POST, "http://localhost:8080/auth/realms/master/protocol/openid-connect/token",
+                      status=400, body='{"value": "Bad Request"}')
+        self.assertRaises(ResolverError, resolver._get_auth_header)
+
+        # Custom error handling
+        resolver.authorization_config[HAS_ERROR_HANDLER] = True
+        resolver.authorization_config[ERROR_RESPONSE] = {}
+        responses.add(responses.POST, "http://localhost:8080/auth/realms/master/protocol/openid-connect/token",
+                      status=200, body='{}')
+        self.assertRaises(ResolverError, resolver._get_auth_header)
 
     @responses.activate
     def test_03_getUserList_success(self):
@@ -1568,12 +1891,28 @@ class KeycloakResolverTestCase(MyTestCase):
 
     @responses.activate
     def test_04_getUserList_fails(self):
-        """
-        Tests that the getUserList method raises an HTTPError if the access token request fails.
-        """
+        # Could not get access token
         resolver = self.set_up_resolver()
         resolver.password = "wrong"
-        self.assertRaises(HTTPError, resolver.getUserList)
+        self.assertRaises(ResolverError, resolver.getUserList)
+        resolver.password = "testpassword"
+
+        # Mock response for invalid access token or missing rights
+        responses.add(responses.GET, "http://localhost:8080/admin/realms/master/users", status=403,
+                      body='{"error": "Unauthorized", "error_description": "Invalid access token"}')
+        self.assertRaises(ResolverError, resolver.getUserList)
+
+        # Mock response for unknown error
+        responses.add(responses.GET, "http://localhost:8080/admin/realms/master/users", status=400,
+                      body='{"description": "Bad Request"}')
+        self.assertRaises(ResolverError, resolver.getUserList)
+
+        # Custom error handling
+        resolver.config[CONFIG_GET_USER_LIST][HAS_ERROR_HANDLER] = True
+        resolver.config[CONFIG_GET_USER_LIST][ERROR_RESPONSE] = {}
+        responses.add(responses.GET, "http://localhost:8080/admin/realms/master/users", status=200,
+                      body='{}')
+        self.assertRaises(ResolverError, resolver.getUserList)
 
     @responses.activate
     def test_05_getUserInfo_success(self):
@@ -1597,9 +1936,24 @@ class KeycloakResolverTestCase(MyTestCase):
         user_id = "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"
 
         # Mock users API: Unknown user ID
-        responses.add(responses.GET, f"http://localhost:8080/admin/realms/master/users/{user_id}", status=404)
+        responses.add(responses.GET, f"http://localhost:8080/admin/realms/master/users/{user_id}", status=404,
+                      body='{"error": "User not found", "error_description": "User not found"}')
+        self.assertRaises(ResolverError, resolver.getUserInfo, user_id)
+        responses.add(responses.GET, f"http://localhost:8080/admin/realms/master/users/{user_id}", status=400,
+                      body='{"error": "User not found", "error_description": "User not found"}')
+        self.assertRaises(ResolverError, resolver.getUserInfo, user_id)
 
-        self.assertRaises(HTTPError, resolver.getUserInfo, user_id)
+        # Unknown error response
+        responses.add(responses.GET, f"http://localhost:8080/admin/realms/master/users/{user_id}", status=500,
+                      body='{"description": "Internal Server Error"}')
+        self.assertRaises(ResolverError, resolver.getUserInfo, user_id)
+
+        # Custom error handling
+        resolver.config[CONFIG_GET_USER_BY_ID][HAS_ERROR_HANDLER] = True
+        resolver.config[CONFIG_GET_USER_BY_ID][ERROR_RESPONSE] = {}
+        responses.add(responses.GET, f"http://localhost:8080/admin/realms/master/users/{user_id}", status=200,
+                      body='{}')
+        self.assertRaises(ResolverError, resolver.getUserInfo, user_id)
 
     @responses.activate
     def test_07_getUsername(self):
@@ -1728,6 +2082,18 @@ class KeycloakResolverTestCase(MyTestCase):
                       body="""{"errorMessage": "No permission to create user"}""")
         self.assertRaises(ResolverError, resolver.add_user, user_data)
 
+        # Unknown error response
+        responses.add(responses.POST, "http://localhost:8080/admin/realms/master/users", status=500,
+                      body="""{"description": "Internal Server Error"}""")
+        self.assertRaises(ResolverError, resolver.add_user, user_data)
+
+        # Custom error handling
+        resolver.config[CONFIG_CREATE_USER][HAS_ERROR_HANDLER] = True
+        resolver.config[CONFIG_CREATE_USER][ERROR_RESPONSE] = {"success": False, "message": "User already exists"}
+        responses.add(responses.POST, "http://localhost:8080/admin/realms/master/users", status=201,
+                      body="""{"success": false, "message": "User already exists"}""")
+        self.assertRaises(ResolverError, resolver.add_user, user_data)
+
     @responses.activate
     def test_13_update_user_success(self):
         resolver = self.set_up_resolver()
@@ -1746,21 +2112,31 @@ class KeycloakResolverTestCase(MyTestCase):
         self.assertTrue(resolver.update_user(uid, new_params))
 
     @responses.activate
-    def test_14_update_user_denied(self):
+    def test_14_update_user_fails(self):
         resolver = self.set_up_resolver()
         uid = "87d349ed-44d7-43e1-9a83-5f2406dee5bd"
+        new_params = {"surname": "Smith"}
 
         # No permission
         responses.add(responses.PUT, f"http://localhost:8080/admin/realms/master/users/{uid}", status=403,
                       body="""{"errorMessage": "No permission to update user"}""")
-
-        new_params = {"surname": "Smith"}
         self.assertFalse(resolver.update_user(uid, new_params))
 
         # User does not exist
         responses.add(responses.PUT, f"http://localhost:8080/admin/realms/master/users/{uid}", status=404,
                       body="""{"error": "User not found"}""")
-        new_params = {"surname": "Smith"}
+        self.assertFalse(resolver.update_user(uid, new_params))
+
+        # Error without unknown error message
+        responses.add(responses.PUT, f"http://localhost:8080/admin/realms/master/users/{uid}", status=500,
+                      body="""{"description": "Internal Server Error"}""")
+        self.assertFalse(resolver.update_user(uid, new_params))
+
+        # custom error handling
+        resolver.config[CONFIG_EDIT_USER][HAS_ERROR_HANDLER] = True
+        resolver.config[CONFIG_EDIT_USER][ERROR_RESPONSE] = {"success": False, "message": "User not found"}
+        responses.add(responses.PUT, f"http://localhost:8080/admin/realms/master/users/{uid}", status=200,
+                      body="""{"success": false, "message": "User not found"}""")
         self.assertFalse(resolver.update_user(uid, new_params))
 
     @responses.activate
@@ -1786,6 +2162,17 @@ class KeycloakResolverTestCase(MyTestCase):
         responses.add(responses.DELETE, f"http://localhost:8080/admin/realms/master/users/{uid}", status=404,
                       body="""{"error": "User not found"}""")
         self.assertFalse(resolver.delete_user(uid))
+
+        # Error with different error message format
+        responses.add(responses.DELETE, f"http://localhost:8080/admin/realms/master/users/{uid}", status=400,
+                      body="""{"success": false, "description": "User not found"}""")
+        self.assertFalse(resolver.delete_user(uid))
+
+        # Custom error handling
+        resolver.config[CONFIG_DELETE_USER][HAS_ERROR_HANDLER] = True
+        resolver.config[CONFIG_DELETE_USER][ERROR_RESPONSE] = {"success": False, "message": "User not found"}
+        responses.add(responses.DELETE, f"http://localhost:8080/admin/realms/master/users/{uid}", status=200,
+                      body="""{"success": false, "message": "User not found"}""")
 
     def check_pass_callback(self, request):
         params = {x.split("=")[0]: x.split("=")[1] for x in request.body.split("&")}
@@ -1813,7 +2200,18 @@ class KeycloakResolverTestCase(MyTestCase):
         # Mock user auth
         responses.add_callback(responses.POST, "http://localhost:8080/realms/master/protocol/openid-connect/token",
                                callback=self.check_pass_callback)
+        self.assertFalse(resolver.checkPass("111-aaa-333", "wrongPassword", "testuser"))
 
+        # Error with different format
+        responses.add(responses.POST, "http://localhost:8080/realms/master/protocol/openid-connect/token",
+                      status=400, body="""{"success": false, "description": "Invalid credentials"}""")
+        self.assertFalse(resolver.checkPass("111-aaa-333", "wrongPassword", "testuser"))
+
+        # Custom error handling
+        resolver.config_user_auth[HAS_ERROR_HANDLER] = True
+        resolver.config_user_auth[ERROR_RESPONSE] = {"success": False, "description": "Invalid credentials"}
+        responses.add(responses.POST, "http://localhost:8080/realms/master/protocol/openid-connect/token",
+                      status=200, body="""{"success": false, "description": "Invalid credentials"}""")
         self.assertFalse(resolver.checkPass("111-aaa-333", "wrongPassword", "testuser"))
 
     @responses.activate

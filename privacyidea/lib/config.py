@@ -159,8 +159,6 @@ class SharedConfigClass(object):
                         # For advanced HTTP resolvers, the headers config is loaded as dict
                         if data.get(HEADERS):
                             data[HEADERS] = json.loads(data.get(HEADERS, "{}"))
-                        else:
-                            data[HEADERS] = {}
                     resolverdef["data"] = data
                     resolverconfig[resolver.name] = resolverdef
                 # Load realm configuration

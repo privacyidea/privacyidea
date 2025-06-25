@@ -312,7 +312,7 @@ class EntraIDResolver(HTTPResolver):
         if error_data:
             error = Error(True, error_data.get("code", ""), error_data.get("message", ""))
         else:
-            error = Error(True, "", "")
+            error = Error(False, "", "")
         return error
 
     def _get_user_list_error_handling(self, response: Response, config: RequestConfig):
@@ -324,10 +324,17 @@ class EntraIDResolver(HTTPResolver):
         if response.status_code != 200:
             error = self._get_error(response)
             if error.error:
+                success = False
                 log.info(f"Failed to get the user list: {error.code} - {error.message}")
-                raise ResolverError(f"Failed to get the user list!")
             else:
-                super()._get_user_list_error_handling(response, config)
+                # There is no error message in the expected format. Execute generic error handling.
+                success = super()._get_user_list_error_handling(response, config)
+        else:
+            # Custom errors can also occur in successful responses
+            success = self._custom_error_handling(response, config)
+
+        if not success:
+            raise ResolverError(f"Failed to get the user list!")
 
     def _get_user_error_handling(self, response: Response, config: RequestConfig, user_identifier: str) -> bool:
         """
@@ -336,22 +343,25 @@ class EntraIDResolver(HTTPResolver):
         :param response: The response object from the HTTP request
         :return: True on success, False otherwise
         """
-        success = response.status_code == 200
-        if not success:
-            if response.status_code == 202:
-                log.debug("EntraID server is busy.")
+        if response.status_code == 202:
+            # Even if this is not a real error, we do not get the user information, so we need to abort the request
+            raise ResolverError("EntraID server is busy. Please try again later.")
+        elif response.status_code != 200:
+            # extract error code and messages
+            error = self._get_error(response)
+            if error.error:
+                success = False
+                log.info(f"Failed to resolve user: {error.code} - {error.message}")
+                if response.status_code == 404:
+                    raise ResolverError(f"User '{user_identifier}' does not exist!")
             else:
-                # extract error code and messages
-                error = self._get_error(response)
-                if error.error:
-                    log.info(f"Failed to resolve user: {error.code} - {error.message}")
-                    if response.status_code == 404:
-                        raise ResolverError(f"User '{user_identifier}' does not exist!")
-                    else:
-                        raise ResolverError(f"Failed to resolve user {user_identifier}!")
-                else:
-                    success = super()._get_user_error_handling(response, config, user_identifier)
-        return success
+                success = super()._get_user_error_handling(response, config, user_identifier)
+        else:
+            # Custom errors can also occur in successful responses
+            success = self._custom_error_handling(response, config)
+
+        if not success:
+            raise ResolverError(f"Failed to resolve user {user_identifier}!")
 
     def _create_user_error_handling(self, response: Response, config: RequestConfig) -> bool:
         """
@@ -360,16 +370,21 @@ class EntraIDResolver(HTTPResolver):
         :param response: The response object from the HTTP request
         :param config: Configuration for the endpoint containing information about special error handling
         """
-        success = response.status_code == 201
-
-        if not success:
+        if not response.status_code == 201:
             # extract error code and messages
             error = self._get_error(response)
             if error.error:
                 log.info(f"Failed to create user: {error.code} - {error.message}")
                 raise ResolverError(f"Failed to create user: {error.code} - {error.message}")
             else:
-                super()._create_user_error_handling(response, config)
+                # There is no error message in the expected format. Execute generic error handling.
+                success = super()._create_user_error_handling(response, config)
+        else:
+            success = self._custom_error_handling(response, config)
+
+        if not success:
+            raise ResolverError("Failed to create user!")
+
         return success
 
     def _update_user_error_handling(self, response: Response, config: RequestConfig, user_identifier: str) -> bool:
@@ -381,13 +396,14 @@ class EntraIDResolver(HTTPResolver):
         :param config: Configuration for the endpoint containing information about special error handling
         """
         success = response.status_code == 204
-
         if not success:
             # extract error code and messages
             error = self._get_error(response)
             if error.error:
+                success = False
                 log.info(f"Failed to update user {user_identifier}: {error.code} - {error.message}")
             else:
+                # There is no error message in the expected format. Execute generic error handling.
                 success = super()._update_user_error_handling(response, config, user_identifier)
         return success
 
@@ -400,7 +416,6 @@ class EntraIDResolver(HTTPResolver):
         :param config: Configuration for the endpoint containing information about special error handling
         """
         success = response.status_code == 204
-
         if not success:
             # extract error code and messages
             error = self._get_error(response)
@@ -409,6 +424,7 @@ class EntraIDResolver(HTTPResolver):
                 # log message. But an error is displayed in the UI anyway.
                 log.info(f"Failed to delete user {user_identifier}: {error.code} - {error.message}")
             else:
+                # Checks for generic HTTP errors and custom error handling
                 success = super()._delete_user_error_handling(response, config, user_identifier)
         return success
 
@@ -421,15 +437,17 @@ class EntraIDResolver(HTTPResolver):
         :param user_identifier: The user identifier (username or user id)
         :return: True if the password check was successful, False otherwise
         """
-        success = response.status_code == 200
-
-        if not success:
+        if not response.status_code == 200:
             # extract error code and messages
             response_data = response.json()
             error = response_data.get("error", {})
             error_message = response_data.get("error_description", "")
             if error:
+                success = False
                 log.debug(f"Failed to authenticate user {user_identifier}: {error} - {error_message}")
             else:
                 success = super()._delete_user_error_handling(response, config, user_identifier)
+        else:
+            # Custom errors can also occur in successful responses
+            success = self._custom_error_handling(response, config)
         return success
