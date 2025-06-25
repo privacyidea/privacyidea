@@ -86,7 +86,6 @@ export class EnrollPushComponent implements OnInit {
       initResponse,
       5000,
     ).catch((error) => {
-      console.log('Rollout aborted');
       return null;
     });
     if (!pollResponse) {
@@ -126,9 +125,7 @@ export class EnrollPushComponent implements OnInit {
   private _openStepOneDialog(
     initResponse: EnrollmentResponse,
   ): MatDialogRef<TokenEnrollmentFirstStepDialogComponent, any> {
-    console.log('Opening enrollment dialog for Push Token');
     this.reopenCurrentEnrollmentDialogChange.emit(async () => {
-      console.log('Reopening enrollment dialog for Push Token');
       if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen()) {
         await this.pollTokenRolloutState(initResponse, 0);
         return initResponse;

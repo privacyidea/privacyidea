@@ -283,7 +283,6 @@ export class TokenEnrollmentComponent {
           | Observable<EnrollmentResponse | void>)
       | undefined,
   ): void {
-    console.log('Updating reopenCurrentEnrollmentDialog: ', event);
     this.reopenCurrentEnrollmentDialogSignal.set(event);
   }
 

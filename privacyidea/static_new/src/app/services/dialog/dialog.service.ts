@@ -57,7 +57,6 @@ export class DialogService {
     }
   }
   isTokenEnrollmentFirstStepDialogOpen(): boolean {
-    console.log('First step dialog open:', !!this._tokenEnrollmentFirstStepRef);
     return !!this._tokenEnrollmentFirstStepRef;
   }
 

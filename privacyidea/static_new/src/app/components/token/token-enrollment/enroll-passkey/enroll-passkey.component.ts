@@ -103,11 +103,8 @@ export class EnrollPasskeyComponent implements OnInit {
       throw new Error(errMsg);
     });
 
-    console.log('Response from first enrollment step:', responseStepOne);
     const detail = responseStepOne.detail;
-    console.log('Enrollment detail:', detail);
     const passkeyRegOptions = detail?.passkey_registration;
-    console.log('Passkey registration options:', passkeyRegOptions);
     if (!passkeyRegOptions) {
       this.notificationService.openSnackBar(
         'Failed to initiate Passkey registration: Invalid server response.',
@@ -117,7 +114,6 @@ export class EnrollPasskeyComponent implements OnInit {
     this.openStepOneDialog({ responseStepOne, detail });
     const publicKeyCred = await this.readPublicKeyCred(responseStepOne);
     if (publicKeyCred === null) {
-      console.log('Returning null due to credential creation failure');
       return null;
     }
     const resposeLastStep = await this.finalizeEnrollment({
@@ -162,7 +158,6 @@ export class EnrollPasskeyComponent implements OnInit {
       extensions: { credProps: true, ...passkeyRegOptions.extensions },
       attestation: passkeyRegOptions.attestation,
     };
-    console.log('PublicKeyCredentialCreationOptions:', publicKeyOptions);
     const publicKeyCred = await navigator.credentials
       .create({ publicKey: publicKeyOptions })
       .catch((browserOrCredentialError) => {
@@ -173,11 +168,8 @@ export class EnrollPasskeyComponent implements OnInit {
       })
       .finally(() => {
         // Ensure the dialog is closed regardless of success or failure
-        console.log('Closing Step One dialog after credential creation');
         this.closeStepOneDialog();
       }); // Type assertion to any for compatibility
-
-    console.log('PublicKeyCredential created:', publicKeyCred);
     return publicKeyCred;
   }
 

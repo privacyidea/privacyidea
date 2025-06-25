@@ -102,11 +102,10 @@ export class EnrollWebauthnComponent implements OnInit {
       throw new Error(errMsg);
     });
 
-    console.log('Response from first enrollment step:', responseStepOne);
     const detail = responseStepOne.detail;
-    console.log('Enrollment detail:', detail);
+
     const webAuthnRegOptions = detail?.webAuthnRegisterRequest;
-    console.log('WebAuthn registration options:', webAuthnRegOptions);
+
     if (!webAuthnRegOptions) {
       this.notificationService.openSnackBar(
         'Failed to initiate WebAuthn registration: Invalid server response.',
@@ -116,7 +115,6 @@ export class EnrollWebauthnComponent implements OnInit {
     this.openStepOneDialog({ responseStepOne, detail });
     const publicKeyCred = await this.readPublicKeyCred(detail);
     if (publicKeyCred === null) {
-      console.log('Returning null due to credential creation failure');
       return null;
     }
     const resposeLastStep = await this.finalizeEnrollment({
@@ -198,11 +196,10 @@ export class EnrollWebauthnComponent implements OnInit {
       })
       .finally(() => {
         // Ensure the dialog is closed regardless of success or failure
-        console.log('Closing Step One dialog after credential creation');
+
         this.closeStepOneDialog();
       }); // Type assertion to any for compatibility
 
-    console.log('PublicKeyCredential created:', publicKeyCred);
     return publicKeyCred;
   };
 
@@ -211,7 +208,7 @@ export class EnrollWebauthnComponent implements OnInit {
     publicKeyCred: any;
   }): Promise<EnrollmentResponse> {
     const { detail, publicKeyCred } = args;
-    console.log('Finalizing enrollment with:', { detail, publicKeyCred });
+
     const params: any = {
       type: 'webauthn',
       transaction_id: detail.transaction_id,
