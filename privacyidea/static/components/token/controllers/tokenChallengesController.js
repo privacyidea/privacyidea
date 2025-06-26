@@ -39,28 +39,22 @@ myApp.controller("tokenChallengesController", ['$scope', 'TokenFactory',
         $scope.get();
     };
 
-     $scope.deleteExpiredChallenges = function () {
+    $scope.deleteExpiredChallenges = function () {
         TokenFactory.deleteExpiredChallenges(function (data) {
             if (data.result.status === true) {
-                if (data.result.value.deleted > 1) {
-                   inform.add(gettextCatalog.getString(
-                       data.result.value.deleted + " expired challenges successfully deleted."),
-                                                                            {type: "success", ttl: 4000});
-                }
-                else if (data.result.value.delete === 1) {
-                        inform.add(gettextCatalog.getString(
-                        "1 expired challenge successfully deleted."),
-                                                    {type: "success", ttl: 4000});
-                }
-                else {
-                      inform.add(gettextCatalog.getString(
-                        "No expired challenges were deleted."),
-                                                  {type: "info", ttl: 4000});
+                if (data.result.value.deleted > 0) {
+                    inform.add(gettextCatalog.getString(
+                            "Total expired challenges deleted: " + data.result.value.deleted),
+                        {type: "success", ttl: 4000});
+                } else {
+                    inform.add(gettextCatalog.getString(
+                            "No expired challenges were deleted."),
+                        {type: "info", ttl: 4000});
                 }
             } else {
                 inform.add(gettextCatalog.getString(
-                            "Could not delete expired challenges."),
-                           {type: "danger", ttl: 8000});
+                        "Could not delete expired challenges."),
+                    {type: "danger", ttl: 8000});
             }
         });
         $scope.get();
