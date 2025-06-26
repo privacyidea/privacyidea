@@ -3,7 +3,9 @@
 
 .token-enrollment-container {
   @include styles.table-container-styles;
+  padding-top: 0;
   margin: 2rem 1rem 1rem;
+  max-height: calc(75vh - 3rem);
   overflow: auto;
   width: 785px;
 }
@@ -69,5 +71,13 @@ h5 {
     column-gap: 0;
     background: #dedcdf;
     padding: 12px 4px 16px 12px;
+  }
+  .sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background-color: white;
+    margin-top: 1rem;
+    padding: 1rem 0;
   }
 }

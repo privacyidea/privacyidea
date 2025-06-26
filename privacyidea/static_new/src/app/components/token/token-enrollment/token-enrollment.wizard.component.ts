@@ -49,7 +49,7 @@ import { HttpClient } from '@angular/common/http';
 import { ContainerService } from '../../../services/container/container.service';
 import { RealmService } from '../../../services/realm/realm.service';
 import { NotificationService } from '../../../services/notification/notification.service';
-import { UserService } from '../../../services/user/user.service';
+import { UserData, UserService } from '../../../services/user/user.service';
 import {
   EnrollmentResponse,
   TokenService,
@@ -147,12 +147,11 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
     );
   }
 
-  protected override openSecondLastDialog(response: EnrollmentResponse) {
-    const user = this.userService.userFilter();
-    if (!user || typeof user === 'string') {
-      return;
-    }
-
+  protected override openLastStepDialog(args: {
+    response: EnrollmentResponse;
+    user: UserData | null;
+  }) {
+    const { response, user } = args;
     this.dialogService.openTokenEnrollmentLastStepDialog({
       data: {
         response,

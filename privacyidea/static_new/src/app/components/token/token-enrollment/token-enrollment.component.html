@@ -1,29 +1,60 @@
 <div aria-label="Token Enrollment" class="token-enrollment-container">
-  <h3 class="margin-left-1">Token Enrollment</h3>
-  <mat-form-field class="width-100 margin-bottom-1">
-    <mat-select
-      [(ngModel)]="selectedTokenType"
-      [panelClass]="'multi-column-panel'">
-      @for (type of tokenService.tokenTypeOptions(); track type) {
-        <mat-option class="token-type-option type-option" [value]="type"
-          >{{ type.info.split(":")[0] }}
-        </mat-option>
-      }
-      <button
-        (click)="versioningService.openDocumentation('tokentypes')"
-        class="card-button type-help-button"
-        mat-flat-button>
-        <mat-icon>info_outline</mat-icon>
-        Help About Tokentypes
-      </button>
-    </mat-select>
-    <mat-hint class="token-type-hint">
-      @if (selectedTokenType().info) {
-        {{ selectedTokenType().info.split(":")[1] }}
-      }
-    </mat-hint>
-  </mat-form-field>
-  <form [formGroup]="formGroup">
+  <h3 class="margin-left-1"> Enroll a new Token </h3>
+
+  <form [formGroup]="formGroup" (ngSubmit)="enrollToken()">
+    <div class="sticky-header">
+      <mat-form-field class="width-100">
+        <mat-select
+          [ngModelOptions]="{ standalone: true }"
+          [(ngModel)]="selectedTokenType"
+          [panelClass]="'multi-column-panel'">
+          @for (type of tokenService.tokenTypeOptions(); track type) {
+            <mat-option
+              class="token-type-option type-option"
+              [value]="type"
+              [matTooltip]="type.info.split(':')[1]"
+              >{{ type.info.split(":")[0] }}
+            </mat-option>
+          }
+          <button
+            (click)="versioningService.openDocumentation('tokentypes')"
+            class="card-button type-help-button"
+            mat-flat-button>
+            <mat-icon>info_outline</mat-icon>
+            Help About Tokentypes
+          </button>
+        </mat-select>
+      </mat-form-field>
+      <div class="enroll-button-container">
+        <div class="enroll-button-spacer"></div>
+        <button
+          (click)="enrollToken()"
+          [ngClass]="{
+            'disabled-button': formGroup.invalid || !selectedTokenType(),
+            'card-button': true,
+          }"
+          mat-flat-button>
+          <mat-icon>add</mat-icon>
+          @if (selectedTokenType(); as tt) {
+            Enroll {{ tt.key }} Token
+          } @else {
+            Enroll Token
+          }
+        </button>
+        <button
+          type="submit"
+          (click)="reopenEnrollmentDialog()"
+          [disabled]="!canReopenEnrollmentDialog()"
+          [matTooltip]="
+            canReopenEnrollmentDialog()
+              ? 'Reopen current enrollment dialog'
+              : ''
+          "
+          mat-icon-button>
+          <mat-icon>open_in_new</mat-icon>
+        </button>
+      </div>
+    </div>
     @switch (selectedTokenType().key) {
       @case ("hotp") {
         <app-enroll-hotp
@@ -334,28 +365,5 @@
         </div>
       </mat-expansion-panel>
     </mat-accordion>
-    <div class="enroll-button-container">
-      <div class="enroll-button-spacer"></div>
-      <button
-        (click)="enrollToken()"
-        [ngClass]="{
-          'disabled-button': formGroup.invalid || !selectedTokenType(),
-          'card-button': true,
-        }"
-        mat-flat-button>
-        <mat-icon>add</mat-icon>
-        @if (selectedTokenType(); as tt) {
-          Enroll {{ tt.key }} Token
-        } @else {
-          Enroll Token
-        }
-      </button>
-      <button
-        (click)="reopenEnrollmentDialog()"
-        [disabled]="!canReopenEnrollmentDialog()"
-        mat-icon-button>
-        <mat-icon>open_in_new</mat-icon>
-      </button>
-    </div>
   </form>
 </div>

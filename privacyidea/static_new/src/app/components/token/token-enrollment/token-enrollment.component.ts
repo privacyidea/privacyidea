@@ -33,7 +33,7 @@ import {
 import { ContainerService } from '../../../services/container/container.service';
 import { RealmService } from '../../../services/realm/realm.service';
 import { NotificationService } from '../../../services/notification/notification.service';
-import { UserService } from '../../../services/user/user.service';
+import { UserData, UserService } from '../../../services/user/user.service';
 import {
   DateAdapter,
   MAT_DATE_FORMATS,
@@ -83,10 +83,22 @@ import { EnrollPasskeyComponent } from './enroll-passkey/enroll-passkey.componen
 import { VersionService } from '../../../services/version/version.service';
 import { ContentService } from '../../../services/content/content.service';
 
-import { from, lastValueFrom, Observable } from 'rxjs';
+import { lastValueFrom, Observable } from 'rxjs';
 import { TokenEnrollmentData } from '../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { DialogService } from '../../../services/dialog/dialog.service';
 import { TokenEnrollmentLastStepDialogData } from './token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component';
+import {
+  MatTooltipModule,
+  MAT_TOOLTIP_DEFAULT_OPTIONS,
+  MatTooltipDefaultOptions,
+} from '@angular/material/tooltip';
+
+export const CUSTOM_TOOLTIP_OPTIONS: MatTooltipDefaultOptions = {
+  showDelay: 0,
+  hideDelay: 0,
+  touchendHideDelay: 1500,
+  disableTooltipInteractivity: true,
+};
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: 'YYYY-MM-DD' },
@@ -182,11 +194,13 @@ export class CustomDateAdapter extends NativeDateAdapter {
     EnrollWebauthnComponent,
     MatError,
     EnrollPasskeyComponent,
+    MatTooltipModule,
   ],
   providers: [
     provideNativeDateAdapter(),
     { provide: DateAdapter, useFactory: () => new CustomDateAdapter('+00:00') },
     { provide: MAT_DATE_FORMATS, useValue: CUSTOM_DATE_FORMATS },
+    { provide: MAT_TOOLTIP_DEFAULT_OPTIONS, useValue: CUSTOM_TOOLTIP_OPTIONS },
   ],
   templateUrl: './token-enrollment.component.html',
   styleUrls: ['./token-enrollment.component.scss'],
@@ -217,7 +231,10 @@ export class TokenEnrollmentComponent {
   selectedUserRealmControl = new FormControl(
     this.userService.selectedUserRealm() || this.realmService.defaultRealm(),
   );
-  userFilterControl = new FormControl(this.userService.userFilter());
+
+  userFilterControl: FormControl<string | UserData | null> = new FormControl(
+    this.userService.userFilter(),
+  );
   setPinControl = new FormControl<string>('');
   repeatPinControl = new FormControl<string>('');
 
@@ -354,7 +371,21 @@ export class TokenEnrollmentComponent {
     // The effect will call resetForm on initialization and on subsequent changes to selectedTokenType
     effect(() => {
       this.tokenService.selectedTokenType(); // Establish dependency on the signal
+      this._lastTokenEnrollmentLastStepDialogData.set(null); // Reset the last step dialog data
       this.resetForm();
+    });
+    effect(() => {
+      const users = this.userService.filteredUsers();
+      console.log('Filtered users:', users);
+      // If the userFilterControl is empty and there are users available
+      if (
+        users.length === 1 &&
+        this.userFilterControl.value === users[0].username
+      ) {
+        console.log('Updating userFilterControl to the only available user.');
+        // If there's only one user, set the userFilterControl to that user
+        this.userFilterControl.setValue(users[0]);
+      }
     });
   }
 
@@ -369,9 +400,10 @@ export class TokenEnrollmentComponent {
       }
       return this.userService.selectedUserRealm.set(value ?? '');
     });
-    this.userFilterControl.valueChanges.subscribe((value) =>
-      this.userService.userFilter.set(value ?? ''),
-    );
+    this.userFilterControl.valueChanges.subscribe((value) => {
+      console.log('User filter changed:', value);
+      this.userService.userFilter.set(value ?? '');
+    });
     this.selectedContainerControl.valueChanges.subscribe((value) =>
       this.containerService.selectedContainer.set(value ?? ''),
     );
@@ -415,18 +447,6 @@ export class TokenEnrollmentComponent {
     this.userFilterControl.updateValueAndValidity({ emitEvent: false });
   }
 
-  @HostListener('document:keydown.enter', ['$event'])
-  onEnter(event: KeyboardEvent) {
-    const target = event.target as HTMLElement;
-
-    if (target.tagName === 'TEXTAREA') {
-      return;
-    }
-    if (!this.dialogService.isAnyDialogOpen()) {
-      this.enrollToken();
-    }
-  }
-
   formatDateTimeOffset(date: Date, time: string, offset: string): string {
     const timeMatch = time.match(/^(\d{2}):(\d{2})$/);
     if (!timeMatch) {
@@ -449,6 +469,7 @@ export class TokenEnrollmentComponent {
   }
 
   protected async enrollToken(): Promise<void> {
+    console.log('Enrolling token with formGroup:', this.formGroup.value);
     const currentTokenType = this.tokenService.selectedTokenType();
     var everythingIsValid = true;
     if (!currentTokenType) {
@@ -456,17 +477,9 @@ export class TokenEnrollmentComponent {
       return;
     }
 
-    // Validate username against options if a username is entered
-    if (!this.validateUserNameFilterControl()) {
+    const user = this.userService.selectedUser();
+    if (this.userIsRequired() && !user) {
       everythingIsValid = false;
-    }
-
-    const userFilter = this.userFilterControl.value;
-    var userNameValue = '';
-    if (typeof userFilter === 'string') {
-      userNameValue = userFilter.trim();
-    } else if (userFilter) {
-      userNameValue = userFilter.username?.trim() || '';
     }
 
     if (this.formGroup.invalid) {
@@ -501,7 +514,7 @@ export class TokenEnrollmentComponent {
         this.selectedEndTimeControl.value ?? '23:59',
         this.selectedTimezoneOffsetControl.value ?? '+00:00',
       ),
-      user: userNameValue,
+      user: user?.username ?? '',
       pin: this.setPinControl.value ?? '',
     };
 
@@ -527,42 +540,15 @@ export class TokenEnrollmentComponent {
     const enrollmentResponse = await enrollPromise;
     this.enrollResponse.set(enrollmentResponse);
     if (enrollmentResponse) {
-      this.handleEnrollmentResponse(enrollmentResponse);
+      this._handleEnrollmentResponse({
+        response: enrollmentResponse,
+        user: user,
+      });
     }
   }
 
-  validateUserNameFilterControl(): boolean {
-    // Validate username against options if a username is entered
-    const userFilter = this.userFilterControl.value;
-    var userNameValue = '';
-    if (typeof userFilter === 'string') {
-      userNameValue = userFilter.trim();
-    } else if (userFilter) {
-      userNameValue = userFilter.username?.trim() || '';
-    }
-    if (
-      userNameValue &&
-      !this.userService.allUsernames().includes(userNameValue)
-    ) {
-      // Validation failed, set 'userNotInOptions' error when needed
-      if (!this.userFilterControl.hasError('userNotInOptions')) {
-        this.userFilterControl.setErrors({ userNotInOptions: true });
-      }
-      return false; // Indicate that validation failed
-    }
-    // Validation passed, clear any existing 'userNotInOptions' error
-    if (this.userFilterControl.hasError('userNotInOptions')) {
-      const currentErrors = { ...this.userFilterControl.errors };
-      delete currentErrors['userNotInOptions'];
-      this.userFilterControl.setErrors(
-        Object.keys(currentErrors).length > 0 ? currentErrors : null,
-      );
-    }
-    return true; // Indicate that validation passed
-  }
-
-  _lastTokenEnrollmentLastStepDialogData: TokenEnrollmentLastStepDialogData | null =
-    null;
+  _lastTokenEnrollmentLastStepDialogData =
+    signal<TokenEnrollmentLastStepDialogData | null>(null);
 
   canReopenEnrollmentDialog = computed(
     () =>
@@ -576,9 +562,10 @@ export class TokenEnrollmentComponent {
       reopenFunction();
       return;
     }
-    if (this._lastTokenEnrollmentLastStepDialogData) {
+    const lastStepData = this._lastTokenEnrollmentLastStepDialogData();
+    if (lastStepData) {
       this.dialogService.openTokenEnrollmentLastStepDialog({
-        data: this._lastTokenEnrollmentLastStepDialogData,
+        data: lastStepData,
       });
       return;
     }
@@ -590,21 +577,26 @@ export class TokenEnrollmentComponent {
     );
   }
 
-  protected openSecondLastDialog(response: EnrollmentResponse | null) {
+  protected openLastStepDialog(args: {
+    response: EnrollmentResponse | null;
+    user: UserData | null;
+  }): void {
+    const { response, user } = args;
     if (!response) {
       this.notificationService.openSnackBar(
         'No enrollment response available.',
       );
       return;
     }
-    const user = this.userService.userFilter();
-    if (typeof user === 'string' || !user) {
-      this.notificationService.openSnackBar(
-        'Please select a user before enrolling the token.',
-      );
-      return;
-    }
 
+    const dialogData: TokenEnrollmentLastStepDialogData = {
+      response: response,
+      enrollToken: this.enrollToken.bind(this),
+      user: user,
+      userRealm: this.userService.selectedUserRealm(),
+      onlyAddToRealm: this.onlyAddToRealm(),
+    };
+    this._lastTokenEnrollmentLastStepDialogData.set(dialogData);
     this.dialogService.openTokenEnrollmentLastStepDialog({
       data: {
         response: response,
@@ -616,29 +608,28 @@ export class TokenEnrollmentComponent {
     });
   }
 
-  private handleEnrollmentResponse(response: EnrollmentResponse): void {
+  private _handleEnrollmentResponse(args: {
+    response: EnrollmentResponse;
+    user: UserData | null;
+  }): void {
+    const { response, user } = args;
     const detail = response.detail || {};
     const rolloutState = detail.rollout_state;
 
-    if (rolloutState !== 'clientwait') {
-      this.notificationService.openSnackBar(
-        `Token ${detail.serial} enrolled successfully.`,
-      );
+    if (rolloutState === 'clientwait') {
+      return;
     }
 
-    // switch (this.tokenService.selectedTokenType()?.key) {
-    //   case 'webauthn':
-    //   case 'passkey':
-    //   case 'push':
-    //     // The multi-step logic for webauthn, passkey, push is now
-    //     // encapsulated within their respective onClickEnroll methods.
-    //     // The parent component just needs to know when to poll.
-    //     // this.openFirstStepDialog(response);
-    //     // this.pollTokenRolloutState(detail.serial, 5000);
-    //     break;
-    //   default:
-    //     break;
-    //   }
-    this.openSecondLastDialog(response);
+    if (this.userIsRequired() && !user) {
+      this.notificationService.openSnackBar(
+        'User is required for this token type, but no user was provided.',
+      );
+      return;
+    }
+
+    this.notificationService.openSnackBar(
+      `Token ${detail.serial} enrolled successfully.`,
+    );
+    this.openLastStepDialog({ response, user });
   }
 }

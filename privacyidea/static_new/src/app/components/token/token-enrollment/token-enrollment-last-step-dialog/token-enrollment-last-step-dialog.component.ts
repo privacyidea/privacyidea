@@ -25,7 +25,7 @@ import { UserData } from '../../../../services/user/user.service';
 export type TokenEnrollmentLastStepDialogData = {
   response: EnrollmentResponse;
   enrollToken: () => void;
-  user: UserData;
+  user: UserData | null;
   userRealm: string;
   onlyAddToRealm: boolean;
 };

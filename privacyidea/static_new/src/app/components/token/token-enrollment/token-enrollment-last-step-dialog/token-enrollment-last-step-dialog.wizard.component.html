@@ -15,11 +15,9 @@
       >.</span
     >
   }
-  @if (
-    data.user.username != "" && data.userRealm != "" && !data.onlyAddToRealm
-  ) {
+  @if (data.user?.username && data.userRealm != "" && !data.onlyAddToRealm) {
     <br /><span
-      >The user <a href="#">{{ data.user.username }}</a> in the realm
+      >The user <a href="#">{{ data.user!.username }}</a> in the realm
       <a href="#">{{ data.userRealm }}</a> was assigned to the token.
     </span>
   }

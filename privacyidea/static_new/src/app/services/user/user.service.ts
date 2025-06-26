@@ -38,6 +38,20 @@ export class UserService {
     computation: (source) => source.defaultRealm,
   });
 
+  selectedUser = computed<UserData | null>(() => {
+    const userName = this.userNameFilter();
+    if (!userName) {
+      return null;
+    }
+    const users = this.users();
+    const user = users.find((user) => user.username === userName);
+    if (user) {
+      return user;
+    } else {
+      return null;
+    }
+  });
+
   userFilter = linkedSignal<string, UserData | string>({
     source: this.selectedUserRealm,
     computation: () => '',
