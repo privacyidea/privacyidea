@@ -631,4 +631,3 @@ class SmsTokenClass(HotpTokenClass):
         self.add_tokeninfo("phone", passw)
         # Dynamically we remember that we need to do another challenge
         self.currently_in_challenge = True
-
