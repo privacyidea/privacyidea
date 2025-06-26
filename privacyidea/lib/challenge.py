@@ -26,7 +26,6 @@ The method is tested in test_lib_challenges
 """
 import datetime
 import logging
-import dateutil.tz
 from .log import log_with
 from .sqlutils import delete_matching_rows
 from ..models import Challenge, db

@@ -16,8 +16,7 @@ from privacyidea.lib.realm import delete_realm, get_realms
 from privacyidea.models import db, NodeName
 from .test_lib_resolver import LDAPDirectory, ldap3mock
 from .test_lib_caconnector import CACERT, CAKEY, WORKINGDIR, OPENSSLCNF
-from privacyidea.models import UserCache, db
-from sqlalchemy import func, select
+from privacyidea.models import UserCache
 
 PWFILE = "tests/testdata/passwords"
 POLICYFILE = "tests/testdata/policy.cfg"

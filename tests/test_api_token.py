@@ -2749,7 +2749,7 @@ class APITokenTestCase(MyApiTestCase):
     def test_35_delete_expired_challenge_endpoint(self):
         from privacyidea.models import Challenge
 
-        # seed the DB with two expired challenges and one valid challenge
+        # Add two expired challenges and one valid challenge to the DB
         Challenge.query.delete()
         Challenge(serial='0', validitytime=0).save()
         Challenge(serial='1', validitytime=0).save()

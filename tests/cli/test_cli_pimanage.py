@@ -17,7 +17,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import pytest
-from sqlalchemy import select, func
 from sqlalchemy.orm.session import close_all_sessions
 
 from privacyidea.app import create_app

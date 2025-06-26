@@ -51,13 +51,13 @@ myApp.controller("tokenChallengesController", ['$scope', 'TokenFactory',
                             "No expired challenges were deleted."),
                         {type: "info", ttl: 4000});
                 }
+                $scope.get(); // Refresh data after successful deletion
             } else {
                 inform.add(gettextCatalog.getString(
                         "Could not delete expired challenges."),
                     {type: "danger", ttl: 8000});
             }
         });
-        $scope.get();
     };
 
     $scope.return_to = function () {
