@@ -2,6 +2,8 @@
 This test file tests the lib.tokens.remotetoken
 This depends on lib.tokenclass
 """
+import logging
+from testfixtures import LogCapture
 
 from .base import MyTestCase
 from privacyidea.lib.tokens.remotetoken import RemoteTokenClass
@@ -80,7 +82,6 @@ class RemoteTokenTestCase(MyTestCase):
         class_prefix = token.get_class_prefix()
         self.assertTrue(class_prefix == "PIRE", class_prefix)
         self.assertTrue(token.get_class_type() == "remote", token)
-
 
     def test_02_class_methods(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()
@@ -170,12 +171,15 @@ class RemoteTokenTestCase(MyTestCase):
         self.assertFalse(r[0], r)
         self.assertTrue(r[1] == -1, r)
         self.assertTrue(r[2].get("message") == "Wrong PIN", r)
-        # rigth PIN
-        r = token.authenticate(self.otppin+"123456")
-        self.assertTrue(r[0], r)
-        self.assertTrue(r[1] >= 0, r)
-        self.assertTrue(r[2].get("message") == "matching 1 tokens", r)
-
+        # right PIN
+        logging.getLogger('privacyidea.lib.tokens.remotetoken').setLevel(logging.DEBUG)
+        with LogCapture(level=logging.DEBUG) as lc:
+            r = token.authenticate(self.otppin+"123456")
+            self.assertTrue(r[0], r)
+            self.assertTrue(r[1] >= 0, r)
+            self.assertTrue(r[2].get("message") == "matching 1 tokens", r)
+            for log_record in lc.actual():
+                self.assertNotIn(self.otppin, log_record[2], log_record)
 
     @responses.activate
     def test_09_authenticate_remote_pin(self):
