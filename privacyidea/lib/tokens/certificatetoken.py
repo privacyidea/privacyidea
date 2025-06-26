@@ -684,16 +684,3 @@ class CertificateTokenClass(TokenClass):
         log.info("CRL {0!s} created.".format(crl))
 
         return revoked
-
-    def import_token(self, token_information: dict):
-        """
-        Imports a certificate token.
-        """
-        try:
-            self.token.type = token_information["type"]
-            self.token.description = token_information["description"]
-            self.add_tokeninfo_dict(token_information["tokeninfo"])
-            self.add_tokeninfo("import_date", datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"))
-            self.save()
-        except Exception as exx:
-            log.error(f'Failed to import token: {exx}')

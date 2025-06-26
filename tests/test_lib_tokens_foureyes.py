@@ -88,7 +88,7 @@ class FourEyesTokenTestCase(MyTestCase):
         remove_token(serial='pwserial3')
         remove_token(serial='eye1')
 
-    def test_04_foureyr_token_export(self):
+    def test_04_foureyes_token_export(self):
         # Set up the FourEyeTokenClass for testing
         foureyetoken = init_token(param={
             'serial': "FOUR12345678",
@@ -128,7 +128,7 @@ class FourEyesTokenTestCase(MyTestCase):
         # Clean up
         remove_token(foureyetoken.token.serial)
 
-    def test_05_foureyr_token_import(self):
+    def test_05_foureyes_token_import(self):
         # Define the token data to be imported
         token_data = [{
             "serial": "FOUR12345678",

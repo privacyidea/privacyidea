@@ -44,7 +44,7 @@ from dateutil.tz import tzutc
 from json import loads, dumps
 from flask_sqlalchemy import SQLAlchemy
 
-from privacyidea.lib.crypto import (encrypt, encryptPin, decryptPin,
+from privacyidea.lib.crypto import (encrypt, encryptPassword, encryptPin, decryptPin,
                                     geturandom, hash, SecretObj, pass_hash,
                                     verify_pass_hash, get_rand_digit_str)
 from sqlalchemy import and_
@@ -638,7 +638,12 @@ class Token(MethodsMixin, db.Model):
         types = {}
         for k, v in info.items():
             if k.endswith(".type"):
-                types[".".join(k.split(".")[:-1])] = v
+                key = ".".join(k.split(".")[:-1])
+                types[key] = v
+                if v == "password":
+                    # If the type is password, we need to encrypt the value
+                    # as it is a secret.
+                    info[key] = encryptPassword(info[key])
         for k, v in info.items():
             if not k.endswith(".type"):
                 TokenInfo(self.id, k, v, Type=types.get(k)).save(persistent=False)

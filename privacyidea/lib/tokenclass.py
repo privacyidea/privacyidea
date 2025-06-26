@@ -78,6 +78,7 @@ This method is supposed to be overwritten by the corresponding token classes.
 import hashlib
 import logging
 import traceback
+
 from base64 import b32encode
 from binascii import unhexlify
 from datetime import datetime, timedelta, timezone
@@ -86,7 +87,7 @@ from dateutil.parser import parse as parse_date_string, ParserError
 from dateutil.tz import tzlocal, tzutc
 
 from privacyidea.lib import _
-from privacyidea.lib.crypto import (encryptPassword, decryptPassword,
+from privacyidea.lib.crypto import (decryptPassword,
                                     generate_otpkey)
 from privacyidea.lib.policy import (get_action_values_from_options, SCOPE, ACTION)
 from privacyidea.lib.utils import (is_true, decode_base32check,
@@ -377,14 +378,6 @@ class TokenClass(object):
         :return:
         """
         self.token.del_info()
-        for k, v in info.items():
-            # check if type is a password
-            if k.endswith(".type") and v == "password":
-                # of type password, so we need to encrypt the value of
-                # the original key (without type)
-                orig_key = ".".join(k.split(".")[:-1])
-                info[orig_key] = encryptPassword(info.get(orig_key, ""))
-
         self.token.set_info(info)
 
     @check_token_locked
@@ -399,9 +392,6 @@ class TokenClass(object):
         add_info = {key: value}
         if value_type:
             add_info[key + ".type"] = value_type
-            if value_type == "password":
-                # encrypt the value
-                add_info[key] = encryptPassword(value)
         self.token.set_info(add_info)
 
     @check_token_locked
@@ -2019,7 +2009,8 @@ class TokenClass(object):
         token_dict["description"] = self.token.description
         token_dict["serial"] = self.token.serial
         token_dict["otpkey"] = self.token.get_otpkey().getKey().decode("utf-8")
-        token_dict["tokeninfo"] = self.get_tokeninfo()
+        token_dict["otplen"] = self.token.otplen
+        token_dict["tokeninfo"] = self.get_tokeninfo(decrypted=True)
 
         return token_dict
 
@@ -2028,11 +2019,12 @@ class TokenClass(object):
         Import a given token.
         """
         try:
-            self.token.set_otpkey(token_information["otpkey"])
+            self.token.set_otpkey(token_information.setdefault("otpkey", ''))
+            self.token.otplen = int(token_information.setdefault("otplen", 6))
             self.token.type = token_information["type"]
-            self.token.description = token_information["description"]
-            self.add_tokeninfo_dict(token_information["tokeninfo"])
-            self.add_tokeninfo("import_date", datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"))
+            self.token.description = token_information.setdefault("description", '')
+            self.add_tokeninfo_dict(token_information.setdefault("tokeninfo", {}))
+            self.add_tokeninfo("import_date", datetime.now(timezone.utc).isoformat(timespec="seconds"))
             self.save()
         except Exception as exx:
             log.error(f'Failed to import token: {exx}')
