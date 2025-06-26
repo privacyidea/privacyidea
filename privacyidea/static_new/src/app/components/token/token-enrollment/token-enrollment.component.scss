@@ -3,11 +3,11 @@
 
 .token-enrollment-container {
   @include styles.table-container-styles;
-  padding-top: 0;
+  // padding-top: 0;
   margin: 2rem 1rem 1rem;
-  max-height: calc(75vh - 3rem);
+  max-height: calc(80vh - 5rem);
   overflow: auto;
-  width: 785px;
+  width: 1140px;
 }
 
 .token-type-option {
@@ -72,12 +72,29 @@ h5 {
     background: #dedcdf;
     padding: 12px 4px 16px 12px;
   }
-  .sticky-header {
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    background-color: white;
-    margin-top: 1rem;
-    padding: 1rem 0;
-  }
+}
+
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: white;
+  padding: 1rem;
+  transition: box-shadow 0.2s ease-in-out;
+}
+
+.sticky-header.is-sticky {
+  /* This shadow is applied only when the header is in its "sticky" state */
+  box-shadow: var(--box-shadow);
+}
+
+.sticky-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.sticky-controls .mat-mdc-form-field {
+  flex-grow: 1;
+  width: 100%;
 }

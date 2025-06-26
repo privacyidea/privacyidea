@@ -1,12 +1,17 @@
 import {
+  AfterViewInit,
   Component,
   computed,
   effect,
+  ElementRef,
   HostListener,
   Injectable,
   linkedSignal,
+  OnDestroy,
+  Renderer2,
   signal,
   WritableSignal,
+  ViewChild,
 } from '@angular/core';
 import {
   MatError,
@@ -94,9 +99,10 @@ import {
 } from '@angular/material/tooltip';
 
 export const CUSTOM_TOOLTIP_OPTIONS: MatTooltipDefaultOptions = {
-  showDelay: 0,
+  showDelay: 500,
+  touchLongPressShowDelay: 500,
   hideDelay: 0,
-  touchendHideDelay: 1500,
+  touchendHideDelay: 0,
   disableTooltipInteractivity: true,
 };
 
@@ -206,7 +212,7 @@ export class CustomDateAdapter extends NativeDateAdapter {
   styleUrls: ['./token-enrollment.component.scss'],
   standalone: true,
 })
-export class TokenEnrollmentComponent {
+export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   timezoneOptions = TIMEZONE_OFFSETS;
   tokenSerial = this.tokenService.tokenSerial;
   containerSerial = this.containerService.containerSerial;
@@ -222,6 +228,13 @@ export class TokenEnrollmentComponent {
   });
 
   enrollResponse: WritableSignal<EnrollmentResponse | null> = signal(null);
+
+  @ViewChild('scrollContainer') scrollContainer!: ElementRef<HTMLElement>;
+  @ViewChild('stickyHeader') stickyHeader!: ElementRef<HTMLElement>;
+  @ViewChild('stickySentinel') stickySentinel!: ElementRef<HTMLElement>;
+
+  private observer!: IntersectionObserver;
+
   // Effect to reset enrollResponse when token type changes, if selectedTokenTypeControl is used as source
   // Alternatively, keep linkedSignal if selectedTokenType (service signal) is the desired source.
   // For simplicity and consistency with formGroup driving state:
@@ -367,6 +380,7 @@ export class TokenEnrollmentComponent {
     protected versioningService: VersionService,
     protected contentService: ContentService,
     protected dialogService: DialogService,
+    private renderer: Renderer2,
   ) {
     // The effect will call resetForm on initialization and on subsequent changes to selectedTokenType
     effect(() => {
@@ -407,6 +421,37 @@ export class TokenEnrollmentComponent {
     this.selectedContainerControl.valueChanges.subscribe((value) =>
       this.containerService.selectedContainer.set(value ?? ''),
     );
+  }
+
+  ngAfterViewInit(): void {
+    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) {
+      return;
+    }
+
+    const options = {
+      root: this.scrollContainer.nativeElement,
+      threshold: [0, 1],
+    };
+
+    this.observer = new IntersectionObserver(([entry]) => {
+      if (!entry.rootBounds) return;
+
+      const isSticky = entry.boundingClientRect.top < entry.rootBounds.top;
+
+      if (isSticky) {
+        this.renderer.addClass(this.stickyHeader.nativeElement, 'is-sticky');
+      } else {
+        this.renderer.removeClass(this.stickyHeader.nativeElement, 'is-sticky');
+      }
+    }, options);
+
+    this.observer.observe(this.stickySentinel.nativeElement);
+  }
+
+  ngOnDestroy(): void {
+    if (this.observer) {
+      this.observer.disconnect();
+    }
   }
 
   resetForm(): void {
