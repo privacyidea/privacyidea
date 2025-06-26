@@ -2688,3 +2688,23 @@ def rss_age(request, action):
             log.warning(f"Invalid RSS_AGE: {age_list}. Using the default.")
     request.all_data[ACTION.RSS_AGE] = age
     return True
+
+
+def disabled_token_types(request, action):
+    """
+    This decorator retrieves the disabled token types from the policies and adds them to the request data,
+    to disable them for the authentication in check_token_list.
+
+    :param request: The request object
+    :param action: The action parameter is not used in this decorator
+    :return: True
+    """
+    token_types = Match.user(g, scope=SCOPE.AUTH, action=ACTION.DISABLED_TOKEN_TYPES,
+                             user_object=request.User if hasattr(request, 'User') else None).action_values(unique=False)
+
+    if token_types:
+        request.all_data[ACTION.DISABLED_TOKEN_TYPES] = list(token_types)
+    else:
+        request.all_data[ACTION.DISABLED_TOKEN_TYPES] = []
+
+    return True

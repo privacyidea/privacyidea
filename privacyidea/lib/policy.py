@@ -448,6 +448,7 @@ class ACTION(object):
     CONTAINER_WIZARD_REGISTRATION = "container_wizard_registration"
     CLIENT_MODE_PER_USER = "client_mode_per_user"
     HIDE_CONTAINER_INFO = "hide_container_info"
+    DISABLED_TOKEN_TYPES = "disabled_token_types"
 
 
 class TYPE(object):
@@ -2584,6 +2585,13 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _("If the PIN of a token is to be changed, this will allow the user to change the "
                           "PIN during a validate/check request via challenge / response."),
+            },
+            ACTION.DISABLED_TOKEN_TYPES: {
+                'type': 'str',
+                'desc': _('Specify the list of token types, '
+                          'that can not be used for authentication.'),
+                'multiple': True,
+                'value': [token_obj.get_class_type() for token_obj in get_token_classes()]
             },
             ACTION.RESYNC_VIA_MULTICHALLENGE: {
                 'type': 'bool',

@@ -2475,6 +2475,10 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
             # If there is no unlocked token left.
             raise TokenAdminError(_("This action is not possible, since the token is locked"), id=1007)
 
+    # Remove disabled token types from token_object_list
+    if ACTION.DISABLED_TOKEN_TYPES in options and options[ACTION.DISABLED_TOKEN_TYPES]:
+        token_object_list = [token for token in token_object_list if token.type not in options[ACTION.DISABLED_TOKEN_TYPES]]
+
     # Remove certain disabled tokens from token_object_list
     if len(token_object_list) > 0:
         token_object_list = [token for token in token_object_list if token.use_for_authentication(options)]
