@@ -32,7 +32,7 @@
         </mat-form-field>
         <div class="enroll-button-container">
           <button
-            (click)="enrollToken()"
+            type="submit"
             [ngClass]="{
               'disabled-button': formGroup.invalid || !selectedTokenType(),
               'card-button': true,
@@ -46,7 +46,7 @@
             }
           </button>
           <button
-            type="submit"
+            type="button"
             (click)="reopenEnrollmentDialog()"
             [disabled]="!canReopenEnrollmentDialog()"
             [matTooltip]="

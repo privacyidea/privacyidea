@@ -4,7 +4,6 @@ import {
   computed,
   effect,
   ElementRef,
-  HostListener,
   Injectable,
   linkedSignal,
   OnDestroy,
@@ -386,6 +385,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     effect(() => {
       this.tokenService.selectedTokenType(); // Establish dependency on the signal
       this._lastTokenEnrollmentLastStepDialogData.set(null); // Reset the last step dialog data
+      this.reopenCurrentEnrollmentDialogSignal.set(undefined); // Reset the reopen dialog signal
       this.resetForm();
     });
     effect(() => {
@@ -475,13 +475,10 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     this.additionalFormFields.set({});
     this.formGroup.markAsPristine();
     this.formGroup.markAsUntouched();
-    // Reset the pollResponse signal
     this.pollResponse.set(null);
-    // Reset the enrollResponse signal
     this.enrollResponse.set(null);
 
     const isUserRequiredByTokenType = this.userIsRequired();
-    // _userInOptionsValidator is now checked only on enrollToken()
     this.selectedUserRealmControl.setValidators(
       isUserRequiredByTokenType ? [Validators.required] : [],
     );
@@ -514,6 +511,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   }
 
   protected async enrollToken(): Promise<void> {
+    console.trace('enrollToken wurde aufgerufen'); // Gibt den Aufrufpfad (Stacktrace) aus
     console.log('Enrolling token with formGroup:', this.formGroup.value);
     const currentTokenType = this.tokenService.selectedTokenType();
     var everythingIsValid = true;
@@ -598,17 +596,19 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   canReopenEnrollmentDialog = computed(
     () =>
       !!this.reopenCurrentEnrollmentDialogSignal() ||
-      !!this._lastTokenEnrollmentLastStepDialogData,
+      !!this._lastTokenEnrollmentLastStepDialogData(),
   );
 
   reopenEnrollmentDialog() {
     const reopenFunction = this.reopenCurrentEnrollmentDialogSignal();
     if (reopenFunction) {
+      console.log('Reopening enrollment dialog with function:', reopenFunction);
       reopenFunction();
       return;
     }
     const lastStepData = this._lastTokenEnrollmentLastStepDialogData();
     if (lastStepData) {
+      console.log('Reopening last step dialog with data:', lastStepData);
       this.dialogService.openTokenEnrollmentLastStepDialog({
         data: lastStepData,
       });
@@ -643,13 +643,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     };
     this._lastTokenEnrollmentLastStepDialogData.set(dialogData);
     this.dialogService.openTokenEnrollmentLastStepDialog({
-      data: {
-        response: response,
-        enrollToken: this.enrollToken.bind(this),
-        user: user,
-        userRealm: this.userService.selectedUserRealm(),
-        onlyAddToRealm: this.onlyAddToRealm(),
-      },
+      data: dialogData,
     });
   }
 

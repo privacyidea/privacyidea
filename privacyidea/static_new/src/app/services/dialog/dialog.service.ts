@@ -83,14 +83,17 @@ export class DialogService {
     });
     return this._tokenEnrollmentLastStepRef;
   }
+
   closeTokenEnrollmentLastStepDialog(): void {
     if (this._tokenEnrollmentLastStepRef) {
       this._tokenEnrollmentLastStepRef.close();
     }
   }
+
   isTokenEnrollmentLastStepDialogOpen(): boolean {
     return !!this._tokenEnrollmentLastStepRef;
   }
+
   isAnyDialogOpen(): boolean {
     return this.dialog.openDialogs.length > 0;
   }
