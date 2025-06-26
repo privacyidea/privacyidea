@@ -1,3 +1,10 @@
+Version 3.11.4, 2025-06-26
+
+  Fixes:
+  * Fix wrong token assignment view tokens when using the usercache (#4454)
+  * Remove superfluous error message when max_token_user/realm is set (#4434)
+  * Fix logging passwords in debug mode with some specific token tpes (#4457)
+
 Version 3.11.3, 2025-05-28
 
 Enhancements:
