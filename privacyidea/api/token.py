@@ -388,7 +388,7 @@ def get_challenges_api(serial=None):
 @log_with(log)
 def delete_expired_challenges_api():
     """
-    Delete expired entries in the challenge table.
+    Delete all expired entries in the challenge table.
 
     :>json bool status: Status of the request
     :reqheader PI-Authorization: The authorization token

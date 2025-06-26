@@ -492,7 +492,7 @@ def list_nodes():
 @admin_required
 def delete_user_cache_api():
     """
-    Delete the user cache. It will delete all entries in the user cache.
+    Delete all entries from the user cache.
 
     :>json bool status: Status of the request
     :reqheader PI-Authorization: The authorization token

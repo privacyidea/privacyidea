@@ -182,7 +182,7 @@ def delete_challenges(serial: str = None, transaction_id: str = None) -> int:
 
 def _build_challenge_criterion(age: int = None) -> 'sqlalchemy.sql.expression.BinaryExpression':
     """
-    Return an SQLAlchemy binary expression selecting the right rows.
+    Return an SQLAlchemy binary expression selecting expired challenges or expired challenges older than a given age.
 
     :param age: If given, delete challenges older than this many minutes.
     :return: SQLAlchemy binary expression
