@@ -15,7 +15,7 @@ import {
 import { environment } from '../../../environments/environment';
 import { LocalService } from '../local/local.service';
 import { NotificationService } from '../notification/notification.service';
-import { EnrollmentUrl, TokenService } from '../token/token.service';
+import { TokenService } from '../token/token.service';
 import {
   catchError,
   forkJoin,
@@ -32,6 +32,7 @@ import { Sort } from '@angular/material/sort';
 import { ContainerTypeOption } from '../../components/token/container-create/container-create.component';
 import { ContentService } from '../content/content.service';
 import { PiResponse } from '../../app.component';
+import { EnrollmentUrl } from '../../mappers/token-api-payload/_token-api-payload.mapper';
 
 const apiFilter = ['container_serial', 'type', 'user'];
 const advancedApiFilter = ['token_serial'];

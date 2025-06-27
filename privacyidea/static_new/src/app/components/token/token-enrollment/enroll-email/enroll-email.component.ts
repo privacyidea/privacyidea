@@ -16,13 +16,13 @@ import {
   Validators,
 } from '@angular/forms';
 import { SystemService } from '../../../../services/system/system.service';
-import {
-  EnrollmentResponse,
-  TokenService,
-} from '../../../../services/token/token.service';
+import { TokenService } from '../../../../services/token/token.service';
 
 import { Observable, of } from 'rxjs';
-import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import {
+  EnrollmentResponse,
+  TokenEnrollmentData,
+} from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { EmailApiPayloadMapper } from '../../../../mappers/token-api-payload/email-token-api-payload.mapper';
 
 export interface EmailEnrollmentOptions extends TokenEnrollmentData {

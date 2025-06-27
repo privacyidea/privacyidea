@@ -25,13 +25,13 @@ import {
 } from '@angular/material/core';
 import { MatError, MatSelect } from '@angular/material/select';
 import { MatCheckbox } from '@angular/material/checkbox';
-import {
-  EnrollmentResponse,
-  TokenService,
-} from '../../../../services/token/token.service';
+import { TokenService } from '../../../../services/token/token.service';
 
 import { Observable, of } from 'rxjs';
-import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import {
+  EnrollmentResponse,
+  TokenEnrollmentData,
+} from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { FourEyesApiPayloadMapper } from '../../../../mappers/token-api-payload/4eyes-token-api-payload.mapper';
 
 export interface FourEyesEnrollmentOptions extends TokenEnrollmentData {

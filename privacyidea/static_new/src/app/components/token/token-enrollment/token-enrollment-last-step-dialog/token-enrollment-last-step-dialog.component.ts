@@ -15,12 +15,10 @@ import {
   MatExpansionPanelTitle,
 } from '@angular/material/expansion';
 import { MatIcon } from '@angular/material/icon';
-import {
-  EnrollmentResponse,
-  TokenService,
-} from '../../../../services/token/token.service';
+import { TokenService } from '../../../../services/token/token.service';
 import { ContentService } from '../../../../services/content/content.service';
 import { UserData } from '../../../../services/user/user.service';
+import { EnrollmentResponse } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 
 export type TokenEnrollmentLastStepDialogData = {
   response: EnrollmentResponse;

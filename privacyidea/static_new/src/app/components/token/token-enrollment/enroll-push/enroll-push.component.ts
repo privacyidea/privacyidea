@@ -5,14 +5,13 @@ import {
   FormsModule,
   ReactiveFormsModule,
 } from '@angular/forms';
-import {
-  EnrollmentResponse,
-  Tokens,
-  TokenService,
-} from '../../../../services/token/token.service';
+import { Tokens, TokenService } from '../../../../services/token/token.service';
 
 import { lastValueFrom, Observable } from 'rxjs';
-import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import {
+  EnrollmentResponse,
+  TokenEnrollmentData,
+} from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { PushApiPayloadMapper } from '../../../../mappers/token-api-payload/push-token-api-payload.mapper';
 import { DialogService } from '../../../../services/dialog/dialog.service';
 import { PiResponse } from '../../../../app.component';
@@ -123,18 +122,18 @@ export class EnrollPushComponent implements OnInit {
   };
 
   private _openStepOneDialog(
-    initResponse: EnrollmentResponse,
+    enrollmentResponse: EnrollmentResponse,
   ): MatDialogRef<TokenEnrollmentFirstStepDialogComponent, any> {
     this.reopenCurrentEnrollmentDialogChange.emit(async () => {
       if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen()) {
-        await this.pollTokenRolloutState(initResponse, 0);
-        return initResponse;
+        await this.pollTokenRolloutState(enrollmentResponse, 0);
+        return enrollmentResponse;
       }
       return undefined;
     });
 
     return this.dialogService.openTokenEnrollmentFirstStepDialog({
-      data: { response: initResponse },
+      data: { enrollmentResponse },
     });
   }
   private _closeStepOneDialog(): void {

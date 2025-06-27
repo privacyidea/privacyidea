@@ -11,13 +11,13 @@ import {
 import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatCheckbox } from '@angular/material/checkbox';
-import {
-  EnrollmentResponse,
-  TokenService,
-} from '../../../../services/token/token.service';
+import { TokenService } from '../../../../services/token/token.service';
 
 import { Observable, of } from 'rxjs';
-import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import {
+  EnrollmentResponse,
+  TokenEnrollmentData,
+} from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { MotpApiPayloadMapper } from '../../../../mappers/token-api-payload/motp-token-api-payload.mapper';
 
 export interface MotpEnrollmentOptions extends TokenEnrollmentData {

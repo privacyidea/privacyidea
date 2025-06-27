@@ -5,13 +5,13 @@ import {
   FormsModule,
   ReactiveFormsModule,
 } from '@angular/forms';
-import {
-  EnrollmentResponse,
-  TokenService,
-} from '../../../../services/token/token.service';
+import { TokenService } from '../../../../services/token/token.service';
 
 import { Observable, of } from 'rxjs';
-import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import {
+  EnrollmentResponse,
+  TokenEnrollmentData,
+} from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { SpassApiPayloadMapper } from '../../../../mappers/token-api-payload/spass-token-api-payload.mapper';
 
 export interface SpassEnrollmentOptions extends TokenEnrollmentData {

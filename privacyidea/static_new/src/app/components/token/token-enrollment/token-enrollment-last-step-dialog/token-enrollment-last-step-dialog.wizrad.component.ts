@@ -16,16 +16,14 @@ import {
 } from '@angular/material/expansion';
 import { MatIcon } from '@angular/material/icon';
 import { TokenEnrollmentLastStepDialogComponent } from './token-enrollment-last-step-dialog.component';
-import {
-  EnrollmentResponse,
-  TokenService,
-} from '../../../../services/token/token.service';
+import { TokenService } from '../../../../services/token/token.service';
 import { ContentService } from '../../../../services/content/content.service';
 import { HttpClient } from '@angular/common/http';
 import { DomSanitizer } from '@angular/platform-browser';
 import { map } from 'rxjs';
 import { UserData } from '../../../../services/user/user.service';
 import { AsyncPipe } from '@angular/common';
+import { EnrollmentResponse } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 
 @Component({
   selector: 'app-token-enrollment-second-step-dialog-wizard',

@@ -23,7 +23,6 @@ import {
 import { catchError, shareReplay, takeUntil, takeWhile } from 'rxjs/operators';
 import { LocalService } from '../local/local.service';
 import { Sort } from '@angular/material/sort';
-import { TableUtilsService } from '../table-utils/table-utils.service';
 import { environment } from '../../../environments/environment';
 import { NotificationService } from '../notification/notification.service';
 import {
@@ -33,6 +32,7 @@ import {
 import { ContentService } from '../content/content.service';
 import { PiResponse } from '../../app.component';
 import {
+  EnrollmentResponse,
   TokenApiPayloadMapper,
   TokenEnrollmentData,
 } from '../../mappers/token-api-payload/_token-api-payload.mapper';
@@ -101,31 +101,30 @@ export interface TokenType {
   text: string;
 }
 
-export interface EnrollmentResponse {
-  detail: EnrollmentResponseDetail;
-  [key: string]: any;
-}
-export interface EnrollmentResponseDetail {
-  serial: string;
-  rollout_state: string;
-  passkey_registration?: any;
-  webAuthnRegisterRequest?: any;
-  u2fRegisterRequest?: any;
-  pushurl?: EnrollmentUrl;
-  transaction_id?: string;
-  googleurl?: EnrollmentUrl;
-  otpkey?: EnrollmentUrl;
-  motpurl?: EnrollmentUrl;
-  tiqrenroll?: EnrollmentUrl;
-  [key: string]: any;
+export interface WebAuthnRegisterRequest {
+  attestation: string;
+  authenticatorSelection: {
+    userVerification: string;
+  };
+  displayName: string;
+  message: string;
+  name: string;
+  nonce: string;
+  excludeCredentials?: any;
+  extensions?: any;
+  pubKeyCredAlgorithms: {
+    alg: number;
+    type: string;
+  }[];
+  relyingParty: {
+    id: string;
+    name: string;
+  };
+  serialNumber: string;
+  timeout: number;
+  transaction_id: string;
 }
 
-export interface EnrollmentUrl {
-  description: string;
-  img: string;
-  value: string;
-  value_b32?: string;
-}
 export type LostTokenResponse = PiResponse<LostTokenData>;
 export interface LostTokenData {
   disable: number;
@@ -136,48 +135,6 @@ export interface LostTokenData {
   serial: string;
   user: boolean;
   valid_to: string;
-}
-
-// Deprecated: Use and extend `TokenEnrollmentData` instead
-export interface EnrollmentOptions extends TokenEnrollmentData {
-  generateOnServer?: boolean;
-  otpLength?: number;
-  otpKey?: string;
-  hashAlgorithm?: string;
-  timeStep?: number;
-  motpPin?: string;
-  sshPublicKey?: string;
-  remoteServer?: { url: string; id: string };
-  remoteSerial?: string;
-  remoteUser?: string;
-  remoteRealm?: string;
-  remoteResolver?: string;
-  checkPinLocally?: boolean;
-  yubicoIdentifier?: string;
-  radiusServerConfiguration?: string;
-  radiusUser?: string;
-  smsGateway?: string;
-  phoneNumber?: string;
-  separator?: string;
-  requiredTokenOfRealms?: {
-    realm: string;
-    tokens: number;
-  }[];
-  onlyAddToRealm?: boolean;
-  userRealm?: string;
-  serviceId?: string;
-  caConnector?: string;
-  certTemplate?: string;
-  pem?: string;
-  emailAddress?: string;
-  readEmailDynamically?: boolean;
-  answers?: Record<string, string>;
-  vascoSerial?: string;
-  useVascoSerial?: boolean;
-  readNumberDynamically?: boolean;
-  setPinValue?: string;
-  repeatPinValue?: string;
-  credential_id?: string;
 }
 
 @Injectable({
@@ -748,129 +705,16 @@ export class TokenService {
       );
   }
 
-  enrollToken<T extends TokenEnrollmentData>(args: {
-    data: T;
-    mapper: TokenApiPayloadMapper<T>;
-  }) {
+  enrollToken<
+    T extends TokenEnrollmentData,
+    R extends EnrollmentResponse,
+  >(args: { data: T; mapper: TokenApiPayloadMapper<T> }) {
     const { data, mapper } = args;
     const headers = this.localService.getHeaders();
     const params = mapper.toApiPayload(data);
 
-    // switch (data.type) {
-    //   case 'webauthn':
-    //   case 'passkey':
-    //     if (data['credential_id']) {
-    //       Object.entries(data).forEach(([key, value]) => {
-    //         params[key] = value;
-    //       });
-    //     }
-    //     break;
-    //   case 'hotp':
-    //   case 'totp':
-    //   case 'motp':
-    //   case 'applspec':
-    //     params.otpkey = data['generateOnServer'] ? null : data['otpKey'];
-    //     params.genkey = data['generateOnServer'] ? 1 : 0;
-    //     if (data.type === 'motp') {
-    //       params.motppin = data['motpPin'];
-    //     }
-    //     if (data.type === 'hotp' || data.type === 'totp') {
-    //       params.otplen = Number(data['otpLength']);
-    //       params.hashlib = data['hashAlgorithm'];
-    //     }
-    //     if (data.type === 'totp') {
-    //       params.timeStep = data['timeStep'];
-    //     }
-    //     if (data.type === 'applspec') {
-    //       params.service_id = data['serviceId'];
-    //     }
-    //     break;
-    //   case 'push':
-    //     params.genkey = 1;
-    //     break;
-    //   case 'daypassword':
-    //     params.otpkey = data['otpKey'];
-    //     params.otplen = Number(data['otpLength']);
-    //     params.hashlib = data['hashAlgorithm'];
-    //     params.timeStep = data['timeStep'];
-    //     break;
-    //   case 'indexedsecret':
-    //     params.otpkey = data['otpKey'];
-    //     break;
-    //   case 'yubikey':
-    //     params.otplen = Number(data['otpLength']);
-    //     params.otpkey = data['otpKey'];
-    //     break;
-    //   case 'yubico':
-    //     params['yubico.tokenid'] = data['yubicoIdentifier'];
-    //     break;
-    //   case 'radius':
-    //     params['radius.identifier'] = data['radiusServerConfiguration'];
-    //     params['radius.user'] = data['radiusUser'];
-    //     break;
-    //   case 'remote':
-    //     params['remote.server_id'] = data['remoteServer'];
-    //     params['remote.serial'] = data['remoteSerial'];
-    //     params['remote.user'] = data['remoteUser'];
-    //     params['remote.realm'] = data['remoteRealm'];
-    //     params['remote.resolver'] = data['remoteResolver'];
-    //     params['remote.local_checkpin'] = data['checkPinLocally'];
-    //     break;
-    //   case 'sms':
-    //     params['sms.identifier'] = data['smsGateway'];
-    //     params['phone'] = data['readNumberDynamically']
-    //       ? null
-    //       : data['phoneNumber'];
-    //     params['dynamic_phone'] = data['readNumberDynamically'];
-    //     break;
-    //   case '4eyes':
-    //     params.separator = data['separator'];
-    //     params['4eyes'] = data['requiredTokenOfRealms']?.reduce(
-    //       (
-    //         acc: { [key: string]: { count: number; selected: boolean } },
-    //         curr: any,
-    //       ) => {
-    //         acc[curr.realm] = {
-    //           count: curr.tokens,
-    //           selected: true,
-    //         };
-    //         return acc;
-    //       },
-    //       {},
-    //     );
-    //     if (data['onlyAddToRealm']) {
-    //       params.realm = data['userRealm'];
-    //       params.user = null;
-    //     }
-    //     break;
-    //   case 'certificate':
-    //     params.genkey = 1;
-    //     params.ca = data['caConnector'];
-    //     params.template = data['certTemplate'];
-    //     params.pem = data['pem'];
-    //     break;
-    //   case 'email':
-    //     params.email = data['emailAddress'];
-    //     params.dynamic_email = data['readEmailDynamically'];
-    //     break;
-
-    //   case 'question':
-    //     params.questions = data['answers'];
-    //     break;
-
-    //   case 'vasco':
-    //     if (data['useVascoSerial']) {
-    //       params.serial = data['vascoSerial'];
-    //     }
-    //     params.otpkey = data['otpKey'];
-    //     params.genkey = 0;
-    //     break;
-    //   default:
-    //     break;
-    // }
-
     return this.http
-      .post<EnrollmentResponse>(`${this.tokenBaseUrl}init`, params, {
+      .post<R>(`${this.tokenBaseUrl}init`, params, {
         headers,
       })
       .pipe(

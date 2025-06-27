@@ -9,8 +9,8 @@ import {
   TokenEnrollmentLastStepDialogComponent,
   TokenEnrollmentLastStepDialogData,
 } from '../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component';
-import { EnrollmentResponse } from '../token/token.service';
 import { TokenEnrollmentFirstStepDialogComponent } from '../../components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component';
+import { EnrollmentResponse } from '../../mappers/token-api-payload/_token-api-payload.mapper';
 
 class MatDialogConfigRequired<D = any> extends MatDialogConfig<D> {
   override data!: D;
@@ -34,7 +34,7 @@ export class DialogService {
   > | null = null;
   openTokenEnrollmentFirstStepDialog(
     config: MatDialogConfigRequired<{
-      response: EnrollmentResponse;
+      enrollmentResponse: EnrollmentResponse;
     }>,
   ): MatDialogRef<TokenEnrollmentFirstStepDialogComponent, any> {
     if (this._tokenEnrollmentFirstStepRef) {

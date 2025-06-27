@@ -8,11 +8,9 @@ import {
   MatDialogRef,
   MatDialogTitle,
 } from '@angular/material/dialog';
-import {
-  EnrollmentResponse,
-  TokenService,
-} from '../../../../services/token/token.service';
+import { TokenService } from '../../../../services/token/token.service';
 import { ContentService } from '../../../../services/content/content.service';
+import { EnrollmentResponse } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 
 @Component({
   selector: 'app-token-enrollment-first-step-dialog',

@@ -18,13 +18,13 @@ import { MatCheckbox } from '@angular/material/checkbox';
 import { ServiceIdService } from '../../../../services/service-id/service-id.service';
 import { ErrorStateMatcher, MatOption } from '@angular/material/core';
 import { MatError, MatSelect } from '@angular/material/select';
-import {
-  EnrollmentResponse,
-  TokenService,
-} from '../../../../services/token/token.service';
+import { TokenService } from '../../../../services/token/token.service';
 
 import { Observable, of } from 'rxjs';
-import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import {
+  EnrollmentResponse,
+  TokenEnrollmentData,
+} from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { ApplspecApiPayloadMapper } from '../../../../mappers/token-api-payload/applspec-token-api-payload.mapper';
 
 export interface ApplspecEnrollmentOptions extends TokenEnrollmentData {

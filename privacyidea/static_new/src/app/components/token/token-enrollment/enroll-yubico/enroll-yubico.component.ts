@@ -17,13 +17,13 @@ import {
 import { SystemService } from '../../../../services/system/system.service';
 import { ErrorStateMatcher } from '@angular/material/core';
 import { MatError } from '@angular/material/select';
-import {
-  EnrollmentResponse,
-  TokenService,
-} from '../../../../services/token/token.service';
+import { TokenService } from '../../../../services/token/token.service';
 
 import { Observable, of } from 'rxjs';
-import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import {
+  EnrollmentResponse,
+  TokenEnrollmentData,
+} from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { YubicoApiPayloadMapper } from '../../../../mappers/token-api-payload/yubico-token-api-payload.mapper';
 
 export interface YubicoEnrollmentOptions extends TokenEnrollmentData {

@@ -54,10 +54,7 @@ import {
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
-import {
-  EnrollmentResponse,
-  TokenService,
-} from '../../../services/token/token.service';
+import { TokenService } from '../../../services/token/token.service';
 import { EnrollTotpComponent } from './enroll-totp/enroll-totp.component';
 import { EnrollSpassComponent } from './enroll-spass/enroll-spass.component';
 import { EnrollMotpComponent } from './enroll-motp/enroll-motp.component';
@@ -88,7 +85,10 @@ import { VersionService } from '../../../services/version/version.service';
 import { ContentService } from '../../../services/content/content.service';
 
 import { lastValueFrom, Observable } from 'rxjs';
-import { TokenEnrollmentData } from '../../../mappers/token-api-payload/_token-api-payload.mapper';
+import {
+  EnrollmentResponse,
+  TokenEnrollmentData,
+} from '../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { DialogService } from '../../../services/dialog/dialog.service';
 import { TokenEnrollmentLastStepDialogData } from './token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component';
 import {
@@ -390,13 +390,10 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     });
     effect(() => {
       const users = this.userService.filteredUsers();
-      console.log('Filtered users:', users);
-      // If the userFilterControl is empty and there are users available
       if (
         users.length === 1 &&
         this.userFilterControl.value === users[0].username
       ) {
-        console.log('Updating userFilterControl to the only available user.');
         // If there's only one user, set the userFilterControl to that user
         this.userFilterControl.setValue(users[0]);
       }
@@ -415,7 +412,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       return this.userService.selectedUserRealm.set(value ?? '');
     });
     this.userFilterControl.valueChanges.subscribe((value) => {
-      console.log('User filter changed:', value);
       this.userService.userFilter.set(value ?? '');
     });
     this.selectedContainerControl.valueChanges.subscribe((value) =>
@@ -511,8 +507,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   }
 
   protected async enrollToken(): Promise<void> {
-    console.trace('enrollToken wurde aufgerufen'); // Gibt den Aufrufpfad (Stacktrace) aus
-    console.log('Enrolling token with formGroup:', this.formGroup.value);
     const currentTokenType = this.tokenService.selectedTokenType();
     var everythingIsValid = true;
     if (!currentTokenType) {
@@ -602,13 +596,11 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   reopenEnrollmentDialog() {
     const reopenFunction = this.reopenCurrentEnrollmentDialogSignal();
     if (reopenFunction) {
-      console.log('Reopening enrollment dialog with function:', reopenFunction);
       reopenFunction();
       return;
     }
     const lastStepData = this._lastTokenEnrollmentLastStepDialogData();
     if (lastStepData) {
-      console.log('Reopening last step dialog with data:', lastStepData);
       this.dialogService.openTokenEnrollmentLastStepDialog({
         data: lastStepData,
       });

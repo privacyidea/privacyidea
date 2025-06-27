@@ -16,11 +16,11 @@ import {
 import { MatInput } from '@angular/material/input';
 import { MatOption } from '@angular/material/core';
 import { MatSelect } from '@angular/material/select';
+import { TokenService } from '../../../../services/token/token.service';
 import {
   EnrollmentResponse,
-  TokenService,
-} from '../../../../services/token/token.service';
-import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+  TokenEnrollmentData,
+} from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { Observable, of } from 'rxjs';
 import { TotpApiPayloadMapper } from '../../../../mappers/token-api-payload/totp-token-api-payload.mapper';
 

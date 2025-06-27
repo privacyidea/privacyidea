@@ -15,13 +15,13 @@ import {
   MatSelect,
 } from '@angular/material/select';
 import { MatInput } from '@angular/material/input';
-import {
-  EnrollmentResponse,
-  TokenService,
-} from '../../../../services/token/token.service';
+import { TokenService } from '../../../../services/token/token.service';
 
 import { Observable, of } from 'rxjs';
-import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import {
+  EnrollmentResponse,
+  TokenEnrollmentData,
+} from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { HotpApiPayloadMapper } from '../../../../mappers/token-api-payload/hotp-token-api-payload.mapper';
 
 export interface HotpEnrollmentOptions extends TokenEnrollmentData {

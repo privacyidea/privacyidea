@@ -15,13 +15,13 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import {
-  EnrollmentResponse,
-  TokenService,
-} from '../../../../services/token/token.service';
+import { TokenService } from '../../../../services/token/token.service';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { Observable, of } from 'rxjs';
-import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import {
+  EnrollmentResponse,
+  TokenEnrollmentData,
+} from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { DaypasswordApiPayloadMapper } from '../../../../mappers/token-api-payload/daypassword-token-api-payload.mapper';
 export interface DaypasswordEnrollmentOptions extends TokenEnrollmentData {
   type: 'daypassword';

@@ -21,13 +21,13 @@ import {
 import { ErrorStateMatcher, MatOption } from '@angular/material/core';
 import { MatError, MatSelect } from '@angular/material/select';
 import { CaConnectorService } from '../../../../services/ca-connector/ca-connector.service';
-import {
-  EnrollmentResponse,
-  TokenService,
-} from '../../../../services/token/token.service';
+import { TokenService } from '../../../../services/token/token.service';
 
 import { Observable, of } from 'rxjs';
-import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import {
+  EnrollmentResponse,
+  TokenEnrollmentData,
+} from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { CertificateApiPayloadMapper } from '../../../../mappers/token-api-payload/certificate-token-api-payload.mapper';
 
 export interface CertificateEnrollmentOptions extends TokenEnrollmentData {

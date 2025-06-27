@@ -10,13 +10,13 @@ import {
 } from '@angular/forms';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { ErrorStateMatcher } from '@angular/material/core';
-import {
-  EnrollmentResponse,
-  TokenService,
-} from '../../../../services/token/token.service';
+import { TokenService } from '../../../../services/token/token.service';
 
 import { Observable, of } from 'rxjs';
-import { TokenEnrollmentData } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import {
+  EnrollmentResponse,
+  TokenEnrollmentData,
+} from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { VascoApiPayloadMapper } from '../../../../mappers/token-api-payload/vasco-token-api-payload.mapper';
 
 export interface VascoEnrollmentOptions extends TokenEnrollmentData {
