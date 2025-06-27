@@ -3233,7 +3233,7 @@ class ValidateAPITestCase(MyApiTestCase):
         """A spass token is accepted, then a policy disables that type."""
         self.setUp_user_realms()
 
-        # 1. Create a working Simple-Pass token and Hotp token
+        # Create a working Simple-Pass token and Hotp token
         init_token(
             {
                 "serial": self.serials[0],
@@ -3254,7 +3254,7 @@ class ValidateAPITestCase(MyApiTestCase):
         )
 
 
-        # 2. It authenticates successfully before the policy is set
+        # It authenticates successfully before the policy is set
         with self.app.test_request_context(
                 "/validate/check",
                 method="POST",
@@ -3265,7 +3265,6 @@ class ValidateAPITestCase(MyApiTestCase):
             result = res.json["result"]
             self.assertEqual(result["authentication"], "ACCEPT")
 
-        # Send the OTP Value of the second token
         with self.app.test_request_context(
                 "/validate/check",
                 method="POST",
@@ -3276,14 +3275,14 @@ class ValidateAPITestCase(MyApiTestCase):
             result = res.json["result"]
             self.assertEqual(result["authentication"], "ACCEPT")
 
-        # 3. Disable the spass token type for authentication
+        # Disable the spass token type for authentication
         set_policy(
             name="disable_spass_token",
             scope=SCOPE.AUTH,
             action="{0!s}=spass hotp".format(ACTION.DISABLED_TOKEN_TYPES),
         )
 
-        # 4. The very same auth attempt must now be rejected
+        # The very same auth attempt must now be rejected
         with self.app.test_request_context(
                 "/validate/check",
                 method="POST",
@@ -3297,14 +3296,14 @@ class ValidateAPITestCase(MyApiTestCase):
         with self.app.test_request_context(
                 "/validate/check",
                 method="POST",
-                data={"user": "cornelius", "realm": self.realm1, "pass": "2" + self.valid_otp_values[0]},
+                data={"user": "cornelius", "realm": self.realm1, "pass": "2" + self.valid_otp_values[1]},
         ):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200, res)
             result = res.json["result"]
             self.assertEqual(result["authentication"], "REJECT")
 
-        # 5. Clean-up
+        # Clean-up
         remove_token(serial=self.serials[0])
         remove_token(serial=self.serials[1])
         delete_policy("disable_spass_token")
