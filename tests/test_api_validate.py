@@ -3232,11 +3232,12 @@ class ValidateAPITestCase(MyApiTestCase):
     def test_38_disable_token_types_for_auth(self):
         """A spass token is accepted, then a policy disables that type."""
         self.setUp_user_realms()
-
+        serial_1 = "SPASS1"
+        serial_2 = "HOTP1"
         # Create a working Simple-Pass token and Hotp token
         init_token(
             {
-                "serial": self.serials[0],
+                "serial": serial_1,
                 "type": "spass",
                 "pin": "1",
             },
@@ -3245,7 +3246,7 @@ class ValidateAPITestCase(MyApiTestCase):
 
         init_token(
             {
-                "serial": self.serials[1],
+                "serial": serial_2,
                 "type": "hotp",
                 "pin": "2",
                 "otpkey": self.otpkey,
@@ -3304,8 +3305,8 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(result["authentication"], "REJECT")
 
         # Clean-up
-        remove_token(serial=self.serials[0])
-        remove_token(serial=self.serials[1])
+        remove_token(serial=serial_1)
+        remove_token(serial=serial_2)
         delete_policy("disable_spass_token")
 
 class RegistrationValidity(MyApiTestCase):
