@@ -3268,7 +3268,11 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(result["authentication"], "ACCEPT")
 
         # Set a policy to trigger challenge response for HOTP
-        set_policy(name="pol_cr", scope=SCOPE.AUTH, action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+        set_policy(
+            name="challenge_response",
+            scope=SCOPE.AUTH,
+            action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE)
+        )
 
         with self.app.test_request_context(
                 "/validate/check",
@@ -3311,6 +3315,7 @@ class ValidateAPITestCase(MyApiTestCase):
         # Clean-up
         remove_token(serial=serial_1)
         remove_token(serial=serial_2)
+        delete_policy("challenge_response")
         delete_policy("disable_spass_token")
 
 
