@@ -1,0 +1,309 @@
+@use "sass:meta";
+@use '@angular/material' as mat;
+
+@include meta.load-css("table.scss");
+@include meta.load-css("buttons.scss");
+@include meta.load-css("inputs.scss");
+@include meta.load-css("tab.scss");
+@include meta.load-css("info.scss");
+@include meta.load-css("dialog.scss");
+@include meta.load-css("enroll.scss");
+@include meta.load-css("panel.scss");
+
+html,
+body {
+  background: var(--background);
+  font-family: "Roboto", sans-serif;
+  margin: 0;
+  overflow: hidden;
+}
+
+@font-face {
+  font-family: 'Roboto';
+  src: url('fonts/Roboto-VariableFont_wdth,wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Roboto';
+  src: url('fonts/static/Roboto-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+:root {
+  --blur: 4px;
+  --border-radius: 4px;
+  --light-distance: -4px;
+  --shadow-distance: 2px;
+  --global-padding: 1.25rem;
+
+  --background: #e6e6e6;
+
+  --shadow: #cccccc;
+  --shadow-light: #d9d9d9;
+  --light: #f3f3f3;
+
+  --green-brand-base: hsl(72, 100%, 32%);
+  --green-brand-light: hsl(72, 100%, 37%);
+  --background-green-brand: linear-gradient(
+      145deg,
+      var(--green-brand-light),
+      var(--green-brand-base)
+  );
+
+  --blue-dark: hsl(198, 66%, 25%);
+  --blue-base: hsl(198, 66%, 30%);
+  --blue-light: hsl(198, 66%, 35%);
+  --blue-light-active: hsl(198, 66%, 40%);
+
+  --green-dark: hsl(120, 39%, 39%);
+  --green-base: hsl(120, 39%, 44%);
+  --green-light: hsl(120, 39%, 49%);
+  --green-light-active: hsl(120, 39%, 54%);
+
+  --red-dark: hsl(342, 100%, 32%);
+  --red-base: hsl(342, 100%, 37%);
+  --red-light: hsl(342, 100%, 42%);
+  --red-light-active: hsl(342, 100%, 57%);
+
+  --yellow-dark: hsl(28, 85%, 45%);
+  --yellow-base: hsl(28, 85%, 50%);
+  --yellow-light: hsl(28, 85%, 55%);
+  --yellow-light-active: hsl(28, 85%, 60%);
+
+  --grey-dark: hsl(0, 0%, 42%);
+  --grey-base: hsl(0, 0%, 50%);
+  --grey-light: hsl(0, 0%, 55%);
+  --grey-light-active: hsl(0, 0%, 60%);
+
+
+  --box-shadow: var(--shadow-distance) var(--shadow-distance) var(--blur) var(--shadow),
+  var(--light-distance) var(--light-distance) var(--blur) var(--light);
+  --box-shadow-white: var(--shadow-distance) var(--shadow-distance) var(--blur) var(--shadow),
+  var(--light-distance) var(--light-distance) var(--blur) white;
+  --box-shadow-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--shadow),
+  inset var(--light-distance) var(--light-distance) var(--blur) white;
+
+  --background-blue: linear-gradient(
+      145deg,
+      var(--blue-base),
+      var(--blue-light)
+  );
+  --background-blue-inset: linear-gradient(
+      145deg,
+      var(--blue-light-active),
+      var(--blue-light)
+  );
+  --box-shadow-blue: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--blue-light-active),
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--blue-dark);
+  --box-shadow-blue-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--blue-dark),
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--blue-light-active);
+
+  --background-green: linear-gradient(145deg, var(--green-base), var(--green-light));
+  --background-green-inset: linear-gradient(145deg, var(--green-light), var(--green-base));
+  --box-shadow-green: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--green-light-active),
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--green-dark);
+  --box-shadow-green-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--green-dark),
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--green-light-active);
+
+  --background-red: linear-gradient(145deg, var(--red-base), var(--red-light));
+  --background-red-inset: linear-gradient(145deg, var(--red-light), var(--red-base));
+  --box-shadow-red: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--red-light-active),
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--red-dark);
+  --box-shadow-red-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--red-dark),
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--red-light-active);
+
+  --background-yellow: linear-gradient(145deg, var(--yellow-base), var(--yellow-light));
+  --background-yellow-inset: linear-gradient(145deg, var(--yellow-light), var(--yellow-base));
+
+  --background-gray: linear-gradient(145deg, var(--grey-base), var(--grey-light));
+  --background-gray-inset: linear-gradient(145deg, var(--grey-light), var(--grey-base));
+  --box-shadow-gray: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--grey-light-active),
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--grey-dark);
+  --box-shadow-gray-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--grey-dark),
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--grey-light-active);
+
+  --box-shadow-header: 4px 2px var(--blur) var(--shadow);
+  --box-shadow-hover: 2px 2px 32px #656668;
+  --table-color: white;
+
+  --mdc-filled-text-field-container-color: var(--light);
+  --mdc-tab-indicator-active-indicator-color: var(--blue-base);
+  --mdc-filled-text-field-focus-active-indicator-color: var(--blue-light);
+  --mat-tab-header-active-focus-indicator-color: var(--blue-base);
+  --mat-tab-header-active-ripple-color: white;
+  --mat-tab-header-inactive-ripple-color: white;
+  --mat-select-focused-arrow-color: var(--blue-light);
+  --mdc-outlined-text-field-focus-outline-color: var(--blue-light);
+  --mat-sys-primary: var(--blue-base);
+  --mat-sys-surface-container-low: white !important;
+  --mat-sys-primary-container: white !important;
+  --mat-sys-on-primary-container: #999999 !important;
+}
+
+.shadow {
+  color: var(--shadow);
+}
+
+.bold {
+  font-weight: bold;
+}
+
+.red {
+  color: var(--red-base);
+}
+
+.red-light {
+  color: var(--red-light);
+}
+
+.red-light-active {
+  color: var(--red-light-active);
+}
+
+.green {
+  color: var(--green-base);
+}
+
+.green-light {
+  color: var(--green-light);
+}
+
+.green-light-active {
+  color: var(--green-light-active);
+}
+
+.yellow {
+  color: var(--yellow-base);
+}
+
+.yellow-light {
+  color: var(--yellow-light);
+}
+
+.yellow-light-active {
+  color: var(--yellow-light-active);
+}
+
+.blue-base {
+  color: var(--blue-base);
+}
+
+.black {
+  color: black;
+}
+
+.ali-center {
+  align-items: center;
+}
+
+.just-center {
+  justify-content: center;
+}
+
+.flex {
+  display: flex;
+}
+
+.width-18rem {
+  width: 18rem;
+}
+
+.font-14 {
+  font-size: 14px;
+}
+
+.mat-mdc-input-element {
+  font-size: 14px;
+}
+
+.gap-20 {
+  gap: 20px;
+}
+
+.pad-0 {
+  padding: 0 !important;
+}
+
+.margin-left-2 {
+  margin-left: 2rem;
+}
+
+.margin-left-1 {
+  margin-left: 1rem;
+}
+
+.margin-top-1 {
+  margin-top: 1rem;
+}
+
+.margin-top-2 {
+  margin-top: 2rem;
+}
+
+.margin-bottom-1 {
+  margin-bottom: 1rem;
+}
+
+.width-32 {
+  width: 32%;
+}
+
+.width-33 {
+  width: 33%;
+}
+
+.width-66 {
+  width: 66%;
+}
+
+.width-50 {
+  width: 50%;
+}
+
+.width-100 {
+  width: 100%;
+}
+
+.gap-1 {
+  gap: 1rem;
+}
+
+.margin-1 {
+  margin: 1rem;
+}
+
+.overflow {
+  overflow: auto;
+}
+
+.copy-button {
+  background: unset;
+  border: unset;
+  cursor: pointer;
+}
+
+.copy-icon {
+  font-size: 16px;
+  align-items: center;
+  display: flex !important;
+  justify-content: center;
+  color: #d0d0d0;
+}
+
+::ng-deep {
+  .mdc-snackbar {
+    margin-bottom: 76px !important;
+  }
+
+  .mat-mdc-icon-button {
+    display: flex;
+    align-items: center;
+  }
+
+  .cdk-overlay-pane.mat-mdc-dialog-panel {
+    max-width: unset;
+  }
+}

@@ -1,0 +1,18 @@
+@use "../../../styles";
+
+.layout {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100vh;
+
+  header {
+  }
+
+  main {
+    overflow: auto;
+  }
+
+  footer {
+    flex-shrink: 0;
+  }
+}

@@ -1,0 +1,31 @@
+.dot {
+  margin-left: -4px;
+}
+
+.otp-inputs-container {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+}
+
+.server-checkbox {
+  margin-bottom: 1rem;
+}
+
+.enroll-h4 {
+  margin: 0 0 1rem 8px;
+}
+
+.inline-hint {
+  margin-bottom: 1rem;
+  background: #d9edf7;
+  padding: 8px;
+  border-radius: var(--border-radius);
+}
+
+.inline-warning {
+  margin-bottom: 1rem;
+  background: #f2dede;
+  padding: 8px;
+  border-radius: var(--border-radius);
+}
