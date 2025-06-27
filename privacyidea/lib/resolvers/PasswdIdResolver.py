@@ -41,14 +41,16 @@
 import re
 import os
 import logging
-import crypt
 import codecs
+from passlib.context import CryptContext
 
-from privacyidea.lib.utils import to_bytes, convert_column_to_unicode
+from privacyidea.lib.utils import convert_column_to_unicode
 from .UserIdResolver import UserIdResolver
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
+
+crypt_ctx = CryptContext(schemes=["sha512_crypt", "sha256_crypt", "bcrypt"])
 
 
 def tokenise(r):
@@ -198,9 +200,7 @@ class IdResolver (UserIdResolver):
                 err = "Sorry, currently no support for shadow passwords"
                 log.error("{0!s}".format(err))
                 raise NotImplementedError(err)
-            cp = crypt.crypt(password, cryptedpasswd)
-            log.debug("encrypted pass is {0!s}".format(cp))
-            if crypt.crypt(password, cryptedpasswd) == cryptedpasswd:
+            if crypt_ctx.verify(password, cryptedpasswd):
                 log.info("successfully authenticated user uid {0!s}".format(uid))
                 return True
             else:
@@ -295,8 +295,7 @@ class IdResolver (UserIdResolver):
         ret = []
 
         #  first check if the searches are in the searchDict
-        for l in self.descDict:
-            line = self.descDict[l]
+        for _id, line in self.descDict.items():
             ok = True
 
             for search in searchDict:

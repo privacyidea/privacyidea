@@ -19,16 +19,17 @@ This implementation is for the Microsoft CA via our middleware.
 
 This module is tested in tests/test_lib_caconnector.py
 """
+from cryptography import x509
+from cryptography.hazmat.primitives import serialization
+import logging
+import traceback
+from typing import Union
 
 from privacyidea.lib.error import CAError
 from privacyidea.lib.caconnectors.baseca import BaseCAConnector, AvailableCAConnectors
-from OpenSSL import crypto
-import logging
-import traceback
 from privacyidea.lib.utils import is_true, int_to_hex
 from privacyidea.lib.error import CSRError, CSRPending
 from privacyidea.lib.utils import to_bytes
-from cryptography.hazmat.primitives import serialization
 
 log = logging.getLogger(__name__)
 try:
@@ -250,12 +251,12 @@ class MSCAConnector(BaseCAConnector):
         self.ssl_client_key_password = self.config.get(ATTR.SSL_CLIENT_KEY_PASSWORD)
         self.templates = self.get_templates()
 
-    def sign_request(self, csr, options=None):
+    def sign_request(self, csr: str, options: dict = None) -> tuple[int, Union[str, None]]:
         """
         Send a signing request to the Microsoft CA
 
-        options can be
-        template: The name of the certificate template to issue
+        *options* may contain the following entries:
+          * ``template``: The name of the certificate template to issue
 
         :param csr: Certificate signing request
         :type csr: PEM string or SPKAC
@@ -264,15 +265,16 @@ class MSCAConnector(BaseCAConnector):
         :return: Returns a tuple of requestID and the certificate object if cert was provided instantly
         :rtype: (int, X509 or None)
         """
+        template_name = options.get("template") if options else None
         if self.connection:
-            reply = self.connection.SubmitCSR(SubmitCSRRequest(csr=csr, templateName=options.get("template"),
+            reply = self.connection.SubmitCSR(SubmitCSRRequest(csr=csr, templateName=template_name,
                                                                caName=self.ca))
             if reply.disposition == 3:
                 request_id = reply.requestId
                 log.info("certificate with request ID {0!s} successfully rolled out".format(request_id))
                 certificate = self.connection.GetCertificate(GetCertificateRequest(id=request_id,
                                                                                    caName=self.ca)).cert
-                return request_id, crypto.load_certificate(crypto.FILETYPE_PEM, certificate)
+                return request_id, certificate
             if reply.disposition == 5:
                 log.info("cert still under submission")
                 raise CSRPending(requestId=reply.requestId)
@@ -285,9 +287,8 @@ class MSCAConnector(BaseCAConnector):
         Revoke the specified certificate. At this point only the database
         index.txt is updated.
 
-        :param certificate: The certificate to revoke
-        :type certificate: Either takes X509 object or a PEM encoded
-            certificate (string)
+        :param certificate: The certificate to revoke (PEM encodes)
+        :type certificate: str
         :param request_id: The id of the certificate in the certificate authority
         :type request_id: int
         :param reason: One of the available reasons the certificate gets revoked
@@ -295,13 +296,8 @@ class MSCAConnector(BaseCAConnector):
         :return: Returns the serial number of the revoked certificate. Otherwise,
             an error is raised.
         """
-        if isinstance(certificate, str):
-            cert_obj = crypto.load_certificate(crypto.FILETYPE_PEM, certificate.encode("ascii"))
-        elif isinstance(certificate, crypto.X509):
-            cert_obj = certificate
-        else:
-            raise CAError("Certificate in unsupported format")
-        serial = cert_obj.get_serial_number()
+        cert_obj = x509.load_pem_x509_certificate(certificate.encode())
+        serial = cert_obj.serial_number
         serial_hex = int_to_hex(serial)
 
         revocation_reason = 0
@@ -408,7 +404,7 @@ class MSCAConnector(BaseCAConnector):
             print("Available CAs: \n")
             for c in cas:
                 print("     {0!s}".format(c))
-            config.ca = input("Choose CA: ".format(config.ca))
+            config.ca = input("Choose CA: ")
             print("=" * 60)
             print("{0!s}".format(config))
             answer = input("Is this configuration correct? [y/n] ")

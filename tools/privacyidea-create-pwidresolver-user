@@ -18,8 +18,7 @@
 import sys
 from getopt import getopt, GetoptError
 import getpass
-import crypt
-import random
+from passlib.hash import sha512_crypt
 
 __version__ = '0.1'
 
@@ -66,13 +65,13 @@ def main():
 
     # without salt, the strongest available hash function will be selected
     # and a random salt is created
-    encryptedPW = crypt.crypt(password)
+    encrypted_pw = sha512_crypt.hash(password)
 
     gid = uid
     home = ""
     shell = ""
     print("%s:%s:%s:%s:%s:%s:%s" % (user,
-                                    encryptedPW,
+                                    encrypted_pw,
                                     uid,
                                     gid,
                                     description,

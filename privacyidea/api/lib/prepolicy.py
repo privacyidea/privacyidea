@@ -67,25 +67,30 @@ import logging
 from dataclasses import replace
 from typing import Union
 
-from OpenSSL import crypto
 from privacyidea.lib import _
-from privacyidea.lib.container import find_container_by_serial
-from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError, ResourceNotFoundError, ParameterError
+from privacyidea.lib.container import find_container_by_serial, get_container_realms
+from privacyidea.lib.containers.container_info import CHALLENGE_TTL, REGISTRATION_TTL, SERVER_URL
+from privacyidea.lib.error import (PolicyError, RegistrationError,
+                                   TokenAdminError, ResourceNotFoundError)
 from flask import g, current_app, Request
 from privacyidea.lib.policy import SCOPE, ACTION, REMOTE_USER
 from privacyidea.lib.policy import Match, check_pin
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
-from privacyidea.lib.token import get_tokens, get_realms_of_token, get_token_type, get_token_owner
-from privacyidea.lib.utils import (parse_timedelta, is_true, generate_charlists_from_pin_policy,
+from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type,
+                                   get_token_owner)
+from privacyidea.lib.utils import (parse_timedelta, is_true,
+                                   generate_charlists_from_pin_policy,
                                    get_module_class,
                                    determine_logged_in_userparams, parse_string_to_dict)
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.auth import ROLE
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn
-from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters, get_pushtoken_add_config,
-                                              check_token_action_allowed, check_container_action_allowed,
+from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters,
+                                              get_pushtoken_add_config,
+                                              check_token_action_allowed,
+                                              check_container_action_allowed,
                                               UserAttributes,
                                               get_container_user_attributes)
 from privacyidea.lib.clientapplication import save_clientapplication
@@ -110,12 +115,10 @@ from privacyidea.lib.tokens.webauthntoken import (DEFAULT_PUBLIC_KEY_CREDENTIAL_
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT,
                                                   DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
                                                   DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
-                                                  WebAuthnTokenClass, DEFAULT_CHALLENGE_TEXT_AUTH,
-                                                  DEFAULT_CHALLENGE_TEXT_ENROLL,
+                                                  WebAuthnTokenClass,
                                                   is_webauthn_assertion_response)
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.tokens.u2ftoken import (U2FACTION, parse_registration_data)
-from privacyidea.lib.tokens.u2f import x509name_to_string
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
 from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
 
@@ -195,7 +198,6 @@ def set_random_pin(request=None, action=None):
     It uses the policy ACTION.OTPPINSETRANDOM in SCOPE.ADMIN or SCOPE.USER to set a random OTP PIN
     """
     params = request.all_data
-    policy_object = g.policy_object
     # Determine the user and admin. We still pass the "username" and "realm" explicitly,
     # since we could have an admin request with only a realm, but not a complete user_object.
     user_object = request.User
@@ -1172,7 +1174,6 @@ def check_anonymous_user(request=None, action=None):
     """
     ERROR = "User actions are defined, but this action is not allowed!"
     params = request.all_data
-    policy_object = g.policy_object
     user_obj = get_user_from_param(params)
 
     action_allowed = Match.user(g, scope=SCOPE.USER, action=action, user_object=user_obj).allowed()
@@ -1201,9 +1202,11 @@ def check_admin_tokenlist(request=None, action=ACTION.TOKENLIST):
     role = g.logged_in_user.get("role")
     if role == ROLE.USER:
         return True
+    serial = request.all_data.get("serial")
+    container_serial = request.all_data.get("container_serial")
 
     policy_object = g.policy_object
-    pols = Match.admin(g, action=action).policies()
+    pols = Match.admin(g, action=action, serial=serial, container_serial=container_serial).policies()
     pols_at_all = policy_object.list_policies(scope=SCOPE.ADMIN, active=True)
 
     if pols_at_all:
@@ -1298,10 +1301,11 @@ def check_token_action(request: Request = None, action: str = None):
     :return: True otherwise raises an Exception
     """
     params = request.all_data
-    user_object = request.User
-    resolver = user_object.resolver if user_object else None
+    user = request.User
+    resolver = user.resolver if user else None
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
     user_attributes = UserAttributes(role, username, realm, resolver, adminuser, adminrealm)
+    user_attributes.user = user if user else None
     serial = params.get("serial")
 
     action_allowed = check_token_action_allowed(g, action, serial, user_attributes)
@@ -1327,10 +1331,11 @@ def check_token_list_action(request: Request = None, action: str = None):
     :return: True
     """
     params = request.all_data
-    user_object = request.User
-    resolver = user_object.resolver if user_object else None
+    user = request.User
+    resolver = user.resolver if user else None
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
     user_attributes = UserAttributes(role, username, realm, resolver, adminuser, adminrealm)
+    user_attributes.user = user if user else None
 
     serial_list = params.get("serial")
     serial_list = serial_list.replace(" ", "").split(",") if serial_list else []
@@ -1371,10 +1376,12 @@ def check_container_action(request: Request = None, action: str = None):
     :return: True if the action is allowed, otherwise raises an Exception
     """
     params = request.all_data
-    user_object = request.User
-    resolver = user_object.resolver if user_object else None
+    user = request.User
+    resolver = user.resolver if user else None
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
     user_attributes = UserAttributes(role, username, realm, resolver, adminuser, adminrealm)
+    # Explicitly set to None if an empty user object is passed
+    user_attributes.user = user if user else None
 
     container_serial = params.get("container_serial")
     action_allowed = check_container_action_allowed(g, action, container_serial, user_attributes)
@@ -1395,21 +1402,22 @@ def check_client_container_action(request=None, action=None):
     """
     params = request.all_data
     container_serial = params.get("container_serial")
-    user_attributes = get_container_user_attributes(container_serial)
+    user = request.User
 
-    # If the container has no owner, check for generic policies only
-    user_attributes.username = user_attributes.username or ""
-    user_attributes.realm = user_attributes.realm or ""
-    user_attributes.resolver = user_attributes.resolver or ""
+    # get additional container realms
+    try:
+        container_realms = get_container_realms(container_serial)
+    except ResourceNotFoundError:
+        container_realms = None
+        log.error(f"Could not find container with serial {container_serial}.")
 
     # Check action for container
     match = Match.generic(g,
                           scope=SCOPE.CONTAINER,
                           action=action,
-                          user=user_attributes.username,
-                          resolver=user_attributes.resolver,
-                          realm=user_attributes.realm,
-                          additional_realms=user_attributes.additional_realms)
+                          user_object=user,
+                          additional_realms=container_realms,
+                          container_serial=container_serial)
     action_allowed = match.allowed()
 
     if not action_allowed:
@@ -1450,7 +1458,8 @@ def check_client_container_disabled_action(request=None, action=None):
                           resolver=user_attributes.resolver,
                           realm=user_attributes.realm,
                           additional_realms=user_attributes.additional_realms,
-                          active=True)
+                          active=True,
+                          container_serial=container_serial)
     # Check if the action is explicitly disabled
     policies_at_all = match.policies(write_to_audit_log=True)
 
@@ -1474,8 +1483,8 @@ def check_user_params(request=None, action=None):
     :return: True if action is allowed, otherwise raises an Exception
     """
     params = request.all_data
-    user_object = request.User
-    resolver = user_object.resolver if user_object else None
+    user = request.User
+    resolver = user.resolver if user else None
     if "logged_in_user" in g:
         (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
     else:
@@ -1484,30 +1493,35 @@ def check_user_params(request=None, action=None):
 
     param_user = params.get("user")
     param_realm = params.get("realm")
+    if param_user and "@" in param_user:
+        param_user, param_realm = split_user(param_user)
     param_resolver = params.get("resolver") or resolver
 
+    action_allowed = True
     if role == "user":
+        # User is only allowed to set its own attributes
         if param_user and param_user != username:
             action_allowed = False
         elif param_realm and param_realm != realm:
             action_allowed = False
         elif param_resolver and param_resolver != resolver:
             action_allowed = False
-        else:
-            action_allowed = True
-    elif role == "admin":
-        # Check action for new parameters
-        if param_user or param_realm or param_resolver:
-            action_allowed = Match.generic(g,
-                                           scope=role,
-                                           action=action,
-                                           user=param_user,
-                                           resolver=param_resolver,
-                                           realm=param_realm,
-                                           adminrealm=adminrealm,
-                                           adminuser=adminuser).allowed()
-        else:
-            action_allowed = True
+
+    # Check if admin is allowed to set user or whether the user also matches the extended userinfo conditions
+    if action_allowed and (param_user or param_realm or param_resolver):
+        container_serial = params.get("container_serial")
+        token_serial = params.get("serial")
+        action_allowed = Match.generic(g,
+                                       scope=role,
+                                       action=action,
+                                       user_object=user,
+                                       user=param_user,
+                                       resolver=param_resolver,
+                                       realm=param_realm,
+                                       adminrealm=adminrealm,
+                                       adminuser=adminuser,
+                                       serial=token_serial,
+                                       container_serial=container_serial).allowed()
 
     if not action_allowed:
         raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed!")
@@ -1829,7 +1843,9 @@ def u2ftoken_allowed(request, action):
                                         user_object=request.User if request.User else None) \
             .action_values(unique=False)
 
-        if len(allowed_certs_pols) and not _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
+        if (len(allowed_certs_pols)
+                and not _attestation_certificate_allowed(
+                    attestation_cert.to_cryptography(), allowed_certs_pols)):
             log.warning("The U2F device {0!s} is not "
                         "allowed to be registered due to policy "
                         "restriction".format(serial))
@@ -2053,6 +2069,7 @@ def fido2_auth(request, action):
     The following policy values are added:
     - WEBAUTHNACTION.ALLOWED_TRANSPORTS
     - ACTION.CHALLENGETEXT for WebAuthn and Passkey token
+    - PasskeyAction.EnableTriggerByPIN
     """
     user_object = request.User if hasattr(request, "User") else None
     allowed_transports_policies = (Match.user(g,
@@ -2080,6 +2097,13 @@ def fido2_auth(request, action):
     rp_id = get_first_policy_value(FIDO2PolicyAction.RELYING_PARTY_ID, "", scope=SCOPE.ENROLL)
     if rp_id:
         request.all_data[FIDO2PolicyAction.RELYING_PARTY_ID] = rp_id
+
+    passkey_trigger_by_pin = (Match.user(g,
+                                         scope=SCOPE.AUTH,
+                                         action=PasskeyAction.EnableTriggerByPIN,
+                                         user_object=user_object).any())
+    request.all_data[PasskeyAction.EnableTriggerByPIN] = passkey_trigger_by_pin
+
     return True
 
 
@@ -2265,7 +2289,6 @@ def webauthntoken_allowed(request, action):
     :return:
     :rtype:
     """
-    types = [WebAuthnTokenClass.get_class_type().lower(), PasskeyTokenClass.get_class_type().lower()]
     ttype = request.all_data.get("type")
 
     # Get the registration data of the 2nd step of enrolling a WebAuthn token
@@ -2284,9 +2307,10 @@ def webauthntoken_allowed(request, action):
         ) = WebAuthnRegistrationResponse.verify_attestation_statement(fmt=att_obj.get('fmt'),
                                                                       att_stmt=att_obj.get('attStmt'),
                                                                       auth_data=att_obj.get('authData'))
-
-        attestation_cert = crypto.X509.from_cryptography(trust_path[0]) if trust_path else None
-        allowed_certs_pols = Match \
+        # TODO: trust_path can be a certificate chain. All certificates in the
+        #  path should be considered
+        attestation_cert = trust_path[0] if trust_path else None
+        allowed_certs_pols = Match\
             .user(g,
                   scope=SCOPE.ENROLL,
                   action=FIDO2PolicyAction.REQ,
@@ -2346,7 +2370,7 @@ def _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
     from the token info, containing just the issuer, serial and subject.
 
     :param attestation_cert: The attestation certificate.
-    :type attestation_cert: OpenSSL.crypto.X509 or None
+    :type attestation_cert: cryptography.x509.Certificate or None
     :param allowed_certs_pols: The policies restricting enrollment, or authorization.
     :type allowed_certs_pols: dict or None
     :return: Whether the token should be allowed to complete enrollment, or authorization, based on its attestation.
@@ -2354,9 +2378,9 @@ def _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
     """
 
     cert_info = {
-        "attestation_issuer": x509name_to_string(attestation_cert.get_issuer()),
-        "attestation_serial": "{!s}".format(attestation_cert.get_serial_number()),
-        "attestation_subject": x509name_to_string(attestation_cert.get_subject())
+        "attestation_issuer": attestation_cert.issuer.rfc4514_string(),
+        "attestation_serial": f"{attestation_cert.serial_number}",
+        "attestation_subject": attestation_cert.subject.rfc4514_string()
     } \
         if attestation_cert \
         else None
@@ -2412,10 +2436,39 @@ def hide_tokeninfo(request=None, action=None):
     :rtype: bool
     """
     hidden_fields = Match.admin_or_user(g, action=ACTION.HIDE_TOKENINFO,
-                                        user_obj=request.User) \
-        .action_values(unique=False)
+                                        user_obj=request.User).action_values(unique=False)
 
     request.all_data['hidden_tokeninfo'] = list(hidden_fields)
+    return True
+
+
+def hide_container_info(request=None, action=None):
+    """
+    This decorator checks for the policy `hide_container_info` and sets the `hide_container_info` parameter in the
+    request object containing a list of container info keys that shall be hidden in the response.
+
+    :param request: The request that is intercepted during the API call
+    :type request: Request Object
+    :param action: An optional action (not used in this decorator)
+    :return: Always true. Modifies the parameter `request`
+    :rtype: bool
+    """
+    # If no user is available (e.g. container/list without any query parameters), policies with conditions will not be
+    # matched. That's why we also use the allowed_realms to find matching policies. However, if multiple containers
+    # are returned, there might be different policies for each container. Actually all policies will simply add all
+    # matching hide_container_info keys, but not specific to the returned containers.
+    # That is not a problem as the container info is only displayed on the container details page (where a user object
+    # is available) and not in the list view. But the info is still contained in the response for the list view.
+    container_serial = request.all_data.get("container_serial")
+    try:
+        container_realms = get_container_realms(container_serial) if container_serial else None
+    except ResourceNotFoundError:
+        container_realms = None
+    hidden_fields = Match.admin_or_user(g=g, action=ACTION.HIDE_CONTAINER_INFO, user_obj=request.User,
+                                        additional_realms=container_realms,
+                                        container_serial=container_serial).action_values(unique=False)
+
+    request.all_data["hide_container_info"] = list(hidden_fields)
     return True
 
 
@@ -2501,41 +2554,53 @@ def container_registration_config(request, action=None):
     user = request.User
     if not user:
         user = None
+    container_serial = request.all_data.get("container_serial")
+
+    # get additional container realms
+    try:
+        container_realms = get_container_realms(container_serial)
+    except ResourceNotFoundError:
+        container_realms = None
+        log.error(f"Could not find container with serial {container_serial}.")
 
     # Get server url the client can contact
     server_url_config = list(Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.PI_SERVER_URL,
-                                           user_object=user).action_values(unique=True))
+                                           user_object=user, additional_realms=container_realms,
+                                           container_serial=container_serial).action_values(unique=True))
     if len(server_url_config) == 0:
         raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot register container.")
-    request.all_data["server_url"] = server_url_config[0]
+    request.all_data[SERVER_URL] = server_url_config[0]
 
     # Get validity time for the registration
     registration_ttl_config = list(Match.generic(g, scope=SCOPE.CONTAINER,
                                                  action=ACTION.CONTAINER_REGISTRATION_TTL,
-                                                 user_object=user).action_values(unique=True))
+                                                 user_object=user, additional_realms=container_realms,
+                                                 container_serial=container_serial).action_values(unique=True))
     if len(registration_ttl_config) > 0:
-        request.all_data["registration_ttl"] = int(registration_ttl_config[0])
-        if request.all_data["registration_ttl"] <= 0:
+        request.all_data[REGISTRATION_TTL] = int(registration_ttl_config[0])
+        if request.all_data[REGISTRATION_TTL] <= 0:
             # default 10 min
-            request.all_data["registration_ttl"] = 10
+            request.all_data[REGISTRATION_TTL] = 10
     else:
-        request.all_data["registration_ttl"] = 10
+        request.all_data[REGISTRATION_TTL] = 10
 
     # Get validity time for further challenges
     challenge_ttl_config = list(Match.generic(g, scope=SCOPE.CONTAINER,
                                               action=ACTION.CONTAINER_CHALLENGE_TTL,
-                                              user_object=user).action_values(unique=True))
+                                              user_object=user, additional_realms=container_realms,
+                                              container_serial=container_serial).action_values(unique=True))
     if len(challenge_ttl_config) > 0:
-        request.all_data["challenge_ttl"] = int(challenge_ttl_config[0])
-        if request.all_data["challenge_ttl"] <= 0:
+        request.all_data[CHALLENGE_TTL] = int(challenge_ttl_config[0])
+        if request.all_data[CHALLENGE_TTL] <= 0:
             # default 2 min
-            request.all_data["challenge_ttl"] = 2
+            request.all_data[CHALLENGE_TTL] = 2
     else:
-        request.all_data["challenge_ttl"] = 2
+        request.all_data[CHALLENGE_TTL] = 2
 
     # Get ssl verify
     ssl_verify_config = list(Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_SSL_VERIFY,
-                                           user_object=user).action_values(unique=True))
+                                           user_object=user, additional_realms=container_realms,
+                                           container_serial=container_serial).action_values(unique=True))
     if len(ssl_verify_config) > 0:
         request.all_data["ssl_verify"] = ssl_verify_config[0]
         if request.all_data["ssl_verify"] not in ["True", "False"]:
@@ -2561,23 +2626,22 @@ def smartphone_config(request, action=None):
     """
     # Get container type
     params = request.all_data
+    # This should be the container owner
+    user = request.User
     container_serial = params.get("container_serial")
     try:
-        container_type = find_container_by_serial(container_serial).type
-    except Exception:
-        container_type = None
-        log.info(f"Container type could not be determined. Ignoring smartphone configurations.")
+        container = find_container_by_serial(container_serial)
+    except ResourceNotFoundError:
+        container = None
+        log.info(f"Container type could not be determined for Container {container_serial}. "
+                 f"Ignoring smartphone configurations.")
 
     is_smartphone = False
     # Get configuration for smartphones
-    if container_type and container_type == "smartphone":
+    if container and container.type == "smartphone":
         is_smartphone = True
-        user_attributes = get_container_user_attributes(container_serial)
 
-        # If the container has no owner, check for generic policies only
-        user_attributes.username = user_attributes.username or ""
-        user_attributes.realm = user_attributes.realm or ""
-        user_attributes.resolver = user_attributes.resolver or ""
+        container_realms = [realm.name for realm in container.realms]
 
         policies = {}
         actions = [ACTION.CONTAINER_CLIENT_ROLLOVER,
@@ -2590,10 +2654,9 @@ def smartphone_config(request, action=None):
             action_policies = Match.generic(g,
                                             scope=SCOPE.CONTAINER,
                                             action=action,
-                                            user=user_attributes.username,
-                                            realm=user_attributes.realm,
-                                            resolver=user_attributes.resolver,
-                                            additional_realms=user_attributes.additional_realms).policies()
+                                            user_object=user,
+                                            additional_realms=container_realms,
+                                            container_serial=container_serial).policies()
             if len(action_policies) > 0:
                 policies[action] = action_policies[0]['action'][action]
             else:
@@ -2612,7 +2675,7 @@ def rss_age(request, action):
     :return: True
     """
     age_list = (Match.user(g, scope=SCOPE.WEBUI, action=ACTION.RSS_AGE,
-                user_object=request.User if hasattr(request, 'User') else None).action_values(unique=True))
+                           user_object=request.User if hasattr(request, 'User') else None).action_values(unique=True))
     # The default age for normal users is 0
     age = 0
     if g.get("logged_in_user", {}).get("role") == ROLE.ADMIN:

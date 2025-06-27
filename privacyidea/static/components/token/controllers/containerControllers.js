@@ -110,7 +110,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             $scope.initRegistration = $scope.container_wizard["registration"];
             $scope.form.containerType = $scope.container_wizard["type"];
         }
-        $scope.passphrase = {"ad": false, "prompt": "", "response": ""};
+        $scope.passphrase = {"user": false, "prompt": "", "response": ""};
 
         $scope.allowedTokenTypes = {
             list: [],
@@ -332,7 +332,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                     let registrationParams =
                         {
                             "container_serial": $scope.containerSerial,
-                            "passphrase_ad": $scope.passphrase.ad,
+                            "passphrase_user": $scope.passphrase.user,
                             "passphrase_prompt": $scope.passphrase.prompt,
                             "passphrase_response": $scope.passphrase.response
                         };
@@ -430,6 +430,7 @@ myApp.controller("containerListController", ['$scope', '$http', '$q', 'Container
         $scope.loggedInUser = AuthFactory.getUser();
         $scope.params = {sortdir: "asc"};
         $scope.containerdata = [];
+        $scope.filter = {serial: "", type: "", realm: "", description: ""}
 
         // Change the pagination
         $scope.pageChanged = function () {
@@ -439,6 +440,12 @@ myApp.controller("containerListController", ['$scope', '$http', '$q', 'Container
         // Get all containers
         $scope.get = function () {
             $scope.expandedRows = [];
+
+            $scope.params.container_serial = "*" + $scope.filter.serial + "*";
+            $scope.params.container_realm = "*" + $scope.filter.realm + "*";
+            $scope.params.type = "*" + $scope.filter.type + "*";
+            $scope.params.description = "*" + $scope.filter.description + "*";
+
             $scope.params.sortby = $scope.sortby;
             if ($scope.reverse) {
                 $scope.params.sortdir = "desc";
@@ -496,8 +503,10 @@ myApp.controller("containerListController", ['$scope', '$http', '$q', 'Container
 
 myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams', '$q', 'ContainerFactory',
     'AuthFactory', 'ConfigFactory', 'TokenFactory', '$state', '$rootScope', '$timeout', '$location', 'ContainerUtils',
+    'inform', 'gettextCatalog',
     function containerDetailsController($scope, $http, $stateParams, $q, ContainerFactory, AuthFactory, ConfigFactory,
-                                        TokenFactory, $state, $rootScope, $timeout, $location, ContainerUtils) {
+                                        TokenFactory, $state, $rootScope, $timeout, $location, ContainerUtils, inform,
+                                        gettextCatalog) {
         $scope.init = true;
         $scope.containerSerial = $stateParams.containerSerial;
         $scope.loggedInUser = AuthFactory.getUser();
@@ -656,36 +665,6 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         $scope.editContainerInfo = false;
         $scope.containerInfoOptions = {};
         $scope.selectedInfoOptions = {};
-        $scope.editInfo = function () {
-            $scope.editContainerInfo = true;
-
-            ContainerFactory.getClassOptions({
-                "only_selectable": true,
-                "container_type": $scope.container.type
-            }, function (data) {
-                $scope.containerInfoOptions = data.result.value[$scope.container.type];
-                angular.forEach($scope.containerInfoOptions, function (values, key) {
-                    let selected = $scope.container.info[key];
-                    if (selected !== undefined) {
-                        $scope.selectedInfoOptions[key] = selected;
-                    } else {
-                        $scope.selectedInfoOptions[key] = values[0];
-                    }
-                });
-
-            });
-        };
-
-        $scope.saveInfo = function () {
-            ContainerFactory.setOptions($scope.containerSerial,
-                {"options": $scope.selectedInfoOptions},
-                function () {
-                    $scope.editContainerInfo = false;
-                    $scope.getContainer();
-                }
-            );
-
-        };
 
         $scope.saveRealms = function () {
             let realmList = "";
@@ -737,13 +716,13 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         };
 
         $scope.registrationOptions = {"open": false};
-        $scope.passphrase = {"required": false, "ad": false, "prompt": "", "response": ""};
+        $scope.passphrase = {"user": false, "prompt": "", "response": ""};
         $scope.offline_tokens = [];
         $scope.registerContainer = function (rollover) {
             let registrationParams =
                 {
                     "container_serial": $scope.containerSerial,
-                    "passphrase_ad": $scope.passphrase.ad,
+                    "passphrase_user": $scope.passphrase.user,
                     "passphrase_prompt": $scope.passphrase.prompt,
                     "passphrase_response": $scope.passphrase.response,
                     "rollover": rollover
@@ -832,6 +811,12 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             // as we do not assign a user
             ConfigFactory.getRealms(function (data) {
                 $scope.realms = data.result.value;
+                angular.forEach($scope.realms, function (realm, realmname) {
+                    // if there is a default realm, preset the default realm
+                    if (realm.default && !$scope.newUser.realm && !$scope.newUser.user) {
+                        $scope.newUser = {user: "", realm: realmname};
+                    }
+                });
             });
         }
 
@@ -911,13 +896,21 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         $scope.showDialogAll = false;
         $scope.deleteAllTokens = function (callback) {
             let tokenSerialList = $scope.getAllTokenSerials();
-            angular.forEach(tokenSerialList, function (token, index) {
-                if (index == tokenSerialList.length - 1) {
-                    // last token: pass callback function
-                    TokenFactory.delete(token, callback);
-                } else {
-                    TokenFactory.delete(token, function () {
-                    });
+            let tokenSerialStr = tokenSerialList.join(',');
+            TokenFactory.deleteBatch({"serial": tokenSerialStr}, function (data) {
+                // Delete container
+                callback();
+                // Error message if some tokens could not be deleted
+                let failedTokens = []
+                angular.forEach(data.result.value, function (success, serial) {
+                    if (!success) {
+                        failedTokens.push(serial);
+                    }
+                });
+                if (failedTokens.length > 0) {
+                    console.warn("Some tokens could not be deleted: " + failedTokens.join(", "));
+                    inform.add(gettextCatalog.getString("Some tokens could not be deleted: " + failedTokens.join(", ")),
+                        {type: "danger", ttl: 10000});
                 }
             });
             $scope.showDialogAll = false;

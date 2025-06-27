@@ -73,7 +73,8 @@ from privacyidea.lib.auth import get_db_admins
 from privacyidea.lib.crypto import geturandom, set_hsm_password, get_hsm
 from privacyidea.lib.importotp import GPGImport
 from privacyidea.lib.utils import hexlify_and_unicode, b64encode_and_unicode
-
+from privacyidea.lib.usercache import delete_user_cache
+from privacyidea.lib.challenge import cleanup_expired_challenges
 
 log = logging.getLogger(__name__)
 
@@ -486,3 +487,33 @@ def list_nodes():
     nodes = get_privacyidea_nodes()
     g.audit_object.log({"success": True})
     return send_result(nodes)
+
+@system_blueprint.route("/user-cache", methods=['DELETE'])
+@admin_required
+def delete_user_cache_api():
+    """
+    Delete all entries from the user cache.
+
+    :>json bool status: Status of the request
+    :reqheader PI-Authorization: The authorization token
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+        HTTP/1.1 200 OK
+        Content-Type: application/json
+
+        {
+          "id": 1,
+          "jsonrpc": "2.0",
+          "result": {
+            "status": true,
+            "deleted": 42
+          },
+          "version": "privacyIDEA unknown"
+        }
+    """
+    row_count = delete_user_cache()
+    g.audit_object.log({"success": True, "info": f"Deleted {row_count} entries from user cache"})
+    return send_result({"status": True, "deleted": row_count})

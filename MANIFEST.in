@@ -1,16 +1,18 @@
-include LICENSE
-include README.rst
+graft privacyidea
+graft tests
+graft tools
+graft deploy
+graft authmodules
 
-recursive-include privacyidea *
-recursive-include tools *
-recursive-include authmodules *
-recursive-include deploy *
-recursive-include migrations *
-recursive-include tests *
+include requirements.txt pyproject.toml
 
-# We need to exclude files at the end
-# otherwise they get included again
-recursive-exclude venv *
+# We need to exclude files at the end otherwise they get included again
+prune venv*
+prune privacyidea/static/node_modules
+
+prune doc
+prune .circleci
+prune .github
+
 global-exclude *.pyc
-global-exclude .git
-
+exclude .git* .codespell* .readthedocs.yaml .dockerignore .pep8speaks.yml Gruntfile.js coveragerc pi-manage .travis* Procfile

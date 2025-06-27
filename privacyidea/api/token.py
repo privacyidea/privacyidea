@@ -56,7 +56,7 @@
 
 from flask import (Blueprint, request, g, current_app)
 
-from ..lib.container import find_container_by_serial, add_token_to_container
+from ..lib.container import find_container_by_serial, add_token_to_container, add_not_authorized_tokens_result
 from ..lib.log import log_with
 from .lib.utils import optional, send_result, send_csv_result, required, getParam
 from ..lib.tokenclass import ROLLOUTSTATE
@@ -72,19 +72,18 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          set_hashlib, set_max_failcount, set_realms,
                          copy_token_user, copy_token_pin, lost_token,
                          get_serial_by_otp, get_tokens,
-                         set_validity_period_end, set_validity_period_start, add_tokeninfo,
-                         delete_tokeninfo, import_token,
+                         set_validity_period_end, set_validity_period_start,
+                         add_tokeninfo, delete_tokeninfo, import_token,
                          assign_tokengroup, unassign_tokengroup, set_tokengroups)
 from ..lib.fido2.util import get_credential_ids_for_user
 from werkzeug.datastructures import FileStorage
-from cgi import FieldStorage
-from privacyidea.lib.error import (ParameterError, TokenAdminError, ResourceNotFoundError, PolicyError, ERROR)
+from privacyidea.lib.error import (ParameterError, TokenAdminError,
+                                   ResourceNotFoundError, PolicyError, ERROR)
 from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
                                        parseYubicoCSV, parsePSKCdata, GPGImport)
 import logging
-from privacyidea.lib.utils import to_unicode
 from privacyidea.lib.policy import ACTION
-from privacyidea.lib.challenge import get_challenges_paginate
+from privacyidea.lib.challenge import get_challenges_paginate, cleanup_expired_challenges
 from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_token_action,
                                            check_token_init, check_token_upload,
                                            check_max_token_user,
@@ -106,7 +105,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_t
                                            webauthntoken_request, required_piv_attestation,
                                            hide_tokeninfo, init_ca_connector, init_ca_template,
                                            init_subject_components, require_description,
-                                           check_container_action, check_user_params)
+                                           check_container_action, check_user_params, check_token_list_action)
 from privacyidea.api.lib.postpolicy import (save_pin_change, check_verify_enrollment,
                                             postpolicy)
 from privacyidea.lib.event import event
@@ -384,6 +383,37 @@ def get_challenges_api(serial=None):
     g.audit_object.log({"success": True})
     return send_result(challenges)
 
+@token_blueprint.route("/challenges/expired", methods=['DELETE'])
+@admin_required
+@log_with(log)
+def delete_expired_challenges_api():
+    """
+    Delete all expired entries in the challenge table.
+
+    :>json bool status: Status of the request
+    :reqheader PI-Authorization: The authorization token
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+        HTTP/1.1 200 OK
+        Content-Type: application/json
+
+        {
+          "id": 1,
+          "jsonrpc": "2.0",
+          "result": {
+            "status": true,
+            "deleted": 42
+          },
+          "version": "privacyIDEA unknown"
+        }
+    """
+    row_count = cleanup_expired_challenges(chunksize=None, age=None)
+    g.audit_object.log({"success": True, "info": f"Deleted {row_count} entries from challenges"})
+    return send_result({"status": True, "deleted": row_count})
+
 
 @token_blueprint.route('/', methods=['GET'])
 @prepolicy(check_admin_tokenlist, request, ACTION.TOKENLIST)
@@ -508,12 +538,13 @@ def assign_api():
     user = get_user_from_param(request.all_data, required)
     serial = getParam(request.all_data, "serial", required, allow_empty=False)
     pin = getParam(request.all_data, "pin")
-    encrypt_pin = getParam(request.all_data, "encryptpin")
+    encrypt_pin_param = getParam(request.all_data, "encryptpin")
     if g.logged_in_user.get("role") == "user":
         err_message = "Token already assigned to another user."
     else:
         err_message = None
-    res = assign_token(serial, user, pin=pin, encrypt_pin=encrypt_pin, error_message=err_message)
+    res = assign_token(serial, user, pin=pin, encrypt_pin=encrypt_pin_param,
+                       error_message=err_message)
     g.audit_object.log({"success": True})
     return send_result(res)
 
@@ -647,6 +678,37 @@ def delete_api(serial):
     return send_result(res)
 
 
+@token_blueprint.route('/batchdeletion', methods=['POST'])
+@prepolicy(check_token_list_action, request, action=ACTION.DELETE)
+@event("token_delete", request, g)
+@log_with(log)
+def batch_deletion():
+    """
+    Delete all passed tokens, e.g. all tokens of a container
+    All errors during the deletion of a token are fetched to be able to delete the remaining tokens.
+
+    :jsonparam serial: A comma separated list of token serials to delete
+    :return: Dictionary with the serials as keys and the success status of the deletion as values
+    """
+    serial_list = getParam(request.all_data, "serial", required)
+    serial_list = serial_list.replace(" ", "").split(",")
+    g.audit_object.log({"serial": serial_list})
+    ret = {}
+    for serial in serial_list:
+        try:
+            success = remove_token(serial)
+        except Exception as ex:
+            # We are catching the exception here to be able to delete the remaining tokens
+            log.error(f"Error deleting token {serial}: {ex}")
+            success = False
+        ret[serial] = success
+
+    not_authorized_serials = getParam(request.all_data, "not_authorized_serials", optional=True)
+    res = add_not_authorized_tokens_result(ret, not_authorized_serials)
+
+    return send_result(res)
+
+
 @token_blueprint.route('/reset', methods=['POST'])
 @token_blueprint.route('/reset/<serial>', methods=['POST'])
 @prepolicy(check_token_action, request, action=ACTION.RESET)
@@ -730,7 +792,7 @@ def setpin_api(serial=None):
     sopin = getParam(request.all_data, "sopin")
     otppin = getParam(request.all_data, "otppin")
     user = request.User
-    encrypt_pin = getParam(request.all_data, "encryptpin")
+    encrypt_pin_param = getParam(request.all_data, "encryptpin")
 
     res = 0
     if userpin is not None:
@@ -743,7 +805,7 @@ def setpin_api(serial=None):
 
     if otppin is not None:
         g.audit_object.add_to_log({'action_detail': "otppin, "})
-        res += set_pin(serial, otppin, user=user, encrypt_pin=encrypt_pin)
+        res += set_pin(serial, otppin, user=user, encrypt_pin=encrypt_pin_param)
 
     g.audit_object.log({"success": True})
     return send_result(res)
@@ -773,13 +835,13 @@ def setrandompin_api(serial=None):
         serial = getParam(request.all_data, "serial", required)
     g.audit_object.log({"serial": serial})
     user = request.User
-    encrypt_pin = getParam(request.all_data, "encryptpin")
+    encrypt_pin_param = getParam(request.all_data, "encryptpin")
     pin = getParam(request.all_data, "pin")
     if not pin:
         raise TokenAdminError("We have an empty PIN. Please check your policy 'otp_pin_set_random'.")
 
     g.audit_object.add_to_log({'action_detail': "otppin, "})
-    res = set_pin(serial, pin, user=user, encrypt_pin=encrypt_pin)
+    res = set_pin(serial, pin, user=user, encrypt_pin=encrypt_pin_param)
     g.audit_object.log({"success": True})
     return send_result(res, details={"pin": pin})
 
@@ -936,7 +998,7 @@ def tokenrealm_api(serial=None):
     :rtype: bool
     """
     realms = getParam(request.all_data, "realms", required)
-    if type(realms) == list:
+    if isinstance(realms, list):
         realm_list = realms
     else:
         realm_list = [r.strip() for r in realms.split(",")]
@@ -989,73 +1051,65 @@ def loadtokens_api(filename=None):
         tokenrealms = trealms.split(",")
 
     not_imported_serials = []
-    TOKENS = {}
     token_file = request.files['file']
-    file_contents = ""
-    # In case of form post requests, it is a "instance" of FieldStorage
-    # i.e. the Filename is selected in the browser and the data is
-    # transferred
-    # in an iframe. see: http://jquery.malsup.com/form/#sample4
-    #
-    if type(token_file) == FieldStorage:  # pragma: no cover
-        log.debug("Field storage file: %s", token_file)
-        file_contents = token_file.value
-    elif type(token_file) == FileStorage:
-        log.debug("Werkzeug File storage file: %s", token_file)
+    if isinstance(token_file, FileStorage):
+        log.debug(f"Werkzeug File storage file: {token_file}")
         file_contents = token_file.read()
     else:  # pragma: no cover
+        # TODO: is that even possible? We might just throw an error here
         file_contents = token_file
 
-    file_contents = to_unicode(file_contents)
+    try:
+        if isinstance(file_contents, bytes):
+            file_contents = file_contents.decode()
+    except UnicodeDecodeError as e:
+        log.error(f"Unable to convert contents of file '{filename}' to unicode: {e}")
+        raise ParameterError("Unable to convert file contents. Binary data is not supported")
 
     if file_contents == "":
-        log.error("Error loading/importing token file. file {0!s} empty!".format(
-            filename))
+        log.error(f"Error loading/importing token file. File {filename} is empty!")
         raise ParameterError("Error loading token file. File empty!")
 
     if file_type not in known_types:
-        log.error(
-            "Unknown file type: >>{0!s}<<. We only know the types: {1!s}".format(file_type, ', '.join(known_types)))
-        raise TokenAdminError("Unknown file type: >>%s<<. We only know the "
-                              "types: %s" % (file_type,
-                                             ', '.join(known_types)))
+        log.error(f"Unknown file type: '{file_type}'. Supported types are: "
+                  f"{', '.join(known_types)}")
+        raise TokenAdminError(f"Unknown file type: '{file_type}'. Supported "
+                              f"types are: {', '.join(known_types)}")
 
     # Decrypt file, if necessary
     if file_contents.startswith("-----BEGIN PGP MESSAGE-----"):
-        GPG = GPGImport(current_app.config)
-        file_contents = GPG.decrypt(file_contents)
+        gpg = GPGImport(current_app.config)
+        file_contents = gpg.decrypt(file_contents)
 
     # Parse the tokens from file and get dictionary
     if file_type == "aladdin-xml":
-        TOKENS = parseSafeNetXML(file_contents)
+        import_tokens = parseSafeNetXML(file_contents)
     elif file_type in ["oathcsv", "OATH CSV"]:
-        TOKENS = parseOATHcsv(file_contents)
+        import_tokens = parseOATHcsv(file_contents)
     elif file_type in ["yubikeycsv", "Yubikey CSV"]:
-        TOKENS = parseYubicoCSV(file_contents)
+        import_tokens = parseYubicoCSV(file_contents)
     elif file_type in ["pskc"]:
-        TOKENS, not_imported_serials = parsePSKCdata(file_contents, preshared_key_hex=aes_psk,
-                                                     password=aes_password, validate_mac=aes_validate_mac)
+        import_tokens, not_imported_serials = parsePSKCdata(
+            file_contents,
+            preshared_key_hex=aes_psk,
+            password=aes_password,
+            validate_mac=aes_validate_mac)
+    else:
+        import_tokens = {}
 
     # Now import the Tokens from the dictionary
-    ret = ""
-    for serial in TOKENS:
-        log.debug("importing token {0!s}".format(TOKENS[serial]))
-
-        log.info("initialize token. serial: {0!s}, realm: {1!s}".format(serial,
-                                                                        tokenrealms))
-
+    for serial in import_tokens:
+        log.debug(f"importing token {import_tokens[serial]}")
+        log.info(f"initialize token. serial: {serial}, realm: {tokenrealms}")
         import_token(serial,
-                     TOKENS[serial],
+                     import_tokens[serial],
                      tokenrealms=tokenrealms)
 
-    g.audit_object.log({'info': "{0!s}, {1!s} (imported: {2:d})".format(file_type,
-                                                                        token_file,
-                                                                        len(TOKENS)),
-                        'serial': ', '.join(TOKENS),
+    g.audit_object.log({'info': f"{file_type}, {token_file} (imported: {len(import_tokens)})",
+                        'serial': ', '.join(import_tokens),
                         'success': True})
-    # logTokenNum()
 
-    return send_result({'n_imported': len(TOKENS), 'n_not_imported': len(not_imported_serials)})
+    return send_result({'n_imported': len(import_tokens), 'n_not_imported': len(not_imported_serials)})
 
 
 @token_blueprint.route('/copypin', methods=['POST'])
@@ -1266,7 +1320,7 @@ def assign_tokengroup_api(serial, groupname=None):
         assign_tokengroup(serial, tokengroup=groupname)
     else:
         groups = getParam(request.all_data, "groups", required)
-        if type(groups) == list:
+        if isinstance(groups, list):
             group_list = groups
         else:
             group_list = [r.strip() for r in groups.split(",")]

@@ -464,6 +464,12 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             // as we do not assign a token
             ConfigFactory.getRealms(function (data) {
                 $scope.realms = data.result.value;
+                angular.forEach($scope.realms, function (realm, realmname) {
+                    // if there is a default realm, preset the default realm
+                    if (realm.default && !$scope.newUser.realm && !$scope.newUser.user) {
+                        $scope.newUser = {user: "", realm: realmname};
+                    }
+                });
             });
 
             if (AuthFactory.checkRight("tokengroup_list")) {

@@ -21,12 +21,12 @@ from unittest.mock import patch
 from webauthn.helpers.structs import AttestationConveyancePreference
 
 import privacyidea.lib.token
-from privacyidea.config import TestingConfig, Config
+from privacyidea.config import TestingConfig
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
 from privacyidea.lib.token import remove_token, init_token, get_tokens
-from privacyidea.lib.tokens.webauthn import COSE_ALGORITHM
+from privacyidea.lib.tokens.webauthn import CoseAlgorithm
 from privacyidea.lib.user import User
 from tests.base import MyApiTestCase, OverrideConfigTestCase
 from tests.passkey_base import PasskeyTestBase
@@ -60,7 +60,8 @@ class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
 
             with self.app.test_request_context('/token/init',
                                                method='POST',
-                                               data={"type": "passkey", "user": self.user.login, "realm": self.user.realm},
+                                               data={"type": "passkey", "user": self.user.login,
+                                                     "realm": self.user.realm},
                                                headers=self.pk_headers):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(200, res.status_code)
@@ -68,6 +69,8 @@ class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
                 detail = res.json["detail"]
                 self.assertIn("passkey_registration", detail)
                 self.validate_default_passkey_registration(detail["passkey_registration"])
+                self.assertIn("rollout_state", detail)
+                self.assertEqual("clientwait", detail["rollout_state"])
                 passkey_registration = detail["passkey_registration"]
                 # PubKeyCredParams: Via the API, all three key algorithms (from webauthn) are valid by default
                 self.assertEqual(len(passkey_registration["pubKeyCredParams"]), 3)
@@ -117,6 +120,7 @@ class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
                 self.assertEqual(200, res.status_code)
                 self.assertIn("detail", res.json)
                 detail = res.json["detail"]
+                self.assertIn("transaction_id", detail)
                 self.assertIn("passkey", detail)
                 passkey = detail["passkey"]
                 self.assertIn("challenge", passkey)
@@ -171,7 +175,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
 
             with self.app.test_request_context('/token/init',
                                                method='POST',
-                                               data={"type": "passkey", "user": self.user.login, "realm": self.user.realm},
+                                               data={"type": "passkey", "user": self.user.login,
+                                                     "realm": self.user.realm},
                                                headers=self.pk_headers):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(200, res.status_code)
@@ -183,7 +188,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
                 passkey_registration = data["detail"]["passkey_registration"]
                 # PubKeyCredParams: Only ecdsa should be allowed
                 self.assertEqual(len(passkey_registration["pubKeyCredParams"]), 1)
-                self.assertEqual(passkey_registration["pubKeyCredParams"][0]["alg"], COSE_ALGORITHM.ES256)
+                self.assertEqual(passkey_registration["pubKeyCredParams"][0]["alg"], CoseAlgorithm.ES256)
                 # Attestation should be enterprise
                 self.assertEqual(passkey_registration["attestation"], AttestationConveyancePreference.ENTERPRISE)
                 # ExcludeCredentials should contain the credential id of the registered token
@@ -268,16 +273,28 @@ class PasskeyAPITest(PasskeyAPITestBase):
         remove_token(serial)
         delete_policy("user_verification")
 
-    def test_05_authenticate_validate_check(self):
+    def test_05_trigger_with_pin(self):
         """
-        Ensure that the passkey token does work with the /validate/check endpoint like any other token type.
+        By default, passkeys are not triggered using the PIN, because the flow of authentication is very different
+        from our other token types. However, it is possible to enable this behavior with the
+        policy passkey_trigger_with_pin.
         """
+        # Without the policy, the passkey should not be triggered with the PIN
         serial = self._enroll_static_passkey()
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": self.user.login, "pass": ""}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            self.assertEqual("REJECT", res.json["result"]["authentication"])
+            self.assertFalse(res.json["result"]["value"])
+
+
+        # Now set the policy to trigger the passkey with the PIN
+        set_policy("passkey_trigger_with_pin", scope=SCOPE.AUTH, action=f"{PasskeyAction.EnableTriggerByPIN}=true")
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
             get_nonce.return_value = self.authentication_challenge_no_uv
             with self.app.test_request_context('/validate/check', method='POST',
                                                data={"user": self.user.login, "pass": ""}):
-
                 res = self.app.full_dispatch_request()
                 self.assertEqual(200, res.status_code)
                 self.assertIn("detail", res.json)
@@ -332,17 +349,19 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual(self.user.login, detail["username"])
             self.assertNotIn("auth_items", res.json)
         remove_token(serial)
+        delete_policy("passkey_trigger_with_pin")
 
     def test_06_validate_check_wrong_serial(self):
         """
         Challenges triggered via /validate/check should be bound to a specific serial.
         Trying to answer the challenge with a token with a different serial should fail.
         """
+        set_policy("passkey_trigger_with_pin", scope=SCOPE.AUTH, action=f"{PasskeyAction.EnableTriggerByPIN}=true")
         serial = self._enroll_static_passkey()
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
             get_nonce.return_value = self.authentication_challenge_no_uv
             with self.app.test_request_context('/validate/check', method='POST',
-                                                data={"user": self.user.login, "pass": ""}):
+                                               data={"user": self.user.login, "pass": ""}):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(200, res.status_code)
                 detail = res.json["detail"]
@@ -366,12 +385,14 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual(403, error["code"])
             self.assertFalse(result["status"])
         remove_token(token.token.serial)
+        delete_policy("passkey_trigger_with_pin")
 
     def test_07_trigger_challenge(self):
         """
         Just test if the challenge is returned by /validate/triggerchallenge. The response would be sent to
-        /validate/check and that is already tested.
+        /validate/check and that is already tested. Requires the passkey_trigger_with_pin policy to be set.
         """
+        set_policy("passkey_trigger_with_pin", scope=SCOPE.AUTH, action=f"{PasskeyAction.EnableTriggerByPIN}=true")
         serial = self._enroll_static_passkey()
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
             get_nonce.return_value = self.authentication_challenge_no_uv

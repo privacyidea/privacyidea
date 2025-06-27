@@ -338,6 +338,18 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                     AuthFactory.authError(error.data)
                 });
             },
+            renamePolicy: function (old_name, new_name, callback) {
+                $http.patch(policyUrl + "/" + old_name, {name: new_name}, {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
             enablePolicy: function (policyname, callback) {
                 $http.post(policyUrl + "/enable/" + policyname, {}, {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
@@ -667,6 +679,18 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
             },
             delSystemConfig: function (key, callback) {
                 $http.delete(systemUrl + "/" + key, {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            deleteUserCache: function (callback) {
+                $http.delete(systemUrl + "/user-cache", {
                     headers: {
                         'PI-Authorization': AuthFactory.getAuthToken(),
                         'Content-Type': 'application/json'

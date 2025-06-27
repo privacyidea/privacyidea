@@ -30,11 +30,12 @@ from privacyidea.lib import _
 from privacyidea.lib.apps import _construct_extra_parameters
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.containerclass import TokenContainerClass
-from privacyidea.lib.containers.container_info import TokenContainerInfoData, PI_INTERNAL
+from privacyidea.lib.containers.container_info import (TokenContainerInfoData, PI_INTERNAL, RegistrationState,
+                                                       INITIALLY_SYNCHRONIZED, CHALLENGE_TTL, SERVER_URL)
 from privacyidea.lib.containers.smartphone_options import SmartphoneOptions
 from privacyidea.lib.crypto import (geturandom, encryptPassword, b64url_str_key_pair_to_ecc_obj,
                                     generate_keypair_ecc, encrypt_aes)
-from privacyidea.lib.error import ContainerInvalidChallenge, ContainerNotRegistered
+from privacyidea.lib.error import ContainerInvalidChallenge, ContainerNotRegistered, ParameterError
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.utils import create_img
 from privacyidea.models import Challenge
@@ -44,8 +45,8 @@ log = logging.getLogger(__name__)
 
 def create_container_registration_url(nonce: str, time_stamp: str, server_url: str, container_serial: str,
                                       key_algorithm: str, hash_algorithm: str, extra_data: dict = None,
-                                      passphrase: str = "", issuer: str = "privacyIDEA", ttl: int = 10,
-                                      ssl_verify: bool = True) -> str:
+                                      passphrase: str = "", send_passphrase: bool = False,
+                                      issuer: str = "privacyIDEA", ttl: int = 10, ssl_verify: bool = True) -> str:
     """
     Create a URL for binding a container to a physical container.
 
@@ -57,6 +58,7 @@ def create_container_registration_url(nonce: str, time_stamp: str, server_url: s
     :param hash_algorithm: Hash algorithm to be used in the signing algorithm, e.g. 'SHA256'.
     :param extra_data: Extra data to be included in the URL.
     :param passphrase: Passphrase Prompt to be displayed to the user in the app.
+    :param send_passphrase: Whether the client shall send the passphrase as parameter in the response.
     :param issuer: Issuer of the registration, e.g. 'privacyIDEA'.
     :param ttl: Time to live of the URL in seconds.
     :param ssl_verify: Whether the smartphone shall verify the SSL certificate of the server.
@@ -69,6 +71,7 @@ def create_container_registration_url(nonce: str, time_stamp: str, server_url: s
     extra_data = extra_data or {}
     url_extra_data = _construct_extra_parameters(extra_data)
     url_passphrase = quote(passphrase.encode("utf-8"))
+    url_send_passphrase = quote(f"{send_passphrase}".encode("utf-8"))
     url_key_algorithm = quote(key_algorithm.encode("utf-8"))
     url_hash_algorithm = quote(hash_algorithm.encode("utf-8"))
     url_ssl_verify = quote(f"{ssl_verify}".encode("utf-8"))
@@ -77,7 +80,7 @@ def create_container_registration_url(nonce: str, time_stamp: str, server_url: s
     url = (f"pia://container/{url_label}?issuer={url_issuer}&ttl={ttl}&nonce={url_nonce}&time={url_time_stamp}"
            f"&url={url_server_url}&serial={container_serial}&key_algorithm={url_key_algorithm}"
            f"&hash_algorithm={url_hash_algorithm}&ssl_verify={url_ssl_verify}"
-           f"&passphrase={url_passphrase}{url_extra_data}")
+           f"&passphrase={url_passphrase}&send_passphrase={url_send_passphrase}{url_extra_data}")
     return url
 
 
@@ -144,6 +147,7 @@ class SmartphoneContainer(TokenContainerClass):
             {
                 "passphrase_prompt": <str, the prompt for the passphrase displayed in the app>, (optional)
                 "passphrase_response": <str, passphrase>, (optional)
+                "passphrase_user": <bool, whether the passphrase shall be validated against the user store>, (optional)
                 "extra_data": <dict, any additional data>, (optional)
             }
 
@@ -170,17 +174,19 @@ class SmartphoneContainer(TokenContainerClass):
         # get params
         params = params or {}
         extra_data = getParam(params, 'extra_data', optional=True) or {}
-        passphrase_ad = getParam(params, 'passphrase_ad', optional=True) or False
+        passphrase_user = getParam(params, 'passphrase_user', optional=True) or False
         passphrase_prompt = getParam(params, 'passphrase_prompt', optional=True) or ""
         passphrase_response = getParam(params, 'passphrase_response', optional=True) or ""
-        if passphrase_ad:
+        if passphrase_response and passphrase_user:
+            raise ParameterError("passphrase_response and passphrase_user cannot be set at the same time!")
+        if passphrase_user:
             if not passphrase_prompt:
-                passphrase_prompt = "Please enter your AD passphrase."
+                passphrase_prompt = "Please enter the passphrase of your user store."
         if passphrase_response:
             passphrase_response = encryptPassword(passphrase_response)
         challenge_params = {"scope": scope, "passphrase_prompt": passphrase_prompt,
                             "passphrase_response": passphrase_response,
-                            "passphrase_ad": passphrase_ad}
+                            "passphrase_user": passphrase_user}
 
         # Delete all other challenges for this container
         challenge_list = get_challenges(serial=self.serial)
@@ -210,6 +216,7 @@ class SmartphoneContainer(TokenContainerClass):
                                                    key_algorithm=key_algorithm,
                                                    hash_algorithm=hash_algorithm,
                                                    passphrase=passphrase_prompt,
+                                                   send_passphrase=passphrase_user,
                                                    ttl=registration_ttl,
                                                    ssl_verify=ssl_verify,
                                                    extra_data=extra_data)
@@ -218,7 +225,8 @@ class SmartphoneContainer(TokenContainerClass):
 
         # Set container info
         self.update_container_info(
-            [TokenContainerInfoData(key="registration_state", value="client_wait", info_type=PI_INTERNAL)])
+            [TokenContainerInfoData(key=RegistrationState.get_key(), value=RegistrationState.CLIENT_WAIT.value,
+                                    info_type=PI_INTERNAL)])
 
         # Response
         response_detail = {"container_url": {"description": _("URL for privacyIDEA Container Registration"),
@@ -231,6 +239,7 @@ class SmartphoneContainer(TokenContainerClass):
                            "ssl_verify": ssl_verify,
                            "ttl": registration_ttl,
                            "passphrase_prompt": passphrase_prompt,
+                           "send_passphrase": passphrase_user,
                            "server_url": server_url}
 
         return response_detail
@@ -270,6 +279,7 @@ class SmartphoneContainer(TokenContainerClass):
                 "public_client_key": <public key of the smartphone serialized in the PEM format>,
                 "device_brand": <Brand of the smartphone, str> (optional),
                 "device_model": <Model of the smartphone, str> (optional),
+                "passphrase": <Passphrase of the user store, str> (optional)
             }
 
         :return: A dictionary with the success status like ``{"success": True}``
@@ -279,6 +289,7 @@ class SmartphoneContainer(TokenContainerClass):
         pub_key_container_str = getParam(params, "public_client_key", optional=False)
         keys_container = b64url_str_key_pair_to_ecc_obj(public_key_str=pub_key_container_str)
         scope = getParam(params, "scope", optional=False)
+        passphrase = getParam(params, "passphrase", optional=True)
         device_brand = getParam(params, "device_brand", optional=True)
         device_model = getParam(params, "device_model", optional=True)
         device = ""
@@ -289,7 +300,7 @@ class SmartphoneContainer(TokenContainerClass):
 
         # Verifies challenge
         valid = self.validate_challenge(signature, keys_container.public_key, scope=scope, device_brand=device_brand,
-                                        device_model=device_model)
+                                        device_model=device_model, passphrase=passphrase)
         if not valid:
             raise ContainerInvalidChallenge('Could not verify signature!')
 
@@ -305,15 +316,16 @@ class SmartphoneContainer(TokenContainerClass):
 
         # The rollover is completed with the first synchronization
         container_info = self.get_container_info_dict()
-        registration_state = container_info.get("registration_state", "")
-        if registration_state != "rollover":
+        registration_state = RegistrationState(container_info.get(RegistrationState.get_key()))
+        if registration_state != RegistrationState.ROLLOVER:
             new_container_info.append(
-                TokenContainerInfoData(key="registration_state", value="registered", info_type=PI_INTERNAL))
+                TokenContainerInfoData(key=RegistrationState.get_key(), value=RegistrationState.REGISTERED.value,
+                                       info_type=PI_INTERNAL))
 
         # check right for initial token transfer
         if params.get("client_policies", {}).get("initially_add_tokens_to_container"):
             new_container_info.append(
-                TokenContainerInfoData(key="initially_synchronized", value="False", info_type=PI_INTERNAL))
+                TokenContainerInfoData(key=INITIALLY_SYNCHRONIZED, value="False", info_type=PI_INTERNAL))
 
         # update container info
         self.update_container_info(new_container_info)
@@ -329,10 +341,10 @@ class SmartphoneContainer(TokenContainerClass):
         # Delete registration / synchronization info
         self.delete_container_info("public_key_client", keep_internal=False)
         self.delete_container_info("device", keep_internal=False)
-        self.delete_container_info("server_url", keep_internal=False)
-        self.delete_container_info("registration_state", keep_internal=False)
-        self.delete_container_info("challenge_ttl", keep_internal=False)
-        self.delete_container_info("initially_synchronized", keep_internal=False)
+        self.delete_container_info(SERVER_URL, keep_internal=False)
+        self.delete_container_info(RegistrationState.get_key(), keep_internal=False)
+        self.delete_container_info(CHALLENGE_TTL, keep_internal=False)
+        self.delete_container_info(INITIALLY_SYNCHRONIZED, keep_internal=False)
 
     def create_challenge(self, scope: str, validity_time: int = 2, data: dict = None) -> dict[str, str]:
         """
@@ -412,6 +424,7 @@ class SmartphoneContainer(TokenContainerClass):
         scope = getParam(params, "scope", optional=False)
         device_brand = getParam(params, "device_brand", optional=True)
         device_model = getParam(params, "device_model", optional=True)
+        passphrase = getParam(params, "passphrase", optional=True)
 
         try:
             pub_key_sig_container_str = self.get_container_info_dict()["public_key_client"]
@@ -424,7 +437,8 @@ class SmartphoneContainer(TokenContainerClass):
                                                   key=pub_key_encr_container_str,
                                                   container=container_client_str,
                                                   device_brand=device_brand,
-                                                  device_model=device_model)
+                                                  device_model=device_model,
+                                                  passphrase=passphrase)
         if not valid_challenge:
             raise ContainerInvalidChallenge('Could not verify signature!')
 

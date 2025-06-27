@@ -144,6 +144,8 @@ the realm in this action.
 
 no_detail_on_success
 ~~~~~~~~~~~~~~~~~~~~
+.. deprecated:: v3.12
+   Please use the :ref:`responsemanglerhandler` to delete the ``detail`` section.
 
 type: ``bool``
 
@@ -158,6 +160,8 @@ this additional information will not be returned.
 
 no_detail_on_fail
 ~~~~~~~~~~~~~~~~~
+.. deprecated:: v3.12
+   This policy breaks :term:`challenge-response <Challenge>` authentication.
 
 type: ``bool``
 

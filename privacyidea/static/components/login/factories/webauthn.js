@@ -36,7 +36,7 @@ angular
                 domExceptionErrorMessage
             ) {
                 return {
-                    register_request: function(registerRequest, callback) {
+                    register_request: function(registerRequest, callback, error_callback) {
                         if (!pi_webauthn) {
                             inform.add(
                                 gettextCatalog.getString(
@@ -62,6 +62,7 @@ angular
                                         ttl: 5000
                                     }
                                 );
+                                error_callback(e);
                             });
                     },
                     sign_request: function(data, signRequests, username, transactionid, login_callback) {

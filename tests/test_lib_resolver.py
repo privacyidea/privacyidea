@@ -2231,6 +2231,35 @@ class LDAPResolverTestCase(MyTestCase):
             pool.get_current_server(None)
             mock_method.assert_called_once()
 
+    def test_37_get_uid(self):
+        """
+        Test that the uids are returned correctly even if the ldap schema is unavailable and ldap could not decode it
+        """
+        # objectGUID without {} (AD LDAP)
+        correct_uid = "fa44faa0-e051-4fb9-afa2-1e24c7fbaeb0"
+        entry = {"attributes": {"objectGUID": [b'\xa0\xfaD\xfaQ\xe0\xb9O\xaf\xa2\x1e$\xc7\xfb\xae\xb0']}}
+        uid = LDAPResolver._get_uid(entry, "objectGUID")
+        self.assertEqual(correct_uid, uid)
+
+        # objectGUID with {} (AD LDAP)
+        correct_uid = "fa44faa0-e051-4fb9-afa2-1e24c7fbaeb0"
+        entry = {"attributes": {"objectGUID": [b'{fa44faa0-e051-4fb9-afa2-1e24c7fbaeb0}']}}
+        uid = LDAPResolver._get_uid(entry, "objectGUID")
+        self.assertEqual(correct_uid, uid)
+
+        # entryUUID (openLDAP)
+        correct_uid = "d0f5e8f2-8877-103f-94d3-9573ffddfff7"
+        entry = {"attributes": {"entryUUID": [b'd0f5e8f2-8877-103f-94d3-9573ffddfff7']}}
+        uid = LDAPResolver._get_uid(entry, "entryUUID")
+        self.assertEqual(correct_uid, uid)
+
+        # GUID (eDirectory)
+        correct_uid = "fa44faa0-e051-4fb9-afa2-1e24c7fbaeb0"
+        entry = {"attributes": {"GUID": [b'\xfaD\xfa\xa0\xe0QO\xb9\xaf\xa2\x1e$\xc7\xfb\xae\xb0']}}
+        uid = LDAPResolver._get_uid(entry, "GUID")
+        self.assertEqual(correct_uid, uid)
+
+
 class BaseResolverTestCase(MyTestCase):
 
     def test_00_basefunctions(self):

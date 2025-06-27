@@ -29,7 +29,9 @@ from flask import json
 from privacyidea.lib import _
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_token_types
-from privacyidea.lib.containers.container_info import TokenContainerInfoData, PI_INTERNAL
+from privacyidea.lib.containers.container_info import (TokenContainerInfoData, PI_INTERNAL, RegistrationState,
+                                                       INITIALLY_SYNCHRONIZED)
+from privacyidea.lib.containers.container_states import ContainerStates
 from privacyidea.lib.crypto import verify_ecc, decryptPassword, FAILED_TO_DECRYPT_PASSWORD
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError, TokenAdminError
 from privacyidea.lib.log import log_with
@@ -361,22 +363,6 @@ class TokenContainerClass:
         states = [state.state for state in db_states]
         return states
 
-    def _check_excluded_states(self, states) -> bool:
-        """
-        Validates whether the state list contains states that excludes each other
-
-        :param states: list of states
-        :returns: True if the state list contains exclusive states, False otherwise
-        """
-        state_types = self.get_state_types()
-        for state in states:
-            if state in state_types:
-                excluded_states = state_types[state]
-                same_states = list(set(states).intersection(excluded_states))
-                if len(same_states) > 0:
-                    return True
-        return False
-
     def set_states(self, state_list: list[str]) -> dict[str, bool]:
         """
         Set the states of the container. Previous states will be removed.
@@ -385,11 +371,23 @@ class TokenContainerClass:
         :param state_list: List of states as strings
         :returns: Dictionary in the format {state: success}
         """
+        res = {}
         if not state_list:
             state_list = []
 
+        # convert to ContainerState Enum and check if state exists
+        supported_states = ContainerStates.get_supported_states()
+        enum_states = []
+        for state in state_list:
+            try:
+                enum_states.append(ContainerStates(state))
+            except ValueError:
+                # We do not raise an error here to allow following states to be set
+                log.warning(f"State {state} not supported. Supported states are {supported_states}.")
+                res[state] = False
+
         # Check for exclusive states
-        exclusive_states = self._check_excluded_states(state_list)
+        exclusive_states = ContainerStates.check_excluded_states(enum_states)
         if exclusive_states:
             raise ParameterError(f"The state list {state_list} contains exclusive states!")
 
@@ -397,16 +395,10 @@ class TokenContainerClass:
         TokenContainerStates.query.filter_by(container_id=self._db_container.id).delete()
 
         # Set new states
-        state_types = self.get_state_types().keys()
-        res = {}
-        for state in state_list:
-            if state not in state_types:
-                # We do not raise an error here to allow following states to be set
-                log.warning(f"State {state} not supported. Supported states are {state_types}.")
-                res[state] = False
-            else:
-                TokenContainerStates(container_id=self._db_container.id, state=state).save()
-                res[state] = True
+        for state in enum_states:
+            TokenContainerStates(container_id=self._db_container.id, state=state.value).save()
+            res[state.value] = True
+
         return res
 
     def add_states(self, state_list: list[str]) -> dict[str, bool]:
@@ -417,32 +409,37 @@ class TokenContainerClass:
         :param state_list: List of states as strings
         :returns: Dictionary in the format {state: success}
         """
+        res = {}
         if not state_list or len(state_list) == 0:
             return {}
 
+        # convert to ContainerState Enum and check if state exists
+        supported_states = ContainerStates.get_supported_states()
+        enum_states = []
+        for state in state_list:
+            try:
+                enum_states.append(ContainerStates(state))
+            except ValueError:
+                # We do not raise an error here to allow following states to be set
+                log.warning(f"State {state} not supported. Supported states are {supported_states}.")
+                res[state] = False
+
         # Check for exclusive states
-        exclusive_states = self._check_excluded_states(state_list)
-        if exclusive_states:
+        if ContainerStates.check_excluded_states(enum_states):
             raise ParameterError(f"The state list {state_list} contains exclusive states!")
 
         # Add new states
-        res = {}
-        state_types = self.get_state_types()
-        for state in state_list:
-            if state not in state_types.keys():
-                # We do not raise an error here to allow following states to be set
-                res[state] = False
-                log.warning(f"State {state} not supported. Supported states are {state_types}.")
-            else:
-                # Remove old states that are excluded from the new state
-                for excluded_state in state_types[state]:
-                    TokenContainerStates.query.filter_by(container_id=self._db_container.id,
-                                                         state=excluded_state).delete()
-                    log.debug(
-                        f"Removed state {excluded_state} from container {self.serial} "
-                        f"because it is excluded by the new state {state}.")
-                TokenContainerStates(container_id=self._db_container.id, state=state).save()
-                res[state] = True
+        exclusive_states = ContainerStates.get_exclusive_states()
+        for state in enum_states:
+            # Remove old states that are excluded from the new state
+            for excluded_state in exclusive_states[state]:
+                TokenContainerStates.query.filter_by(container_id=self._db_container.id,
+                                                     state=excluded_state.value).delete()
+                log.debug(f"Removed state {excluded_state.value} from container {self.serial} because it is excluded "
+                          f"by the new state {state.value}.")
+            TokenContainerStates(container_id=self._db_container.id, state=state.value).save()
+            res[state.value] = True
+
         return res
 
     @classmethod
@@ -610,7 +607,7 @@ class TokenContainerClass:
 
     def validate_challenge(self, signature: bytes, public_key: EllipticCurvePublicKey, scope: str,
                            transaction_id: str = None, key: str = None, container: str = None, device_brand: str = None,
-                           device_model: str = None) -> bool:
+                           device_model: str = None, passphrase: str = None) -> bool:
         """
         Verifies the response of a challenge:
             * Checks if challenge is valid (not expired)
@@ -627,6 +624,7 @@ class TokenContainerClass:
         :param container: Container to be included in the signature, optional
         :param device_brand: Device brand to be included in the signature, optional
         :param device_model: Device model to be included in the signature, optional
+        :param passphrase: Passphrase to be included in the signature and validated against the user store, optional
         :return: True if the challenge response is valid, False otherwise
         """
         challenge_list = get_challenges(serial=self.serial, transaction_id=transaction_id)
@@ -641,7 +639,31 @@ class TokenContainerClass:
                 nonce = challenge.challenge
                 times_stamp = challenge.timestamp.replace(tzinfo=timezone.utc).isoformat()
                 extra_data = json.loads(challenge.data)
-                passphrase = extra_data.get("passphrase_response")
+                passphrase_user = extra_data.get("passphrase_user")
+                if passphrase_user:
+                    if not passphrase:
+                        log.debug("The challenge requires to validate the passphrase against the user store, but no "
+                                  "passphrase is provided.")
+                        continue
+                    owners = self.get_users()
+                    if len(owners) == 0:
+                        log.debug(f"No user assigned to the container {self.serial}. Passphrase can not be validated "
+                                  "against the user store.")
+                        continue
+                    valid_passphrase = owners[0].check_password(passphrase)
+                    if not valid_passphrase:
+                        log.debug(f"Invalid passphrase {len(passphrase) * '*'} for user {owners[0].login} in realm "
+                                  f"{owners[0].realm}.")
+                        continue
+                else:
+                    passphrase = extra_data.get("passphrase_response")
+                    if passphrase:
+                        passphrase = decryptPassword(passphrase)
+                        if passphrase == FAILED_TO_DECRYPT_PASSWORD:
+                            challenge.delete()
+                            log.warning("Failed to decrypt the passphrase from the challenge. "
+                                        "Hence, deleted the challenge.")
+                            continue
                 challenge_scope = extra_data.get("scope")
                 # explicitly check the scope that the right challenge for the right endpoint is used
                 if scope != challenge_scope:
@@ -654,14 +676,7 @@ class TokenContainerClass:
                 if device_model:
                     message += f"|{device_model}"
                 if passphrase:
-                    passphrase = decryptPassword(passphrase)
-                    if passphrase == FAILED_TO_DECRYPT_PASSWORD:
-                        challenge.delete()
-                        log.warning("Failed to decrypt the passphrase from the challenge. "
-                                    "Hence, deleted the challenge.")
-                        continue
-                    else:
-                        message += f"|{passphrase}"
+                    message += f"|{passphrase}"
                 if key:
                     message += f"|{key}"
                 if container:
@@ -674,7 +689,8 @@ class TokenContainerClass:
                     # It is not the right challenge: log to find reason for invalid signature
                     log.debug(f"Used hash algorithm to verify: {verify_res['hash_algorithm']}")
                     challenge_data_log = (f"Challenge data: nonce={nonce}, timestamp={times_stamp}, "
-                                          f"serial={self.serial}, scope={scope}")
+                                          f"serial={self.serial}, scope={scope}, "
+                                          f"transaction_id={challenge.transaction_id}")
                     if passphrase:
                         challenge_data_log += f", passphrase={len(passphrase) * '*'}"
                     log.debug(challenge_data_log)
@@ -874,8 +890,8 @@ class TokenContainerClass:
         client_serials = [token["serial"] for token in client_tokens if "serial" in token.keys()]
 
         container_info = self.get_container_info_dict()
-        registration_state = container_info.get("registration_state", "")
-        if registration_state == "rollover_completed":
+        registration_state = RegistrationState(container_info.get(RegistrationState.get_key()))
+        if registration_state == RegistrationState.ROLLOVER_COMPLETED:
             # rollover all tokens: generate new enroll info for all tokens
             missing_serials = server_token_serials
             same_serials = []
@@ -887,7 +903,7 @@ class TokenContainerClass:
         # counter is not known by the server
         offline_serials = [serial for serial in missing_serials if is_offline_token(serial)]
         missing_serials = list(set(missing_serials).difference(set(offline_serials)))
-        if registration_state == "rollover_completed":
+        if registration_state == RegistrationState.ROLLOVER_COMPLETED:
             # offline tokens known by the client can be added to the update list
             # (indicating the tokens are still in the container)
             same_serials = list(set(client_serials).intersection(set(offline_serials)))
@@ -898,9 +914,9 @@ class TokenContainerClass:
                      "They can not be added during synchronization.")
 
         # Initial synchronization after registration or rollover
-        if initial_transfer_allowed and not is_true(container_info.get("initially_synchronized")):
-            self.update_container_info(
-                [TokenContainerInfoData(key="initially_synchronized", value="True", info_type=PI_INTERNAL)])
+        if initial_transfer_allowed and not is_true(container_info.get(INITIALLY_SYNCHRONIZED)):
+            self.update_container_info([TokenContainerInfoData(key=INITIALLY_SYNCHRONIZED, value="True",
+                                                               info_type=PI_INTERNAL)])
             server_missing_tokens = list(set(client_serials).difference(set(server_token_serials)))
             for serial in server_missing_tokens:
                 # Try to add the missing token to the container on the server
@@ -940,7 +956,7 @@ class TokenContainerClass:
 
         container_dict["tokens"] = {"add": missing_serials, "update": update_dict}
 
-        if registration_state == "rollover_completed":
+        if registration_state == RegistrationState.ROLLOVER_COMPLETED:
             container_dict["tokens"]["offline"] = offline_serials
 
         return container_dict

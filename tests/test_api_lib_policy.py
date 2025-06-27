@@ -6,11 +6,12 @@ The api.lib.policy.py depends on lib.policy and on flask!
 import json
 import logging
 from testfixtures import log_capture
+from werkzeug.datastructures.headers import Headers
 
 from privacyidea.lib.container import init_container, find_container_by_serial
-from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AUTHENTICATOR_ATTACHMENT_TYPE,
-                                             ATTESTATION_LEVEL, ATTESTATION_FORM,
-                                             USER_VERIFICATION_LEVEL)
+from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AuthenticatorAttachmentType,
+                                             AttestationLevel, AttestationForm,
+                                             UserVerificationLevel)
 from privacyidea.lib.tokens.webauthntoken import (DEFAULT_ALLOWED_TRANSPORTS,
                                                   WebAuthnTokenClass, DEFAULT_CHALLENGE_TEXT_AUTH,
                                                   PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
@@ -21,14 +22,16 @@ from privacyidea.lib.tokens.webauthntoken import (DEFAULT_ALLOWED_TRANSPORTS,
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT,
                                                   PUBKEY_CRED_ALGORITHMS_ORDER)
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
-from privacyidea.lib.utils import hexlify_and_unicode
+from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes, INTERNAL_USAGE
+from privacyidea.lib.utils import hexlify_and_unicode, AUTH_RESPONSE
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
 from .base import (MyApiTestCase)
 
 from privacyidea.lib.subscriptions import EXPIRE_MESSAGE
 from privacyidea.lib.policy import (set_policy, delete_policy, enable_policy,
                                     PolicyClass, SCOPE, ACTION, REMOTE_USER,
-                                    AUTOASSIGNVALUE, AUTHORIZED)
+                                    AUTOASSIGNVALUE, AUTHORIZED,
+                                    DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL)
 from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_base_action, check_token_init,
                                            check_max_token_user,
@@ -57,7 +60,8 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            require_description, jwt_validity, check_container_action,
                                            check_token_action, check_token_list_action, check_user_params,
                                            check_client_container_action, container_registration_config,
-                                           smartphone_config, check_client_container_disabled_action, rss_age)
+                                           smartphone_config, check_client_container_disabled_action, rss_age,
+                                           hide_container_info)
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.realm import delete_realm
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
@@ -69,7 +73,7 @@ from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             save_pin_change,
                                             add_user_detail_to_response,
                                             mangle_challenge_response, is_authorized,
-                                            check_verify_enrollment)
+                                            check_verify_enrollment, preferred_client_mode)
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    set_realms, check_user_pass, unassign_token,
                                    enable_token)
@@ -134,6 +138,11 @@ tA==
 
 class PrePolicyDecoratorTestCase(MyApiTestCase):
 
+    def setUp(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        self.setUp_user_realm3()
+
     def test_01_check_base_action(self):
         g.logged_in_user = {"username": "admin1",
                             "realm": "",
@@ -150,9 +159,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req.User = User()
 
         # Set a policy, that does allow the action
-        set_policy(name="pol1",
-                   scope=SCOPE.ADMIN,
-                   action="enable", client="10.0.0.0/8")
+        set_policy(name="pol1", scope=SCOPE.ADMIN, action=ACTION.ENABLE, client="10.0.0.0/8")
         g.policy_object = PolicyClass()
 
         # Action enable is cool
@@ -169,33 +176,21 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                           check_base_action, req, "delete")
 
         # check action with a token realm
-        set_policy(name="pol1",
-                   scope=SCOPE.ADMIN,
-                   action="enable", client="10.0.0.0/8",
-                   realm="realm1")
-        set_policy(name="pol2",
-                   scope=SCOPE.ADMIN,
-                   action="*", client="10.0.0.0/8",
-                   realm="realm2")
+        set_policy(name="pol1", scope=SCOPE.ADMIN, action=ACTION.ENABLE, client="10.0.0.0/8",
+                   realm=self.realm1)
+        set_policy(name="pol2", scope=SCOPE.ADMIN, action="*", client="10.0.0.0/8", realm=self.realm2)
         g.policy_object = PolicyClass()
         # set a polrealm1 and a polrealm2
-        # setup realm1
-        self.setUp_user_realms()
-        # setup realm2
-        self.setUp_user_realm2()
-        tokenobject = init_token({"serial": "POL001", "type": "hotp",
-                                  "otpkey": "1234567890123456"})
-        r = set_realms("POL001", [self.realm1])
+        init_token({"serial": "POL001", "type": "hotp", "otpkey": "1234567890123456"})
+        set_realms("POL001", [self.realm1])
 
-        tokenobject = init_token({"serial": "POL002", "type": "hotp",
-                                  "otpkey": "1234567890123456"})
-        r = set_realms("POL002", [self.realm2])
+        init_token({"serial": "POL002", "type": "hotp", "otpkey": "1234567890123456"})
+        set_realms("POL002", [self.realm2])
 
         # Token in realm1 can not be deleted
         req.all_data = {"serial": "POL001"}
         req.User = User()
-        self.assertRaises(PolicyError,
-                          check_base_action, req, "delete")
+        self.assertRaises(PolicyError, check_base_action, req, "delete")
         # while token in realm2 can be deleted
         req.all_data = {"serial": "POL002"}
         r = check_base_action(req, action="delete")
@@ -215,7 +210,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
     def test_01a_admin_realms(self):
         admin1 = {"username": "admin1",
                   "role": "admin",
-                  "realm": "realm1"}
+                  "realm": "adminrealm"}
 
         admin2 = {"username": "admin1",
                   "role": "admin",
@@ -223,7 +218,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         set_policy(name="pol",
                    scope=SCOPE.ADMIN,
-                   action="*", adminrealm="realm1")
+                   action="*", adminrealm="adminrealm")
         g.policy_object = PolicyClass()
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -350,11 +345,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                    action="{0!s}={1!s}".format(ACTION.MAXACTIVETOKENUSER, 1))
         g.policy_object = PolicyClass()
         # The user has one token, everything is fine.
-        self.setUp_user_realms()
-        tokenobject = init_token({"serial": "NEW001", "type": "hotp",
-                                  "otpkey": "1234567890123456"},
-                                 user=User(login="cornelius",
-                                           realm=self.realm1))
+        init_token({"serial": "NEW001", "type": "hotp",
+                    "otpkey": "1234567890123456"},
+                   user=User(login="cornelius",
+                             realm=self.realm1))
         tokenobject_list = get_tokens(user=User(login="cornelius",
                                                 realm=self.realm1))
         self.assertTrue(len(tokenobject_list) == 1)
@@ -453,20 +447,20 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
         # The user has one token, everything is fine.
         self.setUp_user_realms()
-        tokenobject = init_token({"serial": "NEW001", "type": "hotp",
-                                  "otpkey": "1234567890123456"},
-                                 user=User(login="cornelius",
-                                           realm=self.realm1))
+        init_token({"serial": "NEW001", "type": "hotp",
+                    "otpkey": "1234567890123456"},
+                   user=User(login="cornelius",
+                             realm=self.realm1))
         tokenobject_list = get_tokens(user=User(login="cornelius",
                                                 realm=self.realm1))
         self.assertTrue(len(tokenobject_list) == 1)
         self.assertTrue(check_max_token_user(req))
 
         # Now the user gets his second token
-        tokenobject = init_token({"serial": "NEW002", "type": "hotp",
-                                  "otpkey": "1234567890123456"},
-                                 user=User(login="cornelius",
-                                           realm=self.realm1))
+        init_token({"serial": "NEW002", "type": "hotp",
+                    "otpkey": "1234567890123456"},
+                   user=User(login="cornelius",
+                             realm=self.realm1))
         tokenobject_list = get_tokens(user=User(login="cornelius",
                                                 realm=self.realm1))
         self.assertTrue(len(tokenobject_list) == 2)
@@ -565,10 +559,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                    action="max_token_per_realm=2",
                    realm=self.realm1)
         g.policy_object = PolicyClass()
-        self.setUp_user_realms()
         # Add the first token into the realm
-        tokenobject = init_token({"serial": "NEW001", "type": "hotp",
-                                  "otpkey": "1234567890123456"})
+        init_token({"serial": "NEW001", "type": "hotp",
+                    "otpkey": "1234567890123456"})
         set_realms("NEW001", [self.realm1])
         # check the realm, only one token is in it the policy condition will
         # pass
@@ -577,8 +570,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertTrue(check_max_token_realm(req))
 
         # add a second token to the realm
-        tokenobject = init_token({"serial": "NEW002", "type": "hotp",
-                                  "otpkey": "1234567890123456"})
+        init_token({"serial": "NEW002", "type": "hotp",
+                    "otpkey": "1234567890123456"})
         set_realms("NEW002", [self.realm1])
         tokenobject_list = get_tokens(realm=self.realm1)
         self.assertTrue(len(tokenobject_list) == 2)
@@ -612,8 +605,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Set a policy, that allows two tokens per realm
         set_policy(name="pol1",
                    scope=SCOPE.AUTHZ,
-                   action="{0!s}={1!s}".format(ACTION.SETREALM, self.realm1),
-                   realm="somerealm")
+                   action=f"{ACTION.SETREALM}={self.realm1}",
+                   realm=self.realm2)
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
@@ -624,7 +617,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(req.all_data.get("realm"), None)
 
         req.all_data = {}
-        req.User = User(login="cornelius", realm="somerealm")
+        req.User = User(login="cornelius", realm=self.realm2)
         set_realm(req)
         # Check, if the realm was modified to the realm specified in the policy
         self.assertEqual(req.all_data.get("realm"), self.realm1)
@@ -639,12 +632,12 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         #  we get an exception
         set_policy(name="pol2",
                    scope=SCOPE.AUTHZ,
-                   action="{0!s}={1!s}".format(ACTION.SETREALM, "ConflictRealm"),
-                   realm="somerealm")
+                   action=f"{ACTION.SETREALM}=ConflictRealm",
+                   realm=self.realm2)
         g.policy_object = PolicyClass()
         # This request will trigger two policies with different realms to set
-        req.all_data = {"realm": "somerealm"}
-        req.User = User(login="cornelius", realm="somerealm")
+        req.all_data = {"realm": self.realm2}
+        req.User = User(login="cornelius", realm=self.realm2)
         self.assertRaises(PolicyError, set_realm, req)
 
         # finally delete policy
@@ -825,7 +818,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         policies = ["+cn", "+c", "+cs"]
         for policy in policies:
-            required = ["".join([CHARLIST_CONTENTPOLICY[str] for str in policy[1:]])]
+            required = ["".join([CHARLIST_CONTENTPOLICY[c] for c in policy[1:]])]
             charlists_dict = generate_charlists_from_pin_policy(policy)
             self.assertEqual(charlists_dict,
                              {"base": default_chars,
@@ -845,7 +838,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         policies = ["cn", "c", "sc"]
         for policy in policies:
-            required = [CHARLIST_CONTENTPOLICY[str] for str in policy[:]]
+            required = [CHARLIST_CONTENTPOLICY[c] for c in policy]
             charlists_dict = generate_charlists_from_pin_policy(policy)
             self.assertEqual(charlists_dict,
                              {"base": default_chars,
@@ -1461,8 +1454,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                         "action": ["loginmode=privacyIDEA"],
                         "active": True,
                         "client": [],
-                        "realm": ["realmB"],
-                        "resolver": ["resolverB"],
+                        "realm": [self.realm3],
+                        "resolver": [self.resolvername3],
                         "time": "",
                         "user": []
                         }
@@ -1486,8 +1479,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                           "mresolverwrite, losttoken, enrollSSHKEY, "
                           "importtokens, assign, delete",
                    adminuser="admin[aA]",
-                   realm="realmA, realmB",
-                   resolver="resolverA, resolverB",
+                   realm=f"{self.realm1}, {self.realm3}",
+                   resolver=f"{self.resolvername1}, {self.resolvername3}",
                    )
         set_policy("polAdminB", scope=SCOPE.ADMIN,
                    action="set, revoke, adduser, resync, unassign, "
@@ -1495,8 +1488,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                           "enrollREGISTRATION, updateuser, enable, userlist, "
                           "getserial, disable, reset, getchallenges, losttoken,"
                           " assign, delete ",
-                   realm="realmB",
-                   resolver="resolverB",
+                   realm=self.realm3,
+                   resolver=self.resolvername3,
                    adminuser="adminB")
         g.policy_object = PolicyClass()
         # Test AdminA
@@ -1530,8 +1523,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy("userAdd", scope=SCOPE.ADMIN,
                    action="adduser",
                    adminuser="adminA",
-                   realm="realmA",
-                   resolver="resolverA",
+                   realm=self.realm1,
+                   resolver=self.resolvername1,
                    )
         builder = EnvironBuilder(method='POST')
         env = builder.get_environ()
@@ -1539,7 +1532,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req = Request(env)
         req.User = User()
         req.all_data = {"user": "new_user",
-                        "resolver": "resolverA"}
+                        "resolver": self.resolvername1}
         g.policy_object = PolicyClass()
         g.logged_in_user = {"username": "adminA",
                             "role": "admin",
@@ -1549,7 +1542,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(r, True)
 
         req.all_data = {"user": "new_user",
-                        "resolver": "resolverB"}
+                        "resolver": self.resolvername3}
 
         # User can not be added in a different resolver
         self.assertRaises(PolicyError, check_base_action, req,
@@ -2095,6 +2088,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Now he is only allowed to view realm1
         g.policy_object = PolicyClass()
         req = Request(env)
+        req.all_data = {}
         r = check_admin_tokenlist(req)
         self.assertTrue(r)
         # The admin1 has the policy "pol-realm1", so he is allowed to view all realms!
@@ -2104,6 +2098,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Now he only has the admin right to init tokens
         g.policy_object = PolicyClass()
         req = Request(env)
+        req.all_data = {}
         r = check_admin_tokenlist(req)
         self.assertTrue(r)
         # The admin1 has the policy "pol-only-init", so he is not allowed to list tokens
@@ -2522,10 +2517,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                          request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT))
 
         # With policies
-        authenticator_attachment = AUTHENTICATOR_ATTACHMENT_TYPE.CROSS_PLATFORM
+        authenticator_attachment = AuthenticatorAttachmentType.CROSS_PLATFORM
         public_key_credential_algorithm_preference = 'ecdsa'
-        authenticator_attestation_level = ATTESTATION_LEVEL.TRUSTED
-        authenticator_attestation_form = ATTESTATION_FORM.INDIRECT
+        authenticator_attestation_level = AttestationLevel.TRUSTED
+        authenticator_attestation_form = AttestationForm.INDIRECT
         challengetext = "Lorem Ipsum"
         set_policy(
             name="WebAuthn2",
@@ -2636,7 +2631,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # With policies
         timeout = 30
-        user_verification_requirement = USER_VERIFICATION_LEVEL.REQUIRED
+        user_verification_requirement = UserVerificationLevel.REQUIRED
         authenticator_selection_list = 'foo bar baz'
         set_policy(
             name="WebAuthn",
@@ -2737,7 +2732,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # With policies
         timeout = 30
-        user_verification_requirement = USER_VERIFICATION_LEVEL.REQUIRED
+        user_verification_requirement = UserVerificationLevel.REQUIRED
         set_policy(
             name="WebAuthn",
             scope=SCOPE.AUTH,
@@ -2787,7 +2782,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # With policies
         timeout = 30
-        user_verification_requirement = USER_VERIFICATION_LEVEL.REQUIRED
+        user_verification_requirement = UserVerificationLevel.REQUIRED
         set_policy(
             name="WebAuthn",
             scope=SCOPE.AUTH,
@@ -2893,7 +2888,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # With policies
         timeout = 30
-        user_verification_requirement = USER_VERIFICATION_LEVEL.REQUIRED
+        user_verification_requirement = UserVerificationLevel.REQUIRED
         set_policy(
             name="WebAuthn",
             scope=SCOPE.AUTH,
@@ -3574,29 +3569,44 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req, token = self.mock_token_request("admin")
 
         # Generic policy
-        set_policy(name="policy", scope=SCOPE.ADMIN, action="enable")
-        self.assertTrue(check_token_action(request=req, action="enable"))
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN)
+        self.assertTrue(check_token_action(request=req, action=ACTION.CONTAINER_ADD_TOKEN))
+        # Request user is different from token owner: use token owner (can only happen in add/remove token)
+        req.User = User("selfservice", self.realm1, self.resolvername1)
+        self.assertTrue(check_token_action(request=req, action=ACTION.CONTAINER_ADD_TOKEN))
         delete_policy("policy")
 
         # Policy for resolver
-        set_policy(name="policy", scope=SCOPE.ADMIN, action="enable", resolver=[self.resolvername3])
-        self.assertTrue(check_token_action(request=req, action="enable"))
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN, resolver=[self.resolvername3])
+        self.assertTrue(check_token_action(request=req, action=ACTION.CONTAINER_ADD_TOKEN))
+        # Request user is different from token owner: use token owner (can only happen in add/remove token)
+        req.User = User("selfservice", self.realm1, self.resolvername1)
+        self.assertTrue(check_token_action(request=req, action=ACTION.CONTAINER_ADD_TOKEN))
         delete_policy("policy")
 
         # Policy for realm3 of the user
-        set_policy(name="policy", scope=SCOPE.ADMIN, action="enable", realm=[self.realm3])
-        self.assertTrue(check_token_action(request=req, action="enable"))
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN, realm=[self.realm3])
+        self.assertTrue(check_token_action(request=req, action=ACTION.CONTAINER_ADD_TOKEN))
+        # Request user is different from token owner: use token owner (can only happen in add/remove token)
+        req.User = User("selfservice", self.realm1, self.resolvername1)
+        self.assertTrue(check_token_action(request=req, action=ACTION.CONTAINER_ADD_TOKEN))
         delete_policy("policy")
 
         # Policy for additional token realm realm1
-        set_policy(name="policy", scope=SCOPE.ADMIN, action="enable", realm=[self.realm1])
-        self.assertTrue(check_token_action(request=req, action="enable"))
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN, realm=[self.realm1])
+        self.assertTrue(check_token_action(request=req, action=ACTION.CONTAINER_ADD_TOKEN))
+        # Request user is different from token owner: use token owner (can only happen in add/remove token)
+        req.User = User("selfservice", self.realm1, self.resolvername1)
+        self.assertTrue(check_token_action(request=req, action=ACTION.CONTAINER_ADD_TOKEN))
         delete_policy("policy")
 
         # Policy for user
-        set_policy(name="policy", scope=SCOPE.ADMIN, action="enable", user="root", realm=[self.realm3],
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN, user="root", realm=[self.realm3],
                    resolver=[self.resolvername3])
-        self.assertTrue(check_token_action(request=req, action="enable"))
+        self.assertTrue(check_token_action(request=req, action=ACTION.CONTAINER_ADD_TOKEN))
+        # Request user is different from token owner: use token owner (can only happen in add/remove token)
+        req.User = User("selfservice", self.realm1, self.resolvername1)
+        self.assertTrue(check_token_action(request=req, action=ACTION.CONTAINER_ADD_TOKEN))
         delete_policy("policy")
 
         token.delete_token()
@@ -3605,8 +3615,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req, token = self.mock_token_request_no_user("admin")
 
         # Generic policy
-        set_policy(name="policy", scope=SCOPE.ADMIN, action="enable")
-        self.assertTrue(check_token_action(request=req, action="enable"))
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.ENABLE)
+        self.assertTrue(check_token_action(request=req, action=ACTION.ENABLE))
         delete_policy("policy")
 
         # Policy for realm: only assign is allowed for token without user
@@ -3622,28 +3632,31 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req, token = self.mock_token_request("admin")
 
         # No enable policy
-        set_policy(name="policy", scope=SCOPE.ADMIN, action="disable")
-        self.assertRaises(PolicyError, check_token_action, request=req, action="enable")
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.DISABLE)
+        self.assertRaises(PolicyError, check_token_action, request=req, action=ACTION.ENABLE)
         delete_policy("policy")
 
         # Policy for another resolver
-        set_policy(name="policy", scope=SCOPE.ADMIN, action="enable", resolver=[self.resolvername1])
-        self.assertRaises(PolicyError, check_token_action, request=req, action="enable")
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN, resolver=[self.resolvername1])
+        self.assertRaises(PolicyError, check_token_action, request=req, action=ACTION.CONTAINER_ADD_TOKEN)
+        # Request user would be allowed, but token owner not (can only happen in add/remove token)
+        req.User = User("selfservice", self.realm1, self.resolvername1)
+        self.assertRaises(PolicyError, check_token_action, request=req, action=ACTION.CONTAINER_ADD_TOKEN)
         delete_policy("policy")
 
         # Policy for another realm
-        set_policy(name="policy", scope=SCOPE.ADMIN, action="enable", realm=["realm2"])
-        self.assertRaises(PolicyError, check_token_action, request=req, action="enable")
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.ENABLE, realm=["realm2"])
+        self.assertRaises(PolicyError, check_token_action, request=req, action=ACTION.ENABLE)
         delete_policy("policy")
         # Assign not allowed if token is in another realm
         set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.ASSIGN, realm=["realm2"])
-        self.assertRaises(PolicyError, check_token_action, request=req, action="enable")
+        self.assertRaises(PolicyError, check_token_action, request=req, action=ACTION.ASSIGN)
         delete_policy("policy")
 
         # Policy for another user
-        set_policy(name="policy", scope=SCOPE.ADMIN, action="enable", user="hans", realm=[self.realm3],
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.ENABLE, user="hans", realm=[self.realm3],
                    resolver=[self.resolvername3])
-        self.assertRaises(PolicyError, check_token_action, request=req, action="enable")
+        self.assertRaises(PolicyError, check_token_action, request=req, action=ACTION.ENABLE)
         delete_policy("policy")
 
         token.delete_token()
@@ -3652,19 +3665,19 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req, token = self.mock_token_request_no_user("admin")
 
         # Policy for resolver
-        set_policy(name="policy", scope=SCOPE.ADMIN, action="enable", resolver=[self.resolvername3])
-        self.assertRaises(PolicyError, check_token_action, request=req, action="enable")
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.ENABLE, resolver=[self.resolvername3])
+        self.assertRaises(PolicyError, check_token_action, request=req, action=ACTION.ENABLE)
         delete_policy("policy")
 
         # Policy for realm
-        set_policy(name="policy", scope=SCOPE.ADMIN, action="enable", realm=[self.realm1])
-        self.assertRaises(PolicyError, check_token_action, request=req, action="enable")
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.ENABLE, realm=[self.realm1])
+        self.assertRaises(PolicyError, check_token_action, request=req, action=ACTION.ENABLE)
         delete_policy("policy")
 
         # Policy for user
-        set_policy(name="policy", scope=SCOPE.ADMIN, action="enable", user="root", realm=[self.realm3],
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.ENABLE, user="root", realm=[self.realm3],
                    resolver=[self.resolvername3])
-        self.assertRaises(PolicyError, check_token_action, request=req, action="enable")
+        self.assertRaises(PolicyError, check_token_action, request=req, action=ACTION.ENABLE)
         delete_policy("policy")
 
         token.delete_token()
@@ -3699,14 +3712,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         :param container_type: Type of the container to create
         :return: Request object and container object
         """
-        if role == "admin":
-            g.logged_in_user = {"username": "admin",
-                                "role": "admin"}
-        elif role == "user":
-            g.logged_in_user = {"username": "root",
-                                "realm": self.realm3,
-                                "resolver": self.resolvername3,
-                                "role": "user"}
         # create container for user hans (realm3) and realm 1
         container_serial = init_container({"type": container_type})["container_serial"]
         container = find_container_by_serial(container_serial)
@@ -3715,6 +3720,16 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req = Request(env)
         req.all_data = {"container_serial": container_serial}
         req.User = User()
+        if role == "admin":
+            g.logged_in_user = {"username": "admin",
+                                "role": "admin",
+                                "realm": ""}
+        elif role == "user":
+            g.logged_in_user = {"username": "root",
+                                "realm": self.realm3,
+                                "resolver": self.resolvername3,
+                                "role": "user"}
+            req.User = User(login="root", realm=self.realm3, resolver=self.resolvername3)
         g.policy_object = PolicyClass()
 
         return req, container
@@ -3790,6 +3805,13 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         container.delete()
 
+        # request user differs from container owner
+        set_policy(name="policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DESCRIPTION)
+        selfservice = User(login="selfservice", realm=self.realm1, resolver=self.resolvername1)
+        req.User = selfservice
+        self.assertRaises(PolicyError, check_container_action, request=req, action=ACTION.CONTAINER_DESCRIPTION)
+        delete_policy("policy")
+
         # Container has no owner: only allowed for assign and create
         req, container = self.mock_container_request_no_user("user")
         # Generic policy
@@ -3806,15 +3828,27 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Generic policy
         set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION)
         self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_DESCRIPTION))
+        # request user differs from container owner: uses container owner (can only happen in token init)
+        selfservice = User(login="selfservice", realm=self.realm1, resolver=self.resolvername1)
+        req.User = selfservice
+        self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_DESCRIPTION))
         delete_policy("policy")
 
         # Policy for resolver
         set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, resolver=[self.resolvername3])
         self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_DESCRIPTION))
+        # request user differs from container owner: uses container owner (can only happen in token init)
+        selfservice = User(login="selfservice", realm=self.realm1, resolver=self.resolvername1)
+        req.User = selfservice
+        self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_DESCRIPTION))
         delete_policy("policy")
 
         # Policy for realm3 of the user
         set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, realm=[self.realm3])
+        self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_DESCRIPTION))
+        # request user differs from container owner: uses container owner (can only happen in token init)
+        selfservice = User(login="selfservice", realm=self.realm1, resolver=self.resolvername1)
+        req.User = selfservice
         self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_DESCRIPTION))
         delete_policy("policy")
 
@@ -3822,12 +3856,20 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION,
                    realm=[self.realm2, self.realm1])
         self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_DESCRIPTION))
+        # request user differs from container owner: uses container owner (can only happen in token init)
+        selfservice = User(login="selfservice", realm=self.realm1, resolver=self.resolvername1)
+        req.User = selfservice
+        self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_DESCRIPTION))
         delete_policy("policy")
 
         # Policy for user
         set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, user="root",
                    realm=[self.realm3],
                    resolver=[self.resolvername3])
+        self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_DESCRIPTION))
+        # request user differs from container owner: uses container owner (can only happen in token init)
+        selfservice = User(login="selfservice", realm=self.realm1, resolver=self.resolvername1)
+        req.User = selfservice
         self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_DESCRIPTION))
         delete_policy("policy")
 
@@ -3860,6 +3902,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # Policy for another resolver
         set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, resolver=[self.resolvername1])
+        self.assertRaises(PolicyError, check_container_action, request=req, action=ACTION.CONTAINER_DESCRIPTION)
+        # request user would be allowed, but not the container owner (only possible in token init)
+        req.User = User(login="selfservice", realm=self.realm1, resolver=self.resolvername1)
         self.assertRaises(PolicyError, check_container_action, request=req, action=ACTION.CONTAINER_DESCRIPTION)
         delete_policy("policy")
 
@@ -3987,6 +4032,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         return req
 
     def test_72_check_user_params_user_success(self):
+        set_policy(name="policy", scope=SCOPE.USER, action=ACTION.CONTAINER_ASSIGN_USER)
         # Mock request object
         self.setUp_user_realm4_with_2_resolvers()
         req = self.mock_request_user_params("user")
@@ -3997,6 +4043,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Empty user params
         req.all_data = {}
         self.assertTrue(check_user_params(request=req, action=ACTION.CONTAINER_ASSIGN_USER))
+
+        delete_policy("policy")
 
     def test_73_check_user_params_user_denied(self):
         # Mock request object
@@ -4678,6 +4726,49 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         delete_policy("rssage")
 
+    def test_85_hide_container_info(self):
+        self.setUp_user_realm3()
+        # ---- Admin ----
+        req, container = self.mock_container_request("admin", "smartphone")
+
+        # No policy set
+        hide_container_info(req)
+        self.assertSetEqual(set(), set(req.all_data["hide_container_info"]))
+
+        # Set admin, helpdesk and user policies
+        set_policy(name="admin", scope=SCOPE.ADMIN,
+                   action=f"{ACTION.HIDE_CONTAINER_INFO}=initially_synchronized device")
+        set_policy(name="user", scope=SCOPE.USER,
+                   action=f"{ACTION.HIDE_CONTAINER_INFO}=initially_synchronized challenge_ttl encrypt_algorithm "
+                          f"encrypt_key_algorithm encrypt_mode hash_algorithm key_algorithm server_url")
+
+        # admin
+        hide_container_info(req)
+        self.assertSetEqual({"initially_synchronized", "device"}, set(req.all_data["hide_container_info"]))
+
+        # ---- Helpdesk ----
+        set_policy(name="admin", scope=SCOPE.ADMIN,
+                   action=f"{ACTION.HIDE_CONTAINER_INFO}=device", realm=self.realm1)
+        # request including  user
+        hide_container_info(req)
+        self.assertSetEqual({"device"}, set(req.all_data["hide_container_info"]))
+        # request not including user and container has no owner, but is in realm1
+        req, container = self.mock_container_request_no_user("admin", "smartphone")
+        container.set_realms([self.realm1], add=True)
+        req.pi_allowed_container_realms = [self.realm3]
+        hide_container_info(req)
+        self.assertSetEqual({"device"}, set(req.all_data["hide_container_info"]))
+
+        # ---- User ----
+        req, container = self.mock_container_request("user", "smartphone")
+        hide_container_info(req)
+        self.assertSetEqual({"initially_synchronized", "challenge_ttl", "encrypt_algorithm", "encrypt_key_algorithm",
+                             "encrypt_mode", "hash_algorithm", "key_algorithm", "server_url"},
+                            set(req.all_data["hide_container_info"]))
+
+        delete_policy("admin")
+        delete_policy("user")
+
 
 class PostPolicyDecoratorTestCase(MyApiTestCase):
 
@@ -4948,6 +5039,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("pol2")
 
     def test_04_add_user_in_response(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
         builder = EnvironBuilder(method='POST',
                                  data={'user': "cornelius",
                                        "pass": "test"},
@@ -4957,12 +5050,12 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         env["REMOTE_ADDR"] = "10.0.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
-        self.setUp_user_realms()
         req.User = User("autoassignuser", self.realm1)
-        # The response contains the token type SPASS
+        # The response contains the token type SPASS and result->authentication set to ACCEPT
         res = {"jsonrpc": "2.0",
                "result": {"status": True,
-                          "value": True},
+                          "value": True,
+                          "authentication": AUTH_RESPONSE.ACCEPT},
                "version": "privacyIDEA test",
                "id": 1,
                "detail": {"message": "matching 1 tokens",
@@ -5048,17 +5141,14 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
     def test_05_autoassign_any_pin(self):
         # init a token, that does has no uwser
         self.setUp_user_realms()
-        tokenobject = init_token({"serial": "UASSIGN1", "type": "hotp",
-                                  "otpkey": "3132333435363738393031"
-                                            "323334353637383930"},
-                                 tokenrealms=[self.realm1])
+        init_token({"serial": "UASSIGN1", "type": "hotp",
+                    "otpkey": "3132333435363738393031"
+                              "323334353637383930"},
+                   tokenrealms=[self.realm1])
 
         user_obj = User("autoassignuser", self.realm1)
         # unassign all tokens from the user autoassignuser
-        try:
-            unassign_token(None, user=user_obj)
-        except Exception:
-            print("no need to unassign token")
+        unassign_token(None, user=user_obj)
 
         # The request with an OTP value and a PIN of a user, who has no token assigned
         builder = EnvironBuilder(method='POST',
@@ -5108,16 +5198,13 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
     def test_05_autoassign_userstore(self):
         # init a token, that does has no user
         self.setUp_user_realms()
-        tokenobject = init_token({"serial": "UASSIGN2", "type": "hotp",
-                                  "otpkey": "3132333435363738393031"
-                                            "323334353637383930"},
-                                 tokenrealms=[self.realm1])
+        init_token({"serial": "UASSIGN2", "type": "hotp",
+                    "otpkey": "3132333435363738393031"
+                              "323334353637383930"},
+                   tokenrealms=[self.realm1])
         user_obj = User("autoassignuser", self.realm1)
         # unassign all tokens from the user autoassignuser
-        try:
-            unassign_token(None, user=user_obj)
-        except Exception as e:
-            print("no need to unassign token")
+        unassign_token(None, user=user_obj)
 
         # The request with an OTP value and a PIN of a user, who has no token assigned
         builder = EnvironBuilder(method='POST',
@@ -5168,15 +5255,15 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # Test that a machine definition will return offline hashes
         self.setUp_user_realms()
         serial = "offline01"
-        tokenobject = init_token({"serial": serial, "type": "hotp",
-                                  "otpkey": "3132333435363738393031323334353637383930",
-                                  "pin": "offline",
-                                  "user": "cornelius"})
+        init_token({"serial": serial, "type": "hotp",
+                    "otpkey": "3132333435363738393031323334353637383930",
+                    "pin": "offline",
+                    "user": "cornelius"})
 
         # Set the Machine and MachineToken
-        resolver1 = save_resolver({"name": "reso1",
-                                   "type": "hosts",
-                                   "filename": HOSTSFILE})
+        save_resolver({"name": "reso1",
+                       "type": "hosts",
+                       "filename": HOSTSFILE})
 
         mt = attach_token(serial, "offline", hostname="gandalf")
         self.assertEqual(mt.token.serial, serial)
@@ -5390,43 +5477,15 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         set_policy(name="pol_qr3", scope=SCOPE.WEBUI,
                    action="{0!s}=http://privacyidea.org".format(ACTION.SHOW_CUSTOM_AUTHENTICATOR))
 
+        android_url_image = create_img(DEFAULT_ANDROID_APP_URL)
+        ios_url_image = create_img(DEFAULT_IOS_APP_URL)
         custom_url = create_img("http://privacyidea.org")
         g.policy_object = PolicyClass()
         new_response = get_webui_settings(req, resp)
         jresult = new_response.json
-        self.assertEqual('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZoAAAG'
-                         'aAQAAAAAefbjOAAACFElEQVR42u1cS07FMBCL6AFypHd1jtQDVJrX'
-                         'zD+FBbBDdhZPbVpviOV4nClDfj8+B0EEEUQQQQQRRFCAho/jnpnrd'
-                         'uozHyJnXL4U9DH+MAj6HyBnhK60nIeRwVd/3eaD9h4ZgcCI0ylwa8'
-                         'TlUiByX4371qkyDjICkBF9w1Bu1AMyAlMjljKYKKw5lQxqBLSPaLQ'
-                         'wy1lz9BFAjMhaw/3k84e1BhgjtqHy4BbidhTH15KVfz0QjSgpaJKh'
-                         'FFhmwhwFGYGiEUqGWauvMZXWoe4s7RXuGjjO8so8wm+DKmtuHOLJB'
-                         'BkBU31GhWHG4fzecpIRQM7ysoVXjTBaZBRhOabuKWQEjkaMEWTY5S'
-                         'FpYfUHGQGiES2anCEZLdTevQUZAVF91pFG5lISkuHegj4CSiO2Q29'
-                         '94LrhWwc1Aq/WeAQQVpHqeByTkxEIu0Zrmupp1ONwnBqBoxHRHVNd'
-                         'EVF4imyRBRmBkke4vWxXmVXRR0DWGrrwIlsbXb4SvTP0EVjOsrfaZ'
-                         'mDVfqgRUIwojfBWqao/PMUe9BFozrL3R+QpaM1NdtWBOcstnNqPPW'
-                         'tjISOgnGULsK8UhTjheJ2DPgJp1+gpdjXL2DuvarwjI5CcZX6oE/0'
-                         'RfSfxrYOMgGNEbg4+V19usGMGVyOaZ2hf9dBHQPqIOPss95CbCPMI'
-                         'zFqjjRlt+y4ZzCwR8wj+PxaCCCKIIIIIIuinoDczovv0cx3r0AAAA'
-                         'ABJRU5ErkJggg==',
+        self.assertEqual(android_url_image,
                          jresult.get("result").get("value").get("qr_image_android"))
-        self.assertEqual('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZoAAAG'
-                         'aAQAAAAAefbjOAAACC0lEQVR42u2cUW7DMAxDheUAPlKvniPlAAa8'
-                         'xpYtufnZ9jfw5aPo0vCnJiSSUmft99dpgAABAgQIECBAE2R+He/31'
-                         '9Hsdd3vWh133/fmA68O+rI/XID+B8gZ0U86keHy0zcr/kF6DkYoMK'
-                         'JTIB189YpzljZY0isIjNBjxDh4K3fDKLluwAjVGnGmNhE6Akbo6oh'
-                         'eHm6CuORER2gyYnmN0SEeL3gNMUZsfrTfq1NWlPp8hG9PpEaMUnBT'
-                         '4FwvQ0ykP2GERo04h2ystpmLWS08uqJrSNWIY9IiEqotvaRG6NWIu'
-                         'NxrdDM69KQXDxihoyw/E6qWk4keXA4fCiNUasTQjqtKbJ4zBVboCB'
-                         'kdMccX3ib2SZf3FHSEECNGZtm2uDLNPtEReoy43Guk/pF1RLU8D+X'
-                         'bU1CWeciV+kfoCKcFjBBSlpFBeQCxzEWZwSU1QkdHeAblGnMbhcba'
-                         'DIzQ6Rqbdtw2ZjyhQkfoeY3H5tTkwfAf6Ag997m8xiRDziPQEWru0'
-                         '+ec0T+SI229Rhg6QowR3hz63bL5j3692KrTUpYx9sz7Ebb2bf0DGC'
-                         'FSI9Lpxy7dGnflBRoYIaQs2xVrMzOrWg7DDB0hqCOO3YdWy/0DryH'
-                         'MiLSTT2apzgiz+DlXVhTDgsIIOR0xzcVMJmJZhjxC1GtEFHGuuUZ/'
-                         'jl1szTyC/8cCCBAgQIAAAfop6Bt9aCglBgbq7QAAAABJRU5ErkJgg'
-                         'g==',
+        self.assertEqual(ios_url_image,
                          jresult.get("result").get("value").get("qr_image_ios"))
         qr_image_custom = jresult.get("result").get("value").get("qr_image_custom")
         self.assertEqual(len(custom_url), len(qr_image_custom))
@@ -5600,18 +5659,18 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # Add a subscription
         from privacyidea.models import Subscription
-        s = Subscription(application="privacyidea",
-                         for_name="testuser",
-                         for_email="admin@example.com",
-                         for_phone="0",
-                         by_name="privacyIDEA project",
-                         by_email="privacyidea@example.com",
-                         date_from=datetime.utcnow(),
-                         date_till=datetime.utcnow() + timedelta(days=365),
-                         num_users=100,
-                         num_tokens=100,
-                         num_clients=100
-                         ).save()
+        Subscription(application="privacyidea",
+                     for_name="testuser",
+                     for_email="admin@example.com",
+                     for_phone="0",
+                     by_name="privacyIDEA project",
+                     by_email="privacyidea@example.com",
+                     date_from=datetime.utcnow(),
+                     date_till=datetime.utcnow() + timedelta(days=365),
+                     num_users=100,
+                     num_tokens=100,
+                     num_clients=100
+                     ).save()
         new_response = get_webui_settings(req, resp)
         jresult = new_response.json
         self.assertIn("privacyidea@example.com", jresult.get("result").get("value").get("supportmail"))
@@ -5674,7 +5733,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(1, len(container_wizard.keys()))
 
         # User with container: container wizard disabled
-        container_serial = init_container({"type": "generic", "user": "cornelius", "realm": self.realm1})["container_serial"]
+        container_serial = init_container({"type": "generic", "user": "cornelius", "realm": self.realm1})[
+            "container_serial"]
         resp = jsonify(user_response)
         new_response = get_webui_settings(req, resp)
         container_wizard = new_response.json["result"]["value"]["container_wizard"]
@@ -6012,3 +6072,131 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # Also check the token object.
         self.assertEqual(tok.token.rollout_state, ROLLOUTSTATE.VERIFYPENDING)
         delete_policy("verify_toks")
+
+    def test_21_preferred_client_mode_for_user_allowed(self):
+        """
+        Tests the preferred_client_mode function when the policy client_mode_per_user is activated.
+        """
+        # Mock request
+        builder = EnvironBuilder(method="POST", data={}, headers=Headers({"user_agent": "privacyidea-cp"}))
+        env = builder.get_environ()
+        request = Request(env)
+        request.all_data = {}
+        self.setUp_user_realms()
+        user = User("hans", self.realm1)
+        request.User = user
+
+        response_data = {"jsonrpc": "2.0",
+                         "result": {"status": True, "value": True},
+                         "version": "privacyIDEA test",
+                         "detail": {"multi_challenge": []}
+                         }
+        g.policy_object = PolicyClass()
+
+        # Allow to use preferred client mode per user
+        set_policy("user_client_mode", scope=SCOPE.AUTH, action=ACTION.CLIENT_MODE_PER_USER)
+
+        # No custom user attribute available for the user and no policy: use default
+        multi_challenge = [
+            {"client_mode": "interactive", "type": "hotp", "transaction_id": "", "serial": "", "message": ""},
+            {"client_mode": "poll", "type": "push", "transaction_id": "", "serial": "", "message": ""},
+            {"client_mode": "webauthn", "type": "webauthn", "transaction_id": "", "serial": "", "message": ""}
+        ]
+        response_data["detail"]["multi_challenge"] = multi_challenge
+        response = jsonify(response_data)
+
+        preferred_client_mode(request, response)
+
+        response_details = response.json["detail"]
+        self.assertEqual("interactive", response_details.get("preferred_client_mode"))
+
+        # No preferred client mode policy set only custom user attribute: use user+application preference
+        response = jsonify(response_data)
+        user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-cp", "push", INTERNAL_USAGE)
+        user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-Shibbole", "u2f", INTERNAL_USAGE)
+
+        preferred_client_mode(request, response)
+
+        response_details = response.json["detail"]
+        self.assertEqual("poll", response_details.get("preferred_client_mode"))
+
+        # preferred client mode policy with webauthn first, but user prefers push
+        set_policy("preferred_client_mode", scope=SCOPE.AUTH,
+                   action={ACTION.PREFERREDCLIENTMODE: "webauthn interactive poll u2f"})
+        response = jsonify(response_data)
+
+        preferred_client_mode(request, response)
+        response_details = response.json["detail"]
+        self.assertEqual("poll", response_details.get("preferred_client_mode"))
+
+        # preferred user token not in multi-challenge: use preferred client mode policy
+        multi_challenge = [
+            {"client_mode": "interactive", "type": "hotp", "transaction_id": "", "serial": "", "message": ""},
+            {"client_mode": "webauthn", "type": "webauthn", "transaction_id": "", "serial": "", "message": ""}
+        ]
+        response_data["detail"]["multi_challenge"] = multi_challenge
+        response = jsonify(response_data)
+
+        preferred_client_mode(request, response)
+        response_details = response.json["detail"]
+        self.assertEqual("webauthn", response_details.get("preferred_client_mode"))
+
+        # preferred user token not in multi-challenge and no preferred_client_mode policy: use default
+        delete_policy("preferred_client_mode")
+        response = jsonify(response_data)
+        preferred_client_mode(request, response)
+        response_details = response.json["detail"]
+        self.assertEqual("interactive", response_details.get("preferred_client_mode"))
+
+        delete_policy("user_client_mode")
+
+    def test_22_preferred_client_mode_for_user_denied(self):
+        """
+        Tests the preferred_client_mode function when the policy client_mode_per_user is not activated.
+        """
+        # Mock request
+        builder = EnvironBuilder(method='POST', data={}, headers=Headers({"user_agent": "privacyidea-cp"}))
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        request = Request(env)
+        request.all_data = {}
+        self.setUp_user_realms()
+        user = User("hans", self.realm1)
+        request.User = user
+
+        response_data = {"jsonrpc": "2.0",
+                         "result": {"status": True, "value": True},
+                         "version": "privacyIDEA test",
+                         "detail": {"multi_challenge": []}
+                         }
+        g.policy_object = PolicyClass()
+
+        multi_challenge = [
+            {"client_mode": "interactive", "type": "hotp", "transaction_id": "", "serial": "", "message": ""},
+            {"client_mode": "poll", "type": "push", "transaction_id": "", "serial": "", "message": ""},
+            {"client_mode": "webauthn", "type": "webauthn", "transaction_id": "", "serial": "", "message": ""}
+        ]
+        response_data["detail"]["multi_challenge"] = multi_challenge
+        response = jsonify(response_data)
+        user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-cp", "push", INTERNAL_USAGE)
+
+        # set any policy in scope AUTH
+        set_policy("challenge", scope=SCOPE.AUTH, action={ACTION.CHALLENGERESPONSE: "hotp"})
+
+        # user_client_mode not allowed and also no preferred_client_mode policy: use default
+        preferred_client_mode(request, response)
+        response_details = response.json["detail"]
+        self.assertEqual("interactive", response_details.get("preferred_client_mode"))
+
+        # user_client_mode not allowed: use preferred_client_mode policy: webauthn
+        set_policy("preferred_client_mode", scope=SCOPE.AUTH,
+                   action={ACTION.PREFERREDCLIENTMODE: "webauthn interactive poll u2f"})
+        response = jsonify(response_data)
+
+        preferred_client_mode(request, response)
+        response_details = response.json["detail"]
+        self.assertEqual("webauthn", response_details.get("preferred_client_mode"))
+
+        delete_policy("preferred_client_mode")
+        delete_policy("challenge")

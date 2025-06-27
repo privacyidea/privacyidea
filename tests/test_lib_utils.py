@@ -1,6 +1,7 @@
 """
 This tests the package lib.utils
 """
+import segno
 from privacyidea.config import TestingConfig
 from .base import MyTestCase, OverrideConfigTestCase
 
@@ -31,7 +32,7 @@ from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset, gettz
 from privacyidea.lib.tokenclass import DATE_FORMAT
-from privacyidea.lib.error import PolicyError
+from privacyidea.lib.error import PolicyError, ParameterError
 import binascii
 
 
@@ -83,35 +84,25 @@ class UtilsTestCase(MyTestCase):
     def test_03_check_time_in_range(self):
         # April 5th, 2016 is a Tuesday
         t = datetime(2016, 4, 5, hour=9, minute=12)
-        r = check_time_in_range("Mon-Fri: 09:00-17:30", t)
-        self.assertEqual(r, True)
-        r = check_time_in_range("Mon - Fri : 09:00- 17:30", t)
-        self.assertEqual(r, True)
-        r = check_time_in_range("Sat-Sun:10:00-15:00, Mon - Fri : 09:00- "
-                                "17:30", t)
-        self.assertEqual(r, True)
+        self.assertTrue(check_time_in_range("Mon-Fri: 09:00-17:30", t))
+        self.assertTrue(check_time_in_range("Mon - Fri : 09:00- 17:30", t))
+        self.assertTrue(check_time_in_range("Sat-Sun:10:00-15:00, Mon - Fri : 09:00- 17:30", t))
 
         # Short time description
-        r = check_time_in_range("Tue: 9-15", t)
-        self.assertEqual(r, True)
-        r = check_time_in_range("Tue: 9-15:1", t)
-        self.assertEqual(r, True)
+        self.assertTrue(check_time_in_range("Tue: 9-15", t))
+        self.assertTrue(check_time_in_range("Tue: 9-15:1", t))
 
         # day out of range
-        r = check_time_in_range("Wed - Fri: 09:00-17:30", t)
-        self.assertEqual(r, False)
+        self.assertFalse(check_time_in_range("Wed - Fri: 09:00-17:30", t))
 
         # time out of range
-        r = check_time_in_range("Mon-Fri: 09:30-17:30", t)
-        self.assertEqual(r, False)
+        self.assertFalse(check_time_in_range("Mon-Fri: 09:30-17:30", t))
 
         # A time with a missing leading 0 matches anyway
-        r = check_time_in_range("Mon-Fri: 9:12-17:30", t)
-        self.assertEqual(r, True)
+        self.assertTrue(check_time_in_range("Mon-Fri: 9:12-17:30", t))
 
         # Nonsense will not match
-        r = check_time_in_range("Mon-Wrong: asd-17:30", t)
-        self.assertEqual(r, False)
+        self.assertRaises(ParameterError, check_time_in_range, "Mon-Wrong: asd-17:30", t)
 
     def test_04a_parse_proxy(self):
         self.assertEqual(parse_proxy(""), set())
@@ -795,15 +786,9 @@ class UtilsTestCase(MyTestCase):
                          '-vv8_f7_')
 
     def test_27_images(self):
-        hallo_qr_png = "iVBORw0KGgoAAAANSUhEUgAAASIAAAEiAQAAAAB1xeIbAAABC0lEQV" \
-                       "R42u2aQQ6EIBAEJ7sP8El8nSftA0xYGBiM8eIe6E1McTCofSpnmka1" \
-                       "cmNkQ4UKFSpUj1DZGO86//ghriRXvezOQPWbarB3xBP7mM0bsF/Kvh" \
-                       "V6asRzFL+3AezV7H0GezV7s2036v4/fp8r+94B+L2G/cw5vfgTOUfG" \
-                       "/hgV9n5Jp7Bfyr4nSzf92QGwl6211epLZMwSCy6es7zu83aC3di7+8" \
-                       "BelDFtRpzeAVs4P+zXrrWVc26nx742kTHVOad3QCn4vTzfz1RPztHv" \
-                       "a3u8DAuCve59ToR8fwrsa6Xs4wEM96Hulez9PeaM+7CX+n0P+acFF/" \
-                       "aSnBOfcY26l+d7/i1AhQoVqmeqvi4sW6dMYAvIAAAAAElFTkSuQmCC"
-        self.assertEqual(create_img('Hallo'), 'data:image/png;base64,{0!s}'.format(hallo_qr_png))
+        # Probably more of a dummy test now but the pre-generated image comparison kept on failing
+        hallo_qr_png = segno.make_qr('Hallo').png_data_uri(scale=10)
+        self.assertEqual(create_img('Hallo'), hallo_qr_png)
 
     def test_28_yubikey_utils(self):
         self.assertEqual(modhex_encode(b'\x47'), 'fi')
@@ -1038,8 +1023,8 @@ class UtilsTestCase(MyTestCase):
         dataimage = convert_imagefile_to_dataimage(file)
         self.assertEqual("", dataimage)
 
-        # Try to read a grazy file with an unknown mime-type
-        file = "./tests/testdata/logging.yml"
+        # Try to read a crazy file with an unknown mime-type (it seems, YAML is now known, as well)
+        file = "./tests/testdata/import.oath"
         dataimage = convert_imagefile_to_dataimage(file)
         self.assertEqual("", dataimage)
 

@@ -3,6 +3,7 @@
 aleyna34131 @ GitHub
 andreasweber-uu @ GitHub
 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+fxwgr @ GitHub
 henrik-falk <henrik.falk@netknights.it>
 Jelina Unger <jelina.unger@netknights.it>
 jona-samuel <jona-samuel.hoehmann@netknights.it>

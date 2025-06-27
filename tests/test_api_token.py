@@ -1,4 +1,25 @@
-from privacyidea.lib.container import init_container, add_token_to_container, find_container_by_serial
+# SPDX-FileCopyrightText: (C) 2025 Paul Lettich <paul.lettich@netknights.it>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Info: https://privacyidea.org
+#
+# This code is free software: you can redistribute it and/or
+# modify it under the terms of the GNU Affero General Public License
+# as published by the Free Software Foundation, either
+# version 3 of the License, or any later version.
+#
+# This code is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public
+# License along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+from privacyidea.lib.container import (init_container, add_token_to_container,
+                                       find_container_by_serial, find_container_for_token)
+from privacyidea.lib.error import ResourceNotFoundError
 from .base import MyApiTestCase, PWFILE2
 import json
 import datetime
@@ -9,7 +30,7 @@ import requests
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, ACTION,
                                     enable_policy,
                                     PolicyClass)
-from privacyidea.lib.token import (get_tokens, remove_token,
+from privacyidea.lib.token import (get_tokens, remove_token, get_one_token,
                                    get_tokens_from_serial_or_user, enable_token,
                                    check_serial_pass, unassign_token, init_token,
                                    assign_token, token_exist, add_tokeninfo)
@@ -26,7 +47,6 @@ from privacyidea.lib.tokens.smstoken import SMSACTION
 from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
 from dateutil.tz import tzlocal
 from privacyidea.lib import _
-import os
 import unittest
 from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
 from privacyidea.lib.caconnectors.msca import MSCAConnector
@@ -34,6 +54,7 @@ from .mscamock import CAServiceMock
 from privacyidea.lib.caconnectors.msca import ATTR as MS_ATTR
 from privacyidea.lib.smsprovider.SMSProvider import (set_smsgateway,
                                                      delete_smsgateway)
+from .test_lib_tokens_certificate import REQUEST, CERTIFICATE
 
 # Mock for certificate from MSCA
 MY_CA_NAME = "192.168.47.11"
@@ -41,85 +62,6 @@ MY_CA_NAME = "192.168.47.11"
 MOCK_AVAILABLE_CAS = ['WIN-GG7JP259HMQ.nilsca.com\\nilsca-WIN-GG7JP259HMQ-CA',
                       'CA03.nilsca.com\\nilsca-CA03-CA']
 MOCK_CA_TEMPLATES = ["User", "SmartcardLogon", "ApprovalRequired"]
-
-MOCK_USER_CERT = """-----BEGIN CERTIFICATE-----
-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
-17qsUVtb+0YLznMdHEFtWc51SpzA0h3a7w==
------END CERTIFICATE-----"""
-
-CERTIFICATE = """-----BEGIN CERTIFICATE-----
-MIIHdTCCBV2gAwIBAgITMAAAAHozruIlHyAQtAAAAAAAejANBgkqhkiG9w0BAQsF
-ADBGMRMwEQYKCZImiZPyLGQBGRYDY29tMRYwFAYKCZImiZPyLGQBGRYGbmlsc2Nh
-MRcwFQYDVQQDEw5uaWxzY2EtQ0EwMy1DQTAeFw0yMjA3MjQxNjQzNDlaFw0yMzA3
-MjQxNjQzNDlaMFUxEzARBgoJkiaJk/IsZAEZFgNjb20xFjAUBgoJkiaJk/IsZAEZ
-FgZuaWxzY2ExDjAMBgNVBAMTBVVzZXJzMRYwFAYDVQQDEw1BZG1pbmlzdHJhdG9y
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzb4UT/rOAT9CIhsdnK/d
-ktJ/22y3PjlDQ2sTA/EF9Ad0vHZpKAuvGY7X/OPNxljyyn8IbVP8BwJEJMa0NEyM
-BP4zDkDiILoCc1r39U9jbszGtt9UHTc5fVE2Jl+93D+oi2uirrad1iHn30G4eigq
-aEjKqC3t4elGXlpybbSEOIeR/ZQRCyiExsIvKvsB+TZ6CXXRM4g8c0FbyL+UiXCh
-8MC5LlBTHrEXZGn0LYHgqQ0OMum6VYqF8RtvSXm0f4jDDT5UiJs9HziMBPPuamMr
-9cbbtIOqxHhBOn1L4cg+ccobYVnqxsTKMl7J6b8SKebGw2P+oFXaevFgmE0m7fpw
-LQIDAQABo4IDSzCCA0cwHQYDVR0OBBYEFFM/7V0JB7Nle6tFySRbCXeACpbtMB8G
-A1UdIwQYMBaAFLgiq+2UnxagGJRx6MJQEOuboBfNMIHIBgNVHR8EgcAwgb0wgbqg
-gbeggbSGgbFsZGFwOi8vL0NOPW5pbHNjYS1DQTAzLUNBLENOPUNBMDMsQ049Q0RQ
-LENOPVB1YmxpYyUyMEtleSUyMFNlcnZpY2VzLENOPVNlcnZpY2VzLENOPUNvbmZp
-Z3VyYXRpb24sREM9bmlsc2NhLERDPWNvbT9jZXJ0aWZpY2F0ZVJldm9jYXRpb25M
-aXN0P2Jhc2U/b2JqZWN0Q2xhc3M9Y1JMRGlzdHJpYnV0aW9uUG9pbnQwgb8GCCsG
-AQUFBwEBBIGyMIGvMIGsBggrBgEFBQcwAoaBn2xkYXA6Ly8vQ049bmlsc2NhLUNB
-MDMtQ0EsQ049QUlBLENOPVB1YmxpYyUyMEtleSUyMFNlcnZpY2VzLENOPVNlcnZp
-Y2VzLENOPUNvbmZpZ3VyYXRpb24sREM9bmlsc2NhLERDPWNvbT9jQUNlcnRpZmlj
-YXRlP2Jhc2U/b2JqZWN0Q2xhc3M9Y2VydGlmaWNhdGlvbkF1dGhvcml0eTAOBgNV
-HQ8BAf8EBAMCBaAwPAYJKwYBBAGCNxUHBC8wLQYlKwYBBAGCNxUIhrbHcYa95yeB
-1Y8bh6WhcIGbvAqBfJStI5DMCgIBZAIBBTApBgNVHSUEIjAgBggrBgEFBQcDAgYI
-KwYBBQUHAwQGCisGAQQBgjcKAwQwNQYJKwYBBAGCNxUKBCgwJjAKBggrBgEFBQcD
-AjAKBggrBgEFBQcDBDAMBgorBgEEAYI3CgMEMDMGA1UdEQQsMCqgKAYKKwYBBAGC
-NxQCA6AaDBhBZG1pbmlzdHJhdG9yQG5pbHNjYS5jb20wTQYJKwYBBAGCNxkCBEAw
-PqA8BgorBgEEAYI3GQIBoC4ELFMtMS01LTIxLTYwNDM1NTA3OS0zNzE5MzIxMzQ2
-LTE4ODc1MjYzMzItNTAwMEQGCSqGSIb3DQEJDwQ3MDUwDgYIKoZIhvcNAwICAgCA
-MA4GCCqGSIb3DQMEAgIAgDAHBgUrDgMCBzAKBggqhkiG9w0DBzANBgkqhkiG9w0B
-AQsFAAOCAgEACiBnzQbxxS7cCTtvT6ODyXaJfl5F+WkeoazR7iQnMTIIuigGNeGY
-q7YS92YPGlw8CBcjQ2VHG8ez4v4RaN0xnRDPOoVddG6JPjY4z0Cq+SCHW1W+yBH6
-YNIoU22gx8qM4GWHEQvu33tU+gPHy0ZZceMoEWQVwpC9/Nq/bqEvbevrcXJDC20f
-3Ob3kVJTqrwULYqcuzNW194NXE+hC5+Wjg3mMy7YJU0bE1XeYQxCzHs2T3Sd2O+C
-9ZGvvykSS2MJsC0vW+sFpZ2Z6hDFduXzQqpzaORXe04p+dI88orjdu3yX898jOL0
-YCmxCy/Rvm5+E15MW6Dh3BfUh6Zaeij3z3/xmE3kVaLA9PeWxG5+akW1KtQwD0PB
-mH5q4AmzBj0ryhPfOvXKUSOBp+tLV9Fd4QW0rZgU6/ZTAC73mbh8sDBdXZYb+jzi
-7iM6kqIma6T3mgODYg2d1WTmNx3z+8m+sBoUiwY0yQc22oWkTVXKqzOrg7SOuiSy
-a3QX4OejnyxBSuNegL8EQhyxDCAdisRqgGLhtYh3RMegZn0WnJOlRPBHrniFkJBV
-ub8B4Q4BtcXwyX1IjkSRVGhpmBKc+cykTR1GGR0L0JihMK85qWF/8vyYiwBq3z08
-TdIfRtrzkM5Zw/U/p2/LWzbe/fCkqSC6SheI+/FDR7Bjz7xNxIZHonk=
------END CERTIFICATE-----"""
 
 CONF = {MS_ATTR.HOSTNAME: MY_CA_NAME,
         MS_ATTR.PORT: 50061,
@@ -136,26 +78,6 @@ YUBICOFILE = "tests/testdata/yubico-oath.csv"
 YUBICOFILE_LONG = "tests/testdata/yubico-oath-long.csv"
 OTPKEY = "3132333435363738393031323334353637383930"
 OTPKEY2 = "010fe88d31948c0c2e3258a4b0f7b11956a258ef"
-CAKEY = "cakey.pem"
-CACERT = "cacert.pem"
-OPENSSLCNF = "openssl.cnf"
-WORKINGDIR = "tests/testdata/ca"
-REQUEST = """-----BEGIN CERTIFICATE REQUEST-----
-MIICmTCCAYECAQAwVDELMAkGA1UEBhMCREUxDzANBgNVBAgMBkhlc3NlbjEUMBIG
-A1UECgwLcHJpdmFjeWlkZWExHjAcBgNVBAMMFXJlcXVlc3Rlci5sb2NhbGRvbWFp
-bjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAM2+FE/6zgE/QiIbHZyv
-3ZLSf9tstz45Q0NrEwPxBfQHdLx2aSgLrxmO1/zjzcZY8sp/CG1T/AcCRCTGtDRM
-jAT+Mw5A4iC6AnNa9/VPY27MxrbfVB03OX1RNiZfvdw/qItroq62ndYh599BuHoo
-KmhIyqgt7eHpRl5acm20hDiHkf2UEQsohMbCLyr7Afk2egl10TOIPHNBW8i/lIlw
-ofDAuS5QUx6xF2Rp9C2B4KkNDjLpulWKhfEbb0l5tH+Iww0+VIibPR84jATz7mpj
-K/XG27SDqsR4QTp9S+HIPnHKG2FZ6sbEyjJeyem/EinmxsNj/qBV2nrxYJhNJu36
-cC0CAwEAAaAAMA0GCSqGSIb3DQEBCwUAA4IBAQB7uJC6I1By0T29IZ0B1ue5YNxM
-NDPbqCytRPMQ9awJ6niMMIQRS1YPhSFPWyEWrGKWAUvbn/lV0XHH7L/tvHg6HbC0
-AjLc8qPH4Xqkb1WYV1GVJYr5qyEFS9QLZQLQDC2wk018B40MSwZWtsv14832mPu8
-gP5WP+mj9LRgWCP1MdAR9pcNGd9pZMcCHQLxT76mc/eol4kb/6/U6yxBmzaff8eB
-oysLynYXZkm0wFudTV04K0aKlMJTp/G96sJOtw1yqrkZSe0rNVcDs9vo+HAoMWO/
-XZp8nprZvJuk6/QIRpadjRkv4NElZ2oNu6a8mtaO38xxnfQm4FEMbm5p+4tM
------END CERTIFICATE REQUEST-----"""
 
 
 class API000TokenAdminRealmList(MyApiTestCase):
@@ -206,12 +128,12 @@ class API000TokenAdminRealmList(MyApiTestCase):
         # admin is allowed to see realm1
         set_policy(name="pol-realm1",
                    scope=SCOPE.ADMIN,
-                   action=ACTION.TOKENLIST, user=self.testadmin, realm=self.realm1)
+                   action=ACTION.TOKENLIST, adminuser=self.testadmin, realm=self.realm1)
 
         # admin is allowed to list all realms
         set_policy(name="pol-all-realms",
                    scope=SCOPE.ADMIN,
-                   action=ACTION.TOKENLIST, user=self.testadmin)
+                   action=ACTION.TOKENLIST, adminuser=self.testadmin)
 
         # admin is allowed to only init, not list
         set_policy(name="pol-only-init",
@@ -541,24 +463,80 @@ class API000TokenAdminRealmList(MyApiTestCase):
         self.assertIn(self.realm1, t1_realms)
         self.assertNotIn(self.realm2, t1_realms)
 
+        delete_policy("pol-reso1")
+
+    def test_04_init_token_with_container(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
+        container = find_container_by_serial(container_serial)
+
+        set_policy("policy", scope=SCOPE.ADMIN, action="enrollHOTP", realm=self.realm1)
+
+        # token owner = container owner
+        self.request_assert_200("/token/init", {"type": "hotp", "genkey": True, "user": "hans",
+                                                "realm": self.realm1, "container_serial": container_serial},
+                                self.at, "POST")
+
+        # Token owner != container owner
+        # Allowed: both in realm1
+        self.request_assert_200("/token/init", {"type": "hotp", "genkey": True, "user": "selfservice",
+                                                "realm": self.realm1, "container_serial": container_serial},
+                                self.at, "POST")
+        # Denied: token in different realm
+        self.request_denied_assert_403("/token/init", {"type": "hotp", "genkey": True, "user": "corny",
+                                                       "realm": self.realm3, "container_serial": container_serial},
+                                       self.at, "POST")
+
+        # no token owner, but container owner
+        self.request_denied_assert_403("/token/init", {"type": "hotp", "genkey": True,
+                                                       "container_serial": container_serial},
+                                       self.at, "POST")
+
+        # Init token allowed, but can not add container from different realm
+        container.remove_user(User(login="hans", realm=self.realm1))
+        container.add_user(User(login="corny", realm=self.realm3))
+        result = self.request_assert_200("/token/init", {"type": "hotp", "genkey": True, "user": "hans",
+                                                "realm": self.realm1, "container_serial": container_serial},
+                                self.at, "POST")
+        self.assertIsNone(find_container_for_token(result["detail"]["serial"]))
+
+        # no container owner but token_owner
+        container.remove_user(User(login="corny", realm=self.realm3))
+        result = self.request_assert_200("/token/init", {"type": "hotp", "genkey": True, "user": "hans",
+                                                         "realm": self.realm1, "container_serial": container_serial},
+                                         self.at, "POST")
+        self.assertIsNone(find_container_for_token(result["detail"]["serial"]))
+
+        delete_policy("policy")
+
+    def test_05_helpdesk_delete_batch(self):
+        # helpdesk is allowed to manage realm1
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.DELETE, realm=self.realm1)
+
+        # create tokens
+        token1 = init_token({"type": "hotp", "genkey": True, "realm": self.realm1})
+        token2 = init_token({"type": "hotp", "genkey": True, "realm": self.realm2})
+        token3 = init_token({"type": "hotp", "genkey": True, "realm": self.realm1})
+        token_serials = ",".join([token1.get_serial(), token2.get_serial(), token3.get_serial()])
+
+        # Try to delete all tokens will only delete token1 and token3 from realm1
+        result = self.request_assert_200("/token/batchdeletion", {"serial": token_serials}, self.at, "POST")
+        result = result.get("result").get("value")
+        self.assertTrue(result.get(token1.get_serial()))
+        self.assertFalse(result.get(token2.get_serial()))
+        self.assertTrue(result.get(token3.get_serial()))
+        self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, token1.get_serial(), None)
+        self.assertEqual(1, len(get_tokens_from_serial_or_user(token2.get_serial(), None)))
+        self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, token3.get_serial(), None)
+
+        delete_policy("policy")
+
 
 class APIAttestationTestCase(MyApiTestCase):
-
-    def test_00_realms_and_ca(self):
-        # Setup realms and CA
-        self.setUp_user_realms()
-        cwd = os.getcwd()
-        # setup ca connector
-        save_caconnector({"cakey": CAKEY,
-                          "cacert": CACERT,
-                          "type": "local",
-                          "caconnector": "localCA",
-                          "openssl.cnf": OPENSSLCNF,
-                          "CSRDir": "",
-                          "CertificateDir": "",
-                          "WorkingDir": cwd + "/" + WORKINGDIR})
-
+    @pytest.mark.usefixtures("setup_local_ca")
     def test_01_enroll_certificate(self):
+        self.setUp_user_realms()
         # Enroll a certificate without a policy
         from .test_lib_tokens_certificate import YUBIKEY_CSR, BOGUS_ATTESTATION, YUBIKEY_ATTEST
 
@@ -625,6 +603,7 @@ class APITokenTestCase(MyApiTestCase):
     def setUp(self):
         super(APITokenTestCase, self).setUp()
         self.setUp_user_realms()
+        self.setUp_user_realm2()
 
     def _create_temp_token(self, serial):
         with self.app.test_request_context('/token/init',
@@ -642,7 +621,7 @@ class APITokenTestCase(MyApiTestCase):
                                            data={"type": "hmac"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 400, res)
+            self.assertEqual(400, res.status_code, res)
 
         # missing parameter otpkey
         with self.app.test_request_context('/token/init',
@@ -650,7 +629,7 @@ class APITokenTestCase(MyApiTestCase):
                                            data={"type": "hotp"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 400, res)
+            self.assertEqual(400, res.status_code, res)
 
         with self.app.test_request_context('/token/init',
                                            method='POST',
@@ -666,6 +645,8 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(result.get("value"), result)
             self.assertTrue("value" in detail.get("googleurl"), detail)
             self.assertTrue("OATH" in serial, detail)
+            token = get_one_token(serial=serial)
+            self.assertIn("creation_date", token.get_tokeninfo(), token)
             remove_token(serial)
 
         with self.app.test_request_context('/token/init',
@@ -725,16 +706,19 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(result.get("status"), result)
             self.assertGreaterEqual(len(tokenlist), 1, tokenlist)
             self.assertGreaterEqual(count, 1, result)
-            self.assertTrue(next_tokens is None, next_tokens)
-            self.assertTrue(prev is None, prev)
+            self.assertIsNone(next_tokens, next_tokens)
+            self.assertIsNone(prev, prev)
             token0 = tokenlist[0]
-            self.assertTrue(token0.get("username") == "", token0)
-            self.assertTrue(token0.get("count") == 0, token0)
-            self.assertTrue(token0.get("tokentype") == "hotp", token0)
-            self.assertTrue(token0.get("tokentype") == "hotp", token0)
-            self.assertTrue(token0.get("count_window") == 10, token0)
-            self.assertTrue(token0.get("realms") == [], token0)
-            self.assertTrue(token0.get("user_realm") == "", token0)
+            self.assertEqual("", token0.get("username"), token0)
+            self.assertEqual(0, token0.get("count"), token0)
+            self.assertEqual("hotp", token0.get("tokentype"), token0)
+            self.assertEqual(10, token0.get("count_window"), token0)
+            self.assertEqual([], token0.get("realms"), token0)
+            self.assertEqual("", token0.get("user_realm"), token0)
+            self.assertIn("creation_date", token0.get("info"), token0)
+            self.assertGreaterEqual(datetime.datetime.now(tz=datetime.timezone.utc),
+                                    datetime.datetime.fromisoformat(token0.get("info").get("creation_date")),
+                                    token0)
 
         # get assigned tokens
         with self.app.test_request_context('/token/',
@@ -1088,6 +1072,39 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertEqual(res.status_code, 404)
             self.assertFalse(result.get("status"))
+
+    def test_05b_batch_deletion(self):
+        self._create_temp_token("Token1")
+        self._create_temp_token("Token2")
+        serial_list = "Token1,Token2"
+        with self.app.test_request_context(f"/token/batchdeletion",
+                                           method="POST",
+                                           data={"serial": serial_list},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value").get("Token1"))
+            self.assertTrue(result.get("value").get("Token2"))
+        self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, "Token1", None)
+        self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, "Token2", None)
+
+        # Try to remove token, that does not exist fails silently
+        self._create_temp_token("Token1")
+        self._create_temp_token("Token2")
+        serial_list = "Token1,Token1234,Token2"
+        with self.app.test_request_context(f"/token/batchdeletion",
+                                           method="POST",
+                                           data={"serial": serial_list},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value").get("Token1"))
+            self.assertFalse(result.get("value").get("Token1234"))
+            self.assertTrue(result.get("value").get("Token2"))
+        self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, "Token1", None)
+        self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, "Token2", None)
 
     def test_06_disable_enable_token(self):
         self._create_temp_token("EToken")
@@ -1453,7 +1470,7 @@ class APITokenTestCase(MyApiTestCase):
 
         with self.app.test_request_context('/token/realm/REALM001',
                                            method="POST",
-                                           data={"realms": "realm1, realm2"},
+                                           data={"realms": f"{self.realm1}, non-existin-realm"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -1470,10 +1487,10 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             value = result.get("value")
             token = value.get("tokens")[0]
-            self.assertTrue(token.get("realms") == ["realm1"], token)
+            self.assertTrue(token.get("realms") == [self.realm1], token)
 
     def test_11_load_tokens(self):
-        # Set dummy policy to verify faulty behaviour with #2209
+        # Set dummy policy to check if token upload still works (see #2209)
         set_policy("dumm01", scope=SCOPE.USER, action=ACTION.DISABLE)
         # Load OATH CSV
         with self.app.test_request_context('/token/load/import.oath',
@@ -1542,6 +1559,9 @@ class APITokenTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
+            self.assertEqual(res.json["result"]["error"]["message"],
+                             "ERR905: Error loading token file. File empty!",
+                             res.json)
         # check for a failed audit entry
         entry = self.find_most_recent_audit_entry(action='*/token/load/*')
         self.assertEqual(entry['success'], 0, entry)
@@ -1554,7 +1574,9 @@ class APITokenTestCase(MyApiTestCase):
                                                           "import.oath")},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 400, res)
+            self.assertEqual(res.status_code, 400, res)
+            self.assertTrue(res.json["result"]["error"]["message"].startswith("ERR301: Unknown file type: 'unknown'"),
+                            res.json)
 
         # Load PSKC file, encrypted PSK
         with self.app.test_request_context('/token/load/pskc-aes.xml',
@@ -1617,6 +1639,7 @@ class APITokenTestCase(MyApiTestCase):
         delete_event(event_id)
 
     def test_11_load_tokens_only_to_specific_realm(self):
+
         # Load token to a realm
         def _clean_up_tokens():
             remove_token("token01")
@@ -1662,7 +1685,7 @@ class APITokenTestCase(MyApiTestCase):
         self.assertIn(self.realm1, r)
 
         # Now define a policy, that allows the user to upload tokens to some other realm
-        set_policy(name="tokupload", scope=SCOPE.ADMIN, action=ACTION.IMPORT, realm="otherrealm",
+        set_policy(name="tokupload", scope=SCOPE.ADMIN, action=ACTION.IMPORT, realm=self.realm2,
                    adminuser="testadmin")
         _clean_up_tokens()
         with self.app.test_request_context('/token/load/import.oath',
@@ -1905,19 +1928,9 @@ class APITokenTestCase(MyApiTestCase):
             token = get_tokens(serial="totp{0!s}".format(timestep))[0]
             self.assertEqual(token.timestep, int(timestep))
 
+    @pytest.mark.usefixtures("setup_local_ca")
     def test_17_enroll_certificate(self):
         self.setUp_user_realms()
-        cwd = os.getcwd()
-        # setup ca connector
-        save_caconnector({"cakey": CAKEY,
-                          "cacert": CACERT,
-                          "type": "local",
-                          "caconnector": "localCA",
-                          "openssl.cnf": OPENSSLCNF,
-                          "CSRDir": "",
-                          "CertificateDir": "",
-                          "WorkingDir": cwd + "/" + WORKINGDIR})
-
         # Enroll a certificate token with a CSR
         with self.app.test_request_context('/token/init',
                                            data={"type": "certificate",
@@ -1947,7 +1960,17 @@ class APITokenTestCase(MyApiTestCase):
             result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value"))
             detail = json.loads(res.data.decode('utf8')).get("detail")
-            self.assertIn("pkcs12", detail)
+            self.assertIn("pkcs12", detail, detail)
+            self.assertIn("pkcs12_password", detail, detail)
+        # Check the data stored in tokeninfo
+        serial = detail.get("serial")
+        token = get_one_token(serial=serial)
+        token_info = token.get_tokeninfo()
+        self.assertIn("pkcs12", token_info, token_info)
+        # Make sure we do not store the pkcs12 password
+        self.assertNotIn("pkcs12_password", token_info, token_info)
+        # Make sure the private key is not stored in the tokeninfo
+        self.assertNotIn("privatekey", token_info, token_info)
 
         # List tokens
         with self.app.test_request_context('/token/?type=certificate',
@@ -2000,8 +2023,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 400, res)
 
     def test_19_get_challenges(self):
-        set_policy("chalresp", scope=SCOPE.AUTHZ,
-                   action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+        set_policy("chalresp", scope=SCOPE.AUTH, action=f"{ACTION.CHALLENGERESPONSE}=hotp")
         token = init_token({"genkey": 1, "serial": "CHAL1", "pin": "pin"})
         serial = token.token.serial
         r = check_serial_pass(serial, "pin")
@@ -2154,12 +2176,11 @@ class APITokenTestCase(MyApiTestCase):
         # Check if a realm admin can not delete a token in another realm
         # Admin is only allowed to delete tokens in "testrealm"
         set_policy("deleteToken", scope=SCOPE.ADMIN,
-                   action="delete",
+                   action=ACTION.DELETE,
                    user="testadmin",
-                   realm="testrealm"
-                   )
+                   realm=self.realm1)
         init_token({"type": "SPASS", "serial": "SP001"},
-                   user=User("cornelius", self.realm1))
+                   user=User("cornelius", self.realm2))
 
         # Now testadmin tries to delete a token from realm1, which he can not
         #  access.
@@ -2325,90 +2346,71 @@ class APITokenTestCase(MyApiTestCase):
             self.assertNotIn('key1', tokeninfo)
 
     def test_25_user_init_defaults(self):
-        self.setUp_user_realms()
+        """
+        Test the token init endpoint without passing the required enrollment parameters for TOTP tokens.
+        Test that the correct system defaults are used for the token and in the enroll url.
+        There are three possibilities for the hashlib and time step: Use the system default (sha1, 30 seconds), set the
+        defaults in the configurations, or use a user/admin policy to enforce a specific hashlib and time step. The
+        policies take precedence over the system defaults.
+        """
         self.authenticate_selfservice_user()
-        # Now this user is authenticated as selfservice@realm1
+        set_policy("user_enroll", SCOPE.USER, "enrollTOTP")
+        set_policy("admin_enroll", SCOPE.ADMIN, "enrollTOTP")
 
-        # first test with system configuration
-        set_privacyidea_config('totp.hashlib', 'sha512')
-        with self.app.test_request_context('/token/init',
-                                           method='POST',
-                                           data={
-                                               "type": "totp",
-                                               "genkey": 1,
-                                               "user": "selfservice",
-                                               "realm": "realm1"},
-                                           headers={'Authorization': self.at_user}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            self.assertTrue(res.json.get('result').get("value"))
-            detail = res.json.get("detail")
-            googleurl = detail.get("googleurl")
-            # TODO: The google URL states no hashlib (which means sha1) but the
-            #       actual hashlib is sha512 since no hashlib parameter was
-            #       send in the request.
-            #       This is wrong and needs to be fixed in hotptoken.py:253
-            self.assertFalse("sha1" in googleurl.get("value"))
-            serial = detail.get("serial")
-            token = get_tokens(serial=serial)[0]
-            self.assertEqual(token.hashlib, "sha512")
-            self.assertEqual(token.timestep, 30)
-            self.assertEqual(token.token.otplen, 6)
-            remove_token(serial)
+        def check_token_init(hashlib, time_step, otp_len=6, auth_header=self.at_user):
+            with self.app.test_request_context('/token/init',
+                                               method='POST',
+                                               data={"type": "totp",
+                                                     "genkey": True,
+                                                     "user": "selfservice",
+                                                     "realm": self.realm1},
+                                               headers={'Authorization': auth_header}):
+                res = self.app.full_dispatch_request()
+                data = res.json
+                self.assertTrue(res.status_code == 200, res)
+                result = data.get("result")
+                detail = data.get("detail")
+                self.assertTrue(result.get("status"), result)
+                self.assertTrue(result.get("value"), result)
 
-        # Now create policy for sha256, overwriting the system config
-        set_policy(name="init_details",
-                   scope=SCOPE.USER,
-                   action="totp_otplen=8,totp_hashlib=sha256,"
-                          "totp_timestep=60,enrollTOTP")
+                # check enroll url
+                enroll_url = detail.get("googleurl", {}).get("value")
+                if hashlib == "sha1":
+                    self.assertNotIn("&algorithm", enroll_url)
+                else:
+                    self.assertIn(f"&algorithm={hashlib.upper()}", enroll_url)
+                self.assertIn(f"&period={time_step}", enroll_url)
 
-        with self.app.test_request_context('/token/init',
-                                           method='POST',
-                                           data={
-                                               "type": "totp",
-                                               "totp.hashlib": "sha1",
-                                               "hashlib": "sha1",
-                                               "genkey": 1,
-                                               "user": "selfservice",
-                                               "realm": "realm1"},
-                                           headers={'Authorization': self.at_user}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            self.assertTrue(result.get("value"))
-            detail = res.json.get("detail")
-            googleurl = detail.get("googleurl")
-            self.assertTrue("SHA256" in googleurl.get("value"))
-            serial = detail.get("serial")
-            token = get_tokens(serial=serial)[0]
-            self.assertEqual(token.hashlib, "sha256")
-            self.assertEqual(token.token.otplen, 8)
+                # check token info
+                serial = detail.get("serial")
+                token = get_tokens(serial=serial)[0]
+                self.assertEqual(hashlib, token.hashlib)
+                self.assertEqual(time_step, token.timestep)
+                self.assertEqual(otp_len, token.token.otplen)
 
-        delete_policy("init_details")
-        remove_token(serial)
+        # ---- hashlib and time step ----
+        # System default
+        check_token_init("sha1", 30)
 
+        # Set system default to sha256 and 60 seconds
+        set_privacyidea_config("totp.hashlib", "sha256", "public", "")
+        set_privacyidea_config("totp.timeStep", "60", "public", "")
+        check_token_init("sha256", 60)
+
+        # Set user policy
+        set_policy("user_policy", SCOPE.USER, {"totp_hashlib": "sha512", "totp_timestep": "30"})
+        check_token_init("sha512", 30)
+        delete_policy("user_policy")
+
+        # Set admin policy
+        set_policy("admin_policy", SCOPE.ADMIN, {"totp_hashlib": "sha512", "totp_timestep": "30"})
+        check_token_init("sha512", 30, auth_header=self.at)
+        delete_policy("admin_policy")
+
+        # ---- OTP len ----
         # Set OTP len using the system wide default
         set_privacyidea_config("DefaultOtpLen", 8)
-        with self.app.test_request_context('/token/init',
-                                           method='POST',
-                                           data={
-                                               "type": "totp",
-                                               "totp.hashlib": "sha1",
-                                               "hashlib": "sha1",
-                                               "genkey": 1,
-                                               "user": "selfservice",
-                                               "realm": "realm1"},
-                                           headers={'Authorization': self.at_user}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            self.assertTrue(result.get("value"))
-            detail = res.json.get("detail")
-            serial = detail.get("serial")
-            token = get_tokens(serial=serial)[0]
-            self.assertEqual(token.token.otplen, 8)
-
-        remove_token(serial)
+        check_token_init("sha256", 60, 8)
 
         # override the DefaultOtpLen
         with self.app.test_request_context('/token/init',
@@ -2433,6 +2435,8 @@ class APITokenTestCase(MyApiTestCase):
 
         remove_token(serial)
         delete_privacyidea_config("DefaultOtpLen")
+        delete_policy("user_enroll")
+        delete_policy("admin_enroll")
 
     def test_26_supply_key_size(self):
         with self.app.test_request_context('/token/init',
@@ -2741,6 +2745,39 @@ class APITokenTestCase(MyApiTestCase):
             self.assertNotIn('tokenkind', tok.get('info'), tok)
 
         delete_policy('hide_tokeninfo_admin')
+
+    def test_35_delete_expired_challenge_endpoint(self):
+        from privacyidea.models import Challenge
+
+        # Add two expired challenges and one valid challenge to the DB
+        Challenge.query.delete()
+        Challenge(serial='0', validitytime=0).save()
+        Challenge(serial='1', validitytime=0).save()
+        Challenge(serial='2', validitytime=300).save()
+
+        start_cnt = Challenge.query.count()
+        self.assertEqual(
+            start_cnt, 3,
+            f"expected three challenges before deletion, found {start_cnt}")
+
+        # delete the expired challenges
+        with self.app.test_request_context(
+                '/token/challenges/expired',
+                method='DELETE',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res.data)
+
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertTrue(result["value"]["status"], result)
+
+        # verify that the table is empty
+        remaining = Challenge.query.count()
+        self.assertEqual(
+            remaining, 1,
+            f"challenge-cache contains {remaining} rows")
+
 
     def test_40_init_verify_hotp_token(self):
         set_policy("verify_toks1", scope=SCOPE.ENROLL, action="{0!s}=hotp top".format(ACTION.VERIFY_ENROLLMENT))
@@ -3202,6 +3239,31 @@ class APITokenTestCase(MyApiTestCase):
             self.assertEqual(tok.get_serial(), token.get("serial"), token)
         remove_token(tok.get_serial())
 
+    def test_61_list_tokens_realm(self):
+        self.setUp_user_realm2()
+
+        # create token for a user and an additional token realm
+        token = init_token({"type": "hotp", "genkey": True}, user=User(login="hans", realm=self.realm2))
+        token.set_realms([self.realm1, self.realm2])
+
+        # set policy for helpdesk admin
+        set_policy("helpdesk", scope=SCOPE.ADMIN, action=ACTION.TOKENLIST, realm=self.realm1)
+
+        # List tokens for serial (before request will also add user as parameter)
+        with self.app.test_request_context("/token/",
+                                           method="GET",
+                                           query_string={"serial": token.get_serial()},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertEqual(1, len(result.get("value").get("tokens")))
+            self.assertEqual(token.get_serial(), result.get("value").get("tokens")[0].get("serial"))
+
+        remove_token(token.get_serial())
+        delete_policy("helpdesk")
+
 
 class API00TokenPerformance(MyApiTestCase):
     token_count = 21
@@ -3613,11 +3675,11 @@ class APIRolloutState(MyApiTestCase):
             self.assertIn(tok.get("serial"), [serial1, serial3])
 
 
+@unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,
+                     "Can not test MSCA. grpc module seems not available.")
 class APIMSCACertTestCase(MyApiTestCase):
 
-    @unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,
-                         "Can not test MSCA. grpc module seems not available.")
-    def test_00_setup(self):
+    def setUp(self):
         self.setUp_user_realms()
         # setup ca connector
         CONF["type"] = "microsoft"
@@ -3625,8 +3687,6 @@ class APIMSCACertTestCase(MyApiTestCase):
         r = save_caconnector(CONF)
         self.assertEqual(r, 1)
 
-    @unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,
-                         "Can not test MSCA. grpc module seems not available.")
     def test_01_msca_certificate_pending_and_enrolled(self):
         with mock.patch.object(MSCAConnector, "_connect_to_worker") as mock_conncect_worker:
             # Mock the CA to simulate a Pending Request - disposition 5
@@ -3645,6 +3705,11 @@ class APIMSCACertTestCase(MyApiTestCase):
                                    }, User("cornelius", self.realm1))
             self.assertEqual("certificate", cert_tok.type)
             self.assertEqual(ROLLOUTSTATE.PENDING, cert_tok.rollout_state)
+            # Check, that there is no pkcs12 container in the tokeninfo and init details
+            self.assertIsNotNone(cert_tok.get_tokeninfo("pkcs12"), cert_tok.get_tokeninfo())
+            init_details = cert_tok.get_init_details()
+            self.assertIn("pkcs12", init_details, init_details)
+            self.assertIn("pkcs12_password", init_details, init_details)
 
             # Fetch the rolloutstate by fetching the token
             with self.app.test_request_context('/token/?serial={0!s}'.format(cert_tok.token.serial),
@@ -3671,8 +3736,6 @@ class APIMSCACertTestCase(MyApiTestCase):
                 # certificate is still pending
                 self.assertEqual(ROLLOUTSTATE.ENROLLED, token.get("rollout_state"))
 
-    @unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,
-                         "Can not test MSCA. grpc module seems not available.")
     def test_02_msca_certificate_pending_and_denied(self):
         with mock.patch.object(MSCAConnector, "_connect_to_worker") as mock_conncect_worker:
             # Mock the CA to simulate a Pending Request - disposition 5

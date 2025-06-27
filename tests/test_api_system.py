@@ -16,6 +16,7 @@ from privacyidea.lib.realm import delete_realm, get_realms
 from privacyidea.models import db, NodeName
 from .test_lib_resolver import LDAPDirectory, ldap3mock
 from .test_lib_caconnector import CACERT, CAKEY, WORKINGDIR, OPENSSLCNF
+from privacyidea.models import UserCache
 
 PWFILE = "tests/testdata/passwords"
 POLICYFILE = "tests/testdata/policy.cfg"
@@ -116,11 +117,12 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 400, res)
 
     def test_04_set_policy(self):
+        self.setUp_user_realms()
         with self.app.test_request_context('/policy/pol1',
-                                           data={'action': "enroll",
-                                                 'scope': "selfservice",
-                                                 'realm': "r1",
-                                                 'resolver': "test",
+                                           data={'action': ACTION.ENABLE,
+                                                 'scope': SCOPE.USER,
+                                                 'realm': self.realm1,
+                                                 'resolver': self.resolvername1,
                                                  'user': ["admin"],
                                                  'time': "",
                                                  'client': "127.12.12.12",
@@ -135,10 +137,10 @@ class APIConfigTestCase(MyApiTestCase):
 
         # Update the policy with a more complicated client
         with self.app.test_request_context('/policy/pol1',
-                                           data={'action': "enroll",
-                                                 'scope': "selfservice",
-                                                 'realm': "r1",
-                                                 'resolver': "test",
+                                           data={'action': ACTION.ENABLE,
+                                                 'scope': SCOPE.USER,
+                                                 'realm': self.realm1,
+                                                 'resolver': self.resolvername1,
                                                  'user': ["admin"],
                                                  'time': "",
                                                  'client': "10.0.0.0/8, "
@@ -154,8 +156,8 @@ class APIConfigTestCase(MyApiTestCase):
 
         # setting policy with invalid name fails
         with self.app.test_request_context('/policy/invalid policy name',
-                                           data={'action': "enroll",
-                                                 'scope': "selfservice",
+                                           data={'action': ACTION.ENABLE,
+                                                 'scope': SCOPE.USER,
                                                  'client': "127.12.12.12",
                                                  'active': True},
                                            method='POST',
@@ -166,7 +168,7 @@ class APIConfigTestCase(MyApiTestCase):
 
         # setting policy with an empty name
         with self.app.test_request_context('/policy/enroll',
-                                           data={'scope': "selfservice",
+                                           data={'scope': SCOPE.USER,
                                                  'client': "127.12.12.12",
                                                  'active': True},
                                            method='POST',
@@ -197,11 +199,12 @@ class APIConfigTestCase(MyApiTestCase):
         delete_policy("pol1")
 
     def test_07_update_and_delete_policy(self):
+        self.setUp_user_realms()
         with self.app.test_request_context('/policy/pol_update_del',
-                                           data={'action': "enroll",
-                                                 'scope': "selfservice",
-                                                 'realm': "r1",
-                                                 'resolver': "test",
+                                           data={'action': ACTION.ENABLE,
+                                                 'scope': SCOPE.USER,
+                                                 'realm': self.realm1,
+                                                 'resolver': self.resolvername1,
                                                  'user': "admin",
                                                  'time': "",
                                                  'client': "127.12.12.12",
@@ -217,9 +220,9 @@ class APIConfigTestCase(MyApiTestCase):
 
         # update policy
         with self.app.test_request_context('/policy/pol_update_del',
-                                           data={'action': "enroll",
-                                                 'scope': "selfservice",
-                                                 'realm': "r1",
+                                           data={'action': ACTION.ENABLE,
+                                                 'scope': SCOPE.USER,
+                                                 'realm': self.realm1,
                                                  'client': "1.1.1.1"},
                                            method='POST',
                                            headers={'Authorization': self.at}):
@@ -273,6 +276,9 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertTrue(result["status"], result)
             self.assertTrue(result["value"] == [], result)
 
+        delete_realm(self.realm1)
+        delete_resolver(self.resolvername1)
+
     # Resolvers
     """
     We should move this to LDAP resolver tests and mock this.
@@ -306,6 +312,7 @@ class APIConfigTestCase(MyApiTestCase):
                             detail.get("description"),
                             detail.get("description"))
     """
+
     def test_08_no_ldap_password(self):
         params = {'LDAPURI': 'ldap://localhost',
                   'LDAPBASE': 'o=test',
@@ -658,6 +665,8 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertTrue(len(p1) == 1, p1)
             p2 = pol.match_policies(name="importpol2")
             self.assertTrue(len(p2) == 1, p2)
+        delete_policy("importpol1")
+        delete_policy("importpol2")
 
         # import empty file
         with self.app.test_request_context("/policy/import/"
@@ -666,17 +675,20 @@ class APIConfigTestCase(MyApiTestCase):
                                            data=dict(file=(POLICYEMPTY,
                                                            "policy_empty_file.cfg")),
                                            headers={'Authorization': self.at}):
-
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400, res)
 
     def test_12_test_check_policy(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        self.setUp_user_realm3()
+
         # test invalid policy name "check"
         with self.app.test_request_context('/policy/check',
                                            method='POST',
                                            data={"realm": "*",
-                                                 "action": "action1, action2",
-                                                 "scope": "scope1",
+                                                 "action": f"{ACTION.ENABLE}, {ACTION.DISABLE}",
+                                                 "scope": SCOPE.USER,
                                                  "user": "*, -user1",
                                                  "client": "172.16.0.0/16, "
                                                            "-172.16.1.1"},
@@ -687,8 +699,8 @@ class APIConfigTestCase(MyApiTestCase):
         with self.app.test_request_context('/policy/pol1',
                                            method='POST',
                                            data={"realm": "*",
-                                                 "action": "action1, action2",
-                                                 "scope": "scope1",
+                                                 "action": f"{ACTION.ENABLE}, {ACTION.DISABLE}",
+                                                 "scope": SCOPE.USER,
                                                  "user": "*, -user1",
                                                  "client": "172.16.0.0/16, "
                                                            "-172.16.1.1"},
@@ -702,9 +714,9 @@ class APIConfigTestCase(MyApiTestCase):
         with self.app.test_request_context('/policy/pol2',
                                            method='POST',
                                            data={"realm": "*",
-                                                 "action": "action3=value, "
-                                                           "action4",
-                                                 "scope": "scope1",
+                                                 "action": f"{ACTION.HIDE_TOKENINFO}=hashlib, "
+                                                           f"{ACTION.DELETE}",
+                                                 "scope": SCOPE.USER,
                                                  "user": "admin, superuser",
                                                  "client": "172.16.1.1"},
                                            headers={'Authorization': self.at}):
@@ -713,13 +725,13 @@ class APIConfigTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertGreater(result.get("value")["setPolicy pol2"], 1, result)
 
-        # CHECK: user=superuser, action=action1, client=172.16.1.1
+        # CHECK: user=superuser, action=enable, client=172.16.1.1
         # is not allowed
         with self.app.test_request_context('/policy/check',
                                            method='GET',
-                                           query_string=urlencode({"realm": "realm1",
-                                                                   "action": "action1",
-                                                                   "scope": "scope1",
+                                           query_string=urlencode({"realm": self.realm1,
+                                                                   "action": ACTION.ENABLE,
+                                                                   "scope": SCOPE.USER,
                                                                    "user": "superuser",
                                                                    "client": "172.16.1.1"}),
                                            headers={'Authorization': self.at}):
@@ -728,13 +740,13 @@ class APIConfigTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertFalse(result.get("value").get("allowed"), result)
 
-        # CHECK: user=superuser, action=action1, client=172.16.1.2
+        # CHECK: user=superuser, action=enable, client=172.16.1.2
         # is allowed
         with self.app.test_request_context('/policy/check',
                                            method='GET',
-                                           query_string=urlencode({"realm": "realm2",
-                                                                   "action": "action1",
-                                                                   "scope": "scope1",
+                                           query_string=urlencode({"realm": self.realm2,
+                                                                   "action": ACTION.ENABLE,
+                                                                   "scope": SCOPE.USER,
                                                                    "user": "superuser",
                                                                    "client": "172.16.1.2"}),
                                            headers={'Authorization': self.at}):
@@ -743,13 +755,13 @@ class APIConfigTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("value").get("allowed"), result)
 
-        # CHECK: user=superuser, action=action3, client=172.16.1.2
+        # CHECK: user=superuser, action=hide_token_info, client=172.16.1.2
         # is not allowed
         with self.app.test_request_context('/policy/check',
                                            method='GET',
-                                           query_string=urlencode({"realm": "realm3",
-                                                                   "action": "action3",
-                                                                   "scope": "scope1",
+                                           query_string=urlencode({"realm": self.realm3,
+                                                                   "action": ACTION.HIDE_TOKENINFO,
+                                                                   "scope": SCOPE.USER,
                                                                    "user": "superuser",
                                                                    "client": "172.16.1.2"}),
                                            headers={'Authorization': self.at}):
@@ -758,13 +770,13 @@ class APIConfigTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertFalse(result.get("value").get("allowed"), result)
 
-        # CHECK: user=superuser, action=action3, client=172.16.1.1
+        # CHECK: user=superuser, action=hide_token_info, client=172.16.1.1
         # is allowed
         with self.app.test_request_context('/policy/check',
                                            method='GET',
-                                           query_string=urlencode({"realm": "realm1",
-                                                                   "action": "action3",
-                                                                   "scope": "scope1",
+                                           query_string=urlencode({"realm": self.realm1,
+                                                                   "action": ACTION.HIDE_TOKENINFO,
+                                                                   "scope": SCOPE.USER,
                                                                    "user": "superuser",
                                                                    "client": "172.16.1.1"}),
                                            headers={'Authorization': self.at}):
@@ -772,6 +784,9 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 200, res)
             result = res.json.get("result")
             self.assertTrue(result.get("value").get("allowed"), result)
+
+        delete_policy("pol1")
+        delete_policy("pol2")
 
     def test_13_get_policy_defs(self):
         with self.app.test_request_context('/policy/defs',
@@ -816,6 +831,7 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertIn("description", conditions["comparators"]["contains"])
 
     def test_14_enable_disable_policy(self):
+        set_policy("pol2", scope=SCOPE.USER, action=ACTION.ENABLE)
         with self.app.test_request_context('/policy/pol2',
                                            method='GET',
                                            headers={'Authorization': self.at}):
@@ -862,6 +878,8 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 200, res)
             pol = result.get("value")
             self.assertTrue(pol[0].get("active"), pol[0])
+
+        delete_policy("pol2")
 
     def test_15_get_documentation(self):
         with self.app.test_request_context('/system/documentation',
@@ -1218,6 +1236,28 @@ class APIConfigTestCase(MyApiTestCase):
         delete_policy("user")
         delete_policy("admin")
         delete_caconnector("localCA")
+
+    def test_24_delete_user_cache_endpoint(self):
+        UserCache(username='alice', used_login='', resolver='',
+                  user_id='', timestamp=None).save()
+        UserCache(username='bob', used_login='', resolver='',
+                  user_id='', timestamp=None).save()
+
+        count = UserCache.query.count()
+        self.assertEqual(count, 2, f"expected 2 cache rows, found {count}")
+
+        with self.app.test_request_context('/system/user-cache',
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res.data)
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertTrue(result["value"]["status"], result)
+
+        remaining = UserCache.query.count()
+        self.assertEqual(remaining, 0,
+                         f"user-cache still contains {remaining} rows")
 
     def test_30_realms_with_nodes(self):
         nd1_uuid = "8e4272a9-9037-40df-8aa3-976e4a04b5a9"
