@@ -3,7 +3,7 @@
 $table-border-color: #e0e2ec;
 $td-max-width: 18rem;
 $filter-width: 54.5rem;
-$scrollable-height: 60px;
+$scrollable-height: calc(var(--mat-sys-body-medium-line-height) * 3);
 $scrollable-margin-right: -1rem;
 $scrollable-padding-right: 1rem;
 $realm-margin-top: 17px;

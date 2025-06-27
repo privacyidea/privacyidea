@@ -1,5 +1,5 @@
 @use "../../../styles";
-@use '@angular/material' as mat;
+@use "@angular/material" as mat;
 
 $login-bg: white;
 $btn-bg: var(--background-blue);
@@ -11,7 +11,7 @@ $border-radius: var(--border-radius);
   display: flex;
   flex-direction: column;
   justify-content: center;
-  overflow: scroll;
+  overflow: auto;
   height: 100vh;
   background: $login-bg;
 

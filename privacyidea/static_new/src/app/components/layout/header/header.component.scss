@@ -1,5 +1,5 @@
 @use "../../../../styles";
-@use '@angular/material' as mat;
+@use "@angular/material" as mat;
 
 $header-bg: white;
 $header-shadow: var(--box-shadow);
@@ -19,7 +19,6 @@ $border-radius: var(--border-radius);
 .header-container {
   @include flex-center;
   @include mat.elevation(3);
-  overflow: scroll;
   background: $header-bg;
   border-bottom-left-radius: 5px;
   border-bottom-right-radius: 5px;
@@ -50,7 +49,6 @@ $border-radius: var(--border-radius);
 
   .nav-menu {
     @include flex-center;
-    overflow: auto;
     white-space: nowrap;
     padding-left: 2px;
 
@@ -71,8 +69,9 @@ $border-radius: var(--border-radius);
         background: $hover-bg;
         color: white;
         transform: translateX(-2px);
-        transition: transform 200ms,
-        box-shadow 200ms ease;
+        transition:
+          transform 200ms,
+          box-shadow 200ms ease;
       }
 
       &.active {
@@ -81,8 +80,9 @@ $border-radius: var(--border-radius);
         background: $active-bg;
         color: white;
         transform: translateX(-2px);
-        transition: transform 200ms,
-        box-shadow 200ms ease;
+        transition:
+          transform 200ms,
+          box-shadow 200ms ease;
       }
     }
   }
