@@ -2746,6 +2746,39 @@ class APITokenTestCase(MyApiTestCase):
 
         delete_policy('hide_tokeninfo_admin')
 
+    def test_35_delete_expired_challenge_endpoint(self):
+        from privacyidea.models import Challenge
+
+        # Add two expired challenges and one valid challenge to the DB
+        Challenge.query.delete()
+        Challenge(serial='0', validitytime=0).save()
+        Challenge(serial='1', validitytime=0).save()
+        Challenge(serial='2', validitytime=300).save()
+
+        start_cnt = Challenge.query.count()
+        self.assertEqual(
+            start_cnt, 3,
+            f"expected three challenges before deletion, found {start_cnt}")
+
+        # delete the expired challenges
+        with self.app.test_request_context(
+                '/token/challenges/expired',
+                method='DELETE',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res.data)
+
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertTrue(result["value"]["status"], result)
+
+        # verify that the table is empty
+        remaining = Challenge.query.count()
+        self.assertEqual(
+            remaining, 1,
+            f"challenge-cache contains {remaining} rows")
+
+
     def test_40_init_verify_hotp_token(self):
         set_policy("verify_toks1", scope=SCOPE.ENROLL, action="{0!s}=hotp top".format(ACTION.VERIFY_ENROLLMENT))
         set_policy("verify_toks2", scope=SCOPE.ENROLL, action="{0!s}=HOTP email".format(ACTION.VERIFY_ENROLLMENT))

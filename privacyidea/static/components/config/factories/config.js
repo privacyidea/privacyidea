@@ -689,6 +689,18 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                     AuthFactory.authError(error.data)
                 });
             },
+            deleteUserCache: function (callback) {
+                $http.delete(systemUrl + "/user-cache", {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
             getRandom: function (len, encode, callback) {
                 $http.get(systemUrl +
                     encodeURI("/random?len=" + len + "&encode=" + encode), {

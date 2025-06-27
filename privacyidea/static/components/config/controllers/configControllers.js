@@ -752,6 +752,26 @@ myApp.controller("configController", ["$scope", "$location", "$rootScope",
             $scope.getSystemConfig();
         });
 
+        $scope.deleteUserCache = function () {
+            ConfigFactory.deleteUserCache(function (data) {
+                if (data.result.status === true) {
+                    if (data.result.value.deleted > 0) {
+                        inform.add(gettextCatalog.getString(
+                                "Total user cache entries deleted: " + data.result.value.deleted),
+                            {type: "success", ttl: 4000});
+                    } else {
+                        inform.add(gettextCatalog.getString(
+                                "No user cache entries were deleted."),
+                            {type: "info", ttl: 4000});
+                    }
+                } else {
+                    inform.add(gettextCatalog.getString(
+                            "Could not delete user cache."),
+                        {type: "danger", ttl: 8000});
+                }
+            });
+        };
+
     }]);
 
 myApp.controller("PasswdResolverController", ["$scope", "ConfigFactory",

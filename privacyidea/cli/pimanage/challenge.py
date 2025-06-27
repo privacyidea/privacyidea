@@ -18,13 +18,11 @@
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
-import dateutil.tz
 import click
 from flask.cli import AppGroup
 
-from privacyidea.models import Challenge, db
-from privacyidea.lib.sqlutils import delete_matching_rows
-
+from privacyidea.models import Challenge
+from privacyidea.lib.challenge import _build_challenge_criterion, cleanup_expired_challenges
 
 challenge_cli = AppGroup("challenge", help="Manage challenge data")
 
@@ -38,7 +36,7 @@ challenge_cli = AppGroup("challenge", help="Manage challenge data")
                    "delete challenge entries older than these number of minutes.")
 @click.option('--dryrun', is_flag=True,
               help="Do not actually delete, only show what would be done.")
-def cleanup_challenge(chunksize, age, dryrun=False):
+def cleanup_challenge(chunksize: int, age: int, dryrun: bool = False) -> int:
     """
     Delete all expired challenges from the challenge table
     """
@@ -46,16 +44,16 @@ def cleanup_challenge(chunksize, age, dryrun=False):
         # Delete challenges created earlier than age minutes ago
         now = datetime.datetime.utcnow() - datetime.timedelta(minutes=age)
         click.echo("Deleting challenges older than {0!s}".format(now))
-        criterion = Challenge.timestamp < now
     else:
         # Delete expired challenges
         click.echo("Deleting expired challenges.")
-        now = datetime.datetime.now(tz=dateutil.tz.tzlocal())
-        criterion = Challenge.expiration < now
+
+    criterion = _build_challenge_criterion(age)
 
     if dryrun:
-        r = Challenge.query.filter(criterion).count()
-        click.echo("Would delete {0!s} challenge entries.".format(r))
+        row_count = Challenge.query.filter(criterion).count()
+        click.echo("Would delete {0!s} challenge entries.".format(row_count))
     else:
-        r = delete_matching_rows(db.session, Challenge.__table__, criterion, chunksize)
-        click.echo("{0!s} entries deleted.".format(r))
+        row_count = cleanup_expired_challenges(chunksize=chunksize, age=age)
+        click.echo("{0!s} entries deleted.".format(row_count))
+    return row_count
