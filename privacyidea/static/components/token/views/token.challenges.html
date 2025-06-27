@@ -1,14 +1,12 @@
 <div class="form-group">
-    <div class="col-sm-10">
-        <p><translate>Total Challenges:</translate>
-            {{ challengedata.count }}
-        </p>
-    </div>
+    <p><translate>Total Challenges:</translate>
+        {{ challengedata.count }}
+    </p>
     <button type="button"
             ng-click="deleteExpiredChallenges()"
-            class="btn btn-primary"
+            class="btn btn-transparent btn-danger"
             translate>
-    Delete Expired Challenges
+        Delete Expired Challenges
     </button>
 </div>
 

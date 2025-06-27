@@ -760,6 +760,7 @@ def get_user_list(param=None, user=None, custom_attributes=False):
             log.debug("Check for resolver class: {0!r}".format(resolver_name))
             y = get_resolver_object(resolver_name)
             log.debug("with this search dictionary: {0!r} ".format(searchDict))
+
             ulist = y.getUserList(searchDict)
             # Add resolvername to the list
             realm_id = get_realm_id(param_realm or user_realm)
