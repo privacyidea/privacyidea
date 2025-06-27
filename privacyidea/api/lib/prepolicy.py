@@ -2699,12 +2699,10 @@ def disabled_token_types(request, action):
     :param action: The action parameter is not used in this decorator
     :return: True
     """
-    token_types = Match.user(g, scope=SCOPE.AUTH, action=ACTION.DISABLED_TOKEN_TYPES,
+    disabled = Match.user(g, scope=SCOPE.AUTH, action=ACTION.DISABLED_TOKEN_TYPES,
                              user_object=request.User if hasattr(request, 'User') else None).action_values(unique=False)
 
-    if token_types:
-        request.all_data[ACTION.DISABLED_TOKEN_TYPES] = list(token_types)
-    else:
-        request.all_data[ACTION.DISABLED_TOKEN_TYPES] = []
+    if disabled:
+        request.all_data[ACTION.DISABLED_TOKEN_TYPES] = list(disabled)
 
     return True
