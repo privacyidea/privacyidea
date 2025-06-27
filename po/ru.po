@@ -5,22 +5,23 @@
 # Сергей Николаевич Котенков <kotenkovsn@ya.ru>, 2024.
 # Сергей Котенков <kotenkovsn@ya.ru>, 2024.
 # Konstantin <obrik@inbox.ru>, 2024.
+# LS_Grand <lsg@lsgrand.com>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-03-28 09:26+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"PO-Revision-Date: 2025-06-27 10:01+0000\n"
+"Last-Translator: LS_Grand <lsg@lsgrand.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/privacyidea/"
-"branch-3-11-webui/ru/>\n"
+"privacyidea-webui/ru/>\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-"X-Generator: Weblate 5.11-dev\n"
+"X-Generator: Weblate 5.13-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -280,7 +281,7 @@ msgstr "Описание данной политики"
 #: privacyidea/static/components/token/views/token.containertemplates.create.html:29
 msgid ""
 "A template with this name already exists. Please choose a different name."
-msgstr ""
+msgstr "Шаблон с таким именем уже существует. Пожалуйста, выберете другое имя."
 
 #: privacyidea/static/components/token/views/token.enroll.sms.html:36
 msgid "A token specific SMS gateway"
@@ -288,7 +289,7 @@ msgstr "СМС шлюз для токена"
 
 #: privacyidea/static/components/token/views/token.containertemplates.create.html:24
 msgid "A unique name for this template"
-msgstr ""
+msgstr "Уникальное имя для этого шаблона"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:25
 #: privacyidea/static/components/config/views/config.token.yubico.html:29
@@ -355,10 +356,8 @@ msgstr "Добавить"
 
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:61
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:88
-#, fuzzy
-#| msgid "Add Tokens"
 msgid "Add Token"
-msgstr "Добавить токены"
+msgstr "Добавить токен"
 
 #: privacyidea/static/components/user/views/user.details.html:289
 msgid "Add Tokens"
@@ -394,10 +393,8 @@ msgid "Add user"
 msgstr "Добавить пользователя"
 
 #: privacyidea/static/components/directives/views/directive.containerTemplateDiff.html:38
-#, fuzzy
-#| msgid "Additional conditions"
 msgid "Additional"
-msgstr "Дополнительные условия"
+msgstr "Дополнительный"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:296
 msgid "Additional conditions"
@@ -553,10 +550,8 @@ msgid "Assign the token to a container"
 msgstr "Назначить токен контейнеру"
 
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:73
-#, fuzzy
-#| msgid "Assign the token to a container"
 msgid "Assign the token to the container owner and/or realm."
-msgstr "Назначить токен контейнеру"
+msgstr "Назначить токен владельцу контейнера и/или домену."
 
 #: privacyidea/static/components/token/views/token.enroll.html:48
 msgid "Assign token to user"
@@ -746,10 +741,8 @@ msgid "Certificates Templates file"
 msgstr "Файл шаблонов сертификатов"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:297
-#, fuzzy
-#| msgid "Challenge Response Authentication. Your response was not valid!"
 msgid "Challenge Response Authentication."
-msgstr "Проверка подлинности ответа на запрос. Ваш ответ недействителен!"
+msgstr "Challenge Response Аутентификация."
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:376
 msgid "Challenge Response Authentication. Your response was not valid!"
@@ -896,10 +889,8 @@ msgstr "Компаратор"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:162
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:57
-#, fuzzy
-#| msgid "Comparator"
 msgid "Compare"
-msgstr "Компаратор"
+msgstr "Сравнить"
 
 #: privacyidea/static/templates/menu.html:93
 msgid "Components"
@@ -934,16 +925,12 @@ msgid "Contained Tokens:"
 msgstr "Содержащиеся токены:"
 
 #: privacyidea/static/components/token/views/token.containercreate.html:160
-#, fuzzy
-#| msgid "Container Realms"
 msgid "Container Created"
-msgstr "Контейнерные домены"
+msgstr "Контейнер создан"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:20
-#, fuzzy
-#| msgid "Container details for {{ containerSerial }}"
 msgid "Container Details for {{ containerSerial }}"
-msgstr "Сведения о контейнере для {{ containerSerial }}"
+msgstr "Сведения о контейнере: {{ containerSerial }}"
 
 #: privacyidea/static/components/token/views/token.containerlist.html:77
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:96
@@ -955,10 +942,8 @@ msgid "Container Serial"
 msgstr "Серийный контейнер"
 
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:19
-#, fuzzy
-#| msgid "Container Type"
 msgid "Container Templates"
-msgstr "Тип контейнера"
+msgstr "Шаблоны контейнеров"
 
 #: privacyidea/static/components/audit/views/audit.log.html:89
 #: privacyidea/static/components/token/views/token.containercreate.html:30
@@ -973,7 +958,7 @@ msgstr "Контейнеры"
 
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:43
 msgid "Containers Created With This Template"
-msgstr ""
+msgstr "Контейнеры созданные с помощью этого шаблона"
 
 #: privacyidea/static/components/user/views/user.details.html:321
 msgid "Containers for user {{ username }}"
@@ -998,10 +983,8 @@ msgstr ""
 "                вновь зарегистрированные токены"
 
 #: privacyidea/static/components/token/views/token.containercreate.html:142
-#, fuzzy
-#| msgid "Create Realm"
 msgid "Create"
-msgstr "Создать домен"
+msgstr "Создать"
 
 #: privacyidea/static/components/directives/views/directive.selectorcreatecontainer.html:63
 #: privacyidea/static/components/token/views/token.html:187
@@ -1009,10 +992,8 @@ msgid "Create Container"
 msgstr "Создать новый контейнер"
 
 #: privacyidea/static/components/token/views/token.html:218
-#, fuzzy
-#| msgid "Certificate Template"
 msgid "Create New Template"
-msgstr "Шаблон Сертификата"
+msgstr "Создать новый шаблон"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:195
 msgid "Create Periodic Task Definition"
@@ -1042,10 +1023,8 @@ msgid "Create a New Container"
 msgstr "Создать новый контейнер"
 
 #: privacyidea/static/components/token/views/token.containertemplates.create.html:19
-#, fuzzy
-#| msgid "Create Container"
 msgid "Create a New Container Template"
-msgstr "Создать новый контейнер"
+msgstr "Создать новый шаблон контейнера"
 
 #: privacyidea/static/components/config/views/config.events.details.html:25
 msgid "Create a new Event Handler"
@@ -2139,27 +2118,23 @@ msgstr "Здесь вы можете зарегистрировать новую
 #: privacyidea/static/components/token/views/token.containerdetails.html:170
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:51
 msgid "Hide"
-msgstr ""
+msgstr "Скрыть"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:588
 msgid "Hide Add Token List"
 msgstr "Скрыть список добавленных токенов"
 
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:47
-#, fuzzy
-#| msgid "Detail"
 msgid "Hide Details"
-msgstr "Детали"
+msgstr "Скрыть подробности"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:57
 msgid "Hide Policy templates"
 msgstr "Скрыть шаблоны политик"
 
 #: privacyidea/static/components/token/views/token.containercreate.html:125
-#, fuzzy
-#| msgid "HOTP Token settings"
 msgid "Hide Settings"
-msgstr "Настройки HOTP токена"
+msgstr "Скрыть настройки"
 
 #: privacyidea/static/components/machine/views/machine.details.html:9
 #: privacyidea/static/components/token/views/token.details.html:667
@@ -2591,10 +2566,8 @@ msgid "New RADIUS server"
 msgstr "Новый RADIUS-сервер"
 
 #: privacyidea/static/components/config/views/config.realms.list.html:108
-#, fuzzy
-#| msgid "Save Realm"
 msgid "New Realm..."
-msgstr "Сохранить домен"
+msgstr "Новый домен..."
 
 #: privacyidea/static/components/config/views/config.machineresolvers.html:15
 #: privacyidea/static/components/config/views/config.resolvers.html:15
@@ -3331,10 +3304,8 @@ msgid "Registration Configuration"
 msgstr "Регистрационный код"
 
 #: privacyidea/static/components/token/views/token.containercreate.html:239
-#, fuzzy
-#| msgid "Test Email sent successfully."
 msgid "Registration completed successfully"
-msgstr "Тестовое электронное письмо успешно отправлено."
+msgstr "Регистрация успешно завершена"
 
 #: privacyidea/static/components/token/views/token.enroll.remote.html:44
 msgid "Remote Realm"
@@ -4130,10 +4101,8 @@ msgid "Test OTP only"
 msgstr "Проверка только OTP"
 
 #: privacyidea/static/components/token/views/token.details.html:519
-#, fuzzy
-#| msgid "Test Yubikey"
 msgid "Test Passkey."
-msgstr "Проверка Yubikey"
+msgstr "Проверить Passkey."
 
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:83
 msgid "Test SCIM Resolver"
@@ -4679,10 +4648,8 @@ msgstr ""
 "Клиентское устройство не может быть использовано для этого типа запроса."
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:286
-#, fuzzy
-#| msgid "The URL that contains the logo of the service."
 msgid "The container contains the following offline tokens:"
-msgstr "URL-адрес, содержащий логотип сервиса."
+msgstr "Контейнер содержит следующие автономные токены:"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:68
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:102
@@ -4856,7 +4823,7 @@ msgid ""
 "must not be the word 'send_test_email'"
 msgstr ""
 "Имя ресурса должно состоять из букв, цифр и символов «_», «-», «.» и не "
-"должно быть словом 'send_test_email'."
+"должно быть словом 'send_test_email'"
 
 #: privacyidea/static/app.js:97
 msgid ""
@@ -4864,7 +4831,7 @@ msgid ""
 "must not be the word 'test'"
 msgstr ""
 "Имя ресурса должно состоять из букв, цифр и символов «_», «-», «.» и не "
-"должно содержать слово 'test'."
+"должно содержать слово 'test'"
 
 #: privacyidea/static/app.js:107
 msgid ""
