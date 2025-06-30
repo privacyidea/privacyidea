@@ -998,6 +998,7 @@ class WebAuthnTokenClass(TokenClass):
                 register_request["excludeCredentials"] = credential_options.get("excludeCredentials")
 
             response_detail["webAuthnRegisterRequest"] = register_request
+            response_detail["transaction_id"] = challenge.transaction_id
 
             self.add_tokeninfo_dict({
                 FIDO2TokenInfo.RELYING_PARTY_ID: credential_options["rp"]["id"],
