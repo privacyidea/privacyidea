@@ -12,8 +12,10 @@ from .base import MyTestCase
 from . import ldap3mock
 from ldap3.core.exceptions import LDAPOperationResult
 from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
+from testfixtures import LogCapture
 import mock
 import ldap3
+import logging
 import responses
 import datetime
 import shutil
@@ -37,6 +39,7 @@ from privacyidea.lib.resolver import (save_resolver,
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.models import ResolverConfig
 from privacyidea.lib.utils import to_bytes, to_unicode
+from privacyidea.lib.error import ParameterError
 from requests import HTTPError
 
 PWFILE = "tests/testdata/passwords"
@@ -218,6 +221,27 @@ class SQLResolverTestCase(MyTestCase):
 
         ret = y.getUserList({"username": "cornelius"})
         self.assertEqual(len(ret), 1, ret)
+
+        # Test some failing search parameter
+        with LogCapture(level=logging.ERROR) as lc:
+            self.assertRaises(ParameterError, y.getUserList, {"unknown": "parameter"})
+            lc.check_present(("privacyidea.lib.resolvers.SQLIdResolver", "ERROR",
+                              f"Could not find search key (['unknown'])in the "
+                              f"column mapping keys ({list(y.map.keys())})."))
+
+        # Test a correct map entry with a missing column in the db
+        params = self.parameters.copy()
+        params.update({"Map": '{ "username": "username", \
+                    "userid" : "id", \
+                    "email" : "email", \
+                    "not_in_db" : "not_a_column", \
+                    "password" : "password"}'})
+        y.loadConfig(params)
+        with LogCapture(level=logging.ERROR) as lc:
+            self.assertRaises(ParameterError, y.getUserList, {"not_in_db": "parameter"})
+            lc.check_present(("privacyidea.lib.resolvers.SQLIdResolver", "ERROR",
+                              f"Mapped column ('not_a_column') is not available in the database "
+                              f"table 'users' ({list(y.TABLE.columns.keys())})."))
 
         username = y.getUsername(user_id)
         self.assertEqual(username, "cornelius", username)
@@ -2103,7 +2127,7 @@ class LDAPResolverTestCase(MyTestCase):
                          {'value': bob_id,
                           'timestamp': now + datetime.timedelta(seconds=cache_timeout + 2)})
         # we now go 2 * (CACHE_TIMEOUT + 2) seconds to the future and query for someone else's user ID.
-        # This will cause bob's cache entry to be evicted.
+        # This will cause Bob's cache entry to be evicted.
         with mock.patch('privacyidea.lib.resolvers.LDAPIdResolver.datetime.datetime',
                         wraps=datetime.datetime) as mock_datetime:
             mock_datetime.now.return_value = now + datetime.timedelta(seconds=2 * (cache_timeout + 2))

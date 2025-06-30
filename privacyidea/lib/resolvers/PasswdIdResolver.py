@@ -44,7 +44,7 @@ import logging
 import crypt
 import codecs
 
-from privacyidea.lib.utils import to_bytes, convert_column_to_unicode
+from privacyidea.lib.utils import convert_column_to_unicode
 from .UserIdResolver import UserIdResolver
 
 log = logging.getLogger(__name__)
@@ -286,11 +286,11 @@ class IdResolver (UserIdResolver):
 
         return self.searchFields
 
-    def getUserList(self, searchDict=None):
+    def getUserList(self, search_dict=None):
         """
         get a list of all users matching the search criteria of the searchdict
 
-        :param searchDict: dict of search expressions
+        :param search_dict: dict of search expressions
         """
         ret = []
 
@@ -299,13 +299,13 @@ class IdResolver (UserIdResolver):
             line = self.descDict[l]
             ok = True
 
-            for search in searchDict:
+            for search in search_dict:
 
                 if search not in self.searchFields:
                     ok = False
                     break
 
-                pattern = searchDict[search]
+                pattern = search_dict[search]
 
                 log.debug("searching for %s:%s", search, pattern)
 
