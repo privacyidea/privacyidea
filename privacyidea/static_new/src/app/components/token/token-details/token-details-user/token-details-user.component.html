@@ -28,7 +28,7 @@
                 <mat-label>Enter User</mat-label>
                 <input
                   matInput
-                  [(ngModel)]="userService.userNameFilter"
+                  [(ngModel)]="userService.userFilter"
                   [matAutocomplete]="userAuto" />
                 <mat-autocomplete #userAuto="matAutocomplete">
                   @for (

@@ -1,5 +1,6 @@
 import {
   Component,
+  computed,
   effect,
   linkedSignal,
   ViewChild,
@@ -117,13 +118,17 @@ export class TokenTableComponent {
     },
   });
 
-  pageSizeOptions = linkedSignal({
-    source: this.totalLength,
-    computation: (total) => {
-      return [5, 10, 15].includes(total) || total > 50
-        ? [5, 10, 15]
-        : [5, 10, 15, total];
-    },
+  pageSizeOptions = computed(() => {
+    const total = this.totalLength();
+    const defaultSizeOptions = this.tokenService.defaultSizeOptions;
+    if (total < defaultSizeOptions[defaultSizeOptions.length - 1]) {
+      const filtered = defaultSizeOptions.filter((size) => size <= total);
+      if (filtered.length < 2) {
+        return defaultSizeOptions.slice(0, 2);
+      }
+      return [...filtered, total];
+    }
+    return defaultSizeOptions;
   });
 
   @ViewChild('filterHTMLInputElement', { static: true })

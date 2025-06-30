@@ -144,6 +144,8 @@ export class TokenService {
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
   readonly hiddenApiFilter = hiddenApiFilter;
+  readonly defaultSizeOptions = [5, 10, 25, 50];
+
   tokenBaseUrl = environment.proxyUrl + '/token/';
   eventPageSize = 10;
   stopPolling$ = new Subject<void>();
@@ -219,13 +221,20 @@ export class TokenService {
       source.tokenTypeOptions.find((type) => type.key === 'hotp') ||
       source.tokenTypeOptions[0],
   });
-  pageSize = linkedSignal({
+  pageSize = linkedSignal<Record<string, string>, number>({
     source: this.filterValue,
-    computation: () => {
-      if (![5, 10, 15].includes(this.eventPageSize)) {
-        return 10;
+    computation: (_, previous) => {
+      const previousValue = previous?.value ?? 10;
+
+      if (!this.defaultSizeOptions.includes(previousValue)) {
+        return (
+          this.defaultSizeOptions
+            .slice()
+            .reverse()
+            .find((size) => size <= previousValue) ?? 10
+        );
       }
-      return this.eventPageSize;
+      return previousValue;
     },
   });
   sort = linkedSignal({
