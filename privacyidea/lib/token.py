@@ -2925,8 +2925,7 @@ def token_load(token_dict, tokenowner=True, overwrite=False):
     # Initialize or update token
     token = init_token(stripped_token)
     # Add token information
-    for key, value in tokeninfos.items():
-        token.add_tokeninfo(key, value)
+    token.add_tokeninfo_dict(tokeninfos)
     # Set PIN if hashed_pin is available
     if hashed_pin:
         token.token.pin_hash = hashed_pin
@@ -3067,7 +3066,7 @@ def export_tokens(tokens: list[Token]) -> str:
     return json_export
 
 
-def import_tokens(tokens: str):
+def import_tokens(tokens: str, update_existing: bool = True) -> TokenImportResult:
     """
     Import a list of token dictionaries.
 
@@ -3089,10 +3088,13 @@ def import_tokens(tokens: str):
                     token = create_tokenclass_object(db_token)
                     token.import_token(token_info_dict)
                     successful_tokens.append(serial)
-                else:
+                elif update_existing:
                     token = get_tokens_from_serial_or_user(serial=serial, user=None)
-                    token[0].update(token_info_dict)
+                    token[0].import_token(token_info_dict)
                     updated_tokens.append(serial)
+                else:
+                    raise TokenAdminError(f"Token with serial {serial} already exists. "
+                                          f"Set update_existing=True to update the token.")
             except Exception as e:
                 log.error(f"Could not import token {serial}: {e}")
                 failed_tokens.append(serial)

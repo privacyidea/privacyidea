@@ -138,8 +138,8 @@ class QuestionnaireTokenTestCase(MyTestCase):
         self.assertEqual(r, 1)
         token.delete_token()
 
-    def test_07_questionaire_token_export(self):
-        # Set up the QuestionaireTokenClass for testing
+    def test_07_questionnaire_token_export(self):
+        # Set up the QuestionnaireTokenClass for testing
         set_privacyidea_config("question.num_answers", 3)
         token = init_token({"type": "question",
                             "pin": self.pin,
