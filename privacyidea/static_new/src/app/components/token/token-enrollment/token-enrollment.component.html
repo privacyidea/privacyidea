@@ -248,6 +248,11 @@
             @if (userFilterControl.hasError("userNotInOptions")) {
               <mat-error>User must be selected from the list.</mat-error>
             }
+            @if (userFilterControl.hasError("userNotInRealm")) {
+              <mat-error>
+                User does not exist in the selected realm.
+              </mat-error>
+            }
           </mat-form-field>
         </div>
       </div>
