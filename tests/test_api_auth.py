@@ -722,6 +722,7 @@ class AuthApiTestCase(MyApiTestCase):
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "cornelius",
+                                                 "realm": "realm1",
                                                  "password": "1"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(401, res.status_code, res)
