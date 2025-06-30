@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Renderer2, Version } from '@angular/core';
 import { TokenEnrollmentComponent } from './token-enrollment.component';
 import {
   MatError,
@@ -7,7 +7,7 @@ import {
   MatLabel,
 } from '@angular/material/form-field';
 import { MatOption, MatSelect } from '@angular/material/select';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { EnrollHotpComponent } from './enroll-hotp/enroll-hotp.component';
 import { MatInput } from '@angular/material/input';
 import {
@@ -44,6 +44,15 @@ import { EnrollU2fComponent } from './enroll-u2f/enroll-u2f.component';
 import { EnrollVascoComponent } from './enroll-vasco/enroll-vasco.component';
 import { EnrollWebauthnComponent } from './enroll-webauthn/enroll-webauthn.component';
 import { EnrollPasskeyComponent } from './enroll-passkey/enroll-passkey.component';
+import { ContainerService } from '../../../services/container/container.service';
+import { RealmService } from '../../../services/realm/realm.service';
+import { NotificationService } from '../../../services/notification/notification.service';
+import { UserService } from '../../../services/user/user.service';
+import { TokenService } from '../../../services/token/token.service';
+import { ContentService } from '../../../services/content/content.service';
+import { DialogService } from '../../../services/dialog/dialog.service';
+import { VersionService } from '../../../services/version/version.service';
+import { AuthService } from '../../../services/auth/auth.service';
 
 @Component({
   selector: 'app-token-enrollment-self-service',
@@ -95,4 +104,35 @@ import { EnrollPasskeyComponent } from './enroll-passkey/enroll-passkey.componen
   templateUrl: './token-enrollment.self-service.component.html',
   styleUrl: './token-enrollment.component.scss',
 })
-export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponent {}
+export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponent {
+  constructor(
+    containerService: ContainerService,
+    realmService: RealmService,
+    notificationService: NotificationService,
+    userService: UserService,
+    tokenService: TokenService,
+    versionService: VersionService,
+    contentService: ContentService,
+    dialogService: DialogService,
+    renderer: Renderer2,
+    private authService: AuthService,
+  ) {
+    super(
+      containerService,
+      realmService,
+      notificationService,
+      userService,
+      tokenService,
+      versionService,
+      contentService,
+      dialogService,
+      renderer,
+    );
+  }
+
+  override ngOnInit(): void {
+    super.ngOnInit();
+    this.selectedUserRealmControl.setValue(this.authService.realm());
+    this.userFilterControl.setValue(this.authService.user());
+  }
+}

@@ -435,6 +435,14 @@ export class TokenService {
     return this.http.delete(this.tokenBaseUrl + tokenSerial, { headers });
   }
 
+  deleteTokens(tokenSerials: string[]) {
+    const headers = this.localService.getHeaders();
+    const observables = tokenSerials.map((tokenSerial) =>
+      this.deleteToken(tokenSerial),
+    );
+    return forkJoin(observables);
+  }
+
   revokeToken(tokenSerial: string) {
     const headers = this.localService.getHeaders();
     return this.http

@@ -49,11 +49,7 @@
             type="button"
             (click)="reopenEnrollmentDialog()"
             [disabled]="!canReopenEnrollmentDialog()"
-            [matTooltip]="
-              canReopenEnrollmentDialog()
-                ? 'Reopen current enrollment dialog'
-                : ''
-            "
+            [matTooltip]="'Reopen enrollment dialog'"
             mat-icon-button>
             <mat-icon>open_in_new</mat-icon>
           </button>

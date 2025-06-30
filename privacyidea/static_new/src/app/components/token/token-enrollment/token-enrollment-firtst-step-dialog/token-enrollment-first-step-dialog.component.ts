@@ -33,7 +33,7 @@ export class TokenEnrollmentFirstStepDialogComponent {
     private dialogRef: MatDialogRef<TokenEnrollmentFirstStepDialogComponent>,
     @Inject(MAT_DIALOG_DATA)
     public data: {
-      response: EnrollmentResponse;
+      enrollmentResponse: EnrollmentResponse;
     },
   ) {}
 

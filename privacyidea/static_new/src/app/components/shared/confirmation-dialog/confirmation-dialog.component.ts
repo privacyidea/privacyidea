@@ -25,12 +25,13 @@ import { NgClass } from '@angular/common';
 export class ConfirmationDialogComponent {
   constructor(
     @Inject(MAT_DIALOG_DATA)
-    public data: {
-      type: string;
-      serial_list: string[];
-      title: string;
-      action: string;
-      numberOfTokens: number;
-    },
+    public data: ConfirmationDialogData,
   ) {}
 }
+
+export type ConfirmationDialogData = {
+  type: 'token' | string;
+  serial_list: string[];
+  title: string;
+  action: 'remove' | 'delete' | 'revoke' | 'search';
+};

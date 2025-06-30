@@ -12,7 +12,6 @@ export interface EnrollmentResponseDetail {
   passkey_registration?: any;
   u2fRegisterRequest?: any;
   pushurl?: EnrollmentUrl;
-  transaction_id?: string;
   googleurl?: EnrollmentUrl;
   otpkey?: EnrollmentUrl;
   motpurl?: EnrollmentUrl;

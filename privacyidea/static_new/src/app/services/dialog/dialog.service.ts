@@ -11,7 +11,15 @@ import {
 } from '../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component';
 import { TokenEnrollmentFirstStepDialogComponent } from '../../components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component';
 import { EnrollmentResponse } from '../../mappers/token-api-payload/_token-api-payload.mapper';
+import {
+  ConfirmationDialogData,
+  ConfirmationDialogComponent,
+} from '../../components/shared/confirmation-dialog/confirmation-dialog.component';
 
+/* * This class extends MatDialogConfig to ensure that the data property is always required.
+ * This is useful for dialogs that require data to be passed in, ensuring that the dialog cannot
+ * be opened without the necessary data.
+ */
 class MatDialogConfigRequired<D = any> extends MatDialogConfig<D> {
   override data!: D;
 
@@ -96,5 +104,21 @@ export class DialogService {
 
   isAnyDialogOpen(): boolean {
     return this.dialog.openDialogs.length > 0;
+  }
+
+  confirm(
+    config: MatDialogConfigRequired<ConfirmationDialogData>,
+  ): Promise<boolean> {
+    return new Promise((resolve) => {
+      const dialogRef = this.dialog.open<
+        ConfirmationDialogComponent,
+        ConfirmationDialogData,
+        boolean
+      >(ConfirmationDialogComponent, config);
+
+      dialogRef.afterClosed().subscribe((result) => {
+        resolve(result ?? false);
+      });
+    });
   }
 }

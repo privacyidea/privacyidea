@@ -186,6 +186,16 @@ th:nth-child(even) {
   }
 }
 
+.table-keyword-filter-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 10px 0;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
 .filter-keyword-container {
   display: flex;
   flex-direction: row;

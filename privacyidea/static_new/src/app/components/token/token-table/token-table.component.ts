@@ -22,6 +22,10 @@ import { CopyButtonComponent } from '../../shared/copy-button/copy-button.compon
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { FormsModule } from '@angular/forms';
 import { ContentService } from '../../../services/content/content.service';
+import { MatIconModule } from '@angular/material/icon';
+import { lastValueFrom } from 'rxjs';
+import { MatIconButton } from '@angular/material/button';
+import { DialogService } from '../../../services/dialog/dialog.service';
 
 const columnKeysMap = [
   { key: 'select', label: '' },
@@ -51,6 +55,8 @@ const columnKeysMap = [
     CopyButtonComponent,
     MatCheckboxModule,
     FormsModule,
+    MatIconModule,
+    MatIconButton,
   ],
   templateUrl: './token-table.component.html',
   styleUrl: './token-table.component.scss',
@@ -127,6 +133,7 @@ export class TokenTableComponent {
     protected tokenService: TokenService,
     protected tableUtilsService: TableUtilsService,
     protected contentService: ContentService,
+    protected dialogService: DialogService,
   ) {
     effect(() => {
       const filterValueString = this.filterValueString();
@@ -199,5 +206,32 @@ export class TokenTableComponent {
       return;
     }
     this.sort.set($event);
+  }
+
+  async deleteSelectedTokens() {
+    if (this.tokenSelection().length === 0) {
+      return;
+    }
+    const confirmation = await this.dialogService.confirm({
+      data: {
+        action: 'delete',
+        title: 'Delete Tokens',
+        serial_list: this.tokenSelection().map((token) => token.serial),
+        type: 'token',
+      },
+    });
+    if (!confirmation) {
+      return;
+    }
+    // Extract serials from the selected tokens
+    const tokenSerials = this.tokenSelection().map((token) => token.serial);
+    try {
+      await lastValueFrom(this.tokenService.deleteTokens(tokenSerials));
+      this.tokenSelection.set([]);
+      this.tokenResource.reload();
+    } catch (error) {
+      console.error('Error deleting tokens:', error);
+      // Handle error appropriately, e.g., show a notification
+    }
   }
 }
