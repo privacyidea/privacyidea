@@ -372,3 +372,19 @@ $header-bg: white;
   -webkit-mask-size: 100% 100%;
   mask-size: 100% 100%;
 }
+
+.mdi--list-lock {
+  display:inline-block;
+  width:1em;
+  height:1em;
+  background-color:currentColor;
+
+  --svg:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M 3 4 h 14 v 2 H 3 V 4 M 3 8 h 9 v 2 H 3 V 8 M 3 12 h 7 v 2 H 3 v -2'/%3E%3Cg transform='translate(13 4)'%3E%3Cpath fill='%23000' d='M 6 8 h 0 V 7 a 3 3 0 0 0 -6 0 v 3 H 0 a 2 2 0 0 0 -2 2 v 5 a 2 2 0 0 0 2 2 h 6 a 2 2 0 0 0 2 -2 v -5 a 2 2 0 0 0 -2 -2 Z m -4 2 V 7 a 1 1 0 0 1 2 0 v 3 Z'/%3E%3C/g%3E%3C/svg%3E");
+
+  -webkit-mask-image:var(--svg);
+  mask-image:var(--svg);
+  -webkit-mask-repeat:no-repeat;
+  mask-repeat:no-repeat;
+  -webkit-mask-size:100% 100%;
+  mask-size:100% 100%;
+}

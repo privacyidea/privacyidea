@@ -84,7 +84,7 @@
                     (click)="deleteSelectedTokens()"
                     [disabled]="tokenSelection().length === 0"
                     mat-flat-button>
-              <mat-icon>delete_forever</mat-icon>
+              <mat-icon> delete_sweep </mat-icon>
               Delete Selected
             </button>
           </mat-list-item>
@@ -131,7 +131,7 @@
                   mat-flat-button
                   [ngClass]="[tokenIsRevoked() ? 'card-button-disabled' :
                    tokenIsActive() ? 'card-button-delete':  'card-button-activate']">
-            <mat-icon>{{ tokenIsActive() ? "auto_delete" : "play_circle" }}</mat-icon>
+            <mat-icon>{{ tokenIsActive() ? "lock" : "play_circle" }}</mat-icon>
             {{ tokenIsActive() ? "Deactivate" : "Activate" }}
           </button>
         </mat-list-item>
@@ -139,7 +139,7 @@
           <button (click)="deleteToken()"
                   class="card-button-delete"
                   mat-flat-button>
-            <mat-icon>delete_forever</mat-icon>
+            <mat-icon> delete </mat-icon>
             Delete
           </button>
         </mat-list-item>

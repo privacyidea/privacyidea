@@ -59,7 +59,7 @@
                     (click)="deleteSelectedContainer()"
                     [disabled]="containerSelection().length === 0"
                     mat-flat-button>
-              <mat-icon>delete_forever</mat-icon>
+              <mat-icon> delete_sweep </mat-icon>
               Delete Selected
             </button>
           </mat-list-item>
@@ -117,7 +117,7 @@
               'card-button-activate': !states().includes('active'),
             }"
                   mat-flat-button>
-            <mat-icon>{{ states().includes("active") ? "auto_delete" : "play_circle" }}
+            <mat-icon>{{ states().includes("active") ? "lock" : "play_circle" }}
             </mat-icon>
             {{ states().includes("active") ? "Deactivate" : "Activate" }}
           </button>
@@ -126,7 +126,7 @@
           <button (click)="deleteContainer()"
                   class="card-button-delete"
                   mat-flat-button>
-            <mat-icon>delete_forever</mat-icon>
+            <mat-icon> delete </mat-icon>
             Delete
           </button>
         </mat-list-item>

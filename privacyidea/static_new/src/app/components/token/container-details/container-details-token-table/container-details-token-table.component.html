@@ -97,7 +97,9 @@
         <th
           *matHeaderCellDef
           aria-label="Remove Column Header"
-          mat-header-cell></th>
+          mat-header-cell>
+          Remove
+        </th>
         <td *matCellDef="let element" aria-label="Remove Button Cell" mat-cell>
           <div class="flex just-center">
             <button
@@ -105,7 +107,7 @@
                 removeTokenFromContainer(containerSerial(), element.serial)
               "
               mat-icon-button>
-              <mat-icon>delete_outlined</mat-icon>
+              <mat-icon> highlight_remove </mat-icon>
             </button>
           </div>
         </td>
@@ -161,18 +163,18 @@
         (click)="toggleAll('deactivate')"
         class="card-button-delete"
         mat-flat-button>
-        <mat-icon>playlist_remove</mat-icon>
+        <mat-icon class="mdi--list-lock" />
         {{ "Deactivate All Token" }}
       </button>
       <button (click)="removeAll()" class="card-button-delete" mat-flat-button>
-        <mat-icon>delete_sweep</mat-icon>
+        <mat-icon> playlist_remove </mat-icon>
         {{ "Remove All Token" }}
       </button>
       <button
         (click)="deleteAllTokens()"
         class="card-button-delete"
         mat-flat-button>
-        <mat-icon>delete_forever</mat-icon>
+        <mat-icon> delete_sweep </mat-icon>
         {{ "Delete All Token" }}
       </button>
     </div>
