@@ -88,13 +88,9 @@ $margin-bottom-main: 8.5rem;
   width: 100%;
 }
 
-.selfservice-tile-layout {
-  margin: var(--global-padding);
-}
-
 .tile-button {
-  width: 240px;
-  height: 240px;
+  width: 200px;
+  height: 200px;
   margin: var(--global-padding);
   display: flex;
   justify-content: center;
@@ -113,7 +109,7 @@ $margin-bottom-main: 8.5rem;
 
 .tile-title {
   font-weight: bold;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
 }
 
 .tile-icon {
