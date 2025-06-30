@@ -226,7 +226,7 @@ class SQLResolverTestCase(MyTestCase):
         with LogCapture(level=logging.ERROR) as lc:
             self.assertRaises(ParameterError, y.getUserList, {"unknown": "parameter"})
             lc.check_present(("privacyidea.lib.resolvers.SQLIdResolver", "ERROR",
-                              f"Could not find search key (['unknown'])in the "
+                              f"Could not find search key (['unknown']) in the "
                               f"column mapping keys ({list(y.map.keys())})."))
 
         # Test a correct map entry with a missing column in the db

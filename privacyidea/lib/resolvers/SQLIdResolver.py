@@ -390,6 +390,8 @@ class IdResolver (UserIdResolver):
         :param search_dict: A dictionary with search parameters
         :type search_dict: dict
         :return: list of users, where each user is a dictionary
+        :raises ParameterError: when the search key does not exist in the
+          mapping or database
         """
         users = []
         conditions = []
@@ -398,7 +400,7 @@ class IdResolver (UserIdResolver):
         # Check if all the search keys are available in the mapping
         broken_keys = list(filter(lambda x: x not in self.map.keys(), search_dict.keys()))
         if broken_keys:
-            log.error(f"Could not find search key ({broken_keys})in "
+            log.error(f"Could not find search key ({broken_keys}) in "
                       f"the column mapping keys ({list(self.map.keys())}).")
             raise ParameterError(f"Search parameter ({broken_keys}) not available in mapping.")
         for key, value in search_dict.items():

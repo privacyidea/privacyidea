@@ -762,7 +762,7 @@ def get_user_list(param=None, user=None, custom_attributes=False):
             # Continue if we couldn't find a resolver with the given name
             if not y:
                 continue
-            log.debug(f"With this search dictionary: {search_dict!r}")
+            log.debug("With this search dictionary: %r", search_dict)
             ulist = y.getUserList(search_dict)
             # Add resolvername to the list
             realm_id = get_realm_id(param_realm or user_realm)
