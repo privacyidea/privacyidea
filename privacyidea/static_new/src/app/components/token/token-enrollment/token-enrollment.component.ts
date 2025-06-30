@@ -27,6 +27,8 @@ import {
   AbstractControl,
   ReactiveFormsModule,
   Validators,
+  ValidatorFn,
+  ValidationErrors,
 } from '@angular/forms';
 import { EnrollHotpComponent } from './enroll-hotp/enroll-hotp.component';
 import { MatInput } from '@angular/material/input';
@@ -247,6 +249,20 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   userFilterControl: FormControl<string | UserData | null> = new FormControl(
     this.userService.userFilter(),
   );
+
+  userExistsValidator: ValidatorFn = (
+    control: AbstractControl<string | UserData | null>,
+  ): ValidationErrors | null => {
+    const value = control.value;
+    if (typeof value === 'string' && value !== '') {
+      const users = this.userService.users();
+      const userFound = users.some((user) => user.username === value);
+      return userFound ? null : { userNotFound: { value: value } };
+    }
+
+    return null;
+  };
+
   setPinControl = new FormControl<string>('');
   repeatPinControl = new FormControl<string>('');
 
@@ -480,7 +496,9 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     );
     this.selectedUserRealmControl.updateValueAndValidity({ emitEvent: false });
     this.userFilterControl.setValidators(
-      isUserRequiredByTokenType ? [Validators.required] : [],
+      isUserRequiredByTokenType
+        ? [Validators.required, this.userExistsValidator]
+        : [this.userExistsValidator],
     );
     this.userFilterControl.updateValueAndValidity({ emitEvent: false });
   }
