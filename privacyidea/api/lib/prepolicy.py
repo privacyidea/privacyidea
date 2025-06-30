@@ -2293,7 +2293,7 @@ def increase_failcounter_on_challenge(request=None, action=None):
 def require_description(request=None, action=None):
     """
     Pre Policy
-    This checks if a description is required to roll out a specific token.
+    This checks if a description is required to roll out or edit a specific token.
     scope=SCOPE.ENROLL, action=REQUIRE_DESCRIPTION
 
     An exception is raised, if the tokentypes specified in the
