@@ -257,7 +257,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     if (typeof value === 'string' && value !== '') {
       const users = this.userService.users();
       const userFound = users.some((user) => user.username === value);
-      return userFound ? null : { userNotFound: { value: value } };
+      return userFound ? null : { userNotInRealm: { value: value } };
     }
 
     return null;
@@ -419,7 +419,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   ngOnInit(): void {
     // Sync FormControls with service states for user/realm/container
     this.selectedUserRealmControl.valueChanges.subscribe((value) => {
-      this.userService.userFilter.set(''); // Reset userFilter when realm changes
+      this.userFilterControl.reset('', { emitEvent: false });
       if (!value) {
         this.userFilterControl.disable({ emitEvent: false });
       } else {
