@@ -702,6 +702,7 @@ class AuthApiTestCase(MyApiTestCase):
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "cornelius",
+                                                 "realm": "realm1",
                                                  "password": "1"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
@@ -723,9 +724,12 @@ class AuthApiTestCase(MyApiTestCase):
                                            data={"username": "cornelius",
                                                  "password": "1"}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 401, res)
-            result = res.json["result"]
-            self.assertFalse(result["status"])
+            self.assertEqual(401, res.status_code, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), result)
+            self.assertEqual(4031, result['error']['code'], result)
+            self.assertEqual('Authentication failure. Wrong credentials',
+                             result['error']['message'], result)
 
         # Clean-up
         remove_token(serial=serial)
