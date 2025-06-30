@@ -3284,9 +3284,9 @@ class ValidateAPITestCase(MyApiTestCase):
             result = res.json["result"]
             self.assertEqual(result["authentication"], "CHALLENGE")
 
-        # Disable the spass token type for authentication
+        # Disable the spass and hotp token for authentication
         set_policy(
-            name="disable_spass_token",
+            name="disable_some_token",
             scope=SCOPE.AUTH,
             action="{0!s}=spass hotp".format(ACTION.DISABLED_TOKEN_TYPES),
         )
@@ -3316,7 +3316,7 @@ class ValidateAPITestCase(MyApiTestCase):
         remove_token(serial=serial_1)
         remove_token(serial=serial_2)
         delete_policy("challenge_response")
-        delete_policy("disable_spass_token")
+        delete_policy("disable_some_token")
 
 
 class RegistrationValidity(MyApiTestCase):

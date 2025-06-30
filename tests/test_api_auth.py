@@ -14,7 +14,7 @@ from privacyidea.lib.realm import (set_realm, set_default_realm, delete_realm,
                                    get_default_realm)
 from privacyidea.lib.event import set_event, delete_event
 from privacyidea.lib.eventhandler.base import CONDITION
-from privacyidea.lib.token import get_tokens, remove_token
+from privacyidea.lib.token import get_tokens, remove_token, init_token
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import to_unicode, AUTH_RESPONSE
 from privacyidea.config import TestingConfig
@@ -681,6 +681,56 @@ class AuthApiTestCase(MyApiTestCase):
         delete_realm(self.realm1)
         delete_realm(self.realm2)
         delete_resolver(self.resolvername1)
+
+    def test_08_auth_disabled_token_types(self):
+        self.setUp_user_realms()
+        serial = "SPASS1"
+
+        # Create a working Simple-Pass token
+        init_token(
+            {
+                "serial": serial,
+                "type": "spass",
+                "pin": "1",
+            },
+            user=User("cornelius", self.realm1),
+        )
+
+        # Set the policy to use privacyIDEA for authentication
+        set_policy("piLogin", scope=SCOPE.WEBUI, action="{0!s}=privacyIDEA".format(ACTION.LOGINMODE))
+
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "password": "1"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertIn('token', result.get('value'), result)
+            self.assertEqual(result.get("value").get('role'), 'user', result)
+
+        # Disable the spass token for authentication
+        set_policy(
+            name="disable_spass_token",
+            scope=SCOPE.AUTH,
+            action="{0!s}=spass".format(ACTION.DISABLED_TOKEN_TYPES),
+        )
+
+        # The very same auth must now be rejected
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "password": "1"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401, res)
+            result = res.json["result"]
+            self.assertFalse(result["status"])
+
+        # Clean-up
+        remove_token(serial=serial)
+        delete_policy("disable_spass_token")
+        delete_policy("piLogin")
 
 
 class AdminFromUserstore(OverrideConfigTestCase):
