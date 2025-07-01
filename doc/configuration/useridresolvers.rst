@@ -400,7 +400,8 @@ of web service API. There are four types of HTTP resolvers:
     * :ref:`basic_http_resolver`: Limited configuration options to retrieve user information for a single user.
     * :ref:`advanced_http_resolver`: More complex configuration options to not only get user information for different
       purposes, but also allows to create, edit and delete users.
-    * :ref:`entra_id_resolver`: Preconfigured advanced HTTP resolver to retrieve user information from Microsoft Entra ID.
+    * :ref:`entra_id_resolver`: Preconfigured advanced HTTP resolver to retrieve user information from Microsoft Entra
+      ID.
     * :ref:`keycloak_resolver`: Preconfigured advanced HTTP resolver to retrieve user information from Keycloak.
 
 .. _basic_http_resolver:
@@ -465,7 +466,7 @@ Advanced HTTP resolver
 .. index:: Advanced HTTP resolver
 
 The advanced HTTP resolver is a more complex version of the basic HTTP resolver. In the UI, first some generic settings
-are configured. Below that you can set up the user store API endpoint for each resolver functionality.
+are configured. Below that, you can set up the user store API endpoint for each resolver functionality.
 
 .. figure:: images/http_resolver_advanced.png
    :width: 500
@@ -487,8 +488,8 @@ are configured. Below that you can set up the user store API endpoint for each r
 
     * **Headers**: Default request header to use if no specific one is defined. It has to be in JSON format, e.g.
       ``{"Content-Type": "application/json"}``.
-    * **Edit user store**: If checked, the resolver is editable and allows to create, edit and delete users in the user
-      store. Note that these rights must also be granted in the user store.
+    * **Edit user store**: If checked, the resolver is editable and allows creating, editing, and deleting users in the
+      user store. Note that these rights must also be granted in the user store.
     * **Verify TLS**: If checked, the TLS certificate of the user store API is verified. This should always be checked
       for productive use!
       Optionally, a CA certificate can be provided to verify the TLS certificate of the user store API.
@@ -507,7 +508,7 @@ The configuration is similar for each endpoint:
       set automatically to ``application/json``.
     * **Request Mapping**: The request parameters to send to the user store API. It has to be in JSON format, e.g.
       ``{"username": "{username}", "email": "{email}"}``. You can use tags to map the user attributes to the request
-      parameters. Possible tags depend on the endpoint. Note that tags can only be used in strings, hence it must
+      parameters. Possible tags depend on the endpoint. Note that tags can only be used in strings, hence they must
       always be surrounded by double quotation marks.
 
       If the ``Content-Type`` header is set to ``application/x-www-form-urlencoded``, the request mapping can be
@@ -522,7 +523,7 @@ The configuration is similar for each endpoint:
         { "username": "{Username}", "phone": "{Phone_Numbers.Phone}" }
 
     * **Special error handling**: If checked, the resolver will treat the request as unsuccessful if the response
-      contains certain content. This is useful for APIs which return ``200 OK`` also for a negative response.
+      contains certain content. This is useful for APIs that return ``200 OK`` for a negative response.
       The content to match can be defined in the ``Response contains``.
 
 .. figure:: images/http_resolver_endpoint_config.png
@@ -530,21 +531,21 @@ The configuration is similar for each endpoint:
 
 **Authorization**
 
-This section allows to configure an endpoint to which the privacyIDEA server must authenticate in order to receive an
-access token. This token can then be used to access the user store API.
+This section allows you to configure an endpoint to which the privacyIDEA server must authenticate in order to receive
+an access token. This token can then be used to access the user store API.
 Besides the generic endpoint settings, the ``username`` and ``password`` of a service account can be configured to
 authenticate.
-The password is stored encrypted in the database. If username und password are defined, they can be used as tags for
+The password is stored encrypted in the database. If username and password are defined, they can be used as tags for
 the endpoint and request mapping, e.g. ``{"username": "{username}", "password": "{password}"}``.
 
 **Check User Password**
 
-Configure the endpoint to authenticate the user with its username/userid and password. You can use the tags
-``{username}``, ``{userid}`` and ``{password}`` in the endpoint definition and request mapping.
+Configure the endpoint to authenticate the user with their username/userid and password. You can use the tags
+``{username}``, ``{userid}``, and ``{password}`` in the endpoint definition and request mapping.
 
 **User List**
 
-Configure the endpoint to retrieve a list of users from the user store. The above defined attributes are added to the
+Configure the endpoint to retrieve a list of users from the user store. The above-defined attributes are added to the
 request as search parameters if they are available in the request. You can also use the attributes as tags
 (``{username}``, ``{userid}``, ``{surname}``, ``{givenname}``).
 
@@ -568,15 +569,15 @@ Possible tag: ``{username}``
 
 **Create user**
 
-Configure the endpoint to create a new user in the user store. The above defined attributes can be set in the UI and
-will be added to the request body. Additionally, you can define a password which must be specified in the request
+Configure the endpoint to create a new user in the user store. The above-defined attributes can be set in the UI and
+will be added to the request body. Additionally, you can define a password that must be specified in the request
 mapping using the tag ``{password}``.
 All user attributes defined in the attribute mapping can be used as tags, e.g. ``{username}``, ``{userid}``,
 ``{givenname}``, ``{surname}``, ``{phone}``, ``{mobile}``, ``{email}``.
 
 **Edit user**
 
-Configure the endpoint to edit an existing user in the user store. The above defined attributes can be set in the UI
+Configure the endpoint to edit an existing user in the user store. The above-defined attributes can be set in the UI
 and will be added to the request body. Additionally, you can define custom request parameters in the request mapping.
 All user attributes defined in the attribute mapping can be used as tags, e.g. ``{username}``, ``{userid}``,
 ``{givenname}``, ``{surname}``, ``{phone}``, ``{mobile}``, ``{email}``.
@@ -597,7 +598,7 @@ The EntraID resolver is a preconfigured advanced HTTP resolver to retrieve user 
 Check out the
 `Microsoft Graph API documentation <https://learn.microsoft.com/en-us/graph/api/resources/users?view=graph-rest-1.0>`_
 if you want to change the default configuration.
-The configuration is similar to the advanced HTTP resolver. In the following only the differences and some default
+The configuration is similar to the advanced HTTP resolver. In the following, only the differences and some default
 settings are described.
 
 .. figure:: images/entraid_resolver.png
@@ -606,12 +607,12 @@ settings are described.
 **Generic Settings**
 
     * **Base URL**: The base URL of the Microsoft Graph API. It will be concatenated with the ``Endpoint`` in the
-      detailed configurations. By default this is ``https://graph.microsoft.com/v1.0``.
+      detailed configurations. By default, this is ``https://graph.microsoft.com/v1.0``.
     * **Attribute Mapping**: The mapping between privacyIDEA user attributes and the ones used by Entra ID are already
       all prefilled. If you do not need all of them, you can remove them.
-    * **Edit user store**: By default editing the users in Entra ID is not enabled. If you want to enable this option
+    * **Edit user store**: By default, editing the users in Entra ID is not enabled. If you want to enable this option,
       you need to ensure that the required write permissions are granted to the privacyIDEA server in Entra ID.
-    * **Verify TLS**: By default the TLS certificate of the Entra ID server is verified. Usually, there is no need to
+    * **Verify TLS**: By default, the TLS certificate of the Entra ID server is verified. Usually, there is no need to
       add a custom certificate.
 
 **Authorization**
@@ -623,27 +624,27 @@ all, you need to register the privacyIDEA server as an application in the Micros
     2. Enter a name for the application, e.g. "privacyIDEA" and select *Register* to complete the app
        registration.
 
-For more information read the official documentation on how to
+For more information, read the official documentation on how to
 `Register an Application in Microsoft Entra ID
 <https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-register-app>`_.
 
-Afterwards you need to grant permissions to your application:
+Afterwards, you need to grant permissions to your application:
 
     1. On the application page, browse to *API permissions* and select *Add a permission*.
     2. A new window opens. Select *Microsoft Graph* and then *Application permissions*.
-    3. On the bottom different scopes with possible permissions appear. Open the *User* section and select the
+    3. On the bottom, different scopes with possible permissions appear. Open the *User* section and select the
        permissions you want to grant to the privacyIDEA server:
 
          * ``User.ReadBasic.All``: Allow privacyIDEA to read the basic profile information of all users in the tenant.
-           This includes the username, user ID, given name, surname and email. If these information are sufficient
-           and you do not need to create, edit or delete users, you can select this permission.
+           This includes the username, user ID, given name, surname, and email. If this information is sufficient
+           and you do not need to create, edit, or delete users, you can select this permission.
          * ``User.Read.All``: Allow privacyIDEA to read all user profiles in the tenant. Select this permission if you
-           want to use the resolver only to read user information, but not to create, edit or delete users.
+           want to use the resolver only to read user information, but not to create, edit, or delete users.
          * ``User.ReadWrite.All``: Allow privacyIDEA to read and write all user profiles in the tenant. If you want to
-           use the resolver to create, edit or delete users, you need to grant this permission.
+           use the resolver to create, edit, or delete users, you need to grant this permission.
 
     4. After selecting the permissions, select *Add permissions* to add them to the application.
-    5. If you want privacyIDEA to check the users password, you need to add another permission: Go to
+    5. If you want privacyIDEA to check the user's password, you need to add another permission: Go to
        *Microsoft Graph > Delegated permissions > OpenId Permissions* and select *openid*
     6. After adding the permissions, you need to grant admin consent for the permissions. Select *Grant admin
        consent for <tenant name>* and confirm the dialog.
@@ -651,7 +652,7 @@ Afterwards you need to grant permissions to your application:
 .. figure:: images/Entra_app_permissions.png
     :width: 500
 
-For more information read the official documentation on how to
+For more information, read the official documentation on how to
 `Configure app permissions for a web API
 <https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-configure-app-access-web-apis>`_.
 
@@ -660,14 +661,14 @@ On the application page, browse to *Certificates & secrets*. There are two ways 
 
     1. **Client certificate**: Use a certificate of the privacyIDEA server to authenticate against Microsoft Entra
        ID. It is the recommended credential type by Entra ID. However, you can only use this credential type if the
-       users password is check by Entra ID first and privayIDEA only evalutes the second factor. It can not be used
+       user's password is checked by Entra ID first, and privayIDEA only evaluates the second factor. It can not be used
        if privacyIDEA should check the password.
 
-       To add a ceritficate browse to *Certificates* and select *Upload certificate*. Select the certificate file and
-       select *Add*. Supported file types are *\*.cer*, *\*.pem*, *\*.crt*.
+       To add a certificate, browse to *Certificates* and select *Upload certificate*. Select the certificate file and
+       select *Add*. Supported file types are *\*.cer*, *\*.pem*, and *\*.crt*.
 
     2. **Client secret**: A static secret string (application password) that is used to authenticate the privacyIDEA
-       server against Microsoft Entra ID. Use this credential type if the users password should be checked by
+       server against Microsoft Entra ID. Use this credential type if the user's password should be checked by
        privacyIDEA in an authentication flow.
 
        You can create a new client secret by selecting *New client secret* and *Add* to confirm. The
@@ -676,15 +677,15 @@ On the application page, browse to *Certificates & secrets*. There are two ways 
 .. figure:: images/Entra_client_credential.png
     :width: 500
 
-For more information read the official documentation on how to
+For more information, read the official documentation on how to
 `Add and manage application credentials in Microsoft Entra ID
 <https://learn.microsoft.com/en-us/entra/identity-platform/how-to-add-credentials?tabs=certificate>`_.
 
 In the privacyIDEA web UI, in the authorization section of the EntraID resolver, you can now configure the following
 settings:
 
-    * **Authority**: The URL of microsoft where the application needs to authenticate to receive an access token.
-      This is usually ``https://login.microsoftonline.com/{tenant}`` where ``{tenant}`` is the name of your tenant.
+    * **Authority**: The URL of Microsoft where the application needs to authenticate to receive an access token.
+      This is usually ``https://login.microsoftonline.com/{tenant}``, where ``{tenant}`` is the name of your tenant.
       You can use the tenant tag and define the tenant name below.
     * **Tenant**: The name of your Microsoft Entra ID tenant
     * **Client ID**: The application (client) ID of the registered application in Entra ID. In the Microsoft Entra admin
@@ -698,10 +699,10 @@ settings:
 
             * **Path to the private key file**: The path to the private key file you used to generate the certificate.
               The key must be in PEM format.
-            * **Password of the private key**: If the private key is encrypted, enter the password here, otherwise leave
-              the field empty.
+            * **Password of the private key**: If the private key is encrypted, enter the password here; otherwise,
+              leave the field empty.
             * **Thumbprint of the certificate**: The thumbprint of the certificate you uploaded in Entra ID. You can find
-              the thumbrint also in the Microsoft Entra admin center on the application page. There you need to browse
+              the thumbprint also in the Microsoft Entra admin center on the application page. There, you need to browse
               to *Certificates & secrets > Certificates*.
 
 .. figure:: images/entraid_resolver_authorization.png
@@ -709,10 +710,10 @@ settings:
 
 **Check user password**
 
-To authenticate users the OAuth2.0 resource owner password credentials (ROPC) flow is used. It can only be used with
+To authenticate users, the OAuth 2.0 resource owner password credentials (ROPC) flow is used. It can only be used with
 client secrets as credential type and not with certificates. Generally, it is recommended to let Microsoft Entra ID
 handle the user password check and privacyIDEA only to evaluate the second factor. However, if you want to use
-privacyIDEA to check the user password, you can configure the endpoint to authenticate the user with its username and
+privacyIDEA to check the user password, you can configure the endpoint to authenticate the user with their username and
 password.
 
 Check out the `OAuth ROPC <https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth-ropc>`_ documentation for
@@ -721,7 +722,7 @@ more information about the ROPC flow.
 **User List**
 
 The preconfiguration sets the consistency level header to "eventual" to enable advanced query capabilities. This allows
-to search for user attributes that either starts with or ends with the search value. If the header is not set, we can
+for searching for user attributes that either start with or end with the search value. If the header is not set, we can
 only search for user attributes that start with the search value.
 
 More advanced searches where the search value is contained in the user attribute are not supported by the Microsoft
@@ -729,18 +730,18 @@ Graph API.
 
 **Create User**
 
-To create a user all defined attributes from the attribute mapping are added to the request body. Additionally,
+To create a user, all defined attributes from the attribute mapping are added to the request body. Additionally,
 the following required parameters are set in the request mapping:
 
     * *accountEnabled*: Set to true to enable the user account.
     * *displayName*: This is the user's display name. By default, it is constructed from the given name and surname,
       such as "John Doe".
-    * *mailNickname*: The mail alias for the user. By default this is equal to the given name.
-    * *passwordProfile*: A dictionary by default containing only the users password. The following options can be set:
-        * *password* (required): The password for the user. You can use the tag ``{password}``. Note if you do not
-          specify a password, the tag can not be replaced and the raw tag string ``{password}`` will be used as the
-          password. This will cause an error as this password does not comply with password complexity requirements of
-          Entra ID.
+    * *mailNickname*: The mail alias for the user. By default, this is equal to the given name.
+    * *passwordProfile*: A dictionary by default containing only the user's password. The following options can be set:
+        * *password* (required): The password for the user. You can use the tag ``{password}``. Note that if you do not
+          specify a password, the tag can not be replaced, and the raw tag string ``{password}`` will be used as the
+          password. This will cause an error as this password does not comply with the password complexity requirements
+          of Entra ID.
         * *forceChangePasswordNextSignIn* (optional): If set to true, the user must change the password at the next
           sign-in.
         * *forceChangePasswordNextSignInWithMfa* (optional): If true, at next sign-in, the user must perform a
@@ -758,7 +759,7 @@ The Keycloak resolver is a preconfigured advanced HTTP resolver to retrieve user
 Check out the
 `Keycloak API documentation <https://www.keycloak.org/docs-api/latest/rest-api/index.html#_users>`_
 if you want to change the default configuration.
-The configuration is similar to the advanced HTTP resolver. In the following only the differences and some default
+The configuration is similar to the advanced HTTP resolver. In the following, only the differences and some default
 settings are described.
 
 .. figure:: images/keycloak_resolver.png
@@ -767,22 +768,22 @@ settings are described.
 **Generic Settings**
 
     * **Base URL**: The base URL of the Keycloak server. It will be concatenated with the ``Endpoint`` in the detailed
-      configurations. By default this is ``http://localhost:8080``. However, for production use, you might need to
+      configurations. By default, this is ``http://localhost:8080``. However, for production use, you might need to
       adapt this.
     * **Realm**: The name of the realm in Keycloak from which the users should be retrieved. You can use the tag
       ``{realm}`` in the endpoint definitions to insert the realm name.
-    * **Edit user store**: By default editing the users in Keycloak is not enabled. If you want to enable this option
+    * **Edit user store**: By default, editing the users in Keycloak is not enabled. If you want to enable this option,
       you need to ensure that the required write permissions are granted to the privacyIDEA server in Keycloak.
-    * **Verify TLS**: By default the TLS certificate of the Keycloak server is verified. If you have a self-signed
+    * **Verify TLS**: By default, the TLS certificate of the Keycloak server is verified. If you have a self-signed
       certificate, you can add the certificate of the CA here.
 
 **Authorization**
 
 PrivacyIDEA must authenticate against the Keycloak server to retrieve an access token. This token is then used to
-access the Keycloak API to resolve and edit users. The authentication is done with behalf of a user. Hence you need to
+access the Keycloak API to resolve and edit users. The authentication is done on behalf of a user. Hence, you need to
 create a service account in Keycloak with the required permissions to read (and write) users. If you only want to
 retrieve user information, the service account only requires the role ``view-users``. If you also want to edit users,
-additionally the role ``manage-users`` is required.
+the role ``manage-users`` is required additionally.
 
 In the authorization section of the Keycloak resolver, you can now configure the following settings:
 
@@ -790,12 +791,12 @@ In the authorization section of the Keycloak resolver, you can now configure the
     * **Password**: The password of the service account in Keycloak. It is stored encrypted in the database.
 
 The configured username and password are used as tags in the ``request mapping`` definition. The response mapping
-uses the returned access token to create an authorization header which is then used for all further requests to the
+uses the returned access token to create an authorization header, which is then used for all further requests to the
 Keycloak API.
 
 **Check User Password**
 
-In keycloak the users password is checked using the OpenID Connect token endpoint. Check out the
+In Keycloak, the user's password is checked using the OpenID Connect token endpoint. Check out the
 `Keycloak OpenID Connect documentation <https://www.keycloak.org/securing-apps/oidc-layers>`_ for more information.
 
 **Get user by name**
@@ -812,8 +813,6 @@ the request mapping contains the parameter ``{"enabled": true}`` to enable the u
 
 Keycloak does not support setting the user password during user creation. This would be a separate API call to
 another endpoint. This is actually not implemented in privacyIDEA.
-
-
 
 
 .. _usercache:
