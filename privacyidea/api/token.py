@@ -807,7 +807,7 @@ def setrandompin_api(serial=None):
 def set_description_api(serial=None):
     """
     This endpoint can be used by the user or by the admin to set
-    the description of a token.
+    the description of a token. Setting a description may be required by a policy.
 
     :jsonparam basestring description: The description for the token
     :param serial:
