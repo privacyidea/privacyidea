@@ -74,6 +74,9 @@ class ConfigTestCase(MyTestCase):
         self.assertTrue("privacyidea.lib.resolvers.LDAPIdResolver" in r, r)
         self.assertTrue("privacyidea.lib.resolvers.SCIMIdResolver" in r, r)
         self.assertTrue("privacyidea.lib.resolvers.SQLIdResolver" in r, r)
+        self.assertTrue("privacyidea.lib.resolvers.HTTPResolver" in r, r)
+        self.assertTrue("privacyidea.lib.resolvers.EntraIDResolver" in r, r)
+        self.assertTrue("privacyidea.lib.resolvers.KeycloakResolver" in r, r)
 
         # check modules
         mlist = get_resolver_module_list()

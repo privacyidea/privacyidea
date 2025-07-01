@@ -123,7 +123,7 @@ class IdResolver (UserIdResolver):
         Empty lines are ignored.
         """
 
-        if self.fileName == "":
+        if not self.fileName:
             self.fileName = "/etc/passwd"
 
         log.info('loading users from file {0!s} from within {1!r}'.format(self.fileName,

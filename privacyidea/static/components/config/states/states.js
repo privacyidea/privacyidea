@@ -63,8 +63,28 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
                     templateUrl: configpath + "config.resolvers.http.html" + versioningSuffixProviderProvider.$get().$get(),
                     controller: "HTTPResolverController"
                 })
+                .state('config.resolvers.addentraidresolver', {
+                    url: "/entraidresolver",
+                    templateUrl: configpath + "config.resolvers.http.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "HTTPResolverController"
+                })
+                .state('config.resolvers.addkeycloakresolver', {
+                    url: "/keycloakresolver",
+                    templateUrl: configpath + "config.resolvers.http.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "HTTPResolverController"
+                })
                 .state('config.resolvers.edithttpresolver', {
                     url: "/httpresolver/:resolvername",
+                    templateUrl: configpath + "config.resolvers.http.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "HTTPResolverController"
+                })
+                .state('config.resolvers.editentraidresolver', {
+                    url: "/entraidresolver/:resolvername",
+                    templateUrl: configpath + "config.resolvers.http.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "HTTPResolverController"
+                })
+                .state('config.resolvers.editkeycloakresolver', {
+                    url: "/keycloakresolver/:resolvername",
                     templateUrl: configpath + "config.resolvers.http.html" + versioningSuffixProviderProvider.$get().$get(),
                     controller: "HTTPResolverController"
                 })

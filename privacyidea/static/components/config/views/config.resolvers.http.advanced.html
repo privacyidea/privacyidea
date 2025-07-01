@@ -1,0 +1,344 @@
+<!--
+(c) NetKnights GmbH 2024,  https://netknights.it
+This code is free software; you can redistribute it and/or
+modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+as published by the Free Software Foundation; either
+version 3 of the License, or any later version.
+This code is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+You should have received a copy of the GNU Affero General Public
+License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+SPDX-FileCopyrightText: 2025 Jelina Unger <jelina.unger@netknights.it>
+SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<div>
+    <div class="form-group row">
+        <label for="baseUrl" class="col-sm-3 control-label text-right" translate>Base URL</label>
+        <div class="col-sm-9">
+            <input type="text" id="baseUrl" class="form-control" ng-model="advancedParams.base_url"
+                   required
+                   placeholder="http://example.com/path/to/users"/>
+            <p class="help-block" translate>
+                The base URL of the API of the user store which will be concatenated with the user endpoints defined
+                below.
+            </p>
+        </div>
+    </div>
+
+    <div class="form-group row" ng-show="params.type === 'keycloakresolver'">
+        <label for="realm" class="col-sm-3 control-label text-right" translate>Realm</label>
+        <div class="col-sm-9">
+            <input type="text" id="baseUrl" class="form-control" ng-model="advancedParams.realm"
+                   placeholder="master"/>
+            <p class="help-block" translate>
+                The name of the user realm in keycloak. It can be used as tag in the urls of the endpoints.
+            </p>
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label for="attributeMapping" class="col-sm-3 control-label text-right" translate>Attribute Mapping</label>
+
+        <div class="col-sm-9" id="attributeMapping">
+            <table class="table table-bordered table-striped table-capitalize-header">
+                <thead>
+                <tr>
+                    <th translate>PrivacyIDEA Attribute</th>
+                    <th translate>User Store Attribute</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr ng-repeat="(piAttribute, userStoreAttribute) in advancedParams.attribute_mapping">
+                    <td>{{ piAttribute }}</td>
+                    <td>
+                        <input type="text" class="form-control"
+                               ng-model="advancedParams.attribute_mapping[piAttribute]"
+                               placeholder="{{ piAttribute }}"/>
+                    </td>
+                    <td>
+                        <button class="btn btn-transparent btn-sm btn-danger" ng-click="removeAttribute(piAttribute)">
+                            <span class="glyphicon glyphicon-trash"></span>
+                        </button>
+                    </td>
+                </tr>
+                <tr ng-hide="getRemainingAttributes().length === 0">
+                    <td>
+                        <select ng-model="selectedName" ng-options="attribute for attribute in getRemainingAttributes()"
+                                class="form-control" ng-change="addAttribute(selectedName)">
+                            <option value="" disabled selected translate>Select PrivacyIDEA Attribute</option>
+                        </select>
+                    </td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                </tbody>
+            </table>
+            <p class="help-block" translate>
+                The left column defines the user attributes used in privacyIDEA and the right column the equivalent
+                attribute in the user store.
+            </p>
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label for="headers" class="col-sm-3 control-label text-right" translate>Headers (JSON format)</label>
+        <div class="col-sm-9">
+            <input type="text" name="headers" id="headers" ng-model="advancedParams.headers"
+                   placeholder='{"Content-Type": "application/json; charset=UTF-8"}' class="form-control"/>
+            <p class="help-block" translate>
+                If no custom headers are defined this header is used for all endpoints.
+            </p>
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label class="col-sm-3 control-label text-right" for="editUserStore" translate>Edit user store</label>
+
+        <div class="col-sm-9">
+            <input type="checkbox" id="editUserStore" ng-model="advancedParams.Editable"/>
+            <p class="help-block" translate>
+                The user data in this user store can be modified from within privacyIDEA.
+            </p>
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label class="col-sm-3 control-label text-right" for="verifyTLS" translate>Verify TLS</label>
+
+        <div class="col-sm-9">
+            <input type="checkbox" id="verifyTLS" ng-model="advancedParams.verify_tls"/>
+            <span class="help-block" translate>
+                Verify the TLS certificate of the server.
+            </span>
+
+            <div class="well" ng-show="advancedParams.verify_tls">
+                <label for="tls_ca_file" class="control-label" translate>
+                    The file containing the CA certificate which signed the TLS certificate of the server.
+                </label>
+                <input type="text" id="tls_ca_file" class="form-control"
+                       ng-model="advancedParams.tls_ca_path"
+                       placeholder="path/to/resolver-server-ca.crt"/>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label for="timeout" class="col-sm-3 control-label text-right" translate>Timeout (seconds)</label>
+        <div class="col-sm-9">
+            <input type="text" name="timeout" id="timeout" ng-model="advancedParams.timeout"
+                   placeholder='60' class="form-control"/>
+            <p class="help-block" translate>
+                Time in seconds privacyIDEA tries to reach the user store server.
+            </p>
+        </div>
+    </div>
+
+    <uib-accordion close-others="false">
+        <div uib-accordion-group
+             class="panel-default"
+             is-open="groupIsOpen['authorization']">
+            <uib-accordion-heading ng-click="groupIsOpen['authorization']=!groupIsOpen['authorization']">
+                <div>
+                    <span>Authorization</span>
+                    <span class="pull-right glyphicon" aria-hidden="true"
+                          ng-class="{'glyphicon-chevron-down': groupIsOpen['authorization'],
+                                                     'glyphicon-chevron-right': !groupIsOpen['authorization']}">
+                                        </span>
+                </div>
+            </uib-accordion-heading>
+
+            <p class="help-block" translate>
+                This section allows to configure an endpoint to which the privacyIDEA server must authenticate in order
+                to receive an access token. This token can then be used to access the user store API.
+            </p>
+
+            <div ng-if="params.type === 'entraidresolver'">
+                <p class="help-block" translate>
+                    You can find most of these settings in the app registration in the Entra Admin Center or you also
+                    have to add them there.
+                </p>
+                <div class="form-group row">
+                    <label for="authority" class="col-sm-3 control-label text-right" translate>Authority</label>
+                    <div class="col-sm-9">
+                        <input type="text" id="authority" class="form-control"
+                               ng-model="authorizationConfig['authority']"
+                               placeholder="https://login.microsoftonline.com/{tenant}"/>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="tenant" class="col-sm-3 control-label text-right" translate>Tenant</label>
+                    <div class="col-sm-9">
+                        <input type="text" id="tenant" class="form-control" ng-model="authorizationConfig['tenant']"
+                               required/>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="client_id" class="col-sm-3 control-label text-right" translate>Client ID</label>
+                    <div class="col-sm-9">
+                        <input type="text" id="client_id" class="form-control"
+                               ng-model="authorizationConfig['clientId']"
+                               required/>
+                    </div>
+                </div>
+                <div class="row">
+                    <label class="col-sm-3 control-label text-right" translate>Client Credential</label>
+                    <div class="col-sm-9">
+                        <div class="form-group row">
+                            <label class="col-sm-3 control-label text-right" for="clientCredentialType" translate>
+                                Type
+                            </label>
+                            <div class="col-sm-9">
+                                <select id="clientCredentialType" ng-model="authorizationConfig['clientCredentialType']"
+                                        class="form-control">
+                                    <option ng-repeat="value in ['secret', 'certificate']"
+                                            value="{{ value }}">{{ value }}</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row" ng-show="authorizationConfig['clientCredentialType'] === 'secret'">
+                            <label class="col-sm-3 control-label text-right" for="client_secret" translate>
+                                Secret
+                            </label>
+                            <div class="col-sm-9">
+                                <input type="password"
+                                       id="client_secret" class="form-control"
+                                       ng-model="authorizationConfig['clientSecret']"
+                                       ng-required="authorizationConfig['clientCredentialType'] === 'secret'"/>
+                            </div>
+                        </div>
+
+                        <div ng-show="authorizationConfig['clientCredentialType'] === 'certificate'">
+                            <div class="row">
+                                <div class="col-sm-3"></div>
+                                <div class="col-sm-9">
+                                    <p class="help-block" translate>
+                                        This credential type does not support to check the user's password.
+                                    </p>
+                                    <p class="help-block" translate>
+                                        Specify the path to the private key file of the servers certificate. If you use an
+                                        encrypted key, add the password here, otherwise leave the field empty. The server
+                                        certificate must be uploaded in Entra's app registration as client credential.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label class="col-sm-3 control-label text-right" for="private_key_file" translate>
+                                    Path to the private key file
+                                </label>
+                                <div class="col-sm-9">
+                                    <input type="text"
+                                           id="private_key_file" class="form-control"
+                                           ng-model="authorizationConfig.clientCertificate['private_key_file']"
+                                           ng-required="authorizationConfig['clientCredentialType'] === 'certificate'"/>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label class="col-sm-3 control-label text-right" for="private_key_password"
+                                       translate>Password for the private key</label>
+                                <div class="col-sm-9">
+                                    <input type="password"
+                                           id="private_key_password" class="form-control"
+                                           ng-model="authorizationConfig.clientCertificate['private_key_password']"/>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label class="col-sm-3 control-label text-right" for="certificate_fingerprint"
+                                       translate>Thumbprint of the certificate</label>
+                                <div class="col-sm-9">
+                                    <input type="text"
+                                           id="certificate_fingerprint" class="form-control"
+                                           ng-model="authorizationConfig.clientCertificate['certificate_fingerprint']"
+                                           ng-required="authorizationConfig['clientCredentialType'] === 'certificate'"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div ng-if="params.type !== 'entraidresolver'">
+                <div class="form-group row">
+                    <label for="username" class="col-sm-3 control-label text-right" translate>Username</label>
+                    <div class="col-sm-9">
+                        <input type="text" id="username" ng-model="serviceAccount['username']"
+                               placeholder='privacyIDEA' class="form-control"/>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="password" class="col-sm-3 control-label text-right" translate>Password</label>
+                    <div class="col-sm-9">
+                        <input type="password" id="password" ng-model="serviceAccount['password']"
+                               placeholder='t0p_SeCr3t!' class="form-control"/>
+                    </div>
+                </div>
+                <div http-resolver-endpoint-config
+                     params="authorizationConfig"
+                     placeholders="authorizationPlaceholders"></div>
+            </div>
+
+        </div>
+        <div uib-accordion-group
+             class="panel-default"
+             ng-repeat="(key, name) in userEndpointNames"
+             ng-hide="key === 'checkPass' && authorizationConfig['clientCredentialType'] === 'certificate'"
+             is-open="groupIsOpen[key]">
+            <uib-accordion-heading ng-click="groupIsOpen[key]=!groupIsOpen[key]">
+                <div>
+                    <span>{{ name }}</span>
+                    <span class="pull-right glyphicon" aria-hidden="true"
+                          ng-class="{'glyphicon-chevron-down': groupIsOpen[key],
+                                                     'glyphicon-chevron-right': !groupIsOpen[key]}">
+                                        </span>
+                </div>
+            </uib-accordion-heading>
+
+            <p class="help-block" ng-show="key == 'checkPass'" translate>
+                Configure the endpoint to authenticate the user with its username/userid and password.
+            </p>
+
+            <p class="help-block" ng-show="key == 'userList'" translate>
+                Configure the endpoint to retrieve a list of users from the user store. The above defined attributes
+                are added to the request as search parameters if they are available in the request.
+            </p>
+
+            <p class="help-block" ng-show="key == 'userById'" translate>
+                Configure the endpoint to retrieve a single user for the UID. For example, privacyIDEA only stores
+                the UID of the token owner. To resolve the complete user, this endpoint is used.
+            </p>
+
+            <p class="help-block" ng-show="key == 'userByName'" translate>
+                Configure the endpoint to retrieve a single user for the username. For example, when a user tries to
+                authenticate against privacyIDEA, only the username is provided. To resolve the complete user and
+                evaluate if the user exists, this endpoint is used.
+            </p>
+
+            <p class="help-block" ng-show="key == 'createUser'" translate>
+                Configure the endpoint to create a new user in the user store. The above defined attributes can be
+                set in the UI and will be added to the request body. Additionally, you can define a password which must
+                be specified in the request mapping using the tag <code>"{password}"</code>.
+            </p>
+
+            <p class="help-block" ng-show="key == 'editUser'" translate>
+                Configure the endpoint to edit an existing user in the user store. The above defined attributes can
+                be set in the UI and will be added to the request body. Additionally, you can define custom request
+                parameters in the request mapping.
+            </p>
+
+            <p class="help-block" ng-show="key == 'deleteUser'" translate>
+                Configure the endpoint to delete an existing user from the user store.
+            </p>
+
+            <div http-resolver-endpoint-config
+                 params="endpointConfig[key]"
+                 placeholders="endpointPlaceholders[key]"
+                 tags="endpointTags[key]"></div>
+
+        </div>
+    </uib-accordion>
+
+</div>

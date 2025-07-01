@@ -31,21 +31,15 @@
 """
 The code of this module is tested in tests/test_api_system.py
 """
-from flask import (Blueprint,
-                   request)
-from .lib.utils import (getParam,
-                        optional,
-                        required,
-                        send_result)
+from flask import Blueprint, request
+from .lib.utils import getParam, optional, required, send_result
 from ..lib.log import log_with
-from ..lib.resolver import (get_resolver_list,
-                            save_resolver,
-                            delete_resolver, pretestresolver)
+from ..lib.resolver import get_resolver_list, save_resolver, delete_resolver, pretestresolver, get_resolver_class
 from flask import g
 import logging
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.policy import ACTION
-
+from ..lib.utils import is_true
 
 log = logging.getLogger(__name__)
 
@@ -75,10 +69,8 @@ def get_resolvers(resolver=None):
     """
     typ = getParam(request.all_data, "type", optional)
     editable = getParam(request.all_data, "editable", optional)
-    if editable == "1":
-        editable = True
-    elif editable == "0":
-        editable = False
+    if editable is not None:
+        editable = is_true(editable)
 
     res = get_resolver_list(filter_resolver_name=resolver,
                             filter_resolver_type=typ,
@@ -194,3 +186,14 @@ def test_resolver():
     success, desc = pretestresolver(rtype, param)
     return send_result(success, details={"description": desc})
 
+
+@resolver_blueprint.route('/<resolvertype>/default', methods=['GET'])
+@log_with(log)
+def get_default_resolver_config(resolvertype):
+    """
+    Returns the default configuration for a resolver.
+    This is used to provide a template for creating new resolvers.
+    """
+    resolver = get_resolver_class(resolvertype)()
+    config = resolver.get_config()
+    return send_result(config)
