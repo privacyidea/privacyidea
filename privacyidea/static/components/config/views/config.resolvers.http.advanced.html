@@ -201,7 +201,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                             </div>
                         </div>
 
-                        <div class="form-group row" ng-show="authorizationConfig['clientCredentialType'] === 'secret'">
+                        <div class="row" ng-show="authorizationConfig['clientCredentialType'] === 'secret'">
                             <label class="col-sm-3 control-label text-right" for="client_secret" translate>
                                 Secret
                             </label>
@@ -216,11 +216,16 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                         <div ng-show="authorizationConfig['clientCredentialType'] === 'certificate'">
                             <div class="row">
                                 <div class="col-sm-3"></div>
-                                <p class="help-block col-sm-9" translate>
-                                    Specify the path to the private key file of the servers certificate. If you use an
-                                    encrypted key, add the password here, otherwise leave the field empty. The server
-                                    certificate must be uploaded in Entra's app registration as client credential.
-                                </p>
+                                <div class="col-sm-9">
+                                    <p class="help-block" translate>
+                                        This credential type does not support to check the user's password.
+                                    </p>
+                                    <p class="help-block" translate>
+                                        Specify the path to the private key file of the servers certificate. If you use an
+                                        encrypted key, add the password here, otherwise leave the field empty. The server
+                                        certificate must be uploaded in Entra's app registration as client credential.
+                                    </p>
+                                </div>
                             </div>
                             <div class="form-group row">
                                 <label class="col-sm-3 control-label text-right" for="private_key_file" translate>
