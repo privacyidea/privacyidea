@@ -331,6 +331,17 @@ This is a list of token types for which challenge response can
 be used during authentication. The list is separated by whitespaces like
 *"hotp totp"*.
 
+
+.. _policy_diable_token_types:
+
+disable_token_types
+~~~~~~~~~~~~~~~~~~~~
+
+type: ``string``
+
+This is a list of token types that are not allowed to be used during authentication.
+The list is separated by whitespaces like *"hotp totp"*.
+
 .. _policy_change_pin_via_validate:
 
 force_challenge_response
