@@ -107,7 +107,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                     <div ng-switch-default>
                         <a ui-sref="user.details({username: container.users[0].user_name,
                             realmname: container.users[0].user_realm,
-                            resolvername: token.resolver,
+                            resolvername: container.users[0].user_resolver,
                             editable: false})">
                             {{ container.users[0].user_name }}</a>
                     </div>
