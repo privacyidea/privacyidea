@@ -579,8 +579,9 @@ class UserTestCase(MyTestCase):
                                       "resolver": "SQL1"})
             self.assertTrue(len(userlist) == 0, userlist)
             lc.check_present(("privacyidea.lib.user", "ERROR",
-                              "Unable to get user list for resolver 'SQL1': ERR905: "
-                              "Search parameter (['unknown']) not available in mapping."))
+                              "Unable to get user list for resolver 'SQL1': "
+                              "ParameterError(description=\"Search parameter "
+                              "([\'unknown\']) not available in mapping.\", id=905)"))
 
     @ldap3mock.activate
     def test_18_user_with_several_phones(self):

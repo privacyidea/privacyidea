@@ -783,7 +783,7 @@ def get_user_list(param=None, user=None, custom_attributes=False):
             raise exx
 
         except Exception as ex:
-            log.error(f"Unable to get user list for resolver '{resolver_name}': {ex}")
+            log.error(f"Unable to get user list for resolver '{resolver_name}': {ex!r}")
             log.debug("{0!s}".format(traceback.format_exc()))
             continue
 

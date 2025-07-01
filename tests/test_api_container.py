@@ -597,7 +597,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         # User does not have CONTAINER_TEMPLATE_CREATE rights
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_CREATE)
         data = {"template_options": {}}
-        self.request_denied_assert_403(f'/container/generic/template/test', data, self.at_user, 'POST')
+        self.request_denied_assert_403('/container/generic/template/test', data, self.at_user, 'POST')
         delete_policy("policy")
 
     def test_28_user_container_template_delete_allowed(self):
@@ -1004,7 +1004,7 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         # Admin does not have CONTAINER_TEMPLATE_CREATE rights
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE)
         data = {"template_options": {}}
-        self.request_denied_assert_403(f'/container/generic/template/test', data, self.at, 'POST')
+        self.request_denied_assert_403('/container/generic/template/test', data, self.at, 'POST')
         delete_policy("policy")
 
     def test_31_admin_container_template_delete_allowed(self):
@@ -2572,6 +2572,27 @@ class APIContainer(APIContainerTest):
                                              {}, self.at, "DELETE")
         self.assertFalse(result["result"]["value"])
 
+    def test_25_broken_user_resolver(self):
+        # Arrange
+        self.setUp_user_realms()
+        container_serial = init_container({"type": "generic",
+                                           "description": "test container",
+                                           "user": "hans",
+                                           "realm": self.realm1})["container_serial"]
+        # Get all containers with assigned user
+        result = self.request_assert_success('/container/', {}, self.at, 'GET')
+        # Get the current container
+        container = [x for x in result["result"]["value"]["containers"] if x["serial"] == container_serial][0]
+        self.assertEqual(container["users"][0]["user_name"], "hans", result["result"])
+        # Break the resolver
+        save_resolver({"resolver": self.resolvername1,
+                       "type": "passwdresolver",
+                       "fileName": "/unknown/file"})
+        # And check the container again
+        result = self.request_assert_success('/container/', {}, self.at, 'GET')
+        container = [x for x in result["result"]["value"]["containers"] if x["serial"] == container_serial][0]
+        self.assertEqual(container["users"][0]["user_name"], "**resolver error**", result["result"])
+
 
 @dataclass
 class SmartphoneRequests:
@@ -2879,8 +2900,8 @@ class APIContainerSynchronization(APIContainerTest):
         mock_smph = registration.mock_smph
 
         # Init
-        scope = f"https://pi.net/container/synchronize"
-        result = self.request_assert_success(f'container/challenge',
+        scope = "https://pi.net/container/synchronize"
+        result = self.request_assert_success('container/challenge',
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              'POST')
 
@@ -2932,15 +2953,15 @@ class APIContainerSynchronization(APIContainerTest):
         mock_smph = registration.mock_smph
 
         # Challenge
-        scope = f"https://pi.net/container/register/terminate/client"
-        result = self.request_assert_success(f'container/challenge',
+        scope = "https://pi.net/container/register/terminate/client"
+        result = self.request_assert_success('container/challenge',
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              'POST')
 
         params = mock_smph.register_terminate(result["result"]["value"], scope)
 
         # Terminate
-        res = self.request_assert_success(f'container/register/terminate/client',
+        res = self.request_assert_success('container/register/terminate/client',
                                           params,
                                           None, 'POST')
         self.assertTrue(res["result"]["value"]["success"])
@@ -3070,7 +3091,7 @@ class APIContainerSynchronization(APIContainerTest):
 
         # Challenge
         scope = "https://pi.net/container/register/terminate/client"
-        self.request_assert_success(f'container/challenge',
+        self.request_assert_success('container/challenge',
                                     {"scope": scope, "container_serial": mock_smph.container_serial}, None, 'POST')
 
         # Terminate without signature
@@ -3106,7 +3127,7 @@ class APIContainerSynchronization(APIContainerTest):
         mock_smph = registration.mock_smph
 
         # Challenge
-        scope = f"https://pi.net/container/register/terminate/client"
+        scope = "https://pi.net/container/register/terminate/client"
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              'POST')
@@ -3127,7 +3148,7 @@ class APIContainerSynchronization(APIContainerTest):
         mock_smph = registration.mock_smph
 
         # Challenge
-        scope = f"https://pi.net/container/register/terminate/client"
+        scope = "https://pi.net/container/register/terminate/client"
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
@@ -3207,7 +3228,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertFalse(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
 
         # Challenge
-        scope = f"https://pi.net/container/synchronize"
+        scope = "https://pi.net/container/synchronize"
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
@@ -3270,7 +3291,7 @@ class APIContainerSynchronization(APIContainerTest):
         mock_smph = registration.mock_smph
 
         # Challenge
-        scope = f"https://pi.net/container/synchronize"
+        scope = "https://pi.net/container/synchronize"
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
@@ -4807,7 +4828,7 @@ class APIContainerTemplate(APIContainerTest):
 
     def test_02_create_template_fail(self):
         # Create template without name
-        self.request_assert_404_no_result(f'/container/smartphone/template',
+        self.request_assert_404_no_result('/container/smartphone/template',
                                           {}, self.at, 'POST')
 
     def test_03_delete_template_fail(self):
@@ -5437,7 +5458,7 @@ class APIContainerTemplate(APIContainerTest):
         container.add_token(totp2)
 
         # Compare template with all containers
-        result = self.request_assert_success(f"/container/template/test/compare", {}, self.at, "GET")
+        result = self.request_assert_success("/container/template/test/compare", {}, self.at, "GET")
         # Check result for equal container
         container_diff = result["result"]["value"][equal_cserial]
         token_diff = container_diff["tokens"]
@@ -5452,7 +5473,7 @@ class APIContainerTemplate(APIContainerTest):
         self.assertFalse(token_diff["equal"])
 
         # Compare template with specific container
-        result = self.request_assert_success(f"/container/template/test/compare", {"container_serial": cserial},
+        result = self.request_assert_success("/container/template/test/compare", {"container_serial": cserial},
                                              self.at, "GET")
         # Check result for unequal container
         container_diff = result["result"]["value"][cserial]
