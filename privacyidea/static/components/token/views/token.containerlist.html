@@ -100,11 +100,18 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 {{ container.description }}
             </td>
             <td ng-show="loggedInUser.role == 'admin'">
-                <a ui-sref="user.details({username: container.users[0].user_name,
+                <div  ng-switch on="container.users[0].user_name">
+                    <div ng-switch-when="**resolver error**">
+                        {{ container.users[0].user_name }}
+                    </div>
+                    <div ng-switch-default>
+                        <a ui-sref="user.details({username: container.users[0].user_name,
                             realmname: container.users[0].user_realm,
                             resolvername: token.resolver,
                             editable: false})">
-                    {{ container.users[0].user_name }}</a>
+                            {{ container.users[0].user_name }}</a>
+                    </div>
+                </div>
             </td>
             <td ng-show="loggedInUser.role == 'admin'">
                 <a ui-sref="config.realms.list">{{ container.users[0].user_realm }}</a>
