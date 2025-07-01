@@ -1,5 +1,5 @@
 @use "../../../styles/styles";
-@use '@angular/material' as mat;
+@use "@angular/material" as mat;
 
 .token-layout {
   display: flex;
@@ -88,42 +88,8 @@ $margin-bottom-main: 8.5rem;
   width: 100%;
 }
 
-.tile-button {
-  width: 200px;
-  height: 200px;
-  margin: var(--global-padding);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border-radius: calc(var(--border-radius) * 2);
-  @include mat.elevation(3);
-
-  &:hover {
-    @include mat.elevation(6);
-  }
-}
-
 .tile-header {
   padding: 0;
-}
-
-.tile-title {
-  font-weight: bold;
-  font-size: 1.3rem;
-}
-
-.tile-icon {
-  margin-bottom: 1rem;
-  font-size: 3rem;
-  height: 3rem;
-  width: 3rem;
-}
-
-.tile-icon-2 {
-  margin-bottom: 1rem;
-  font-size: 3.7rem;
-  height: 3.7rem;
-  width: 3.7rem;
 }
 
 .back-button-div {

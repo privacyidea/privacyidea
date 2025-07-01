@@ -6,7 +6,7 @@ import {
   provideHttpClient,
   withInterceptorsFromDi,
 } from '@angular/common/http';
-import { TokenSelectedContent } from '../../token.component';
+import { TokenSelectedContentKey } from '../../token.component';
 import { MachineService } from '../../../../services/machine/machine.service';
 
 describe('TokenApplicationsSsh', () => {
@@ -34,7 +34,8 @@ describe('TokenApplicationsSsh', () => {
     ) as jasmine.SpyObj<MachineService>;
 
     component.tokenSerial = signal<string>('');
-    component.selectedContent = signal<TokenSelectedContent>('token_details');
+    component.selectedContent =
+      signal<TokenSelectedContentKey>('token_details');
     component.advancedApiFilter = [];
   });
 

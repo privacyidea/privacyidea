@@ -12,7 +12,7 @@ import { UserService } from '../../../services/user/user.service';
 import { MatDialog } from '@angular/material/dialog';
 import { VersionService } from '../../../services/version/version.service';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { TokenSelectedContent } from '../token.component';
+import { TokenSelectedContentKey } from '../token.component';
 
 class MockTokenService {
   private _tokenTypeOptions = [
@@ -110,7 +110,7 @@ describe('TokenEnrollmentComponent', () => {
     component = fixture.componentInstance;
     component.tokenSerial = signal('Mock serial');
     component.containerSerial = signal('Mock container serial');
-    component.selectedContent = signal({} as TokenSelectedContent);
+    component.selectedContent = signal({} as TokenSelectedContentKey);
     component.isProgrammaticChange = signal(false);
     fixture.detectChanges();
   });

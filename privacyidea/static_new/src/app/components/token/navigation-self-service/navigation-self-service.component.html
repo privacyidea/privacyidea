@@ -1,0 +1,9 @@
+<div class="flex-row">
+  <div class="navigation-self-service-column" [@componentFade]>
+    @for (buttonData of navigationSelfServiceButtons; track buttonData) {
+      <app-navigation-self-service-button [buttonData]="buttonData" />
+    }
+  </div>
+  <app-token-table-self-service />
+  <app-user-self-service />
+</div>

@@ -51,4 +51,4 @@ import { AuditComponent } from './audit.component';
   templateUrl: './audit.self-service.component.html',
   styleUrl: './audit.component.scss',
 })
-export class AuditComponentSelfService extends AuditComponent {}
+export class AuditComponentSelfServiceComponent extends AuditComponent {}

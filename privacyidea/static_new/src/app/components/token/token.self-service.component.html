@@ -1,108 +1,61 @@
-<div aria-label="Token Selfservice Layout"
-     class="token-selfservice-layout">
+<div aria-label="Token Selfservice Layout" class="token-selfservice-layout">
   <div class="main-content-div main-margin overflow">
-    @if (contentService.selectedContent() !== 'token_self-service_menu') {
+    @if (this.contentService.selectedContent() !== "token_self-service_menu") {
       <div class="back-button-div">
-        <button mat-fab
-                (click)="selectedContent.set('token_self-service_menu')"
-                class="back-button">
+        <button
+          mat-fab
+          (click)="
+            this.contentService.selectedContent.set('token_self-service_menu')
+          "
+          class="back-button">
           <mat-icon>keyboard_arrow_left</mat-icon>
         </button>
       </div>
     }
+  </div>
 
-    <div class="token-selfservice-div flex-column">
-      @switch (contentService.selectedContent()) {
-        @case ("token_self-service_menu") {
-          <div class="flex-row">
-            <app-token-table-self-service />
-            <app-user-self-service />
-          </div>
-          <div class="flex-row"
-               [@componentFade]>
-
-            <a class="tile-button"
-               mat-fab
-               (click)="selectedContent.set('token_enrollment')">
-              <div class="tile-title flex-column ali-center">
-                <mat-icon class="tile-icon">add_moderator</mat-icon>
-                Token Enrollment
-              </div>
-            </a>
-
-            <a class="tile-button"
-               mat-fab
-               (click)="selectedContent.set('assign_token')">
-              <div class="tile-title flex-column ali-center">
-                <mat-icon class="tile-icon-2">admin_panel_settings</mat-icon>
-                Assign Token
-              </div>
-            </a>
-
-            <a class="tile-button"
-               mat-fab
-               (click)="selectedContent.set('container_overview')">
-              <div class="tile-title flex-column ali-center">
-                <mat-icon class="mdi--folder-search tile-icon" />
-                Container Overview
-              </div>
-            </a>
-
-            <a class="tile-button"
-               mat-fab
-               (click)="selectedContent.set('container_create')">
-              <div class="tile-title flex-column ali-center">
-                <mat-icon class="tile-icon">create_new_folder</mat-icon>
-                Create Container
-              </div>
-            </a>
-
-            <a class="tile-button"
-               mat-fab
-               (click)="selectedContent.set('audit')">
-              <div class="tile-title flex-column ali-center">
-                <mat-icon class="tile-icon">manage_search</mat-icon>
-                Audit Log
-              </div>
-            </a>
-          </div>
-        }
-        @case ("token_enrollment") {
-          <div [@componentFade]>
-            <app-token-enrollment-self-service />
-          </div>
-        }
-        @case ("token_details") {
-          <div [@componentFade]>
-            <app-token-details-self-service />
-          </div>
-        }
-        @case ("container_overview") {
-          <div [@componentFade]>
-            <app-container-table-self-service />
-          </div>
-        }
-        @case ("container_details") {
-          <div [@componentFade]>
-            <app-container-details-self-service />
-          </div>
-        }
-        @case ("container_create") {
-          <div [@componentFade]>
-            <app-container-create-self-service />
-          </div>
-        }
-        @case ("assign_token") {
-          <div [@componentFade]>
-            <app-assign-token-self-service />
-          </div>
-        }
-        @case ("audit") {
-          <div [@componentFade]>
-            <app-audit-self-service />
-          </div>
-        }
+  <div class="token-selfservice-div flex-column text-center">
+    @switch (contentService.selectedContent()) {
+      @case ("token_self-service_menu") {
+        <div [@componentFade]>
+          <app-navigation-self-service />
+        </div>
       }
-    </div>
+      @case ("token_enrollment") {
+        <div [@componentFade]>
+          <app-token-enrollment-self-service />
+        </div>
+      }
+      @case ("token_details") {
+        <div [@componentFade]>
+          <app-token-details-self-service />
+        </div>
+      }
+      @case ("container_overview") {
+        <div [@componentFade]>
+          <app-container-table-self-service />
+        </div>
+      }
+      @case ("container_details") {
+        <div [@componentFade]>
+          <app-container-details-self-service />
+        </div>
+      }
+      @case ("container_create") {
+        <div [@componentFade]>
+          <app-container-create-self-service />
+        </div>
+      }
+      @case ("assign_token") {
+        <div [@componentFade]>
+          <app-assign-token-self-service />
+        </div>
+      }
+      @case ("audit") {
+        <div [@componentFade]>
+          <app-audit-self-service />
+        </div>
+      }
+    }
   </div>
 </div>

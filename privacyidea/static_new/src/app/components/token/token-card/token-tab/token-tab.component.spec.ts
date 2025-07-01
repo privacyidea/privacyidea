@@ -11,7 +11,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { By } from '@angular/platform-browser';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
-import { TokenSelectedContent } from '../../token.component';
+import { TokenSelectedContentKey } from '../../token.component';
 import { SelectionModel } from '@angular/cdk/collections';
 
 describe('TokenTabComponent', () => {
@@ -64,7 +64,8 @@ describe('TokenTabComponent', () => {
     component = fixture.componentInstance;
 
     component.tokenSerial = signal<string>('Mock serial');
-    component.selectedContent = signal<TokenSelectedContent>('token_overview');
+    component.selectedContent =
+      signal<TokenSelectedContentKey>('token_overview');
     component.tokenIsRevoked = signal<boolean>(false);
     component.tokenIsActive = signal<boolean>(true);
     component.refreshTokenDetails = signal<boolean>(false);
