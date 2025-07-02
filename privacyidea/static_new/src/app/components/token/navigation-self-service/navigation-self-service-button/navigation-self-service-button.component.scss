@@ -58,3 +58,8 @@
   font-size: calc(var(--tile-height) / 7.5); // 0.8rem;
   text-align: center;
 }
+
+.selected {
+  background-color: var(--primary-color);
+  color: var(--primary-contrast-color);
+}

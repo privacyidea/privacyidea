@@ -38,13 +38,14 @@
             </button>
           </div>
         }
-        <div [ngClass]="[
-              overflowService.isWidthOverflowing(
-                'body',
-                overflowService.getOverflowThreshold(contentService.selectedContent()))
-                ? 'main-margin'
-                : 'main-margin-overflow']"
-             class="main-content-div">
+        <!-- [ngClass]="[
+        overflowService.isWidthOverflowing(
+          'body',
+          overflowService.getOverflowThreshold(contentService.selectedContent()))
+          ? 'main-margin'
+          : 'main-margin-overflow']" -->
+          <div 
+             class="main-margin overflow">
           @switch (contentService.selectedContent()) {
             @case ("token_overview") {
               <app-token-table #tokenTableComponent />

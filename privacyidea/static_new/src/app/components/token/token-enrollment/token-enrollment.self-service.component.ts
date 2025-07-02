@@ -1,11 +1,6 @@
 import { Component, Renderer2, Version } from '@angular/core';
 import { TokenEnrollmentComponent } from './token-enrollment.component';
-import {
-  MatError,
-  MatFormField,
-  MatHint,
-  MatLabel,
-} from '@angular/material/form-field';
+import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { EnrollHotpComponent } from './enroll-hotp/enroll-hotp.component';
@@ -53,6 +48,7 @@ import { ContentService } from '../../../services/content/content.service';
 import { DialogService } from '../../../services/dialog/dialog.service';
 import { VersionService } from '../../../services/version/version.service';
 import { AuthService } from '../../../services/auth/auth.service';
+import { MatTooltip } from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-token-enrollment-self-service',
@@ -62,7 +58,6 @@ import { AuthService } from '../../../services/auth/auth.service';
     MatOption,
     ReactiveFormsModule,
     FormsModule,
-    MatHint,
     EnrollHotpComponent,
     MatInput,
     MatLabel,
@@ -100,6 +95,7 @@ import { AuthService } from '../../../services/auth/auth.service';
     EnrollWebauthnComponent,
     EnrollPasskeyComponent,
     MatError,
+    MatTooltip,
   ],
   templateUrl: './token-enrollment.self-service.component.html',
   styleUrl: './token-enrollment.component.scss',

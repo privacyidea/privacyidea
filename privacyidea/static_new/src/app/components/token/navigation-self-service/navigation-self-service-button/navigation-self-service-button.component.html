@@ -4,8 +4,10 @@
       <div class="top-content">
         <mat-icon
           [ngClass]="
-            buttonData.matIconSize ??
-            'tile-icon-medium' + ' ' + buttonData.matIconClass
+            (buttonData.matIconSize ?? 'tile-icon-medium' + ' ') +
+            (buttonData.matIconClass ?? '') +
+            ' ' +
+            (isSelected() ? ' selected' : '')
           "
           >{{ buttonData.matIconName }}</mat-icon
         >

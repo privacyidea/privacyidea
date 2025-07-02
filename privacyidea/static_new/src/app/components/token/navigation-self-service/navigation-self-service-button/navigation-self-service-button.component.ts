@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input } from '@angular/core';
+import { Component, computed, Input } from '@angular/core';
 import { MatFabAnchor } from '@angular/material/button';
 
 import { MatIconModule } from '@angular/material/icon';
@@ -25,6 +25,10 @@ export class NavigationSelfServiceButtonComponent {
   @Input({ required: true }) buttonData!: NavigationSelfServiceButtonData;
 
   selectedContent = this.contentService.selectedContent;
+  isSelected = computed(() => {
+    return this.selectedContent() === this.buttonData.key;
+  });
+
   constructor(protected readonly contentService: ContentService) {}
 
   onClick() {

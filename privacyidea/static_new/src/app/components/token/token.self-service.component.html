@@ -1,24 +1,23 @@
 <div aria-label="Token Selfservice Layout" class="token-selfservice-layout">
-  <div class="main-content-div main-margin overflow">
-    @if (this.contentService.selectedContent() !== "token_self-service_menu") {
-      <div class="back-button-div">
-        <button
-          mat-fab
-          (click)="
-            this.contentService.selectedContent.set('token_self-service_menu')
-          "
-          class="back-button">
-          <mat-icon>keyboard_arrow_left</mat-icon>
-        </button>
-      </div>
-    }
-  </div>
+  <app-navigation-self-service class="flex-size-1" />
+  <!-- @if (this.contentService.selectedContent() !== "token_self-service_menu") {
+    <button
+      mat-fab
+      (click)="
+        this.contentService.selectedContent.set('token_self-service_menu')
+      "
+      class="back-button">
+      <mat-icon>keyboard_arrow_left</mat-icon>
+    </button>
+  } @else {
+    <app-navigation-self-service />
+  } -->
 
-  <div class="token-selfservice-div flex-column text-center">
+  <div class="overflow flex-size-5 flex-top-center">
     @switch (contentService.selectedContent()) {
       @case ("token_self-service_menu") {
         <div [@componentFade]>
-          <app-navigation-self-service />
+          <app-token-table-self-service />
         </div>
       }
       @case ("token_enrollment") {
@@ -57,5 +56,8 @@
         </div>
       }
     }
+  </div>
+  <div class="flex-size-1">
+    <!-- Ensure that the content is always centered -->
   </div>
 </div>

@@ -1,8 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input } from '@angular/core';
-import { MatFabAnchor } from '@angular/material/button';
-import { UserSelfServiceComponent } from '../../user/user.self-service.component';
-import { TokenTableSelfServiceComponent } from '../token-table/token-table.self-service.component';
+import { Component } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { ContentService } from '../../../services/content/content.service';
 import {
@@ -13,13 +10,7 @@ import {
 @Component({
   selector: 'app-navigation-self-service',
   standalone: true,
-  imports: [
-    CommonModule,
-    MatIconModule,
-    TokenTableSelfServiceComponent,
-    UserSelfServiceComponent,
-    NavigationSelfServiceButtonComponent,
-  ],
+  imports: [CommonModule, MatIconModule, NavigationSelfServiceButtonComponent],
   templateUrl: './navigation-self-service.component.html',
   styleUrl: './navigation-self-service.component.scss',
 })

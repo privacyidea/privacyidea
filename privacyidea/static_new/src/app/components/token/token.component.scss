@@ -3,7 +3,7 @@
 
 .token-layout {
   display: flex;
-  height: 100vh;
+  height: 80vh;
 }
 
 .token-drawer {
@@ -24,10 +24,6 @@
   margin-top: 5.8rem;
   overflow: auto;
   padding-bottom: 4rem;
-}
-
-.main-content-div {
-  display: flex;
 }
 
 $margin-bottom-main: 8.5rem;
@@ -77,24 +73,18 @@ $margin-bottom-main: 8.5rem;
 
 .token-selfservice-layout {
   display: flex;
-  flex: 1 1 auto;
   justify-content: center;
   align-items: flex-start;
-  overflow-y: auto;
-  height: 100vh;
-}
-
-.token-selfservice-div {
-  width: 100%;
+  height: 80vh;
 }
 
 .tile-header {
   padding: 0;
 }
 
-.back-button-div {
-  display: flex;
-  margin-left: -5rem;
-  height: 100%;
-  position: fixed;
-}
+// .back-button-div {
+//   display: flex;
+//   margin-left: -5rem;
+//   height: 100%;
+//   position: fixed;
+// }
