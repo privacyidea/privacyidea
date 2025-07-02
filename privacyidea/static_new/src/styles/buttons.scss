@@ -322,6 +322,7 @@ $header-bg: white;
   cursor: pointer;
   color: white;
 
+  &.active,
   &:hover {
     box-shadow: none;
     background: $profile-hover-bg;

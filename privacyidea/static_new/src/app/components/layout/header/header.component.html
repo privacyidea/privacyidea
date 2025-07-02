@@ -75,18 +75,34 @@
         }
       </div>
       <div class="profile-logout-div flex-row">
-      <button class="profile-btn"
-              extended
-              href="#"
-              mat-fab>
-        <mat-icon>account_box</mat-icon>
-        <h4>{{ profileText }}</h4></button>
-        <button (click)="logout()"
-                class="logout-btn"
-                aria-label="Logout"
-                mat-icon-button>
-          <mat-icon>logout</mat-icon>
-        </button>
+        @if (authService.role() === 'admin') {
+          <button class="profile-btn"
+                  extended
+                  href="#"
+                  mat-fab>
+            <mat-icon>account_box</mat-icon>
+            <h4>{{ profileText }}</h4>
+          </button>
+        } @else {
+          <button class="profile-btn"
+                  [class.active]="trigger.menuOpen"
+                  #trigger="matMenuTrigger"
+                  [matMenuTriggerFor]="profileMenu"
+                  extended
+                  mat-fab>
+            <mat-menu #profileMenu="matMenu">
+              <app-user-self-service />
+            </mat-menu>
+            <mat-icon>account_box</mat-icon>
+            <h4>{{ profileText }}</h4>
+          </button>
+          <button (click)="logout()"
+                  class="logout-btn"
+                  aria-label="Logout"
+                  mat-icon-button>
+            <mat-icon>logout</mat-icon>
+          </button>
+        }
       </div>
     </div>
   </div>

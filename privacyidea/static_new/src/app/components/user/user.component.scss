@@ -7,10 +7,9 @@
 }
 
 .user-self-service-card {
-  @include mat.elevation(5);
   border-radius: var(--border-radius);
-  margin: 2rem;
   padding: var(--global-padding);
+  background: #EFEDF0;
 }
 
 .user-details-grid {

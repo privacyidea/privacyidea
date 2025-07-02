@@ -11,7 +11,6 @@ import { ContainerTableSelfServiceComponent } from './container-table/container-
 import { TokenDetailsSelfServiceComponent } from './token-details/token-details.self-service.component';
 import { ContainerDetailsSelfServiceComponent } from './container-details/container-details.self-service.component';
 import { componentFadeAnimation } from '../../../styles/animations/animations';
-import { UserSelfServiceComponent } from '../user/user.self-service.component';
 import { AuditComponentSelfService } from '../audit/audit.self-service.component';
 
 @Component({
@@ -28,7 +27,6 @@ import { AuditComponentSelfService } from '../audit/audit.self-service.component
     TokenTableSelfServiceComponent,
     ContainerTableSelfServiceComponent,
     ContainerDetailsSelfServiceComponent,
-    UserSelfServiceComponent,
     AuditComponentSelfService,
   ],
   animations: [componentFadeAnimation],

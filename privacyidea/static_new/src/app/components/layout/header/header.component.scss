@@ -86,7 +86,6 @@ $border-radius: var(--border-radius);
       }
     }
   }
-
   .session-timer {
     width: 48px;
     height: 19px;
@@ -116,5 +115,14 @@ $border-radius: var(--border-radius);
     margin-right: 130px;
     align-items: center;
     gap: 1rem;
+  }
+}
+
+::ng-deep {
+  #mat-menu-panel-0 {
+    max-width: none;
+  }
+  .mat-mdc-menu-content {
+    padding: 0 !important;
   }
 }

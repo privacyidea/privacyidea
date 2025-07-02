@@ -11,6 +11,8 @@ import { SessionTimerService } from '../../../services/session-timer/session-tim
 import { AuthService } from '../../../services/auth/auth.service';
 import { LocalService } from '../../../services/local/local.service';
 import { NotificationService } from '../../../services/notification/notification.service';
+import { MatMenu, MatMenuTrigger } from '@angular/material/menu';
+import { UserSelfServiceComponent } from '../../user/user.self-service.component';
 
 @Component({
   selector: 'app-header',
@@ -24,6 +26,9 @@ import { NotificationService } from '../../../services/notification/notification
     DatePipe,
     NgClass,
     MatIconButton,
+    MatMenuTrigger,
+    MatMenu,
+    UserSelfServiceComponent,
   ],
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss',
