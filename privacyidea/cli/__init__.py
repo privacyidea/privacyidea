@@ -21,7 +21,9 @@
 """Utility functions for CLI tools"""
 import click
 from flask.cli import FlaskGroup
+import importlib
 import platform
+
 from privacyidea.app import create_app
 from privacyidea.lib.utils import get_version_number
 
@@ -36,6 +38,14 @@ def create_silent_app():
 # Don't load plugin commands
 class NoPluginsFlaskGroup(FlaskGroup):
     """A FlaskGroup class which does not load commands from plugins"""
+
+    def __init__(self, *args, **kwargs):
+        # Hide the app option, we already hardcode the app in the CLI
+        super().__init__(*args, **kwargs)
+        for param in self.params:
+            if param.name == "app":
+                self.params.remove(param)
+
     def _load_plugin_commands(self):
         pass
 
@@ -45,7 +55,6 @@ def get_version(ctx, param, value):
     if not value or ctx.resilient_parsing:
         return
 
-    import werkzeug
     from flask import __version__
 
     message = "Python %(python)s\nFlask %(flask)s\nWerkzeug %(werkzeug)s\nprivacyIDEA %(privacyIDEA)s"
@@ -54,7 +63,7 @@ def get_version(ctx, param, value):
         % {
             "python": platform.python_version(),
             "flask": __version__,
-            "werkzeug": werkzeug.__version__,
+            "werkzeug": importlib.metadata.version("werkzeug"),
             "privacyIDEA": get_version_number(),
         },
         color=ctx.color,

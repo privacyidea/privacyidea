@@ -37,13 +37,17 @@ But you can set up a cron job to clean up old audit entries. Since version
 2.19 audit entries can be either cleaned up based on the number of entries or
 based on on the age. Cleaning based on the age takes precedence.
 
+.. versionadded:: 2.22 The ``--chunksize`` parameter allows cleaning up audit
+    entries in chunks to avoid exzessive memory usage.
+
 Cleaning based on the number of entries:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can specify a *highwatermark* and a *lowwatermark*. To clean
-up the audit log table, you can call ``pi-manage`` at command line::
+up the audit log table, you can call :ref:`the pi-manage script <pimanage>` on
+the command line::
 
-   pi-manage rotate_audit --highwatermark 20000 --lowwatermark 18000
+   pi-manage audit rotate --highwatermark 20000 --lowwatermark 18000
 
 If there are more than 20000 log entries, this will clean up all old log entries, leaving only 18000 log entries.
 
@@ -52,7 +56,7 @@ Cleaning based on the age:
 
 You can specify the number of days, how old an audit entry may be at a max::
 
-   pi-manage rotate_audit --age 365
+   pi-manage audit rotate --age 365
 
 This will delete all audit entries that are older than one year.
 
@@ -60,13 +64,14 @@ This will delete all audit entries that are older than one year.
 
 Cleaning based on the config file:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. versionadded:: 2.21
 
 Using a config file, you can define different retention times for the audit data.
 E.g. this way you can define, that audit entries about token listings can be deleted after
 one month,
 while the audit information about token creation will only be deleted after ten years.
 
-The config file is a YAML format and looks like this::
+The config file is in a *YAML* format and looks like this::
 
     # DELETE auth requests of nils after 10 days
     - rotate: 10
@@ -109,9 +114,13 @@ If is a good idea to have a *catch-all* rule at the end.
 
 You can then add a call like::
 
-   pi-manage rotate_audit --config /etc/privacyidea/audit.yaml
+   pi-manage audit rotate --config /etc/privacyidea/audit.yaml
 
 in your crontab.
+
+.. note:: The cleaning based on a config file currently does **not** work with
+    the ``--chunksize`` parameter. If the audit-table is too big, consider
+    cleaning based on the age or number of entries first.
 
 
 Access rights
@@ -128,10 +137,12 @@ So you can simply specify a config file with only the content::
 Then you can call ``pi-manage`` like this::
 
    PRIVACYIDEA_CONFIGFILE=/home/cornelius/src/privacyidea/audit.cfg \
-   pi-manage rotate_audit
+   pi-manage audit rotate
 
 This will read the configuration (only the database URI) from the config file
 ``audit.cfg``.
+
+.. _audit_table_size:
 
 Table size
 ~~~~~~~~~~
@@ -141,12 +152,14 @@ column in the database. You should set::
 
    PI_AUDIT_SQL_TRUNCATE = True
 
-in ``pi.cfg``. This will truncate each entry to the defined column length.
+in the :ref:`config file <cfgfile>`. This will truncate each entry to the
+defined column length.
 
-However, if you sill want to fetch more information in the audit log, you can
-increase the column length directly in the database by the usual database means.
+However, if you sill want to add more information to the audit log, you can
+increase the column length directly in the database by the usual database means
+(i.e. :code:`ALTER TABLE pidea_audit MODIFY user varchar(100);` for MariaDB).
 However, privacyIDEA does not know about this and will still truncate the entries
-to the originally defined length.
+to the originally defined lengths.
 
 To avoid this, you need to tell privacyIDEA about the changes.
 In Your :ref:`config file <cfgfile>` add the setting like::
@@ -155,7 +168,8 @@ In Your :ref:`config file <cfgfile>` add the setting like::
                                   "policies": 1000}
 
 which will increase truncation of the user column to 100 and the policies
-column to 1000. Check the database schema for the available columns.
+column to 1000. Check the database schema for the available columns
+here: :class:`privacyidea.models.Audit`.
 
 .. _logger_audit:
 

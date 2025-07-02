@@ -16,9 +16,9 @@
 #
 #
 __doc__ = """The Container Audit Module allows to write audit information to several different
-audit modules at the same time. E.g. it can write audit information to the SQL Audit Module and to the 
+audit modules at the same time. E.g. it can write audit information to the SQL Audit Module and to the
 Logger Audit Module. This way audit information can be saved in the SQL database and at the same time
-be passed to a file or external services via the Python logging facility. 
+be passed to a file or external services via the Python logging facility.
 
 The Container Audit Module is configured like this:
 

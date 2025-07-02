@@ -1,6 +1,14 @@
-<p><translate>Total Challenges:</translate>
-    {{ challengedata.count }}
-</p>
+<div class="form-group">
+    <p><translate>Total Challenges:</translate>
+        {{ challengedata.count }}
+    </p>
+    <button type="button"
+            ng-click="deleteExpiredChallenges()"
+            class="btn btn-transparent btn-danger"
+            translate>
+        Delete Expired Challenges
+    </button>
+</div>
 
 <div uib-pagination ng-show="challengedata.count > 15"
      total-items="challengedata.count" ng-model="params.page"
@@ -58,7 +66,12 @@
             <td>
                {{ challenge.timestamp }}
             </td>
-            <td><a ui-sref="token.details({tokenSerial:challenge.serial})"
+            <td ng-show="!challenge.data.type || challenge.data.type !== 'container'">
+                <a ui-sref="token.details({tokenSerial:challenge.serial})"
+                   ng-click="$rootScope.returnTo=token.challenges;">
+                {{ challenge.serial }}</a></td>
+            <td ng-show="challenge.data.type === 'container'">
+                <a ui-sref="token.containerdetails({containerSerial:challenge.serial})"
                    ng-click="$rootScope.returnTo=token.challenges;">
                 {{ challenge.serial }}</a></td>
             <td>{{ challenge.transaction_id }}</td>

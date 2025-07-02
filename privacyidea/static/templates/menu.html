@@ -1,10 +1,10 @@
 <div class="alert alert-warning" role="alert"
-    ng-show="backend_log_level === 10" translate>
+     ng-show="backend_log_level === 10" translate>
     privacyIDEA is running in DEBUG mode. You can change the debug level in
     pi.cfg.
 </div>
 <div class="alert alert-danger" role="alert"
-    ng-show="backend_log_level < 10" translate>
+     ng-show="backend_log_level < 10" translate>
     privacyIDEA is running in DEBUG mode with PASSWORDS being written to the
     log file. You can change the debug level in
     pi.cfg. Afterwards be sure to remove the logfile!
@@ -29,7 +29,8 @@
         </button>
 
         <div class="navbar-collapse collapse myMainNavbar">
-            <ul class="nav navbar-nav nav-capitalize" ng-hide="token_wizard">
+            <ul class="nav navbar-nav nav-capitalize" ng-hide="token_wizard || container_wizard['enabled']">
+
                 <li ui-sref-active="active"
                     ng-show="loggedInUser.role == 'admin' && admin_dashboard">
                     <a ui-sref="dashboard">
@@ -37,7 +38,6 @@
                           aria-hidden="true"></span>
                         <translate>Dashboard</translate>
                     </a></li>
-
                 <li ng-class="{ 'active': $state.includes('token')}"
                     ng-show="loggedInUser.role && checkMainMenu('tokens')">
                     <a ui-sref="token.list">
@@ -93,6 +93,15 @@
                         <translate>Components</translate>
                     </a>
                 </li>
+                <li ng-class="{ 'active': $state.includes('info')}"
+                    ng-show="loggedInUser.role && rss_age">
+                    <!-- We can hide this, if rss_age == 0. -->
+                    <a ui-sref="info">
+                    <span class="glyphicon glyphicon-info-sign"
+                          aria-hidden="true"></span>
+                        <translate>News</translate>
+                    </a>
+                </li>
             </ul>
             <ul class="nav navbar-nav navbar-right nav-capitalize">
                 <li ng-show="show_node">
@@ -105,8 +114,8 @@
                 </li>
                 <li ng-show="loggedInUser.role && showReload">
                     <a ng-click="reload()" style="cursor: pointer">
-                    <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span>
-                    <translate>Refresh</translate>
+                        <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span>
+                        <translate>Refresh</translate>
                     </a>
                 </li>
                 <li ng-class="{active: $state.includes('register')}"
@@ -134,15 +143,15 @@
                         </button>
                         <ul class="dropdown-menu">
                             <li><a ng-href="https://privacyidea.readthedocs.io/en/v{{ privacyideaVersionNumber }}"
-				                   target="documentation" translate>
+                                   target="documentation" translate>
                                 Online Documentation</a></li>
                             <li ng-show="piExternalLinks !== 'False'">
                                 <a href="https://community.privacyidea.org"
-				                   target="_external" translate>Community</a></li>
+                                   target="_external" translate>Community</a></li>
                             <li ng-show="piExternalLinks !== 'False'">
                                 <a ng-href="{{ privacyideaSupportLink }}"
-				                   target="_external" translate
-				>Support</a></li>
+                                   target="_external" translate
+                                >Support</a></li>
                             <li class="divider"></li>
                             <li ng-click="lock_screen()">
                                 <a translate>Lock screen</a>
@@ -163,9 +172,10 @@
     You will be logged out in {{ myCountdown }} second(s).
 </div>
 <div class="alert alert-warning {{ class_subscription_expired }}"
-    ng-show="subscription_state === 2">
+     ng-show="subscription_state === 2">
     <div translate>
         Your subscription is not valid anymore. Either you exceeded the number of tokens or the
-        subscription expired. Please check, if you need to renew your <a ui-sref="component.subscriptions">subscription</a>.
+        subscription expired. Please check, if you need to renew your <a
+            ui-sref="component.subscriptions">subscription</a>.
     </div>
 </div>

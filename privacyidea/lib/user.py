@@ -208,8 +208,7 @@ class User(object):
         """
         resolver_tuples = []
         realm_config = get_realms(self.realm)
-        resolvers_in_realm = realm_config.get(self.realm, {}) \
-            .get("resolver", [])
+        resolvers_in_realm = realm_config.get(self.realm, {}).get("resolver", [])
         for resolver in resolvers_in_realm:
             # append a tuple
             resolver_tuples.append((resolver.get("name"),
@@ -761,6 +760,7 @@ def get_user_list(param=None, user=None, custom_attributes=False):
             log.debug("Check for resolver class: {0!r}".format(resolver_name))
             y = get_resolver_object(resolver_name)
             log.debug("with this search dictionary: {0!r} ".format(searchDict))
+
             ulist = y.getUserList(searchDict)
             # Add resolvername to the list
             realm_id = get_realm_id(param_realm or user_realm)
@@ -780,8 +780,8 @@ def get_user_list(param=None, user=None, custom_attributes=False):
             log.debug("{0!s}".format(traceback.format_exc()))
             raise exx
 
-        except Exception as exx:  # pragma: no cover
-            log.error("{0!r}".format(exx))
+        except Exception as ex:  # pragma: no cover
+            log.error(f"Unable to get user list: {ex}")
             log.debug("{0!s}".format(traceback.format_exc()))
             continue
 
@@ -808,7 +808,7 @@ def get_username(userid, resolvername):
     return username
 
 
-def log_used_user(user, other_text=""):
+def log_used_user(user: User, other_text: str = "") -> str:
     """
     This creates a log message combined of a user and another text.
     The user information is only added, if user.login != user.used_login

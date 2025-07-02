@@ -16,21 +16,28 @@ SPDX-FileCopyrightText: 2024 Jelina Unger <jelina.unger@netknights.it>
 SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-<div class="well">
-    <form name="formCreateContainer" role="form" ng-hide="loggedInUser.role == 'user' && !checkRight('container_create')">
+<div class="form-group" ng-hide="containerRegister || showTokenEnrolled || containerCreated">
+
+    <div ng-if="container_wizard['enabled']"
+         ng-include="instanceUrl + '/' +piCustomization + '/views/includes/token.containercreate.pre.top.html'">
+    </div>
+
+    <h3 ng-hide="container_wizard['enabled']" translate>Create a New Container</h3>
+    <form name="formCreateContainer" role="form"
+          ng-hide="loggedInUser.role == 'user' && !checkRight('container_create')">
         <!-- Container Type -->
         <div class="form-group">
             <label for="containertype" translate>Container Type</label>
             <select class="form-control"
-                id="containertype"
-                ng-model="form.containerType"
-                ng-options="type as attr.description for (type, attr) in formData.containerTypes">
-        </select>
+                    id="containertype"
+                    ng-disabled="container_wizard['enabled']"
+                    ng-model="form.containerType"
+                    ng-options="type as attr.description for (type, attr) in formData.containerTypes">
+            </select>
         </div>
-        <div class="form-group">
-            <span translate>Supported Token Types</span>: {{ form.token_types }}
+        <div class="form-group" ng-hide="container_wizard['enabled']">
+            <span translate>Supported Token Types</span>: {{ allowedTokenTypes.displayPhrase }}
         </div>
-        <br>
 
         <!-- Description -->
         <div class="form-group" ng-hide="loggedInUser.role == 'user' && !checkRight('container_description')">
@@ -38,21 +45,209 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             <input type="text" class="form-control" id="description"
                    autocomplete="new-password"
                    placeholder="{{ 'Some nice words...'|translate }}"
-                   ng-model="form.description" />
+                   ng-model="form.description"/>
         </div>
 
         <!-- User: will be $scope.newUser.user to use with fixUser() -->
-        <h4 ng-hide="loggedInUser.role == 'user' && !checkRight('container_assign_user')" translate>Assign container to user</h4>
-        <div ng-hide="loggedInUser.role == 'user' && !checkRight('container_assign_user')">
-            <div assign-user new-user-object="newUser" realms="realms" enable-set-pin=false>
+        <div class="form-group" ng-show="loggedInUser.role=='admin'">
+            <hr class="horizontal-line-invisible">
+            <h4 translate>
+                Assign the Container to a User
+            </h4>
+            <div>
+                <div assign-user
+                     new-user-object="newUser"
+                     realms="realms"
+                     enable-set-pin=false
+                     enable-realm-only=true>
+                </div>
             </div>
         </div>
+
+        <!-- Template -->
+        <div class="form-group" ng-show="checkRight('container_template_list')">
+            <hr class="horizontal-line-invisible">
+            <h4 translate>Use a Template</h4>
+            <div class="form-group">
+                <label for="templateName" translate>
+                    Template Name and Contained Token Types
+                </label>
+                <select class="form-control form-group"
+                        id="templateName"
+                        ng-model="form.template"
+                        ng-change="selectTemplate(false)"
+                        ng-disabled="container_wizard['enabled']"
+                        ng-options="template as template.template_display for (templateName, template) in templates[form.containerType]">
+                </select>
+                <button class="btn btn-default form-group" ng-hide="editTemplate || container_wizard['enabled']"
+                        ng-disabled="form.template.name==='noTemplate'"
+                        ng-click="editTemplate=true"
+                        translate>
+                    Edit
+                </button>
+                <button class="btn btn-default form-group btn-group" ng-show="editTemplate"
+                        ng-click="editTemplate=false" translate>
+                    Hide
+                </button>
+                <div class="panel panel-default panel-body" ng-show="editTemplate">
+                    <div container-template-details
+                         selection="form"
+                         form-init="tokenSettings"
+                         allowed-token-types="allowedTokenTypes"
+                         function-obj="functionObject"
+                         mark-add-remove="true"
+                         show-default-selection="false"
+                         edit="true"
+                         hide-buttons="hide_buttons"
+                         class="form-group"
+                    ></div>
+                    <span translate>Note: Changes will only be applied to this container and not to the template.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Init registration -->
+        <div class="form-group" ng-show="checkRight('container_register') && form.containerType == 'smartphone'">
+            <hr class="horizontal-line-invisible">
+            <h4 translate>Registration</h4>
+            <input type="checkbox" id="init_registration"
+                   ng-disabled="container_wizard['enabled']"
+                   ng-model="initRegistration">
+            <label for="init_registration" translate>Generate a QR code to register the container on a
+                smartphone.</label>
+            <div class="form-group">
+                <button class="btn btn-default"
+                        ng-click="registrationSettings=true"
+                        ng-hide="registrationSettings || container_wizard['enabled']"
+                        translate>
+                    Edit Settings
+                </button>
+                <button class="btn btn-default"
+                        ng-click="registrationSettings=false"
+                        ng-show="registrationSettings"
+                        translate>
+                    Hide Settings
+                </button>
+            </div>
+            <div register-container
+                 passphrase="passphrase"
+                 ng-show="registrationSettings">
+            </div>
+        </div>
+
         <!-- Submit Button -->
         <div class="text-center" ng-hide="loggedInUser.role == 'user' && !checkRight('container_create')">
             <button type="button" ng-click="createContainer()"
                     class="btn btn-primary">
-                <span>Create</span>
+                <span translate>Create</span>
             </button>
         </div>
     </form>
+
+    <div ng-if="container_wizard['enabled']"
+         ng-include="instanceUrl + '/' +piCustomization + '/views/includes/token.containercreate.pre.bottom.html'">
+    </div>
+</div>
+
+<!--- Container Enrolled --->
+<div ng-show="containerRegister || showTokenEnrolled || (containerCreated && container_wizard['enabled'])">
+
+    <div ng-if="container_wizard['enabled']"
+         ng-include="instanceUrl + '/' +piCustomization + '/views/includes/token.containercreate.post.top.html'">
+    </div>
+
+    <div ng-hide="container_wizard['enabled']">
+        <h3 translate>Container Created</h3>
+
+        <span translate>
+        Your container was successfully created with the serial: </span>
+        <a ui-sref="token.containerdetails({containerSerial:containerSerial})">{{ containerSerial }}</a>
+    </div>
+
+    <!--- Container Registration --->
+    <div ng-show="containerRegister">
+        <h4 translate>Registration</h4>
+
+        <div class="row">
+            <div class="col-sm-6">
+                <img width="250" ng-src="{{ containerRegistrationQR }}"/>
+            </div>
+
+            <div class="col-sm-6" ng-hide="container_wizard['enabled']">
+                <p class="help-block" translate>
+                    Please scan the QR code with the privacyIDEA Authenticator App
+                    or click <a href="{{ containerRegistrationURL }}">this link</a> on your
+                    smartphone to register your container. It will send the missing registration data to the configured
+                    endpoint.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!--- Tokens enrolled --->
+    <div ng-show="showTokenEnrolled && !containerRegister && !registeredSuccessfully">
+        <h4 translate>Tokens</h4>
+        <div class="form-group" ng-hide="container_wizard['enabled']">
+            <span translate>
+                The following tokens were successfully enrolled in the container using the template
+            </span>
+            <a ui-sref="token.containertemplates.edit({templateName: form.template.name})"
+               ng-show="checkRight('container_template_list')">
+                {{ form.template.name }}
+            </a>.
+        </div>
+
+
+        <table class="table table-hover">
+            <tr ng-repeat="enrolledToken in tokenInitData">
+                <td>
+                    <label class="table-capitalize"> {{ enrolledToken.type }}
+                        <a ui-sref="token.details({tokenSerial:enrolledToken.serial})"
+                           ng-hide="container_wizard['enabled']">
+                            {{ enrolledToken.serial }}
+                        </a>
+                    </label>
+
+                    <div otp-list
+                         enrolled-token="enrolledToken"
+                         otp-rows="enrolledToken.otp_rows"
+                         otp-row-count="enrolledToken.otp_row_count"
+                         pi-customization="piCustomization"
+                         ng-if="enrolledToken.otps">
+                    </div>
+
+                    <div ng-if="enrolledToken.otps === undefined">
+                        <ng-include src="instanceUrl +
+                '/static/components/token/views/token.enrolled.' + enrolledToken.type + '.html' + fileVersionSuffix">
+                        </ng-include>
+                    </div>
+
+                    <div verify-enrolled-token
+                         enrolled-token="enrolledToken"
+                         token-type="enrolledToken.type"
+                         new-user="newUser"
+                         callback="verifyTokenCallback">
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div ng-show="container_wizard['enabled'] && !containerRegister">
+        <div class="form-group" ng-show="registeredSuccessfully">
+            <span class="glyphicon glyphicon-ok"></span>
+            <span translate>
+                Registration completed successfully
+            </span>
+        </div>
+        <button ng-click="logout()"
+                ng-show="container_wizard['enabled']"
+                class="btn btn-primary" translate>Logout
+        </button>
+    </div>
+
+    <div ng-if="container_wizard['enabled']"
+         ng-include="instanceUrl + '/' +piCustomization + '/views/includes/token.containercreate.post.bottom.html'">
+    </div>
+
 </div>

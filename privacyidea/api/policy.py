@@ -31,29 +31,28 @@
 __doc__ = """
 The code of this module is tested in tests/test_api_system.py
 """
-from flask import (Blueprint,
-                   request)
+from flask import Blueprint, request, current_app
 from .lib.utils import (getParam,
                         getLowerParams,
                         optional,
                         required,
                         send_result,
-                        check_policy_name, send_file)
+                        check_policy_name, send_file, get_required)
 from ..lib.log import log_with
-from ..lib.policy import (set_policy, ACTION,
+from ..lib.policies.policy_conditions import ConditionHandleMissingData
+from ..lib.policy import (set_policy, ACTION, rename_policy,
                           export_policies, import_policies,
                           delete_policy, get_static_policy_definitions,
                           enable_policy, get_policy_condition_sections,
-                          get_policy_condition_comparators, Match)
+                          get_policy_condition_comparators, Match, validate_values)
 from ..lib.token import get_dynamic_policy_definitions
 from ..lib.error import (ParameterError)
-from privacyidea.lib.utils import to_unicode, is_true
+from privacyidea.lib.utils import is_true
 from privacyidea.lib.config import get_privacyidea_node_names
 from ..api.lib.prepolicy import prepolicy, check_base_action
 
 from flask import g
 from werkzeug.datastructures import FileStorage
-from cgi import FieldStorage
 
 import logging
 
@@ -98,6 +97,23 @@ def disable_policy_api(name):
     g.audit_object.log({"success": True})
     return send_result(p)
 
+@policy_blueprint.route('/<old_name>', methods=['PATCH'])
+@log_with(log)
+@prepolicy(check_base_action, request, ACTION.POLICYWRITE)
+def patch_policy_name_api(old_name):
+    """
+    Rename an existing policy.
+
+    Only the policy’s name is modified; all other attributes remain unchanged.
+
+    :param old_name: Current name of the policy (from the URL).
+    :jsonparam name: New name to assign to the policy (in the JSON body).
+    :return: Database ID of the renamed policy.
+    """
+    new_name = get_required(request.all_data, "name")
+    result = rename_policy(name=old_name, new_name=new_name)
+    g.audit_object.log({"success": True, "action_detail": f"{old_name} renamed to {new_name}"})
+    return send_result(result)
 
 @policy_blueprint.route('/<name>', methods=['POST'])
 @log_with(log)
@@ -198,6 +214,11 @@ def set_policy_api(name=None):
     priority = int(getParam(param, "priority", optional, default=1))
     conditions = getParam(param, "conditions", optional)
     description = getParam(param, "description", optional)
+
+    # Validate admin realms here, because the allowed realms need to be read from the config file
+    # (avoid flask imports on lib level)
+    valid_admin_realms = current_app.config.get("SUPERUSER_REALM", [])
+    validate_values(admin_realm, valid_admin_realms, "Admin Realms")
 
     g.audit_object.log({'action_detail': name,
                         'info': "{0!s}".format(param)})
@@ -346,7 +367,7 @@ def delete_policy_api(name=None):
        }
     """
     ret = delete_policy(name)
-    g.audit_object.log({'success': ret,
+    g.audit_object.log({'success': True,
                         'info': name})
     return send_result(ret)
 
@@ -395,23 +416,20 @@ def import_policy_api(filename=None):
 
     """
     policy_file = request.files['file']
-    file_contents = ""
-    # In case of form post requests, it is an "instance" of FieldStorage
-    # i.e. the Filename is selected in the browser and the data is
-    # transferred
-    # in an iframe. see: http://jquery.malsup.com/form/#sample4
-    #
-    if type(policy_file) == FieldStorage:  # pragma: no cover
-        log.debug("Field storage file: %s", policy_file)
-        file_contents = policy_file.value
-    elif type(policy_file) == FileStorage:
-        log.debug("Werkzeug File storage file: %s", policy_file)
+    if isinstance(policy_file, FileStorage):
+        log.debug(f"Werkzeug File storage file: {policy_file}")
         file_contents = policy_file.read()
     else:  # pragma: no cover
+        # TODO: is this even possible?
         file_contents = policy_file
 
     # The policy file should contain readable characters
-    file_contents = to_unicode(file_contents)
+    try:
+        if isinstance(file_contents, bytes):
+            file_contents = file_contents.decode()
+    except UnicodeDecodeError as e:
+        log.error(f"Unable to convert contents of file '{filename}' to unicode: {e}")
+        raise ParameterError("Unable to convert file contents. Binary data is not supported")
 
     if file_contents == "":
         log.error("Error loading/importing policy file. file {0!s} empty!".format(
@@ -532,6 +550,10 @@ def get_policy_defs(scope=None):
          * ``"description"``, a human-readable description of the section
      * ``"comparators"``, containing a dictionary mapping each comparator to a dictionary with the following keys:
          * ``"description"``, a human-readable description of the comparator
+     * ``"handle_missing_data"``, containing a dictionary mapping each handle_missing_data to a dictionary with the
+        following keys:
+            * ``"display_value"``, a human-readable name of the behaviour to be displayed in the webUI
+            * ``"description"``, a short description of the behaviour
 
     if the scope is "pinodes", it returns a list of the configured privacyIDEA nodes.
 
@@ -547,9 +569,11 @@ def get_policy_defs(scope=None):
         # special treatment: get descriptions of conditions
         section_descriptions = get_policy_condition_sections()
         comparator_descriptions = get_policy_condition_comparators()
+        handle_missing_data = ConditionHandleMissingData.get_selection_dict()
         result = {
             "sections": section_descriptions,
             "comparators": comparator_descriptions,
+            "handle_missing_data": handle_missing_data
         }
     elif scope == 'pinodes':
         result = get_privacyidea_node_names()

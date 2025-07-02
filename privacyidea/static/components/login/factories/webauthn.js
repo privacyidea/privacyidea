@@ -36,7 +36,7 @@ angular
                 domExceptionErrorMessage
             ) {
                 return {
-                    register_request: function(registerRequest, callback) {
+                    register_request: function(registerRequest, callback, error_callback) {
                         if (!pi_webauthn) {
                             inform.add(
                                 gettextCatalog.getString(
@@ -54,13 +54,15 @@ angular
                             .register(registerRequest)
                             .then(callback)
                             .catch(function(e) {
+                                console.log("Error in WebAuthn registration:", e);
                                 inform.add(
-                                    domExceptionErrorMessage[e.name] + " / " + e.message,
+                                    "WebAuthn registration failed.",
                                     {
                                         type: "danger",
-                                        ttl: 10000
+                                        ttl: 5000
                                     }
                                 );
+                                error_callback(e);
                             });
                     },
                     sign_request: function(data, signRequests, username, transactionid, login_callback) {

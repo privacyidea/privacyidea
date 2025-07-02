@@ -75,36 +75,33 @@ In case of 2stepinit the key is generated from the server_component and the
 client_component using the TokenClass method generate_symmetric_key.
 This method is supposed to be overwritten by the corresponding token classes.
 """
-import logging
 import hashlib
+import logging
 import traceback
-from datetime import datetime, timedelta
+from base64 import b32encode
+from binascii import unhexlify
+from datetime import datetime, timedelta, timezone
 
-from .error import (TokenAdminError,
-                    ParameterError)
-
-from ..api.lib.utils import getParam
-from .log import log_with
-
-from .config import (get_from_config, get_prepend_pin)
-from .user import (User,
-                   get_username)
-from ..models import (TokenOwner, TokenTokengroup, Challenge, cleanup_challenges)
-from .challenge import get_challenges
-from privacyidea.lib.crypto import (encryptPassword, decryptPassword,
-                                    generate_otpkey)
-from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
-from .decorators import check_token_locked
 from dateutil.parser import parse as parse_date_string, ParserError
 from dateutil.tz import tzlocal, tzutc
+
+from privacyidea.lib import _
+from privacyidea.lib.crypto import (encryptPassword, decryptPassword,
+                                    generate_otpkey)
+from privacyidea.lib.policy import (get_action_values_from_options, SCOPE, ACTION)
 from privacyidea.lib.utils import (is_true, decode_base32check,
                                    to_unicode, create_img, parse_timedelta,
                                    parse_legacy_time, split_pin_pass)
-from privacyidea.lib import _
-from privacyidea.lib.policy import (get_action_values_from_options, SCOPE, ACTION)
-from base64 import b32encode
-from binascii import unhexlify
-
+from .challenge import get_challenges
+from .config import (get_from_config, get_prepend_pin)
+from .decorators import check_token_locked
+from .error import (TokenAdminError,
+                    ParameterError)
+from .log import log_with
+from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
+from .user import (User)
+from ..api.lib.utils import getParam
+from ..models import (TokenOwner, TokenTokengroup, Challenge, cleanup_challenges)
 
 DATE_FORMAT = '%Y-%m-%dT%H:%M%z'
 AUTH_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f%z"
@@ -168,8 +165,6 @@ class TokenClass(object):
     client_mode = CLIENTMODE.INTERACTIVE
     # If the token provides means that the user has to prove/verify that the token was successfully enrolled.
     can_verify_enrollment = False
-    # If the token is enrollable via multichallenge
-    is_multichallenge_enrollable = False
 
     @log_with(log)
     def __init__(self, db_token):
@@ -245,7 +240,8 @@ class TokenClass(object):
                        user_id=uid, resolver=resolvername,
                        realmname=user.realm).save()
         # set the tokenrealm
-        self.set_realms([user.realm])
+        self.set_realms([user.realm], add=True)
+        self.add_tokeninfo("assignment_date", datetime.now(timezone.utc).isoformat(timespec="seconds"))
 
     def add_tokengroup(self, tokengroup=None, tokengroup_id=None):
         """
@@ -293,13 +289,12 @@ class TokenClass(object):
         user_object = None
         tokenowner = self.token.first_owner
         if tokenowner:
-            username = get_username(tokenowner.user_id, tokenowner.resolver)
-            user_object = User(login=username,
-                               resolver=tokenowner.resolver,
-                               realm=tokenowner.realm.name)
+            user_object = User(resolver=tokenowner.resolver,
+                               realm=tokenowner.realm.name,
+                               uid=tokenowner.user_id)
         return user_object
 
-    def is_orphaned(self):
+    def is_orphaned(self, orphaned_on_error=True):
         """
         Return True if the token is orphaned.
 
@@ -317,8 +312,9 @@ class TokenClass(object):
                     orphaned = True
             except Exception:
                 # If any other resolving error occurs, we also assume the
-                # token to be orphaned
-                orphaned = True
+                # token to be orphaned per default, You can change this with
+                # the parameter orphaned_on_error.
+                orphaned = orphaned_on_error
         return orphaned
 
     def get_user_displayname(self):
@@ -407,6 +403,10 @@ class TokenClass(object):
                 # encrypt the value
                 add_info[key] = encryptPassword(value)
         self.token.set_info(add_info)
+
+    @check_token_locked
+    def add_tokeninfo_dict(self, info: dict):
+        self.token.set_info(info)
 
     @check_token_locked
     def check_otp(self, otpval, counter=None, window=None, options=None):
@@ -523,8 +523,7 @@ class TokenClass(object):
         otp_counter = -1
         reply = None
 
-        (res, pin, otpval) = self.split_pin_pass(passw, user=user,
-                                                 options=options)
+        (res, pin, otpval) = self.split_pin_pass(passw, user=user, options=options)
         if res:
             # If the otpvalue is too short, we do not check the PIN at all, since res is False
             pin_match = self.check_pin(pin, user=user, options=options)
@@ -639,11 +638,11 @@ class TokenClass(object):
 
         pin = getParam(param, "pin", optional)
         if pin is not None:
-            storeHashed = True
-            enc = getParam(param, "encryptpin", optional)
-            if enc is not None and (enc is True or enc.lower() == "true"):
-                storeHashed = False
-            self.token.set_pin(pin, storeHashed)
+            store_hashed = True
+            encrypt_pin = getParam(param, "encryptpin", optional)
+            if is_true(encrypt_pin):
+                store_hashed = False
+            self.token.set_pin(pin, store_hashed)
 
         otplen = getParam(param, 'otplen', optional)
         if otplen is not None:
@@ -1411,11 +1410,11 @@ class TokenClass(object):
         :rtype: tuple
         """
         # The database field is always an integer
-        otplen = self.token.otplen
-        log.debug("Splitting the an OTP value of length {0!s} from the password.".format(otplen))
-        pin, otpval = split_pin_pass(passw, otplen, get_prepend_pin())
-        # If the provided passw is shorter than the expected otplen, we return the status False
-        return len(passw) >= otplen, pin, otpval
+        otp_length = self.token.otplen
+        log.debug(f"Splitting the OTP value of length {otp_length} from the password.")
+        pin, otp_value = split_pin_pass(passw, otp_length, get_prepend_pin())
+        # If the provided passw is shorter than the expected otp_length, we return the status False
+        return len(passw) >= otp_length, pin, otp_value
 
     def status_validation_fail(self):
         """
@@ -1493,7 +1492,7 @@ class TokenClass(object):
         is triggered by overwriting this method.
 
         .. note:: in case of ``pin policy == 2`` (no pin is required)
-                  the ``check_pin`` would always return true! Thus each request
+                  the ``check_pin`` would always return true! Thus, each request
                   containing a ``data`` or ``challenge`` would trigger a challenge!
 
         The Challenge workflow is like this.
@@ -1516,7 +1515,7 @@ class TokenClass(object):
                      V                       V
             challenge_janitor       challenge_janitor
 
-        :param passw: password, which might be pin or pin+otp
+        :param passw: password, which might be the pin or pin+otp
         :type passw: string
         :param user: The user from the authentication request
         :type user: User object
@@ -1615,31 +1614,38 @@ class TokenClass(object):
 
         # get the challenges for this transaction ID
         if transaction_id is not None:
-            challengeobject_list = get_challenges(serial=self.token.serial,
-                                                  transaction_id=transaction_id)
+            challenges = get_challenges(serial=self.token.serial, transaction_id=transaction_id)
 
-            for challengeobject in challengeobject_list:
-                if challengeobject.is_valid():
+            for challenge in challenges:
+                if challenge.is_valid():
                     # challenge is still valid
                     # Add the challenge to the options for check_otp
-                    options["challenge"] = challengeobject.challenge
-                    options["data"] = challengeobject.data
-                    if challengeobject.session == CHALLENGE_SESSION.ENROLLMENT:
+                    options["challenge"] = challenge.challenge
+                    options["data"] = challenge.data
+                    if challenge.session == CHALLENGE_SESSION.ENROLLMENT:
                         self.enroll_via_validate_2nd_step(passw, options=options)
-                        challengeobject.delete()
+                        challenge.delete()
                         # Basically we have a successfully answered challenge
                         otp_counter = 0
                     else:
                         # Now see if the OTP matches:
-                        otp_counter = self.check_otp(passw, options=options)
+                        try:
+                            otp_counter = self.check_otp(passw, options=options)
+                        except ParameterError as e:
+                            # ParameterError can be expected because options does not contain the data for every token
+                            # type to do a successful check. This is the case if the user has multiple token, e.g.
+                            # push and passkey, and uses push. In the final call with the push token, there is obviously
+                            # no data for the passkey in the options
+                            log.debug(e)
+                            otp_counter = -1
                         if otp_counter >= 0:
                             # We found the matching challenge, so lets return the
                             # successful result and delete the challenge object.
-                            challengeobject.delete()
+                            challenge.delete()
                             break
                         else:
                             # increase the received_count
-                            challengeobject.set_otp_status()
+                            challenge.set_otp_status()
 
         self.challenge_janitor()
         return otp_counter
@@ -1659,7 +1665,8 @@ class TokenClass(object):
 
     def challenge_janitor(self):
         """
-        Just clean up all challenges, for which the expiration has expired.
+        Clean up all challenges for this token, for which the expiration has
+        expired.
 
         :return: None
         """
@@ -1689,6 +1696,8 @@ class TokenClass(object):
         message = get_action_values_from_options(SCOPE.AUTH,
                                                  ACTION.CHALLENGETEXT,
                                                  options) or _('please enter otp: ')
+        message = message.replace(r"\,", ",")
+
         data = None
         reply_dict = {}
 
@@ -1989,3 +1998,13 @@ class TokenClass(object):
         token_dict["otpkey"] = to_unicode(token_dict.get("otpkey"))
         token_dict["info_list"] = self.get_tokeninfo(decrypted=True)
         return token_dict
+
+    @classmethod
+    def is_multichallenge_enrollable(cls):
+        return False
+
+    def get_enroll_url(self, user: User, params: dict):
+        """
+        Return the URL to enroll this token. It is not supported by all token types.
+        """
+        return None

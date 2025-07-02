@@ -473,8 +473,9 @@ def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
 
             # Set the last successful authentication, if res still true
             if res:
-                token.add_tokeninfo(ACTION.LASTAUTH,
-                                    datetime.datetime.now(tzlocal()))
+                from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
+                last_auth = datetime.datetime.now(tzlocal())
+                token.add_tokeninfo(ACTION.LASTAUTH, last_auth.strftime(AUTH_DATE_FORMAT))
 
     return res, reply_dict
 

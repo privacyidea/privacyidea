@@ -1,7 +1,7 @@
 .. _containerhandler:
 
 Container Handler Module
---------------------
+------------------------
 
 .. index:: Container Handler, Handler Modules
 
@@ -98,6 +98,12 @@ disable all tokens
 ..................
 
 For the container identified in the request all contained tokens will be disabled.
+
+unregister
+..........
+
+The container identified in the request will be unregistered. Synchronization with the smartphone is not possible
+anymore.
 
 Code
 ~~~~

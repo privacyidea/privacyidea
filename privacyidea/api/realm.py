@@ -56,7 +56,7 @@ from privacyidea.lib import _
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import check_node_uuid_exists
 from privacyidea.lib.error import ParameterError
-from privacyidea.lib.policy import CONDITION_CHECK, ACTION, Match
+from privacyidea.lib.policy import ConditionCheck, ACTION, Match
 import logging
 
 log = logging.getLogger(__name__)
@@ -212,7 +212,7 @@ def get_realms_api():
                              adminrealm=luser.get("realm"),
                              adminuser=luser.get("username"),
                              active=True,
-                             extended_condition_check=CONDITION_CHECK.DO_NOT_CHECK_AT_ALL).policies()
+                             extended_condition_check=ConditionCheck.DO_NOT_CHECK_AT_ALL).policies()
     realms = reduce_realms(all_realms, policies)
 
     return send_result(realms)

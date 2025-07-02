@@ -31,10 +31,9 @@ myApp.controller("tokenMenuController", ['$scope', '$location', '$rootScope', 'A
 
         // watch the location to change the side menu from token to container
         $rootScope.$on('$locationChangeSuccess', function () {
-            if ($location.path().includes("container"))  {
+            if ($location.path().includes("container")) {
                 $scope.tokenMenu = false;
-            }
-            else{
+            } else {
                 $scope.tokenMenu = true;
             }
         })
@@ -137,10 +136,10 @@ myApp.controller("tokenAssignController", ['$scope', 'TokenFactory',
 
 myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout", "$stateParams", "AuthFactory",
     "UserFactory", "$state", "ConfigFactory", "instanceUrl", "$http", "hotkeys", "gettextCatalog", "inform",
-    "U2fFactory", "webAuthnToken", "versioningSuffixProvider",
+    "U2fFactory", "webAuthnToken", "versioningSuffixProvider", "$location",
     function tokenEnrollController($scope, TokenFactory, $timeout, $stateParams, AuthFactory, UserFactory, $state,
                                    ConfigFactory, instanceUrl, $http, hotkeys, gettextCatalog, inform, U2fFactory,
-                                   webAuthnToken, versioningSuffixProvider) {
+                                   webAuthnToken, versioningSuffixProvider, $location) {
 
         hotkeys.bindTo($scope).add({
             combo: 'alt+e',
@@ -189,11 +188,12 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             type: $scope.default_tokentype,
             hashlib: "sha1",
             'radius.system_settings': true,
-            container_serial: $stateParams.containerSerial,
+            container_serial: null,
         };
         if ($state.includes('token.rollover')) {
             $scope.form.serial = $stateParams.tokenSerial;
             $scope.form.type = $stateParams.tokenType;
+            $scope.form.container_serial = $stateParams.containerSerial;
         }
         $scope.vasco = {
             // Note: A primitive does not work in the ng-model of the checkbox!
@@ -375,19 +375,13 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             ConfigFactory.getRealms(function (data) {
                 $scope.realms = data.result.value;
                 // Set the default realm
-                const size = Object.keys($scope.realms).length;
                 angular.forEach($scope.realms, function (realm, realmname) {
-                    if (size === 1) {
-                        // if there is only one realm, preset it
-                        $scope.newUser = {user: "", realm: realmname};
-                    }
                     // if there is a default realm, preset the default realm
                     if (realm.default && !$stateParams.realmname) {
                         $scope.newUser = {user: "", realm: realmname};
-                        //debug: console.log("tokenEnrollController");
-                        //debug: console.log($scope.newUser);
                     }
                 });
+
                 // init the user, if token.enroll was called from the user.details
                 if ($stateParams.realmname) {
                     $scope.newUser.realm = $stateParams.realmname;
@@ -481,11 +475,99 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
 
                 $scope.register_fido($scope.enrolledToken.webAuthnRegisterRequest, webAuthnToken, $scope.webAuthnToken);
             }
-            if ($scope.enrolledToken.rollout_state === "clientwait") {
+            if ($scope.enrolledToken.rollout_state === "clientwait" && !$scope.form["2stepinit"]) {
                 $scope.pollTokenInfo();
             }
+            // Passkey
+            $scope.bytesToBase64 = function (bytes) {
+                const binString = Array.from(bytes, (byte) =>
+                    String.fromCodePoint(byte),).join("");
+                return btoa(binString);
+            };
+            $scope.base64URLToBytes = function (base64URLString) {
+                const base64 = base64URLString.replace(/-/g, '+').replace(/_/g, '/');
+                const padLength = (4 - (base64.length % 4)) % 4;
+                const padded = base64.padEnd(base64.length + padLength, '=');
+                const binary = atob(padded);
+                const buffer = new ArrayBuffer(binary.length);
+                const bytes = new Uint8Array(buffer);
+                for (let i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+                return buffer;
+            }
+
+            if ($scope.enrolledToken.passkey_registration) {
+                $scope.click_wait = true;
+                //console.log($scope.enrolledToken.passkey_registration);
+                let options = $scope.enrolledToken.passkey_registration;
+                let excludedCredentials = [];
+                for (const cred of options.excludeCredentials) {
+                    excludedCredentials.push({
+                        id: $scope.base64URLToBytes(cred.id),
+                        type: cred.type,
+                    });
+                }
+                navigator.credentials.create({
+                    publicKey: {
+                        rp: options.rp,
+                        user: {
+                            id: $scope.base64URLToBytes(options.user.id),
+                            name: options.user.name,
+                            displayName: options.user.displayName
+                        },
+                        challenge: Uint8Array.from(options.challenge, c => c.charCodeAt(0)),
+                        pubKeyCredParams: options.pubKeyCredParams,
+                        excludeCredentials: excludedCredentials,
+                        authenticatorSelection: options.authenticatorSelection,
+                        timeout: options.timeout,
+                        extensions: {
+                            credProps: true,
+                        },
+                        attestation: options.attestation
+                    }
+                }).then(function (publicKeyCred) {
+                    //console.log("Successfully registered passkey");
+                    //console.log(publicKeyCred);
+                    let params = {
+                        user: $scope.newUser.user,
+                        realm: $scope.newUser.realm,
+                        transaction_id: data.detail.transaction_id,
+                        serial: data.detail.serial,
+                        type: "passkey",
+                        credential_id: publicKeyCred.id,
+                        rawId: $scope.bytesToBase64(new Uint8Array(publicKeyCred.rawId)),
+                        authenticatorAttachment: publicKeyCred.authenticatorAttachment,
+                        attestationObject: $scope.bytesToBase64(
+                            new Uint8Array(publicKeyCred.response.attestationObject)),
+                        clientDataJSON: $scope.bytesToBase64(new Uint8Array(publicKeyCred.response.clientDataJSON)),
+                    }
+                    if (publicKeyCred.response.attestationObject) {
+                        params.attestationObject = $scope.bytesToBase64(
+                            new Uint8Array(publicKeyCred.response.attestationObject));
+                    }
+                    const extResults = publicKeyCred.getClientExtensionResults();
+                    if (extResults.credProps) {
+                        params.credProps = extResults.credProps;
+                    }
+                    TokenFactory.initToken(params, function (response) {
+                        $scope.click_wait = false;
+                    });
+                }, function (error) {
+                    console.log("Error while registering passkey");
+                    console.log(error);
+                    inform.add("Error while registering passkey, the token will not be created!",
+                        {type: "danger", ttl: 10000});
+                    if (AuthFactory.checkRight("delete")) {
+                        TokenFactory.delete(data.detail.serial, function (response) {
+                            $state.go('token.list');
+                        });
+                    }
+                });
+            }
+            // End Passkey
             $('html,body').scrollTop(0);
-        };
+        }
 
         $scope.enrollToken = function () {
             $scope.enrolling = true;
@@ -499,6 +581,9 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
 
             if ($scope.containerSerial !== "createnew" && $scope.containerSerial !== "none") {
                 $scope.form.container_serial = $scope.containerSerial;
+            } else {
+                // Do not send the container_serial if it has no value
+                delete $scope.form.container_serial;
             }
 
             TokenFactory.enroll($scope.newUser,
@@ -511,18 +596,24 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
 
         $scope.pollTokenInfo = function () {
             TokenFactory.getTokenForSerial($scope.enrolledToken.serial, function (data) {
-                $scope.enrolledToken.rollout_state = data.result.value.tokens[0].rollout_state;
+                if (data.result.value && data.result.value.tokens && data.result.value.tokens.length > 0) {
+                    $scope.enrolledToken.rollout_state = data.result.value.tokens[0].rollout_state;
+                }
                 // Poll the data after 2.5 seconds again
-                if ($scope.enrolledToken.rollout_state === "clientwait") {
+                if ($scope.enrolledToken.rollout_state === "clientwait" && $location.path().indexOf("/token/enroll") > -1) {
                     $timeout($scope.pollTokenInfo, 2500);
                 }
             })
         };
 
-        $scope.regenerateToken = function () {
+        $scope.regenerateToken = function (serial) {
             const params = $scope.form;
-            params.serial = $scope.enrolledToken.serial;
-            TokenFactory.enroll($scope.newUser, params, $scope.callback);
+            if (serial) {
+                params.serial = serial;
+            } else {
+                params.serial = $scope.enrolledToken.serial;
+            }
+            TokenFactory.enroll(null, params, $scope.callback);
         };
 
         $scope.sendClientPart = function () {
@@ -530,7 +621,9 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                 "otpkey": $scope.clientpart.replace(/ /g, ""),
                 "otpkeyformat": "base32check",
                 "serial": $scope.enrolledToken.serial,
-                "type": $scope.form.type
+                "type": $scope.form.type,
+                // Send the rollover parameter as well to avoid a possible PIN check
+                "rollover": $scope.form.rollover
             };
             TokenFactory.enroll($scope.newUser, params, function (data) {
                 $scope.clientpart = "";
@@ -543,7 +636,6 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                 "serial": $scope.enrolledToken.serial,
                 "verify": $scope.verifyResponse,
                 "type": $scope.form.type
-
             };
             TokenFactory.enroll($scope.newUser, params, function (data) {
                 if (data.result.value === true) {
@@ -579,8 +671,14 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                         token.subject
                             = (response.detail.u2fRegisterResponse || response.detail.webAuthnRegisterResponse).subject;
                         token.vendor = token.subject.split(" ")[0];
-                        console.log(token);
+                        //console.log(token);
                     });
+            }, function (error) {
+                if (AuthFactory.checkRight("delete")) {
+                    TokenFactory.delete($scope.serial, function (response) {
+                        $state.go('token.list');
+                    });
+                }
             });
             $scope.click_wait = true;
         };
@@ -678,6 +776,13 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             return true;
         };
 
+        $scope.copyPKCS12PasswordToClipboard = function (text) {
+            navigator.clipboard.writeText(text).then(function () {
+                inform.add(gettextCatalog.getString("PKCS12 Password copied to clipboard"),
+                    {type: "info", ttl: 3000})
+            });
+        }
+
         // ===========================================================
         // ===============  Date stuff ===============================
         // ===========================================================
@@ -692,8 +797,8 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             formatYear: 'yy',
             startingDay: 1
         };
-    }]);
-
+    }
+]);
 
 myApp.controller("tokenImportController", ['$scope', 'Upload', 'AuthFactory', 'tokenUrl', 'ConfigFactory', 'inform',
     'gettextCatalog',

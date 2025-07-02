@@ -500,11 +500,11 @@ class IdResolver (UserIdResolver):
         return self
 
     def _create_engine(self):
-        log.info("using the connect string "
-                 "{0!s}".format(censor_connect_string(self.connect_string)))
+        log.debug("using the connect string "
+                  "{0!s}".format(censor_connect_string(self.connect_string)))
+        log.debug("using pool_size={0!s}, pool_timeout={1!s}, pool_recycle={2!s}".format(
+            self.pool_size, self.pool_timeout, self.pool_recycle))
         try:
-            log.debug("using pool_size={0!s}, pool_timeout={1!s}, pool_recycle={2!s}".format(
-                self.pool_size, self.pool_timeout, self.pool_recycle))
             engine = create_engine(self.connect_string,
                                    encoding=self.encoding,
                                    convert_unicode=False,
@@ -593,12 +593,15 @@ class IdResolver (UserIdResolver):
 
         """
         num = -1
-
-        connect_string = cls._create_connect_string(param)
-        log.info("using the connect string {0!s}".format(censor_connect_string(connect_string)))
-        engine = create_engine(connect_string)
-        # create a configured "Session" class
-        session = scoped_session(sessionmaker(bind=engine))()
+        try:
+            connect_string = cls._create_connect_string(param)
+            log.info("using the connect string {0!s}".format(censor_connect_string(connect_string)))
+            engine = create_engine(connect_string)
+            # create a configured "Session" class
+            session = scoped_session(sessionmaker(bind=engine))()
+        except Exception as e:
+            log.warning(f"Unable to connect to database: {e}")
+            return -1, "Unable to connect to database."
 
         table_parts = param.get("Table").split(".")
         schema = table_parts[0] if len(table_parts) > 1 else None
@@ -614,8 +617,9 @@ class IdResolver (UserIdResolver):
 
             num = result
             desc = "Found {0:d} users.".format(num)
-        except Exception as exx:
-            desc = "failed to retrieve users: {0!s}".format(exx)
+        except Exception as e:
+            log.warning(f"Failed to retrieve users: {e!r}")
+            desc = f"Failed to retrieve users."
         finally:
             # We do not want any leftover DB connection, so we first need to close
             # the session such that the DB connection gets returned to the pool (it

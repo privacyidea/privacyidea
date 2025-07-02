@@ -3,11 +3,12 @@ myApp.controller("tokenChallengesController", ['$scope', 'TokenFactory',
                                                'UserFactory', '$stateParams',
                                                '$state', '$rootScope',
                                                'ValidateFactory', 'AuthFactory',
+                                               'inform', 'gettextCatalog',
                                                function ($scope, TokenFactory,
                                                          UserFactory, $stateParams,
                                                          $state, $rootScope,
                                                          ValidateFactory,
-                                                         AuthFactory) {
+                                                         AuthFactory, inform, gettextCatalog) {
     $scope.tokenSerial = "";
     // This is the parents object
     $scope.loggedInUser = AuthFactory.getUser();
@@ -36,6 +37,27 @@ myApp.controller("tokenChallengesController", ['$scope', 'TokenFactory',
     $scope.challengePageChanged = function () {
         //debug: console.log('Page changed to: ' + $scope.params.page);
         $scope.get();
+    };
+
+    $scope.deleteExpiredChallenges = function () {
+        TokenFactory.deleteExpiredChallenges(function (data) {
+            if (data.result.status === true) {
+                if (data.result.value.deleted > 0) {
+                    inform.add(gettextCatalog.getString(
+                            "Total expired challenges deleted: " + data.result.value.deleted),
+                        {type: "success", ttl: 4000});
+                } else {
+                    inform.add(gettextCatalog.getString(
+                            "No expired challenges were deleted."),
+                        {type: "info", ttl: 4000});
+                }
+                $scope.get(); // Refresh data after successful deletion
+            } else {
+                inform.add(gettextCatalog.getString(
+                        "Could not delete expired challenges."),
+                    {type: "danger", ttl: 8000});
+            }
+        });
     };
 
     $scope.return_to = function () {

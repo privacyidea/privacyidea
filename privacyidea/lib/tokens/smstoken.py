@@ -47,29 +47,26 @@ This code is tested in tests/test_lib_tokens_sms
 """
 
 import datetime
+import logging
 import traceback
+from json import loads
 
 from privacyidea.api.lib.utils import getParam
 from privacyidea.api.lib.utils import required, optional
-from privacyidea.lib.utils import is_true, create_tag_dict
-
+from privacyidea.lib import _
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
-from privacyidea.lib.log import log_with
-from privacyidea.lib.policy import Match
 from privacyidea.lib.crypto import safe_compare
+from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.log import log_with
+from privacyidea.lib.policy import (SCOPE, ACTION, GROUP, comma_escape_text,
+                                    Match, get_action_values_from_options)
 from privacyidea.lib.smsprovider.SMSProvider import (get_sms_provider_class,
                                                      create_sms_instance,
                                                      get_smsgateway)
-from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE, HotpTokenClass
-from json import loads
-from privacyidea.lib import _
-
 from privacyidea.lib.tokenclass import CHALLENGE_SESSION, AUTHENTICATIONMODE
+from privacyidea.lib.tokens.hotptoken import HotpTokenClass
+from privacyidea.lib.utils import is_true, create_tag_dict
 from privacyidea.models import Challenge
-from privacyidea.lib.decorators import check_token_locked
-import logging
-
 
 log = logging.getLogger(__name__)
 
@@ -208,7 +205,9 @@ class SmsTokenClass(HotpTokenClass):
                            'type': 'str',
                            'desc': _('The text that will be send via SMS for '
                                      'an SMS token. Use tags like {otp} and {serial} '
-                                     'as parameters.')},
+                                     'as parameters.')
+                                   + " " + comma_escape_text
+                       },
                        SMSACTION.SMSAUTO: {
                            'type': 'bool',
                            'desc': _('If set, a new SMS OTP will be sent '
@@ -220,6 +219,7 @@ class SmsTokenClass(HotpTokenClass):
                                      'user to enter the code from the SMS. You can also '
                                      'use tags for automated replacement. Check out the '
                                      'documentation for more details.')
+                                   + " " + comma_escape_text
                        }
                    },
                    SCOPE.ADMIN: {
@@ -324,6 +324,9 @@ class SmsTokenClass(HotpTokenClass):
                                                         "{0!s}_{1!s}".format(self.get_class_type(),
                                                                              ACTION.CHALLENGETEXT),
                                                         options) or _("Enter the OTP from the SMS:")
+
+        return_message = return_message.replace(r'\,', ',')
+
         reply_dict = {'attributes': {'state': transactionid}}
         validity = self._get_sms_timeout()
 
@@ -535,6 +538,8 @@ class SmsTokenClass(HotpTokenClass):
                 allow_white_space_in_action=True, unique=True)
             if len(messages) == 1:
                 message = list(messages)[0]
+
+        message = message.replace(r'\,', ',')
 
         return message
 

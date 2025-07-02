@@ -82,7 +82,7 @@ privacyIDEA. You can get the latest version tag from the `GitHub release page <h
 .com/privacyidea/privacyidea/releases>`_ or the `PyPI package history <https://pypi
 .org/project/privacyIDEA/#history>`_ (e.g. "3.3.1")::
 
-        (privacyidea)$ export PI_VERSION=3.3.1
+        (privacyidea)$ export PI_VERSION=3.11.3
         (privacyidea)$ pip install -r https://raw.githubusercontent.com/privacyidea/privacyidea/v${PI_VERSION}/requirements.txt
 
 Then just install the targeted privacyIDEA version with::
@@ -139,10 +139,9 @@ From now on the ``pi-manage``-tool can be used to configure and manage the priva
 
 .. code-block:: bash
 
-    (privacyidea)$ pi-manage create_enckey  # encryption key for the database
-    (privacyidea)$ pi-manage create_audit_keys  # key for verification of audit log entries
-    (privacyidea)$ pi-manage create_tables  # create the database structure
-    (privacyidea)$ pi-manage db stamp head -d /opt/privacyidea/lib/privacyidea/migrations/  # stamp the db
+    (privacyidea)$ pi-manage setup create_enckey  # encryption key for the database
+    (privacyidea)$ pi-manage setup create_audit_keys  # key for verification of audit log entries
+    (privacyidea)$ pi-manage setup create_tables  # create the database structure
 
 An administrative account is needed to configure and maintain privacyIDEA:
 

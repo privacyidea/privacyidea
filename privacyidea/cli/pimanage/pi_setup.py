@@ -29,10 +29,7 @@ from flask.cli import AppGroup
 from flask import current_app
 from flask_migrate import stamp as fm_stamp
 import gnupg
-try:
-    from importlib import metadata
-except ImportError:  # Python 3.7
-    import importlib_metadata as metadata
+from importlib import metadata
 
 from privacyidea.models import db
 from privacyidea.lib.security.default import DefaultSecurityModule
