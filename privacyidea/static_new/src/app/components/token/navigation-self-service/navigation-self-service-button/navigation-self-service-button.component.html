@@ -1,0 +1,18 @@
+<div class="tile-size-scope">
+  <a class="tile-button" mat-fab (click)="onClick()">
+    <div class="tile-button-content">
+      <div class="top-content">
+        <mat-icon
+          [ngClass]="
+            buttonData.matIconSize ??
+            'tile-icon-medium' + ' ' + buttonData.matIconClass
+          "
+          >{{ buttonData.matIconName }}</mat-icon
+        >
+      </div>
+      <div class="bottom-content">
+        {{ buttonData.title }}
+      </div>
+    </div>
+  </a>
+</div>

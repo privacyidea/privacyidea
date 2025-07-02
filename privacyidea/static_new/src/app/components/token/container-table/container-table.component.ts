@@ -22,7 +22,7 @@ import { CopyButtonComponent } from '../../shared/copy-button/copy-button.compon
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { FormsModule } from '@angular/forms';
 import { TokenService } from '../../../services/token/token.service';
-import { TokenSelectedContent } from '../token.component';
+import { TokenSelectedContentKey } from '../token.component';
 import { ContentService } from '../../../services/content/content.service';
 import {
   animate,
@@ -152,7 +152,7 @@ export class ContainerTableComponent {
 
   @ViewChild('filterHTMLInputElement', { static: true })
   filterInput!: HTMLInputElement;
-  @Input() selectedContent!: WritableSignal<TokenSelectedContent>;
+  @Input() selectedContent!: WritableSignal<TokenSelectedContentKey>;
   expandedElement: ContainerDetailData | null = null;
 
   constructor(

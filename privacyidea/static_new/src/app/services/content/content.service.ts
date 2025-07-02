@@ -3,7 +3,7 @@ import { AuthService } from '../auth/auth.service';
 import { NavigationEnd, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
-import { TokenSelectedContent } from '../../components/token/token.component';
+import { TokenSelectedContentKey } from '../../components/token/token.component';
 
 @Injectable({
   providedIn: 'root',
@@ -18,7 +18,7 @@ export class ContentService {
     { initialValue: this.router.url },
   );
   isProgrammaticTabChange = signal(false);
-  selectedContent = linkedSignal<string, TokenSelectedContent>({
+  selectedContent = linkedSignal<string, TokenSelectedContentKey>({
     source: this.authService.role,
     computation: (role) => {
       return role === 'user' ? 'token_self-service_menu' : 'token_overview';

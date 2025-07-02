@@ -207,12 +207,22 @@ body {
   display: flex;
 }
 
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .width-18rem {
   width: 18rem;
 }
 
 .font-14 {
   font-size: 14px;
+}
+
+.text-center {
+  text-align: center;
 }
 
 .mat-mdc-input-element {

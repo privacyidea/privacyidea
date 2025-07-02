@@ -9,17 +9,17 @@ import {
   withInterceptorsFromDi,
 } from '@angular/common/http';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { TokenSelectedContent } from '../token.component';
+import { TokenSelectedContentKey } from '../token.component';
 
 describe('TokenApplications', () => {
   let component: TokenApplicationsComponent;
   let fixture: ComponentFixture<TokenApplicationsComponent>;
   let tokenSerial: WritableSignal<string>;
-  let selectedContent: WritableSignal<TokenSelectedContent>;
+  let selectedContent: WritableSignal<TokenSelectedContentKey>;
 
   beforeEach(async () => {
     tokenSerial = signal('test-serial');
-    selectedContent = signal({} as TokenSelectedContent);
+    selectedContent = signal({} as TokenSelectedContentKey);
 
     await TestBed.configureTestingModule({
       imports: [
@@ -59,7 +59,7 @@ describe('TokenApplications', () => {
   });
 
   it('should update selectedContent input', () => {
-    const newContent: TokenSelectedContent = 'token_details';
+    const newContent: TokenSelectedContentKey = 'token_details';
     component.selectedContent.set(newContent);
     expect(component.selectedContent()).toBe(newContent);
   });

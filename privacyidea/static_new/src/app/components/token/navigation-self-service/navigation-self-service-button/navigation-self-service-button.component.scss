@@ -1,0 +1,60 @@
+@use "sass:meta";
+@use "../../../../../styles/styles";
+@use "@angular/material" as mat;
+
+.tile-size-scope {
+  --tile-width: 8rem;
+  --tile-height: 6rem;
+}
+.tile-size-scope .tile-button {
+  width: var(--tile-width);
+  height: var(--tile-height); // 120px
+  margin: calc(var(--global-padding) / 2);
+  border-radius: calc(--border-radius);
+  @include mat.elevation(3);
+
+  &:hover {
+    @include mat.elevation(6);
+    transform: translateY(-2px); /* Minimal "Pop-up"-Effekt on Hover */
+  }
+}
+.tile-size-scope .tile-button-content {
+  width: var(--tile-width);
+  height: var(--tile-height); // 120px
+  padding: calc(var(--global-padding) / 2);
+  display: flex;
+  flex-direction: column;
+}
+
+.tile-size-scope .tile-icon-small {
+  font-size: calc(var(--tile-height) / 4); // 1.5rem;
+  height: calc(var(--tile-height) / 4);
+  width: calc(var(--tile-height) / 4);
+}
+
+.tile-size-scope .tile-icon-medium {
+  font-size: calc(var(--tile-height) / 3.333); // 1.8rem;
+  height: calc(var(--tile-height) / 3.333);
+  width: calc(var(--tile-height) / 3.333);
+}
+.tile-size-scope .tile-icon-large {
+  font-size: calc(var(--tile-height) / 2.7); // 2.22rem;
+  height: calc(var(--tile-height) / 2.7);
+  width: calc(var(--tile-height) / 2.7);
+}
+.top-content {
+  flex: 3;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.tile-size-scope .bottom-content {
+  flex: 2;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+
+  font-weight: bold;
+  font-size: calc(var(--tile-height) / 7.5); // 0.8rem;
+  text-align: center;
+}

@@ -289,7 +289,7 @@ export class TableUtilsService {
     } else if (columnKey === 'failcount') {
       return 'failcount';
     } else if (columnKey !== 'realms') {
-      return 'flex ali-center';
+      return 'flex-center';
     }
     return 'table-scrollable-container';
   }

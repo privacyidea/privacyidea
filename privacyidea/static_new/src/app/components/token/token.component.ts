@@ -50,7 +50,7 @@ export type TokenTypeOption =
   | 'webauthn'
   | 'passkey';
 
-export type TokenSelectedContent =
+export type TokenSelectedContentKey =
   | 'token_overview'
   | 'token_details'
   | 'container_overview'
