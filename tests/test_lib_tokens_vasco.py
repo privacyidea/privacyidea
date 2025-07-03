@@ -286,7 +286,7 @@ class VascoTokenTest(MyTestCase):
     def test_10_vasco_token_export(self):
         token = init_token(param={'serial': "OATH12345678",
                                   'type': 'vasco',
-                                  'otpkey': self.otpkey})
+                                  'otpkey': hexlify(b"A" * 248).decode("utf-8")})
         self.assertRaises(NotImplementedError, token.export_token)
 
         # Clean up
