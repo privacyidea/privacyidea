@@ -3051,7 +3051,7 @@ def regenerate_enroll_url(serial: str, request: Request, g) -> Union[str, None]:
     return enroll_url
 
 
-def export_tokens(tokens: list[Token]) -> str:
+def export_tokens(tokens: list[TokenClass]) -> str:
     """
     Takes a list of tokens and returns an exportable JSON string.
 
@@ -3066,7 +3066,7 @@ def export_tokens(tokens: list[Token]) -> str:
     return json_export
 
 
-def import_tokens(tokens: str, update_existing: bool = True) -> TokenImportResult:
+def import_tokens(tokens: str, update_existing_tokens: bool = True) -> TokenImportResult:
     """
     Import a list of token dictionaries.
 
@@ -3088,7 +3088,7 @@ def import_tokens(tokens: str, update_existing: bool = True) -> TokenImportResul
                     token = create_tokenclass_object(db_token)
                     token.import_token(token_info_dict)
                     successful_tokens.append(serial)
-                elif update_existing:
+                elif update_existing_tokens:
                     token = get_tokens_from_serial_or_user(serial=serial, user=None)
                     token[0].import_token(token_info_dict)
                     updated_tokens.append(serial)

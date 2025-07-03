@@ -63,7 +63,7 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    import_token, get_one_token,
                                    get_tokens_from_serial_or_user,
                                    get_tokens_paginated_generator,
-                                   assign_tokengroup, unassign_tokengroup)
+                                   assign_tokengroup, unassign_tokengroup, export_tokens)
 from privacyidea.lib.token import weigh_token_type, import_tokens
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokenclass import (TokenClass, TOKENKIND,
@@ -1771,6 +1771,72 @@ class TokenTestCase(MyTestCase):
         remove_token(imported_tokens[0].token.serial)
         remove_token(imported_tokens[1].token.serial)
         remove_token(imported_tokens[2].token.serial)
+
+    def test_62_token_import_and_export(self):
+        hotptoken = init_token(param={'serial': "OATH12345678",
+                                      'type': 'hotp',
+                                      'otpkey': self.otpkey,
+                                      "otplen": '8',
+                                      "description": "Hotp Token"})
+        totptoken = init_token(param={'serial': "TOTP12345678",
+                                      'type': 'totp',
+                                      'otpkey': self.otpkey,
+                                      "otplen": '8',
+                                      "description": "Totp Token"})
+
+        # Export the tokens
+        exported_tokens = export_tokens([hotptoken, totptoken])
+        self.assertIn('"type": "hotp"', exported_tokens)
+        self.assertIn('"serial": "OATH12345678"', exported_tokens)
+        self.assertIn('"type": "totp"', exported_tokens)
+        self.assertIn('"serial": "TOTP12345678"', exported_tokens)
+
+        # Remove the tokens
+        hotptoken.delete_token()
+        totptoken.delete_token()
+
+        # Impoert tokens
+        imported_tokens = import_tokens(exported_tokens)
+        hotptoken = get_tokens(serial="OATH12345678")[0]
+        totptoken = get_tokens(serial="TOTP12345678")[0]
+        self.assertEqual(len(imported_tokens.successful_tokens), 2)
+        self.assertEqual(len(imported_tokens.failed_tokens), 0)
+        self.assertEqual(len(imported_tokens.updated_tokens), 0)
+        self.assertIn('OATH12345678', imported_tokens.successful_tokens)
+        self.assertIn('TOTP12345678', imported_tokens.successful_tokens)
+        self.assertEqual(hotptoken.token.serial, "OATH12345678")
+        self.assertEqual(hotptoken.token.tokentype, "hotp")
+        self.assertEqual(totptoken.token.serial, "TOTP12345678")
+        self.assertEqual(totptoken.token.tokentype, "totp")
+
+        hotptoken.set_description("this will be replaced by the import")
+        totptoken.set_description("this will be replaced by the import")
+        self.assertEqual(hotptoken.token.description, "this will be replaced by the import")
+        self.assertEqual(totptoken.token.description, "this will be replaced by the import")
+
+        # Updating the tokens
+        updated_tokens = import_tokens(exported_tokens, update_existing_tokens=True)
+        self.assertEqual(hotptoken.token.description, "Hotp Token")
+        self.assertEqual(totptoken.token.description, "Totp Token")
+        self.assertEqual(len(updated_tokens.updated_tokens), 2)
+
+        hotptoken.set_description("this will not be replaced by the import")
+        totptoken.set_description("this will not be replaced by the import")
+        self.assertEqual(hotptoken.token.description, "this will not be replaced by the import")
+        self.assertEqual(totptoken.token.description, "this will not be replaced by the import")
+
+        # Import token but not updating
+        updated_tokens = import_tokens(exported_tokens, update_existing_tokens=False)
+        self.assertEqual(hotptoken.token.description, "this will not be replaced by the import")
+        self.assertEqual(totptoken.token.description, "this will not be replaced by the import")
+        self.assertEqual(len(updated_tokens.failed_tokens), 2)
+
+        # Remove the tokens
+        hotptoken.delete_token()
+        totptoken.delete_token()
+
+        # Import format not supported
+        self.assertRaises(TokenAdminError, import_tokens, "This is not a valid JSON string")
 
 
 class TokenOutOfBandTestCase(MyTestCase):

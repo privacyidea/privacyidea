@@ -2023,7 +2023,6 @@ class TokenClass(object):
         try:
             self.token.set_otpkey(token_information.setdefault("otpkey", ''))
             self.token.otplen = int(token_information.setdefault("otplen", 6))
-            self.token.type = token_information["type"]
             self.token.description = token_information.setdefault("description", '')
             self.token.pin_hash = token_information.setdefault("_hashed_pin", None)
             self.add_tokeninfo_dict(token_information.setdefault("tokeninfo", {}))
