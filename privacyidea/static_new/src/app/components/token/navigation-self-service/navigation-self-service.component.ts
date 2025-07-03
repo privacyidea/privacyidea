@@ -17,6 +17,11 @@ import {
 export class NavigationSelfServiceComponent {
   navigationSelfServiceButtons: NavigationSelfServiceButtonData[] = [
     {
+      key: 'token_self-service_menu',
+      title: 'Token Overview',
+      matIconName: 'shield',
+    },
+    {
       key: 'token_enrollment',
       title: 'Token Enrollment',
       matIconName: 'add_moderator',

@@ -11,6 +11,7 @@ import {
   signal,
   WritableSignal,
   ViewChild,
+  untracked,
 } from '@angular/core';
 import {
   MatError,
@@ -399,10 +400,11 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   ) {
     // The effect will call resetForm on initialization and on subsequent changes to selectedTokenType
     effect(() => {
-      this.tokenService.selectedTokenType(); // Establish dependency on the signal
-      this._lastTokenEnrollmentLastStepDialogData.set(null); // Reset the last step dialog data
-      this.reopenCurrentEnrollmentDialogSignal.set(undefined); // Reset the reopen dialog signal
-      this.resetForm();
+      const asd = this.tokenService.selectedTokenType(); // Establish dependency on the signal
+      console.log('Resetting form due to token type change to:', asd);
+      untracked(() => {
+        this.resetForm();
+      });
     });
     effect(() => {
       const users = this.userService.filteredUsers();
@@ -467,6 +469,11 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   }
 
   resetForm(): void {
+    console.trace('Resetting enrollment form');
+
+    this._lastTokenEnrollmentLastStepDialogData.set(null);
+    this.reopenCurrentEnrollmentDialogSignal.set(undefined);
+
     this.userService.selectedUserRealm.set('');
     this.userService.userFilter.set('');
 

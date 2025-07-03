@@ -1,13 +1,16 @@
 <div class="tile-size-scope">
-  <a class="tile-button" mat-fab (click)="onClick()">
+  <a
+    mat-fab
+    class="tile-button"
+    [ngClass]="isSelected() ? 'selected' : ''"
+    (click)="onClick()">
     <div class="tile-button-content">
       <div class="top-content">
         <mat-icon
           [ngClass]="
             (buttonData.matIconSize ?? 'tile-icon-medium' + ' ') +
             (buttonData.matIconClass ?? '') +
-            ' ' +
-            (isSelected() ? ' selected' : '')
+            ' '
           "
           >{{ buttonData.matIconName }}</mat-icon
         >

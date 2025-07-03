@@ -207,8 +207,6 @@
       <div class="flex-column width-100">
         <h4 class="enroll-h4">Assign Token to User</h4>
         <div class="assign-user-container">
-          <input style="display: none" type="text" />
-          <input style="display: none" type="password" />
           <mat-form-field class="width-50 input-height">
             <mat-label>Select Realm of User</mat-label>
             <mat-select [formControl]="selectedUserRealmControl">
@@ -259,6 +257,8 @@
       @if (selectedTokenType().key !== "passkey") {
         <div class="flex-column user-pin-container">
           <h4 class="enroll-h4">Set PIN</h4>
+          <input style="display: none" type="text" />
+          <input style="display: none" type="password" />
           <div class="user-pin-input">
             <input
               [formControl]="setPinControl"

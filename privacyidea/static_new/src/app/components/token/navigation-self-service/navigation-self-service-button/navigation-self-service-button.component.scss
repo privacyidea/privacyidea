@@ -3,14 +3,14 @@
 @use "@angular/material" as mat;
 
 .tile-size-scope {
-  --tile-width: 8rem;
-  --tile-height: 6rem;
+  --tile-width: 12rem;
+  --tile-height: 8rem;
 }
 .tile-size-scope .tile-button {
   width: var(--tile-width);
   height: var(--tile-height); // 120px
   margin: calc(var(--global-padding) / 2);
-  border-radius: calc(--border-radius);
+  border-radius: var(--border-radius);
   @include mat.elevation(3);
 
   &:hover {
@@ -18,6 +18,7 @@
     transform: translateY(-2px); /* Minimal "Pop-up"-Effekt on Hover */
   }
 }
+
 .tile-size-scope .tile-button-content {
   width: var(--tile-width);
   height: var(--tile-height); // 120px
@@ -59,7 +60,25 @@
   text-align: center;
 }
 
-.selected {
-  background-color: var(--primary-color);
-  color: var(--primary-contrast-color);
+.tile-button.selected {
+  background-color: var(--blue-base);
+  color: white;
+  box-shadow:
+    var(--shadow-distance) var(--shadow-distance) var(--blur) var(--shadow),
+    var(--light-distance) var(--light-distance) var(--blur) var(--light);
+
+  .mat-icon {
+    color: white;
+  }
+
+  .bottom-content {
+    color: white;
+    font-weight: bold;
+  }
+
+  &:hover {
+    background-color: var(--blue-light);
+    @include mat.elevation(10);
+    transform: translateY(-5px);
+  }
 }

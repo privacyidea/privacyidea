@@ -78,6 +78,12 @@ $margin-bottom-main: 8.5rem;
   // height: var(--content-height);
 }
 
+.main-content-container {
+  display: grid;
+  justify-items: center;
+  width: 100%;
+}
+
 .tile-header {
   padding: 0;
 }

@@ -209,6 +209,7 @@
         <mat-form-field class="width-32 input-height">
           <mat-label>Enter Container</mat-label>
           <input
+            [formControlName]="'selectedContainer'"
             [formControl]="selectedContainerControl"
             [matAutocomplete]="containerAuto"
             matInput />
@@ -225,6 +226,8 @@
       @if (selectedTokenType().key !== "passkey") {
         <div class="flex-column user-pin-container">
           <h4 class="enroll-h4">Set PIN</h4>
+          <input style="display: none" type="text" />
+          <input style="display: none" type="password" />
           <div class="user-pin-input">
             <input
               [formControl]="setPinControl"
