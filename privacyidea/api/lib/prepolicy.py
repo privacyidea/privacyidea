@@ -86,7 +86,7 @@ from privacyidea.lib.utils import (parse_timedelta, is_true,
                                    determine_logged_in_userparams, parse_string_to_dict)
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.auth import ROLE
-from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn
+from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn, get_optional
 from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters,
                                               get_pushtoken_add_config,
                                               check_token_action_allowed,
@@ -2498,12 +2498,12 @@ def require_description(request=None, action=None):
     """
     params = request.all_data
     user_object = request.User
-    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+    (role, username, realm, admin_user, admin_realm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     action_values = Match.generic(g, action=ACTION.REQUIRE_DESCRIPTION,
                                   scope=SCOPE.ENROLL,
-                                  adminrealm=adminrealm,
-                                  adminuser=adminuser,
+                                  adminrealm=admin_realm,
+                                  adminuser=admin_user,
                                   user=username,
                                   realm=realm,
                                   user_object=user_object).action_values(unique=False)
@@ -2511,14 +2511,14 @@ def require_description(request=None, action=None):
     token_types = list(action_values.keys())
     type_value = request.all_data.get("type") or 'hotp'
     if type_value in token_types:
-        tok = None
-        serial = getParam(params, "serial")
+        token = None
+        serial = get_optional(params, "serial")
         if serial:
-            tok = (get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.VERIFYPENDING, silent_fail=True)
+            token = (get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.VERIFYPENDING, silent_fail=True)
                    or get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.CLIENTWAIT, silent_fail=True))
         # only if no token exists, yet, we need to check the description
-        if not tok and not request.all_data.get("description"):
-            log.warning(_("Missing description for {} token.").format(type_value))
+        if not token and not request.all_data.get("description"):
+            log.error(("Missing description for {} token.").format(type_value))
             raise PolicyError(_("Description required for {} token.").format(type_value))
 
 def require_description_on_edit(request=None, action=None):
@@ -2537,12 +2537,12 @@ def require_description_on_edit(request=None, action=None):
     """
     params = request.all_data
     user_object = request.User
-    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+    (role, username, realm, admin_user, admin_realm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     action_values = Match.generic(g, action=ACTION.REQUIRE_DESCRIPTION_ON_EDIT,
                                   scope=SCOPE.MANAGEMENT,
-                                  adminrealm=adminrealm,
-                                  adminuser=adminuser,
+                                  adminrealm=admin_realm,
+                                  adminuser=admin_user,
                                   user=username,
                                   realm=realm,
                                   user_object=user_object).action_values(unique=False)
@@ -2550,13 +2550,9 @@ def require_description_on_edit(request=None, action=None):
     token_types = list(action_values.keys())
     type_value = request.all_data.get("type") or 'hotp'
     if type_value in token_types:
-        tok = None
-        serial = getParam(params, "serial")
-        if serial:
-            tok = get_one_token(serial=serial, silent_fail=True)
         description = request.all_data.get("description", "").strip()
-        if tok and not description:
-            log.warning(_("Missing description for {} token.".format(type_value)))
+        if not description:
+            log.error(("Missing description for {} token.".format(type_value)))
             raise PolicyError(_("Description required for {} token.".format(type_value)))
 
 
