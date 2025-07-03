@@ -215,6 +215,7 @@ class SCOPE(object):
     ENROLL = "enrollment"
     WEBUI = "webui"
     REGISTER = "register"
+    MANAGEMENT = "management"
 
 
 class ACTION(object):
@@ -393,6 +394,7 @@ class ACTION(object):
     SERVICEID_DELETE = "serviceid_delete"
     PREFERREDCLIENTMODE = "preferred_client_mode"
     REQUIRE_DESCRIPTION = "require_description"
+    REQUIRE_DESCRIPTION_ON_EDIT = "require_description_on_edit"
     CONTAINER_DESCRIPTION = "container_description"
     CONTAINER_INFO = "container_info"
     CONTAINER_STATE = "container_state"
@@ -2794,6 +2796,17 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("This action adds a QR code in the enrollment page for "
                           "HOTP, TOTP and Push tokens, that lead to this given URL."),
                 'group': 'QR Codes'
+            }
+        },
+
+        SCOPE.MANAGEMENT: {
+            ACTION.REQUIRE_DESCRIPTION_ON_EDIT: {
+                'type': 'str',
+                'desc': _('This action makes the description required for all '
+                          'selected tokentypes, during the editing process.'),
+                'group': GROUP.TOKEN,
+                'multiple': True,
+                'value': get_token_types()
             }
         }
 

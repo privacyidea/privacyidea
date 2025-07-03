@@ -101,8 +101,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            check_admin_tokenlist, webauthntoken_enroll, webauthntoken_allowed,
                                            webauthntoken_request, required_piv_attestation,
                                            hide_tokeninfo, init_ca_connector, init_ca_template,
-                                           init_subject_components, require_description,
-                                           check_container_action)
+                                           init_subject_components,
+                                           check_container_action, require_description_on_edit)
 from privacyidea.api.lib.postpolicy import (save_pin_change, check_verify_enrollment,
                                             postpolicy)
 from privacyidea.lib.event import event
@@ -821,7 +821,7 @@ def set_description_api(serial=None):
     g.audit_object.add_to_log({'action_detail': "description={0!r}".format(description)})
     tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
     request.all_data["type"] = tokenobject_list[0].type
-    require_description(request)
+    require_description_on_edit(request)
     res = set_description(serial, description, user=user)
     g.audit_object.log({"success": True})
     return send_result(res)

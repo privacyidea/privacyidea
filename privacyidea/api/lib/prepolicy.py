@@ -2293,7 +2293,7 @@ def increase_failcounter_on_challenge(request=None, action=None):
 def require_description(request=None, action=None):
     """
     Pre Policy
-    This checks if a description is required to roll out or edit a specific token.
+    This checks if a description is required to roll out a specific token.
     scope=SCOPE.ENROLL, action=REQUIRE_DESCRIPTION
 
     An exception is raised, if the tokentypes specified in the
@@ -2326,6 +2326,44 @@ def require_description(request=None, action=None):
                   get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.CLIENTWAIT, silent_fail=True)
         # only if no token exists, yet, we need to check the description
         if not tok and not request.all_data.get("description"):
+            log.warning(_("Missing description for {} token.".format(type_value)))
+            raise PolicyError(_("Description required for {} token.".format(type_value)))
+
+def require_description_on_edit(request=None, action=None):
+    """
+    Pre Policy
+    This checks if a description is required to edit a specific token.
+    scope=SCOPE.MANAGEMENT, action=REQUIRE_DESCRIPTION_ON_EDIT
+
+    An exception is raised, if the tokentypes specified in the
+    REQUIRE_DESCRIPTION_ON_EDIT policy match the token to be edited,
+    but no description is given.
+
+    :param request:
+    :param action:
+    :return:
+    """
+    params = request.all_data
+    user_object = request.User
+    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+
+    action_values = Match.generic(g, action=ACTION.REQUIRE_DESCRIPTION_ON_EDIT,
+                                  scope=SCOPE.MANAGEMENT,
+                                  adminrealm=adminrealm,
+                                  adminuser=adminuser,
+                                  user=username,
+                                  realm=realm,
+                                  user_object=user_object).action_values(unique=False)
+
+    token_types = list(action_values.keys())
+    type_value = request.all_data.get("type") or 'hotp'
+    if type_value in token_types:
+        tok = None
+        serial = getParam(params, "serial")
+        if serial:
+            tok = get_one_token(serial=serial, silent_fail=True)
+        description = request.all_data.get("description", "").strip()
+        if tok and not description:
             log.warning(_("Missing description for {} token.".format(type_value)))
             raise PolicyError(_("Description required for {} token.".format(type_value)))
 
