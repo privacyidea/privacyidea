@@ -2,7 +2,10 @@
 This test file tests the lib.tokens.sshkeytoken
 This depends on lib.tokenclass
 """
+import json
+
 from privacyidea.lib.error import TokenAdminError
+from privacyidea.lib.token import init_token, import_tokens, get_tokens
 from .base import MyTestCase
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
 from privacyidea.lib.tokens.sshkeytoken import SSHkeyTokenClass
@@ -130,3 +133,62 @@ class SSHTokenTestCase(MyTestCase):
         sshkey = token.get_sshkey()
         self.assertEqual(self.ecdsa_sk, sshkey)
         self.assertIsInstance(sshkey, str)
+
+    def test_04_ssh_token_export(self):
+        # Set up the SSHTokenClass for testing
+        token = init_token({"type": "sshkey",
+                            "serial": self.serial1,
+                            "sshkey": self.sshkey,
+                            "description": "this is a ssh token export test",
+                            "issuer": "privacyIDEA"})
+
+        # Test that all expected keys are present in the exported dictionary
+        exported_data = token.export_token()
+        expected_keys = ["serial", "type", "description", "issuer"]
+        self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
+
+        expected_tokeninfo_keys = ["tokenkind", "ssh_key", "ssh_type", "ssh_comment"]
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+
+        # Test that the exported values match the token's data
+        self.assertEqual(exported_data["serial"], "ser1")
+        self.assertEqual(exported_data["type"], "sshkey")
+        self.assertEqual(exported_data["description"], "this is a ssh token export test")
+        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
+        self.assertEqual(exported_data["issuer"], "privacyIDEA")
+        self.assertEqual(exported_data["tokeninfo"]["ssh_key"], self.sshkey[8:-28]) # ss_key without type and comment
+        self.assertEqual(exported_data["tokeninfo"]["ssh_type"], "ssh-rsa")
+        self.assertEqual(exported_data["tokeninfo"]["ssh_comment"], "NetKnights GmbH Descröption")
+
+        # Clean up
+        token.delete_token()
+
+    def test_05_ssh_token_import(self):
+        # Define the token data to be imported
+        token_data = [{'description': 'this is a registration token export test',
+                      'issuer': 'privacyIDEA',
+                      'serial': 'newserial',
+                      'type': 'sshkey',
+                      'tokeninfo': {'ssh_comment': 'NetKnights GmbH Descröption',
+                                    'ssh_key': self.sshkey[8:-28],  # ss_key without type and comment
+                                    'ssh_key.type': 'password',
+                                    'ssh_type': 'ssh-rsa',
+                                    'tokenkind': 'software'}
+                      }]
+
+        # Import the token
+        import_tokens(json.dumps(token_data))
+
+        # Retrieve the imported token
+        token = get_tokens(serial=token_data[0]["serial"])[0]
+
+        # Verify that the token data matches the imported data
+        self.assertEqual(token.token.serial, token_data[0]["serial"])
+        self.assertEqual(token.type, token_data[0]["type"])
+        self.assertEqual(token.token.description, token_data[0]["description"])
+        self.assertEqual(token.get_tokeninfo("tokenkind"), "software")
+        self.assertEqual(token.get_tokeninfo("ssh_key"), token_data[0]["tokeninfo"]["ssh_key"])
+        self.assertEqual(token.get_tokeninfo("ssh_type"), "ssh-rsa")
+
+        # Clean up
+        token.delete_token()
