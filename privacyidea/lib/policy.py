@@ -235,7 +235,7 @@ class SCOPE(object):
         Return all valid scopes as a list
         """
         valid_scopes = [cls.AUTHZ, cls.ADMIN, cls.AUTH, cls.AUDIT, cls.USER, cls.ENROLL, cls.WEBUI, cls.REGISTER,
-                        cls.CONTAINER]
+                        cls.CONTAINER, cls.MANAGEMENT]
         return valid_scopes
 
 
