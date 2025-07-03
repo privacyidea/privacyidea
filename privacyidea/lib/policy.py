@@ -3027,7 +3027,6 @@ def get_static_policy_definitions(scope=None):
                 'group': GROUP.SMARTPHONE
             }
         },
-
         SCOPE.MANAGEMENT: {
             ACTION.REQUIRE_DESCRIPTION_ON_EDIT: {
                 'type': 'str',
