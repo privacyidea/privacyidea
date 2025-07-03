@@ -34,6 +34,7 @@ class TokenBaseTestCase(MyTestCase):
     realm2 = "realm2"
     serial1 = "SE123456"
     serial2 = "SE222222"
+    otpkey = "3132333435363738393031323334353637383930"
 
     # add_user, get_user, reset, set_user_identifiers
 
