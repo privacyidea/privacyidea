@@ -169,12 +169,7 @@ export class EnrollWebauthnComponent implements OnInit {
   readPublicKeyCred = async (
     enrollmentResponse: WebauthnEnrollmentResponse,
   ): Promise<any | null> => {
-    console.log(
-      'readPublicKeyCred called with enrollmentResponse:',
-      enrollmentResponse,
-    );
     const request = enrollmentResponse.detail?.webAuthnRegisterRequest;
-    console.log('readPublicKeyCred request:', request);
 
     // Validate the request data.
     if (!request) {

@@ -400,8 +400,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   ) {
     // The effect will call resetForm on initialization and on subsequent changes to selectedTokenType
     effect(() => {
-      const asd = this.tokenService.selectedTokenType(); // Establish dependency on the signal
-      console.log('Resetting form due to token type change to:', asd);
+      this.tokenService.selectedTokenType(); // Trigger effect on token type change
       untracked(() => {
         this.resetForm();
       });

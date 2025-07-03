@@ -127,17 +127,13 @@ export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponen
   }
 
   override ngOnInit(): void {
-    console.log('Initializing enrollment form in self-service');
     super.ngOnInit();
     this.selectedUserRealmControl.setValue(this.authService.realm());
     this.userFilterControl.setValue(this.authService.user());
   }
 
   override resetForm(): void {
-    console.log('Resetting enrollment form in self-service');
     super.resetForm();
-    console.log('Resetting user realm and filter controls');
-
     this.selectedUserRealmControl.setValue(this.authService.realm());
     this.userFilterControl.setValue(this.authService.user());
   }

@@ -57,7 +57,6 @@ export class RealmService {
   });
   defaultRealm = computed<string>(() => {
     const data = this.defaultRealmResource.value();
-    console.log('Default realm data:', data);
     if (data?.result?.value) {
       return Object.keys(data.result?.value)[0] ?? '';
     }
