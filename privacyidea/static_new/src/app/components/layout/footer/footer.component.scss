@@ -1,6 +1,6 @@
 @use "../../../../styles";
 @use "sass:color";
-@use '@angular/material' as mat;
+@use "@angular/material" as mat;
 
 $footer-bg: #3f3f3f;
 $footer-text-color: white;
@@ -18,12 +18,12 @@ $border-radius: var(--border-radius);
 
 .footer-container {
   display: block;
-  justify-content: space-between;
-  align-items: center;
-  position: fixed;
-  bottom: 0;
+  // justify-content: space-between;
+  // align-items: center;
+  // position: fixed;
+  // bottom: 0;
   width: 100%;
-  z-index: 1;
+  // z-index: 1;
 
   .progress-bar {
     @include flex-center;

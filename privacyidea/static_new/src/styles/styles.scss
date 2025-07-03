@@ -33,6 +33,17 @@ body {
 }
 
 :root {
+  // --header-height: 3rem;
+  // --footer-height: 2rem;
+  // --footer-padding: 0.5rem;
+  --content-height: 80vh;
+  // --content-height: calc(
+  //   100vh - var(--header-height) - var(--footer-height) - var(
+  //       --global-padding
+  //     ) *
+  //     2- var(--footer-padding)
+  // );
+
   --blur: 4px;
   --border-radius: 4px;
   --light-distance: -4px;

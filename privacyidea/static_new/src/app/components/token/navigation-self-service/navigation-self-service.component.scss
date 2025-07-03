@@ -3,7 +3,5 @@
 .navigation-self-service-column {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  padding: var(--global-padding);
-  padding-bottom: 6rem;
+  padding: calc(var(--global-padding) * 2);
 }

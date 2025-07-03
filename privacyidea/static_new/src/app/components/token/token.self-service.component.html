@@ -14,48 +14,50 @@
   } -->
 
   <div class="overflow flex-size-5 flex-top-center">
-    @switch (contentService.selectedContent()) {
-      @case ("token_self-service_menu") {
-        <div [@componentFade]>
-          <app-token-table-self-service />
-        </div>
+    <div class="width-100">
+      @switch (contentService.selectedContent()) {
+        @case ("token_self-service_menu") {
+          <div [@componentFade]>
+            <app-token-table-self-service />
+          </div>
+        }
+        @case ("token_enrollment") {
+          <div [@componentFade]>
+            <app-token-enrollment-self-service />
+          </div>
+        }
+        @case ("token_details") {
+          <div [@componentFade]>
+            <app-token-details-self-service />
+          </div>
+        }
+        @case ("container_overview") {
+          <div [@componentFade]>
+            <app-container-table-self-service />
+          </div>
+        }
+        @case ("container_details") {
+          <div [@componentFade]>
+            <app-container-details-self-service />
+          </div>
+        }
+        @case ("container_create") {
+          <div [@componentFade]>
+            <app-container-create-self-service />
+          </div>
+        }
+        @case ("assign_token") {
+          <div [@componentFade]>
+            <app-assign-token-self-service />
+          </div>
+        }
+        @case ("audit") {
+          <div [@componentFade]>
+            <app-audit-self-service />
+          </div>
+        }
       }
-      @case ("token_enrollment") {
-        <div [@componentFade]>
-          <app-token-enrollment-self-service />
-        </div>
-      }
-      @case ("token_details") {
-        <div [@componentFade]>
-          <app-token-details-self-service />
-        </div>
-      }
-      @case ("container_overview") {
-        <div [@componentFade]>
-          <app-container-table-self-service />
-        </div>
-      }
-      @case ("container_details") {
-        <div [@componentFade]>
-          <app-container-details-self-service />
-        </div>
-      }
-      @case ("container_create") {
-        <div [@componentFade]>
-          <app-container-create-self-service />
-        </div>
-      }
-      @case ("assign_token") {
-        <div [@componentFade]>
-          <app-assign-token-self-service />
-        </div>
-      }
-      @case ("audit") {
-        <div [@componentFade]>
-          <app-audit-self-service />
-        </div>
-      }
-    }
+    </div>
   </div>
   <div class="flex-size-1">
     <!-- Ensure that the content is always centered -->

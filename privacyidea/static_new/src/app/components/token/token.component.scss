@@ -3,7 +3,7 @@
 
 .token-layout {
   display: flex;
-  height: 80vh;
+  // height: var(--content-height);
 }
 
 .token-drawer {
@@ -75,7 +75,7 @@ $margin-bottom-main: 8.5rem;
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  height: 80vh;
+  // height: var(--content-height);
 }
 
 .tile-header {
