@@ -52,7 +52,7 @@
 """CLI Tool for configuring and managing privacyIDEA"""
 import click
 import copy
-from flask.cli import FlaskGroup
+from flask.cli import FlaskGroup, run_command
 from privacyidea.cli import create_silent_app, get_version
 from privacyidea.lib.utils import get_version_number
 from .admin import admin_cli
@@ -115,7 +115,8 @@ deprecated_commands = [
     (event_cli, None, "config event"),
     (ca_cli, None, "config ca"),
     (authcache_cli, None, "config authcache"),
-    (hsm_cli, None, "config hsm")
+    (hsm_cli, None, "config hsm"),
+    (run_command, "runserver", "run")
 ]
 
 for cmd, new_name, epilog in deprecated_commands:

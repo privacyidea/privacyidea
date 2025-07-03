@@ -24,27 +24,28 @@ This is the library with base functions for privacyIDEA.
 
 This module is tested in tests/test_lib_utils.py
 """
-import os
 
-import logging
-from importlib import import_module
-import binascii
 import base64
-import sqlalchemy
-import string
+import binascii
+import hashlib
+import logging
 import re
+import string
+import threading
+import traceback
+from datetime import time as dt_time, timezone
 from datetime import timedelta, datetime
-from datetime import time as dt_time
+from importlib import import_module
+from typing import Union
+
+import sqlalchemy
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal, tzutc
 from netaddr import IPAddress, IPNetwork, AddrFormatError
-import hashlib
-import traceback
-import threading
-try:
-    from importlib import metadata
-except ImportError:
-    import importlib_metadata as metadata
+
+from privacyidea.lib.framework import get_app_config_value
+
+from importlib import metadata
 import time
 import html
 import segno
@@ -60,8 +61,8 @@ ALLOWED_SERIAL = r"^[0-9a-zA-Z\-_]+$"
 
 # character lists for the identifiers in the pin content policy
 CHARLIST_CONTENTPOLICY = {"c": string.ascii_letters,  # characters
-                          "n": string.digits,         # numbers
-                          "s": string.punctuation}    # special
+                          "n": string.digits,  # numbers
+                          "s": string.punctuation}  # special
 
 
 class AUTH_RESPONSE(object):
@@ -94,7 +95,7 @@ def check_time_in_range(time_range, check_time=None):
     :param time_range: The timerange
     :type time_range: basestring
     :param check_time: The time to check
-    :type check_time: datetime
+    :type check_time: datetime.datetime
     :return: True, if time is within time_range.
     """
     time_match = False
@@ -113,35 +114,41 @@ def check_time_in_range(time_range, check_time=None):
     time_range = ''.join(time_range.split())
     # split into list of time ranges
     time_ranges = time_range.split(",")
-    try:
-        for tr in time_ranges:
-            # tr is something like: Mon-Tue:09:30-17:30
-            dow, t = [x.lower() for x in tr.split(":", 1)]
-            if "-" in dow:
-                dow_start, dow_end = dow.split("-")
-            else:
-                dow_start = dow_end = dow
-            t_start, t_end = t.split("-")
-            # determine if we have times like 9:00-15:00 or 9-15
-            ts = [int(x) for x in t_start.split(":")]
-            te = [int(x) for x in t_end.split(":")]
-            if len(ts) == 2:
-                time_start = dt_time(ts[0], ts[1])
-            else:
-                time_start = dt_time(ts[0])
-            if len(te) == 2:
-                time_end = dt_time(te[0], te[1])
-            else:
-                time_end = dt_time(te[0])
 
-            # check the day and the time
-            if (dow_index.get(dow_start) <= check_day <= dow_index.get(dow_end)
-                    and
-                    time_start <= check_hour <= time_end):
-                time_match = True
-    except ValueError:
-        log.error("Wrong time range format: <dow>-<dow>:<hh:mm>-<hh:mm>")
-        log.debug("{0!s}".format(traceback.format_exc()))
+    for tr in time_ranges:
+        # tr is something like: Mon-Tue:09:30-17:30
+        dow, t = [x.lower() for x in tr.split(":", 1)]
+        if "-" in dow:
+            dow_start, dow_end = dow.split("-")
+        else:
+            dow_start = dow_end = dow
+        # check for valid day of the week
+        if dow_start not in dow_index or dow_end not in dow_index:
+            log.error(f"Invalid day of the week '{dow}'. Allowed values are: {dow_index.keys()}")
+            raise ParameterError("Invalid time format!")
+
+        t_start, t_end = t.split("-")
+        # determine if we have times like 9:00-15:00 or 9-15
+        ts = [int(x) for x in t_start.split(":")]
+        te = [int(x) for x in t_end.split(":")]
+        if len(ts) == 2:
+            time_start = dt_time(ts[0], ts[1])
+        else:
+            time_start = dt_time(ts[0])
+        if len(te) == 2:
+            time_end = dt_time(te[0], te[1])
+        else:
+            time_end = dt_time(te[0])
+
+        if time_start > time_end:
+            log.error(f"Invalid time range. Start time is greater than end time: {t}")
+            raise ParameterError("Invalid time format!")
+
+        # check the day and the time
+        if (dow_index.get(dow_start) <= check_day <= dow_index.get(dow_end)
+                and
+                time_start <= check_hour <= time_end):
+            time_match = True
 
     return time_match
 
@@ -364,9 +371,8 @@ def decode_base32check(encoded_data, always_upper=True):
     # Decode as base32
     try:
         decoded_data = base64.b32decode(encoded_data)
-    except (TypeError, binascii.Error, OverflowError):
-        # Python 3.6.7: b32decode throws a binascii.Error when the padding is wrong
-        # Python 3.6.3 (travis): b32decode throws an OverflowError when the padding is wrong
+    except (TypeError, binascii.Error):
+        # b32decode throws a binascii.Error when the padding is wrong
         raise ParameterError("Malformed base32check data: Invalid base32")
     # Extract checksum and payload
     if len(decoded_data) < 4:
@@ -469,14 +475,14 @@ def parse_timelimit(limit):
     time_specifier = limit[-1].lower()
     if time_specifier not in ["m", "s", "h"]:
         raise Exception("Invalid time specifier")
-    l = limit[:-1].split("/")
-    count = int(l[0])
-    time = int(l[1])
-    td = timedelta(minutes=time)
+    time_limit = limit[:-1].split("/")
+    count = int(time_limit[0])
+    time_delta = int(time_limit[1])
+    td = timedelta(minutes=time_delta)
     if time_specifier == "s":
-        td = timedelta(seconds=time)
+        td = timedelta(seconds=time_delta)
     if time_specifier == "h":
-        td = timedelta(hours=time)
+        td = timedelta(hours=time_delta)
 
     return count, td
 
@@ -571,7 +577,7 @@ def parse_proxy(proxy_settings):
         for proxy in proxies_list:
             p_list = proxy.split(">")
             if len(p_list) > 1:
-                proxypath = tuple(IPNetwork(proxynet) for proxynet in p_list)
+                proxypath = tuple(IPNetwork(proxynet.strip()) for proxynet in p_list)
             else:
                 # No mapping client, so we take the whole network
                 proxypath = (IPNetwork(p_list[0]), IPNetwork("0.0.0.0/0"))
@@ -786,7 +792,7 @@ def reduce_realms(all_realms, policies):
 
 def is_true(value):
     """
-    Returns True is the value is 1, "1", True or "true"
+    Returns True if the value is 1, "1", True,"True", "true" or "TRUE"
 
     :param value: string or integer
     :return: Boolean
@@ -852,7 +858,7 @@ def compare_value_value(value1, comparator, value2):
     except Exception:
         log.debug("can not compare values as integers.")
 
-    if type(value1) != int and type(value2) != int:
+    if not isinstance(value1, int) and not isinstance(value2, int):
         # try to convert both values to a timestamp
         try:
             date1 = parse_date(value1)
@@ -885,12 +891,12 @@ def compare_generic_condition(cond, key_method, warning):
     Compares a condition like "tokeninfoattribute == value".
     It uses the "key_method" to determine the value of "tokeninfoattribute".
 
-    If the value does not match, it returns False.
+    If the value does not match or the key does not exist, it returns False.
 
     :param cond: A condition containing a comparator like "==", ">", "<"
     :param key_method: A function call, that get the value from the key
-    :param warning: A warning message to be written to the log file.
-    :return: True of False
+    :param warning: A warning message to be written to the log file in case the condition is not parsable.
+    :return: True or False
     """
     key = value = None
     for comparator in ["==", ">", "<"]:
@@ -898,13 +904,39 @@ def compare_generic_condition(cond, key_method, warning):
             key, value = [x.strip() for x in cond.split(comparator)]
             break
     if value:
-        res = compare_value_value(key_method(key), comparator, value)
-        log.debug("Comparing {0!s} {1!s} {2!s} with result {3!s}.".format(key, comparator, value, res))
-        return res
+        if key_method(key) is not None:
+            res = compare_value_value(key_method(key), comparator, value)
+            log.debug("Comparing {0!s} {1!s} {2!s} with result {3!s}.".format(key, comparator, value, res))
+            return res
+        else:
+            log.debug(f"Key {key} not found.")
+            return False
     else:
         # There is a condition, but we do not know it!
         log.warning(warning.format(cond))
         raise Exception("Condition not parsable.")
+
+
+def compare_time(cond: str, time_value: datetime) -> bool:
+    """
+    Evaluates whether a passed timestamp is within a certain time frame in the past compared to now.
+
+    :param cond: The maximum time difference the time value may have to now, e.g. "5d", "2h", "30m"
+                 The following units are supported: y (years), d (days), h (hours), m (minutes), s (seconds)
+    :param time_value: The timestamp to be compared to now
+    :return: True if the time difference between the time stamp and now is less than the condition value,
+             False otherwise
+    """
+    # parse condition value to timedelta format
+    cond_time_delta = parse_timedelta(cond)
+
+    # calculate the true time difference between the time stamp and now
+    now = datetime.now(timezone.utc)
+    true_time_delta = now - time_value
+
+    # compare the true time value with the condition time value
+    res = compare_value_value(true_time_delta, "<", cond_time_delta)
+    return res
 
 
 def int_to_hex(serial):
@@ -1211,7 +1243,7 @@ def check_pin_contents(pin, policy):
 
     # check for not allowed characters
     for char in pin:
-        if not char in charlists_dict["base"]:
+        if char not in charlists_dict["base"]:
             ret = False
     if not ret:
         comment.append("Not allowed character in PIN!")
@@ -1290,6 +1322,8 @@ def prepare_result(obj, rid=1, details=None):
     :return: json rendered sting result
     :rtype: string
     """
+    # TODO this function has to be reworked or removed. We do not need to calculate the value of authentication here
+    # TODO when the caller already knows it. A function for formatting the response is fine.
     res = {"jsonrpc": "2.0",
            "result": {"status": True,
                       "value": obj},
@@ -1302,10 +1336,14 @@ def prepare_result(obj, rid=1, details=None):
         res["detail"] = details
 
     if rid > 1:
-        if obj:
+        if isinstance(obj, dict):
+            # TODO: Remove when /validate/samlcheck is removed
+            obj = obj.get("auth")
+        if obj and obj != AUTH_RESPONSE.CHALLENGE and not details.get("multi_challenge"):
             r_authentication = AUTH_RESPONSE.ACCEPT
-        elif not obj and details.get("multi_challenge"):
-            # We have a challenge authentication
+        elif obj and obj == AUTH_RESPONSE.CHALLENGE:
+            r_authentication = AUTH_RESPONSE.CHALLENGE
+        elif details.get("multi_challenge") or details.get("passkey"):
             r_authentication = AUTH_RESPONSE.CHALLENGE
         elif not obj and (details.get("challenge_status") == "declined"):
             r_authentication = AUTH_RESPONSE.DECLINED
@@ -1346,10 +1384,16 @@ def create_tag_dict(logged_in_user=None,
                     recipient=None,
                     registrationcode=None,
                     googleurl_value=None,
+                    googleurl_img=None,
+                    pushurl_value=None,
+                    pushurl_img=None,
                     client_ip=None,
                     pin=None,
                     challenge=None,
-                    escape_html=False):
+                    escape_html=False,
+                    container_serial=None,
+                    container_url_value=None,
+                    container_url_img=None):
     """
     This helper function creates a dictionary with tags to be used in sending emails
     either with email tokens or within the notification handler
@@ -1365,10 +1409,16 @@ def create_tag_dict(logged_in_user=None,
     :param registrationcode: The registration code of a token
     :param tokendescription: The description of the token
     :param googleurl_value: The URL for the QR code during token enrollemnt
+    :param googleurl_img: The image data blob of the QR-code during token enrollment
+    :param pushurl_value: The URL for the Push-Token enrollment
+    :param pushurl_img: The image data blob of the Push-Token enrollment QR-code
     :param client_ip: The IP of the client
     :param pin: The PIN of a token
     :param challenge: The challenge data
     :param escape_html: Whether the values for the tags should be html escaped
+    :param container_serial: The serial number of the container
+    :param container_url_value: The URL for the container registration
+    :param container_url_img: The URL as QR code for the container registration
     :return: The tag dictionary
     """
     time = datetime.now().strftime("%H:%M:%S")
@@ -1390,13 +1440,19 @@ def create_tag_dict(logged_in_user=None,
                 recipient_givenname=recipient.get("givenname"),
                 recipient_surname=recipient.get("surname"),
                 googleurl_value=googleurl_value,
+                googleurl_img=googleurl_img,
+                pushurl_value=pushurl_value,
+                pushurl_img=pushurl_img,
                 time=time,
                 date=date,
                 client_ip=client_ip,
                 pin=pin,
                 ua_browser=request.user_agent.browser if request else "",
                 ua_string=request.user_agent.string if request else "",
-                challenge=challenge if challenge else "")
+                challenge=challenge if challenge else "",
+                container_serial=container_serial,
+                container_url_value=container_url_value,
+                container_url_img=container_url_img)
     if escape_html:
         escaped_tags = {}
         for key, value in tags.items():
@@ -1495,44 +1551,6 @@ def parse_string_to_dict(s, split_char=":"):
     return d
 
 
-def replace_function_event_handler(text, token_serial=None, tokenowner=None, logged_in_user=None):
-    if logged_in_user is not None:
-        login = logged_in_user.login
-        realm = logged_in_user.realm
-    else:
-        login = ""
-        realm = ""
-
-    if tokenowner is not None:
-        surname = tokenowner.info.get("surname")
-        givenname = tokenowner.info.get("givenname")
-        userrealm = tokenowner.realm
-    else:
-        surname = ""
-        givenname = ""
-        userrealm = ""
-
-    if token_serial is not None:
-        token_serial = token_serial
-    else:
-        token_serial = ""  # nosec B105 # Reset serial
-
-    try:
-        attributes = {
-            "logged_in_user": login,
-            "realm": realm,
-            "surname": surname,
-            "token_owner": givenname,
-            "user_realm": userrealm,
-            "token_serial": token_serial
-        }
-        new_text = text.format(**attributes)
-        return new_text
-    except(ValueError, KeyError) as err:
-        log.warning("Unable to replace placeholder: ({0!s})! Please check the webhooks data option.".format(err))
-        return text
-
-
 def convert_imagefile_to_dataimage(imagepath):
     """
     This helper reads an image file and converts it to a dataimage string,
@@ -1580,20 +1598,33 @@ def get_plugin_info_from_useragent(useragent):
         return "", None, None
 
 
-def get_computer_name_from_user_agent(user_agent):
+def get_computer_name_from_user_agent(user_agent: str) -> Union[str, None]:
     """
     Searches for entries in the user agent that could identify the machine.
-    It is expected that the string following the key does not contain whitespaces.
     Example: ComputerName/Laptop-3324231
-
+    The following keys are by default searched for in the user agent:
+    ["ComputerName", "Hostname", "MachineName", "Windows", "Linux", "Mac"]
+    The list can be extended with custom keys in pi.cfg with the entry OFFLINE_MACHINE_KEYS = ["CustomKey1", ...]
     :param user_agent: The user agent string
-    :type user_agent: str
-    :return: The computer name or None if nothing is found
+    :type user_agent: str or None
+    :return: The computer name or a generated computer name if no matching key was found in the user agent
     :rtype: str or None
     """
-    keys = ["ComputerName", "Hostname", "MachineName", "Windows", "Linux", "Mac"]
-    if user_agent:
-        for key in keys:
-            if key in user_agent:
+    if not user_agent:
+        log.warning("No user agent provided to extract computer name from.")
+        return None
+    # TODO the input user_agent could be sanitized by removing all () and everything in between each of them
+    # Do not convert to set as the order of the keys should be preserved and iteration should be deterministic
+    keys: list = ["ComputerName", "Hostname", "MachineName", "Windows", "Linux", "Mac"]
+    config_keys: list = get_app_config_value("OFFLINE_MACHINE_KEYS", [])
+    keys.extend([key for key in config_keys if key not in keys])
+    log.debug(f"Keys to search for machine name in user agent: {keys}")
+    for key in keys:
+        if key in user_agent:
+            try:
                 return user_agent.split(key + "/")[1].split(" ")[0]
+            except Exception as ex:
+                # This exception is likely to happen, because words/parts like "Mac" are common
+                #log.debug(f"Could not extract computer name from user agent: {ex} with key {key}")
+                pass
     return None

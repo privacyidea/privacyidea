@@ -134,9 +134,9 @@ def parse_registration_data(reg_data, verify_cert=True):
     # check the validity period of the certificate
     if verify_cert:
         if start_time > time.localtime() or \
-                        end_time < time.localtime():  #pragma no cover
+                        end_time < time.localtime():  # pragma no cover
             log.error("The certificate is not valid. {0!s} -> {1!s}".format(not_before,
-                                                                  not_after))
+                                                                            not_after))
             raise Exception("The time of the attestation certificate is not "
                             "valid.")
 
@@ -186,11 +186,11 @@ def check_registration_data(attestation_cert, app_id,
     client_data_hash = sha256(to_bytes(client_data)).digest()
     reg_data = b'\x00' + app_id_hash + client_data_hash \
                + binascii.unhexlify(key_handle) + binascii.unhexlify(user_pub_key)
+    attest_cert = attestation_cert.to_cryptography()
     try:
-        crypto.verify(attestation_cert,
-                      binascii.unhexlify(signature),
-                      reg_data,
-                      "sha256")
+        attest_cert.public_key().verify(binascii.unhexlify(signature),
+                                        reg_data,
+                                        ec.ECDSA(hashes.SHA256()))
     except Exception as exx:
         raise Exception("Error checking the signature of the registration "
                         "data. %s" % exx)

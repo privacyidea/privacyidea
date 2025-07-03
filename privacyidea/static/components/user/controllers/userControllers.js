@@ -129,7 +129,13 @@ angular.module("privacyideaApp")
                 }, function (data) {
                     $scope.tokendata = data.result.value;
                     //debug: console.log("Token for user " + $scope.username);
-                    $scope.enableAddTokenToContainer = $scope.tokendata.tokens.length > 0;
+                    $scope.tokenWithoutContainer = [];
+                    for (let token of $scope.tokendata.tokens) {
+                        if (!token.container_serial) {
+                            $scope.tokenWithoutContainer.push(token);
+                        }
+                    }
+                    $scope.enableAddTokenToContainer = $scope.tokenWithoutContainer.length > 0;
                 });
             };
 
@@ -141,7 +147,7 @@ angular.module("privacyideaApp")
                         pagesize: $scope.containersPerPage,
                         page: $scope.containerParams.page
                     }, function (data) {
-                        $scope.containerdata = data.result.value.containers;
+                        $scope.containerdata = data.result.value;
                     });
                 } else {
                     $scope.containerdata = [];
@@ -149,9 +155,11 @@ angular.module("privacyideaApp")
             };
 
             // Change the pagination
-            $scope.pageChanged = function () {
+            $scope.tokenPageChanged = function () {
                 //debug: console.log('Page changed to: ' + $scope.params.page);
                 $scope._getUserToken();
+            };
+            $scope.containerPageChanged = function () {
                 $scope.getUserContainer();
             };
 
@@ -218,11 +226,11 @@ angular.module("privacyideaApp")
             $scope.onCustomAttributeKeyChange = function () {
                 $scope.newCustomAttributeValue = "";
                 $scope.selectedAttrValue = "";
-                $scope.allowed_values = $scope.allowedCustomAttributes['set'][$scope.selected_attr_key]
+                $scope.allowed_values = $scope.allowedCustomAttributes['set'][$scope.selectedAttrKey]
                 $scope.customAttributeValueSelectVisible = true;
                 if ($scope.allowed_values.length === 1) {
                     // If there is only one value, set it!
-                    $scope.selected_attr_value = $scope.allowed_values[0];
+                    $scope.selectedAttrValue = $scope.allowed_values[0];
                     // if this value is "*", then we hide the
                     $scope.customAttributeValueSelectVisible = false;
                 }
@@ -335,7 +343,8 @@ angular.module("privacyideaApp")
             $scope.containerSelected = false;
             // Enable the button only if a container is selected
             $scope.$watch('containerSerial', function (newValue, oldValue) {
-                $scope.containerSelected = (newValue != null && newValue != undefined && newValue != "createnew");
+                $scope.containerSelected = (newValue !== null && newValue !== undefined
+                    && newValue != "createnew" && newValue != "none");
             });
 
             // Selection looks like this {"TOTP0001B29F":{"totp":true}, "OATH0002EB1F":{"hotp":false}}
@@ -354,16 +363,6 @@ angular.module("privacyideaApp")
             }, true); // true = deep watch
 
             // Button actions
-            $scope.addTokensToContainerMode = function () {
-                $scope.showTokenOfUser = false;
-                $scope.tokenWithoutContainer = [];
-                for (let token of $scope.tokendata.tokens) {
-                    if (!token.container_serial) {
-                        $scope.tokenWithoutContainer.push(token);
-                    }
-                }
-            };
-
             $scope.cancelAddTokensToContainerMode = function () {
                 $scope.showTokenOfUser = true;
                 $scope.tokenSelection = {};
@@ -378,15 +377,31 @@ angular.module("privacyideaApp")
                     }
                     selectedSerials += key;
                 }
-                let params = {serial: selectedSerials, container_serial: $scope.containerSerial};
-                ContainerFactory.addTokenToContainer(params, function (data) {
-
-                });
-                // Reload the token to show the container
-                $scope._getUserToken();
+                if (selectedSerials.length > 0) {
+                    let params = {serial: selectedSerials, container_serial: $scope.containerSerial};
+                    ContainerFactory.addTokenToContainer(params, function (data) {
+                        // Reload the token to show the container
+                        $scope._getUserToken();
+                    });
+                }
                 $scope.showTokenOfUser = true;
                 $scope.containerSerial = null;
             };
+        }
+    ]);
+
+
+angular.module("privacyideaApp")
+    .controller("userListController", ['$scope',
+        function ($scope) {
+            // Change the pagination
+            $scope.pageChanged = function () {
+                //debug: console.log('Page changed to: ' + $scope.params.page);
+                $scope._getUsers();
+            };
+            $scope.$on("piReload", function () {
+                $scope._getUsers(false);
+            });
         }
     ]);
 
@@ -441,12 +456,6 @@ angular.module("privacyideaApp")
                             //debug: console.log($scope.userlist);
                         });
                 }
-            };
-
-            // Change the pagination
-            $scope.pageChanged = function () {
-                //debug: console.log('Page changed to: ' + $scope.params.page);
-                $scope._getUsers();
             };
 
             $scope.getRealms = function () {
@@ -554,7 +563,4 @@ angular.module("privacyideaApp")
                 $scope.rightColumn = userFields.slice(middle, end);
             };
 
-            $scope.$on("piReload", function () {
-                $scope._getUsers(false);
-            });
         }]);

@@ -27,7 +27,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
      boundary-links="true" ng-change="pageChanged()">
 </div>
 
-<span translate>Total Containers: {{ containerdata.count }}</span>
+<div translate>Total Containers: {{ containerdata.count }}</div>
 
 <div class="form-group">
     <label>
@@ -58,12 +58,30 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                         pi-sort-by="serial"
                         translate>Serial
                 </button>
+                <pi-filter ng-model="filter.serial"
+                           ng-change="get()"
+                           ng-keypress="($event.which==13)?get():return"
+                ></pi-filter>
             </th>
-            <th translate>
-                Type
+            <th class="pifilter">
+                <button class="btn btn-default unsorted"
+                        pi-sort-by="type"
+                        translate>Type
+                </button>
+                <pi-filter ng-model="filter.type"
+                           ng-change="get()"
+                           ng-keypress="($event.which==13)?get():return"
+                ></pi-filter>
             </th>
-            <th translate>
-                Description
+            <th class="pifilter">
+                <button class="btn btn-default unsorted"
+                        pi-sort-by="description"
+                        translate>Description
+                </button>
+                <pi-filter ng-model="filter.description"
+                           ng-change="get()"
+                           ng-keypress="($event.which==13)?get():return"
+                ></pi-filter>
             </th>
             <th ng-show="loggedInUser.role == 'admin'" translate>
                 User
@@ -73,6 +91,10 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             </th>
             <th ng-show="loggedInUser.role == 'admin'" translate>
                 Container Realms
+                <pi-filter ng-model="filter.realm"
+                           ng-change="get()"
+                           ng-keypress="($event.which==13)?get():return"
+                ></pi-filter>
             </th>
         </tr>
         </thead>
@@ -117,14 +139,14 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <tr ng-if="expandedRows.includes($index)" ng-repeat-end="">
             <td colspan="6">
                 <b><span translate>Contained Tokens: </span></b>
-                <table class="table table-bordered table-striped"  id="tableContainerTokenList"
+                <table class="table table-bordered table-striped" id="tableContainerTokenList"
                        ng-if="container.tokens.length > 0">
                     <tbody>
                     <tr ng-repeat="token in container.tokens">
                         <td><a ui-sref="token.details({tokenSerial:token.serial, currentToken:token})"
                                ng-click="$rootScope.returnTo=token.list;"
                                ng-show="token.tokentype">
-                            {{ "[" + token.tokentype + "] " + token.serial + ": " + token.description}}</a>
+                            {{ "[" + token.tokentype + "] " + token.serial + ": " + token.description }}</a>
                             <span ng-hide="token.tokentype">
                                 {{ token.serial }}
                             </span>

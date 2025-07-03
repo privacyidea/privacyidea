@@ -1,5 +1,5 @@
 <div class="well">
-    <nav class="navbar navbar-default" ng-show="checkRight('container_list')">
+    <nav class="navbar navbar-default" ng-show="checkRight('container_list') && !token_wizard && !container_wizard['enabled']">
         <div class="container">
             <!-- Hide menu bar on small screens, show button to toggle instead -->
             <button type="button" class="navbar-toggle"
@@ -26,7 +26,8 @@
                         </a>
                     </li>
                     <li ng-class="{active: $state.includes('token.containerlist')
-                        || $state.includes('token.containercreate') || $state.includes('token.containerdetails')}">
+                        || $state.includes('token.containercreate') || $state.includes('token.containerdetails')
+                        || $state.includes('token.containertemplates')}">
                         <a ui-sref="token.containerlist" ng-click="tokenMenu=false">
                             <span class="glyphicon glyphicon-folder-close"
                                   aria-hidden="true"></span>
@@ -119,7 +120,7 @@
                         ng-show="($state.includes('token.details')||
                         $state.includes('token.lost')) &&
                         checkRight('losttoken')">
-                        <a ui-sref="token.lost({tokenSerial:selectedToken.serial})">
+                        <a ui-sref="token.lost({tokenSerial: $stateParams.tokenSerial})">
                             <span class="glyphicon glyphicon-eye-open"></span>
                             <span translate>Lost Token</span>
                         </a>
@@ -162,7 +163,7 @@
         </div>
 
         <!-- Container sidebar panel -->
-        <div class="col-lg-3 sticky" ng-show="!tokenMenu">
+        <div class="col-lg-3 sticky" ng-show="!tokenMenu && !container_wizard['enabled']">
             <div class="pa-sidebar panel">
                 <ul class="nav nav-pills nav-stacked nav-capitalize">
                     <li role="presentation"
@@ -186,17 +187,89 @@
                             <span translate>Create Container</span>
                         </a>
                     </li>
+                    <li role="presentation"
+                        ng-show="checkRight('container_template_list')"
+                        ng-class="{active: $state.includes('token.containertemplates')}">
+                        <a ui-sref="token.containertemplates.list">
+                            <span class="glyphicon glyphicon-duplicate"></span>
+                            <span translate>Templates</span>
+                        </a>
+                    </li>
+                    <ul ng-show="$state.includes('token.containertemplates')"
+                        class="nav nav-pills nav-stacked pi-submenu nav-capitalize">
+                        <li role="presentation"
+                            ng-show="checkRight('container_template_list')"
+                            ng-class="{active: $state.includes('token.containertemplates.list')}">
+                            <a ui-sref="token.containertemplates.list">
+                                <span class="glyphicon glyphicon-list"></span>
+                                <span translate>List Templates</span>
+                            </a>
+                        </li>
+                        <li role="presentation"
+                            ng-class="{active: $state.includes('token.containertemplates.edit')}"
+                            ng-show="$state.includes('token.containertemplates.edit')"><a>
+                            Template {{ $stateParams.templateName }}</a>
+                        </li>
+                        <li role="presentation"
+                            ng-show="checkRight('container_template_create')"
+                            ng-class="{active: $state.includes('token.containertemplates.create')}">
+                            <a ui-sref="token.containertemplates.create">
+                                <span class="glyphicon glyphicon-plus"></span>
+                                <span translate>Create New Template</span>
+                            </a>
+                        </li>
+                    </ul>
+                    <hr>
+                    <li role="presentation"
+                        ng-show="($state.includes('token.containerlist'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/webui/index.html#containers' }}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Containers</span></a>
+                    </li>
+                    <li role="presentation"
+                        ng-show="($state.includes('token.containercreate'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/webui/container_view.html#container-create' }}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Creating a Container</span></a>
+                    </li>
+                    <li role="presentation"
+                        ng-show="($state.includes('token.containerdetails'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/webui/container_view.html#container-details' }}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Container Details</span></a>
+                    </li>
+                    <li role="presentation"
+                        ng-show="($state.includes('token.containertemplates.list'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/webui/container_view.html#templates' }}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Container Templates</span></a>
+                    </li>
+                    <li role="presentation"
+                        ng-show="($state.includes('token.containertemplates.create'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/webui/container_view.html#template-create' }}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Creating a Template</span></a>
+                    </li>
+                    <li role="presentation"
+                        ng-show="($state.includes('token.containertemplates.edit'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/webui/container_view.html#template-details' }}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Template Details</span></a>
+                    </li>
                 </ul>
             </div>
         </div>
 
-        <div ng-class="{'col-lg-9': !token_wizard || !tokenMenu, 'col-lg-12': token_wizard && tokenMenu}"
+        <div ng-class="{'col-lg-9': !token_wizard && !container_wizard['enabled'],
+                        'col-lg-12': token_wizard || container_wizard['enabled']}"
              ui-view class="slide panel">
         </div>
     </div>
 
 </div>
-
-
-
-

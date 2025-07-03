@@ -34,7 +34,8 @@ returns -1.
 import logging
 import datetime
 from privacyidea.lib.tokenclass import TokenClass, AUTHENTICATIONMODE
-from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
+from privacyidea.lib.policy import (SCOPE, ACTION, GROUP, comma_escape_text,
+                                    get_action_values_from_options)
 from privacyidea.lib.crypto import urandom, safe_compare
 from privacyidea.lib.log import log_with
 from privacyidea.lib import _, lazy_gettext
@@ -104,11 +105,12 @@ class IndexedSecretTokenClass(TokenClass):
                'policy': {SCOPE.AUTH: {
                    ACTION.CHALLENGETEXT: {
                        'type': 'str',
+                       'group': "Indexed Secret Token",
                        'desc': _('Use an alternative challenge text for telling the '
                                  'user which positions of the secret he should enter. You can also '
                                  'use tags for automated replacement. Check out the documentation '
-                                 'for more details.'),
-                       'group': "Indexed Secret Token"
+                                 'for more details.')
+                               + " " + comma_escape_text
                    },
                    PIIXACTION.COUNT: {
                        'type': 'int',
@@ -199,6 +201,8 @@ class IndexedSecretTokenClass(TokenClass):
                                                         "{0!s}_{1!s}".format(self.get_class_type(),
                                                                              ACTION.CHALLENGETEXT),
                                                         options) or DEFAULT_CHALLENGE_TEXT
+
+        return_message = return_message.replace(r'\,', ',')
 
         if self.get_tokeninfo("multichallenge"):
             # In case of multichallenge we ask only once.

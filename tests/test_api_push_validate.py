@@ -4,7 +4,7 @@ from privacyidea.lib.token import get_tokens, init_token, remove_token, get_one_
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION, strip_key
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
-from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
+from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from cryptography.hazmat.backends import default_backend
@@ -24,7 +24,7 @@ DICT_FILE = "tests/testdata/dictionary"
 FIREBASE_FILE = "tests/testdata/firebase-test.json"
 CLIENT_FILE = "tests/testdata/google-services.json"
 FB_CONFIG_VALS = {
-    FIREBASE_CONFIG.JSON_CONFIG: FIREBASE_FILE}
+    FirebaseConfig.JSON_CONFIG: FIREBASE_FILE}
 REGISTRATION_URL = "http://test/ttype/push"
 TTL = "10"
 
@@ -428,12 +428,15 @@ class PushAPITestCase(MyApiTestCase):
             # Check, that multi_challenge is also contained.
             self.assertEqual(CLIENTMODE.POLL, detail.get("multi_challenge")[0].get("client_mode"))
             self.assertIn("image", detail)
+            self.assertIn("link", detail)
+            link = detail.get("link")
+            self.assertTrue(link.startswith("otpauth://pipush"))
             serial = detail.get("serial")
 
         # The Application starts polling, if the token is enrolled
         with self.app.test_request_context('/validate/polltransaction',
                                            method='GET',
-                                           data={"transaction_id": transaction_id}):
+                                           query_string={"transaction_id": transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
@@ -482,7 +485,7 @@ class PushAPITestCase(MyApiTestCase):
         # The Application polls, if the token is readily enrolled
         with self.app.test_request_context('/validate/polltransaction',
                                            method='GET',
-                                           data={"transaction_id": transaction_id}):
+                                           query_string={"transaction_id": transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")

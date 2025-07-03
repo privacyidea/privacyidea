@@ -1,7 +1,6 @@
 """
 This file contains the tests for the lifecycle module lib/lifecycle.py
 """
-import json
 from mock import mock
 
 from privacyidea.lib.lifecycle import register_finalizer, call_finalizers
@@ -69,4 +68,3 @@ class LifecycleTestCase(MyTestCase):
             self.assertTrue(result.get("status"))
         finalizer1.assert_called_once()
         finalizer2.assert_called_once()
-

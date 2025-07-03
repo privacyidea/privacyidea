@@ -25,6 +25,7 @@ import click
 from flask import current_app
 from flask.cli import AppGroup
 import json
+import traceback
 import yaml
 
 from privacyidea.lib.authcache import cleanup
@@ -185,7 +186,7 @@ def realm_delete(realm):
     try:
         delete_realm(realm)
     except ResourceNotFoundError as e:
-        click.secho(f"Could not delete realm '{realm}': {e}", fg="red")
+        click.secho(f"Could not delete realm '{realm}': {e!r}", fg="red")
     else:
         click.secho(f"Realm '{realm}' successfully deleted.", fg="green")
 
@@ -199,7 +200,7 @@ def realm_set_default(realm):
     try:
         set_default_realm(realm)
     except ResourceNotFoundError as e:
-        click.secho(f"Could not set realm {realm} as default: {e}", fg="red")
+        click.secho(f"Could not set realm {realm} as default: {e!r}", fg="red")
     else:
         click.secho(f"Realm {realm} set as default realm.", fg="green")
 
@@ -332,13 +333,13 @@ def resolver_create_internal(ctx, name):
 
     # Now we create the database table
     from sqlalchemy import create_engine
-    from sqlalchemy import Table, MetaData, Column
+    from sqlalchemy import Table, MetaData, Column, Identity
     from sqlalchemy import Integer, String
     engine = create_engine(sqluri)
     metadata = MetaData()
     Table('users_%s' % name,
           metadata,
-          Column('id', Integer, primary_key=True),
+          Column('id', Integer, Identity(), primary_key=True),
           Column('username', String(40), unique=True),
           Column('email', String(80)),
           Column('password', String(255)),
@@ -377,7 +378,7 @@ def event_enable(eid):
     try:
         r = enable_event(eid)
     except ResourceNotFoundError as e:
-        click.secho(f"Could not enable event {eid}: {e}", fg="red")
+        click.secho(f"Could not enable event {eid}: {e!r}", fg="red")
     else:
         click.secho(f"Enabled Event with ID {r}", fg="green")
 
@@ -391,7 +392,7 @@ def event_disable(eid):
     try:
         r = enable_event(eid, enable=False)
     except ResourceNotFoundError as e:
-        click.secho(f"Could not disable event {eid}: {e}", fg="red")
+        click.secho(f"Could not disable event {eid}: {e!r}", fg="red")
     else:
         click.secho(f"Disabled Event with ID {r}", fg="green")
 
@@ -405,7 +406,7 @@ def event_delete(eid):
     try:
         r = delete_event(eid)
     except ResourceNotFoundError as e:
-        click.secho(f"Could not delete event with ID {eid}: {e}", fg="red")
+        click.secho(f"Could not delete event with ID {eid}: {e!r}", fg="red")
     else:
         click.secho(f"Deleted Event with ID {r}", fg="green")
 
@@ -438,7 +439,7 @@ def policy_enable(name):
     try:
         enable_policy(name)
     except ResourceNotFoundError as e:
-        click.secho(f"Could not enable policy {name}: {e}", fg="red")
+        click.secho(f"Could not enable policy {name}: {e!r}", fg="red")
     else:
         click.secho(f"Successfully enabled policy '{name}'", fg="green")
 
@@ -452,7 +453,7 @@ def policy_disable(name):
     try:
         enable_policy(name, enable=False)
     except ResourceNotFoundError as e:
-        click.secho(f"Could not disable policy {name}: {e}", fg="red")
+        click.secho(f"Could not disable policy {name}: {e!r}", fg="red")
     else:
         click.secho(f"Successfully disabled policy '{name}'", fg="green")
 
@@ -466,7 +467,7 @@ def policy_delete(name):
     try:
         delete_policy(name)
     except ResourceNotFoundError as e:
-        click.secho(f"Could not delete policy {name}: {e}", fg="red")
+        click.secho(f"Could not delete policy {name}: {e!r}", fg="red")
     else:
         click.secho(f"Successfully deleted policy '{name}'", fg="green")
 
@@ -615,7 +616,7 @@ def config_import(ctx, infile, types, name):
                     value['func'](data[typ], name=name)
                 except Exception as e:
                     click.secho(f"Could not successfully import data of "
-                                f"type {typ}: {e}", fg="red")
+                                f"type {typ}: {e!r}", fg="red")
 
 
 # Create the "importer" command as a hidden and deprecated alias for "import"

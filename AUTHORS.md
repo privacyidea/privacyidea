@@ -1,3 +1,18 @@
+# Authors in version 3.11
+
+aleyna34131 @ GitHub
+andreasweber-uu @ GitHub
+Cornelius Kölbel <cornelius.koelbel@netknights.it>
+fxwgr @ GitHub
+henrik-falk <henrik.falk@netknights.it>
+Jelina Unger <jelina.unger@netknights.it>
+jona-samuel <jona-samuel.hoehmann@netknights.it>
+Nils Behlen <nils.behlen@netknights.it>
+Paul Lettich <paul.lettich@netknights.it>
+Robin @ GitHub
+samir-at-netknights <samir.nasher_taher@netknights.it>
+topelrapha <info@rtopel.de>
+
 # Authors in version 3.10
 
 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -10,6 +25,8 @@ maxstaubach @ GitHub
 Nils Behlen <nils.behlen@netknights.it>
 pablo-knight <julio.storch@netknights.it>
 Paul Lettich <paul.lettich@netknights.it>
+Clemens Weissbacher <clemens.weissbacher@uibk.ac.at>
+samir-at-netknights <samir.nasher_taher@netknights.it>
 
 # Authors in version 3.9
 

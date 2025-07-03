@@ -160,10 +160,10 @@ Other tags are ``{client_ip}`` for the client IP address and ``{ua_browser}``
 and ``{ua_string}`` for information on the user agent and ``{username}`` and
 ``{realm}`` for information on the user in the parameters.
 
-.. note:: Some tokens have token specific attributes that are stored in the
-   tokeninfo. The TOTP token type has a ``timeWindow``. The TOTP and the HOTP
-   token store the ``hashlib`` in the tokeninfo, the SMS token stores the
-   ``phone`` number.
+.. note:: Some tokens have token specific required attributes that are stored
+   in the tokeninfo. The TOTP token type has a ``timeStep`` attribute, the TOTP
+   and the HOTP token store the ``hashlib`` attribute in the tokeninfo. the SMS
+   token stores the ``phone`` number.
 
 .. note:: You can use this to set the ``timeWindow`` of a TOTP token for
    :ref:`faq_initial_synchronization`.

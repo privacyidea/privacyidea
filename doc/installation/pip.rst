@@ -9,54 +9,58 @@ You can install privacyidea usually on any Linux distribution in a python
 virtual environment. This way you keep all privacyIDEA code in one defined
 subdirectory.
 
-privacyIDEA currently runs with Python 3.6 to 3.10. Other
-versions either do not work or are not tested.
+.. note::
+    privacyIDEA currently runs with Python 3.9 to 3.12. Other
+    versions either do not work or are not tested.
+
+Setting up a virtual environment
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You first need to install a package for creating a python `virtual environment
 <https://virtualenv.pypa.io/en/stable/>`_.
 
 Now you can setup the virtual environment for privacyIDEA like this::
 
-  virtualenv /opt/privacyidea
+  $ virtualenv /opt/privacyidea
 
-  cd /opt/privacyidea
-  source bin/activate
+  $ cd /opt/privacyidea
+  $ source bin/activate
+  (privacyidea)$
 
 .. note::
     Some distributions still ship Python 2.7 as the system python. If you want
     to use Python 3 you can create the virtual environment like this:
     `virtualenv -p /usr/bin/python3 /opt/privacyidea`
 
-Now you are within the python virtual environment and you can run::
+Now you are within the python virtual environment and you can proceed with the
+:ref:`deterministic installation <pip_deterministic_installation>`.
 
-  pip install privacyidea
-
-in order to install the latest privacyIDEA version from
-`PyPI <https://pypi.org/project/privacyIDEA>`_.
+.. _pip_deterministic_installation:
 
 Deterministic Installation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The privacyIDEA package contains dependencies with a minimal required version. However, newest
 versions of dependencies are not always tested and might cause problems.
-If you want to achieve a deterministic installation, you can now install the pinned and tested
-versions of the dependencies::
+To achieve a deterministic installation, you must install the pinned and tested
+versions of the dependencies *before* installing privacyIDEA::
 
-  pip install -r lib/privacyidea/requirements.txt
+    (privacyidea)$ pip install -r https://raw.githubusercontent.com/privacyidea/privacyidea/v3.11.3/requirements.txt
 
-It would even be safer to install the pinned dependencies *before* installing privacyIDEA.
-So if you e.g. know that you are going to install version 3.6 you can run::
+Now you can install the required privacyIDEA version from
+`PyPI <https://pypi.org/project/privacyIDEA>`_::
 
-    pip install -r https://raw.githubusercontent.com/privacyidea/privacyidea/v3.6/requirements.txt
-    pip install privacyidea==3.6
+    (privacyidea)$ pip install privacyidea==3.11.3
+
+The requirements are also available after the installation at ``/opt/privacyidea/lib/privacyidea/requirements.txt``.
 
 .. _pip_configuration:
 
 Configuration
-.............
+^^^^^^^^^^^^^
 
 Database
-^^^^^^^^
+........
 
 privacyIDEA makes use of `SQLAlchemy <https://www.sqlalchemy.org>`_ to be able
 to talk to different SQL-based databases. Our best experience is with
@@ -77,7 +81,7 @@ You must then add the database name, user and password to your `pi.cfg`. See
 :ref:`cfgfile` for more information on the configuration.
 
 Setting up privacyIDEA
-^^^^^^^^^^^^^^^^^^^^^^
+......................
 Additionally to the database connection a new ``PI_PEPPER`` and ``SECRET_KEY``
 must be generated in order to secure the installation::
 
@@ -90,31 +94,30 @@ An encryption key for encrypting the secrets in the database and a key for
 signing the :ref:`audit` log is also needed (the following commands should be
 executed inside the virtual environment)::
 
-    pi-manage create_enckey  # encryption key for the database
-    pi-manage create_audit_keys  # key for verification of audit log entries
+    (privacyidea)$ pi-manage setup create_enckey  # encryption key for the database
+    (privacyidea)$ pi-manage setup create_audit_keys  # key for verification of audit log entries
 
 To create the database tables execute::
 
-    pi-manage create_tables
-
-Stamping the database to the current database schema version is important for
-the update process later::
-
-    pi-manage db stamp head -d /opt/privacyidea/lib/privacyidea/migrations/
+    (privacyidea)$ pi-manage setup create_tables
 
 After creating a local administrative user with::
 
-    pi-manage admin add <login>
+    (privacyidea)$ pi-manage admin add <login>
 
 the development server can be started with::
 
-    pi-manage run
+    (privacyidea)$ pi-manage run
+
+.. versionchanged:: 3.10
+    To start the development server with an earlier version use ``runserver``. The
+    command is still available but deprecated.
 
 .. warning::
     The development server should not be used for a productive environment.
 
 Webserver
-^^^^^^^^^
+.........
 
 To serve authentication requests and provide the management UI a
 `WSGI <https://wsgi.readthedocs.io/en/latest/index.html>`_ capable webserver

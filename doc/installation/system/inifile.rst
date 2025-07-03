@@ -188,7 +188,7 @@ database engine. If ``PI_AUDIT_SQL_OPTIONS`` is not set,
 ``SQLALCHEMY_ENGINE_OPTIONS`` will be used.
 
 ``PI_AUDIT_SQL_TRUNCATE = True`` lets you truncate audit entries to the length
-of the database fields.
+of the database fields (See :ref:`Audit table size <audit_table_size>`).
 
 In certain cases when you experiencing problems you may use the parameters
 ``PI_AUDIT_POOL_SIZE`` and ``PI_AUDIT_POOL_RECYCLE``. However, they are only
@@ -300,10 +300,30 @@ A JWT can be created like this::
    If you are using an administrative user, the realm for this administrative
    must be defined in ``pi.cfg`` in the list ``SUPERUSER_REALM``.
 
+
+Token parameters
+----------------
+
+.. _picfg_token_serial_random:
+
+Random serial generation
+........................
+
+.. versionadded:: 3.11
+
+A newly generated token serial contains an additional non-random part which
+reduces the amount of possible serials. To generate completely random serials use::
+
+    PI_TOKEN_SERIAL_RANDOM = True
+
+.. note::
+    See :py:func:`~privacyidea.lib.token.gen_serial` for more information on
+    the generation of a token serial.
+
 .. _picfg_3rd_party_tokens:
 
 3rd party token types
----------------------
+.....................
 
 You can add 3rd party token types to privacyIDEA. Read more about this
 at :ref:`customize_3rd_party_tokens`.

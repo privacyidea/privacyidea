@@ -303,6 +303,8 @@ angular.module("TokenModule", ["privacyideaAuth"])
                     if (username) {
                         params.user = username;
                         params.realm = userObject.realm;
+                    } else if (userObject.realmOnly) {
+                        params.realm = userObject.realm;
                     }
                     $http.post(tokenUrl + "/init", params,
                         {headers: {'PI-Authorization': AuthFactory.getAuthToken()}}
@@ -316,8 +318,30 @@ angular.module("TokenModule", ["privacyideaAuth"])
                             }
                         });
                 },
+                initToken: function (params, callback) {
+                    if (params["user"]) {
+                        params["user"] = fixUser(params["user"]);
+                    }
+                    $http.post(tokenUrl + "/init", params,
+                        {headers: {'PI-Authorization': AuthFactory.getAuthToken()}}
+                    ).then(function (response) {
+                        callback(response.data);
+                    }, function (error) {
+                        AuthFactory.authError(error.data);
+                    });
+                },
                 delete: function (serial, callback) {
                     $http.delete(tokenUrl + "/" + serial,
+                        {
+                            headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                        }).then(function (response) {
+                        callback(response.data)
+                    }, function (error) {
+                        AuthFactory.authError(error.data)
+                    });
+                },
+                deleteBatch: function (params, callback) {
+                    $http.post(tokenUrl + "/batchdeletion", params,
                         {
                             headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                         }).then(function (response) {
@@ -355,5 +379,27 @@ angular.module("TokenModule", ["privacyideaAuth"])
                         AuthFactory.authError(error.data)
                     });
                 },
+                deleteExpiredChallenges: function (callback) {
+                    $http.delete(tokenUrl + "/challenges/expired", {
+                        headers: {
+                            'PI-Authorization': AuthFactory.getAuthToken(),
+                            'Content-Type': 'application/json'
+                        }
+                    }).then(function (response) {
+                        callback(response.data)
+                    }, function (error) {
+                        AuthFactory.authError(error.data)
+                    });
+                },
+                deleteTokenInfo: function (serial, key, callback) {
+                    $http.delete(tokenUrl + "/info/" + serial + "/" + key,
+                        {
+                            headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                        }).then(function (response) {
+                        callback(response.data)
+                    }, function (error) {
+                        AuthFactory.authError(error.data)
+                    });
+                }
             };
         }]);

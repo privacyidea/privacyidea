@@ -1,0 +1,93 @@
+<!--
+(c) NetKnights GmbH 2024,  https://netknights.it
+This code is free software; you can redistribute it and/or
+modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+as published by the Free Software Foundation; either
+version 3 of the License, or any later version.
+This code is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+You should have received a copy of the GNU Affero General Public
+License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+SPDX-FileCopyrightText: 2024 Jelina Unger <jelina.unger@netknights.it>
+SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<div ng-show="showDefaultSelection">
+    <input type="checkbox"
+           ng-model="selection.default"
+           ng-disabled="!edit"
+           id="defaultTemplate">
+    <label for="defaultTemplate" translate>Set as default template</label>
+</div>
+
+<h4 translate>Tokens</h4>
+
+<table class="table table-bordered table-responsive table-capitalize-header"
+       ng-show="selection.tokens.length > 0">
+    <tr ng-repeat="token in selection.tokens track by $index"
+        ng-class="colorMap[token.state]">
+        <td class="width-25">
+            {{ token.type }}
+        </td>
+        <td>
+            <div class="form-group">
+                <button class="btn btn-capitalize btn-primary btn-transparent"
+                        ng-hide="token.edit"
+                        ng-click="editTokenProperties($index)">
+                    <span class="glyphicon glyphicon-pencil"></span>
+                    <span translate>Edit</span>
+                </button>
+                <button class="btn btn-capitalize btn-primary btn-transparent"
+                        ng-show="token.edit"
+                        ng-click="saveTokenProperties($index)">
+                    <span class="glyphicon glyphicon-eye-close"></span>
+                    <span translate>Hide Details</span>
+                </button>
+                <button class="btn btn-capitalize btn-warning btn-transparent"
+                        ng-click="removeToken($index)"
+                        ng-hide="token.state === 'remove' || (!edit && hideButtons)"
+                        ng-disabled="!edit">
+                    <span class="glyphicon glyphicon-remove"></span>
+                    <translate>Remove Token</translate>
+                </button>
+                <button class="btn btn-capitalize btn-primary btn-transparent"
+                        ng-click="reAddToken($index)"
+                        ng-show="token.state === 'remove' && !(!edit && hideButtons)"
+                        ng-disabled="!edit">
+                    <span class="glyphicon glyphicon-plus"></span>
+                    <translate>Add Token</translate>
+                </button>
+            </div>
+            <div class="alert alert-warning" role="alert" ng-show="!allowedTokenTypes.displaySelection[token.type]"
+                 translate>
+                You are not allowed to enroll this token type! It will be skipped!
+            </div>
+            <div class="well" ng-show="token.edit">
+                <ng-include src="instanceUrl + '/static/components/token/views/token.enroll.'
+                                         + token.type + '.html' + fileVersionSuffix">
+                </ng-include>
+                <input type="checkbox" ng-model="form.user" id="checkboxAssignUserFromContainer" ng-disabled="!edit">
+                <label for="checkboxAssignUserFromContainer" translate>
+                    Assign the token to the container owner and/or realm.</label>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div ng-show="edit">
+    <span translate>
+        Select a token type to add:
+    </span>
+    <select class="form-control"
+            ng-model="formInit.selectedTokenType"
+            ng-options="type as desc for (type, desc) in allowedTokenTypes.displaySelection">
+    </select>
+    <button class="btn btn-default btn-capitalize"
+            ng-click="addToken(formInit.selectedTokenType)"
+            translate>
+        Add Token
+    </button>
+</div>

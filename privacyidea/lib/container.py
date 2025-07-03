@@ -18,29 +18,40 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
 import importlib
+import json
 import logging
 import os
+from datetime import timezone, datetime
+from typing import Union
 
+from sqlalchemy import func
+from sqlalchemy.orm import Query
+
+from privacyidea.api.lib.utils import send_result
+from privacyidea.lib.challenge import delete_challenges
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.containerclass import TokenContainerClass
+from privacyidea.lib.containers.container_info import (PI_INTERNAL, TokenContainerInfoData, RegistrationState,
+                                                       SERVER_URL, CHALLENGE_TTL)
+from privacyidea.lib.containertemplate.containertemplatebase import ContainerTemplateBase
 from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError
 from privacyidea.lib.log import log_with
-from privacyidea.lib.token import get_token_owner, get_tokens_from_serial_or_user, get_realms_of_token
+from privacyidea.lib.machine import is_offline_token
+from privacyidea.lib.token import (get_tokens_from_serial_or_user, get_tokens,
+                                   convert_token_objects_to_dicts, init_token)
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import hexlify_and_unicode
-from privacyidea.models import (TokenContainer, TokenContainerOwner, Token, TokenContainerToken, TokenContainerRealm,
-                                Realm)
+from privacyidea.lib.utils import hexlify_and_unicode, parse_timedelta
+from privacyidea.models import (TokenContainer, TokenContainerOwner, Token, TokenContainerToken,
+                                Realm, TokenContainerTemplate, TokenContainerInfo, TokenContainerStates)
 
 log = logging.getLogger(__name__)
 
 
-def delete_container_by_id(container_id: int, user: User, user_role="user"):
+def delete_container_by_id(container_id: int) -> int:
     """
     Delete the container with the given id. If it does not exist, raises a ResourceNotFoundError.
 
     :param container_id: The id of the container to delete
-    :param user: The user deleting the container
-    :param user_role: The role of the user ('admin' or 'user')
     :return: ID of the deleted container on success
     """
     if not container_id:
@@ -48,32 +59,30 @@ def delete_container_by_id(container_id: int, user: User, user_role="user"):
 
     container = find_container_by_id(container_id)
 
-    # Check user rights: Throws error if user is not allowed to modify the container
-    _check_user_access_on_container(container, user, user_role)
+    # Delete challenges
+    delete_challenges(serial=container.serial)
 
     return container.delete()
 
 
-def delete_container_by_serial(serial: str, user: User, user_role="user"):
+def delete_container_by_serial(serial: str) -> int:
     """
     Delete the container with the given serial. If it does not exist, raises a ResourceNotFoundError.
 
     :param serial: The serial of the container to delete
-    :param user: The user deleting the container
-    :param user_role: The role of the user ('admin' or 'user')
     :return: ID of the deleted container on success
     """
     if not serial:
         raise ParameterError("Unable to delete container without serial.")
     container = find_container_by_serial(serial)
 
-    # Check user rights: Throws error if user is not allowed to modify the container
-    _check_user_access_on_container(container, user, user_role)
+    # Delete challenges
+    delete_challenges(serial=serial)
 
     return container.delete()
 
 
-def _gen_serial(container_type: str):
+def _gen_serial(container_type: str) -> str:
     """
     Generate a new serial for a container of the given type
 
@@ -100,7 +109,7 @@ def _gen_serial(container_type: str):
     return serial
 
 
-def create_container_from_db_object(db_container: TokenContainer):
+def create_container_from_db_object(db_container: TokenContainer) -> Union[TokenContainerClass, None]:
     """
     Create a TokenContainerClass object from the given db object.
 
@@ -119,7 +128,7 @@ def create_container_from_db_object(db_container: TokenContainer):
 
 
 @log_with(log)
-def find_container_by_id(container_id: int):
+def find_container_by_id(container_id: int) -> TokenContainerClass:
     """
     Returns the TokenContainerClass object for the given container id or raises a ResourceNotFoundError.
 
@@ -133,7 +142,7 @@ def find_container_by_id(container_id: int):
     return create_container_from_db_object(db_container)
 
 
-def find_container_by_serial(serial: str):
+def find_container_by_serial(serial: str) -> TokenContainerClass:
     """
     Returns the TokenContainerClass object for the given container serial or raises a ResourceNotFoundError.
 
@@ -141,53 +150,156 @@ def find_container_by_serial(serial: str):
     :return: container object
     :rtype: privacyidea.lib.containerclass.TokenContainerClass
     """
-    db_container = TokenContainer.query.filter(TokenContainer.serial == serial).first()
+    if serial:
+        db_container = TokenContainer.query.filter(func.upper(TokenContainer.serial) == serial.upper()).first()
+    else:
+        db_container = None
     if not db_container:
         raise ResourceNotFoundError(f"Unable to find container with serial {serial}.")
 
     return create_container_from_db_object(db_container)
 
 
-def _create_container_query(user: User = None, serial=None, ctype=None, token_serial=None, realms=None, sortby='serial',
-                            sortdir='asc'):
+def _create_container_query(user: User = None, serial: str = None, ctype: str = None, token_serial: str = None,
+                            realm: str = None, allowed_realms: list[str] = None, template: str = None,
+                            description: str = None, assigned: bool = None, resolver: str = None, info: dict = None,
+                            last_auth_delta: str = None, last_sync_delta: str = None, state: str = None,
+                            sortby: str = 'serial', sortdir: str = 'asc') -> Query:
     """
     Generates a sql query to filter containers by the given parameters.
 
     :param user: container owner, optional
-    :param serial: container serial, optional
-    :param ctype: container type, optional
-    :param token_serial: serial of a token which is assigned to the container, optional
-    :param realms: list of realms to filter by, optional
+    :param serial: container serial (case-insensitive and allows '*' as wildcard), optional
+    :param ctype: container type (case-insensitive and allows '*' as wildcard), optional
+    :param token_serial: serial of a token which is assigned to the container (case-insensitive and allows '*' as
+        wildcard), optional
+    :param realm: realm name to filter by (case-insensitive and allows '*' as wildcard), optional
+    :param allowed_realms: list of realms the user is allowed to see (None if all realms are allowed), optional
+        If realms and allowed_realms are given, the intersection of both lists is used. If there is no intersection, no
+        container is returned.
+    :param template: The name of the template the container was created with (case-sensitive and allows '*' as
+        wildcard), optional
+    :param description: The description of the container (case-insensitive and allows '*' as wildcard), optional
+    :param assigned: True if the container is assigned to a user, False if not, optional
+    :param resolver: The resolver of the user (case-insensitive and allows '*' as wildcard), optional
+    :param info: The info dictionary in the format {key: value} of length 1, optional
+        Both key and value can contain '*' as wildcard. key is case-sensitive, value is case-insensitive.
+    :param last_auth_delta: The maximum time difference the last authentication may have to now, e.g. "1y", "14d", "1h"
+        The following units are supported: y (years), d (days), h (hours), m (minutes), s (seconds)
+    :param last_sync_delta: The maximum time difference the last synchronization may have to now, e.g. "1y", "14d", "1h"
+        The following units are supported: y (years), d (days), h (hours), m (minutes), s (seconds)
+    :param state: State the container should have (case-insensitive and allows "*" as wildcard), optional
     :param sortby: column to sort by, default is the container serial
     :param sortdir: sort direction, default is ascending
     :return: sql query
     """
     sql_query = TokenContainer.query
     if user:
-        # Get all containers for the given user
         sql_query = sql_query.join(TokenContainer.owners).filter(TokenContainerOwner.user_id == user.uid)
-    if serial:
-        sql_query = sql_query.filter(TokenContainer.serial == serial)
+        if user.realm:
+            realm_db = Realm.query.filter(func.lower(Realm.name) == user.realm.lower()).first()
+            if realm_db:
+                sql_query = sql_query.filter(TokenContainerOwner.realm_id == realm_db.id)
+            else:
+                log.warning(f"The users realm {user.realm} does not exist. Ignoring it as filter parameter.")
+        if user.resolver:
+            sql_query = sql_query.filter(func.lower(TokenContainerOwner.resolver) == user.resolver.lower())
 
-    if ctype:
-        sql_query = sql_query.filter(TokenContainer.type == ctype)
-    if token_serial:
-        token = Token.query.filter(Token.serial == token_serial).first()
-        if token:
-            token_container_token = TokenContainerToken.query.filter(TokenContainerToken.token_id == token.id).all()
-            container_ids = [t.container_id for t in token_container_token]
-            sql_query = sql_query.filter(TokenContainer.id.in_(container_ids))
+    if serial and serial.strip("*"):
+        # only if a serial is passed and it not only contains *s we add the filter
+        if "*" in serial:
+            sql_query = sql_query.filter(TokenContainer.serial.ilike(serial.replace("*", "%")))
         else:
-            log.info(f'Unknown token serial {token_serial}. Containers are not filtered by "token_serial".')
+            sql_query = sql_query.filter(func.upper(TokenContainer.serial) == serial.upper())
 
-    if realms:
-        realm_ids = [realm.id for realm in Realm.query.filter(Realm.name.in_(realms)).all()]
-        container_realms = TokenContainerRealm.query.filter(TokenContainerRealm.realm_id.in_(realm_ids)).all()
-        container_ids = [r.container_id for r in container_realms]
-        sql_query = sql_query.filter(TokenContainer.id.in_(container_ids))
+    if ctype and ctype.strip("*"):
+        if "*" in ctype:
+            sql_query = sql_query.filter(TokenContainer.type.ilike(ctype.replace("*", "%")))
+        else:
+            sql_query = sql_query.filter(func.upper(TokenContainer.type) == ctype.upper())
+
+    if token_serial and token_serial.strip("*"):
+        if "*" in token_serial:
+            sql_query = sql_query.filter(TokenContainer.tokens.any(Token.serial.ilike(token_serial.replace("*", "%"))))
+        else:
+            sql_query = sql_query.outerjoin(TokenContainer.tokens).filter(
+                func.upper(Token.serial) == token_serial.upper())
+
+    if realm and realm.strip("*"):
+        if "*" in realm:
+            sql_query = sql_query.outerjoin(TokenContainer.realms).filter(Realm.name.ilike(realm.replace("*", "%")))
+        else:
+            sql_query = sql_query.outerjoin(TokenContainer.realms).filter(func.lower(Realm.name) == realm.lower())
+
+    if allowed_realms:
+        allowed_realms = [realm.lower() for realm in allowed_realms]
+        sql_query = sql_query.outerjoin(TokenContainer.realms).filter(func.lower(Realm.name).in_(allowed_realms))
+
+    if resolver and resolver.strip("*"):
+        if "*" in resolver:
+            sql_query = sql_query.filter(
+                TokenContainer.owners.any(TokenContainerOwner.resolver.ilike(resolver.replace("*", "%"))))
+        else:
+            sql_query = sql_query.filter(
+                TokenContainer.owners.any(func.lower(TokenContainerOwner.resolver) == resolver.lower()))
+
+    if template and template.strip("*"):
+        if "*" in template:
+            sql_query = sql_query.filter(TokenContainer.template.has(
+                TokenContainerTemplate.name.like(template.replace("*", "%"))))
+        else:
+            sql_query = sql_query.filter(TokenContainer.template.has(TokenContainerTemplate.name == template))
+
+    if description and description.strip("*"):
+        if "*" in description:
+            sql_query = sql_query.filter(TokenContainer.description.ilike(description.replace("*", "%")))
+        else:
+            sql_query = sql_query.filter(func.lower(TokenContainer.description) == description.lower())
+
+    if assigned:
+        sql_query = sql_query.filter(TokenContainer.owners.any())
+    elif assigned is False:
+        sql_query = sql_query.filter(~TokenContainer.owners.any())
+
+    if info:
+        if len(info) == 1:
+            key, value = list(info.items())[0]
+            if key and key.strip("*"):
+                if "*" in key:
+                    sql_query = sql_query.outerjoin(
+                        TokenContainer.info_list).filter(TokenContainerInfo.key.like(key.replace("*", "%")))
+                else:
+                    sql_query = sql_query.outerjoin(TokenContainer.info_list).filter(TokenContainerInfo.key == key)
+            if value and value.strip("*"):
+                if "*" in value:
+                    sql_query = sql_query.outerjoin(
+                        TokenContainer.info_list).filter(TokenContainerInfo.value.ilike(value.replace("*", "%")))
+                else:
+                    sql_query = sql_query.outerjoin(
+                        TokenContainer.info_list).filter(func.lower(TokenContainerInfo.value) == value.lower())
+        else:
+            log.warning("Info dictionary has more than one entry. Only one entry is allowed. Ignoring info filter.")
+
+    if last_auth_delta:
+        time_delta = parse_timedelta(last_auth_delta)
+        max_time = datetime.now(timezone.utc) - time_delta
+        sql_query = sql_query.filter(TokenContainer.last_seen > max_time)
+
+    if last_sync_delta:
+        time_delta = parse_timedelta(last_sync_delta)
+        max_time = datetime.now(timezone.utc) - time_delta
+        sql_query = sql_query.filter(TokenContainer.last_updated > max_time)
+
+    if state and state.strip("*"):
+        if "*" in state:
+            sql_query = sql_query.filter(TokenContainer.states.any(
+                TokenContainerStates.state.ilike(state.replace("*", "%"))))
+        else:
+            sql_query = sql_query.filter(
+                TokenContainer.states.any(func.lower(TokenContainerStates.state) == state.lower()))
 
     if isinstance(sortby, str):
-        # Check that the sort column exists and convert it to a Token column
+        # Check that the sort column exists and convert it to a container column
         cols = TokenContainer.__table__.columns
         if sortby in cols:
             sortby = cols.get(sortby)
@@ -203,8 +315,12 @@ def _create_container_query(user: User = None, serial=None, ctype=None, token_se
     return sql_query
 
 
-def get_all_containers(user: User = None, serial=None, ctype=None, token_serial=None, realms=None, sortby='serial',
-                       sortdir='asc', page=0, pagesize=0):
+def get_all_containers(user: User = None, serial: str = None, ctype: str = None, token_serial: str = None,
+                       realm: str = None, allowed_realms: list[str] = None, sortby: str = 'serial',
+                       sortdir: str = 'asc', template: str = None, description: str = None, assigned: bool = None,
+                       resolver: str = None, info: dict = None, last_auth_delta: str = None,
+                       last_sync_delta: str = None, state: str = None, page: int = 0,
+                       pagesize: int = 0) -> dict[str, Union[int, None, list[TokenContainerClass]]]:
     """
     This function is used to retrieve a container list, that can be displayed in
     the Web UI. It supports pagination if either page or pagesize is given (e.g. >0).
@@ -213,10 +329,26 @@ def get_all_containers(user: User = None, serial=None, ctype=None, token_serial=
     The containers are filtered by the given parameters.
 
     :param user: container owner, optional
-    :param serial: container serial, optional
-    :param ctype: container type, optional
-    :param token_serial: serial of a token which is assigned to the container, optional
-    :param realms: list of realms the container is assigned to, optional
+    :param serial: container serial (case-insensitive and allows '*' as wildcard), optional
+    :param ctype: container type (case-insensitive and allows '*' as wildcard), optional
+    :param token_serial: serial of a token which is assigned to the container (case-insensitive and allows '*'
+        as wildcard), optional
+    :param realm: name of the realm the container is assigned to (case-insensitive and allows '*' as wildcard), optional
+    :param allowed_realms: list of realms the user is allowed to see (None if all realms are allowed), optional
+        If realms and allowed_realms are given, the intersection of both lists is used. If there is no intersection, no
+        container is returned.
+    :param template: The name of the template the container was created with (case-sensitive and allows '*' as wildcard)
+        , optional
+    :param description: The description of the container (case-insensitive and allows '*' as wildcard), optional
+    :param assigned: True if the container is assigned to a user, False otherwise, optional
+    :param resolver: The resolver of the user (case-insensitive and allows '*' as wildcard), optional
+    :param info: The info dictionary in the format {key: value} of length 1, optional
+        Both key and value can contain '*' as wildcard. key is case-sensitive, value is case-insensitive.
+    :param last_auth_delta: The maximum time difference the last authentication may have to now, e.g. "1y", "14d", "1h"
+        The following units are supported: y (years), d (days), h (hours), m (minutes), s (seconds)
+    :param last_sync_delta: The maximum time difference the last synchronization may have to now, e.g. "1y", "14d", "1h"
+        The following units are supported: y (years), d (days), h (hours), m (minutes), s (seconds)
+    :param state: State the container should have (case-insensitive and allows "*" as wildcard), optional
     :param sortby: column to sort by, default is the container serial
     :param sortdir: sort direction, default is ascending
     :param page: The number of the page to view. Starts with 1 ;-)
@@ -224,40 +356,60 @@ def get_all_containers(user: User = None, serial=None, ctype=None, token_serial=
     :returns: A dictionary with a list of containers at the key 'containers' and optionally pagination entries ('prev',
               'next', 'current', 'count')
     """
-    sql_query = _create_container_query(user=user, serial=serial, ctype=ctype, token_serial=token_serial, realms=realms,
+    sql_query = _create_container_query(user=user, serial=serial, ctype=ctype, token_serial=token_serial, realm=realm,
+                                        allowed_realms=allowed_realms, template=template, description=description,
+                                        assigned=assigned, resolver=resolver, info=info,
+                                        last_auth_delta=last_auth_delta, last_sync_delta=last_sync_delta, state=state,
                                         sortby=sortby, sortdir=sortdir)
     ret = {}
     # Paginate if requested
     if page > 0 or pagesize > 0:
-        if page < 1:
-            page = 1
-        if pagesize < 1:
-            pagesize = 10
-
-        pagination = sql_query.paginate(page, per_page=pagesize, error_out=False)
-        db_containers = pagination.items
-
-        prev = None
-        if pagination.has_prev:
-            prev = page - 1
-        nxt = None
-        if pagination.has_next:
-            nxt = page + 1
-
-        ret["prev"] = prev
-        ret["next"] = nxt
-        ret["current"] = page
-        ret["count"] = pagination.total
+        ret = create_pagination(page, pagesize, sql_query, "containers")
     else:  # No pagination
-        db_containers = sql_query.all()
+        ret["containers"] = sql_query.all()
 
-    container_list = [create_container_from_db_object(db_container) for db_container in db_containers]
+    container_list = [create_container_from_db_object(db_container) for db_container in ret["containers"]]
     ret["containers"] = container_list
 
     return ret
 
 
-def find_container_for_token(serial):
+def create_pagination(page: int, pagesize: int, sql_query: Query,
+                      object_list_key: str) -> dict[str, Union[int, None, list[any]]]:
+    """
+        Creates the pagination of a sql query.
+
+        :param page: The number of the page to view. Starts with 1
+        :param pagesize: The number of objects that shall be shown on one page
+        :param sql_query: The sql query to paginate
+        :param object_list_key: The key used in the return dictionary for the list of objects
+        :return: A dictionary with pagination information and a list of database objects
+    """
+    ret = {}
+    if page < 1:
+        page = 1
+    if pagesize < 1:
+        pagesize = 10
+
+    pagination = sql_query.paginate(page=page, per_page=pagesize, error_out=False)
+    db_objects = pagination.items
+
+    prev = None
+    if pagination.has_prev:
+        prev = page - 1
+    nxt = None
+    if pagination.has_next:
+        nxt = page + 1
+
+    ret["prev"] = prev
+    ret["next"] = nxt
+    ret["current"] = page
+    ret["count"] = pagination.total
+    ret[object_list_key] = db_objects
+    return ret
+
+
+def find_container_for_token(serial: str) -> TokenContainerClass:
     """
     Returns a TokenContainerClass object for the given token or raises a ResourceNotFoundError
     if the token does not exist.
@@ -277,7 +429,7 @@ def find_container_for_token(serial):
     return container
 
 
-def get_container_classes():
+def get_container_classes() -> dict[str, type[TokenContainerClass]]:
     """
     Returns a dictionary of all available container classes in the format: { type: class }.
     New container types have to be added here.
@@ -301,27 +453,7 @@ def get_container_classes():
     return ret
 
 
-def get_container_policy_info(container_type=None):
-    """
-    Returns the policy info for the given container type or for all container types if no type is defined.
-
-    :param container_type: The type of the container, optional
-    :return: The policy info for the given container type or for all container types
-    """
-    classes = get_container_classes()
-    if container_type:
-        if container_type in classes.keys():
-            return classes[container_type].get_container_policy_info()
-        else:
-            raise ResourceNotFoundError(f"Unable to find container type {container_type}.")
-    else:
-        ret = {}
-        for container_type, container_class in classes.items():
-            ret[container_type] = container_class.get_container_policy_info()
-        return ret
-
-
-def init_container(params):
+def init_container(params: dict[str, any]) -> dict[str, Union[str, list]]:
     """
     Create a new container with the given parameters. Requires at least the type.
 
@@ -330,16 +462,26 @@ def init_container(params):
         ::
 
             {
-                "type":...,
+                "type": ...,
                 "description": ..., (optional)
                 "container_serial": ..., (optional)
                 "user": ..., Name of the user (optional)
-                "realm": ... Name of the realm (optional)
+                "realm": ..., Name of the realm (optional)
+                "template": {...}, Template as dictionary (optional)
+                "template_name": ..., Name of the template (optional)
             }
 
         To assign a user to the container, the user and realm are required.
 
-    :return: The serial of the created container
+    :return: Dictionary containing the serial of the created container and a list of init details for tokens if the
+        container is created from a template
+
+        ::
+
+            {
+                "container_serial": "CONT0001",
+                "template_tokens": [{"type": "hotp", ...}, ...]
+            }
     """
     ctype = params.get("type")
     if not ctype:
@@ -347,12 +489,63 @@ def init_container(params):
     if ctype.lower() not in get_container_classes().keys():
         raise EnrollmentError(f"Type '{ctype}' is not a valid type!")
 
+    template_dict = params.get("template")
+    template_name = params.get("template_name")
+    if template_dict and template_name:
+        raise ParameterError("Both template and template_name are given. Choose only one!")
+
     desc = params.get("description") or ""
-    serial = params.get("container_serial") or _gen_serial(ctype)
+    serial = params.get("container_serial")
+    if serial:
+        # Check if a container with this serial already exists
+        containers = get_all_containers(serial=serial)["containers"]
+        if len(containers) > 0:
+            raise EnrollmentError(f"Container with serial {serial} already exists!")
+    else:
+        serial = _gen_serial(ctype)
     db_container = TokenContainer(serial=serial, container_type=ctype.lower(), description=desc)
     db_container.save()
 
     container = create_container_from_db_object(db_container)
+
+    # Creation Date
+    creation_date = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    container.update_container_info(
+        [TokenContainerInfoData(key="creation_date", value=creation_date, info_type=PI_INTERNAL)])
+
+    # Template handling
+    template_tokens = []
+    if template_name:
+        # Use template from db
+        try:
+            template = get_template_obj(template_name)
+        except ResourceNotFoundError as ex:
+            template = None
+            log.warning(f"Template {template_name} does not exists, create container without template: {ex}")
+
+        if template:
+            if template.container_type == ctype:
+                template_options = template.get_template_options_as_dict()
+                template_tokens = template_options.get("tokens", [])
+                container.template = template_name
+            else:
+                log.warning(f"Template {template_name} is not of type {ctype}, create container without template.")
+    elif template_dict:
+        # Use template dictionary
+        if template_dict.get("container_type") == ctype:
+            # check if the template was modified, otherwise save the template name
+            stored_templates = get_templates_by_query(name=template_dict["name"])["templates"]
+            if len(stored_templates) > 0:
+                original_template = stored_templates[0]
+                original_template_used = compare_template_dicts(template_dict, original_template)
+                if original_template_used:
+                    container.template = original_template["name"]
+            template_options = template_dict.get("template_options", {})
+            # tokens from template
+            template_tokens = template_options.get("tokens", [])
+        else:
+            log.warning(f"Template {template_name} is not of type {ctype}, create container without template.")
+
     user = params.get("user")
     realm = params.get("realm")
     realms = []
@@ -369,25 +562,154 @@ def init_container(params):
             log.warning(f"Error setting user for container {serial}: {ex}")
 
     container.set_states(['active'])
-    return serial
+
+    res = {"container_serial": serial, "template_tokens": template_tokens}
+    return res
 
 
-def add_token_to_container(container_serial, token_serial, user: User = None, user_role="user"):
+def create_container_tokens_from_template(container_serial: str, template_tokens: list, request,
+                                          user_role: str) -> dict[str, dict]:
+    """
+    Create tokens for the container from the given template. The token policies are checked and the enroll information
+    is read from the policies for each token. The tokens owner and the enroll information are added to the request
+    object to check the corresponding policies. All errors are caught and logged to be able to create the remaining
+    tokens.
+
+    :param container_serial: The serial of the container
+    :param template_tokens: The template to create the tokens from as list of dictionaries where each dictionary
+        contains the details for a token to be enrolled
+    :param request: The request object
+    :param user_role: The role of the user ('admin' or 'user')
+    :return: A dictionary containing the enroll details for each created token in the format:
+
+    ::
+
+        {
+            <token_serial>: {"serial": <token_serial>,
+                             "type": <token_type>,
+                             "init_params": <params used for the enrollment>, ...},
+        }
+    """
+    container = find_container_by_serial(container_serial)
+
+    users = container.get_users()
+    if len(users) > 0:
+        container_owner = users[0]
+    else:
+        container_owner = User()
+    realms = get_container_realms(container_serial)
+
+    init_result = {}
+
+    # Get policies for the token
+    from privacyidea.api.lib.prepolicy import (check_max_token_realm, sms_identifiers,
+                                               indexedsecret_force_attribute, pushtoken_add_config,
+                                               tantoken_count, papertoken_count, init_token_length_contents,
+                                               init_token_defaults, check_external, check_otp_pin, encrypt_pin,
+                                               init_random_pin, twostep_enrollment_parameters,
+                                               twostep_enrollment_activation, enroll_pin,
+                                               init_tokenlabel, check_token_init, check_max_token_user,
+                                               require_description)
+    from privacyidea.api.lib.postpolicy import check_verify_enrollment, save_pin_change
+
+    # Create each token defined in the template. The template contains the enroll information for each token.
+    for token_info in template_tokens:
+        token = None
+        user = User()
+        # If the user flag is set, the token is assigned to the container owner: set the full user information in the
+        # enroll information
+        if token_info.get("user"):
+            if container_owner:
+                token_info["user"] = container_owner.login
+                token_info["realm"] = container_owner.realm
+                token_info["resolver"] = container_owner.resolver
+            elif realms:
+                token_info["realm"] = realms[0]
+                del token_info["user"]
+            else:
+                del token_info["user"]
+            user = container_owner
+        elif user_role == "user" and request.User:
+            # Users are always assigned to the tokens, only admins can create tokens without a user
+            user = request.User
+            token_info["user"] = user.login
+            token_info["realm"] = user.realm
+            token_info["resolver"] = user.resolver
+        elif token_info.get("user") is not None:
+            del token_info["user"]
+
+        # The pre-policy decorator functions require a request object containing the enroll information.
+        # Hence, we need to clear the data in the request object from the previous token and set the new enroll
+        # information for the current token.
+        request.all_data = {}
+        request.all_data.update(token_info)
+
+        # Pre-policy checks
+        # TODO: Refactor including original uses of these functions (decorators on token init endpoint)
+        try:
+            check_max_token_realm(request, None)
+            require_description(request, None)
+            check_max_token_user(request, None)
+            check_token_init(request, None)
+            init_tokenlabel(request, None)
+            enroll_pin(request, None)
+            twostep_enrollment_activation(request, None)
+            twostep_enrollment_parameters(request, None)
+            init_random_pin(request, None)
+            encrypt_pin(request, None)
+            check_otp_pin(request, None)
+            check_external(request, None)
+            init_token_defaults(request, None)
+            init_token_length_contents(request, None)
+            papertoken_count(request, None)
+            sms_identifiers(request, None)
+            tantoken_count(request, None)
+            pushtoken_add_config(request, None)
+            indexedsecret_force_attribute(request, None)
+        except Exception as ex:
+            log.warning(f"Error checking pre-policies for token {token_info} created from template: {ex}")
+            continue
+
+        init_params = request.all_data
+        try:
+            token = init_token(init_params, user)
+            init_result[token.get_serial()] = {"type": token.get_type()}
+            init_result[token.get_serial()].update(token.get_init_detail(init_params, user))
+            container.add_token(token)
+        except Exception as ex:
+            log.warning(f"Error creating token {token_info} from template: {ex}")
+            if token:
+                if init_result.get(token.get_serial()):
+                    del init_result[token.get_serial()]
+                token.delete_token()
+            continue
+
+        # Post-policy checks
+        try:
+            # Post-policy decorators require a response object containing the result of the token creation.
+            response = send_result(True, details=init_result[token.get_serial()])
+            check_verify_enrollment(request, response)
+            save_pin_change(request, response)
+        except Exception as ex:
+            log.warning(f"Error checking post-policy for token {token_info} created from template: {ex}")
+            continue
+
+        init_result[token.get_serial()].update(response.json["detail"])
+        init_result[token.get_serial()]["init_params"] = init_params
+
+    return init_result
+
+
+def add_token_to_container(container_serial: str, token_serial: str) -> bool:
     """
     Add a single token to a container. If a token is already in a container it is removed from the old container.
     Raises a ResourceNotFoundError if either the container or token does not exist.
-    Raises a PolicyError if the user is not allowed to add the token to the container. The user/admin needs the rights
-    to edit the container, the token and if the token is already in a container, also the rights for this container.
 
     :param container_serial: The serial of the container
     :param token_serial: The serial of the token
-    :param user: The user adding the token
-    :param user_role: The role of the user ('admin' or 'user')
     :return: True on success
     """
     container = find_container_by_serial(container_serial)
-    # Check if user is admin or owner of container
-    _check_user_access_on_container(container, user, user_role)
 
     # Get the token object
     token = get_tokens_from_serial_or_user(token_serial, None)[0]
@@ -395,52 +717,33 @@ def add_token_to_container(container_serial, token_serial, user: User = None, us
     # Check if the token is in a container
     old_container = find_container_for_token(token_serial)
 
-    # Check if admin/user is allowed to add the token to the container
-    if user_role == "admin" or token.user == user:
-        if old_container:
-            # Remove token from old container (raises PolicyError if user is not allowed to edit the old container)
-            remove_token_from_container(old_container.serial, token_serial, user, user_role)
-            log.info(f"Adding token {token.get_serial()} to container {container_serial}: "
-                     f"Token removed from previous container {old_container.serial}.")
-        res = container.add_token(token)
+    if old_container and old_container.serial != container.serial:
+        # Remove token from old container
+        remove_token_from_container(old_container.serial, token_serial)
+        log.info(f"Adding token {token.get_serial()} to container {container_serial}: "
+                 f"Token removed from previous container {old_container.serial}.")
 
-    else:
-        raise PolicyError(f"User {user} is not allowed to add token {token.get_serial()} "
-                          f"to container {container_serial}.")
+    res = container.add_token(token)
+
     return res
 
 
-def add_multiple_tokens_to_container(container_serial, token_serials, user: User = None, user_role="user",
-                                     allowed_realms=[]):
+def add_multiple_tokens_to_container(container_serial: str, token_serials: list) -> dict[str, bool]:
     """
     Add the given tokens to the container with the given serial. Raises a ResourceNotFoundError if the container does
     not exist. If a token is already in a container it is removed from the old container.
-    A user is only allowed to add a token to a container if the user is an admin or the owner of both. If the token is
-    already in a container, the user also has to be the owner of the old container.
 
     :param container_serial: The serial of the container
     :param token_serials: A list of token serials to add
-    :param user: The user adding the tokens
-    :param user_role: The role of the user ('admin' or 'user')
-    :param allowed_realms: A list of realms the admin is allowed to add tokens to, optional
-    :return: A dictionary in the format {token_serial: success}
+    :return: A dictionary in the format {<token_serial>: <success>}
     """
     # Raises ResourceNotFound if container does not exist
     find_container_by_serial(container_serial)
 
     ret = {}
     for token_serial in token_serials:
-        # Check if admin is allowed to add the token to the container
-        if user_role == "admin" and allowed_realms:
-            token_realms = get_realms_of_token(token_serial)
-            matching_realms = list(set(token_realms).intersection(allowed_realms))
-            if len(matching_realms) == 0:
-                ret[token_serial] = False
-                log.info(
-                    f"User {user} is not allowed to add token {token_serial} to container {container_serial}.")
-                continue
         try:
-            res = add_token_to_container(container_serial, token_serial, user, user_role)
+            res = add_token_to_container(container_serial, token_serial)
         except Exception as ex:
             # We are catching the exception here to be able to add the remaining tokens
             log.warning(f"Error adding token {token_serial} to container {container_serial}: {ex}")
@@ -450,7 +753,21 @@ def add_multiple_tokens_to_container(container_serial, token_serials, user: User
     return ret
 
 
-def get_container_classes_descriptions():
+def add_not_authorized_tokens_result(result: dict, not_authorized_serials: list) -> dict[str, bool]:
+    """
+    Add the result False for all tokens the user is not authorized to manage.
+
+    :param result: The result dictionary in the format {token_serial: success}
+    :param not_authorized_serials: A list of token serials the user is not authorized to manage
+    :return: The result dictionary with the not authorized tokens added like {<token_serial>: False}
+    """
+    if not_authorized_serials:
+        for serial in not_authorized_serials:
+            result[serial] = False
+    return result
+
+
+def get_container_classes_descriptions() -> dict[str, str]:
     """
     Returns a dictionary of {"type": "Type: description"} entries for all container types.
     Used to list the container types.
@@ -462,7 +779,7 @@ def get_container_classes_descriptions():
     return ret
 
 
-def get_container_token_types():
+def get_container_token_types() -> dict[str, list[str]]:
     """
     Returns a dictionary of {"type": ["tokentype0", "tokentype1", ...]} entries for all container types.
     Used to list the supported token types for each container type.
@@ -474,66 +791,39 @@ def get_container_token_types():
     return ret
 
 
-def remove_token_from_container(container_serial, token_serial, user: User = None, user_role="user"):
+def remove_token_from_container(container_serial: str, token_serial: str) -> bool:
     """
     Remove the given token from the container with the given serial.
-    Raises a ResourceNotFoundError if the container or token does not exist. Raises a PolicyError if the user is not
-    allowed to remove the token from the container. The user/admin needs the rights to edit the container, the token and
-    if the token is already in a container, also the rights for this container.
+    Raises a ResourceNotFoundError if the container or token does not exist.
 
     :param container_serial: The serial of the container
     :param token_serial: the serial of the token to remove
-    :param user: The user adding the token
-    :param user_role: The role of the user ('admin' or 'user')
     :return: True on success
     """
     container = find_container_by_serial(container_serial)
+    res = container.remove_token(token_serial)
 
-    # Check if user is admin or owner of container
-    _check_user_access_on_container(container, user, user_role)
-
-    token_owner = get_token_owner(token_serial)
-    if user_role == "admin" or user == token_owner:
-        res = container.remove_token(token_serial)
-    else:
-        raise PolicyError(
-            f"User {user} is not allowed to remove token {token_serial} from container {container_serial}.")
     return res
 
 
-def remove_multiple_tokens_from_container(container_serial, token_serials, user: User = None, user_role="user",
-                                          allowed_realms=[]):
+def remove_multiple_tokens_from_container(container_serial: str, token_serials: str) -> dict[str, bool]:
     """
     Remove the given tokens from the container with the given serial.
     Raises a ResourceNotFoundError if no container for the given serial exist.
     Errors of removing tokens are caught and only logged, in order to be able to remove the remaining
     tokens in the list.
-    A user is only allowed to remove a token from a container if it is an admin or the owner of both,
-    the token and the container.
 
     :param container_serial: The serial of the container
     :param token_serials: A list of token serials to remove
-    :param user: The user adding the tokens
-    :param user_role: The role of the user ('admin' or 'user')
-    :param allowed_realms: A list of realms the user is allowed to remove tokens from (only for admins), optional
     :return: A dictionary in the format {token_serial: success}
     """
-    # Raises ResourceNotFound if container does not exist
+    # Check that container exists
     find_container_by_serial(container_serial)
 
     ret = {}
     for token_serial in token_serials:
-        # Check if admin is allowed to remove the token from the container
-        if user_role == "admin" and allowed_realms:
-            token_realms = get_realms_of_token(token_serial)
-            matching_realms = list(set(token_realms).intersection(allowed_realms))
-            if len(matching_realms) == 0:
-                ret[token_serial] = False
-                log.info(
-                    f"User {user} is not allowed to remove token {token_serial} from container {container_serial}.")
-                continue
         try:
-            res = remove_token_from_container(container_serial, token_serial, user, user_role)
+            res = remove_token_from_container(container_serial, token_serial)
         except Exception as ex:
             # We are catching the exception here to be able to remove the remaining tokens
             log.warning(f"Error removing token {token_serial} from container {container_serial}: {ex}")
@@ -542,59 +832,64 @@ def remove_multiple_tokens_from_container(container_serial, token_serials, user:
     return ret
 
 
-def add_container_info(serial, ikey, ivalue, user, user_role="user"):
+def add_container_info(serial: str, ikey: str, ivalue) -> bool:
     """
     Add the given info to the container with the given serial.
+    If the key already exists, the value is updated. However, if the entry is of type PI_INTERNAL, the value can not be
+    modified.
 
     :param serial: The serial of the container
     :param ikey: The info key
     :param ivalue: The info value
-    :param user: The user adding the info
-    :param user_role: The role of the user ('admin' or 'user')
     :returns: True on success
     """
     container = find_container_by_serial(serial)
 
-    # Check if user is admin or owner of container
-    _check_user_access_on_container(container, user, user_role)
+    # Check if key already exists and if it is an internal key
+    internal_keys = container.get_internal_info_keys()
+    if ikey in internal_keys:
+        raise PolicyError(f"The key {ikey} is an internal entry and can not be modified.")
 
-    container.add_container_info(ikey, ivalue)
+    container.update_container_info([TokenContainerInfoData(key=ikey, value=ivalue)])
     return True
 
 
-def set_container_info(serial, info, user, user_role="user"):
+def set_container_info(serial, info: dict) -> dict[str, bool]:
     """
     Set the given info to the container with the given serial.
+    Keys of type PI_INTERNAL can not be modified and will be ignored.
 
     :param serial: The serial of the container
     :param info: The info dictionary in the format {key: value}
-    :param user: The user adding the info
-    :param user_role: The role of the user ('admin' or 'user')
-    :returns: True on success
+    :returns: Dictionary with the success state for each info key
     """
     container = find_container_by_serial(serial)
+    result = {}
 
-    # Check if user is admin or owner of container
-    _check_user_access_on_container(container, user, user_role)
+    # Remove internal keys from the info dictionary, they can not be modified by the user
+    internal_keys = container.get_internal_info_keys()
+    not_internal_info = {}
+    for key, value in info.items():
+        if key not in internal_keys:
+            not_internal_info[key] = value
+            result[key] = True
+        else:
+            result[key] = False
+            log.warning(f"The key {key} is an internal entry and can not be modified.")
 
-    container.set_container_info(info)
-    return True
+    container.set_container_info(not_internal_info)
+    return result
 
 
-def get_container_info_dict(serial, ikey=None, user=None, user_role="user"):
+def get_container_info_dict(serial: str, ikey: str = None) -> dict[str, Union[str, None]]:
     """
     Returns the info of the given key or all infos if no key is given for the container with the given serial.
 
     :param serial: The serial of the container
     :param ikey: The info key or None to get all info keys
-    :param user: The user getting the info
-    :param user_role: The role of the user ('admin' or 'user')
     :return: The info dict
     """
     container = find_container_by_serial(serial)
-
-    # Check if user is admin or owner of container
-    _check_user_access_on_container(container, user, user_role)
 
     container_info = {container_info.key: container_info.value for container_info in container.get_container_info()}
     if ikey:
@@ -606,120 +901,91 @@ def get_container_info_dict(serial, ikey=None, user=None, user_role="user"):
     return container_info
 
 
-def delete_container_info(serial, ikey=None, user=None, user_role="user"):
+def delete_container_info(serial: str, ikey: str = None) -> dict[str, bool]:
     """
     Delete the info of the given key or all infos if no key is given.
+    Internal infos are not deleted
 
     :param serial: The serial of the container
     :param ikey: The info key or None to delete all info keys
-    :param user: The user adding the info
-    :param user_role: The role of the user ('admin' or 'user')
-    :return: True on success, False otherwise
+    :return: Dictionary with all info keys or only ikey if given and the value True on success, False otherwise
     """
     container = find_container_by_serial(serial)
 
-    # Check if user is admin or owner of container
-    _check_user_access_on_container(container, user, user_role)
-
-    res = container.delete_container_info(ikey)
+    res = container.delete_container_info(ikey, keep_internal=True)
     return res
 
 
-def assign_user(serial, user: User, logged_in_user: User = None, user_role="user"):
+def assign_user(serial: str, user: User) -> bool:
     """
     Assign a user to a container.
 
     :param serial: container serial
     :param user: user to assign to the container
-    :param logged_in_user: user performing this action
-    :param user_role: role of the logged-in user ("admin" or "user")
     :return: True on success, False otherwise
     """
     container = find_container_by_serial(serial)
-
-    # Check user rights on container
-    if not user_role == "admin" and user != logged_in_user:
-        raise PolicyError(f"User {logged_in_user} is not allowed to assign user {user} to container {serial}!")
 
     res = container.add_user(user)
     return res
 
 
-def unassign_user(serial, user: User, logged_in_user: User = None, user_role="user"):
+def unassign_user(serial: str, user: User) -> bool:
     """
     Unassign a user from a container.
 
     :param serial: container serial
     :param user: user to unassign from the container
-    :param logged_in_user: user performing this action
-    :param user_role: role of the logged-in user ("admin" or "user")
     :return: True on success, False otherwise
     """
     container = find_container_by_serial(serial)
-
-    # Check user rights on container
-    _check_user_access_on_container(container, logged_in_user, user_role)
 
     res = container.remove_user(user)
     return res
 
 
-def set_container_description(serial, description, user: User = None, user_role="user"):
+def set_container_description(serial: str, description: str):
     """
     Set the description of a container.
 
     :param serial: serial of the container
     :param description: new description
-    :param user: user setting the description
-    :param user_role: role of the logged-in user ("admin" or "user")
     """
     container = find_container_by_serial(serial)
-
-    # Check user rights on container
-    _check_user_access_on_container(container, user, user_role)
 
     container.description = description
 
 
-def set_container_states(serial, states, user: User = None, user_role="user"):
+def set_container_states(serial: str, states: list[str]) -> dict[str, bool]:
     """
     Set the states of a container.
 
     :param serial: serial of the container
     :param states: new states as list of str
-    :param user: user setting the states
-    :param user_role: role of the logged-in user ("admin" or "user")
     :returns: Dictionary in the format {state: success}
     """
     container = find_container_by_serial(serial)
-
-    # Check user rights on container
-    _check_user_access_on_container(container, user, user_role)
 
     res = container.set_states(states)
     return res
 
 
-def add_container_states(serial, states, user: User = None, user_role="user"):
+def add_container_states(serial: str, states: list[str]) -> dict[str, bool]:
     """
     Add the states to a container.
 
     :param serial: serial of the container
     :param states: additional states as list of str
-    :param user: user setting the states
-    :param user_role: role of the logged-in user ("admin" or "user")
     :returns: Dictionary in the format {state: success}
     """
     container = find_container_by_serial(serial)
-
-    # Check user rights on container
-    _check_user_access_on_container(container, user, user_role)
 
     res = container.add_states(states)
     return res
 
 
-def set_container_realms(serial, realms, allowed_realms=[]):
+def set_container_realms(serial: str, realms: list[str],
+                         allowed_realms: Union[list[str], None] = []) -> dict[str, bool]:
     """
     Set the realms of a container.
 
@@ -753,7 +1019,7 @@ def set_container_realms(serial, realms, allowed_realms=[]):
     return res
 
 
-def add_container_realms(serial, realms, allowed_realms):
+def add_container_realms(serial: str, realms: list[str], allowed_realms: Union[list[str], None]) -> dict[str, bool]:
     """
     Add the realms to the container realms.
 
@@ -781,7 +1047,7 @@ def add_container_realms(serial, realms, allowed_realms):
     return res
 
 
-def get_container_realms(serial):
+def get_container_realms(serial: str) -> list[str]:
     """
     Get the realms of the container.
 
@@ -792,22 +1058,507 @@ def get_container_realms(serial):
     return [realm.name for realm in container.realms]
 
 
-def _check_user_access_on_container(container, user, user_role):
+def create_container_dict(container_list: list[TokenContainerClass], no_token: bool = False, user: User = None,
+                          logged_in_user_role: str = 'user', allowed_token_realms: Union[list[str], None] = [],
+                          hide_token_info: list[str] = None, hide_container_info: list[str] = None) -> list[dict]:
     """
-    Check if the given user is the owner of the given container or an admin.
+    Create a dictionary for each container in the list.
+    It contains the container properties, owners, realms, tokens and info.
+    The information is only provided if the user is allowed to see it.
+
+    :param container_list: List of container objects
+    :param no_token: If True, the token information is not included
+    :param user: The user object requesting the containers
+    :param logged_in_user_role: The role of the logged-in user ('admin' or 'user')
+    :param allowed_token_realms: A list of realms the admin is allowed to see tokens from
+    :param hide_token_info: List of token info keys to hide in the response, optional
+    :param hide_container_info: List of container info keys to hide in the response, optional
+    :return: List of container dictionaries
+
+    Example of a returned list:
+        ::
+
+            [
+                {
+                    "type": "generic",
+                    "serial": "CONT0001",
+                    "description": "Container description",
+                    "last_authentication": "2021-06-01T12:00:00+00:00",
+                    "last_synchronization": "2021-06-01T12:00:00+00:00",
+                    "states": ["active"],
+                    "users": [
+                        {
+                            "user_name": "user1",
+                            "user_realm": "realm1",
+                            "user_resolver": "resolver1",
+                            "user_id": 1
+                        }
+                        ],
+                    "tokens": [
+                        {
+                            "serial": "TOTP0001",
+                            "type": "totp",
+                            "active": true,
+                            ...
+                        }],
+                    "info": {"hash_algorithm": "SHA256", ...},
+                    "internal_info_keys": ["hash_algorithm"],
+                    "realms": ["realm1", "realm2"],
+                    "template": "template1"
+                }, ...
+            ]
+    """
+    res: list = []
+    for container in container_list:
+        container_dict = container.get_as_dict(include_tokens=not no_token, public_info=True,
+                                               additional_hide_info=hide_container_info)
+        if not no_token:
+            token_serials = ",".join(container_dict["tokens"])
+            tokens_dict_list = []
+            if len(token_serials) > 0:
+                tokens = get_tokens(serial=token_serials)
+                tokens_dict_list = convert_token_objects_to_dicts(tokens, user=user, user_role=logged_in_user_role,
+                                                                  allowed_realms=allowed_token_realms,
+                                                                  hidden_token_info=hide_token_info)
+            container_dict["tokens"] = tokens_dict_list
+
+        res.append(container_dict)
+
+    return res
+
+
+def create_endpoint_url(base_url: str, endpoint: str) -> str:
+    """
+    Creates the url for an endpoint. It concat the base_url and the endpoint if the endpoint is not already in the
+    base_url. base_url and endpoint are separated by a slash.
+
+    :param base_url: The base url of the host
+    :param endpoint: The endpoint
+    :return: The url for the endpoint
+    :rtype: str
+    """
+    if endpoint not in base_url:
+        if base_url[-1] != "/":
+            base_url += "/"
+        endpoint_url = base_url + endpoint
+    else:
+        endpoint_url = base_url
+    return endpoint_url
+
+
+def finalize_registration(container_serial: str, params: dict) -> dict:
+    """
+    Finalize the registration of a container if the challenge response is valid.
+    If the container is in the registration_state `rollover`, it finalizes the container rollover.
+
+    :param container_serial: The serial of the container
+    :param params: The parameters for the registration as dictionary
+    :return: dictionary with container specific information
+    """
+    # Get container
+    container = find_container_by_serial(container_serial)
+    container_info = container.get_container_info_dict()
+    registration_state = RegistrationState(container_info.get(RegistrationState.get_key()))
+
+    # Update params with registration url
+    if registration_state == RegistrationState.ROLLOVER:
+        server_url = container_info.get("rollover_server_url")
+    else:
+        server_url = container_info.get("server_url")
+    if server_url is None:
+        log.debug("Server url is not set in the container info. Ensure that registration/init is called first.")
+        server_url = " "
+    scope = create_endpoint_url(server_url, "container/register/finalize")
+    params.update({'scope': scope})
+
+    res = container.finalize_registration(params)
+
+    if registration_state == RegistrationState.ROLLOVER:
+        # container registration rolled over: set rollover info as correct info
+        for key, value in container_info.items():
+            if key.find("rollover_") == 0:
+                original_key = key.replace("rollover_", "")
+                container.update_container_info(
+                    [TokenContainerInfoData(key=original_key, value=value, info_type=PI_INTERNAL)])
+                container.delete_container_info(key, keep_internal=False)
+
+        finalize_container_rollover(container)
+        container.update_container_info([TokenContainerInfoData(key=RegistrationState.get_key(),
+                                                                value=RegistrationState.ROLLOVER_COMPLETED.value,
+                                                                info_type=PI_INTERNAL)])
+
+    return res
+
+
+def finalize_container_rollover(container: TokenContainerClass):
+    """
+    Finalize the rollover of a container. For each token in the container a rollover is performed.
+    All previous challenges are deleted.
 
     :param container: The container object
-    :param user: The user object
-    :return: True if the user is the owner or admin, False otherwise
     """
-    if user_role == "admin":
-        return True
-    elif user_role == "user":
-        owners = container.get_users()
-        for owner in owners:
-            if owner == user:
-                return True
 
-        raise PolicyError(f"User {user} is not allowed to modify container {container.serial}.")
+    tokens = container.get_tokens()
+
+    # Offline tokens can not be rolled over, that would invalidate the offline otp values
+    offline_serials = [token.get_serial() for token in tokens if is_offline_token(token.get_serial())]
+    online_tokens = [token for token in tokens if token.get_serial() not in offline_serials]
+    if len(offline_serials) > 0:
+        log.info(f"The following offline tokens are in the container: {offline_serials}. "
+                 "They can not be rolled over.")
+
+    for token in online_tokens:
+        params = {"serial": token.get_serial(),
+                  "type": token.get_type(),
+                  "genkey": True,
+                  "rollover": True}
+        token_info = token.get_tokeninfo()
+        params.update(token_info)
+        try:
+            token = init_token(params)
+        except Exception as ex:
+            # Do not block the rollover process
+            log.debug(f"Error during rollover of token {token.get_serial()} in container rollover: {ex}")
+
+    # Delete previous challenges of the container
+    delete_challenges(container.serial)
+
+
+def init_container_rollover(container: TokenContainerClass, server_url: str, challenge_ttl: int, registration_ttl: int,
+                            ssl_verify: bool, params: dict) -> dict:
+    """
+    Initializes the rollover of a container.
+    First the response to the challenge is validated. If it is valid, the registration is initialized.
+    The new registration info is not finally set until the new container successfully finalized the registration.
+
+    :param container: The container object
+    :param server_url: The server url of the privacyIDEA server the client can contact
+    :param challenge_ttl: The time to live of the challenge in minutes
+    :param registration_ttl: The time to live of the challenge for the registration in minutes
+    :param ssl_verify: If the client has to verify the ssl certificate of the server
+    :param params: Container type specific parameters for the registration as dictionary
+    :return: dictionary with container specific information for the client
+    """
+    # Check challenge if rollover is allowed
+    rollover_scope = create_endpoint_url(server_url, "container/rollover")
+    params.update({"scope": rollover_scope})
+    container.check_challenge_response(params)
+
+    registration_scope = create_endpoint_url(server_url, "container/register/finalize")
+    params.update({"scope": registration_scope})
+
+    # Get registration data
+    res = container.init_registration(server_url, registration_scope, registration_ttl, ssl_verify, params)
+
+    # Set registration state
+    info = [TokenContainerInfoData(key=RegistrationState.get_key(), value=RegistrationState.ROLLOVER.value,
+                                   info_type=PI_INTERNAL),
+            TokenContainerInfoData(key=f"rollover_{SERVER_URL}", value=server_url, info_type=PI_INTERNAL),
+            TokenContainerInfoData(key=f"rollover_{CHALLENGE_TTL}", value=str(challenge_ttl), info_type=PI_INTERNAL)]
+    container.update_container_info(info)
+
+    return res
+
+
+def unregister(container: TokenContainerClass) -> bool:
+    """
+    Unregister a container from the synchronization and deletes all challenges for the container.
+
+    :param container: The container object
+    :return: True on success
+    """
+    # terminate registration
+    container.terminate_registration()
+
+    # Delete all challenges of the container
+    delete_challenges(serial=container.serial)
+
+    return True
+
+
+def set_options(serial: str, options: dict):
+    """
+    Set the options of a container. The user has to be an admin or the owner of the container.
+
+    :param serial: The serial of the container
+    :param options: The options as dictionary
+    """
+    container = find_container_by_serial(serial)
+
+    container.add_options(options)
+
+
+def get_container_template_classes() -> dict[str, type[ContainerTemplateBase]]:
+    """
+    Returns a dictionary of all available container template classes in the format: { type: class }.
+    New container template types have to be added here.
+    """
+    # className: module
+    classes = {
+        "ContainerTemplateBase": "privacyidea.lib.containertemplate.containertemplatebase",
+        "SmartphoneContainerTemplate": "privacyidea.lib.containertemplate.smartphonetemplate",
+        "YubikeyContainerTemplate": "privacyidea.lib.containertemplate.yubikeytemplate"
+    }
+
+    ret = {}
+    for cls, mod in classes.items():
+        try:
+            m = importlib.import_module(mod)
+            c = getattr(m, cls)
+            ret[c.get_class_type().lower()] = c
+        except Exception as ex:  # pragma: no cover
+            log.warning(f"Error importing module {cls}: {ex}")
+
+    return ret
+
+
+def create_container_template(container_type: str, template_name: str, options: dict, default: bool = False) -> int:
+    """
+    Create a new container template.
+
+    :param container_type: The type of the container
+    :param template_name: The name of the template
+    :param options: The options for the template as dictionary
+    :param default: If True, the template is set as default, optional
+
+    Example for the options dictionary:
+        ::
+
+            {
+                "tokens": [{"type": "hotp", "genkey": True, "hashlib": "sha256"}, ...]
+            }
+
+    :return: ID of the created template
+    """
+    # Check container type
+    if container_type.lower() not in get_container_classes().keys():
+        raise EnrollmentError(f"Type '{container_type}' is not a valid type!")
+
+    TokenContainerTemplate(name=template_name, container_type=container_type).save()
+    template = get_template_obj(template_name)
+    try:
+        if options:
+            template.template_options = options
+        if default:
+            template.default = default
+    except Exception as ex:
+        # We need to delete the template on error, but still want to raise the original exception
+        template.delete()
+        raise ex
+
+    return template.id
+
+
+def create_container_template_from_db_object(db_template: TokenContainerTemplate) -> Union[ContainerTemplateBase, None]:
+    """
+    Create a TokenContainerTemplate object from the given db object.
+
+    :param db_template: The DB object to create the container template from
+    :return: The created container template object or None if the container template type is not supported
+    """
+
+    for ctypes, cls in get_container_template_classes().items():
+        if ctypes.lower() == db_template.container_type.lower():
+            try:
+                template = cls(db_template)
+            except Exception as ex:  # pragma: no cover
+                log.warning(f"Error creating container template from db object: {ex}")
+                return None
+            return template
+    return None
+
+
+def get_all_templates_with_type():
+    """
+    Returns a list of display strings containing the name and type of all templates.
+    """
+    templates = TokenContainerTemplate.query.all()
+    template_list = []
+    for template in templates:
+        template_list.append(f"{template.name}({template.container_type})")
+    return template_list
+
+
+def get_templates_by_query(name: str = None, container_type: str = None, default: bool = None, page: int = 0,
+                           pagesize: int = 0, sortdir: str = "asc",
+                           sortby: str = "name") -> dict[str, Union[int, list[dict], None]]:
+    """
+    Returns a list of all templates or a list filtered by the given parameters.
+
+    :param name: The name of the template, optional
+    :param container_type: The type of the container, optional
+    :param default: Filters for default templates if True or non-default if False, optional
+    :param page: The number of the page to view. 0 if no pagination shall be used
+    :param pagesize: The size of the page. 0 if no pagination shall be used
+    :param sortdir: The sort direction, either 'asc' or 'desc'
+    :param sortby: The attribute to sort by
+    :return: a dictionary with a list of templates at the key 'templates' and optionally pagination entries ('prev',
+             'next', 'current', 'count')
+    """
+    sql_query = TokenContainerTemplate.query
+    if name:
+        sql_query = sql_query.filter(TokenContainerTemplate.name == name)
+    if container_type:
+        sql_query = sql_query.filter(TokenContainerTemplate.container_type == container_type)
+    if default is not None:
+        sql_query = sql_query.filter(TokenContainerTemplate.default == default)
+
+    if isinstance(sortby, str):
+        # Check that the sort column exists and convert it to a template column
+        cols = TokenContainerTemplate.__table__.columns
+        if sortby in cols:
+            sortby = cols.get(sortby)
+        else:
+            log.info(f'Unknown sort column "{sortby}". Using "name" instead.')
+            sortby = TokenContainerTemplate.name
+
+    if sortdir == "desc":
+        sql_query = sql_query.order_by(sortby.desc())
     else:
-        raise ParameterError(f"Unknown user role {user_role}!")
+        sql_query = sql_query.order_by(sortby.asc())
+
+    # paginate if requested
+    if page > 0 or pagesize > 0:
+        ret = create_pagination(page, pagesize, sql_query, "templates")
+    else:
+        ret = {"templates": sql_query.all()}
+
+    # create class objects from db objects
+    template_obj_list = [create_container_template_from_db_object(template) for template in ret["templates"]]
+
+    # convert to dict
+    template_list = []
+    for template in template_obj_list:
+        template_options = {}
+        if template.template_options != "":
+            template_options = json.loads(template.template_options)
+        template_dict = {"name": template.name,
+                         "container_type": template.container_type,
+                         "template_options": template_options,
+                         "default": template.default}
+        template_list.append(template_dict)
+
+    ret["templates"] = template_list
+
+    return ret
+
+
+def get_template_obj(template_name: str) -> ContainerTemplateBase:
+    """
+    Returns the template class object for the given template name.
+    Raises a ResourceNotFoundError if no template with this name exists.
+
+    :param template_name: The name of the template
+    :return: The template class object
+    """
+    db_template = TokenContainerTemplate.query.filter(TokenContainerTemplate.name == template_name).first()
+    if not db_template:
+        raise ResourceNotFoundError(f"Template {template_name} does not exist.")
+    template = create_container_template_from_db_object(db_template)
+    return template
+
+
+def set_default_template(name: str):
+    """
+    Sets the template of the given name as default and all other templates for the container type as non-default.
+
+    :param name: The name of the template to be the new default template
+    """
+    default_template = get_template_obj(name)
+
+    # Get all default templates for the container type and reset them to non-default
+    old_default_templates = get_templates_by_query(container_type=default_template.container_type, default=True)
+    for template in old_default_templates["templates"]:
+        template_obj = get_template_obj(template["name"])
+        template_obj.default = False
+
+    default_template.default = True
+
+
+def compare_template_dicts(template_a: dict, template_b: dict) -> bool:
+    """
+    Compares two template dictionaries for equal tokens.
+
+    :param template_a: The first template dictionary
+    :param template_b: The second template dictionary
+    :return: True if the templates contain the same tokens, False otherwise.
+    """
+    if template_a is None or template_b is None:
+        return False
+
+    # get template options
+    template_options_a = template_a.get("template_options", {})
+    template_options_b = template_b.get("template_options", {})
+
+    # compare tokens
+    tokens_a = template_options_a.get("tokens", [])
+    tokens_b = template_options_b.get("tokens", [])
+    if len(tokens_a) != len(tokens_b):
+        # different number of tokens, templates can not be equal
+        return False
+
+    unique_tokens_a = [token for token in tokens_a if token not in tokens_b]
+    unique_tokens_b = [token for token in tokens_b if token not in tokens_a]
+    if len(unique_tokens_a) > 0 or len(unique_tokens_b) > 0:
+        return False
+
+    return True
+
+
+def compare_template_with_container(template: ContainerTemplateBase, container: TokenContainerClass) -> dict:
+    """
+    Compares the template with the container. It is only evaluated if the token types are equal.
+
+    :param template: The template object
+    :param container: The container object
+    :return: A dictionary with the differences between the template and the container
+
+    Example of a returned dictionary:
+        ::
+
+            {
+                "tokens": {
+                            "missing": ["hotp"],
+                            "additional": ["totp"]
+                            }
+            }
+    """
+    result = {"tokens": {"missing": [], "additional": []}}
+    template_options = json.loads(template.template_options)
+
+    # compare tokens
+    template_tokens = template_options.get("tokens", [])
+    template_token_types = [token["type"] for token in template_tokens]
+    template_token_count = {ttype: template_token_types.count(ttype) for ttype in template_token_types}
+    container_token_types = [token.type for token in container.get_tokens()]
+    container_token_count = {ttype: container_token_types.count(ttype) for ttype in container_token_types}
+
+    for ttype, count_template in template_token_count.items():
+        count_container = container_token_count.get(ttype, 0)
+        if count_template > count_container:
+            result["tokens"]["missing"].extend([ttype] * (count_template - count_container))
+
+    for ttype, count_container in container_token_count.items():
+        count_template = template_token_count.get(ttype, 0)
+        if count_template < count_container:
+            result["tokens"]["additional"].extend([ttype] * (count_container - count_template))
+
+    # Check if container and template are equal
+    if len(result["tokens"]["missing"]) == 0 and len(result["tokens"]["additional"]) == 0:
+        result["tokens"]["equal"] = True
+    else:
+        result["tokens"]["equal"] = False
+
+    return result
+
+
+def get_offline_token_serials(container: TokenContainerClass) -> list[str]:
+    """
+    Returns a list of serials of offline tokens in the container.
+
+    :param container: A TokenContainerClass object
+    :return: List of serials of offline tokens in the container
+    """
+    tokens = container.get_tokens()
+    offline_serials = [token.get_serial() for token in tokens if is_offline_token(token.get_serial())]
+    return offline_serials

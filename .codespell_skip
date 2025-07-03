@@ -1,4 +1,3 @@
 ./privacyidea/static/contrib/*
-./privacyidea/static/components/translation/*
-./privacyidea/translations/*
-./po/*
+./privacyidea/static/components/translation/translations.js
+*.po
