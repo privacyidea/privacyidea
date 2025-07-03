@@ -3,12 +3,13 @@ This test file tests the lib.tokens.vascotoken
 This depends on lib.tokenclass
 """
 import functools
+import json
 from binascii import hexlify
 
 import mock
 
 from privacyidea.lib.error import ParameterError
-from privacyidea.lib.token import check_serial_pass
+from privacyidea.lib.token import check_serial_pass, init_token, get_tokens, import_tokens
 from privacyidea.lib.tokens.vascotoken import VascoTokenClass
 from privacyidea.models import Token
 from tests.base import MyTestCase
@@ -281,3 +282,25 @@ class VascoTokenTest(MyTestCase):
         self.assertEqual(key, b"A" * 24 + b"N" * 224)
 
         token.delete_token()
+
+    def test_10_vasco_token_export(self):
+        token = init_token(param={'serial': "OATH12345678",
+                                  'type': 'vasco',
+                                  'otpkey': self.otpkey})
+        self.assertRaises(NotImplementedError, token.export_token)
+
+        # Clean up
+        token.token.delete()
+
+    def test_11_vasco_token_import(self):
+        token_data = [{
+            "serial": "123456",
+            "type": "vasco",
+            "description": "this token can't be imported",
+            "otpkey": self.otpkey,
+            "issuer": "privacyIDEA",
+        }]
+        before_import = get_tokens()
+        import_tokens(json.dumps(token_data))
+        after_import = get_tokens()
+        self.assertEqual(len(before_import), len(after_import))
