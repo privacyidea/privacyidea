@@ -9,7 +9,7 @@ from privacyidea.models import Token
 import responses
 import json
 from privacyidea.lib.config import set_privacyidea_config
-from privacyidea.lib.token import remove_token
+from privacyidea.lib.token import remove_token, init_token, get_tokens, import_tokens
 from privacyidea.lib.error import ConfigAdminError
 from privacyidea.lib.privacyideaserver import add_privacyideaserver
 
@@ -239,3 +239,26 @@ class RemoteTokenTestCase(MyTestCase):
         self.assertEqual(True, r[0])
         # OTP counter is 1
         self.assertEqual(1, r[1])
+
+    def test_22_remote_token_export(self):
+        token = init_token(param={'serial': "OATH12345678",
+                                  'type': 'remote',
+                                  'otpkey': self.otpkey,
+                                  'remote.server': 'https://localhost'})
+        self.assertRaises(NotImplementedError, token.export_token)
+
+        # Clean up
+        token.token.delete()
+
+    def test_23_remote_token_import(self):
+        token_data = [{
+            "serial": "123456",
+            "type": "remote",
+            "description": "this token can't be imported",
+            "otpkey": self.otpkey,
+            "issuer": "privacyIDEA",
+        }]
+        before_import = get_tokens()
+        import_tokens(json.dumps(token_data))
+        after_import = get_tokens()
+        self.assertEqual(len(before_import), len(after_import))

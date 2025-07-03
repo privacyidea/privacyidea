@@ -232,3 +232,18 @@ class MotpTokenClass(TokenClass):
             self.set_otp_count(res)
 
         return res
+
+
+    def export_token(self) -> dict:
+        """
+        Export for this token is not supported.
+        """
+        raise NotImplementedError("Export for mOTP token is not supported.")
+
+    def import_token(self, token_information: dict):
+        """
+        Import for this token is not supported.
+        """
+        self.token.delete()
+        raise NotImplementedError("Import for mOTP token is not supported.")
+
