@@ -860,8 +860,7 @@ type: ``list``
 To prevent tokens from becoming unidentifiable after a device loss, a description can
 be enforced with the "require_description policy". The desired token-types can be
 selected here. After setting up the policy, the selected token types can only be
-enrolled if a description is set during enrollment. Additionally, the description of
-enrolled tokens of these types can only be edited with non-empty values.
+enrolled if a description is set during enrollment.
 
 .. _policy_email_validate:
 
