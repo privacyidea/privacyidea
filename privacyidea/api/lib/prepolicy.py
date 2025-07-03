@@ -2704,5 +2704,8 @@ def disabled_token_types(request, action):
 
     if disabled:
         request.all_data[ACTION.DISABLED_TOKEN_TYPES] = list(disabled)
+    else:
+        # remove the key if no disabled token types are set
+        request.all_data.pop(ACTION.DISABLED_TOKEN_TYPES, None)
 
     return True
