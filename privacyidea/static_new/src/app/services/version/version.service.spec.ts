@@ -1,14 +1,53 @@
-import { fakeAsync, TestBed, tick } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { VersionService } from './version.service';
+
+const VALID_HTML = `
+  <html><body>
+    <div class="document"><div class="documentwrapper">
+      <div class="bodywrapper"><div class="body">
+        <h1>Documentation found</h1>
+      </div></div>
+    </div></div>
+  </body></html>
+`;
+
+const NOT_FOUND_HTML = `
+  <html><body>
+    <div class="document"><div class="documentwrapper">
+      <div class="bodywrapper"><div class="body">
+        <h1 id="notfound">Page Not Found</h1>
+      </div></div>
+    </div></div>
+  </body></html>
+`;
+
+const mockFetchWithHTML = (html: string): Promise<Response> =>
+  Promise.resolve({
+    text: () => Promise.resolve(html),
+  } as unknown as Response);
+
+const flushPromises = () => new Promise((r) => setTimeout(r, 0));
 
 describe('VersionService', () => {
   let service: VersionService;
 
+  beforeAll(() => {
+    if (!(global as any).fetch) {
+      (global as any).fetch = jest.fn();
+    }
+  });
+
   beforeEach(() => {
-    TestBed.configureTestingModule({
-      providers: [VersionService],
-    });
+    TestBed.configureTestingModule({ providers: [VersionService] });
     service = TestBed.inject(VersionService);
+
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    jest.spyOn(window, 'open').mockImplementation(jest.fn());
+    jest.spyOn(window, 'alert').mockImplementation(jest.fn());
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it('should be created', () => {
@@ -16,85 +55,60 @@ describe('VersionService', () => {
   });
 
   describe('openDocumentation()', () => {
-    const VALID_HTML = `
-      <html lang="en">
-        <body>
-          <div class="document">
-            <div class="documentwrapper">
-              <div class="bodywrapper">
-                <div class="body">
-                  <h1>Documentation found</h1>
-                </div>
-              </div>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
+    it('opens the version-specific URL when the page exists', async () => {
+      service.version.set('3.12');
 
-    const NOT_FOUND_HTML = `
-      <html lang="en">
-        <body>
-          <div class="document">
-            <div class="documentwrapper">
-              <div class="bodywrapper">
-                <div class="body">
-                  <h1 id="notfound">Page Not Found</h1>
-                </div>
-              </div>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
+      jest
+        .spyOn(global, 'fetch')
+        .mockImplementation(() => mockFetchWithHTML(VALID_HTML));
 
-    function mockFetchWithHTML(html: string) {
-      return Promise.resolve({
-        text: () => Promise.resolve(html),
-      } as Response);
-    }
-
-    beforeEach(() => {
-      spyOn(window, 'open');
-      spyOn(window, 'alert');
-    });
-
-    it('opens the version-specific URL if it is found', fakeAsync(() => {
-      spyOn(window, 'fetch').and.returnValue(mockFetchWithHTML(VALID_HTML));
       service.openDocumentation('token_enrollment');
-      tick();
+      await flushPromises();
+
       const expectedUrl =
-        'https://privacyidea.readthedocs.io/en/v/webui/token_details.html#enroll-token';
+        'https://privacyidea.readthedocs.io/en/v3.12/webui/token_details.html#enroll-token';
+
       expect(window.open).toHaveBeenCalledWith(expectedUrl, '_blank');
       expect(window.alert).not.toHaveBeenCalled();
-    }));
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+    });
 
-    it('opens the fallback (latest) URL if the version-specific page is not found', fakeAsync(() => {
-      const fetchSpy = spyOn(window, 'fetch').and.returnValues(
-        mockFetchWithHTML(NOT_FOUND_HTML),
-        mockFetchWithHTML(VALID_HTML),
-      );
+    it('falls back to the latest URL when the version page is missing', async () => {
+      service.version.set('3.12');
+
+      jest
+        .spyOn(global, 'fetch')
+        .mockImplementationOnce(() => mockFetchWithHTML(NOT_FOUND_HTML))
+        .mockImplementationOnce(() => mockFetchWithHTML(VALID_HTML));
+
       service.openDocumentation('token_enrollment');
-      tick();
-      const expectedFallbackUrl =
+      await flushPromises();
+      await flushPromises();
+
+      const fallbackUrl =
         'https://privacyidea.readthedocs.io/en/latest/webui/token_details.html#enroll-token';
-      expect(window.open).toHaveBeenCalledWith(expectedFallbackUrl, '_blank');
+
+      expect(window.open).toHaveBeenCalledWith(fallbackUrl, '_blank');
       expect(window.alert).not.toHaveBeenCalled();
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+    });
 
-      expect(fetchSpy).toHaveBeenCalledTimes(2);
-    }));
+    it('shows an alert if neither page exists', async () => {
+      service.version.set('3.12');
 
-    it('alerts if neither version-specific nor fallback page is found', fakeAsync(() => {
-      spyOn(window, 'fetch').and.returnValues(
-        mockFetchWithHTML(NOT_FOUND_HTML),
-        mockFetchWithHTML(NOT_FOUND_HTML),
-      );
+      jest
+        .spyOn(global, 'fetch')
+        .mockImplementation(() => mockFetchWithHTML(NOT_FOUND_HTML));
+
       service.openDocumentation('token_enrollment');
-      tick();
+      await flushPromises();
+      await flushPromises();
+
       expect(window.alert).toHaveBeenCalledWith(
         'The documentation page is currently not available.',
       );
       expect(window.open).not.toHaveBeenCalled();
-    }));
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+    });
   });
 });
