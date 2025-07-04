@@ -3,7 +3,7 @@
   aria-label="Token Enrollment"
   class="token-enrollment-container">
   <h3 class="margin-left-1"> Enroll a new Token </h3>
-  <form [formGroup]="formGroup" (ngSubmit)="enrollToken()">
+  <form [formGroup]="formGroupSignal()" (ngSubmit)="enrollToken()">
     <!-- This invisible sentinel element is used to detect when the header becomes sticky. -->
     <div #stickySentinel></div>
     <div class="sticky-header" #stickyHeader>
@@ -34,7 +34,8 @@
           <button
             type="submit"
             [ngClass]="{
-              'disabled-button': formGroup.invalid || !selectedTokenType(),
+              'disabled-button':
+                formGroupSignal().invalid || !selectedTokenType(),
               'card-button': true,
             }"
             mat-flat-button>
@@ -193,7 +194,7 @@
     <mat-form-field class="description-form">
       <mat-label>Description</mat-label>
       <textarea
-        [formControl]="descriptionControl"
+        [formControl]="descriptionControlSignal()"
         [maxlength]="80"
         matInput
         placeholder="Enter description"
@@ -205,7 +206,7 @@
         <div class="assign-user-container">
           <mat-form-field class="width-50 input-height">
             <mat-label>Select Realm of User</mat-label>
-            <mat-select [formControl]="selectedUserRealmControl">
+            <mat-select [formControl]="selectedUserRealmControlSignal()">
               @for (option of realmService.realmOptions(); track option) {
                 <mat-option [value]="option">{{ option }}</mat-option>
               }
@@ -214,7 +215,7 @@
           <mat-form-field class="width-50 input-height">
             <mat-label>Enter User</mat-label>
             <input
-              [formControl]="userFilterControl"
+              [formControl]="userFilterControlSignal()"
               [matAutocomplete]="userAuto"
               matInput />
             <mat-autocomplete
@@ -224,11 +225,11 @@
                 <mat-option [value]="user">{{ user.username }}</mat-option>
               }
             </mat-autocomplete>
-            @if (selectedUserRealmControl.hasError("required")) {
+            @if (selectedUserRealmControlSignal().hasError("required")) {
               <mat-error>User Realm is <strong>required</strong></mat-error>
             }
             @if (
-              !selectedUserRealmControl.value &&
+              !selectedUserRealmControlSignal().value &&
               !onlyAddToRealm() &&
               selectedTokenType()
             ) {
@@ -236,13 +237,13 @@
                 Select a realm first to enable user selection.
               </mat-hint>
             }
-            @if (userFilterControl.hasError("required")) {
+            @if (userFilterControlSignal().hasError("required")) {
               <mat-error>User is <strong>required</strong></mat-error>
             }
-            @if (userFilterControl.hasError("userNotInOptions")) {
+            @if (userFilterControlSignal().hasError("userNotInOptions")) {
               <mat-error>User must be selected from the list.</mat-error>
             }
-            @if (userFilterControl.hasError("userNotInRealm")) {
+            @if (userFilterControlSignal().hasError("userNotInRealm")) {
               <mat-error>
                 User does not exist in the selected realm.
               </mat-error>
@@ -257,21 +258,21 @@
           <input style="display: none" type="password" />
           <div class="user-pin-input">
             <input
-              [formControl]="setPinControl"
+              [formControl]="setPinControlSignal()"
               [type]="'password'"
               class="input"
               placeholder="PIN" />
 
             <input
-              [formControl]="repeatPinControl"
+              [formControl]="repeatPinControlSignal()"
               [type]="'password'"
               class="input"
               placeholder="Repeat PIN" />
           </div>
           @if (
-            formGroup.hasError("pinMismatch") &&
-            (formGroup.get("setPin")?.touched ||
-              formGroup.get("repeatPin")?.touched)
+            formGroupSignal().hasError("pinMismatch") &&
+            (formGroupSignal().get("setPin")?.touched ||
+              formGroupSignal().get("repeatPin")?.touched)
           ) {
             <mat-error class="pin-error">PINs do not match.</mat-error>
           }
@@ -285,7 +286,7 @@
     <mat-form-field class="width-32 input-height">
       <mat-label>Enter Container</mat-label>
       <input
-        [formControl]="selectedContainerControl"
+        [formControl]="selectedContainerControlSignal()"
         [matAutocomplete]="containerAuto"
         matInput />
       <mat-autocomplete #containerAuto="matAutocomplete">
@@ -307,7 +308,7 @@
           <mat-form-field class="date-picker">
             <mat-label>Choose a Start Date</mat-label>
             <input
-              [formControl]="selectedStartDateControl"
+              [formControl]="selectedStartDateControlSignal()"
               [matDatepicker]="startPicker"
               matInput
               placeholder="Start date" />
@@ -321,7 +322,7 @@
           <mat-form-field class="time-picker">
             <mat-label>Enter Start Time</mat-label>
             <input
-              [formControl]="selectedStartTimeControl"
+              [formControl]="selectedStartTimeControlSignal()"
               matInput
               max="23"
               min="0"
@@ -331,7 +332,7 @@
 
           <mat-form-field class="zone-picker">
             <mat-label>Timezone Offset</mat-label>
-            <mat-select [formControl]="selectedTimezoneOffsetControl">
+            <mat-select [formControl]="selectedTimezoneOffsetControlSignal()">
               @for (option of timezoneOptions; track option) {
                 <mat-option [value]="option.value">{{
                   option.label
@@ -344,7 +345,7 @@
           <mat-form-field class="date-picker">
             <mat-label>Choose a End Date</mat-label>
             <input
-              [formControl]="selectedEndDateControl"
+              [formControl]="selectedEndDateControlSignal()"
               [matDatepicker]="endPicker"
               matInput
               placeholder="End date" />
@@ -358,7 +359,7 @@
           <mat-form-field class="time-picker">
             <mat-label>Enter End Time</mat-label>
             <input
-              [formControl]="selectedEndTimeControl"
+              [formControl]="selectedEndTimeControlSignal()"
               matInput
               max="23"
               min="0"

@@ -239,7 +239,10 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     computation: () => null,
   });
 
-  enrollResponse: WritableSignal<EnrollmentResponse | null> = signal(null);
+  enrollResponse: WritableSignal<EnrollmentResponse | null> = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => null,
+  });
 
   @ViewChild('scrollContainer') scrollContainer!: ElementRef<HTMLElement>;
   @ViewChild('stickyHeader') stickyHeader!: ElementRef<HTMLElement>;
@@ -252,23 +255,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   // For simplicity and consistency with formGroup driving state:
 
   // FormControls for the main enrollment form
-  descriptionControl = new FormControl<string>('', { nonNullable: true });
-  selectedUserRealmControl = new FormControl(
-    this.userService.selectedUserRealm() || this.realmService.defaultRealm(),
-  );
-  userFilterControl: FormControl<string | UserData | null> = new FormControl(
-    this.userService.userFilter(),
-  );
-  setPinControl = new FormControl<string>('');
-  repeatPinControl = new FormControl<string>('');
-  selectedContainerControl = new FormControl(
-    this.containerService.selectedContainer(),
-  );
-  selectedStartDateControl = new FormControl<Date | null>(null);
-  selectedStartTimeControl = new FormControl<string>('00:00');
-  selectedTimezoneOffsetControl = new FormControl<string>('+00:00');
-  selectedEndDateControl = new FormControl<Date | null>(null);
-  selectedEndTimeControl = new FormControl<string>('23:59');
 
   onlyAddToRealm = computed(() => {
     if (this.tokenService.selectedTokenType()?.key === '4eyes') {
@@ -285,7 +271,10 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   updateClickEnroll(event: ClickEnrollFn): void {
     this.clickEnroll = event;
   }
-  reopenDialogSignal: WritableSignal<ReopenDialogFn> = signal(undefined);
+  reopenDialogSignal: WritableSignal<ReopenDialogFn> = linkedSignal({
+    source: this.selectedTokenType,
+    computation: () => undefined,
+  });
   updateReopenDialog(event: ReopenDialogFn): void {
     this.reopenDialogSignal.set(event);
   }
@@ -294,6 +283,120 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   additionalFormFields: WritableSignal<{
     [key: string]: FormControl<any>;
   }> = signal({});
+
+  formGroupSignal: WritableSignal<FormGroup> = linkedSignal({
+    source: () => ({
+      additionalFormFields: this.additionalFormFields(),
+      selectedUserRealm: this.userService.selectedUserRealm(),
+      selectedContainer: untracked(() =>
+        this.containerService.selectedContainer(),
+      ),
+      selectedUser: this.userService.selectedUser(),
+      defaultRealm: this.realmService.defaultRealm(),
+    }),
+    computation: (source, previous) => {
+      const {
+        defaultRealm,
+        additionalFormFields,
+        selectedUserRealm,
+        selectedContainer,
+        selectedUser,
+      } = source;
+      const prevSource = previous?.source;
+      const prevFormGroup = previous?.value;
+      console.log('Previous: ', previous);
+      if (
+        !prevFormGroup ||
+        !prevSource ||
+        selectedUserRealm !== prevSource.selectedUserRealm ||
+        additionalFormFields !== prevSource.additionalFormFields
+      ) {
+        console.log('Creating new FormGroup');
+        const selectedUserRealmControl = new FormControl(
+          selectedUserRealm || defaultRealm,
+          this.isUserRequired ? [Validators.required] : [],
+        );
+        selectedUserRealmControl.valueChanges.subscribe((value) => {
+          this.userFilterControlSignal().reset('', { emitEvent: false });
+          if (!value) {
+            this.userFilterControlSignal().disable({ emitEvent: false });
+          } else {
+            this.userFilterControlSignal().enable({ emitEvent: false });
+          }
+          if (value !== this.userService.selectedUserRealm()) {
+            this.userService.selectedUserRealm.set(value ?? '');
+          }
+        });
+        console.log('User filter:', selectedUser);
+        const userFilterControl = new FormControl<string | UserData | null>(
+          selectedUser,
+          this.isUserRequired
+            ? [Validators.required, this.userExistsValidator]
+            : [this.userExistsValidator],
+        );
+        userFilterControl.valueChanges.subscribe((value) => {
+          this.userService.userFilter.set(value ?? '');
+        });
+
+        return new FormGroup(
+          {
+            description: new FormControl<string>('', { nonNullable: true }),
+            selectedUserRealm: selectedUserRealmControl,
+            userFilter: userFilterControl,
+            setPin: new FormControl<string>('', { nonNullable: true }),
+            repeatPin: new FormControl<string>('', { nonNullable: true }),
+            selectedContainer: new FormControl(selectedContainer, {
+              nonNullable: true,
+            }),
+            selectedStartDate: new FormControl<Date | null>(new Date(), {
+              nonNullable: true,
+            }),
+            selectedStartTime: new FormControl<string>('00:00', {
+              nonNullable: true,
+            }),
+            selectedTimezoneOffset: new FormControl<string>('+00:00', {
+              nonNullable: true,
+            }),
+            selectedEndDate: new FormControl<Date | null>(new Date(), {
+              nonNullable: true,
+            }),
+            selectedEndTime: new FormControl<string>('23:59', {
+              nonNullable: true,
+            }),
+            ...additionalFormFields,
+          },
+          { validators: TokenEnrollmentComponent.pinMismatchValidator },
+        );
+      }
+      // // if (selectedUserRealm !== prevSource.selectedUserRealm) {
+      // //   console.log(
+      // //     'Updating selectedUserRealm in existing FormGroup',
+      // //     selectedUserRealm,
+      // //   );
+      // //   prevFormGroup
+      // //     .get('selectedUserRealm')
+      // //     ?.setValue(selectedUserRealm, { emitEvent: false });
+      // // }
+      // if (selectedContainer !== prevSource.selectedContainer) {
+      //   console.log(
+      //     'Updating selectedContainer in existing FormGroup',
+      //     selectedContainer,
+      //   );
+      //   prevFormGroup
+      //     .get('selectedContainer')
+      //     ?.setValue(selectedContainer, { emitEvent: false });
+      // }
+      if (selectedUser !== prevFormGroup.value) {
+        console.log('Updating userFilter in existing FormGroup', selectedUser);
+        prevFormGroup
+          .get('userFilter')
+          ?.setValue(selectedUser, { emitEvent: false });
+      }
+      prevFormGroup.updateValueAndValidity({ emitEvent: false });
+      return prevFormGroup;
+    },
+  });
+
   updateAdditionalFormFields(event: {
     [key: string]: FormControl<any> | undefined | null; // Allow undefined/null temporarily for safety
   }): void {
@@ -309,41 +412,86 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       }
     }
     this.additionalFormFields.set(validControls);
-    this.formGroup = new FormGroup(
-      {
-        description: this.descriptionControl,
-        selectedUserRealm: this.selectedUserRealmControl,
-        userFilter: this.userFilterControl,
-        setPin: this.setPinControl,
-        repeatPin: this.repeatPinControl,
-        selectedContainer: this.selectedContainerControl,
-        selectedStartDate: this.selectedStartDateControl,
-        selectedStartTime: this.selectedStartTimeControl,
-        selectedTimezoneOffset: this.selectedTimezoneOffsetControl,
-        selectedEndDate: this.selectedEndDateControl,
-        selectedEndTime: this.selectedEndTimeControl,
-        ...validControls, // Spread valid controls into the formGroup
-      },
-      { validators: TokenEnrollmentComponent.pinMismatchValidator },
-    );
   }
 
-  formGroup = new FormGroup(
-    {
-      description: this.descriptionControl,
-      selectedUserRealm: this.selectedUserRealmControl,
-      userFilter: this.userFilterControl,
-      setPin: this.setPinControl,
-      repeatPin: this.repeatPinControl,
-      selectedContainer: this.selectedContainerControl,
-      selectedStartDate: this.selectedStartDateControl,
-      selectedStartTime: this.selectedStartTimeControl,
-      selectedTimezoneOffset: this.selectedTimezoneOffsetControl,
-      selectedEndDate: this.selectedEndDateControl,
-      selectedEndTime: this.selectedEndTimeControl,
+  descriptionControlSignal: WritableSignal<FormControl<string>> = linkedSignal({
+    source: this.formGroupSignal,
+    computation: (formGroup) =>
+      formGroup.get('description') as FormControl<string>,
+  });
+  selectedUserRealmControlSignal: WritableSignal<FormControl<string>> =
+    linkedSignal({
+      source: this.formGroupSignal,
+      computation: (formGroup) => {
+        const control = formGroup.get(
+          'selectedUserRealm',
+        ) as FormControl<string>;
+
+        return control;
+      },
+    });
+
+  userFilterControlSignal: WritableSignal<FormControl> = linkedSignal({
+    source: () => this.formGroupSignal(),
+    computation: (formGroup) => {
+      return formGroup.get('userFilter') as FormControl<
+        string | UserData | null
+      >;
     },
-    { validators: TokenEnrollmentComponent.pinMismatchValidator },
-  );
+  });
+
+  setPinControlSignal: WritableSignal<FormControl<string>> = linkedSignal({
+    source: this.formGroupSignal,
+    computation: (formGroup) => formGroup.get('setPin') as FormControl<string>,
+  });
+  repeatPinControlSignal: WritableSignal<FormControl<string>> = linkedSignal({
+    source: this.formGroupSignal,
+    computation: (formGroup) =>
+      formGroup.get('repeatPin') as FormControl<string>,
+  });
+  selectedContainerControlSignal: WritableSignal<FormControl<string>> =
+    linkedSignal({
+      source: this.formGroupSignal,
+      computation: (formGroup) => {
+        const control = formGroup.get(
+          'selectedContainer',
+        ) as FormControl<string>;
+        control.valueChanges.subscribe((value) =>
+          this.containerService.selectedContainer.set(value ?? ''),
+        );
+        return control;
+      },
+    });
+  selectedStartDateControlSignal: WritableSignal<FormControl<Date | null>> =
+    linkedSignal({
+      source: this.formGroupSignal,
+      computation: (formGroup) =>
+        formGroup.get('selectedStartDate') as FormControl<Date | null>,
+    });
+  selectedStartTimeControlSignal: WritableSignal<FormControl<string>> =
+    linkedSignal({
+      source: this.formGroupSignal,
+      computation: (formGroup) =>
+        formGroup.get('selectedStartTime') as FormControl<string>,
+    });
+  selectedTimezoneOffsetControlSignal: WritableSignal<FormControl<string>> =
+    linkedSignal({
+      source: this.formGroupSignal,
+      computation: (formGroup) =>
+        formGroup.get('selectedTimezoneOffset') as FormControl<string>,
+    });
+  selectedEndDateControlSignal: WritableSignal<FormControl<Date | null>> =
+    linkedSignal({
+      source: this.formGroupSignal,
+      computation: (formGroup) =>
+        formGroup.get('selectedEndDate') as FormControl<Date | null>,
+    });
+  selectedEndTimeControlSignal: WritableSignal<FormControl<string>> =
+    linkedSignal({
+      source: this.formGroupSignal,
+      computation: (formGroup) =>
+        formGroup.get('selectedEndTime') as FormControl<string>,
+    });
 
   constructor(
     protected containerService: ContainerService,
@@ -356,42 +504,16 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     protected dialogService: DialogService,
     private renderer: Renderer2,
   ) {
-    // The effect will call resetForm on initialization and on subsequent changes to selectedTokenType
-    effect(() => {
-      this.tokenService.selectedTokenType(); // Trigger effect on token type change
-      untracked(() => {
-        this.resetForm();
-      });
-    });
     effect(() => {
       const users = this.userService.filteredUsers();
       if (
         users.length === 1 &&
-        this.userFilterControl.value === users[0].username
+        this.userFilterControlSignal().value === users[0].username
       ) {
         // If there's only one user, set the userFilterControl to that user
-        this.userFilterControl.setValue(users[0]);
+        this.userFilterControlSignal().setValue(users[0]);
       }
     });
-  }
-
-  ngOnInit(): void {
-    // Sync FormControls with service states for user/realm/container
-    this.selectedUserRealmControl.valueChanges.subscribe((value) => {
-      this.userFilterControl.reset('', { emitEvent: false });
-      if (!value) {
-        this.userFilterControl.disable({ emitEvent: false });
-      } else {
-        this.userFilterControl.enable({ emitEvent: false });
-      }
-      return this.userService.selectedUserRealm.set(value ?? '');
-    });
-    this.userFilterControl.valueChanges.subscribe((value) => {
-      this.userService.userFilter.set(value ?? '');
-    });
-    this.selectedContainerControl.valueChanges.subscribe((value) =>
-      this.containerService.selectedContainer.set(value ?? ''),
-    );
   }
 
   ngAfterViewInit(): void {
@@ -425,44 +547,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  resetForm(): void {
-    this._lastTokenEnrollmentLastStepDialogData.set(null);
-    this.reopenDialogSignal.set(undefined);
-
-    this.userService.selectedUserRealm.set('');
-    this.userService.userFilter.set('');
-
-    this.descriptionControl.setValue('');
-    this.setPinControl.setValue('');
-    this.repeatPinControl.setValue('');
-    this.selectedContainerControl.setValue('');
-    this.selectedStartDateControl.setValue(new Date());
-    this.selectedStartTimeControl.setValue('00:00');
-    this.selectedTimezoneOffsetControl.setValue('+00:00');
-    this.selectedEndDateControl.setValue(new Date());
-    this.selectedEndTimeControl.setValue('23:59');
-
-    this.enrollResponse.set(null);
-    this.pollResponse.set(null);
-    this.additionalFormFields.set({});
-    this.formGroup.markAsPristine();
-    this.formGroup.markAsUntouched();
-    this.pollResponse.set(null);
-    this.enrollResponse.set(null);
-
-    const isUserRequiredByTokenType = this.userIsRequired();
-    this.selectedUserRealmControl.setValidators(
-      isUserRequiredByTokenType ? [Validators.required] : [],
-    );
-    this.selectedUserRealmControl.updateValueAndValidity({ emitEvent: false });
-    this.userFilterControl.setValidators(
-      isUserRequiredByTokenType
-        ? [Validators.required, () => this.userExistsValidator]
-        : [this.userExistsValidator],
-    );
-    this.userFilterControl.updateValueAndValidity({ emitEvent: false });
-  }
-
   formatDateTimeOffset(date: Date, time: string, offset: string): string {
     const timeMatch = time.match(/^(\d{2}):(\d{2})$/);
     if (!timeMatch) {
@@ -493,12 +577,12 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
 
     const user = this.userService.selectedUser();
-    if (this.userIsRequired() && !user) {
+    if (this.isUserRequired && !user) {
       everythingIsValid = false;
     }
 
-    if (this.formGroup.invalid) {
-      this.formGroup.markAllAsTouched();
+    if (this.formGroupSignal().invalid) {
+      this.formGroupSignal().markAllAsTouched();
       everythingIsValid = false;
     }
 
@@ -517,20 +601,21 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
     const basicOptions: TokenEnrollmentData = {
       type: currentTokenType.key,
-      description: this.descriptionControl.value.trim(),
-      containerSerial: this.selectedContainerControl.value?.trim() ?? '',
+      description: this.descriptionControlSignal().value.trim(),
+      containerSerial:
+        this.selectedContainerControlSignal().value?.trim() ?? '',
       validityPeriodStart: this.formatDateTimeOffset(
-        this.selectedStartDateControl.value ?? new Date(),
-        this.selectedStartTimeControl.value ?? '00:00',
-        this.selectedTimezoneOffsetControl.value ?? '+00:00',
+        this.selectedStartDateControlSignal().value ?? new Date(),
+        this.selectedStartTimeControlSignal().value ?? '00:00',
+        this.selectedTimezoneOffsetControlSignal().value ?? '+00:00',
       ),
       validityPeriodEnd: this.formatDateTimeOffset(
-        this.selectedEndDateControl.value ?? new Date(),
-        this.selectedEndTimeControl.value ?? '23:59',
-        this.selectedTimezoneOffsetControl.value ?? '+00:00',
+        this.selectedEndDateControlSignal().value ?? new Date(),
+        this.selectedEndTimeControlSignal().value ?? '23:59',
+        this.selectedTimezoneOffsetControlSignal().value ?? '+00:00',
       ),
       user: user?.username ?? '',
-      pin: this.setPinControl.value ?? '',
+      pin: this.setPinControlSignal().value ?? '',
     };
 
     const enrollResponse = this.clickEnroll(basicOptions);
@@ -562,8 +647,11 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  _lastTokenEnrollmentLastStepDialogData =
-    signal<TokenEnrollmentLastStepDialogData | null>(null);
+  _lastTokenEnrollmentLastStepDialogData: WritableSignal<TokenEnrollmentLastStepDialogData | null> =
+    linkedSignal({
+      source: this.tokenService.selectedTokenType,
+      computation: () => null,
+    });
 
   canReopenEnrollmentDialog = computed(
     () =>
@@ -586,7 +674,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  userIsRequired() {
+  get isUserRequired() {
     return ['tiqr', 'webauthn', 'passkey', 'certificate'].includes(
       this.tokenService.selectedTokenType()?.key ?? '',
     );
@@ -618,13 +706,8 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   }
 
   userExistsValidator: ValidatorFn = (
-    group: AbstractControl,
+    control: AbstractControl<string | UserData | null>,
   ): ValidationErrors | null => {
-    const control = group.get('userFilter');
-    if (!control) {
-      return null;
-    }
-
     const value = control.value;
     if (typeof value === 'string' && value !== '') {
       const users = this.userService.users();
@@ -657,7 +740,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    if (this.userIsRequired() && !user) {
+    if (this.isUserRequired && !user) {
       this.notificationService.openSnackBar(
         'User is required for this token type, but no user was provided.',
       );

@@ -10,6 +10,8 @@ import { environment } from '../../../environments/environment';
 import { RealmService } from '../realm/realm.service';
 import { ContentService } from '../content/content.service';
 import { PiResponse } from '../../app.component';
+import { TokenService } from '../token/token.service';
+import { AuthService } from '../auth/auth.service';
 
 export interface UserData {
   description: string;
@@ -34,12 +36,26 @@ export class UserService {
     source: () => ({
       selectedContent: this.contentService.selectedContent(),
       defaultRealm: this.realmService.defaultRealm(),
+      selectedTokenType: this.tokenService.selectedTokenType(),
+      authRole: this.authService.role(),
+      authRealm: this.authService.realm(),
     }),
-    computation: (source) => source.defaultRealm,
+    computation: (source) => {
+      console.log('UserService.selectedUserRealm computation', source);
+      if (source.authRole === 'user') {
+        return source.authRealm;
+      }
+      return source.defaultRealm;
+    },
   });
 
   selectedUser = computed<UserData | null>(() => {
-    const userName = this.userNameFilter();
+    var userName = '';
+    if (this.authService.role() === 'user') {
+      userName = this.authService.user();
+    } else {
+      userName = this.userNameFilter();
+    }
     if (!userName) {
       return null;
     }
@@ -54,7 +70,10 @@ export class UserService {
 
   userFilter = linkedSignal<string, UserData | string>({
     source: this.selectedUserRealm,
-    computation: () => '',
+    computation: () => {
+      console.log('UserService.userFilter computation');
+      return '';
+    },
   });
 
   userNameFilter = computed<string>(() => {
@@ -161,5 +180,7 @@ export class UserService {
     private localService: LocalService,
     private realmService: RealmService,
     private contentService: ContentService,
+    private tokenService: TokenService,
+    private authService: AuthService,
   ) {}
 }

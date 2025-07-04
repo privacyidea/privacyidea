@@ -3,7 +3,7 @@
   aria-label="Token Enrollment"
   class="token-enrollment-container">
   <h3 class="margin-left-1"> Enroll a new Token </h3>
-  <form [formGroup]="formGroup" (ngSubmit)="enrollToken()">
+  <form [formGroup]="formGroupSignal()" (ngSubmit)="enrollToken()">
     <!-- This invisible sentinel element is used to detect when the header becomes sticky. -->
     <div #stickySentinel></div>
     <div class="sticky-header" #stickyHeader>
@@ -34,7 +34,8 @@
           <button
             type="submit"
             [ngClass]="{
-              'disabled-button': formGroup.invalid || !selectedTokenType(),
+              'disabled-button':
+                formGroupSignal().invalid || !selectedTokenType(),
               'card-button': true,
             }"
             mat-flat-button>
@@ -193,7 +194,7 @@
     <mat-form-field class="description-form">
       <mat-label>Description</mat-label>
       <textarea
-        [formControl]="descriptionControl"
+        [formControl]="descriptionControlSignal()"
         [maxlength]="80"
         matInput
         placeholder="Enter description"
@@ -206,7 +207,7 @@
           <mat-label>Enter Container</mat-label>
           <input
             [formControlName]="'selectedContainer'"
-            [formControl]="selectedContainerControl"
+            [formControl]="selectedContainerControlSignal()"
             [matAutocomplete]="containerAuto"
             matInput />
           <mat-autocomplete #containerAuto="matAutocomplete">
@@ -226,21 +227,21 @@
           <input style="display: none" type="password" />
           <div class="user-pin-input">
             <input
-              [formControl]="setPinControl"
+              [formControl]="setPinControlSignal()"
               [type]="'password'"
               class="input"
               placeholder="PIN" />
 
             <input
-              [formControl]="repeatPinControl"
+              [formControl]="repeatPinControlSignal()"
               [type]="'password'"
               class="input"
               placeholder="Repeat PIN" />
           </div>
           @if (
-            formGroup.hasError("pinMismatch") &&
-            (formGroup.get("setPin")?.touched ||
-              formGroup.get("repeatPin")?.touched)
+            formGroupSignal().hasError("pinMismatch") &&
+            (formGroupSignal().get("setPin")?.touched ||
+              formGroupSignal().get("repeatPin")?.touched)
           ) {
             <mat-error class="pin-error">PINs do not match.</mat-error>
           }
