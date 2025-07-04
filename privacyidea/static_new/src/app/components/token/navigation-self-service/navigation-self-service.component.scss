@@ -1,0 +1,8 @@
+@use "../../../../styles/styles";
+
+.navigation-self-service-column {
+  display: flex;
+  flex-direction: column;
+  padding: calc(var(--global-padding) * 2);
+  align-items: center;
+}
