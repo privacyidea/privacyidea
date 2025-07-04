@@ -146,9 +146,7 @@
         <app-enroll-push
           (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)"
-          (reopenCurrentEnrollmentDialogChange)="
-            updateReopenCurrentEnrollmentDialog($event)
-          " />
+          (reopenDialogChange)="updateReopenDialog($event)" />
       }
       @case ("question") {
         <app-enroll-question
@@ -189,9 +187,7 @@
         <app-enroll-passkey
           (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)"
-          (reopenCurrentEnrollmentDialogChange)="
-            updateReopenCurrentEnrollmentDialog($event)
-          " />
+          (reopenDialogChange)="updateReopenDialog($event)" />
       }
     }
     <mat-form-field class="description-form">

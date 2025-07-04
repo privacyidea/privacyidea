@@ -17,6 +17,7 @@ import { DialogService } from '../../../../services/dialog/dialog.service';
 import { PiResponse } from '../../../../app.component';
 import { TokenEnrollmentFirstStepDialogComponent } from '../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component';
 import { MatDialogRef } from '@angular/material/dialog';
+import { ReopenDialogFn } from '../token-enrollment.component';
 
 export interface PushEnrollmentOptions extends TokenEnrollmentData {
   type: 'push';
@@ -43,11 +44,7 @@ export class EnrollPushComponent implements OnInit {
   @Output() clickEnrollChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => Promise<EnrollmentResponse | null>
   >();
-  @Output() reopenCurrentEnrollmentDialogChange = new EventEmitter<
-    () =>
-      | Promise<EnrollmentResponse | void>
-      | Observable<EnrollmentResponse | void>
-  >();
+  @Output() reopenDialogChange = new EventEmitter<ReopenDialogFn>();
   // No specific FormControls needed for Push Token that the user sets directly.
   // generateOnServer is implicit or can be treated as a constant.
   pushForm = new FormGroup({});
@@ -124,12 +121,12 @@ export class EnrollPushComponent implements OnInit {
   private _openStepOneDialog(
     enrollmentResponse: EnrollmentResponse,
   ): MatDialogRef<TokenEnrollmentFirstStepDialogComponent, any> {
-    this.reopenCurrentEnrollmentDialogChange.emit(async () => {
+    this.reopenDialogChange.emit(async () => {
       if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen()) {
         await this.pollTokenRolloutState(enrollmentResponse, 0);
         return enrollmentResponse;
       }
-      return undefined;
+      return null;
     });
 
     return this.dialogService.openTokenEnrollmentFirstStepDialog({
@@ -137,7 +134,7 @@ export class EnrollPushComponent implements OnInit {
     });
   }
   private _closeStepOneDialog(): void {
-    this.reopenCurrentEnrollmentDialogChange.emit(undefined);
+    this.reopenDialogChange.emit(undefined);
     this.dialogService.closeTokenEnrollmentFirstStepDialog();
   }
 }
