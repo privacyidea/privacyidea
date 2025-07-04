@@ -227,6 +227,7 @@ class SCOPE(object):
     WEBUI = "webui"
     REGISTER = "register"
     CONTAINER = "container"
+    MANAGEMENT = "management"
 
     @classmethod
     def get_all_scopes(cls) -> list[str]:
@@ -234,7 +235,7 @@ class SCOPE(object):
         Return all valid scopes as a list
         """
         valid_scopes = [cls.AUTHZ, cls.ADMIN, cls.AUTH, cls.AUDIT, cls.USER, cls.ENROLL, cls.WEBUI, cls.REGISTER,
-                        cls.CONTAINER]
+                        cls.CONTAINER, cls.MANAGEMENT]
         return valid_scopes
 
 
@@ -414,6 +415,7 @@ class ACTION(object):
     SERVICEID_DELETE = "serviceid_delete"
     PREFERREDCLIENTMODE = "preferred_client_mode"
     REQUIRE_DESCRIPTION = "require_description"
+    REQUIRE_DESCRIPTION_ON_EDIT = "require_description_on_edit"
     CONTAINER_DESCRIPTION = "container_description"
     CONTAINER_INFO = "container_info"
     CONTAINER_STATE = "container_state"
@@ -3023,6 +3025,16 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('The client is not allowed to unregister the container. The user can not delete the '
                           'container locally on the smartphone.'),
                 'group': GROUP.SMARTPHONE
+            }
+        },
+        SCOPE.MANAGEMENT: {
+            ACTION.REQUIRE_DESCRIPTION_ON_EDIT: {
+                'type': 'str',
+                'desc': _('This action makes the description required for all '
+                          'selected tokentypes, during the editing process.'),
+                'group': GROUP.TOKEN,
+                'multiple': True,
+                'value': get_token_types()
             }
         }
 
