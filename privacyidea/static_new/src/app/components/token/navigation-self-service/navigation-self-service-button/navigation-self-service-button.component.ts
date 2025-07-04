@@ -1,18 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, Input } from '@angular/core';
 import { MatFabAnchor } from '@angular/material/button';
-
 import { MatIconModule } from '@angular/material/icon';
 import { ContentService } from '../../../../services/content/content.service';
 import { TokenSelectedContentKey } from '../../token.component';
-
-export type NavigationSelfServiceButtonData = {
-  key: TokenSelectedContentKey;
-  title: string;
-  matIconName?: string;
-  matIconClass?: string;
-  matIconSize?: 'tile-icon-small' | 'tile-icon-medium' | 'tile-icon-large';
-};
 
 @Component({
   selector: 'app-navigation-self-service-button',
@@ -22,16 +13,23 @@ export type NavigationSelfServiceButtonData = {
   styleUrl: './navigation-self-service-button.component.scss',
 })
 export class NavigationSelfServiceButtonComponent {
-  @Input({ required: true }) buttonData!: NavigationSelfServiceButtonData;
+  @Input({ required: true }) key!: TokenSelectedContentKey;
+  @Input({ required: true }) title!: string;
+  @Input() matIconName?: string;
+  @Input() matIconClass?: string;
+  @Input() matIconSize?:
+    | 'tile-icon-small'
+    | 'tile-icon-medium'
+    | 'tile-icon-large';
 
   selectedContent = this.contentService.selectedContent;
   isSelected = computed(() => {
-    return this.selectedContent() === this.buttonData.key;
+    return this.selectedContent() === this.key;
   });
 
   constructor(protected readonly contentService: ContentService) {}
 
   onClick() {
-    this.selectedContent.set(this.buttonData.key);
+    this.selectedContent.set(this.key);
   }
 }

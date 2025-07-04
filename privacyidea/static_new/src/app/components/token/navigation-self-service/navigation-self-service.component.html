@@ -1,5 +1,27 @@
 <div class="navigation-self-service-column" [@componentFade]>
-  @for (buttonData of navigationSelfServiceButtons; track buttonData) {
-    <app-navigation-self-service-button [buttonData]="buttonData" />
-  }
+  <app-navigation-self-service-button
+    [key]="'token_self-service_menu'"
+    title="Token Overview"
+    matIconName="shield" />
+  <app-navigation-self-service-button
+    [key]="'token_enrollment'"
+    title="Token Enrollment"
+    matIconName="add_moderator" />
+  <app-navigation-self-service-button
+    [key]="'assign_token'"
+    title="Assign Token"
+    matIconName="admin_panel_settings"
+    matIconSize="tile-icon-large" />
+  <app-navigation-self-service-button
+    [key]="'container_overview'"
+    title="Container Overview"
+    matIconClass="mdi--folder-search" />
+  <app-navigation-self-service-button
+    [key]="'container_create'"
+    title="Create Container"
+    matIconName="create_new_folder" />
+  <app-navigation-self-service-button
+    [key]="'audit'"
+    title="Audit Log"
+    matIconName="manage_search" />
 </div>
