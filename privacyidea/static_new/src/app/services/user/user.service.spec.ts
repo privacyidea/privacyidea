@@ -37,9 +37,7 @@ function buildUser(username: string): UserData {
 
 describe('UserService', () => {
   let userService: UserService;
-  let realmService: RealmService;
-  let contentService: ContentService;
-  let localService: LocalService;
+  let realmService: MockRealmService;
   let users: UserData[];
   let alice: UserData;
 
@@ -56,10 +54,6 @@ describe('UserService', () => {
 
     userService = TestBed.inject(UserService);
     realmService = TestBed.inject(RealmService) as unknown as MockRealmService;
-    contentService = TestBed.inject(
-      ContentService,
-    ) as unknown as MockContentService;
-    localService = TestBed.inject(LocalService) as unknown as MockLocalService;
 
     alice = buildUser('Alice');
     users = [alice, buildUser('Bob'), buildUser('Charlie')];
