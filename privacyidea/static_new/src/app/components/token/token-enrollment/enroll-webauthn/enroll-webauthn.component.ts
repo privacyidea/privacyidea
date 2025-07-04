@@ -21,6 +21,7 @@ import {
   WebauthnFinalizeData,
 } from '../../../../mappers/token-api-payload/webauthn-token-api-payload.mapper';
 import { DialogService } from '../../../../services/dialog/dialog.service';
+import { ReopenDialogFn } from '../token-enrollment.component';
 
 @Component({
   selector: 'app-enroll-webauthn',
@@ -45,11 +46,7 @@ export class EnrollWebauthnComponent implements OnInit {
   >();
   // Output event emitter to trigger reopening the current enrollment dialog,
   // used for multi-step enrollment processes.
-  @Output() reopenCurrentEnrollmentDialogChange = new EventEmitter<
-    () =>
-      | Promise<EnrollmentResponse | void>
-      | Observable<EnrollmentResponse | void>
-  >();
+  @Output() reopenDialogChange = new EventEmitter<ReopenDialogFn>();
 
   // WebAuthn has no direct form fields in this component for user input.
   webauthnForm = new FormGroup({});
@@ -324,7 +321,7 @@ export class EnrollWebauthnComponent implements OnInit {
     // Emit an event to allow the parent component to re-open this dialog if needed.
     // The emitted function will only open the dialog and return the response,
     // it will NOT trigger the finalization step directly from here.
-    this.reopenCurrentEnrollmentDialogChange.emit(async () => {
+    this.reopenDialogChange.emit(async () => {
       // Check if the dialog is already open to prevent multiple instances.
       if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen()) {
         this.dialogService.openTokenEnrollmentFirstStepDialog({
@@ -333,7 +330,7 @@ export class EnrollWebauthnComponent implements OnInit {
         });
         return webauthnEnrollmentResponse;
       }
-      return undefined;
+      return null;
     });
 
     // Open the dialog immediately when this function is called.

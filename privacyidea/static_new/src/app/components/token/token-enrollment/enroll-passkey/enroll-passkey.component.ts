@@ -17,6 +17,7 @@ import { PasskeyApiPayloadMapper } from '../../../../mappers/token-api-payload/p
 import { DialogService } from '../../../../services/dialog/dialog.service';
 import { MatDialogRef } from '@angular/material/dialog';
 import { TokenEnrollmentFirstStepDialogComponent } from '../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component';
+import { ReopenDialogFn } from '../token-enrollment.component';
 
 // Interface for the initialization options of the Passkey token (first step)
 export interface PasskeyEnrollmentData extends TokenEnrollmentData {
@@ -67,11 +68,7 @@ export class EnrollPasskeyComponent implements OnInit {
   @Output() clickEnrollChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => Promise<EnrollmentResponse | null>
   >();
-  @Output() reopenCurrentEnrollmentDialogChange = new EventEmitter<
-    () =>
-      | Promise<EnrollmentResponse | void>
-      | Observable<EnrollmentResponse | void>
-  >();
+  @Output() reopenDialogChange = new EventEmitter<ReopenDialogFn>();
 
   passkeyForm = new FormGroup({});
 
@@ -239,7 +236,7 @@ export class EnrollPasskeyComponent implements OnInit {
         throw Error(errorStep3);
       })
       .then((finalResponse) => {
-        this.reopenCurrentEnrollmentDialogChange.emit(undefined);
+        this.reopenDialogChange.emit(undefined);
         return finalResponse;
       });
   }
@@ -249,7 +246,7 @@ export class EnrollPasskeyComponent implements OnInit {
     enrollmentResponse: EnrollmentResponse;
   }): MatDialogRef<TokenEnrollmentFirstStepDialogComponent, any> {
     const { enrollmentInitData, enrollmentResponse } = args;
-    this.reopenCurrentEnrollmentDialogChange.emit(async () => {
+    this.reopenDialogChange.emit(async () => {
       if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen()) {
         this.dialogService.openTokenEnrollmentFirstStepDialog({
           data: { enrollmentResponse },
@@ -263,7 +260,7 @@ export class EnrollPasskeyComponent implements OnInit {
         });
         return resposeLastStep;
       }
-      return undefined;
+      return null;
     });
 
     return this.dialogService.openTokenEnrollmentFirstStepDialog({

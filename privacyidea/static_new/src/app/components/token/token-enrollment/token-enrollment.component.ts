@@ -100,6 +100,16 @@ import {
   MatTooltipDefaultOptions,
 } from '@angular/material/tooltip';
 
+export type ClickEnrollFn = (
+  enrollementOptions: TokenEnrollmentData,
+) => Promise<EnrollmentResponse | null> | Observable<EnrollmentResponse | null>;
+
+export type ReopenDialogFn =
+  | (() =>
+      | Promise<EnrollmentResponse | null>
+      | Observable<EnrollmentResponse | null>)
+  | undefined;
+
 export const CUSTOM_TOOLTIP_OPTIONS: MatTooltipDefaultOptions = {
   showDelay: 500,
   touchLongPressShowDelay: 500,
@@ -246,41 +256,14 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   selectedUserRealmControl = new FormControl(
     this.userService.selectedUserRealm() || this.realmService.defaultRealm(),
   );
-
   userFilterControl: FormControl<string | UserData | null> = new FormControl(
     this.userService.userFilter(),
   );
-
-  userExistsValidator: ValidatorFn = (
-    control: AbstractControl<string | UserData | null>,
-  ): ValidationErrors | null => {
-    const value = control.value;
-    if (typeof value === 'string' && value !== '') {
-      const users = this.userService.users();
-      const userFound = users.some((user) => user.username === value);
-      return userFound ? null : { userNotInRealm: { value: value } };
-    }
-
-    return null;
-  };
-
   setPinControl = new FormControl<string>('');
   repeatPinControl = new FormControl<string>('');
-
-  static pinMismatchValidator(
-    group: AbstractControl,
-  ): { [key: string]: boolean } | null {
-    const setPin = group.get('setPin');
-    const repeatPin = group.get('repeatPin');
-    return setPin && repeatPin && setPin.value !== repeatPin.value
-      ? { pinMismatch: true }
-      : null;
-  }
-
   selectedContainerControl = new FormControl(
     this.containerService.selectedContainer(),
   );
-
   selectedStartDateControl = new FormControl<Date | null>(null);
   selectedStartTimeControl = new FormControl<string>('00:00');
   selectedTimezoneOffsetControl = new FormControl<string>('+00:00');
@@ -298,38 +281,13 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     return false;
   });
 
-  clickEnroll?:
-    | ((
-        enrollementOptions: TokenEnrollmentData,
-      ) =>
-        | Observable<EnrollmentResponse | null>
-        | Promise<EnrollmentResponse | null>)
-    | undefined;
-  updateClickEnroll(
-    event:
-      | ((
-          enrollementOptions: TokenEnrollmentData,
-        ) =>
-          | Promise<EnrollmentResponse | null>
-          | Observable<EnrollmentResponse | null>)
-      | undefined,
-  ): void {
+  clickEnroll?: ClickEnrollFn;
+  updateClickEnroll(event: ClickEnrollFn): void {
     this.clickEnroll = event;
   }
-  reopenCurrentEnrollmentDialogSignal: WritableSignal<
-    | (() =>
-        | Promise<EnrollmentResponse | void>
-        | Observable<EnrollmentResponse | void>)
-    | undefined
-  > = signal(undefined);
-  updateReopenCurrentEnrollmentDialog(
-    event:
-      | (() =>
-          | Promise<EnrollmentResponse | void>
-          | Observable<EnrollmentResponse | void>)
-      | undefined,
-  ): void {
-    this.reopenCurrentEnrollmentDialogSignal.set(event);
+  reopenDialogSignal: WritableSignal<ReopenDialogFn> = signal(undefined);
+  updateReopenDialog(event: ReopenDialogFn): void {
+    this.reopenDialogSignal.set(event);
   }
 
   // This signal might not be needed if children manage their forms entirely.
@@ -468,10 +426,8 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   }
 
   resetForm(): void {
-    console.trace('Resetting enrollment form');
-
     this._lastTokenEnrollmentLastStepDialogData.set(null);
-    this.reopenCurrentEnrollmentDialogSignal.set(undefined);
+    this.reopenDialogSignal.set(undefined);
 
     this.userService.selectedUserRealm.set('');
     this.userService.userFilter.set('');
@@ -479,8 +435,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     this.descriptionControl.setValue('');
     this.setPinControl.setValue('');
     this.repeatPinControl.setValue('');
-    this.selectedUserRealmControl.setValue(this.realmService.defaultRealm());
-    this.userFilterControl.setValue('');
     this.selectedContainerControl.setValue('');
     this.selectedStartDateControl.setValue(new Date());
     this.selectedStartTimeControl.setValue('00:00');
@@ -503,7 +457,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     this.selectedUserRealmControl.updateValueAndValidity({ emitEvent: false });
     this.userFilterControl.setValidators(
       isUserRequiredByTokenType
-        ? [Validators.required, this.userExistsValidator]
+        ? [Validators.required, () => this.userExistsValidator]
         : [this.userExistsValidator],
     );
     this.userFilterControl.updateValueAndValidity({ emitEvent: false });
@@ -613,12 +567,12 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
 
   canReopenEnrollmentDialog = computed(
     () =>
-      !!this.reopenCurrentEnrollmentDialogSignal() ||
+      !!this.reopenDialogSignal() ||
       !!this._lastTokenEnrollmentLastStepDialogData(),
   );
 
   reopenEnrollmentDialog() {
-    const reopenFunction = this.reopenCurrentEnrollmentDialogSignal();
+    const reopenFunction = this.reopenDialogSignal();
     if (reopenFunction) {
       reopenFunction();
       return;
@@ -661,6 +615,34 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     this.dialogService.openTokenEnrollmentLastStepDialog({
       data: dialogData,
     });
+  }
+
+  userExistsValidator: ValidatorFn = (
+    group: AbstractControl,
+  ): ValidationErrors | null => {
+    const control = group.get('userFilter');
+    if (!control) {
+      return null;
+    }
+
+    const value = control.value;
+    if (typeof value === 'string' && value !== '') {
+      const users = this.userService.users();
+      const userFound = users.some((user) => user.username === value);
+      return userFound ? null : { userNotInRealm: { value: value } };
+    }
+
+    return null;
+  };
+
+  static pinMismatchValidator(
+    group: AbstractControl,
+  ): { [key: string]: boolean } | null {
+    const setPin = group.get('setPin');
+    const repeatPin = group.get('repeatPin');
+    return setPin && repeatPin && setPin.value !== repeatPin.value
+      ? { pinMismatch: true }
+      : null;
   }
 
   private _handleEnrollmentResponse(args: {

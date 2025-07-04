@@ -8,15 +8,15 @@
       <div class="top-content">
         <mat-icon
           [ngClass]="
-            (buttonData.matIconSize ?? 'tile-icon-medium' + ' ') +
-            (buttonData.matIconClass ?? '') +
+            (matIconSize ?? 'tile-icon-medium' + ' ') +
+            (matIconClass ?? '') +
             ' '
           "
-          >{{ buttonData.matIconName }}</mat-icon
+          >{{ matIconName }}</mat-icon
         >
       </div>
       <div class="bottom-content">
-        {{ buttonData.title }}
+        {{ title }}
       </div>
     </div>
   </a>
