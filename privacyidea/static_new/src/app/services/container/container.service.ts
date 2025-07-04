@@ -155,9 +155,11 @@ export class ContainerService {
   selectedContainer: WritableSignal<string> = linkedSignal({
     source: () => ({
       selectedContent: this.selectedContent(),
-      selectedTokenType: this.tokenService.selectedTokenType(),
     }),
-    computation: () => '',
+    computation: (source, previous) =>
+      source.selectedContent === 'token_enrollment'
+        ? (previous?.value ?? '')
+        : '',
   });
 
   sort = signal<Sort>({ active: 'serial', direction: 'asc' });

@@ -1,5 +1,6 @@
 import {
   computed,
+  effect,
   Injectable,
   linkedSignal,
   WritableSignal,
@@ -182,5 +183,9 @@ export class UserService {
     private contentService: ContentService,
     private tokenService: TokenService,
     private authService: AuthService,
-  ) {}
+  ) {
+    effect(() => {
+      console.log('selectedUserRealm:', this.selectedUserRealm());
+    });
+  }
 }

@@ -287,113 +287,42 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   formGroupSignal: WritableSignal<FormGroup> = linkedSignal({
     source: () => ({
       additionalFormFields: this.additionalFormFields(),
-      selectedUserRealm: this.userService.selectedUserRealm(),
-      selectedContainer: untracked(() =>
-        this.containerService.selectedContainer(),
-      ),
       selectedUser: this.userService.selectedUser(),
-      defaultRealm: this.realmService.defaultRealm(),
     }),
     computation: (source, previous) => {
-      const {
-        defaultRealm,
-        additionalFormFields,
-        selectedUserRealm,
-        selectedContainer,
-        selectedUser,
-      } = source;
-      const prevSource = previous?.source;
-      const prevFormGroup = previous?.value;
+      const { additionalFormFields, selectedUser } = source;
       console.log('Previous: ', previous);
-      if (
-        !prevFormGroup ||
-        !prevSource ||
-        selectedUserRealm !== prevSource.selectedUserRealm ||
-        additionalFormFields !== prevSource.additionalFormFields
-      ) {
-        console.log('Creating new FormGroup');
-        const selectedUserRealmControl = new FormControl(
-          selectedUserRealm || defaultRealm,
-          this.isUserRequired ? [Validators.required] : [],
-        );
-        selectedUserRealmControl.valueChanges.subscribe((value) => {
-          this.userFilterControlSignal().reset('', { emitEvent: false });
-          if (!value) {
-            this.userFilterControlSignal().disable({ emitEvent: false });
-          } else {
-            this.userFilterControlSignal().enable({ emitEvent: false });
-          }
-          if (value !== this.userService.selectedUserRealm()) {
-            this.userService.selectedUserRealm.set(value ?? '');
-          }
-        });
-        console.log('User filter:', selectedUser);
-        const userFilterControl = new FormControl<string | UserData | null>(
-          selectedUser,
-          this.isUserRequired
-            ? [Validators.required, this.userExistsValidator]
-            : [this.userExistsValidator],
-        );
-        userFilterControl.valueChanges.subscribe((value) => {
-          this.userService.userFilter.set(value ?? '');
-        });
+      this.selectedUserRealmControl.setValidators(
+        this.isUserRequired ? [Validators.required] : [],
+      );
 
-        return new FormGroup(
-          {
-            description: new FormControl<string>('', { nonNullable: true }),
-            selectedUserRealm: selectedUserRealmControl,
-            userFilter: userFilterControl,
-            setPin: new FormControl<string>('', { nonNullable: true }),
-            repeatPin: new FormControl<string>('', { nonNullable: true }),
-            selectedContainer: new FormControl(selectedContainer, {
-              nonNullable: true,
-            }),
-            selectedStartDate: new FormControl<Date | null>(new Date(), {
-              nonNullable: true,
-            }),
-            selectedStartTime: new FormControl<string>('00:00', {
-              nonNullable: true,
-            }),
-            selectedTimezoneOffset: new FormControl<string>('+00:00', {
-              nonNullable: true,
-            }),
-            selectedEndDate: new FormControl<Date | null>(new Date(), {
-              nonNullable: true,
-            }),
-            selectedEndTime: new FormControl<string>('23:59', {
-              nonNullable: true,
-            }),
-            ...additionalFormFields,
-          },
-          { validators: TokenEnrollmentComponent.pinMismatchValidator },
-        );
-      }
-      // // if (selectedUserRealm !== prevSource.selectedUserRealm) {
-      // //   console.log(
-      // //     'Updating selectedUserRealm in existing FormGroup',
-      // //     selectedUserRealm,
-      // //   );
-      // //   prevFormGroup
-      // //     .get('selectedUserRealm')
-      // //     ?.setValue(selectedUserRealm, { emitEvent: false });
-      // // }
-      // if (selectedContainer !== prevSource.selectedContainer) {
-      //   console.log(
-      //     'Updating selectedContainer in existing FormGroup',
-      //     selectedContainer,
-      //   );
-      //   prevFormGroup
-      //     .get('selectedContainer')
-      //     ?.setValue(selectedContainer, { emitEvent: false });
-      // }
-      if (selectedUser !== prevFormGroup.value) {
+      this.userFilterControl.setValidators(
+        this.isUserRequired
+          ? [Validators.required, this.userExistsValidator]
+          : [this.userExistsValidator],
+      );
+
+      if (selectedUser !== this.userFilterControl.value) {
         console.log('Updating userFilter in existing FormGroup', selectedUser);
-        prevFormGroup
-          .get('userFilter')
-          ?.setValue(selectedUser, { emitEvent: false });
+        this.userFilterControl.setValue(selectedUser, { emitEvent: false });
       }
-      prevFormGroup.updateValueAndValidity({ emitEvent: false });
-      return prevFormGroup;
+      return new FormGroup(
+        {
+          description: this.descriptionControl,
+          selectedUserRealm: this.selectedUserRealmControl,
+          userFilter: this.userFilterControl,
+          setPin: this.setPinControl,
+          repeatPin: this.repeatPinControl,
+          selectedContainer: this.selectedContainerControl,
+          selectedStartDate: this.selectedStartDateControl,
+          selectedStartTime: this.selectedStartTimeControl,
+          selectedTimezoneOffset: this.selectedTimezoneOffsetControl,
+          selectedEndDate: this.selectedEndDateControl,
+          selectedEndTime: this.selectedEndTimeControl,
+          ...additionalFormFields,
+        },
+        { validators: TokenEnrollmentComponent.pinMismatchValidator },
+      );
     },
   });
 
@@ -414,84 +343,39 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     this.additionalFormFields.set(validControls);
   }
 
-  descriptionControlSignal: WritableSignal<FormControl<string>> = linkedSignal({
-    source: this.formGroupSignal,
-    computation: (formGroup) =>
-      formGroup.get('description') as FormControl<string>,
+  descriptionControl = new FormControl<string>('', {
+    nonNullable: true,
+    validators: [Validators.maxLength(80)],
   });
-  selectedUserRealmControlSignal: WritableSignal<FormControl<string>> =
-    linkedSignal({
-      source: this.formGroupSignal,
-      computation: (formGroup) => {
-        const control = formGroup.get(
-          'selectedUserRealm',
-        ) as FormControl<string>;
-
-        return control;
-      },
-    });
-
-  userFilterControlSignal: WritableSignal<FormControl> = linkedSignal({
-    source: () => this.formGroupSignal(),
-    computation: (formGroup) => {
-      return formGroup.get('userFilter') as FormControl<
-        string | UserData | null
-      >;
-    },
+  selectedUserRealmControl = new FormControl<string>(
+    this.userService.selectedUserRealm(),
+    { nonNullable: true },
+  );
+  userFilterControl = new FormControl<string | UserData | null>(
+    this.userService.userFilter(),
+    { nonNullable: true },
+  );
+  setPinControl = new FormControl<string>('', { nonNullable: true });
+  repeatPinControl = new FormControl<string>('', { nonNullable: true });
+  selectedContainerControl = new FormControl(
+    this.containerService.selectedContainer(),
+    { nonNullable: true },
+  );
+  selectedStartDateControl = new FormControl<Date | null>(new Date(), {
+    nonNullable: true,
   });
-
-  setPinControlSignal: WritableSignal<FormControl<string>> = linkedSignal({
-    source: this.formGroupSignal,
-    computation: (formGroup) => formGroup.get('setPin') as FormControl<string>,
+  selectedStartTimeControl = new FormControl<string>('00:00', {
+    nonNullable: true,
   });
-  repeatPinControlSignal: WritableSignal<FormControl<string>> = linkedSignal({
-    source: this.formGroupSignal,
-    computation: (formGroup) =>
-      formGroup.get('repeatPin') as FormControl<string>,
+  selectedTimezoneOffsetControl = new FormControl<string>('+00:00', {
+    nonNullable: true,
   });
-  selectedContainerControlSignal: WritableSignal<FormControl<string>> =
-    linkedSignal({
-      source: this.formGroupSignal,
-      computation: (formGroup) => {
-        const control = formGroup.get(
-          'selectedContainer',
-        ) as FormControl<string>;
-        control.valueChanges.subscribe((value) =>
-          this.containerService.selectedContainer.set(value ?? ''),
-        );
-        return control;
-      },
-    });
-  selectedStartDateControlSignal: WritableSignal<FormControl<Date | null>> =
-    linkedSignal({
-      source: this.formGroupSignal,
-      computation: (formGroup) =>
-        formGroup.get('selectedStartDate') as FormControl<Date | null>,
-    });
-  selectedStartTimeControlSignal: WritableSignal<FormControl<string>> =
-    linkedSignal({
-      source: this.formGroupSignal,
-      computation: (formGroup) =>
-        formGroup.get('selectedStartTime') as FormControl<string>,
-    });
-  selectedTimezoneOffsetControlSignal: WritableSignal<FormControl<string>> =
-    linkedSignal({
-      source: this.formGroupSignal,
-      computation: (formGroup) =>
-        formGroup.get('selectedTimezoneOffset') as FormControl<string>,
-    });
-  selectedEndDateControlSignal: WritableSignal<FormControl<Date | null>> =
-    linkedSignal({
-      source: this.formGroupSignal,
-      computation: (formGroup) =>
-        formGroup.get('selectedEndDate') as FormControl<Date | null>,
-    });
-  selectedEndTimeControlSignal: WritableSignal<FormControl<string>> =
-    linkedSignal({
-      source: this.formGroupSignal,
-      computation: (formGroup) =>
-        formGroup.get('selectedEndTime') as FormControl<string>,
-    });
+  selectedEndDateControl = new FormControl<Date | null>(new Date(), {
+    nonNullable: true,
+  });
+  selectedEndTimeControl = new FormControl<string>('23:59', {
+    nonNullable: true,
+  });
 
   constructor(
     protected containerService: ContainerService,
@@ -508,12 +392,43 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       const users = this.userService.filteredUsers();
       if (
         users.length === 1 &&
-        this.userFilterControlSignal().value === users[0].username
+        this.userFilterControl.value === users[0].username
       ) {
         // If there's only one user, set the userFilterControl to that user
-        this.userFilterControlSignal().setValue(users[0]);
+        this.userFilterControl.setValue(users[0]);
       }
     });
+  }
+
+  ngOnInit(): void {
+    this.selectedContainerControl.valueChanges.subscribe((value) =>
+      this.containerService.selectedContainer.set(value ?? ''),
+    );
+    this.userFilterControl.valueChanges.subscribe((value) => {
+      this.userService.userFilter.set(value ?? '');
+    });
+    this.selectedUserRealmControl.valueChanges.subscribe((value) => {
+      this.userFilterControl.reset('', { emitEvent: false });
+      if (!value) {
+        this.userFilterControl.disable({ emitEvent: false });
+      } else {
+        this.userFilterControl.enable({ emitEvent: false });
+      }
+      console.log('Selected user realm changed:', value);
+      console.log(
+        'Current selected user realm:',
+        this.userService.selectedUserRealm(),
+      );
+      // Update the selectedUserRealm
+      if (value !== this.userService.selectedUserRealm()) {
+        console.log('Updating selected user realm:', value);
+        this.userService.selectedUserRealm.set(value ?? '');
+      }
+    });
+    console.log(
+      'TokenEnrollmentComponent initialized with selectedUserRealm:',
+      this.userService.selectedUserRealm(),
+    );
   }
 
   ngAfterViewInit(): void {
@@ -601,21 +516,20 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
     const basicOptions: TokenEnrollmentData = {
       type: currentTokenType.key,
-      description: this.descriptionControlSignal().value.trim(),
-      containerSerial:
-        this.selectedContainerControlSignal().value?.trim() ?? '',
+      description: this.descriptionControl.value.trim(),
+      containerSerial: this.selectedContainerControl.value?.trim() ?? '',
       validityPeriodStart: this.formatDateTimeOffset(
-        this.selectedStartDateControlSignal().value ?? new Date(),
-        this.selectedStartTimeControlSignal().value ?? '00:00',
-        this.selectedTimezoneOffsetControlSignal().value ?? '+00:00',
+        this.selectedStartDateControl.value ?? new Date(),
+        this.selectedStartTimeControl.value ?? '00:00',
+        this.selectedTimezoneOffsetControl.value ?? '+00:00',
       ),
       validityPeriodEnd: this.formatDateTimeOffset(
-        this.selectedEndDateControlSignal().value ?? new Date(),
-        this.selectedEndTimeControlSignal().value ?? '23:59',
-        this.selectedTimezoneOffsetControlSignal().value ?? '+00:00',
+        this.selectedEndDateControl.value ?? new Date(),
+        this.selectedEndTimeControl.value ?? '23:59',
+        this.selectedTimezoneOffsetControl.value ?? '+00:00',
       ),
       user: user?.username ?? '',
-      pin: this.setPinControlSignal().value ?? '',
+      pin: this.setPinControl.value ?? '',
     };
 
     const enrollResponse = this.clickEnroll(basicOptions);

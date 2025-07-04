@@ -194,7 +194,7 @@
     <mat-form-field class="description-form">
       <mat-label>Description</mat-label>
       <textarea
-        [formControl]="descriptionControlSignal()"
+        [formControl]="descriptionControl"
         [maxlength]="80"
         matInput
         placeholder="Enter description"
@@ -207,7 +207,7 @@
           <mat-label>Enter Container</mat-label>
           <input
             [formControlName]="'selectedContainer'"
-            [formControl]="selectedContainerControlSignal()"
+            [formControl]="selectedContainerControl"
             [matAutocomplete]="containerAuto"
             matInput />
           <mat-autocomplete #containerAuto="matAutocomplete">
@@ -227,13 +227,13 @@
           <input style="display: none" type="password" />
           <div class="user-pin-input">
             <input
-              [formControl]="setPinControlSignal()"
+              [formControl]="setPinControl"
               [type]="'password'"
               class="input"
               placeholder="PIN" />
 
             <input
-              [formControl]="repeatPinControlSignal()"
+              [formControl]="repeatPinControl"
               [type]="'password'"
               class="input"
               placeholder="Repeat PIN" />

@@ -194,7 +194,7 @@
     <mat-form-field class="description-form">
       <mat-label>Description</mat-label>
       <textarea
-        [formControl]="descriptionControlSignal()"
+        [formControl]="descriptionControl"
         [maxlength]="80"
         matInput
         placeholder="Enter description"
@@ -206,7 +206,7 @@
         <div class="assign-user-container">
           <mat-form-field class="width-50 input-height">
             <mat-label>Select Realm of User</mat-label>
-            <mat-select [formControl]="selectedUserRealmControlSignal()">
+            <mat-select [formControl]="selectedUserRealmControl">
               @for (option of realmService.realmOptions(); track option) {
                 <mat-option [value]="option">{{ option }}</mat-option>
               }
@@ -215,7 +215,7 @@
           <mat-form-field class="width-50 input-height">
             <mat-label>Enter User</mat-label>
             <input
-              [formControl]="userFilterControlSignal()"
+              [formControl]="userFilterControl"
               [matAutocomplete]="userAuto"
               matInput />
             <mat-autocomplete
@@ -225,11 +225,11 @@
                 <mat-option [value]="user">{{ user.username }}</mat-option>
               }
             </mat-autocomplete>
-            @if (selectedUserRealmControlSignal().hasError("required")) {
+            @if (selectedUserRealmControl.hasError("required")) {
               <mat-error>User Realm is <strong>required</strong></mat-error>
             }
             @if (
-              !selectedUserRealmControlSignal().value &&
+              !selectedUserRealmControl.value &&
               !onlyAddToRealm() &&
               selectedTokenType()
             ) {
@@ -237,13 +237,13 @@
                 Select a realm first to enable user selection.
               </mat-hint>
             }
-            @if (userFilterControlSignal().hasError("required")) {
+            @if (userFilterControl.hasError("required")) {
               <mat-error>User is <strong>required</strong></mat-error>
             }
-            @if (userFilterControlSignal().hasError("userNotInOptions")) {
+            @if (userFilterControl.hasError("userNotInOptions")) {
               <mat-error>User must be selected from the list.</mat-error>
             }
-            @if (userFilterControlSignal().hasError("userNotInRealm")) {
+            @if (userFilterControl.hasError("userNotInRealm")) {
               <mat-error>
                 User does not exist in the selected realm.
               </mat-error>
@@ -258,13 +258,13 @@
           <input style="display: none" type="password" />
           <div class="user-pin-input">
             <input
-              [formControl]="setPinControlSignal()"
+              [formControl]="setPinControl"
               [type]="'password'"
               class="input"
               placeholder="PIN" />
 
             <input
-              [formControl]="repeatPinControlSignal()"
+              [formControl]="repeatPinControl"
               [type]="'password'"
               class="input"
               placeholder="Repeat PIN" />
@@ -286,7 +286,7 @@
     <mat-form-field class="width-32 input-height">
       <mat-label>Enter Container</mat-label>
       <input
-        [formControl]="selectedContainerControlSignal()"
+        [formControl]="selectedContainerControl"
         [matAutocomplete]="containerAuto"
         matInput />
       <mat-autocomplete #containerAuto="matAutocomplete">
@@ -308,7 +308,7 @@
           <mat-form-field class="date-picker">
             <mat-label>Choose a Start Date</mat-label>
             <input
-              [formControl]="selectedStartDateControlSignal()"
+              [formControl]="selectedStartDateControl"
               [matDatepicker]="startPicker"
               matInput
               placeholder="Start date" />
@@ -322,7 +322,7 @@
           <mat-form-field class="time-picker">
             <mat-label>Enter Start Time</mat-label>
             <input
-              [formControl]="selectedStartTimeControlSignal()"
+              [formControl]="selectedStartTimeControl"
               matInput
               max="23"
               min="0"
@@ -332,7 +332,7 @@
 
           <mat-form-field class="zone-picker">
             <mat-label>Timezone Offset</mat-label>
-            <mat-select [formControl]="selectedTimezoneOffsetControlSignal()">
+            <mat-select [formControl]="selectedTimezoneOffsetControl">
               @for (option of timezoneOptions; track option) {
                 <mat-option [value]="option.value">{{
                   option.label
@@ -345,7 +345,7 @@
           <mat-form-field class="date-picker">
             <mat-label>Choose a End Date</mat-label>
             <input
-              [formControl]="selectedEndDateControlSignal()"
+              [formControl]="selectedEndDateControl"
               [matDatepicker]="endPicker"
               matInput
               placeholder="End date" />
@@ -359,7 +359,7 @@
           <mat-form-field class="time-picker">
             <mat-label>Enter End Time</mat-label>
             <input
-              [formControl]="selectedEndTimeControlSignal()"
+              [formControl]="selectedEndTimeControl"
               matInput
               max="23"
               min="0"
