@@ -90,7 +90,6 @@
           "builder": "@angular-builders/jest:run",
           "options": {
             "configPath": "./jest.config.ts",
-            "polyfills": ["zone.js", "zone.js/testing"],
             "tsConfig": "tsconfig.spec.json"
           }
         }

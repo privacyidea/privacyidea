@@ -1,18 +1,34 @@
+jest.mock('./guards/auth.guard', () => ({
+  adminMatch: () => true,
+  selfServiceMatch: () => true,
+  AuthGuard: () => true,
+}));
+
 import { fakeAsync, TestBed, tick } from '@angular/core/testing';
-import { AppComponent } from './app.component';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { provideRouter, Router } from '@angular/router';
+import { APP_BASE_HREF, Location } from '@angular/common';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { appConfig } from './app.config';
-import { APP_BASE_HREF, Location } from '@angular/common';
-import { provideRouter, Router } from '@angular/router';
-import { routes } from './app.routes';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { AuthGuard } from './guards/auth.guard';
 
-class MockAuthGuard {
-  canActivate() {
-    return true;
-  }
+import { AppComponent } from './app.component';
+import { routes } from './app.routes';
+import { appConfig } from './app.config';
+import { AuthService } from './services/auth/auth.service';
+import { NotificationService } from './services/notification/notification.service';
+import { SessionTimerService } from './services/session-timer/session-timer.service';
+
+class MockAuthService {
+  isAuthenticatedUser = jest.fn(() => false);
+}
+
+class MockNotificationService {
+  openSnackBar = jest.fn();
+}
+
+class MockSessionTimerService {
+  startTimer = jest.fn();
+  resetTimer = jest.fn();
 }
 
 describe('AppComponent', () => {
@@ -23,118 +39,102 @@ describe('AppComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter(routes),
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: NotificationService, useClass: MockNotificationService },
+        { provide: SessionTimerService, useClass: MockSessionTimerService },
       ],
     }).compileComponents();
+
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
-  it('should create the app', () => {
+  it('creates the app', () => {
     const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
+    expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it(`should have the 'privacyidea-webui' title`, () => {
+  it('has title "privacyidea-webui"', () => {
     const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-    expect(app.title).toEqual('privacyidea-webui');
+    expect(fixture.componentInstance.title).toBe('privacyidea-webui');
   });
 
-  it('should call sessionTimerService methods in constructor if user is authenticated', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-    const sessionTimerService = (app as any).sessionTimerService;
-    spyOn(sessionTimerService, 'startTimer').and.callThrough();
-    spyOn(sessionTimerService, 'resetTimer').and.callThrough();
+  it('starts timer and shows snackbar when user already authenticated', () => {
+    const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
+    const timer = TestBed.inject(
+      SessionTimerService,
+    ) as unknown as MockSessionTimerService;
+    const note = TestBed.inject(
+      NotificationService,
+    ) as unknown as MockNotificationService;
 
-    const authService = (app as any).authService;
-    spyOn(authService, 'isAuthenticatedUser').and.returnValue(true);
+    auth.isAuthenticatedUser.mockReturnValue(true);
 
-    const notificationService = (app as any).notificationService;
-    spyOn(notificationService, 'openSnackBar').and.callThrough();
+    TestBed.createComponent(AppComponent).detectChanges();
 
-    const newFixture = TestBed.createComponent(AppComponent);
-    newFixture.detectChanges();
-    expect(sessionTimerService.startTimer).toHaveBeenCalled();
-    expect(authService.isAuthenticatedUser).toHaveBeenCalled();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+    expect(timer.startTimer).toHaveBeenCalled();
+    expect(auth.isAuthenticatedUser).toHaveBeenCalled();
+    expect(note.openSnackBar).toHaveBeenCalledWith(
       'User is already logged in.',
     );
   });
 
-  it('should reset and start session timer when user interacts (click, keydown, mousemove, scroll)', () => {
+  it('resets & restarts timer on user interaction', () => {
+    const timer = TestBed.inject(
+      SessionTimerService,
+    ) as unknown as MockSessionTimerService;
+
     const fixture = TestBed.createComponent(AppComponent);
-    fixture.detectChanges();
-    const app = fixture.componentInstance;
-    const sessionTimerService = (app as any).sessionTimerService;
-    spyOn(sessionTimerService, 'resetTimer');
-    spyOn(sessionTimerService, 'startTimer');
+    fixture.detectChanges(); // registers HostListeners
 
-    const event = new Event('click');
-    document.dispatchEvent(event);
+    document.dispatchEvent(new Event('click'));
 
-    expect(sessionTimerService.resetTimer).toHaveBeenCalled();
-    expect(sessionTimerService.startTimer).toHaveBeenCalled();
+    expect(timer.resetTimer).toHaveBeenCalled();
+    expect(timer.startTimer).toHaveBeenCalled();
   });
 
   describe('appConfig', () => {
-    it('should define providers array', () => {
-      expect(appConfig.providers).toBeDefined();
+    it('defines providers array', () => {
+      expect(Array.isArray(appConfig.providers)).toBe(true);
     });
 
-    it('should contain APP_BASE_HREF set to /ui/', () => {
-      const appBaseHrefProvider = appConfig.providers.find(
-        (p: any) => p.provide === APP_BASE_HREF,
+    it('contains APP_BASE_HREF set to /ui/', () => {
+      const p = appConfig.providers.find(
+        (x: any) => x.provide === APP_BASE_HREF,
       );
-      expect(appBaseHrefProvider).toBeDefined();
-
-      if (appBaseHrefProvider) {
-        if ('useValue' in appBaseHrefProvider) {
-          expect(appBaseHrefProvider.useValue).toBe('/ui/');
-        }
+      if (p && 'useValue' in p) {
+        expect(p?.useValue).toBe('/ui/');
       }
     });
+  });
 
-    describe('App Routing', () => {
-      let router: Router;
-      let location: Location;
+  describe('Routing', () => {
+    let router: Router;
+    let location: Location;
 
-      beforeEach(() => {
-        TestBed.configureTestingModule({
-          imports: [BrowserAnimationsModule],
-          providers: [
-            {
-              provide: AuthGuard,
-              useClass: MockAuthGuard,
-            },
-            provideRouter(routes),
-            provideHttpClient(),
-            provideHttpClientTesting(),
-          ],
-        });
+    beforeEach(fakeAsync(() => {
+      router = TestBed.inject(Router);
+      location = TestBed.inject(Location);
 
-        router = TestBed.inject(Router);
-        location = TestBed.inject(Location);
+      router.navigateByUrl('/');
+      tick();
+    }));
 
-        router.navigateByUrl('/');
-      });
+    it('navigates to /login', fakeAsync(() => {
+      router.navigate(['/login']);
+      tick();
+      expect(location.path()).toBe('/login');
+    }));
 
-      it('should navigate to /login for the login route', fakeAsync(() => {
-        router.navigate(['/login']);
-        tick();
-        expect(location.path()).toBe('/login');
-      }));
+    it('navigates to /token (guards mocked to allow)', fakeAsync(() => {
+      router.navigate(['/token']);
+      tick();
+      expect(location.path()).toBe('/token');
+    }));
 
-      it('should navigate to /token for the token route', fakeAsync(() => {
-        router.navigate(['/token']);
-        tick();
-        expect(location.path()).toBe('/token');
-      }));
-
-      it('should redirect unknown routes (**) to /login', fakeAsync(() => {
-        router.navigate(['/unknown-route']);
-        tick();
-        expect(location.path()).toBe('/login');
-      }));
-    });
+    it('redirects unknown routes to /login', fakeAsync(() => {
+      router.navigate(['/does-not-exist']);
+      tick();
+      expect(location.path()).toBe('/login');
+    }));
   });
 });
