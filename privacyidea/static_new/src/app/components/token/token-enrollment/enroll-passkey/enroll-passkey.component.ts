@@ -85,9 +85,6 @@ export class EnrollPasskeyComponent implements OnInit {
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
-  /*
-  {"timeStep":30,"otplen":6,"genkey":true,"type":"passkey","hashlib":"sha1","radius.system_settings":true,"2stepinit":false,"rollover":false,"validity_period_start":"","validity_period_end":"","user":"man","realm":"defrealm"}
-  */
   onClickEnroll = async (
     basicEnrollmentData: TokenEnrollmentData,
   ): Promise<EnrollmentResponse | null> => {

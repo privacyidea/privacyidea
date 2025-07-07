@@ -68,6 +68,9 @@ $description-width: 18rem;
     height: $scrollable-height;
     margin-right: $scrollable-margin-right;
     padding-right: $scrollable-padding-right;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
   }
 
   .failcount {
@@ -76,18 +79,8 @@ $description-width: 18rem;
     justify-content: center;
   }
 
-  .description {
-    display: flex;
-    align-items: center;
-    text-align: left;
-  }
-
   .realm-list {
     margin-top: $realm-list-margin-top;
-  }
-
-  .realm {
-    margin-top: $realm-margin-top;
   }
   ::ng-deep {
     .mdc-checkbox
