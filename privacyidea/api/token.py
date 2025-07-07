@@ -105,14 +105,13 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_t
                                            check_admin_tokenlist, fido2_enroll, webauthntoken_allowed,
                                            webauthntoken_request, required_piv_attestation,
                                            hide_tokeninfo, init_ca_connector, init_ca_template,
-                                           init_subject_components, require_description_on_edit,
+                                           init_subject_components, require_description_on_edit, require_description,
                                            check_container_action, check_user_params, check_token_list_action)
 from privacyidea.api.lib.postpolicy import (save_pin_change, check_verify_enrollment,
                                             postpolicy)
 from privacyidea.lib.event import event
 from privacyidea.api.auth import admin_required
 from privacyidea.lib.subscriptions import CheckSubscription
-from privacyidea.api.lib.prepolicy import require_description
 
 token_blueprint = Blueprint('token_blueprint', __name__)
 log = logging.getLogger(__name__)

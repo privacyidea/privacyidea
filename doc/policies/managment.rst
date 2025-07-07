@@ -5,8 +5,8 @@ Management policies
 
 .. index:: management policies
 
-The scope *management* defines what happens when managing tokens
-either by an administrator or the user.
+The scope *management* defines what happens when managing objects, like tokens or containers,
+in the system either by an administrator or the user.
 
 The following actions are available in the scope
 *management*:

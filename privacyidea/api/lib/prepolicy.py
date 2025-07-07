@@ -2518,8 +2518,8 @@ def require_description(request=None, action=None):
                    or get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.CLIENTWAIT, silent_fail=True))
         # only if no token exists, yet, we need to check the description
         if not token and not request.all_data.get("description"):
-            log.error(("Missing description for {} token.").format(type_value))
-            raise PolicyError(_("Description required for {} token.").format(type_value))
+            log.error(f"Missing description for {type_value} token.")
+            raise PolicyError(_(f"Description required for {type_value} token."))
 
 def require_description_on_edit(request=None, action=None):
     """
@@ -2552,8 +2552,8 @@ def require_description_on_edit(request=None, action=None):
     if type_value in token_types:
         description = request.all_data.get("description", "").strip()
         if not description:
-            log.error(("Missing description for {} token.".format(type_value)))
-            raise PolicyError(_("Description required for {} token.".format(type_value)))
+            log.error(f"Missing description for {type_value} token.")
+            raise PolicyError(_(f"Description required for {type_value} token."))
 
 
 def jwt_validity(request, action):
