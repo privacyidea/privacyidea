@@ -471,7 +471,7 @@ are configured. Below that, you can set up the user store API endpoint for each 
 .. figure:: images/http_resolver_advanced.png
    :width: 500
 
-**Generic settings**
+**Generic Settings**
     * **Resolver name**: A unique name for the resolver.
     * **Base URL**: The base URL of the user store API. It will be concatenated with the ``Endpoint`` in the detailed
       configurations, except for endpoints where a full URL is specified starting with ``http``.
@@ -549,7 +549,7 @@ Configure the endpoint to retrieve a list of users from the user store. The abov
 request as search parameters if they are available in the request. You can also use the attributes as tags
 (``{username}``, ``{userid}``, ``{surname}``, ``{givenname}``).
 
-**Get user by ID**
+**Get User by ID**
 
 Configure the endpoint to retrieve a single user for the UID. For example, privacyIDEA only stores the UID of the token
 owner. To resolve the complete user, this endpoint is used. If an error occurs, the resolver will only log it and not
@@ -557,7 +557,7 @@ throw an exception.
 
 Possible tag: ``{userid}``
 
-**Get user by name**
+**Get User by Name**
 
 Configure the endpoint to retrieve a single user for the username. If an error occurs, the resolver will only log it
 and not throw an exception.
@@ -567,7 +567,7 @@ evaluate if the user exists, this endpoint is used.
 
 Possible tag: ``{username}``
 
-**Create user**
+**Create User**
 
 Configure the endpoint to create a new user in the user store. The above-defined attributes can be set in the UI and
 will be added to the request body. Additionally, you can define a password that must be specified in the request
@@ -575,14 +575,14 @@ mapping using the tag ``{password}``.
 All user attributes defined in the attribute mapping can be used as tags, e.g. ``{username}``, ``{userid}``,
 ``{givenname}``, ``{surname}``, ``{phone}``, ``{mobile}``, ``{email}``.
 
-**Edit user**
+**Edit User**
 
 Configure the endpoint to edit an existing user in the user store. The above-defined attributes can be set in the UI
 and will be added to the request body. Additionally, you can define custom request parameters in the request mapping.
 All user attributes defined in the attribute mapping can be used as tags, e.g. ``{username}``, ``{userid}``,
 ``{givenname}``, ``{surname}``, ``{phone}``, ``{mobile}``, ``{email}``.
 
-**Delete user**
+**Delete User**
 
 Configure the endpoint to delete an existing user from the user store.
 Possible tag: ``{userid}``

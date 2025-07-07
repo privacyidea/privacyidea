@@ -1507,11 +1507,11 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
                     $scope.userEndpointNames = {
                         "checkPass": "Check User Password",
                         "userList": "User List",
-                        "userById": "Get user by ID",
-                        "userByName": "Get user by name",
-                        "createUser": "Create user",
-                        "editUser": "Edit user",
-                        "deleteUser": "Delete user"
+                        "userById": "Get User by ID",
+                        "userByName": "Get User by Name",
+                        "createUser": "Create User",
+                        "editUser": "Edit User",
+                        "deleteUser": "Delete User"
                     };
                     if (!$scope.edit) {
                         $scope.groupIsOpen["createUser"] = true;
@@ -1520,8 +1520,8 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
                     $scope.userEndpointNames = {
                         "checkPass": "Check User Password",
                         "userList": "User List",
-                        "userById": "Get user by ID",
-                        "userByName": "Get user by name"
+                        "userById": "Get User by ID",
+                        "userByName": "Get User by Name"
                     };
                 }
             });
@@ -1531,11 +1531,11 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
             $scope.userEndpointNames = {
                 "checkPass": "Check User Password",
                 "userList": "User List",
-                "userById": "Get user by ID",
-                "userByName": "Get user by name",
-                "createUser": "Create user",
-                "editUser": "Edit user",
-                "deleteUser": "Delete user"
+                "userById": "Get User by ID",
+                "userByName": "Get User by Name",
+                "createUser": "Create User",
+                "editUser": "Edit User",
+                "deleteUser": "Delete User"
             };
             $scope.groupIsOpen = {"authorization": false};
             $scope.endpointConfig = {};
