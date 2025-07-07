@@ -74,7 +74,7 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          get_serial_by_otp, get_tokens,
                          set_validity_period_end, set_validity_period_start, add_tokeninfo,
                          delete_tokeninfo, import_token,
-                         assign_tokengroup, unassign_tokengroup, set_tokengroups, get_tokens_from_serial_or_user)
+                         assign_tokengroup, unassign_tokengroup, set_tokengroups, get_one_token)
 
 from ..lib.fido2.util import get_credential_ids_for_user
 from werkzeug.datastructures import FileStorage
@@ -867,8 +867,8 @@ def set_description_api(serial=None):
     g.audit_object.log({"serial": serial})
     description = getParam(request.all_data, "description", optional=required)
     g.audit_object.add_to_log({'action_detail': "description={0!r}".format(description)})
-    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
-    request.all_data["type"] = tokenobject_list[0].type
+    token = get_one_token(serial=serial)
+    request.all_data["type"] = token.type
     require_description_on_edit(request)
     res = set_description(serial, description, user=user)
     g.audit_object.log({"success": True})
