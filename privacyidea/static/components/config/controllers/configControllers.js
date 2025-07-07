@@ -640,7 +640,8 @@ myApp.controller("configController", ["$scope", "$location", "$rootScope",
         };
 
         // TODO: This information needs to be fetched from the server
-        $scope.availableResolverTypes = ['passwdresolver', 'ldapresolver', 'sqlresolver', 'scimresolver', 'httpresolver'];
+        $scope.availableResolverTypes = ['passwdresolver', 'ldapresolver', 'sqlresolver', 'scimresolver',
+            'httpresolver', 'entraidresolver', 'keycloakresolver'];
         // TODO: This information needs to be fetched from the server
         $scope.availableMachineResolverTypes = ['hosts', 'ldap'];
         // TODO: This information needs to be fetched from the server
@@ -1187,8 +1188,8 @@ myApp.controller("SqlResolverController", ["$scope", "ConfigFactory", "$state",
     }]);
 
 myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
-    "$stateParams", "inform",
-    function ($scope, ConfigFactory, $state, $stateParams, inform) {
+    "$stateParams", "inform", "$location",
+    function ($scope, ConfigFactory, $state, $stateParams, inform, $location) {
         $scope.params = {
             type: "httpresolver",
             endpoint: "",
@@ -1206,6 +1207,45 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
             "keycloakresolver": "Keycloak Resolver"
         };
 
+        $scope.setTags = function () {
+            if ($scope.params.type === "entraidresolver") {
+                $scope.endpointTags["checkPass"] = ["{userid}", "{username}", "{password}", "{client_id}",
+                    "{client_credential}", "{tenant}"];
+            } else {
+                $scope.endpointTags["checkPass"] = ["{userid}", "{username}", "{password}"];
+            }
+            if ($scope.params.type === "keycloakresolver") {
+                $scope.endpointTags["createUser"] = ["{username}", "{userid}", "{surname}", "{givenname}",
+                    "{email}", "{mobile}", "{phone}"];
+                $scope.endpointTags["editUser"] = ["{username}", "{userid}", "{surname}", "{givenname}", "{email}",
+                    "{mobile}", "{phone}"];
+            } else {
+                $scope.endpointTags["createUser"] = ["{username}", "{userid}", "{surname}", "{givenname}",
+                    "{email}", "{mobile}", "{phone}", "{password}"];
+                $scope.endpointTags["editUser"] = ["{username}", "{userid}", "{surname}", "{givenname}", "{email}",
+                    "{mobile}", "{phone}", "{password}"];
+            }
+        };
+
+        $scope.getDefaultResolverConfig = function () {
+            ConfigFactory.getDefaultResolverConfig($scope.params.type, function (data) {
+                $scope.setUIParams(data.result.value);
+                if ($scope.params.type === "entraidresolver" || $scope.params.type === "keycloakresolver") {
+                    // open section with required data to fill
+                    $scope.groupIsOpen["authorization"] = true;
+                }
+                $scope.setTags();
+            });
+        };
+
+        if ($location.path() === "/config/resolvers/entraidresolver") {
+            $scope.params.type = "entraidresolver";
+            $scope.getDefaultResolverConfig();
+        } else if ($location.path() === "/config/resolvers/keycloakresolver") {
+            $scope.params.type = "keycloakresolver";
+            $scope.getDefaultResolverConfig();
+        }
+
         $scope.$watch(
             'params.hasSpecialErrorHandler;',
             function (incomingValue) {
@@ -1216,20 +1256,13 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
         $scope.$watch(
             'params.type;',
             function (newType, oldType) {
-                if (newType && newType !== 'httpresolver' && oldType !== newType && !$scope.resolvername) {
-                    ConfigFactory.getDefaultResolverConfig(newType, function (data) {
-                        $scope.setUIParams(data.result.value);
-                        if (newType === "entraidresolver" || newType === "keycloakresolver") {
-                            // open section with required data to fill
-                            $scope.groupIsOpen["authorization"] = true;
-                        }
-                        if (newType === "entraidresolver") {
-                            $scope.endpointTags["checkPass"] = ["{userid}", "{username}", "{password}", "{client_id}",
-                                "{client_credential}", "{tenant}"];
-                        } else {
-                            $scope.endpointTags["checkPass"] = ["{userid}", "{username}", "{password}"];
-                        }
-                    });
+                if (newType && oldType !== newType && !$scope.resolvername) {
+                    if (newType !== "httpresolver") {
+                        $scope.getDefaultResolverConfig();
+                    }
+                    $scope.setTags();
+                    // change the state to select the correct type in the side menu
+                    $state.go("config.resolvers.add" + newType);
                 }
             });
 
@@ -1242,6 +1275,7 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
                 const resolver = data.result.value[$scope.resolvername];
                 resolver.data.type = resolver.type;
                 $scope.setUIParams(resolver.data);
+                $scope.setTags();
             });
         }
 
@@ -1473,11 +1507,11 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
                     $scope.userEndpointNames = {
                         "checkPass": "Check User Password",
                         "userList": "User List",
-                        "userById": "Get user by ID",
-                        "userByName": "Get user by name",
-                        "createUser": "Create user",
-                        "editUser": "Edit user",
-                        "deleteUser": "Delete user"
+                        "userById": "Get User by ID",
+                        "userByName": "Get User by Name",
+                        "createUser": "Create User",
+                        "editUser": "Edit User",
+                        "deleteUser": "Delete User"
                     };
                     if (!$scope.edit) {
                         $scope.groupIsOpen["createUser"] = true;
@@ -1486,8 +1520,8 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
                     $scope.userEndpointNames = {
                         "checkPass": "Check User Password",
                         "userList": "User List",
-                        "userById": "Get user by ID",
-                        "userByName": "Get user by name"
+                        "userById": "Get User by ID",
+                        "userByName": "Get User by Name"
                     };
                 }
             });
@@ -1497,11 +1531,11 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
             $scope.userEndpointNames = {
                 "checkPass": "Check User Password",
                 "userList": "User List",
-                "userById": "Get user by ID",
-                "userByName": "Get user by name",
-                "createUser": "Create user",
-                "editUser": "Edit user",
-                "deleteUser": "Delete user"
+                "userById": "Get User by ID",
+                "userByName": "Get User by Name",
+                "createUser": "Create User",
+                "editUser": "Edit User",
+                "deleteUser": "Delete User"
             };
             $scope.groupIsOpen = {"authorization": false};
             $scope.endpointConfig = {};

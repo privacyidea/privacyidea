@@ -1,19 +1,26 @@
 version: 2
 updates:
   - package-ecosystem: "github-actions"
+    # Check GitHub actions weekly for updates
     directory: "/"
     schedule:
       interval: "weekly"
 
   - package-ecosystem: "pip"
+    # Check Python requirements daily for updates but only create PRs for security updates
     directories:
       - "/"
       - "/doc"
       - "/tests"
     schedule:
       interval: "daily"
+    # Don't create PRs for version updates
+    open-pull-requests-limit: 0
 
   - package-ecosystem: "npm"
+    # Check JS packages daily for updates
     directory: "/privacyidea/static"
     schedule:
       interval: "daily"
+    # Don't create PRs for version updates
+    open-pull-requests-limit: 0

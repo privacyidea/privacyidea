@@ -25,13 +25,12 @@ Flask endpoints.
 It also contains the error handlers.
 """
 
-from .lib.utils import (send_error, get_all_params, verify_auth_token)
+from .lib.utils import (send_error, get_all_params, verify_auth_token, get_optional)
 from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
 from ..lib.framework import get_app_config_value
 from ..lib.user import get_user_from_param
 import logging
-from .lib.utils import getParam
 from flask import request, g
 from privacyidea.lib.audit import getAudit
 from flask import current_app
@@ -126,9 +125,9 @@ def before_create_user_request():
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
 
     # Already get some typical parameters to log
-    audit_realm = getParam(request.all_data, "realm")
-    audit_resolver = getParam(request.all_data, "resolver")
-    audit_username = getParam(request.all_data, "user")
+    audit_realm = get_optional(request.all_data, "realm")
+    audit_resolver = get_optional(request.all_data, "resolver")
+    audit_username = get_optional(request.all_data, "user")
 
     ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
     g.audit_object.log({"success": False,
@@ -164,8 +163,8 @@ def before_userendpoint_request():
         before_request()
     # DEL /user/ has no realm parameter, and thus we need to create the user object this way.
     if not request.User and request.method == "DELETE":
-        resolvername = getParam(request.all_data, "resolvername")
-        username = getParam(request.all_data, "username")
+        resolvername = get_optional(request.all_data, "resolvername")
+        username = get_optional(request.all_data, "username")
         if resolvername and username:
             request.User = User(login=username, resolver=resolvername)
 
@@ -239,7 +238,7 @@ def before_container_request():
     g.serial = None
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     # Get info about the container and resolve user from the container if not yet set
-    container_serial = getParam(request.all_data, "container_serial")
+    container_serial = get_optional(request.all_data, "container_serial")
     container = None
     container_type = None
     if container_serial and "*" not in container_serial:
@@ -260,9 +259,9 @@ def before_container_request():
         audit_realm = request.User.realm
         audit_resolver = request.User.resolver
     else:
-        audit_realm = getParam(request.all_data, "realm")
-        audit_resolver = getParam(request.all_data, "resolver")
-        audit_username = getParam(request.all_data, "user")
+        audit_realm = get_optional(request.all_data, "realm")
+        audit_resolver = get_optional(request.all_data, "resolver")
+        audit_username = get_optional(request.all_data, "user")
 
     ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
     g.audit_object.log({"success": False,
@@ -339,7 +338,7 @@ def before_request():
 
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     # Already get some typical parameters to log
-    serial = getParam(request.all_data, "serial")
+    serial = get_optional(request.all_data, "serial")
     if serial and "*" not in serial and "," not in serial:
         g.serial = serial
         tokentype = get_token_type(serial)
@@ -356,7 +355,7 @@ def before_request():
         tokentype = None
 
     # Container info
-    container_serial = getParam(request.all_data, "container_serial")
+    container_serial = get_optional(request.all_data, "container_serial")
     container = None
     container_type = None
     if container_serial and "*" not in container_serial:
@@ -390,9 +389,9 @@ def before_request():
         audit_realm = request.User.realm
         audit_resolver = request.User.resolver
     else:
-        audit_realm = getParam(request.all_data, "realm")
-        audit_resolver = getParam(request.all_data, "resolver")
-        audit_username = getParam(request.all_data, "user")
+        audit_realm = get_optional(request.all_data, "realm")
+        audit_resolver = get_optional(request.all_data, "resolver")
+        audit_username = get_optional(request.all_data, "user")
 
     ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
     g.audit_object.log({"success": False,

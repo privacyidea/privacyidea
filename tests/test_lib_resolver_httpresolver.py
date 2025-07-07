@@ -399,12 +399,12 @@ class HTTPResolverTestCase(MyTestCase):
         # Error
         responses.add(responses.GET, "https://example.com/users/1234", status=404,
                       body="""{"error": "Not Found"}""")
-        self.assertRaises(ResolverError, resolver.getUsername, '1234')
+        self.assertEqual("", resolver.getUsername('1234'))
 
         # Custom error handling
         responses.add(responses.GET, "https://example.com/users/1234", status=200,
                       body="""{"success": false}""")
-        self.assertRaises(ResolverError, resolver.getUsername, '1234')
+        self.assertEqual("", resolver.getUsername('1234'))
 
     @responses.activate
     def test_07_get_user_id(self):
@@ -425,12 +425,12 @@ class HTTPResolverTestCase(MyTestCase):
         # Error
         responses.add(responses.GET, "https://example.com/users/testuser", status=404,
                       body="""{"error": "Not Found"}""")
-        self.assertRaises(ResolverError, resolver.getUserId, 'testuser')
+        self.assertEqual("", resolver.getUserId('testuser'))
 
         # Custom error handling
         responses.add(responses.GET, "https://example.com/users/testuser", status=200,
                       body="""{"success": false}""")
-        self.assertRaises(ResolverError, resolver.getUserId, 'testuser')
+        self.assertEqual("", resolver.getUserId('testuser'))
 
     def test_08_get_resolver_id(self):
         instance = HTTPResolver()
@@ -498,7 +498,7 @@ class HTTPResolverTestCase(MyTestCase):
         instance = HTTPResolver()
         instance.loadConfig(self.basic_config)
         config = RequestConfig(instance.config_get_user_by_id, instance.headers, {"{userid}": "PepePerez"})
-        self.assertRaises(Exception, instance._get_user, user_identifier='PepePerez', config=config)
+        self.assertDictEqual({}, instance._get_user(user_identifier='PepePerez', config=config))
 
     @responses.activate
     def test_11_get_user_internal_error(self):
@@ -511,7 +511,7 @@ class HTTPResolverTestCase(MyTestCase):
         instance = HTTPResolver()
         instance.loadConfig(self.basic_config)
         config = RequestConfig(instance.config_get_user_by_id, instance.headers, {"{userid}": "PepePerez"})
-        self.assertRaises(ResolverError, instance._get_user, user_identifier='PepePerez', config=config)
+        self.assertDictEqual({}, instance._get_user(user_identifier='PepePerez', config=config))
 
     @responses.activate
     def test_12_testconnection_basic(self):
@@ -677,7 +677,7 @@ class HTTPResolverTestCase(MyTestCase):
         )
         success, description = HTTPResolver.testconnection(params)
         self.assertFalse(success)
-        self.assertIn("Failed to get user by name", description)
+        self.assertIn("No user found for username 'hans'", description)
 
         # passed username differs from resolved one
         params['test_username'] = 'lee'
@@ -705,7 +705,7 @@ class HTTPResolverTestCase(MyTestCase):
         )
         success, description = HTTPResolver.testconnection(params)
         self.assertFalse(success)
-        self.assertIn("Failed to get user by ID", description)
+        self.assertIn("No user found for user ID '123'", description)
 
         # Failed to get access token
         responses.add(
@@ -741,11 +741,7 @@ class HTTPResolverTestCase(MyTestCase):
         self.assertEqual(response.get('a_static_key'), 'a static value')
 
         # Test with invalid response
-        self.assertRaisesRegex(
-            ResolverError,
-            "Received an error while searching for user: PepePerez",
-            instance.getUserInfo, 'PepePerez'
-        )
+        self.assertDictEqual({}, instance.getUserInfo('PepePerez'))
 
     def test_15_get_config(self):
         resolver = HTTPResolver()
@@ -1234,29 +1230,30 @@ class EntraIDResolverTestCase(MyTestCase):
                       body="""{"error": {"code": "Request_ResourceNotFound", 
                                "message": "Resource '12345789' does not exist or one of its queried reference-property objects are not present."}}"""
                       )
-        self.assertRaises(ResolverError, resolver.getUserInfo, user_id)
+        self.assertDictEqual({}, resolver.getUserInfo(user_id))
         responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_id}", status=404, body="{}")
-        self.assertRaises(ResolverError, resolver.getUserInfo, user_id)
+        self.assertDictEqual({}, resolver.getUserInfo(user_id))
 
         # Server is busy
         responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_id}", status=202, body="{}")
-        self.assertRaises(ResolverError, resolver.getUserInfo, user_id)
+        self.assertDictEqual({}, resolver.getUserInfo(user_id))
 
         # Missing error message in response
         responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_id}", status=400, body="{}")
-        self.assertRaises(ResolverError, resolver.getUserInfo, user_id)
+        self.assertDictEqual({}, resolver.getUserInfo(user_id))
 
         # Custom error handling for successful response without user info
         resolver.config[CONFIG_GET_USER_BY_ID][HAS_ERROR_HANDLER] = True
         resolver.config[CONFIG_GET_USER_BY_ID][ERROR_RESPONSE] = {"success": False, "message": "User not found"}
         responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_id}", status=200,
                       body="""{"success": false, "message": "User not found"}""")
-        self.assertRaises(ResolverError, resolver.getUserInfo, user_id)
+        self.assertDictEqual({}, resolver.getUserInfo(user_id))
 
     @responses.activate
     def test_10_getUsername(self):
         resolver = self.set_up_resolver()
 
+        # success
         user_id = "87d349ed-44d7-43e1-9a83-5f2406dee5bd"
         responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_id}", status=200,
                       body="""{"businessPhones": ["+1 425 555 0109"],
@@ -1274,10 +1271,18 @@ class EntraIDResolverTestCase(MyTestCase):
 
         self.assertEqual("AdeleV@contoso.com", resolver.getUsername(user_id))
 
+        # User ID does not exists
+        responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_id}", status=404,
+                      body="""{"error": {"code": "Request_ResourceNotFound", 
+                                       "message": "Resource '12345789' does not exist or one of its queried reference-property objects are not present."}}"""
+                      )
+        self.assertEqual("", resolver.getUsername(user_id))
+
     @responses.activate
     def test_11_getUserId(self):
         resolver = self.set_up_resolver()
 
+        # success
         user_name = "AdeleV@contoso.com"
         responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_name}", status=200,
                       body="""{"businessPhones": ["+1 425 555 0109"],
@@ -1294,6 +1299,13 @@ class EntraIDResolverTestCase(MyTestCase):
                               }""")
 
         self.assertEqual("87d349ed-44d7-43e1-9a83-5f2406dee5bd", resolver.getUserId(user_name))
+
+        # User ID does not exists
+        responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_name}", status=404,
+                      body="""{"error": {"code": "Request_ResourceNotFound", 
+                                               "message": "Resource 'AdeleV@contoso.com' does not exist."}}"""
+                      )
+        self.assertEqual("", resolver.getUserId(user_name))
 
     @responses.activate
     def test_12_testconnection_success(self):
@@ -1591,7 +1603,8 @@ class EntraIDResolverTestCase(MyTestCase):
                      "givenName": parameters.get("givenName"),
                      "surname": parameters.get("surname"),
                      "mail": parameters.get("mail"),
-                     "mobilePhone": parameters.get("mobilePhone")}
+                     "mobilePhone": parameters.get("mobilePhone"),
+                     "businessPhones": parameters.get("businessPhones", [])}
 
         # check for required parameters
         password_profile = parameters.get("passwordProfile", {})
@@ -1600,6 +1613,10 @@ class EntraIDResolverTestCase(MyTestCase):
         password_profile.get("password") or password_profile.get("password") == "{password}"):
             status_code = 400
             resp_body = {"error": {"code": "Request_BadRequest", "message": "Required property is missing"}}
+        # Check that businessPhones is a list
+        elif not isinstance(parameters.get("businessPhones", []), list):
+            status_code = 400
+            resp_body = {"error": {"code": "Request_BadRequest", "message": "businessPhones must be a list"}}
         return status_code, {"Content-Type": "application/json"}, json.dumps(resp_body)
 
     @responses.activate
@@ -1612,7 +1629,8 @@ class EntraIDResolverTestCase(MyTestCase):
         user_data = {"username": "AdeleV@contoso.com",
                      "givenname": "Adele",
                      "surname": "Vance",
-                     "password": "xWwvJ]6NMw+bWH-d"}
+                     "password": "xWwvJ]6NMw+bWH-d",
+                     "phone": "01521 123456",}
 
         uid = resolver.add_user(user_data)
         self.assertEqual("123456789", uid)
@@ -1937,35 +1955,41 @@ class KeycloakResolverTestCase(MyTestCase):
         # Mock users API: Unknown user ID
         responses.add(responses.GET, f"http://localhost:8080/admin/realms/master/users/{user_id}", status=404,
                       body='{"error": "User not found", "error_description": "User not found"}')
-        self.assertRaises(ResolverError, resolver.getUserInfo, user_id)
+        self.assertDictEqual({}, resolver.getUserInfo(user_id))
         responses.add(responses.GET, f"http://localhost:8080/admin/realms/master/users/{user_id}", status=400,
                       body='{"error": "User not found", "error_description": "User not found"}')
-        self.assertRaises(ResolverError, resolver.getUserInfo, user_id)
+        self.assertDictEqual({}, resolver.getUserInfo(user_id))
 
         # Unknown error response
         responses.add(responses.GET, f"http://localhost:8080/admin/realms/master/users/{user_id}", status=500,
                       body='{"description": "Internal Server Error"}')
-        self.assertRaises(ResolverError, resolver.getUserInfo, user_id)
+        self.assertDictEqual({}, resolver.getUserInfo(user_id))
 
         # Custom error handling
         resolver.config[CONFIG_GET_USER_BY_ID][HAS_ERROR_HANDLER] = True
         resolver.config[CONFIG_GET_USER_BY_ID][ERROR_RESPONSE] = {}
         responses.add(responses.GET, f"http://localhost:8080/admin/realms/master/users/{user_id}", status=200,
                       body='{}')
-        self.assertRaises(ResolverError, resolver.getUserInfo, user_id)
+        self.assertDictEqual({}, resolver.getUserInfo(user_id))
 
     @responses.activate
     def test_07_getUsername(self):
         resolver = self.set_up_resolver()
         user_id = "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"
 
-        # Mock users API
+        # Mock users API success
         responses.add(responses.GET, f"http://localhost:8080/admin/realms/master/users/{user_id}", status=200,
                       body="""{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott",
                                 "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"}""")
 
         username = resolver.getUsername(user_id)
         self.assertEqual("elizabeth", username)
+
+        # Mock users API: Unknown user ID
+        responses.add(responses.GET, f"http://localhost:8080/admin/realms/master/users/{user_id}", status=404,
+                      body='{"error": "User not found", "error_description": "User not found"}')
+        username = resolver.getUsername(user_id)
+        self.assertEqual("", username)
 
     @responses.activate
     def test_08_getUserId(self):
@@ -2302,7 +2326,7 @@ class KeycloakResolverTestCase(MyTestCase):
                       status=400, body="""{"errorMessage": "Invalid request"}""")
         success, description = KeycloakResolver.testconnection(params)
         self.assertFalse(success)
-        self.assertIn("Failed to get user by ID", description)
+        self.assertIn("No user found for user ID", description)
 
         # Invalid credentials to get authorization token
         responses.add(responses.POST, "http://localhost:8080/realms/master/protocol/openid-connect/token",

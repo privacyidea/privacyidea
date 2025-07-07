@@ -128,14 +128,19 @@ class KeycloakResolver(HTTPResolver):
         """
         config_get_user_by_name = self.config.get(CONFIG_GET_USER_BY_NAME)
         config = RequestConfig(config_get_user_by_name, self.headers, {"username": login_name}, "")
-        users = self._get_user_list({}, config)
+        try:
+            users = self._get_user_list({}, config)
+        except ResolverError as error:
+            log.info(f"Failed to resolve user '{login_name}': {error}")
+            return ""
+
         if len(users) == 1:
             user_id = users[0].get("userid")
         elif len(users) > 1:
             raise ResolverError(f"Multiple users found for username '{login_name}'")
         else:
             user_id = ""
-            log.debug(f"No user found for username '{login_name}'")
+            log.info(f"No user found for username '{login_name}'")
         return user_id
 
     def _replace_resolver_specific_tags(self, config: RequestConfig):
@@ -213,7 +218,7 @@ class KeycloakResolver(HTTPResolver):
                 success = False
                 log.info(f"Failed to resolve user: {error.code} - {error.message}")
                 if response.status_code == 404:
-                    raise ResolverError(f"User '{user_identifier}' does not exist!")
+                    log.info(f"User '{user_identifier}' does not exist!")
             else:
                 # There is no error message in the expected format. Execute generic error handling.
                 success = super()._get_user_error_handling(response, config, user_identifier)
@@ -221,8 +226,6 @@ class KeycloakResolver(HTTPResolver):
             # Custom errors can also occur in successful responses
             success = self._custom_error_handling(response, config)
 
-        if not success:
-            raise ResolverError(f"Failed to resolve user {user_identifier}!")
         return success
 
     def _create_user_error_handling(self, response: Response, config: RequestConfig) -> bool:

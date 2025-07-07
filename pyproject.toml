@@ -1,0 +1,130 @@
+# SPDX-FileCopyrightText: (C) 2023 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#
+# SPDX-License-Identifier: CC0-1.0
+
+[project]
+name = "privacyIDEA"
+description="privacyIDEA: multifactor authentication management system"
+readme = "README.rst"
+requires-python = ">=3.9"
+license = "AGPL-3.0-or-later"
+license-files = ["LICENSE"]
+keywords = ["OTP", "two-factor authentication", "management", "security", "2fa", "mfa"]
+authors = [
+    {name = "Cornelius Kölbel", email = "cornelius@privacyidea.org"}
+]
+maintainers = [
+    {name = "Cornelius Kölbel", email = "cornelius@privacyidea.org"}
+]
+classifiers = [
+    "Framework :: Flask",
+    "Programming Language :: Python",
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: System Administrators",
+    "Natural Language :: English",
+    "Operating System :: POSIX :: Linux",
+    "Topic :: Internet",
+    "Topic :: Security",
+    "Topic :: System :: Systems Administration :: Authentication/Directory",
+    'Programming Language :: Python',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
+    'Programming Language :: Python :: 3.13'
+]
+
+dynamic = ["version"]
+
+dependencies = [
+    "argon2_cffi",
+    "beautifulsoup4[lxml]",
+    "cbor2",
+    "configobj",
+    "croniter",
+    "cryptography",
+    "defusedxml",
+    "Flask",
+    "Flask-Babel",
+    "Flask-Migrate",
+    "Flask-SQLAlchemy",
+    "Flask-Versioned",
+    "feedparser",
+    "google-auth",
+    "grpcio",
+    "huey[redis]",
+    "ldap3<2.9",
+    "msal",
+    "netaddr",
+    "passlib[bcrypt]",
+    "protobuf",
+    "pydash",
+    "PyJWT",
+    "PyMySQL",
+    "pyOpenSSL",
+    "pyrad",
+    "python-dateutil",
+    "python-gnupg",
+    "PyYAML",
+    "requests",
+    "segno",
+    "smpplib",
+    "SQLAlchemy<2.0",
+    "webauthn"
+]
+
+[project.optional-dependencies]
+test = [
+    "mock",
+    "pyparsing",
+    "pytest",
+    "pytest-cov",
+    "responses",
+    "testfixtures"
+]
+doc = [
+    "Pallets-Sphinx-Themes",
+    "Sphinx",
+    "sphinxcontrib-httpdomain",
+    "sphinxcontrib-spelling"
+]
+postgres = [
+    "psycopg2"
+]
+hsm = [
+    "PyKCS11"
+]
+kerberos = [
+    "gssapi"
+]
+
+[project.urls]
+"Homepage" = "https://privacyidea.org"
+"Documentation" = "https://privacyidea.readthedocs.io"
+"Source Code" = "https://github.com/privacyidea/privacyidea"
+"Changelog" = "https://github.com/privacyidea/privacyidea/blob/master/Changelog"
+"Forum" = "https://community.privacyidea.org"
+
+[project.scripts]
+pi-manage = "privacyidea.cli.pimanage:cli"
+privacyidea-token-janitor = "privacyidea.cli.privacyideatokenjanitor:cli"
+privacyidea-standalone = "privacyidea.cli.tools.standalone:cli"
+privacyidea-get-serial = "privacyidea.cli.tools.get_serial:byotp_call"
+privacyidea-usercache-cleanup = "privacyidea.cli.tools.usercache_cleanup:delete_call"
+privacyidea-get-unused-tokens = "privacyidea.cli.tools.get_unused_tokens:cli"
+privacyidea-expired-users = "privacyidea.cli.tools.expired_users:expire_call"
+privacyidea-cron = "privacyidea.cli.tools.cron:cli"
+pi-tokenjanitor = "privacyidea.cli.pitokenjanitor:cli"
+
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["privacyidea*"]
+
+[tool.setuptools_scm]

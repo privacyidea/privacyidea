@@ -362,18 +362,21 @@ class HTTPResolver(UserIdResolver):
             mapping["password"] = "password"
         return mapping
 
-    def getUserId(self, loginName: str) -> str:
+    def getUserId(self, login_name: str) -> str:
         """
-        Returns the user ID for the given username.
+        Returns the user ID for the given username. If the user does not exist, an empty string is returned.
         If the endpoint to get the user by its username is not configured, only the username is echoed.
+
+        :param login_name: The username to resolve
+        :return: The user ID for the given username or an empty string if the user does not exist.
         """
         config_get_user_by_name = self.config.get(CONFIG_GET_USER_BY_NAME)
         if config_get_user_by_name:
-            config = RequestConfig(config_get_user_by_name, self.headers, {"username": loginName}, "")
-            user_info = self._get_user(loginName, config)
-            user_id = user_info.get('userid')
+            config = RequestConfig(config_get_user_by_name, self.headers, {"username": login_name}, "")
+            user_info = self._get_user(login_name, config)
+            user_id = user_info.get("userid", "")
         else:
-            user_id = loginName
+            user_id = login_name
         return user_id
 
     def getUsername(self, userid: str) -> str:
@@ -381,7 +384,7 @@ class HTTPResolver(UserIdResolver):
         Returns the username for the given user ID.
         """
         user_info = self.getUserInfo(userid)
-        user_name = user_info.get("username")
+        user_name = user_info.get("username", "")
         return user_name
 
     def getUserInfo(self, userid: str) -> dict:
@@ -396,15 +399,15 @@ class HTTPResolver(UserIdResolver):
         user_info = self._get_user(userid, config)
         return user_info
 
-    def getUserList(self, searchDict: Optional[dict] = None) -> list[dict]:
+    def getUserList(self, search_dict: Optional[dict] = None) -> list[dict]:
         """
         Fetches all users from the user store according to the search dictionary.
         If the endpoint is not configured to list all users, an empty list is returned.
         """
         config_get_user_list = self.config.get(CONFIG_GET_USER_LIST)
         if config_get_user_list:
-            config = RequestConfig(config_get_user_list, self.headers, searchDict, self.wildcard)
-            user_list = self._get_user_list(searchDict, config)
+            config = RequestConfig(config_get_user_list, self.headers, search_dict, self.wildcard)
+            user_list = self._get_user_list(search_dict, config)
         else:
             log.debug("No configuration to list users available.")
             user_list = []
@@ -554,18 +557,18 @@ class HTTPResolver(UserIdResolver):
         * errorResponse: str (JSON) or dict
 
         For the advanced http resolver the config can contain the following entries:
-        * BASE_URL: str
+        * base_url: str
         * headers: dict or str (JSON)
-        * ATTRIBUTE_MAPPING: dict (or JSON str)
-        * EDIT_USER_STORE: bool or str (e.g. "true" or "false")
-        * CONFIG_AUTHORIZATION: dict
-        * CONFIG_USER_AUTH: dict
-        * USERNAME: str
-        * PASSWORD: str
-        * VERIFY_TLS: bool or str (e.g. "true" or "false")
-        * TLS_CERTIFICATE_PATH: str
-        * TIMEOUT: int (seconds) or str e.g. "10"
-        * CONFIG_GET_USER_BY_ID: dict
+        * attribute_mapping: dict (or JSON str)
+        * Editable: bool or str (e.g. "true" or "false")
+        * config_authorization: dict
+        * config_user_auth: dict
+        * username: str
+        * password: str
+        * verify_tls: bool or str (e.g. "true" or "false")
+        * tls_certificate_path: str
+        * timeout: int (seconds) or str e.g. "10"
+        * config_get_user_by_id: dict
             - method: str (e.g. "get" or "post")
             - endpoint: str
             - headers: str (JSON) or dict
@@ -573,16 +576,16 @@ class HTTPResolver(UserIdResolver):
             - responseMapping: str (JSON) or dict
             - hasSpecialErrorHandler: bool or str (e.g. "true" or "false")
             - errorResponse: str (JSON) or dict
-        * CONFIG_GET_USER_BY_NAME: dict
-            - see CONFIG_GET_USER_BY_ID
-        * CONFIG_GET_USER_LIST: dict
-            - see CONFIG_GET_USER_BY_ID
-        * CONFIG_CREATE_USER
-            - see CONFIG_GET_USER_BY_ID
-        * CONFIG_EDIT_USER
-            - see CONFIG_GET_USER_BY_ID
-        * CONFIG_DELETE_USER
-            - see CONFIG_GET_USER_BY_ID
+        * config_get_user_by_name: dict
+            - see config_get_user_by_id
+        * config_get_user_list: dict
+            - see config_get_user_by_id
+        * config_create_user
+            - see config_get_user_by_id
+        * config_edit_user
+            - see config_get_user_by_id
+        * config_delete_user
+            - see config_get_user_by_id
 
         :param config: The configuration values of the resolver
         :type config: dict
@@ -928,16 +931,18 @@ class HTTPResolver(UserIdResolver):
         response = self._do_request(config, params)
 
         # Error handling
-        self._get_user_error_handling(response, config, user_identifier)
+        success = self._get_user_error_handling(response, config, user_identifier)
 
         # Map user store attributes to pi attributes
-        user_info = response.json()
-        if config.response_mapping:
-            # Apply custom response mapping
-            user_info = self._apply_response_mapping(config, user_info)
-        if self.attribute_mapping_user_store_to_pi:
-            # Apply general attribute mapping
-            user_info = self._user_store_user_to_pi_user(user_info)
+        user_info = {}
+        if success:
+            user_info = response.json()
+            if config.response_mapping:
+                # Apply custom response mapping
+                user_info = self._apply_response_mapping(config, user_info)
+            if self.attribute_mapping_user_store_to_pi:
+                # Apply general attribute mapping
+                user_info = self._user_store_user_to_pi_user(user_info)
 
         return user_info
 
@@ -1045,7 +1050,9 @@ class HTTPResolver(UserIdResolver):
 
     def _get_user_error_handling(self, response: Response, config: RequestConfig, user_identifier: str) -> bool:
         """
-        Handles the error response from the user store
+        Handles the error response from the user store.
+        We do not raise an error here, as this would block many other functionalities, e.g. listing tokens with a token
+        for a user that does not exist.
 
         :param response: The response object from the HTTP request
         :param config: Configuration for the endpoint containing information about special error handling
@@ -1053,8 +1060,6 @@ class HTTPResolver(UserIdResolver):
         :return: True if the request was successful, False otherwise
         """
         success = self._default_error_handling(response, config)
-        if not success:
-            raise ResolverError(f"Received an error while searching for user: {user_identifier}.")
         return success
 
     def _create_user_error_handling(self, response: Response, config: RequestConfig):

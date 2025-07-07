@@ -287,6 +287,19 @@ class EntraIDResolver(HTTPResolver):
 
         return request_parameters
 
+    def _pi_user_to_user_store_user(self, pi_user: dict) -> dict:
+        """
+        Maps the attributes used in privacyidea to the attributes from the user store.
+
+        :param pi_user: Dictionary containing user attributes from privacyidea
+        :return: Dictionary containing user attributes mapped to the user store
+        """
+        user = super()._pi_user_to_user_store_user(pi_user)
+        if "businessPhones" in user:
+            # EntraID uses "businessPhones" as a list of phone numbers
+            user["businessPhones"] = [user["businessPhones"]]
+        return user
+
     def _get_user_list_from_response(self, response: Union[dict, list]) -> list[dict]:
         """
         Extracts the user attributes dictionary from the response body.
@@ -344,8 +357,8 @@ class EntraIDResolver(HTTPResolver):
         :return: True on success, False otherwise
         """
         if response.status_code == 202:
-            # Even if this is not a real error, we do not get the user information, so we need to abort the request
-            raise ResolverError("EntraID server is busy. Please try again later.")
+            success = False
+            log.info("Failed to resolve user: Entra ID server is busy.")
         elif response.status_code != 200:
             # extract error code and messages
             error = self._get_error(response)
@@ -353,15 +366,14 @@ class EntraIDResolver(HTTPResolver):
                 success = False
                 log.info(f"Failed to resolve user: {error.code} - {error.message}")
                 if response.status_code == 404:
-                    raise ResolverError(f"User '{user_identifier}' does not exist!")
+                    log.info(f"User '{user_identifier}' does not exist!")
             else:
                 success = super()._get_user_error_handling(response, config, user_identifier)
         else:
             # Custom errors can also occur in successful responses
             success = self._custom_error_handling(response, config)
 
-        if not success:
-            raise ResolverError(f"Failed to resolve user {user_identifier}!")
+        return success
 
     def _create_user_error_handling(self, response: Response, config: RequestConfig) -> bool:
         """

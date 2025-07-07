@@ -511,11 +511,14 @@ angular.module("privacyideaApp")
                             delete userinfo["userid"];
                             break;
                         case "httpresolver":
-                        case "keycloakresolver":
                         case "entraidresolver":
                             userinfo = resolver.data.attribute_mapping || {};
                             delete userinfo["userid"];
                             userinfo["password"] = "";
+                            break;
+                        case "keycloakresolver":
+                            userinfo = resolver.data.attribute_mapping || {};
+                            delete userinfo["userid"];
                             break;
                     }
                     const fields = [];
