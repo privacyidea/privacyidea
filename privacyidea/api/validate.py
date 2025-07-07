@@ -782,7 +782,8 @@ def poll_transaction(transaction_id=None):
             user = get_one_token(serial=log_challenges[0].serial).user
         else:
             container = find_container_by_serial(log_challenges[0].serial)
-            user = container.get_users()[0]
+            users = container.get_users()
+            user = users[0] if users else User()
         if user:
             g.audit_object.log({
                 "user": user.login,
