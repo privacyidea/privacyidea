@@ -52,8 +52,8 @@ describe('AuthGuard — CanMatch helpers', () => {
 
 describe('AuthGuard class', () => {
   let guard: AuthGuard;
-  let auth: MockAuthService;
-  let note: MockNotificationService;
+  let authService: MockAuthService;
+  let notificationService: MockNotificationService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -66,8 +66,8 @@ describe('AuthGuard class', () => {
     });
 
     guard = TestBed.inject(AuthGuard);
-    auth = TestBed.inject(AuthService) as unknown as MockAuthService;
-    note = TestBed.inject(
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    notificationService = TestBed.inject(
       NotificationService,
     ) as unknown as MockNotificationService;
 
@@ -80,25 +80,25 @@ describe('AuthGuard class', () => {
   });
 
   it('allows activation when user is authenticated', () => {
-    auth.isAuthenticatedUser.mockReturnValue(true);
+    authService.isAuthenticatedUser.mockReturnValue(true);
 
     expect(guard.canActivate()).toBe(true);
     expect(guard.canActivateChild()).toBe(true);
-    expect(auth.isAuthenticatedUser).toHaveBeenCalledTimes(2);
+    expect(authService.isAuthenticatedUser).toHaveBeenCalledTimes(2);
     expect(routerMock.navigate).not.toHaveBeenCalled();
   });
 
   it('blocks activation and redirects to /login when not authenticated', async () => {
-    auth.isAuthenticatedUser.mockReturnValue(false);
+    authService.isAuthenticatedUser.mockReturnValue(false);
 
     expect(guard.canActivate()).toBe(false);
     expect(guard.canActivateChild()).toBe(false);
 
-    expect(auth.isAuthenticatedUser).toHaveBeenCalledTimes(2);
+    expect(authService.isAuthenticatedUser).toHaveBeenCalledTimes(2);
     expect(routerMock.navigate).toHaveBeenCalledWith(['/login']);
 
     await flushPromises(); // wait for .then() in guard
-    expect(note.openSnackBar).toHaveBeenCalledWith(
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
       'Navigation blocked by AuthGuard!',
     );
   });

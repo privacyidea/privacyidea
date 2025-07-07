@@ -29,7 +29,7 @@ const mockFetchWithHTML = (html: string): Promise<Response> =>
 const flushPromises = () => new Promise((r) => setTimeout(r, 0));
 
 describe('VersionService', () => {
-  let service: VersionService;
+  let versionService: VersionService;
 
   beforeAll(() => {
     if (!(global as any).fetch) {
@@ -39,7 +39,7 @@ describe('VersionService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({ providers: [VersionService] });
-    service = TestBed.inject(VersionService);
+    versionService = TestBed.inject(VersionService);
 
     jest.spyOn(console, 'error').mockImplementation(() => {});
     jest.spyOn(window, 'open').mockImplementation(jest.fn());
@@ -51,18 +51,18 @@ describe('VersionService', () => {
   });
 
   it('should be created', () => {
-    expect(service).toBeTruthy();
+    expect(versionService).toBeTruthy();
   });
 
   describe('openDocumentation()', () => {
     it('opens the version-specific URL when the page exists', async () => {
-      service.version.set('3.12');
+      versionService.version.set('3.12');
 
       jest
         .spyOn(global, 'fetch')
         .mockImplementation(() => mockFetchWithHTML(VALID_HTML));
 
-      service.openDocumentation('token_enrollment');
+      versionService.openDocumentation('token_enrollment');
       await flushPromises();
 
       const expectedUrl =
@@ -74,14 +74,14 @@ describe('VersionService', () => {
     });
 
     it('falls back to the latest URL when the version page is missing', async () => {
-      service.version.set('3.12');
+      versionService.version.set('3.12');
 
       jest
         .spyOn(global, 'fetch')
         .mockImplementationOnce(() => mockFetchWithHTML(NOT_FOUND_HTML))
         .mockImplementationOnce(() => mockFetchWithHTML(VALID_HTML));
 
-      service.openDocumentation('token_enrollment');
+      versionService.openDocumentation('token_enrollment');
       await flushPromises();
       await flushPromises();
 
@@ -94,13 +94,13 @@ describe('VersionService', () => {
     });
 
     it('shows an alert if neither page exists', async () => {
-      service.version.set('3.12');
+      versionService.version.set('3.12');
 
       jest
         .spyOn(global, 'fetch')
         .mockImplementation(() => mockFetchWithHTML(NOT_FOUND_HTML));
 
-      service.openDocumentation('token_enrollment');
+      versionService.openDocumentation('token_enrollment');
       await flushPromises();
       await flushPromises();
 

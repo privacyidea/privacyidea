@@ -1,9 +1,3 @@
-jest.mock('./guards/auth.guard', () => ({
-  adminMatch: () => true,
-  selfServiceMatch: () => true,
-  AuthGuard: () => true,
-}));
-
 import { fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { provideRouter, Router } from '@angular/router';
@@ -17,9 +11,11 @@ import { appConfig } from './app.config';
 import { AuthService } from './services/auth/auth.service';
 import { NotificationService } from './services/notification/notification.service';
 import { SessionTimerService } from './services/session-timer/session-timer.service';
+import { AuthGuard } from './guards/auth.guard';
 
 class MockAuthService {
   isAuthenticatedUser = jest.fn(() => false);
+  role = jest.fn(() => 'admin');
 }
 
 class MockNotificationService {
@@ -40,6 +36,10 @@ describe('AppComponent', () => {
         provideHttpClientTesting(),
         provideRouter(routes),
         { provide: AuthService, useClass: MockAuthService },
+        {
+          provode: AuthGuard,
+          useValue: { canActivate: () => true, canMatch: () => true },
+        },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: SessionTimerService, useClass: MockSessionTimerService },
       ],
@@ -110,10 +110,15 @@ describe('AppComponent', () => {
   describe('Routing', () => {
     let router: Router;
     let location: Location;
+    let auth: MockAuthService;
 
     beforeEach(fakeAsync(() => {
       router = TestBed.inject(Router);
       location = TestBed.inject(Location);
+      auth = TestBed.inject(AuthService) as unknown as MockAuthService;
+
+      auth.isAuthenticatedUser.mockReturnValue(true);
+      auth.role.mockReturnValue('admin');
 
       router.navigateByUrl('/');
       tick();
@@ -125,7 +130,7 @@ describe('AppComponent', () => {
       expect(location.path()).toBe('/login');
     }));
 
-    it('navigates to /token (guards mocked to allow)', fakeAsync(() => {
+    it('navigates to /token', fakeAsync(() => {
       router.navigate(['/token']);
       tick();
       expect(location.path()).toBe('/token');
@@ -136,5 +141,7 @@ describe('AppComponent', () => {
       tick();
       expect(location.path()).toBe('/login');
     }));
+
+    it('refreshes the page on ');
   });
 });

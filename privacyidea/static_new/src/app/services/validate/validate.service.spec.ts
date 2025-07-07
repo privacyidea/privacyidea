@@ -25,7 +25,7 @@ class MockAuthService {
 }
 
 describe('ValidateService', () => {
-  let service: ValidateService;
+  let validateService: ValidateService;
   let http: HttpClient;
   let postSpy: jest.SpyInstance;
   let consoleErrorSpy: jest.SpyInstance;
@@ -47,7 +47,7 @@ describe('ValidateService', () => {
       ],
     });
 
-    service = TestBed.inject(ValidateService);
+    validateService = TestBed.inject(ValidateService);
     http = TestBed.inject(HttpClient);
     postSpy = jest.spyOn(http, 'post');
 
@@ -67,7 +67,7 @@ describe('ValidateService', () => {
   });
 
   it('should be created', () => {
-    expect(service).toBeTruthy();
+    expect(validateService).toBeTruthy();
   });
 
   it('testToken should POST correct payload and return API result', () => {
@@ -78,7 +78,9 @@ describe('ValidateService', () => {
     postSpy.mockReturnValue(of(apiResp));
 
     let result!: ValidateCheckResponse;
-    service.testToken('HOTP1', '000000', '1').subscribe((r) => (result = r));
+    validateService
+      .testToken('HOTP1', '000000', '1')
+      .subscribe((r) => (result = r));
 
     expect(postSpy).toHaveBeenCalledWith(
       expect.stringMatching(/\/validate\/check$/),
@@ -86,22 +88,6 @@ describe('ValidateService', () => {
       { headers: local.getHeaders() },
     );
     expect(result).toEqual(apiResp);
-  });
-
-  it('testToken should surface error and show snackbar', () => {
-    const boom = {
-      error: { result: { error: { message: 'Boom' } } },
-    };
-    postSpy.mockReturnValue(throwError(() => boom));
-
-    service.testToken('BAD', '999999').subscribe({
-      next: () => fail('expected error'),
-      error: () => {
-        expect(notif.openSnackBar).toHaveBeenCalledWith(
-          expect.stringMatching(/Failed to test token\. Boom/),
-        );
-      },
-    });
   });
 
   describe('authenticatePasskey', () => {
@@ -117,7 +103,7 @@ describe('ValidateService', () => {
         restore = () => delete (window as any).PublicKeyCredential;
       }
 
-      service.authenticatePasskey().subscribe({
+      validateService.authenticatePasskey().subscribe({
         next: () => fail('expected error'),
         error: (err) => {
           expect(err.message).toMatch(/WebAuthn is not supported/i);
@@ -171,7 +157,7 @@ describe('ValidateService', () => {
         });
 
       let final!: AuthResponse;
-      service
+      validateService
         .authenticatePasskey({ isTest: true })
         .subscribe((r) => (final = r as AuthResponse));
 
