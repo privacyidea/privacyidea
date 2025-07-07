@@ -98,7 +98,7 @@ class EntraIDResolver(HTTPResolver):
 
     def loadConfig(self, config: dict):
         """
-        loadConfig - load the configuration from the database
+        loadConfig - load the configuration from the database.
 
         :param config: the config dictionary
         """
@@ -165,7 +165,7 @@ class EntraIDResolver(HTTPResolver):
     @staticmethod
     def getResolverClassType():
         """
-        Provide the resolver type for registration
+        Provide the resolver type for registration.
         """
         return 'entraidresolver'
 
@@ -241,10 +241,10 @@ class EntraIDResolver(HTTPResolver):
         """
         Returns a dictionary containing the search parameters in the format expected by the user store API.
         All search parameters are mapped to the EntraID attributes according to the attribute mapping and concatenated
-        to a single query string. If the search value does not contain any wildcard the syntax is
-        ``<entra_key> eq '<value>'``. If wildcards are contained in the value we use the syntax
+        to a single query string. If the search value does not contain any wildcard, the syntax is
+        ``<entra_key> eq '<value>'``. If wildcards are contained in the value, we use the syntax
         ``startswith(<entra_key>, '<value>')`` where all '*' characters are removed from the value as entraID does not
-        support advanced wildcard searches. If advanced query capabilities are activated it also searches for values
+        support advanced wildcard searches. If advanced query capabilities are activated, it also searches for values
         that ends with the substring. Syntax: ``(startswith(<entra_key>, '<value>') or endswith(<entra_key>, '<value>'))``
         Multiple search attributes are concatenated with `` and ``.
         The complete search query is stored und the key ``$filer`` in the request parameters dictionary.
@@ -430,7 +430,7 @@ class EntraIDResolver(HTTPResolver):
 
     def _user_auth_error_handling(self, response: Response, config: RequestConfig, user_identifier: str) -> bool:
         """
-        Handles the error response from the user store when checking a user's password
+        Handles the error response from the user store when checking a user's password.
 
         :param response: The response object from the HTTP request
         :param config: Configuration for the endpoint containing information about special error handling
