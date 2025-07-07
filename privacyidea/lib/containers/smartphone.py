@@ -128,7 +128,7 @@ class SmartphoneContainer(TokenContainerClass):
     @classmethod
     def is_multi_challenge_enrollable(cls) -> bool:
         """
-        Returns Ture if the container type can be enrolled during the authentication process "via multi challenge"
+        Returns True if the container type can be enrolled during the authentication process "via multi challenge"
         """
         return True
 
