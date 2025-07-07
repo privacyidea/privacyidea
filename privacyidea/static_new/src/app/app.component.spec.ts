@@ -1,4 +1,4 @@
-import { fakeAsync, TestBed, tick } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { provideRouter, Router } from '@angular/router';
 import { APP_BASE_HREF, Location } from '@angular/common';
@@ -29,6 +29,7 @@ class MockSessionTimerService {
 
 describe('AppComponent', () => {
   beforeEach(async () => {
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [AppComponent, BrowserAnimationsModule],
       providers: [
@@ -112,7 +113,7 @@ describe('AppComponent', () => {
     let location: Location;
     let auth: MockAuthService;
 
-    beforeEach(fakeAsync(() => {
+    beforeEach(async () => {
       router = TestBed.inject(Router);
       location = TestBed.inject(Location);
       auth = TestBed.inject(AuthService) as unknown as MockAuthService;
@@ -120,28 +121,30 @@ describe('AppComponent', () => {
       auth.isAuthenticatedUser.mockReturnValue(true);
       auth.role.mockReturnValue('admin');
 
-      router.navigateByUrl('/');
-      tick();
-    }));
+      await router.navigateByUrl('/');
+      jest.runOnlyPendingTimers();
+      await Promise.resolve();
+    });
 
-    it('navigates to /login', fakeAsync(() => {
-      router.navigate(['/login']);
-      tick();
+    it('navigates to /login', async () => {
+      await router.navigate(['/login']);
+      jest.runOnlyPendingTimers();
+      await Promise.resolve();
       expect(location.path()).toBe('/login');
-    }));
+    });
 
-    it('navigates to /token', fakeAsync(() => {
-      router.navigate(['/token']);
-      tick();
+    it('navigates to /token', async () => {
+      await router.navigate(['/token']);
+      jest.runOnlyPendingTimers();
+      await Promise.resolve();
       expect(location.path()).toBe('/token');
-    }));
+    });
 
-    it('redirects unknown routes to /login', fakeAsync(() => {
-      router.navigate(['/does-not-exist']);
-      tick();
+    it('redirects unknown routes to /login', async () => {
+      await router.navigate(['/does-not-exist']);
+      jest.runOnlyPendingTimers();
+      await Promise.resolve();
       expect(location.path()).toBe('/login');
-    }));
-
-    it('refreshes the page on ');
+    });
   });
 });

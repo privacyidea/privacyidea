@@ -38,6 +38,7 @@ describe('VersionService', () => {
   });
 
   beforeEach(() => {
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({ providers: [VersionService] });
     versionService = TestBed.inject(VersionService);
 

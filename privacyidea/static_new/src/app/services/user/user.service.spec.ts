@@ -42,6 +42,7 @@ describe('UserService', () => {
   let alice: UserData;
 
   beforeEach(() => {
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),

@@ -681,7 +681,11 @@ export class TokenService {
 
   setTokengroup(tokenSerial: string, value: string | string[]) {
     const headers = this.localService.getHeaders();
-    const valueArray = Array.isArray(value) ? value : Object.values(value);
+    const valueArray: string[] = Array.isArray(value)
+      ? value
+      : typeof value === 'object' && value !== null
+        ? Object.values(value)
+        : [value];
     return this.http
       .post(
         `${this.tokenBaseUrl}group/` + tokenSerial,

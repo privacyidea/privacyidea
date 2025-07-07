@@ -36,6 +36,7 @@ describe('ValidateService', () => {
   let auth: MockAuthService;
 
   beforeEach(() => {
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
@@ -91,7 +92,7 @@ describe('ValidateService', () => {
   });
 
   describe('authenticatePasskey', () => {
-    it('should error and notify when WebAuthn is unsupported', waitForAsync(() => {
+    it('should error and notify when WebAuthn is unsupported', async () => {
       let restore: () => void;
       if ('PublicKeyCredential' in window) {
         const spy = jest
@@ -114,9 +115,9 @@ describe('ValidateService', () => {
       });
 
       restore();
-    }));
+    });
 
-    it('should initialise, collect credentials, then POST /check when isTest=true', fakeAsync(() => {
+    it('should initialise, collect credentials, then POST /check when isTest=true', async () => {
       const credGet = jest.fn().mockResolvedValue({
         id: 'cred-1',
         response: {
@@ -161,7 +162,11 @@ describe('ValidateService', () => {
         .authenticatePasskey({ isTest: true })
         .subscribe((r) => (final = r as AuthResponse));
 
-      tick();
+      jest.runOnlyPendingTimers();
+      await Promise.resolve();
+
+      jest.runOnlyPendingTimers();
+      await Promise.resolve();
 
       expect(postSpy).toHaveBeenCalledTimes(2);
       expect(postSpy.mock.calls[0][0]).toMatch(/\/validate\/initialize$/);
@@ -174,6 +179,6 @@ describe('ValidateService', () => {
       expect(b64.bytesToBase64).toHaveBeenCalled();
       expect(auth.authenticate).not.toHaveBeenCalled();
       expect(final).toEqual({ success: true });
-    }));
+    });
   });
 });
