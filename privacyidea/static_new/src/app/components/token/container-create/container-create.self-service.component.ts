@@ -14,6 +14,7 @@ import { FormsModule } from '@angular/forms';
 import { MatInput } from '@angular/material/input';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { ContainerCreateComponent } from './container-create.component';
+import { MatTooltip } from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-container-create-self-service',
@@ -33,6 +34,7 @@ import { ContainerCreateComponent } from './container-create.component';
     MatExpansionPanel,
     MatExpansionPanelTitle,
     MatExpansionPanelHeader,
+    MatTooltip,
   ],
   templateUrl: './container-create.self-service.component.html',
   styleUrl: './container-create.component.scss',
