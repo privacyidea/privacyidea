@@ -2524,7 +2524,7 @@ def require_description(request=None, action=None):
 def require_description_on_edit(request=None, action=None):
     """
     Pre Policy
-    This checks if a description is required to edit a specific token.
+    This checks whether a description is required while editing a specific token.
     scope=SCOPE.MANAGEMENT, action=REQUIRE_DESCRIPTION_ON_EDIT
 
     An exception is raised, if the tokentypes specified in the
