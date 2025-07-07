@@ -125,6 +125,13 @@ class SmartphoneContainer(TokenContainerClass):
         """
         return _("A smartphone that uses an authenticator app.")
 
+    @classmethod
+    def is_multi_challenge_enrollable(cls) -> bool:
+        """
+        Returns Ture if the container type can be enrolled during the authentication process "via multi challenge"
+        """
+        return True
+
     def get_tokens_for_synchronization(self) -> list[TokenClass]:
         """
         Returns the tokens of the container that can be synchronized with a client as a list of TokenClass objects.
@@ -240,7 +247,8 @@ class SmartphoneContainer(TokenContainerClass):
                            "ttl": registration_ttl,
                            "passphrase_prompt": passphrase_prompt,
                            "send_passphrase": passphrase_user,
-                           "server_url": server_url}
+                           "server_url": server_url,
+                           "transaction_id": res.get("transaction_id")}
 
         return response_detail
 
@@ -382,7 +390,8 @@ class SmartphoneContainer(TokenContainerClass):
 
         res = {"nonce": nonce,
                "time_stamp": time_stamp_iso,
-               "enc_key_algorithm": enc_key_algorithm}
+               "enc_key_algorithm": enc_key_algorithm,
+               "transaction_id": db_challenge.transaction_id}
         return res
 
     def check_challenge_response(self, params: dict) -> bool:

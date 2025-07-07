@@ -19,6 +19,8 @@ Technically the decorators in :ref:`code_api_policy` are used.
 The following actions are available in the scope
 *enrollment*:
 
+.. _policy_max_token_per_realm:
+
 max_token_per_realm
 ~~~~~~~~~~~~~~~~~~~
 
@@ -33,6 +35,8 @@ This is the maximum allowed number of tokens in the specified realm.
 .. note:: If there are multiple matching policies, the *highest* maximum
    allowed number of tokens among the matching policies is enforced.
    Policy priorities are ignored.
+
+.. _policy_max_token_per_user:
 
 max_token_per_user
 ~~~~~~~~~~~~~~~~~~

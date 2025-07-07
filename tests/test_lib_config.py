@@ -22,7 +22,7 @@ from privacyidea.lib.config import (get_resolver_list,
                                     get_machine_resolver_class_dict,
                                     get_privacyidea_node, get_privacyidea_nodes,
                                     this, get_config_object, invalidate_config_object,
-                                    get_multichallenge_enrollable_tokentypes,
+                                    get_multichallenge_enrollable_types,
                                     get_email_validators,
                                     check_node_uuid_exists)
 from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PWResolver
@@ -271,7 +271,7 @@ class ConfigTestCase(MyTestCase):
         self.assertEqual(get_from_config("some_key", "default"), "some_value")
 
     def test_10_enrollable_tokentypes(self):
-        ttypes = get_multichallenge_enrollable_tokentypes()
+        ttypes = get_multichallenge_enrollable_types()
         self.assertIn("hotp", ttypes)
         self.assertIn("totp", ttypes)
         self.assertIn("sms", ttypes)
@@ -280,6 +280,9 @@ class ConfigTestCase(MyTestCase):
         self.assertNotIn("tan", ttypes)
         self.assertNotIn("daplug", ttypes)
         self.assertNotIn("paper", ttypes)
+        self.assertIn("smartphone", ttypes)
+        self.assertNotIn("generic", ttypes)
+        self.assertNotIn("yubikey", ttypes)
 
     def test_11_get_email_validators(self):
         ev = get_email_validators()

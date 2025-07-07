@@ -1507,7 +1507,7 @@ class TokenContainerSynchronization(MyTestCase):
         container_info_keys = container_info.keys()
         self.assertIn("public_key_client", container_info_keys)
         self.assertEqual(f"{mock_smph.device_brand} {mock_smph.device_model}", container_info["device"])
-        self.assertEqual(RegistrationState.REGISTERED.value, container_info[RegistrationState.get_key()])
+        self.assertEqual(RegistrationState.REGISTERED.value, smartphone.registration_state)
 
         return mock_smph
 
@@ -1606,7 +1606,7 @@ class TokenContainerSynchronization(MyTestCase):
         container_info_keys = container_info.keys()
         self.assertIn("public_key_client", container_info_keys)
         self.assertEqual(f"{mock_smph.device_brand} {mock_smph.device_model}", container_info["device"])
-        self.assertEqual(RegistrationState.REGISTERED.value, container_info[RegistrationState.get_key()])
+        self.assertEqual(RegistrationState.REGISTERED.value, smartphone.registration_state)
 
     def test_05c_register_smartphone_passphrase_user_fails(self):
         """
@@ -1987,7 +1987,7 @@ class TokenContainerSynchronization(MyTestCase):
         container_info_keys = container_info.keys()
         self.assertIn("public_key_client", container_info_keys)
         self.assertEqual(f"{mock_smph_new.device_brand} {mock_smph_new.device_model}", container_info["device"])
-        self.assertEqual(RegistrationState.ROLLOVER_COMPLETED.value, container_info[RegistrationState.get_key()])
+        self.assertEqual(RegistrationState.ROLLOVER_COMPLETED.value, smartphone.registration_state)
         self.assertEqual("https://pi.net/", container_info["server_url"])
         self.assertEqual("20", container_info["challenge_ttl"])
 

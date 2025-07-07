@@ -4603,8 +4603,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.request_assert_success('container/register/finalize',
                                     params,
                                     None, 'POST')
-        self.assertEqual(RegistrationState.ROLLOVER_COMPLETED.value,
-                         smartphone.get_container_info_dict().get(RegistrationState.get_key()))
+        self.assertEqual(RegistrationState.ROLLOVER_COMPLETED.value, smartphone.registration_state)
 
         # Challenge for Sync
         scope = "https://new-pi.net/container/synchronize"
@@ -4631,8 +4630,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertEqual(0, len(token_diff["update"]))
 
         # smartphone got new token secrets: rollover completed
-        self.assertEqual(RegistrationState.REGISTERED.value,
-                         smartphone.get_container_info_dict().get(RegistrationState.get_key()))
+        self.assertEqual(RegistrationState.REGISTERED.value, smartphone.registration_state)
 
         delete_policy("policy")
 
@@ -4760,8 +4758,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.request_assert_success('container/register/finalize',
                                     params,
                                     None, 'POST')
-        self.assertEqual(RegistrationState.ROLLOVER_COMPLETED.value,
-                         smartphone.get_container_info_dict().get(RegistrationState.get_key()))
+        self.assertEqual(RegistrationState.ROLLOVER_COMPLETED.value, smartphone.registration_state)
 
         # Try to sync with old smartphone
         scope = "https://pi.net/container/synchronize"
@@ -4772,8 +4769,7 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_error(400, "container/synchronize",
                                            params, None, 'POST')
         self.assertEqual(3002, result["result"]["error"]["code"])
-        self.assertEqual(RegistrationState.ROLLOVER_COMPLETED.value,
-                         smartphone.get_container_info_dict().get(RegistrationState.get_key()))
+        self.assertEqual(RegistrationState.ROLLOVER_COMPLETED.value, smartphone.registration_state)
 
         # Sync with new smartphone
         scope = "https://new-pi.net/container/synchronize"
@@ -4812,8 +4808,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertEqual("firebase", push.get_tokeninfo()[PUSH_ACTION.FIREBASE_CONFIG])
 
         # smartphone got new token secrets: rollover completed
-        self.assertEqual(RegistrationState.REGISTERED.value,
-                         smartphone.get_container_info_dict().get(RegistrationState.get_key()))
+        self.assertEqual(RegistrationState.REGISTERED.value, smartphone.registration_state)
 
         delete_policy("policy")
 
