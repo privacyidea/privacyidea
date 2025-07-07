@@ -14,7 +14,7 @@ export interface AuthData {
   menus: string[];
   realm: string;
   rights: string[];
-  role: string;
+  role: AuthRole;
   token: string;
   username: string;
   logout_time: number;
@@ -50,6 +50,8 @@ export interface AuthData {
   };
 }
 
+export type AuthRole = 'admin' | 'user' | '';
+
 export interface AuthDetail {
   username: string;
 }
@@ -62,7 +64,7 @@ export class AuthService {
   isAuthenticated = signal(false);
   user = signal('');
   realm = signal('');
-  role = signal('');
+  role = signal<AuthRole>('');
   menus = signal<string[]>([]);
 
   constructor(

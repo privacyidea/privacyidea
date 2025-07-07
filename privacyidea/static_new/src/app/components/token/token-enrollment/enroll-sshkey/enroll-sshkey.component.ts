@@ -18,24 +18,6 @@ import {
 } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { SshkeyApiPayloadMapper } from '../../../../mappers/token-api-payload/sshkey-token-api-payload.mapper';
 
-/*
-Old ui request body example:
-{
-  "timeStep": 30,
-  "otplen": 6,
-  "genkey": true,
-  "type": "sshkey",
-  "hashlib": "sha1",
-  "radius.system_settings": true,
-  "2stepinit": false,
-  "rollover": false,
-  "sshkey": "ssh-rsa aaaaaaaaaaaaaaaaaaa",
-  "description": "bbbbbbbbbbbbbbbbbbbbb",
-  "validity_period_start": "",
-  "validity_period_end": ""
-}
-*/
-
 export interface SshkeyEnrollmentOptions extends TokenEnrollmentData {
   type: 'sshkey';
   sshPublicKey: string;

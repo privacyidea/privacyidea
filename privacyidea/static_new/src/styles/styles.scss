@@ -270,6 +270,15 @@ body {
   justify-content: center;
 }
 
+.flex-center-vertical {
+  display: flex;
+  align-items: center;
+}
+.flex-center-horizontal {
+  display: flex;
+  justify-content: center;
+}
+
 .flex-top-center {
   display: flex;
   align-items: flex-start;

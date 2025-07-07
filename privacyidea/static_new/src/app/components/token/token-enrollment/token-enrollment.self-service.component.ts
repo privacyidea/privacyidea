@@ -1,4 +1,10 @@
-import { Component, Renderer2, Version } from '@angular/core';
+import {
+  Component,
+  effect,
+  Renderer2,
+  Version,
+  WritableSignal,
+} from '@angular/core';
 import { TokenEnrollmentComponent } from './token-enrollment.component';
 import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatOption, MatSelect } from '@angular/material/select';
@@ -111,7 +117,6 @@ export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponen
     contentService: ContentService,
     dialogService: DialogService,
     renderer: Renderer2,
-    private authService: AuthService,
   ) {
     super(
       containerService,
@@ -124,17 +129,5 @@ export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponen
       dialogService,
       renderer,
     );
-  }
-
-  override ngOnInit(): void {
-    super.ngOnInit();
-    this.selectedUserRealmControl.setValue(this.authService.realm());
-    this.userFilterControl.setValue(this.authService.user());
-  }
-
-  override resetForm(): void {
-    super.resetForm();
-    this.selectedUserRealmControl.setValue(this.authService.realm());
-    this.userFilterControl.setValue(this.authService.user());
   }
 }
