@@ -5,8 +5,11 @@ The lib.user.py only depends on the database model
 """
 import logging
 
+import mock
 from testfixtures import log_capture, LogCapture
 
+from privacyidea.lib.resolvers.EntraIDResolver import (CLIENT_ID, CLIENT_CREDENTIAL_TYPE, ClientCredentialType,
+                                                       CLIENT_SECRET, TENANT)
 from .base import MyTestCase
 from privacyidea.lib.resolver import (save_resolver, delete_resolver)
 from privacyidea.lib.config import set_privacyidea_config
@@ -22,6 +25,7 @@ from privacyidea.lib.user import log as user_log
 from privacyidea.models import NodeName
 from . import ldap3mock
 from .test_lib_resolver import LDAPDirectory_small
+from .test_lib_resolver_httpresolver import ConfidentialClientApplicationMock
 
 PWFILE = "tests/testdata/passwd"
 PWFILE2 = "tests/testdata/passwords"
@@ -320,6 +324,19 @@ class UserTestCase(MyTestCase):
         # resolver.
         self.assertEqual(User(login="cornelius",
                               realm="realm2").check_password("test"), None)
+
+        # check that for HTTPResolvers also the login name is passed to the function
+        save_resolver({"resolver": "entraid", "type": "entraidresolver",
+                       CLIENT_ID: "1234", CLIENT_CREDENTIAL_TYPE: ClientCredentialType.SECRET.value,
+                       CLIENT_SECRET: "secret", TENANT: "organization"})
+        with mock.patch('privacyidea.lib.resolvers.HTTPResolver.HTTPResolver.checkPass') as mock_check_password:
+            with mock.patch("privacyidea.lib.resolvers.EntraIDResolver.msal.ConfidentialClientApplication",
+                            new=ConfidentialClientApplicationMock):
+                mock_check_password.return_value = True
+                user = User(login="cornelius", realm="EntraID", resolver="entraid", uid="1234")
+                user.check_password("test")
+                mock_check_password.assert_called_with("1234", "test", "cornelius")
+
         delete_realm("realm2")
         delete_realm("passwordrealm")
 
