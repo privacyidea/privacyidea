@@ -1,4 +1,4 @@
-# (c) NetKnights GmbH 2024,  https://netknights.it
+# (c) NetKnights GmbH 2025,  https://netknights.it
 #
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -28,6 +28,7 @@ from privacyidea.lib.resolvers.HTTPResolver import (HTTPResolver, METHOD, ENDPOI
                                                     RequestConfig, HEADERS, ADVANCED, RESPONSE_MAPPING,
                                                     CONFIG_CREATE_USER, CONFIG_DELETE_USER, CONFIG_EDIT_USER,
                                                     CONFIG_USER_AUTH, Error)
+from privacyidea.lib.resolvers.util import delete_user_error_handling_no_content
 
 log = logging.getLogger(__name__)
 
@@ -157,7 +158,7 @@ class KeycloakResolver(HTTPResolver):
     # Error Handling
 
     @staticmethod
-    def _get_error(response: Response) -> Union[Error, None]:
+    def get_error(response: Response) -> Union[Error, None]:
         """
         Extracts the error message from the response if available.
         It tries to get the error message under the key "errorMessage" or "error".
@@ -188,7 +189,7 @@ class KeycloakResolver(HTTPResolver):
         :param config: The configuration for the user list request
         """
         if response.status_code != 200:
-            error = self._get_error(response)
+            error = self.get_error(response)
             if error.error:
                 success = False
                 log.info(f"Failed to get the user list: {error.code} - {error.message}")
@@ -213,7 +214,7 @@ class KeycloakResolver(HTTPResolver):
         """
         if not response.status_code == 200:
             # extract error messages
-            error = self._get_error(response)
+            error = self.get_error(response)
             if error.error:
                 success = False
                 log.info(f"Failed to resolve user: {error.code} - {error.message}")
@@ -236,17 +237,15 @@ class KeycloakResolver(HTTPResolver):
         :param config: Configuration for the endpoint containing information about special error handling
         :return: True on success, False otherwise
         """
-        success = response.status_code == 201
-
         if not response.status_code == 201:
             # extract error messages
-            error = self._get_error(response)
+            error = self.get_error(response)
             if error.error:
                 log.info(f"Failed to create user: {error.code} - {error.message}")
                 raise ResolverError(f"Failed to create user: {error.message}")
             else:
                 # There is no error message in the expected format. Execute generic error handling.
-                super()._create_user_error_handling(response, config)
+                success = super()._create_user_error_handling(response, config)
         else:
             # Custom errors can also occur in successful responses
             success = self._custom_error_handling(response, config)
@@ -264,16 +263,17 @@ class KeycloakResolver(HTTPResolver):
         :param config: Configuration for the endpoint containing information about special error handling
         :return: True on success, False otherwise
         """
-        success = response.status_code == 204
-        if not success:
-            # extract error messages
-            error = self._get_error(response)
-            if error.error:
-                success = False
-                log.info(f"Failed to update user {user_identifier}: {error.code} - {error.message}")
-            else:
-                # There is no error message in the expected format. Execute generic error handling.
-                success = super()._update_user_error_handling(response, config, user_identifier)
+        if response.status_code == 204:
+            return True
+
+        # extract error messages
+        error = self.get_error(response)
+        if error.error:
+            success = False
+            log.info(f"Failed to update user {user_identifier}: {error.code} - {error.message}")
+        else:
+            # There is no error message in the expected format. Execute generic error handling.
+            success = super()._update_user_error_handling(response, config, user_identifier)
         return success
 
     def _delete_user_error_handling(self, response: Response, config: RequestConfig, user_identifier: str) -> bool:
@@ -282,20 +282,10 @@ class KeycloakResolver(HTTPResolver):
 
         :param response: The response object from the HTTP request
         :param config: Configuration for the endpoint containing information about special error handling
+        :param user_identifier: The identifier of the user to be deleted#
         :return: True on success, False otherwise
         """
-        success = response.status_code == 204
-        if not success:
-            # extract error code and messages
-            error = self._get_error(response)
-            if error.error:
-                # We do not raise an error here, as it would be caught in the outer function and cause an ambiguous
-                # log message. But an error is displayed in the UI anyway.
-                log.info(f"Failed to delete user {user_identifier}: {error.code} - {error.message}")
-            else:
-                # There is no error message in the expected format. Execute generic error handling.
-                success = super()._delete_user_error_handling(response, config, user_identifier)
-        return success
+        return delete_user_error_handling_no_content(self, response, config, user_identifier)
 
     def _auth_header_error_handling(self, response: Response, config: RequestConfig) -> bool:
         """
@@ -307,7 +297,7 @@ class KeycloakResolver(HTTPResolver):
         """
         if not response.status_code == 200:
             # extract error code and messages
-            error = self._get_error(response)
+            error = self.get_error(response)
             if error.error:
                 success = False
                 log.debug(f"Failed to get authorization header: {error.code} - {error.message}")
@@ -329,7 +319,7 @@ class KeycloakResolver(HTTPResolver):
         """
         if not response.status_code == 200:
             # extract error code and messages
-            error = self._get_error(response)
+            error = self.get_error(response)
             if error.error:
                 success = False
                 log.debug(f"Failed to authenticate user {user_identifier}: {error.code} - {error.message}")

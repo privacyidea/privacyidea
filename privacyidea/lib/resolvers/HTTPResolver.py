@@ -1,29 +1,22 @@
-#  Mar, 12 2020 Bruno Cascio
-#  http://www.privacyidea.org
-#
-#  product:  PrivacyIDEA
-#  module:   httpresolver
-#  tool:     HTTPResolver
-#  edition:  Comunity Edition
-#
-#  License:  AGPLv3
-#  contact:  http://www.linotp.org
-#            http://www.lsexperts.de
-#            linotp@lsexperts.de
+# (c) NetKnights GmbH 2025,  https://netknights.it
 #
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
-# License as published by the Free Software Foundation; either
+# as published by the Free Software Foundation; either
 # version 3 of the License, or any later version.
 #
 # This code is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU AFFERO GENERAL PUBLIC LICENSE for more details.
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+# SPDX-FileCopyrightText: 2020 Bruno Cascio
+# SPDX-FileCopyrightText: 2025 Jelina Unger <jelina.unger@netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 import re
 import time
 import copy
@@ -371,12 +364,14 @@ class HTTPResolver(UserIdResolver):
         :return: The user ID for the given username or an empty string if the user does not exist.
         """
         config_get_user_by_name = self.config.get(CONFIG_GET_USER_BY_NAME)
-        if config_get_user_by_name:
-            config = RequestConfig(config_get_user_by_name, self.headers, {"username": login_name}, "")
-            user_info = self._get_user(login_name, config)
-            user_id = user_info.get("userid", "")
-        else:
-            user_id = login_name
+        if not config_get_user_by_name:
+            # No endpoint configured to get user by name
+            log.debug("No configuration to get user by name available.")
+            return login_name
+
+        config = RequestConfig(config_get_user_by_name, self.headers, {"username": login_name}, "")
+        user_info = self._get_user(login_name, config)
+        user_id = user_info.get("userid", "")
         return user_id
 
     def getUsername(self, userid: str) -> str:
@@ -405,12 +400,12 @@ class HTTPResolver(UserIdResolver):
         If the endpoint is not configured to list all users, an empty list is returned.
         """
         config_get_user_list = self.config.get(CONFIG_GET_USER_LIST)
-        if config_get_user_list:
-            config = RequestConfig(config_get_user_list, self.headers, search_dict, self.wildcard)
-            user_list = self._get_user_list(search_dict, config)
-        else:
+        if not config_get_user_list:
             log.debug("No configuration to list users available.")
-            user_list = []
+            return []
+
+        config = RequestConfig(config_get_user_list, self.headers, search_dict, self.wildcard)
+        user_list = self._get_user_list(search_dict, config)
         return user_list
 
     def add_user(self, attributes: Optional[dict] = None) -> str:
@@ -424,29 +419,30 @@ class HTTPResolver(UserIdResolver):
         """
         uid = ""
         config_create_user = self.config.get(CONFIG_CREATE_USER)
-        if config_create_user:
-            # Prepare request
-            config = RequestConfig(config_create_user, self.headers, attributes, self.wildcard)
-            config.headers.update(self._get_auth_header())
-            request_params = config.request_mapping if config.request_mapping else {}
-            request_params.update(self._pi_user_to_user_store_user(attributes))
-
-            # Request
-            response = self._do_request(config, request_params)
-
-            # Handle Response
-            success = self._create_user_error_handling(response, config)
-            if success:
-                if 'application/json' in response.headers.get('content-type', ""):
-                    # Try to get the user id from the response
-                    data = response.json()
-                    data = self._apply_response_mapping(config, data)
-                    uid = data.get(self.attribute_mapping_pi_to_user_store['userid'])
-                if not uid:
-                    uid = self.getUserId(attributes.get('username', ''))
-        else:
+        if not config_create_user:
             # No create user config available
             log.debug("No configuration to create users available.")
+            return uid
+
+        # Prepare request
+        config = RequestConfig(config_create_user, self.headers, attributes, self.wildcard)
+        config.headers.update(self._get_auth_header())
+        request_params = config.request_mapping if config.request_mapping else {}
+        request_params.update(self._pi_user_to_user_store_user(attributes))
+
+        # Request
+        response = self._do_request(config, request_params)
+
+        # Handle Response
+        success = self._create_user_error_handling(response, config)
+        if success:
+            if 'application/json' in response.headers.get('content-type', ""):
+                # Try to get the user id from the response
+                data = response.json()
+                data = self._apply_response_mapping(config, data)
+                uid = data.get(self.attribute_mapping_pi_to_user_store['userid'])
+            if not uid:
+                uid = self.getUserId(attributes.get('username', ''))
         return uid
 
     def delete_user(self, uid: str) -> bool:
@@ -459,20 +455,22 @@ class HTTPResolver(UserIdResolver):
         """
         success = False
         config_delete_user = self.config.get(CONFIG_DELETE_USER)
-        if config_delete_user:
-            # Prepare Request
-            config = RequestConfig(config_delete_user, self.headers, {"userid": uid}, "")
-            config.headers.update(self._get_auth_header())
-            params = config.request_mapping if config.request_mapping else {}
-
-            # Request
-            response = self._do_request(config, params)
-
-            # Handle Response
-            success = self._delete_user_error_handling(response, config, uid)
-        else:
+        if not config_delete_user:
             # No delete user config available
             log.debug("No delete user configuration available.")
+            return success
+
+        # Prepare Request
+        config = RequestConfig(config_delete_user, self.headers, {"userid": uid}, "")
+        config.headers.update(self._get_auth_header())
+        params = config.request_mapping if config.request_mapping else {}
+
+        # Request
+        response = self._do_request(config, params)
+
+        # Handle Response
+        success = self._delete_user_error_handling(response, config, uid)
+
         return success
 
     def update_user(self, uid: str, attributes: Optional[dict] = None) -> bool:
@@ -488,21 +486,23 @@ class HTTPResolver(UserIdResolver):
         """
         success = False
         config_edit_user = self.config.get(CONFIG_EDIT_USER)
-        if config_edit_user:
-            # Prepare Request
-            config = RequestConfig(config_edit_user, self.headers, {"userid": uid}, "")
-            config.headers.update(self._get_auth_header())
-            request_params = config.request_mapping if config.request_mapping else {}
-            request_params.update(self._pi_user_to_user_store_user(attributes))
-
-            # Request
-            response = self._do_request(config, request_params)
-
-            # Handle Request
-            success = self._update_user_error_handling(response, config, uid)
-        else:
+        if not config_edit_user:
             # No edit user config available
             log.debug("No edit user configuration available.")
+            return success
+
+        # Prepare Request
+        config = RequestConfig(config_edit_user, self.headers, {"userid": uid}, "")
+        config.headers.update(self._get_auth_header())
+        request_params = config.request_mapping if config.request_mapping else {}
+        request_params.update(self._pi_user_to_user_store_user(attributes))
+
+        # Request
+        response = self._do_request(config, request_params)
+
+        # Handle Request
+        success = self._update_user_error_handling(response, config, uid)
+
         return success
 
     @log_with(log, hide_args=[2])
@@ -516,22 +516,22 @@ class HTTPResolver(UserIdResolver):
         :param username: The username of the user
         :return: True or False
         """
-        if self.config_user_auth:
-            # Prepare Request
-            config = RequestConfig(self.config_user_auth, self.headers,
-                                   {"userid": uid, "username": username, "password": password}, self.wildcard)
-            config.headers.update(self._get_auth_header())
-            request_params = config.request_mapping if config.request_mapping else {}
-
-            # Request
-            response = self._do_request(config, request_params)
-
-            # Handle Response
-            success = self._user_auth_error_handling(response, config, uid)
-        else:
+        if not self.config_user_auth:
             # No user auth config available
             log.debug("No user authentication configuration available.")
-            success = False
+            return False
+
+        # Prepare Request
+        config = RequestConfig(self.config_user_auth, self.headers,
+                               {"userid": uid, "username": username, "password": password}, self.wildcard)
+        config.headers.update(self._get_auth_header())
+        request_params = config.request_mapping if config.request_mapping else {}
+
+        # Request
+        response = self._do_request(config, request_params)
+
+        # Handle Response
+        success = self._user_auth_error_handling(response, config, uid)
         return success
 
     def getResolverId(self) -> str:
@@ -828,18 +828,20 @@ class HTTPResolver(UserIdResolver):
         # TODO: Cache implementation
 
         auth_header = {}
-        if self.authorization_config:
-            config = RequestConfig(self.authorization_config, {"Content-Type": "application/x-www-form-urlencode"},
-                                   {"username": self.username, "password": self.password}, "")
+        if not self.authorization_config:
+            return auth_header
 
-            response = self._do_request(config, config.request_mapping)
+        config = RequestConfig(self.authorization_config, {"Content-Type": "application/x-www-form-urlencode"},
+                               {"username": self.username, "password": self.password}, "")
 
-            success = self._auth_header_error_handling(response, config)
-            if success:
-                json_result = response.json()
-                auth_header = self._apply_response_mapping(config, json_result)
-            else:
-                raise ResolverError("Failed to get authorization header.")
+        response = self._do_request(config, config.request_mapping)
+
+        success = self._auth_header_error_handling(response, config)
+        if success:
+            json_result = response.json()
+            auth_header = self._apply_response_mapping(config, json_result)
+        else:
+            raise ResolverError("Failed to get authorization header.")
 
         return auth_header
 
@@ -963,16 +965,19 @@ class HTTPResolver(UserIdResolver):
         default wildcard '*' is replaced with the configured wildcard.
         """
         request_parameters = {}
-        if search_dict:
-            for key, value in search_dict.items():
-                user_store_key = self.attribute_mapping_pi_to_user_store.get(key)
-                if user_store_key:
-                    value = value.replace("*", self.wildcard)
-                    if value:
-                        request_parameters[user_store_key] = value
-                else:
-                    log.debug(
-                        f"Search parameter '{key}' not found in attribute mapping. Searching without this parameter.")
+        if not search_dict:
+            # If no search parameters are provided, return an empty dict
+            return request_parameters
+
+        for key, value in search_dict.items():
+            user_store_key = self.attribute_mapping_pi_to_user_store.get(key)
+            if user_store_key:
+                value = value.replace("*", self.wildcard)
+                if value:
+                    request_parameters[user_store_key] = value
+            else:
+                log.debug(
+                    f"Search parameter '{key}' not found in attribute mapping. Searching without this parameter.")
         return request_parameters
 
     def _get_user_list(self, search_dict: dict, config: RequestConfig) -> list[dict]:
@@ -1001,23 +1006,37 @@ class HTTPResolver(UserIdResolver):
 
     # Error Handling
 
-    def _custom_error_handling(self, response: Response, config: RequestConfig) -> bool:
+    @staticmethod
+    def get_error(response: Response) -> Error:
+        """
+        Extracts a potential error from the response.
+
+        :param response: Response object
+        :return: Error dataclass containing the error info
+        """
+        return Error(False, "", "")
+
+    @staticmethod
+    def _custom_error_handling(response: Response, config: RequestConfig) -> bool:
         """
         Checks if all entries of the custom error response are contained in the response.
         """
         success = True
-        if response.status_code != 204:
-            # If the response is not empty, we can check for custom error handling
-            if config.has_error_handler:
-                json_result = response.json()
-                # verify if error response mapping is a subset of the json http response
-                if isinstance(json_result, dict) and config.error_response is not None:
-                    if all([x in json_result.items() for x in config.error_response.items()]):
-                        log.error(json_result)
-                        success = False
+        if response.status_code == 204:
+            return success
+
+        # If the response is not empty, we can check for custom error handling
+        if not config.has_error_handler:
+            return success
+        json_result = response.json()
+        # verify if error response mapping is a subset of the json http response
+        if isinstance(json_result, dict) and config.error_response is not None:
+            if all([x in json_result.items() for x in config.error_response.items()]):
+                log.error(json_result)
+                success = False
         return success
 
-    def _default_error_handling(self, response: Response, config: RequestConfig) -> bool:
+    def default_error_handling(self, response: Response, config: RequestConfig) -> bool:
         """
         Checks if an HTTP error occurred and raise it or if the custom error handling fits the response.
 
@@ -1043,7 +1062,7 @@ class HTTPResolver(UserIdResolver):
         :param config: Configuration for the endpoint containing information about special error handling
         :return: True if the request was successful, False otherwise
         """
-        success = self._default_error_handling(response, config)
+        success = self.default_error_handling(response, config)
         if not success:
             raise ResolverError("Failed to get the user list!")
         return success
@@ -1059,7 +1078,7 @@ class HTTPResolver(UserIdResolver):
         :param user_identifier: Either the username or user id (used for logging)
         :return: True if the request was successful, False otherwise
         """
-        success = self._default_error_handling(response, config)
+        success = self.default_error_handling(response, config)
         return success
 
     def _create_user_error_handling(self, response: Response, config: RequestConfig):
@@ -1069,7 +1088,7 @@ class HTTPResolver(UserIdResolver):
         :param response: The response object from the HTTP request
         :param config: Configuration for the endpoint containing information about special error handling
         """
-        success = self._default_error_handling(response, config)
+        success = self.default_error_handling(response, config)
         if not success:
             raise ResolverError("Failed to create a user in the user store.")
         return success
@@ -1082,7 +1101,7 @@ class HTTPResolver(UserIdResolver):
         :param response: The response object from the HTTP request
         :param config: Configuration for the endpoint containing information about special error handling
         """
-        success = self._default_error_handling(response, config)
+        success = self.default_error_handling(response, config)
         return success
 
     def _delete_user_error_handling(self, response: Response, config: RequestConfig, user_identifier: str) -> bool:
@@ -1093,7 +1112,7 @@ class HTTPResolver(UserIdResolver):
         :param response: The response object from the HTTP request
         :param config: Configuration for the endpoint containing information about special error handling
         """
-        success = self._default_error_handling(response, config)
+        success = self.default_error_handling(response, config)
         return success
 
     def _auth_header_error_handling(self, response: Response, config: RequestConfig) -> bool:
@@ -1104,7 +1123,7 @@ class HTTPResolver(UserIdResolver):
         :param config: Configuration for the endpoint containing information about special error handling
         :return: True if the password check was successful, False otherwise
         """
-        success = self._default_error_handling(response, config)
+        success = self.default_error_handling(response, config)
         return success
 
     def _user_auth_error_handling(self, response: Response, config: RequestConfig, user_identifier: str) -> bool:
@@ -1116,5 +1135,5 @@ class HTTPResolver(UserIdResolver):
         :param user_identifier: The user identifier (username or user id)
         :return: True if the password check was successful, False otherwise
         """
-        success = self._default_error_handling(response, config)
+        success = self.default_error_handling(response, config)
         return success

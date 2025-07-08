@@ -1,6 +1,6 @@
 import copy
 import json
-from typing import Optional
+from typing import Optional, Union
 
 import mock
 import responses
@@ -930,7 +930,7 @@ class HTTPResolverTestCase(MyTestCase):
 
 
 class ConfidentialClientApplicationMock:
-    def __init__(self, client_id, authority, client_credential):
+    def __init__(self, client_id: str, authority: str, client_credential: Union[str, dict[str, str]]):
         self.client_id = client_id
         self.authority = authority
         self.client_credential = client_credential

@@ -1,4 +1,4 @@
-# (c) NetKnights GmbH 2024,  https://netknights.it
+# (c) NetKnights GmbH 2025,  https://netknights.it
 #
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -15,10 +15,11 @@
 #
 # SPDX-FileCopyrightText: 2025 Jelina Unger <jelina.unger@netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
-#
+
 import copy
 import json
 import logging
+import msal
 from enum import Enum
 from typing import Union, Optional
 
@@ -33,7 +34,7 @@ from privacyidea.lib.resolvers.HTTPResolver import (HTTPResolver, METHOD, ENDPOI
                                                     CONFIG_CREATE_USER, CONFIG_EDIT_USER,
                                                     CONFIG_DELETE_USER, REQUEST_MAPPING, HEADERS, CONFIG_USER_AUTH,
                                                     Error)
-import msal
+from privacyidea.lib.resolvers.util import delete_user_error_handling_no_content
 
 CLIENT_ID = "client_id"
 CLIENT_CREDENTIAL_TYPE = "client_credential_type"
@@ -250,40 +251,43 @@ class EntraIDResolver(HTTPResolver):
         The complete search query is stored und the key ``$filer`` in the request parameters dictionary.
         """
         request_parameters = {}
-        if search_dict:
-            filter_values = []
-            for key, value in search_dict.items():
-                entra_key = self.attribute_mapping_pi_to_user_store.get(key)
-                if entra_key:
-                    if value == "*":
-                        # If the value is "*", we do not filter by this attribute
-                        continue
-                    elif "*" in value:
-                        # Advanced query capabilities (endswith) can only be used if the Consistency Header is set
-                        # If it is not configured we use basic queries (only startswith)
-                        user_list_config = self.config.get(CONFIG_GET_USER_LIST, {})
-                        headers = user_list_config.get(HEADERS, "{}")
-                        try:
-                            headers = json.loads(headers)
-                            advanced_query = headers.get("ConsistencyLevel", "") == "eventual"
-                        except json.JSONDecodeError:
-                            advanced_query = False
+        if not search_dict:
+            return request_parameters
 
-                        # EntraID does not support advanced wildcard searches. We can only filter for attributes
-                        # that start (or end) with the given value.
-                        value = value.replace("*", self.wildcard)
-                        if advanced_query:
-                            filter_values.append(
-                                f"(startswith({entra_key}, '{value}') or endswith({entra_key}, '{value}'))")
-                        else:
-                            filter_values.append(f"startswith({entra_key}, '{value}')")
-                    else:
-                        filter_values.append(f"{entra_key} eq '{value.replace('*', self.wildcard)}'")
+        filter_values = []
+        for key, value in search_dict.items():
+            entra_key = self.attribute_mapping_pi_to_user_store.get(key)
+            if not entra_key:
+                log.debug(f"Search parameter '{key}' not found in attribute mapping. Search without this parameter.")
+                continue
+
+            if value == "*":
+                # If the value is "*", we do not filter by this attribute
+                continue
+            elif "*" in value:
+                # Advanced query capabilities (endswith) can only be used if the Consistency Header is set
+                # If it is not configured we use basic queries (only startswith)
+                user_list_config = self.config.get(CONFIG_GET_USER_LIST, {})
+                headers = user_list_config.get(HEADERS, "{}")
+                try:
+                    headers = json.loads(headers)
+                    advanced_query = headers.get("ConsistencyLevel", "") == "eventual"
+                except json.JSONDecodeError:
+                    advanced_query = False
+
+                # EntraID does not support advanced wildcard searches. We can only filter for attributes
+                # that start (or end) with the given value.
+                value = value.replace("*", self.wildcard)
+                if advanced_query:
+                    filter_values.append(
+                        f"(startswith({entra_key}, '{value}') or endswith({entra_key}, '{value}'))")
                 else:
-                    log.debug(
-                        f"Search parameter '{key}' not found in attribute mapping. Search without this parameter.")
-            if filter_values:
-                request_parameters["$filter"] = " and ".join(filter_values)
+                    filter_values.append(f"startswith({entra_key}, '{value}')")
+            else:
+                filter_values.append(f"{entra_key} eq '{value.replace('*', self.wildcard)}'")
+
+        if filter_values:
+            request_parameters["$filter"] = " and ".join(filter_values)
 
         return request_parameters
 
@@ -312,7 +316,7 @@ class EntraIDResolver(HTTPResolver):
 
     # Error Handling
     @staticmethod
-    def _get_error(response: Response) -> Error:
+    def get_error(response: Response) -> Error:
         """
         Extracts a potential error from the response.
         EntraID usually returns errors in the format:
@@ -335,7 +339,7 @@ class EntraIDResolver(HTTPResolver):
         :param response: The response object from the HTTP request
         """
         if response.status_code != 200:
-            error = self._get_error(response)
+            error = self.get_error(response)
             if error.error:
                 success = False
                 log.info(f"Failed to get the user list: {error.code} - {error.message}")
@@ -361,7 +365,7 @@ class EntraIDResolver(HTTPResolver):
             log.info("Failed to resolve user: Entra ID server is busy.")
         elif response.status_code != 200:
             # extract error code and messages
-            error = self._get_error(response)
+            error = self.get_error(response)
             if error.error:
                 success = False
                 log.info(f"Failed to resolve user: {error.code} - {error.message}")
@@ -384,7 +388,7 @@ class EntraIDResolver(HTTPResolver):
         """
         if not response.status_code == 201:
             # extract error code and messages
-            error = self._get_error(response)
+            error = self.get_error(response)
             if error.error:
                 log.info(f"Failed to create user: {error.code} - {error.message}")
                 raise ResolverError(f"Failed to create user: {error.code} - {error.message}")
@@ -407,16 +411,17 @@ class EntraIDResolver(HTTPResolver):
         :param response: The response object from the HTTP request
         :param config: Configuration for the endpoint containing information about special error handling
         """
-        success = response.status_code == 204
-        if not success:
-            # extract error code and messages
-            error = self._get_error(response)
-            if error.error:
-                success = False
-                log.info(f"Failed to update user {user_identifier}: {error.code} - {error.message}")
-            else:
-                # There is no error message in the expected format. Execute generic error handling.
-                success = super()._update_user_error_handling(response, config, user_identifier)
+        if response.status_code == 204:
+            return True
+
+        # extract error code and messages
+        error = self.get_error(response)
+        if error.error:
+            success = False
+            log.info(f"Failed to update user {user_identifier}: {error.code} - {error.message}")
+        else:
+            # There is no error message in the expected format. Execute generic error handling.
+            success = super()._update_user_error_handling(response, config, user_identifier)
         return success
 
     def _delete_user_error_handling(self, response: Response, config: RequestConfig, user_identifier: str) -> bool:
@@ -426,19 +431,10 @@ class EntraIDResolver(HTTPResolver):
 
         :param response: The response object from the HTTP request
         :param config: Configuration for the endpoint containing information about special error handling
+        :param user_identifier: The identifier of the user to be deleted
+        :return: True if the user was deleted successfully, False otherwise
         """
-        success = response.status_code == 204
-        if not success:
-            # extract error code and messages
-            error = self._get_error(response)
-            if error.error:
-                # We do not raise an error here, as it would be caught in the outer function and cause an ambiguous
-                # log message. But an error is displayed in the UI anyway.
-                log.info(f"Failed to delete user {user_identifier}: {error.code} - {error.message}")
-            else:
-                # Checks for generic HTTP errors and custom error handling
-                success = super()._delete_user_error_handling(response, config, user_identifier)
-        return success
+        return delete_user_error_handling_no_content(self, response, config, user_identifier)
 
     def _user_auth_error_handling(self, response: Response, config: RequestConfig, user_identifier: str) -> bool:
         """
