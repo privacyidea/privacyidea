@@ -3252,8 +3252,7 @@ class ValidateAPITestCase(MyApiTestCase):
         with self.app.test_request_context(
                 "/validate/check",
                 method="POST",
-                data={"user": "cornelius", "realm": self.realm1, "pass": "1"},
-        ):
+                data={"user": "cornelius", "realm": self.realm1, "pass": "1"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200, res)
             result = res.json["result"]
