@@ -867,10 +867,10 @@ def set_description_api(serial=None):
     g.audit_object.log({"serial": serial})
     description = getParam(request.all_data, "description", optional=required)
     g.audit_object.add_to_log({'action_detail': "description={0!r}".format(description)})
-    token = get_one_token(serial=serial)
+    token = get_one_token(serial=serial, user=user)
     request.all_data["type"] = token.type
     require_description_on_edit(request)
-    res = set_description(serial, description, user=user)
+    res = set_description(serial, description, user=user, token=token)
     g.audit_object.log({"success": True})
     return send_result(res)
 
