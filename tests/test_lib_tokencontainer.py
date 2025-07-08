@@ -846,7 +846,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         container_3 = find_container_by_serial(container_serials[3])
         container_3.set_container_info({"key1": "value1", "key2": "value2"})
         container_4 = find_container_by_serial(container_serials[4])
-        container_4.set_container_info({"key1": "value1", "test": "1234"})
+        container_4.set_container_info({"key1": "value1", "test": "1234", "test.type": "number"})
         # exact
         container_data = get_all_containers(info={"key1": "value1"}, pagesize=15)
         self.assertEqual(2, len(container_data["containers"]))
@@ -861,6 +861,15 @@ class TokenContainerManagementTestCase(MyTestCase):
         # no match
         container_data = get_all_containers(info={"test": "*value*"}, pagesize=15)
         self.assertEqual(0, len(container_data["containers"]))
+
+        # Get container info type
+        container_data = get_all_containers(info={"test": "*"})
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(container_serials[4], container_data["containers"][0].serial)
+        container_info = container_data["containers"][0].get_container_info()
+        self.assertGreaterEqual(len(container_info), 2, container_info)
+        test_info = [x for x in container_info if x.key == "test"][0]
+        self.assertEqual("number", test_info.type, test_info)
 
         # ---- description ----
         # filter by description

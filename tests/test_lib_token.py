@@ -1636,8 +1636,8 @@ class TokenTestCase(MyTestCase):
         unassign_token(serial=None, user=user)
 
     def test_55_get_tokens_paginated_generator(self):
-        def flatten_tokens(l):
-            return [token.token.id for l2 in l for token in l2]
+        def flatten_tokens(token_list):
+            return [token.token.id for l2 in token_list for token in l2]
 
         # serial72 token has invalid type. Check behavior and remove it.
         self.assertEqual(list(get_tokens_paginated_generator(serial_wildcard="serial*")), [[]])
@@ -2244,19 +2244,23 @@ class TokenGroupTestCase(MyTestCase):
         grouplist = list_tokengroups("g2")
         self.assertEqual(len(grouplist), 2)
 
-        # unassign tokengroups
+        # Remove tokengroup "g1" from token "s1"
         tok1.del_tokengroup("g1")
-        # only the 2nd group remains
+        # Only the 2nd group remains
         self.assertEqual(tok1.token.tokengroup_list[0].tokengroup.name, "g2")
-        # remove it
+        # Remove it from token "s2"
         unassign_tokengroup("s2", "g2")
         tok2 = get_one_token(serial="s2")
         self.assertEqual(len(tok2.token.tokengroup_list), 0)
 
-        # check that deleting a tokengroup with tokens still assigned results in an error
+        # Check that deleting a tokengroup with tokens still assigned results in an error
         self.assertRaises(privacyIDEAError, delete_tokengroup, name='g2')
 
-        # cleanup
+        # Remove all tokengroups from token "s1"
+        tok1.del_tokengroup()
+        self.assertEqual(len(tok1.token.tokengroup_list), 0)
+
+        # Cleanup
         for s in serials:
             remove_token(s)
         delete_tokengroup('g1')

@@ -13,9 +13,7 @@ from privacyidea.lib.user import (User)
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.lib.policy import (PolicyClass, set_policy, delete_policy, SCOPE)
 from unittest import mock
-from privacyidea.models import (Token,
-                                 Config,
-                                 Challenge)
+from privacyidea.models import Token, Config, Challenge
 from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
 import datetime
 import binascii

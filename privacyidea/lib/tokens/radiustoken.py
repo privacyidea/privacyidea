@@ -485,7 +485,7 @@ class RadiusTokenClass(RemoteTokenClass):
         # here we also need to check for radius.user
         log.debug("checking OTP len:{0!s} on radius server: "
                   "{1!s}, user: {2!r}".format(len(otpval), radius_server,
-                                               radius_user))
+                                              radius_user))
 
         try:
             # pyrad does not allow to set timeout and retries.
