@@ -2471,8 +2471,8 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertFalse(result.get("status"))
         # Check that we have a failed attempt with the username in the audit
         ae = self.find_most_recent_audit_entry(action='* /validate/radiuscheck')
-        self.assertEqual(0,  ae.get("success"), ae)
-        self.assertEqual("unknown",  ae.get("user"), ae)
+        self.assertEqual(0, ae.get("success"), ae)
+        self.assertEqual("unknown", ae.get("user"), ae)
 
     def test_29_several_CR_one_locked(self):
         # A user has several CR tokens. One of the tokens is locked.
@@ -3238,23 +3238,17 @@ class ValidateAPITestCase(MyApiTestCase):
 
         # Create a working Simple-Pass token and HOTP token
         init_token(
-            {
-                "serial": serial_1,
-                "type": "spass",
-                "pin": "1",
-            },
-            user=User("cornelius", self.realm1),
-        )
+            {"serial": serial_1,
+             "type": "spass",
+             "pin": "1"},
+            user=User("cornelius", self.realm1))
 
         init_token(
-            {
-                "serial": serial_2,
-                "type": "hotp",
-                "pin": "2",
-                "otpkey": self.otpkey,
-            },
-            user=User("cornelius", self.realm1),
-        )
+            {"serial": serial_2,
+             "type": "hotp",
+             "pin": "2",
+             "otpkey": self.otpkey},
+            user=User("cornelius", self.realm1))
 
         # It authenticates successfully before the policy is set
         with self.app.test_request_context(
@@ -3268,35 +3262,25 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(result["authentication"], "ACCEPT")
 
         # Set a policy to trigger challenge response for HOTP
-        set_policy(
-            name="challenge_response",
-            scope=SCOPE.AUTH,
-            action=f"{ACTION.CHALLENGERESPONSE}=hotp"
-        )
+        set_policy(name="challenge_response", scope=SCOPE.AUTH, action=f"{ACTION.CHALLENGERESPONSE}=hotp")
 
         with self.app.test_request_context(
                 "/validate/check",
                 method="POST",
-                data={"user": "cornelius", "realm": self.realm1, "pass": "2"},
-        ):
+                data={"user": "cornelius", "realm": self.realm1, "pass": "2"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200, res)
             result = res.json["result"]
             self.assertEqual(result["authentication"], "CHALLENGE")
 
         # Disable the spass and hotp token for authentication
-        set_policy(
-            name="disable_some_token",
-            scope=SCOPE.AUTH,
-            action=f"{ACTION.DISABLED_TOKEN_TYPES}=spass hotp",
-        )
+        set_policy(name="disable_some_token", scope=SCOPE.AUTH, action=f"{ACTION.DISABLED_TOKEN_TYPES}=spass hotp")
 
         # The very same auth attempt must now be rejected
         with self.app.test_request_context(
                 "/validate/check",
                 method="POST",
-                data={"user": "cornelius", "realm": self.realm1, "pass": "1"},
-        ):
+                data={"user": "cornelius", "realm": self.realm1, "pass": "1"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200, res)
             result = res.json["result"]
@@ -3305,8 +3289,7 @@ class ValidateAPITestCase(MyApiTestCase):
         with self.app.test_request_context(
                 "/validate/check",
                 method="POST",
-                data={"user": "cornelius", "realm": self.realm1, "pass": "2"},
-        ):
+                data={"user": "cornelius", "realm": self.realm1, "pass": "2"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200, res)
             result = res.json["result"]
@@ -4033,7 +4016,8 @@ class MultiChallenge(MyApiTestCase):
                                            headers={"user_agent": "privacyidea-cp/2.0"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            preferred_token_types = user.attributes.get(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-cp")
+            preferred_token_types = user.attributes.get(
+                f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-cp")
             self.assertEqual("push", preferred_token_types)
 
         # authenticate with PIN to trigger challenge-response: second auth, custom user attribute set
@@ -4081,7 +4065,8 @@ class MultiChallenge(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             # custom user attribute changed to interactive
-            preferred_token_types = user.attributes.get(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-cp")
+            preferred_token_types = user.attributes.get(
+                f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-cp")
             self.assertEqual("hotp", preferred_token_types)
         # authenticate with PIN to trigger challenge-response: second auth, custom user attribute set
         with self.app.test_request_context('/validate/check',
@@ -6355,6 +6340,7 @@ class ValidateShortPasswordTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
+
 
 class Initialize(MyApiTestCase):
 
