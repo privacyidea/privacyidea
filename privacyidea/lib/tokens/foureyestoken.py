@@ -43,7 +43,7 @@ from privacyidea.lib.error import ParameterError
 from privacyidea.lib.token import check_realm_pass
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib import _
-from privacyidea.lib.policy import ACTION, SCOPE, GROUP, get_action_values_from_options
+from privacyidea.lib.policy import ACTION, SCOPE, GROUP
 from privacyidea.lib.challenge import get_challenges, Challenge
 import json
 import datetime
@@ -287,7 +287,7 @@ class FourEyesTokenClass(TokenClass):
                     break
         return r_success
 
-    @log_with(log)
+    @log_with(log, hide_args=[1])
     @check_token_locked
     def authenticate(self, passw, user=None, options=None):
         """
@@ -450,7 +450,7 @@ class FourEyesTokenClass(TokenClass):
         """
         options = options or {}
         message = ""
-        if type(options.get("data")) == dict:
+        if isinstance(options.get("data"), dict):
             # In the special first chal-resp case we do not have jsonified data, yet. So we need to convert
             options["data"] = json.dumps(options.get("data"))
         used_tokens = json.loads(options.get("data", json.dumps({})))

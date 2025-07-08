@@ -152,21 +152,21 @@ class UserIdResolver(object):
         """
         return {}
 
-    def getUserList(self, searchDict=None):
+    def getUserList(self, search_dict=None):
         """
         This function finds the user objects,
         that have the term 'value' in the user object field 'key'
 
-        :param searchDict:  dict with key values of user attributes -
+        :param search_dict:  dict with key values of user attributes -
                     the key may be something like 'loginname' or 'email'
                     the value is a regular expression.
-        :type searchDict: dict
+        :type search_dict: dict
 
         :return: list of dictionaries (each dictionary contains a
                  user object) or an empty string if no object is found.
         :rtype: list of dicts
         """
-        searchDict = searchDict or {}
+        search_dict = search_dict or {}
         return [{}]
 
     def getResolverId(self):

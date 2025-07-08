@@ -2,6 +2,8 @@
 This test file tests the lib.tokens.radiustoken
 This depends on lib.tokenclass
 """
+import logging
+from testfixtures import LogCapture
 
 from .base import MyTestCase
 from privacyidea.lib.tokens.radiustoken import RadiusTokenClass
@@ -61,7 +63,6 @@ class RadiusTokenTestCase(MyTestCase):
         self.assertTrue(class_prefix == "PIRA", class_prefix)
         self.assertTrue(token.get_class_type() == "radius", token)
 
-
     def test_02_class_methods(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         token = RadiusTokenClass(db_token)
@@ -109,9 +110,13 @@ class RadiusTokenTestCase(MyTestCase):
         self.assertTrue(r[1] == -1, r)
         self.assertTrue(r[2].get("message") == "Wrong PIN", r)
         # right PIN
-        r = token.authenticate(self.otppin+"123456")
-        self.assertTrue(r[0], r)
-        self.assertTrue(r[1] >= 0, r)
+        logging.getLogger('privacyidea.lib.tokens.radiustoken').setLevel(logging.DEBUG)
+        with LogCapture(level=logging.DEBUG) as lc:
+            r = token.authenticate(self.otppin+"123456")
+            self.assertTrue(r[0], r)
+            self.assertTrue(r[1] >= 0, r)
+            for log_record in lc.actual():
+                self.assertNotIn(self.otppin, log_record[2], log_record)
 
     @radiusmock.activate
     def test_09_authenticate_radius_pin(self):
@@ -174,6 +179,8 @@ class RadiusTokenTestCase(MyTestCase):
                             "radius.identifier": "myserver",
                             "radius.local_checkpin": True,
                             "radius.user": "nönäscii"})
+
+        self.assertIsInstance(token, RadiusTokenClass)
 
         # check the working of internal _check_radius
         radiusmock.setdata(response=radiusmock.AccessChallenge)
@@ -365,4 +372,3 @@ class RadiusTokenTestCase(MyTestCase):
         r, otp_count, _rpl = token.authenticate("some_remote_value")
         self.assertFalse(r)
         self.assertTrue(otp_count < 0)
-
