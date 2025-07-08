@@ -1,3 +1,4 @@
+import { NgClass } from '@angular/common';
 import {
   Component,
   computed,
@@ -7,6 +8,14 @@ import {
   ViewChild,
   WritableSignal,
 } from '@angular/core';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { MatButton, MatIconButton } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
+import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatIcon } from '@angular/material/icon';
+import { MatInput } from '@angular/material/input';
+import { MatPaginator } from '@angular/material/paginator';
+import { MatSort, MatSortHeader, MatSortModule } from '@angular/material/sort';
 import {
   MatCell,
   MatHeaderCell,
@@ -16,26 +25,18 @@ import {
   MatTableDataSource,
   MatTableModule,
 } from '@angular/material/table';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
-import { MatPaginator } from '@angular/material/paginator';
-import { MatSort, MatSortHeader, MatSortModule } from '@angular/material/sort';
-import { TokenService } from '../../../../services/token/token.service';
-import { TableUtilsService } from '../../../../services/table-utils/table-utils.service';
-import { NgClass } from '@angular/common';
-import { MatIcon } from '@angular/material/icon';
-import { MatButton, MatIconButton } from '@angular/material/button';
+import { MatTooltip } from '@angular/material/tooltip';
+import { AuthService } from '../../../../services/auth/auth.service';
 import {
   ContainerDetailToken,
   ContainerService,
 } from '../../../../services/container/container.service';
+import { ContentService } from '../../../../services/content/content.service';
 import { OverflowService } from '../../../../services/overflow/overflow.service';
-import { MatDialog } from '@angular/material/dialog';
+import { TableUtilsService } from '../../../../services/table-utils/table-utils.service';
+import { TokenService } from '../../../../services/token/token.service';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { CopyButtonComponent } from '../../../shared/copy-button/copy-button.component';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { ContentService } from '../../../../services/content/content.service';
-import { AuthService } from '../../../../services/auth/auth.service';
 import { UserAssignmentDialogComponent } from '../user-assignment-dialog/user-assignment-dialog.component';
 
 const columnsKeyMap = [
@@ -68,6 +69,7 @@ const columnsKeyMap = [
     CopyButtonComponent,
     ReactiveFormsModule,
     FormsModule,
+    MatTooltip,
   ],
   templateUrl: './container-details-token-table.component.html',
   styleUrl: './container-details-token-table.component.scss',
@@ -127,7 +129,7 @@ export class ContainerDetailsTokenTableComponent {
     protected tokenService: TokenService,
     protected tableUtilsService: TableUtilsService,
     protected overflowService: OverflowService,
-    private dialog: MatDialog,
+    protected dialog: MatDialog,
     protected contentService: ContentService,
     protected authService: AuthService,
   ) {

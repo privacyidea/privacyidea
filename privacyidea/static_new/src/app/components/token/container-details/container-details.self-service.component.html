@@ -159,7 +159,7 @@
                       </mat-autocomplete>
                     </mat-form-field>
                   } @else {
-                    <a href="#">{{ element.value }}</a>
+                    <span>{{ element.value }}</span>
                   }
                 }
                 @case ("user_realm") {
@@ -178,7 +178,7 @@
                       </mat-select>
                     </mat-form-field>
                   } @else {
-                    <a href="#">{{ element.value }}</a>
+                    <span>{{ element.value }}</span>
                   }
                 }
                 @default {
@@ -292,7 +292,7 @@
           </mat-autocomplete>
         </mat-form-field>
         <mat-divider class="width-36"></mat-divider>
-        <app-container-details-token-table
+        <app-container-details-token-table-self-service
           [containerTokenData]="containerTokenData" />
       </div>
     </div>

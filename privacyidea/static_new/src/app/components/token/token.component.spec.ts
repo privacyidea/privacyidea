@@ -1,14 +1,14 @@
-import { ComponentFixture, fakeAsync, TestBed } from '@angular/core/testing';
-import { Component } from '@angular/core';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { Component } from '@angular/core';
+import { ComponentFixture, fakeAsync, TestBed } from '@angular/core/testing';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
-import { TokenComponent } from './token.component';
-import { OverflowService } from '../../services/overflow/overflow.service';
 import { NotificationService } from '../../services/notification/notification.service';
-import { TokenDetailsComponent } from './token-details/token-details.component';
+import { OverflowService } from '../../services/overflow/overflow.service';
 import { ContainerDetailsComponent } from './container-details/container-details.component';
+import { TokenDetailsComponent } from './token-details/token-details.component';
+import { TokenComponent } from './token.component';
 
 @Component({
   selector: 'app-token-details',

@@ -1,24 +1,24 @@
-import { Component } from '@angular/core';
 import { NgClass } from '@angular/common';
-import { MatCell, MatColumnDef, MatTableModule } from '@angular/material/table';
+import { Component } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MatListItem } from '@angular/material/list';
-import { EditButtonsComponent } from '../../shared/edit-buttons/edit-buttons.component';
-import { MatFormField } from '@angular/material/form-field';
-import { MatSelectModule } from '@angular/material/select';
-import { MatInput } from '@angular/material/input';
 import {
   MatAutocomplete,
   MatAutocompleteTrigger,
 } from '@angular/material/autocomplete';
-import { MatIcon } from '@angular/material/icon';
 import { MatIconButton } from '@angular/material/button';
-import { ContainerDetailsInfoComponent } from './container-details-info/container-details-info.component';
-import { ContainerDetailsTokenTableComponent } from './container-details-token-table/container-details-token-table.component';
-import { MatPaginator } from '@angular/material/paginator';
-import { MatDivider } from '@angular/material/divider';
 import { MatCheckbox } from '@angular/material/checkbox';
+import { MatDivider } from '@angular/material/divider';
+import { MatFormField } from '@angular/material/form-field';
+import { MatIcon } from '@angular/material/icon';
+import { MatInput } from '@angular/material/input';
+import { MatListItem } from '@angular/material/list';
+import { MatPaginator } from '@angular/material/paginator';
+import { MatSelectModule } from '@angular/material/select';
+import { MatCell, MatColumnDef, MatTableModule } from '@angular/material/table';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
+import { EditButtonsComponent } from '../../shared/edit-buttons/edit-buttons.component';
+import { ContainerDetailsInfoComponent } from './container-details-info/container-details-info.component';
+import { ContainerDetailsTokenTableSelfServiceComponent } from './container-details-token-table/container-details-token-table.self-service.component';
 import { ContainerDetailsComponent } from './container-details.component';
 
 @Component({
@@ -41,7 +41,7 @@ import { ContainerDetailsComponent } from './container-details.component';
     MatIcon,
     MatIconButton,
     ContainerDetailsInfoComponent,
-    ContainerDetailsTokenTableComponent,
+    ContainerDetailsTokenTableSelfServiceComponent,
     MatPaginator,
     MatDivider,
     MatCheckbox,

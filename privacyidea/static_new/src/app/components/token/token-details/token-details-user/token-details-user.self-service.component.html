@@ -40,7 +40,7 @@
                 </mat-autocomplete>
               </mat-form-field>
             } @else {
-              <a href="#">{{ element.value }}</a>
+              <span>{{ element.value }}</span>
             }
           }
           @case ("user_realm") {
@@ -54,7 +54,7 @@
                 </mat-select>
               </mat-form-field>
             } @else {
-              <a href="#">{{ element.value }}</a>
+              <span>{{ element.value }}</span>
             }
           }
           @default {
@@ -115,12 +115,7 @@
           <mat-icon class="detail-button-icon">password</mat-icon>
           Set PIN
         </button>
-        <button
-          (click)="setRandomPin()"
-          class="detail-button"
-          extended
-          mat-fab
-          [disabled]="!canSetRandomPin()">
+        <button (click)="setRandomPin()" class="detail-button" extended mat-fab>
           <mat-icon class="detail-button-icon">casino</mat-icon>
           Random PIN
         </button>

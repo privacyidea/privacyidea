@@ -15,10 +15,10 @@ import {
   MatExpansionPanelTitle,
 } from '@angular/material/expansion';
 import { MatIcon } from '@angular/material/icon';
-import { TokenService } from '../../../../services/token/token.service';
-import { ContentService } from '../../../../services/content/content.service';
-import { UserData } from '../../../../services/user/user.service';
 import { EnrollmentResponse } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import { ContentService } from '../../../../services/content/content.service';
+import { TokenService } from '../../../../services/token/token.service';
+import { UserData } from '../../../../services/user/user.service';
 
 export type TokenEnrollmentLastStepDialogData = {
   response: EnrollmentResponse;
@@ -29,7 +29,7 @@ export type TokenEnrollmentLastStepDialogData = {
 };
 
 @Component({
-  selector: 'app-token-enrollment-second-step-dialog',
+  selector: 'app-token-enrollment-last-step-dialog',
   imports: [
     MatButton,
     MatDialogActions,
@@ -51,8 +51,8 @@ export class TokenEnrollmentLastStepDialogComponent {
 
   constructor(
     protected tokenService: TokenService,
-    private contentService: ContentService,
-    private dialogRef: MatDialogRef<TokenEnrollmentLastStepDialogComponent>,
+    protected contentService: ContentService,
+    protected dialogRef: MatDialogRef<TokenEnrollmentLastStepDialogComponent>,
     @Inject(MAT_DIALOG_DATA)
     public data: TokenEnrollmentLastStepDialogData,
   ) {

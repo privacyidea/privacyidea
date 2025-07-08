@@ -52,10 +52,7 @@
                 [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("serial") {
-                    @if (
-                      element.username === authService.user() ||
-                      authService.role() === "admin"
-                    ) {
+                    @if (element.username === authService.user()) {
                       <a
                         attr.aria-label="{{ column.label }} Link"
                         (click)="contentService.tokenSelected(element.serial)">
@@ -82,6 +79,11 @@
                       {{
                         tableUtilsService.getDisplayText(column.key, element)
                       }}
+                    </span>
+                  }
+                  @case ("username") {
+                    <span>
+                      {{ element[column.key] }}
                     </span>
                   }
                   @default {

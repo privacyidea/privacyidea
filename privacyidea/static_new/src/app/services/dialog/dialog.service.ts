@@ -1,5 +1,5 @@
 // src/app/dialogs/dialog.service.ts
-import { Injectable } from '@angular/core';
+import { computed, Injectable } from '@angular/core';
 import {
   MatDialog,
   MatDialogConfig,
@@ -15,6 +15,8 @@ import {
   ConfirmationDialogData,
   ConfirmationDialogComponent,
 } from '../../components/shared/confirmation-dialog/confirmation-dialog.component';
+import { AuthService } from '../auth/auth.service';
+import { TokenEnrollmentLastStepDialogSelfServiceComponent } from '../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component';
 
 /* * This class extends MatDialogConfig to ensure that the data property is always required.
  * This is useful for dialogs that require data to be passed in, ensuring that the dialog cannot
@@ -34,7 +36,12 @@ class MatDialogConfigRequired<D = any> extends MatDialogConfig<D> {
 
 @Injectable({ providedIn: 'root' })
 export class DialogService {
-  constructor(private dialog: MatDialog) {}
+  isSelfServing = computed(() => this.authService.role() === 'user');
+
+  constructor(
+    private dialog: MatDialog,
+    private authService: AuthService,
+  ) {}
 
   private _tokenEnrollmentFirstStepRef: MatDialogRef<
     TokenEnrollmentFirstStepDialogComponent,
@@ -82,10 +89,14 @@ export class DialogService {
       // If the dialog is already open, close it before opening a new one
       this._tokenEnrollmentLastStepRef.close();
     }
+
     this._tokenEnrollmentLastStepRef = this.dialog.open(
-      TokenEnrollmentLastStepDialogComponent,
+      this.isSelfServing()
+        ? TokenEnrollmentLastStepDialogSelfServiceComponent
+        : TokenEnrollmentLastStepDialogComponent,
       config,
     );
+
     this._tokenEnrollmentLastStepRef.afterClosed().subscribe(() => {
       this._tokenEnrollmentLastStepRef = null;
     });
