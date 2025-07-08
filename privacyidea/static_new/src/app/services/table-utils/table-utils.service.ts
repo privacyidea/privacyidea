@@ -197,50 +197,49 @@ export class TableUtilsService {
   }
 
   getClassForColumn(columnKey: string, element: any): string {
-    if (element['locked'] || element['revoked']) {
-      return 'highlight-disabled';
+    if (element['locked'] || element['revoked']) return 'highlight-disabled';
+
+    switch (columnKey) {
+      case 'active':
+        if (element['active']) return 'highlight-true-clickable';
+        if (element['active'] === false) return 'highlight-false-clickable';
+        return '';
+
+      case 'failcount':
+        if (element['failcount'] === '') return '';
+        if (element['failcount'] <= 0) return 'highlight-true';
+        if (element['failcount'] < element['maxfail']) {
+          return 'highlight-warning-clickable';
+        }
+        return 'highlight-false-clickable';
     }
-    if (columnKey === 'active') {
-      if (element['active'] === '') {
-        return '';
-      }
-      if (element['active'] === false) {
-        return 'highlight-false-clickable';
-      } else if (element['active']) {
-        return 'highlight-true-clickable';
-      }
-    } else if (columnKey === 'failcount') {
-      if (element['failcount'] === '') {
-        return '';
-      }
-      if (element['failcount'] === 0) {
-        return 'highlight-true';
-      } else if (
-        element['failcount'] > 0 &&
-        element['failcount'] < element['maxfail']
-      ) {
-        return 'highlight-warning-clickable';
-      } else {
-        return 'highlight-false-clickable';
-      }
+    return '';
+  }
+
+  getTooltipForColumn(columnKey: string, element: any): string {
+    if (element['locked']) return 'Locked';
+    if (element['revoked']) return 'Revoked';
+
+    switch (columnKey) {
+      case 'active':
+        if (element['active'] === '') return '';
+        return element['active'] ? 'Deactivate Token' : 'Activate Token';
+
+      case 'failcount':
+        return element['failcount'] ? 'Reset Fail Counter' : '';
     }
     return '';
   }
 
   getDisplayText(columnKey: string, element: any): string {
-    if (columnKey === 'active') {
-      if (element['active'] === '') {
-        return '';
-      }
-      if (element['revoked']) {
-        return 'revoked';
-      } else if (element['locked']) {
-        return 'locked';
-      } else if (element['active']) {
-        return 'active';
-      } else if (element['active'] === false) {
-        return 'deactivated';
-      }
+    switch (columnKey) {
+      case 'active':
+        if (element['active'] === '') return '';
+        if (element['revoked']) return 'revoked';
+        if (element['locked']) return 'locked';
+        if (element['active']) return 'active';
+        if (element['active'] === false) return 'deactivated';
+        break;
     }
     return element[columnKey];
   }

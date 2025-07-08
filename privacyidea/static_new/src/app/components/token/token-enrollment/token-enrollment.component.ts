@@ -1,3 +1,4 @@
+import { NgClass } from '@angular/common';
 import {
   AfterViewInit,
   Component,
@@ -9,38 +10,24 @@ import {
   OnDestroy,
   Renderer2,
   signal,
-  WritableSignal,
   ViewChild,
-  untracked,
+  WritableSignal,
 } from '@angular/core';
 import {
-  MatError,
-  MatFormField,
-  MatHint,
-  MatLabel,
-  MatSuffix,
-} from '@angular/material/form-field';
-import { MatOption, MatSelect } from '@angular/material/select';
-import {
+  AbstractControl,
   FormControl,
   FormGroup,
   FormsModule,
-  AbstractControl,
   ReactiveFormsModule,
-  Validators,
-  ValidatorFn,
   ValidationErrors,
+  ValidatorFn,
+  Validators,
 } from '@angular/forms';
-import { EnrollHotpComponent } from './enroll-hotp/enroll-hotp.component';
-import { MatInput } from '@angular/material/input';
 import {
   MatAutocomplete,
   MatAutocompleteTrigger,
 } from '@angular/material/autocomplete';
-import { ContainerService } from '../../../services/container/container.service';
-import { RealmService } from '../../../services/realm/realm.service';
-import { NotificationService } from '../../../services/notification/notification.service';
-import { UserData, UserService } from '../../../services/user/user.service';
+import { MatButton, MatIconButton } from '@angular/material/button';
 import {
   DateAdapter,
   MAT_DATE_FORMATS,
@@ -48,45 +35,62 @@ import {
   NativeDateAdapter,
   provideNativeDateAdapter,
 } from '@angular/material/core';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import {
   MatAccordion,
   MatExpansionPanel,
   MatExpansionPanelHeader,
   MatExpansionPanelTitle,
 } from '@angular/material/expansion';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatButton, MatIconButton } from '@angular/material/button';
+import {
+  MatError,
+  MatFormField,
+  MatHint,
+  MatLabel,
+  MatSuffix,
+} from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
+import { MatInput } from '@angular/material/input';
+import { MatOption, MatSelect } from '@angular/material/select';
+import { ContainerService } from '../../../services/container/container.service';
+import { ContentService } from '../../../services/content/content.service';
+import { NotificationService } from '../../../services/notification/notification.service';
+import { RealmService } from '../../../services/realm/realm.service';
 import { TokenService } from '../../../services/token/token.service';
-import { EnrollTotpComponent } from './enroll-totp/enroll-totp.component';
-import { EnrollSpassComponent } from './enroll-spass/enroll-spass.component';
-import { EnrollMotpComponent } from './enroll-motp/enroll-motp.component';
-import { NgClass } from '@angular/common';
-import { EnrollSshkeyComponent } from './enroll-sshkey/enroll-sshkey.component';
-import { EnrollYubikeyComponent } from './enroll-yubikey/enroll-yubikey.component';
-import { EnrollRemoteComponent } from './enroll-remote/enroll-remote.component';
-import { EnrollYubicoComponent } from './enroll-yubico/enroll-yubico.component';
-import { EnrollRadiusComponent } from './enroll-radius/enroll-radius.component';
-import { EnrollSmsComponent } from './enroll-sms/enroll-sms.component';
-import { EnrollFoureyesComponent } from './enroll-foureyes/enroll-foureyes.component';
+import { UserData, UserService } from '../../../services/user/user.service';
+import { VersionService } from '../../../services/version/version.service';
 import { EnrollApplspecComponent } from './enroll-asp/enroll-applspec.component';
-import { EnrollDaypasswordComponent } from './enroll-daypassword/enroll-daypassword.component';
 import { EnrollCertificateComponent } from './enroll-certificate/enroll-certificate.component';
+import { EnrollDaypasswordComponent } from './enroll-daypassword/enroll-daypassword.component';
 import { EnrollEmailComponent } from './enroll-email/enroll-email.component';
+import { EnrollFoureyesComponent } from './enroll-foureyes/enroll-foureyes.component';
+import { EnrollHotpComponent } from './enroll-hotp/enroll-hotp.component';
 import { EnrollIndexedsecretComponent } from './enroll-indexsecret/enroll-indexedsecret.component';
+import { EnrollMotpComponent } from './enroll-motp/enroll-motp.component';
 import { EnrollPaperComponent } from './enroll-paper/enroll-paper.component';
+import { EnrollPasskeyComponent } from './enroll-passkey/enroll-passkey.component';
 import { EnrollPushComponent } from './enroll-push/enroll-push.component';
 import { EnrollQuestionComponent } from './enroll-questionnaire/enroll-question.component';
+import { EnrollRadiusComponent } from './enroll-radius/enroll-radius.component';
 import { EnrollRegistrationComponent } from './enroll-registration/enroll-registration.component';
+import { EnrollRemoteComponent } from './enroll-remote/enroll-remote.component';
+import { EnrollSmsComponent } from './enroll-sms/enroll-sms.component';
+import { EnrollSpassComponent } from './enroll-spass/enroll-spass.component';
+import { EnrollSshkeyComponent } from './enroll-sshkey/enroll-sshkey.component';
 import { EnrollTanComponent } from './enroll-tan/enroll-tan.component';
 import { EnrollTiqrComponent } from './enroll-tiqr/enroll-tiqr.component';
+import { EnrollTotpComponent } from './enroll-totp/enroll-totp.component';
 import { EnrollU2fComponent } from './enroll-u2f/enroll-u2f.component';
 import { EnrollVascoComponent } from './enroll-vasco/enroll-vasco.component';
 import { EnrollWebauthnComponent } from './enroll-webauthn/enroll-webauthn.component';
-import { EnrollPasskeyComponent } from './enroll-passkey/enroll-passkey.component';
-import { VersionService } from '../../../services/version/version.service';
-import { ContentService } from '../../../services/content/content.service';
+import { EnrollYubicoComponent } from './enroll-yubico/enroll-yubico.component';
+import { EnrollYubikeyComponent } from './enroll-yubikey/enroll-yubikey.component';
 
+import {
+  MAT_TOOLTIP_DEFAULT_OPTIONS,
+  MatTooltipDefaultOptions,
+  MatTooltipModule,
+} from '@angular/material/tooltip';
 import { lastValueFrom, Observable } from 'rxjs';
 import {
   EnrollmentResponse,
@@ -94,11 +98,6 @@ import {
 } from '../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { DialogService } from '../../../services/dialog/dialog.service';
 import { TokenEnrollmentLastStepDialogData } from './token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component';
-import {
-  MatTooltipModule,
-  MAT_TOOLTIP_DEFAULT_OPTIONS,
-  MatTooltipDefaultOptions,
-} from '@angular/material/tooltip';
 
 export type ClickEnrollFn = (
   enrollementOptions: TokenEnrollmentData,
@@ -291,7 +290,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }),
     computation: (source, previous) => {
       const { additionalFormFields, selectedUser } = source;
-      console.log('Previous: ', previous);
       this.selectedUserRealmControl.setValidators(
         this.isUserRequired ? [Validators.required] : [],
       );
@@ -303,7 +301,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       );
 
       if (selectedUser !== this.userFilterControl.value) {
-        console.log('Updating userFilter in existing FormGroup', selectedUser);
         this.userFilterControl.setValue(selectedUser, { emitEvent: false });
       }
       return new FormGroup(
@@ -414,21 +411,11 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       } else {
         this.userFilterControl.enable({ emitEvent: false });
       }
-      console.log('Selected user realm changed:', value);
-      console.log(
-        'Current selected user realm:',
-        this.userService.selectedUserRealm(),
-      );
-      // Update the selectedUserRealm
+
       if (value !== this.userService.selectedUserRealm()) {
-        console.log('Updating selected user realm:', value);
         this.userService.selectedUserRealm.set(value ?? '');
       }
     });
-    console.log(
-      'TokenEnrollmentComponent initialized with selectedUserRealm:',
-      this.userService.selectedUserRealm(),
-    );
   }
 
   ngAfterViewInit(): void {

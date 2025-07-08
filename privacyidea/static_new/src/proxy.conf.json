@@ -1,9 +1,9 @@
 {
   "/proxy": {
-    "target": "https://henrik.fritz.box:5000",
+    "target": "https://pi.frank:5000",
     "secure": false,
     "changeOrigin": true,
-    "logLevel": "debug",
+     "logLevel": "debug",
     "pathRewrite": {
       "^/proxy": ""
     }

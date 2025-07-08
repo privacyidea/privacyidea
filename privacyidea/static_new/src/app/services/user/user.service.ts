@@ -1,18 +1,17 @@
+import { httpResource } from '@angular/common/http';
 import {
   computed,
-  effect,
   Injectable,
   linkedSignal,
   WritableSignal,
 } from '@angular/core';
-import { httpResource } from '@angular/common/http';
-import { LocalService } from '../local/local.service';
 import { environment } from '../../../environments/environment';
-import { RealmService } from '../realm/realm.service';
-import { ContentService } from '../content/content.service';
 import { PiResponse } from '../../app.component';
-import { TokenService } from '../token/token.service';
 import { AuthService } from '../auth/auth.service';
+import { ContentService } from '../content/content.service';
+import { LocalService } from '../local/local.service';
+import { RealmService } from '../realm/realm.service';
+import { TokenService } from '../token/token.service';
 
 export interface UserData {
   description: string;
@@ -42,7 +41,6 @@ export class UserService {
       authRealm: this.authService.realm(),
     }),
     computation: (source) => {
-      console.log('UserService.selectedUserRealm computation', source);
       if (source.authRole === 'user') {
         return source.authRealm;
       }
@@ -71,10 +69,7 @@ export class UserService {
 
   userFilter = linkedSignal<string, UserData | string>({
     source: this.selectedUserRealm,
-    computation: () => {
-      console.log('UserService.userFilter computation');
-      return '';
-    },
+    computation: () => '',
   });
 
   userNameFilter = computed<string>(() => {
@@ -183,9 +178,5 @@ export class UserService {
     private contentService: ContentService,
     private tokenService: TokenService,
     private authService: AuthService,
-  ) {
-    effect(() => {
-      console.log('selectedUserRealm:', this.selectedUserRealm());
-    });
-  }
+  ) {}
 }

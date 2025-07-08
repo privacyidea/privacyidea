@@ -1,3 +1,5 @@
+import { AsyncPipe } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { Component, Inject } from '@angular/core';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import {
@@ -15,18 +17,16 @@ import {
   MatExpansionPanelTitle,
 } from '@angular/material/expansion';
 import { MatIcon } from '@angular/material/icon';
-import { TokenEnrollmentLastStepDialogComponent } from './token-enrollment-last-step-dialog.component';
-import { TokenService } from '../../../../services/token/token.service';
-import { ContentService } from '../../../../services/content/content.service';
-import { HttpClient } from '@angular/common/http';
 import { DomSanitizer } from '@angular/platform-browser';
 import { map } from 'rxjs';
-import { UserData } from '../../../../services/user/user.service';
-import { AsyncPipe } from '@angular/common';
 import { EnrollmentResponse } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import { ContentService } from '../../../../services/content/content.service';
+import { TokenService } from '../../../../services/token/token.service';
+import { UserData } from '../../../../services/user/user.service';
+import { TokenEnrollmentLastStepDialogComponent } from './token-enrollment-last-step-dialog.component';
 
 @Component({
-  selector: 'app-token-enrollment-second-step-dialog-wizard',
+  selector: 'app-token-enrollment-last-step-dialog-wizard',
   imports: [
     MatButton,
     MatDialogActions,
