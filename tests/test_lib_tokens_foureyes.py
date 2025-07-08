@@ -2,6 +2,8 @@
 This test file tests the lib.tokens.4eyestoken
 This depends on lib.tokenclass
 """
+import logging
+from testfixtures import LogCapture
 
 from .base import MyTestCase
 from privacyidea.lib.tokens.foureyestoken import FourEyesTokenClass
@@ -29,6 +31,7 @@ class FourEyesTokenTestCase(MyTestCase):
         self.assertEqual(r.type, "4eyes")
         self.assertEqual(r.get_tokeninfo("4eyes"), "realm1:1,realm2:2")
         self.assertEqual(r.get_tokeninfo("separator"), "|")
+        self.assertIsInstance(r, FourEyesTokenClass)
 
         realms = r._get_realms()
         self.assertEqual(realms, {"realm1": 1, "realm2": 2})
@@ -61,8 +64,13 @@ class FourEyesTokenTestCase(MyTestCase):
                           "4eyes": "{0!s}:2".format(self.realm1),
                           "separator": " "})
 
-        r = check_serial_pass("eye1", "pin1password1 pin2password2")
-        self.assertEqual(r[0], True)
+        logging.getLogger('privacyidea.lib.tokens.foureyestoken').setLevel(logging.DEBUG)
+        with LogCapture(level=logging.DEBUG) as lc:
+            r = check_serial_pass("eye1", "pin1password1 pin2password2")
+            self.assertTrue(r[0])
+            for log_record in lc.actual():
+                self.assertFalse(any(x in log_record[2] for x in ["password1", "pin1", "password2", "pin2"]),
+                                 log_record)
 
         # This triggers the challenge for the next token
         r = check_serial_pass("eye1", "pin1password1")

@@ -572,6 +572,17 @@ class UserTestCase(MyTestCase):
                          "realm='sqlrealm', resolver='SQL1')",
                          user_repr, user_repr)
 
+        # Test with not existing search filter
+        with LogCapture(level=logging.ERROR) as lc:
+            userlist = get_user_list({"realm": "sqlrealm",
+                                      "unknown": "parameter",
+                                      "resolver": "SQL1"})
+            self.assertTrue(len(userlist) == 0, userlist)
+            lc.check_present(("privacyidea.lib.user", "ERROR",
+                              "Unable to get user list for resolver 'SQL1': "
+                              "ParameterError(description=\"Search parameter "
+                              "([\'unknown\']) not available in mapping.\", id=905)"))
+
     @ldap3mock.activate
     def test_18_user_with_several_phones(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory_small)

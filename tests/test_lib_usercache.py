@@ -493,6 +493,26 @@ class UserCacheTestCase(MyTestCase):
         self.assertEqual(r, "user1")
         self.assertEqual(self.counter, 1)
 
+    def test_14_user_init(self):
+        self._create_realm()
+        corny = User("corny", self.realm1, self.resolvername1)
+        root = User("root", self.realm1, self.resolvername1)
+        UserCache(corny.login, corny.login, self.resolvername1, corny.uid, datetime.now()).save()
+        UserCache(root.login, root.login, self.resolvername1, root.uid, datetime.now()).save()
+
+        # Check that the user is correctly fetched from the cache if only the login is given and only the uid is given
+        cache_root = User(root.login, self.realm1, self.resolvername1)
+        self.assertEqual(root.uid, cache_root.uid)
+        cache_root = User(realm=self.realm1, resolver=self.resolvername1, uid=root.uid)
+        self.assertEqual(root.login, cache_root.login)
+
+        cache_corny = User(corny.login, self.realm1, self.resolvername1)
+        self.assertEqual(corny.uid, cache_corny.uid)
+        cache_corny = User(realm=self.realm1, resolver=self.resolvername1, uid=corny.uid)
+        self.assertEqual(corny.login, cache_corny.login)
+
+        self._delete_realm()
+
     def test_99_unset_config(self):
         # Test early exit!
         # Assert that the function `retrieve_latest_entry` is called if the cache is enabled

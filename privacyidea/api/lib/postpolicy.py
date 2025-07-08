@@ -881,6 +881,14 @@ def multichallenge_enroll_via_validate(request, response):
                 # Check if the user already has a token of the type that should be enrolled
                 # If so, do not enroll another one
                 if len(get_tokens(tokentype=tokentype, user=user)) == 0:
+                    # Check if another policy restricts the token count and exit early if true
+                    try:
+                        check_max_token_user(request=request)
+                        check_max_token_realm(request=request)
+                    except PolicyError as e:
+                        g.audit_object.log({"success": True, "action_detail": f"{e}"})
+                        return response
+
                     if tokentype in get_multichallenge_enrollable_tokentypes():
                         # Now get the alternative text from the policies
                         text_policies = Match.user(g, scope=SCOPE.AUTH, action=ACTION.ENROLL_VIA_MULTICHALLENGE_TEXT,

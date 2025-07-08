@@ -698,8 +698,8 @@ def get_tokens_paginate(tokentype=None, token_type_list=None, realm=None, assign
                     token_dict["user_realm"] = user.realm
                     token_dict["user_editable"] = get_resolver_object(
                         user.resolver).editable
-            except Exception as exx:
-                log.error("User information can not be retrieved: {0!s}".format(exx))
+            except Exception as ex:
+                log.error(f"User information can not be retrieved: {ex!r}")
                 log.debug(traceback.format_exc())
                 token_dict["username"] = "**resolver error**"
 

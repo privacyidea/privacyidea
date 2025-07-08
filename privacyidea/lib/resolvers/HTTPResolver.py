@@ -131,7 +131,7 @@ class HTTPResolver(UserIdResolver):
         """
         return self._getUser(userid)
 
-    def getUserList(self, searchDict=None):
+    def getUserList(self, search_dict=None):
         """
         Since it is an HTTP resolver,
         users are not stored in the database
