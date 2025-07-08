@@ -271,18 +271,20 @@ class ConfigTestCase(MyTestCase):
         self.assertEqual(get_from_config("some_key", "default"), "some_value")
 
     def test_10_enrollable_tokentypes(self):
-        ttypes = get_multichallenge_enrollable_types()
-        self.assertIn("hotp", ttypes)
-        self.assertIn("totp", ttypes)
-        self.assertIn("sms", ttypes)
-        self.assertIn("email", ttypes)
-        self.assertIn("push", ttypes)
-        self.assertNotIn("tan", ttypes)
-        self.assertNotIn("daplug", ttypes)
-        self.assertNotIn("paper", ttypes)
-        self.assertIn("smartphone", ttypes)
-        self.assertNotIn("generic", ttypes)
-        self.assertNotIn("yubikey", ttypes)
+        # Execute the function twice to ensure the cache works
+        for i in range (2):
+            ttypes = get_multichallenge_enrollable_types()
+            self.assertIn("hotp", ttypes)
+            self.assertIn("totp", ttypes)
+            self.assertIn("sms", ttypes)
+            self.assertIn("email", ttypes)
+            self.assertIn("push", ttypes)
+            self.assertNotIn("tan", ttypes)
+            self.assertNotIn("daplug", ttypes)
+            self.assertNotIn("paper", ttypes)
+            self.assertIn("smartphone", ttypes)
+            self.assertNotIn("generic", ttypes)
+            self.assertNotIn("yubikey", ttypes)
 
     def test_11_get_email_validators(self):
         ev = get_email_validators()
