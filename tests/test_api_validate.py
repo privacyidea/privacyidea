@@ -3271,7 +3271,7 @@ class ValidateAPITestCase(MyApiTestCase):
         set_policy(
             name="challenge_response",
             scope=SCOPE.AUTH,
-            action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE)
+            action=f"{ACTION.CHALLENGERESPONSE}=hotp"
         )
 
         with self.app.test_request_context(
@@ -3288,7 +3288,7 @@ class ValidateAPITestCase(MyApiTestCase):
         set_policy(
             name="disable_some_token",
             scope=SCOPE.AUTH,
-            action="{0!s}=spass hotp".format(ACTION.DISABLED_TOKEN_TYPES),
+            action=f"{ACTION.DISABLED_TOKEN_TYPES}=spass hotp",
         )
 
         # The very same auth attempt must now be rejected

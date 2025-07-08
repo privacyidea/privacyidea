@@ -697,7 +697,7 @@ class AuthApiTestCase(MyApiTestCase):
         )
 
         # Set the policy to use privacyIDEA for authentication
-        set_policy("piLogin", scope=SCOPE.WEBUI, action="{0!s}=privacyIDEA".format(ACTION.LOGINMODE))
+        set_policy("piLogin", scope=SCOPE.WEBUI, action=f"{ACTION.LOGINMODE}=privacyIDEA")
 
         with self.app.test_request_context('/auth',
                                            method='POST',
@@ -715,7 +715,7 @@ class AuthApiTestCase(MyApiTestCase):
         set_policy(
             name="disable_spass_token",
             scope=SCOPE.AUTH,
-            action="{0!s}=spass".format(ACTION.DISABLED_TOKEN_TYPES),
+            action=f"{ACTION.DISABLED_TOKEN_TYPES}=spass",
         )
 
         # The very same auth must now be rejected
