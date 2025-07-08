@@ -50,7 +50,6 @@ Defines the rough interface for a UserId Resolver
 
 
 class UserIdResolver(object):
-
     fields = {"username": 1, "userid": 1,
               "description": 0,
               "phone": 0, "mobile": 0, "email": 0,
@@ -283,3 +282,9 @@ class UserIdResolver(object):
         :return: bool
         """
         return False
+
+    def get_config(self) -> dict:
+        """
+        Returns the configuration of the resolver.
+        """
+        return {}

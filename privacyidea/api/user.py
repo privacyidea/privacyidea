@@ -287,11 +287,11 @@ def create_user_api():
     password = attributes.get("password")
     if "password" in attributes:
         del attributes["password"]
-    r = create_user(resolvername, attributes, password=password)
-    g.audit_object.log({"success": True,
-                        "info": "{0!s}: {1!s}/{2!s}".format(r, username,
+    uid = create_user(resolvername, attributes, password=password)
+    g.audit_object.log({"success": True if uid else False,
+                        "info": "{0!s}: {1!s}/{2!s}".format(uid, username,
                                                             resolvername)})
-    return send_result(r)
+    return send_result(uid)
 
 
 @user_blueprint.route('', methods=['PUT'])
@@ -341,10 +341,10 @@ def update_user():
     password = attributes.get("password")
     if password:
         del attributes["password"]
-    r = user_obj.update_user_info(attributes, password=password)
-    g.audit_object.log({"success": True,
-                        "info": "{0!s}: {1!s}/{2!s}".format(r, username, resolvername)})
-    return send_result(r)
+    success = user_obj.update_user_info(attributes, password=password)
+    g.audit_object.log({"success": success,
+                        "info": "{0!s}: {1!s}/{2!s}".format(success, username, resolvername)})
+    return send_result(success)
 
 
 def _get_attributes_from_param(param):
