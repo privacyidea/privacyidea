@@ -686,11 +686,10 @@ class AuthApiTestCase(MyApiTestCase):
         serial = "SPASS1"
 
         # Create a working Simple-Pass token
-        init_token(
-            {"serial": serial,
-             "type": "spass",
-             "pin": "1"},
-            user=User("cornelius", self.realm1))
+        init_token({"serial": serial,
+                    "type": "spass",
+                    "pin": "1"},
+                   user=User("cornelius", self.realm1))
 
         # Set the policy to use privacyIDEA for authentication
         set_policy("piLogin", scope=SCOPE.WEBUI, action=f"{ACTION.LOGINMODE}=privacyIDEA")

@@ -3237,18 +3237,16 @@ class ValidateAPITestCase(MyApiTestCase):
         serial_2 = "HOTP1"
 
         # Create a working Simple-Pass token and HOTP token
-        init_token(
-            {"serial": serial_1,
-             "type": "spass",
-             "pin": "1"},
-            user=User("cornelius", self.realm1))
+        init_token({"serial": serial_1,
+                    "type": "spass",
+                    "pin": "1"},
+                   user=User("cornelius", self.realm1))
 
-        init_token(
-            {"serial": serial_2,
-             "type": "hotp",
-             "pin": "2",
-             "otpkey": self.otpkey},
-            user=User("cornelius", self.realm1))
+        init_token({"serial": serial_2,
+                    "type": "hotp",
+                    "pin": "2",
+                    "otpkey": self.otpkey},
+                   user=User("cornelius", self.realm1))
 
         # It authenticates successfully before the policy is set
         with self.app.test_request_context(
