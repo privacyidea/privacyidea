@@ -1,16 +1,19 @@
 import { TestBed } from '@angular/core/testing';
 
 import { ChallengesService } from './challenges.service';
+import { provideHttpClient } from '@angular/common/http';
 
 describe('ChallengesService', () => {
-  let service: ChallengesService;
+  let challengesService: ChallengesService;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
-    service = TestBed.inject(ChallengesService);
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient()],
+    });
+    challengesService = TestBed.inject(ChallengesService);
   });
 
   it('should be created', () => {
-    expect(service).toBeTruthy();
+    expect(challengesService).toBeTruthy();
   });
 });

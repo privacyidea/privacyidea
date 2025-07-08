@@ -6,17 +6,17 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { MachineService } from './machine.service';
 
 describe('LocalService', () => {
-  let service: MachineService;
+  let machineService: MachineService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [AppComponent],
       providers: [provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
-    service = TestBed.inject(MachineService);
+    machineService = TestBed.inject(MachineService);
   });
 
   it('should be created', () => {
-    expect(service).toBeTruthy();
+    expect(machineService).toBeTruthy();
   });
 });

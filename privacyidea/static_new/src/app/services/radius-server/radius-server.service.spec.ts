@@ -5,16 +5,16 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 describe('RadiusServerService', () => {
-  let service: RadiusServerService;
+  let radiusServerService: RadiusServerService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
-    service = TestBed.inject(RadiusServerService);
+    radiusServerService = TestBed.inject(RadiusServerService);
   });
 
   it('should be created', () => {
-    expect(service).toBeTruthy();
+    expect(radiusServerService).toBeTruthy();
   });
 });

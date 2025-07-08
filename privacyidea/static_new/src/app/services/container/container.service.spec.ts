@@ -6,17 +6,17 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 describe('ContainerService', () => {
-  let service: ContainerService;
+  let containerService: ContainerService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [AppComponent],
       providers: [provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
-    service = TestBed.inject(ContainerService);
+    containerService = TestBed.inject(ContainerService);
   });
 
   it('should be created', () => {
-    expect(service).toBeTruthy();
+    expect(containerService).toBeTruthy();
   });
 });

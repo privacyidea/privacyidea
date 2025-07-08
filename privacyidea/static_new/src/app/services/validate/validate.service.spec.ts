@@ -1,25 +1,27 @@
-import { TestBed, fakeAsync, tick, waitForAsync } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
-import { HttpClient } from '@angular/common/http';
-import { of, throwError } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
+import { HttpClient, provideHttpClient } from '@angular/common/http';
+import { of } from 'rxjs';
 
-import { ValidateService, ValidateCheckResponse } from './validate.service';
+import { ValidateCheckResponse, ValidateService } from './validate.service';
 import { LocalService } from '../local/local.service';
 import { NotificationService } from '../notification/notification.service';
 import { Base64Service } from '../base64/base64.service';
-import { AuthService, AuthResponse } from '../auth/auth.service';
+import { AuthResponse, AuthService } from '../auth/auth.service';
 
 class MockLocalService {
   getHeaders = jest
     .fn()
     .mockReturnValue({ Authorization: 'Bearer FAKE_TOKEN' });
 }
+
 class MockNotificationService {
   openSnackBar = jest.fn();
 }
+
 class MockBase64Service {
   bytesToBase64 = jest.fn(() => 'b64');
 }
+
 class MockAuthService {
   authenticate = jest.fn().mockReturnValue(of({ success: true } as any));
 }

@@ -3,14 +3,14 @@ import { TestBed } from '@angular/core/testing';
 import { OverflowService } from './overflow.service';
 
 describe('OverflowService', () => {
-  let service: OverflowService;
+  let overflowService: OverflowService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(OverflowService);
+    overflowService = TestBed.inject(OverflowService);
   });
 
   it('should be created', () => {
-    expect(service).toBeTruthy();
+    expect(overflowService).toBeTruthy();
   });
 });

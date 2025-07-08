@@ -288,7 +288,11 @@ describe('TokenService', () => {
       .pollTokenRolloutState({ tokenSerial: 'HOTP3', initDelay: 0 })
       .subscribe((r) => emissions.push(r));
 
+    // wait four ticks but getTokenDetails should be called three times
     jest.runOnlyPendingTimers();
+    await Promise.resolve();
+
+    jest.advanceTimersByTime(2000);
     await Promise.resolve();
 
     jest.advanceTimersByTime(2000);

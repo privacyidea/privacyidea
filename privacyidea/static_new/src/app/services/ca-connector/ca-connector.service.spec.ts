@@ -5,16 +5,16 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 describe('CaConnectorService', () => {
-  let service: CaConnectorService;
+  let caConnectorService: CaConnectorService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
-    service = TestBed.inject(CaConnectorService);
+    caConnectorService = TestBed.inject(CaConnectorService);
   });
 
   it('should be created', () => {
-    expect(service).toBeTruthy();
+    expect(caConnectorService).toBeTruthy();
   });
 });

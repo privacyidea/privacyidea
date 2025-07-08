@@ -5,16 +5,16 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 describe('SmsGatewayService', () => {
-  let service: SmsGatewayService;
+  let smsGatewayService: SmsGatewayService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
-    service = TestBed.inject(SmsGatewayService);
+    smsGatewayService = TestBed.inject(SmsGatewayService);
   });
 
   it('should be created', () => {
-    expect(service).toBeTruthy();
+    expect(smsGatewayService).toBeTruthy();
   });
 });
