@@ -53,8 +53,10 @@ $border-radius: var(--border-radius);
   }
 
   .loading-urls-container {
-    display: flex;
-    flex-direction: column;
+    position: fixed;
+    bottom: 6vh;
+    right: 0;
+    z-index: 9999;
   }
 
   .loading-url {
