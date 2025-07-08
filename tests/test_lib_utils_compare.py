@@ -137,7 +137,7 @@ class UtilsCompareTestCase(MyTestCase):
         self.assertFalse(compare_values(true_date_str, Comparators.DATE_AFTER, condition_date_str))
         # test with different time zones
         condition_date_str = "2025-01-01 12:00:00+00:00"
-        true_date_str = "2025-01-01 13:00:00+02:00"
+        true_date_str = "2025-01-01 13:00:55.203554+0200"
         self.assertFalse(compare_values(true_date_str, Comparators.DATE_AFTER, condition_date_str))
         true_date_str = "2025-01-01 11:00:00-02:00"
         self.assertTrue(compare_values(true_date_str, Comparators.DATE_AFTER, condition_date_str))
@@ -183,7 +183,7 @@ class UtilsCompareTestCase(MyTestCase):
         self.assertTrue(compare_values(true_date_str, Comparators.DATE_BEFORE, condition_date_str))
         # test with different time zones
         condition_date_str = "2025-01-01 12:00:00+00:00"
-        true_date_str = "2025-01-01 13:00:00+0200"
+        true_date_str = "2025-01-01 13:00:55.203554+0200"
         self.assertTrue(compare_values(true_date_str, Comparators.DATE_BEFORE, condition_date_str))
         true_date_str = "2025-01-01 11:00:00-02:00"
         self.assertFalse(compare_values(true_date_str, Comparators.DATE_BEFORE, condition_date_str))
@@ -237,7 +237,7 @@ class UtilsCompareTestCase(MyTestCase):
         self.assertTrue(compare_values(now.replace(tzinfo=None).isoformat(), Comparators.DATE_WITHIN_LAST, "1h"))
 
         # Invalid formats
-        self.assertRaises(CompareError, compare_values, "12:00", Comparators.DATE_WITHIN_LAST, "1h")
+        self.assertRaises(CompareError, compare_values, "1. Juli 2025", Comparators.DATE_WITHIN_LAST, "1h")
         self.assertRaises(CompareError, compare_values, now, Comparators.DATE_WITHIN_LAST, "1year")
 
     def test_11_date_not_within_last(self):
@@ -279,7 +279,7 @@ class UtilsCompareTestCase(MyTestCase):
         self.assertFalse(compare_values(now.replace(tzinfo=None).isoformat(), Comparators.DATE_NOT_WITHIN_LAST, "1h"))
 
         # Invalid formats
-        self.assertRaises(CompareError, compare_values, "12:00", Comparators.DATE_NOT_WITHIN_LAST, "1h")
+        self.assertRaises(CompareError, compare_values, "1. Juli 2025", Comparators.DATE_NOT_WITHIN_LAST, "1h")
         self.assertRaises(CompareError, compare_values, now, Comparators.DATE_NOT_WITHIN_LAST, "1year")
 
     def test_12_string_contains(self):
@@ -289,9 +289,13 @@ class UtilsCompareTestCase(MyTestCase):
         self.assertTrue(compare_values("hello world", Comparators.STRING_CONTAINS, "ello"))
         self.assertFalse(compare_values("hello world", Comparators.STRING_CONTAINS, "hello world!"))
 
+        self.assertRaises(CompareError, compare_values, "hello world", Comparators.STRING_CONTAINS, 42)
+
     def test_13_string_not_contains(self):
         # negation
         self.assertTrue(compare_values("hello world", Comparators.STRING_NOT_CONTAINS, "foo"))
         self.assertFalse(compare_values("hello world", Comparators.STRING_NOT_CONTAINS, "world"))
         self.assertFalse(compare_values("hello world", Comparators.STRING_NOT_CONTAINS, "hello"))
         self.assertFalse(compare_values("hello world", Comparators.STRING_NOT_CONTAINS, "WoRlD"))
+
+        self.assertRaises(CompareError, compare_values, "hello world", Comparators.STRING_NOT_CONTAINS, 42)

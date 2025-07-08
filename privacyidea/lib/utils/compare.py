@@ -33,6 +33,8 @@ import re
 from functools import wraps
 from typing import Union
 
+from dateutil.parser import parse
+
 from privacyidea.lib.framework import _
 from privacyidea.lib.utils import parse_timedelta
 
@@ -185,7 +187,10 @@ def _get_datetime(date_time: Union[str, datetime.datetime]) -> datetime.datetime
     """
     if isinstance(date_time, str):
         try:
-            date_time = datetime.datetime.fromisoformat(date_time)
+            # Parse the string into a datetime object (accepts also non-iso formats)
+            # TODO : use datetime.datetime.fromisoformat() would be better, but this can not handle the last_auth
+            #  datetime format in the tokeninfo for python 3.9 and 3.10
+            date_time = parse(date_time)
         except ValueError as error:
             log.error(f"Invalid date format '{date_time}': {error}")
             raise CompareError(f"Invalid date format: {date_time!r}. Expected ISO format.")
