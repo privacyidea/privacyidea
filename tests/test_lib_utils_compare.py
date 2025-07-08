@@ -240,14 +240,56 @@ class UtilsCompareTestCase(MyTestCase):
         self.assertRaises(CompareError, compare_values, "12:00", Comparators.DATE_WITHIN_LAST, "1h")
         self.assertRaises(CompareError, compare_values, now, Comparators.DATE_WITHIN_LAST, "1year")
 
-    def test_11_string_contains(self):
+    def test_11_date_not_within_last(self):
+        # Test with datetime object
+        now = datetime.datetime.now(datetime.timezone.utc)
+        self.assertFalse(compare_values(now, Comparators.DATE_NOT_WITHIN_LAST, "1h"))
+        self.assertFalse(compare_values(now - datetime.timedelta(days=120), Comparators.DATE_NOT_WITHIN_LAST, "3y"))
+        self.assertTrue(
+            compare_values(now - datetime.timedelta(days=370, hours=1), Comparators.DATE_NOT_WITHIN_LAST, "1y"))
+        self.assertFalse(compare_values(now - datetime.timedelta(hours=48), Comparators.DATE_NOT_WITHIN_LAST, "7d"))
+        self.assertTrue(compare_values(now - datetime.timedelta(days=7, hours=1), Comparators.DATE_NOT_WITHIN_LAST, "7d"))
+        self.assertFalse(compare_values(now - datetime.timedelta(minutes=50), Comparators.DATE_NOT_WITHIN_LAST, "1h"))
+        self.assertTrue(compare_values(now - datetime.timedelta(days=1), Comparators.DATE_NOT_WITHIN_LAST, "1h"))
+        self.assertFalse(compare_values(now - datetime.timedelta(minutes=10), Comparators.DATE_NOT_WITHIN_LAST, "30m"))
+        self.assertTrue(compare_values(now - datetime.timedelta(minutes=31), Comparators.DATE_NOT_WITHIN_LAST, "30m"))
+
+        # Test with string
+        now = datetime.datetime.now(datetime.timezone.utc)
+        self.assertFalse(compare_values(now.isoformat(), Comparators.DATE_NOT_WITHIN_LAST, "1h"))
+        self.assertFalse(
+            compare_values((now - datetime.timedelta(days=120)).isoformat(), Comparators.DATE_NOT_WITHIN_LAST, "3y"))
+        self.assertTrue(
+            compare_values((now - datetime.timedelta(days=370, hours=1)).isoformat(), Comparators.DATE_NOT_WITHIN_LAST,
+                           "1y"))
+        self.assertFalse(
+            compare_values((now - datetime.timedelta(hours=48)).isoformat(), Comparators.DATE_NOT_WITHIN_LAST, "7d"))
+        self.assertTrue(
+            compare_values((now - datetime.timedelta(days=7, hours=1)).isoformat(), Comparators.DATE_NOT_WITHIN_LAST, "7d"))
+        self.assertFalse(
+            compare_values((now - datetime.timedelta(minutes=50)).isoformat(), Comparators.DATE_NOT_WITHIN_LAST, "1h"))
+        self.assertTrue(
+            compare_values((now - datetime.timedelta(days=1)).isoformat(), Comparators.DATE_NOT_WITHIN_LAST, "1h"))
+        self.assertFalse(
+            compare_values((now - datetime.timedelta(minutes=10)).isoformat(), Comparators.DATE_NOT_WITHIN_LAST, "30m"))
+        self.assertTrue(
+            compare_values((now - datetime.timedelta(minutes=31)).isoformat(), Comparators.DATE_NOT_WITHIN_LAST, "30m"))
+
+        # Missing timezone info assumes UTC
+        self.assertFalse(compare_values(now.replace(tzinfo=None).isoformat(), Comparators.DATE_NOT_WITHIN_LAST, "1h"))
+
+        # Invalid formats
+        self.assertRaises(CompareError, compare_values, "12:00", Comparators.DATE_NOT_WITHIN_LAST, "1h")
+        self.assertRaises(CompareError, compare_values, now, Comparators.DATE_NOT_WITHIN_LAST, "1year")
+
+    def test_12_string_contains(self):
         self.assertTrue(compare_values("hello world", Comparators.STRING_CONTAINS, "hello"))
         self.assertTrue(compare_values("hello world", Comparators.STRING_CONTAINS, "world"))
         self.assertTrue(compare_values("hello world", Comparators.STRING_CONTAINS, "Hello"))
         self.assertTrue(compare_values("hello world", Comparators.STRING_CONTAINS, "ello"))
         self.assertFalse(compare_values("hello world", Comparators.STRING_CONTAINS, "hello world!"))
 
-    def test_12_string_not_contains(self):
+    def test_13_string_not_contains(self):
         # negation
         self.assertTrue(compare_values("hello world", Comparators.STRING_NOT_CONTAINS, "foo"))
         self.assertFalse(compare_values("hello world", Comparators.STRING_NOT_CONTAINS, "world"))

@@ -194,7 +194,7 @@ def _get_datetime(date_time: Union[str, datetime.datetime]) -> datetime.datetime
     return date_time
 
 
-def _compare_date_before(left: Union[str, datetime.datetime], comparator: Comparators,
+def _compare_date_before(left: Union[str, datetime.datetime], comparator: str,
                          right: Union[str, datetime.datetime]) -> bool:
     """
     Checks if the left date and time is before the right date and time.
@@ -214,7 +214,7 @@ def _compare_date_before(left: Union[str, datetime.datetime], comparator: Compar
     return left < right
 
 
-def _compare_date_after(left: Union[str, datetime.datetime], comparator: Comparators,
+def _compare_date_after(left: Union[str, datetime.datetime], comparator: str,
                         right: Union[str, datetime.datetime]) -> bool:
     """
     Checks if the left date and time is after the right date and time.
@@ -223,7 +223,7 @@ def _compare_date_after(left: Union[str, datetime.datetime], comparator: Compara
     :param left: a datetime object or a string in ISO format
     :param comparator: a comparator, should be Comparators.DATE_AFTER
     :param right: a datetime object or a string in ISO format
-    :return: True if left is before right, False otherwise
+    :return: True if left is after right, False otherwise
     """
     # Convert to datetime objects
     left = _get_datetime(left)
@@ -234,7 +234,7 @@ def _compare_date_after(left: Union[str, datetime.datetime], comparator: Compara
     return left > right
 
 
-def _compare_date_within_last(date_to_check: Union[str, datetime.datetime], comparator: Comparators,
+def _compare_date_within_last(date_to_check: Union[str, datetime.datetime], comparator: str,
                               time_delta: str) -> bool:
     """
     Checks if the date and time is within the past duration specified by the time_delta.
@@ -261,7 +261,7 @@ def _compare_date_within_last(date_to_check: Union[str, datetime.datetime], comp
     return true_time_delta < condition_time_delta
 
 
-def _compare_string_contains(text: str, comparator: Comparators, substring: str) -> bool:
+def _compare_string_contains(text: str, comparator: str, substring: str) -> bool:
     """
     Checks if the text contains the substring.
 
@@ -357,7 +357,7 @@ COMPARATOR_DESCRIPTIONS = {
 }
 
 
-def compare_values(left, comparator: Comparators, right) -> bool:
+def compare_values(left, comparator: str, right) -> bool:
     """
     Compare two values according to ``comparator`` and return either True or False.
     If the comparison is invalid, raise a CompareError with a descriptive message.
