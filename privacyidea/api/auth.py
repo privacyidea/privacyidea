@@ -69,7 +69,7 @@ from privacyidea.api.lib.postpolicy import (postpolicy, add_user_detail_to_respo
 from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
                                            pushtoken_disable_wait, webauthntoken_authz, webauthntoken_request,
                                            fido2_auth, increase_failcounter_on_challenge,
-                                           jwt_validity)
+                                           jwt_validity, disabled_token_types)
 from privacyidea.api.lib.utils import (send_result, get_all_params,
                                        verify_auth_token, getParam, get_optional, get_required)
 from privacyidea.lib.utils import get_client_ip, hexlify_and_unicode, to_unicode, get_plugin_info_from_useragent
@@ -133,6 +133,7 @@ def before_request():
 @prepolicy(pushtoken_disable_wait, request)
 @prepolicy(webauthntoken_request, request=request)
 @prepolicy(webauthntoken_authz, request=request)
+@prepolicy(disabled_token_types, request=request)
 @prepolicy(fido2_auth, request=request)
 @prepolicy(jwt_validity, request)
 @postpolicy(get_webui_settings, request=request)

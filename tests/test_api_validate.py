@@ -3229,6 +3229,75 @@ class ValidateAPITestCase(MyApiTestCase):
         # delete the token
         remove_token(serial=serial)
 
+    def test_38_disable_token_types_for_auth(self):
+        """A spass token is accepted and a HOTP token triggers the challenge response,
+        then a policy disables both types."""
+        self.setUp_user_realms()
+        serial_1 = "SPASS1"
+        serial_2 = "HOTP1"
+
+        # Create a working Simple-Pass token and HOTP token
+        init_token({"serial": serial_1,
+                    "type": "spass",
+                    "pin": "1"},
+                   user=User("cornelius", self.realm1))
+
+        init_token({"serial": serial_2,
+                    "type": "hotp",
+                    "pin": "2",
+                    "otpkey": self.otpkey},
+                   user=User("cornelius", self.realm1))
+
+        # It authenticates successfully before the policy is set
+        with self.app.test_request_context(
+                "/validate/check",
+                method="POST",
+                data={"user": "cornelius", "realm": self.realm1, "pass": "1"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json["result"]
+            self.assertEqual(result["authentication"], "ACCEPT")
+
+        # Set a policy to trigger challenge response for HOTP
+        set_policy(name="challenge_response", scope=SCOPE.AUTH, action=f"{ACTION.CHALLENGERESPONSE}=hotp")
+
+        with self.app.test_request_context(
+                "/validate/check",
+                method="POST",
+                data={"user": "cornelius", "realm": self.realm1, "pass": "2"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json["result"]
+            self.assertEqual(result["authentication"], "CHALLENGE")
+
+        # Disable the spass and hotp token for authentication
+        set_policy(name="disable_some_token", scope=SCOPE.AUTH, action=f"{ACTION.DISABLED_TOKEN_TYPES}=spass hotp")
+
+        # The very same auth attempt must now be rejected
+        with self.app.test_request_context(
+                "/validate/check",
+                method="POST",
+                data={"user": "cornelius", "realm": self.realm1, "pass": "1"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json["result"]
+            self.assertEqual(result["authentication"], "REJECT")
+
+        with self.app.test_request_context(
+                "/validate/check",
+                method="POST",
+                data={"user": "cornelius", "realm": self.realm1, "pass": "2"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json["result"]
+            self.assertEqual(result["authentication"], "REJECT")
+
+        # Clean-up
+        remove_token(serial=serial_1)
+        remove_token(serial=serial_2)
+        delete_policy("challenge_response")
+        delete_policy("disable_some_token")
+
 
 class RegistrationValidity(MyApiTestCase):
 
@@ -3944,7 +4013,8 @@ class MultiChallenge(MyApiTestCase):
                                            headers={"user_agent": "privacyidea-cp/2.0"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            preferred_token_types = user.attributes.get(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-cp")
+            preferred_token_types = user.attributes.get(
+                f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-cp")
             self.assertEqual("push", preferred_token_types)
 
         # authenticate with PIN to trigger challenge-response: second auth, custom user attribute set
@@ -3992,7 +4062,8 @@ class MultiChallenge(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             # custom user attribute changed to interactive
-            preferred_token_types = user.attributes.get(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-cp")
+            preferred_token_types = user.attributes.get(
+                f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-cp")
             self.assertEqual("hotp", preferred_token_types)
         # authenticate with PIN to trigger challenge-response: second auth, custom user attribute set
         with self.app.test_request_context('/validate/check',

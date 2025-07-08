@@ -89,7 +89,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            check_base_action, pushtoken_validate, fido2_auth,
                                            webauthntoken_authz,
                                            webauthntoken_request, check_application_tokentype,
-                                           increase_failcounter_on_challenge, get_first_policy_value, fido2_enroll)
+                                           increase_failcounter_on_challenge, get_first_policy_value, fido2_enroll,
+                                           disabled_token_types)
 from privacyidea.api.lib.utils import get_all_params, get_optional_one_of
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.api.register import register_blueprint
@@ -256,6 +257,7 @@ def offlinerefill():
 @prepolicy(save_client_application_type, request=request)
 @prepolicy(webauthntoken_request, request=request)
 @prepolicy(webauthntoken_authz, request=request)
+@prepolicy(disabled_token_types, request=request)
 @prepolicy(fido2_auth, request=request)
 @check_user_serial_or_cred_id_in_request(request)
 @CheckSubscription(request)
