@@ -11,6 +11,7 @@ describe('LayoutComponent', () => {
   let fixture: ComponentFixture<LayoutComponent>;
 
   beforeEach(async () => {
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [LayoutComponent],
       providers: [

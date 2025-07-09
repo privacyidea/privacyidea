@@ -24,6 +24,7 @@ describe('AuthGuard — CanMatch helpers', () => {
     ) as boolean;
 
   beforeEach(() => {
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [{ provide: AuthService, useClass: MockAuthService }],
     });
@@ -56,6 +57,7 @@ describe('AuthGuard class', () => {
   let notificationService: MockNotificationService;
 
   beforeEach(() => {
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         AuthGuard,

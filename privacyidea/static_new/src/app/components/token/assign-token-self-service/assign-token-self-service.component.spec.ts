@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { AssignTokenSelfServiceComponent } from './assign-token-self-service.component';
+import { provideHttpClient } from '@angular/common/http';
 
 describe('AssignTokenSelfServiceComponent', () => {
   let component: AssignTokenSelfServiceComponent;
@@ -8,9 +9,9 @@ describe('AssignTokenSelfServiceComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AssignTokenSelfServiceComponent]
-    })
-    .compileComponents();
+      providers: [provideHttpClient()],
+      imports: [AssignTokenSelfServiceComponent],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(AssignTokenSelfServiceComponent);
     component = fixture.componentInstance;

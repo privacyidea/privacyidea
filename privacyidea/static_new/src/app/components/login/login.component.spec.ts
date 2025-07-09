@@ -1,77 +1,62 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { LoginComponent } from './login.component';
+import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { of } from 'rxjs';
+import { Router } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+
+import { LoginComponent } from './login.component';
 import { AuthService } from '../../services/auth/auth.service';
 import { LocalService } from '../../services/local/local.service';
 import { NotificationService } from '../../services/notification/notification.service';
 import { SessionTimerService } from '../../services/session-timer/session-timer.service';
-import { Router } from '@angular/router';
-import { of } from 'rxjs';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
 
-describe('LoginComponent', () => {
-  let component: LoginComponent;
+describe('LoginComponent (Jest)', () => {
   let fixture: ComponentFixture<LoginComponent>;
-  let authService: AuthService;
-  let localService: LocalService;
-  let notificationService: NotificationService;
-  let sessionTimerService: SessionTimerService;
-  let router: Router;
+  let component: LoginComponent;
 
-  const mockAuthService = {
-    isAuthenticatedUser() {
-      return false;
-    },
-    authenticate(_username: string, _password: string) {
-      return of({});
-    },
-    deauthenticate() {},
-  };
+  const authService = {
+    isAuthenticatedUser: jest.fn().mockReturnValue(false),
+    authenticate: jest.fn().mockReturnValue(of({})),
+    deauthenticate: jest.fn(),
+  } as unknown as jest.Mocked<AuthService>;
 
-  const mockLocalService = {
+  const localService = {
     bearerTokenKey: 'bearerTokenKey',
-    saveData(_key: string, _data: string) {},
-    removeData(_key: string) {},
-  };
+    saveData: jest.fn(),
+    removeData: jest.fn(),
+  } as unknown as jest.Mocked<LocalService>;
 
-  const mockNotificationService = {
-    openSnackBar(_message: string) {},
-  };
+  const notificationService = {
+    openSnackBar: jest.fn(),
+  } as unknown as jest.Mocked<NotificationService>;
 
-  const mockSessionTimerService = {
-    startRefreshingRemainingTime() {},
-    startTimer() {},
-  };
+  const sessionTimerService = {
+    startRefreshingRemainingTime: jest.fn(),
+    startTimer: jest.fn(),
+  } as unknown as jest.Mocked<SessionTimerService>;
 
-  const mockRouter = {
-    navigate(_commands: any[]) {
-      return Promise.resolve(true);
-    },
-  };
+  const router = {
+    navigate: jest.fn().mockResolvedValue(true),
+  } as unknown as jest.Mocked<Router>;
 
   beforeEach(async () => {
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [LoginComponent, BrowserAnimationsModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: AuthService, useValue: mockAuthService },
-        { provide: LocalService, useValue: mockLocalService },
-        { provide: NotificationService, useValue: mockNotificationService },
-        { provide: SessionTimerService, useValue: mockSessionTimerService },
-        { provide: Router, useValue: mockRouter },
+        { provide: AuthService, useValue: authService },
+        { provide: LocalService, useValue: localService },
+        { provide: NotificationService, useValue: notificationService },
+        { provide: SessionTimerService, useValue: sessionTimerService },
+        { provide: Router, useValue: router },
       ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(LoginComponent);
     component = fixture.componentInstance;
-
-    authService = TestBed.inject(AuthService);
-    localService = TestBed.inject(LocalService);
-    notificationService = TestBed.inject(NotificationService);
-    sessionTimerService = TestBed.inject(SessionTimerService);
-    router = TestBed.inject(Router);
   });
 
   it('should create', () => {
@@ -80,9 +65,8 @@ describe('LoginComponent', () => {
   });
 
   it('should warn and open a snack bar if the user is already logged in', () => {
-    spyOn(authService, 'isAuthenticatedUser').and.returnValue(true);
-    spyOn(notificationService, 'openSnackBar').and.callThrough();
-    spyOn(console, 'warn');
+    authService.isAuthenticatedUser.mockReturnValue(true);
+    const warn = jest.spyOn(console, 'warn').mockImplementation();
 
     fixture = TestBed.createComponent(LoginComponent);
     component = fixture.componentInstance;
@@ -91,30 +75,19 @@ describe('LoginComponent', () => {
     expect(notificationService.openSnackBar).toHaveBeenCalledWith(
       'User is already logged in.',
     );
-    expect(console.warn).toHaveBeenCalledWith('User is already logged in.');
+    expect(warn).toHaveBeenCalledWith('User is already logged in.');
+
+    warn.mockRestore();
   });
 
   describe('onSubmit', () => {
     beforeEach(() => {
-      spyOn(authService, 'authenticate').and.callThrough();
-      spyOn(authService, 'isAuthenticatedUser').and.callThrough();
-      spyOn(localService, 'saveData').and.callThrough();
-      spyOn(notificationService, 'openSnackBar').and.callThrough();
-      spyOn(
-        sessionTimerService,
-        'startRefreshingRemainingTime',
-      ).and.callThrough();
-      spyOn(sessionTimerService, 'startTimer').and.callThrough();
-      spyOn(router, 'navigate').and.callThrough();
-
       component.username.set('test-user');
       component.password.set('test-pass');
     });
 
-    it('should call authService.authenticate with username/password signals', () => {
-      authService.isAuthenticatedUser = jasmine
-        .createSpy()
-        .and.returnValue(true);
+    it('should call authService.authenticate with username/password', () => {
+      authService.isAuthenticatedUser.mockReturnValue(true);
 
       component.onSubmit();
 
@@ -125,10 +98,10 @@ describe('LoginComponent', () => {
     });
 
     it('should handle successful login', () => {
-      (authService.authenticate as jasmine.Spy).and.returnValue(
-        of({ result: { value: { token: 'fake-token' } } }),
+      authService.authenticate.mockReturnValue(
+        of({ result: { value: { token: 'fake-token' } } } as any),
       );
-      (authService.isAuthenticatedUser as jasmine.Spy).and.returnValue(true);
+      authService.isAuthenticatedUser.mockReturnValue(true);
 
       component.onSubmit();
 
@@ -140,12 +113,11 @@ describe('LoginComponent', () => {
         sessionTimerService.startRefreshingRemainingTime,
       ).toHaveBeenCalled();
       expect(sessionTimerService.startTimer).toHaveBeenCalled();
+      expect(router.navigate).toHaveBeenCalledWith(['token']);
     });
 
-    it('should handle missing or invalid token (trigger challenge response)', () => {
-      (authService.authenticate as jasmine.Spy).and.returnValue(
-        of({ result: {} }),
-      );
+    it('should handle missing or invalid token (challenge response)', () => {
+      authService.authenticate.mockReturnValue(of({ result: {} }) as any);
 
       component.onSubmit();
 
@@ -162,11 +134,7 @@ describe('LoginComponent', () => {
   });
 
   describe('logout', () => {
-    it('should call removeData, deauthenticate, and navigate to login', () => {
-      spyOn(localService, 'removeData').and.callThrough();
-      spyOn(authService, 'deauthenticate').and.callThrough();
-      spyOn(router, 'navigate').and.callThrough();
-
+    it('should remove token, deauthenticate, and navigate to login', async () => {
       component.logout();
 
       expect(localService.removeData).toHaveBeenCalledWith(

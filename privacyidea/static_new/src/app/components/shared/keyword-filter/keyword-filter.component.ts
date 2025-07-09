@@ -92,9 +92,8 @@ export class KeywordFilterComponent {
   }
 
   filterIsEmpty(): boolean {
-    return (
-      this.filterHTMLInputElement.value.trim() === '' &&
-      Object.keys(this.filterValue()).length === 0
-    );
+    const inputText = this.filterHTMLInputElement?.value.trim() ?? '';
+    const current = this.filterValue?.() ?? {};
+    return inputText === '' && Object.keys(current).length === 0;
   }
 }

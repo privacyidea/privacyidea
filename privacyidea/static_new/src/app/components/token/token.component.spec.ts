@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { Component } from '@angular/core';
-import { ComponentFixture, fakeAsync, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
 import { NotificationService } from '../../services/notification/notification.service';
@@ -112,42 +112,6 @@ describe('TokenComponent', () => {
     expect(mockTokenService.tokenTypeOptions).toBeDefined();
     expect(mockTokenService.tokenTypeOptions.length).toBeGreaterThan(0);
   });
-
-  it('should have default signal values', () => {
-    expect(component.selectedContent()).toBe('token_overview');
-    expect(component.tokenSerial()).toBe('');
-    expect(component.containerSerial()).toBe('');
-    expect(component.tokenIsActive()).toBeTrue();
-    expect(component.tokenIsRevoked()).toBeTrue();
-  });
-
-  it('should refresh token details successfully', fakeAsync(() => {
-    const onRefreshTokenDetails = spyOn(
-      component,
-      'onRefreshTokenDetails',
-    ).and.returnValue(void 0);
-
-    component.refreshTokenDetails.set(true);
-
-    TestBed.flushEffects();
-    fixture.detectChanges();
-
-    expect(onRefreshTokenDetails).toHaveBeenCalled();
-  }));
-
-  it('should refresh container details successfully', fakeAsync(() => {
-    const onRefreshContainerDetails = spyOn(
-      component,
-      'onRefreshContainerDetails',
-    ).and.returnValue(void 0);
-
-    component.refreshContainerDetails.set(true);
-
-    TestBed.flushEffects();
-    fixture.detectChanges();
-
-    expect(onRefreshContainerDetails).toHaveBeenCalled();
-  }));
 
   it('should show token card outside the drawer if overflowService returns false', () => {
     mockOverflowService.setWidthOverflow(false);

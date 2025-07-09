@@ -14,7 +14,9 @@ describe('KeywordFilterComponent', () => {
 
     fixture = TestBed.createComponent(KeywordFilterComponent);
     component = fixture.componentInstance;
-    component.filterValue = signal('');
+    component.filterHTMLInputElement = document.createElement('input');
+    component.filterHTMLInputElement.value = '';
+    component.filterValue = signal<Record<string, string>>({});
     component.advancedApiFilter = [];
     fixture.detectChanges();
   });

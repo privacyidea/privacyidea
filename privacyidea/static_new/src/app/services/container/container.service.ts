@@ -97,6 +97,7 @@ export interface ContainerDetailUser {
 }
 
 export type ContainerTypes = Map<ContainerTypeOption, _ContainerType>;
+
 interface _ContainerType {
   description: string;
   token_types: string[];
@@ -292,13 +293,11 @@ export class ContainerService {
   selectedContainerType = linkedSignal({
     source: this.selectedContent,
     computation: () =>
-      this.containerTypeOptions()[0] ?? [
-        {
-          key: 'generic',
-          description: 'No container type data available',
-          token_types: [],
-        },
-      ],
+      this.containerTypeOptions()[0] ?? {
+        containerType: 'generic',
+        description: 'No container type data available',
+        token_types: [],
+      },
   });
 
   containerDetailResource = httpResource<PiResponse<ContainerDetails>>(() => {
