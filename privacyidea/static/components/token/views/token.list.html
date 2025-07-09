@@ -120,11 +120,18 @@
             <!--<td>{{ token.otplen }}</td>-->
             <td>{{ token.rollout_state }}</td>
             <td ng-show="loggedInUser.role == 'admin'">
-                <a ui-sref="user.details({username: token.username,
+                <div  ng-switch on="token.username">
+                    <div ng-switch-when="**resolver error**">
+                        {{ token.username }}
+                    </div>
+                    <div ng-switch-default>
+                        <a ui-sref="user.details({username: token.username,
                             realmname: token.user_realm,
                             resolvername: token.resolver,
                             editable: token.user_editable})">
-                {{ token.username }}</a>
+                            {{ token.username }}</a>
+                    </div>
+                </div>
             </td>
             <td ng-show="loggedInUser.role == 'admin'">
                 <a ui-sref="config.realms.list">{{ token.user_realm }}</a>

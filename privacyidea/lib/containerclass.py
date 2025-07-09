@@ -368,7 +368,12 @@ class TokenContainerClass:
         users: list[User] = []
         for owner in db_container_owners:
             realm = Realm.query.filter_by(id=owner.realm_id).first()
-            user = User(uid=owner.user_id, realm=realm.name, resolver=owner.resolver)
+            try:
+                user = User(uid=owner.user_id, realm=realm.name, resolver=owner.resolver)
+            except Exception as ex:
+                log.error(f"Unable to get user {owner.user_id} for container {self.serial}: {ex!r}")
+                # We return an empty User object here to notify that we ran into an error
+                user = User(login=None, realm=realm.name, resolver=owner.resolver)
             users.append(user)
 
         return users
@@ -592,7 +597,8 @@ class TokenContainerClass:
         Initializes the registration: Generates a QR code containing all relevant data.
 
         :param server_url: URL of the server reachable for the client.
-        :param scope: The URL the client contacts to finalize the registration e.g. "https://pi.net/container/register/finalize".
+        :param scope: The URL the client contacts to finalize the registration
+                      e.g. "https://pi.net/container/register/finalize".
         :param registration_ttl: Time to live of the registration link in minutes.
         :param ssl_verify: Whether the client shall use ssl.
         :param params: Container specific parameters
@@ -799,10 +805,15 @@ class TokenContainerClass:
         users = []
         user_info = {}
         for user in self.get_users():
-            user_info["user_name"] = user.login
             user_info["user_realm"] = user.realm
             user_info["user_resolver"] = user.resolver
-            user_info["user_id"] = user.uid
+            if user.uid:
+                user_info["user_name"] = user.login
+                user_info["user_id"] = user.uid
+            else:
+                # In case we have a User object without an uid, we assume a resolver error.
+                user_info["user_name"] = "**resolver error**"
+                user_info["user_id"] = "**resolver error**"
             users.append(user_info)
         details["users"] = users
 

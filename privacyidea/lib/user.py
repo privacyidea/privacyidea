@@ -379,7 +379,7 @@ class User(object):
         if phone_type in userinfo:
             phone = userinfo[phone_type]
             log.debug("got user phone {0!r} of type {1!r}".format(phone, phone_type))
-            if type(phone) == list and index is not None:
+            if isinstance(phone, list) and index is not None:
                 if len(phone) > index:
                     return phone[index]
                 else:
@@ -456,9 +456,14 @@ class User(object):
             res = self._get_resolvers()
             # Now we know, the resolvers of this user, and we can verify the password
             if len(res) == 1:
+                from .resolvers.HTTPResolver import HTTPResolver
                 y = get_resolver_object(self.resolver)
                 uid, _rtype, _rname = self.get_user_identifiers()
-                if y.checkPass(uid, password):
+                if isinstance(y, HTTPResolver):
+                    valid_credentials = y.checkPass(uid, password, self.login)
+                else:
+                    valid_credentials = y.checkPass(uid, password)
+                if valid_credentials:
                     success = f"{self.login}@{self.realm}"
                     log.debug(f"Successfully authenticated user {self}.")
                     self._checked_passwords[password_hash] = True
@@ -702,7 +707,7 @@ def get_user_list(param=None, user=None, custom_attributes=False):
     """
     users = []
     resolvers = []
-    searchDict = {"username": "*"}
+    search_dict = {"username": "*"}
     param = param or {}
 
     # we have to recreate a new searchdict without the realm key
@@ -711,16 +716,16 @@ def get_user_list(param=None, user=None, custom_attributes=False):
         lval = param[key]
         if key in ["realm", "resolver", "user", "username"]:
             continue
-        searchDict[key] = lval
+        search_dict[key] = lval
         log.debug("Parameter key:{0!r}={1!r}".format(key, lval))
 
     # update searchdict depending on existence of 'user' or 'username' in param
     # Since 'user' takes precedence over 'username' we have to check the order
     if 'username' in param:
-        searchDict['username'] = param['username']
+        search_dict['username'] = param['username']
     if 'user' in param:
-        searchDict['username'] = param['user']
-    log.debug('Changed search key to username: %s.', searchDict['username'])
+        search_dict['username'] = param['user']
+    log.debug('Changed search key to username: %s.', search_dict['username'])
 
     # determine which scope we want to show
     param_resolver = getParam(param, "resolver")
@@ -759,9 +764,11 @@ def get_user_list(param=None, user=None, custom_attributes=False):
         try:
             log.debug("Check for resolver class: {0!r}".format(resolver_name))
             y = get_resolver_object(resolver_name)
-            log.debug("with this search dictionary: {0!r} ".format(searchDict))
-
-            ulist = y.getUserList(searchDict)
+            # Continue if we couldn't find a resolver with the given name
+            if not y:
+                continue
+            log.debug("With this search dictionary: %r", search_dict)
+            ulist = y.getUserList(search_dict)
             # Add resolvername to the list
             realm_id = get_realm_id(param_realm or user_realm)
             for ue in ulist:
@@ -780,8 +787,8 @@ def get_user_list(param=None, user=None, custom_attributes=False):
             log.debug("{0!s}".format(traceback.format_exc()))
             raise exx
 
-        except Exception as ex:  # pragma: no cover
-            log.error(f"Unable to get user list: {ex}")
+        except Exception as ex:
+            log.error(f"Unable to get user list for resolver '{resolver_name}': {ex!r}")
             log.debug("{0!s}".format(traceback.format_exc()))
             continue
 

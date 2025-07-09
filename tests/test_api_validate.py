@@ -6115,8 +6115,23 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         self._authenticate_no_token_enrolled(user, spass)
         delete_policy("max_token_per_realm")
 
+        # Test that the max token policies are not checked if there is no need to enroll a new token
+        token2 = init_token({"type": "hotp", "genkey": True}, user)
+        with mock.patch("privacyidea.api.lib.prepolicy.check_max_token_user") as mock_check_max_token_user, mock.patch(
+                "privacyidea.api.lib.prepolicy.check_max_token_realm") as mock_check_max_token_realm:
+            self._authenticate_no_token_enrolled(user, spass, check_audit=False)
+            self.assertEqual(0, mock_check_max_token_user.call_count)
+            self.assertEqual(0, mock_check_max_token_realm.call_count)
+        # Check that we do not have a log message (action_detail) regarding the max tokens in the audit
+        audit_entry = self.find_most_recent_audit_entry(action='POST /validate/check')
+        self.assertIsNotNone(audit_entry)
+        self.assertFalse(audit_entry["action_detail"].startswith("ERR303: The number of "), audit_entry)
+        self.assertEqual(audit_entry["authentication"], AUTH_RESPONSE.ACCEPT, audit_entry)
+        self.assertEqual(audit_entry["success"], 1, audit_entry)
+
         delete_policy("enroll_via_multichallenge")
         remove_token(token1.get_serial())
+        remove_token(token2.get_serial())
 
     @ldap3mock.activate
     def test_07_enroll_TOTP_default_params(self):
@@ -6184,7 +6199,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
 
         delete_policy("policy")
 
-    def _authenticate_no_token_enrolled(self, user: User, otp):
+    def _authenticate_no_token_enrolled(self, user: User, otp, check_audit=True):
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": user.login, "realm": user.realm, "pass": otp}):
@@ -6199,12 +6214,13 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             detail = data.get("detail")
             self.assertNotIn("transaction_id", detail)
             self.assertNotIn("multi_challenge", detail)
-        # Check that we have the proper log message (action_detail) in the audit
-        audit_entry = self.find_most_recent_audit_entry(action='POST /validate/check')
-        self.assertIsNotNone(audit_entry)
-        self.assertTrue(audit_entry["action_detail"].startswith("ERR303: The number of "), audit_entry)
-        self.assertEqual(audit_entry["authentication"], AUTH_RESPONSE.ACCEPT, audit_entry)
-        self.assertEqual(audit_entry["success"], 1, audit_entry)
+        if check_audit:
+            # Check that we have the proper log message (action_detail) in the audit
+            audit_entry = self.find_most_recent_audit_entry(action='POST /validate/check')
+            self.assertIsNotNone(audit_entry)
+            self.assertTrue(audit_entry["action_detail"].startswith("ERR303: The number of "), audit_entry)
+            self.assertEqual(audit_entry["authentication"], AUTH_RESPONSE.ACCEPT, audit_entry)
+            self.assertEqual(audit_entry["success"], 1, audit_entry)
 
     @ldap3mock.activate
     def test_08_enroll_smartphone_success(self):

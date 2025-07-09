@@ -25,13 +25,12 @@ Flask endpoints.
 It also contains the error handlers.
 """
 
-from .lib.utils import (send_error, get_all_params, verify_auth_token)
+from .lib.utils import (send_error, get_all_params, verify_auth_token, get_optional)
 from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
 from ..lib.framework import get_app_config_value
 from ..lib.user import get_user_from_param
 import logging
-from .lib.utils import getParam
 from flask import request, g
 from privacyidea.lib.audit import getAudit
 from flask import current_app
@@ -113,14 +112,59 @@ def before_user_request():
     before_request()
 
 
+def before_create_user_request():
+    """
+    This function is executed before the create user endpoint.
+    It removes the user parameter from the request to avoid that before_request tries to resolve the user.
+    """
+    ensure_no_config_object()
+    request.all_data = get_all_params(request)
+    request.User = None
+    get_before_request_config()
+
+    privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
+
+    # Already get some typical parameters to log
+    audit_realm = get_optional(request.all_data, "realm")
+    audit_resolver = get_optional(request.all_data, "resolver")
+    audit_username = get_optional(request.all_data, "user")
+
+    ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
+    g.audit_object.log({"success": False,
+                        "user": audit_username,
+                        "realm": audit_realm,
+                        "resolver": audit_resolver,
+                        "client": g.client_ip,
+                        "user_agent": ua_name,
+                        "user_agent_version": ua_version,
+                        "privacyidea_server": privacyidea_server,
+                        "action": "{0!s} {1!s}".format(request.method, request.url_rule),
+                        "action_detail": "",
+                        "thread_id": "{0!s}".format(threading.current_thread().ident),
+                        "info": ""})
+
+    if g.logged_in_user.get("role") == "admin":
+        # An administrator is calling this API
+        g.audit_object.log({"administrator": g.logged_in_user.get("username")})
+        # TODO: Check if there are realm specific admin policies, so that the
+        #  admin is only allowed to act on certain realms
+        #  If now realm is specified, we need to add "filterrealms".
+        #  If the admin tries to view realms, he is not allowed to, we need to
+        #  raise an exception.
+
+
+
 @user_blueprint.before_request
 @user_required
 def before_userendpoint_request():
-    before_request()
+    if request.endpoint == "user_blueprint.create_user_api":
+        before_create_user_request()
+    else:
+        before_request()
     # DEL /user/ has no realm parameter, and thus we need to create the user object this way.
     if not request.User and request.method == "DELETE":
-        resolvername = getParam(request.all_data, "resolvername")
-        username = getParam(request.all_data, "username")
+        resolvername = get_optional(request.all_data, "resolvername")
+        username = get_optional(request.all_data, "username")
         if resolvername and username:
             request.User = User(login=username, resolver=resolvername)
 
@@ -194,7 +238,7 @@ def before_container_request():
     g.serial = None
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     # Get info about the container and resolve user from the container if not yet set
-    container_serial = getParam(request.all_data, "container_serial")
+    container_serial = get_optional(request.all_data, "container_serial")
     container = None
     container_type = None
     if container_serial and "*" not in container_serial:
@@ -215,9 +259,9 @@ def before_container_request():
         audit_realm = request.User.realm
         audit_resolver = request.User.resolver
     else:
-        audit_realm = getParam(request.all_data, "realm")
-        audit_resolver = getParam(request.all_data, "resolver")
-        audit_username = getParam(request.all_data, "user")
+        audit_realm = get_optional(request.all_data, "realm")
+        audit_resolver = get_optional(request.all_data, "resolver")
+        audit_username = get_optional(request.all_data, "user")
 
     ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
     g.audit_object.log({"success": False,
@@ -294,7 +338,7 @@ def before_request():
 
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     # Already get some typical parameters to log
-    serial = getParam(request.all_data, "serial")
+    serial = get_optional(request.all_data, "serial")
     if serial and "*" not in serial and "," not in serial:
         g.serial = serial
         tokentype = get_token_type(serial)
@@ -311,7 +355,7 @@ def before_request():
         tokentype = None
 
     # Container info
-    container_serial = getParam(request.all_data, "container_serial")
+    container_serial = get_optional(request.all_data, "container_serial")
     container = None
     container_type = None
     if container_serial and "*" not in container_serial:
@@ -345,9 +389,9 @@ def before_request():
         audit_realm = request.User.realm
         audit_resolver = request.User.resolver
     else:
-        audit_realm = getParam(request.all_data, "realm")
-        audit_resolver = getParam(request.all_data, "resolver")
-        audit_username = getParam(request.all_data, "user")
+        audit_realm = get_optional(request.all_data, "realm")
+        audit_resolver = get_optional(request.all_data, "resolver")
+        audit_username = get_optional(request.all_data, "user")
 
     ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
     g.audit_object.log({"success": False,

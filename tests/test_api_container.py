@@ -3083,6 +3083,27 @@ class APIContainer(APIContainerTest):
                                              {}, self.at, "DELETE")
         self.assertFalse(result["result"]["value"])
 
+    def test_25_broken_user_resolver(self):
+        # Arrange
+        self.setUp_user_realms()
+        container_serial = init_container({"type": "generic",
+                                           "description": "test container",
+                                           "user": "hans",
+                                           "realm": self.realm1})["container_serial"]
+        # Get all containers with assigned user
+        result = self.request_assert_success('/container/', {}, self.at, 'GET')
+        # Get the current container
+        container = [x for x in result["result"]["value"]["containers"] if x["serial"] == container_serial][0]
+        self.assertEqual(container["users"][0]["user_name"], "hans", result["result"])
+        # Break the resolver
+        save_resolver({"resolver": self.resolvername1,
+                       "type": "passwdresolver",
+                       "fileName": "/unknown/file"})
+        # And check the container again
+        result = self.request_assert_success('/container/', {}, self.at, 'GET')
+        container = [x for x in result["result"]["value"]["containers"] if x["serial"] == container_serial][0]
+        self.assertEqual(container["users"][0]["user_name"], "**resolver error**", result["result"])
+
 
 @dataclass
 class SmartphoneRequests:
