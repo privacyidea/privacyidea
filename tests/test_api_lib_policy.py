@@ -5,10 +5,12 @@ The api.lib.policy.py depends on lib.policy and on flask!
 """
 import json
 import logging
-from testfixtures import log_capture
+from testfixtures import log_capture, LogCapture
 from werkzeug.datastructures.headers import Headers
 
-from privacyidea.lib.container import init_container, find_container_by_serial
+from privacyidea.lib.container import (init_container, find_container_by_serial, create_container_template,
+                                       get_all_containers)
+from privacyidea.lib.containers.container_info import RegistrationState
 from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AuthenticatorAttachmentType,
                                              AttestationLevel, AttestationForm,
                                              UserVerificationLevel)
@@ -73,7 +75,8 @@ from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             save_pin_change,
                                             add_user_detail_to_response,
                                             mangle_challenge_response, is_authorized,
-                                            check_verify_enrollment, preferred_client_mode)
+                                            check_verify_enrollment, preferred_client_mode,
+                                            multichallenge_enroll_via_validate)
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    set_realms, check_user_pass, unassign_token,
                                    enable_token)
@@ -3601,8 +3604,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("policy")
 
         # Policy for user
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN, user="root", realm=[self.realm3],
-                   resolver=[self.resolvername3])
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN, user="root",
+                   realm=[self.realm3], resolver=[self.resolvername3])
         self.assertTrue(check_token_action(request=req, action=ACTION.CONTAINER_ADD_TOKEN))
         # Request user is different from token owner: use token owner (can only happen in add/remove token)
         req.User = User("selfservice", self.realm1, self.resolvername1)
@@ -6113,7 +6116,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # No preferred client mode policy set only custom user attribute: use user+application preference
         response = jsonify(response_data)
         user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-cp", "push", INTERNAL_USAGE)
-        user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-Shibbole", "u2f", INTERNAL_USAGE)
+        user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-Shibbole", "u2f",
+                           INTERNAL_USAGE)
 
         preferred_client_mode(request, response)
 
@@ -6200,3 +6204,228 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         delete_policy("preferred_client_mode")
         delete_policy("challenge")
+
+    def test_23_enroll_via_multichallenge_smartphone_is_triggered(self):
+        """
+        Here we only test that the enroll_via_multichallenge is triggered correctly for different scenarios
+        """
+        template_options = {"tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True}]}
+        create_container_template(container_type="smartphone", template_name="test", options=template_options)
+        set_policy("enroll_via_multichallenge", scope=SCOPE.AUTH,
+                   action={ACTION.ENROLL_VIA_MULTICHALLENGE: "smartphone", ACTION.PASSTHRU: True})
+        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"})
+
+        self.setUp_user_realms()
+        hans = User("hans", self.realm1)
+
+        # Mock request
+        builder = EnvironBuilder(method='POST', data={}, headers=Headers({"user_agent": "privacyidea-cp"}))
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        request = Request(env)
+        request.all_data = {}
+        request.User = hans
+        g.policy_object = PolicyClass()
+
+        response_data = {"jsonrpc": "2.0",
+                         "result": {"status": True, "value": True, "authentication": AUTH_RESPONSE.ACCEPT},
+                         "version": "privacyIDEA test"}
+        response = jsonify(response_data)
+
+        def check_response(response, message=None):
+            result = response.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertFalse(result.get("value"))
+            self.assertEqual(AUTH_RESPONSE.CHALLENGE, result.get("authentication"))
+            details = response.json.get("detail", {})
+            self.assertIn("multi_challenge", details)
+            self.assertEqual(1, len(details.get("multi_challenge", [])))
+            challenge_data = details.get("multi_challenge")[0]
+            # Data in the challenge is equal to the data in the details
+            self.assertEqual(details.get("serial"), challenge_data.get("serial"))
+            self.assertEqual(details.get("type"), challenge_data.get("type"))
+            self.assertEqual(details.get("transaction_id"), challenge_data.get("transaction_id"))
+            self.assertEqual(details.get("client_mode"), challenge_data.get("client_mode"))
+            self.assertEqual(details.get("message"), challenge_data.get("message"))
+            self.assertEqual(details.get("image"), challenge_data.get("image"))
+            self.assertEqual(details.get("link"), challenge_data.get("link"))
+            # As it is equal we only need to check for valid values once
+            self.assertEqual("smartphone", challenge_data.get("type"))
+            self.assertEqual("poll", challenge_data.get("client_mode"))
+            self.assertTrue(challenge_data.get("link").startswith("pia://container"))
+            # Default message
+            message = message or "Please scan the QR code to register the container."
+            self.assertEqual(message, challenge_data.get("message"))
+
+        # User has no container
+        response = multichallenge_enroll_via_validate(request, response)
+        check_response(response)
+        container = find_container_by_serial(response.json.get("detail").get("serial"))
+        # container is created without template hence there are no tokens
+        self.assertEqual(0, len(container.tokens))
+        # clean up
+        container.delete()
+        response = jsonify(response_data)
+
+        # User has token, but no container
+        token = init_token({"type": "hotp", "genkey": True}, user=hans)
+        response = multichallenge_enroll_via_validate(request, response)
+        check_response(response)
+        # clean up
+        token.delete_token()
+        [container.delete() for container in get_all_containers(user=hans)["containers"]]
+        response = jsonify(response_data)
+
+        # User has generic container, but not smartphone container
+        init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
+        response = multichallenge_enroll_via_validate(request, response)
+        check_response(response)
+        # clean up
+        [container.delete() for container in get_all_containers(user=hans)["containers"]]
+        response = jsonify(response_data)
+
+        # User has smartphone container, but it is not registered
+        container_serial = init_container({"type": "smartphone", "user": "hans", "realm": self.realm1})[
+            "container_serial"]
+        response = multichallenge_enroll_via_validate(request, response)
+        check_response(response)
+        self.assertEqual(container_serial, response.json.get("detail").get("serial"))
+        # clean up
+        [container.delete() for container in get_all_containers(user=hans)["containers"]]
+        response = jsonify(response_data)
+
+        # use template policy
+        set_policy("enroll_via_multichallenge_template", scope=SCOPE.AUTH,
+                   action={ACTION.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: "test"})
+        response = multichallenge_enroll_via_validate(request, response)
+        check_response(response)
+        container = find_container_by_serial(response.json.get("detail").get("serial"))
+        self.assertEqual("test", container.template.name)
+        tokens = container.tokens
+        self.assertSetEqual({"hotp", "totp"}, {token.type for token in tokens})
+        # clean up
+        [token.delete_token() for token in tokens]
+        [container.delete() for container in get_all_containers(user=hans)["containers"]]
+        response = jsonify(response_data)
+
+        # User max token reached, but container is created anyway
+        set_policy("max_token_user", scope=SCOPE.ENROLL, action={ACTION.MAXTOKENUSER: 1})
+        token = init_token({"type": "hotp", "genkey": True}, user=hans)
+        with LogCapture() as capture:
+            logging.getLogger('privacyidea.lib.container').setLevel(logging.WARNING)
+            response = multichallenge_enroll_via_validate(request, response)
+            token_info = {"type": "hotp", "genkey": True, "user": hans.login, "realm": hans.realm,
+                          "resolver": hans.resolver}
+            log_message = (f"Error checking pre-policies for token {token_info} created from template: ERR303: The "
+                           "number of tokens for this user is limited!")
+            capture.check_present(("privacyidea.lib.container", "WARNING", log_message))
+            token_info["type"] = "totp"
+            log_message = (f"Error checking pre-policies for token {token_info} created from template: ERR303: The "
+                           "number of tokens for this user is limited!")
+            capture.check_present(("privacyidea.lib.container", "WARNING", log_message))
+        check_response(response)
+        container = find_container_by_serial(response.json.get("detail").get("serial"))
+        self.assertEqual("test", container.template.name)
+        # token is not created as the user already had one token
+        tokens = container.tokens
+        self.assertEqual(0, len(tokens))
+
+        # clean up
+        [container.delete() for container in get_all_containers(user=hans)["containers"]]
+        token.delete_token()
+        delete_policy("max_token_user")
+        delete_policy("enroll_via_multichallenge_template")
+        response = jsonify(response_data)
+
+        # use custom text
+        set_policy("enroll_via_multichallenge_text", scope=SCOPE.AUTH,
+                   action={ACTION.ENROLL_VIA_MULTICHALLENGE_TEXT: "Test custom text!"})
+        response = multichallenge_enroll_via_validate(request, response)
+        check_response(response, message="Test custom text!")
+        # clean up
+        [container.delete() for container in get_all_containers(user=hans)["containers"]]
+        delete_policy("enroll_via_multichallenge_text")
+        response = jsonify(response_data)
+
+        # Invalid template name: container is created anyway
+        set_policy("enroll_via_multichallenge_template", scope=SCOPE.AUTH,
+                   action={ACTION.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: "invalid"})
+        response = multichallenge_enroll_via_validate(request, response)
+        check_response(response)
+        container = find_container_by_serial(response.json.get("detail").get("serial"))
+        self.assertEqual(0, len(container.tokens))
+        self.assertIsNone(container.template)
+        # clean up
+        [container.delete() for container in get_all_containers(user=hans)["containers"]]
+        delete_policy("enroll_via_multichallenge_template")
+        response = jsonify(response_data)
+
+        delete_policy("enroll_via_multichallenge")
+        delete_policy("registration")
+
+    @log_capture(level=logging.DEBUG)
+    def test_24_enroll_smartphone_is_not_triggered(self, capture):
+        """
+        Here we only test that the enroll_via_multichallenge is not triggered correctly for different scenarios
+        """
+        logging.getLogger('privacyidea.api.lib.postpolicy').setLevel(logging.DEBUG)
+        set_policy("enroll_via_multichallenge", scope=SCOPE.AUTH,
+                   action={ACTION.ENROLL_VIA_MULTICHALLENGE: "smartphone", ACTION.PASSTHRU: True})
+        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"})
+        set_policy("enroll_via_multichallenge_template", scope=SCOPE.AUTH,
+                   action={ACTION.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: "test"})
+
+        self.setUp_user_realms()
+        hans = User("hans", self.realm1)
+
+        # Mock request
+        builder = EnvironBuilder(method='POST', data={}, headers=Headers({"user_agent": "privacyidea-cp"}))
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        request = Request(env)
+        request.all_data = {}
+        request.User = hans
+        g.policy_object = PolicyClass()
+
+        response_data = {"jsonrpc": "2.0",
+                         "result": {"status": True, "value": True, "authentication": AUTH_RESPONSE.ACCEPT},
+                         "version": "privacyIDEA test"}
+        response = jsonify(response_data)
+
+        def check_response(response):
+            result = response.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+            self.assertEqual(AUTH_RESPONSE.ACCEPT, result.get("authentication"))
+
+        # User has registered smartphone container
+        container_serial = init_container({"type": "smartphone", "user": "hans", "realm": self.realm1})[
+            "container_serial"]
+        container = find_container_by_serial(container_serial)
+        container.set_container_info({RegistrationState.get_key(): RegistrationState.REGISTERED.value})
+        response = multichallenge_enroll_via_validate(request, response)
+        check_response(response)
+        container_of_hans = get_all_containers(user=hans)["containers"]
+        self.assertEqual(1, len(container_of_hans))
+        self.assertEqual(container_serial, container_of_hans[0].serial)
+        [container.delete() for container in get_all_containers(user=hans)["containers"]]
+        response = jsonify(response_data)
+
+        # Missing registration policies
+        delete_policy("registration")
+        # create with template to check that also no tokens are created
+        template_options = {"tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True}]}
+        create_container_template(container_type="smartphone", template_name="test", options=template_options)
+        response = multichallenge_enroll_via_validate(request, response)
+        check_response(response)
+        container_of_hans = get_all_containers(user=hans)["containers"]
+        self.assertEqual(0, len(container_of_hans))
+        tokens_of_hans = get_tokens(user=hans)
+        self.assertEqual(0, len(tokens_of_hans))
+        capture.check_present(("privacyidea.api.lib.postpolicy", "DEBUG",
+                               "Missing container registration policy. Can not enroll container via multichallenge."))
+
+        delete_policy("enroll_via_multichallenge")
+        delete_policy("enroll_via_multichallenge_template")
