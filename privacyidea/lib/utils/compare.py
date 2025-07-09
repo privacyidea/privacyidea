@@ -54,10 +54,10 @@ class CompareError(Exception):
         return f"CompareError({self.message!r})"
 
 
-#: This class enumerates all available comparators.
-#: In order to add a comparator to this module, add a suitable member to COMPARATORS
-#: and suitable entries to COMPARATOR_FUNCTIONS and COMPARATOR_DESCRIPTIONS.
-class Comparators():
+# This class enumerates all available comparators.
+# In order to add a comparator to this module, add a suitable member to COMPARATORS
+# and suitable entries to COMPARATOR_FUNCTIONS and COMPARATOR_DESCRIPTIONS.
+class Comparators:
     EQUALS = "equals"
     NOT_EQUALS = "!equals"
 
