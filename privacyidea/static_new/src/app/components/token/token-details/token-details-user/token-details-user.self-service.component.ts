@@ -17,6 +17,7 @@ import { NotificationService } from '../../../../services/notification/notificat
 import { OverflowService } from '../../../../services/overflow/overflow.service';
 import { RealmService } from '../../../../services/realm/realm.service';
 import { TokenService } from '../../../../services/token/token.service';
+import { UiPolicyService } from '../../../../services/ui-policy/ui-policy.service';
 import { UserService } from '../../../../services/user/user.service';
 import { EditButtonsComponent } from '../../../shared/edit-buttons/edit-buttons.component';
 import { TokenDetailsUserComponent } from './token-details-user.component';
@@ -54,6 +55,7 @@ export class TokenDetailsUserSelfServiceComponent extends TokenDetailsUserCompon
     protected override userService: UserService,
     protected override notificationService: NotificationService,
     protected override overflowService: OverflowService,
+    protected override uiPolicyService: UiPolicyService,
   ) {
     super(
       tokenService,
@@ -61,6 +63,15 @@ export class TokenDetailsUserSelfServiceComponent extends TokenDetailsUserCompon
       userService,
       notificationService,
       overflowService,
+      uiPolicyService,
     );
+  }
+
+  override canSetRandomPin() {
+    console.log(
+      'Policy for setting random PIN:',
+      this.uiPolicyService.otpPinSetRandomUser,
+    );
+    return false; // Placeholder for actual implementation
   }
 }

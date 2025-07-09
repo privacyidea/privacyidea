@@ -115,15 +115,16 @@
           <mat-icon class="detail-button-icon">password</mat-icon>
           Set PIN
         </button>
-        <button
-          (click)="setRandomPin()"
-          class="detail-button"
-          extended
-          mat-fab
-          [disabled]="!canSetRandomPin()">
-          <mat-icon class="detail-button-icon">casino</mat-icon>
-          Random PIN
-        </button>
+        @if (canSetRandomPin()) {
+          <button
+            (click)="setRandomPin()"
+            class="detail-button"
+            extended
+            mat-fab>
+            <mat-icon class="detail-button-icon">casino</mat-icon>
+            Random PIN
+          </button>
+        }
       </div>
     }
     <br />

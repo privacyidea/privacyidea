@@ -1,8 +1,8 @@
-import { Injectable, linkedSignal, WritableSignal } from '@angular/core';
-import { PiResponse } from '../../app.component';
 import { httpResource } from '@angular/common/http';
-import { LocalService } from '../local/local.service';
+import { Injectable, linkedSignal, WritableSignal } from '@angular/core';
 import { environment } from '../../../environments/environment';
+import { PiResponse } from '../../app.component';
+import { LocalService } from '../local/local.service';
 
 export type Applications = {
   luks: ApplicationLuks;
