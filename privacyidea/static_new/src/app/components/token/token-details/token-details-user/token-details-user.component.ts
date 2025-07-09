@@ -24,6 +24,7 @@ import { NotificationService } from '../../../../services/notification/notificat
 import { OverflowService } from '../../../../services/overflow/overflow.service';
 import { RealmService } from '../../../../services/realm/realm.service';
 import { TokenService } from '../../../../services/token/token.service';
+import { UiPolicyService } from '../../../../services/ui-policy/ui-policy.service';
 import { UserService } from '../../../../services/user/user.service';
 import {
   EditableElement,
@@ -75,6 +76,7 @@ export class TokenDetailsUserComponent {
     protected userService: UserService,
     protected notificationService: NotificationService,
     protected overflowService: OverflowService,
+    protected uiPolicyService: UiPolicyService,
   ) {}
 
   unassignUser() {
