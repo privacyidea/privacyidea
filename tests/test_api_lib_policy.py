@@ -3434,7 +3434,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Set policies
         set_policy(name="require_description_on_edit",
                    scope=SCOPE.MANAGEMENT,
-                   action=["{0!s}=hotp".format(ACTION.REQUIRE_DESCRIPTION_ON_EDIT)])
+                   action=[f"{ACTION.REQUIRE_DESCRIPTION_ON_EDIT}=hotp"])
 
         set_policy(name="set_description",
                    scope=SCOPE.ADMIN,
