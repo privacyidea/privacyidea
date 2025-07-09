@@ -961,73 +961,82 @@ def multichallenge_enroll_via_validate(request, response):
     content = response.json
     result = content.get("result")
     # Check if the authentication was successful, only then attempt to enroll a new token
-    if result.get("value") and result.get("authentication") == AUTH_RESPONSE.ACCEPT:
-        user = request.User
-        if user.login and user.realm:
-            enroll_policies = Match.user(g, scope=SCOPE.AUTH, action=ACTION.ENROLL_VIA_MULTICHALLENGE,
-                                         user_object=user).action_values(unique=True, write_to_audit_log=False)
-            # Check if we have a policy to enroll a token and which type
-            if enroll_policies:
-                enroll_type = list(enroll_policies)[0]
-                enroll_type = enroll_type.lower()
+    if not result.get("value") or result.get("authentication") != AUTH_RESPONSE.ACCEPT:
+        # Authentication was not successful, so we do not enroll a token
+        return response
 
-                if enroll_type in get_multichallenge_enrollable_types():
+    user = request.User
+    if not user.login or not user.realm:
+        return response
 
-                    if enroll_type == "smartphone":
-                        content = container_create_via_multichallenge(request, content, enroll_type)
-                    else:
-                        tokentype = enroll_type
-                        # Check if the user already has a token of the type that should be enrolled
-                        # If so, do not enroll another one
-                        if len(get_tokens(tokentype=tokentype, user=user)) == 0:
-                            # Check if another policy restricts the token count and exit early if true
-                            try:
-                                check_max_token_user(request=request)
-                                check_max_token_realm(request=request)
-                            except PolicyError as e:
-                                g.audit_object.log({"success": True, "action_detail": f"{e}"})
-                                return response
+    # Check if we have a policy to enroll a token and which type
+    enroll_policies = Match.user(g, scope=SCOPE.AUTH, action=ACTION.ENROLL_VIA_MULTICHALLENGE,
+                                 user_object=user).action_values(unique=True, write_to_audit_log=False)
+    if not enroll_policies:
+        # No policy to enroll a token via multichallenge, so we do nothing
+        return response
 
-                            # Now get the alternative text from the policies
-                            text_policies = Match.user(g, scope=SCOPE.AUTH,
-                                                       action=ACTION.ENROLL_VIA_MULTICHALLENGE_TEXT,
-                                                       user_object=user).action_values(unique=True,
-                                                                                       write_to_audit_log=False,
-                                                                                       allow_white_space_in_action=True)
-                            message = None
-                            if text_policies:
-                                message = list(text_policies)[0]
-                            # -----------------------------
-                            # TODO this is not perfect yet, but the improved implementation of enroll_via_validate
-                            # TODO should go in this direction instead of putting the stuff in the token class
-                            if tokentype == PasskeyTokenClass.get_class_type().lower():
-                                request.all_data["type"] = tokentype
-                                fido2_enroll(request, None)
-                                token = init_token(request.all_data, user)
-                                try:
-                                    init_details = token.get_init_detail(request.all_data, user)
-                                    if not init_details:
-                                        token.token.delete()
-                                    content.get("result")["value"] = False
-                                    content.get("result")["authentication"] = AUTH_RESPONSE.CHALLENGE
-                                    detail = content.setdefault("detail", {})
-                                    detail["transaction_id"] = init_details["transaction_id"]
-                                    detail["transaction_ids"] = [init_details["transaction_id"]]
-                                    detail["multi_challenge"] = [init_details]
-                                    detail["serial"] = token.token.serial
-                                    detail["type"] = tokentype
-                                    detail.pop("otplen", None)
-                                    detail["message"] = PasskeyTokenClass.get_default_challenge_text_register()
-                                    detail["client_mode"] = "webauthn"
-                                except Exception as e:
-                                    log.error(f"Error during enroll_via_validate: {e}")
-                                    token.token.delete()
-                                    raise e
-                            # ------------------------------
-                            else:
-                                tokenclass = get_token_class(tokentype)
-                                tokenclass.enroll_via_validate(g, content, user, message)
-                    response.set_data(json.dumps(content))
+    # Check if the type is a valid multichallenge enrollable type
+    enroll_type = list(enroll_policies)[0]
+    enroll_type = enroll_type.lower()
+    if enroll_type not in get_multichallenge_enrollable_types():
+        return response
+
+    if enroll_type == "smartphone":
+        content = container_create_via_multichallenge(request, content, enroll_type)
+    else:
+        tokentype = enroll_type
+        # Check if the user already has a token of the type that should be enrolled
+        # If so, do not enroll another one
+        if len(get_tokens(tokentype=tokentype, user=user)) == 0:
+            # Check if another policy restricts the token count and exit early if true
+            try:
+                check_max_token_user(request=request)
+                check_max_token_realm(request=request)
+            except PolicyError as e:
+                g.audit_object.log({"success": True, "action_detail": f"{e}"})
+                return response
+
+            # Now get the alternative text from the policies
+            text_policies = Match.user(g, scope=SCOPE.AUTH,
+                                       action=ACTION.ENROLL_VIA_MULTICHALLENGE_TEXT,
+                                       user_object=user).action_values(unique=True,
+                                                                       write_to_audit_log=False,
+                                                                       allow_white_space_in_action=True)
+            message = None
+            if text_policies:
+                message = list(text_policies)[0]
+            # -----------------------------
+            # TODO this is not perfect yet, but the improved implementation of enroll_via_validate
+            # TODO should go in this direction instead of putting the stuff in the token class
+            if tokentype == PasskeyTokenClass.get_class_type().lower():
+                request.all_data["type"] = tokentype
+                fido2_enroll(request, None)
+                token = init_token(request.all_data, user)
+                try:
+                    init_details = token.get_init_detail(request.all_data, user)
+                    if not init_details:
+                        token.token.delete()
+                    content.get("result")["value"] = False
+                    content.get("result")["authentication"] = AUTH_RESPONSE.CHALLENGE
+                    detail = content.setdefault("detail", {})
+                    detail["transaction_id"] = init_details["transaction_id"]
+                    detail["transaction_ids"] = [init_details["transaction_id"]]
+                    detail["multi_challenge"] = [init_details]
+                    detail["serial"] = token.token.serial
+                    detail["type"] = tokentype
+                    detail.pop("otplen", None)
+                    detail["message"] = PasskeyTokenClass.get_default_challenge_text_register()
+                    detail["client_mode"] = "webauthn"
+                except Exception as e:
+                    log.error(f"Error during enroll_via_validate: {e}")
+                    token.token.delete()
+                    raise e
+            # ------------------------------
+            else:
+                tokenclass = get_token_class(tokentype)
+                tokenclass.enroll_via_validate(g, content, user, message)
+    response.set_data(json.dumps(content))
 
     return response
 
