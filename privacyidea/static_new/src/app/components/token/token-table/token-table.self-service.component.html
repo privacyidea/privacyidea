@@ -1,82 +1,96 @@
-<div aria-label="Token Table"
-     class="token-table-container">
+<div aria-label="Token Table" class="token-table-container">
   <div class="selfservice-paginator-container">
-    <mat-paginator (page)="onPageEvent($event)"
-                   [length]="totalLength()"
-                   [pageIndex]="pageIndex()"
-                   [pageSize]="pageSize()"
-                   hidePageSize
-                   showFirstLastButtons></mat-paginator>
+    <h3 class="selfservice-paginator-label"> Your Tokens </h3>
+    <mat-paginator
+      (page)="onPageEvent($event)"
+      [length]="totalLength()"
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"
+      hidePageSize
+      showFirstLastButtons></mat-paginator>
   </div>
-  <table (matSortChange)="onSortEvent($event)"
-         [dataSource]="tokenDataSource()"
-         [matSortDisableClear]="false"
-         aria-label="Token Data Table"
-         class="token-table"
-         mat-table
-         matSort>
+  <table
+    (matSortChange)="onSortEvent($event)"
+    [dataSource]="tokenDataSource()"
+    [matSortDisableClear]="false"
+    aria-label="Token Data Table"
+    class="token-table"
+    mat-table
+    matSort>
     @for (column of columnKeysMapSelfService; track column) {
       <ng-container [matColumnDef]="column.key">
-        <th *matHeaderCellDef
-            attr.aria-label="{{ column.label }} Header"
-            mat-header-cell
-            mat-sort-header>
+        <th
+          *matHeaderCellDef
+          attr.aria-label="{{ column.label }} Header"
+          mat-header-cell
+          mat-sort-header>
           {{ column.label }}
         </th>
-        <td *matCellDef="let element; let row"
-            attr.aria-label="{{ column.label }} Cell"
-            mat-cell
-            [ngClass]="{
+        <td
+          *matCellDef="let element; let row"
+          attr.aria-label="{{ column.label }} Cell"
+          mat-cell
+          [ngClass]="{
             'width-18rem': column.key === 'description',
           }">
           <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
             @switch (column.key) {
               @case ("serial") {
-                <a attr.aria-label="{{ column.label }} Link"
-                   (click)="contentService.tokenSelected(element.serial)"> {{
-                    element[column.key]
-                  }} </a>
+                <a
+                  attr.aria-label="{{ column.label }} Link"
+                  (click)="contentService.tokenSelected(element.serial)">
+                  {{ element[column.key] }}
+                </a>
                 <app-copy-button [copyText]="element.serial"></app-copy-button>
               }
               @case ("container_serial") {
-                <a attr.aria-label="{{ column.label }} Link"
-                   (click)="contentService.containerSelected(element.container_serial)"> {{
-                    element[column.key]
-                  }} </a>
+                <a
+                  attr.aria-label="{{ column.label }} Link"
+                  (click)="
+                    contentService.containerSelected(element.container_serial)
+                  ">
+                  {{ element[column.key] }}
+                </a>
                 @if (element.container_serial !== "") {
-                  <app-copy-button [copyText]="element.container_serial"></app-copy-button>
+                  <app-copy-button
+                    [copyText]="element.container_serial"></app-copy-button>
                 }
               }
               @case ("active") {
-                <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
-                      (click)="toggleActive(element)">
-                    {{ tableUtilsService.getDisplayText(column.key, element) }}
-                  </span>
+                <span
+                  [ngClass]="
+                    tableUtilsService.getClassForColumn(column.key, element)
+                  "
+                  (click)="toggleActive(element)">
+                  {{ tableUtilsService.getDisplayText(column.key, element) }}
+                </span>
               }
               @case ("failcount") {
-                <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
-                      (click)="resetFailCount(element)">
-                    {{ tableUtilsService.getDisplayText(column.key, element) }}
-                  </span>
+                <span
+                  [ngClass]="
+                    tableUtilsService.getClassForColumn(column.key, element)
+                  "
+                  (click)="resetFailCount(element)">
+                  {{ tableUtilsService.getDisplayText(column.key, element) }}
+                </span>
               }
               @case ("revoke") {
                 @if (!element.revoked) {
-                <button (click)="revokeToken(element.serial)"
-                        mat-icon-button>
-                  <mat-icon>undo</mat-icon>
-                </button>
+                  <button (click)="revokeToken(element.serial)" mat-icon-button>
+                    <mat-icon>undo</mat-icon>
+                  </button>
                 }
               }
               @case ("delete") {
-                <button (click)="deleteToken(element.serial)"
-                        mat-icon-button>
+                <button (click)="deleteToken(element.serial)" mat-icon-button>
                   <mat-icon> delete </mat-icon>
                 </button>
               }
               @default {
                 @if (tableUtilsService.isLink(column.key)) {
-                  <a attr.aria-label="{{ column.label }} Link"
-                     href="#"> {{ element[column.key] }} </a>
+                  <a attr.aria-label="{{ column.label }} Link" href="#">
+                    {{ element[column.key] }}
+                  </a>
                 } @else {
                   <span>
                     {{ element[column.key] }}
@@ -88,16 +102,18 @@
         </td>
       </ng-container>
     }
-    <tr *matHeaderRowDef="columnKeysSelfService"
-        aria-label="Header Row"
-        mat-header-row></tr>
-    <tr *matRowDef="let row; columns: columnKeysSelfService"
-        aria-label="Data Row"
-        mat-row></tr>
-    <tr *matNoDataRow
-        aria-label="No Data Row">
-      <td [attr.colspan]="columnKeysSelfService.length"
-          aria-label="No Data Cell">
+    <tr
+      *matHeaderRowDef="columnKeysSelfService"
+      aria-label="Header Row"
+      mat-header-row></tr>
+    <tr
+      *matRowDef="let row; columns: columnKeysSelfService"
+      aria-label="Data Row"
+      mat-row></tr>
+    <tr *matNoDataRow aria-label="No Data Row">
+      <td
+        [attr.colspan]="columnKeysSelfService.length"
+        aria-label="No Data Cell">
         No data matching the filter.
       </td>
     </tr>
