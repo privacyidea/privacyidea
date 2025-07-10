@@ -3012,8 +3012,8 @@ def import_tokens(tokens: str, update_existing_tokens: bool = True) -> TokenImpo
                     token.import_token(token_info_dict)
                     successful_tokens.append(serial)
                 elif update_existing_tokens:
-                    token = get_tokens_from_serial_or_user(serial=serial, user=None)
-                    token[0].import_token(token_info_dict)
+                    token = get_one_token(serial=serial)
+                    token.import_token(token_info_dict)
                     updated_tokens.append(serial)
                 else:
                     raise TokenAdminError(f"Token with serial {serial} already exists. "
