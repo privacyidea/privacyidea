@@ -110,8 +110,7 @@ class CAConnectorConfig(db.Model):
                                               Key=self.Key
                                               ).update({'Value': self.Value,
                                                         'Type': self.Type,
-                                                        'Descrip'
-                                                        'tion': self.Description})
+                                                        'Description': self.Description})
             ret = c.id
         db.session.commit()
         return ret
