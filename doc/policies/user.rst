@@ -284,7 +284,7 @@ needs to enter. (see :ref:`2step_enrollment`).
 Possible values are *allow* and *force*.
 This works in conjunction with the enrollment parameters :ref:`2step_parameters`.
 
-Such a policy can also be set for the administrator. See :ref:`admin_policies_2step`.
+Such a policy can also be set for the administrator. See :ref:`admin_policy_2step`.
 
 .. note:: This does not work in combination with the enrollment
     policy :ref:`policy_verify_enrollment`, since the usage of 2step already

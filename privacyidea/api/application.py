@@ -45,12 +45,48 @@ def get_applications():
     """
     returns a json dict of the available applications
 
-    {"luks": {"options": {"slot": {"type": "int"},
-                          "partition": {"type": "str"}},
-     "ssh": {"options": {"user": {"type": "str"}},
-     "otherapplication": {"options": {"optionA": {"type": "int",
-                                                  "required": True}}
-    }
+    **Example request**:
+
+    .. sourcecode:: http
+
+       GET /application HTTP/1.1
+       Host: example.com
+       Accept: application/json
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+       HTTP/1.1 200 OK
+       Content-Type: application/json
+
+        {
+          "luks": {
+            "options": {
+              "slot": {
+                "type": "int"
+              },
+              "partition": {
+                "type": "str"
+              }
+            }
+          },
+          "ssh": {
+            "options": {
+              "user": {
+                "type": "str"
+              }
+            }
+          },
+          "otherapplication": {
+            "options": {
+              "optionA": {
+                "type": "int",
+                "required": true
+              }
+            }
+          }
+        }
     """
     res = get_application_types()
     g.audit_object.log({"success": True})

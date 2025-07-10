@@ -87,7 +87,8 @@ doc = [
     "Pallets-Sphinx-Themes",
     "Sphinx",
     "sphinxcontrib-httpdomain",
-    "sphinxcontrib-spelling"
+    "sphinxcontrib-spelling",
+    "setuptools-scm"
 ]
 postgres = [
     "psycopg2"
@@ -128,3 +129,7 @@ where = ["."]
 include = ["privacyidea*"]
 
 [tool.setuptools_scm]
+
+[tool.pip-tools]
+generate_hashes = true
+allow_unsafe = true

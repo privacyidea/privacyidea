@@ -136,7 +136,7 @@ Get the challenge
       "detail": {
         "attributes": {
                         "hideResponseInput": true,
-                        "img": ...imageUrl...
+                        "img": "...imageUrl...",
                         "u2fSignRequest": {
                             "challenge": "...",
                             "appId": "...",
