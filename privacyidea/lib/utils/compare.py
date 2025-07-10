@@ -30,6 +30,7 @@ import csv
 import datetime
 import logging
 import re
+from dataclasses import dataclass
 from functools import wraps
 from typing import Union
 
@@ -54,44 +55,6 @@ class CompareError(Exception):
         return f"CompareError({self.message!r})"
 
 
-# This class enumerates all available comparators.
-# In order to add a comparator to this module, add a suitable member to COMPARATORS
-# and suitable entries to COMPARATOR_FUNCTIONS and COMPARATOR_DESCRIPTIONS.
-class Comparators:
-    EQUALS = "equals"
-    NOT_EQUALS = "!equals"
-
-    CONTAINS = "contains"
-    NOT_CONTAINS = "!contains"
-
-    MATCHES = "matches"
-    NOT_MATCHES = "!matches"
-
-    IN = "in"
-    NOT_IN = "!in"
-
-    SMALLER = "<"
-    BIGGER = ">"
-
-    DATE_BEFORE = "date_before"
-    DATE_AFTER = "date_after"
-
-    DATE_WITHIN_LAST = "date_within_last"
-    DATE_NOT_WITHIN_LAST = "!date_within_last"
-
-    STRING_CONTAINS = "string_contains"
-    STRING_NOT_CONTAINS = "!string_contains"
-
-    @classmethod
-    def get_all_comparators(cls) -> list[str]:
-        """
-        Return a list of all comparators.
-        """
-        return [cls.EQUALS, cls.NOT_EQUALS, cls.CONTAINS, cls.NOT_CONTAINS, cls.MATCHES, cls.NOT_MATCHES,
-                cls.IN, cls.NOT_IN, cls.SMALLER, cls.BIGGER, cls.STRING_CONTAINS, cls.STRING_NOT_CONTAINS,
-                cls.DATE_BEFORE, cls.DATE_AFTER, cls.DATE_WITHIN_LAST, cls.DATE_NOT_WITHIN_LAST]
-
-
 def parse_comma_separated_string(input_string: str) -> list[str]:
     """
     Parse a string that contains a list of comma-separated values and return the list of values.
@@ -110,31 +73,60 @@ def parse_comma_separated_string(input_string: str) -> list[str]:
     return rows[0]
 
 
-def _compare_equality(left, comparator, right):
+def _compare_equality(left: any, right: any) -> bool:
     """
     Return True if two values are exactly equal, according to Python semantics.
     """
     return left == right
 
 
-def _compare_smaller(left, comparator, right):
+def _compare_smaller(left: Union[int, str], right: Union[int, str]) -> bool:
     """
     Return True if the left value as integer is smaller than the right integer
     """
     return int(left or 0) < int(right)
 
 
-def _compare_bigger(left, comparator, right):
+def _compare_smaller_any(left: any, right: any) -> bool:
+    """
+    Return True if the left value is smaller than the right value. Any type of value is allowed.
+    """
+    return left < right
+
+
+def _compare_less_equal(left: Union[str, int], right: Union[str, int]) -> bool:
+    """
+    Return True if the left value as integer is smaller or equal to the right integer
+    """
+    return int(left or 0) <= int(right)
+
+
+def _compare_bigger(left: Union[int, str], right: Union[int, str]) -> bool:
     """
     Return True if the left value as integer is bigger than the right integer
     """
     return int(left or 0) > int(right)
 
 
-def _compare_contains(left, comparator, right):
+def _compare_bigger_any(left: any, right: any) -> bool:
+    """
+    Return True if the left value is bigger than the right value. Any type of value is allowed.
+    """
+    return left > right
+
+
+def _compare_greater_equal(left: Union[str, int], right: Union[str, int]) -> bool:
+    """
+    Return True if the left value as integer is bigger or equal to the right integer
+    """
+    return int(left or 0) >= int(right)
+
+
+def _compare_contains(left: list, right: any) -> bool:
     """
     Return True if ``left`` has ``right`` as an element.
     Raise a CompareError if ``left`` is not a list.
+
     :param left: a Python list
     :param right: an arbitrary Python value
     :return: True or False
@@ -145,11 +137,12 @@ def _compare_contains(left, comparator, right):
         raise CompareError("Left value must be a list, not {!r}".format(type(left)))
 
 
-def _compare_matches(left, comparator, right):
+def _compare_matches(left: str, right: str) -> bool:
     """
     Return True if the string in ``left`` completely matches the regular expression given in ``right``.
     Raise a CompareError if ``right`` is not a valid regular expression, or
     if any other matching error occurs.
+
     :param left: a string
     :param right: a regular expression
     :return: True or False
@@ -166,10 +159,11 @@ def _compare_matches(left, comparator, right):
         raise CompareError("Error during matching: {!r}".format(e))
 
 
-def _compare_in(left, comparator, right):
+def _compare_in(left: str, right: str) -> bool:
     """
     Return True if ``left`` is a member of ``right``, which is a string containing a
     list of values, separated by commas (see ``parse_comma_separated_string``).
+
     :param left: a string
     :param right: a string of comma-separated values
     :return: True or False
@@ -199,14 +193,12 @@ def _get_datetime(date_time: Union[str, datetime.datetime]) -> datetime.datetime
     return date_time
 
 
-def _compare_date_before(left: Union[str, datetime.datetime], comparator: str,
-                         right: Union[str, datetime.datetime]) -> bool:
+def _compare_date_before(left: Union[str, datetime.datetime], right: Union[str, datetime.datetime]) -> bool:
     """
     Checks if the left date and time is before the right date and time.
     If the left or the right value are given as strings, they are converted to datetime objects.
 
     :param left: a datetime object or a string in ISO format
-    :param comparator: a comparator, should be Comparators.DATE_BEFORE
     :param right: a datetime object or a string in ISO format
     :return: True if left is before right, False otherwise
     """
@@ -219,14 +211,12 @@ def _compare_date_before(left: Union[str, datetime.datetime], comparator: str,
     return left < right
 
 
-def _compare_date_after(left: Union[str, datetime.datetime], comparator: str,
-                        right: Union[str, datetime.datetime]) -> bool:
+def _compare_date_after(left: Union[str, datetime.datetime], right: Union[str, datetime.datetime]) -> bool:
     """
     Checks if the left date and time is after the right date and time.
     If the left or the right value are given as strings, they are converted to datetime objects.
 
     :param left: a datetime object or a string in ISO format
-    :param comparator: a comparator, should be Comparators.DATE_AFTER
     :param right: a datetime object or a string in ISO format
     :return: True if left is after right, False otherwise
     """
@@ -239,13 +229,11 @@ def _compare_date_after(left: Union[str, datetime.datetime], comparator: str,
     return left > right
 
 
-def _compare_date_within_last(date_to_check: Union[str, datetime.datetime], comparator: str,
-                              time_delta: str) -> bool:
+def _compare_date_within_last(date_to_check: Union[str, datetime.datetime], time_delta: str) -> bool:
     """
     Checks if the date and time is within the past duration specified by the time_delta.
 
     :param date_to_check: a datetime object or a string in ISO format
-    :param comparator: a comparator, should be Comparators.DATE_WITHIN_LAST
     :param time_delta: a string representing a time delta / duration (e.g., '1y', '7d', '6h', '15m')
     :return: True if the left date is within the past duration, False otherwise
     """
@@ -266,12 +254,11 @@ def _compare_date_within_last(date_to_check: Union[str, datetime.datetime], comp
     return true_time_delta < condition_time_delta
 
 
-def _compare_string_contains(text: str, comparator: str, substring: str) -> bool:
+def _compare_string_contains(text: str, substring: str) -> bool:
     """
     Checks if the text contains the substring.
 
     :param text: a string to check
-    :param comparator: a comparator, should be Comparators.STRING_CONTAINS
     :param substring: a substring to look for in the text
     :return: True if the text contains the substring, False otherwise
     """
@@ -284,95 +271,305 @@ def negate(func):
     """
     Given a comparison function ``func``, build and return a comparison function that negates
     the result of ``func``.
-    :param func: a comparison function taking three arguments
+
+    :param func: a comparison function taking two arguments
     :return: a comparison function taking three arguments
     """
 
     @wraps(func)
-    def negated(left, comparator, right):
-        return not func(left, comparator, right)
+    def negated(left, right):
+        return not func(left, right)
 
     return negated
 
+# In order to add a comparator to this module, add a suitable member to PrimaryComparators and add an entry in the
+# COMPARATORS dictionary to map the name to the corresponding Comparator object containing the related function and
+# description.
 
-#: This dictionary connects comparators to comparator functions.
-#: A comparison function takes three parameters ``left``, ``comparator``, ``right``.
-COMPARATOR_FUNCTIONS = {
-    Comparators.EQUALS: _compare_equality,
-    Comparators.NOT_EQUALS: negate(_compare_equality),
+# This class enumerates all available primary comparators. For some of them also other names are accepted, but
+# these are the preferred names which are used internally.
+class PrimaryComparators:
+    EQUALS = "equals"
+    NOT_EQUALS = "!equals"
 
-    Comparators.CONTAINS: _compare_contains,
-    Comparators.NOT_CONTAINS: negate(_compare_contains),
+    CONTAINS = "contains"
+    NOT_CONTAINS = "!contains"
 
-    Comparators.MATCHES: _compare_matches,
-    Comparators.NOT_MATCHES: negate(_compare_matches),
+    MATCHES = "matches"
+    NOT_MATCHES = "!matches"
 
-    Comparators.IN: _compare_in,
-    Comparators.NOT_IN: negate(_compare_in),
+    IN = "in"
+    NOT_IN = "!in"
 
-    Comparators.SMALLER: _compare_smaller,
-    Comparators.BIGGER: _compare_bigger,
+    SMALLER = "<"
+    BIGGER = ">"
 
-    Comparators.DATE_BEFORE: _compare_date_before,
-    Comparators.DATE_AFTER: _compare_date_after,
+    DATE_BEFORE = "date_before"
+    DATE_AFTER = "date_after"
 
-    Comparators.DATE_WITHIN_LAST: _compare_date_within_last,
-    Comparators.DATE_NOT_WITHIN_LAST: negate(_compare_date_within_last),
+    DATE_WITHIN_LAST = "date_within_last"
+    DATE_NOT_WITHIN_LAST = "!date_within_last"
 
-    Comparators.STRING_CONTAINS: _compare_string_contains,
-    Comparators.STRING_NOT_CONTAINS: negate(_compare_string_contains)
+    STRING_CONTAINS = "string_contains"
+    STRING_NOT_CONTAINS = "!string_contains"
 
-}
+    @classmethod
+    def get_all_comparators(cls) -> list[str]:
+        """
+        Return a list of all primary comparators.
+        """
+        return [v for k, v in vars(cls).items() if k.isupper()]
 
-#: This dictionary connects comparators to their human-readable (and translated) descriptions.
-COMPARATOR_DESCRIPTIONS = {
-    Comparators.CONTAINS: _("True if the value of the left attribute contains the right value"),
-    Comparators.NOT_CONTAINS: _("False if the value of the left attribute contains the right value"),
 
-    Comparators.EQUALS: _("True if the value of the left attribute equals the right value"),
-    Comparators.NOT_EQUALS: _("False if the value of the left attribute equals the right value"),
+@dataclass
+class Comparator:
+    name: str
+    function: callable
+    description: str
 
-    Comparators.MATCHES: _("True if the value of the left attribute completely matches the given regular expression "
-                           "pattern on the right"),
-    Comparators.NOT_MATCHES: _("False if the value of the left attribute completely matches the given regular "
-                               "expression pattern on the right"),
 
-    Comparators.IN: _("True if the value of the left attribute is contained in the comma-separated values on the "
-                      "right"),
-    Comparators.NOT_IN: _("False if the value of the left attribute is contained in the comma-separated values on the "
-                          "right"),
-
-    Comparators.SMALLER: _("True if the integer value of the left attribute is smaller than the right integer value"),
-    Comparators.BIGGER: _("True if the integer value of the left attribute is bigger than the right integer value"),
-
-    Comparators.DATE_BEFORE: _("True if the date and time of the left attribute is before the date and time of the "
-                               "right attribute"),
-    Comparators.DATE_AFTER: _("True if the date and time of the left attribute is after the date and time of the "
-                              "right attribute"),
-    Comparators.DATE_WITHIN_LAST: _("True if the date and time of the left attribute is within the past duration of "
+# Comparator objects
+equals = Comparator(PrimaryComparators.EQUALS, _compare_equality,
+                    _("True if the value of the left attribute is equal to the right value"))
+not_equals = Comparator(PrimaryComparators.NOT_EQUALS, negate(_compare_equality),
+                        _("False if the value of the left attribute is equal to the right value"))
+contains = Comparator(PrimaryComparators.CONTAINS, _compare_contains,
+                      _("True if the value of the left attribute contains the right value"))
+not_contains = Comparator(PrimaryComparators.NOT_CONTAINS, negate(_compare_contains),
+                          _("False if the value of the left attribute contains the right value"))
+matches = Comparator(PrimaryComparators.MATCHES, _compare_matches,
+                     _("True if the value of the left attribute completely matches the given regular expression "
+                       "pattern on the right"))
+not_matches = Comparator(PrimaryComparators.NOT_MATCHES, negate(_compare_matches),
+                         _("False if the value of the left attribute completely matches the given regular expression "
+                           "pattern on the right"))
+in_ = Comparator(PrimaryComparators.IN, _compare_in,
+                 _("True if the value of the left attribute is contained in the comma-separated values on the right"))
+not_in = Comparator(PrimaryComparators.NOT_IN, negate(_compare_in),
+                    _("False if the value of the left attribute is contained in the comma-separated values on the right"))
+smaller = Comparator(PrimaryComparators.SMALLER, _compare_smaller,
+                     _("True if the integer value of the left attribute is smaller than the right integer value"))
+smaller_any = Comparator("<_any", _compare_smaller_any, "")
+less_equal = Comparator("<=", _compare_less_equal, "")
+bigger = Comparator(PrimaryComparators.BIGGER, _compare_bigger,
+                    _("True if the integer value of the left attribute is bigger than the right integer value"))
+bigger_any = Comparator(">_any", _compare_bigger_any, "")
+greater_equal = Comparator(">=", _compare_greater_equal, "")
+date_before = Comparator(PrimaryComparators.DATE_BEFORE, _compare_date_before,
+                         _("True if the date and time of the left attribute is before the date and time of the right "
+                           "attribute"))
+date_after = Comparator(PrimaryComparators.DATE_AFTER, _compare_date_after,
+                        _("True if the date and time of the left attribute is after the date and time of the right "
+                          "attribute"))
+date_within_last = Comparator(PrimaryComparators.DATE_WITHIN_LAST, _compare_date_within_last,
+                              _("True if the date and time of the left attribute is within the past duration of the "
+                                "right attribute. The right attribute should be a duration such as '1y', '7d', '6h', "
+                                "'15m'."))
+date_not_within_last = Comparator(PrimaryComparators.DATE_NOT_WITHIN_LAST, negate(_compare_date_within_last),
+                                  _("False if the date and time of the left attribute is within the past duration of "
                                     "the right attribute. The right attribute should be a duration such as '1y', '7d', "
-                                    "'6h', '15m'."),
-    Comparators.DATE_NOT_WITHIN_LAST: _("False if the date and time of the left attribute is within the past duration "
-                                        "of the right attribute. The right attribute should be a duration such as "
-                                        "'1y', '7d', '6h', '15m'."),
-    Comparators.STRING_CONTAINS: _(
-        "True if the value of the left attribute contains the right value (case-insensitive)"),
-    Comparators.STRING_NOT_CONTAINS: _(
-        "False if the value of the left attribute contains the right value (case-insensitive)"),
-}
+                                    "'6h', '15m'."))
+string_contains = Comparator(PrimaryComparators.STRING_CONTAINS, _compare_string_contains,
+                             _("True if the value of the left attribute contains the right value (case-insensitive)"))
+string_not_contains = Comparator(PrimaryComparators.STRING_NOT_CONTAINS, negate(_compare_string_contains),
+                                 _("False if the value of the left attribute contains the right value "
+                                   "(case-insensitive)"))
+
+# Map different comparator names to the corresponding Comparator objects.
+COMPARATORS = {PrimaryComparators.EQUALS: equals, "=": equals, "==": equals, "==_any": equals, "=_any": equals,
+               PrimaryComparators.NOT_EQUALS: not_equals, "!=": not_equals, "!=_any": not_equals,
+               PrimaryComparators.CONTAINS: contains,
+               PrimaryComparators.NOT_CONTAINS: not_contains,
+               PrimaryComparators.MATCHES: matches,
+               PrimaryComparators.NOT_MATCHES: not_matches,
+               PrimaryComparators.IN: in_,
+               PrimaryComparators.NOT_IN: not_in,
+               PrimaryComparators.SMALLER: smaller, "<_any": smaller_any,
+               "<=": less_equal, "=<": less_equal,
+               PrimaryComparators.BIGGER: bigger, ">_any": bigger_any,
+               ">=": greater_equal, "=>": greater_equal,
+               PrimaryComparators.DATE_BEFORE: date_before,
+               PrimaryComparators.DATE_AFTER: date_after,
+               PrimaryComparators.DATE_WITHIN_LAST: date_within_last,
+               PrimaryComparators.DATE_NOT_WITHIN_LAST: date_not_within_last,
+               PrimaryComparators.STRING_CONTAINS: string_contains,
+               PrimaryComparators.STRING_NOT_CONTAINS: string_not_contains}
+
+# This dictionary connects comparators to their human-readable (and translated) descriptions.
+COMPARATOR_DESCRIPTIONS = {comparator: COMPARATORS[comparator].description for comparator in
+                           PrimaryComparators.get_all_comparators()}
 
 
-def compare_values(left, comparator: str, right) -> bool:
+def compare_values(left, comparator_name: str, right) -> bool:
     """
     Compare two values according to ``comparator`` and return either True or False.
     If the comparison is invalid, raise a CompareError with a descriptive message.
 
     :param left: Left operand of the comparison
-    :param comparator: Comparator to use, one of ``COMPARATORS``
+    :param comparator_name: Comparator to use
     :param right: Right operand of the comparison
     :return: True or False
     """
-    if comparator in COMPARATOR_FUNCTIONS:
-        return COMPARATOR_FUNCTIONS[comparator](left, comparator, right)
-    else:
-        raise CompareError(f"Invalid comparator: {comparator!r}")
+    comparator = COMPARATORS.get(comparator_name)
+    if not comparator:
+        raise CompareError(f"Invalid comparator: {comparator_name!r}")
+    return comparator.function(left, right)
+
+
+def compare_time(condition: str, time_value: Union[datetime.datetime, str]) -> bool:
+    """
+    Evaluates whether a passed timestamp is within a certain time frame in the past compared to now.
+    In case of a CompareError, the error is logged and False is returned.
+
+    :param condition: The maximum time difference the time value may have to now, e.g. "5d", "2h", "30m"
+                 The following units are supported: y (years), d (days), h (hours), m (minutes), s (seconds)
+    :param time_value: The timestamp to be compared to now
+    :return: True if the time difference between the time stamp and now is less than the condition value,
+             False otherwise
+    """
+    try:
+        result = compare_values(time_value, PrimaryComparators.DATE_WITHIN_LAST, condition)
+    except CompareError as error:
+        log.debug(
+            f"Error during time comparison for condition '{condition}' and date time value '{time_value}': {error}")
+        return False
+    return result
+
+
+@dataclass
+class Condition:
+    comparator: str
+    value: str
+
+
+def parse_condition(condition: str) -> Union[Condition, None]:
+    """
+    Extracts the comparator and the condition value from a condition string.
+    The condition can start with '<', '=' or '>' and contain a value like:
+    <100
+    >1000
+    =123
+    123 is interpreted as =123
+
+    :param condition: A string like <100
+    :return: A Condition object with comparator and value
+    """
+    condition = condition.replace(" ", "")
+    if not condition:
+        # No condition to match!
+        log.debug("Empty condition provided.")
+        return None
+
+    try:
+        if condition[0:2] in ["==", "!=", ">=", "=>", "<=", "=<"]:
+            comparator = condition[0:2]
+            condition_value = condition[2:]
+        elif condition[0] in ["=", "<", ">"]:
+            comparator = condition[0]
+            condition_value = condition[1:]
+        else:
+            # no comparator available: use equals as default
+            comparator = PrimaryComparators.EQUALS
+            condition_value = condition
+    except IndexError:
+        log.warning(f"Invalid condition {condition}.")
+        return None
+    return Condition(comparator, condition_value)
+
+
+def compare_ints(condition: str, value: Union[str, int]) -> bool:
+    """
+    This function first extracts the comparator and the right-hand side value from the condition,
+    and then performs the comparison. Both values are expected to be parsable as integers.
+
+    The condition can start with '<', '=' or '>' and contain a number like:
+    <100
+    >1000
+    =123
+    123 is interpreted as =123
+
+    :param condition: A condition as string like "<100"
+    :param value: the value to check
+    :return: True if condition is true, False otherwise and on any error
+    """
+    condition = parse_condition(condition)
+    if not condition:
+        return False
+
+    # convert both values to int
+    try:
+        value = int(value)
+        condition_value = int(condition.value)
+    except ValueError:
+        log.debug(f"Cannot convert values to integers: condition value '{condition.value}', value '{value}'")
+        return False
+
+    # Compare the values, but fail silent
+    try:
+        result = compare_values(value, condition.comparator, condition_value)
+    except CompareError as error: # pragma no cover
+        log.debug(f"Error during comparison: {error}")
+        return False
+    return result
+
+
+def compare_generic(condition: str, key_method: callable, warning: str) -> bool:
+    """
+    Compares a condition like "tokeninfoattribute == value".
+    It uses the "key_method" to determine the value of "tokeninfoattribute".
+
+    If the value does not match or the key does not exist, it returns False.
+
+    :param condition: A condition containing a comparator like "==", ">", "<"
+    :param key_method: A function call, that get the value from the key
+    :param warning: A warning message to be written to the log file in case the condition is not parsable.
+    :return: True or False
+    """
+    key = right_value = None
+    for comparator in ["==", ">", "<"]:
+        if len(condition.split(comparator)) == 2:
+            key, right_value = [x.strip() for x in condition.split(comparator)]
+            break
+
+    if right_value is None or not key:
+        # There is a condition, but we do not know it!
+        log.warning(warning.format(condition))
+        raise CompareError("Condition not parsable.")
+
+    left_value = key_method(key)
+    if left_value is None:
+        log.debug(f"Key {key} not found.")
+        return False
+
+    # Try to convert to ints
+    try:
+        int1 = int(left_value)
+        int2 = int(right_value)
+        # We only converts BOTH values if possible
+        left_value = int1
+        right_value = int2
+    except Exception:
+        log.debug(f"Convert '{left_value}' and/or '{right_value}' to integers failed.")
+
+    if not isinstance(left_value, int) and not isinstance(right_value, int):
+        # try to convert both values to a timestamp
+        try:
+            date1 = parse(left_value)
+            date2 = parse(right_value)
+            if date1 and date2:
+                # Only use dates, if both values can be converted to dates
+                left_value = date1
+                right_value = date2
+        except Exception:
+            log.debug(f"Convert '{left_value}' or '{right_value}' to datetime objects failed.")
+
+    # Compare the values, but fail silent
+    try:
+        # append "_any" to the comparator to indicate that we want to compare any type of value
+        result = compare_values(left_value, f"{comparator}_any", right_value)
+    except CompareError as error:   # pragma no cover
+        log.debug(f"Error during comparison: {error}")
+        return False
+
+    log.debug(f"Comparing {key} {comparator} {right_value} with result {result}.")
+    return result
