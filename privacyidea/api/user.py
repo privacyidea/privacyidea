@@ -237,10 +237,9 @@ def delete_user(resolvername=None, username=None):
 
     .. sourcecode:: http
 
-       DELETE /user/<resolvername>/<username>
-       Host: example.com
-       Accept: application/json
-
+      DELETE /user/<resolvername>/<username> HTTP/1.1
+      Host: example.com
+      Accept: application/json
     """
     user_obj = request.User
     res = user_obj.delete()
@@ -262,7 +261,10 @@ def create_user_api():
 
     .. sourcecode:: http
 
-       POST /user
+       POST /user HTTP/1.1
+       Host: example.com
+       Accept: application/json
+
        user=new_user
        resolver=<resolvername>
        surname=...
@@ -272,10 +274,6 @@ def create_user_api():
        phone=...
        password=...
        description=...
-
-       Host: example.com
-       Accept: application/json
-
     """
     # We can not use "get_user_from_param", since this checks the existence
     # of the user.
@@ -308,7 +306,10 @@ def update_user():
 
     .. sourcecode:: http
 
-       PUT /user
+       PUT /user HTTP/1.1
+       Host: example.com
+       Accept: application/json
+
        user=existing_user
        resolver=<resolvername>
        surname=...
@@ -318,9 +319,6 @@ def update_user():
        phone=...
        password=...
        description=...
-
-       Host: example.com
-       Accept: application/json
 
     .. note:: Also a user can call this function to e.g. change his password.
        But in this case the parameter "user" and "resolver" get overwritten

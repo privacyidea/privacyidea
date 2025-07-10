@@ -61,6 +61,7 @@ def url_decode(url):
 def url_encode(data):
     """
     Encodes a string base64 websafe and omits trailing padding "=".
+
     :param data: Some string
     :return: websafe b64 encoded string
     """

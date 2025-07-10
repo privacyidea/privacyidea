@@ -482,7 +482,7 @@ successfully enrolled the token.
 As long as no OTP value is provided by the user during the enrollment process, the
 token can not be used for authentication.
 
-.. note:: This does not work in combination with the admin policy :ref:`admin_policies_2step` and
+.. note:: This does not work in combination with the admin policy :ref:`admin_policy_2step` and
   the user policy :ref:`user_policy_2step`.
 
 .. _policy_webauthn_enroll_relying_party_id:
@@ -728,8 +728,8 @@ This action configures the attestation conveyance preference for the passkey enr
 "none", "indirect" and "direct" and "enterprise". The default is "none". If attestation is requested and the
 authenticator return a statement, the certificate will be saved in the token info. Currently, there is no further
 validation.
-This policy is separate from :ref:`policy_webauthn_authenticator_attestation_form` and
-:ref:`policy_webauthn_authenticator_attestation_level` which are not used for passkey enrollment.
+This policy is separate from :ref:`policy_webauthn_enroll_authenticator_attestation_form` and
+:ref:`policy_webauthn_enroll_authenticator_attestation_level` which are not used for passkey enrollment.
 
 .. _policy_webauthn_enroll_req:
 
