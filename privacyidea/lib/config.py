@@ -1125,10 +1125,22 @@ def import_config(data, name=None):
         ', '.join([k for k, v in res.items() if v == 'update'])))
 
 
-def get_multichallenge_enrollable_tokentypes():
-    enrollable_tokentypes = []
-    # If the token is enrollable via multichallenge
-    for tclass in get_token_classes():
-        if tclass.is_multichallenge_enrollable():
-            enrollable_tokentypes.append(tclass.get_class_type())
-    return enrollable_tokentypes
+def get_multichallenge_enrollable_types() -> list[str]:
+    """
+    Returns a list of token and container types which can be enrolled during a successful authentication using the
+    policy "enroll_via_multichallenge"
+    """
+    if "pi_multichallenge_enrollable_types" not in this.config:
+        from .container import get_container_classes
+        enrollable_types = []
+        # Get token types enrollable via multichallenge
+        for tclass in get_token_classes():
+            if tclass.is_multichallenge_enrollable():
+                enrollable_types.append(tclass.get_class_type())
+        # Get container types enrollable via multichallenge
+        for class_name, container_class in get_container_classes().items():
+            if container_class.is_multi_challenge_enrollable():
+                enrollable_types.append(container_class.get_class_type())
+
+        this.config["pi_multichallenge_enrollable_types"] = enrollable_types
+    return this.config["pi_multichallenge_enrollable_types"]

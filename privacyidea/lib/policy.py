@@ -178,10 +178,10 @@ import logging
 
 from ..api.lib.utils import check_policy_name
 from .policies.policy_conditions import PolicyConditionClass, ConditionCheck, ConditionSection
-from ..models import (Policy, db, save_config_timestamp, Token, PolicyDescription, PolicyCondition)
+from ..models import (Policy, db, save_config_timestamp, PolicyDescription, PolicyCondition)
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     get_config_object, get_privacyidea_node,
-                                    get_multichallenge_enrollable_tokentypes,
+                                    get_multichallenge_enrollable_types,
                                     get_email_validators, get_privacyidea_nodes)
 from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, ServerError
 from privacyidea.lib.realm import get_realms
@@ -377,6 +377,7 @@ class ACTION(object):
     RESYNC_VIA_MULTICHALLENGE = "resync_via_multichallenge"
     ENROLL_VIA_MULTICHALLENGE = "enroll_via_multichallenge"
     ENROLL_VIA_MULTICHALLENGE_TEXT = "enroll_via_multichallenge_text"
+    ENROLL_VIA_MULTICHALLENGE_TEMPLATE = "enroll_via_multichallenge_template"
     CLIENTTYPE = "clienttype"
     REGISTERBODY = "registration_body"
     RESETALLTOKENS = "reset_all_user_tokens"
@@ -1684,7 +1685,7 @@ def get_static_policy_definitions(scope=None):
         description.
     :rtype: dict
     """
-    from .container import get_container_token_types, get_all_templates_with_type
+    from .container import get_container_token_types, get_all_templates_with_type, get_templates_by_query
     resolvers = list(get_resolver_list())
     realms = list(get_realms())
     smtpconfigs = [server.config.identifier for server in get_smtpservers()]
@@ -2600,13 +2601,20 @@ def get_static_policy_definitions(scope=None):
             },
             ACTION.ENROLL_VIA_MULTICHALLENGE: {
                 'type': 'str',
-                'desc': _("In case of a successful authentication the following tokentype is enrolled. The "
-                          "maximum number of tokens for a user is checked."),
-                'value': [t.upper() for t in get_multichallenge_enrollable_tokentypes()]
+                'desc': _("In case of a successful authentication the following token or container type is enrolled. "
+                          "The maximum number of tokens for a user is checked."),
+                'value': [t.upper() for t in get_multichallenge_enrollable_types()]
             },
             ACTION.ENROLL_VIA_MULTICHALLENGE_TEXT: {
                 'type': 'str',
                 'desc': _("Change the default text that is shown during enrolling a token.")
+            },
+            ACTION.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: {
+                'type': 'str',
+                'desc': _(
+                    "Select the template to use for the enrollment of a smartphone container via multichallenge."),
+                'value': [template.get("name") for template in
+                          get_templates_by_query(container_type="smartphone").get("templates")]
             },
             ACTION.PASSTHRU: {
                 'type': 'str',
