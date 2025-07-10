@@ -25,7 +25,7 @@ from sqlalchemy import func
 from privacyidea.lib.policies.policy_conditions import (PolicyConditionClass, ConditionSection,
                                                         ConditionHandleMissingData)
 from privacyidea.lib.policy import set_policy_conditions
-from privacyidea.lib.utils.compare import Comparators
+from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import (Token,
                                 Resolver,
                                 ResolverRealm, NodeName,
@@ -434,23 +434,24 @@ class TokenModelTestCase(MyTestCase):
         p3.save()
 
         # set conditions
-        conditions = [PolicyConditionClass(ConditionSection.USERINFO, "type", Comparators.EQUALS, "foobar", False),
-                      PolicyConditionClass(ConditionSection.HTTP_REQUEST_HEADER, "user_agent", Comparators.EQUALS,
-                                           "abcd", True)]
+        conditions = [
+            PolicyConditionClass(ConditionSection.USERINFO, "type", PrimaryComparators.EQUALS, "foobar", False),
+            PolicyConditionClass(ConditionSection.HTTP_REQUEST_HEADER, "user_agent", PrimaryComparators.EQUALS,
+                                 "abcd", True)]
         set_policy_conditions(conditions, p3)
-        expected = [(ConditionSection.USERINFO, "type", Comparators.EQUALS, "foobar", False,
+        expected = [(ConditionSection.USERINFO, "type", PrimaryComparators.EQUALS, "foobar", False,
                      ConditionHandleMissingData.default().value),
-                    (ConditionSection.HTTP_REQUEST_HEADER, "user_agent", Comparators.EQUALS, "abcd", True,
+                    (ConditionSection.HTTP_REQUEST_HEADER, "user_agent", PrimaryComparators.EQUALS, "abcd", True,
                      ConditionHandleMissingData.default().value)]
         self.assertEqual(expected, p3.get_conditions_tuples())
         self.assertEqual(expected, p3.get()["conditions"])
         self.assertEqual(2, PolicyCondition.query.count())
 
         set_policy_conditions(
-            [PolicyConditionClass(ConditionSection.USERINFO, "type", Comparators.EQUALS, "baz", True)],
+            [PolicyConditionClass(ConditionSection.USERINFO, "type", PrimaryComparators.EQUALS, "baz", True)],
             p3)
         p3.save()
-        self.assertEqual([(ConditionSection.USERINFO, "type", Comparators.EQUALS, "baz", True,
+        self.assertEqual([(ConditionSection.USERINFO, "type", PrimaryComparators.EQUALS, "baz", True,
                            ConditionHandleMissingData.default().value)], p3.get()["conditions"])
         self.assertEqual(1, len(p3.conditions))
         self.assertEqual("baz", p3.conditions[0].Value)
@@ -459,9 +460,8 @@ class TokenModelTestCase(MyTestCase):
         # Check that the change has been persisted to the database
         p3_reloaded1 = Policy.query.filter_by(name="pol3").one()
         self.assertEqual(["pinode3"], p3_reloaded1.get()["pinode"])
-        self.assertEqual(
-            [("userinfo", "type", Comparators.EQUALS, "baz", True, ConditionHandleMissingData.default().value)],
-            p3_reloaded1.get()["conditions"])
+        self.assertEqual([("userinfo", "type", PrimaryComparators.EQUALS, "baz", True,
+                           ConditionHandleMissingData.default().value)], p3_reloaded1.get()["conditions"])
         self.assertEqual(1, len(p3_reloaded1.conditions))
         self.assertEqual("baz", p3_reloaded1.conditions[0].Value)
         self.assertEqual(1, PolicyCondition.query.count())
