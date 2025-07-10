@@ -718,7 +718,7 @@ class TokenModelTestCase(MyTestCase):
     def test_21_add_update_delete_clientapp(self):
         # MySQLs DATETIME type supports only seconds so we have to mock now()
         current_time = datetime(2018, 3, 4, 5, 6, 8)
-        with mock.patch('privacyidea.models.datetime') as mock_dt:
+        with mock.patch('privacyidea.models.subscription.datetime') as mock_dt:
             mock_dt.now.return_value = current_time
 
             ClientApplication(ip="1.2.3.4", hostname="host1",
@@ -884,7 +884,7 @@ class TokenModelTestCase(MyTestCase):
 
     def test_26_periodictask(self):
         current_utc_time = datetime(2018, 3, 4, 5, 6, 8)
-        with mock.patch('privacyidea.models.datetime') as mock_dt:
+        with mock.patch('privacyidea.models.periodictask.datetime') as mock_dt:
             mock_dt.utcnow.return_value = current_utc_time
 
             task1 = PeriodicTask("task1", False, "0 5 * * *", ["localhost"], "some.module", 2, {
@@ -924,7 +924,7 @@ class TokenModelTestCase(MyTestCase):
 
         # assert we can update the task
         later_utc_time = current_utc_time + timedelta(seconds=1)
-        with mock.patch('privacyidea.models.datetime') as mock_dt:
+        with mock.patch('privacyidea.models.periodictask.datetime') as mock_dt:
             mock_dt.utcnow.return_value = later_utc_time
             PeriodicTask("task one", True, "0 8 * * *", ["localhost", "otherhost"], "some.module", 3, {
                 "KEY2": "value number 2",
@@ -1080,9 +1080,9 @@ class TokengroupTestCase(MyTestCase):
         self.assertEqual(tok2.serial, "tok2")
 
         # assign tokens to token groups
-        t = TokenTokengroup(token_id=tok1.id, tokengroupname="gruppe1").save()
-        t = TokenTokengroup(token_id=tok1.id, tokengroupname="gruppe2").save()
-        t = TokenTokengroup(token_id=tok2.id, tokengroup_id=tg2.id).save()
+        TokenTokengroup(token_id=tok1.id, tokengroupname="gruppe1").save()
+        TokenTokengroup(token_id=tok1.id, tokengroupname="gruppe2").save()
+        TokenTokengroup(token_id=tok2.id, tokengroup_id=tg2.id).save()
         ttg = TokenTokengroup.query.all()
         self.assertEqual(len(ttg), 3)
         # It does not change anything, if we try to save the same assignment!

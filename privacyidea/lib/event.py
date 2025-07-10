@@ -22,7 +22,7 @@
 #
 from privacyidea.lib.config import get_config_object
 from privacyidea.lib.utils import fetch_one_resource
-from privacyidea.models import EventHandler, EventHandlerOption, db
+from privacyidea.models import EventHandler
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.utils.export import (register_import, register_export)
 import functools
@@ -41,7 +41,7 @@ class event(object):
 
     def __init__(self, eventname, request, g):
         self.eventname = eventname
-        if not eventname in AVAILABLE_EVENTS:
+        if eventname not in AVAILABLE_EVENTS:
             AVAILABLE_EVENTS.append(eventname)
         self.request = request
         self.g = g
@@ -226,7 +226,7 @@ def set_event(name=None, event=None, handlermodule=None, action=None, conditions
     :type position: basestring
     :return: The id of the event.
     """
-    if type(event) == list:
+    if isinstance(event, list):
         event = ",".join(event)
     conditions = conditions or {}
     if id:

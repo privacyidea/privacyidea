@@ -1427,7 +1427,7 @@ class ValidateAPITestCase(MyApiTestCase):
         pol.save()
 
         # create the challenge by authenticating with the OTP PIN
-        with Replace('privacyidea.models.datetime',
+        with Replace('privacyidea.models.challenge.datetime',
                      test_datetime(2020, 6, 13, 1, 2, 3,
                                    tzinfo=datetime.timezone(datetime.timedelta(hours=+5)))):
             with self.app.test_request_context('/validate/check',
@@ -1445,7 +1445,7 @@ class ValidateAPITestCase(MyApiTestCase):
         # send the OTP value while being an hour too early (timezone +1)
         # This should not happen unless there is a server misconfiguration
         # The transaction should not be removed by the janitor
-        with Replace('privacyidea.models.datetime',
+        with Replace('privacyidea.models.challenge.datetime',
                      test_datetime(2020, 6, 13, 1, 2, 4,
                                    tzinfo=datetime.timezone(datetime.timedelta(hours=+6)))):
             with self.app.test_request_context('/validate/check',
@@ -1459,7 +1459,7 @@ class ValidateAPITestCase(MyApiTestCase):
                 self.assertFalse(result.get("value"))
 
         # send the OTP value while being an hour too late (timezone -1)
-        with Replace('privacyidea.models.datetime',
+        with Replace('privacyidea.models.challenge.datetime',
                      test_datetime(2020, 6, 13, 1, 2, 4,
                                    tzinfo=datetime.timezone(datetime.timedelta(hours=+1)))):
             with self.app.test_request_context('/validate/check',
@@ -5411,7 +5411,7 @@ class AChallengeResponse(MyApiTestCase):
         # However, the authentication with the expired transaction_id has to fail
         new_utcnow = datetime.datetime.utcnow().replace(tzinfo=None) + datetime.timedelta(minutes=12)
         new_now = datetime.datetime.now().replace(tzinfo=None) + datetime.timedelta(minutes=12)
-        with mock.patch('privacyidea.models.datetime') as mock_datetime:
+        with mock.patch('privacyidea.models.challenge.datetime') as mock_datetime:
             mock_datetime.utcnow.return_value = new_utcnow
             mock_datetime.now.return_value = new_now
             with self.app.test_request_context('/validate/check',

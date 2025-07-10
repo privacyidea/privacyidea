@@ -436,7 +436,6 @@ def get_resolver_classes():
     :return: array of resolver classes
     :rtype: array
     """
-    resolver_classes = {}
     if "pi_resolver_classes" not in this.config:
         (r_classes, r_types) = get_resolver_class_dict()
         this.config["pi_resolver_types"] = r_types
@@ -844,7 +843,6 @@ def get_token_module_list():
             module = importlib.import_module(mod_name)
             modules.append(module)
         except Exception as exx:  # pragma: no cover
-            module = None
             log.warning('unable to load token module : {0!r} ({1!r})'.format(mod_name, exx))
 
     return modules
@@ -895,7 +893,6 @@ def get_caconnector_module_list():
     modules = []
     for mod_name in module_list:
         mod_name = ".".join(mod_name.split(".")[:-1])
-        class_name = mod_name.split(".")[-1:]
         try:
             log.debug("import module: {0!s}".format(mod_name))
             module = importlib.import_module(mod_name)

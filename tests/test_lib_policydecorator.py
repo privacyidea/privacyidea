@@ -4,9 +4,6 @@ This test file tests the lib.policy.py
 The lib.policy.py only depends on the database model.
 """
 
-PW_FILE_2 = "tests/testdata/passwords"
-DICT_FILE = "tests/testdata/dictionary"
-
 import datetime
 from datetime import timedelta
 
@@ -33,6 +30,9 @@ from privacyidea.lib.user import User
 from privacyidea.models import AuthCache
 from . import radiusmock
 from .base import MyTestCase, FakeFlaskG, FakeAudit
+
+PW_FILE_2 = "tests/testdata/passwords"
+DICT_FILE = "tests/testdata/dictionary"
 
 
 def _check_policy_name(policy_name, policies):
@@ -164,7 +164,7 @@ class LibPolicyTestCase(MyTestCase):
         self.assertRaises(UserError, auth_user_does_not_exist,
                           check_user_pass, user, passw, options)
 
-        # Now we set a policy, that a non existing user will authenticate
+        # Now we set a policy, that a non-existing user will authenticate
         set_policy(name="pol1",
                    scope=SCOPE.AUTH,
                    action=ACTION.PASSNOUSER)
@@ -181,10 +181,10 @@ class LibPolicyTestCase(MyTestCase):
         delete_policy("pol1")
 
     def test_04a_user_does_not_exist_without_resolver(self):
-        user = User("MisterX", realm=self.realm1)
+        user = User("MisterX", "r1")
         passw = "somePW"
 
-        # Now we set a policy, that a non existing user will authenticate
+        # Now we set a policy, that a non-existing user will authenticate
         set_policy(name="pol1",
                    scope=SCOPE.AUTH,
                    action="{0}, {1}, {2}, {3}=none".format(
@@ -193,7 +193,7 @@ class LibPolicyTestCase(MyTestCase):
                        ACTION.PASSNOTOKEN,
                        ACTION.OTPPIN
                    ),
-                   realm=self.realm1)
+                   realm="r1")
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
         g.audit_object = FakeAudit()
