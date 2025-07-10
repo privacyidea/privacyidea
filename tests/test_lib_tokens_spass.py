@@ -2,7 +2,10 @@
 This test file tests the lib.tokens.spasstoken
 This depends on lib.tokenclass
 """
+
 import json
+import logging
+from testfixtures import LogCapture
 
 from privacyidea.lib.token import remove_token, get_tokens, import_tokens, init_token
 from .base import MyTestCase
@@ -16,7 +19,7 @@ class SpassTokenTestCase(MyTestCase):
     serial1 = "ser1"
 
     # add_user, get_user, reset, set_user_identifiers
-    
+
     def test_01_create_token(self):
         db_token = Token(self.serial1, tokentype="spass")
         db_token.save()
@@ -41,8 +44,12 @@ class SpassTokenTestCase(MyTestCase):
 
         # check pin+otp:
         token.set_pin(self.otppin)
-        r = token.authenticate(self.otppin)
-        self.assertTrue(r, r)
+        logging.getLogger('privacyidea.lib.tokens.spasstoken').setLevel(logging.DEBUG)
+        with LogCapture(level=logging.DEBUG) as lc:
+            r = token.authenticate(self.otppin)
+            self.assertTrue(r, r)
+            for log_record in lc.actual():
+                self.assertNotIn(self.otppin, log_record[2], log_record)
 
     def test_03_class_methods(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()

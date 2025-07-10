@@ -26,9 +26,9 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__="""This is the implementation of the simple pass token.
+"""This is the implementation of the simple pass token.
 The simple pass token always returns TRUE as far as the checkOTP is concerned.
-Thus a user with a simple pass token can authenticate by just providing the
+Thus, a user with a simple pass token can authenticate by just providing the
 OTP PIN of the token.
 
 This code is tested in tests/test_lib_tokens_spass
@@ -81,8 +81,8 @@ class SpassTokenClass(TokenClass):
         :return: subsection if key exists or user defined
         :rtype: dict
         """
-        res = {'type' :'spass',
-               'title' :'Simple Pass Token',
+        res = {'type': 'spass',
+               'title': 'Simple Pass Token',
                'description': _('SPass: Simple Pass token. Static passwords.'),
                'config': {},
                'user': ['enroll'],
@@ -144,7 +144,7 @@ class SpassTokenClass(TokenClass):
         """
         return 0
 
-    @log_with(log)
+    @log_with(log, hide_args=[1])
     @check_token_locked
     def authenticate(self, passw, user=None, options=None):
         """
@@ -156,4 +156,3 @@ class SpassTokenClass(TokenClass):
         if pin_match is True:
             otp_count = 0
         return pin_match, otp_count, None
-

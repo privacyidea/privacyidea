@@ -425,6 +425,15 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                     AuthFactory.authError(error.data)
                 });
             },
+            getDefaultResolverConfig: function (resolvertype, callback) {
+                $http.get(resolverUrl + "/" + resolvertype + "/default", {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
             getMachineResolver: function (resolvername, callback) {
                 $http.get(machineResolverUrl + "/" + resolvername, {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
@@ -679,6 +688,18 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
             },
             delSystemConfig: function (key, callback) {
                 $http.delete(systemUrl + "/" + key, {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            deleteUserCache: function (callback) {
+                $http.delete(systemUrl + "/user-cache", {
                     headers: {
                         'PI-Authorization': AuthFactory.getAuthToken(),
                         'Content-Type': 'application/json'

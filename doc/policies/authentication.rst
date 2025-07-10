@@ -331,6 +331,17 @@ This is a list of token types for which challenge response can
 be used during authentication. The list is separated by whitespaces like
 *"hotp totp"*.
 
+
+.. _policy_diable_token_types:
+
+disable_token_types
+~~~~~~~~~~~~~~~~~~~~
+
+type: ``string``
+
+This is a list of token types that are not allowed to be used during authentication.
+The list is separated by whitespaces like *"hotp totp"*.
+
 .. _policy_change_pin_via_validate:
 
 force_challenge_response
@@ -384,23 +395,24 @@ enroll_via_multichallenge
 
 type: ``string``
 
-This policy allows the rollout of tokens during the authentication via `/validate/check`.
+This policy allows the rollout of tokens during a successful authentication via `/validate/check`. A user could
+authenticate via :ref:`passthru_policy` or using a registration code and right during this authentication session be
+asked to enroll a new token.
 
-The policy action can take one of the following token types: `hotp`, `totp`, `push`, `email`, `sms`.
+The policy action can take one of the token types `hotp`, `totp`, `push`, `email`, `sms` or the container type
+`smartphone`.
 
 The clients and plugins should make use of this policy transparently and using multiple consecutive
 challenges.
 
-The *only condition* currently, if a new token will be enrolled is that the user currently has no token
-of this token type. This way, we avoid loops in this authentication process.
-This means, a user could authenticate via passthru or using a registration code and right during
-this authentication session be asked to enroll a new token.
+A new token is only enrolled if the user has no token of this type assigned yet. Additionally, the policies
+:ref:`policy_max_token_per_user` and :ref:`policy_max_token_per_realm` are checked.
 
-.. note:: During this kind of enrollment the policies for *max_token*, *require_description*
+.. note:: During this kind of enrollment the policies for *require_description*
    and *verify_enrollment* are not checked.
    Also, currently no token PIN is set.
 
-The different ways of enrollment are defined in detail by the token types:
+The different ways of enrollment are defined in detail by the token/container types:
 
 **HOTP and TOTP**
 
@@ -430,8 +442,18 @@ If the token is successfully enrolled, the user is logged in without any further
 Since the successful enrollment of the Push token already verifies the presence of the user's smartphone,
 there is no additional authentication step anymore during enrollment.
 
-.. note:: Enrolling multiple token types one after another is not supported. It is currently possible to
-   enroll only one token type.
+**Smartphone**
+
+A smartphone container is only created if the user has no smartphone container assigned yet, and at least the
+registration policy :ref:`container_policy_server_url` is defined.
+
+After the first successful authentication step, the user is presented with a QR code for smartphone registration. The
+user needs to scan the QR code with the privacyIDEA Authenticator App. If the container is registered successfully, the
+user is logged in without any further interaction.
+
+When using the :ref:`policy_enroll_via_multichallenge_template` policy, the container is created using the selected
+template. This allows the container to be enrolled with multiple tokens at once. Note that for these tokens, all
+enrollment policies are checked.
 
 
 .. _policy_enroll_via_multichallenge_text:
@@ -441,8 +463,24 @@ enroll_via_multichallenge_text
 
 type: ``string``
 
-There is a default text that is shown to the user, when a token via
-multichallenge is enrolled. The administrator can change this text using this policy.
+There is a default text that is shown to the user, when a token or container is enrolled via multichallenge. The
+administrator can change this text using this policy.
+
+
+.. _policy_enroll_via_multichallenge_template:
+
+enroll_via_multichallenge_template
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``string``
+
+Select a container template for the smartphone container that is used during enrollment via multichallenge. This means
+you can enroll a container and multiple tokens at once. For the tokens, all enrollment policies are checked. If an
+error occurs during the enrollment of a token, it fails silently, and the remaining tokens can still be enrolled.
+
+If this policy contains an invalid template name, the container is enrolled anyway, but without a template.
+
+The policy :ref:`policy_enroll_via_multichallenge` has to be set to `smartphone` for this policy to take effect.
 
 
 .. _policy_u2f_facets:

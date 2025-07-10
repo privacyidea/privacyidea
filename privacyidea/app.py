@@ -227,7 +227,7 @@ def create_app(config_name="development",
     # Set up Plug-Ins
     db.init_app(app)
     # TODO: This is not necessary except for pi-manage
-    migrate.init_app(app, db)
+    migrate.init_app(app, db, directory="privacyidea/migrations")
 
     Versioned(app, format='%(path)s?v=%(version)s')
 

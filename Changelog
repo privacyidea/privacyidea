@@ -1,11 +1,30 @@
-Version 3.12dev1, 2025-03-14
+Version 3.12dev1, 2025-07-09
+
+  Features:
+  * Entra ID and Keycloak resolver (#4217)
 
   Enhancements:
   * Remember last used token type per user and application for multi-challenge (#4179)
   * Add option 'handle_missing_data' to the extended policy conditions (#4339)
+  * Move project description and building metadata into pyproject.toml (#3525)
+  * Policy to disable specific token types for authentication (#4371)
+  * Dedicated functions to rename and clone policies (#4293)
+  * Clean up user cache and expired challenges via API/WebUI (#4280)
+  * Allow to enroll smartphone containers via multi-challenge (#4361)
+  * Add comparators for extended policy conditions to compare dates and check for substrings (#4470)
 
   Fixes:
   * Reduce PyOpenSSL dependencies for certificate token (#4212)
+  * Consistent handling of whitespaces in usernames for policy checks (#4385)
+
+Version 3.11.4, 2025-06-26
+
+  Fixes:
+  * Fix wrong token assignment view tokens when using the usercache (#4454)
+  * Remove superfluous error message when max_token_user/realm is set (#4434)
+  * Fix logging passwords in debug mode with some specific token tpes (#4457)
+  * Fix error when wrong key is used in SQL-resolver mapping  (#4461)
+  * Fix error when listing containers with non-existing users/resolver errors (#4464)
 
 Version 3.11.3, 2025-05-28
 

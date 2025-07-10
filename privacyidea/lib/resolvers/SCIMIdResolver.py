@@ -134,7 +134,7 @@ class IdResolver (UserIdResolver):
         # It seems that the userName is the userId
         return convert_column_to_unicode(loginName)
 
-    def getUserList(self, searchDict=None):
+    def getUserList(self, search_dict=None):
         """
         Return the list of users
         """
@@ -144,8 +144,7 @@ class IdResolver (UserIdResolver):
         res = {}
         if self.access_token:
             res = self._search_users(self.resource_server,
-                                                 self.access_token,
-                                                 "")
+                                     self.access_token)
 
         for user in res.get("Resources"):
             ret_user = self._fill_user_schema_1_0(user)
@@ -218,18 +217,18 @@ class IdResolver (UserIdResolver):
     def testconnection(cls, param):
         """
         This function lets you test the to be saved SCIM connection.
-              
+
         :param param: A dictionary with all necessary parameter to test the
                         connection.
         :type param: dict
         :return: Tuple of success and a description
         :rtype: (bool, string)
-        
+
         Parameters are: Authserver, Resourceserver, Client, Secret, Mapping
         """
         desc = None
         success = False
-               
+
         try:
             access_token = cls.get_access_token(str(param.get("Authserver")),
                                                 param.get("Client"),
@@ -243,7 +242,7 @@ class IdResolver (UserIdResolver):
             log.error("Failed to retrieve users: {0!s}".format(exx))
             log.debug("{0!s}".format(traceback.format_exc()))
             desc = "failed to retrieve users: {0!s}".format(exx)
-            
+
         return success, desc
 
     @staticmethod
@@ -264,7 +263,7 @@ class IdResolver (UserIdResolver):
         j_content = yaml.safe_load(resp.content)
 
         return j_content
-    
+
     @staticmethod
     def _get_user(resource_server, access_token, userid):
         """

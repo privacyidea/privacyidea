@@ -53,6 +53,7 @@ class user_cache(object):
         :param wrapped_function: The function, that is decorated.
         :return: None
         """
+
         @functools.wraps(wrapped_function)
         def cache_wrapper(*args, **kwds):
             if is_cache_enabled():
@@ -84,9 +85,10 @@ def is_cache_enabled():
     return bool(get_cache_time())
 
 
-def delete_user_cache(resolver=None, username=None, expired=None):
+def delete_user_cache(resolver: str = None, username: str = None, expired: bool = None) -> int:
     """
-    This completely deletes the user cache.
+    Delete entries from the user cache. If a resolver and/or username is given,
+    it only deletes entries for this resolver and/or username.
     If no parameter is given, it deletes the user cache completely.
 
     :param resolver: Will only delete entries of this resolver
@@ -99,12 +101,12 @@ def delete_user_cache(resolver=None, username=None, expired=None):
     """
     filter_condition = create_filter(username=username, resolver=resolver,
                                      expired=expired)
-    rowcount = db.session.query(UserCache).filter(filter_condition).delete()
+    row_count = db.session.query(UserCache).filter(filter_condition).delete()
     db.session.commit()
     log.info('Deleted {} entries from the user cache (resolver={!r}, username={!r}, expired={!r})'.format(
-        rowcount, resolver, username, expired
+        row_count, resolver, username, expired
     ))
-    return rowcount
+    return row_count
 
 
 def add_to_cache(username, used_login, resolver, user_id):
@@ -210,7 +212,7 @@ def user_init(wrapped_function, self):
         resolvers = self.get_ordered_resolvers()
     for resolvername in resolvers:
         # If we could figure out a resolver, we can query the user cache
-        filter_conditions = create_filter(used_login=self.used_login, resolver=resolvername)
+        filter_conditions = create_filter(used_login=self.used_login, resolver=resolvername, user_id=self.uid)
         result = retrieve_latest_entry(filter_conditions)
         if result:
             # Cached user exists, retrieve information and exit early

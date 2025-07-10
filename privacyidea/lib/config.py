@@ -32,6 +32,7 @@ The code is tested in tests/test_lib_config
 """
 
 import copy
+import json
 import sys
 import logging
 import inspect
@@ -99,6 +100,8 @@ class SharedConfigClass(object):
         the internal timestamp, then read the complete data
         :return:
         """
+        from .resolvers.HTTPResolver import ADVANCED, HEADERS
+        from .resolver import get_resolver_class
         check_reload_config = get_app_config_value("PI_CHECK_RELOAD_CONFIG", 0)
         if not self.timestamp or \
                 self.timestamp + datetime.timedelta(seconds=check_reload_config) < datetime.datetime.now():
@@ -123,14 +126,39 @@ class SharedConfigClass(object):
                     resolverdef = {"type": resolver.rtype,
                                    "resolvername": resolver.name,
                                    "censor_keys": []}
+                    resolver_class = get_resolver_class(resolver.rtype)
+                    class_descriptor_config = resolver_class.getResolverClassDescriptor()[resolver.rtype]["config"]
                     data = {}
                     for rconf in resolver.config_list:
                         if rconf.Type == "password":
                             value = decryptPassword(rconf.Value)
                             resolverdef["censor_keys"].append(rconf.Key)
+                        elif rconf.Type == "dict":
+                            try:
+                                value = json.loads(rconf.Value)
+                            except json.JSONDecodeError as error:
+                                log.debug(
+                                    f"Could not load {rconf.Key} ({rconf.Value}) from resolver config as JSON: {error}")
+                                value = rconf.Value
+                        elif rconf.Type == "dict_with_password":
+                            # An entry in the dict is a password which needs to be decrypted
+                            try:
+                                value = json.loads(rconf.Value)
+                                for key, val in value.items():
+                                    if class_descriptor_config.get(f"{rconf.Key}.{key}", "") == "password":
+                                        value[key] = decryptPassword(val)
+                                        resolverdef["censor_keys"].append(f"{rconf.Key}.{key}")
+                            except json.JSONDecodeError as error:
+                                log.debug(
+                                    f"Could not load {rconf.Key} ({rconf.Value}) from resolver config as JSON: {error}")
+                                value = rconf.Value
                         else:
                             value = rconf.Value
                         data[rconf.Key] = value
+                    if data.get(ADVANCED, False) and HEADERS in data:
+                        # For advanced HTTP resolvers, the headers config is loaded as dict
+                        if data.get(HEADERS):
+                            data[HEADERS] = json.loads(data.get(HEADERS, "{}"))
                     resolverdef["data"] = data
                     resolverconfig[resolver.name] = resolverdef
                 # Load realm configuration
@@ -670,6 +698,8 @@ def get_resolver_list():
     module_list.add("privacyidea.lib.resolvers.SCIMIdResolver")
     module_list.add("privacyidea.lib.resolvers.SQLIdResolver")
     module_list.add("privacyidea.lib.resolvers.HTTPResolver")
+    module_list.add("privacyidea.lib.resolvers.EntraIDResolver")
+    module_list.add("privacyidea.lib.resolvers.KeycloakResolver")
 
     # Dynamic Resolver modules
     # TODO: Migration
@@ -1095,10 +1125,22 @@ def import_config(data, name=None):
         ', '.join([k for k, v in res.items() if v == 'update'])))
 
 
-def get_multichallenge_enrollable_tokentypes():
-    enrollable_tokentypes = []
-    # If the token is enrollable via multichallenge
-    for tclass in get_token_classes():
-        if tclass.is_multichallenge_enrollable():
-            enrollable_tokentypes.append(tclass.get_class_type())
-    return enrollable_tokentypes
+def get_multichallenge_enrollable_types() -> list[str]:
+    """
+    Returns a list of token and container types which can be enrolled during a successful authentication using the
+    policy "enroll_via_multichallenge"
+    """
+    if "pi_multichallenge_enrollable_types" not in this.config:
+        from .container import get_container_classes
+        enrollable_types = []
+        # Get token types enrollable via multichallenge
+        for tclass in get_token_classes():
+            if tclass.is_multichallenge_enrollable():
+                enrollable_types.append(tclass.get_class_type())
+        # Get container types enrollable via multichallenge
+        for class_name, container_class in get_container_classes().items():
+            if container_class.is_multi_challenge_enrollable():
+                enrollable_types.append(container_class.get_class_type())
+
+        this.config["pi_multichallenge_enrollable_types"] = enrollable_types
+    return this.config["pi_multichallenge_enrollable_types"]

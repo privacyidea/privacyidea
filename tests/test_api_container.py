@@ -3083,6 +3083,27 @@ class APIContainer(APIContainerTest):
                                              {}, self.at, "DELETE")
         self.assertFalse(result["result"]["value"])
 
+    def test_25_broken_user_resolver(self):
+        # Arrange
+        self.setUp_user_realms()
+        container_serial = init_container({"type": "generic",
+                                           "description": "test container",
+                                           "user": "hans",
+                                           "realm": self.realm1})["container_serial"]
+        # Get all containers with assigned user
+        result = self.request_assert_success('/container/', {}, self.at, 'GET')
+        # Get the current container
+        container = [x for x in result["result"]["value"]["containers"] if x["serial"] == container_serial][0]
+        self.assertEqual(container["users"][0]["user_name"], "hans", result["result"])
+        # Break the resolver
+        save_resolver({"resolver": self.resolvername1,
+                       "type": "passwdresolver",
+                       "fileName": "/unknown/file"})
+        # And check the container again
+        result = self.request_assert_success('/container/', {}, self.at, 'GET')
+        container = [x for x in result["result"]["value"]["containers"] if x["serial"] == container_serial][0]
+        self.assertEqual(container["users"][0]["user_name"], "**resolver error**", result["result"])
+
 
 @dataclass
 class SmartphoneRequests:
@@ -4603,8 +4624,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.request_assert_success('container/register/finalize',
                                     params,
                                     None, 'POST')
-        self.assertEqual(RegistrationState.ROLLOVER_COMPLETED.value,
-                         smartphone.get_container_info_dict().get(RegistrationState.get_key()))
+        self.assertEqual(RegistrationState.ROLLOVER_COMPLETED, smartphone.registration_state)
 
         # Challenge for Sync
         scope = "https://new-pi.net/container/synchronize"
@@ -4631,8 +4651,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertEqual(0, len(token_diff["update"]))
 
         # smartphone got new token secrets: rollover completed
-        self.assertEqual(RegistrationState.REGISTERED.value,
-                         smartphone.get_container_info_dict().get(RegistrationState.get_key()))
+        self.assertEqual(RegistrationState.REGISTERED, smartphone.registration_state)
 
         delete_policy("policy")
 
@@ -4760,8 +4779,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.request_assert_success('container/register/finalize',
                                     params,
                                     None, 'POST')
-        self.assertEqual(RegistrationState.ROLLOVER_COMPLETED.value,
-                         smartphone.get_container_info_dict().get(RegistrationState.get_key()))
+        self.assertEqual(RegistrationState.ROLLOVER_COMPLETED, smartphone.registration_state)
 
         # Try to sync with old smartphone
         scope = "https://pi.net/container/synchronize"
@@ -4772,8 +4790,7 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_error(400, "container/synchronize",
                                            params, None, 'POST')
         self.assertEqual(3002, result["result"]["error"]["code"])
-        self.assertEqual(RegistrationState.ROLLOVER_COMPLETED.value,
-                         smartphone.get_container_info_dict().get(RegistrationState.get_key()))
+        self.assertEqual(RegistrationState.ROLLOVER_COMPLETED, smartphone.registration_state)
 
         # Sync with new smartphone
         scope = "https://new-pi.net/container/synchronize"
@@ -4812,8 +4829,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertEqual("firebase", push.get_tokeninfo()[PUSH_ACTION.FIREBASE_CONFIG])
 
         # smartphone got new token secrets: rollover completed
-        self.assertEqual(RegistrationState.REGISTERED.value,
-                         smartphone.get_container_info_dict().get(RegistrationState.get_key()))
+        self.assertEqual(RegistrationState.REGISTERED, smartphone.registration_state)
 
         delete_policy("policy")
 

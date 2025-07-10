@@ -123,7 +123,7 @@ class IdResolver (UserIdResolver):
         Empty lines are ignored.
         """
 
-        if self.fileName == "":
+        if not self.fileName:
             self.fileName = "/etc/passwd"
 
         log.info('loading users from file {0!s} from within {1!r}'.format(self.fileName,
@@ -286,11 +286,11 @@ class IdResolver (UserIdResolver):
 
         return self.searchFields
 
-    def getUserList(self, searchDict=None):
+    def getUserList(self, search_dict=None):
         """
         get a list of all users matching the search criteria of the searchdict
 
-        :param searchDict: dict of search expressions
+        :param search_dict: dict of search expressions
         """
         ret = []
 
@@ -298,13 +298,13 @@ class IdResolver (UserIdResolver):
         for _id, line in self.descDict.items():
             ok = True
 
-            for search in searchDict:
+            for search in search_dict:
 
                 if search not in self.searchFields:
                     ok = False
                     break
 
-                pattern = searchDict[search]
+                pattern = search_dict[search]
 
                 log.debug("searching for %s:%s", search, pattern)
 

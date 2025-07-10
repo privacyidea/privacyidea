@@ -354,7 +354,6 @@ class RadiusTokenClass(RemoteTokenClass):
 
         return local_check
 
-    @log_with(log)
     def split_pin_pass(self, passw, user=None, options=None):
         """
         Split the PIN and the OTP value.
@@ -368,7 +367,7 @@ class RadiusTokenClass(RemoteTokenClass):
 
         return res, pin, otpval
 
-    @log_with(log)
+    @log_with(log, hide_args=[1])
     @check_token_locked
     def authenticate(self, passw, user=None, options=None):
         """

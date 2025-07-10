@@ -708,8 +708,8 @@ def get_tokens_paginate(tokentype=None, token_type_list=None, realm=None, assign
                     token_dict["user_realm"] = user.realm
                     token_dict["user_editable"] = get_resolver_object(
                         user.resolver).editable
-            except Exception as exx:
-                log.error("User information can not be retrieved: {0!s}".format(exx))
+            except Exception as ex:
+                log.error(f"User information can not be retrieved: {ex!r}")
                 log.debug(traceback.format_exc())
                 token_dict["username"] = "**resolver error**"
 
@@ -2484,6 +2484,10 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
         if len(token_object_list) == 0:
             # If there is no unlocked token left.
             raise TokenAdminError(_("This action is not possible, since the token is locked"), id=1007)
+
+    # Remove disabled token types from token_object_list
+    if ACTION.DISABLED_TOKEN_TYPES in options and options[ACTION.DISABLED_TOKEN_TYPES]:
+        token_object_list = [token for token in token_object_list if token.type not in options[ACTION.DISABLED_TOKEN_TYPES]]
 
     # Remove certain disabled tokens from token_object_list
     if len(token_object_list) > 0:

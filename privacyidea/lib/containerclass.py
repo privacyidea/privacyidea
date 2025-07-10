@@ -38,7 +38,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.machine import is_offline_token
 from privacyidea.lib.token import (create_tokenclass_object, get_tokens, get_serial_by_otp_list,
                                    get_tokens_from_serial_or_user)
-from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenclass import TokenClass, CHALLENGE_SESSION
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true
 from privacyidea.models import (TokenContainerOwner, Realm, Token, db, TokenContainerStates,
@@ -76,6 +76,13 @@ class TokenContainerClass:
         else:
             class_options = cls.options
         return class_options
+
+    @classmethod
+    def is_multi_challenge_enrollable(cls) -> bool:
+        """
+        Returns True if the container type can be enrolled during the authentication process "via multi challenge"
+        """
+        return False
 
     def set_default_option(self, key) -> str:
         """
@@ -247,6 +254,17 @@ class TokenContainerClass:
         realms = [owner.realm for owner in owners]
         return realms
 
+    @property
+    def registration_state(self) -> RegistrationState:
+        """
+        Returns the registration state of the container.
+        The registration state is stored in the container info with key 'registration_state'.
+        If the key does not exist, it returns the registration state NOT_REGISTERED with the value None.
+        """
+        container_info = self.get_container_info_dict()
+        state = container_info.get(RegistrationState.get_key())
+        return RegistrationState(state)
+
     def remove_token(self, serial: str) -> bool:
         """
         Remove a token from the container. Raises a ResourceNotFoundError if the token does not exist.
@@ -350,7 +368,12 @@ class TokenContainerClass:
         users: list[User] = []
         for owner in db_container_owners:
             realm = Realm.query.filter_by(id=owner.realm_id).first()
-            user = User(uid=owner.user_id, realm=realm.name, resolver=owner.resolver)
+            try:
+                user = User(uid=owner.user_id, realm=realm.name, resolver=owner.resolver)
+            except Exception as ex:
+                log.error(f"Unable to get user {owner.user_id} for container {self.serial}: {ex!r}")
+                # We return an empty User object here to notify that we ran into an error
+                user = User(login=None, realm=realm.name, resolver=owner.resolver)
             users.append(user)
 
         return users
@@ -574,7 +597,8 @@ class TokenContainerClass:
         Initializes the registration: Generates a QR code containing all relevant data.
 
         :param server_url: URL of the server reachable for the client.
-        :param scope: The URL the client contacts to finalize the registration e.g. "https://pi.net/container/register/finalize".
+        :param scope: The URL the client contacts to finalize the registration
+                      e.g. "https://pi.net/container/register/finalize".
         :param registration_ttl: Time to live of the registration link in minutes.
         :param ssl_verify: Whether the client shall use ssl.
         :param params: Container specific parameters
@@ -698,8 +722,14 @@ class TokenContainerClass:
                               f"device_model={device_model}, key={key}, container={container} ")
                     continue
 
-                # Valid challenge: delete it
-                challenge.delete()
+                if challenge.session == CHALLENGE_SESSION.ENROLLMENT:
+                    # challenge was created during the enrollment. It is still required, hence we only set the state to
+                    # answered, but not delete it.
+                    challenge.set_otp_status(True)
+                    challenge.save()
+                else:
+                    # Valid challenge: delete it
+                    challenge.delete()
                 break
             else:
                 # Delete expired challenge
@@ -775,10 +805,15 @@ class TokenContainerClass:
         users = []
         user_info = {}
         for user in self.get_users():
-            user_info["user_name"] = user.login
             user_info["user_realm"] = user.realm
             user_info["user_resolver"] = user.resolver
-            user_info["user_id"] = user.uid
+            if user.uid:
+                user_info["user_name"] = user.login
+                user_info["user_id"] = user.uid
+            else:
+                # In case we have a User object without an uid, we assume a resolver error.
+                user_info["user_name"] = "**resolver error**"
+                user_info["user_id"] = "**resolver error**"
             users.append(user_info)
         details["users"] = users
 
@@ -889,8 +924,7 @@ class TokenContainerClass:
         # map client and server tokens
         client_serials = [token["serial"] for token in client_tokens if "serial" in token.keys()]
 
-        container_info = self.get_container_info_dict()
-        registration_state = RegistrationState(container_info.get(RegistrationState.get_key()))
+        registration_state = self.registration_state
         if registration_state == RegistrationState.ROLLOVER_COMPLETED:
             # rollover all tokens: generate new enroll info for all tokens
             missing_serials = server_token_serials
@@ -914,6 +948,7 @@ class TokenContainerClass:
                      "They can not be added during synchronization.")
 
         # Initial synchronization after registration or rollover
+        container_info = self.get_container_info_dict()
         if initial_transfer_allowed and not is_true(container_info.get(INITIALLY_SYNCHRONIZED)):
             self.update_container_info([TokenContainerInfoData(key=INITIALLY_SYNCHRONIZED, value="True",
                                                                info_type=PI_INTERNAL)])

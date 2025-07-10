@@ -44,11 +44,11 @@ from privacyidea.lib.container import (find_container_by_serial, init_container,
                                        finalize_registration, init_container_rollover,
                                        get_container_realms,
                                        add_not_authorized_tokens_result, get_offline_token_serials,
-                                       delete_container_info)
+                                       delete_container_info, init_registration)
 from privacyidea.lib.containers.container_info import (TokenContainerInfoData, PI_INTERNAL, RegistrationState,
-    CHALLENGE_TTL, REGISTRATION_TTL, SERVER_URL, SSL_VERIFY)
+                                                       CHALLENGE_TTL, REGISTRATION_TTL, SERVER_URL, SSL_VERIFY)
 from privacyidea.lib.containers.container_states import ContainerStates
-from privacyidea.lib.error import ParameterError, ContainerNotRegistered, ContainerError
+from privacyidea.lib.error import ParameterError, ContainerNotRegistered
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION
@@ -652,35 +652,8 @@ def registration_init():
                         "action_detail": f"rollover={container_rollover}",
                         "info": info_str})
 
-    # Check registration state: registration init is only allowed for None (not yet registered) and "client_wait"
-    # otherwise do a rollover
-    registration_state = RegistrationState(container.get_container_info_dict().get(RegistrationState.get_key()))
-    if container_rollover:
-        if registration_state not in [RegistrationState.REGISTERED, RegistrationState.ROLLOVER,
-                                      RegistrationState.ROLLOVER_COMPLETED]:
-            raise ContainerNotRegistered("Container is not registered.")
-    elif registration_state not in [RegistrationState.NOT_REGISTERED, RegistrationState.CLIENT_WAIT]:
-        raise ContainerError("Container is already registered.")
-
-    # Reset last synchronization and authentication time stamps from possible previous registration
-    container.reset_last_synchronization()
-    container.reset_last_authentication()
-
-    # registration
-    scope = create_endpoint_url(server_url, "container/register/finalize")
-    res = container.init_registration(server_url, scope, registration_ttl, ssl_verify, params)
-
-    if container_rollover:
-        # Set registration state
-        info = [TokenContainerInfoData(key=RegistrationState.get_key(), value=RegistrationState.ROLLOVER.value,
-                                       info_type=PI_INTERNAL),
-                TokenContainerInfoData(key="rollover_server_url", value=server_url, info_type=PI_INTERNAL),
-                TokenContainerInfoData(key="rollover_challenge_ttl", value=challenge_ttl, info_type=PI_INTERNAL)]
-    else:
-        # save policy values in container info
-        info = [TokenContainerInfoData(key="server_url", value=server_url, info_type=PI_INTERNAL),
-                TokenContainerInfoData(key="challenge_ttl", value=challenge_ttl, info_type=PI_INTERNAL)]
-    container.update_container_info(info)
+    res = init_registration(container, container_rollover, server_url, registration_ttl, ssl_verify, challenge_ttl,
+                            params)
 
     # Check for offline tokens
     res["offline_tokens"] = get_offline_token_serials(container)

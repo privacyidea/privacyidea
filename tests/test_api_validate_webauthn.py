@@ -69,7 +69,8 @@ class WebAuthn(MyApiTestCase):
             webauthn_request = data.get("detail").get("webAuthnRegisterRequest")
             self.assertEqual("Please confirm with your WebAuthn token", webauthn_request.get("message"))
             self.assertEqual(self.serial, webauthn_request.get("serialNumber"))
-            transaction_id = webauthn_request.get("transaction_id")
+            transaction_id = data.get("detail").get("transaction_id")
+            self.assertTrue(transaction_id)
 
         # We need to change the nonce in the challenge database to use our recorded WebAuthN enrollment data
         recorded_nonce = "nh0iBz0SMndlVsPRGLvOCQc-PprPxOJf30KeZmTXY94"
