@@ -3,7 +3,7 @@ from testfixtures import LogCapture
 
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.policies.policy_conditions import ConditionSection, ConditionHandleMissingData
-from privacyidea.lib.utils.compare import Comparators
+from privacyidea.lib.utils.compare import PrimaryComparators
 from .base import MyApiTestCase
 from privacyidea.lib.policy import (set_policy, SCOPE, ACTION, delete_policy, rename_policy)
 from privacyidea.lib.token import init_token
@@ -159,17 +159,17 @@ class APIPolicyTestCase(MyApiTestCase):
         self.setUp_user_realms()
         self.setUp_user_realm2()
 
-        expected_conditions = [[ConditionSection.USERINFO, "groups", Comparators.CONTAINS, "group1", True,
+        expected_conditions = [[ConditionSection.USERINFO, "groups", PrimaryComparators.CONTAINS, "group1", True,
                                 ConditionHandleMissingData.RAISE_ERROR.value],
-                               [ConditionSection.USERINFO, "type", Comparators.EQUALS, "secure", False,
+                               [ConditionSection.USERINFO, "type", PrimaryComparators.EQUALS, "secure", False,
                                 ConditionHandleMissingData.RAISE_ERROR.value],
-                               [ConditionSection.HTTP_REQUEST_HEADER, "Origin", Comparators.EQUALS,
+                               [ConditionSection.HTTP_REQUEST_HEADER, "Origin", PrimaryComparators.EQUALS,
                                 "https://localhost", True, ConditionHandleMissingData.IS_TRUE.value]]
 
         # set a policy with conditions
-        conditions = [[ConditionSection.USERINFO, "groups", Comparators.CONTAINS, "group1", True],
-                      [ConditionSection.USERINFO, "type", Comparators.EQUALS, "secure", False, None],
-                      [ConditionSection.HTTP_REQUEST_HEADER, "Origin", Comparators.EQUALS, "https://localhost",
+        conditions = [[ConditionSection.USERINFO, "groups", PrimaryComparators.CONTAINS, "group1", True],
+                      [ConditionSection.USERINFO, "type", PrimaryComparators.EQUALS, "secure", False, None],
+                      [ConditionSection.HTTP_REQUEST_HEADER, "Origin", PrimaryComparators.EQUALS, "https://localhost",
                        True, ConditionHandleMissingData.IS_TRUE.value]]
         with self.app.test_request_context('/policy/cond1',
                                            method='POST',
@@ -232,7 +232,7 @@ class APIPolicyTestCase(MyApiTestCase):
                                                  "client": "10.1.2.3",
                                                  "scope": SCOPE.AUTHZ,
                                                  "conditions": [[ConditionSection.USERINFO, "type",
-                                                                 Comparators.EQUALS, "secure", True]],
+                                                                 PrimaryComparators.EQUALS, "secure", True]],
                                                  "realm": self.realm2},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -251,7 +251,7 @@ class APIPolicyTestCase(MyApiTestCase):
             self.assertEqual(cond1["realm"], ["realm2"])
             self.assertEqual(len(cond1["conditions"]), 1)
             # order of conditions is not guaranteed
-            self.assertIn([ConditionSection.USERINFO, "type", Comparators.EQUALS, "secure", True,
+            self.assertIn([ConditionSection.USERINFO, "type", PrimaryComparators.EQUALS, "secure", True,
                            ConditionHandleMissingData.RAISE_ERROR.value], cond1["conditions"])
 
         # test some invalid conditions
@@ -262,7 +262,7 @@ class APIPolicyTestCase(MyApiTestCase):
                                                  "client": "10.1.2.3",
                                                  "scope": SCOPE.AUTHZ,
                                                  "conditions": [[ConditionSection.USERINFO, "type",
-                                                                 Comparators.EQUALS, "secure"]],
+                                                                 PrimaryComparators.EQUALS, "secure"]],
                                                  "realm": "realm2"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -273,8 +273,8 @@ class APIPolicyTestCase(MyApiTestCase):
                                            json={"action": ACTION.NODETAILFAIL,
                                                  "client": "10.1.2.3",
                                                  "scope": SCOPE.AUTHZ,
-                                                 "conditions": [[ConditionSection.USERINFO, "type", Comparators.EQUALS,
-                                                                 "secure", True,
+                                                 "conditions": [[ConditionSection.USERINFO, "type",
+                                                                 PrimaryComparators.EQUALS, "secure", True,
                                                                  ConditionHandleMissingData.RAISE_ERROR.value,
                                                                  "extra"]],
                                                  "realm": self.realm2},
@@ -288,8 +288,8 @@ class APIPolicyTestCase(MyApiTestCase):
                                            json={"action": ACTION.NODETAILFAIL,
                                                  "client": "10.1.2.3",
                                                  "scope": SCOPE.AUTHZ,
-                                                 "conditions": [[ConditionSection.USERINFO, "type", Comparators.EQUALS,
-                                                                 123, False]],
+                                                 "conditions": [[ConditionSection.USERINFO, "type",
+                                                                 PrimaryComparators.EQUALS, 123, False]],
                                                  "realm": self.realm2},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -300,8 +300,8 @@ class APIPolicyTestCase(MyApiTestCase):
                                            json={"action": ACTION.NODETAILFAIL,
                                                  "client": "10.1.2.3",
                                                  "scope": SCOPE.AUTHZ,
-                                                 "conditions": [[ConditionSection.USERINFO, "type", Comparators.EQUALS,
-                                                                 "123", "true"]],
+                                                 "conditions": [[ConditionSection.USERINFO, "type",
+                                                                 PrimaryComparators.EQUALS, "123", "true"]],
                                                  "realm": self.realm2},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -596,6 +596,7 @@ class APIPolicyTestCase(MyApiTestCase):
         delete_policy("pol_a")
         delete_policy("pol_b")
 
+
 class APIPolicyConditionTestCase(MyApiTestCase):
 
     def setUp(self):
@@ -608,7 +609,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
         # Request from a certain user agent will not see the detail
         set_policy("policy", scope=SCOPE.AUTHZ, action=ACTION.NODETAILSUCCESS, client="10.1.2.3",
                    realm=self.realm1, conditions=[(ConditionSection.HTTP_REQUEST_HEADER, "User-Agent",
-                                                   Comparators.EQUALS, "SpecialApp", True,
+                                                   PrimaryComparators.EQUALS, "SpecialApp", True,
                                                    ConditionHandleMissingData.RAISE_ERROR.value)])
 
         # A request with another header will display the details
@@ -640,7 +641,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
         # ---- Raises error for missing data ----
         set_policy("policy", scope=SCOPE.AUTHZ, action=ACTION.NODETAILSUCCESS, client="10.1.2.3",
                    realm=self.realm1, conditions=[(ConditionSection.HTTP_REQUEST_HEADER, "User-Agent",
-                                                   Comparators.EQUALS, "SpecialApp", True,
+                                                   PrimaryComparators.EQUALS, "SpecialApp", True,
                                                    ConditionHandleMissingData.RAISE_ERROR.value)])
         # A request without such a header
         with LogCapture(level=logging.ERROR) as lc:
@@ -737,7 +738,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
         # Error for invalid comparator
         set_policy("policy", scope=SCOPE.AUTHZ, action=ACTION.NODETAILSUCCESS, client="10.1.2.3",
                    realm=self.realm1, conditions=[(ConditionSection.HTTP_REQUEST_HEADER, "User-Agent",
-                                                   Comparators.CONTAINS, "SpecialApp", True,
+                                                   PrimaryComparators.CONTAINS, "SpecialApp", True,
                                                    ConditionHandleMissingData.RAISE_ERROR.value)])
 
         with self.app.test_request_context("/validate/check",
@@ -768,7 +769,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
         # set a policy with conditions
         set_policy("policy", scope=SCOPE.AUTHZ, action=ACTION.NODETAILSUCCESS, realm=self.realm1,
                    client="10.1.2.3", conditions=[(ConditionSection.HTTP_ENVIRONMENT, "REQUEST_METHOD",
-                                                   Comparators.EQUALS, "POST", True)])
+                                                   PrimaryComparators.EQUALS, "POST", True)])
 
         # A GET request will contain the details!
         with self.app.test_request_context("/validate/check",
@@ -800,7 +801,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
                                                  "realm": "realm1",
                                                  "client": "10.1.2.3",
                                                  "conditions": [[ConditionSection.HTTP_ENVIRONMENT, "NON_EXISTING",
-                                                                 Comparators.EQUALS, "POST", True]],
+                                                                 PrimaryComparators.EQUALS, "POST", True]],
                                                  "scope": SCOPE.AUTHZ},
                                            headers={'PI-Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -828,7 +829,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
         # Raise Error
         set_policy("policy", scope=SCOPE.AUTHZ, action=ACTION.NODETAILSUCCESS, realm=self.realm1,
                    client="10.1.2.3", conditions=[(ConditionSection.HTTP_ENVIRONMENT, "NON_EXISTING",
-                                                   Comparators.EQUALS, "POST", True,
+                                                   PrimaryComparators.EQUALS, "POST", True,
                                                    ConditionHandleMissingData.RAISE_ERROR.value)])
 
         with self.app.test_request_context("/validate/check",
@@ -844,7 +845,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
         # Policy matches (condition is true)
         set_policy("policy", scope=SCOPE.AUTHZ, action=ACTION.NODETAILSUCCESS, realm=self.realm1,
                    client="10.1.2.3", conditions=[(ConditionSection.HTTP_ENVIRONMENT, "NON_EXISTING",
-                                                   Comparators.EQUALS, "POST", True,
+                                                   PrimaryComparators.EQUALS, "POST", True,
                                                    ConditionHandleMissingData.IS_TRUE.value)])
 
         with self.app.test_request_context("/validate/check",
@@ -859,7 +860,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
         # Policy not matches (condition is false)
         set_policy("policy", scope=SCOPE.AUTHZ, action=ACTION.NODETAILSUCCESS, realm=self.realm1,
                    client="10.1.2.3", conditions=[(ConditionSection.HTTP_ENVIRONMENT, "NON_EXISTING",
-                                                   Comparators.EQUALS, "POST", True,
+                                                   PrimaryComparators.EQUALS, "POST", True,
                                                    ConditionHandleMissingData.IS_FALSE.value)])
 
         with self.app.test_request_context("/validate/check",
