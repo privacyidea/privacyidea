@@ -2,7 +2,7 @@
 This test file tests the lib.tokens.yubicotoken
 This depends on lib.tokenclass
 """
-
+from privacyidea.lib.token import init_token, get_tokens, import_tokens
 from .base import MyTestCase
 from privacyidea.lib.tokens.yubicotoken import (YubicoTokenClass, YUBICO_URL)
 from privacyidea.models import Token
@@ -112,3 +112,26 @@ status=REPLAYED_OTP"""
         token = YubicoTokenClass(db_token)
         self.assertRaises(Exception, token.update,
                           {"yubico.tokenid": "vvbgidlg"})
+
+    def test_09_yubico_token_export(self):
+        token = init_token(param={'serial': "OATH12345678",
+                                  'type': 'yubico',
+                                  'otpkey': self.otpkey,
+                                  'yubico.tokenid': 'vvbgidlghkhgfbvetefnbrfibfctu'})
+        self.assertRaises(NotImplementedError, token.export_token)
+
+        # Clean up
+        token.token.delete()
+
+    def test_10_yubico_token_import(self):
+        token_data = [{
+            "serial": "123456",
+            "type": "yubico",
+            "description": "this token can't be imported",
+            "otpkey": self.otpkey,
+            "issuer": "privacyIDEA",
+        }]
+        before_import = get_tokens()
+        import_tokens(json.dumps(token_data))
+        after_import = get_tokens()
+        self.assertEqual(len(before_import), len(after_import))

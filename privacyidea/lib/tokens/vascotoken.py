@@ -184,3 +184,15 @@ class VascoTokenClass(TokenClass):
             else:
                 log.warning("VASCO token failed to authenticate, result: {!r}".format(result))
             return -1
+
+    def export_token(self) -> dict:
+        """
+        Export for this token is not supported.
+        """
+        raise NotImplementedError("Export for VASCO token is not supported.")
+
+    def import_token(self, token_information: dict):
+        """
+        Import for this token is not supported.
+        """
+        raise NotImplementedError("Import for VASCO token is not supported.")

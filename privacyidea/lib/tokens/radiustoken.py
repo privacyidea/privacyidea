@@ -566,3 +566,16 @@ class RadiusTokenClass(RemoteTokenClass):
         options.update({'radius_state': radius_state})
         options.update({'radius_message': radius_message})
         return result
+
+    def export_token(self) -> dict:
+        """
+        Export for this token is not supported.
+        """
+        raise NotImplementedError("Export for RADIUS token is not supported.")
+
+    def import_token(self, token_information: dict):
+        """
+        Import for this token is not supported.
+        """
+        raise NotImplementedError("Import for RADIUS token is not supported.")
+

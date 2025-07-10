@@ -2,12 +2,14 @@
 This test file tests the lib.tokens.u2ftoken
 This depends on lib.tokenclass
 """
+import json
+
 from .base import MyTestCase
 from privacyidea.lib.tokens.u2ftoken import U2fTokenClass
 from privacyidea.lib.tokens.u2f import (check_registration_data,
                                         parse_registration_data, url_decode,
                                         check_response, parse_response_data)
-from privacyidea.lib.token import init_token, remove_token, check_user_pass
+from privacyidea.lib.token import init_token, remove_token, check_user_pass, get_tokens, import_tokens
 from privacyidea.lib.user import User
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from privacyidea.lib.config import set_privacyidea_config
@@ -251,6 +253,28 @@ class U2FTokenTestCase(MyTestCase):
         with self.assertRaisesRegex(Exception,
                                     'The registration data is in a wrong format.'):
             parse_registration_data(reg_data)
+
+    def test_05_u2f_token_export(self):
+        token = init_token(param={'serial': "OATH12345678",
+                                  'type': 'u2f',
+                                  'otpkey': self.otpkey})
+        self.assertRaises(NotImplementedError, token.export_token)
+
+        # Clean up
+        token.token.delete()
+
+    def test_06_u2f_token_import(self):
+        token_data = [{
+            "serial": "123456",
+            "type": "u2f",
+            "description": "this token can't be imported",
+            "otpkey": self.otpkey,
+            "issuer": "privacyIDEA",
+        }]
+        before_import = get_tokens()
+        import_tokens(json.dumps(token_data))
+        after_import = get_tokens()
+        self.assertEqual(len(before_import), len(after_import))
 
 
 class MultipleU2FTokenTestCase(MyTestCase):

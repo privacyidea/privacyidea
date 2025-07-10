@@ -600,3 +600,15 @@ class U2fTokenClass(TokenClass):
                                  ]
                }
         return "fido.trusted-apps+json", res
+
+    def export_token(self) -> dict:
+        """
+        Export for this token is not supported.
+        """
+        raise NotImplementedError("Export for U2F token is not supported.")
+
+    def import_token(self, token_information: dict):
+        """
+        Import for this token is not supported.
+        """
+        raise NotImplementedError("Import for U2F token is not supported.")
