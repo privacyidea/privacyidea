@@ -11,7 +11,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 # Install Python, pip, build tools
-RUN apk add --no-cache python-${PYTHON_VERSION} py${PYTHON_VERSION}-pip build-base
+RUN apk add --no-cache python-${PYTHON_VERSION} py${PYTHON_VERSION}-pip build-base git
 
 RUN python3 -m venv /opt/privacyidea
 
@@ -27,9 +27,9 @@ COPY requirements.txt .
 
 RUN /opt/privacyidea/bin/pip install --no-cache-dir -r requirements.txt
 
-COPY README.rst MANIFEST.in setup.py ./
+COPY README.rst MANIFEST.in setup.py pyproject.toml ./
+COPY ./.git ./.git
 COPY ./deploy/ ./deploy
-COPY ./migrations/ ./migrations
 COPY ./tools/ ./tools
 COPY ./privacyidea/ ./privacyidea
 
