@@ -119,6 +119,50 @@ the same conditions.
    privacyIDEA system. We recommend to test your definitions thoroughly to assure
    your expected outcome.
 
+
+.. _condition_comparators:
+
+Comparators
+~~~~~~~~~~~
+
+In some conditions you need to use comparators to define how the condition should be checked. Generally the following
+comparators are available:
+
+    * ``==`` evaluates to true if both values are equal. Allows comparison of strings, integers, and dates in isoformat.
+      ``!==`` evaluates to true if this is not the case.
+    * ``>`` evaluates to true if the left value is greater than the right value. Allows comparison of integers and
+      dates in isoformat.
+    * ``<`` evaluates to true if the left value is less than the right value. Allows comparison of integers and dates
+      in isoformat.
+    * ``matches`` evaluates to true if the left value matches the right value as a regular expression. Allows
+      comparison of strings.
+      ``!matches`` evaluates to true if this is not the case.
+    * ``in`` evaluates to true if the left value is contained in the comma-separated list on the right.
+      Only allows strings.
+      ``!in`` evaluates to true if this is not the case.
+    * ``contains`` evaluates to true if the left value is a list containing the right value. Only allows strings.
+      ``!contains`` evaluates to true if this is not the case.
+    * ``string_contains`` evaluates to true if the left value (a string) contains the right value as a substring.
+      ``!string_contains`` evaluates to true if this is not the case.
+    * ``date_before`` evaluates to true if the left value is a date and time that occurs before the right value.
+      Both values must be a date in ISO format (e.g. "YYYY-MM-DD hh:mm:ss±hh:mm").
+    * ``date_after`` evaluates to true if the left value is a date and time that occurs after the right value.
+      Both values must be a date in ISO format (e.g. "YYYY-MM-DD hh:mm:ss±hh:mm").
+    * ``date_within_last`` evaluates to true if the left-hand value is a date and time that falls within the past time
+      interval specified by the right-hand value. ``!date_within_last`` evaluates to true if this is not the case.
+      The right-hand value must be a duration expressed as an integer
+      immediately followed by a time unit:
+        * ``y`` for years
+        * ``d`` for days
+        * ``h`` for hours
+        * ``m`` for minutes
+        * ``s`` for seconds
+      For example, "7d" means "within the last 7 days", "2h" means "within the last 2 hours".
+
+Usually, comparators should be wrapped in single quotes, e.g. ``'=='1000`` or ``'>'1000``. Due to backwards
+compatibility, the basic comparators (``==``, ``!=``, ``>``, ``<``) can also be used without quotes.
+
+
 Basic conditions
 ~~~~~~~~~~~~~~~~
 
@@ -134,19 +178,20 @@ sign::
 
 **count_auth**
 
-This can be '>100', '<99', or '=100', to trigger the action, if the tokeninfo field 'count_auth'
-is bigger than 100, less than 99 or exactly 100.
+This can be ``'>'100``, ``'<'99``, or ``'=='100``, to trigger the action, if the tokeninfo field 'count_auth'
+is bigger than 100, less than 99 or exactly 100. You can use all :ref:`condition_comparators` that support integers.
 
 **count_auth_fail**
 
-This can be '>100', '<99', or '=100', to trigger the action, if the difference between
+This can be ``'>'100``, ``'<'99``, or ``'=='100``, to trigger the action, if the difference between
 the tokeninfo field 'count_auth' and 'count_auth_success is bigger than 100,
-less than 99 or exactly 100.
+less than 99 or exactly 100. You can use all :ref:`condition_comparators` supporting integers.
 
 **count_auth_success**
 
-This can be '>100', '<99', or '=100', to trigger the action, if the tokeninfo field
-'count_auth_success' is bigger than 100, less than 99 or exactly 100.
+This can be ``'>'100``, ``'<'99``, or ``'=='100``, to trigger the action, if the tokeninfo field
+'count_auth_success' is bigger than 100, less than 99 or exactly 100. You can use all :ref:`condition_comparators`
+that support integers.
 
 **failcounter**
 
@@ -154,7 +199,8 @@ This is the ``failcount`` of the token. It is increased on failed authentication
 attempts. If it reaches ``max_failcount`` increasing will stop and the token is locked.
 See :term:`failcount`.
 
-The condition can be set to '>9', '=10', or '<5' and it will trigger the action accordingly.
+The condition can be set to ``'>'9``, ``'=='10``, or ``'<'5`` and it will trigger the action accordingly. You can use
+all :ref:`condition_comparators` that support integers.
 
 **detail_error_message**
 
@@ -216,8 +262,7 @@ notified.
 **otp_counter**
 
 The action is triggered, if the otp counter of a token has reached the given
-value. The value can either be an exact match or greater ('>100') or less ('<200')
-then a specified limit.
+value. You can use all :ref:`condition_comparators` that support integers, e.g. ``'<'100``.
 
 The administrator can use this condition to e.g. automatically enroll a new
 paper token for the user or notify the user that nearly all OTP values of a
@@ -300,29 +345,32 @@ Checks if the token is in the current validity period or not. Can be set to
 
 The tokeninfo condition can compare any arbitrary tokeninfo field against a
 fixed value. You can compare strings and integers. Integers are converted
-automatically. Valid compares are::
+automatically. You can use all :ref:`condition_comparators`, but ensure that the comparator supports the datatype of
+your values. Valid compares are::
 
-    myValue == 1000
-    myValue > 1000
-    myValue < 99
-    myTokenInfoField == EnrollmentState
-    myTokenInfoField < ABC
-    myTokenInfoField > abc
+    myValue '==' 1000
+    myValue '>' 1000
+    myValue '<' 99
+    myTokenInfoField '==' EnrollmentState
+    myTokenInfoField '<' ABC
+    myTokenInfoField '>' abc
+    myTokenInfoField 'date_after' 2017-10-12 10:00+02:00
+    myTokenInfoField 'date_within_last' 7d
 
 "myValue" and "myTokenInfoField" being any possible tokeninfo fields.
 
 Starting with version 2.20 you can also compare dates in the isoformat like
 that::
 
-    myValue > 2017-10-12T10:00+0200
-    myValue < 2020-01-01T00:00+0000
+    myValue '>' 2017-10-12T10:00+0200
+    myValue '<' 2020-01-01T00:00+0000
 
 In addition you can also use the tag ``{now}`` to compare to the current time
 *and* you can add offsets to ``{now}`` in seconds, minutes, hours or days::
 
-    myValue < {now}
-    myValue > {now}+10d
-    myValue < {now}-5h
+    myValue '<' {now}
+    myValue '>' {now}+10d
+    myValue '<' {now}-5h
 
 Which would match if the tokeninfo *myValue* is a date, which is later than
 10 days from now or it the tokeninfo *myValue* is a date, which is 5 more
@@ -357,14 +405,16 @@ This can be used to e.g. automatically enroll a token for the user if the
 user has no tokens left or to notify the administrator if
 the user has a certain amount of tokens assigned.
 
+You can use all :ref:`condition_comparators` that support integers, e.g. ``'=='0``.
+
 **counter**
 
 The counter condition can compare the value of any arbitrary event counter against a fixed
-value. Valid compares are::
+value. You can use all :ref:`condition_comparators` that support integers. Valid compares are::
 
-    myCounter == 1000
-    myCounter > 1000
-    myCounter < 1000
+    myCounter '==' 1000
+    myCounter '>' 1000
+    myCounter '<' 1000
 
 "myCounter" being any event counter set with the :ref:`counterhandler`.
 
@@ -417,14 +467,18 @@ The action is only triggered if the container has or has not at least one token.
 **container_info**
 
 The ``container_info`` condition can compare any arbitrary container info field against a fixed value. You can compare
-strings and integers. Integers are converted automatically. Valid compares are: ::
+strings, integers, and dates in isoformat. Integers and dates are converted automatically. You can use all
+:ref:`condition_comparators`, but ensure that the used comparator fits the data type of your values.
+Valid compares are: ::
 
-    myValue == 1000
-    myValue > 1000
-    myValue < 99
-    myInfoField == EnrollmentState
-    myInfoField < ABC
-    myInfoField > abc
+    myValue '==' 1000
+    myValue '>' 1000
+    myValue '<' 99
+    myInfoField '==' EnrollmentState
+    myInfoField '<' ABC
+    myInfoField '>' abc
+    myInfoField 'date_after' 2017-10-12 10:00+02:00
+    myInfoField 'date_within_last' 7d
 
 "myValue" and "myTokenInfoField" being any possible tokeninfo fields.
 

@@ -32,7 +32,7 @@ import logging
 import re
 from dataclasses import dataclass
 from functools import wraps
-from typing import Union
+from typing import Union, Optional
 
 from dateutil.parser import parse
 
@@ -287,7 +287,8 @@ def negate(func):
 # description.
 
 # This class enumerates all available primary comparators. For some of them also other names are accepted, but
-# these are the preferred names which are used internally.
+# these are the preferred names which are used internally.Additionally, only these are sued to generate the
+# COMPARATOR_DESCRIPTIONS dictionary.
 class PrimaryComparators:
     EQUALS = "equals"
     NOT_EQUALS = "!equals"
@@ -320,12 +321,20 @@ class PrimaryComparators:
         """
         return [v for k, v in vars(cls).items() if k.isupper()]
 
+    @classmethod
+    def get_all_int_comparators(cls) -> list[str]:
+        """
+        Return a list of all primary comparators that can be used for integer comparisons.
+        """
+        return [cls.EQUALS, cls.NOT_EQUALS, cls.SMALLER, cls.BIGGER]
+
 
 @dataclass
 class Comparator:
     name: str
     function: callable
     description: str
+    type_restricted: bool = False
 
 
 # Comparator objects
@@ -334,46 +343,50 @@ equals = Comparator(PrimaryComparators.EQUALS, _compare_equality,
 not_equals = Comparator(PrimaryComparators.NOT_EQUALS, negate(_compare_equality),
                         _("False if the value of the left attribute is equal to the right value"))
 contains = Comparator(PrimaryComparators.CONTAINS, _compare_contains,
-                      _("True if the value of the left attribute contains the right value"))
+                      _("True if the list of the left attribute contains the right value"), True)
 not_contains = Comparator(PrimaryComparators.NOT_CONTAINS, negate(_compare_contains),
-                          _("False if the value of the left attribute contains the right value"))
+                          _("False if the list of the left attribute contains the right value"), True)
 matches = Comparator(PrimaryComparators.MATCHES, _compare_matches,
                      _("True if the value of the left attribute completely matches the given regular expression "
-                       "pattern on the right"))
+                       "pattern on the right"), True)
 not_matches = Comparator(PrimaryComparators.NOT_MATCHES, negate(_compare_matches),
                          _("False if the value of the left attribute completely matches the given regular expression "
-                           "pattern on the right"))
+                           "pattern on the right"), True)
 in_ = Comparator(PrimaryComparators.IN, _compare_in,
-                 _("True if the value of the left attribute is contained in the comma-separated values on the right"))
+                 _("True if the value of the left attribute is contained in the comma-separated list on the right"),
+                 True)
 not_in = Comparator(PrimaryComparators.NOT_IN, negate(_compare_in),
-                    _("False if the value of the left attribute is contained in the comma-separated values on the right"))
+                    _("False if the value of the left attribute is contained in the comma-separated list on the right"),
+                    True)
 smaller = Comparator(PrimaryComparators.SMALLER, _compare_smaller,
-                     _("True if the integer value of the left attribute is smaller than the right integer value"))
+                     _("True if the integer value of the left attribute is smaller than the right integer value"),
+                     True)
 smaller_any = Comparator("<_any", _compare_smaller_any, "")
-less_equal = Comparator("<=", _compare_less_equal, "")
+less_equal = Comparator("<=", _compare_less_equal, "", True)
 bigger = Comparator(PrimaryComparators.BIGGER, _compare_bigger,
-                    _("True if the integer value of the left attribute is bigger than the right integer value"))
+                    _("True if the integer value of the left attribute is bigger than the right integer value"), True)
 bigger_any = Comparator(">_any", _compare_bigger_any, "")
-greater_equal = Comparator(">=", _compare_greater_equal, "")
+greater_equal = Comparator(">=", _compare_greater_equal, "", True)
 date_before = Comparator(PrimaryComparators.DATE_BEFORE, _compare_date_before,
                          _("True if the date and time of the left attribute is before the date and time of the right "
-                           "attribute"))
+                           "attribute"), True)
 date_after = Comparator(PrimaryComparators.DATE_AFTER, _compare_date_after,
                         _("True if the date and time of the left attribute is after the date and time of the right "
-                          "attribute"))
+                          "attribute"), True)
 date_within_last = Comparator(PrimaryComparators.DATE_WITHIN_LAST, _compare_date_within_last,
                               _("True if the date and time of the left attribute is within the past duration of the "
                                 "right attribute. The right attribute should be a duration such as '1y', '7d', '6h', "
-                                "'15m'."))
+                                "'15m'."), True)
 date_not_within_last = Comparator(PrimaryComparators.DATE_NOT_WITHIN_LAST, negate(_compare_date_within_last),
                                   _("False if the date and time of the left attribute is within the past duration of "
                                     "the right attribute. The right attribute should be a duration such as '1y', '7d', "
-                                    "'6h', '15m'."))
+                                    "'6h', '15m'."), True)
 string_contains = Comparator(PrimaryComparators.STRING_CONTAINS, _compare_string_contains,
-                             _("True if the value of the left attribute contains the right value (case-insensitive)"))
+                             _("True if the value of the left attribute contains the right value (case-insensitive)"),
+                             True)
 string_not_contains = Comparator(PrimaryComparators.STRING_NOT_CONTAINS, negate(_compare_string_contains),
                                  _("False if the value of the left attribute contains the right value "
-                                   "(case-insensitive)"))
+                                   "(case-insensitive)"), True)
 
 # Map different comparator names to the corresponding Comparator objects.
 COMPARATORS = {PrimaryComparators.EQUALS: equals, "=": equals, "==": equals, "==_any": equals, "=_any": equals,
@@ -398,6 +411,14 @@ COMPARATORS = {PrimaryComparators.EQUALS: equals, "=": equals, "==": equals, "==
 # This dictionary connects comparators to their human-readable (and translated) descriptions.
 COMPARATOR_DESCRIPTIONS = {comparator: COMPARATORS[comparator].description for comparator in
                            PrimaryComparators.get_all_comparators()}
+
+def get_all_type_restricted_comparators() -> list[str]:
+    """
+    Return a list of all type-restricted comparators.
+    Type-restricted comparators are those that only work with specific data types, such as integers or strings.
+    The type conversion is done automatically by the compare function.
+    """
+    return [comparator.name for comparator in COMPARATORS.values() if comparator.type_restricted]
 
 
 def compare_values(left, comparator_name: str, right) -> bool:
@@ -438,43 +459,60 @@ def compare_time(condition: str, time_value: Union[datetime.datetime, str]) -> b
 
 @dataclass
 class Condition:
+    left_value: str
     comparator: str
-    value: str
+    right_value: str
 
 
-def parse_condition(condition: str) -> Union[Condition, None]:
+def parse_condition(condition: str, data_type: Optional[str] = None) -> Union[Condition, None]:
     """
-    Extracts the comparator and the condition value from a condition string.
-    The condition can start with '<', '=' or '>' and contain a value like:
-    <100
-    >1000
-    =123
-    123 is interpreted as =123
+    Extracts the comparator and the condition values from a condition string.
+    The condition can have the following structures:
+        * "value comparator value", e.g. "registration_state == 'registered'"
+        * "comparator value", e.g. "<1000"
+        * "value", e.g. "123" (interpreted as "== 123")
 
     :param condition: A string like <100
-    :return: A Condition object with comparator and value
+    :param data_type: The expected datatype of the values to only check for valid comparators
+    :return: A Condition object with comparator and values or None in case of an empty condition string.
     """
-    condition = condition.replace(" ", "")
     if not condition:
         # No condition to match!
         log.debug("Empty condition provided.")
         return None
 
-    try:
-        if condition[0:2] in ["==", "!=", ">=", "=>", "<=", "=<"]:
-            comparator = condition[0:2]
-            condition_value = condition[2:]
-        elif condition[0] in ["=", "<", ">"]:
-            comparator = condition[0]
-            condition_value = condition[1:]
-        else:
-            # no comparator available: use equals as default
-            comparator = PrimaryComparators.EQUALS
-            condition_value = condition
-    except IndexError:
-        log.warning(f"Invalid condition {condition}.")
-        return None
-    return Condition(comparator, condition_value)
+    # For consistency all comparators should be quoted, but we also need to support the old unquoted comparators
+    if data_type == "int":
+        # Only check for comparators that can handle integers
+        primary_comparators = [f"'{comparator}'" for comparator in PrimaryComparators.get_all_int_comparators()]
+    else:
+        primary_comparators = [f"'{comparator}'" for comparator in PrimaryComparators.get_all_comparators()]
+    basic_comparators = ["==", "!=", "<=", "=<", ">=", "=>", "<", ">", "="]
+    basic_quoted_comparators = [f"'{comparator}'" for comparator in basic_comparators]
+    allowed_comparators = primary_comparators + basic_quoted_comparators + basic_comparators
+    for tmp_comparator in allowed_comparators:
+        if tmp_comparator not in condition:
+            continue
+        values = condition.split(tmp_comparator)
+        if len(values) > 0:
+            if len(values) == 2:
+                # full condition
+                left_value, right_value = [x.strip() for x in values]
+            elif len(values) == 1 and condition.endswith(values[0]):
+                # half condition starting with a comparator
+                left_value = ""
+                right_value = values[0].strip()
+            else:
+                continue
+
+            if tmp_comparator.startswith("'") and tmp_comparator.endswith("'"):
+                # remove quotes
+                comparator = tmp_comparator[1:-1]
+            else:
+                comparator = tmp_comparator
+            return Condition(left_value, comparator, right_value)
+    # No comparator found, so we assume it is an equals comparator and the full condition is the right value
+    return Condition("", PrimaryComparators.EQUALS, condition.strip())
 
 
 def compare_ints(condition: str, value: Union[str, int]) -> bool:
@@ -482,26 +520,26 @@ def compare_ints(condition: str, value: Union[str, int]) -> bool:
     This function first extracts the comparator and the right-hand side value from the condition,
     and then performs the comparison. Both values are expected to be parsable as integers.
 
-    The condition can start with '<', '=' or '>' and contain a number like:
+    The condition can start with '<', '==', '!=' or '>' and contain a number like:
     <100
     >1000
-    =123
-    123 is interpreted as =123
+    ==123
+    123 is interpreted as ==123
 
     :param condition: A condition as string like "<100"
     :param value: the value to check
     :return: True if condition is true, False otherwise and on any error
     """
-    condition = parse_condition(condition)
+    condition = parse_condition(condition, data_type="int")
     if not condition:
         return False
 
     # convert both values to int
     try:
         value = int(value)
-        condition_value = int(condition.value)
+        condition_value = int(condition.right_value)
     except ValueError:
-        log.debug(f"Cannot convert values to integers: condition value '{condition.value}', value '{value}'")
+        log.debug(f"Cannot convert values to integers: condition value '{condition.right_value}', value '{value}'")
         return False
 
     # Compare the values, but fail silent
@@ -525,13 +563,12 @@ def compare_generic(condition: str, key_method: callable, warning: str) -> bool:
     :param warning: A warning message to be written to the log file in case the condition is not parsable.
     :return: True or False
     """
-    key = right_value = None
-    for comparator in ["==", ">", "<"]:
-        if len(condition.split(comparator)) == 2:
-            key, right_value = [x.strip() for x in condition.split(comparator)]
-            break
+    condition = parse_condition(condition)
+    key = condition.left_value
+    comparator = condition.comparator
+    right_value = condition.right_value
 
-    if right_value is None or not key:
+    if right_value is None or not key or not comparator:
         # There is a condition, but we do not know it!
         log.warning(warning.format(condition))
         raise CompareError("Condition not parsable.")
@@ -541,32 +578,39 @@ def compare_generic(condition: str, key_method: callable, warning: str) -> bool:
         log.debug(f"Key {key} not found.")
         return False
 
-    # Try to convert to ints
-    try:
-        int1 = int(left_value)
-        int2 = int(right_value)
-        # We only converts BOTH values if possible
-        left_value = int1
-        right_value = int2
-    except Exception:
-        log.debug(f"Convert '{left_value}' and/or '{right_value}' to integers failed.")
+    # We do not know the type, hence we use the generic comparison without type conversion in the comparator function
+    if comparator in ["<", ">"]:
+        comparator += "_any"
 
-    if not isinstance(left_value, int) and not isinstance(right_value, int):
-        # try to convert both values to a timestamp
+    # Datatype conversion
+    if comparator not in get_all_type_restricted_comparators():
+        # A comparator without explicit type restriction, so we try to convert both values
+        # Try to convert to ints
         try:
-            date1 = parse(left_value)
-            date2 = parse(right_value)
-            if date1 and date2:
-                # Only use dates, if both values can be converted to dates
-                left_value = date1
-                right_value = date2
+            int1 = int(left_value)
+            int2 = int(right_value)
+            # We only converts BOTH values if possible
+            left_value = int1
+            right_value = int2
         except Exception:
-            log.debug(f"Convert '{left_value}' or '{right_value}' to datetime objects failed.")
+            log.debug(f"Convert '{left_value}' and/or '{right_value}' to integers failed.")
+
+        if not isinstance(left_value, int) and not isinstance(right_value, int):
+            # try to convert both values to a timestamp
+            try:
+                date1 = parse(left_value)
+                date2 = parse(right_value)
+                if date1 and date2:
+                    # Only use dates, if both values can be converted to dates
+                    left_value = date1
+                    right_value = date2
+            except Exception:
+                log.debug(f"Convert '{left_value}' or '{right_value}' to datetime objects failed.")
 
     # Compare the values, but fail silent
     try:
         # append "_any" to the comparator to indicate that we want to compare any type of value
-        result = compare_values(left_value, f"{comparator}_any", right_value)
+        result = compare_values(left_value, comparator, right_value)
     except CompareError as error:   # pragma no cover
         log.debug(f"Error during comparison: {error}")
         return False

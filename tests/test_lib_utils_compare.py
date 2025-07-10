@@ -145,7 +145,8 @@ class UtilsCompareTestCase(MyTestCase):
 
         # Invalid date formats
         self.assertRaises(CompareError, compare_values, "12:00", PrimaryComparators.DATE_AFTER, condition_date_str)
-        self.assertRaises(CompareError, compare_values, true_date_str, PrimaryComparators.DATE_AFTER, "2025/01/01 12:00")
+        self.assertRaises(CompareError, compare_values, true_date_str, PrimaryComparators.DATE_AFTER,
+                          "2025/01/01 12:00")
         self.assertRaises(CompareError, compare_values, true_date_str, PrimaryComparators.DATE_AFTER, 2025)
         self.assertRaises(CompareError, compare_values, 102, PrimaryComparators.DATE_AFTER, condition_date_str)
         self.assertRaises(CompareError, compare_values, "2025-01-01 12:00", PrimaryComparators.DATE_AFTER,
@@ -191,7 +192,8 @@ class UtilsCompareTestCase(MyTestCase):
 
         # Invalid date formats
         self.assertRaises(CompareError, compare_values, "12:00", PrimaryComparators.DATE_BEFORE, condition_date_str)
-        self.assertRaises(CompareError, compare_values, true_date_str, PrimaryComparators.DATE_BEFORE, "2025/01/01 12:00")
+        self.assertRaises(CompareError, compare_values, true_date_str, PrimaryComparators.DATE_BEFORE,
+                          "2025/01/01 12:00")
         self.assertRaises(CompareError, compare_values, true_date_str, PrimaryComparators.DATE_BEFORE, 2025)
         self.assertRaises(CompareError, compare_values, 102, PrimaryComparators.DATE_BEFORE, condition_date_str)
         self.assertRaises(CompareError, compare_values, "2025-01-01 12:00", PrimaryComparators.DATE_BEFORE,
@@ -207,11 +209,14 @@ class UtilsCompareTestCase(MyTestCase):
         self.assertFalse(
             compare_values(now - datetime.timedelta(days=370, hours=1), PrimaryComparators.DATE_WITHIN_LAST, "1y"))
         self.assertTrue(compare_values(now - datetime.timedelta(hours=48), PrimaryComparators.DATE_WITHIN_LAST, "7d"))
-        self.assertFalse(compare_values(now - datetime.timedelta(days=7, hours=1), PrimaryComparators.DATE_WITHIN_LAST, "7d"))
+        self.assertFalse(
+            compare_values(now - datetime.timedelta(days=7, hours=1), PrimaryComparators.DATE_WITHIN_LAST, "7d"))
         self.assertTrue(compare_values(now - datetime.timedelta(minutes=50), PrimaryComparators.DATE_WITHIN_LAST, "1h"))
         self.assertFalse(compare_values(now - datetime.timedelta(days=1), PrimaryComparators.DATE_WITHIN_LAST, "1h"))
-        self.assertTrue(compare_values(now - datetime.timedelta(minutes=10), PrimaryComparators.DATE_WITHIN_LAST, "30m"))
-        self.assertFalse(compare_values(now - datetime.timedelta(minutes=31), PrimaryComparators.DATE_WITHIN_LAST, "30m"))
+        self.assertTrue(
+            compare_values(now - datetime.timedelta(minutes=10), PrimaryComparators.DATE_WITHIN_LAST, "30m"))
+        self.assertFalse(
+            compare_values(now - datetime.timedelta(minutes=31), PrimaryComparators.DATE_WITHIN_LAST, "30m"))
 
         # Test with string
         now = datetime.datetime.now(datetime.timezone.utc)
@@ -219,20 +224,25 @@ class UtilsCompareTestCase(MyTestCase):
         self.assertTrue(
             compare_values((now - datetime.timedelta(days=120)).isoformat(), PrimaryComparators.DATE_WITHIN_LAST, "3y"))
         self.assertFalse(
-            compare_values((now - datetime.timedelta(days=370, hours=1)).isoformat(), PrimaryComparators.DATE_WITHIN_LAST,
+            compare_values((now - datetime.timedelta(days=370, hours=1)).isoformat(),
+                           PrimaryComparators.DATE_WITHIN_LAST,
                            "1y"))
         self.assertTrue(
             compare_values((now - datetime.timedelta(hours=48)).isoformat(), PrimaryComparators.DATE_WITHIN_LAST, "7d"))
         self.assertFalse(
-            compare_values((now - datetime.timedelta(days=7, hours=1)).isoformat(), PrimaryComparators.DATE_WITHIN_LAST, "7d"))
+            compare_values((now - datetime.timedelta(days=7, hours=1)).isoformat(), PrimaryComparators.DATE_WITHIN_LAST,
+                           "7d"))
         self.assertTrue(
-            compare_values((now - datetime.timedelta(minutes=50)).isoformat(), PrimaryComparators.DATE_WITHIN_LAST, "1h"))
+            compare_values((now - datetime.timedelta(minutes=50)).isoformat(), PrimaryComparators.DATE_WITHIN_LAST,
+                           "1h"))
         self.assertFalse(
             compare_values((now - datetime.timedelta(days=1)).isoformat(), PrimaryComparators.DATE_WITHIN_LAST, "1h"))
         self.assertTrue(
-            compare_values((now - datetime.timedelta(minutes=10)).isoformat(), PrimaryComparators.DATE_WITHIN_LAST, "30m"))
+            compare_values((now - datetime.timedelta(minutes=10)).isoformat(), PrimaryComparators.DATE_WITHIN_LAST,
+                           "30m"))
         self.assertFalse(
-            compare_values((now - datetime.timedelta(minutes=31)).isoformat(), PrimaryComparators.DATE_WITHIN_LAST, "30m"))
+            compare_values((now - datetime.timedelta(minutes=31)).isoformat(), PrimaryComparators.DATE_WITHIN_LAST,
+                           "30m"))
 
         # Missing timezone info assumes UTC
         self.assertTrue(compare_values(now.replace(tzinfo=None).isoformat(), PrimaryComparators.DATE_WITHIN_LAST, "1h"))
@@ -245,41 +255,55 @@ class UtilsCompareTestCase(MyTestCase):
         # Test with datetime object
         now = datetime.datetime.now(datetime.timezone.utc)
         self.assertFalse(compare_values(now, PrimaryComparators.DATE_NOT_WITHIN_LAST, "1h"))
-        self.assertFalse(compare_values(now - datetime.timedelta(days=120), PrimaryComparators.DATE_NOT_WITHIN_LAST, "3y"))
+        self.assertFalse(
+            compare_values(now - datetime.timedelta(days=120), PrimaryComparators.DATE_NOT_WITHIN_LAST, "3y"))
         self.assertTrue(
             compare_values(now - datetime.timedelta(days=370, hours=1), PrimaryComparators.DATE_NOT_WITHIN_LAST, "1y"))
-        self.assertFalse(compare_values(now - datetime.timedelta(hours=48), PrimaryComparators.DATE_NOT_WITHIN_LAST, "7d"))
+        self.assertFalse(
+            compare_values(now - datetime.timedelta(hours=48), PrimaryComparators.DATE_NOT_WITHIN_LAST, "7d"))
         self.assertTrue(
             compare_values(now - datetime.timedelta(days=7, hours=1), PrimaryComparators.DATE_NOT_WITHIN_LAST, "7d"))
-        self.assertFalse(compare_values(now - datetime.timedelta(minutes=50), PrimaryComparators.DATE_NOT_WITHIN_LAST, "1h"))
+        self.assertFalse(
+            compare_values(now - datetime.timedelta(minutes=50), PrimaryComparators.DATE_NOT_WITHIN_LAST, "1h"))
         self.assertTrue(compare_values(now - datetime.timedelta(days=1), PrimaryComparators.DATE_NOT_WITHIN_LAST, "1h"))
-        self.assertFalse(compare_values(now - datetime.timedelta(minutes=10), PrimaryComparators.DATE_NOT_WITHIN_LAST, "30m"))
-        self.assertTrue(compare_values(now - datetime.timedelta(minutes=31), PrimaryComparators.DATE_NOT_WITHIN_LAST, "30m"))
+        self.assertFalse(
+            compare_values(now - datetime.timedelta(minutes=10), PrimaryComparators.DATE_NOT_WITHIN_LAST, "30m"))
+        self.assertTrue(
+            compare_values(now - datetime.timedelta(minutes=31), PrimaryComparators.DATE_NOT_WITHIN_LAST, "30m"))
 
         # Test with string
         now = datetime.datetime.now(datetime.timezone.utc)
         self.assertFalse(compare_values(now.isoformat(), PrimaryComparators.DATE_NOT_WITHIN_LAST, "1h"))
         self.assertFalse(
-            compare_values((now - datetime.timedelta(days=120)).isoformat(), PrimaryComparators.DATE_NOT_WITHIN_LAST, "3y"))
+            compare_values((now - datetime.timedelta(days=120)).isoformat(), PrimaryComparators.DATE_NOT_WITHIN_LAST,
+                           "3y"))
         self.assertTrue(
-            compare_values((now - datetime.timedelta(days=370, hours=1)).isoformat(), PrimaryComparators.DATE_NOT_WITHIN_LAST,
+            compare_values((now - datetime.timedelta(days=370, hours=1)).isoformat(),
+                           PrimaryComparators.DATE_NOT_WITHIN_LAST,
                            "1y"))
         self.assertFalse(
-            compare_values((now - datetime.timedelta(hours=48)).isoformat(), PrimaryComparators.DATE_NOT_WITHIN_LAST, "7d"))
+            compare_values((now - datetime.timedelta(hours=48)).isoformat(), PrimaryComparators.DATE_NOT_WITHIN_LAST,
+                           "7d"))
         self.assertTrue(
-            compare_values((now - datetime.timedelta(days=7, hours=1)).isoformat(), PrimaryComparators.DATE_NOT_WITHIN_LAST,
+            compare_values((now - datetime.timedelta(days=7, hours=1)).isoformat(),
+                           PrimaryComparators.DATE_NOT_WITHIN_LAST,
                            "7d"))
         self.assertFalse(
-            compare_values((now - datetime.timedelta(minutes=50)).isoformat(), PrimaryComparators.DATE_NOT_WITHIN_LAST, "1h"))
+            compare_values((now - datetime.timedelta(minutes=50)).isoformat(), PrimaryComparators.DATE_NOT_WITHIN_LAST,
+                           "1h"))
         self.assertTrue(
-            compare_values((now - datetime.timedelta(days=1)).isoformat(), PrimaryComparators.DATE_NOT_WITHIN_LAST, "1h"))
+            compare_values((now - datetime.timedelta(days=1)).isoformat(), PrimaryComparators.DATE_NOT_WITHIN_LAST,
+                           "1h"))
         self.assertFalse(
-            compare_values((now - datetime.timedelta(minutes=10)).isoformat(), PrimaryComparators.DATE_NOT_WITHIN_LAST, "30m"))
+            compare_values((now - datetime.timedelta(minutes=10)).isoformat(), PrimaryComparators.DATE_NOT_WITHIN_LAST,
+                           "30m"))
         self.assertTrue(
-            compare_values((now - datetime.timedelta(minutes=31)).isoformat(), PrimaryComparators.DATE_NOT_WITHIN_LAST, "30m"))
+            compare_values((now - datetime.timedelta(minutes=31)).isoformat(), PrimaryComparators.DATE_NOT_WITHIN_LAST,
+                           "30m"))
 
         # Missing timezone info assumes UTC
-        self.assertFalse(compare_values(now.replace(tzinfo=None).isoformat(), PrimaryComparators.DATE_NOT_WITHIN_LAST, "1h"))
+        self.assertFalse(
+            compare_values(now.replace(tzinfo=None).isoformat(), PrimaryComparators.DATE_NOT_WITHIN_LAST, "1h"))
 
         # Invalid formats
         self.assertRaises(CompareError, compare_values, "1. Juli 2025", PrimaryComparators.DATE_NOT_WITHIN_LAST, "1h")
@@ -307,23 +331,35 @@ class UtilsCompareTestCase(MyTestCase):
         self.assertTrue(compare_ints("100", 100))
         self.assertTrue(compare_ints("=100", 100))
         self.assertTrue(compare_ints(" = 100 ", 100))
+        self.assertTrue(compare_ints("==100", 100))
+        self.assertFalse(compare_ints("== 100", 99))
+        self.assertTrue(compare_ints("'=='100", 100))
+        self.assertFalse(compare_ints("'==' 100", 99))
+        self.assertTrue(compare_ints("'equals'100", 100))
+        self.assertFalse(compare_ints("'equals' 100", 99))
 
         self.assertFalse(compare_ints("100 ", 99))
 
         self.assertTrue(compare_ints(">100", 101))
+        self.assertTrue(compare_ints("'>'100", 101))
         self.assertFalse(compare_ints(">100", 100))
         self.assertFalse(compare_ints(">100", 1))
+        self.assertFalse(compare_ints("'>'100", 1))
 
         self.assertTrue(compare_ints("<100", 10))
+        self.assertTrue(compare_ints("'<'100", 10))
         self.assertTrue(compare_ints("  <100", 10))
         self.assertFalse(compare_ints("<100", 1000))
         self.assertFalse(compare_ints("<100", 100))
+        self.assertFalse(compare_ints("'<'100", 100))
 
         # There are invalid conditions, which should not raise an exception
         # An empty condition will result in False
         self.assertFalse(compare_ints("", 100))
         # An invalid condition, which misses a compare-value, will result in false
         self.assertFalse(compare_ints(">", 100))
+        # primary comparators can not be parsed without quotes
+        self.assertFalse(compare_ints("equals 100", 100))
 
         # Test new comparators
         self.assertTrue(compare_ints('>=100', 100))
@@ -335,14 +371,16 @@ class UtilsCompareTestCase(MyTestCase):
         self.assertFalse(compare_ints('<= 100', 101))
 
         self.assertTrue(compare_ints('!=100', 99))
+        self.assertTrue(compare_ints("'!equals'100", 99))
         self.assertFalse(compare_ints('!= 100', 100))
-
-        self.assertTrue(compare_ints('==100', 100))
+        self.assertFalse(compare_ints("'!equals' 100", 100))
         self.assertFalse(compare_ints('== 100', 99))
 
         # Unknown comparator causes invalid value which evaluates always to False
         self.assertFalse(compare_ints('!~100', 100))
         self.assertFalse(compare_ints('===100', 100))
+        # comparator that does not support integers
+        self.assertFalse(compare_ints("'string_contains' 100", 100))
 
     def test_15_compare_generic_condition(self):
         def mock_attribute(key):
@@ -355,23 +393,53 @@ class UtilsCompareTestCase(MyTestCase):
                         hours=10)).isoformat(),
                     "past": "2017/04/20 11:30+0200",
                     "invalid_date": "16. März 2020",
-                    "text": "ABC"}
+                    "text": "ABC",
+                    "list": ["123", "ABC", "XYZ"]}
             return attr.get(key)
 
         self.assertTrue(compare_generic("a<100", mock_attribute, "Error {0!s}"))
         self.assertTrue(compare_generic("a <100", mock_attribute, "Error {0!s}"))
+        self.assertTrue(compare_generic("a '<' 100", mock_attribute, "Error {0!s}"))
         self.assertTrue(compare_generic("a > 1", mock_attribute, "Error {0!s}"))
+        self.assertTrue(compare_generic("a '>' 1", mock_attribute, "Error {0!s}"))
         self.assertTrue(compare_generic("b==100", mock_attribute, "Error {0!s}"))
+        self.assertTrue(compare_generic("b'=='100", mock_attribute, "Error {0!s}"))
+        self.assertTrue(compare_generic("b 'equals' 100", mock_attribute, "Error {0!s}"))
+        self.assertTrue(compare_generic("b!=200", mock_attribute, "Error {0!s}"))
+        self.assertTrue(compare_generic("b'!='200", mock_attribute, "Error {0!s}"))
+        self.assertTrue(compare_generic("b '!equals' 200", mock_attribute, "Error {0!s}"))
         self.assertTrue(compare_generic("e == 1000", mock_attribute, "Error {0!s}"))
         self.assertTrue(compare_generic("text < ABD", mock_attribute, "Error {0!s}"))
+        self.assertTrue(compare_generic("text '<' ABD", mock_attribute, "Error {0!s}"))
         self.assertTrue(compare_generic("text == ABC", mock_attribute, "Error {0!s}"))
+        self.assertTrue(compare_generic("text 'equals' ABC", mock_attribute, "Error {0!s}"))
+        self.assertTrue(compare_generic("text 'string_contains' B", mock_attribute, "Error {0!s}"))
+        self.assertTrue(compare_generic("text '!string_contains' D", mock_attribute, "Error {0!s}"))
+        self.assertTrue(compare_generic("text 'in' 123,ABC,XYZ", mock_attribute, "Error {0!s}"))
+        self.assertTrue(compare_generic("text '!in' 123,ABCD,XYZ", mock_attribute, "Error {0!s}"))
+        self.assertTrue(compare_generic("text 'matches' [A-Z]{3}", mock_attribute, "Error {0!s}"))
+        self.assertTrue(compare_generic("text '!matches' [1-9]{3}", mock_attribute, "Error {0!s}"))
+        self.assertTrue(compare_generic("list 'contains' ABC", mock_attribute, "Error {0!s}"))
+        self.assertTrue(compare_generic("list '!contains' AB", mock_attribute, "Error {0!s}"))
 
         self.assertFalse(compare_generic("a== 100", mock_attribute, "Error {0!s}"))
+        self.assertFalse(compare_generic("a '==' 100", mock_attribute, "Error {0!s}"))
+        self.assertFalse(compare_generic("a'equals'100", mock_attribute, "Error {0!s}"))
         self.assertFalse(compare_generic("b>100", mock_attribute, "Error {0!s}"))
         self.assertFalse(compare_generic("c < 500", mock_attribute, "Error {0!s}"))
         self.assertFalse(compare_generic("c <500", mock_attribute, "Error {0!s}"))
+        self.assertFalse(compare_generic("c '<' 500", mock_attribute, "Error {0!s}"))
         self.assertFalse(compare_generic("text > ABD", mock_attribute, "Error {0!s}"))
+        self.assertFalse(compare_generic("text '>' ABD", mock_attribute, "Error {0!s}"))
         self.assertFalse(compare_generic("text == ABCD", mock_attribute, "Error {0!s}"))
+        self.assertFalse(compare_generic("text 'string_contains' D", mock_attribute, "Error {0!s}"))
+        self.assertFalse(compare_generic("text '!string_contains' A", mock_attribute, "Error {0!s}"))
+        self.assertFalse(compare_generic("text 'in' 123,ABCD,XYZ", mock_attribute, "Error {0!s}"))
+        self.assertFalse(compare_generic("text '!in' 123,ABC,XYZ", mock_attribute, "Error {0!s}"))
+        self.assertFalse(compare_generic("text '!matches' [A-Z]{3}", mock_attribute, "Error {0!s}"))
+        self.assertFalse(compare_generic("text 'matches' [1-9]{3}", mock_attribute, "Error {0!s}"))
+        self.assertFalse(compare_generic("list '!contains' ABC", mock_attribute, "Error {0!s}"))
+        self.assertFalse(compare_generic("list 'contains' AB", mock_attribute, "Error {0!s}"))
 
         # Wrong condition: key does not exist
         self.assertFalse(compare_generic("d==1", mock_attribute, "Error {0!s}"))
@@ -388,7 +456,11 @@ class UtilsCompareTestCase(MyTestCase):
 
         # compare dates
         self.assertTrue(compare_generic("now > 2017-01-01T10:00+0200", mock_attribute, "Error {0!s}"))
-        self.assertFalse(compare_generic("now<2017-01-01T10:00+0200", mock_attribute, "Error {0!s}"))
+        self.assertTrue(compare_generic("now 'date_after' 2017-01-01 10:00+02:00", mock_attribute, "Error {0!s}"))
+        self.assertTrue(compare_generic("now 'date_within_last' 2h", mock_attribute, "Error {0!s}"))
+        self.assertTrue(compare_generic("past '!date_within_last' 2h", mock_attribute, "Error {0!s}"))
+        self.assertFalse(compare_generic("now<2017-01-01 10:00+02:00", mock_attribute, "Error {0!s}"))
+        self.assertFalse(compare_generic("now 'date_before' 2017-01-01T10:00+02:00", mock_attribute, "Error {0!s}"))
         # The timestamp in 10 hours is bigger than the current time
         self.assertTrue(
             compare_generic(f"now+10h>{datetime.datetime.now(datetime.timezone.utc).isoformat()}", mock_attribute,
@@ -396,6 +468,8 @@ class UtilsCompareTestCase(MyTestCase):
 
         self.assertFalse(compare_generic(f"past > {datetime.datetime.now(datetime.timezone.utc).isoformat()}",
                                          mock_attribute, "Error {0!s}"))
+        self.assertFalse(compare_generic(f"past 'date_within_last' 1s", mock_attribute, "Error {0!s}"))
+        self.assertFalse(compare_generic(f"now '!date_within_last' 1h", mock_attribute, "Error {0!s}"))
 
         past_date = datetime.datetime(2017, 4, 20, 9, 30, tzinfo=datetime.timezone.utc).isoformat()
         self.assertTrue(compare_generic(f"past=={past_date}", mock_attribute, "Error {0!s}"))
