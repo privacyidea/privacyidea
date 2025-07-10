@@ -87,7 +87,8 @@ doc = [
     "Pallets-Sphinx-Themes",
     "Sphinx",
     "sphinxcontrib-httpdomain",
-    "sphinxcontrib-spelling"
+    "sphinxcontrib-spelling",
+    "setuptools-scm"
 ]
 postgres = [
     "psycopg2"
