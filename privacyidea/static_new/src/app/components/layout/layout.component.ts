@@ -1,3 +1,4 @@
+import { NgClass } from '@angular/common';
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { AuthService } from '../../services/auth/auth.service';
@@ -14,6 +15,7 @@ import { HeaderSelfServiceComponent } from './header/header.serlf-service.compon
     HeaderComponent,
     FooterComponent,
     HeaderSelfServiceComponent,
+    NgClass,
   ],
   styleUrl: './layout.component.scss',
 })

@@ -1,4 +1,8 @@
-<div aria-label="Layout" class="layout">
+<div
+  aria-label="Layout"
+  [ngClass]="
+    !this.authService.isSelfServiceUser() ? 'layout' : 'layout-self-service'
+  ">
   <header aria-label="Header">
     @if (!this.authService.isSelfServiceUser()) {
       <app-header></app-header>

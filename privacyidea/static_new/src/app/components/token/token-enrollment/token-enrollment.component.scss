@@ -6,7 +6,7 @@
   // padding-top: 0;
 
   width: 47.5rem;
-  max-height: 85vh; // TODO: Use calculated value based on viewport height
+  max-height: var(--content-height);
   overflow: auto;
 }
 
