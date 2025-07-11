@@ -1,7 +1,7 @@
 import logging
 from testfixtures import LogCapture
 
-from privacyidea.lib.container import create_container_template
+from privacyidea.lib.container import create_container_template, get_template_obj
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.policies.policy_conditions import ConditionSection, ConditionHandleMissingData
 from privacyidea.lib.utils.compare import Comparators
@@ -959,3 +959,4 @@ class APIPolicyConditionTestCase(MyApiTestCase):
 
         delete_policy("policy")
         delete_policy("policy_token")
+        get_template_obj("test").delete()

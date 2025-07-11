@@ -2805,14 +2805,14 @@ class PolicyConditionClassTestCase(MyTestCase):
 
         # Request data not available
         data = condition.get_data_from_dict(None)
-        self.assertEqual("request_data", data.object_name)
+        self.assertEqual(ConditionSection.REQUEST_DATA.value, data.object_name)
         self.assertFalse(data.object_available)
         self.assertIsNone(data.value)
         self.assertIsNone(data.available_keys)
 
         # Invalid data type for request data
         data = condition.get_data_from_dict("type: hotp")
-        self.assertEqual("request_data", data.object_name)
+        self.assertEqual(ConditionSection.REQUEST_DATA.value, data.object_name)
         self.assertFalse(data.object_available)
         self.assertIsNone(data.value)
         self.assertIsNone(data.available_keys)
@@ -2820,7 +2820,7 @@ class PolicyConditionClassTestCase(MyTestCase):
         # Key not available
         request_data = {"user": "hans", "serial": "1234567890"}
         data = condition.get_data_from_dict(request_data)
-        self.assertEqual("request_data", data.object_name)
+        self.assertEqual(ConditionSection.REQUEST_DATA.value, data.object_name)
         self.assertTrue(data.object_available)
         self.assertIsNone(data.value)
         self.assertTrue(isinstance(data.available_keys, list))
@@ -2828,7 +2828,7 @@ class PolicyConditionClassTestCase(MyTestCase):
         # Everything available
         request_data = {"user": "hans", "type": "hotp", "serial": "1234567890"}
         data = condition.get_data_from_dict(request_data)
-        self.assertEqual("request_data", data.object_name)
+        self.assertEqual(ConditionSection.REQUEST_DATA.value, data.object_name)
         self.assertTrue(data.object_available)
         self.assertEqual("hotp", data.value)
         self.assertIsNone(data.available_keys)
