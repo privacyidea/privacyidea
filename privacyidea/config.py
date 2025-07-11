@@ -136,25 +136,6 @@ class ProductionConfig(Config):
     SUPERUSER_REALM = ['superuser']
 
 
-class HerokuConfig(Config):
-    SQLALCHEMY_DATABASE_URI = "postgres://mvfkmtkwzuwojj:" \
-                              "wqy_btZE3CPPNWsmkfdmeorxy6@" \
-                              "ec2-54-83-0-61.compute-1." \
-                              "amazonaws.com:5432/d6fjidokoeilp6"
-    #SQLALCHEMY_DATABASE_URI = "mysql://pi2:pi2@localhost/pi2"
-    # This is used to encrypt the auth_token
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 't0p s3cr3t'
-    # This is used to encrypt the admin passwords
-    PI_PEPPER = "Never know..."
-    # This is used to encrypt the token data and token passwords
-    PI_ENCFILE = os.path.join(basedir, "deploy/heroku/enckey")
-    # This is used to sign the audit log
-    PI_AUDIT_KEY_PRIVATE = os.path.join(basedir,
-                                        "deploy/heroku/private.pem")
-    PI_AUDIT_KEY_PUBLIC = os.path.join(basedir, "deploy/heroku/public.pem")
-    SUPERUSER_REALM = ['superuser']
-
-
 class DockerConfig:
     # TODO: Make secrets available through the docker secrets API (env or file)
     confdir = Path("/etc/privacyidea/")
@@ -185,6 +166,5 @@ config = {
     'testing': TestingConfig,
     'production': ProductionConfig,
     'default': DevelopmentConfig,
-    'heroku': HerokuConfig,
     'altUI': AltUIConfig
 }
