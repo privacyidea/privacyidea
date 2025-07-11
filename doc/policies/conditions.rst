@@ -215,6 +215,8 @@ The key defines the name of a request parameter. Check out the :ref:`rest_api` d
 the available request parameters for a specific request. Note that these are only the expected parameters.
 A requester could send any parameter in the request.
 
+Passwords are excluded from the request data, so they cannot be used in conditions.
+
 
 Comparators
 ~~~~~~~~~~~
