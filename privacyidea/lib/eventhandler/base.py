@@ -48,9 +48,8 @@ from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.token import get_token_owner, get_tokens
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import (compare_condition, compare_generic_condition,
-                                   parse_time_offset_from_now, is_true,
-                                   check_ip_in_policy, AUTH_RESPONSE, compare_time)
+from privacyidea.lib.utils import parse_time_offset_from_now, is_true, check_ip_in_policy, AUTH_RESPONSE
+from privacyidea.lib.utils.compare import compare_time, compare_ints, compare_generic
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.challenge import get_challenges
 
@@ -811,7 +810,7 @@ class BaseEventHandler(object):
         if CONDITION.USER_TOKEN_NUMBER in conditions and user:
             num_tokens = get_tokens(user=user, count=True)
             cond = conditions.get(CONDITION.USER_TOKEN_NUMBER)
-            if not compare_condition(cond, num_tokens):
+            if not compare_ints(cond, num_tokens):
                 return False
 
         if CONDITION.USER_CONTAINER_NUMBER in conditions and user:
@@ -836,7 +835,7 @@ class BaseEventHandler(object):
 
         if CONDITION.COUNTER in conditions:
             # Can be counter==1000
-            if not compare_generic_condition(conditions.get(CONDITION.COUNTER),
+            if not compare_generic(conditions.get(CONDITION.COUNTER),
                                              lambda x: counter_read(x) or 0,
                                              "Misconfiguration in your counter "
                                              "condition: {0!s}"
@@ -881,7 +880,7 @@ class BaseEventHandler(object):
 
             if CONDITION.OTP_COUNTER in conditions:
                 cond = conditions.get(CONDITION.OTP_COUNTER)
-                if not compare_condition(cond, token_obj.token.count):
+                if not compare_ints(cond, token_obj.token.count):
                     return False
 
             if CONDITION.LAST_AUTH in conditions:
@@ -891,13 +890,13 @@ class BaseEventHandler(object):
             if CONDITION.COUNT_AUTH in conditions:
                 count = token_obj.get_count_auth()
                 cond = conditions.get(CONDITION.COUNT_AUTH)
-                if not compare_condition(cond, count):
+                if not compare_ints(cond, count):
                     return False
 
             if CONDITION.COUNT_AUTH_SUCCESS in conditions:
                 count = token_obj.get_count_auth_success()
                 cond = conditions.get(CONDITION.COUNT_AUTH_SUCCESS)
-                if not compare_condition(cond, count):
+                if not compare_ints(cond, count):
                     return False
 
             if CONDITION.COUNT_AUTH_FAIL in conditions:
@@ -905,13 +904,13 @@ class BaseEventHandler(object):
                 c_success = token_obj.get_count_auth_success()
                 c_fail = count - c_success
                 cond = conditions.get(CONDITION.COUNT_AUTH_FAIL)
-                if not compare_condition(cond, c_fail):
+                if not compare_ints(cond, c_fail):
                     return False
 
             if CONDITION.FAILCOUNTER in conditions:
                 failcount = token_obj.get_failcount()
                 cond = conditions.get(CONDITION.FAILCOUNTER)
-                res = compare_condition(cond, failcount)
+                res = compare_ints(cond, failcount)
                 if not res:
                     return False
 
@@ -922,7 +921,7 @@ class BaseEventHandler(object):
                 s_now = (datetime.datetime.now(tzlocal()) + td).strftime(
                     DATE_FORMAT)
                 cond = cond.format(now=s_now)
-                if not compare_generic_condition(cond,
+                if not compare_generic(cond,
                                                  token_obj.get_tokeninfo,
                                                  "Misconfiguration in your tokeninfo "
                                                  "condition: {0!s}"):
@@ -1057,7 +1056,7 @@ class BaseEventHandler(object):
             if CONDITION.CONTAINER_INFO in conditions:
                 cond = conditions.get(CONDITION.CONTAINER_INFO)
 
-                if not compare_generic_condition(cond,
+                if not compare_generic(cond,
                                                  container.get_container_info_dict().get,
                                                  "Misconfiguration in your container info condition: {0!s}"):
                     return False

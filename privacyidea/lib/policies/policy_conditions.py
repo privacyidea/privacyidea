@@ -28,7 +28,7 @@ from privacyidea.lib import _
 from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.user import User
-from privacyidea.lib.utils.compare import Comparators, compare_values
+from privacyidea.lib.utils.compare import PrimaryComparators, compare_values
 
 log = logging.getLogger(__name__)
 
@@ -178,11 +178,11 @@ class PolicyConditionClass:
 
     @comparator.setter
     def comparator(self, comparator: str):
-        if comparator in Comparators.get_all_comparators() or self._allow_invalid_parameters:
+        if comparator in PrimaryComparators.get_all_comparators() or self._allow_invalid_parameters:
             self._comparator = comparator
         else:
             log.error(f"Unknown comparator '{comparator}' set in condition. Valid comparators are: "
-                      f"{Comparators.get_all_comparators()}")
+                      f"{PrimaryComparators.get_all_comparators()}")
             raise ParameterError(f"Unknown comparator '{comparator}'.")
 
     @property

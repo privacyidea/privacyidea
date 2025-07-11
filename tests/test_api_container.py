@@ -32,7 +32,7 @@ from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
 from privacyidea.lib.tokens.tantoken import TANACTION
 from privacyidea.lib.token import init_token, get_tokens_paginate, unassign_token
 from privacyidea.lib.user import User
-from privacyidea.lib.utils.compare import Comparators
+from privacyidea.lib.utils.compare import PrimaryComparators
 from tests.base import MyApiTestCase
 from tests.test_lib_tokencontainer import MockSmartphone
 
@@ -2057,13 +2057,13 @@ class ContainerPolicyConditions(APIContainerAuthorization):
     def test_01_create(self):
         # condition on container fails as the container does not yet exist
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE,
-                   conditions=[(ConditionSection.CONTAINER, "type", Comparators.EQUALS, "generic", True)])
+                   conditions=[(ConditionSection.CONTAINER, "type", PrimaryComparators.EQUALS, "generic", True)])
         self.request_assert_error(403, '/container/init', {"type": "generic"}, self.at, 'POST')
         delete_policy("policy")
 
     def test_02_delete(self):
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE,
-                   conditions=[(ConditionSection.CONTAINER, "type", Comparators.IN, "generic,smartphone", True)])
+                   conditions=[(ConditionSection.CONTAINER, "type", PrimaryComparators.IN, "generic,smartphone", True)])
 
         # Delete smartphone is allowed
         container_serial = init_container({"type": "smartphone"})["container_serial"]
@@ -2079,15 +2079,15 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         self.setUp_user_realms()
         # Only allowed to assign users with a phone number to smartphone containers and all users to other containers
         set_policy("assign", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER,
-                   conditions=[(ConditionSection.CONTAINER, "type", Comparators.NOT_EQUALS, "smartphone", True)])
+                   conditions=[(ConditionSection.CONTAINER, "type", PrimaryComparators.NOT_EQUALS, "smartphone", True)])
         set_policy("assign_smph", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER,
-                   conditions=[(ConditionSection.USERINFO, "phone", Comparators.MATCHES, ".+", True,
+                   conditions=[(ConditionSection.USERINFO, "phone", PrimaryComparators.MATCHES, ".+", True,
                                 ConditionHandleMissingData.IS_FALSE.value),
-                               (ConditionSection.CONTAINER, "type", Comparators.EQUALS, "smartphone", True)])
+                               (ConditionSection.CONTAINER, "type", PrimaryComparators.EQUALS, "smartphone", True)])
         # Unassignment only allowed for not registered containers
         set_policy("unassign", scope=SCOPE.ADMIN,
                    action=ACTION.CONTAINER_UNASSIGN_USER,
-                   conditions=[(ConditionSection.CONTAINER_INFO, "registration_state", Comparators.NOT_EQUALS,
+                   conditions=[(ConditionSection.CONTAINER_INFO, "registration_state", PrimaryComparators.NOT_EQUALS,
                                 "registered", True, ConditionHandleMissingData.IS_TRUE.value)])
 
         generic_serial = init_container({"type": "generic"})["container_serial"]
@@ -2125,7 +2125,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
     def test_04_list_containers(self):
         # extended policy conditions do not work for list containers as most often this involves multiple containers
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_LIST,
-                   conditions=[(ConditionSection.CONTAINER, "type", Comparators.EQUALS, "generic", True)])
+                   conditions=[(ConditionSection.CONTAINER, "type", PrimaryComparators.EQUALS, "generic", True)])
         container_serial = init_container({"type": "generic"})["container_serial"]
         self.request_assert_error(403, "/container/", {}, self.at, "GET")
         self.request_assert_error(403, "/container/", {"type": "generic"}, self.at, "GET")
@@ -2137,9 +2137,9 @@ class ContainerPolicyConditions(APIContainerAuthorization):
     def test_05_add_token(self):
         # only tokens of a specific type and hashlib can be added to smartphones
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_ADD_TOKEN,
-                   conditions=[(ConditionSection.CONTAINER, "type", Comparators.EQUALS, "smartphone", True),
-                               (ConditionSection.TOKEN, "tokentype", Comparators.IN, "hotp,totp", True),
-                               (ConditionSection.TOKENINFO, "hashlib", Comparators.EQUALS, "sha256", True,
+                   conditions=[(ConditionSection.CONTAINER, "type", PrimaryComparators.EQUALS, "smartphone", True),
+                               (ConditionSection.TOKEN, "tokentype", PrimaryComparators.IN, "hotp,totp", True),
+                               (ConditionSection.TOKENINFO, "hashlib", PrimaryComparators.EQUALS, "sha256", True,
                                 ConditionHandleMissingData.IS_FALSE.value)])
         selfservice = User("selfservice", self.realm1)
         hotp_sha1 = init_token({"type": "hotp", "genkey": True, "hashlib": "sha1"}, selfservice)
@@ -2185,7 +2185,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         # ---- user info condition ----
         # user condition is applied to the token and container owner
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN,
-                   conditions=[(ConditionSection.USERINFO, "phone", Comparators.MATCHES, ".+", True)])
+                   conditions=[(ConditionSection.USERINFO, "phone", PrimaryComparators.MATCHES, ".+", True)])
 
         cornelius = User("cornelius", self.realm1)
         container = find_container_by_serial(container_serial)
@@ -2213,7 +2213,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
     def test_06_set_realms(self):
         # Only allow to set the realms for disabled containers
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REALMS,
-                   conditions=[(ConditionSection.CONTAINER, "states", Comparators.CONTAINS,
+                   conditions=[(ConditionSection.CONTAINER, "states", PrimaryComparators.CONTAINS,
                                 ContainerStates.DISABLED.value, True)])
         container_serial = init_container({"type": "generic"})["container_serial"]
 
@@ -2231,18 +2231,18 @@ class ContainerPolicyConditions(APIContainerAuthorization):
     def test_07_register(self):
         # only allow registration if state != lost/damaged
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_REGISTER,
-                   conditions=[(ConditionSection.CONTAINER, "states", Comparators.NOT_CONTAINS,
+                   conditions=[(ConditionSection.CONTAINER, "states", PrimaryComparators.NOT_CONTAINS,
                                 ContainerStates.LOST.value, True),
-                               (ConditionSection.CONTAINER, "states", Comparators.NOT_CONTAINS,
+                               (ConditionSection.CONTAINER, "states", PrimaryComparators.NOT_CONTAINS,
                                 ContainerStates.DAMAGED.value, True)
                                ])
         # users should register at different pi servers
         set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"},
-                   conditions=[(ConditionSection.USERINFO, "email", Comparators.MATCHES, ".*@localhost.localdomain",
-                                True, ConditionHandleMissingData.IS_FALSE.value)])
+                   conditions=[(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES,
+                                ".*@localhost.localdomain", True, ConditionHandleMissingData.IS_FALSE.value)])
         set_policy("registration_external", scope=SCOPE.CONTAINER,
                    action={ACTION.PI_SERVER_URL: "https://pi-external.net/"},
-                   conditions=[(ConditionSection.USERINFO, "email", Comparators.NOT_MATCHES,
+                   conditions=[(ConditionSection.USERINFO, "email", PrimaryComparators.NOT_MATCHES,
                                 ".*@localhost.localdomain", True, ConditionHandleMissingData.IS_TRUE.value)])
         container_serial = init_container({"type": "smartphone", "user": "selfservice", "realm": self.realm1})[
             "container_serial"]
@@ -2276,8 +2276,9 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         # only allow server rollover if state == lost and user has a phone number
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ROLLOVER,
                    conditions=[
-                       (ConditionSection.CONTAINER, "states", Comparators.CONTAINS, ContainerStates.LOST.value, True),
-                       (ConditionSection.USERINFO, "phone", Comparators.MATCHES, ".+", True,
+                       (ConditionSection.CONTAINER, "states", PrimaryComparators.CONTAINS, ContainerStates.LOST.value,
+                        True),
+                       (ConditionSection.USERINFO, "phone", PrimaryComparators.MATCHES, ".+", True,
                         ConditionHandleMissingData.IS_FALSE.value)])
         set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"})
         container_serial = init_container({"type": "smartphone", "user": "selfservice", "realm": self.realm1})[
@@ -2311,7 +2312,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         # initially add tokens only allowed if container was not created from a template
         set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"})
         set_policy("initially_add_tokens", scope=SCOPE.CONTAINER, action=ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
-                   conditions=[(ConditionSection.CONTAINER, "template", Comparators.NOT_MATCHES, ".+", True)])
+                   conditions=[(ConditionSection.CONTAINER, "template", PrimaryComparators.NOT_MATCHES, ".+", True)])
         container_serial = init_container({"type": "smartphone", "user": "selfservice", "realm": self.realm1})[
             "container_serial"]
         container = find_container_by_serial(container_serial)
@@ -2355,8 +2356,8 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         # initially add tokens only allowed for internal users (specific mail domain) + specific client
         set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"})
         set_policy("initially_add_tokens", scope=SCOPE.CONTAINER, action=ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
-                   conditions=[(ConditionSection.USERINFO, "email", Comparators.MATCHES, ".+@localhost.localdomain",
-                                True, ConditionHandleMissingData.IS_FALSE.value)])
+                   conditions=[(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES,
+                                ".+@localhost.localdomain", True, ConditionHandleMissingData.IS_FALSE.value)])
         container_serial = init_container({"type": "smartphone", "user": "selfservice", "realm": self.realm1})[
             "container_serial"]
         container = find_container_by_serial(container_serial)
@@ -2399,9 +2400,10 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         # Only allowed if state != lost && userinfo
         set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"})
         set_policy("rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER,
-                   conditions=[(ConditionSection.CONTAINER, "states", Comparators.NOT_CONTAINS,
+                   conditions=[(ConditionSection.CONTAINER, "states", PrimaryComparators.NOT_CONTAINS,
                                 ContainerStates.LOST.value, True),
-                               (ConditionSection.USERINFO, "email", Comparators.MATCHES, ".+@localhost.localdomain",
+                               (ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES,
+                                ".+@localhost.localdomain",
                                 True, ConditionHandleMissingData.IS_FALSE.value)])
         container_serial = init_container({"type": "smartphone", "user": "selfservice", "realm": self.realm1})[
             "container_serial"]
@@ -2427,7 +2429,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         rollover_scope = "https://pi.net/container/rollover"
         params = mock_smph.register_finalize(challenge_data["nonce"], challenge_data["time_stamp"],
                                              rollover_scope, mock_smph.container_serial)
-        self.request_assert_error(403,"container/rollover", params, None, "POST")
+        self.request_assert_error(403, "container/rollover", params, None, "POST")
 
         # Client rollover: User not allowed
         container.set_states([ContainerStates.ACTIVE.value])

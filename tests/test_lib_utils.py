@@ -8,11 +8,8 @@ from .base import MyTestCase, OverrideConfigTestCase
 from privacyidea.lib.utils import (parse_timelimit,
                                    check_time_in_range, parse_proxy,
                                    check_proxy, reduce_realms, is_true,
-                                   parse_date, compare_condition,
-                                   get_data_from_params, parse_legacy_time,
-                                   int_to_hex, compare_value_value,
-                                   compare_generic_condition,
-                                   parse_time_offset_from_now, censor_connect_string,
+                                   parse_date, get_data_from_params, parse_legacy_time,
+                                   int_to_hex, parse_time_offset_from_now, censor_connect_string,
                                    parse_timedelta, to_unicode,
                                    parse_int, convert_column_to_unicode,
                                    truncate_comma_list, check_pin_contents, CHARLIST_CONTENTPOLICY,
@@ -31,7 +28,6 @@ from privacyidea.lib.crypto import generate_password
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset, gettz
-from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.error import PolicyError, ParameterError
 import binascii
 
@@ -328,43 +324,6 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(parse_date("7 Januar 17"), None)
         self.assertIsNone(parse_date('15/15'))
 
-    def test_08_compare_condition(self):
-        self.assertTrue(compare_condition("100", 100))
-        self.assertTrue(compare_condition("=100", 100))
-        self.assertTrue(compare_condition(" = 100 ", 100))
-
-        self.assertFalse(compare_condition("100 ", 99))
-
-        self.assertTrue(compare_condition(">100", 101))
-        self.assertFalse(compare_condition(">100", 100))
-        self.assertFalse(compare_condition(">100", 1))
-
-        self.assertTrue(compare_condition("<100", 10))
-        self.assertTrue(compare_condition("  <100", 10))
-        self.assertFalse(compare_condition("<100", 1000))
-        self.assertFalse(compare_condition("<100", 100))
-
-        # There are invalid conditions, which should not raise an exception
-        # An empty condition will result in False
-        self.assertFalse(compare_condition("", 100))
-        # An invalid condition, which misses a compare-value, will result in false
-        self.assertFalse(compare_condition(">", 100))
-
-        # Test new comparators
-        self.assertTrue(compare_condition('>=100', 100))
-        self.assertTrue(compare_condition('=> 100', 200))
-        self.assertFalse(compare_condition('>= 100', 99))
-
-        self.assertTrue(compare_condition('<=100', 100))
-        self.assertTrue(compare_condition('=< 100', 99))
-        self.assertFalse(compare_condition('<= 100', 101))
-
-        self.assertTrue(compare_condition('!=100', 99))
-        self.assertFalse(compare_condition('!= 100', 100))
-
-        self.assertTrue(compare_condition('==100', 100))
-        self.assertFalse(compare_condition('== 100', 99))
-
     def test_09_get_data_from_params(self):
         config_description = {
             "local": {
@@ -416,54 +375,6 @@ class UtilsTestCase(MyTestCase):
 
         h = int_to_hex(65536)
         self.assertEqual(h, "010000")
-
-    def test_12_compare_value_value(self):
-        self.assertTrue(compare_value_value("1000", ">", "999"))
-        self.assertTrue(compare_value_value("ABD", ">", "ABC"))
-        self.assertTrue(compare_value_value(1000, "==", "1000"))
-        self.assertTrue(compare_value_value("99", "<", "1000"))
-
-        self.assertTrue(compare_value_value(100, '>', '10'))
-        self.assertTrue(compare_value_value(100, '>=', '10'))
-        self.assertTrue(compare_value_value("100", '=>', 10))
-        self.assertTrue(compare_value_value(100, '>=', '100'))
-        self.assertFalse(compare_value_value(100, '>=', '101'))
-
-        self.assertTrue(compare_value_value('ABC', '=', 'ABC'))
-        self.assertTrue(compare_value_value('ABC', '!=', 'ABD'))
-
-        self.assertTrue(compare_value_value(10, '<', '100'))
-        self.assertTrue(compare_value_value(10, '<=', '100'))
-        self.assertTrue(compare_value_value("10", '=<', 100))
-        self.assertTrue(compare_value_value(10, '<=', '10'))
-        self.assertFalse(compare_value_value(10, '<=', '9'))
-
-        # compare dates
-        self.assertTrue(compare_value_value(
-            datetime.now(tzlocal()).strftime(DATE_FORMAT), ">",
-            "2017-01-01T10:00+0200"))
-        self.assertFalse(compare_value_value(
-            datetime.now(tzlocal()).strftime(DATE_FORMAT), "<",
-            "2017-01-01T10:00+0200"))
-        # The timestamp in 10 hours is bigger than the current time
-        self.assertTrue(compare_value_value(
-            (datetime.now(tzlocal()) + timedelta(hours=10)).strftime(DATE_FORMAT),
-            ">", datetime.now(tzlocal()).strftime(DATE_FORMAT)))
-
-        self.assertTrue(compare_value_value('+3h', '>', ''))
-        self.assertFalse(compare_value_value('2017/04/20 11:30+0200', '>',
-                                             datetime.now(tzlocal()).strftime(DATE_FORMAT)))
-
-        self.assertTrue(compare_value_value('2020-01-15T00:00', '==',
-                                            datetime(2020, 1, 15).strftime(DATE_FORMAT)))
-        # unexpected result: The date string can not be parsed since dateutil.parser
-        # does not understand locale dates. So the strings themselves are compared
-        # since parse_date() returns 'None'
-        self.assertTrue(compare_value_value('16. März 2020', '<',
-                                            datetime(2020, 3, 15).strftime(DATE_FORMAT)))
-
-        # check for unknown comparator
-        self.assertRaises(Exception, compare_value_value, 5, '~=', 5)
 
     def test_13_parse_time_offset_from_now(self):
         td = parse_timedelta("+5s")
@@ -895,68 +806,6 @@ class UtilsTestCase(MyTestCase):
                            "realm": "Wild West"},
                           {"user": "Dave Rudabaugh",
                            "realm": "Dodge City"})
-
-    def test_34_compare_generic_condition(self):
-        def mock_attribute(key):
-            attr = {"a": "10",
-                    "b": "100",
-                    "c": "1000"}
-            return attr.get(key)
-
-        self.assertTrue(compare_generic_condition("a<100",
-                                                  mock_attribute,
-                                                  "Error {0!s}"))
-
-        self.assertTrue(compare_generic_condition("a <100",
-                                                  mock_attribute,
-                                                  "Error {0!s}"))
-
-        self.assertTrue(compare_generic_condition("b==100",
-                                                  mock_attribute,
-                                                  "Error {0!s}"))
-
-        # Wrong condition
-        self.assertFalse(compare_generic_condition("a== 100",
-                                                   mock_attribute,
-                                                   "Error {0!s}"))
-
-        # Wrong condition
-        self.assertFalse(compare_generic_condition("b>100",
-                                                   mock_attribute,
-                                                   "Error {0!s}"))
-
-        # Wrong condition
-        self.assertFalse(compare_generic_condition("c < 500",
-                                                   mock_attribute,
-                                                   "Error {0!s}"))
-
-        # Wrong condition
-        self.assertFalse(compare_generic_condition("c <500",
-                                                   mock_attribute,
-                                                   "Error {0!s}"))
-
-        # Wrong condition: key does not exist
-        self.assertFalse(compare_generic_condition("d==1",
-                                                   mock_attribute,
-                                                   "Error {0!s}"))
-
-        # Wrong condition: key does not exist
-        self.assertFalse(compare_generic_condition("d<1",
-                                                   mock_attribute,
-                                                   "Error {0!s}"))
-
-        # Wrong condition: key does not exist
-        self.assertFalse(compare_generic_condition("d>1",
-                                                   mock_attribute,
-                                                   "Error {0!s}"))
-
-        # Wrong entry, that is not processed
-        self.assertRaises(Exception, compare_generic_condition,
-                          "c 500", mock_attribute, "Error {0!s}")
-
-        # Wrong entry, that cannot be processed
-        self.assertRaises(Exception, compare_generic_condition,
-                          "b!~100", mock_attribute, "Error {0!s}")
 
     def test_34_to_list(self):
         # Simple string
