@@ -4,7 +4,8 @@ This tests the module lib.utils.compare
 import datetime
 
 from privacyidea.lib.utils.compare import (compare_values, CompareError, parse_comma_separated_string,
-                                           compare_ints, compare_generic, compare_time, PrimaryComparators)
+                                           compare_ints, compare_generic, compare_time, PrimaryComparators,
+                                           _get_datetime)
 from .base import MyTestCase
 
 
@@ -107,7 +108,45 @@ class UtilsCompareTestCase(MyTestCase):
         self.assertFalse(compare_values(2, "<", 1))
         self.assertFalse(compare_values(2, ">", "2"))
 
-    def test_08_date_after(self):
+    def test_08_get_datetime(self):
+        date_time = datetime.datetime(2025, 1, 1, 12, 0,
+                                      tzinfo=datetime.timezone(datetime.timedelta(hours=2)))
+        self.assertEqual(date_time, _get_datetime(date_time))
+
+        # Valid date strings
+        # Different time zones
+        self.assertEqual(date_time, _get_datetime("2025-01-01T12:00:00+02:00"))
+        self.assertEqual(date_time, _get_datetime("2025-01-01T12:00:00+0200"))
+        self.assertEqual(date_time, _get_datetime("2025-01-01T12:00:00+02"))
+        # Different separator
+        self.assertEqual(date_time, _get_datetime("2025-01-01 12:00:00+02:00"))
+        self.assertEqual(date_time, _get_datetime("2025-01-01 12:00:00+0200"))
+        # Date without time zone
+        date_time_no_tz = date_time.replace(tzinfo=None)
+        self.assertEqual(date_time_no_tz, _get_datetime("2025-01-01T12:00:00"))
+        self.assertEqual(date_time_no_tz, _get_datetime("2025-01-01 12:00:00"))
+        # Date without seconds
+        self.assertEqual(date_time_no_tz, _get_datetime("2025-01-01T12:00"))
+        self.assertEqual(date_time_no_tz, _get_datetime("2025-01-01 12:00"))
+        # Date without minutes
+        self.assertEqual(date_time_no_tz, _get_datetime("2025-01-01T12"))
+        self.assertEqual(date_time_no_tz, _get_datetime("2025-01-01 12"))
+        # Date only
+        self.assertEqual(datetime.datetime(2025, 1, 1, 0, 0), _get_datetime("2025-01-01"))
+
+        # Invalid date strings
+        # Low precision dates
+        self.assertRaises(CompareError, _get_datetime, "2025-01")
+        self.assertRaises(CompareError, _get_datetime, "2025")
+        # Invalid separators
+        self.assertRaises(CompareError, _get_datetime, "2025/01/01 12:00:00+02:00")
+        # Invalid date order
+        self.assertRaises(CompareError, _get_datetime, "01-01-2025 12:00:00+02:00")
+        # Invalid format
+        self.assertRaises(CompareError, _get_datetime, "1. January 2025")
+
+
+    def test_09_date_after(self):
         # Test with datetime objects
         condition_date = datetime.datetime(2025, 1, 1, 12, 0, tzinfo=datetime.timezone.utc)
         true_date = datetime.datetime(2025, 2, 1, 12, 0, tzinfo=datetime.timezone.utc)
@@ -127,7 +166,7 @@ class UtilsCompareTestCase(MyTestCase):
         self.assertTrue(compare_values(true_date, PrimaryComparators.DATE_AFTER, condition_date))
 
         # Test with date strings
-        condition_date_str = "2025-01-01 12:00"
+        condition_date_str = "2025-01-01T12:00"
         true_date_str = "2025-02-01 12:00:00"
         self.assertTrue(compare_values(true_date_str, PrimaryComparators.DATE_AFTER, condition_date_str))
         true_date_str = "2025-01-01 12:00:01"
@@ -144,17 +183,17 @@ class UtilsCompareTestCase(MyTestCase):
         self.assertTrue(compare_values(true_date_str, PrimaryComparators.DATE_AFTER, condition_date_str))
 
         # Invalid date formats
-        self.assertRaises(CompareError, compare_values, "12:00", PrimaryComparators.DATE_AFTER, condition_date_str)
         self.assertRaises(CompareError, compare_values, true_date_str, PrimaryComparators.DATE_AFTER,
                           "2025/01/01 12:00")
         self.assertRaises(CompareError, compare_values, true_date_str, PrimaryComparators.DATE_AFTER, 2025)
         self.assertRaises(CompareError, compare_values, 102, PrimaryComparators.DATE_AFTER, condition_date_str)
+        # Only one time stamp contains time zone information
         self.assertRaises(CompareError, compare_values, "2025-01-01 12:00", PrimaryComparators.DATE_AFTER,
                           "2025-01-01 12:00+02:00")
         self.assertRaises(CompareError, compare_values, "2025-01-01 12:00-02:00", PrimaryComparators.DATE_AFTER,
                           "2025-01-01 12:00")
 
-    def test_09_date_before(self):
+    def test_10_date_before(self):
         # Test with datetime objects
         condition_date = datetime.datetime(2025, 1, 1, 12, 0, tzinfo=datetime.timezone.utc)
         true_date = datetime.datetime(2025, 2, 1, 12, 0, tzinfo=datetime.timezone.utc)
@@ -191,17 +230,16 @@ class UtilsCompareTestCase(MyTestCase):
         self.assertFalse(compare_values(true_date_str, PrimaryComparators.DATE_BEFORE, condition_date_str))
 
         # Invalid date formats
-        self.assertRaises(CompareError, compare_values, "12:00", PrimaryComparators.DATE_BEFORE, condition_date_str)
-        self.assertRaises(CompareError, compare_values, true_date_str, PrimaryComparators.DATE_BEFORE,
-                          "2025/01/01 12:00")
+        self.assertRaises(CompareError, compare_values, "12", PrimaryComparators.DATE_BEFORE, condition_date_str)
         self.assertRaises(CompareError, compare_values, true_date_str, PrimaryComparators.DATE_BEFORE, 2025)
         self.assertRaises(CompareError, compare_values, 102, PrimaryComparators.DATE_BEFORE, condition_date_str)
+        # Only one time stamp contains time zone information
         self.assertRaises(CompareError, compare_values, "2025-01-01 12:00", PrimaryComparators.DATE_BEFORE,
                           "2025-01-01 12:00+02:00")
         self.assertRaises(CompareError, compare_values, "2025-01-01 12:00-02:00", PrimaryComparators.DATE_BEFORE,
                           "2025-01-01 12:00")
 
-    def test_10_date_within_last(self):
+    def test_11_date_within_last(self):
         # Test with datetime object
         now = datetime.datetime.now(datetime.timezone.utc)
         self.assertTrue(compare_values(now, PrimaryComparators.DATE_WITHIN_LAST, "1h"))
@@ -248,10 +286,11 @@ class UtilsCompareTestCase(MyTestCase):
         self.assertTrue(compare_values(now.replace(tzinfo=None).isoformat(), PrimaryComparators.DATE_WITHIN_LAST, "1h"))
 
         # Invalid formats
-        self.assertRaises(CompareError, compare_values, "1. Juli 2025", PrimaryComparators.DATE_WITHIN_LAST, "1h")
+        self.assertRaises(CompareError, compare_values, "2025", PrimaryComparators.DATE_WITHIN_LAST, "1h")
+        self.assertRaises(CompareError, compare_values, "1. July 2025", PrimaryComparators.DATE_WITHIN_LAST, "1h")
         self.assertRaises(CompareError, compare_values, now, PrimaryComparators.DATE_WITHIN_LAST, "1year")
 
-    def test_11_date_not_within_last(self):
+    def test_12_date_not_within_last(self):
         # Test with datetime object
         now = datetime.datetime.now(datetime.timezone.utc)
         self.assertFalse(compare_values(now, PrimaryComparators.DATE_NOT_WITHIN_LAST, "1h"))
@@ -309,7 +348,7 @@ class UtilsCompareTestCase(MyTestCase):
         self.assertRaises(CompareError, compare_values, "1. Juli 2025", PrimaryComparators.DATE_NOT_WITHIN_LAST, "1h")
         self.assertRaises(CompareError, compare_values, now, PrimaryComparators.DATE_NOT_WITHIN_LAST, "1year")
 
-    def test_12_string_contains(self):
+    def test_13_string_contains(self):
         self.assertTrue(compare_values("hello world", PrimaryComparators.STRING_CONTAINS, "hello"))
         self.assertTrue(compare_values("hello world", PrimaryComparators.STRING_CONTAINS, "world"))
         self.assertTrue(compare_values("hello world", PrimaryComparators.STRING_CONTAINS, "Hello"))
@@ -318,7 +357,7 @@ class UtilsCompareTestCase(MyTestCase):
 
         self.assertRaises(CompareError, compare_values, "hello world", PrimaryComparators.STRING_CONTAINS, 42)
 
-    def test_13_string_not_contains(self):
+    def test_14_string_not_contains(self):
         # negation
         self.assertTrue(compare_values("hello world", PrimaryComparators.STRING_NOT_CONTAINS, "foo"))
         self.assertFalse(compare_values("hello world", PrimaryComparators.STRING_NOT_CONTAINS, "world"))
@@ -327,7 +366,7 @@ class UtilsCompareTestCase(MyTestCase):
 
         self.assertRaises(CompareError, compare_values, "hello world", PrimaryComparators.STRING_NOT_CONTAINS, 42)
 
-    def test_14_compare_ints(self):
+    def test_15_compare_ints(self):
         self.assertTrue(compare_ints("100", 100))
         self.assertTrue(compare_ints("=100", 100))
         self.assertTrue(compare_ints(" = 100 ", 100))
@@ -382,7 +421,7 @@ class UtilsCompareTestCase(MyTestCase):
         # comparator that does not support integers
         self.assertFalse(compare_ints("'string_contains' 100", 100))
 
-    def test_15_compare_generic_condition(self):
+    def test_16_compare_generic_condition(self):
         def mock_attribute(key):
             attr = {"a": "10",
                     "b": "100",
@@ -480,7 +519,7 @@ class UtilsCompareTestCase(MyTestCase):
             f"invalid_date < {datetime.datetime(2020, 3, 15).isoformat()}",
             mock_attribute, "Error {0!s}"))
 
-    def test_16_compare_time(self):
+    def test_17_compare_time(self):
         # Test with datetime object
         now = datetime.datetime.now(datetime.timezone.utc)
         self.assertTrue(compare_time("1h", now))
@@ -512,5 +551,5 @@ class UtilsCompareTestCase(MyTestCase):
         self.assertFalse(compare_time("1h", "1. Juli 2025"))
         self.assertFalse(compare_time("1year", now))
 
-    def test_17_compare_values_invalid_comparator(self):
+    def test_18_compare_values_invalid_comparator(self):
         self.assertRaises(CompareError, compare_values, "hello", "invalid_comparator", "world")

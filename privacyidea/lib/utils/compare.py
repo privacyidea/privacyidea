@@ -34,7 +34,7 @@ from dataclasses import dataclass
 from functools import wraps
 from typing import Union, Optional
 
-from dateutil.parser import parse
+from dateutil.parser import parse, isoparse
 
 from privacyidea.lib.framework import _
 from privacyidea.lib.utils import parse_timedelta
@@ -173,18 +173,23 @@ def _compare_in(left: str, right: str) -> bool:
 
 def _get_datetime(date_time: Union[str, datetime.datetime]) -> datetime.datetime:
     """
-    Convert a string in ISO format to a datetime object.
+    Convert a string in ISO format to a datetime object. Low precision dates are not supported. The date string must
+    at least have the format 'YYYY-MM-DD'.
     If the input is already a datetime object, return it unchanged.
+    If the date_time string is not a valid iso format, a CompareError is raised.
 
     :param date_time: a string in ISO format or a datetime object
     :return: a datetime object
     """
     if isinstance(date_time, str):
         try:
-            # Parse the string into a datetime object (accepts also non-iso formats)
-            # TODO : use datetime.datetime.fromisoformat() would be better, but this can not handle the last_auth
-            #  datetime format in the tokeninfo for python 3.9 and 3.10
-            date_time = parse(date_time)
+            # Beginning with python 3.11 we could also use `datetime.datetime.fromisoformat(date_time)`, but in
+            # python 3.9 and 3.10 some formats are not supported.
+            if len(date_time) < 10:
+                # Avoid guessing the month and day, at least YYYY-MM-DD is required
+                raise ValueError("Low precision date strings are not supported!")
+            # Parse the string into a datetime object
+            date_time = isoparse(date_time)
         except ValueError as error:
             log.error(f"Invalid date format '{date_time}': {error}")
             raise CompareError(f"Invalid date format: {date_time!r}. Expected ISO format.")
