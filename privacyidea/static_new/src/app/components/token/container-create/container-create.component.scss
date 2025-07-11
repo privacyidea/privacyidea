@@ -1,0 +1,12 @@
+@use "../../../../styles";
+
+.container-create-container {
+  @include styles.table-container-styles;
+  overflow: auto;
+  width: 785px;
+}
+
+.container-type-hint {
+  margin-top: 8px;
+  font-size: 16px;
+}

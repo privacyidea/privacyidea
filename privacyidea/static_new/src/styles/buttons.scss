@@ -1,0 +1,392 @@
+@use "@angular/material" as mat;
+
+$button-height: 40px;
+$button-width: 240px;
+$keyword-height: 28px;
+$keyword-padding: 2px 8px;
+$button-gap-small: 10px;
+$padding-horizontal: 16px;
+$detail-icon-font-size: 18px;
+$margin-bottom-small: -6px;
+$keyword-bg: #f3f3f3;
+$keyword-font-size: 18px;
+$keyword-color: #999999;
+$button-border-radius: var(--border-radius);
+$profile-bg: var(--background-yellow);
+$profile-hover-bg: var(--background-yellow-inset);
+$shadow-white: var(--box-shadow-white);
+$header-bg: white;
+
+// Mixins for common button styles
+@mixin button-base(
+  $height,
+  $width,
+  $border-radius,
+  $background,
+  $box-shadow,
+  $cursor: pointer
+) {
+  color: white;
+  height: $height;
+  width: $width;
+  border: none;
+  justify-content: start;
+  border-radius: $border-radius;
+  background: $background;
+  box-shadow: $box-shadow;
+  cursor: $cursor;
+  transition:
+    background 400ms,
+    box-shadow 400ms;
+}
+
+@mixin button-hover($background, $box-shadow) {
+  &:hover {
+    background: $background;
+    box-shadow: $box-shadow;
+    transition:
+      background 400ms,
+      box-shadow 400ms;
+  }
+}
+
+.login-btn {
+  text-decoration: none;
+  color: white;
+  padding: 10px;
+  border-radius: $button-border-radius;
+  box-shadow: var(--box-shadow-white);
+  background: var(--background-blue);
+
+  &:hover {
+    box-shadow: var(--box-shadow-blue-inset);
+    background: var(--background-blue-inset);
+    color: white;
+    transform: translateY(2px);
+  }
+}
+
+.passkey-btn {
+  text-decoration: none;
+  color: black;
+  padding: 10px;
+  border-radius: $button-border-radius;
+  box-shadow: var(--box-shadow-white);
+  background: linear-gradient(145deg, #efefef, #ffffff);
+
+  &:hover {
+    box-shadow: var(--box-shadow-inset);
+    background: linear-gradient(145deg, #ffffff, #efefef);
+    color: black;
+    transform: translateY(2px);
+  }
+}
+
+.support-btn {
+  height: 40px;
+  margin: 0 20px;
+  border: none;
+  border-radius: $button-border-radius;
+  background: var(--background-green-brand);
+  cursor: pointer;
+  color: white;
+
+  &:hover {
+    opacity: 0.9;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.card-button {
+  min-width: 240px;
+  @include button-base(
+    $button-height,
+    $button-width,
+    $button-border-radius,
+    var(--background-blue),
+    var(--box-shadow-blue)
+  );
+  @include button-hover(
+    var(--background-blue-inset),
+    var(--box-shadow-blue-inset)
+  );
+}
+
+.card-button-reset {
+  min-width: 240px;
+  @include button-base(
+    $button-height,
+    $button-width,
+    $button-border-radius,
+    var(--background-green),
+    var(--box-shadow-green)
+  );
+}
+
+.card-button-active {
+  min-width: 240px;
+  @include button-base(
+    $button-height,
+    $button-width,
+    $button-border-radius,
+    var(--background-blue-inset),
+    var(--box-shadow-blue-inset)
+  );
+}
+
+.card-button-disabled {
+  min-width: 240px;
+  @include button-base(
+    $button-height,
+    $button-width,
+    $button-border-radius,
+    var(--background-gray),
+    var(--box-shadow-gray)
+  );
+  color: #5b5b5b;
+}
+
+.card-button-delete {
+  min-width: 240px;
+  @include button-base(
+    $button-height,
+    $button-width,
+    $button-border-radius,
+    var(--background-red),
+    var(--box-shadow-red)
+  );
+  transition: 0ms;
+
+  &.active,
+  &:hover {
+    background: var(--background-red-inset);
+    box-shadow: var(--box-shadow-red-inset);
+    transition:
+      background 400ms,
+      box-shadow 400ms;
+  }
+}
+
+.card-button-activate {
+  min-width: 240px;
+  @include button-base(
+    $button-height,
+    $button-width,
+    $button-border-radius,
+    var(--background-green),
+    var(--box-shadow-green)
+  );
+  transition: 0ms;
+
+  &.active,
+  &:hover {
+    background: var(--background-green-inset);
+    box-shadow: var(--box-shadow-green-inset);
+    transition:
+      background 400ms,
+      box-shadow 400ms;
+  }
+}
+
+.detail-button {
+  min-width: 240px;
+  color: white;
+  @include button-base(
+    $button-height,
+    $button-width,
+    $button-border-radius,
+    var(--background-blue),
+    var(--box-shadow-blue)
+  );
+  @include button-hover(
+    var(--background-blue-inset),
+    var(--box-shadow-blue-inset)
+  );
+}
+
+.detail-button-icon {
+  vertical-align: bottom;
+  margin-bottom: $margin-bottom-small;
+  font-size: $detail-icon-font-size;
+}
+
+.delete-buttons-container {
+  display: flex;
+  flex-direction: column;
+  gap: $button-gap-small;
+  padding: 0 $padding-horizontal;
+}
+
+.dialog-button-delete {
+  color: var(--red-base);
+  background-color: white;
+}
+
+.cancel-button {
+  color: var(--red-base);
+  background-color: white;
+  cursor: pointer;
+}
+
+.keyword-button,
+.more-keyword-button {
+  background-color: $keyword-bg;
+  border-radius: $button-border-radius;
+  height: $keyword-height;
+  margin: 3px;
+  box-shadow: none;
+  color: black;
+
+  &.keyword-button {
+    padding: $keyword-padding;
+
+    &:hover .add-keyword {
+      color: var(--green-light);
+    }
+  }
+
+  &.more-keyword-button {
+    padding: 0 0 0 8px;
+  }
+}
+
+.keyword-button-icon {
+  font-size: $keyword-font-size;
+  vertical-align: bottom;
+  margin-right: 0;
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+
+.add-keyword {
+  color: $keyword-color;
+}
+
+.remove-keyword {
+  color: var(--red-light);
+}
+
+.change-keyword {
+  color: var(--yellow-light);
+}
+
+.delete-info-button {
+  margin-top: 16px;
+}
+
+.refresh-btn {
+  width: 60px;
+  height: 60px;
+  cursor: pointer;
+  border-radius: 0;
+  background: $header-bg;
+  color: #767676;
+  box-shadow: none !important;
+
+  &:hover {
+    background: #f8f8f8;
+    mat-icon {
+      color: black;
+    }
+  }
+}
+
+.type-help-button {
+  margin-left: 4px;
+  margin-top: 4px;
+}
+
+.enroll-button-container {
+  padding: 16px 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: left;
+  gap: 8px;
+}
+
+.enroll-button-spacer {
+  width: 40px; // Standard width of a mat-icon-button
+  height: 40px; // Standard height of a mat-icon-button, ensures alignment
+}
+
+.profile-btn {
+  height: 60px;
+  justify-content: start;
+  border: none;
+  border-radius: 0;
+  background: $profile-bg;
+  box-shadow: var(--box-shadow-header);
+  cursor: pointer;
+  color: white;
+
+  &.active,
+  &:hover {
+    box-shadow: none;
+    background: $profile-hover-bg;
+    color: white;
+    transform: translateX(2px);
+  }
+}
+
+.logout-btn {
+  color: #767676;
+
+  &:hover {
+    color: black;
+  }
+}
+
+.drawer-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: white;
+  height: 48px;
+  width: 48px;
+  color: black;
+  border-radius: calc(var(--border-radius) * 2);
+  @include mat.elevation(5);
+}
+
+.back-button {
+  @extend .drawer-button;
+  margin: 32px 16px 0 16px;
+
+  &:hover {
+    @include mat.elevation(8);
+  }
+}
+
+.mdi--folder-search {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M16.5 12c2.5 0 4.5 2 4.5 4.5c0 .88-.25 1.71-.69 2.4l3.08 3.1L22 23.39l-3.12-3.07c-.69.43-1.51.68-2.38.68c-2.5 0-4.5-2-4.5-4.5s2-4.5 4.5-4.5m0 2a2.5 2.5 0 0 0-2.5 2.5a2.5 2.5 0 0 0 2.5 2.5a2.5 2.5 0 0 0 2.5-2.5a2.5 2.5 0 0 0-2.5-2.5M9 4l2 2h8a2 2 0 0 1 2 2v3.81A6.48 6.48 0 0 0 16.5 10a6.5 6.5 0 0 0-6.5 6.5c0 1.29.37 2.5 1 3.5H3a2 2 0 0 1-2-2V6c0-1.11.89-2 2-2z'/%3E%3C/svg%3E");
+  background-color: currentColor;
+  -webkit-mask-image: var(--svg);
+  mask-image: var(--svg);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+
+.mdi--list-lock {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  background-color: currentColor;
+
+  --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M 3 4 h 14 v 2 H 3 V 4 M 3 8 h 9 v 2 H 3 V 8 M 3 12 h 7 v 2 H 3 v -2'/%3E%3Cg transform='translate(13 4)'%3E%3Cpath fill='%23000' d='M 6 8 h 0 V 7 a 3 3 0 0 0 -6 0 v 3 H 0 a 2 2 0 0 0 -2 2 v 5 a 2 2 0 0 0 2 2 h 6 a 2 2 0 0 0 2 -2 v -5 a 2 2 0 0 0 -2 -2 Z m -4 2 V 7 a 1 1 0 0 1 2 0 v 3 Z'/%3E%3C/g%3E%3C/svg%3E");
+
+  -webkit-mask-image: var(--svg);
+  mask-image: var(--svg);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}

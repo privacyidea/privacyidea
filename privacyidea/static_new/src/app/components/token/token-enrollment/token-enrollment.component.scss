@@ -1,0 +1,100 @@
+@use "../../../../styles";
+@use "@angular/material" as mat;
+
+.token-enrollment-container {
+  @include styles.table-container-styles;
+  // padding-top: 0;
+
+  width: 47.5rem;
+  max-height: var(--content-height);
+  overflow: auto;
+}
+
+.token-type-option {
+  @include mat.elevation(3);
+  background: #efedf0;
+  border-radius: var(--border-radius);
+  margin: 0 3px 5px;
+  width: 13rem;
+}
+
+.token-type-hint {
+  width: 473px;
+  margin-top: 8px;
+  font-size: 1rem;
+}
+
+.assign-user-container {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.h4-container {
+  display: flex;
+  flex-direction: row;
+}
+
+.date-picker {
+  width: 40%;
+  margin: 0 0 16px 16px;
+}
+
+.time-picker {
+  width: 20%;
+  margin: 0 0 16px 16px;
+}
+
+.zone-picker {
+  width: 30%;
+  margin: 0 0 16px 32px;
+}
+
+h5 {
+  margin: 0 0 0 16px;
+}
+
+.wizard-top-div {
+  margin-top: 16px;
+}
+
+.description-form {
+  width: 100%;
+  margin-top: 16px;
+}
+
+::ng-deep {
+  .multi-column-panel.mat-mdc-select-panel {
+    column-count: 3;
+    max-height: unset;
+    column-gap: 0;
+    background: #dedcdf;
+    padding: 12px 4px 16px 12px;
+  }
+}
+
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: white;
+  padding: 16px;
+  transition: box-shadow 0.2s ease-in-out;
+}
+
+.sticky-header.is-sticky {
+  /* This shadow is applied only when the header is in its "sticky" state */
+  box-shadow: var(--box-shadow);
+}
+
+.sticky-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.sticky-controls .mat-mdc-form-field {
+  flex-grow: 1;
+  width: 100%;
+}

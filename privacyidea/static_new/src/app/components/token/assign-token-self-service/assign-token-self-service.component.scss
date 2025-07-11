@@ -1,0 +1,7 @@
+@use "../../../../styles";
+
+.assign-token-self-service-container {
+  @include styles.table-container-styles;
+  overflow: auto;
+  width: 49rem;
+}

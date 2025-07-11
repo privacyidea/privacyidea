@@ -1,0 +1,11 @@
+@use "../../../../styles/styles";
+
+.navigation-self-service-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--global-padding);
+  align-items: left;
+  padding-top: var(--global-padding);
+  padding-left: var(--global-padding);
+  padding-bottom: var(--global-padding);
+}

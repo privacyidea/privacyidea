@@ -1,0 +1,20 @@
+@use "../../../../styles";
+@use "@angular/material" as mat;
+
+.details-container {
+  display: flex;
+  align-items: center;
+  border-radius: var(--border-radius);
+  @include mat.elevation(5);
+  background-color: var(--table-color);
+  padding: var(--global-padding);
+  overflow: auto;
+
+  .mat-mdc-select-value-text {
+    font-size: 14px;
+  }
+
+  .mdc-list-item.mdc-list-item--with-one-line {
+    // height: auto;
+  }
+}

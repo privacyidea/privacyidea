@@ -1,0 +1,84 @@
+<h2 mat-dialog-title>Assign SSH Machine</h2>
+<mat-dialog-content class="full-width">
+  <form [formGroup]="formGroup">
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Application</mat-label>
+      <mat-select [formControl]="selectedApplication">
+        @for (app of availableApplications(); track app) {
+          <mat-option [value]="app">{{ app }}</mat-option>
+        }
+      </mat-select>
+      @if (selectedApplication.touched && selectedApplication.invalid) {
+        <mat-error> Application is required. </mat-error>
+      }
+    </mat-form-field>
+
+    <mat-divider></mat-divider>
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Machine</mat-label>
+      <input
+        matInput
+        type="text"
+        [matAutocomplete]="machineAuto"
+        [formControl]="selectedMachine" />
+      <mat-autocomplete
+        #machineAuto="matAutocomplete"
+        [displayWith]="getFullMachineName">
+        @for (machine of filteredMachines(); track machine) {
+          <mat-option [value]="machine">{{
+            getFullMachineName(machine)
+          }}</mat-option>
+        }
+      </mat-autocomplete>
+      @if (selectedMachine.touched && selectedMachine.invalid) {
+        <mat-error> Machine is required. </mat-error>
+      }
+    </mat-form-field>
+    @if (selectedApplication.value === "ssh") {
+      <mat-divider></mat-divider>
+      <mat-form-field appearance="fill" class="full-width">
+        <mat-label>Service ID</mat-label>
+        <mat-select [formControl]="selectedServiceId">
+          @for (serviceId of availableServiceIds(); track serviceId) {
+            <mat-option [value]="serviceId">{{ serviceId }}</mat-option>
+          }
+        </mat-select>
+        @if (selectedServiceId.touched && selectedServiceId.invalid) {
+          <mat-error> Service ID is required. </mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="fill" class="full-width">
+        <mat-label>User</mat-label>
+        <input
+          matInput
+          type="text"
+          [matAutocomplete]="userAuto"
+          [formControl]="selectedUser" />
+        <mat-autocomplete
+          #userAuto="matAutocomplete"
+          [displayWith]="getFullMachineName">
+          @for (user of filteredUsers(); track user) {
+            <mat-option [value]="user">{{ user }}</mat-option>
+          }
+        </mat-autocomplete>
+        @if (selectedUser.touched && selectedUser.invalid) {
+          <mat-error> User is required. </mat-error>
+        }
+      </mat-form-field>
+    }
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions>
+  <div class="form-actions">
+    <button
+      mat-button
+      type="button"
+      [disabled]="formGroup.invalid"
+      (click)="onAssign()">
+      Assign
+    </button>
+    <button mat-button type="button" (click)="onCancel()">Cancel</button>
+  </div>
+</mat-dialog-actions>
