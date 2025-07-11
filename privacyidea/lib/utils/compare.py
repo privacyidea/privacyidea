@@ -73,6 +73,23 @@ def parse_comma_separated_string(input_string: str) -> list[str]:
     return rows[0]
 
 
+def _parse_int(value: Union[str, int]) -> int:
+    """
+    Parse a value as an integer.
+    If the value cannot be parsed as an integer, raise a CompareError.
+
+    :param value: value to be parsed to an integer
+    :return: value as integer
+    """
+    if isinstance(value, int):
+        return value
+    try:
+        int_value = int(value)
+    except ValueError:
+        raise CompareError(f"Cannot convert value '{value}' to integer.")
+    return int_value
+
+
 def _compare_equality(left: any, right: any) -> bool:
     """
     Return True if two values are exactly equal, according to Python semantics.
@@ -84,7 +101,9 @@ def _compare_smaller(left: Union[int, str], right: Union[int, str]) -> bool:
     """
     Return True if the left value as integer is smaller than the right integer
     """
-    return int(left or 0) < int(right)
+    left = _parse_int(left or 0)
+    right = _parse_int(right)
+    return left < right
 
 
 def _compare_smaller_any(left: any, right: any) -> bool:
@@ -98,14 +117,18 @@ def _compare_less_equal(left: Union[str, int], right: Union[str, int]) -> bool:
     """
     Return True if the left value as integer is smaller or equal to the right integer
     """
-    return int(left or 0) <= int(right)
+    left = _parse_int(left or 0)
+    right = _parse_int(right)
+    return left <= right
 
 
 def _compare_bigger(left: Union[int, str], right: Union[int, str]) -> bool:
     """
     Return True if the left value as integer is bigger than the right integer
     """
-    return int(left or 0) > int(right)
+    left = _parse_int(left or 0)
+    right = _parse_int(right)
+    return left > right
 
 
 def _compare_bigger_any(left: any, right: any) -> bool:
@@ -119,7 +142,9 @@ def _compare_greater_equal(left: Union[str, int], right: Union[str, int]) -> boo
     """
     Return True if the left value as integer is bigger or equal to the right integer
     """
-    return int(left or 0) >= int(right)
+    left = _parse_int(left or 0)
+    right = _parse_int(right)
+    return left >= right
 
 
 def _compare_contains(left: list, right: any) -> bool:
@@ -134,7 +159,7 @@ def _compare_contains(left: list, right: any) -> bool:
     if isinstance(left, list):
         return right in left
     else:
-        raise CompareError("Left value must be a list, not {!r}".format(type(left)))
+        raise CompareError(f"Left value must be a list, not {type(left)}")
 
 
 def _compare_matches(left: str, right: str) -> bool:

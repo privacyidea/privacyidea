@@ -108,6 +108,12 @@ class UtilsCompareTestCase(MyTestCase):
         self.assertFalse(compare_values(2, "<", 1))
         self.assertFalse(compare_values(2, ">", "2"))
 
+        # Invalid inputs
+        self.assertRaises(CompareError, compare_values, "1.0", "<", "2")
+        self.assertRaises(CompareError, compare_values, "1", "<", "2.1")
+        self.assertRaises(CompareError, compare_values, "1.0", ">", "0")
+        self.assertRaises(CompareError, compare_values, "1", ">", "0.5")
+
     def test_08_get_datetime(self):
         date_time = datetime.datetime(2025, 1, 1, 12, 0,
                                       tzinfo=datetime.timezone(datetime.timedelta(hours=2)))
