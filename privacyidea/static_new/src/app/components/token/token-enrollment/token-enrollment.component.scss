@@ -4,8 +4,8 @@
 .token-enrollment-container {
   @include styles.table-container-styles;
   // padding-top: 0;
-  margin: 32px 16px 16px;
-  width: 1140px;
+
+  width: 47.5rem;
   max-height: 85vh; // TODO: Use calculated value based on viewport height
   overflow: auto;
 }
@@ -15,7 +15,7 @@
   background: #efedf0;
   border-radius: var(--border-radius);
   margin: 0 3px 5px;
-  width: 208px;
+  width: 13rem;
 }
 
 .token-type-hint {

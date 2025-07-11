@@ -305,8 +305,8 @@ body {
   flex: auto;
 }
 
-.width-18rem {
-  width: 18rem;
+.width-288px {
+  width: 288px;
 }
 
 .font-14 {
@@ -408,4 +408,8 @@ body {
   .cdk-overlay-pane.mat-mdc-dialog-panel {
     max-width: unset;
   }
+}
+
+.content-layout {
+  max-width: 81vw;
 }

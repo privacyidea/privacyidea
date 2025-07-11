@@ -1,11 +1,11 @@
-import { Injectable, signal } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
+import { computed, Injectable, signal } from '@angular/core';
+import { throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
+import { PiResponse } from '../../app.component';
 import { NotificationService } from '../notification/notification.service';
 import { VersionService } from '../version/version.service';
-import { PiResponse } from '../../app.component';
 
 export type AuthResponse = PiResponse<AuthData, AuthDetail>;
 
@@ -66,6 +66,10 @@ export class AuthService {
   realm = signal('');
   role = signal<AuthRole>('');
   menus = signal<string[]>([]);
+
+  isSelfServiceUser = computed(() => {
+    return this.role() === 'user';
+  });
 
   constructor(
     private http: HttpClient,

@@ -1,17 +1,15 @@
 @use "../../../../styles";
 
-.token-table-container {
+.token-table-layout {
   @include styles.table-container-styles;
   @include styles.base-table-structure(
     ".token-table",
     ".token-table-filter",
     ".table-scroll-container"
   );
-  overflow: auto;
 }
 
 .selfservice-paginator-container {
-  min-width: 1128px;
   justify-content: end;
   display: flex;
 }

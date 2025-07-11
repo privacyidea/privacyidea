@@ -8,7 +8,6 @@
   @include mat.elevation(5);
   background-color: var(--table-color);
   padding: var(--global-padding);
-  margin: 32px 16px 16px;
   overflow: auto;
 
   .mat-mdc-select-value-text {

@@ -1,6 +1,6 @@
 @use "../../../../../styles";
 
-.container-details-token-table-container {
+.container-details-token-table-layout {
   @include styles.base-table-structure(
     ".container-details-token-table",
     ".container-details-token-table-filter",

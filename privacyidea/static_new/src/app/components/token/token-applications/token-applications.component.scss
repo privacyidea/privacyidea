@@ -6,7 +6,6 @@
   border-radius: var(--border-radius);
   @include mat.elevation(5);
   background-color: var(--table-color);
-  margin: 32px 16px 16px;
   overflow: auto;
 
   h4 {

@@ -1,11 +1,6 @@
 @use "../../../styles";
 @use "@angular/material" as mat;
 
-.audit-layout {
-  overflow: auto;
-  width: 81vw;
-}
-
 .audit-table-overflow {
   padding-bottom: 12px;
   overflow: auto;

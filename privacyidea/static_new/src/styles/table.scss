@@ -344,7 +344,7 @@ th:nth-child(even) {
       padding-left: 5px;
     }
 
-    .container-details-token-table-container .mat-mdc-text-field-wrapper,
+    .container-details-token-table-layout .mat-mdc-text-field-wrapper,
     .add-token .mat-mdc-text-field-wrapper {
       padding-left: 16px !important;
     }
@@ -362,4 +362,9 @@ th:nth-child(even) {
       font-size: 14px;
     }
   }
+}
+
+.table-container {
+  overflow-y: auto;
+  max-width: 70.5rem;
 }
