@@ -345,7 +345,7 @@ class UtilsCompareTestCase(MyTestCase):
             compare_values(now.replace(tzinfo=None).isoformat(), PrimaryComparators.DATE_NOT_WITHIN_LAST, "1h"))
 
         # Invalid formats
-        self.assertRaises(CompareError, compare_values, "1. Juli 2025", PrimaryComparators.DATE_NOT_WITHIN_LAST, "1h")
+        self.assertRaises(CompareError, compare_values, "1. July 2025", PrimaryComparators.DATE_NOT_WITHIN_LAST, "1h")
         self.assertRaises(CompareError, compare_values, now, PrimaryComparators.DATE_NOT_WITHIN_LAST, "1year")
 
     def test_13_string_contains(self):
@@ -548,7 +548,7 @@ class UtilsCompareTestCase(MyTestCase):
         self.assertTrue(compare_time("1h", now.replace(tzinfo=None).isoformat()))
 
         # Invalid formats
-        self.assertFalse(compare_time("1h", "1. Juli 2025"))
+        self.assertFalse(compare_time("1h", "1. July 2025"))
         self.assertFalse(compare_time("1year", now))
 
     def test_18_compare_values_invalid_comparator(self):
