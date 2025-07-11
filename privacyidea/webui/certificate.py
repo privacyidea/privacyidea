@@ -23,7 +23,7 @@ This code is tested in test_ui_certificate.py
 """
 __author__ = "Cornelius Kölbel, <cornelius@privacyidea.org>"
 
-from flask import (Blueprint, render_template, request)
+from flask import (Blueprint, render_template, request, g)
 from privacyidea.api.lib.utils import (get_all_params,
                                        verify_auth_token, send_html)
 
@@ -38,7 +38,9 @@ def before_request():
     """
     # remove session from param and gather all parameters, either
     # from the Form data or from JSON in the request body.
-    request.all_data = get_all_params(request)
+    # Save the request data
+    g.request_data = get_all_params(request)
+    request.all_data = g.request_data
     # Verify the authtoken!
     authtoken = request.all_data.get("authtoken")
     r = verify_auth_token(authtoken, ["user", "admin"])

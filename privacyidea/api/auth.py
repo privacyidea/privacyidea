@@ -91,7 +91,9 @@ def before_request():
     This is executed before the request
     """
     ensure_no_config_object()
-    request.all_data = get_all_params(request)
+    # Save the request data
+    g.request_data = get_all_params(request)
+    request.all_data = g.request_data
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)
