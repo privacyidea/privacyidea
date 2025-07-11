@@ -118,7 +118,9 @@ def before_create_user_request():
     It removes the user parameter from the request to avoid that before_request tries to resolve the user.
     """
     ensure_no_config_object()
-    request.all_data = get_all_params(request)
+    # Save the request data
+    g.request_data = get_all_params(request)
+    request.all_data = g.request_data
     request.User = None
     get_before_request_config()
 
@@ -205,7 +207,9 @@ def before_container_request():
     """
     # auth free endpoints
     ensure_no_config_object()
-    request.all_data = get_all_params(request)
+    # Save the request data
+    g.request_data = get_all_params(request)
+    request.all_data = g.request_data
     auth_token_free_endpoints = ["/container/register/finalize",
                                  "/container/register/terminate/client",
                                  "/container/challenge",
@@ -332,7 +336,9 @@ def before_request():
     # remove session from param and gather all parameters, either
     # from the Form data or from JSON in the request body.
     ensure_no_config_object()
-    request.all_data = get_all_params(request)
+    # Save the request data
+    g.request_data = get_all_params(request)
+    request.all_data = g.request_data
     resolve_logged_in_user()
     get_before_request_config()
 
