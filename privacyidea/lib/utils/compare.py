@@ -522,19 +522,9 @@ def parse_condition(condition: str, data_type: Optional[str] = None) -> Union[Co
     basic_quoted_comparators = [f"'{comparator}'" for comparator in basic_comparators]
     allowed_comparators = primary_comparators + basic_quoted_comparators + basic_comparators
     for tmp_comparator in allowed_comparators:
-        if tmp_comparator not in condition:
-            continue
         values = condition.split(tmp_comparator)
-        if len(values) > 0:
-            if len(values) == 2:
-                # full condition
-                left_value, right_value = [x.strip() for x in values]
-            elif len(values) == 1 and condition.endswith(values[0]):
-                # half condition starting with a comparator
-                left_value = ""
-                right_value = values[0].strip()
-            else:
-                continue
+        if len(values) == 2:
+            left_value, right_value = [x.strip() for x in values]
 
             if tmp_comparator.startswith("'") and tmp_comparator.endswith("'"):
                 # remove quotes
