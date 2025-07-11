@@ -33,7 +33,7 @@ Sections
 ~~~~~~~~
 
 privacyIDEA implements the sections ``userinfo``, ``token``, ``tokeninfo``, ``HTTP Request Headers``,
-``HTTP Environment``, ``Container``, and ``Container Info``.
+``HTTP Environment``, ``Container``, ``Container Info``, and ``Request Data``.
 
 userinfo
 ^^^^^^^^
@@ -205,6 +205,15 @@ The ``Container Info`` condition works the same way as userinfo but matches the 
 The condition can only be evaluated when a valid container serial is available which is the case for most container
 endpoints. It does not work for the actions ``container_list`` (:http:get:`/container/`),
 ``container_create`` (:http:post:`/container/init`) and the template actions.
+
+
+Request Data
+^^^^^^^^^^^^
+
+This section can be used to define conditions based on the request data.
+The key defines the name of a request parameter. Check out the :ref:`rest_api` documentation for more information on
+the available request parameters for a specific request. Note that these are only the expected parameters.
+A requester could send any parameter in the request.
 
 
 Comparators

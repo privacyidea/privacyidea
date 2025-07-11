@@ -1,12 +1,13 @@
 import logging
 from testfixtures import LogCapture
 
+from privacyidea.lib.container import create_container_template
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.policies.policy_conditions import ConditionSection, ConditionHandleMissingData
 from privacyidea.lib.utils.compare import Comparators
 from .base import MyApiTestCase
 from privacyidea.lib.policy import (set_policy, SCOPE, ACTION, delete_policy, rename_policy)
-from privacyidea.lib.token import init_token
+from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
 from privacyidea.models import db, NodeName
 
@@ -873,3 +874,88 @@ class APIPolicyConditionTestCase(MyApiTestCase):
             self.assertEqual(result.get("detail").get("message"), "matching 1 tokens")
 
         delete_policy("policy")
+
+    def test_06_check_request_data_condition_success(self):
+        set_policy("policy_hotp", scope=SCOPE.ENROLL, action={ACTION.TOKENLABEL: "pi_offline"},
+                   conditions=[(ConditionSection.REQUEST_DATA, "type", Comparators.EQUALS, "hotp", True,
+                                                   ConditionHandleMissingData.IS_FALSE.value)])
+        set_policy("policy_totp", scope=SCOPE.ENROLL, action={ACTION.TOKENLABEL: "pi_online"},
+                   conditions=[(ConditionSection.REQUEST_DATA, "type", Comparators.EQUALS, "totp", True,
+                                ConditionHandleMissingData.IS_FALSE.value)])
+
+        # Request for hotp token
+        with self.app.test_request_context("/token/init", method="POST", json={"type": "hotp", "genkey": True},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json
+            self.assertTrue("detail" in result)
+            enroll_url = result.get("detail").get("googleurl").get("value")
+            self.assertTrue(enroll_url.startswith("otpauth://hotp/pi_offline"))
+            remove_token(result.get("detail").get("serial"))
+
+        # Request for totp token
+        with self.app.test_request_context("/token/init", method="POST", json={"type": "totp", "genkey": True},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json
+            self.assertTrue("detail" in result)
+            enroll_url = result.get("detail").get("googleurl").get("value")
+            self.assertTrue(enroll_url.startswith("otpauth://totp/pi_online"))
+            remove_token(result.get("detail").get("serial"))
+
+        # Request for another token type
+        with self.app.test_request_context("/token/init", method="POST", json={"type": "daypassword", "genkey": True},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json
+            self.assertTrue("detail" in result)
+            enroll_url = result.get("detail").get("googleurl").get("value")
+            self.assertTrue(enroll_url.startswith(f"otpauth://daypassword/{result.get('detail').get('serial')}"))
+            remove_token(result.get("detail").get("serial"))
+
+        # Cleanup
+        delete_policy("policy_hotp")
+        delete_policy("policy_totp")
+
+    def test_07_check_request_data_condition_missing_data(self):
+        # only allow to create container from template
+        set_policy("policy", scope=SCOPE.ADMIN, action=[ACTION.CONTAINER_CREATE],
+                   conditions=[(ConditionSection.REQUEST_DATA, "template_name", Comparators.MATCHES, ".+", True,
+                                ConditionHandleMissingData.IS_FALSE.value)])
+        set_policy("policy_token", scope=SCOPE.ADMIN, action="enrollTOTP")
+        create_container_template("smartphone", "test",
+                                  {"tokens": [{"type": "totp", "genkey": True}]})
+
+        # Creation with template is allowed
+        with self.app.test_request_context("/container/init",
+                                           method="POST",
+                                           json={"type": "smartphone", "container_serial": "SMPH001", "template_name": "test"},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json
+            self.assertTrue(result.get("result").get("status"))
+            container_serial = result.get("result").get("value").get("container_serial")
+            self.assertEqual("SMPH001", container_serial)
+            tokens = result.get("result").get("value").get("tokens")
+            self.assertEqual(1, len(tokens))
+            token = list(tokens.values())[0]
+            self.assertEqual("totp", token.get("type"))
+            remove_token(token.get("serial"))
+
+        # Creation without template is not allowed
+        with self.app.test_request_context("/container/init",
+                                           method="POST",
+                                           json={"type": "smartphone", "container_serial": "SMPH001"},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403)
+            result = res.json
+            self.assertFalse(result.get("result").get("status"))
+            self.assertEqual(303, result.get("result").get("error").get("code"))
+
+        delete_policy("policy")
+        delete_policy("policy_token")

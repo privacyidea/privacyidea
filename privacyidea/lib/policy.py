@@ -166,7 +166,7 @@ and any combination of it. ``dow`` being day of week Mon, Tue, Wed, Thu, Fri,
 Sat, Sun.
 """
 from datetime import datetime
-from typing import Union
+from typing import Union, Optional
 
 from werkzeug.datastructures.headers import EnvironHeaders
 
@@ -792,7 +792,7 @@ class PolicyClass(object):
                        time: datetime = None, sort_by_priority: bool = True, audit_data: dict = None,
                        request_headers=None, serial: str = None,
                        extended_condition_check: Union[int, list[str], None] = None, additional_realms: list = None,
-                       container_serial: str = None) -> list[dict]:
+                       container_serial: str = None, request_data: Optional[dict] = None) -> list[dict]:
         """
         Return all policies matching the given context.
         Optionally, write the matching policies to the audit log.
@@ -829,6 +829,7 @@ class PolicyClass(object):
         :param additional_realms: A list of realms that should be additionally checked besides the user realm
             combination
         :param container_serial: The container serial from the request if available
+        :param request_data: The request data as dictionary
         :return: a list of policy dictionaries
         """
         if user_object is not None:
@@ -874,7 +875,7 @@ class PolicyClass(object):
             try:
                 reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object, request_headers,
                                                                       serial, extended_condition_check,
-                                                                      container_serial)
+                                                                      container_serial, request_data)
             except PolicyError:
                 # Add the information on which actions triggered the error to the logs
                 log.error(f"Error checking extended conditions for action '{action}'.")
@@ -921,7 +922,7 @@ class PolicyClass(object):
     def filter_policies_by_conditions(self, policies: list[dict], user_object: User = None,
                                       request_headers: EnvironHeaders = None, serial: str = None,
                                       extended_condition_check: Union[None, int, list[str]] = None,
-                                      container_serial: str = None) -> list[dict]:
+                                      container_serial: str = None, request_data: Optional[dict] = None) -> list[dict]:
         """
         Evaluates for each policy condition if it matches the actual request (user / token / request headers) and
         returns a list of all matching policies.
@@ -935,6 +936,7 @@ class PolicyClass(object):
         :param extended_condition_check: One of CONDITION_CHECK (1 - not check, list of sections to check,
             None - check all).
         :param container_serial: The serial of a container or None if not contained in the request data
+        :param request_data: The request data as dictionary, if available
         :return: a list of matching policy dictionaries
         """
         reduced_policies = []
@@ -955,7 +957,7 @@ class PolicyClass(object):
                     # We check conditions, either if we are supposed to check everything or if
                     # the section is contained in the extended condition check
                     include_policy = condition.match(policy_name, user_object, serial, request_headers,
-                                                     container_serial)
+                                                     container_serial, request_data)
 
                     if not include_policy:
                         # condition does not match request, no need to check the remaining conditions
@@ -3103,6 +3105,9 @@ def get_policy_condition_sections():
         ConditionSection.CONTAINER_INFO: {
             "description": _("The policy only matches if certain conditions on the container info are fulfilled.")
         },
+        ConditionSection.REQUEST_DATA: {
+            "description": _("The policy only matches if certain conditions on the request data are fulfilled.")
+        }
     }
 
 
@@ -3193,12 +3198,10 @@ class Match(object):
             audit_data = self._g.audit_object.audit_data
         else:
             audit_data = None
-        if hasattr(self._g, "request_headers"):
-            request_headers = self._g.request_headers
-        else:
-            request_headers = None
+        request_headers = self._g.get("request_headers")
+        request_data = self._g.get("request_data")
         return self._g.policy_object.match_policies(audit_data=audit_data, request_headers=request_headers,
-                                                    pinode=self.pinode, **self._match_kwargs)
+                                                    pinode=self.pinode, request_data=request_data, **self._match_kwargs)
 
     def any(self, write_to_audit_log=True):
         """
