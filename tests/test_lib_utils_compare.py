@@ -430,7 +430,7 @@ class UtilsCompareTestCase(MyTestCase):
                     "now": datetime.datetime.now(datetime.timezone.utc).isoformat(),
                     "now+10h": (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
                         hours=10)).isoformat(),
-                    "past": "2017/04/20 11:30+0200",
+                    "past": "2017-04-20 11:30+0200",
                     "invalid_date": "16. März 2020",
                     "text": "ABC",
                     "list": ["123", "ABC", "XYZ"]}

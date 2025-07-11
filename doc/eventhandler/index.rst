@@ -129,7 +129,7 @@ In some conditions you need to use comparators to define how the condition shoul
 comparators are available:
 
     * ``==`` evaluates to true if both values are equal. Allows comparison of strings, integers, and dates in isoformat.
-      ``!==`` evaluates to true if this is not the case.
+      ``!=`` evaluates to true if this is not the case.
     * ``>`` evaluates to true if the left value is greater than the right value. Allows comparison of integers and
       dates in isoformat.
     * ``<`` evaluates to true if the left value is less than the right value. Allows comparison of integers and dates

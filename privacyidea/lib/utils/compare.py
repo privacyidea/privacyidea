@@ -272,17 +272,16 @@ def _compare_string_contains(text: str, substring: str) -> bool:
     return substring.lower() in text.lower()
 
 
-def negate(func):
+def negate(func: callable) -> callable:
     """
     Given a comparison function ``func``, build and return a comparison function that negates
     the result of ``func``.
 
-    :param func: a comparison function taking two arguments
-    :return: a comparison function taking three arguments
+    :param func: a comparison function taking the two values to compare as arguments
+    :return: a comparison function taking the two values to compare as arguments
     """
-
     @wraps(func)
-    def negated(left, right):
+    def negated(left: any, right: any) -> bool:
         return not func(left, right)
 
     return negated
@@ -292,7 +291,7 @@ def negate(func):
 # description.
 
 # This class enumerates all available primary comparators. For some of them also other names are accepted, but
-# these are the preferred names which are used internally.Additionally, only these are sued to generate the
+# these are the preferred names which are used internally. Additionally, only these are used to generate the
 # COMPARATOR_DESCRIPTIONS dictionary.
 class PrimaryComparators:
     EQUALS = "equals"
@@ -338,7 +337,9 @@ class PrimaryComparators:
 class Comparator:
     name: str
     function: callable
+    # description only for primary comparators to be displayed in the UI
     description: str
+    # Whether the comparator function only accepts specific types of the values and handles the type conversion
     type_restricted: bool = False
 
 
