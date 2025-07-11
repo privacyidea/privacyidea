@@ -89,7 +89,7 @@ $border-radius: var(--border-radius);
   .session-timer {
     width: 48px;
     height: 19px;
-    padding-left: 1rem;
+    padding-left: 16px;
     justify-content: center;
     display: flex;
   }
@@ -111,10 +111,10 @@ $border-radius: var(--border-radius);
   }
 
   .profile-logout-div {
-    margin-left: 1rem;
+    margin-left: 16px;
     margin-right: 130px;
     align-items: center;
-    gap: 1rem;
+    gap: 16px;
   }
 }
 

@@ -3,6 +3,8 @@
 .navigation-self-service-column {
   display: flex;
   flex-direction: column;
-  padding: calc(var(--global-padding) * 2);
+  gap: var(--global-padding);
   align-items: center;
+  padding-top: var(--global-padding);
+  padding-left: var(--global-padding);
 }

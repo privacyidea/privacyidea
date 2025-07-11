@@ -50,11 +50,12 @@
                   @case ("success") {
                     <div class="flex just-center">
                       <span
-                        [ngClass]="[
-                          element[column.key] === 1
-                            ? 'highlight-true'
-                            : 'highlight-false',
-                        ]">
+                        [ngClass]="
+                          tableUtilsService.getSpanClassForKey({
+                            key: column.key,
+                            value: element[column.key],
+                          })
+                        ">
                         {{ element[column.key] }}
                       </span>
                     </div>

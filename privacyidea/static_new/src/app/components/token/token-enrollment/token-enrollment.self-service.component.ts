@@ -6,13 +6,21 @@ import {
   MatAutocompleteTrigger,
 } from '@angular/material/autocomplete';
 import { MatButton, MatIconButton } from '@angular/material/button';
-import { MatNativeDateModule } from '@angular/material/core';
+import {
+  DateAdapter,
+  MAT_DATE_FORMATS,
+  MatNativeDateModule,
+  provideNativeDateAdapter,
+} from '@angular/material/core';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatOption, MatSelect } from '@angular/material/select';
-import { MatTooltip } from '@angular/material/tooltip';
+import {
+  MAT_TOOLTIP_DEFAULT_OPTIONS,
+  MatTooltip,
+} from '@angular/material/tooltip';
 import { ContainerService } from '../../../services/container/container.service';
 import { ContentService } from '../../../services/content/content.service';
 import { DialogService } from '../../../services/dialog/dialog.service';
@@ -47,7 +55,12 @@ import { EnrollVascoComponent } from './enroll-vasco/enroll-vasco.component';
 import { EnrollWebauthnComponent } from './enroll-webauthn/enroll-webauthn.component';
 import { EnrollYubicoComponent } from './enroll-yubico/enroll-yubico.component';
 import { EnrollYubikeyComponent } from './enroll-yubikey/enroll-yubikey.component';
-import { TokenEnrollmentComponent } from './token-enrollment.component';
+import {
+  CUSTOM_DATE_FORMATS,
+  CUSTOM_TOOLTIP_OPTIONS,
+  CustomDateAdapter,
+  TokenEnrollmentComponent,
+} from './token-enrollment.component';
 
 @Component({
   selector: 'app-token-enrollment-self-service',
@@ -98,6 +111,12 @@ import { TokenEnrollmentComponent } from './token-enrollment.component';
   ],
   templateUrl: './token-enrollment.self-service.component.html',
   styleUrl: './token-enrollment.component.scss',
+  providers: [
+    provideNativeDateAdapter(),
+    { provide: DateAdapter, useFactory: () => new CustomDateAdapter('+00:00') },
+    { provide: MAT_DATE_FORMATS, useValue: CUSTOM_DATE_FORMATS },
+    { provide: MAT_TOOLTIP_DEFAULT_OPTIONS, useValue: CUSTOM_TOOLTIP_OPTIONS },
+  ],
 })
 export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponent {
   constructor(

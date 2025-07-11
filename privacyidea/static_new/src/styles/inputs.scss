@@ -15,19 +15,23 @@ $focus-outline: 3px solid var(--blue-light);
   height: 76.5px;
 }
 
+.hint-spacer {
+  margin-bottom: 1rem;
+}
+
 .user-pin-container {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .user-pin-input {
   display: flex;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .user-pin-button {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 8px;
 }

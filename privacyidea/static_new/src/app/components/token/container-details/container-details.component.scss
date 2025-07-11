@@ -1,5 +1,5 @@
 @use "../../../../styles";
-@use '@angular/material' as mat;
+@use "@angular/material" as mat;
 
 $gap-small: 8px;
 $table-border-color: #e0e2ec;
@@ -13,7 +13,7 @@ $table-border-color: #e0e2ec;
   @include mat.elevation(5);
   background-color: var(--table-color);
   padding: var(--global-padding);
-  margin: 2rem 1rem 1rem;
+  margin: 32px 16px 16px;
   overflow: auto;
 
   .details-table {
@@ -31,7 +31,7 @@ $table-border-color: #e0e2ec;
   flex-direction: row;
   display: flex;
   gap: $gap-small;
-  margin-left: 1rem;
+  margin-left: 16px;
   align-items: center;
 }
 
@@ -50,8 +50,8 @@ $table-border-color: #e0e2ec;
 }
 
 .add-token {
-  margin-bottom: 1rem;
-  width: 36rem;
+  margin-bottom: 16px;
+  width: 576px;
 }
 
 .token-option {
@@ -69,7 +69,7 @@ $table-border-color: #e0e2ec;
 }
 
 .checkbox-paginator-container {
-  gap: 1rem;
+  gap: 16px;
   height: 60px;
 }
 

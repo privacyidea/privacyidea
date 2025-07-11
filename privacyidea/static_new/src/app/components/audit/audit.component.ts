@@ -1,6 +1,10 @@
+import { NgClass } from '@angular/common';
 import { Component, effect, linkedSignal, WritableSignal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
-import { KeywordFilterComponent } from '../shared/keyword-filter/keyword-filter.component';
+import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatInput } from '@angular/material/input';
+import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import {
   MatCell,
   MatCellDef,
@@ -15,17 +19,13 @@ import {
   MatTable,
   MatTableDataSource,
 } from '@angular/material/table';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { FormsModule } from '@angular/forms';
-import { MatInput } from '@angular/material/input';
-import { NgClass } from '@angular/common';
-import { MatPaginator, PageEvent } from '@angular/material/paginator';
-import { AuditData, AuditService } from '../../services/audit/audit.service';
-import { CopyButtonComponent } from '../shared/copy-button/copy-button.component';
-import { ContentService } from '../../services/content/content.service';
 import { RouterLink } from '@angular/router';
+import { AuditData, AuditService } from '../../services/audit/audit.service';
 import { AuthService } from '../../services/auth/auth.service';
+import { ContentService } from '../../services/content/content.service';
 import { TableUtilsService } from '../../services/table-utils/table-utils.service';
+import { CopyButtonComponent } from '../shared/copy-button/copy-button.component';
+import { KeywordFilterComponent } from '../shared/keyword-filter/keyword-filter.component';
 
 const columnKeysMap = [
   { key: 'number', label: 'Number' },
@@ -141,7 +141,7 @@ export class AuditComponent {
 
   constructor(
     private auditService: AuditService,
-    private tableUtilsService: TableUtilsService,
+    protected tableUtilsService: TableUtilsService,
     protected contentService: ContentService,
     protected authService: AuthService,
   ) {

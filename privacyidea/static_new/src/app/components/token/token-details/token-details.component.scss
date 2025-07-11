@@ -1,5 +1,5 @@
 @use "../../../../styles";
-@use '@angular/material' as mat;
+@use "@angular/material" as mat;
 
 .details-container {
   display: flex;
@@ -8,7 +8,7 @@
   @include mat.elevation(5);
   background-color: var(--table-color);
   padding: var(--global-padding);
-  margin: 2rem 1rem 1rem;
+  margin: 32px 16px 16px;
   overflow: auto;
 
   .mat-mdc-select-value-text {
@@ -16,6 +16,6 @@
   }
 
   .mdc-list-item.mdc-list-item--with-one-line {
-    height: auto;
+    // height: auto;
   }
 }

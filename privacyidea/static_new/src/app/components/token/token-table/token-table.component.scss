@@ -5,9 +5,8 @@
   @include styles.base-table-structure(
     ".token-table",
     ".token-table-filter",
-    ".table-scrollable-container"
+    ".table-scroll-container"
   );
-  margin: 2rem 1rem 1rem;
   overflow: auto;
 }
 
@@ -19,5 +18,5 @@
 
 .selfservice-paginator-label {
   flex: 1;
-  margin-right: 1rem;
+  margin-right: 16px;
 }

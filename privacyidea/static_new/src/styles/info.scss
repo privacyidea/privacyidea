@@ -1,7 +1,7 @@
 $border-color: #e0e2ec;
 $odd-row-bg: #f3f3f3;
 $even-row-bg: #ffffff;
-$table-cell-font-size: 14px;
+$table-cell-font-size: 0.875rem;
 
 .info-container {
   display: flex;
@@ -12,7 +12,7 @@ $table-cell-font-size: 14px;
   .info-title {
     display: flex;
     align-items: center;
-    padding-left: 1rem;
+    padding-left: 16px;
     border-left: 1px solid $border-color;
     border-bottom: 1px solid $border-color;
     box-sizing: border-box;
@@ -39,23 +39,24 @@ $table-cell-font-size: 14px;
   }
 
   .info-value-container {
-    width: 19rem;
+    // width: 19rem;
   }
 
   .info-input {
     margin-left: 5px;
-    margin-top: 0.25rem;
+    margin-top: 4px;
   }
 
   .info-row {
-    margin-top: 0.063rem;
+    margin-top: 1px;
+    height: 5rem;
   }
 
   .info-span {
     display: flex;
     flex-direction: column;
     margin-left: 0.5rem;
-    margin-top: 0.2rem;
+    margin-top: 3px;
     font-size: $table-cell-font-size;
   }
 
@@ -68,17 +69,17 @@ $table-cell-font-size: 14px;
     margin-left: 2px;
     margin-top: 3px;
     white-space: normal;
-    max-height: 72px;
+    max-height: calc(var(--mat-sys-body-large-line-height) * 2);
     overflow-y: auto;
-    max-width: 277px;
-    margin-right: -1rem;
-    padding-right: 1rem;
+    max-width: 18rem;
+    margin-right: -16px;
+    padding-right: 16px;
     overflow-wrap: anywhere;
   }
 
   .info-divider {
     width: 16rem;
-    margin: 0.188rem 0 0.25rem -0.5rem;
+    margin: 3px 0 4px -8px;
   }
 
   .border-top {

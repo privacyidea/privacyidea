@@ -1,10 +1,10 @@
 @use "../../../../styles";
-@use '@angular/material' as mat;
+@use "@angular/material" as mat;
 
 $card-bg: white;
 $card-border: white;
 $card-padding: 8px;
-$card-margin: 2rem;
+$card-margin: 32px;
 $tab-active-color: var(--blue-base);
 $h4-padding: 8px;
 $h4-margin: 0;

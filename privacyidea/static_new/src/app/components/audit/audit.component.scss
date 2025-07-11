@@ -3,7 +3,7 @@
 
 .audit-layout {
   overflow: auto;
-  width: 70vw;
+  width: 81vw;
 }
 
 .audit-table-overflow {
@@ -16,8 +16,7 @@
   @include styles.base-table-structure(
     ".token-table",
     ".token-table-filter",
-    ".table-scrollable-container"
+    ".table-scroll-container"
   );
-  margin: 2rem 1rem 1rem;
   overflow: auto;
 }

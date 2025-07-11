@@ -244,7 +244,19 @@ export class TableUtilsService {
     return element[columnKey];
   }
 
-  getSpanClassForKey(key: string, value: any, maxfail: any): string {
+  getSpanClassForKey(args: {
+    key: string;
+    value?: any;
+    maxfail?: any;
+  }): string {
+    const { key, value, maxfail } = args;
+    if (key === 'success') {
+      if (value === '' || value === null || value === undefined) {
+        return '';
+      }
+      if (value) return 'highlight-true';
+      return 'highlight-false';
+    }
     if (key === 'description') {
       return 'details-table-item details-description';
     }
@@ -283,14 +295,27 @@ export class TableUtilsService {
   }
 
   getClassForColumnKey(columnKey: string): string {
-    if (columnKey === 'description') {
-      return 'table-scrollable-container description';
-    } else if (columnKey === 'failcount') {
-      return 'failcount';
-    } else if (columnKey !== 'realms') {
-      return 'flex-center-vertical';
+    switch (columnKey) {
+      case 'failcount':
+      case 'active':
+      case 'revoke':
+      case 'delete':
+        return 'flex-center';
+      case 'realms':
+      case 'description':
+        return 'table-scroll-container';
+      default:
+        return 'flex-center-vertical';
     }
-    return 'table-scrollable-container';
+  }
+
+  getChildClassForColumnKey(columnKey: string): string {
+    if (
+      this.getClassForColumnKey(columnKey).includes('table-scroll-container')
+    ) {
+      return 'scroll-item';
+    }
+    return '';
   }
 
   getDisplayTextForKeyAndRevoked(

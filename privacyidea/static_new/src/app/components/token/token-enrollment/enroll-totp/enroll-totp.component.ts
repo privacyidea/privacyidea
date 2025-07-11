@@ -1,3 +1,4 @@
+import { NgClass } from '@angular/common';
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import {
   FormControl,
@@ -7,6 +8,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { MatCheckbox } from '@angular/material/checkbox';
+import { MatOption } from '@angular/material/core';
 import {
   MatError,
   MatFormField,
@@ -14,15 +16,14 @@ import {
   MatLabel,
 } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
-import { MatOption } from '@angular/material/core';
 import { MatSelect } from '@angular/material/select';
-import { TokenService } from '../../../../services/token/token.service';
+import { Observable, of } from 'rxjs';
 import {
   EnrollmentResponse,
   TokenEnrollmentData,
 } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
-import { Observable, of } from 'rxjs';
 import { TotpApiPayloadMapper } from '../../../../mappers/token-api-payload/totp-token-api-payload.mapper';
+import { TokenService } from '../../../../services/token/token.service';
 
 export interface TotpEnrollmentOptions extends TokenEnrollmentData {
   type: 'totp';
@@ -46,6 +47,7 @@ export interface TotpEnrollmentOptions extends TokenEnrollmentData {
     MatSelect,
     MatError,
     ReactiveFormsModule,
+    NgClass,
   ],
   templateUrl: './enroll-totp.component.html',
   styleUrl: './enroll-totp.component.scss',
@@ -62,7 +64,7 @@ export class EnrollTotpComponent implements OnInit {
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
-  generateOnServerControl = new FormControl<boolean>(true, [
+  generateOnServerFormControl = new FormControl<boolean>(true, [
     Validators.required,
   ]);
   otpLengthControl = new FormControl<number>(6, [Validators.required]);
@@ -71,7 +73,7 @@ export class EnrollTotpComponent implements OnInit {
   timeStepControl = new FormControl<number | string>(30, [Validators.required]);
 
   totpForm = new FormGroup({
-    generateOnServer: this.generateOnServerControl,
+    generateOnServer: this.generateOnServerFormControl,
     otpLength: this.otpLengthControl,
     otpKey: this.otpKeyControl,
     hashAlgorithm: this.hashAlgorithmControl,
@@ -94,7 +96,7 @@ export class EnrollTotpComponent implements OnInit {
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({
-      generateOnServer: this.generateOnServerControl,
+      generateOnServer: this.generateOnServerFormControl,
       otpLength: this.otpLengthControl,
       otpKey: this.otpKeyControl,
       hashAlgorithm: this.hashAlgorithmControl,
@@ -102,7 +104,7 @@ export class EnrollTotpComponent implements OnInit {
     });
     this.clickEnrollChange.emit(this.onClickEnroll);
 
-    this.generateOnServerControl.valueChanges.subscribe((generate) => {
+    this.generateOnServerFormControl.valueChanges.subscribe((generate) => {
       if (!generate) {
         this.otpKeyControl.setValidators([
           Validators.required,
@@ -130,7 +132,7 @@ export class EnrollTotpComponent implements OnInit {
     const enrollmentData: TotpEnrollmentOptions = {
       ...basicOptions,
       type: 'totp',
-      generateOnServer: !!this.generateOnServerControl.value,
+      generateOnServer: !!this.generateOnServerFormControl.value,
       otpLength: this.otpLengthControl.value ?? 6,
       hashAlgorithm: this.hashAlgorithmControl.value ?? 'sha1',
       timeStep: timeStepValue,

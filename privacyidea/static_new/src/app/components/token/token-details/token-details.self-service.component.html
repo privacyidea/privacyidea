@@ -167,11 +167,11 @@
                       ]">
                       <span
                         [ngClass]="[
-                          tableUtilsService.getSpanClassForKey(
-                            element.keyMap.key,
-                            element.value,
-                            maxfail
-                          ),
+                          tableUtilsService.getSpanClassForKey({
+                            key: element.keyMap.key,
+                            value: element.value,
+                            maxfail: maxfail,
+                          }),
                         ]">
                         {{
                           tableUtilsService.getDisplayTextForKeyAndRevoked(

@@ -81,13 +81,15 @@
                   [disabled]="totalLength() === 0"></mat-checkbox>
               }
               @case ("serial") {
-                <a
-                  attr.aria-label="{{ column.label }} Link"
-                  (click)="contentService.tokenSelected(tokenDetails.serial)">
-                  {{ tokenDetails[column.key] }}
-                </a>
-                <app-copy-button
-                  [copyText]="tokenDetails.serial"></app-copy-button>
+                <div class="flex-row">
+                  <a
+                    attr.aria-label="{{ column.label }} Link"
+                    (click)="contentService.tokenSelected(tokenDetails.serial)">
+                    {{ tokenDetails[column.key] }}
+                  </a>
+                  <app-copy-button
+                    [copyText]="tokenDetails.serial"></app-copy-button>
+                </div>
               }
               @case ("active") {
                 <span
