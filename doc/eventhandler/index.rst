@@ -109,15 +109,14 @@ property *conditions* and checked in the method *check_condition*. The base clas
 for event handlers currently defines those conditions. So all event handlers come with
 the same conditions.
 
-.. note:: In contrast to other conditions, the condition checking for
-   ``tokenrealms``, ``tokenresolvers``, ``serial`` and ``user_token_number``
-   also evaluates to *true*, if this information
-   can not be checked. I.e. if a request does not contain a *serial* or if the serial
-   can not be determined, this condition will be evaluated as fulfilled.
+.. note:: In contrast to other conditions, the checking for the following conditions also evaluates to *true*, if this
+   information can not be checked: ``serial``, ``client_ip``, ``user_token_number``, ``user_container_number``, and
+   any condition based on a token or container if the according token or container object is not available.
+   I.e. if a request does not contain a *serial* or if the serial can not be determined, this condition will be
+   evaluated as fulfilled.
 
-   Event Handlers are a mighty and complex tool to tweak the functioning of your
-   privacyIDEA system. We recommend to test your definitions thoroughly to assure
-   your expected outcome.
+   Event Handlers are a mighty and complex tool to tweak the functioning of your privacyIDEA system. We recommend to
+   test your definitions thoroughly to assure your expected outcome.
 
 
 .. _condition_comparators:
@@ -380,12 +379,13 @@ than 5 hours in the past.
 
 In contrast to the *realm* this is the realm of the token - the *tokenrealm*.
 The action is only triggered, if the token within the event has the given
-tokenrealm. This can be used in workflows, when e.g. hardware tokens which
+tokenrealm or no tokenrealm at all. This can be used in workflows, when e.g. hardware tokens which
 are not assigned to a user are pushed into a kind of storage realm.
 
 **tokenresolver**
 
-The resolver of the token, for which this event should apply.
+The resolver of the token, for which this event should apply. The action is also triggered if the token (the token
+owner) is in no resolver at all.
 
 **tokentype**
 
@@ -404,6 +404,13 @@ of tokens assigned.
 This can be used to e.g. automatically enroll a token for the user if the
 user has no tokens left or to notify the administrator if
 the user has a certain amount of tokens assigned.
+
+You can use all :ref:`condition_comparators` that support integers, e.g. ``'=='0``.
+
+**user_container_number**
+
+The action is only triggered, if the number of containers assigned to the user in the event matches the given
+condition.
 
 You can use all :ref:`condition_comparators` that support integers, e.g. ``'=='0``.
 
@@ -490,9 +497,9 @@ The condition is not checked if the container has no realm, hence the action wou
 
 **container_resolver**
 
-The action is only triggered if the owner of the container is in the given resolver.
-If multiple resolvers are selected, the condition is fulfilled if at least one owner is in one resolver. The condition
-is not checked if the container has no owner, hence the action would be triggered.
+The action is only triggered if the owner of the container is in the given resolver or the container has no owner at
+all. If multiple resolvers are selected, the condition is fulfilled if at least one owner is in one resolver. The
+condition is not checked if the container has no owner, hence the action would be triggered.
 
 **container_last_auth**
 

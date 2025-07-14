@@ -32,7 +32,7 @@ from privacyidea.lib.eventhandler.tokenhandler import (TokenEventHandler,
 from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler, SCRIPT_WAIT
 from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
 from privacyidea.lib.eventhandler.responsemangler import ResponseManglerEventHandler
-from privacyidea.models import EventCounter
+from privacyidea.models import EventCounter, TokenOwner
 from privacyidea.lib.eventhandler.federationhandler import FederationEventHandler
 from privacyidea.lib.eventhandler.requestmangler import RequestManglerEventHandler
 from privacyidea.lib.eventhandler.base import BaseEventHandler, CONDITION
@@ -668,7 +668,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # Check if the condition does not match due to wrong state
-        options["handler_def"] = {"conditions": {CONDITION.CONTAINER_EXACT_STATE: "active"}}
+        options["handler_def"] = {"conditions": {CONDITION.CONTAINER_EXACT_STATE: "lost,active"}}
         r = uhandler.check_condition(options)
         self.assertFalse(r)
 
@@ -1069,6 +1069,159 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertTrue(r)
 
         delete_container_by_serial(container_serial)
+
+    def test_24_invalid_container_serial(self):
+        # event handler
+        uhandler = BaseEventHandler()
+
+        # Prepare a fake request
+        all_data = {"container_serial": "random_serial"}
+        resp_data = """{"result": {"value": false}}"""
+        options = self.setup_request(all_data=all_data, resp_data=resp_data)
+
+        # The condition matches as the container is not found, hence the condition is not checked
+        options["handler_def"] = {"conditions": {CONDITION.CONTAINER_TYPE: "smartphone"}}
+        r = uhandler.check_condition(options)
+        self.assertTrue(r)
+
+        # Try to get container from invalid token serial
+        all_data = {"serial": "random_serial"}
+        resp_data = """{"result": {"value": false}}"""
+        options = self.setup_request(all_data=all_data, resp_data=resp_data)
+        options["handler_def"] = {"conditions": {CONDITION.CONTAINER_TYPE: "smartphone"}}
+        r = uhandler.check_condition(options)
+        self.assertTrue(r)
+
+    def test_25_check_token_locked(self):
+        token = init_token({"type": "hotp", "genkey": True})
+
+        # event handler
+        uhandler = BaseEventHandler()
+
+        # Prepare a fake request
+        all_data = {"serial": token.get_serial()}
+        resp_data = """{"result": {"value": false}}"""
+        options = self.setup_request(all_data=all_data, resp_data=resp_data)
+
+        # Token is not locked
+        options["handler_def"] = {"conditions": {CONDITION.TOKEN_LOCKED: "False"}}
+        r = uhandler.check_condition(options)
+        self.assertTrue(r)
+        options["handler_def"] = {"conditions": {CONDITION.TOKEN_LOCKED: "True"}}
+        r = uhandler.check_condition(options)
+        self.assertFalse(r)
+
+        # Token is locked
+        token.set_maxfail(1)
+        token.inc_failcount()
+        options["handler_def"] = {"conditions": {CONDITION.TOKEN_LOCKED: "False"}}
+        r = uhandler.check_condition(options)
+        self.assertFalse(r)
+        options["handler_def"] = {"conditions": {CONDITION.TOKEN_LOCKED: "True"}}
+        r = uhandler.check_condition(options)
+        self.assertTrue(r)
+
+        token.delete_token()
+
+    def test_26_check_user_container_number(self):
+        self.setUp_user_realms()
+        hans = User("hans", self.realm1)
+        container_serial = init_container({"type": "generic", "user": hans.login, "realm": hans.realm})[
+            "container_serial"]
+
+        # event handler
+        uhandler = BaseEventHandler()
+
+        # Prepare a fake request
+        all_data = {"type": "hotp"} # just set any data to ensure request.all_data is set
+        resp_data = """{"result": {"value": false}}"""
+        options = self.setup_request(all_data=all_data, resp_data=resp_data, user=hans)
+
+        # Condition is true
+        options["handler_def"] = {"conditions": {CONDITION.USER_CONTAINER_NUMBER: "==1"}}
+        r = uhandler.check_condition(options)
+        self.assertTrue(r)
+        options["handler_def"] = {"conditions": {CONDITION.USER_CONTAINER_NUMBER: "<2"}}
+        r = uhandler.check_condition(options)
+        self.assertTrue(r)
+        options["handler_def"] = {"conditions": {CONDITION.USER_CONTAINER_NUMBER: ">0"}}
+        r = uhandler.check_condition(options)
+        self.assertTrue(r)
+
+        # Condition is false
+        options["handler_def"] = {"conditions": {CONDITION.USER_CONTAINER_NUMBER: "!=1"}}
+        r = uhandler.check_condition(options)
+        self.assertFalse(r)
+        options["handler_def"] = {"conditions": {CONDITION.USER_CONTAINER_NUMBER: ">2"}}
+        r = uhandler.check_condition(options)
+        self.assertFalse(r)
+        options["handler_def"] = {"conditions": {CONDITION.USER_CONTAINER_NUMBER: "<1"}}
+        r = uhandler.check_condition(options)
+        self.assertFalse(r)
+
+        delete_container_by_serial(container_serial)
+
+    def test_27_token_has_owner(self):
+        token = init_token({"type": "hotp", "genkey": True})
+
+        # event handler
+        uhandler = BaseEventHandler()
+
+        # Prepare a fake request
+        all_data = {"serial": token.get_serial()}
+        resp_data = """{"result": {"value": false}}"""
+        options = self.setup_request(all_data=all_data, resp_data=resp_data)
+
+        # Token has no owner
+        options["handler_def"] = {"conditions": {CONDITION.TOKEN_HAS_OWNER: "False"}}
+        r = uhandler.check_condition(options)
+        self.assertTrue(r)
+        options["handler_def"] = {"conditions": {CONDITION.TOKEN_HAS_OWNER: "True"}}
+        r = uhandler.check_condition(options)
+        self.assertFalse(r)
+
+        # Token has owner
+        self.setUp_user_realms()
+        user = User("hans", self.realm1)
+        token.add_user(user)
+        options["handler_def"] = {"conditions": {CONDITION.TOKEN_HAS_OWNER: "False"}}
+        r = uhandler.check_condition(options)
+        self.assertFalse(r)
+        options["handler_def"] = {"conditions": {CONDITION.TOKEN_HAS_OWNER: "True"}}
+        r = uhandler.check_condition(options)
+        self.assertTrue(r)
+
+        token.delete_token()
+
+    def test_28_token_is_orphaned(self):
+        token = init_token({"type": "hotp", "genkey": True})
+
+        # event handler
+        uhandler = BaseEventHandler()
+
+        # Prepare a fake request
+        all_data = {"serial": token.get_serial()}
+        resp_data = """{"result": {"value": false}}"""
+        options = self.setup_request(all_data=all_data, resp_data=resp_data)
+
+        # Token is not orphaned
+        options["handler_def"] = {"conditions": {CONDITION.TOKEN_IS_ORPHANED: "False"}}
+        r = uhandler.check_condition(options)
+        self.assertTrue(r)
+        options["handler_def"] = {"conditions": {CONDITION.TOKEN_IS_ORPHANED: "True"}}
+        r = uhandler.check_condition(options)
+        self.assertFalse(r)
+
+        # Token is orphaned
+        TokenOwner(token_id=token.token.id, user_id="123", resolver="invalid", realmname="invalid").save()
+        options["handler_def"] = {"conditions": {CONDITION.TOKEN_IS_ORPHANED: "False"}}
+        r = uhandler.check_condition(options)
+        self.assertFalse(r)
+        options["handler_def"] = {"conditions": {CONDITION.TOKEN_IS_ORPHANED: "True"}}
+        r = uhandler.check_condition(options)
+        self.assertTrue(r)
+
+        token.delete_token()
 
 
 class CounterEventTestCase(MyTestCase):
