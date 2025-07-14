@@ -495,9 +495,11 @@ class UtilsCompareTestCase(MyTestCase):
         self.assertFalse(compare_generic("e==ABC", mock_attribute, "Error {0!s}"))
 
         # Wrong entry, that is not processed
-        self.assertRaises(CompareError, compare_generic, "c 500", mock_attribute, "Error {0!s}")
+        self.assertFalse(compare_generic("c 500", mock_attribute, "Error {0!s}"))
         # Wrong entry, that cannot be processed
-        self.assertRaises(CompareError, compare_generic, "b!~100", mock_attribute, "Error {0!s}")
+        self.assertFalse(compare_generic("b!~100", mock_attribute, "Error {0!s}"))
+        # Empty entry
+        self.assertFalse(compare_generic("", mock_attribute, "Error {0!s}"))
 
         # compare dates
         self.assertTrue(compare_generic("now > 2017-01-01T10:00+0200", mock_attribute, "Error {0!s}"))

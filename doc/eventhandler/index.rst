@@ -118,6 +118,8 @@ the same conditions.
    Event Handlers are a mighty and complex tool to tweak the functioning of your privacyIDEA system. We recommend to
    test your definitions thoroughly to assure your expected outcome.
 
+Invalid conditions are evaluated to False. Errors are logged, but not raised to not break the request.
+
 
 .. _condition_comparators:
 

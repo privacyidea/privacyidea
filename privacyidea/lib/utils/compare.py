@@ -507,6 +507,7 @@ def parse_condition(condition: str, data_type: Optional[str] = None) -> Union[Co
     :param data_type: The expected datatype of the values to only check for valid comparators
     :return: A Condition object with comparator and values or None in case of an empty condition string.
     """
+    condition = condition.strip()
     if not condition:
         # No condition to match!
         log.debug("Empty condition provided.")
@@ -585,14 +586,17 @@ def compare_generic(condition: str, key_method: callable, warning: str) -> bool:
     :return: True or False
     """
     condition = parse_condition(condition)
+    if not condition:
+        # No condition to match!
+        return False
+
     key = condition.left_value
     comparator = condition.comparator
     right_value = condition.right_value
-
     if right_value is None or not key or not comparator:
         # There is a condition, but we do not know it!
         log.warning(warning.format(condition))
-        raise CompareError("Condition not parsable.")
+        return False
 
     left_value = key_method(key)
     if left_value is None:
