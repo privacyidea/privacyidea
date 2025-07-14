@@ -313,7 +313,7 @@ $header-bg: white;
 }
 
 .profile-btn {
-  height: 60px;
+  height: var(--header-height);
   justify-content: start;
   border: none;
   border-radius: 0;

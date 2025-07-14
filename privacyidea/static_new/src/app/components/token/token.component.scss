@@ -76,7 +76,7 @@ $margin-bottom-main: 136px;
 .main-content-container {
   display: grid;
   justify-items: center;
-  width: 70vw;
+  // width: 70vw;
   height: calc(var(--main-height) - var(--global-padding) * 2);
   padding: var(--global-padding);
 }

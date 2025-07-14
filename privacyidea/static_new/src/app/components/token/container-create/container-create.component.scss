@@ -2,7 +2,7 @@
 
 .container-create-container {
   @include styles.table-container-styles;
-  width: 81vw;
+  width: 920px;
   max-height: calc(var(--main-height) - var(--global-padding) * 4);
   overflow: auto;
 }
