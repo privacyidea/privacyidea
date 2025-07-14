@@ -38,6 +38,7 @@ body {
   --light-distance: -4px;
   --shadow-distance: 2px;
 
+  --double-global-padding: calc(var(--global-padding) * 2);
   --global-padding: 20px;
   --three-quarters-global-padding: calc(var(--global-padding) * 0.75);
   --half-global-padding: calc(var(--global-padding) / 2);

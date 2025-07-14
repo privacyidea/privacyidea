@@ -30,12 +30,12 @@ $border-radius: var(--border-radius);
 
   .brand {
     @include flex-center;
-    margin-right: 40px;
+    margin-right: var(--double-global-padding);
 
     img {
-      margin-left: 40px;
-      width: 52px;
-      height: 52px;
+      margin-left: var(--double-global-padding);
+      height: var(--header-height);
+      width: var(--header-height);
       border-radius: 50%;
       @include mat.elevation(5);
     }

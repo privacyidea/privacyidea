@@ -279,8 +279,8 @@ $header-bg: white;
 }
 
 .refresh-btn {
-  width: 60px;
-  height: 60px;
+  width: var(--header-height);
+  height: var(--header-height);
   cursor: pointer;
   border-radius: 0;
   background: $header-bg;
@@ -293,10 +293,6 @@ $header-bg: white;
       color: black;
     }
   }
-}
-
-.type-help-button {
-  width: 100%;
 }
 
 .enroll-button-container {
