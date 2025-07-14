@@ -913,8 +913,9 @@ class APIPolicyConditionTestCase(MyApiTestCase):
             result = res.json
             self.assertTrue("detail" in result)
             enroll_url = result.get("detail").get("googleurl").get("value")
-            self.assertTrue(enroll_url.startswith(f"otpauth://daypassword/{result.get('detail').get('serial')}"))
-            remove_token(result.get("detail").get("serial"))
+            serial = result.get("detail").get("serial")
+            self.assertTrue(enroll_url.startswith(f"otpauth://daypassword/{serial}"))
+            remove_token(serial)
 
         # Cleanup
         delete_policy("policy_hotp")

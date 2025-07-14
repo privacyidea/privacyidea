@@ -3200,9 +3200,10 @@ class Match(object):
         else:
             audit_data = None
         request_headers = self._g.get("request_headers")
-        # Do not pass the password in the request data to the policy matching.
-        request_data = copy.deepcopy(self._g.get("request_data"))
-        if request_data:
+        request_data = self._g.get("request_data")
+        if request_data and ("pass" in request_data or "password" in request_data):
+            request_data = copy.deepcopy(self._g.get("request_data"))  # Do not modify the original request_data
+            # Do not pass the password in the request data to the policy matching.
             if "pass" in request_data:
                 del request_data["pass"]
             if "password" in request_data:
