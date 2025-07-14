@@ -7,6 +7,7 @@
   gap: var(--global-padding);
   padding: var(--global-padding);
   max-height: calc(var(--main-height) - var(--global-padding) * 2);
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   scrollbar-width: thin;
 }
