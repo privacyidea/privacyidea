@@ -377,14 +377,6 @@ class TokenClass(object):
         :return:
         """
         self.token.del_info()
-        for k, v in info.items():
-            # check if type is a password
-            if k.endswith(".type") and v == "password":
-                # of type password, so we need to encrypt the value of
-                # the original key (without type)
-                orig_key = ".".join(k.split(".")[:-1])
-                info[orig_key] = encryptPassword(info.get(orig_key, ""))
-
         self.token.set_info(info)
 
     @check_token_locked
@@ -399,9 +391,6 @@ class TokenClass(object):
         add_info = {key: value}
         if value_type:
             add_info[key + ".type"] = value_type
-            if value_type == "password":
-                # encrypt the value
-                add_info[key] = encryptPassword(value)
         self.token.set_info(add_info)
 
     @check_token_locked

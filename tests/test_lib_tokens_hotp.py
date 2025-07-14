@@ -7,8 +7,7 @@ import json
 import warnings
 from testfixtures import log_capture
 
-from privacyidea.api.container import remove_token
-from privacyidea.lib.token import import_tokens, get_tokens
+from privacyidea.lib.token import import_tokens, get_tokens, init_token, remove_token
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.resolver import (save_resolver)

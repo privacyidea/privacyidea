@@ -254,15 +254,3 @@ def x509name_to_string(x509name):
     """
     components = x509name.get_components()
     return ",".join(["{0}={1}".format(to_unicode(c[0]), to_unicode(c[1])) for c in components])
-
-def export_token(self) -> dict:
-    """
-    Export for this token is not supported.
-    """
-    raise NotImplementedError("Export for U2F token is not supported.")
-
-def import_token(self, token_information: dict):
-    """
-    Import for this token is not supported.
-    """
-    raise NotImplementedError("Import for U2F token is not supported.")

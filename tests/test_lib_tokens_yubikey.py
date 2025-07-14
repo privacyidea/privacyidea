@@ -30,6 +30,7 @@ class YubikeyTokenTestCase(MyTestCase):
     realm1 = "realm1"
     realm2 = "realm2"
     serial1 = "UBAM01382015_1"
+    serial2 = "UBAM01382015_2"
     otpkey = "9163508031b20d2fbb1868954e041729"
     pin = "yubikeypin"
 

@@ -152,15 +152,3 @@ class mTimeOtp(object):
         vhash = "{0:d}{1!s}{2!s}".format(counter, key, pin)
         motp = md5(to_bytes(vhash)).hexdigest()[:self.digits]  # nosec B324 # md5 used in mOTP algorithm
         return to_unicode(motp)
-
-    def export_token(self) -> dict:
-        """
-        Export for this token is not supported.
-        """
-        raise NotImplementedError("Export for mOTP token is not supported.")
-
-    def import_token(self, token_information: dict):
-        """
-        Import for this token is not supported.
-        """
-        raise NotImplementedError("Import for mOTP token is not supported.")
