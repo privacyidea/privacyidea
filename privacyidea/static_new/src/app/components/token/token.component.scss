@@ -3,7 +3,6 @@
 
 .token-layout {
   display: flex;
-  // height: var(--content-height);
 }
 
 .token-drawer {
@@ -27,9 +26,6 @@
 }
 
 $margin-bottom-main: 136px;
-.main-margin {
-  margin: 0 32px $margin-bottom-main 76px;
-}
 
 .main-margin-overflow {
   margin: 0 32px $margin-bottom-main 0;
@@ -75,13 +71,11 @@ $margin-bottom-main: 136px;
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  // height: var(--content-height);
 }
 
 .main-content-container {
   display: grid;
   justify-items: center;
-  // width: 100%;
   width: 70vw;
   height: calc(var(--main-height) - var(--global-padding) * 2);
   padding: var(--global-padding);
@@ -90,10 +84,3 @@ $margin-bottom-main: 136px;
 .tile-header {
   padding: 0;
 }
-
-// .back-button-div {
-//   display: flex;
-//   margin-left: -5rem;
-//   height: 100%;
-//   position: fixed;
-// }

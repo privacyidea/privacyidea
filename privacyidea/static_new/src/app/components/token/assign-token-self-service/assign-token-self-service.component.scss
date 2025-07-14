@@ -2,6 +2,7 @@
 
 .assign-token-self-service-container {
   @include styles.table-container-styles;
-  overflow: auto;
   width: 49rem;
+  max-height: calc(var(--main-height) - var(--global-padding) * 4);
+  overflow: auto;
 }

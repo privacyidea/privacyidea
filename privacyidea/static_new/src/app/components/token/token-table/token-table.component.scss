@@ -7,6 +7,8 @@
     ".token-table-filter",
     ".table-scroll-container"
   );
+  max-height: calc(var(--main-height) - var(--global-padding) * 4);
+  overflow: auto;
 }
 
 .selfservice-paginator-container {

@@ -7,7 +7,9 @@
     ".container-table-filter",
     ".table-scroll-container"
   );
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: calc(var(--main-height) - var(--global-padding) * 4);
 }
 
 .filter-paginator-container-selfservice {

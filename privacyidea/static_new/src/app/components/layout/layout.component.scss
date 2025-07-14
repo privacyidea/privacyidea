@@ -2,8 +2,8 @@
 
 .layout {
   --total-layout-height: 100vh;
-  --header-height: calc(3rem + var(--global-padding));
-  --footer-height: calc(2.5rem + var(--global-padding));
+  --header-height: calc(2.5rem + var(--global-padding));
+  --footer-height: calc(2.25rem + var(--global-padding));
   --main-height: calc(100vh - var(--header-height) - var(--footer-height));
 
   display: grid;
@@ -42,7 +42,8 @@
   }
 
   main {
-    overflow: auto;
+    overflow-x: auto;
+    overflow-y: hidden;
     height: var(--main-height);
   }
 }

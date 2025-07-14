@@ -1,24 +1,32 @@
-<ng-template #tokenCard
-             let-hasMargin="hasMargin">
+<ng-template #tokenCard let-hasMargin="hasMargin">
   <app-token-card [ngClass]="hasMargin ? 'margin-right-1' : ''" />
 </ng-template>
 
-<div aria-label="Token Layout"
-     class="token-layout">
-  @if (!overflowService.isWidthOverflowing("body",
-    overflowService.getOverflowThreshold(contentService.selectedContent()))) {
-    <ng-container [ngTemplateOutlet]="tokenCard"
-                  [ngTemplateOutletContext]="{ hasMargin: true }" />
-  }
-  <mat-drawer-container>
-    @if (overflowService.isWidthOverflowing(
+<div aria-label="Token Layout" class="token-layout">
+  @if (
+    !overflowService.isWidthOverflowing(
       "body",
       overflowService.getOverflowThreshold(contentService.selectedContent())
-    )) {
-      <mat-drawer #drawer
-                  (opened)="updateOverflowState()"
-                  [mode]="'over'"
-                  [ngClass]="isTokenDrawerOverflowing() ? 'token-drawer-overflow' : 'token-drawer'">
+    )
+  ) {
+    <ng-container
+      [ngTemplateOutlet]="tokenCard"
+      [ngTemplateOutletContext]="{ hasMargin: true }" />
+  }
+  <mat-drawer-container>
+    @if (
+      overflowService.isWidthOverflowing(
+        "body",
+        overflowService.getOverflowThreshold(contentService.selectedContent())
+      )
+    ) {
+      <mat-drawer
+        #drawer
+        (opened)="updateOverflowState()"
+        [mode]="'over'"
+        [ngClass]="
+          isTokenDrawerOverflowing() ? 'token-drawer-overflow' : 'token-drawer'
+        ">
         <div class="drawer">
           <ng-container [ngTemplateOutlet]="tokenCard" />
         </div>
@@ -26,26 +34,21 @@
     }
     <mat-drawer-content>
       <div class="drawer-content-div">
-        @if (overflowService.isWidthOverflowing(
-          "body",
-          overflowService.getOverflowThreshold(contentService.selectedContent())
-        )) {
+        @if (
+          overflowService.isWidthOverflowing(
+            "body",
+            overflowService.getOverflowThreshold(
+              contentService.selectedContent()
+            )
+          )
+        ) {
           <div class="drawer-button-div">
-            <button mat-fab
-                    (click)="drawer.toggle()"
-                    class="drawer-button">
+            <button mat-fab (click)="drawer.toggle()" class="drawer-button">
               <mat-icon>keyboard_arrow_right</mat-icon>
             </button>
           </div>
         }
-        <!-- [ngClass]="[
-        overflowService.isWidthOverflowing(
-          'body',
-          overflowService.getOverflowThreshold(contentService.selectedContent()))
-          ? 'main-margin'
-          : 'main-margin-overflow']" -->
-          <div 
-             class="main-margin overflow">
+        <div class="main-margin overflow">
           @switch (contentService.selectedContent()) {
             @case ("token_overview") {
               <app-token-table #tokenTableComponent />

@@ -3,10 +3,8 @@
 
 .token-enrollment-container {
   @include styles.table-container-styles;
-  // padding-top: 0;
-
   width: 47.5rem;
-  max-height: var(--content-height);
+  max-height: calc(var(--main-height) - var(--global-padding) * 4);
   overflow: auto;
 }
 

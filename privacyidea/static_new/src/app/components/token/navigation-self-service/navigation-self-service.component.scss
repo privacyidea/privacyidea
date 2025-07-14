@@ -3,9 +3,10 @@
 .navigation-self-service-column {
   display: flex;
   flex-direction: column;
+  align-items: start;
   gap: var(--global-padding);
-  align-items: left;
-  padding-top: var(--global-padding);
-  padding-left: var(--global-padding);
-  padding-bottom: var(--global-padding);
+  padding: var(--global-padding);
+  max-height: calc(var(--main-height) - var(--global-padding) * 2);
+  overflow: auto;
+  scrollbar-width: thin;
 }
