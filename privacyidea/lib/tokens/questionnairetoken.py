@@ -64,7 +64,7 @@ class QuestionnaireTokenClass(TokenClass):
     def get_class_type():
         """
         Returns the internal token type identifier
-        :return: qust
+        :return: question
         :rtype: basestring
         """
         return "question"

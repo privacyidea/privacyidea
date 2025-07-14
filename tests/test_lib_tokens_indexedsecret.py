@@ -1,6 +1,7 @@
 """
 This test file tests the lib.tokens.smstoken
 """
+import json
 
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.resolver import (save_resolver)
@@ -9,7 +10,7 @@ from privacyidea.lib.user import (User)
 from privacyidea.lib.tokens.indexedsecrettoken import IndexedSecretTokenClass, PIIXACTION
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, ACTION, PolicyClass
 from privacyidea.models import Token
-from privacyidea.lib.token import init_token, remove_token
+from privacyidea.lib.token import init_token, remove_token, import_tokens, get_tokens
 
 PWFILE = "tests/testdata/passwords"
 
@@ -137,3 +138,60 @@ class IndexedSecretTokenTestCase(MyTestCase):
         delete_policy("pol1")
         delete_policy("pol2")
         remove_token("PIIX1234")
+
+    def test_04_indexedsecret_token_export(self):
+        # Set up the indexedsecret token for testing
+        token = init_token(
+            param={'serial': self.serial1, 'type': 'indexedsecret', 'otpkey': self.otpkey, "otplen": '8'})
+        token.set_description("this is a indexedsecret token export test")
+        token.add_tokeninfo("hashlib", "sha256")
+
+        # Test that all expected keys are present in the exported dictionary
+        exported_data = token.export_token()
+
+        expected_keys = ["serial", "type", "description", "otpkey"]
+        self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
+
+        expected_tokeninfo_keys = ["hashlib", "tokenkind"]
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+
+        # Test that the exported values match the token's data
+        exported_data = token.export_token()
+        self.assertEqual(exported_data["serial"], 'SE123456')
+        self.assertEqual(exported_data["type"], "indexedsecret")
+        self.assertEqual(exported_data["description"], "this is a indexedsecret token export test")
+        self.assertEqual(exported_data["tokeninfo"]["hashlib"], "sha256")
+        self.assertEqual(exported_data["otpkey"], self.otpkey)
+        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
+        self.assertEqual(exported_data["issuer"], "privacyIDEA")
+
+        # Clean up
+        remove_token(token.token.serial)
+
+    def test_05_indexedsecret_token_import(self):
+        # Define the token data to be imported
+        token_data = [{
+            "serial": "SE123456",
+            "type": "indexedsecret",
+            "description": "this is a indexedsecret token import test",
+            "otpkey": self.otpkey,
+            "issuer": "privacyIDEA",
+            "tokeninfo": {"hashlib": "sha256", "tokenkind": "software"}
+        }]
+
+        # Import the token
+        import_tokens(json.dumps(token_data))
+
+        # Retrieve the imported token
+        token = get_tokens(serial=token_data[0]["serial"])[0]
+
+        # Verify that the token data matches the imported data
+        self.assertEqual(token.token.serial, token_data[0]["serial"])
+        self.assertEqual(token.type, token_data[0]["type"])
+        self.assertEqual(token.token.description, token_data[0]["description"])
+        self.assertEqual(token.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
+        self.assertEqual(token.get_tokeninfo("hashlib"), "sha256")
+        self.assertEqual(token.get_tokeninfo("tokenkind"), "software")
+
+        # Clean up
+        remove_token(token.token.serial)
