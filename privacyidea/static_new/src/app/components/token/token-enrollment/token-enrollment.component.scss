@@ -4,9 +4,9 @@
 .token-enrollment-container {
   @include styles.table-container-styles;
   // padding-top: 0;
-  margin: 2rem 1rem 1rem;
-  width: 1140px;
-  max-height: 85vh; // TODO: Use calculated value based on viewport height
+
+  width: 47.5rem;
+  max-height: var(--content-height);
   overflow: auto;
 }
 
@@ -15,7 +15,7 @@
   background: #efedf0;
   border-radius: var(--border-radius);
   margin: 0 3px 5px;
-  width: 208px;
+  width: 13rem;
 }
 
 .token-type-hint {
@@ -28,7 +28,7 @@
   display: flex;
   flex-direction: row;
   align-items: baseline;
-  gap: 1rem;
+  gap: 16px;
 }
 
 .h4-container {
@@ -38,30 +38,30 @@
 
 .date-picker {
   width: 40%;
-  margin: 0 0 1rem 1rem;
+  margin: 0 0 16px 16px;
 }
 
 .time-picker {
   width: 20%;
-  margin: 0 0 1rem 1rem;
+  margin: 0 0 16px 16px;
 }
 
 .zone-picker {
   width: 30%;
-  margin: 0 0 1rem 2rem;
+  margin: 0 0 16px 32px;
 }
 
 h5 {
-  margin: 0 0 0 1rem;
+  margin: 0 0 0 16px;
 }
 
 .wizard-top-div {
-  margin-top: 1rem;
+  margin-top: 16px;
 }
 
 .description-form {
   width: 100%;
-  margin-top: 1rem;
+  margin-top: 16px;
 }
 
 ::ng-deep {
@@ -79,7 +79,7 @@ h5 {
   top: 0;
   z-index: 100;
   background-color: white;
-  padding: 1rem;
+  padding: 16px;
   transition: box-shadow 0.2s ease-in-out;
 }
 
@@ -91,7 +91,7 @@ h5 {
 .sticky-controls {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 16px;
 }
 
 .sticky-controls .mat-mdc-form-field {

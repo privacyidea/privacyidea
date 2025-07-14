@@ -1,11 +1,12 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
-import { MatCheckbox } from '@angular/material/checkbox';
 import {
   FormControl,
   FormsModule,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
+import { MatCheckbox } from '@angular/material/checkbox';
+import { MatInput } from '@angular/material/input';
 import {
   MatError,
   MatFormField,
@@ -14,9 +15,9 @@ import {
   MatOption,
   MatSelect,
 } from '@angular/material/select';
-import { MatInput } from '@angular/material/input';
 import { TokenService } from '../../../../services/token/token.service';
 
+import { NgClass } from '@angular/common';
 import { Observable, of } from 'rxjs';
 import {
   EnrollmentResponse,
@@ -45,6 +46,7 @@ export interface HotpEnrollmentOptions extends TokenEnrollmentData {
     MatHint,
     MatError,
     ReactiveFormsModule,
+    NgClass,
   ],
   templateUrl: './enroll-hotp.component.html',
   styleUrl: './enroll-hotp.component.scss',

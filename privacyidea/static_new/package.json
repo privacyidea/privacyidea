@@ -7,7 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "jest",
-    "start-hmr":"ng serve --hmr --port 4200 --ssl --ssl-key /home/frank/GitHub/privacyidea/ca/pi_keypair.pem --ssl-cert /home/frank/GitHub/privacyidea/ca/pi.cert.pem"
+    "start-hmr": "ng serve --hmr --port 4200 --ssl --ssl-key /home/frank/GitHub/privacyidea/ca/pi_keypair.pem --ssl-cert /home/frank/GitHub/privacyidea/ca/pi.cert.pem"
   },
   "private": true,
   "dependencies": {
@@ -23,6 +23,7 @@
     "@angular/router": "^19.0.3",
     "crypto-js": "^4.2.0",
     "rxjs": "^7.8.1",
+    "ts-node": "^10.9.2",
     "tslib": "^2.3.0",
     "uuid": "^11.1.0"
   },

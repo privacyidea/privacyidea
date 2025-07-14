@@ -1,11 +1,48 @@
 @use "../../../styles";
 
 .layout {
+  --total-layout-height: 100vh;
+  --header-height: calc(3rem + var(--global-padding));
+  --footer-height: calc(2.5rem + var(--global-padding));
+  --main-height: calc(100vh - var(--header-height) - var(--footer-height));
+
   display: grid;
   grid-template-rows: auto 1fr auto;
-  height: 100vh;
+  height: --total-layout-height;
+
+  header {
+    height: var(--header-height);
+  }
 
   main {
     overflow: auto;
+    height: var(--main-height);
+  }
+
+  footer {
+    height: var(--footer-height);
+  }
+}
+
+.layout-self-service {
+  --total-layout-height: 100vh;
+
+  --header-height: calc(3rem + var(--global-padding));
+  --footer-height: 0vh;
+  --main-height: calc(
+    var(--total-layout-height) - var(--header-height) - var(--footer-height)
+  );
+
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: --total-layout-height;
+
+  header {
+    height: var(--header-height);
+  }
+
+  main {
+    overflow: auto;
+    height: var(--main-height);
   }
 }

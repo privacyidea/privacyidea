@@ -88,6 +88,15 @@
           </button>
         } @else {
           <button
+            aria-label="Support"
+            class="support-btn"
+            extended
+            href="https://netknights.it/support_link_admin"
+            mat-fab>
+            <mat-icon>support_agent</mat-icon>
+            <h4>Support</h4>
+          </button>
+          <button
             class="profile-btn"
             [class.active]="trigger.menuOpen"
             #trigger="matMenuTrigger"
@@ -100,6 +109,7 @@
             <mat-icon>account_box</mat-icon>
             <h4>{{ profileText }}</h4>
           </button>
+
           <button
             (click)="logout()"
             class="logout-btn"

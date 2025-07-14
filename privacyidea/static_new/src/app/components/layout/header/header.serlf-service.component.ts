@@ -13,9 +13,10 @@ import { LocalService } from '../../../services/local/local.service';
 import { NotificationService } from '../../../services/notification/notification.service';
 import { SessionTimerService } from '../../../services/session-timer/session-timer.service';
 import { UserSelfServiceComponent } from '../../user/user.self-service.component';
+import { HeaderComponent } from './header.component';
 
 @Component({
-  selector: 'app-header',
+  selector: 'app-header-self-service',
   standalone: true,
   imports: [
     NgOptimizedImage,
@@ -30,40 +31,23 @@ import { UserSelfServiceComponent } from '../../user/user.self-service.component
     MatMenu,
     UserSelfServiceComponent,
   ],
-  templateUrl: './header.component.html',
+  templateUrl: './header.self-service.component.html',
   styleUrl: './header.component.scss',
 })
-export class HeaderComponent {
-  protected readonly AuthService = AuthService;
-  profileText =
-    this.authService.user() +
-    ' @' +
-    this.authService.realm() +
-    ' (' +
-    this.authService.role() +
-    ')';
-
+export class HeaderSelfServiceComponent extends HeaderComponent {
   constructor(
-    protected sessionTimerService: SessionTimerService,
-    protected authService: AuthService,
-    protected localService: LocalService,
-    protected notificationService: NotificationService,
-    protected router: Router,
-  ) {}
-
-  isActive(link: string) {
-    return this.router.url.includes(link);
-  }
-
-  refreshPage() {
-    window.location.reload();
-  }
-
-  logout(): void {
-    this.localService.removeData(this.localService.bearerTokenKey);
-    this.authService.deauthenticate();
-    this.router
-      .navigate(['login'])
-      .then(() => this.notificationService.openSnackBar('Logout successful.'));
+    protected override sessionTimerService: SessionTimerService,
+    protected override authService: AuthService,
+    protected override localService: LocalService,
+    protected override notificationService: NotificationService,
+    protected override router: Router,
+  ) {
+    super(
+      sessionTimerService,
+      authService,
+      localService,
+      notificationService,
+      router,
+    );
   }
 }

@@ -1,18 +1,19 @@
-import { Component, inject } from '@angular/core';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatTableModule } from '@angular/material/table';
-import { MatPaginatorModule } from '@angular/material/paginator';
-import { MatInputModule } from '@angular/material/input';
-import { MatSortModule } from '@angular/material/sort';
 import { NgClass } from '@angular/common';
-import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
-import { MatCheckboxModule } from '@angular/material/checkbox';
+import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { TokenTableComponent } from './token-table.component';
 import { MatIconButton } from '@angular/material/button';
-import { MatIcon } from '@angular/material/icon';
-import { ConfirmationDialogComponent } from '../../shared/confirmation-dialog/confirmation-dialog.component';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialog } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIcon } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatPaginatorModule } from '@angular/material/paginator';
+import { MatSortModule } from '@angular/material/sort';
+import { MatTableModule } from '@angular/material/table';
+import { ConfirmationDialogComponent } from '../../shared/confirmation-dialog/confirmation-dialog.component';
+import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
+import { ScrollAdjusterDirective } from '../../shared/directives/scroll-adjuster.directive';
+import { TokenTableComponent } from './token-table.component';
 
 @Component({
   selector: 'app-token-table-self-service',
@@ -29,6 +30,7 @@ import { MatDialog } from '@angular/material/dialog';
     FormsModule,
     MatIconButton,
     MatIcon,
+    ScrollAdjusterDirective,
   ],
   templateUrl: './token-table.self-service.component.html',
   styleUrl: './token-table.component.scss',

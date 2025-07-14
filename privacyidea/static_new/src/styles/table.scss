@@ -4,8 +4,8 @@ $table-border-color: #e0e2ec;
 $td-max-width: 18rem;
 $filter-width: 54.5rem;
 $scrollable-height: calc(var(--mat-sys-body-medium-line-height) * 3);
-$scrollable-margin-right: -1rem;
-$scrollable-padding-right: 1rem;
+$scrollable-margin-right: -16px;
+$scrollable-padding-right: 16px;
 $realm-margin-top: 17px;
 $realm-list-margin-top: 7px;
 
@@ -38,7 +38,7 @@ $description-width: 18rem;
 @mixin base-table-structure(
   $table-class: ".table",
   $filter-class: ".table-filter",
-  $scroll-container: ".table-scrollable-container"
+  $scroll-container: ".table-scroll-container"
 ) {
   #{$table-class} {
     border-collapse: collapse;
@@ -73,12 +73,6 @@ $description-width: 18rem;
     flex-direction: column;
   }
 
-  .failcount {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
   .realm-list {
     margin-top: $realm-list-margin-top;
   }
@@ -100,13 +94,11 @@ $description-width: 18rem;
     }
 
     .mat-mdc-paginator-range-label {
-      margin: 2px 16px 0 16px;
-      width: 141px;
+      margin: 0 var(--global-padding);
     }
 
     .mat-mdc-paginator-container {
-      padding: 0 0 0 16px;
-      width: 565px;
+      padding: 0 0 0 var(--global-padding);
     }
   }
 }
@@ -138,7 +130,7 @@ th:nth-child(even) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 16px;
 }
 
 .highlight-true,
@@ -234,8 +226,8 @@ th:nth-child(even) {
 }
 
 .scroll-margin-pad {
-  margin-right: -1rem;
-  padding-right: 1rem;
+  margin-right: -16px;
+  padding-right: 16px;
 }
 
 .fix-width-20-padr-0 {
@@ -302,7 +294,7 @@ th:nth-child(even) {
     display: flex;
     align-items: center;
     gap: $gap-small;
-    margin-left: 1rem;
+    margin-left: 16px;
   }
 
   .details-flex-layout {
@@ -314,7 +306,7 @@ th:nth-child(even) {
   .details-description-div {
     display: flex;
     overflow-wrap: anywhere;
-    padding-right: 1rem;
+    padding-right: 16px;
     align-items: center;
     white-space: normal;
     height: 96px;
@@ -352,9 +344,9 @@ th:nth-child(even) {
       padding-left: 5px;
     }
 
-    .container-details-token-table-container .mat-mdc-text-field-wrapper,
+    .container-details-token-table-layout .mat-mdc-text-field-wrapper,
     .add-token .mat-mdc-text-field-wrapper {
-      padding-left: 1rem !important;
+      padding-left: 16px !important;
     }
 
     .details-table .mat-mdc-form-field-infix {
@@ -362,12 +354,17 @@ th:nth-child(even) {
       margin-bottom: -6px;
     }
 
-    .details-table .description .mat-mdc-form-field-infix {
-      padding-top: 0;
-    }
+    // .details-table .description .mat-mdc-form-field-infix {
+    //   padding-top: 0;
+    // }
 
     .mat-mdc-row {
       font-size: 14px;
     }
   }
+}
+
+.table-container {
+  overflow-y: auto;
+  max-width: 70.5rem;
 }

@@ -30,32 +30,28 @@
             </button>
           </mat-select>
         </mat-form-field>
-        <div class="enroll-button-container">
-          <button
-            type="submit"
-            [ngClass]="{
-              'disabled-button':
-                formGroupSignal().invalid || !selectedTokenType(),
-              'card-button': true,
-            }"
-            mat-flat-button>
-            <mat-icon>add</mat-icon>
-            @if (selectedTokenType(); as tt) {
-              Enroll {{ tt.key }} Token
-            } @else {
-              Enroll Token
-            }
-          </button>
-          <!-- type="button" to prevent form submission -->
-          <button
-            type="button"
-            (click)="reopenEnrollmentDialog()"
-            [disabled]="!canReopenEnrollmentDialog()"
-            [matTooltip]="'Reopen enrollment dialog'"
-            mat-icon-button>
-            <mat-icon>open_in_new</mat-icon>
-          </button>
-        </div>
+      </div>
+      <div class="enroll-button-container">
+        <button
+          type="submit"
+          [ngClass]="{
+            'disabled-button':
+              formGroupSignal().invalid || !selectedTokenType(),
+            'card-button': true,
+          }"
+          mat-flat-button>
+          <mat-icon>add</mat-icon>
+          Enroll Token
+        </button>
+        <!-- type="button" to prevent form submission -->
+        <button
+          type="button"
+          (click)="reopenEnrollmentDialog()"
+          [disabled]="!canReopenEnrollmentDialog()"
+          [matTooltip]="'Reopen enrollment dialog'"
+          mat-icon-button>
+          <mat-icon>open_in_new</mat-icon>
+        </button>
       </div>
     </div>
     @switch (selectedTokenType().key) {

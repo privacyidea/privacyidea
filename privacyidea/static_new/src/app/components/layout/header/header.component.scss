@@ -26,6 +26,7 @@ $border-radius: var(--border-radius);
   position: sticky;
   width: fit-content;
   min-width: 100%;
+  height: var(--header-height);
 
   .brand {
     @include flex-center;
@@ -89,7 +90,7 @@ $border-radius: var(--border-radius);
   .session-timer {
     width: 48px;
     height: 19px;
-    padding-left: 1rem;
+    padding-left: 16px;
     justify-content: center;
     display: flex;
   }
@@ -111,10 +112,10 @@ $border-radius: var(--border-radius);
   }
 
   .profile-logout-div {
-    margin-left: 1rem;
-    margin-right: 130px;
+    margin-left: 16px;
+    margin-right: 16px;
     align-items: center;
-    gap: 1rem;
+    gap: 16px;
   }
 }
 

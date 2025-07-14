@@ -1,4 +1,4 @@
-<div aria-label="Audit Layout" class="audit-layout">
+<div aria-label="Audit Layout" class="content-layout">
   <div class="audit-table-container">
     <div class="filter-paginator-container">
       <mat-form-field class="token-table-filter" subscriptSizing="dynamic">
@@ -50,11 +50,12 @@
                   @case ("success") {
                     <div class="flex just-center">
                       <span
-                        [ngClass]="[
-                          element[column.key] === 1
-                            ? 'highlight-true'
-                            : 'highlight-false',
-                        ]">
+                        [ngClass]="
+                          tableUtilsService.getSpanClassForKey({
+                            key: column.key,
+                            value: element[column.key],
+                          })
+                        ">
                         {{ element[column.key] }}
                       </span>
                     </div>

@@ -2,7 +2,6 @@
 
 .token-get-serial {
   @include styles.table-container-styles;
-  margin: 2rem 1rem 1rem;
   overflow: auto;
   width: 785px;
 }
@@ -11,5 +10,5 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 1rem;
+  margin-top: 16px;
 }

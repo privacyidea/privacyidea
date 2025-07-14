@@ -59,7 +59,7 @@ export class UiPolicyService {
     return this.config.remoteUser;
   }
   get hasJobQueue(): boolean {
-    return this.config.hasJobQueue.toLowerCase() === 'true';
+    return !!this.config.hasJobQueue.toLowerCase();
   }
   get passwordReset(): boolean {
     return this.config.passwordReset;

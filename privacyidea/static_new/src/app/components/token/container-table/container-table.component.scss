@@ -3,11 +3,10 @@
 .container-table-container {
   @include styles.table-container-styles;
   @include styles.base-table-structure(
-      ".container-table",
-      ".container-table-filter",
-      ".table-scrollable-container"
+    ".container-table",
+    ".container-table-filter",
+    ".table-scroll-container"
   );
-  margin: 2rem 1rem 1rem;
   overflow: auto;
 }
 
@@ -15,7 +14,7 @@
   display: flex;
   align-items: center;
   justify-content: end;
-  gap: 1rem;
+  gap: 16px;
 }
 
 tr.example-detail-row {
@@ -47,25 +46,25 @@ tr.example-detail-row td {
 .expanded-token-list {
   display: grid;
   grid-template-columns: auto auto auto auto auto;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  margin-top: 1rem;
+  gap: 8px;
+  margin-bottom: 16px;
+  margin-top: 16px;
 }
 
 .expanded-token-list-self-serivce {
   display: grid;
   grid-template-columns: auto auto auto;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  margin-top: 1rem;
+  gap: 8px;
+  margin-bottom: 16px;
+  margin-top: 16px;
 }
 
 .token-item {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
+  gap: 8px;
+  padding: 8px;
   border: solid 1px #e0e2ec;
   border-radius: var(--border-radius);
   background: white;

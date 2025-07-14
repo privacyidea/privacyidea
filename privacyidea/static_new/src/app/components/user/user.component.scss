@@ -1,5 +1,5 @@
 @use "../../../styles/styles";
-@use '@angular/material' as mat;
+@use "@angular/material" as mat;
 
 .user-layout {
   display: flex;
@@ -9,20 +9,20 @@
 .user-self-service-card {
   border-radius: var(--border-radius);
   padding: var(--global-padding);
-  background: #EFEDF0;
+  background: #efedf0;
 }
 
 .user-details-grid {
   display: flex;
-  gap: 2rem;
-  margin-top: 2rem;
+  gap: 32px;
+  margin-top: 32px;
 }
 
 .user-details-column {
   display: grid;
   grid-template-columns: auto 1fr;
-  row-gap: 1rem;
-  column-gap: 1rem;
+  row-gap: 16px;
+  column-gap: 16px;
 }
 
 .user-details-column .label {

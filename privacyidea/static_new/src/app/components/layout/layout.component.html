@@ -1,11 +1,21 @@
-<div aria-label="Layout" class="layout">
+<div
+  aria-label="Layout"
+  [ngClass]="
+    !this.authService.isSelfServiceUser() ? 'layout' : 'layout-self-service'
+  ">
   <header aria-label="Header">
-    <app-header></app-header>
+    @if (!this.authService.isSelfServiceUser()) {
+      <app-header></app-header>
+    } @else {
+      <app-header-self-service></app-header-self-service>
+    }
   </header>
   <main aria-label="Main Router Outlet">
     <router-outlet></router-outlet>
   </main>
   <footer aria-label="Footer">
-    <app-footer></app-footer>
+    @if (!this.authService.isSelfServiceUser()) {
+      <app-footer></app-footer>
+    }
   </footer>
 </div>

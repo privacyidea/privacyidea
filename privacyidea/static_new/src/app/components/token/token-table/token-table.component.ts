@@ -1,3 +1,4 @@
+import { NgClass } from '@angular/common';
 import {
   Component,
   computed,
@@ -6,27 +7,25 @@ import {
   ViewChild,
   WritableSignal,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { MatIconButton } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSortModule, Sort } from '@angular/material/sort';
-import { NgClass } from '@angular/common';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { lastValueFrom } from 'rxjs';
+import { ContentService } from '../../../services/content/content.service';
+import { DialogService } from '../../../services/dialog/dialog.service';
+import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
 import {
   TokenDetails,
-  Tokens,
   TokenService,
 } from '../../../services/token/token.service';
-import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
-import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
-import { MatCheckboxModule } from '@angular/material/checkbox';
-import { FormsModule } from '@angular/forms';
-import { ContentService } from '../../../services/content/content.service';
-import { MatIconModule } from '@angular/material/icon';
-import { lastValueFrom } from 'rxjs';
-import { MatIconButton } from '@angular/material/button';
-import { DialogService } from '../../../services/dialog/dialog.service';
+import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
 
 const columnKeysMap = [
   { key: 'select', label: '' },

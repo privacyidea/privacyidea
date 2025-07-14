@@ -2,12 +2,11 @@
 
 .container-create-container {
   @include styles.table-container-styles;
-  margin: 2rem 1rem 1rem;
   overflow: auto;
   width: 785px;
 }
 
 .container-type-hint {
   margin-top: 8px;
-  font-size: 1rem;
+  font-size: 16px;
 }

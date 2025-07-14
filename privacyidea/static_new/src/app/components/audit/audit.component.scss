@@ -1,11 +1,6 @@
 @use "../../../styles";
 @use "@angular/material" as mat;
 
-.audit-layout {
-  overflow: auto;
-  width: 70vw;
-}
-
 .audit-table-overflow {
   padding-bottom: 12px;
   overflow: auto;
@@ -16,8 +11,7 @@
   @include styles.base-table-structure(
     ".token-table",
     ".token-table-filter",
-    ".table-scrollable-container"
+    ".table-scroll-container"
   );
-  margin: 2rem 1rem 1rem;
   overflow: auto;
 }
