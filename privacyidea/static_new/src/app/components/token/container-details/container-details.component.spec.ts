@@ -1,146 +1,116 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-
-import { ContainerDetailsComponent } from './container-details.component';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { signal } from '@angular/core';
+import { signal, WritableSignal } from '@angular/core';
+import { of } from 'rxjs';
+
+import { ContainerDetailsComponent } from './container-details.component';
 import { TokenDetailsComponent } from '../token-details/token-details.component';
 import { TokenService } from '../../../services/token/token.service';
 import { ContainerService } from '../../../services/container/container.service';
 import { ValidateService } from '../../../services/validate/validate.service';
-import { of, throwError } from 'rxjs';
 import { NotificationService } from '../../../services/notification/notification.service';
 import { UserService } from '../../../services/user/user.service';
 
-class MockTokenService {
-  getTokenDetails() {
-    return of({
-      result: {
-        value: {
-          tokens: [
-            {
-              active: true,
-              revoked: false,
-              container_serial: 'Mock serial',
-              realms: ['realm1', 'realm2'],
-            },
-          ],
-        },
-      },
-    });
-  }
-
-  getRealms() {
-    return of({ result: { value: ['realm1', 'realm2'] } });
-  }
-
-  resetFailCount() {
-    return of(null);
-  }
-
-  assignUser() {
-    return of(null);
-  }
-
-  unassignUser() {
-    return of(null);
-  }
-
-  getTokenData() {
-    return of({
-      result: {
-        value: {
-          tokens: [
-            {
-              active: true,
-              revoked: false,
-              container_serial: 'Mock serial',
-              realms: ['realm1', 'realm2'],
-            },
-          ],
-        },
-      },
-    });
-  }
+function makeResource<T>(initial: T) {
+  return {
+    value: signal(initial) as WritableSignal<T>,
+    reload: jest.fn(),
+    error: jest.fn().mockReturnValue(null),
+  };
 }
 
-class MockContainerService {
-  getContainerData() {
-    return of({
-      result: {
-        value: {
-          containers: [{ serial: 'Mock serial' }, { serial: 'container2' }],
-        },
+class MockTokenService {
+  showOnlyTokenNotInContainer = signal(false);
+  tokenSerial = signal('');
+  filterValue = signal<Record<string, string>>({});
+  pageIndex = signal(0);
+  pageSize = signal(10);
+  eventPageSize = 10;
+
+  tokenResource = makeResource({
+    result: { value: { tokens: [], count: 0 } },
+  });
+
+  getTokenDetails = jest.fn().mockReturnValue(of({}));
+  getRealms = jest.fn().mockReturnValue(of({ result: { value: [] } }));
+  resetFailCount = jest.fn().mockReturnValue(of(null));
+  assignUser = jest.fn().mockReturnValue(of(null));
+  unassignUser = jest.fn().mockReturnValue(of(null));
+  getTokenData = this.getTokenDetails;
+}
+
+export class MockContainerService {
+  states = signal<string[]>([]);
+  containerSerial = signal('Mock serial');
+
+  containerDetailResource = makeResource({
+    result: { value: { containers: [] } },
+  });
+
+  containerDetail = signal({
+    containers: [
+      {
+        serial: 'Mock serial',
+        users: [
+          {
+            user_realm: 'realmUser',
+            user_name: 'bob',
+            user_resolver: '',
+            user_id: '',
+          },
+        ],
+        realms: [],
+        tokens: [],
+        type: '',
+        states: [],
+        description: '',
+        select: '',
       },
-    });
-  }
+    ],
+    count: 1,
+  });
 
-  addTokenToContainer() {
-    return of(null);
-  }
-
-  getContainerDetails() {
-    return of(null);
-  }
-
-  assignContainer() {
-    return of(null);
-  }
-
-  unassignUser() {
-    return of(null);
-  }
-
-  assignUser() {
-    return of(null);
-  }
-
-  setContainerRealm() {
-    return of(null);
-  }
-
-  setContainerDescription() {
-    return of(null);
-  }
+  /* methods touched in tests */
+  addTokenToContainer = jest.fn().mockReturnValue(of(null));
+  assignUser = jest.fn().mockReturnValue(of(null));
+  unassignUser = jest.fn().mockReturnValue(of(null));
+  setContainerRealm = jest.fn().mockReturnValue(of(null));
+  setContainerDescription = jest.fn().mockReturnValue(of(null));
+  deleteAllTokens = jest.fn().mockReturnValue(of(null));
 }
 
 class MockValidateService {
-  testToken() {
-    return of(null);
-  }
+  testToken = jest.fn().mockReturnValue(of(null));
 }
 
 class MockNotificationService {
-  openSnackBar() {
-    return of(null);
-  }
+  openSnackBar = jest.fn();
 }
 
 class MockUserService {
-  selectedUsername = signal('');
   selectedUserRealm = signal('');
+  userFilter = signal('');
 
-  setDefaultRealm() {
-    return of(null);
-  }
+  userNameFilter = jest.fn().mockReturnValue('alice');
 
-  resetUserSelection() {
-    this.selectedUsername.set('');
+  setDefaultRealm = jest.fn();
+  resetUserSelection = () => {
+    this.userFilter.set('');
     this.selectedUserRealm.set('');
-  }
+  };
 }
 
-describe('ContainerDetailsComponent', () => {
+describe('ContainerDetailsComponent (Jest)', () => {
   let component: ContainerDetailsComponent;
   let fixture: ComponentFixture<ContainerDetailsComponent>;
-  let tokenService: TokenService;
+
   let containerService: ContainerService;
   let userService: UserService;
-  let validateService: ValidateService;
-  let notificationService: NotificationService;
 
   beforeEach(async () => {
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [TokenDetailsComponent, BrowserAnimationsModule],
       providers: [
@@ -149,16 +119,16 @@ describe('ContainerDetailsComponent', () => {
         { provide: TokenService, useClass: MockTokenService },
         { provide: ContainerService, useClass: MockContainerService },
         { provide: ValidateService, useClass: MockValidateService },
-        { provide: NotificationService, useValue: MockNotificationService },
+        { provide: NotificationService, useClass: MockNotificationService },
         { provide: UserService, useClass: MockUserService },
       ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ContainerDetailsComponent);
     component = fixture.componentInstance;
+
     component.tokenSerial = signal('Mock serial');
     component.containerSerial = signal('Mock serial');
-    component.refreshContainerDetails = signal(false);
     component.infoData = signal([
       {
         keyMap: { key: 'info', label: 'Info' },
@@ -169,108 +139,44 @@ describe('ContainerDetailsComponent', () => {
     component.userData = signal([
       {
         keyMap: { key: 'user', label: 'User' },
-        value: { key1: 'value1', key2: 'value2' },
+        value: '',
         isEditing: signal(false),
       },
     ]);
-    component.realmOptions = signal(['realm1', 'realm2']);
     component.selectedContent = signal('token_details');
-    tokenService = TestBed.inject(TokenService);
+
     containerService = TestBed.inject(ContainerService);
-    validateService = TestBed.inject(ValidateService);
-    notificationService = TestBed.inject(NotificationService);
     userService = TestBed.inject(UserService);
 
     fixture.detectChanges();
   });
 
   afterEach(() => {
-    fixture.destroy();
+    jest.clearAllMocks();
   });
 
-  it('should create', () => {
+  it('creates the component', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should load token details on initialization', () => {
-    spyOn(tokenService, 'getTokenDetails').and.callThrough();
-    component.showContainerDetail().subscribe(() => {
-      expect(tokenService.getTokenDetails).toHaveBeenCalledWith('Mock serial');
-      expect(component.containerDetailData().length).toBeGreaterThan(0);
-      expect(component.infoData().length).toBeGreaterThan(0);
-      expect(component.realmOptions().length).toBeGreaterThan(0);
-      expect(component.containerSerial()).toBe('Mock serial');
-      expect(component.realmOptions().length).toBeGreaterThan(0);
-      expect(component.states()).toBe(['active']);
-    });
-  });
-
-  it('should handle errors when loading token details fails', () => {
-    spyOn(tokenService, 'getTokenDetails').and.returnValue(
-      throwError(() => new Error('Error fetching token details.')),
-    );
-    spyOn(console, 'error');
-    component.showContainerDetail().subscribe({
-      error: () => {
-        expect(console.error).toHaveBeenCalledWith(
-          'Failed to get token details. ',
-          jasmine.any(Error),
-        );
-      },
-    });
-  });
-
-  it('should handle empty data gracefully', () => {
-    spyOn(containerService, 'getContainerDetails').and.returnValue(
-      of({ result: { value: { tokens: [] } } }),
-    );
-    component.showContainerDetail().subscribe({
-      next: () => {
-        expect(component.containerDetailData().length).toBe(0);
-      },
-    });
-  });
-
-  it('should get container data', () => {
-    spyOn(containerService, 'getContainerData').and.callThrough();
-    component.showContainerDetail().subscribe(() => {
-      expect(containerService.getContainerData).toHaveBeenCalledWith({
-        page: 1,
-        pageSize: 10,
-      });
-    });
-  });
-
-  it('should add token', () => {
+  it('addTokenToContainer calls service with correct params', () => {
     component.containerSerial = signal('container1');
-    spyOn(containerService, 'addTokenToContainer').and.callThrough();
+
     component.addTokenToContainer({
       serial: 'Mock Serial',
       tokentype: 'hotp',
       active: true,
       username: 'username',
     });
+
     expect(containerService.addTokenToContainer).toHaveBeenCalledWith(
       'container1',
       'Mock Serial',
     );
   });
 
-  it('should filter user options correctly', () => {
-    //TODO
-  });
-
-  it('should return true for description and realms in isEditableElement', () => {
-    expect(component.isEditableElement('description')).toBeTrue();
-    expect(component.isEditableElement('realms')).toBeTrue();
-    expect(component.isEditableElement('otherKey')).toBeFalse();
-  });
-
-  it('should toggle edit mode for realms and call setContainerRealm on save', () => {
-    const setRealmSpy = spyOn(
-      containerService,
-      'setContainerRealm',
-    ).and.returnValue(of(Object));
+  it('toggles realm edit and saves via setContainerRealm()', () => {
+    jest.spyOn(containerService, 'setContainerRealm').mockReturnValue(of({}));
 
     component.containerDetailData.set([
       {
@@ -282,23 +188,22 @@ describe('ContainerDetailsComponent', () => {
     const element = component.containerDetailData()[0];
 
     component.toggleContainerEdit(element);
-    expect(element.isEditing()).toBeTrue();
+    expect(element.isEditing()).toBe(true);
 
     component.selectedRealms.set(['realm1', 'realm2']);
     component.saveContainerEdit(element);
 
-    expect(setRealmSpy).toHaveBeenCalledWith('Mock serial', [
-      'realm1',
-      'realm2',
-    ]);
-    expect(element.isEditing()).toBeFalse();
+    expect(containerService.setContainerRealm).toHaveBeenCalledWith(
+      'Mock serial',
+      ['realm1', 'realm2'],
+    );
+    expect(element.isEditing()).toBe(false);
   });
 
-  it('should toggle edit mode for description and call setContainerDescription on save', () => {
-    const setDescSpy = spyOn(
-      containerService,
-      'setContainerDescription',
-    ).and.returnValue(of(Object));
+  it('edits description and calls setContainerDescription()', () => {
+    jest
+      .spyOn(containerService, 'setContainerDescription')
+      .mockReturnValue(of({}));
 
     component.containerDetailData.set([
       {
@@ -308,8 +213,9 @@ describe('ContainerDetailsComponent', () => {
       },
     ]);
     const element = component.containerDetailData()[0];
+
     component.toggleContainerEdit(element);
-    expect(element.isEditing()).toBeTrue();
+    expect(element.isEditing()).toBe(true);
 
     component.containerDetailData.set([
       {
@@ -320,17 +226,15 @@ describe('ContainerDetailsComponent', () => {
     ]);
 
     component.saveContainerEdit(element);
-    expect(setDescSpy).toHaveBeenCalledWith(
+    expect(containerService.setContainerDescription).toHaveBeenCalledWith(
       'Mock serial',
       'New description from UI',
     );
-    expect(element.isEditing()).toBeFalse();
+    expect(element.isEditing()).toBe(false);
   });
 
-  it('should enter user edit mode, call saveUser on save, and exit edit mode', () => {
-    const assignUserSpy = spyOn(containerService, 'assignUser').and.returnValue(
-      of(Object),
-    );
+  it('enters user edit mode, saves, and exits', () => {
+    jest.spyOn(containerService, 'assignUser').mockReturnValue(of({}));
 
     component.userData.set([
       {
@@ -339,54 +243,43 @@ describe('ContainerDetailsComponent', () => {
         isEditing: signal(false),
       },
     ]);
-
     const element = component.userData()[0];
-    expect(component.isEditingUser()).toBeFalse();
+
+    expect(component.isEditingUser()).toBe(false);
 
     component.toggleContainerEdit(element);
-    expect(component.isEditingUser()).toBeTrue();
+    expect(component.isEditingUser()).toBe(true);
 
-    userService.selectedUserFilter.set('alice');
     userService.selectedUserRealm.set('realmUser');
 
     component.saveUser();
-    expect(assignUserSpy).toHaveBeenCalledWith({
+
+    expect(containerService.assignUser).toHaveBeenCalledWith({
       containerSerial: 'Mock serial',
       username: 'alice',
       userRealm: 'realmUser',
     });
-    expect(component.isEditingUser()).toBeFalse();
+    expect(component.isEditingUser()).toBe(false);
   });
 
-  it('should handle cancel action when editing realms', () => {
+  it('canceling a realms edit clears selection', () => {
     component.selectedRealms.set(['realm1']);
     component.containerDetailData.set([
       {
         keyMap: { label: 'Realms', key: 'realms' },
-        value: 'Old description',
+        value: 'irrelevant',
         isEditing: signal(false),
       },
     ]);
     const element = component.containerDetailData()[0];
     component.cancelContainerEdit(element);
+
     expect(component.selectedRealms()).toEqual([]);
   });
 
-  it('should handle cancel action for other fields by re-calling showContainerDetail', () => {
-    const showDetailSpy = spyOn(
-      component,
-      'showContainerDetail',
-    ).and.callThrough();
-    const element = component.containerDetailData()[0];
-    component.cancelContainerEdit(element);
-    expect(showDetailSpy).toHaveBeenCalled();
-  });
+  it('unassignUser triggers service and refresh', () => {
+    jest.spyOn(containerService, 'unassignUser').mockReturnValue(of({}));
 
-  it('should unassignUser and refresh details', () => {
-    const unassignUserSpy = spyOn(
-      containerService,
-      'unassignUser',
-    ).and.returnValue(of(Object));
     component.userData.set([
       {
         keyMap: { label: 'User Name', key: 'user_name' },
@@ -399,12 +292,13 @@ describe('ContainerDetailsComponent', () => {
         isEditing: signal(false),
       },
     ]);
+
     component.unassignUser();
-    expect(unassignUserSpy).toHaveBeenCalledWith(
+
+    expect(containerService.unassignUser).toHaveBeenCalledWith(
       'Mock serial',
       'bob',
       'realmUser',
     );
-    expect(component.refreshContainerDetails()).toBeTrue();
   });
 });

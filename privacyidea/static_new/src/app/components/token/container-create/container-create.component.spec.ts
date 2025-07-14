@@ -1,9 +1,20 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { of } from 'rxjs';
 
 import { ContainerCreateComponent } from './container-create.component';
+import { MatDialog } from '@angular/material/dialog';
+import { NotificationService } from '../../../services/notification/notification.service';
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+
+const mockMatDialog = {
+  open: () => ({ afterClosed: () => of(null) }),
+  closeAll: () => {},
+};
+
+const mockNotificationService = {
+  openSnackBar: () => {},
+};
 
 describe('ContainerCreateComponent', () => {
   let component: ContainerCreateComponent;
@@ -11,8 +22,12 @@ describe('ContainerCreateComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ContainerCreateComponent, BrowserAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      imports: [ContainerCreateComponent, NoopAnimationsModule],
+      providers: [
+        provideHttpClient(),
+        { provide: MatDialog, useValue: mockMatDialog },
+        { provide: NotificationService, useValue: mockNotificationService },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ContainerCreateComponent);

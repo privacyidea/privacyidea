@@ -1,66 +1,54 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { TokenApplicationsComponent } from './token-applications.component';
 import { TokenApplicationsSshComponent } from './token-applications-ssh/token-applications-ssh.component';
 import { TokenApplicationsOfflineComponent } from './token-applications-offline/token-applications-offline.component';
 import { MatSelectModule } from '@angular/material/select';
-import { signal, WritableSignal } from '@angular/core';
-import {
-  provideHttpClient,
-  withInterceptorsFromDi,
-} from '@angular/common/http';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { TokenSelectedContentKey } from '../token.component';
+import { MachineService } from '../../../services/machine/machine.service';
+import { ContentService } from '../../../services/content/content.service';
+import { provideHttpClient } from '@angular/common/http';
+import { makeMachineServiceMock } from '../../../../testing/mock-services';
 
-describe('TokenApplications', () => {
-  let component: TokenApplicationsComponent;
+describe('TokenApplicationsComponent (Jest)', () => {
   let fixture: ComponentFixture<TokenApplicationsComponent>;
-  let tokenSerial: WritableSignal<string>;
-  let selectedContent: WritableSignal<TokenSelectedContentKey>;
+  let component: TokenApplicationsComponent;
+  const machineServiceMock = makeMachineServiceMock(); // ⬅️  new
 
   beforeEach(async () => {
-    tokenSerial = signal('test-serial');
-    selectedContent = signal({} as TokenSelectedContentKey);
+    const mockContentService = {
+      selectedContent: signal('token_applications'),
+    };
+    TestBed.resetTestingModule();
 
     await TestBed.configureTestingModule({
       imports: [
+        TokenApplicationsComponent,
         TokenApplicationsSshComponent,
         TokenApplicationsOfflineComponent,
         MatSelectModule,
-        TokenApplicationsComponent,
-        BrowserAnimationsModule,
       ],
-      providers: [provideHttpClient(withInterceptorsFromDi())],
+      providers: [
+        provideHttpClient(),
+        { provide: MachineService, useValue: machineServiceMock },
+        { provide: ContentService, useValue: mockContentService },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TokenApplicationsComponent);
     component = fixture.componentInstance;
-    component.tokenSerial = tokenSerial;
-    component.selectedContent = selectedContent;
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it('should create the component', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should have default selectedApplicationType as "ssh"', () => {
+  it('should default to "ssh" for selectedApplicationType', () => {
     expect(component.selectedApplicationType()).toBe('ssh');
   });
 
-  it('should set token serial and selected content on tokenSelected', () => {
-    component.tokenSelected('testSerial');
-    expect(component.tokenSerial()).toBe('testSerial');
-    expect(component.selectedContent()).toBe('token_details');
-  });
-
-  it('should update tokenSerial input', () => {
-    component.tokenSerial.set('new-serial');
-    expect(component.tokenSerial()).toBe('new-serial');
-  });
-
-  it('should update selectedContent input', () => {
-    const newContent: TokenSelectedContentKey = 'token_details';
-    component.selectedContent.set(newContent);
-    expect(component.selectedContent()).toBe(newContent);
+  it('should react when the machineService signal changes', () => {
+    machineServiceMock.selectedApplicationType.set('offline');
+    expect(component.selectedApplicationType()).toBe('offline');
   });
 });

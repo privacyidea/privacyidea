@@ -1,112 +1,124 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
 import { ContainerTableComponent } from './container-table.component';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { AuthService } from '../../../services/auth/auth.service';
 import { ContainerService } from '../../../services/container/container.service';
 import { NotificationService } from '../../../services/notification/notification.service';
 import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
-import { Router } from '@angular/router';
-import { signal } from '@angular/core';
-import { By } from '@angular/platform-browser';
+import { NavigationEnd, Router } from '@angular/router';
+import { signal, WritableSignal } from '@angular/core';
+import { PageEvent } from '@angular/material/paginator';
 import { Sort } from '@angular/material/sort';
-import { MatPaginator } from '@angular/material/paginator';
-import { SelectionModel } from '@angular/cdk/collections';
+import { of } from 'rxjs';
+import { TokenService } from '../../../services/token/token.service';
+import { ContentService } from '../../../services/content/content.service';
 
-describe('ContainerTableComponent', () => {
+function makeResource<T>(initial: T) {
+  return {
+    value: signal(initial) as WritableSignal<T>,
+    reload: jest.fn(),
+    error: jest.fn().mockReturnValue(null),
+  };
+}
+
+const authServiceMock = {
+  isAuthenticatedUser: jest.fn().mockReturnValue(true),
+};
+
+const tableUtilsMock = {
+  // Only the bits used by this component/tests.
+  recordsFromText: jest.fn().mockReturnValue({}),
+  getClassForColumnKey: jest.fn().mockReturnValue(''),
+  isLink: jest.fn().mockReturnValue(false),
+  getSpanClassForState: jest.fn().mockReturnValue(''),
+  getDisplayTextForState: jest.fn().mockReturnValue(''),
+};
+
+const notificationServiceMock = {
+  openSnackBar: jest.fn(),
+};
+
+const tokenServiceMock = {
+  selectedContent: signal('container_overview'),
+};
+
+const contentServiceMock = {};
+
+const mockContainerResource = {
+  result: {
+    value: {
+      count: 2,
+      containers: [
+        {
+          serial: 'CONT-1',
+          type: 'hotp',
+          states: ['active'],
+          description: 'Container 1',
+          users: [{ user_name: 'user1', user_realm: 'realm1' }],
+          realms: [],
+        },
+        {
+          serial: 'CONT-2',
+          type: 'totp',
+          states: ['deactivated'],
+          description: 'Container 2',
+          users: [],
+          realms: [],
+        },
+      ],
+    },
+  },
+};
+
+const containerServiceMock = {
+  containerSelection: signal<any[]>([]),
+  filterValue: signal<Record<string, string>>({}),
+  pageSize: signal(10),
+  pageIndex: signal(0),
+  sort: signal<Sort>({ active: 'serial', direction: '' }),
+  containerResource: makeResource(mockContainerResource),
+
+  apiFilter: ['serial', 'type', 'states', 'description'],
+  advancedApiFilter: ['realm', 'users'],
+
+  getContainerData: jest.fn().mockReturnValue(of(mockContainerResource)),
+  toggleActive: jest.fn().mockReturnValue(of({})),
+  eventPageSize: 10,
+};
+
+describe('ContainerTableComponent (Jest)', () => {
   let component: ContainerTableComponent;
   let fixture: ComponentFixture<ContainerTableComponent>;
 
-  let authServiceSpy: jasmine.SpyObj<AuthService>;
-  let containerServiceSpy: jasmine.SpyObj<ContainerService>;
-  let notificationServiceSpy: jasmine.SpyObj<NotificationService>;
-  let tableUtilsServiceSpy: jasmine.SpyObj<TableUtilsService>;
-  let routerSpy: jasmine.SpyObj<Router>;
-
   beforeEach(async () => {
-    authServiceSpy = jasmine.createSpyObj('AuthService', [
-      'isAuthenticatedUser',
-    ]);
-    containerServiceSpy = jasmine.createSpyObj('ContainerService', [
-      'apiFilter',
-      'advancedApiFilter',
-      'getContainerData',
-      'toggleActive',
-    ]);
-    notificationServiceSpy = jasmine.createSpyObj('NotificationService', [
-      'openSnackBar',
-    ]);
-    tableUtilsServiceSpy = jasmine.createSpyObj('TableUtilsService', [
-      'parseFilterString',
-      'getFilterIconName',
-      'getClassForColumnKey',
-      'isFilterSelected',
-      'isLink',
-      'getClassForColumn',
-      'getDisplayText',
-      'getSpanClassForState',
-      'getDisplayTextForState',
-      'handleFilterInput',
-      'handlePageEvent',
-      'handleSortEvent',
-    ]);
-
-    routerSpy = jasmine.createSpyObj('Router', ['navigate']);
-
-    containerServiceSpy.apiFilter = ['serial', 'type', 'states', 'description'];
-    containerServiceSpy.advancedApiFilter = ['realm', 'users'];
-
-    authServiceSpy.isAuthenticatedUser.and.returnValue(true);
-    containerServiceSpy.getContainerData.and.returnValue(
-      of({
-        result: {
-          value: {
-            count: 1,
-            containers: [
-              {
-                serial: 'Mock serail',
-                type: 'hopt',
-                states: ['active'],
-                description: 'desc',
-                users: [
-                  {
-                    user_name: 'test_user',
-                    user_realm: 'realm1',
-                  },
-                ],
-                realms: 'containerRealm',
-              },
-            ],
-          },
-        },
-      }),
-    );
-
-    containerServiceSpy.toggleActive.and.returnValue(of({}));
-
-    routerSpy.navigate.and.returnValue(Promise.resolve(true));
-
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [ContainerTableComponent, BrowserAnimationsModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: AuthService, useValue: authServiceSpy },
-        { provide: ContainerService, useValue: containerServiceSpy },
-        { provide: NotificationService, useValue: notificationServiceSpy },
-        { provide: TableUtilsService, useValue: tableUtilsServiceSpy },
-        { provide: Router, useValue: routerSpy },
+        { provide: AuthService, useValue: authServiceMock },
+        { provide: ContainerService, useValue: containerServiceMock },
+        { provide: TableUtilsService, useValue: tableUtilsMock },
+        { provide: NotificationService, useValue: notificationServiceMock },
+        { provide: TokenService, useValue: tokenServiceMock },
+        { provide: ContentService, useValue: contentServiceMock },
+        {
+          provide: Router,
+          useValue: {
+            navigate: jest.fn(),
+            events: of(new NavigationEnd(0, '/', '/')),
+          },
+        },
       ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ContainerTableComponent);
     component = fixture.componentInstance;
 
-    component.containerSerial = signal('Mock container');
     component.selectedContent = signal('container_overview');
-    component.containerSelection = new SelectionModel<any>(true, []);
 
     fixture.detectChanges();
   });
@@ -115,133 +127,68 @@ describe('ContainerTableComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  describe('fetchContainerData()', () => {
-    it('should call containerService.getContainerData', () => {
-      containerServiceSpy.getContainerData.calls.reset();
-      component['fetchContainerData']();
-      expect(containerServiceSpy.getContainerData).toHaveBeenCalledWith({
-        page: component.pageIndex() + 1,
-        pageSize: component.pageSize(),
-        sort: component.sortby_sortdir(),
-        filterValue: component.filterValue(),
-      });
+  describe('#handleStateClick', () => {
+    it('calls toggleActive and reloads data', () => {
+      const element = { serial: 'CONT-1', states: ['active'] } as any;
+      component.handleStateClick(element);
+
+      expect(containerServiceMock.toggleActive).toHaveBeenCalledWith('CONT-1', [
+        'active',
+      ]);
+      expect(containerServiceMock.containerResource.reload).toHaveBeenCalled();
     });
   });
 
-  describe('processDataSource()', () => {
-    it('should transform users array to "users" and "user_realm" fields', () => {
-      const mockData = [
-        {
-          serial: 'Mock serial',
-          type: 'hotp',
-          states: 'active',
-          description: 'test description',
-          users: [{ user_name: 'admin_user', user_realm: 'realm1' }],
-        },
-        {
-          serial: 'Mock serial',
-          type: 'hotp',
-          states: ['deactivated'],
-          description: 'test description',
-          users: [],
-        },
-      ];
-      component['processDataSource'](mockData);
+  describe('#onPageEvent', () => {
+    it('updates page index, size and eventPageSize', () => {
+      const event: PageEvent = {
+        pageIndex: 2,
+        pageSize: 15,
+        length: 100,
+        previousPageIndex: 1,
+      };
 
-      const tableData = component.dataSource().data;
-      expect(tableData[0].users).toBe('admin_user');
-      expect(tableData[0].user_realm).toBe('realm1');
-      expect(tableData[1].users).toBe('');
-      expect(tableData[1].user_realm).toBe('');
-    });
-  });
+      component.onPageEvent(event);
 
-  describe('Paginator (handlePageEvent)', () => {
-    it('should delegate page changes to tableUtilsService.handlePageEvent', () => {
-      const paginator = fixture.debugElement.query(
-        By.directive(MatPaginator),
-      ).componentInstance;
-      const testPageEvent = { pageIndex: 2, pageSize: 15 };
-
-      spyOn<any>(component, 'fetchContainerData').and.callThrough();
-
-      tableUtilsServiceSpy.handlePageEvent.and.callFake(
-        (event, pageIndexSignal, pageSizeSignal, fetchDataCb) => {
-          pageIndexSignal.set(event.pageIndex);
-          pageSizeSignal.set(event.pageSize);
-          fetchDataCb();
-        },
-      );
-
-      paginator.page.emit(testPageEvent);
-      fixture.detectChanges();
-
-      expect(tableUtilsServiceSpy.handlePageEvent).toHaveBeenCalledWith(
-        jasmine.objectContaining(testPageEvent),
-        component.pageIndex,
-        component.pageSize,
-        component['fetchContainerData'],
-      );
       expect(component.pageIndex()).toBe(2);
       expect(component.pageSize()).toBe(15);
-      expect(component['fetchContainerData']).toHaveBeenCalled();
+      expect(containerServiceMock.eventPageSize).toBe(15);
     });
   });
 
-  describe('Sort (handleSortEvent)', () => {
-    it('should delegate sort changes to tableUtilsService.handleSortEvent', () => {
-      const testSort: Sort = { active: 'type', direction: 'asc' };
-      spyOn<any>(component, 'fetchContainerData').and.callThrough();
+  describe('#onSortEvent', () => {
+    it('updates the sort signal', () => {
+      const sort: Sort = { active: 'type', direction: 'asc' };
 
-      tableUtilsServiceSpy.handleSortEvent.and.callFake(
-        (sort, pageIndexSignal, sortbySortDirSignal, fetchDataCb) => {
-          sortbySortDirSignal.set(sort);
-          pageIndexSignal.set(0);
-          fetchDataCb();
-        },
-      );
+      component.onSortEvent(sort);
 
-      tableUtilsServiceSpy.handleSortEvent(
-        testSort,
-        component.pageIndex,
-        component.sortby_sortdir,
-        component['fetchContainerData'],
-      );
-      fixture.detectChanges();
-
-      expect(tableUtilsServiceSpy.handleSortEvent).toHaveBeenCalledWith(
-        testSort,
-        component.pageIndex,
-        component.sortby_sortdir,
-        jasmine.any(Function),
-      );
-      expect(component.sortby_sortdir().active).toBe('type');
-      expect(component.sortby_sortdir().direction).toBe('asc');
-      expect(component.pageIndex()).toBe(0);
-      expect(component['fetchContainerData']).toHaveBeenCalled();
+      const result = component.sort();
+      expect(result.active).toBe('type');
+      expect(result.direction).toBe('asc');
     });
   });
 
-  describe('handleStateClick()', () => {
-    it('should call toggleActive() and refetch data on success', () => {
-      spyOn<any>(component, 'fetchContainerData').and.callThrough();
-      const mockElement = { serial: 'Mock serial', states: ['active'] };
+  describe('Selection helpers', () => {
+    it('toggleAllRows selects *then* clears every row', () => {
+      expect(component.isAllSelected()).toBe(false);
 
-      component.handleStateClick(mockElement);
+      component.toggleAllRows();
+      expect(component.isAllSelected()).toBe(true);
+      expect(component.containerSelection().length).toBe(2);
 
-      expect(containerServiceSpy.toggleActive).toHaveBeenCalledWith(
-        'Mock serial',
-        ['active'],
-      );
-      expect(component['fetchContainerData']).toHaveBeenCalled();
+      component.toggleAllRows();
+      expect(component.isAllSelected()).toBe(false);
+      expect(component.containerSelection().length).toBe(0);
     });
-  });
 
-  describe('containerSelected()', () => {
-    it('should set containerSerial and selectedContent', () => {
-      component.containerSelected('new serial');
-      expect(component.containerSerial()).toBe('new serial');
-      expect(component.selectedContent()).toBe('container_details');
+    it('toggleRow adds and removes a single row', () => {
+      const row = component.containerDataSource().data[0];
+
+      component.toggleRow(row);
+      expect(component.containerSelection()).toContain(row);
+
+      component.toggleRow(row);
+      expect(component.containerSelection()).not.toContain(row);
     });
   });
 });

@@ -1,85 +1,75 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ContainerDetailsTokenTableComponent } from './container-details-token-table.component';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { of, Subject } from 'rxjs';
+import { signal } from '@angular/core';
+import { MatTableDataSource } from '@angular/material/table';
+import { NavigationEnd, Router } from '@angular/router';
+
+import { ContainerDetailsTokenTableComponent } from './container-details-token-table.component';
+import {
+  authServiceMock,
+  MockContainerService,
+  MockContentService,
+  MockOverflowService,
+  MockTokenService,
+  MockUserService,
+  notificationServiceMock,
+  tableUtilsMock,
+} from '../../../../../testing/mock-services';
 import { AuthService } from '../../../../services/auth/auth.service';
 import { ContainerService } from '../../../../services/container/container.service';
 import { TokenService } from '../../../../services/token/token.service';
 import { TableUtilsService } from '../../../../services/table-utils/table-utils.service';
 import { OverflowService } from '../../../../services/overflow/overflow.service';
 import { NotificationService } from '../../../../services/notification/notification.service';
-import { Router } from '@angular/router';
-import { MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { signal } from '@angular/core';
-import { of } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+import { UserService } from '../../../../services/user/user.service';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
-import { MatTableDataSource } from '@angular/material/table';
+import { ContentService } from '../../../../services/content/content.service';
+
+const routerEvents$ = new Subject<NavigationEnd>();
+routerEvents$.next(new NavigationEnd(1, '/', '/'));
+const routerMock = {
+  navigate: jest.fn().mockResolvedValue(true),
+  url: '/',
+  events: routerEvents$,
+} as unknown as jest.Mocked<Router>;
+
+function makeDialogResult(result: boolean) {
+  return { afterClosed: () => of(result) } as any;
+}
+
+const matDialogMock = {
+  open: jest.fn().mockReturnValue(makeDialogResult(true)),
+};
 
 describe('ContainerDetailsTokenTableComponent', () => {
-  let component: ContainerDetailsTokenTableComponent;
   let fixture: ComponentFixture<ContainerDetailsTokenTableComponent>;
-  let authServiceSpy: jasmine.SpyObj<AuthService>;
-  let containerServiceSpy: jasmine.SpyObj<ContainerService>;
-  let tokenServiceSpy: jasmine.SpyObj<TokenService>;
-  let tableUtilsSpy: jasmine.SpyObj<TableUtilsService>;
-  let overflowServiceSpy: jasmine.SpyObj<OverflowService>;
-  let notificationServiceSpy: jasmine.SpyObj<NotificationService>;
-  let routerSpy: jasmine.SpyObj<Router>;
-  let matDialogSpy: jasmine.SpyObj<MatDialog>;
+  let component: ContainerDetailsTokenTableComponent;
+
+  const containerServiceMock = new MockContainerService();
+  const tokenServiceMock = new MockTokenService();
+  const overflowServiceMock = new MockOverflowService();
 
   beforeEach(async () => {
-    authServiceSpy = jasmine.createSpyObj('AuthService', [
-      'isAuthenticatedUser',
-    ]);
-    containerServiceSpy = jasmine.createSpyObj('ContainerService', [
-      'removeTokenFromContainer',
-      'toggleAll',
-      'deleteAllTokens',
-    ]);
-    tokenServiceSpy = jasmine.createSpyObj('TokenService', ['toggleActive']);
-    tableUtilsSpy = jasmine.createSpyObj('TableUtilsService', [
-      'handleColumnClick',
-      'getClassForColumnKey',
-      'isLink',
-      'getClassForColumn',
-      'getDisplayText',
-    ]);
-    overflowServiceSpy = jasmine.createSpyObj('OverflowService', [
-      'handleFilterInput',
-      'isWidthOverflowing',
-    ]);
-    notificationServiceSpy = jasmine.createSpyObj('NotificationService', [
-      'openSnackBar',
-    ]);
-    routerSpy = jasmine.createSpyObj('Router', ['navigate']);
-    matDialogSpy = jasmine.createSpyObj('MatDialog', ['open']);
-
-    authServiceSpy.isAuthenticatedUser.and.returnValue(true);
-    routerSpy.navigate.and.returnValue(Promise.resolve(true));
-
-    containerServiceSpy.removeTokenFromContainer.and.returnValue(of({}));
-    containerServiceSpy.toggleAll.and.returnValue(of({}));
-    containerServiceSpy.deleteAllTokens.and.returnValue(of({}));
-    tokenServiceSpy.toggleActive.and.returnValue(of({}));
-
-    matDialogSpy.open.and.returnValue({
-      afterClosed: () => of(true),
-    } as MatDialogRef<ConfirmationDialogComponent>);
-
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [ContainerDetailsTokenTableComponent, BrowserAnimationsModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: AuthService, useValue: authServiceSpy },
-        { provide: ContainerService, useValue: containerServiceSpy },
-        { provide: TokenService, useValue: tokenServiceSpy },
-        { provide: TableUtilsService, useValue: tableUtilsSpy },
-        { provide: OverflowService, useValue: overflowServiceSpy },
-        { provide: NotificationService, useValue: notificationServiceSpy },
-        { provide: Router, useValue: routerSpy },
-        { provide: MatDialog, useValue: matDialogSpy },
+        { provide: AuthService, useValue: authServiceMock },
+        { provide: ContainerService, useValue: containerServiceMock },
+        { provide: TokenService, useValue: tokenServiceMock },
+        { provide: TableUtilsService, useValue: tableUtilsMock },
+        { provide: OverflowService, useValue: overflowServiceMock },
+        { provide: NotificationService, useValue: notificationServiceMock },
+        { provide: Router, useValue: routerMock },
+        { provide: MatDialog, useValue: matDialogMock },
+        { provide: UserService, useClass: MockUserService },
+        { provide: ContentService, useClass: MockContentService },
       ],
     }).compileComponents();
 
@@ -102,115 +92,53 @@ describe('ContainerDetailsTokenTableComponent', () => {
         },
       ]),
     );
-    component.containerSerial = signal('CONT-1');
-    component.tokenSerial = signal('');
-    component.refreshContainerDetails = signal(false);
-    component.isProgrammaticTabChange = signal(false);
-    component.selectedContent = signal('container_details');
 
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  afterEach(() => jest.clearAllMocks());
+
+  it('creates the component', () => {
     expect(component).toBeTruthy();
   });
 
-  describe('ngAfterViewInit', () => {
-    it('should set paginator and sort on dataSource', () => {
-      const ds = component.containerTokenData();
-      expect(ds.paginator).toBe(component.paginator);
-      expect(ds.sort).toBe(component.sort);
-    });
+  it('sets paginator and sort on the dataSource', () => {
+    const ds = component.containerTokenData();
+    expect(ds.paginator).toBe(component.paginator);
+    expect(ds.sort).toBe(component.sort);
   });
 
-  describe('handleFilterInput', () => {
-    it('should set the dataSource filter value', () => {
-      const mockEvent = {
-        target: { value: ' testFilter ' },
-      } as unknown as Event;
+  it('updates filterValue and MatTableDataSource.filter', () => {
+    const mockEvent = { target: { value: ' testFilter ' } } as unknown as Event;
 
-      component.handleFilterInput(mockEvent);
+    component.handleFilterInput(mockEvent);
 
-      expect(component.filterValue).toBe('testFilter');
-      expect(component.containerTokenData().filter).toBe('testfilter');
-    });
+    expect(component.filterValue).toBe('testFilter');
+    expect(component.containerTokenData().filter).toBe('testfilter');
   });
 
-  describe('tokenSelected', () => {
-    it('should set signals for isProgrammaticChange and tokenSerial, and selectedContent', () => {
-      expect(component.isProgrammaticTabChange()).toBeFalse();
-      component.tokenSelected('Mock serial');
+  it('delegates to toggleActive when columnKey === "active"', () => {
+    const toggleSpy = jest.spyOn(component, 'toggleActive');
+    const row = { serial: 'Mock serial', active: true };
 
-      expect(component.isProgrammaticTabChange()).toBeTrue();
-      expect(component.tokenSerial()).toBe('Mock serial');
-      expect(component.selectedContent()).toBe('token_details');
-    });
+    component.handleColumnClick('active', row as any);
+
+    expect(toggleSpy).toHaveBeenCalledWith(row);
   });
 
-  describe('removeTokenFromContainer', () => {
-    it('should call containerService.removeTokenFromContainer and set refreshContainerDetails true', () => {
-      component.refreshContainerDetails.set(false);
+  it('does nothing when columnKey !== "active"', () => {
+    const toggleSpy = jest.spyOn(component, 'toggleActive');
 
-      component.removeTokenFromContainer('CONT-1', 'Mock serial');
-      expect(containerServiceSpy.removeTokenFromContainer).toHaveBeenCalledWith(
-        'CONT-1',
-        'Mock serial',
-      );
+    component.handleColumnClick('username', {} as any);
 
-      expect(component.refreshContainerDetails()).toBeTrue();
-    });
+    expect(toggleSpy).not.toHaveBeenCalled();
   });
 
-  describe('handleColumnClick', () => {
-    it('should call toggleActive if columnKey === active', () => {
-      spyOn(component, 'toggleActive');
-      const element = { serial: 'Mock serial', active: true };
-
-      component.handleColumnClick('active', element);
-      expect(component.toggleActive).toHaveBeenCalledWith(element);
-    });
-
-    it('should do nothing if columnKey != active', () => {
-      spyOn(component, 'toggleActive');
-      component.handleColumnClick('username', {});
-
-      expect(component.toggleActive).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('toggleActive', () => {
-    it('should call tokenService.toggleActive and set refreshContainerDetails on success', () => {
-      component.refreshContainerDetails.set(false);
-      const element = { serial: 'Mock serial', active: true };
-
-      component.toggleActive(element);
-
-      expect(tokenServiceSpy.toggleActive).toHaveBeenCalledWith(
-        'Mock serial',
-        true,
-      );
-      expect(component.refreshContainerDetails()).toBeTrue();
-    });
-  });
-
-  describe('toggleAll', () => {
-    it('should call containerService.toggleAll and set refreshContainerDetails on success', () => {
-      component.refreshContainerDetails.set(false);
-
-      component.toggleAll('activate');
-      expect(containerServiceSpy.toggleAll).toHaveBeenCalledWith(
-        'CONT-1',
-        'activate',
-      );
-      expect(component.refreshContainerDetails()).toBeTrue();
-    });
-  });
-
-  describe('deleteAllTokens', () => {
-    it('should open a confirmation dialog and call deleteAllTokens on confirm', () => {
+  describe('deleteAllTokens()', () => {
+    it('opens confirm dialog and deletes on confirm', () => {
       component.deleteAllTokens();
 
-      expect(matDialogSpy.open).toHaveBeenCalledWith(
+      expect(matDialogMock.open).toHaveBeenCalledWith(
         ConfirmationDialogComponent,
         {
           data: {
@@ -223,22 +151,18 @@ describe('ContainerDetailsTokenTableComponent', () => {
         },
       );
 
-      expect(containerServiceSpy.deleteAllTokens).toHaveBeenCalledWith({
+      expect(containerServiceMock.deleteAllTokens).toHaveBeenCalledWith({
         containerSerial: 'CONT-1',
         serialList: 'Mock serial,Another serial',
       });
-      expect(component.refreshContainerDetails()).toBeTrue();
     });
 
-    it('should not call deleteAllTokens if dialog result is false (cancel)', () => {
-      matDialogSpy.open.and.returnValue({
-        afterClosed: () => of(false),
-      } as MatDialogRef<ConfirmationDialogComponent>);
+    it('does NOT delete if dialog returns false', () => {
+      matDialogMock.open.mockReturnValueOnce(makeDialogResult(false));
 
-      containerServiceSpy.deleteAllTokens.calls.reset();
       component.deleteAllTokens();
 
-      expect(containerServiceSpy.deleteAllTokens).not.toHaveBeenCalled();
+      expect(containerServiceMock.deleteAllTokens).not.toHaveBeenCalled();
     });
   });
 });

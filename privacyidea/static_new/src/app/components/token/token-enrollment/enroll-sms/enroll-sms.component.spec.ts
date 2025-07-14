@@ -18,7 +18,6 @@ describe('EnrollSmsComponent', () => {
 
     fixture = TestBed.createComponent(EnrollSmsComponent);
     component = fixture.componentInstance;
-    component.readNumberDynamically = signal(false);
     fixture.detectChanges();
   });
 

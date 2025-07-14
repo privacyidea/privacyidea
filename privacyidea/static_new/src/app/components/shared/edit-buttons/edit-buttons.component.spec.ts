@@ -4,8 +4,8 @@ import { EditButtonsComponent } from './edit-buttons.component';
 import { signal } from '@angular/core';
 
 describe('EditButtonsComponent', () => {
-  let component: EditButtonsComponent;
-  let fixture: ComponentFixture<EditButtonsComponent>;
+  let component: EditButtonsComponent<any>;
+  let fixture: ComponentFixture<EditButtonsComponent<any>>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({

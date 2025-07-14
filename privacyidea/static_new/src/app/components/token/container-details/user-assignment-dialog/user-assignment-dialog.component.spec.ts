@@ -1,22 +1,25 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { UserAssignmentDialogComponent } from './user-assignment-dialog.component';
-import { MatDialogRef } from '@angular/material/dialog';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { MatDialogRef } from '@angular/material/dialog';
+
+import { UserAssignmentDialogComponent } from './user-assignment-dialog.component';
 
 describe('UserAssignmentDialogComponent', () => {
-  let component: UserAssignmentDialogComponent;
   let fixture: ComponentFixture<UserAssignmentDialogComponent>;
-  let dialogRefSpy: jasmine.SpyObj<
+  let component: UserAssignmentDialogComponent;
+
+  const dialogRefMock = {
+    close: jest.fn(),
+  } as unknown as jest.Mocked<
     MatDialogRef<UserAssignmentDialogComponent, string | null>
   >;
 
   beforeEach(async () => {
-    dialogRefSpy = jasmine.createSpyObj('MatDialogRef', ['close']);
-
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [UserAssignmentDialogComponent, NoopAnimationsModule],
-      providers: [{ provide: MatDialogRef, useValue: dialogRefSpy }],
+      providers: [{ provide: MatDialogRef, useValue: dialogRefMock }],
     }).compileComponents();
   });
 
@@ -30,33 +33,42 @@ describe('UserAssignmentDialogComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should disable Assign All if PINs do not match', () => {
+  it('should disable "Assign All" when PINs do not match', () => {
     component.pin.set('1234');
     component.pinRepeat.set('4321');
     fixture.detectChanges();
-    const assignBtn = fixture.debugElement.queryAll(By.css('button'))[1]
-      .nativeElement;
-    expect(assignBtn.disabled).toBeTrue();
+
+    const assignBtn = fixture.debugElement.query(
+      By.css('mat-dialog-actions button[color="primary"]'),
+    ).nativeElement as HTMLButtonElement;
+
+    expect(assignBtn.disabled).toBe(true);
   });
 
-  it('should enable Assign All if PINs match', () => {
+  it('should enable "Assign All" when PINs match', () => {
     component.pin.set('1234');
     component.pinRepeat.set('1234');
     fixture.detectChanges();
-    const assignBtn = fixture.debugElement.queryAll(By.css('button'))[1]
-      .nativeElement;
-    expect(assignBtn.disabled).toBeFalse();
+
+    const assignBtn = fixture.debugElement.query(
+      By.css('mat-dialog-actions button[color="primary"]'),
+    ).nativeElement as HTMLButtonElement;
+
+    expect(assignBtn.disabled).toBe(false);
   });
 
-  it('should return true on confirm', () => {
+  it('should return the PIN on confirm', () => {
     component.pin.set('1234');
     component.pinRepeat.set('1234');
+
     component.onConfirm();
-    expect(dialogRefSpy.close).toHaveBeenCalledWith('1234');
+
+    expect(dialogRefMock.close).toHaveBeenCalledWith('1234');
   });
 
-  it('should return false on cancel', () => {
+  it('should return null on cancel', () => {
     component.onCancel();
-    expect(dialogRefSpy.close).toHaveBeenCalledWith(null);
+
+    expect(dialogRefMock.close).toHaveBeenCalledWith(null);
   });
 });

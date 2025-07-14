@@ -1,10 +1,10 @@
-// src/app/dialogs/dialog.service.ts
 import { computed, Injectable } from '@angular/core';
 import {
   MatDialog,
   MatDialogConfig,
   MatDialogRef,
 } from '@angular/material/dialog';
+
 import {
   TokenEnrollmentLastStepDialogComponent,
   TokenEnrollmentLastStepDialogData,
@@ -12,16 +12,11 @@ import {
 import { TokenEnrollmentFirstStepDialogComponent } from '../../components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component';
 import { EnrollmentResponse } from '../../mappers/token-api-payload/_token-api-payload.mapper';
 import {
-  ConfirmationDialogData,
   ConfirmationDialogComponent,
+  ConfirmationDialogData,
 } from '../../components/shared/confirmation-dialog/confirmation-dialog.component';
 import { AuthService } from '../auth/auth.service';
-import { TokenEnrollmentLastStepDialogSelfServiceComponent } from '../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component';
 
-/* * This class extends MatDialogConfig to ensure that the data property is always required.
- * This is useful for dialogs that require data to be passed in, ensuring that the dialog cannot
- * be opened without the necessary data.
- */
 class MatDialogConfigRequired<D = any> extends MatDialogConfig<D> {
   override data!: D;
 
@@ -36,85 +31,76 @@ class MatDialogConfigRequired<D = any> extends MatDialogConfig<D> {
 
 @Injectable({ providedIn: 'root' })
 export class DialogService {
-  isSelfServing = computed(() => this.authService.role() === 'user');
+  readonly isSelfServing = computed(() => this.authService.role() === 'user');
+
+  private _tokenEnrollmentFirstStepRef: MatDialogRef<
+    TokenEnrollmentFirstStepDialogComponent,
+    any
+  > | null = null;
 
   constructor(
     private dialog: MatDialog,
     private authService: AuthService,
   ) {}
 
-  private _tokenEnrollmentFirstStepRef: MatDialogRef<
-    TokenEnrollmentFirstStepDialogComponent,
+  private _tokenEnrollmentLastStepRef: MatDialogRef<
+    TokenEnrollmentLastStepDialogComponent,
     any
   > | null = null;
+
+  get tokenEnrollmentLastStepRef() {
+    return this._tokenEnrollmentLastStepRef;
+  }
+
   openTokenEnrollmentFirstStepDialog(
-    config: MatDialogConfigRequired<{
-      enrollmentResponse: EnrollmentResponse;
-    }>,
+    config: MatDialogConfigRequired<{ enrollmentResponse: EnrollmentResponse }>,
   ): MatDialogRef<TokenEnrollmentFirstStepDialogComponent, any> {
     if (this._tokenEnrollmentFirstStepRef) {
-      // If the dialog is already open, close it before opening a new one
       this._tokenEnrollmentFirstStepRef.close();
     }
     this._tokenEnrollmentFirstStepRef = this.dialog.open(
       TokenEnrollmentFirstStepDialogComponent,
       config,
     );
+
     this._tokenEnrollmentFirstStepRef.afterClosed().subscribe(() => {
       this._tokenEnrollmentFirstStepRef = null;
     });
+
     return this._tokenEnrollmentFirstStepRef;
   }
 
   closeTokenEnrollmentFirstStepDialog(): void {
-    if (this._tokenEnrollmentFirstStepRef) {
-      this._tokenEnrollmentFirstStepRef.close();
-    }
-  }
-  isTokenEnrollmentFirstStepDialogOpen(): boolean {
-    return !!this._tokenEnrollmentFirstStepRef;
+    this._tokenEnrollmentFirstStepRef?.close();
   }
 
-  private _tokenEnrollmentLastStepRef: MatDialogRef<
-    TokenEnrollmentLastStepDialogComponent,
-    any
-  > | null = null;
-  get tokenEnrollmentLastStepRef() {
-    return this._tokenEnrollmentLastStepRef;
-  }
   openTokenEnrollmentLastStepDialog(
     config: MatDialogConfigRequired<TokenEnrollmentLastStepDialogData>,
   ): MatDialogRef<TokenEnrollmentLastStepDialogComponent, any> {
     if (this._tokenEnrollmentLastStepRef) {
-      // If the dialog is already open, close it before opening a new one
       this._tokenEnrollmentLastStepRef.close();
     }
 
+    const component = this.isSelfServing()
+      ? (
+          require('../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component') as typeof import('../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component')
+        ).TokenEnrollmentLastStepDialogSelfServiceComponent
+      : TokenEnrollmentLastStepDialogComponent;
+
     this._tokenEnrollmentLastStepRef = this.dialog.open(
-      this.isSelfServing()
-        ? TokenEnrollmentLastStepDialogSelfServiceComponent
-        : TokenEnrollmentLastStepDialogComponent,
+      component as any,
       config,
     );
 
     this._tokenEnrollmentLastStepRef.afterClosed().subscribe(() => {
       this._tokenEnrollmentLastStepRef = null;
     });
+
     return this._tokenEnrollmentLastStepRef;
   }
 
   closeTokenEnrollmentLastStepDialog(): void {
-    if (this._tokenEnrollmentLastStepRef) {
-      this._tokenEnrollmentLastStepRef.close();
-    }
-  }
-
-  isTokenEnrollmentLastStepDialogOpen(): boolean {
-    return !!this._tokenEnrollmentLastStepRef;
-  }
-
-  isAnyDialogOpen(): boolean {
-    return this.dialog.openDialogs.length > 0;
+    this._tokenEnrollmentLastStepRef?.close();
   }
 
   confirm(
@@ -127,9 +113,11 @@ export class DialogService {
         boolean
       >(ConfirmationDialogComponent, config);
 
-      dialogRef.afterClosed().subscribe((result) => {
-        resolve(result ?? false);
-      });
+      dialogRef.afterClosed().subscribe((result) => resolve(result ?? false));
     });
+  }
+
+  isAnyDialogOpen(): boolean {
+    return this.dialog.openDialogs.length > 0;
   }
 }

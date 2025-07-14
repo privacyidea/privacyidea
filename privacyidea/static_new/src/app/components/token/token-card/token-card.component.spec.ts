@@ -2,7 +2,10 @@ import { signal } from '@angular/core';
 import { TokenCardComponent } from './token-card.component';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import {
+  BrowserAnimationsModule,
+  provideNoopAnimations,
+} from '@angular/platform-browser/animations';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { SelectionModel } from '@angular/cdk/collections';
 
@@ -11,9 +14,14 @@ describe('TokenCardComponent', () => {
   let fixture: ComponentFixture<TokenCardComponent>;
 
   beforeEach(async () => {
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [TokenCardComponent, BrowserAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideNoopAnimations(),
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TokenCardComponent);
@@ -22,16 +30,7 @@ describe('TokenCardComponent', () => {
     component.selectedContent = signal('token_overview');
     component.tokenSerial = signal('Mock serial');
     component.containerSerial = signal('Mock container');
-    component.active = signal(true);
-    component.revoked = signal(false);
     component.states = signal([]);
-    component.refreshTokenDetails = signal(false);
-    component.refreshContainerDetails = signal(false);
-    component.isProgrammaticTabChange = signal(false);
-    component.tokenSelection = new SelectionModel<any>(true, []);
-    component.containerSelection = new SelectionModel<any>(true, []);
-    component.refreshTokenOverview = signal(false);
-    component.refreshContainerOverview = signal(false);
 
     fixture.detectChanges();
   });
@@ -50,7 +49,6 @@ describe('TokenCardComponent', () => {
 
       component.onTabChange();
 
-      expect(component.isProgrammaticTabChange()).toBeFalse();
       expect(component.selectedTabIndex()).toBe(1);
       expect(component.selectedContent()).toBe('token_overview');
       expect(component.containerSerial()).toBe('Mock serial');
@@ -83,16 +81,6 @@ describe('TokenCardComponent', () => {
       expect(component.selectedContent()).toBe('container_overview');
       expect(component.containerSerial()).toBe('');
       expect(component.tokenSerial()).toBe('');
-    });
-  });
-
-  describe('TokenCardComponent - isProgrammaticChange reset', () => {
-    it('should set isProgrammaticChange to false if it was true upon onTabChange()', () => {
-      component.isProgrammaticTabChange.set(true);
-
-      component.onTabChange();
-
-      expect(component.isProgrammaticTabChange()).toBe(false);
     });
   });
 });

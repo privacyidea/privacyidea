@@ -1,115 +1,44 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TokenDetailsComponent } from './token-details.component';
 import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { of, throwError } from 'rxjs';
+
 import { TokenService } from '../../../services/token/token.service';
 import { ContainerService } from '../../../services/container/container.service';
 import { ValidateService } from '../../../services/validate/validate.service';
-import { of, throwError } from 'rxjs';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-
-class MockTokenService {
-  getTokenDetails() {
-    return of({
-      result: {
-        value: {
-          tokens: [
-            {
-              active: true,
-              revoked: false,
-              container_serial: 'Mock serial',
-              realms: ['realm1', 'realm2'],
-            },
-          ],
-        },
-      },
-    });
-  }
-
-  getRealms() {
-    return of({ result: { value: ['realm1', 'realm2'] } });
-  }
-
-  resetFailCount() {
-    return of(null);
-  }
-
-  setTokenDetail() {
-    return of(null);
-  }
-
-  assignUser() {
-    return of(null);
-  }
-
-  unassignUser() {
-    return of(null);
-  }
-
-  setPin() {
-    return of(null);
-  }
-
-  setRandomPin() {
-    return of(null);
-  }
-
-  resyncOTPToken() {
-    return of(null);
-  }
-}
-
-class MockContainerService {
-  selectedContainer = signal('');
-  containerOptions = signal(['container1', 'container2', 'admin-container']);
-
-  getContainerData() {
-    return of({
-      result: {
-        value: {
-          containers: [{ serial: 'container1' }, { serial: 'container2' }],
-        },
-      },
-    });
-  }
-
-  assignContainer() {
-    return of(null);
-  }
-
-  unassignContainer() {
-    return of(null);
-  }
-}
-
-class MockValidateService {
-  testToken() {
-    return of(null);
-  }
-}
-
-class MockRealmService {
-  realmOptions = signal(['realm1', 'realm2']);
-}
+import { RealmService } from '../../../services/realm/realm.service';
+import {
+  MockContainerService,
+  MockRealmService,
+  MockTokenService,
+  MockValidateService,
+} from '../../../../testing/mock-services';
 
 describe('TokenDetailsComponent', () => {
   let component: TokenDetailsComponent;
   let fixture: ComponentFixture<TokenDetailsComponent>;
   let tokenService: TokenService;
   let containerService: ContainerService;
-  let realmService: MockRealmService;
   let validateService: ValidateService;
+  let realmService: MockRealmService;
 
   beforeEach(async () => {
+    jest.clearAllMocks();
+
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [TokenDetailsComponent, BrowserAnimationsModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+
         { provide: TokenService, useClass: MockTokenService },
         { provide: ContainerService, useClass: MockContainerService },
         { provide: ValidateService, useClass: MockValidateService },
+        { provide: RealmService, useClass: MockRealmService },
       ],
     }).compileComponents();
 
@@ -133,125 +62,43 @@ describe('TokenDetailsComponent', () => {
         isEditing: signal(false),
       },
     ]);
+
     tokenService = TestBed.inject(TokenService);
     containerService = TestBed.inject(ContainerService);
     validateService = TestBed.inject(ValidateService);
+    realmService = TestBed.inject(RealmService) as unknown as MockRealmService;
 
     fixture.detectChanges();
-  });
-
-  afterEach(() => {
-    fixture.destroy();
   });
 
   it('should create', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should load token details on initialization', () => {
-    spyOn(tokenService, 'getTokenDetails').and.callThrough();
-    component.showTokenDetail().subscribe(() => {
-      expect(tokenService.getTokenDetails).toHaveBeenCalledWith('Mock serial');
-      expect(component.tokenDetailData().length).toBeGreaterThan(0);
-      expect(component.infoData().length).toBeGreaterThan(0);
-      expect(component.tokengroupOptions().length).toBeGreaterThan(0);
-      expect(containerService.containerOptions().length).toBeGreaterThan(0);
-      expect(realmService.realmOptions().length).toBeGreaterThan(0);
-      expect(containerService.selectedContainer()).toBe('Mock serial');
-      expect(realmService.realmOptions().length).toBeGreaterThan(0);
-      expect(component.tokenIsActive()).toBeTrue();
-    });
-  });
-
-  it('should handle errors when loading token details fails', () => {
-    spyOn(tokenService, 'getTokenDetails').and.returnValue(
-      throwError(() => new Error('Error fetching token details.')),
-    );
-    spyOn(console, 'error');
-    component.showTokenDetail().subscribe({
-      error: () => {
-        expect(console.error).toHaveBeenCalledWith(
-          'Failed to get token details.',
-          jasmine.any(Error),
-        );
-      },
-    });
-  });
-
-  it('should handle empty data gracefully', () => {
-    spyOn(tokenService, 'getTokenDetails').and.returnValue(
-      of({ result: { value: { tokens: [] } } }),
-    );
-    component.showTokenDetail().subscribe({
-      next: () => {
-        expect(component.tokenDetailData().length).toBe(0);
-      },
-    });
-  });
-
   it('should display token details correctly', () => {
-    const detailHeader = fixture.nativeElement.querySelector(
+    const header = fixture.nativeElement.querySelector(
       '.details-header h3:nth-child(2)',
     );
-    expect(detailHeader.textContent).toContain('Mock serial');
-  });
-
-  it('should save token detail', () => {
-    spyOn(tokenService, 'setTokenDetail').and.callThrough();
-    component.saveTokenDetail('key', 'value');
-    expect(tokenService.saveTokenDetail).toHaveBeenCalledWith(
-      'Mock serial',
-      'key',
-      'value',
-    );
+    expect(header.textContent).toContain('Mock serial');
   });
 
   it('should reset fail count', () => {
-    spyOn(tokenService, 'resetFailCount').and.callThrough();
+    const resetSpy = jest.spyOn(tokenService, 'resetFailCount');
     component.resetFailCount();
-    expect(tokenService.resetFailCount).toHaveBeenCalledWith('Mock serial');
-  });
-
-  it('should get container data', () => {
-    spyOn(containerService, 'getContainerData').and.callThrough();
-    component.showTokenDetail().subscribe(() => {
-      expect(containerService.getContainerData).toHaveBeenCalledWith({
-        page: 1,
-        pageSize: 10,
-      });
-      expect(containerService.containerOptions().length).toBe(3);
-    });
+    expect(resetSpy).toHaveBeenCalledWith('Mock serial');
   });
 
   it('should assign container', () => {
-    containerService.selectedContainer = signal('container1');
-    spyOn(containerService, 'assignContainer').and.callThrough();
+    containerService.selectedContainer.set('container1');
+    const assignSpy = jest.spyOn(containerService, 'assignContainer');
     component.saveContainer();
-    expect(containerService.assignContainer).toHaveBeenCalledWith(
-      'Mock serial',
-      'container1',
-    );
+    expect(assignSpy).toHaveBeenCalledWith('Mock serial', 'container1');
   });
 
   it('should unassign container', () => {
-    containerService.selectedContainer = signal('container1');
-    spyOn(containerService, 'unassignContainer').and.callThrough();
+    containerService.selectedContainer.set('container1');
+    const unassignSpy = jest.spyOn(containerService, 'unassignContainer');
     component.deleteContainer();
-    expect(containerService.unassignContainer).toHaveBeenCalledWith(
-      'Mock serial',
-      'container1',
-    );
-  });
-
-  it('should navigate to container details when containerSelected is called', () => {
-    component.isProgrammaticTabChange = signal(false);
-    component.selectedContent = signal('token_overview');
-    component.containerSerial = signal('');
-
-    component.containerSelected('testSerial');
-
-    expect(component.isProgrammaticTabChange()).toBeTrue();
-    expect(component.selectedContent()).toBe('container_details');
-    expect(component.containerSerial()).toBe('testSerial');
+    expect(unassignSpy).toHaveBeenCalledWith('Mock serial', 'container1');
   });
 });

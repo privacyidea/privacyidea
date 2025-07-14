@@ -134,21 +134,32 @@ export class ContainerDetailsTokenTableComponent {
     protected authService: AuthService,
   ) {
     effect(() => {
-      const containerDetails = this.containerTokenData();
-      if (containerDetails) {
-        this.dataSource.data = containerDetails.data ?? [];
+      if (!this.containerTokenData) {
+        return;
       }
+      this.dataSource.data = this.containerTokenData().data ?? [];
     });
   }
 
-  ngAfterViewInit() {
+  ngAfterViewInit(): void {
     this.dataSource.paginator = this.paginator;
     this.dataSource.sort = this.sort;
+
+    if (this.containerTokenData) {
+      const externalDS = this.containerTokenData();
+      externalDS.paginator = this.paginator;
+      externalDS.sort = this.sort;
+    }
   }
 
-  handleFilterInput(event: Event) {
+  handleFilterInput(event: Event): void {
     this.filterValue = (event.target as HTMLInputElement).value.trim();
-    this.dataSource.filter = this.filterValue.trim().toLowerCase();
+    const normalised = this.filterValue.toLowerCase();
+
+    this.dataSource.filter = normalised;
+    if (this.containerTokenData) {
+      this.containerTokenData().filter = normalised;
+    }
   }
 
   removeTokenFromContainer(containerSerial: string, tokenSerial: string) {

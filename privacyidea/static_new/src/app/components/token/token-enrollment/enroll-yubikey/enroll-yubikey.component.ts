@@ -20,6 +20,7 @@ import {
   YubikeyEnrollmentData,
 } from '../../../../mappers/token-api-payload/yubikey-token-api-payload.mapper';
 import { MatOptionModule } from '@angular/material/core';
+import { MatSelect } from '@angular/material/select';
 
 @Component({
   selector: 'app-enroll-yubikey',
@@ -32,6 +33,7 @@ import { MatOptionModule } from '@angular/material/core';
     MatFormFieldModule,
     MatInputModule,
     MatOptionModule,
+    MatSelect,
   ],
 })
 export class EnrollYubikeyComponent implements OnInit {

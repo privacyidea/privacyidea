@@ -18,7 +18,6 @@ describe('EnrollMotpComponent', () => {
 
     fixture = TestBed.createComponent(EnrollMotpComponent);
     component = fixture.componentInstance;
-    component.generateOnServer = signal(false);
     fixture.detectChanges();
   });
 

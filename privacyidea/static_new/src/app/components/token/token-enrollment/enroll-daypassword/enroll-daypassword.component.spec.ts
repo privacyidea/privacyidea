@@ -18,7 +18,6 @@ describe('EnrollDaypasswordComponent', () => {
 
     fixture = TestBed.createComponent(EnrollDaypasswordComponent);
     component = fixture.componentInstance;
-    component.timeStep = signal('');
     fixture.detectChanges();
   });
 

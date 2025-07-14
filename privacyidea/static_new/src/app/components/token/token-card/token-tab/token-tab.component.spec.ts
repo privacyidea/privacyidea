@@ -1,216 +1,178 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TokenTabComponent } from './token-tab.component';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { signal } from '@angular/core';
-import { TokenService } from '../../../../services/token/token.service';
-import { MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { VersionService } from '../../../../services/version/version.service';
-import { NotificationService } from '../../../../services/notification/notification.service';
-import { of } from 'rxjs';
+
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
+import {
+  BrowserAnimationsModule,
+  provideNoopAnimations,
+} from '@angular/platform-browser/animations';
+
+import { signal } from '@angular/core';
+import { of } from 'rxjs';
 import { By } from '@angular/platform-browser';
+
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { TokenService } from '../../../../services/token/token.service';
+import { VersionService } from '../../../../services/version/version.service';
+import { NotificationService } from '../../../../services/notification/notification.service';
+import { ContentService } from '../../../../services/content/content.service';
+
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { TokenSelectedContentKey } from '../../token.component';
-import { SelectionModel } from '@angular/cdk/collections';
 
 describe('TokenTabComponent', () => {
   let component: TokenTabComponent;
   let fixture: ComponentFixture<TokenTabComponent>;
-  let tokenServiceSpy: jasmine.SpyObj<TokenService>;
-  let matDialogSpy: jasmine.SpyObj<MatDialog>;
-  let versionServiceSpy: jasmine.SpyObj<VersionService>;
-  let notificationSpy: jasmine.SpyObj<NotificationService>;
+
+  const tokenServiceStub = {
+    tokenIsActive: signal<boolean>(true),
+    tokenIsRevoked: signal<boolean>(false),
+    tokenSerial: signal<string>('Mock serial'),
+    tokenSelection: signal<any[]>([]),
+
+    toggleActive: jest.fn().mockReturnValue(of(null)),
+    revokeToken: jest.fn().mockReturnValue(of(null)),
+    deleteToken: jest.fn().mockReturnValue(of(null)),
+    getTokenDetails: jest.fn().mockReturnValue(of({})),
+
+    tokenDetailResource: { reload: jest.fn() },
+    tokenResource: { reload: jest.fn() },
+  } as unknown as TokenService;
+
+  const matDialogRefStub = {
+    afterClosed: () => of(true),
+  } as unknown as MatDialogRef<ConfirmationDialogComponent>;
+
+  const matDialogStub = {
+    open: jest.fn().mockReturnValue(matDialogRefStub),
+  } as unknown as MatDialog;
+
+  const versionServiceStub = {
+    getVersion: jest.fn().mockReturnValue('1.0.0'),
+  } as unknown as VersionService;
+
+  const notificationServiceStub = {
+    openSnackBar: jest.fn(),
+  } as unknown as NotificationService;
+
+  const contentServiceStub = {
+    selectedContent: signal<TokenSelectedContentKey>('token_overview'),
+  } as unknown as ContentService;
 
   beforeEach(async () => {
-    tokenServiceSpy = jasmine.createSpyObj('TokenService', [
-      'toggleActive',
-      'revokeToken',
-      'deleteToken',
-      'getTokenDetails',
-    ]);
-    tokenServiceSpy.toggleActive.and.returnValue(of(null));
-    tokenServiceSpy.revokeToken.and.returnValue(of(Object));
-    tokenServiceSpy.deleteToken.and.returnValue(of(Object));
-    tokenServiceSpy.getTokenDetails.and.returnValue(
-      of({
-        tokenSerial: 'Mock serial',
-        tokenIsSelected: true,
-      }),
-    );
-
-    matDialogSpy = jasmine.createSpyObj('MatDialog', ['open']);
-
-    versionServiceSpy = jasmine.createSpyObj('VersionService', ['getVersion']);
-    versionServiceSpy.getVersion.and.returnValue('1.0.0');
-
-    notificationSpy = jasmine.createSpyObj('NotificationService', [
-      'openSnackBar',
-    ]);
-
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [TokenTabComponent, BrowserAnimationsModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: TokenService, useValue: tokenServiceSpy },
-        { provide: MatDialog, useValue: matDialogSpy },
-        { provide: VersionService, useValue: versionServiceSpy },
-        { provide: NotificationService, useValue: notificationSpy },
+        provideNoopAnimations(),
+        { provide: TokenService, useValue: tokenServiceStub },
+        { provide: MatDialog, useValue: matDialogStub },
+        { provide: VersionService, useValue: versionServiceStub },
+        { provide: NotificationService, useValue: notificationServiceStub },
+        { provide: ContentService, useValue: contentServiceStub },
       ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TokenTabComponent);
     component = fixture.componentInstance;
-
-    component.tokenSerial = signal<string>('Mock serial');
-    component.selectedContent =
-      signal<TokenSelectedContentKey>('token_overview');
-    component.tokenIsRevoked = signal<boolean>(false);
-    component.tokenIsActive = signal<boolean>(true);
-    component.refreshTokenDetails = signal<boolean>(false);
-    component.tokenSelection = new SelectionModel<any>(true, []);
-
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it('creates the component', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should set version on ngOnInit', () => {
+  it('sets the version on ngOnInit', () => {
     expect(component.version).toBe('1.0.0');
-    expect(versionServiceSpy.getVersion).toHaveBeenCalled();
-  });
-
-  describe('Navigation methods', () => {
-    it('onClickOverview() sets selectedContent and clears tokenSerial', () => {
-      component.onClickOverview();
-      expect(component.selectedContent()).toBe('token_overview');
-      expect(component.tokenSerial()).toBe('');
-    });
-
-    it('onClickEnrollment() sets selectedContent and clears tokenSerial', () => {
-      component.onClickEnrollment();
-      expect(component.selectedContent()).toBe('token_enrollment');
-      expect(component.tokenSerial()).toBe('');
-    });
-
-    it('onClickGetSerial() sets selectedContent and clears tokenSerial', () => {
-      component.onClickGetSerial();
-      expect(component.selectedContent()).toBe('token_get_serial');
-      expect(component.tokenSerial()).toBe('');
-    });
+    expect(versionServiceStub.getVersion).toHaveBeenCalled();
   });
 
   describe('toggleActive()', () => {
-    it('calls tokenService.toggleActive and refreshes token details on success', () => {
-      const refreshSpy = spyOn(component.refreshTokenDetails, 'set');
-
+    it('calls service, reloads details', () => {
       component.toggleActive();
 
-      expect(tokenServiceSpy.toggleActive).toHaveBeenCalledWith(
+      expect(tokenServiceStub.toggleActive).toHaveBeenCalledWith(
         'Mock serial',
         true,
       );
-      expect(tokenServiceSpy.getTokenDetails).toHaveBeenCalledWith(
+      expect(tokenServiceStub.getTokenDetails).toHaveBeenCalledWith(
         'Mock serial',
       );
-      expect(refreshSpy).toHaveBeenCalledWith(true);
-      expect(notificationSpy.openSnackBar).not.toHaveBeenCalled();
+      expect(tokenServiceStub.tokenDetailResource.reload).toHaveBeenCalled();
+      expect(notificationServiceStub.openSnackBar).not.toHaveBeenCalled();
     });
   });
 
   describe('revokeToken()', () => {
-    it('calls tokenService.revokeToken and refreshes token details on success', () => {
-      matDialogSpy.open.and.returnValue({
-        afterClosed: () => of(true),
-      } as MatDialogRef<ConfirmationDialogComponent>);
-
-      const refreshSpy = spyOn(component.refreshTokenDetails, 'set');
-
+    it('opens confirm dialog, revokes, reloads details', () => {
       component.revokeToken();
 
-      expect(tokenServiceSpy.revokeToken).toHaveBeenCalledWith('Mock serial');
-      expect(tokenServiceSpy.getTokenDetails).toHaveBeenCalledWith(
+      expect(matDialogStub.open).toHaveBeenCalled();
+      expect(tokenServiceStub.revokeToken).toHaveBeenCalledWith('Mock serial');
+      expect(tokenServiceStub.getTokenDetails).toHaveBeenCalledWith(
         'Mock serial',
       );
-      expect(refreshSpy).toHaveBeenCalledWith(true);
+      expect(tokenServiceStub.tokenDetailResource.reload).toHaveBeenCalled();
     });
   });
 
   describe('deleteToken()', () => {
-    it('calls tokenService.deleteToken and clears tokenSerial and redirects to overview', () => {
-      matDialogSpy.open.and.returnValue({
-        afterClosed: () => of(true),
-      } as MatDialogRef<ConfirmationDialogComponent>);
-
+    it('opens confirm dialog, deletes, clears serial, returns to overview', () => {
       component.deleteToken();
 
-      expect(tokenServiceSpy.deleteToken).toHaveBeenCalledWith('Mock serial');
-      expect(component.tokenSerial()).toBe('');
-      expect(component.selectedContent()).toBe('token_overview');
+      expect(matDialogStub.open).toHaveBeenCalled();
+      expect(tokenServiceStub.deleteToken).toHaveBeenCalledWith('Mock serial');
+      expect(tokenServiceStub.tokenSerial()).toBe('');
+      expect(contentServiceStub.selectedContent()).toBe('token_overview');
     });
   });
 
   describe('openLostTokenDialog()', () => {
-    it('should open a LostToken dialog with the correct data', () => {
+    it('passes the isLost & tokenSerial signals to the dialog', () => {
       component.openLostTokenDialog();
-      expect(matDialogSpy.open).toHaveBeenCalled();
 
-      const dialogCall = matDialogSpy.open.calls.mostRecent();
-      const config = dialogCall.args[1] as {
+      expect(matDialogStub.open).toHaveBeenCalledWith(expect.any(Function), {
         data: {
-          tokenSerial: () => string;
-          isLost: () => boolean;
-        };
-      };
-
-      expect(config.data.tokenSerial()).toBe('Mock serial');
-      expect(config.data.isLost()).toBe(false);
+          isLost: component.isLost,
+          tokenSerial: component.tokenSerial,
+        },
+      });
     });
   });
 
-  describe('when selectedContent = "token_details"', () => {
-    beforeEach(() => {
-      component.selectedContent.set('token_details');
+  describe('template bindings', () => {
+    it('highlights “Token Details” when selectedContent = token_details', () => {
+      contentServiceStub.selectedContent.set('token_details');
       fixture.detectChanges();
-    });
 
-    it('should show the Token Details button as active', () => {
-      const tokenDetailsBtn = fixture.debugElement.query(
+      const btn = fixture.debugElement.query(
         By.css('button.card-button-active'),
       )?.nativeElement;
 
-      expect(tokenDetailsBtn).toBeTruthy();
-      expect(tokenDetailsBtn.textContent).toContain('Token Details');
-      expect(tokenDetailsBtn.classList).toContain('card-button-active');
+      expect(btn).toBeTruthy();
+      expect(btn.textContent).toContain('Token Details');
     });
-  });
 
-  describe('when selectedContent = "token_overview"', () => {
-    beforeEach(() => {
-      component.selectedContent.set('token_overview');
+    it('highlights “Overview” when selectedContent = token_overview', () => {
+      contentServiceStub.selectedContent.set('token_overview');
       fixture.detectChanges();
-    });
 
-    it('should show the Overview button as active', () => {
-      const overviewBtn = fixture.debugElement.query(
+      const btn = fixture.debugElement.query(
         By.css('button.card-button-active'),
       )?.nativeElement;
 
-      expect(overviewBtn).toBeTruthy();
-      expect(overviewBtn.textContent).toContain('Overview');
-      expect(overviewBtn.classList).toContain('card-button-active');
-    });
+      expect(btn).toBeTruthy();
+      expect(btn.textContent).toContain('Overview');
 
-    it('should not render the token_details block', () => {
-      const tokenDetailsBtn = fixture.debugElement.query(
+      const icon = fixture.debugElement.query(
         By.css(
           'button.card-button-active mat-icon[textContent="health_and_safety"]',
         ),
       );
-      expect(tokenDetailsBtn).toBeNull();
+      expect(icon).toBeNull();
     });
   });
 });

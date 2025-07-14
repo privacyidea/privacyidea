@@ -18,7 +18,6 @@ describe('EnrollQuestionnaireComponent', () => {
 
     fixture = TestBed.createComponent(EnrollQuestionComponent);
     component = fixture.componentInstance;
-    component.answers = signal({});
     fixture.detectChanges();
   });
 

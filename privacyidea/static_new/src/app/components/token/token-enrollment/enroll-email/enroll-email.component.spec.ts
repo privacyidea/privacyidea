@@ -18,7 +18,6 @@ describe('EnrollEmailComponent', () => {
 
     fixture = TestBed.createComponent(EnrollEmailComponent);
     component = fixture.componentInstance;
-    component.readEmailDynamically = signal(false);
     fixture.detectChanges();
   });
 

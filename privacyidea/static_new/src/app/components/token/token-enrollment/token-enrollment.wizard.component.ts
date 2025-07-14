@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Renderer2 } from '@angular/core';
 import { TokenEnrollmentComponent } from './token-enrollment.component';
 import {
   MatError,
@@ -50,14 +50,12 @@ import { ContainerService } from '../../../services/container/container.service'
 import { RealmService } from '../../../services/realm/realm.service';
 import { NotificationService } from '../../../services/notification/notification.service';
 import { UserData, UserService } from '../../../services/user/user.service';
-import {
-  EnrollmentResponse,
-  TokenService,
-} from '../../../services/token/token.service';
+import { TokenService } from '../../../services/token/token.service';
 import { VersionService } from '../../../services/version/version.service';
 import { ContentService } from '../../../services/content/content.service';
 import { map } from 'rxjs';
 import { DialogService } from '../../../services/dialog/dialog.service';
+import { EnrollmentResponse } from '../../../mappers/token-api-payload/_token-api-payload.mapper';
 
 @Component({
   selector: 'app-token-enrollment-wizard',
@@ -134,6 +132,7 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
     contentService: ContentService,
     versioningService: VersionService,
     dialogService: DialogService,
+    renderer: Renderer2,
   ) {
     super(
       containerService,
@@ -144,6 +143,7 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
       versioningService,
       contentService,
       dialogService,
+      renderer,
     );
   }
 

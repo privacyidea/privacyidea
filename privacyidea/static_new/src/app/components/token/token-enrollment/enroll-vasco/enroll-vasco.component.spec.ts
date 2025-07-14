@@ -18,9 +18,6 @@ describe('EnrollVascoComponent', () => {
 
     fixture = TestBed.createComponent(EnrollVascoComponent);
     component = fixture.componentInstance;
-    component.useVascoSerial = signal(true);
-    component.vascoSerial = signal('');
-    component.otpKey = signal('');
     fixture.detectChanges();
   });
 

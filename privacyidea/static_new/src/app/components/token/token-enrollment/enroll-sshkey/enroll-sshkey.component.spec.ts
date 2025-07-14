@@ -18,7 +18,6 @@ describe('EnrollSshkeyComponent', () => {
 
     fixture = TestBed.createComponent(EnrollSshkeyComponent);
     component = fixture.componentInstance;
-    component.sshPublicKey = signal('');
     fixture.detectChanges();
   });
 

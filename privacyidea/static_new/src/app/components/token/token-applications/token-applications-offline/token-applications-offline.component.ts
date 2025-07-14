@@ -45,7 +45,7 @@ const _offlineColumnsKeyMap = [
 export class TokenApplicationsOfflineComponent {
   columnsKeyMap = _offlineColumnsKeyMap;
   pageSizeOptions = [5, 10, 15];
-  length = computed(() => this.machineService.tokenApplications().length ?? 0);
+  length = computed(() => this.machineService.tokenApplications()?.length ?? 0);
   displayedColumns: string[] = _offlineColumnsKeyMap.map(
     (column) => column.key,
   );

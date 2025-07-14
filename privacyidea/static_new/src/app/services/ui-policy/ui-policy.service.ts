@@ -23,7 +23,7 @@ export interface AppConfig {
   providedIn: 'root',
 })
 export class UiPolicyService {
-  private config: AppConfig;
+  private readonly config: AppConfig;
 
   constructor() {
     console.log('UiPolicyService window: ', window);

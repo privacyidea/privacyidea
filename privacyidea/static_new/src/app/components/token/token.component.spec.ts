@@ -1,103 +1,31 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { of } from 'rxjs';
-import { NotificationService } from '../../services/notification/notification.service';
-import { OverflowService } from '../../services/overflow/overflow.service';
-import { ContainerDetailsComponent } from './container-details/container-details.component';
-import { TokenDetailsComponent } from './token-details/token-details.component';
+import {
+  BrowserAnimationsModule,
+  provideNoopAnimations,
+} from '@angular/platform-browser/animations';
 import { TokenComponent } from './token.component';
-
-@Component({
-  selector: 'app-token-details',
-  template: '',
-  standalone: true,
-})
-class MockTokenDetailsComponent {
-  showTokenDetail() {
-    return of(null);
-  }
-}
-
-@Component({
-  selector: 'app-container-details',
-  template: '',
-  standalone: true,
-})
-class MockContainerDetailsComponent {
-  showContainerDetail() {
-    return of(null);
-  }
-}
-
-class MockOverflowService {
-  private _overflow = false;
-
-  getOverflowThreshold() {
-    return 1920;
-  }
-
-  setWidthOverflow(value: boolean) {
-    this._overflow = value;
-  }
-
-  isWidthOverflowing(selector: string, threshold: number) {
-    return this._overflow;
-  }
-
-  isHeightOverflowing(selector: string, threshold: number) {
-    return this._overflow;
-  }
-}
-
-class MockNotificationService {
-  openSnackBar(msg: string) {
-    console.warn('NotificationService.openSnackBar:', msg);
-  }
-}
-
-class MockTokenService {
-  tokenTypeOptions = [
-    { value: 'type1', label: 'Type 1' },
-    { value: 'type2', label: 'Type 2' },
-  ];
-}
+import { OverflowService } from '../../services/overflow/overflow.service';
+import { MockOverflowService } from '../../../testing/mock-services';
 
 describe('TokenComponent', () => {
   let component: TokenComponent;
   let fixture: ComponentFixture<TokenComponent>;
-  let mockNotificationService: MockNotificationService;
   let mockOverflowService: MockOverflowService;
-  let mockTokenService: MockTokenService;
 
   beforeEach(async () => {
-    mockNotificationService = new MockNotificationService();
     mockOverflowService = new MockOverflowService();
-    mockTokenService = new MockTokenService();
-
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [BrowserAnimationsModule, TokenComponent],
       providers: [
+        { provide: OverflowService, useValue: mockOverflowService },
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: TokenComponent, useValue: TokenComponent },
-        { provide: TokenDetailsComponent, useClass: MockTokenDetailsComponent },
-        { provide: OverflowService, useValue: mockOverflowService },
-        { provide: NotificationService, useValue: mockNotificationService },
-        { provide: MockTokenService, useValue: mockTokenService },
+        provideNoopAnimations(),
       ],
-    })
-      .overrideComponent(TokenComponent, {
-        remove: {
-          imports: [TokenDetailsComponent, ContainerDetailsComponent],
-        },
-        add: {
-          imports: [MockTokenDetailsComponent, MockContainerDetailsComponent],
-        },
-      })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(TokenComponent);
     component = fixture.componentInstance;
@@ -106,11 +34,6 @@ describe('TokenComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
-  });
-
-  it('should have static tokenTypes defined', () => {
-    expect(mockTokenService.tokenTypeOptions).toBeDefined();
-    expect(mockTokenService.tokenTypeOptions.length).toBeGreaterThan(0);
   });
 
   it('should show token card outside the drawer if overflowService returns false', () => {

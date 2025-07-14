@@ -65,7 +65,7 @@ export type TokenSelectedContentKey =
   | 'audit';
 
 @Component({
-  selector: 'app-token-grid',
+  selector: 'app-token',
   standalone: true,
   imports: [
     CommonModule,

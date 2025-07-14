@@ -18,7 +18,6 @@ describe('EnrollAspComponent', () => {
 
     fixture = TestBed.createComponent(EnrollApplspecComponent);
     component = fixture.componentInstance;
-    component.generateOnServer = signal(false);
     fixture.detectChanges();
   });
 

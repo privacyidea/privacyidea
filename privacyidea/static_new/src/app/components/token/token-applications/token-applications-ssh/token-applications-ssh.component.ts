@@ -52,7 +52,7 @@ const _sshColumnsKeyMap = [
 export class TokenApplicationsSshComponent {
   columnsKeyMap = _sshColumnsKeyMap;
   pageSizeOptions = [5, 10, 15];
-  length = computed(() => this.machineService.tokenApplications().length ?? 0);
+  length = computed(() => this.machineService.tokenApplications()?.length ?? 0);
   displayedColumns: string[] = _sshColumnsKeyMap.map((column) => column.key);
 
   constructor(

@@ -6,21 +6,19 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { UserService } from '../../../../services/user/user.service'; // Adjust path as necessary
-
-class MockUserService {
-  selectedUserRealm = signal('');
-  selectedUsername = signal('');
-  userOptions = signal(['user1', 'user2', 'admin']);
-}
+import { UserService } from '../../../../services/user/user.service';
+import { MockUserService } from '../../../../../testing/mock-services';
 
 describe('TokenDetailsUserComponent', () => {
   let component: TokenDetailsUserComponent;
+  let fixture: ComponentFixture<TokenDetailsUserComponent>;
   let tokenService: TokenService;
   let userService: MockUserService;
-  let fixture: ComponentFixture<TokenDetailsUserComponent>;
 
   beforeEach(async () => {
+    jest.clearAllMocks();
+
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [
         TokenDetailsUserComponent,
@@ -39,10 +37,12 @@ describe('TokenDetailsUserComponent', () => {
     userService = TestBed.inject(UserService) as unknown as MockUserService;
     fixture = TestBed.createComponent(TokenDetailsUserComponent);
     component = fixture.componentInstance;
+
     component.tokenSerial = signal('Mock serial');
     component.isEditingUser = signal(false);
     component.setPinValue = signal('');
     component.repeatPinValue = signal('');
+
     fixture.detectChanges();
   });
 
@@ -56,22 +56,26 @@ describe('TokenDetailsUserComponent', () => {
     component.setPinValue.set('1234');
     component.repeatPinValue.set('1234');
 
-    spyOn(tokenService, 'assignUser').and.callThrough();
+    const assignSpy = jest.spyOn(tokenService, 'assignUser');
+
     component.saveUser();
-    expect(tokenService.assignUser).toHaveBeenCalledWith(
-      'Mock serial',
-      'testUser',
-      'testRealm',
-      '1234',
-    );
+
+    expect(assignSpy).toHaveBeenCalledWith({
+      pin: '1234',
+      realm: 'testRealm',
+      tokenSerial: 'Mock serial',
+      username: '',
+    });
   });
 
   it('should not assign user if PINs do not match', () => {
     component.setPinValue.set('1234');
     component.repeatPinValue.set('5678');
 
-    spyOn(tokenService, 'assignUser').and.callThrough();
+    const assignSpy = jest.spyOn(tokenService, 'assignUser');
+
     component.saveUser();
-    expect(tokenService.assignUser).not.toHaveBeenCalled();
+
+    expect(assignSpy).not.toHaveBeenCalled();
   });
 });
