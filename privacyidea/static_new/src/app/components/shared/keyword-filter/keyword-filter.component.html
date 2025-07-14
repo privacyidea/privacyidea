@@ -26,7 +26,7 @@
       {{ filterKeyword }}
     </button>
   }
-  @if (advancedApiFilter?.length ?? 0 > 0) {
+  @if (advancedApiFilter.length > 0) {
     <button
       (click)="onToggleAdvancedFilter()"
       class="more-keyword-button"

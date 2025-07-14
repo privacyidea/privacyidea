@@ -6,15 +6,16 @@ import {
 } from '@angular/material/dialog';
 
 import {
-  TokenEnrollmentLastStepDialogComponent,
-  TokenEnrollmentLastStepDialogData,
-} from '../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component';
-import { TokenEnrollmentFirstStepDialogComponent } from '../../components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component';
-import { EnrollmentResponse } from '../../mappers/token-api-payload/_token-api-payload.mapper';
-import {
   ConfirmationDialogComponent,
   ConfirmationDialogData,
 } from '../../components/shared/confirmation-dialog/confirmation-dialog.component';
+import { TokenEnrollmentFirstStepDialogComponent } from '../../components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component';
+import {
+  TokenEnrollmentLastStepDialogComponent,
+  TokenEnrollmentLastStepDialogData,
+} from '../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component';
+import { TokenEnrollmentLastStepDialogSelfServiceComponent } from '../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component';
+import { EnrollmentResponse } from '../../mappers/token-api-payload/_token-api-payload.mapper';
 import { AuthService } from '../auth/auth.service';
 
 class MatDialogConfigRequired<D = any> extends MatDialogConfig<D> {
@@ -38,10 +39,13 @@ export class DialogService {
     any
   > | null = null;
 
-  constructor(
-    private dialog: MatDialog,
-    private authService: AuthService,
-  ) {}
+  get tokenEnrollmentFirstStepRef() {
+    return this._tokenEnrollmentFirstStepRef;
+  }
+
+  get isTokenEnrollmentFirstStepDialogOpen(): boolean {
+    return this._tokenEnrollmentFirstStepRef !== null;
+  }
 
   private _tokenEnrollmentLastStepRef: MatDialogRef<
     TokenEnrollmentLastStepDialogComponent,
@@ -51,6 +55,15 @@ export class DialogService {
   get tokenEnrollmentLastStepRef() {
     return this._tokenEnrollmentLastStepRef;
   }
+
+  get isTokenEnrollmentLastStepDialogOpen(): boolean {
+    return this._tokenEnrollmentLastStepRef !== null;
+  }
+
+  constructor(
+    private dialog: MatDialog,
+    private authService: AuthService,
+  ) {}
 
   openTokenEnrollmentFirstStepDialog(
     config: MatDialogConfigRequired<{ enrollmentResponse: EnrollmentResponse }>,
@@ -82,9 +95,7 @@ export class DialogService {
     }
 
     const component = this.isSelfServing()
-      ? (
-          require('../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component') as typeof import('../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component')
-        ).TokenEnrollmentLastStepDialogSelfServiceComponent
+      ? TokenEnrollmentLastStepDialogSelfServiceComponent
       : TokenEnrollmentLastStepDialogComponent;
 
     this._tokenEnrollmentLastStepRef = this.dialog.open(

@@ -5,10 +5,7 @@ import {
   FormsModule,
   ReactiveFormsModule,
 } from '@angular/forms';
-import { NotificationService } from '../../../../services/notification/notification.service';
-import { Base64Service } from '../../../../services/base64/base64.service';
 import { firstValueFrom, from, lastValueFrom, Observable } from 'rxjs';
-import { TokenService } from '../../../../services/token/token.service';
 import {
   EnrollmentResponse,
   TokenEnrollmentData,
@@ -17,10 +14,12 @@ import {
   WebAuthnApiPayloadMapper,
   WebAuthnEnrollmentData,
   WebauthnEnrollmentResponse,
-  WebauthnEnrollmentResponseDetail,
   WebauthnFinalizeData,
 } from '../../../../mappers/token-api-payload/webauthn-token-api-payload.mapper';
+import { Base64Service } from '../../../../services/base64/base64.service';
 import { DialogService } from '../../../../services/dialog/dialog.service';
+import { NotificationService } from '../../../../services/notification/notification.service';
+import { TokenService } from '../../../../services/token/token.service';
 import { ReopenDialogFn } from '../token-enrollment.component';
 
 @Component({
@@ -323,7 +322,7 @@ export class EnrollWebauthnComponent implements OnInit {
     // it will NOT trigger the finalization step directly from here.
     this.reopenDialogChange.emit(async () => {
       // Check if the dialog is already open to prevent multiple instances.
-      if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen()) {
+      if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen) {
         this.dialogService.openTokenEnrollmentFirstStepDialog({
           data: { enrollmentResponse: webauthnEnrollmentResponse },
           disableClose: true,

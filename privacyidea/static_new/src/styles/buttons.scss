@@ -301,11 +301,10 @@ $header-bg: white;
 }
 
 .enroll-button-container {
-  padding: 16px 0;
   display: flex;
   flex-direction: row;
   justify-content: left;
-  gap: 8px;
+  gap: calc(var(--global-padding) / 2);
 }
 
 .enroll-button-spacer {

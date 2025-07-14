@@ -7,16 +7,16 @@ import {
 } from '@angular/forms';
 import { Tokens, TokenService } from '../../../../services/token/token.service';
 
-import { lastValueFrom, Observable } from 'rxjs';
+import { MatDialogRef } from '@angular/material/dialog';
+import { lastValueFrom } from 'rxjs';
+import { PiResponse } from '../../../../app.component';
 import {
   EnrollmentResponse,
   TokenEnrollmentData,
 } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { PushApiPayloadMapper } from '../../../../mappers/token-api-payload/push-token-api-payload.mapper';
 import { DialogService } from '../../../../services/dialog/dialog.service';
-import { PiResponse } from '../../../../app.component';
 import { TokenEnrollmentFirstStepDialogComponent } from '../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component';
-import { MatDialogRef } from '@angular/material/dialog';
 import { ReopenDialogFn } from '../token-enrollment.component';
 
 export interface PushEnrollmentOptions extends TokenEnrollmentData {
@@ -122,7 +122,7 @@ export class EnrollPushComponent implements OnInit {
     enrollmentResponse: EnrollmentResponse,
   ): MatDialogRef<TokenEnrollmentFirstStepDialogComponent, any> {
     this.reopenDialogChange.emit(async () => {
-      if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen()) {
+      if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen) {
         await this.pollTokenRolloutState(enrollmentResponse, 0);
         return enrollmentResponse;
       }

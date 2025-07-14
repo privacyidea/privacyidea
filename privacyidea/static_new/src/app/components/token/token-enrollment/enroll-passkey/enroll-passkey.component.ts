@@ -5,17 +5,17 @@ import {
   FormsModule,
   ReactiveFormsModule,
 } from '@angular/forms';
-import { NotificationService } from '../../../../services/notification/notification.service';
-import { TokenService } from '../../../../services/token/token.service';
-import { Base64Service } from '../../../../services/base64/base64.service';
-import { lastValueFrom, Observable } from 'rxjs';
+import { MatDialogRef } from '@angular/material/dialog';
+import { lastValueFrom } from 'rxjs';
 import {
   EnrollmentResponse,
   TokenEnrollmentData,
 } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { PasskeyApiPayloadMapper } from '../../../../mappers/token-api-payload/passkey-token-api-payload.mapper';
+import { Base64Service } from '../../../../services/base64/base64.service';
 import { DialogService } from '../../../../services/dialog/dialog.service';
-import { MatDialogRef } from '@angular/material/dialog';
+import { NotificationService } from '../../../../services/notification/notification.service';
+import { TokenService } from '../../../../services/token/token.service';
 import { TokenEnrollmentFirstStepDialogComponent } from '../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component';
 import { ReopenDialogFn } from '../token-enrollment.component';
 
@@ -244,7 +244,7 @@ export class EnrollPasskeyComponent implements OnInit {
   }): MatDialogRef<TokenEnrollmentFirstStepDialogComponent, any> {
     const { enrollmentInitData, enrollmentResponse } = args;
     this.reopenDialogChange.emit(async () => {
-      if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen()) {
+      if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen) {
         this.dialogService.openTokenEnrollmentFirstStepDialog({
           data: { enrollmentResponse },
           disableClose: true,

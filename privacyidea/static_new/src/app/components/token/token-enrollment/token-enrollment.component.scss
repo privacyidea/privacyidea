@@ -78,7 +78,7 @@ h5 {
   z-index: 100;
   background-color: white;
   padding: 16px;
-  transition: box-shadow 0.2s ease-in-out;
+  transition: box-shadow 0.3s ease-in-out;
 }
 
 .sticky-header.is-sticky {
@@ -89,10 +89,18 @@ h5 {
 .sticky-controls {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: calc(var(--global-padding) / 2);
 }
 
 .sticky-controls .mat-mdc-form-field {
   flex-grow: 1;
   width: 100%;
+}
+
+.select-token-type-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0 calc(var(--global-padding));
+  margin-bottom: 16px;
 }
