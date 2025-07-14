@@ -398,4 +398,3 @@ class RadiusTokenTestCase(MyTestCase):
         import_tokens(json.dumps(token_data))
         after_import = get_tokens()
         self.assertEqual(len(before_import), len(after_import))
-

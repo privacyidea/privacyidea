@@ -69,8 +69,6 @@ from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from privacyidea.lib.token import init_token, check_user_pass, remove_token, import_tokens, get_tokens
-from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, RegistrationRejectedException,
-from privacyidea.lib.token import init_token, check_user_pass, remove_token
 from privacyidea.lib.tokens.webauthn import (CoseAlgorithm, RegistrationRejectedException,
                                              WebAuthnMakeCredentialOptions, AuthenticationRejectedException,
                                              webauthn_b64_decode, webauthn_b64_encode,
