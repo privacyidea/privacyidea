@@ -1213,7 +1213,8 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # Token is orphaned
-        TokenOwner(token_id=token.token.id, user_id="123", resolver="invalid", realmname="invalid").save()
+        self.setUp_user_realms()
+        TokenOwner(token_id=token.token.id, user_id="123", resolver=self.resolvername1, realmname=self.realm1).save()
         options["handler_def"] = {"conditions": {CONDITION.TOKEN_IS_ORPHANED: "False"}}
         r = uhandler.check_condition(options)
         self.assertFalse(r)
