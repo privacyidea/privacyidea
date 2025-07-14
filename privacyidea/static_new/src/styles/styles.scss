@@ -37,7 +37,13 @@ body {
   --border-radius: 4px;
   --light-distance: -4px;
   --shadow-distance: 2px;
+
   --global-padding: 20px;
+  --three-quarters-global-padding: calc(var(--global-padding) * 0.75);
+  --half-global-padding: calc(var(--global-padding) / 2);
+  --third-global-padding: calc(var(--global-padding) / 3);
+  --quarter-global-padding: calc(var(--global-padding) / 4);
+  --eighth-global-padding: calc(var(--global-padding) / 8);
 
   --background: #e6e6e6;
 

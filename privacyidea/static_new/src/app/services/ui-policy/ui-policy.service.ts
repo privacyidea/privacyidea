@@ -96,7 +96,4 @@ export class UiPolicyService {
   get translationWarning(): boolean {
     return this.config.translationWarning;
   }
-  get otpPinSetRandomUser(): number | undefined {
-    return this.config.otpPinSetRandomUser;
-  }
 }

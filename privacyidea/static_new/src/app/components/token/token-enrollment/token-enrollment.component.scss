@@ -3,17 +3,15 @@
 
 .token-enrollment-container {
   @include styles.table-container-styles;
-  width: 47.5rem;
+  width: 49.5rem;
   max-height: calc(var(--main-height) - var(--global-padding) * 4);
   overflow: auto;
 }
 
 .token-type-option {
   @include mat.elevation(3);
-  background: #efedf0;
   border-radius: var(--border-radius);
-  margin: 0 3px 5px;
-  width: 13rem;
+  margin: 0 0 var(--third-global-padding) 0;
 }
 
 .token-type-hint {
@@ -66,9 +64,9 @@ h5 {
   .multi-column-panel.mat-mdc-select-panel {
     column-count: 3;
     max-height: unset;
-    column-gap: 0;
-    background: #dedcdf;
-    padding: 12px 4px 16px 12px;
+    column-gap: var(--third-global-padding);
+    padding: var(--three-quarters-global-padding);
+    padding-bottom: var(--global-padding);
   }
 }
 

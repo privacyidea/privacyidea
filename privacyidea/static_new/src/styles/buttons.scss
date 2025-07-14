@@ -101,7 +101,6 @@ $header-bg: white;
 }
 
 .card-button {
-  min-width: 240px;
   @include button-base(
     $button-height,
     $button-width,
@@ -113,6 +112,7 @@ $header-bg: white;
     var(--background-blue-inset),
     var(--box-shadow-blue-inset)
   );
+  min-height: 48px;
 }
 
 .card-button-reset {
@@ -296,8 +296,7 @@ $header-bg: white;
 }
 
 .type-help-button {
-  margin-left: 4px;
-  margin-top: 4px;
+  width: 100%;
 }
 
 .enroll-button-container {
