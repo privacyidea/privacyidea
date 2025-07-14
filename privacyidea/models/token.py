@@ -28,7 +28,7 @@ from privacyidea.models.config import SAFE_STORE
 from privacyidea.models.tokengroup import Tokengroup, TokenTokengroup
 from privacyidea.lib.crypto import (geturandom, encrypt, hexlify_and_unicode,
                                     pass_hash, encryptPin, decryptPin, hash,
-                                    verify_pass_hash, SecretObj)
+                                    verify_pass_hash, SecretObj, encryptPassword)
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.utils import convert_column_to_unicode
 from privacyidea.lib.log import log_with
@@ -524,7 +524,12 @@ class Token(MethodsMixin, db.Model):
         types = {}
         for k, v in info.items():
             if k.endswith(".type"):
-                types[".".join(k.split(".")[:-1])] = v
+                key = ".".join(k.split(".")[:-1])
+                types[key] = v
+                if v == "password":
+                    # If the type is password, we need to encrypt the value
+                    # as it is a secret.
+                    info[key] = encryptPassword(info[key])
         for k, v in info.items():
             if not k.endswith(".type"):
                 TokenInfo(self.id, k, v, Type=types.get(k)).save(persistent=False)
