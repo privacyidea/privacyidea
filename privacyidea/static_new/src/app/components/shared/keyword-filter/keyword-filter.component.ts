@@ -12,8 +12,8 @@ import { TableUtilsService } from '../../../services/table-utils/table-utils.ser
   styleUrl: './keyword-filter.component.scss',
 })
 export class KeywordFilterComponent {
-  @Input() apiFilter!: string[];
-  @Input() advancedApiFilter!: string[];
+  @Input() apiFilter: string[] = [];
+  @Input() advancedApiFilter: string[] = [];
   @Input() filterHTMLInputElement!: HTMLInputElement;
   @Input() filterValue!: WritableSignal<Record<string, string>>;
   showAdvancedFilter = signal(false);

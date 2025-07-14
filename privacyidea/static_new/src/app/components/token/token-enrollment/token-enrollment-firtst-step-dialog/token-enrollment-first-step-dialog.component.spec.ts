@@ -2,7 +2,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { ReactiveFormsModule } from '@angular/forms';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { TokenEnrollmentFirstStepDialogComponent } from './token-enrollment-first-step-dialog.component';
 import { provideHttpClient } from '@angular/common/http';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
@@ -69,7 +68,6 @@ describe('TokenEnrollmentFirstStepDialogComponent', () => {
         MatFormFieldModule,
         MatAutocompleteModule,
         ReactiveFormsModule,
-        BrowserAnimationsModule,
         TokenEnrollmentFirstStepDialogComponent,
       ],
     }).compileComponents();

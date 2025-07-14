@@ -1,5 +1,8 @@
 import { TokenEnrollmentComponent } from './token-enrollment.component';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import {
+  BrowserAnimationsModule,
+  NoopAnimationsModule,
+} from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { EnrollYubikeyComponent } from './enroll-yubikey/enroll-yubikey.component';
@@ -20,7 +23,7 @@ describe('TokenEnrollmentComponent', () => {
         MatFormFieldModule,
         MatInputModule,
       ],
-      providers: [provideHttpClient()],
+      providers: [provideHttpClient(), NoopAnimationsModule],
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollYubikeyComponent);

@@ -1,7 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { EnrollPushComponent } from './enroll-push.component';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import {
+  BrowserAnimationsModule,
+  NoopAnimationsModule,
+} from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
@@ -11,7 +14,7 @@ describe('EnrollPushComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EnrollPushComponent, BrowserAnimationsModule],
+      imports: [EnrollPushComponent, NoopAnimationsModule],
       providers: [provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
 

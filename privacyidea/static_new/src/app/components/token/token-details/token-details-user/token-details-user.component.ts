@@ -145,7 +145,7 @@ export class TokenDetailsUserComponent {
 
   canSetRandomPin() {
     // Failed to set random PIN. ERR301: You need to specify a policy 'otp_pin_set_random' in scope user.
-    console.log('canSetRandomPin Method not implemented.');
+    console.warn('canSetRandomPin Method not implemented.');
     return true; // Placeholder for actual implementation
   }
 }

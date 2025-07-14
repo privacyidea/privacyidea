@@ -64,7 +64,6 @@ export class ContainerDetailsTokenTableSelfServiceComponent extends ContainerDet
     protected override contentService: ContentService,
     protected override authService: AuthService,
   ) {
-    console.log('ContainerDetailsTokenTableSelfServiceComponent initialized');
     super(
       containerService,
       tokenService,

@@ -14,7 +14,6 @@ import {
   TokenEnrollmentLastStepDialogComponent,
   TokenEnrollmentLastStepDialogData,
 } from '../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component';
-import { TokenEnrollmentLastStepDialogSelfServiceComponent } from '../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component';
 import { EnrollmentResponse } from '../../mappers/token-api-payload/_token-api-payload.mapper';
 import { AuthService } from '../auth/auth.service';
 
@@ -33,6 +32,11 @@ class MatDialogConfigRequired<D = any> extends MatDialogConfig<D> {
 @Injectable({ providedIn: 'root' })
 export class DialogService {
   readonly isSelfServing = computed(() => this.authService.role() === 'user');
+
+  constructor(
+    private dialog: MatDialog,
+    private authService: AuthService,
+  ) {}
 
   private _tokenEnrollmentFirstStepRef: MatDialogRef<
     TokenEnrollmentFirstStepDialogComponent,
@@ -60,11 +64,6 @@ export class DialogService {
     return this._tokenEnrollmentLastStepRef !== null;
   }
 
-  constructor(
-    private dialog: MatDialog,
-    private authService: AuthService,
-  ) {}
-
   openTokenEnrollmentFirstStepDialog(
     config: MatDialogConfigRequired<{ enrollmentResponse: EnrollmentResponse }>,
   ): MatDialogRef<TokenEnrollmentFirstStepDialogComponent, any> {
@@ -87,12 +86,24 @@ export class DialogService {
     this._tokenEnrollmentFirstStepRef?.close();
   }
 
-  openTokenEnrollmentLastStepDialog(
+  async openTokenEnrollmentLastStepDialog(
     config: MatDialogConfigRequired<TokenEnrollmentLastStepDialogData>,
-  ): MatDialogRef<TokenEnrollmentLastStepDialogComponent, any> {
+  ): Promise<MatDialogRef<any>> {
     if (this._tokenEnrollmentLastStepRef) {
       this._tokenEnrollmentLastStepRef.close();
     }
+
+    const [
+      { TokenEnrollmentLastStepDialogComponent },
+      { TokenEnrollmentLastStepDialogSelfServiceComponent },
+    ] = await Promise.all([
+      import(
+        '../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component'
+      ),
+      import(
+        '../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component'
+      ),
+    ]);
 
     const component = this.isSelfServing()
       ? TokenEnrollmentLastStepDialogSelfServiceComponent

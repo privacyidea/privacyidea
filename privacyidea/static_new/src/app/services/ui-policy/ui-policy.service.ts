@@ -26,7 +26,6 @@ export class UiPolicyService {
   private readonly config: AppConfig;
 
   constructor() {
-    console.log('UiPolicyService window: ', window);
     if (typeof window !== 'undefined' && (window as any).appConfig) {
       this.config = (window as any).appConfig;
     } else {

@@ -68,10 +68,7 @@ export class TokenDetailsUserSelfServiceComponent extends TokenDetailsUserCompon
   }
 
   override canSetRandomPin() {
-    console.log(
-      'Policy for setting random PIN:',
-      this.uiPolicyService.otpPinSetRandomUser,
-    );
+    console.warn('canSetRandomPin Method not implemented.');
     return false; // Placeholder for actual implementation
   }
 }

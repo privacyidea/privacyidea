@@ -30,7 +30,6 @@ export class ScrollAdjusterDirective implements AfterViewInit, OnDestroy {
     const container = this.el.nativeElement;
 
     const computedStyle = getComputedStyle(container);
-    console.log('computedStyle:', computedStyle);
     if (
       computedStyle.overflowY !== 'scroll' &&
       computedStyle.overflowY !== 'auto'
@@ -96,9 +95,6 @@ export class ScrollAdjusterDirective implements AfterViewInit, OnDestroy {
       return;
     }
 
-    console.log('ScrollHeight:', container.scrollHeight);
-    console.log('ContainerHeight:', containerHeight);
-    console.log('Endhöhe ohne Padding:', itemHeight);
     const effectivePadding = Math.max(0, itemHeight - containerHeight);
     firstItem.style.paddingTop = `${effectivePadding}px`;
     firstItem.style.paddingBottom = '0px';

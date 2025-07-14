@@ -3,11 +3,10 @@ import { TokenCardComponent } from './token-card.component';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import {
-  BrowserAnimationsModule,
+  NoopAnimationsModule,
   provideNoopAnimations,
 } from '@angular/platform-browser/animations';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { SelectionModel } from '@angular/cdk/collections';
 
 describe('TokenCardComponent', () => {
   let component: TokenCardComponent;
@@ -16,7 +15,7 @@ describe('TokenCardComponent', () => {
   beforeEach(async () => {
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
-      imports: [TokenCardComponent, BrowserAnimationsModule],
+      imports: [TokenCardComponent, NoopAnimationsModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
