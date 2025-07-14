@@ -39,6 +39,7 @@ Wrapping the functions in a decorator class enables easy modular testing.
 
 The functions of this module are tested in tests/test_api_lib_policy.py
 """
+import copy
 import datetime
 import functools
 import json
@@ -198,7 +199,7 @@ def sign_response(request, response):
 
     # Save the request data
     g.request_data = get_all_params(request)
-    request.all_data = g.request_data
+    request.all_data = copy.deepcopy(g.request_data)
     # response can be either a Response object or a Tuple (Response, ErrorID)
     response_value = 200
     response_is_tuple = False

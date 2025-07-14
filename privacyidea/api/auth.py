@@ -43,6 +43,8 @@ authenticated, the API returns a 401 response.
 To authenticate you need to send a POST request to /auth containing username
 and password.
 """
+import copy
+
 from flask import (Blueprint,
                    request,
                    current_app,
@@ -93,7 +95,7 @@ def before_request():
     ensure_no_config_object()
     # Save the request data
     g.request_data = get_all_params(request)
-    request.all_data = g.request_data
+    request.all_data = copy.deepcopy(g.request_data)
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)

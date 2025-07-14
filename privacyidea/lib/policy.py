@@ -3202,10 +3202,11 @@ class Match(object):
         request_headers = self._g.get("request_headers")
         # Do not pass the password in the request data to the policy matching.
         request_data = copy.deepcopy(self._g.get("request_data"))
-        if "pass" in request_data:
-            del request_data["pass"]
-        if "password" in request_data:
-            del request_data["password"]
+        if request_data:
+            if "pass" in request_data:
+                del request_data["pass"]
+            if "password" in request_data:
+                del request_data["password"]
         return self._g.policy_object.match_policies(audit_data=audit_data, request_headers=request_headers,
                                                     pinode=self.pinode, request_data=request_data, **self._match_kwargs)
 

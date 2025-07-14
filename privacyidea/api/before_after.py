@@ -25,6 +25,8 @@ Flask endpoints.
 It also contains the error handlers.
 """
 
+import copy
+
 from .lib.utils import (send_error, get_all_params, verify_auth_token, get_optional)
 from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
@@ -120,7 +122,7 @@ def before_create_user_request():
     ensure_no_config_object()
     # Save the request data
     g.request_data = get_all_params(request)
-    request.all_data = g.request_data
+    request.all_data = copy.deepcopy(g.request_data)
     request.User = None
     get_before_request_config()
 
@@ -209,12 +211,12 @@ def before_container_request():
     ensure_no_config_object()
     # Save the request data
     g.request_data = get_all_params(request)
-    request.all_data = g.request_data
+    request.all_data = copy.deepcopy(g.request_data)
     auth_token_free_endpoints = ["/container/register/finalize",
                                  "/container/register/terminate/client",
                                  "/container/challenge",
                                  "/container/synchronize",
-                                 "/container/rollover", ]
+                                 "/container/rollover"]
     is_auth_free = request.path in auth_token_free_endpoints
 
     # Get auth token
@@ -338,7 +340,7 @@ def before_request():
     ensure_no_config_object()
     # Save the request data
     g.request_data = get_all_params(request)
-    request.all_data = g.request_data
+    request.all_data = copy.deepcopy(g.request_data)
     resolve_logged_in_user()
     get_before_request_config()
 

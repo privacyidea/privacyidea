@@ -65,6 +65,7 @@ In case if authenticating a serial number:
 
 """
 
+import copy
 import json
 import logging
 import threading
@@ -139,7 +140,8 @@ def before_request():
     ensure_no_config_object()
     # Save the request data
     g.request_data = get_all_params(request)
-    request.all_data = g.request_data
+    request.all_data = copy.deepcopy(g.request_data)
+
     request.User = get_user_from_param(request.all_data)
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     # Create a policy_object, that reads the database audit settings
