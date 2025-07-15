@@ -1,16 +1,19 @@
-import { Component, computed, effect } from '@angular/core';
+import { NgClass } from '@angular/common';
+import { Component, computed, Inject } from '@angular/core';
+import { MatButton } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
+import { MatDivider } from '@angular/material/divider';
 import { MatIcon } from '@angular/material/icon';
 import { MatList, MatListItem } from '@angular/material/list';
-import { MatButton } from '@angular/material/button';
-import { NgClass } from '@angular/common';
-import { MatDivider } from '@angular/material/divider';
 import { forkJoin } from 'rxjs';
-import { ContainerService } from '../../../../services/container/container.service';
-import { VersionService } from '../../../../services/version/version.service';
-import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
-import { MatDialog } from '@angular/material/dialog';
 import { tabToggleState } from '../../../../../styles/animations/animations';
+import { ContainerService } from '../../../../services/container/container.service';
 import { ContentService } from '../../../../services/content/content.service';
+import {
+  VersioningService,
+  VersioningServiceInterface,
+} from '../../../../services/version/version.service';
+import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 
 @Component({
   selector: 'app-container-tab',
@@ -37,7 +40,8 @@ export class ContainerTabComponent {
   constructor(
     private containerService: ContainerService,
     private contentService: ContentService,
-    protected versioningService: VersionService,
+    @Inject(VersioningService)
+    private versioningService: VersioningServiceInterface,
     private dialog: MatDialog,
   ) {}
 

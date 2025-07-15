@@ -1,11 +1,19 @@
-import { Component, effect, signal, untracked } from '@angular/core';
+import { Component, effect, Inject, signal, untracked } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import {
+  MatAutocomplete,
+  MatAutocompleteTrigger,
+} from '@angular/material/autocomplete';
+import { MatButton, MatIconButton } from '@angular/material/button';
+import { MatCheckbox } from '@angular/material/checkbox';
+import { MatOption } from '@angular/material/core';
+import { MatDialog } from '@angular/material/dialog';
 import {
   MatAccordion,
   MatExpansionPanel,
   MatExpansionPanelHeader,
   MatExpansionPanelTitle,
 } from '@angular/material/expansion';
-import { MatButton, MatIconButton } from '@angular/material/button';
 import {
   MatError,
   MatFormField,
@@ -13,29 +21,24 @@ import {
   MatLabel,
 } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
-import { MatOption } from '@angular/material/core';
-import { MatSelect } from '@angular/material/select';
-import { FormsModule } from '@angular/forms';
-import { VersionService } from '../../../services/version/version.service';
-import { TokenComponent } from '../token.component';
 import { MatInput } from '@angular/material/input';
-import {
-  MatAutocomplete,
-  MatAutocompleteTrigger,
-} from '@angular/material/autocomplete';
-import { UserService } from '../../../services/user/user.service';
-import { RealmService } from '../../../services/realm/realm.service';
-import { MatCheckbox } from '@angular/material/checkbox';
+import { MatSelect } from '@angular/material/select';
+import { PiResponse } from '../../../app.component';
 import {
   ContainerRegisterData,
   ContainerService,
 } from '../../../services/container/container.service';
-import { NotificationService } from '../../../services/notification/notification.service';
-import { MatDialog } from '@angular/material/dialog';
-import { ContainerRegistrationDialogComponent } from './container-registration-dialog/container-registration-dialog.component';
-import { TokenService } from '../../../services/token/token.service';
 import { ContentService } from '../../../services/content/content.service';
-import { PiResponse } from '../../../app.component';
+import { NotificationService } from '../../../services/notification/notification.service';
+import { RealmService } from '../../../services/realm/realm.service';
+import { TokenService } from '../../../services/token/token.service';
+import { UserService } from '../../../services/user/user.service';
+import {
+  VersioningService,
+  VersioningServiceInterface,
+} from '../../../services/version/version.service';
+import { TokenComponent } from '../token.component';
+import { ContainerRegistrationDialogComponent } from './container-registration-dialog/container-registration-dialog.component';
 
 export type ContainerTypeOption = 'generic' | 'smartphone' | 'yubikey';
 
@@ -80,7 +83,8 @@ export class ContainerCreateComponent {
 
   constructor(
     protected registrationDialog: MatDialog,
-    protected versioningService: VersionService,
+    @Inject(VersioningService)
+    protected versioningService: VersioningServiceInterface,
     protected userService: UserService,
     protected realmService: RealmService,
     protected containerService: ContainerService,

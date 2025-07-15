@@ -1,17 +1,20 @@
-import { Component, computed, signal } from '@angular/core';
+import { NgClass } from '@angular/common';
+import { Component, computed, Inject, signal } from '@angular/core';
+import { MatButton } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
+import { MatDivider } from '@angular/material/divider';
 import { MatIcon } from '@angular/material/icon';
 import { MatList, MatListItem } from '@angular/material/list';
-import { MatButton } from '@angular/material/button';
-import { MatDivider } from '@angular/material/divider';
-import { NgClass } from '@angular/common';
 import { forkJoin, switchMap } from 'rxjs';
-import { TokenService } from '../../../../services/token/token.service';
-import { MatDialog } from '@angular/material/dialog';
-import { LostTokenComponent } from './lost-token/lost-token.component';
-import { VersionService } from '../../../../services/version/version.service';
-import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { tabToggleState } from '../../../../../styles/animations/animations';
 import { ContentService } from '../../../../services/content/content.service';
+import { TokenService } from '../../../../services/token/token.service';
+import {
+  VersioningService,
+  VersioningServiceInterface,
+} from '../../../../services/version/version.service';
+import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
+import { LostTokenComponent } from './lost-token/lost-token.component';
 
 @Component({
   selector: 'app-token-tab',
@@ -34,7 +37,8 @@ export class TokenTabComponent {
   constructor(
     private tokenService: TokenService,
     private dialog: MatDialog,
-    protected versioningService: VersionService,
+    @Inject(VersioningService)
+    protected versioningService: VersioningServiceInterface,
     private contentService: ContentService,
   ) {}
 

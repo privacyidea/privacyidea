@@ -5,6 +5,7 @@ import {
   computed,
   effect,
   ElementRef,
+  Inject,
   Injectable,
   linkedSignal,
   OnDestroy,
@@ -58,7 +59,10 @@ import { NotificationService } from '../../../services/notification/notification
 import { RealmService } from '../../../services/realm/realm.service';
 import { TokenService } from '../../../services/token/token.service';
 import { UserData, UserService } from '../../../services/user/user.service';
-import { VersionService } from '../../../services/version/version.service';
+import {
+  VersioningService,
+  VersioningServiceInterface,
+} from '../../../services/version/version.service';
 import { EnrollApplspecComponent } from './enroll-asp/enroll-applspec.component';
 import { EnrollCertificateComponent } from './enroll-certificate/enroll-certificate.component';
 import { EnrollDaypasswordComponent } from './enroll-daypassword/enroll-daypassword.component';
@@ -380,7 +384,8 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     protected notificationService: NotificationService,
     protected userService: UserService,
     protected tokenService: TokenService,
-    protected versioningService: VersionService,
+    @Inject(VersioningService)
+    protected versioningService: VersioningServiceInterface,
     protected contentService: ContentService,
     protected dialogService: DialogService,
     private renderer: Renderer2,

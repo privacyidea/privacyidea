@@ -9,14 +9,14 @@ import {
 } from '@angular/platform-browser/animations';
 
 import { signal } from '@angular/core';
-import { of } from 'rxjs';
 import { By } from '@angular/platform-browser';
+import { of } from 'rxjs';
 
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { TokenService } from '../../../../services/token/token.service';
-import { VersionService } from '../../../../services/version/version.service';
-import { NotificationService } from '../../../../services/notification/notification.service';
 import { ContentService } from '../../../../services/content/content.service';
+import { NotificationService } from '../../../../services/notification/notification.service';
+import { TokenService } from '../../../../services/token/token.service';
+import { VersioningService } from '../../../../services/version/version.service';
 
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { TokenSelectedContentKey } from '../../token.component';
@@ -48,9 +48,9 @@ describe('TokenTabComponent', () => {
     open: jest.fn().mockReturnValue(matDialogRefStub),
   } as unknown as MatDialog;
 
-  const versionServiceStub = {
+  const versioningServiceStub = {
     getVersion: jest.fn().mockReturnValue('1.0.0'),
-  } as unknown as VersionService;
+  } as unknown as VersioningService;
 
   const notificationServiceStub = {
     openSnackBar: jest.fn(),
@@ -70,7 +70,7 @@ describe('TokenTabComponent', () => {
         provideNoopAnimations(),
         { provide: TokenService, useValue: tokenServiceStub },
         { provide: MatDialog, useValue: matDialogStub },
-        { provide: VersionService, useValue: versionServiceStub },
+        { provide: VersioningService, useValue: versioningServiceStub },
         { provide: NotificationService, useValue: notificationServiceStub },
         { provide: ContentService, useValue: contentServiceStub },
       ],
@@ -87,7 +87,7 @@ describe('TokenTabComponent', () => {
 
   it('sets the version on ngOnInit', () => {
     expect(component.version).toBe('1.0.0');
-    expect(versionServiceStub.getVersion).toHaveBeenCalled();
+    expect(versioningServiceStub.getVersion).toHaveBeenCalled();
   });
 
   describe('toggleActive()', () => {

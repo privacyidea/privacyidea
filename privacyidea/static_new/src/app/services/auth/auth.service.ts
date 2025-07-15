@@ -8,7 +8,7 @@ import {
   NotificationService,
   NotificationServiceInterface,
 } from '../notification/notification.service';
-import { VersionService } from '../version/version.service';
+import { VersioningService } from '../version/version.service';
 
 export type AuthResponse = PiResponse<AuthData, AuthDetail>;
 
@@ -91,7 +91,7 @@ export class AuthService implements AuthServiceInterface {
     readonly http: HttpClient,
     @Inject(NotificationService)
     readonly notificationService: NotificationServiceInterface,
-    readonly versionService: VersionService,
+    readonly versioningService: VersioningService,
   ) {}
 
   authenticate(params: any) {
@@ -105,7 +105,7 @@ export class AuthService implements AuthServiceInterface {
       })
       .pipe(
         tap((response) => {
-          this.versionService.version.set(response.versionnumber);
+          this.versioningService.version.set(response.versionnumber);
           const value = response.result?.value;
           if (response?.result?.status && value) {
             this.acceptAuthentication();

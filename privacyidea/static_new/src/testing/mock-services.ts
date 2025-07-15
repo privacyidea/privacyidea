@@ -21,9 +21,8 @@ import { Observable, of, Subscription } from 'rxjs';
 import { PiResponse } from '../app/app.component';
 import { TokenSelectedContentKey } from '../app/components/token/token.component';
 import {
-  AuthResponse,
   AuthRole,
-  AuthService,
+  AuthServiceInterface,
 } from '../app/services/auth/auth.service';
 import { ContentService } from '../app/services/content/content.service';
 import { LocalService } from '../app/services/local/local.service';
@@ -39,7 +38,7 @@ import {
 } from '../app/services/table-utils/table-utils.service';
 import { TokenDetails } from '../app/services/token/token.service';
 import { UserData } from '../app/services/user/user.service';
-import { VersionService } from '../app/services/version/version.service';
+import { VersioningService } from '../app/services/version/version.service';
 
 export function makeResource<T>(initial: T) {
   return {
@@ -110,7 +109,7 @@ export class MockPiResponse<T> implements PiResponse<T, undefined> {
   }
 }
 
-export class MockAuthService implements AuthService {
+export class MockAuthService implements AuthServiceInterface {
   readonly authUrl = "environmentMock.proxyUrl + '/auth'";
   isAuthenticated: WritableSignal<boolean> = signal(true);
   user: WritableSignal<string> = signal('alice');
@@ -124,27 +123,43 @@ export class MockAuthService implements AuthService {
   isSelfServiceUser: Signal<boolean> = signal(
     this.role() === 'user' && this.menus().includes('token_self-service_menu'),
   );
-  authenticate(params: any): Observable<AuthResponse> {
-    throw new Error('Method not implemented.');
-  }
-  acceptAuthentication(): void {
-    throw new Error('Method not implemented.');
-  }
-  deauthenticate(): void {
-    throw new Error('Method not implemented.');
-  }
-  // role() {
-  //   return 'admin';
-  // }
+  authenticate = jest.fn().mockReturnValue(
+    of(
+      MockPiResponse.fromValue({
+        username: 'alice',
+        realm: 'default',
+        role: 'admin',
+        menus: [
+          'token_overview',
+          'token_self-service_menu',
+          'container_overview',
+        ],
+        versionnumber: '1.0',
+      }),
+    ),
+  );
+  acceptAuthentication = jest.fn().mockImplementation(() => {
+    this.isAuthenticated.set(true);
+    this.role.set('admin');
+    this.user.set('alice');
+    this.realm.set('default');
+  });
 
-  isAuthenticatedUser() {
-    return true;
-  }
+  deauthenticate = jest.fn().mockImplementation(() => {
+    this.isAuthenticated.set(false);
+    this.role.set('');
+    this.user.set('');
+    this.realm.set('');
+  });
+
+  isAuthenticatedUser = jest
+    .fn()
+    .mockReturnValue(this.isAuthenticated() && this.role() === 'user');
 
   constructor(
     readonly http: HttpClient = new HttpClient({} as any),
     readonly notificationService: NotificationServiceInterface = new MockNotificationService(),
-    readonly versionService: VersionService = new VersionService(),
+    readonly versioningService: VersioningService = new VersioningService(),
   ) {}
 
   // realm() {
