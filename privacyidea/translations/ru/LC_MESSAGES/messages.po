@@ -53,7 +53,7 @@ msgstr "Ошибка аутентификации. Неверная пара, л
 
 #: api/realm.py:528
 msgid "The given node does not exist!"
-msgstr ""
+msgstr "Данная нода не существует!"
 
 #: api/realm.py:534 api/realm.py:544
 msgid "Could not verify data in request!"
@@ -61,7 +61,7 @@ msgstr "Не удалось проверить данные в запросе!"
 
 #: api/validate.py:467 lib/token.py:2608
 msgid "Found matching challenge"
-msgstr "Найден соответствующий challenge."
+msgstr "Найден соответствующий challenge"
 
 #: api/lib/postpolicy.py:90
 #, python-brace-format
@@ -75,6 +75,15 @@ msgid ""
 "Subscriber: {subscriber_name}\n"
 "Subscriptions: {subscriptions}\n"
 msgstr ""
+"\n"
+"<--- Пожалуйста, опишите подробно вашу проблему --->\n"
+"\n"
+"<--- Пожалуйста, предоставьте как можно больше дополнительной информации --->"
+"\n"
+"\n"
+"privacyIDEA Version: {version}\n"
+"Subscriber: {subscriber_name}\n"
+"Subscriptions: {subscriptions}\n"
 
 #: api/lib/prepolicy.py:2478
 #, python-brace-format
@@ -142,6 +151,8 @@ msgstr ""
 msgid ""
 "General purpose container that can hold any type and any number of token."
 msgstr ""
+"Универсальный контейнер, способный хранить токены любого типа и в любом "
+"количестве."
 
 #: lib/decorators.py:43 lib/token.py:2468
 msgid "This action is not possible, since the token is locked"
@@ -169,6 +180,8 @@ msgid ""
 "Note: If you use a comma in the message, you need to escape it with a "
 "backslash."
 msgstr ""
+"Примечание: если в сообщении используется запятая, её необходимо "
+"экранировать с помощью обратной косой черты."
 
 #: lib/policy.py:1455
 msgid "Invalid client definition!"
