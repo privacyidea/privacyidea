@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-04-09 14:24+0200\n"
-"PO-Revision-Date: 2025-07-16 09:01+0000\n"
+"PO-Revision-Date: 2025-07-16 09:02+0000\n"
 "Last-Translator: LS_Grand <lsg@lsgrand.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/ru/>\n"
@@ -2150,7 +2150,7 @@ msgstr ""
 
 #: lib/eventhandler/tokenhandler.py:144
 msgid "set a new realm of the token"
-msgstr "Назначить новый домен для токена."
+msgstr "Назначить новый домен для токена"
 
 #: lib/eventhandler/tokenhandler.py:150
 msgid ""
@@ -2158,6 +2158,8 @@ msgid ""
 "will be removed from this token. If disabled, the realm will be added to the "
 "token."
 msgstr ""
+"Новый домен заменит все текущие домены токена. Если опция отключена, домен "
+"будет просто добавлен."
 
 #: lib/eventhandler/tokenhandler.py:167
 msgid "set the PIN of the token to a random PIN of this length."
@@ -2173,7 +2175,7 @@ msgstr ""
 
 #: lib/eventhandler/tokenhandler.py:190
 msgid "Set the realm of the newly created token."
-msgstr ""
+msgstr "Назначить домен для нового токена."
 
 #: lib/eventhandler/tokenhandler.py:199
 msgid "Dynamically read the mobile number from the user store."
@@ -2331,6 +2333,13 @@ msgid ""
 "{container_url_img}, {time}, {date}, {client_ip}, {ua_browser}, {ua_string}, "
 "{pin}.</code>"
 msgstr ""
+"Шаблон тела email. Вы можете использовать в нём следующие теги, описанные в "
+"документации: <code>{admin}, {realm}, {action}, {serial}, {url}, {user}, "
+"{givenname}, {surname}, {username}, {userrealm}, {tokentype}, "
+"{tokendescription}, {registrationcode}, {recipient_givenname}, "
+"{recipient_surname}, {googleurl_value}, {googleurl_img}, {pushurl_value}, "
+"{pushurl_img}, {container_url_value}, {container_url_img}, {time}, {date}, "
+"{client_ip}, {ua_browser}, {ua_string}, {pin}.</code>"
 
 #: lib/eventhandler/usernotification.py:203
 #: lib/eventhandler/usernotification.py:248
