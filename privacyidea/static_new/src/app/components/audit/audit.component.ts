@@ -113,9 +113,13 @@ export class AuditComponent {
   pageSizeOptions = linkedSignal({
     source: this.totalLength,
     computation: (total) => {
-      return [5, 10, 15].includes(total) || total > 50
-        ? [5, 10, 15]
-        : [5, 10, 15, total];
+      if (total > 50) {
+        return [5, 10, 15, 50];
+      }
+      if ([5, 10, 15].includes(total)) {
+        return [5, 10, 15];
+      }
+      return [5, 10, 15, total];
     },
   });
 

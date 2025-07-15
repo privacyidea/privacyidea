@@ -9,14 +9,14 @@ import { NavigationEnd, Router } from '@angular/router';
 
 import { ContainerDetailsTokenTableComponent } from './container-details-token-table.component';
 import {
-  authServiceMock,
+  MockAuthService,
   MockContainerService,
   MockContentService,
+  MockNotificationService,
   MockOverflowService,
+  MockTableUtilsService,
   MockTokenService,
   MockUserService,
-  notificationServiceMock,
-  tableUtilsMock,
 } from '../../../../../testing/mock-services';
 import { AuthService } from '../../../../services/auth/auth.service';
 import { ContainerService } from '../../../../services/container/container.service';
@@ -52,6 +52,9 @@ describe('ContainerDetailsTokenTableComponent', () => {
   const containerServiceMock = new MockContainerService();
   const tokenServiceMock = new MockTokenService();
   const overflowServiceMock = new MockOverflowService();
+  const tableUtilsMock = new MockTableUtilsService();
+  const authServiceMock = new MockAuthService();
+  const notificationServiceMock = new MockNotificationService();
 
   beforeEach(async () => {
     TestBed.resetTestingModule();

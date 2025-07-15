@@ -13,8 +13,8 @@ import {
 import { TokenService } from '../../../../services/token/token.service';
 import { ContentService } from '../../../../services/content/content.service';
 import {
-  makeMachineServiceMock,
-  tableUtilsMock,
+  MockMachineService,
+  MockTableUtilsService,
 } from '../../../../../testing/mock-services';
 import { signal } from '@angular/core';
 
@@ -23,8 +23,8 @@ describe('TokenApplicationsOfflineComponent (Jest)', () => {
   let component: TokenApplicationsOfflineComponent;
 
   let mockTokenService: Partial<TokenService>;
-  const machineServiceMock = makeMachineServiceMock();
-
+  const machineServiceMock = new MockMachineService();
+  const tableUtilsMock = new MockTableUtilsService();
   const mockContentService = {
     selectedContent: signal('token_applications'),
   };

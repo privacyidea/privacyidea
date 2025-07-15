@@ -20,7 +20,6 @@ describe('HeaderComponent', () => {
           {
             provide: ActivatedRoute,
             useValue: {
-              // Mock the necessary parts of ActivatedRoute, like params, queryParams, etc.
               params: of({ id: '123' }),
             },
           },

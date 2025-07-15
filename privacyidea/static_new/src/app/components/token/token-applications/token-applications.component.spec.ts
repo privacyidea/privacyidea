@@ -7,12 +7,12 @@ import { MatSelectModule } from '@angular/material/select';
 import { MachineService } from '../../../services/machine/machine.service';
 import { ContentService } from '../../../services/content/content.service';
 import { provideHttpClient } from '@angular/common/http';
-import { makeMachineServiceMock } from '../../../../testing/mock-services';
+import { MockMachineService } from '../../../../testing/mock-services';
 
 describe('TokenApplicationsComponent (Jest)', () => {
   let fixture: ComponentFixture<TokenApplicationsComponent>;
   let component: TokenApplicationsComponent;
-  const machineServiceMock = makeMachineServiceMock(); // ⬅️  new
+  const machineServiceMock = new MockMachineService();
 
   beforeEach(async () => {
     const mockContentService = {

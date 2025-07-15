@@ -1,39 +1,129 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import {
+  ComponentFixture,
+  fakeAsync,
+  TestBed,
+  tick,
+} from '@angular/core/testing';
+import { MatTableDataSource } from '@angular/material/table';
 
 import { AuditComponent } from './audit.component';
-import { ActivatedRoute, convertToParamMap } from '@angular/router';
-import { of } from 'rxjs';
+import {
+  MockAuditService,
+  MockAuthService,
+  MockContentService,
+  MockTableUtilsService,
+} from '../../../testing/mock-services';
 import { provideHttpClient } from '@angular/common/http';
+import { ActivatedRoute } from '@angular/router';
+import { of } from 'rxjs';
+import { TableUtilsService } from '../../services/table-utils/table-utils.service';
+import { ContentService } from '../../services/content/content.service';
+import { AuthService } from '../../services/auth/auth.service';
+import { AuditService } from '../../services/audit/audit.service';
 
-const activatedRouteStub = {
-  snapshot: {
-    paramMap: convertToParamMap({ id: '42' }),
-    data: {},
-  },
-
-  paramMap: of(convertToParamMap({ id: '42' })),
-  data: of({}),
-};
-
-describe('AuditComponent', () => {
-  let component: AuditComponent;
+describe('AuditComponent (unit)', () => {
   let fixture: ComponentFixture<AuditComponent>;
+  let component: AuditComponent;
+  let mockAuditService: MockAuditService;
+  let mockTableUtilsService: MockTableUtilsService;
 
   beforeEach(async () => {
+    TestBed.resetTestingModule();
+
     await TestBed.configureTestingModule({
-      providers: [
-        { provide: ActivatedRoute, useValue: activatedRouteStub },
-        provideHttpClient(),
-      ],
       imports: [AuditComponent],
+      providers: [
+        provideHttpClient(),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            params: of({ id: '123' }),
+          },
+        },
+        { provide: MockAuditService as any, useClass: MockAuditService },
+        {
+          provide: MockTableUtilsService as any,
+          useClass: MockTableUtilsService,
+        },
+        { provide: MockContentService as any, useClass: MockContentService },
+        { provide: MockAuthService as any, useClass: MockAuthService },
+        { provide: AuditService, useExisting: MockAuditService },
+        { provide: TableUtilsService, useExisting: MockTableUtilsService },
+        { provide: ContentService, useExisting: MockContentService },
+        { provide: AuthService, useExisting: MockAuthService },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(AuditComponent);
     component = fixture.componentInstance;
+    mockAuditService = TestBed.inject(MockAuditService as any);
+    mockTableUtilsService = TestBed.inject(MockTableUtilsService as any);
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it('creates', () => {
     expect(component).toBeTruthy();
+    expect(component.columnKeys.length).toBe(component.columnKeysMap.length);
+  });
+
+  describe('page‑related derived signals', () => {
+    it.each`
+      count | expectedOptions
+      ${12} | ${[5, 10, 15, 12]}
+      ${10} | ${[5, 10, 15]}
+      ${60} | ${[5, 10, 15, 50]}
+    `(
+      'total=$count → pageSizeOptions=$expectedOptions',
+      ({ count, expectedOptions }) => {
+        mockAuditService.auditResource.value.set({
+          result: { value: { count, auditdata: [] } },
+        });
+        expect(component.totalLength()).toBe(count);
+        expect(component.pageSizeOptions()).toEqual(expectedOptions);
+      },
+    );
+  });
+
+  it('emptyResource mirrors pageSize', () => {
+    mockAuditService.pageSize.set(3);
+    expect(component.emptyResource().length).toBe(3);
+    mockAuditService.pageSize.set(7);
+    expect(component.emptyResource().length).toBe(7);
+  });
+
+  it('auditDataSource updates when auditResource changes', () => {
+    const rows = [{ user: 'alice' } as any];
+    mockAuditService.auditResource.value.set({
+      result: { value: { count: 1, auditdata: rows as any } },
+    });
+    expect(component.auditDataSource() instanceof MatTableDataSource).toBe(
+      true,
+    );
+    expect(component.auditDataSource().data).toEqual(rows);
+  });
+
+  it('parses filterValueString and resets pageIndex through the effect', async () => {
+    mockAuditService.pageIndex.set(3);
+    mockAuditService.filterValue.set({ user: 'bob', success: 'true' });
+
+    await fixture.whenStable();
+    await Promise.resolve();
+    jest.runOnlyPendingTimers();
+
+    expect(mockTableUtilsService.recordsFromText).toHaveBeenCalledWith(
+      'user: bob success: true',
+    );
+    expect(mockAuditService.pageIndex()).toBe(0);
+  });
+
+  it('onPageEvent mutates pageSize & pageIndex signals', () => {
+    component.onPageEvent({
+      pageSize: 15,
+      pageIndex: 2,
+      length: 0,
+      previousPageIndex: 1,
+    });
+    expect(mockAuditService.pageSize()).toBe(15);
+    expect(mockAuditService.pageIndex()).toBe(2);
   });
 });

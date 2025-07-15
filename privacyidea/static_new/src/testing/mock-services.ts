@@ -1,4 +1,4 @@
-import { signal, WritableSignal } from '@angular/core';
+import { linkedSignal, signal, WritableSignal } from '@angular/core';
 import { of } from 'rxjs';
 import { TokenApplication } from '../app/services/machine/machine.service';
 import { MatTableDataSource } from '@angular/material/table';
@@ -14,15 +14,17 @@ export function makeResource<T>(initial: T) {
   };
 }
 
-export const authServiceMock = {
-  isAuthenticatedUser: jest.fn().mockReturnValue(true),
-  role: jest.fn().mockReturnValue('admin'),
-  user: jest.fn().mockReturnValue('alice'),
-};
-
 export class MockAuthService {
   role() {
     return 'admin';
+  }
+
+  isAuthenticatedUser() {
+    return true;
+  }
+
+  user() {
+    return 'alice';
   }
 }
 
@@ -34,6 +36,7 @@ export class MockUserService {
   setDefaultRealm = jest.fn();
   filteredUsers = signal([]);
   selectedUser = signal<UserData | null>(null);
+
   resetUserSelection() {
     this.userFilter.set('');
     this.selectedUserRealm.set('');
@@ -222,21 +225,34 @@ export class MockTokenService {
   getTokenData = this.getTokenDetails;
 }
 
-export const machineServiceMock = {
-  tokenApplications: jest.fn<TokenApplication[] | undefined, []>(() => []),
-  pageSize: jest.fn<number, []>(() => 10),
-  pageIndex: jest.fn<number, []>(() => 0),
-  selectedApplicationType: signal(''),
-};
+export class MockMachineService {
+  selectedApplicationType = signal<'ssh' | 'offline'>('ssh');
+  tokenApplications: WritableSignal<TokenApplication[] | undefined> = signal<
+    TokenApplication[] | undefined
+  >([]);
 
-export const tableUtilsMock = {
-  handleColumnClick: jest.fn(),
-  getClassForColumnKey: jest.fn(),
-  isLink: jest.fn().mockReturnValue(false),
-  getClassForColumn: jest.fn(),
-  getDisplayText: jest.fn(),
-  getTooltipForColumn: jest.fn(),
-  emptyDataSource: jest
+  pageSize = jest.fn(() => 10);
+  pageIndex = jest.fn(() => 0);
+}
+
+export class MockTableUtilsService {
+  handleColumnClick = jest.fn();
+  getClassForColumnKey = jest.fn();
+  isLink = jest.fn().mockReturnValue(false);
+  getClassForColumn = jest.fn();
+  getDisplayText = jest.fn();
+  getTooltipForColumn = jest.fn();
+  recordsFromText = jest.fn((filterString: string) => {
+    const records: { [key: string]: string } = {};
+    filterString.split(' ').forEach((part) => {
+      const [key, value] = part.split(': ');
+      if (key && value) {
+        records[key] = value;
+      }
+    });
+    return records;
+  });
+  emptyDataSource = jest
     .fn()
     .mockImplementation(
       (_pageSize: number, _columns: { key: string; label: string }[]) => {
@@ -244,23 +260,31 @@ export const tableUtilsMock = {
         (dataSource as any).isEmpty = true;
         return dataSource;
       },
-    ),
-};
+    );
+}
 
-export const notificationServiceMock = {
-  openSnackBar: jest.fn(),
-};
+export class NotificationService {
+  openSnackBar = jest.fn();
+}
 
-export function makeMachineServiceMock() {
-  const selectedApplicationType = signal<'ssh' | 'offline'>('ssh');
-  const tokenApplications: WritableSignal<TokenApplication[] | undefined> =
-    signal<TokenApplication[] | undefined>([]);
+export class MockAuditService {
+  apiFilter = ['user', 'success'];
+  advancedApiFilter = ['machineid', 'resolver'];
 
-  return {
-    selectedApplicationType,
-    tokenApplications,
-
-    pageSize: jest.fn(() => 10),
-    pageIndex: jest.fn(() => 0),
+  filterValue = signal<Record<string, string>>({});
+  auditResource = {
+    value: signal({ result: { value: { count: 0, auditdata: [] } } }),
   };
+  pageSize = linkedSignal({
+    source: this.filterValue,
+    computation: () => 10,
+  });
+
+  pageIndex = linkedSignal({
+    source: () => ({
+      filterValue: this.filterValue(),
+      pageSize: this.pageSize(),
+    }),
+    computation: () => 0,
+  });
 }
