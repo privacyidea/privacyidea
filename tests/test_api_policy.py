@@ -878,10 +878,10 @@ class APIPolicyConditionTestCase(MyApiTestCase):
 
     def test_06_check_request_data_condition_success(self):
         set_policy("policy_hotp", scope=SCOPE.ENROLL, action={ACTION.TOKENLABEL: "pi_offline"},
-                   conditions=[(ConditionSection.REQUEST_DATA, "type", Comparators.EQUALS, "hotp", True,
+                   conditions=[(ConditionSection.REQUEST_DATA, "type", PrimaryComparators.EQUALS, "hotp", True,
                                                    ConditionHandleMissingData.IS_FALSE.value)])
         set_policy("policy_totp", scope=SCOPE.ENROLL, action={ACTION.TOKENLABEL: "pi_online"},
-                   conditions=[(ConditionSection.REQUEST_DATA, "type", Comparators.EQUALS, "totp", True,
+                   conditions=[(ConditionSection.REQUEST_DATA, "type", PrimaryComparators.EQUALS, "totp", True,
                                 ConditionHandleMissingData.IS_FALSE.value)])
 
         # Request for hotp token
@@ -925,7 +925,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
     def test_07_check_request_data_condition_missing_data(self):
         # only allow to create container from template
         set_policy("policy", scope=SCOPE.ADMIN, action=[ACTION.CONTAINER_CREATE],
-                   conditions=[(ConditionSection.REQUEST_DATA, "template_name", Comparators.MATCHES, ".+", True,
+                   conditions=[(ConditionSection.REQUEST_DATA, "template_name", PrimaryComparators.MATCHES, ".+", True,
                                 ConditionHandleMissingData.IS_FALSE.value)])
         set_policy("policy_token", scope=SCOPE.ADMIN, action="enrollTOTP")
         create_container_template("smartphone", "test",
