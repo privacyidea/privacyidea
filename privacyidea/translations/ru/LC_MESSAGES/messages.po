@@ -1620,7 +1620,7 @@ msgstr ""
 
 #: lib/token.py:2329
 msgid "The user has no tokens assigned"
-msgstr "Пользователю не назначено ни одного токена."
+msgstr "У пользователя нет назначенных токенов."
 
 #: lib/token.py:2550
 #, python-brace-format
@@ -2256,7 +2256,7 @@ msgstr ""
 
 #: lib/eventhandler/tokenhandler.py:362
 msgid "Add a tokengroup to the token."
-msgstr ""
+msgstr "Привязать токен к группе токенов."
 
 #: lib/eventhandler/tokenhandler.py:372
 msgid "Remove a tokengroup from the token."
@@ -2604,6 +2604,8 @@ msgid ""
 "This takes a space separated list of elements to be added to the subject. "
 "Can be 'email' and 'realm'."
 msgstr ""
+"Здесь указывается список элементов, разделённых пробелами, которые будут "
+"добавлены в поле Subject. Возможные значения: 'email' и 'realm'."
 
 #: lib/tokens/certificatetoken.py:336 lib/tokens/certificatetoken.py:343
 msgid "The directory containing attestation certificate chains."
@@ -2708,7 +2710,7 @@ msgstr ""
 
 #: lib/tokens/emailtoken.py:561
 msgid "Please enter your new email address!"
-msgstr ""
+msgstr "Пожалуйста, введите новый адрес электронной почты!"
 
 #: lib/tokens/emailtoken.py:601
 msgid "The email address is not valid!"
@@ -3175,7 +3177,7 @@ msgstr ""
 
 #: lib/tokens/smstoken.py:611
 msgid "Please enter your new phone number!"
-msgstr ""
+msgstr "Пожалуйста, введите новый номер телефона!"
 
 #: lib/tokens/spasstoken.py:86
 msgid "SPass: Simple Pass token. Static passwords."
