@@ -1848,7 +1848,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), False)
             details = res.json.get("detail")
             self.assertEqual(details.get("message"),
-                             "Only 2 failed authentications per 0:00:20")
+                             "Only 2 failed authentications per 0:00:20 allowed.")
 
         delete_policy("pol_time1")
         remove_token(token.token.serial)
