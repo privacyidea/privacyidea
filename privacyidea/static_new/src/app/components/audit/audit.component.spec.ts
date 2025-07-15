@@ -1,9 +1,4 @@
-import {
-  ComponentFixture,
-  fakeAsync,
-  TestBed,
-  tick,
-} from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatTableDataSource } from '@angular/material/table';
 
 import { AuditComponent } from './audit.component';
