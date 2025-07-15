@@ -11,7 +11,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-06-27 10:01+0000\n"
+"PO-Revision-Date: 2025-07-16 06:01+0000\n"
 "Last-Translator: LS_Grand <lsg@lsgrand.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/ru/>\n"
@@ -518,10 +518,8 @@ msgid "Assign User"
 msgstr "Назначить пользователя"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:367
-#, fuzzy
-#| msgid "Assign Token"
 msgid "Assign User To All Tokens"
-msgstr "Назначить токен"
+msgstr "Назначить пользователя на все токены"
 
 #: privacyidea/static/components/user/views/user.details.html:303
 msgid "Assign a new token {{ newToken.serial }}"
@@ -532,8 +530,6 @@ msgid "Assign a new token {{ newTokenObject.serial }}"
 msgstr "Назначьте новый токен {{ newTokenObject.serial }}"
 
 #: privacyidea/static/components/token/views/token.containercreate.html:54
-#, fuzzy
-#| msgid "Assign container to user"
 msgid "Assign the Container to a User"
 msgstr "Назначить контейнер пользователю"
 
@@ -1011,14 +1007,10 @@ msgid "Create Realm for node {{ selectedNode.name }}"
 msgstr "Создать домен для узла {{ selectedNode.name }}"
 
 #: privacyidea/static/components/token/views/token.containertemplates.create.html:61
-#, fuzzy
-#| msgid "Certificate Template"
 msgid "Create Template"
-msgstr "Шаблон Сертификата"
+msgstr "Создать шаблон"
 
 #: privacyidea/static/components/token/views/token.containercreate.html:25
-#, fuzzy
-#| msgid "Create Container"
 msgid "Create a New Container"
 msgstr "Создать новый контейнер"
 
@@ -1127,8 +1119,6 @@ msgid "Create new SMS Gateway definition"
 msgstr "Создать новое определение шлюза SMS"
 
 #: privacyidea/static/components/token/views/token.enroll.html:228
-#, fuzzy
-#| msgid "Create Container"
 msgid "Create new container"
 msgstr "Создать новый контейнер"
 
@@ -1323,7 +1313,7 @@ msgstr "Словарь"
 
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:99
 msgid "Differences to the template"
-msgstr ""
+msgstr "Различия в шаблоне"
 
 #: privacyidea/static/components/config/views/config.events.details.html:6
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:6
@@ -1337,10 +1327,8 @@ msgid "Disable All"
 msgstr "Отключить все"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:315
-#, fuzzy
-#| msgid "Disable token"
 msgid "Disable All Tokens"
-msgstr "Отключить токен"
+msgstr "Отключить все токены"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:702
 #: privacyidea/static/components/token/views/token.list.html:99
@@ -1538,8 +1526,6 @@ msgid "Edit Service ID {{ servicename }}"
 msgstr "Редактировать идентификатор службы {{ servicename }}"
 
 #: privacyidea/static/components/token/views/token.containercreate.html:119
-#, fuzzy
-#| msgid "Edit Options"
 msgid "Edit Settings"
 msgstr "Параметры редактирования"
 
@@ -1627,7 +1613,7 @@ msgstr "Зарегистрировать токен"
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:224
 msgid "Enroll a new token"
-msgstr "Зарегистрироать новый токен"
+msgstr "Зарегистрировать новый токен"
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:425
 msgid "Enrollment successfully verified."
