@@ -24,7 +24,7 @@ msgstr ""
 
 #: api/auth.py:231
 msgid "Authentication with passkey disabled."
-msgstr "Аутентификация с использованием passkey отключена"
+msgstr "Аутентификация с использованием passkey отключена."
 
 #: api/auth.py:236
 msgid "Authentication failure. The passkey is not registered."
@@ -56,11 +56,11 @@ msgstr ""
 
 #: api/realm.py:534 api/realm.py:544
 msgid "Could not verify data in request!"
-msgstr ""
+msgstr "Не удалось проверить данные в запросе!"
 
 #: api/validate.py:466 lib/token.py:2608
 msgid "Found matching challenge"
-msgstr ""
+msgstr "Найден соответствующий challenge."
 
 #: api/lib/postpolicy.py:88
 #, python-brace-format
