@@ -1527,7 +1527,7 @@ msgstr "Редактировать идентификатор службы {{ se
 
 #: privacyidea/static/components/token/views/token.containercreate.html:119
 msgid "Edit Settings"
-msgstr "Параметры редактирования"
+msgstr "Изменить настройки"
 
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:2
 msgid "Edit Tokengroup {{ groupname }}"
@@ -1650,6 +1650,9 @@ msgid ""
 "                            This should indicate which passphrase the user "
 "should enter."
 msgstr ""
+"Введите подсказку для парольной фразы, которая будет отображаться "
+"пользователю.\n"
+"Она должна ясно указывать, какую фразу нужно ввести."
 
 #: privacyidea/static/components/token/views/token.details.html:80
 msgid "Enter code to verify enrollment"
@@ -1677,7 +1680,7 @@ msgstr ""
 
 #: privacyidea/static/components/directives/views/directive.containerTemplateDiff.html:20
 msgid "Equal"
-msgstr ""
+msgstr "Равно"
 
 #: privacyidea/static/components/config/factories/config.js:48
 msgid "Error fetching policy template"
@@ -1841,7 +1844,7 @@ msgstr "Создать запрос"
 msgid ""
 "Generate a QR code to register the container on a\n"
 "                smartphone."
-msgstr ""
+msgstr "Сгенерируйте QR-код, чтобы зарегистрировать контейнер на смартфоне."
 
 #: privacyidea/static/components/token/views/token.enroll.daypassword.html:16
 msgid "Generate secret on the Server"
@@ -1922,10 +1925,8 @@ msgid "Headers (JSON format)"
 msgstr "Заголовки (формат JSON)"
 
 #: privacyidea/static/components/token/views/token.html:242
-#, fuzzy
-#| msgid "Help about User Details"
 msgid "Help about Container Details"
-msgstr "Справка о сведениях о пользователе"
+msgstr "Информация о контейнере"
 
 #: privacyidea/static/components/token/views/token.html:249
 #, fuzzy
