@@ -3,6 +3,6 @@
 Vasco Token
 ~~~~~~~~~~~
 
-.. autoclass:: privacyidea.lib.tokens.vascotoken.class VascoTokenClass
+.. autoclass:: privacyidea.lib.tokens.vascotoken.VascoTokenClass
    :members:
    :undoc-members:
