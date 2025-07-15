@@ -76,6 +76,15 @@ class MyTestCase(unittest.TestCase):
         # Create an admin for tests.
         create_db_admin(cls.testadmin, cls.testadminmail, cls.testadminpw)
 
+    def set_default_g_variables(self):
+        # Set values to g to avoid attribute errors in tests
+        self.app_context.g.policy_object = None
+        self.app_context.g.logged_in_user = {}
+        self.app_context.g.audit_object = None
+        self.app_context.g.client_ip = None
+        self.app_context.g.request_headers = None
+        self.app_context.g.serial = None
+
     def tearDown(self):
         # Rollback uncommitted changes to the DB and close the session to
         # avoid breaking following tests due to unfinished transactions

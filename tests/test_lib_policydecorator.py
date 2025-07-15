@@ -243,10 +243,10 @@ class LibPolicyTestCase(MyTestCase):
         set_policy(name="pol1",
                    scope=SCOPE.AUTH,
                    action=ACTION.PASSTHRU)
-        g = FakeFlaskG()
-        g.policy_object = PolicyClass()
-        g.audit_object = FakeAudit()
-        options = {"g": g}
+        self.set_default_g_variables()
+        self.app_context.g.policy_object = PolicyClass()
+        self.app_context.g.audit_object = FakeAudit()
+        options = {"g": self.app_context.g}
         rv = auth_user_passthru(check_user_pass, user, passw,
                                 options=options)
         self.assertTrue(rv[0])
@@ -257,10 +257,10 @@ class LibPolicyTestCase(MyTestCase):
         set_policy(name="pol1",
                    scope=SCOPE.AUTH,
                    action="{0!s}=userstore".format(ACTION.PASSTHRU))
-        g = FakeFlaskG()
-        g.policy_object = PolicyClass()
-        g.audit_object = FakeAudit()
-        options = {"g": g}
+        self.set_default_g_variables()
+        self.app_context.g.policy_object = PolicyClass()
+        self.app_context.g.audit_object = FakeAudit()
+        options = {"g": self.app_context.g}
         rv = auth_user_passthru(check_user_pass, user, passw, options=options)
         self.assertTrue(rv[0])
         self.assertEqual(rv[1].get("message"), "against userstore due to 'pol1'")
@@ -273,10 +273,10 @@ class LibPolicyTestCase(MyTestCase):
         r = add_radius("radiusconfig1", "1.2.3.4", "testing123", dictionary=DICT_FILE)
         self.assertTrue(r > 0)
 
-        g = FakeFlaskG()
-        g.policy_object = PolicyClass()
-        g.audit_object = FakeAudit()
-        options = {"g": g}
+        self.set_default_g_variables()
+        self.app_context.g.policy_object = PolicyClass()
+        self.app_context.g.audit_object = FakeAudit()
+        options = {"g": self.app_context.g}
         rv = auth_user_passthru(check_user_pass, user, passw, options=options)
         self.assertTrue(rv[0])
         self.assertEqual(rv[1].get("message"),
@@ -288,13 +288,13 @@ class LibPolicyTestCase(MyTestCase):
         init_token({"serial": "PTHRU",
                     "type": "spass", "pin": "Hallo"},
                    user=user)
-        rv = auth_user_passthru(check_user_pass, user, passw,
-                                options=options)
+        rv = auth_user_passthru(check_user_pass, user, passw, options=options)
         self.assertFalse(rv[0])
         self.assertEqual(rv[1].get("message"), "wrong otp pin")
 
         remove_token("PTHRU")
         delete_policy("pol1")
+        self.set_default_g_variables()
 
     def test_07_login_mode(self):
         # a realm: cornelius@r1: PW: test

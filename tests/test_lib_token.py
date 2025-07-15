@@ -2380,10 +2380,10 @@ class TestMultipleUserToken(MyTestCase):
         # To test whether the password caching works, we need to set the otppin policy to userstore
         set_policy("otppin", scope=SCOPE.AUTH, action=f"{ACTION.OTPPIN}=userstore")
 
-        g = FakeFlaskG()
-        g.policy_object = PolicyClass()
-        g.audit_object = FakeAudit()
-        options = {"g": g}
+        self.set_default_g_variables()
+        self.app_context.g.policy_object = PolicyClass()
+        self.app_context.g.audit_object = FakeAudit()
+        options = {"g": self.app_context.g}
 
         logging.getLogger('privacyidea.lib.user').setLevel(logging.DEBUG)
 
@@ -2594,3 +2594,4 @@ class TestMultipleUserToken(MyTestCase):
         delete_policy("force_chalresp")
         remove_token("s1")
         remove_token("s2")
+        self.set_default_g_variables()
