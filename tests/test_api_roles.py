@@ -1086,7 +1086,7 @@ class APISelfserviceTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 401)
             details = res.json.get("detail")
             self.assertEqual(details.get("message"),
-                             "Only 2 failed authentications per 0:00:20",
+                             "Only 2 failed authentications per 0:00:20 allowed.",
                              details)
 
         # and even /validate/check does not work
@@ -1135,7 +1135,7 @@ class APISelfserviceTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 401)
             details = res.json.get("detail")
             self.assertEqual(details.get("message"),
-                             "Only 2 successful authentications per 0:00:20",
+                             "Only 2 successful authentications per 0:00:20 allowed.",
                              details)
 
         # ... and not with the wrong PIN

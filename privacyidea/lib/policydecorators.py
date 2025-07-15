@@ -50,6 +50,7 @@ from dateutil.tz import tzlocal
 
 from privacyidea.lib.authcache import verify_in_cache, add_to_cache
 from privacyidea.lib.error import PolicyError
+from privacyidea.lib.policies.policy_helper import check_max_auth_fail, check_max_auth_success
 from privacyidea.lib.policy import ACTION, SCOPE, ACTIONVALUE, LOGINMODE
 from privacyidea.lib.policy import Match
 from privacyidea.lib.radiusserver import get_radius
@@ -331,7 +332,7 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
     return wrapped_function(user_object, passw, options)
 
 
-def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
+def auth_user_timelimit(wrapped_function, user, password, options=None):
     """
     This decorator checks the policy settings of
     ACTION.AUTHMAXSUCCESS,
@@ -345,80 +346,26 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
     arguments (user, passw, options={})
 
     :param wrapped_function:
-    :param user_object:
-    :param passw:
+    :param user:
+    :param password:
     :param options: Dict containing values for "g" and "clientip"
     :return: Tuple of True/False and reply-dictionary
     """
-    # First we call the wrapped function
-    res, reply_dict = wrapped_function(user_object, passw, options)
-
     options = options or {}
+    reply_dict = {}
     g = options.get("g")
+    result = True
     if g:
-        max_success_dict = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.AUTHMAXSUCCESS,
-                                      user_object=user_object).action_values(unique=True, write_to_audit_log=False)
-        max_fail_dict = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.AUTHMAXFAIL,
-                                   user_object=user_object).action_values(unique=True, write_to_audit_log=False)
-        # Check for maximum failed authentications
-        # Always - also in case of unsuccessful authentication
-        if len(max_fail_dict) == 1:
-            policy_count, tdelta = parse_timelimit(list(max_fail_dict)[0])
-            fail_c = g.audit_object.get_count({"user": user_object.login,
-                                               "realm": user_object.realm,
-                                               "action":
-                                                   "%/validate/check"},
-                                              success=False,
-                                              timedelta=tdelta)
-            log.debug("Checking users timelimit %s: %s "
-                      "failed authentications with /validate/check" %
-                      (list(max_fail_dict)[0], fail_c))
-            fail_auth_c = g.audit_object.get_count({"user": user_object.login,
-                                                    "realm": user_object.realm,
-                                                    "info": "%loginmode=privacyIDEA%",
-                                                    "action": "%/auth"},
-                                                   success=False,
-                                                   timedelta=tdelta)
-            log.debug("Checking users timelimit %s: %s "
-                      "failed authentications with /auth" %
-                      (list(max_fail_dict)[0], fail_auth_c))
-            if fail_c + fail_auth_c >= policy_count:
-                res = False
-                reply_dict["message"] = ("Only %s failed authentications "
-                                         "per %s" % (policy_count, tdelta))
-                g.audit_object.add_policy(next(iter(max_fail_dict.values())))
+        user_search_dict = {"user": user.login, "realm": user.realm}
+        result, reply_dict = check_max_auth_fail(user, user_search_dict)
+        if result:
+            result, reply_dict = check_max_auth_success(user, user_search_dict)
 
-        if res:
-            # Check for maximum successful authentications
-            # Only in case of a successful authentication
-            if len(max_success_dict) == 1:
-                policy_count, tdelta = parse_timelimit(list(max_success_dict)[0])
-                # Check the successful authentications for this user
-                succ_c = g.audit_object.get_count({"user": user_object.login,
-                                                   "realm": user_object.realm,
-                                                   "action":
-                                                       "%/validate/check"},
-                                                  success=True,
-                                                  timedelta=tdelta)
-                log.debug("Checking users timelimit %s: %s "
-                          "successful authentications with /validate/check" %
-                          (list(max_success_dict)[0], succ_c))
-                succ_auth_c = g.audit_object.get_count({"user": user_object.login,
-                                                        "realm": user_object.realm,
-                                                        "info": "%loginmode=privacyIDEA%",
-                                                        "action": "%/auth"},
-                                                       success=True,
-                                                       timedelta=tdelta)
-                log.debug("Checking users timelimit %s: %s "
-                          "successful authentications with /auth" %
-                          (list(max_success_dict)[0], succ_auth_c))
-                if succ_c + succ_auth_c >= policy_count:
-                    res = False
-                    reply_dict["message"] = ("Only %s successful "
-                                             "authentications per %s"
-                                             % (policy_count, tdelta))
+    # Only execute wrapped function if auth is temporarily locked for the user
+    if result:
+        result, reply_dict = wrapped_function(user, password, options)
 
-    return res, reply_dict
+    return result, reply_dict
 
 
 def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
