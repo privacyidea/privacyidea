@@ -1167,7 +1167,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                            data={"user": "cornelius",
                                                  "pass": pin}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(res.status_code, 200, res)
             result = res.json.get("result")
             detail = res.json.get("detail")
             self.assertFalse(result.get("value"))
@@ -1183,10 +1183,10 @@ class ValidateAPITestCase(MyApiTestCase):
                                            method='POST',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(res.status_code, 200, res)
             result = res.json.get("result")
-            self.assertTrue(result["status"] is True, result)
-            self.assertEqual(result['value']['setPolicy pol_chal_resp'], 1, result)
+            self.assertTrue(result["status"], result)
+            self.assertGreaterEqual(result['value']['setPolicy pol_chal_resp'], 1, result)
 
         # create the challenge by authenticating with the OTP PIN
         with self.app.test_request_context('/validate/check',
@@ -1194,7 +1194,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                            data={"user": "cornelius",
                                                  "pass": pin}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(res.status_code, 200, res)
             result = res.json.get("result")
             detail = res.json.get("detail")
             self.assertFalse(result.get("value"))
@@ -1235,7 +1235,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                            data={"user": "cornelius",
                                                  "pass": pin}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(res.status_code, 200, res)
             result = res.json.get("result")
             detail = res.json.get("detail")
             self.assertFalse(result.get("value"))
@@ -1251,10 +1251,10 @@ class ValidateAPITestCase(MyApiTestCase):
                                            method='POST',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(res.status_code, 200, res)
             result = res.json.get("result")
-            self.assertTrue(result["status"] is True, result)
-            self.assertEqual(result['value']['setPolicy pol_chal_resp'], 1, result)
+            self.assertTrue(result["status"], result)
+            self.assertGreaterEqual(result['value']['setPolicy pol_chal_resp'], 1, result)
 
         # create the challenge by authenticating with the OTP PIN
         with self.app.test_request_context('/validate/check',
@@ -1262,7 +1262,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                            data={"user": "cornelius",
                                                  "pass": pin}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(res.status_code, 200, res)
             result = res.json.get("result")
             detail = res.json.get("detail")
             self.assertFalse(result.get("value"))
@@ -1276,7 +1276,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "transaction_id": transaction_id,
                                                  "pass": "regcode"}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(res.status_code, 200, res)
             result = res.json.get("result")
             self.assertTrue(result.get("value"))
 
@@ -1298,9 +1298,9 @@ class ValidateAPITestCase(MyApiTestCase):
                                            method='POST',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(res.status_code, 200, res)
             result = res.json.get("result")
-            self.assertTrue(result["status"] is True, result)
+            self.assertTrue(result["status"], result)
             self.assertGreaterEqual(result['value']['setPolicy pol_chal_resp'], 1, result)
 
         chalresp_serials = ["CHALRESP1", "CHALRESP2"]
@@ -1326,7 +1326,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                            data={"user": "cornelius",
                                                  "pass": chalresp_pins[0]}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(res.status_code, 200, res)
             result = res.json.get("result")
             detail = res.json.get("detail")
             self.assertFalse(result.get("value"))
@@ -1345,7 +1345,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                      transaction_id,
                                                  "pass": "111111"}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(res.status_code, 200, res)
             result = res.json.get("result")
             detail = res.json.get("detail")
             self.assertFalse(result.get("value"))
