@@ -347,7 +347,7 @@ Checks if the token is in the current validity period or not. Can be set to
 The tokeninfo condition can compare any arbitrary tokeninfo field against a
 fixed value. You can compare strings and integers. Integers are converted
 automatically. You can use all :ref:`condition_comparators`, but ensure that the comparator supports the datatype of
-your values. Valid compares are::
+your values. Valid comparisons are::
 
     myValue '==' 1000
     myValue '>' 1000
@@ -419,7 +419,7 @@ You can use all :ref:`condition_comparators` that support integers, e.g. ``'=='0
 **counter**
 
 The counter condition can compare the value of any arbitrary event counter against a fixed
-value. You can use all :ref:`condition_comparators` that support integers. Valid compares are::
+value. You can use all :ref:`condition_comparators` that support integers. Valid comparisons are::
 
     myCounter '==' 1000
     myCounter '>' 1000
@@ -478,7 +478,7 @@ The action is only triggered if the container has or has not at least one token.
 The ``container_info`` condition can compare any arbitrary container info field against a fixed value. You can compare
 strings, integers, and dates in isoformat. Integers and dates are converted automatically. You can use all
 :ref:`condition_comparators`, but ensure that the used comparator fits the data type of your values.
-Valid compares are: ::
+Valid comparisons are: ::
 
     myValue '==' 1000
     myValue '>' 1000
