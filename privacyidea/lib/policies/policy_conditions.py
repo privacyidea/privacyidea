@@ -19,7 +19,7 @@
 import logging
 import traceback
 from dataclasses import dataclass
-from enum import Enum, StrEnum
+from enum import Enum
 from typing import Union, Optional
 
 from werkzeug.datastructures import EnvironHeaders
@@ -32,23 +32,34 @@ from privacyidea.lib.utils.compare import Comparators, compare_values
 
 log = logging.getLogger(__name__)
 
-class ConditionSection(StrEnum):
+# TODO: Change this to an Enum or StrEnum (Python 3.11+) and remove subclass Section
+class ConditionSection:
     __doc__ = """This is a list of available sections for conditions of policies """
-    USERINFO = "userinfo"
-    TOKENINFO = "tokeninfo"
-    TOKEN = "token"  # nosec B105 # section name
-    HTTP_REQUEST_HEADER = "HTTP Request header"
-    HTTP_ENVIRONMENT = "HTTP Environment"
-    CONTAINER = "container"
-    CONTAINER_INFO = "container_info"
-    REQUEST_DATA = "Request Data"
+    class Section(Enum):
+        USERINFO = "userinfo"
+        TOKENINFO = "tokeninfo"
+        TOKEN = "token"  # nosec B105 # section name
+        HTTP_REQUEST_HEADER = "HTTP Request header"
+        HTTP_ENVIRONMENT = "HTTP Environment"
+        CONTAINER = "container"
+        CONTAINER_INFO = "container_info"
+        REQUEST_DATA = "Request Data"
+
+    USERINFO = Section.USERINFO.value
+    TOKENINFO = Section.TOKENINFO.value
+    TOKEN = Section.TOKEN.value
+    HTTP_REQUEST_HEADER = Section.HTTP_REQUEST_HEADER.value
+    HTTP_ENVIRONMENT = Section.HTTP_ENVIRONMENT.value
+    CONTAINER = Section.CONTAINER.value
+    CONTAINER_INFO = Section.CONTAINER_INFO.value
+    REQUEST_DATA = Section.REQUEST_DATA.value
 
     @classmethod
     def get_all_sections(cls) -> list[str]:
         """
         Return all available sections for conditions of policies as a list.
         """
-        return [section for section in cls]
+        return [section.value for section in cls.Section]
 
 
 class ConditionCheck:
