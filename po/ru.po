@@ -1926,13 +1926,11 @@ msgstr "Заголовки (формат JSON)"
 
 #: privacyidea/static/components/token/views/token.html:242
 msgid "Help about Container Details"
-msgstr "Информация о контейнере"
+msgstr "Cправка о контейнере"
 
 #: privacyidea/static/components/token/views/token.html:249
-#, fuzzy
-#| msgid "Help about Token Details"
 msgid "Help about Container Templates"
-msgstr "Справка о деталях токена"
+msgstr "Справка по шаблонам контейнеров"
 
 #: privacyidea/static/components/token/views/token.html:228
 #, fuzzy
