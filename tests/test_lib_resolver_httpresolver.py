@@ -4,7 +4,7 @@ from typing import Optional, Union
 
 import mock
 import responses
-from _pytest.python_api import raises
+import pytest
 
 from privacyidea.api.lib.utils import get_required
 from privacyidea.lib.error import ResolverError, ParameterError
@@ -364,7 +364,7 @@ class HTTPResolverTestCase(MyTestCase):
 
         # success with filter
         responses.add(responses.GET, "https://example.com/users?first_name=Test", status=200,
-                        body="""[{"login": "testuser", "first_name": "Test", "last_name": "User", "id": "1234"}]""")
+                      body="""[{"login": "testuser", "first_name": "Test", "last_name": "User", "id": "1234"}]""")
         users = instance.getUserList({"givenname": "Test", "favorite_color": "blue"})
         self.assertEqual(len(users), 1)
         self.assertEqual(users[0]['username'], 'testuser')
@@ -727,9 +727,9 @@ class HTTPResolverTestCase(MyTestCase):
     @responses.activate
     def test_14_get_user_info(self):
         responses.add(self.METHOD, self.ENDPOINT, status=200, adding_headers=json.loads(self.HEADERS),
-            body=self.BODY_RESPONSE_OK)
+                      body=self.BODY_RESPONSE_OK)
         responses.add(self.METHOD, self.ENDPOINT, status=200, adding_headers=json.loads(self.HEADERS),
-            body=self.BODY_RESPONSE_NOK)
+                      body=self.BODY_RESPONSE_NOK)
 
         # Test with valid response
         instance = HTTPResolver()
@@ -1013,33 +1013,33 @@ class EntraIDResolverTestCase(MyTestCase):
         config = {CLIENT_ID: "1234", CLIENT_CREDENTIAL_TYPE: ClientCredentialType.SECRET.value, CLIENT_SECRET: "secret",
                   TENANT: "organization"}
         # invalid when checking authority
-        with raises(ParameterError, match="Invalid Authorization"):
+        with pytest.raises(ParameterError, match="Invalid Authorization"):
             EntraIDResolver().loadConfig(config)
 
         # Missing parameters
         with mock.patch("privacyidea.lib.resolvers.EntraIDResolver.msal.ConfidentialClientApplication",
                         new=ConfidentialClientApplicationMock):
-            with raises(ParameterError, match=TENANT):
+            with pytest.raises(ParameterError, match=TENANT):
                 EntraIDResolver().loadConfig(
                     {CLIENT_ID: "1234", CLIENT_CREDENTIAL_TYPE: ClientCredentialType.SECRET.value,
                      CLIENT_SECRET: "secret"})
 
         with mock.patch("privacyidea.lib.resolvers.EntraIDResolver.msal.ConfidentialClientApplication",
                         new=ConfidentialClientApplicationMock):
-            with raises(ParameterError, match=CLIENT_ID):
+            with pytest.raises(ParameterError, match=CLIENT_ID):
                 EntraIDResolver().loadConfig({TENANT: "organization",
                                               CLIENT_CREDENTIAL_TYPE: ClientCredentialType.SECRET.value,
                                               CLIENT_SECRET: "secret"})
 
         with mock.patch("privacyidea.lib.resolvers.EntraIDResolver.msal.ConfidentialClientApplication",
                         new=ConfidentialClientApplicationMock):
-            with raises(ParameterError, match=CLIENT_CREDENTIAL_TYPE):
+            with pytest.raises(ParameterError, match=CLIENT_CREDENTIAL_TYPE):
                 EntraIDResolver().loadConfig({TENANT: "organization", CLIENT_ID: "1234", CLIENT_SECRET: "secret"})
 
         # Use client secret
         with mock.patch("privacyidea.lib.resolvers.EntraIDResolver.msal.ConfidentialClientApplication",
                         new=ConfidentialClientApplicationMock):
-            with raises(ParameterError, match=CLIENT_SECRET):
+            with pytest.raises(ParameterError, match=CLIENT_SECRET):
                 EntraIDResolver().loadConfig({CLIENT_ID: "1234",
                                               CLIENT_CREDENTIAL_TYPE: ClientCredentialType.SECRET.value,
                                               TENANT: "organization"})
@@ -1047,21 +1047,21 @@ class EntraIDResolverTestCase(MyTestCase):
         # use certificate
         with mock.patch("privacyidea.lib.resolvers.EntraIDResolver.msal.ConfidentialClientApplication",
                         new=ConfidentialClientApplicationMock):
-            with raises(ParameterError, match=CLIENT_CERTIFICATE):
+            with pytest.raises(ParameterError, match=CLIENT_CERTIFICATE):
                 EntraIDResolver().loadConfig({CLIENT_ID: "1234",
                                               CLIENT_CREDENTIAL_TYPE: ClientCredentialType.CERTIFICATE.value,
                                               TENANT: "organization"})
         # subkeys of the certificate are missing
         with mock.patch("privacyidea.lib.resolvers.EntraIDResolver.msal.ConfidentialClientApplication",
                         new=ConfidentialClientApplicationMock):
-            with raises(ParameterError, match=CERTIFICATE_FINGERPRINT):
+            with pytest.raises(ParameterError, match=CERTIFICATE_FINGERPRINT):
                 EntraIDResolver().loadConfig({CLIENT_ID: "1234",
                                               CLIENT_CREDENTIAL_TYPE: ClientCredentialType.CERTIFICATE.value,
                                               CLIENT_CERTIFICATE: {PRIVATE_KEY_FILE: "tests/testdata/private.pem"},
                                               TENANT: "organization"})
         with mock.patch("privacyidea.lib.resolvers.EntraIDResolver.msal.ConfidentialClientApplication",
                         new=ConfidentialClientApplicationMock):
-            with raises(ParameterError, match=PRIVATE_KEY_FILE):
+            with pytest.raises(ParameterError, match=PRIVATE_KEY_FILE):
                 EntraIDResolver().loadConfig({CLIENT_ID: "1234",
                                               CLIENT_CREDENTIAL_TYPE: ClientCredentialType.CERTIFICATE.value,
                                               CLIENT_CERTIFICATE: {CERTIFICATE_FINGERPRINT: "fingerprint"},
@@ -1630,7 +1630,7 @@ class EntraIDResolverTestCase(MyTestCase):
                      "givenname": "Adele",
                      "surname": "Vance",
                      "password": "xWwvJ]6NMw+bWH-d",
-                     "phone": "01521 123456",}
+                     "phone": "01521 123456"}
 
         uid = resolver.add_user(user_data)
         self.assertEqual("123456789", uid)
@@ -1811,8 +1811,8 @@ class EntraIDResolverTestCase(MyTestCase):
         resolver = self.set_up_resolver({CLIENT_CREDENTIAL_TYPE: ClientCredentialType.CERTIFICATE.value,
                                          CLIENT_CERTIFICATE: {PRIVATE_KEY_FILE: "tests/testdata/private.pem",
                                                               CERTIFICATE_FINGERPRINT: "123456"}})
-        with raises(ResolverError,
-                    match="User authentication with password is not supported when using a certificate for the client"):
+        with pytest.raises(ResolverError,
+                           match="User authentication with password is not supported when using a certificate for the client"):
             resolver.checkPass("111-aaa-333", "testpassword", "testuser")
 
 

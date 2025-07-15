@@ -9,8 +9,6 @@ REST API
 
 Start to read about authentication to the API at :ref:`rest_auth`.
 
-Now you can take a look at the several REST endpoints.
-
 .. toctree::
 
    api/audit

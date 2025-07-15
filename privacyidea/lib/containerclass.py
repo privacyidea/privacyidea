@@ -634,9 +634,10 @@ class TokenContainerClass:
                            device_model: str = None, passphrase: str = None) -> bool:
         """
         Verifies the response of a challenge:
-            * Checks if challenge is valid (not expired)
-            * Checks if the challenge is for the right scope
-            * Verifies the signature
+            - Checks if challenge is valid (not expired)
+            - Checks if the challenge is for the right scope
+            - Verifies the signature
+
         Implicitly verifies the passphrase by adding it to the signature message. The passphrase needs to be defined in
         the challenge data. Otherwise, no passphrase is used.
 
@@ -747,9 +748,9 @@ class TokenContainerClass:
         :param additional_hide_info: List of keys that shall be omitted from the dictionary
         :return: Dictionary with the container details
 
-        Example response
+        Example response:
 
-        ::
+        .. code:: python
 
             {
                 "type": "smartphone",
@@ -871,10 +872,9 @@ class TokenContainerClass:
         or updated. For the tokens to be added the enrollUrl is provided. For the tokens to be updated at least the
         serial and the tokentype are provided.
 
-        :param initial_transfer_allowed: If True, all tokens from the client are added to the container
-        :param container_client: The container from the client as dictionary.
         An example container dictionary from the client:
-            ::
+
+        .. code:: python
 
                 {
                     "serial": "SMPH001",
@@ -883,9 +883,9 @@ class TokenContainerClass:
                                 {"otp": ["1234", "9876"], "tokentype": "HOTP", "counter": "2"}]
                 }
 
-        :return: container dictionary
         An example of a returned container dictionary:
-            ::
+
+        .. code:: python
 
                 {
                     "container": {"type": "smartphone", "serial": "SMPH001"},
@@ -894,6 +894,10 @@ class TokenContainerClass:
                                           {"serial": "HOTP001", "otp": ["1234", "9876"],
                                            "tokentype": "hotp", "counter": 2}]}
                 }
+
+        :param initial_transfer_allowed: If True, all tokens from the client are added to the container
+        :param container_client: The container from the client as dictionary.
+        :return: container dictionary
         """
         container_dict = {"container": {"type": self.type, "serial": self.serial}}
         server_token_serials = [token.get_serial() for token in self.get_tokens_for_synchronization()]

@@ -17,14 +17,6 @@ clean:
 	rm -f .coverage
 	(cd doc; make clean)
 
-setversion:
-	vim Makefile
-	vim setup.py
-	vim doc/conf.py
-	vim Changelog
-	@echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-	@echo "Please set a tag like:  git tag 3.17"
-
 POS = $(wildcard po/*.po)
 translate:
 	grunt nggettext_extract

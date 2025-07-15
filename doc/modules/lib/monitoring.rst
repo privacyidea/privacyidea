@@ -20,6 +20,3 @@ SQL Statistics module
 
 .. autoclass:: privacyidea.lib.monitoringmodules.sqlstats.Monitoring
    :members:
-
-
-
