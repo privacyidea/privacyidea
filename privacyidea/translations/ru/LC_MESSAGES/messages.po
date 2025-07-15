@@ -1614,7 +1614,7 @@ msgid ""
 "excluded types: {1!s}"
 msgstr ""
 "В этом домене нет активных и назначенных токенов. Включённые типы: {0!s}, "
-"исключённые типы: {1!s}."
+"исключённые типы: {1!s}"
 
 #: lib/token.py:2295
 msgid "OTP verification failed."
@@ -1743,7 +1743,7 @@ msgstr ""
 
 #: lib/eventhandler/base.py:196
 msgid "The realm of the user, for which this event should apply."
-msgstr ""
+msgstr "Домен пользователя, к которому должно применяться это событие."
 
 #: lib/eventhandler/base.py:203
 msgid "The resolver of the user, for which this event should apply."
@@ -1751,7 +1751,7 @@ msgstr ""
 
 #: lib/eventhandler/base.py:210
 msgid "The realm of the token, for which this event should apply."
-msgstr ""
+msgstr "Домен токена, к которому должно применяться это событие."
 
 #: lib/eventhandler/base.py:218
 msgid "The resolver of the token, for which this event should apply."
@@ -1913,6 +1913,10 @@ msgid ""
 "realm of the list. The condition is not checked if the container has no "
 "realm, hence the action would be triggered."
 msgstr ""
+"Контейнер находится либо в этом домене, либо не привязан ни к одному домену. "
+"Если выбрано несколько доменов, условие считается выполненным, если "
+"контейнер принадлежит хотя бы одному из них. Если контейнер не привязан ни к "
+"одному домену, условия не проверяются, и действие будет выполнено."
 
 #: lib/eventhandler/base.py:456
 msgid ""
@@ -2018,6 +2022,7 @@ msgstr ""
 #: lib/eventhandler/federationhandler.py:79
 msgid "Change the realm name to a realm on the child privacyIDEA system."
 msgstr ""
+"Замените имя домена на домен, используемый в дочерней системе privacyIDEA."
 
 #: lib/eventhandler/federationhandler.py:85
 msgid "Change the resolver name to a resolver on the child privacyIDEA system."
@@ -2077,6 +2082,9 @@ msgid ""
 "If the parameter is 'username', 'user' or 'realm', the user will be reset. "
 "This can have an effect on any further actions on the user!"
 msgstr ""
+"Если параметр имеет значение 'username', 'user' или 'realm', данные "
+"пользователя будут сброшены. Это может повлиять на выполнение последующих "
+"действий с ним."
 
 #: lib/eventhandler/responsemangler.py:79
 msgid ""
