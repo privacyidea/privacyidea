@@ -2134,7 +2134,7 @@ msgstr ""
 
 #: lib/eventhandler/scripthandler.py:121
 msgid "Add '--realm <realm>' as script parameter."
-msgstr "Добавьте параметр '--realm <домен>' в скрипт."
+msgstr "Укажите '--realm <домен>' как параметр скрипта."
 
 #: lib/eventhandler/scripthandler.py:126
 msgid ""
@@ -2150,7 +2150,7 @@ msgstr ""
 
 #: lib/eventhandler/tokenhandler.py:144
 msgid "set a new realm of the token"
-msgstr ""
+msgstr "Назначить новый домен для токена."
 
 #: lib/eventhandler/tokenhandler.py:150
 msgid ""
