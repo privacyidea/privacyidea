@@ -227,7 +227,7 @@ def resolversz():
 
       {
           "status": "ready",
-          "ldapresolvers" {
+          "ldapresolvers": {
               "ldapresolver1": "OK",
               "ldapresolver2": "OK"
           },
