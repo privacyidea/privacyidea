@@ -24,7 +24,7 @@ msgstr ""
 
 #: api/auth.py:231
 msgid "Authentication with passkey disabled."
-msgstr ""
+msgstr "Аутентификация с использованием passkey отключена"
 
 #: api/auth.py:236
 msgid "Authentication failure. The passkey is not registered."
@@ -923,6 +923,9 @@ msgid ""
 "</code>, <code>{realm}</code>, <code>{serial}</code>, <code>{givenname}</"
 "code> and <code>{surname}</code>."
 msgstr ""
+"Метка для нового зарегистрированного токена смартфона. Можно использовать "
+"следующие плейсхолдеры: <code>{user}</code>, <code>{realm}</code>, "
+"<code>{serial}</code>, <code>{givenname}</code> и <code>{surname}</code>."
 
 #: lib/policy.py:2415
 #, python-brace-format
@@ -931,6 +934,9 @@ msgid ""
 "<code>{user}</code>, <code>{realm}</code>, <code>{serial}</code>, "
 "<code>{givenname}</code> and <code>{surname}</code>."
 msgstr ""
+"Название эмитента для нового токена смартфона. Допустимы следующие шаблонные "
+"теги <code>{user}</code>, <code>{realm}</code>, <code>{serial}</code>, "
+"<code>{givenname}</code> и <code>{surname}</code>."
 
 #: lib/policy.py:2422
 msgid ""
@@ -1065,6 +1071,9 @@ msgid ""
 "If set, the user in this realm will be authenticated against the userstore "
 "or against the given RADIUS config, if the user has no tokens assigned."
 msgstr ""
+"Если включено, пользователь в этом домене будет аутентифицирован через "
+"хранилище пользователей или указанную конфигурацию RADIUS, если у него нет "
+"назначенных токенов."
 
 #: lib/policy.py:2551
 msgid ""
@@ -1091,6 +1100,8 @@ msgid ""
 "Can be used to modify the parameters pass, user and realm in an "
 "authentication request. See the documentation for an example."
 msgstr ""
+"Может быть использовано для изменения параметров pass, user и realm в "
+"запросе аутентификации. См. документацию для примера."
 
 #: lib/policy.py:2575
 msgid ""
@@ -1181,6 +1192,8 @@ msgid ""
 "The Realm of the user is set to this very realm. This is important if the "
 "user is not contained in the default realm and can not pass his realm."
 msgstr ""
+"Этот домен будет назначен пользователю. Это важно, если он не входит в домен "
+"по умолчанию и его приложение не передаёт домен при входе."
 
 #: lib/policy.py:2670
 msgid ""
@@ -1205,6 +1218,8 @@ msgid ""
 "In case of successful authentication the user resolver and realm will be "
 "added in the detail branch of the authentication response."
 msgstr ""
+"В случае успешной аутентификации resolver пользователя и домен будут "
+"добавлены в раздел detail ответа аутентификации."
 
 #: lib/policy.py:2698
 msgid ""
@@ -2326,9 +2341,9 @@ msgid ""
 "{container_url_img}, {time}, {date}, {client_ip}, {ua_browser}, {ua_string}, "
 "{pin}.</code>"
 msgstr ""
-"Шаблон тела email. Вы можете использовать в нём следующие теги, описанные в "
-"документации: <code>{admin}, {realm}, {action}, {serial}, {url}, {user}, "
-"{givenname}, {surname}, {username}, {userrealm}, {tokentype}, "
+"Шаблон тела email-сообщения. Вы можете использовать в нём следующие теги, "
+"описанные в документации: <code>{admin}, {realm}, {action}, {serial}, {url}, "
+"{user}, {givenname}, {surname}, {username}, {userrealm}, {tokentype}, "
 "{tokendescription}, {registrationcode}, {recipient_givenname}, "
 "{recipient_surname}, {googleurl_value}, {googleurl_img}, {pushurl_value}, "
 "{pushurl_img}, {container_url_value}, {container_url_img}, {time}, {date}, "
@@ -2354,6 +2369,13 @@ msgid ""
 "{pushurl_img}, {container_url_value}, {container_url_img}, {time}, {date}, "
 "{client_ip}, {ua_browser}, {ua_string}, {pin}.</code>"
 msgstr ""
+"Текстовый шаблон SMS-сообщения. Вы можете использовать в нём следующие теги, "
+"описанные в документации: <code>{admin}, {realm}, {action}, {serial}, {url}, "
+"{user}, {givenname}, {surname}, {username}, {userrealm}, {tokentype}, "
+"{tokendescription}, {registrationcode}, {recipient_givenname}, "
+"{recipient_surname}, {googleurl_value}, {googleurl_img}, {pushurl_value}, "
+"{pushurl_img}, {container_url_value}, {container_url_img}, {time}, {date}, "
+"{client_ip}, {ua_browser}, {ua_string}, {pin}.</code>"
 
 #: lib/eventhandler/usernotification.py:255
 #, python-brace-format
@@ -2366,6 +2388,13 @@ msgid ""
 "{pushurl_img}, {container_url_value}, {container_url_img}, {time}, {date}, "
 "{client_ip}, {ua_browser}, {ua_string}, {pin}.</code>"
 msgstr ""
+"Шаблон содержимого нового файла. Вы можете использовать в нём следующие "
+"теги, описанные в документации: <code>{admin}, {realm}, {action}, {serial}, "
+"{url}, {user}, {givenname}, {surname}, {username}, {userrealm}, {tokentype}, "
+"{tokendescription}, {registrationcode}, {recipient_givenname}, "
+"{recipient_surname}, {googleurl_value}, {googleurl_img}, {pushurl_value}, "
+"{pushurl_img}, {container_url_value}, {container_url_img}, {time}, {date}, "
+"{client_ip}, {ua_browser}, {ua_string}, {pin}.</code>"
 
 #: lib/eventhandler/usernotification.py:266
 #, python-brace-format
@@ -2390,6 +2419,9 @@ msgid ""
 "{surname}, {token_owner}, {user_realm}, {token_serial}. However, tag "
 "availability is depending on the endpoint."
 msgstr ""
+"Вы можете использовать следующие плейсхолдеры: {logged_in_user}, {realm}, "
+"{surname}, {token_owner}, {user_realm}, {token_serial}. Однако доступность "
+"тегов зависит от конечной точки."
 
 #: lib/eventhandler/webhookeventhandler.py:102
 msgid "The data posted in the WebHook"
