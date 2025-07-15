@@ -1605,7 +1605,7 @@ msgstr ""
 
 #: lib/token.py:2230
 msgid "There is no active and assigned token in this realm"
-msgstr "В этом домене нет активных и назначенных токенов."
+msgstr "В этом домене нет активных и назначенных токенов"
 
 #: lib/token.py:2242
 #, python-brace-format
@@ -1613,6 +1613,8 @@ msgid ""
 "There is no active and assigned token in this realm, included types: {0!s}, "
 "excluded types: {1!s}"
 msgstr ""
+"В этом домене нет активных и назначенных токенов. Включённые типы: {0!s}, "
+"исключённые типы: {1!s}."
 
 #: lib/token.py:2295
 msgid "OTP verification failed."
