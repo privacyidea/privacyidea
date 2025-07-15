@@ -1,26 +1,26 @@
+import { NgClass } from '@angular/common';
 import { Component, computed } from '@angular/core';
-import { MatTabsModule } from '@angular/material/tabs';
-import {
-  MachineService,
-  TokenApplication,
-} from '../../../../services/machine/machine.service';
-import { KeywordFilterComponent } from '../../../shared/keyword-filter/keyword-filter.component';
+import { FormsModule } from '@angular/forms';
+import { MatFormField, MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatPaginatorModule } from '@angular/material/paginator';
+import { MatSortModule } from '@angular/material/sort';
 import {
   MatCell,
   MatCellDef,
   MatTableDataSource,
   MatTableModule,
 } from '@angular/material/table';
-import { MatFormField, MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatPaginatorModule } from '@angular/material/paginator';
-import { MatSortModule, Sort } from '@angular/material/sort';
-import { NgClass } from '@angular/common';
-import { TableUtilsService } from '../../../../services/table-utils/table-utils.service';
-import { CopyButtonComponent } from '../../../shared/copy-button/copy-button.component';
-import { TokenService } from '../../../../services/token/token.service';
-import { FormsModule } from '@angular/forms';
+import { MatTabsModule } from '@angular/material/tabs';
 import { ContentService } from '../../../../services/content/content.service';
+import {
+  MachineService,
+  TokenApplication,
+} from '../../../../services/machine/machine.service';
+import { TableUtilsService } from '../../../../services/table-utils/table-utils.service';
+import { TokenService } from '../../../../services/token/token.service';
+import { CopyButtonComponent } from '../../../shared/copy-button/copy-button.component';
+import { KeywordFilterComponent } from '../../../shared/keyword-filter/keyword-filter.component';
 
 const _sshColumnsKeyMap = [
   { key: 'serial', label: 'Serial' },
@@ -64,7 +64,7 @@ export class TokenApplicationsSshComponent {
 
   dataSource = computed(() => {
     var data = this.machineService.tokenApplications();
-    if (data) {
+    if (data.length) {
       return new MatTableDataSource<TokenApplication>(data);
     }
     return this.tableUtilsService.emptyDataSource(

@@ -1,10 +1,13 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { computed, Injectable, signal } from '@angular/core';
+import { computed, Inject, Injectable, signal } from '@angular/core';
 import { throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { PiResponse } from '../../app.component';
-import { NotificationService } from '../notification/notification.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../notification/notification.service';
 import { VersionService } from '../version/version.service';
 
 export type AuthResponse = PiResponse<AuthData, AuthDetail>;
@@ -56,11 +59,24 @@ export interface AuthDetail {
   username: string;
 }
 
+export interface AuthServiceInterface {
+  isAuthenticated: () => boolean;
+  user: () => string;
+  realm: () => string;
+  role: () => AuthRole;
+  menus: () => string[];
+  isSelfServiceUser: () => boolean;
+  authenticate: (params: any) => any;
+  isAuthenticatedUser: () => boolean;
+  acceptAuthentication: () => void;
+  deauthenticate: () => void;
+}
+
 @Injectable({
   providedIn: 'root',
 })
-export class AuthService {
-  private authUrl = environment.proxyUrl + '/auth';
+export class AuthService implements AuthServiceInterface {
+  readonly authUrl = environment.proxyUrl + '/auth';
   isAuthenticated = signal(false);
   user = signal('');
   realm = signal('');
@@ -72,9 +88,10 @@ export class AuthService {
   });
 
   constructor(
-    private http: HttpClient,
-    private notificationService: NotificationService,
-    private versionService: VersionService,
+    readonly http: HttpClient,
+    @Inject(NotificationService)
+    readonly notificationService: NotificationServiceInterface,
+    readonly versionService: VersionService,
   ) {}
 
   authenticate(params: any) {

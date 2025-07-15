@@ -1,28 +1,28 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { MatTabsModule } from '@angular/material/tabs';
 import { MatTableDataSource } from '@angular/material/table';
+import { MatTabsModule } from '@angular/material/tabs';
 
-import { TokenApplicationsOfflineComponent } from './token-applications-offline.component';
-import { KeywordFilterComponent } from '../../../shared/keyword-filter/keyword-filter.component';
-import { CopyButtonComponent } from '../../../shared/copy-button/copy-button.component';
-import { TableUtilsService } from '../../../../services/table-utils/table-utils.service';
-import {
-  MachineService,
-  TokenApplication,
-} from '../../../../services/machine/machine.service';
-import { TokenService } from '../../../../services/token/token.service';
-import { ContentService } from '../../../../services/content/content.service';
+import { signal } from '@angular/core';
 import {
   MockMachineService,
   MockTableUtilsService,
 } from '../../../../../testing/mock-services';
-import { signal } from '@angular/core';
+import { ContentService } from '../../../../services/content/content.service';
+import {
+  MachineService,
+  TokenApplication,
+} from '../../../../services/machine/machine.service';
+import { TableUtilsService } from '../../../../services/table-utils/table-utils.service';
+import { TokenService } from '../../../../services/token/token.service';
+import { CopyButtonComponent } from '../../../shared/copy-button/copy-button.component';
+import { KeywordFilterComponent } from '../../../shared/keyword-filter/keyword-filter.component';
+import { TokenApplicationsOfflineComponent } from './token-applications-offline.component';
 
 describe('TokenApplicationsOfflineComponent (Jest)', () => {
   let fixture: ComponentFixture<TokenApplicationsOfflineComponent>;
   let component: TokenApplicationsOfflineComponent;
 
-  let mockTokenService: Partial<TokenService>;
+  let mockTokenService: Partial<TokenService> = {};
   const machineServiceMock = new MockMachineService();
   const tableUtilsMock = new MockTableUtilsService();
   const mockContentService = {
@@ -92,7 +92,7 @@ describe('TokenApplicationsOfflineComponent (Jest)', () => {
     });
 
     it('delegates to emptyDataSource when tokenApplications() is falsy', () => {
-      machineServiceMock.tokenApplications.set(undefined);
+      machineServiceMock.tokenApplications.set([]);
       fixture.detectChanges();
 
       const ds = component.dataSource();
