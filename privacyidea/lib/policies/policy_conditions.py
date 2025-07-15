@@ -19,7 +19,7 @@
 import logging
 import traceback
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, StrEnum
 from typing import Union, Optional
 
 from werkzeug.datastructures import EnvironHeaders
@@ -32,8 +32,7 @@ from privacyidea.lib.utils.compare import Comparators, compare_values
 
 log = logging.getLogger(__name__)
 
-
-class ConditionSection:
+class ConditionSection(StrEnum):
     __doc__ = """This is a list of available sections for conditions of policies """
     USERINFO = "userinfo"
     TOKENINFO = "tokeninfo"
@@ -49,7 +48,7 @@ class ConditionSection:
         """
         Return all available sections for conditions of policies as a list.
         """
-        return [value for key, value in vars(cls).items() if key.isupper()]
+        return [section for section in cls]
 
 
 class ConditionCheck:
