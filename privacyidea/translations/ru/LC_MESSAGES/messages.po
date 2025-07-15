@@ -2077,7 +2077,7 @@ msgid ""
 msgstr ""
 "Если параметр имеет значение 'username', 'user' или 'realm', данные "
 "пользователя будут сброшены. Это может повлиять на выполнение последующих "
-"действий с ним."
+"действий с ним!"
 
 #: lib/eventhandler/responsemangler.py:79
 msgid ""
@@ -2127,7 +2127,7 @@ msgstr ""
 
 #: lib/eventhandler/scripthandler.py:121
 msgid "Add '--realm <realm>' as script parameter."
-msgstr ""
+msgstr "Добавьте параметр '--realm <домен>' в скрипт."
 
 #: lib/eventhandler/scripthandler.py:126
 msgid ""
