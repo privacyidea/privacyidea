@@ -20,7 +20,7 @@ import logging
 import traceback
 from dataclasses import dataclass
 from enum import Enum
-from typing import Union
+from typing import Union, Optional
 
 from werkzeug.datastructures import EnvironHeaders
 
@@ -32,25 +32,34 @@ from privacyidea.lib.utils.compare import PrimaryComparators, compare_values
 
 log = logging.getLogger(__name__)
 
-
+# TODO: Change this to an Enum or StrEnum (Python 3.11+) and remove subclass Section
 class ConditionSection:
     __doc__ = """This is a list of available sections for conditions of policies """
-    USERINFO = "userinfo"
-    TOKENINFO = "tokeninfo"
-    TOKEN = "token"  # nosec B105 # section name
-    HTTP_REQUEST_HEADER = "HTTP Request header"
-    HTTP_ENVIRONMENT = "HTTP Environment"
-    CONTAINER = "container"
-    CONTAINER_INFO = "container_info"
+    class Section(Enum):
+        USERINFO = "userinfo"
+        TOKENINFO = "tokeninfo"
+        TOKEN = "token"  # nosec B105 # section name
+        HTTP_REQUEST_HEADER = "HTTP Request header"
+        HTTP_ENVIRONMENT = "HTTP Environment"
+        CONTAINER = "container"
+        CONTAINER_INFO = "container_info"
+        REQUEST_DATA = "Request Data"
+
+    USERINFO = Section.USERINFO.value
+    TOKENINFO = Section.TOKENINFO.value
+    TOKEN = Section.TOKEN.value
+    HTTP_REQUEST_HEADER = Section.HTTP_REQUEST_HEADER.value
+    HTTP_ENVIRONMENT = Section.HTTP_ENVIRONMENT.value
+    CONTAINER = Section.CONTAINER.value
+    CONTAINER_INFO = Section.CONTAINER_INFO.value
+    REQUEST_DATA = Section.REQUEST_DATA.value
 
     @classmethod
     def get_all_sections(cls) -> list[str]:
         """
         Return all available sections for conditions of policies as a list.
         """
-        sections = [cls.USERINFO, cls.TOKENINFO, cls.TOKEN, cls.HTTP_REQUEST_HEADER, cls.HTTP_ENVIRONMENT,
-                    cls.CONTAINER, cls.CONTAINER_INFO]
-        return sections
+        return [section.value for section in cls.Section]
 
 
 class ConditionCheck:
@@ -402,8 +411,25 @@ class PolicyConditionClass:
                     data.available_keys = list(request_environment.keys())
         return data
 
+    def get_data_from_dict(self, dictionary: Optional[dict]) -> ConditionSectionData:
+        """
+        Get the value from the request data for the condition.
+
+        :param dictionary: The dict from which to get the data value
+        :return: The value from request data and further information if it is not available
+        """
+        data = ConditionSectionData(self.section)
+        data.object_available = isinstance(dictionary, dict)
+
+        if data.object_available:
+            data.value = dictionary.get(self.key)
+            if data.value is None:
+                data.available_keys = list(dictionary.keys())
+        return data
+
     def match(self, policy_name: str, user: Union[User, None], serial: Union[str, None],
-              request_header: Union[EnvironHeaders, None], container_serial: Union[str, None] = None) -> bool:
+              request_header: Union[EnvironHeaders, None], container_serial: Union[str, None] = None,
+              request_data: Optional[dict] = None) -> bool:
         """
         Check if the condition matches the given user, token, or request header.
 
@@ -412,6 +438,7 @@ class PolicyConditionClass:
         :param serial: The serial number of the token
         :param request_header: The request header to check
         :param container_serial: The serial number of the container
+        :param request_data: The request data
         :return: True if the condition matches, False otherwise
         """
         condition_matches = True
@@ -425,6 +452,8 @@ class PolicyConditionClass:
                 section_data = self.get_request_header_data(request_header)
             elif self.section in [ConditionSection.CONTAINER, ConditionSection.CONTAINER_INFO]:
                 section_data = self.get_container_data(container_serial)
+            elif self.section == ConditionSection.REQUEST_DATA:
+                section_data = self.get_data_from_dict(request_data)
             else:  # pragma no cover
                 # We should never reach this case as the section is already evaluated in the setter
                 log.warning(f"Policy '{policy_name}' has condition with unknown section: '{self.section}'")
