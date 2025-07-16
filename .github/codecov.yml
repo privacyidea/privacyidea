@@ -12,7 +12,7 @@ coverage:
     project: # settings affecting project coverage
       default:
         target: auto # auto % coverage target
-        threshold: 3%  # allow for 5% reduction of coverage without failing
+        threshold: 3%  # allow for 3% reduction of coverage without failing
 
     # do not run coverage on patch nor changes
     patch: off
