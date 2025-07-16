@@ -1,6 +1,0 @@
-[report]
-omit =
-
-exclude_lines =
-    pragma: no cover
-    except Exception

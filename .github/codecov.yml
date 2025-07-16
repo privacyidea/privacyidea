@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: (C) 2025 NetKnights GmbH <https://netknights.it>
+#
+# SPDX-License-Identifier: CC0-1.0
+
+# configuration related to pull request comments
+#comment: no # do not comment PR with the result
+
+coverage:
+  range: 70..90 # coverage lower than 70 is red, higher than 90 green, between color code
+
+  status:
+    project: # settings affecting project coverage
+      default:
+        target: auto # auto % coverage target
+        threshold: 3%  # allow for 3% reduction of coverage without failing
+
+    # do not run coverage on patch nor changes
+    patch: off
