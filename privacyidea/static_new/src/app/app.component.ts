@@ -1,11 +1,11 @@
 import { Component, HostListener } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { RouterOutlet } from '@angular/router';
 import { AuthService } from './services/auth/auth.service';
 import { NotificationService } from './services/notification/notification.service';
 import { SessionTimerService } from './services/session-timer/session-timer.service';
 
-export interface PiResponse<Value, Detail = undefined> {
+export interface PiResponse<Value, Detail = unknown> {
   id: number;
   jsonrpc: string;
   detail: Detail;

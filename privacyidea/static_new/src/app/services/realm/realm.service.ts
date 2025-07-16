@@ -1,10 +1,21 @@
-import { computed, effect, Injectable, signal } from '@angular/core';
-import { HttpErrorResponse, httpResource } from '@angular/common/http';
+import {
+  HttpErrorResponse,
+  httpResource,
+  HttpResourceRef,
+} from '@angular/common/http';
+import {
+  computed,
+  effect,
+  Injectable,
+  Signal,
+  signal,
+  WritableSignal,
+} from '@angular/core';
 import { environment } from '../../../environments/environment';
+import { PiResponse } from '../../app.component';
+import { AuthService } from '../auth/auth.service';
 import { LocalService } from '../local/local.service';
 import { NotificationService } from '../notification/notification.service';
-import { AuthService } from '../auth/auth.service';
-import { PiResponse } from '../../app.component';
 
 export type Realms = Map<string, Realm>;
 
@@ -24,10 +35,18 @@ export interface RealmResolver {
   priority: any;
 }
 
+export interface RealmServiceInterface {
+  selectedRealms: WritableSignal<string[]>;
+  realmResource: HttpResourceRef<PiResponse<Realms> | undefined>;
+  realmOptions: Signal<string[]>;
+  defaultRealmResource: HttpResourceRef<PiResponse<Realms> | undefined>;
+  defaultRealm: Signal<string>;
+}
+
 @Injectable({
   providedIn: 'root',
 })
-export class RealmService {
+export class RealmService implements RealmServiceInterface {
   selectedRealms = signal<string[]>([]);
 
   realmResource = httpResource<PiResponse<Realms>>(() => {

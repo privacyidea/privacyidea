@@ -1,13 +1,13 @@
-import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { LocalService } from '../local/local.service';
-import { environment } from '../../../environments/environment';
-import { catchError } from 'rxjs/operators';
+import { Injectable } from '@angular/core';
 import { from, Observable, switchMap, throwError } from 'rxjs';
-import { NotificationService } from '../notification/notification.service';
-import { Base64Service } from '../base64/base64.service';
-import { AuthData, AuthDetail, AuthResponse, AuthService } from '../auth/auth.service';
+import { catchError } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 import { PiResponse } from '../../app.component';
+import { AuthResponse, AuthService } from '../auth/auth.service';
+import { Base64Service } from '../base64/base64.service';
+import { LocalService } from '../local/local.service';
+import { NotificationService } from '../notification/notification.service';
 
 export interface ValidateCheckDetail {
   attributes?: {
@@ -36,10 +36,19 @@ export interface ValidateCheckDetail {
 
 export type ValidateCheckResponse = PiResponse<boolean, ValidateCheckDetail>;
 
+export interface ValidateServiceInterface {
+  testToken(
+    tokenSerial: string,
+    otpOrPinToTest: string,
+    otponly?: string,
+  ): Observable<ValidateCheckResponse>;
+  authenticatePasskey(args?: { isTest?: boolean }): Observable<AuthResponse>;
+}
+
 @Injectable({
   providedIn: 'root',
 })
-export class ValidateService {
+export class ValidateService implements ValidateServiceInterface {
   private baseUrl = environment.proxyUrl + '/validate/';
 
   constructor(
@@ -121,10 +130,7 @@ export class ValidateService {
               ),
             };
             return args?.isTest
-              ? this.http.post<AuthResponse>(
-                  `${this.baseUrl}check`,
-                  params,
-                )
+              ? this.http.post<AuthResponse>(`${this.baseUrl}check`, params)
               : this.authenticationService.authenticate(params);
           }),
         );
