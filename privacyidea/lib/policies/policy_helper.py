@@ -22,7 +22,7 @@ from flask import g
 
 from privacyidea.lib.policy import Match, SCOPE, ACTION
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import parse_timelimit
+from privacyidea.lib.utils import parse_timelimit, AUTH_RESPONSE
 
 log = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ def check_max_auth_fail(user: User, user_search_dict: dict, check_validate_check
     fail_count = 0
     if check_validate_check:
         # Local admins can not authenticate at validate/check, no need to search the audit log for it
-        search_dict = {"action": "%/validate/check"}
+        search_dict = {"action": "%/validate/check", "authentication": f"!{AUTH_RESPONSE.CHALLENGE}"}
         search_dict.update(user_search_dict)
         fail_count = g.audit_object.get_count(search_dict, success=False, timedelta=time_delta)
         log.debug(f"Checking users timelimit {list(max_fail_dict)[0]}: {fail_count} failed authentications with "

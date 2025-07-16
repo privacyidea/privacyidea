@@ -2312,20 +2312,13 @@ def webauthntoken_allowed(request, action):
         # TODO: trust_path can be a certificate chain. All certificates in the
         #  path should be considered
         attestation_cert = trust_path[0] if trust_path else None
-        allowed_certs_pols = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=FIDO2PolicyAction.REQ,
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=False)
+        allowed_certs_pols = Match.user(g, scope=SCOPE.ENROLL, action=FIDO2PolicyAction.REQ,
+                                        user_object=request.User if hasattr(request, 'User')
+                                        else None).action_values(unique=False)
 
-        allowed_aaguids_pols = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST,
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=False,
-                           allow_white_space_in_action=True)
+        allowed_aaguids_pols = Match.user(g, scope=SCOPE.ENROLL, action=FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST,
+                                          user_object=request.User if hasattr(request, 'User')
+                                          else None).action_values(unique=False, allow_white_space_in_action=True)
         allowed_aaguids = set(
             aaguid
             for allowed_aaguid_pol in allowed_aaguids_pols
