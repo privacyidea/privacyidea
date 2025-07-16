@@ -2,16 +2,23 @@ import { Injectable } from '@angular/core';
 import { MatSnackBar, MatSnackBarRef } from '@angular/material/snack-bar';
 import { Subscription, timer } from 'rxjs';
 
+export interface NotificationServiceInterface {
+  remainingTime: number;
+  timerSub: Subscription;
+  startTime: number;
+  openSnackBar(message: string): void;
+}
+
 @Injectable({
   providedIn: 'root',
 })
-export class NotificationService {
-  private totalDuration = 5000;
-  private remainingTime: number = this.totalDuration;
-  private timerSub: Subscription = new Subscription();
-  private startTime: number = 0;
+export class NotificationService implements NotificationServiceInterface {
+  private totalDuration: number = 5000;
+  remainingTime: number = this.totalDuration;
+  timerSub: Subscription = new Subscription();
+  startTime: number = 0;
 
-  constructor(private snackBar: MatSnackBar) {}
+  constructor(readonly snackBar: MatSnackBar) {}
 
   openSnackBar(message: string): void {
     const snackBarRef = this.snackBar.open(message, '🗙', {

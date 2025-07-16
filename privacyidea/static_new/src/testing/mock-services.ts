@@ -1,10 +1,44 @@
-import { linkedSignal, signal, WritableSignal } from '@angular/core';
-import { of } from 'rxjs';
-import { TokenApplication } from '../app/services/machine/machine.service';
-import { MatTableDataSource } from '@angular/material/table';
-import { TokenDetails } from '../app/services/token/token.service';
 import { SelectionModel } from '@angular/cdk/collections';
+import {
+  HttpClient,
+  HttpHeaders,
+  HttpProgressEvent,
+  HttpResourceRef,
+} from '@angular/common/http';
+import {
+  computed,
+  linkedSignal,
+  Resource,
+  ResourceStatus,
+  Signal,
+  signal,
+  WritableSignal,
+} from '@angular/core';
+import { Sort } from '@angular/material/sort';
+import { MatTableDataSource } from '@angular/material/table';
+import { Router } from '@angular/router';
+import { Observable, of, Subscription } from 'rxjs';
+import { PiResponse } from '../app/app.component';
+import { TokenSelectedContentKey } from '../app/components/token/token.component';
+import {
+  AuthRole,
+  AuthServiceInterface,
+} from '../app/services/auth/auth.service';
+import { ContentService } from '../app/services/content/content.service';
+import { LocalService } from '../app/services/local/local.service';
+import {
+  Machines,
+  MachineService,
+  TokenApplication,
+} from '../app/services/machine/machine.service';
+import { NotificationServiceInterface } from '../app/services/notification/notification.service';
+import {
+  FilterPair,
+  TableUtilsService,
+} from '../app/services/table-utils/table-utils.service';
+import { TokenDetails } from '../app/services/token/token.service';
 import { UserData } from '../app/services/user/user.service';
+import { VersioningService } from '../app/services/version/version.service';
 
 export function makeResource<T>(initial: T) {
   return {
@@ -14,18 +48,125 @@ export function makeResource<T>(initial: T) {
   };
 }
 
-export class MockAuthService {
-  role() {
-    return 'admin';
+export class MockHttpResourceRef<T> implements HttpResourceRef<T> {
+  value: WritableSignal<T>;
+  reload = jest.fn();
+  error = signal<Error | null>(null);
+  constructor(initial: T) {
+    this.value = signal(initial) as WritableSignal<T>;
   }
+  headers: Signal<HttpHeaders | undefined> = signal(undefined);
+  statusCode: Signal<number | undefined> = signal(undefined);
+  progress: Signal<HttpProgressEvent | undefined> = signal(undefined);
+  hasValue(): this is HttpResourceRef<Exclude<T, undefined>> {
+    return this.value() !== undefined;
+  }
+  destroy(): void {}
+  set(value: T): void {
+    this.value.set(value);
+  }
+  update(updater: (value: T) => T): void {
+    this.value.set(updater(this.value()));
+  }
+  asReadonly(): Resource<T> {
+    return {
+      value: this.value,
+      reload: this.reload,
+      error: this.error,
+      hasValue: this.hasValue.bind(this),
+      status: signal(ResourceStatus.Resolved),
+      isLoading: signal(false),
+    };
+  }
+  status: Signal<ResourceStatus> = signal(ResourceStatus.Resolved);
+  isLoading: Signal<boolean> = signal(false);
+}
 
-  isAuthenticatedUser() {
-    return true;
-  }
+export class MockPiResponse<T> implements PiResponse<T, undefined> {
+  id: number = 1;
+  jsonrpc: string = '2.0';
+  detail: undefined;
+  result?:
+    | {
+        authentication?: 'CHALLENGE' | 'POLL' | 'PUSH';
+        status: boolean;
+        value?: T | undefined;
+        error?: { code: number; message: string };
+      }
+    | undefined;
+  signature: string = '';
+  time: number = Date.now();
+  version: string = '1.0';
+  versionnumber: string = '1.0';
 
-  user() {
-    return 'alice';
+  static fromValue<T>(value: T): MockPiResponse<T> {
+    const response = new MockPiResponse<T>();
+    response.result = {
+      status: true,
+      value: value,
+    };
+    return response;
   }
+}
+
+export class MockAuthService implements AuthServiceInterface {
+  readonly authUrl = "environmentMock.proxyUrl + '/auth'";
+  isAuthenticated: WritableSignal<boolean> = signal(true);
+  user: WritableSignal<string> = signal('alice');
+  realm: WritableSignal<string> = signal('default');
+  role: WritableSignal<AuthRole> = signal('admin');
+  menus: WritableSignal<string[]> = signal([
+    'token_overview',
+    'token_self-service_menu',
+    'container_overview',
+  ]);
+  isSelfServiceUser: Signal<boolean> = signal(
+    this.role() === 'user' && this.menus().includes('token_self-service_menu'),
+  );
+  authenticate = jest.fn().mockReturnValue(
+    of(
+      MockPiResponse.fromValue({
+        username: 'alice',
+        realm: 'default',
+        role: 'admin',
+        menus: [
+          'token_overview',
+          'token_self-service_menu',
+          'container_overview',
+        ],
+        versionnumber: '1.0',
+      }),
+    ),
+  );
+  acceptAuthentication = jest.fn().mockImplementation(() => {
+    this.isAuthenticated.set(true);
+    this.role.set('admin');
+    this.user.set('alice');
+    this.realm.set('default');
+  });
+
+  deauthenticate = jest.fn().mockImplementation(() => {
+    this.isAuthenticated.set(false);
+    this.role.set('');
+    this.user.set('');
+    this.realm.set('');
+  });
+
+  isAuthenticatedUser = jest
+    .fn()
+    .mockReturnValue(this.isAuthenticated() && this.role() === 'user');
+
+  constructor(
+    readonly http: HttpClient = new HttpClient({} as any),
+    readonly notificationService: NotificationServiceInterface = new MockNotificationService(),
+    readonly versioningService: VersioningService = new VersioningService(),
+  ) {}
+
+  // realm() {
+
+  // user() {
+  //   return 'alice';
+  // }
 }
 
 export class MockUserService {
@@ -43,8 +184,16 @@ export class MockUserService {
   }
 }
 
-export class MockNotificationService {
-  openSnackBar(message: string) {}
+export class MockNotificationService implements NotificationServiceInterface {
+  totalDuration = 5000;
+  remainingTime: number = this.totalDuration;
+  timerSub: Subscription = new Subscription();
+  startTime: number = 0;
+
+  openSnackBar = jest.fn().mockImplementation((message: string) => {
+    // Simulate showing a notification
+    console.log('Mock Notification:', message);
+  });
 }
 
 export class MockValidateService {
@@ -59,9 +208,28 @@ export class MockRealmService {
   selectedRealms = signal<string[]>([]);
 }
 
-export class MockContentService {
+export class MockContentService implements ContentService {
+  router: Router = {
+    url: '/home',
+    events: of({} as any),
+  } as any;
+  routeUrl: Signal<string> = signal('/home');
+  selectedContent: WritableSignal<TokenSelectedContentKey> =
+    signal('token_overview');
+  tokenSerial: WritableSignal<string> = signal('');
+  containerSerial: WritableSignal<string> = signal('');
+
+  tokenSelected = jest.fn().mockImplementation((serial: string) => {
+    this.selectedContent.set('token_details');
+    this.tokenSerial.set(serial);
+  });
+
+  containerSelected = jest.fn().mockImplementation((serial: string) => {
+    this.selectedContent.set('container_details');
+    this.containerSerial.set(serial);
+  });
   isProgrammaticTabChange = signal(false);
-  selectedContent = signal('tokens');
+  constructor(public authService: MockAuthService = new MockAuthService()) {}
 }
 
 export class MockContainerService {
@@ -225,17 +393,170 @@ export class MockTokenService {
   getTokenData = this.getTokenDetails;
 }
 
-export class MockMachineService {
-  selectedApplicationType = signal<'ssh' | 'offline'>('ssh');
-  tokenApplications: WritableSignal<TokenApplication[] | undefined> = signal<
-    TokenApplication[] | undefined
-  >([]);
+export class MockMachineService implements MachineService {
+  filterParams = computed(() => {
+    let allowedKeywords =
+      this.selectedApplicationType() === 'ssh'
+        ? [...this.sshApiFilter, ...this.sshAdvancedApiFilter]
+        : [...this.offlineApiFilter, ...this.offlineAdvancedApiFilter];
 
-  pageSize = jest.fn(() => 10);
-  pageIndex = jest.fn(() => 0);
+    const filterPairs = Object.entries(this.filterValue())
+      .map(([key, value]) => ({ key, value }))
+      .filter(({ key }) => allowedKeywords.includes(key));
+    if (filterPairs.length === 0) {
+      return {};
+    }
+    let params: any = {};
+    filterPairs.forEach(({ key, value }) => {
+      if (['serial'].includes(key)) {
+        params[key] = `*${value}*`;
+      }
+      if (['hostname', 'machineid', 'resolver'].includes(key)) {
+        params[key] = value;
+      }
+      if (
+        this.selectedApplicationType() === 'ssh' &&
+        ['service_id'].includes(key)
+      ) {
+        params[key] = `*${value}*`;
+      }
+      if (
+        this.selectedApplicationType() === 'offline' &&
+        ['count', 'rounds'].includes(key)
+      ) {
+        params[key] = value;
+      }
+    });
+    return params;
+  });
+  baseUrl: string = "environment.mockProxyUrl + '/machine/'";
+  sshApiFilter: string[] = [];
+  sshAdvancedApiFilter: string[] = [];
+  offlineApiFilter: string[] = [];
+  offlineAdvancedApiFilter: string[] = [];
+  selectedContent: WritableSignal<TokenSelectedContentKey> =
+    signal('token_applications');
+  machinesResource = new MockHttpResourceRef(MockPiResponse.fromValue([]));
+
+  machines: WritableSignal<Machines> = signal<Machines>([]);
+  postAssignMachineToToken(args: {
+    service_id: string;
+    user: string;
+    serial: string;
+    application: string;
+    machineid: string;
+    resolver: string;
+  }): Observable<any> {
+    throw new Error('Mock method not implemented.');
+  }
+  filterValue: WritableSignal<Record<string, string>> = signal({});
+  sort: WritableSignal<Sort> = signal({ active: '', direction: '' });
+  tokenApplications: WritableSignal<TokenApplication[]> = signal([]);
+  tokenApplicationResource: HttpResourceRef<
+    PiResponse<TokenApplication[], undefined> | undefined
+  > = new MockHttpResourceRef(MockPiResponse.fromValue([]));
+  // postTokenOption(
+  //   hostname: string,
+  //   machineid: string,
+  //   resolver: string,
+  //   serial: string,
+  //   application: string,
+  //   mtid: string,
+  // ): Observable<any> {
+  //   throw new Error('Mock method not implemented.');
+  // }
+  postTokenOption = jest.fn().mockReturnValue(of({} as any));
+  getAuthItem = jest.fn().mockReturnValue(
+    of({
+      result: {
+        value: { serial: '', machineid: '', resolver: '' },
+      },
+    }),
+  );
+  postToken = jest.fn().mockReturnValue(of({} as any));
+  getMachine = jest.fn().mockReturnValue(
+    of({
+      result: {
+        value: {
+          machines: [
+            {
+              hostname: 'localhost',
+              machineid: 'machine1',
+              resolver: 'resolver1',
+              serial: 'serial1',
+              type: 'ssh',
+              applications: [],
+            },
+          ],
+          count: 1,
+        },
+      },
+    }),
+  );
+  deleteToken = jest.fn().mockReturnValue(of({} as any));
+  deleteTokenMtid = jest.fn().mockReturnValue(of({} as any));
+  onPageEvent = jest.fn();
+  onSortEvent = jest.fn();
+  selectedApplicationType = signal<'ssh' | 'offline'>('ssh');
+
+  pageSize = signal(10);
+  pageIndex = signal(0);
+
+  constructor(
+    public http: HttpClient = new HttpClient({} as any),
+    public localService: LocalService = new LocalService(),
+    public tableUtilsService: TableUtilsService = new MockTableUtilsService(),
+    public contentService: ContentService = new MockContentService(),
+  ) {}
 }
 
-export class MockTableUtilsService {
+export class MockTableUtilsService implements TableUtilsService {
+  parseFilterString(
+    filterValue: string,
+    apiFilter: string[],
+  ): { filterPairs: FilterPair[]; remainingFilterText: string } {
+    throw new Error('Mock method not implemented.');
+  }
+  toggleKeywordInFilter(currentValue: string, keyword: string): string {
+    throw new Error('Mock method not implemented.');
+  }
+  public toggleBooleanInFilter(args: {
+    keyword: string;
+    currentValue: string;
+  }): string {
+    throw new Error('Mock method not implemented.');
+  }
+  getSpanClassForKey(args: {
+    key: string;
+    value?: any;
+    maxfail?: any;
+  }): string {
+    throw new Error('Mock method not implemented.');
+  }
+  getDivClassForKey(
+    key: string,
+  ): '' | 'details-scrollable-container' | 'details-value' {
+    throw new Error('Mock method not implemented.');
+  }
+  getChildClassForColumnKey(columnKey: string): string {
+    throw new Error('Mock method not implemented.');
+  }
+  getDisplayTextForKeyAndRevoked(
+    key: string,
+    value: any,
+    revoked: boolean,
+  ): string {
+    throw new Error('Mock method not implemented.');
+  }
+  getTdClassForKey(key: string): string[] {
+    throw new Error('Mock method not implemented.');
+  }
+  getSpanClassForState(state: string, clickable: boolean): string {
+    throw new Error('Mock method not implemented.');
+  }
+  getDisplayTextForState(state: string): string {
+    throw new Error('Mock method not implemented.');
+  }
   handleColumnClick = jest.fn();
   getClassForColumnKey = jest.fn();
   isLink = jest.fn().mockReturnValue(false);
@@ -261,10 +582,6 @@ export class MockTableUtilsService {
         return dataSource;
       },
     );
-}
-
-export class NotificationService {
-  openSnackBar = jest.fn();
 }
 
 export class MockAuditService {

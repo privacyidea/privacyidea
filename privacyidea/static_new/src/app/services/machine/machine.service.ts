@@ -6,15 +6,15 @@ import {
   signal,
   WritableSignal,
 } from '@angular/core';
-import { LocalService } from '../local/local.service';
-import { environment } from '../../../environments/environment';
-import { TableUtilsService } from '../table-utils/table-utils.service';
 import { Sort } from '@angular/material/sort';
+import { environment } from '../../../environments/environment';
+import { LocalService } from '../local/local.service';
+import { TableUtilsService } from '../table-utils/table-utils.service';
 
-import { Observable } from 'rxjs';
 import { PageEvent } from '@angular/material/paginator';
-import { ContentService } from '../content/content.service';
+import { Observable } from 'rxjs';
 import { PiResponse } from '../../app.component';
+import { ContentService } from '../content/content.service';
 
 type TokenApplications = TokenApplication[];
 
@@ -87,7 +87,7 @@ export class MachineService {
     source: this.selectedApplicationType,
     computation: () => ({}),
   });
-  private filterParams = computed(() => {
+  filterParams = computed(() => {
     let allowedKeywords =
       this.selectedApplicationType() === 'ssh'
         ? [...this.sshApiFilter, ...this.sshAdvancedApiFilter]
@@ -160,10 +160,10 @@ export class MachineService {
   });
 
   constructor(
-    private http: HttpClient,
-    private localService: LocalService,
-    private tableUtilsService: TableUtilsService,
-    private contentService: ContentService,
+    public http: HttpClient,
+    public localService: LocalService,
+    public tableUtilsService: TableUtilsService,
+    public contentService: ContentService,
   ) {}
 
   postTokenOption(

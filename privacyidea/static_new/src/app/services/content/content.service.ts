@@ -1,15 +1,15 @@
 import { inject, Injectable, linkedSignal, signal } from '@angular/core';
-import { AuthService } from '../auth/auth.service';
-import { NavigationEnd, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router } from '@angular/router';
 import { filter, map } from 'rxjs';
 import { TokenSelectedContentKey } from '../../components/token/token.component';
+import { AuthService } from '../auth/auth.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ContentService {
-  private router = inject(Router);
+  readonly router = inject(Router);
   routeUrl = toSignal(
     this.router.events.pipe(
       filter((e): e is NavigationEnd => e instanceof NavigationEnd),
@@ -33,7 +33,7 @@ export class ContentService {
     computation: () => '',
   });
 
-  constructor(private authService: AuthService) {}
+  constructor(public authService: AuthService) {}
 
   tokenSelected(serial: string) {
     if (

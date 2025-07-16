@@ -1,5 +1,5 @@
 import { NgClass } from '@angular/common';
-import { Component, Renderer2 } from '@angular/core';
+import { Component, Inject, Renderer2 } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {
   MatAutocomplete,
@@ -28,7 +28,10 @@ import { NotificationService } from '../../../services/notification/notification
 import { RealmService } from '../../../services/realm/realm.service';
 import { TokenService } from '../../../services/token/token.service';
 import { UserService } from '../../../services/user/user.service';
-import { VersionService } from '../../../services/version/version.service';
+import {
+  VersioningService,
+  VersioningServiceInterface,
+} from '../../../services/version/version.service';
 import { EnrollApplspecComponent } from './enroll-asp/enroll-applspec.component';
 import { EnrollCertificateComponent } from './enroll-certificate/enroll-certificate.component';
 import { EnrollDaypasswordComponent } from './enroll-daypassword/enroll-daypassword.component';
@@ -125,7 +128,8 @@ export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponen
     notificationService: NotificationService,
     userService: UserService,
     tokenService: TokenService,
-    versionService: VersionService,
+    @Inject(VersioningService)
+    versioningService: VersioningServiceInterface,
     contentService: ContentService,
     dialogService: DialogService,
     renderer: Renderer2,
@@ -136,7 +140,7 @@ export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponen
       notificationService,
       userService,
       tokenService,
-      versionService,
+      versioningService,
       contentService,
       dialogService,
       renderer,

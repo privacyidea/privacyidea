@@ -1,31 +1,34 @@
-import { Component } from '@angular/core';
+import { AsyncPipe } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { Component, Inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { MatButton, MatIconButton } from '@angular/material/button';
+import { MatCheckbox } from '@angular/material/checkbox';
+import { MatOption } from '@angular/material/core';
+import { MatDialog } from '@angular/material/dialog';
 import {
   MatAccordion,
   MatExpansionPanel,
   MatExpansionPanelHeader,
   MatExpansionPanelTitle,
 } from '@angular/material/expansion';
-import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
-import { MatOption } from '@angular/material/core';
-import { MatSelect } from '@angular/material/select';
-import { FormsModule } from '@angular/forms';
 import { MatInput } from '@angular/material/input';
-import { MatCheckbox } from '@angular/material/checkbox';
-import { ContainerCreateComponent } from './container-create.component';
-import { AsyncPipe } from '@angular/common';
-import { map } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
+import { MatSelect } from '@angular/material/select';
 import { DomSanitizer } from '@angular/platform-browser';
-import { MatDialog } from '@angular/material/dialog';
-import { VersionService } from '../../../services/version/version.service';
-import { UserService } from '../../../services/user/user.service';
-import { RealmService } from '../../../services/realm/realm.service';
+import { map } from 'rxjs';
 import { ContainerService } from '../../../services/container/container.service';
-import { NotificationService } from '../../../services/notification/notification.service';
-import { TokenService } from '../../../services/token/token.service';
 import { ContentService } from '../../../services/content/content.service';
+import { NotificationService } from '../../../services/notification/notification.service';
+import { RealmService } from '../../../services/realm/realm.service';
+import { TokenService } from '../../../services/token/token.service';
+import { UserService } from '../../../services/user/user.service';
+import {
+  VersioningService,
+  VersioningServiceInterface,
+} from '../../../services/version/version.service';
+import { ContainerCreateComponent } from './container-create.component';
 
 @Component({
   selector: 'app-container-create-wizard',
@@ -67,7 +70,8 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     private http: HttpClient,
     private sanitizer: DomSanitizer,
     registrationDialog: MatDialog,
-    versioningService: VersionService,
+    @Inject(VersioningService)
+    versioningService: VersioningServiceInterface,
     userService: UserService,
     realmService: RealmService,
     containerService: ContainerService,

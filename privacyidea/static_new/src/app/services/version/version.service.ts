@@ -1,9 +1,15 @@
 import { Injectable, signal } from '@angular/core';
 
+export interface VersioningServiceInterface {
+  version: () => string;
+  getVersion(): string;
+  openDocumentation(page: string): void;
+}
+
 @Injectable({
   providedIn: 'root',
 })
-export class VersionService {
+export class VersioningService implements VersioningServiceInterface {
   version = signal('');
 
   constructor() {}

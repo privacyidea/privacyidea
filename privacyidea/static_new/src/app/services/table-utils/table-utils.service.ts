@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { MatTableDataSource } from '@angular/material/table';
 
-interface FilterPair {
+export interface FilterPair {
   key: string;
   value: string;
 }
@@ -185,7 +185,7 @@ export class TableUtilsService {
     return mapValue;
   }
 
-  isLink(columnKey: string) {
+  isLink(columnKey: string): boolean {
     return (
       columnKey === 'username' ||
       columnKey === 'container_serial' ||

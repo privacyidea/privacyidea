@@ -1,32 +1,31 @@
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { MatTabsModule } from '@angular/material/tabs';
 import { MatTableDataSource } from '@angular/material/table';
-
-import { TokenApplicationsSshComponent } from './token-applications-ssh.component';
-import { KeywordFilterComponent } from '../../../shared/keyword-filter/keyword-filter.component';
-import { CopyButtonComponent } from '../../../shared/copy-button/copy-button.component';
-import { TableUtilsService } from '../../../../services/table-utils/table-utils.service';
-import {
-  MachineService,
-  TokenApplication,
-} from '../../../../services/machine/machine.service';
-import { TokenService } from '../../../../services/token/token.service';
-import { ContentService } from '../../../../services/content/content.service';
+import { MatTabsModule } from '@angular/material/tabs';
 import {
   MockMachineService,
   MockTableUtilsService,
 } from '../../../../../testing/mock-services';
-import { signal } from '@angular/core';
+import { ContentService } from '../../../../services/content/content.service';
+import {
+  MachineService,
+  TokenApplication,
+} from '../../../../services/machine/machine.service';
+import { TableUtilsService } from '../../../../services/table-utils/table-utils.service';
+import { TokenService } from '../../../../services/token/token.service';
+import { CopyButtonComponent } from '../../../shared/copy-button/copy-button.component';
+import { KeywordFilterComponent } from '../../../shared/keyword-filter/keyword-filter.component';
+import { TokenApplicationsSshComponent } from './token-applications-ssh.component';
 
 describe('TokenApplicationsSshComponent (Jest)', () => {
   let fixture: ComponentFixture<TokenApplicationsSshComponent>;
   let component: TokenApplicationsSshComponent;
 
-  let mockTokenService: Partial<TokenService>;
+  let mockTokenService: Partial<TokenService> = {};
   const mockContentService = {
     selectedContent: signal('token_applications'),
   };
-  let mockKeywordFilterComponent: Partial<KeywordFilterComponent>;
+  let mockKeywordFilterComponent: Partial<KeywordFilterComponent> = {};
   const machineServiceMock = new MockMachineService();
   const tableUtilsMock = new MockTableUtilsService();
 
@@ -89,7 +88,7 @@ describe('TokenApplicationsSshComponent (Jest)', () => {
           application: '',
         },
       ];
-      machineServiceMock.tokenApplications.set(fakeApps);
+      machineServiceMock.tokenApplications!.set(fakeApps);
 
       // trigger recompute
       fixture.detectChanges();
@@ -103,12 +102,12 @@ describe('TokenApplicationsSshComponent (Jest)', () => {
     });
 
     it('delegates to emptyDataSource when tokenApplications() is falsy', () => {
-      machineServiceMock.tokenApplications.set(undefined);
+      machineServiceMock.tokenApplications!.set([]);
       fixture.detectChanges();
 
       const ds = component.dataSource();
       expect(tableUtilsMock.emptyDataSource).toHaveBeenCalledWith(
-        machineServiceMock.pageSize(),
+        machineServiceMock.pageSize!(),
         component.columnsKeyMap,
       );
       expect((ds as any).isEmpty).toBe(true);
