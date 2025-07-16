@@ -2740,6 +2740,6 @@ def auth_timelimit(request, action):
         result, reply_dict = check_max_auth_success(user, user_search_dict, check_validate_check=not local_admin)
 
     if not result:
-        raise AuthError(_("Authentication failure. Account is temporary locked!"), details=reply_dict)
+        raise AuthError(_("Authentication failure. The account has exceeded the authentication time limit!"), details=reply_dict)
 
     return True
