@@ -434,8 +434,9 @@ class CertificateTokenClass(TokenClass):
         :return: None
         """
         # Remove genkey and otpkey from params to avoid generating an otpkey
-        token_params = {k: v for k, v in param.items() if k not in ["genkey", "otpkey"]}
-        TokenClass.update(self, token_params)
+        param.pop("genkey", None)
+        param.pop("otpkey", None)
+        TokenClass.update(self, param)
 
         request = get_optional(param, "request")
         spkac = get_optional(param, "spkac")
