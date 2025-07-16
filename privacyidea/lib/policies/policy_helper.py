@@ -26,6 +26,7 @@ from privacyidea.lib.utils import parse_timelimit, AUTH_RESPONSE
 
 log = logging.getLogger(__name__)
 
+
 def check_max_auth_fail(user: User, user_search_dict: dict, check_validate_check: bool = True):
     """
     Check if the maximum number of authentication failures is reached.
@@ -43,8 +44,9 @@ def check_max_auth_fail(user: User, user_search_dict: dict, check_validate_check
     fail_count = 0
     if check_validate_check:
         # Local admins can not authenticate at validate/check, no need to search the audit log for it
-        search_dict = {"action": "%/validate/check", "authentication": f"!{AUTH_RESPONSE.CHALLENGE}"}
-        search_dict.update(user_search_dict)
+        # at validate/check users and admins are not distinguished: always search for user
+        search_dict = {"action": "%/validate/check", "authentication": f"!{AUTH_RESPONSE.CHALLENGE}",
+                       "user": user.login, "realm": user_search_dict.get("realm", "%")}
         fail_count = g.audit_object.get_count(search_dict, success=False, timedelta=time_delta)
         log.debug(f"Checking users timelimit {list(max_fail_dict)[0]}: {fail_count} failed authentications with "
                   "/validate/check")

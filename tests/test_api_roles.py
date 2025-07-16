@@ -1410,6 +1410,48 @@ class APISelfserviceTestCase(MyApiTestCase):
         delete_policy("pol_time1")
         delete_policy("pol_loginmode")
 
+    def test_46_auth_timelimit_maxfail_external_admin(self):
+        self.setUp_user_realms()
+        set_realm("adminrealm", resolvers=[{"name": self.resolvername1}])
+
+        set_policy(name="pol_time",
+                   scope=SCOPE.AUTHZ,
+                   action=f"{ACTION.AUTHMAXFAIL}=2/20s")
+
+        # failed auth
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@adminrealm",
+                                                 "password": "wrong"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+
+        # failed validate check
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice@adminrealm",
+                                                 "pass": "wrong"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertFalse(result["value"], result)
+
+
+        # We now cannot authenticate even with the correct PIN
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@adminrealm",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+            details = res.json.get("detail")
+            self.assertEqual(details.get("message"),
+                             "Only 2 failed authentications per 0:00:20 allowed.",
+                             details)
+
+        delete_policy("pol_time")
+
 
 class PolicyConditionsTestCase(MyApiTestCase):
     @ldap3mock.activate
