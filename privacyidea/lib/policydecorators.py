@@ -361,7 +361,7 @@ def auth_user_timelimit(wrapped_function, user, password, options=None):
         if result:
             result, reply_dict = check_max_auth_success(user, user_search_dict)
 
-    # Only execute wrapped function if auth is temporarily locked for the user
+    # Only execute wrapped function if auth is not temporarily locked for the user
     if result:
         result, reply_dict = wrapped_function(user, password, options)
 
