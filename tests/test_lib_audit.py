@@ -165,6 +165,11 @@ class AuditTestCase(MyTestCase):
                                      success=False)
             self.assertEqual(r, 2)
 
+            # get failed authentication
+            r = self.Audit.get_count({"action": "/validate/check", "authentication": "!CHAL%"},
+                                     success=False)
+            self.assertEqual(r, 2)
+
             # get one authentication during the last second
             r = self.Audit.get_count({"action": "/validate/check"}, success=True,
                                      timedelta=datetime.timedelta(seconds=1))

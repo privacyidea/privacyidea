@@ -191,7 +191,7 @@ class APIAuthTestCase(MyApiTestCase):
         for _ in range(2):
             with self.app.test_request_context('/auth',
                                                method='POST',
-                                               data={"username": "selfservice",
+                                               data={"username": "selfservice@adminrealm",
                                                      "password": "wrong"}):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(res.status_code, 401)
@@ -199,7 +199,7 @@ class APIAuthTestCase(MyApiTestCase):
         # We now cannot authenticate even with the correct PIN
         with self.app.test_request_context('/auth',
                                            method='POST',
-                                           data={"username": "selfservice",
+                                           data={"username": "selfservice@adminrealm",
                                                  "password": "test"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 401)

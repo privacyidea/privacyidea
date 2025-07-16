@@ -96,7 +96,7 @@ from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters,
                                               UserAttributes,
                                               get_container_user_attributes)
 from privacyidea.lib.clientapplication import save_clientapplication
-from privacyidea.lib.config import (get_token_class, get_superuser_realms)
+from privacyidea.lib.config import get_token_class
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
 from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
 from privacyidea.lib.token import get_one_token
@@ -2719,7 +2719,7 @@ def auth_timelimit(request, action):
 
     user = request.User
     # check if the user is an admin
-    admin_realms = get_superuser_realms()
+    admin_realms = [x.lower() for x in current_app.config.get("SUPERUSER_REALM", [])]
     local_admin = get_db_admin(user.login)
     if local_admin:
         # local admin

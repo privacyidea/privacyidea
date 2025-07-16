@@ -1141,11 +1141,3 @@ def get_multichallenge_enrollable_types() -> list[str]:
 
         this.config["pi_multichallenge_enrollable_types"] = enrollable_types
     return this.config["pi_multichallenge_enrollable_types"]
-
-
-def get_superuser_realms() -> list[str]:
-    """
-    Returns a list of all realms which are configured as superuser/admin realms. The names are in lowercase.
-    """
-    superuser_realms = [x.lower() for x in this.config.get("SUPERUSER_REALM", [])]
-    return superuser_realms
