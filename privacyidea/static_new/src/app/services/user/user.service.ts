@@ -1,8 +1,9 @@
-import { httpResource } from '@angular/common/http';
+import { httpResource, HttpResourceRef } from '@angular/common/http';
 import {
   computed,
   Injectable,
   linkedSignal,
+  Signal,
   WritableSignal,
 } from '@angular/core';
 import { environment } from '../../../environments/environment';
@@ -26,10 +27,26 @@ export interface UserData {
   username: string;
 }
 
+export interface UserServiceInterface {
+  selectedUserRealm: WritableSignal<string>;
+  selectedUser: Signal<UserData | null>;
+  userFilter: WritableSignal<string | UserData>;
+  userNameFilter: Signal<string>;
+  userResource: HttpResourceRef<PiResponse<UserData[]> | undefined>;
+  user: WritableSignal<UserData>;
+  usersResource: HttpResourceRef<PiResponse<UserData[]> | undefined>;
+  users: WritableSignal<UserData[]>;
+  allUsernames: Signal<string[]>;
+  usersOfRealmResource: HttpResourceRef<PiResponse<UserData[]> | undefined>;
+  filteredUsernames: Signal<string[]>;
+  filteredUsers: Signal<UserData[]>;
+  displayUser(user: UserData | string): string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
-export class UserService {
+export class UserService implements UserServiceInterface {
   private baseUrl = environment.proxyUrl + '/user/';
 
   selectedUserRealm = linkedSignal({

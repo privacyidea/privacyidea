@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { computed, Inject, Injectable, signal } from '@angular/core';
-import { throwError } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { PiResponse } from '../../app.component';
@@ -66,7 +66,7 @@ export interface AuthServiceInterface {
   role: () => AuthRole;
   menus: () => string[];
   isSelfServiceUser: () => boolean;
-  authenticate: (params: any) => any;
+  authenticate: (params: any) => Observable<AuthResponse>;
   isAuthenticatedUser: () => boolean;
   acceptAuthentication: () => void;
   deauthenticate: () => void;
