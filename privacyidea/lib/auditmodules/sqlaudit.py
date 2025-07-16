@@ -239,9 +239,15 @@ class Audit(AuditBase):
                             column = to_isodate(column)
                         search_value = search_value.replace('*', '%')
                         if '%' in search_value:
-                            conditions.append(column.like(search_value))
+                            if search_value.startswith("!"):
+                                conditions.append(column.notlike(search_value[1:]))
+                            else:
+                                conditions.append(column.like(search_value))
                         else:
-                            conditions.append(column == search_value)
+                            if search_value.startswith("!"):
+                                conditions.append(column != search_value[1:])
+                            else:
+                                conditions.append(column == search_value)
                 except Exception as exx:
                     # The search_key was no search key but some
                     # bullshit stuff in the param

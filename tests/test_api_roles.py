@@ -159,6 +159,123 @@ class APIAuthTestCase(MyApiTestCase):
 
         delete_policy("realmadmin")
 
+    def test_04_auth_timelimit_maxfail(self):
+        # Test with local admin
+        set_policy(name="policy", scope=SCOPE.AUTHZ, action=f"{ACTION.AUTHMAXFAIL}=2/20s")
+        self.app_context.g.audit_object.clear()
+        for _ in range(2):
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": self.testadmin,
+                                                     "password": "wrong"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 401)
+
+        # We now cannot authenticate even with the correct PIN
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": self.testadmin,
+                                                 "password": self.testadminpw}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+            details = res.json.get("detail")
+            self.assertEqual(details.get("message"),
+                             "Only 2 failed authentications per 0:00:20 allowed.", details)
+
+        # Test with external admin
+        self.setUp_user_realms()
+        (added, failed) = set_realm("adminrealm",[{'name': self.resolvername1}])
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 1)
+
+        for _ in range(2):
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "selfservice@adminrealm",
+                                                     "password": "wrong"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 401)
+
+        # We now cannot authenticate even with the correct PIN
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@adminrealm",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+            details = res.json.get("detail")
+            self.assertEqual(details.get("message"),
+                             "Only 2 failed authentications per 0:00:20 allowed.", details)
+
+        delete_policy("policy")
+        delete_realm("adminrealm")
+
+    def test_05_auth_timelimit_maxsuccess(self):
+        set_policy(name="policy", scope=SCOPE.AUTHZ, action=f"{ACTION.AUTHMAXSUCCESS}=2/20s")
+        self.app_context.g.audit_object.clear()
+        for _ in range(2):
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": self.testadmin,
+                                                     "password": self.testadminpw}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200)
+
+        # We now cannot authenticate even with the correct PIN
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": self.testadmin,
+                                                 "password": self.testadminpw}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+            details = res.json.get("detail")
+            self.assertEqual(details.get("message"),
+                             "Only 2 successful authentications per 0:00:20 allowed.", details)
+
+        # ... and not with the wrong PIN
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": self.testadmin,
+                                                 "password": "wrong"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+
+        # Test with external admin
+        self.setUp_user_realms()
+        (added, failed) = set_realm("adminrealm", [{'name': self.resolvername1}])
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 1)
+
+        for _ in range(2):
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "selfservice",
+                                                     "password": "test"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200)
+
+        # We now cannot authenticate even with the correct PIN
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+            details = res.json.get("detail")
+            self.assertEqual(details.get("message"),
+                             "Only 2 successful authentications per 0:00:20 allowed.", details)
+
+        # ... and not with the wrong PIN
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice",
+                                                 "password": "wrong"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+
+        delete_policy("policy")
+        delete_realm("adminrealm")
+
 
 class APIAuthChallengeResponse(MyApiTestCase):
 
@@ -1055,7 +1172,7 @@ class APISelfserviceTestCase(MyApiTestCase):
 
         delete_policy("webui5")
 
-    def test_42_auth_timelimit_maxfail(self):
+    def test_42_auth_timelimit_maxfail_auth(self):
         self.setUp_user_realm2()
         # check that AUTHMAXFAIL also takes effect for /auth with loginmode=privacyIDEA
         user = User("timelimituser", realm=self.realm2)
@@ -1086,7 +1203,7 @@ class APISelfserviceTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 401)
             details = res.json.get("detail")
             self.assertEqual(details.get("message"),
-                             "Only 2 failed authentications per 0:00:20",
+                             "Only 2 failed authentications per 0:00:20 allowed.",
                              details)
 
         # and even /validate/check does not work
@@ -1103,6 +1220,7 @@ class APISelfserviceTestCase(MyApiTestCase):
 
         delete_policy("pol_time1")
         delete_policy("pol_loginmode")
+        token.delete_token()
 
     def test_43_auth_timelimit_maxsuccess(self):
         self.setUp_user_realm2()
@@ -1135,7 +1253,7 @@ class APISelfserviceTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 401)
             details = res.json.get("detail")
             self.assertEqual(details.get("message"),
-                             "Only 2 successful authentications per 0:00:20",
+                             "Only 2 successful authentications per 0:00:20 allowed.",
                              details)
 
         # ... and not with the wrong PIN
@@ -1160,6 +1278,179 @@ class APISelfserviceTestCase(MyApiTestCase):
 
         delete_policy("pol_time1")
         delete_policy("pol_loginmode")
+        token.delete_token()
+
+    def test_44_auth_timelimit_maxfail_challenge_response(self):
+        # check with challenge response token
+        self.setUp_user_realm2()
+        user = User("timelimituser", realm=self.realm2)
+        pin = "spass"
+        # create a token
+        token = init_token({"type": "hotp", "genkey": True, "pin": pin}, user=user)
+        set_policy(name="policy", scope=SCOPE.AUTHZ, action=f"{ACTION.AUTHMAXFAIL}=2/20s")
+        set_policy(name="challenge_response", scope=SCOPE.AUTH, action=f"{ACTION.CHALLENGERESPONSE}=hotp")
+        self.app_context.g.audit_object.clear()
+
+        # only triggering challenges should not count for the policy
+        for _ in range(2):
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "timelimituser@" + self.realm2,
+                                                     "pass": pin}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200)
+                result = res.json.get("result")
+                self.assertTrue(result["status"], result)
+                self.assertFalse(result["value"], result)
+                self.assertEqual(result.get("authentication"), "CHALLENGE")
+                detail = res.json.get("detail")
+                transaction_id = detail.get("transaction_id")
+
+        # Answering the last challenge should work
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "timelimituser@" + self.realm2,
+                                                 "pass": token.get_otp()[2],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertTrue(result["value"], result)
+
+        # Trigger new challenge
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "timelimituser@" + self.realm2,
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertFalse(result["value"], result)
+            self.assertEqual(result.get("authentication"), "CHALLENGE")
+            detail = res.json.get("detail")
+            transaction_id = detail.get("transaction_id")
+
+        # Sending wrong OTP values will block the authentication
+        for i in range(2):
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "timelimituser@" + self.realm2,
+                                                     "pass": "123",
+                                                     "transaction_id": transaction_id}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200)
+                result = res.json.get("result")
+                self.assertTrue(result["status"], result)
+                self.assertFalse(result["value"], result)
+                message = res.json.get("detail").get("message")
+                self.assertEqual("Response did not match the challenge.", message)
+
+        # Now sending correct OTP value also fails
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "timelimituser@" + self.realm2,
+                                                 "pass": token.get_otp()[2],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertFalse(result["value"], result)
+            message = res.json.get("detail").get("message")
+            self.assertEqual("Only 2 failed authentications per 0:00:20 allowed.", message)
+
+        delete_policy("policy")
+        delete_policy("challenge_response")
+
+    def test_45_auth_timelimit_maxfail_non_existing_user(self):
+        # Test that the policy also works for non-existing users
+        self.setUp_user_realm2()
+        pin = "spass"
+
+        set_policy(name="pol_time1",
+                   scope=SCOPE.AUTHZ,
+                   action="{0!s}=2/20s".format(ACTION.AUTHMAXFAIL))
+        set_policy(name="pol_loginmode",
+                   scope=SCOPE.WEBUI,
+                   action="{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA))
+        for _ in range(2):
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "eve",
+                                                     "password": "wrong"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 401)
+
+        # We now cannot authenticate even with the correct PIN
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "eve",
+                                                 "password": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+            details = res.json.get("detail")
+            self.assertEqual(details.get("message"),
+                             "Only 2 failed authentications per 0:00:20 allowed.",
+                             details)
+
+        # and even /validate/check does not work
+        # (since it counts /auth *and* /validate/check )
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "eve",
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertFalse(result["value"], result)
+
+        delete_policy("pol_time1")
+        delete_policy("pol_loginmode")
+
+    def test_46_auth_timelimit_maxfail_external_admin(self):
+        self.setUp_user_realms()
+        set_realm("adminrealm", resolvers=[{"name": self.resolvername1}])
+
+        set_policy(name="pol_time",
+                   scope=SCOPE.AUTHZ,
+                   action=f"{ACTION.AUTHMAXFAIL}=2/20s")
+
+        # failed auth
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@adminrealm",
+                                                 "password": "wrong"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+
+        # failed validate check
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice@adminrealm",
+                                                 "pass": "wrong"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertFalse(result["value"], result)
+
+
+        # We now cannot authenticate even with the correct PIN
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@adminrealm",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+            details = res.json.get("detail")
+            self.assertEqual(details.get("message"),
+                             "Only 2 failed authentications per 0:00:20 allowed.",
+                             details)
+
+        delete_policy("pol_time")
 
 
 class PolicyConditionsTestCase(MyApiTestCase):

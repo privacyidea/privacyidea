@@ -71,8 +71,10 @@ from privacyidea.lib import _
 from privacyidea.lib.container import find_container_by_serial, get_container_realms
 from privacyidea.lib.containers.container_info import CHALLENGE_TTL, REGISTRATION_TTL, SERVER_URL
 from privacyidea.lib.error import (PolicyError, RegistrationError,
-                                   TokenAdminError, ResourceNotFoundError)
+                                   TokenAdminError, ResourceNotFoundError, AuthError)
 from flask import g, current_app, Request
+
+from privacyidea.lib.policies.policy_helper import check_max_auth_fail, check_max_auth_success
 from privacyidea.lib.policy import SCOPE, ACTION, REMOTE_USER
 from privacyidea.lib.policy import Match, check_pin
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
@@ -85,7 +87,7 @@ from privacyidea.lib.utils import (parse_timedelta, is_true,
                                    get_module_class,
                                    determine_logged_in_userparams, parse_string_to_dict)
 from privacyidea.lib.crypto import generate_password
-from privacyidea.lib.auth import ROLE
+from privacyidea.lib.auth import ROLE, get_db_admin
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn
 from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters,
                                               get_pushtoken_add_config,
@@ -94,7 +96,7 @@ from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters,
                                               UserAttributes,
                                               get_container_user_attributes)
 from privacyidea.lib.clientapplication import save_clientapplication
-from privacyidea.lib.config import (get_token_class)
+from privacyidea.lib.config import get_token_class
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
 from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
 from privacyidea.lib.token import get_one_token
@@ -2310,20 +2312,13 @@ def webauthntoken_allowed(request, action):
         # TODO: trust_path can be a certificate chain. All certificates in the
         #  path should be considered
         attestation_cert = trust_path[0] if trust_path else None
-        allowed_certs_pols = Match\
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=FIDO2PolicyAction.REQ,
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=False)
+        allowed_certs_pols = Match.user(g, scope=SCOPE.ENROLL, action=FIDO2PolicyAction.REQ,
+                                        user_object=request.User if hasattr(request, 'User')
+                                        else None).action_values(unique=False)
 
-        allowed_aaguids_pols = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST,
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=False,
-                           allow_white_space_in_action=True)
+        allowed_aaguids_pols = Match.user(g, scope=SCOPE.ENROLL, action=FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST,
+                                          user_object=request.User if hasattr(request, 'User')
+                                          else None).action_values(unique=False, allow_white_space_in_action=True)
         allowed_aaguids = set(
             aaguid
             for allowed_aaguid_pol in allowed_aaguids_pols
@@ -2700,11 +2695,51 @@ def disabled_token_types(request, action):
     :return: True
     """
     disabled = Match.user(g, scope=SCOPE.AUTH, action=ACTION.DISABLED_TOKEN_TYPES,
-                             user_object=request.User if hasattr(request, 'User') else None).action_values(unique=False)
+                          user_object=request.User if hasattr(request, 'User') else None).action_values(unique=False)
 
     if disabled:
         request.all_data[ACTION.DISABLED_TOKEN_TYPES] = list(disabled)
     else:
         request.all_data[ACTION.DISABLED_TOKEN_TYPES] = []
+
+    return True
+
+
+def auth_timelimit(request, action):
+    """
+    This decorator retrieves the auth timelimit from the policies and adds it to the request data.
+    The auth timelimit is used to limit the time a user has to complete the authentication process.
+
+    :param request: The request object
+    :param action: The action parameter is not used in this decorator
+    :return: True
+    """
+    if not hasattr(request, 'User') or not request.User:
+        return False
+
+    user = request.User
+    # check if the user is an admin
+    admin_realms = [x.lower() for x in current_app.config.get("SUPERUSER_REALM", [])]
+    local_admin = get_db_admin(user.login)
+    if local_admin:
+        # local admin
+        user = User(login=local_admin.username)
+        user_search_dict = {"user": user.login}
+    elif user.realm and user.realm.lower() in admin_realms:
+        # external admin
+        user_search_dict = {"administrator": user.login, "realm": user.realm}
+    else:
+        # normal user
+        user_search_dict = {"user": user.login, "realm": user.realm}
+
+    # Check policies
+    result, reply_dict = check_max_auth_fail(user, user_search_dict, check_validate_check=not local_admin)
+    if result:
+        if local_admin:
+            user_search_dict = {"administrator": local_admin.username}
+        result, reply_dict = check_max_auth_success(user, user_search_dict, check_validate_check=not local_admin)
+
+    if not result:
+        raise AuthError(_("Authentication failure. The account has exceeded the authentication time limit!"), details=reply_dict)
 
     return True

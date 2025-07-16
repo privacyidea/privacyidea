@@ -14,6 +14,7 @@ from privacyidea.lib.audit import getAudit, search
 from privacyidea.lib.auditmodules.containeraudit import Audit as ContainerAudit
 from privacyidea.lib.auditmodules.loggeraudit import Audit as LoggerAudit
 from privacyidea.lib.auditmodules.sqlaudit import column_length
+from privacyidea.lib.utils import AUTH_RESPONSE
 from .base import MyTestCase, OverrideConfigTestCase
 from testfixtures import log_capture
 
@@ -117,7 +118,15 @@ class AuditTestCase(MyTestCase):
                         "success": True})
         self.Audit.finalize_log()
 
-        self.Audit.log({"action": "/validate/check",
+        self.Audit.log({"action": "/validate/check", "authentication": AUTH_RESPONSE.REJECT,
+                        "success": False})
+        self.Audit.finalize_log()
+
+        self.Audit.log({"action": "/validate/check", "authentication": AUTH_RESPONSE.DECLINED,
+                        "success": False})
+        self.Audit.finalize_log()
+
+        self.Audit.log({"action": "/validate/check", "authentication": AUTH_RESPONSE.CHALLENGE,
                         "success": False})
         self.Audit.finalize_log()
 
@@ -140,11 +149,26 @@ class AuditTestCase(MyTestCase):
 
             # get 4 authentications
             r = self.Audit.get_count({"action": "/validate/check"})
-            self.assertEqual(r, 4)
+            self.assertEqual(r, 6)
 
             # get one failed authentication
             r = self.Audit.get_count({"action": "/validate/check"}, success=False)
+            self.assertEqual(r, 3)
+
+            # get one challenge authentication
+            r = self.Audit.get_count({"action": "/validate/check", "authentication": AUTH_RESPONSE.CHALLENGE},
+                                     success=False)
             self.assertEqual(r, 1)
+
+            # get failed authentication
+            r = self.Audit.get_count({"action": "/validate/check", "authentication": f"!{AUTH_RESPONSE.CHALLENGE}"},
+                                     success=False)
+            self.assertEqual(r, 2)
+
+            # get failed authentication
+            r = self.Audit.get_count({"action": "/validate/check", "authentication": "!CHAL%"},
+                                     success=False)
+            self.assertEqual(r, 2)
 
             # get one authentication during the last second
             r = self.Audit.get_count({"action": "/validate/check"}, success=True,

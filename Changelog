@@ -1,4 +1,9 @@
-Version 3.12dev1, 2025-07-09
+Version 3.12dev1, 2025-07-16
+
+  Fixes:
+  * 'max_auth_fail' and 'max_auth_success' are also applied to local admins and evaluated before checking the password (#4340)
+
+Version 3.12dev0, 2025-07-09
 
   Features:
   * Entra ID and Keycloak resolver (#4217)
