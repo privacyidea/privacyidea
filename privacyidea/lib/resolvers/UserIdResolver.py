@@ -21,6 +21,8 @@
 #            http://www.lsexperts.de
 #            linotp@lsexperts.de
 #
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
 # License as published by the Free Software Foundation; either
@@ -203,19 +205,16 @@ class UserIdResolver(object):
         """
         return False
 
-    def add_user(self, attributes=None):
+    def add_user(self, attributes: dict=None):
         """
         Add a new user in the useridresolver.
         This is only possible, if the UserIdResolver supports this and if
         we have write access to the user store.
 
-        :param username: The login name of the user
-        :type username: basestring
         :param attributes: Attributes according to the attribute mapping
         :return: The new UID of the user. The UserIdResolver needs to
                  determine the way how to create the UID.
         """
-        attributes = attributes or {}
         return None
 
     def delete_user(self, uid):

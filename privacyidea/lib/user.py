@@ -22,6 +22,8 @@
 #            http://www.lsexperts.de
 #            linotp@lsexperts.de
 #
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
 # License as published by the Free Software Foundation; either
@@ -94,7 +96,9 @@ class User(object):
         if resolver == "**":
             resolver = ""
         self.resolver = resolver or ""
-        self.uid = uid
+        # We never specified the type of the UID, but internally we expect it to be a string (i.e. TokenOwner table)
+        # To avoid confusion here if an uid parameter is passed we convert it to a string.
+        self.uid = str(uid) if uid else None
         self.rtype = None
         # Hash of already checked passwords and their result. If a user has multiple token, it is not necessary to check
         # the same password multiple times. However, we can not differentiate between PIN+OTP and just PIN, so this dict
@@ -642,14 +646,14 @@ def split_user(username):
 
     split_at_sign = get_from_config(SYSCONF.SPLITATSIGN, return_bool=True)
     if split_at_sign:
-        l = user.split('@')
-        if len(l) >= 2:
-            if realm_is_defined(l[-1]):
+        user_split = user.split('@')
+        if len(user_split) >= 2:
+            if realm_is_defined(user_split[-1]):
                 # split the last only if the last part is really a realm
                 (user, realm) = user.rsplit('@', 1)
         else:
-            l = user.split('\\')
-            if len(l) >= 2:
+            user_split = user.split('\\')
+            if len(user_split) >= 2:
                 (realm, user) = user.rsplit('\\', 1)
 
     return user, realm
