@@ -1,9 +1,19 @@
 import { Injectable } from '@angular/core';
 
+export interface OverflowServiceInterface {
+  isWidthOverflowing(selector: string, threshold: number): boolean;
+  isHeightOverflowing(params: {
+    selector: string;
+    threshold?: number;
+    thresholdSelector?: string;
+  }): boolean;
+  getOverflowThreshold(selectedContent: string): number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
-export class OverflowService {
+export class OverflowService implements OverflowServiceInterface {
   isWidthOverflowing(selector: string, threshold: number): boolean {
     const element = document.querySelector(selector);
     return element ? element.clientWidth < threshold : false;
@@ -34,7 +44,7 @@ export class OverflowService {
     }
   }
 
-  getOverflowThreshold(selectedContent: string) {
+  getOverflowThreshold(selectedContent: string): number {
     switch (selectedContent) {
       case 'token_details':
         return 1880;

@@ -1,21 +1,20 @@
 import {
-  computed,
-  effect,
-  Injectable,
-  linkedSignal,
-  signal,
-  WritableSignal,
-} from '@angular/core';
-import {
   HttpClient,
   HttpErrorResponse,
   HttpParams,
   httpResource,
+  HttpResourceRef,
 } from '@angular/common/http';
-import { environment } from '../../../environments/environment';
-import { LocalService } from '../local/local.service';
-import { NotificationService } from '../notification/notification.service';
-import { TokenService } from '../token/token.service';
+import {
+  computed,
+  effect,
+  Injectable,
+  linkedSignal,
+  Signal,
+  signal,
+  WritableSignal,
+} from '@angular/core';
+import { Sort } from '@angular/material/sort';
 import {
   catchError,
   forkJoin,
@@ -28,11 +27,14 @@ import {
   throwError,
   timer,
 } from 'rxjs';
-import { Sort } from '@angular/material/sort';
-import { ContainerTypeOption } from '../../components/token/container-create/container-create.component';
-import { ContentService } from '../content/content.service';
+import { environment } from '../../../environments/environment';
 import { PiResponse } from '../../app.component';
+import { ContainerTypeOption } from '../../components/token/container-create/container-create.component';
 import { EnrollmentUrl } from '../../mappers/token-api-payload/_token-api-payload.mapper';
+import { ContentService } from '../content/content.service';
+import { LocalService } from '../local/local.service';
+import { NotificationService } from '../notification/notification.service';
+import { TokenService } from '../token/token.service';
 
 const apiFilter = ['container_serial', 'type', 'user'];
 const advancedApiFilter = ['token_serial'];
@@ -141,10 +143,100 @@ export interface ContainerRegisterData {
   ttl: number;
 }
 
+export interface ContainerServiceInterface {
+  stopPolling$: Subject<void>;
+  containerBaseUrl: string;
+  eventPageSize: number;
+  states: WritableSignal<string[]>;
+  selectedContent: Signal<string>;
+  containerSerial: Signal<string>;
+  selectedContainer: WritableSignal<string>;
+  sort: WritableSignal<Sort>;
+  filterValue: WritableSignal<Record<string, string>>;
+  filterParams: Signal<Record<string, string>>;
+  pageSize: Signal<number>;
+  pageIndex: Signal<number>;
+  loadAllContainers: Signal<boolean>;
+  containerResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
+  containerOptions: Signal<string[]>;
+  filteredContainerOptions: Signal<string[]>;
+  containerSelection: WritableSignal<ContainerDetailData[]>;
+  containerTypesResource: HttpResourceRef<
+    PiResponse<ContainerTypes> | undefined
+  >;
+  containerTypeOptions: Signal<ContainerType[]>;
+  selectedContainerType: Signal<ContainerType>;
+  containerDetailResource: HttpResourceRef<
+    PiResponse<ContainerDetails> | undefined
+  >;
+  containerDetail: WritableSignal<ContainerDetails>;
+  templatesResource: HttpResourceRef<
+    PiResponse<{ templates: ContainerTemplate[] }> | undefined
+  >;
+  templates: Signal<ContainerTemplate[]>;
+  assignContainer: (
+    tokenSerial: string,
+    containerSerial: string,
+  ) => Observable<any>;
+  unassignContainer: (
+    tokenSerial: string,
+    containerSerial: string,
+  ) => Observable<any>;
+  setContainerRealm: (
+    containerSerial: string,
+    value: string[],
+  ) => Observable<any>;
+  setContainerDescription: (
+    containerSerial: string,
+    value: string,
+  ) => Observable<any>;
+
+  toggleActive: (
+    containerSerial: string,
+    states: string[],
+  ) => Observable<PiResponse<{ disabled: boolean } | { active: boolean }>>;
+  unassignUser: (
+    containerSerial: string,
+    username: string,
+    userRealm: string,
+  ) => Observable<any>;
+  assignUser: (args: {
+    containerSerial: string;
+    username: string;
+
+    userRealm: string;
+  }) => Observable<any>;
+  setContainerInfos: (
+    containerSerial: string,
+    infos: any,
+  ) => Observable<Object>[];
+  deleteInfo: (containerSerial: string, key: string) => Observable<any>;
+  addTokenToContainer: (
+    containerSerial: string,
+    tokenSerial: string,
+  ) => Observable<any>;
+  removeTokenFromContainer: (
+    containerSerial: string,
+    tokenSerial: string,
+  ) => Observable<any>;
+  toggleAll: (action: 'activate' | 'deactivate') => Observable<any>;
+  removeAll: (containerSerial: string) => Observable<any>;
+  deleteContainer: (containerSerial: string) => Observable<any>;
+  deleteAllTokens: (param: {
+    containerSerial: string;
+    serialList: string;
+  }) => Observable<any>;
+  registerContainer: (params: {
+    container_serial: string;
+    passphrase_prompt: string;
+    passphrase_response: string;
+  }) => Observable<PiResponse<ContainerRegisterData, unknown>>;
+}
+
 @Injectable({
   providedIn: 'root',
 })
-export class ContainerService {
+export class ContainerService implements ContainerServiceInterface {
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
   stopPolling$ = new Subject<void>();

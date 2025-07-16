@@ -2,6 +2,7 @@ import { SelectionModel } from '@angular/cdk/collections';
 import {
   HttpClient,
   HttpHeaders,
+  HttpParams,
   HttpProgressEvent,
   HttpResourceRef,
 } from '@angular/common/http';
@@ -17,9 +18,14 @@ import {
 import { Sort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { Router } from '@angular/router';
-import { Observable, of, Subscription } from 'rxjs';
+import { Observable, of, Subject, Subscription } from 'rxjs';
 import { PiResponse } from '../app/app.component';
 import { TokenSelectedContentKey } from '../app/components/token/token.component';
+import {
+  EnrollmentResponse,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData,
+} from '../app/mappers/token-api-payload/_token-api-payload.mapper';
 import {
   AuthData,
   AuthDetail,
@@ -27,7 +33,19 @@ import {
   AuthRole,
   AuthServiceInterface,
 } from '../app/services/auth/auth.service';
-import { ContentService } from '../app/services/content/content.service';
+import {
+  ContainerDetailData,
+  ContainerDetails,
+  ContainerRegisterData,
+  ContainerServiceInterface,
+  ContainerTemplate,
+  ContainerType,
+  ContainerTypes,
+} from '../app/services/container/container.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../app/services/content/content.service';
 import { LocalService } from '../app/services/local/local.service';
 import {
   Machines,
@@ -35,6 +53,7 @@ import {
   TokenApplication,
 } from '../app/services/machine/machine.service';
 import { NotificationServiceInterface } from '../app/services/notification/notification.service';
+import { OverflowServiceInterface } from '../app/services/overflow/overflow.service';
 import {
   Realm,
   Realms,
@@ -44,7 +63,14 @@ import {
   FilterPair,
   TableUtilsService,
 } from '../app/services/table-utils/table-utils.service';
-import { TokenDetails } from '../app/services/token/token.service';
+import {
+  LostTokenResponse,
+  TokenDetails,
+  TokenGroups,
+  Tokens,
+  TokenServiceInterface,
+  TokenType,
+} from '../app/services/token/token.service';
 import {
   UserData,
   UserServiceInterface,
@@ -401,7 +427,7 @@ export class MockRealmService implements RealmServiceInterface {
   selectedRealms = signal<string[]>([]);
 }
 
-export class MockContentService implements ContentService {
+export class MockContentService implements ContentServiceInterface {
   router: Router = {
     url: '/home',
     events: of({} as any),
@@ -425,7 +451,106 @@ export class MockContentService implements ContentService {
   constructor(public authService: MockAuthService = new MockAuthService()) {}
 }
 
-export class MockContainerService {
+export class MockContainerService implements ContainerServiceInterface {
+  apiFilter: string[] = [];
+  advancedApiFilter: string[] = [];
+  stopPolling$: Subject<void> = new Subject<void>();
+  containerBaseUrl: string = "mockEnvironment.proxyUrl + '/container'";
+  eventPageSize: number = 10;
+  selectedContent: WritableSignal<TokenSelectedContentKey> =
+    signal('container_overview');
+  sort: WritableSignal<Sort> = signal({ active: 'serial', direction: 'asc' });
+  filterValue: WritableSignal<Record<string, string>> = signal({});
+
+  filterParams: Signal<Record<string, string>> = computed(() =>
+    Object.fromEntries(
+      Object.entries(this.filterValue()).filter(([key]) =>
+        [...this.apiFilter, ...this.advancedApiFilter].includes(key),
+      ),
+    ),
+  );
+  pageSize: WritableSignal<number> = signal(10);
+  pageIndex: WritableSignal<number> = signal(0);
+  loadAllContainers: Signal<boolean> = signal(false);
+  containerResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined> =
+    new MockHttpResourceRef(
+      MockPiResponse.fromValue({
+        containers: [],
+        count: 0,
+      }),
+    );
+  containerOptions: WritableSignal<string[]> = signal([]);
+  filteredContainerOptions: Signal<string[]> = computed(() => {
+    const options = this.containerOptions();
+    const filter = this.filterValue();
+    return options.filter((option) => {
+      return Object.keys(filter).every((key) => {
+        return option.includes(filter[key]);
+      });
+    });
+  });
+  containerSelection: WritableSignal<ContainerDetailData[]> = signal([]);
+  containerTypesResource: HttpResourceRef<
+    PiResponse<ContainerTypes, unknown> | undefined
+  > = new MockHttpResourceRef(
+    MockPiResponse.fromValue<ContainerTypes>(new Map()),
+  );
+
+  containerTypeOptions: Signal<ContainerType[]> = computed(() => {
+    const types = this.containerTypesResource.value()?.result?.value;
+    return types ? Object.values(types) : [];
+  });
+  selectedContainerType: WritableSignal<ContainerType> = signal({
+    containerType: 'generic',
+    description: '',
+    token_types: [],
+  });
+  templatesResource: HttpResourceRef<
+    PiResponse<{ templates: ContainerTemplate[] }, unknown> | undefined
+  > = new MockHttpResourceRef(
+    MockPiResponse.fromValue<{ templates: ContainerTemplate[] }>({
+      templates: [],
+    }),
+  );
+  templates: WritableSignal<ContainerTemplate[]> = signal([]);
+
+  toggleActive = jest.fn().mockReturnValue(of({}));
+  setContainerInfos = jest.fn().mockReturnValue(of({}));
+  deleteInfo = jest.fn().mockReturnValue(of({}));
+  deleteContainer = jest.fn().mockReturnValue(of({}));
+
+  createContainer(param: {
+    container_type: string;
+    description?: string;
+    user_realm?: string;
+    template?: string;
+    user?: string;
+    realm?: string;
+    options?: any;
+  }): Observable<PiResponse<{ container_serial: string }, unknown>> {
+    throw new Error('Method not implemented.');
+  }
+  registerContainer(params: {
+    container_serial: string;
+    passphrase_prompt: string;
+    passphrase_response: string;
+  }): Observable<PiResponse<ContainerRegisterData, unknown>> {
+    throw new Error('Method not implemented.');
+  }
+  stopPolling(): void {
+    throw new Error('Method not implemented.');
+  }
+  getContainerDetails(
+    containerSerial: string,
+  ): Observable<PiResponse<ContainerDetails, unknown>> {
+    throw new Error('Method not implemented.');
+  }
+  pollContainerRolloutState(
+    containerSerial: string,
+    startTime: number,
+  ): Observable<PiResponse<ContainerDetails, unknown>> {
+    throw new Error('Method not implemented.');
+  }
   #containerDetailSignal = signal({
     containers: [
       {
@@ -450,9 +575,31 @@ export class MockContainerService {
   });
   states = signal<string[]>([]);
   containerSerial = signal('CONT-1');
-  containerDetailResource = makeResource({
-    result: { value: { containers: [] } },
-  });
+  containerDetailResource = new MockHttpResourceRef(
+    MockPiResponse.fromValue({
+      containers: [
+        {
+          serial: 'CONT-1',
+          users: [
+            {
+              user_realm: '',
+              user_name: '',
+              user_resolver: '',
+              user_id: '',
+            },
+          ],
+          tokens: [],
+          realms: [],
+          states: [],
+          type: '',
+          select: '',
+          description: '',
+        },
+      ],
+      count: 1,
+    }),
+  );
+
   unassignContainer = jest.fn().mockReturnValue(of(null));
   assignContainer = jest.fn().mockReturnValue(of(null));
   containerDetail = this.#containerDetailSignal;
@@ -506,10 +653,10 @@ export class MockTokenTableComponent {
   pageSizeOptions = signal([5, 10, 25, 50]);
 }
 
-export class MockOverflowService {
+export class MockOverflowService implements OverflowServiceInterface {
   private _overflow = false;
 
-  getOverflowThreshold() {
+  getOverflowThreshold(selectedContent: string): number {
     return 1920;
   }
 
@@ -517,64 +664,192 @@ export class MockOverflowService {
     this._overflow = value;
   }
 
-  isWidthOverflowing(selector: string, threshold: number) {
+  isWidthOverflowing(selector: string, threshold: number): boolean {
     return this._overflow;
   }
 
-  isHeightOverflowing(selector: string, threshold: number) {
+  isHeightOverflowing(args: {
+    selector: string;
+    threshold?: number;
+    thresholdSelector?: string;
+  }): boolean {
     return this._overflow;
   }
 }
 
-export class MockTokenService {
+export class MockTokenService implements TokenServiceInterface {
+  apiFilter: string[] = [];
+  advancedApiFilter: string[] = [];
+  hiddenApiFilter: string[] = [];
+  tokenBaseUrl: string = "mockEnvironment.proxyUrl + '/token'";
+  stopPolling$: Subject<void> = new Subject<void>();
+  tokenIsActive: WritableSignal<boolean> = signal(true);
+  tokenIsRevoked: WritableSignal<boolean> = signal(false);
+  selectedContent: WritableSignal<TokenSelectedContentKey> =
+    signal('token_overview');
+  tokenTypesResource: HttpResourceRef<PiResponse<{}, unknown> | undefined> =
+    new MockHttpResourceRef(MockPiResponse.fromValue({}));
+  sort: WritableSignal<Sort> = signal({ active: 'serial', direction: 'asc' });
+
+  filterParams: Signal<Record<string, string>> = signal({});
+
+  saveTokenDetail = jest
+    .fn()
+    .mockReturnValue(of(MockPiResponse.fromValue<boolean>(true)));
+
+  setTokenInfos(
+    tokenSerial: string,
+    infos: any,
+  ): Observable<PiResponse<boolean, unknown>[]> {
+    throw new Error('Method not implemented.');
+  }
+  deleteToken(tokenSerial: string): Observable<Object> {
+    throw new Error('Method not implemented.');
+  }
+  deleteTokens(tokenSerials: string[]): Observable<Object[]> {
+    throw new Error('Method not implemented.');
+  }
+  revokeToken(tokenSerial: string): Observable<Object> {
+    throw new Error('Method not implemented.');
+  }
+  deleteInfo(tokenSerial: string, infoKey: string): Observable<Object> {
+    throw new Error('Method not implemented.');
+  }
+  unassignUserFromAll(
+    tokenSerials: string[],
+  ): Observable<PiResponse<boolean, unknown>[]> {
+    throw new Error('Method not implemented.');
+  }
+  assignUserToAll(args: {
+    tokenSerials: string[];
+    username: string;
+    realm: string;
+    pin?: string;
+  }): Observable<PiResponse<boolean, unknown>[]> {
+    throw new Error('Method not implemented.');
+  }
+  setPin(tokenSerial: string, userPin: string): Observable<Object> {
+    throw new Error('Method not implemented.');
+  }
+  setRandomPin(tokenSerial: string): Observable<Object> {
+    throw new Error('Method not implemented.');
+  }
+  resyncOTPToken(
+    tokenSerial: string,
+    fristOTPValue: string,
+    secondOTPValue: string,
+  ): Observable<Object> {
+    throw new Error('Method not implemented.');
+  }
+  setTokenRealm(
+    tokenSerial: string,
+    value: string[],
+  ): Observable<PiResponse<boolean, unknown>> {
+    throw new Error('Method not implemented.');
+  }
+  setTokengroup(
+    tokenSerial: string,
+    value: string | string[],
+  ): Observable<Object> {
+    throw new Error('Method not implemented.');
+  }
+  lostToken(tokenSerial: string): Observable<LostTokenResponse> {
+    throw new Error('Method not implemented.');
+  }
+  enrollToken<
+    T extends TokenEnrollmentData,
+    R extends EnrollmentResponse,
+  >(args: { data: T; mapper: TokenApiPayloadMapper<T> }): Observable<R> {
+    throw new Error('Method not implemented.');
+  }
+  getTokengroups(): Observable<PiResponse<TokenGroups, unknown>> {
+    throw new Error('Method not implemented.');
+  }
+  getSerial(
+    otp: string,
+    params: HttpParams,
+  ): Observable<PiResponse<{ count: number; serial?: string }, unknown>> {
+    throw new Error('Method not implemented.');
+  }
+  pollTokenRolloutState(args: {
+    tokenSerial: string;
+    initDelay: number;
+  }): Observable<PiResponse<Tokens>> {
+    throw new Error('Method not implemented.');
+  }
+  stopPolling(): void {
+    throw new Error('Method not implemented.');
+  }
   showOnlyTokenNotInContainer = signal(false);
-  tokenDetailResource = makeResource<{
-    result: { value: { tokens: TokenDetails[] } };
-  }>({
-    result: {
-      value: {
-        tokens: [
-          {
-            tokentype: 'hotp',
-            active: true,
-            revoked: false,
-            container_serial: 'CONT-1',
-            realms: [],
-            count: 0,
-            count_window: 0,
-            description: '',
-            failcount: 0,
-            id: 0,
-            info: {},
-            locked: false,
-            maxfail: 0,
-            otplen: 0,
-            resolver: '',
-            rollout_state: '',
-            serial: '',
-            sync_window: 0,
-            tokengroup: [],
-            user_id: '',
-            user_realm: '',
-            username: '',
-          },
-        ],
-      },
-    },
-  });
+  tokenDetailResource = new MockHttpResourceRef(
+    MockPiResponse.fromValue<Tokens>({
+      count: 1,
+      current: 1,
+      tokens: [
+        {
+          tokentype: 'hotp',
+          active: true,
+          revoked: false,
+          container_serial: 'CONT-1',
+          realms: [],
+          count: 0,
+          count_window: 0,
+          description: '',
+          failcount: 0,
+          id: 0,
+          info: {},
+          locked: false,
+          maxfail: 0,
+          otplen: 0,
+          resolver: '',
+          rollout_state: '',
+          serial: '',
+          sync_window: 0,
+          tokengroup: [],
+          user_id: '',
+          user_realm: '',
+          username: '',
+        },
+      ],
+    }),
+  );
   tokenSerial = signal('');
   filterValue = signal<Record<string, string>>({});
   pageIndex = signal(0);
   pageSize = signal(10);
-  tokenTypeOptions: WritableSignal<string[]> = signal(['hotp', 'totp', 'push']);
+  tokenTypeOptions: WritableSignal<TokenType[]> = signal<TokenType[]>([
+    {
+      key: 'hotp',
+      info: '',
+      text: 'HMAC-based One-Time Password',
+    },
+    {
+      key: 'totp',
+      info: '',
+      text: 'Time-based One-Time Password',
+    },
+    {
+      key: 'push',
+      info: '',
+      text: 'Push Notification',
+    },
+  ]);
   tokenSelection: WritableSignal<TokenDetails[]> = signal<TokenDetails[]>([]);
-  defaultSizeOptions = signal([10, 25, 50, 100]);
+  defaultSizeOptions: number[] = [10, 25, 50, 100];
   eventPageSize = 10;
-  selectedTokenType = signal('hotp');
-
-  tokenResource = makeResource({
-    result: { value: { tokens: [], count: 0 } },
+  selectedTokenType: WritableSignal<TokenType> = signal({
+    key: 'hotp',
+    info: '',
+    text: 'HMAC-based One-Time Password',
   });
+
+  tokenResource = new MockHttpResourceRef(
+    MockPiResponse.fromValue<Tokens>({
+      count: 0,
+      current: 0,
+      tokens: [],
+    }),
+  );
 
   getTokenDetails = jest.fn().mockReturnValue(of({}));
   getRealms = jest.fn().mockReturnValue(of({ result: { value: [] } }));

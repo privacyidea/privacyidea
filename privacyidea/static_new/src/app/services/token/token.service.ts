@@ -1,17 +1,20 @@
 import {
-  computed,
-  effect,
-  Injectable,
-  linkedSignal,
-  signal,
-  WritableSignal,
-} from '@angular/core';
-import {
   HttpClient,
   HttpErrorResponse,
   HttpParams,
   httpResource,
+  HttpResourceRef,
 } from '@angular/common/http';
+import {
+  computed,
+  effect,
+  Injectable,
+  linkedSignal,
+  Signal,
+  signal,
+  WritableSignal,
+} from '@angular/core';
+import { Sort } from '@angular/material/sort';
 import {
   forkJoin,
   Observable,
@@ -21,21 +24,20 @@ import {
   timer,
 } from 'rxjs';
 import { catchError, shareReplay, takeUntil, takeWhile } from 'rxjs/operators';
-import { LocalService } from '../local/local.service';
-import { Sort } from '@angular/material/sort';
 import { environment } from '../../../environments/environment';
-import { NotificationService } from '../notification/notification.service';
+import { PiResponse } from '../../app.component';
 import {
   TokenComponent,
   TokenTypeOption as TokenTypeKey,
 } from '../../components/token/token.component';
-import { ContentService } from '../content/content.service';
-import { PiResponse } from '../../app.component';
 import {
   EnrollmentResponse,
   TokenApiPayloadMapper,
   TokenEnrollmentData,
 } from '../../mappers/token-api-payload/_token-api-payload.mapper';
+import { ContentService } from '../content/content.service';
+import { LocalService } from '../local/local.service';
+import { NotificationService } from '../notification/notification.service';
 
 const apiFilter = [
   'serial',
@@ -137,10 +139,76 @@ export interface LostTokenData {
   valid_to: string;
 }
 
+export interface TokenServiceInterface {
+  stopPolling$: Subject<void>;
+  tokenBaseUrl: string;
+  eventPageSize: number;
+  selectedContent: Signal<string>;
+  tokenSerial: Signal<string>;
+  selectedTokenType: Signal<TokenType>;
+  showOnlyTokenNotInContainer: WritableSignal<boolean>;
+  filterValue: WritableSignal<Record<string, string>>;
+  tokenDetailResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
+  tokenTypesResource: HttpResourceRef<PiResponse<{}> | undefined>;
+  tokenTypeOptions: Signal<TokenType[]>;
+  pageSize: WritableSignal<number>;
+
+  sort: WritableSignal<Sort>;
+  pageIndex: WritableSignal<number>;
+  filterParams: Signal<Record<string, string>>;
+  tokenResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
+  tokenSelection: WritableSignal<TokenDetails[]>;
+  toggleActive(
+    tokenSerial: string,
+    active: boolean,
+  ): Observable<PiResponse<boolean>>;
+  resetFailCount(tokenSerial: string): Observable<PiResponse<boolean>>;
+  saveTokenDetail(
+    tokenSerial: string,
+    key: string,
+    value: any,
+  ): Observable<PiResponse<boolean>>;
+
+  setTokenInfos(
+    tokenSerial: string,
+    infos: any,
+  ): Observable<PiResponse<boolean>[]>;
+
+  deleteToken(tokenSerial: string): Observable<Object>;
+
+  deleteTokens(tokenSerials: string[]): Observable<Object[]>;
+
+  revokeToken(tokenSerial: string): Observable<any>;
+
+  deleteInfo(tokenSerial: string, infoKey: string): Observable<Object>;
+  unassignUserFromAll(
+    tokenSerials: string[],
+  ): Observable<PiResponse<boolean>[]>;
+
+  unassignUser(tokenSerial: string): Observable<PiResponse<boolean>>;
+
+  assignUserToAll(args: {
+    tokenSerials: string[];
+    username: string;
+    realm: string;
+    pin?: string;
+  }): Observable<PiResponse<boolean>[]>;
+
+  assignUser(args: {
+    tokenSerial: string;
+    username: string;
+    realm: string;
+    pin: string;
+  }): Observable<PiResponse<boolean>>;
+
+  setPin(tokenSerial: string, userPin: string): Observable<any>;
+  setRandomPin(tokenSerial: string): Observable<any>;
+}
+
 @Injectable({
   providedIn: 'root',
 })
-export class TokenService {
+export class TokenService implements TokenServiceInterface {
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
   readonly hiddenApiFilter = hiddenApiFilter;
