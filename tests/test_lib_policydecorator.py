@@ -28,6 +28,7 @@ from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.token import (init_token, remove_token, check_user_pass,
                                    get_tokens)
 from privacyidea.lib.user import User
+from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.models import AuthCache
 from . import radiusmock
 from .base import MyTestCase, FakeFlaskG, FakeAudit
@@ -984,6 +985,8 @@ class LibPolicyTestCase(MyTestCase):
                                                  "user": user.login,
                                                  "realm": user.realm,
                                                  "resolver": user.resolver})
+            if endpoint == "/validate/check":
+                self.app_context.g.audit_object.log({"authentication": AUTH_RESPONSE.REJECT})
             self.app_context.g.audit_object.finalize_log()
 
         # Number of failed audits reached
@@ -1044,6 +1047,8 @@ class LibPolicyTestCase(MyTestCase):
                                                  "user": user.login,
                                                  "realm": user.realm,
                                                  "resolver": user.resolver})
+            if endpoint == "/validate/check":
+                self.app_context.g.audit_object.log({"authentication": AUTH_RESPONSE.REJECT})
             self.app_context.g.audit_object.finalize_log()
         # Policy for failed authentications is checked first
         success, reply_dict = auth_user_timelimit(mock_check_user_pass, user, pin, options=options)

@@ -217,6 +217,9 @@ invalidated.
 
 Allowed time specifiers are *s* (second), *m* (minute) and *h* (hour).
 
+This policy applies to ``/auth`` and ``/validate/check`` and holds for both admins and users. The policy is
+evaluated before checking the password or OTP value.
+
 .. note:: This policy depends on reading the audit log. If you use a
    non-readable audit log like :ref:`logger_audit` this policy will not
    work.
@@ -238,6 +241,9 @@ Specify the value like ``2/1m`` meaning 2 failed authentication requests per min
 failed authentications were performed the authentication request is discarded. The used OTP value is invalidated.
 
 Allowed time specifiers are *s* (second), *m* (minute) and *h* (hour).
+
+This policy applies to ``/auth`` and ``/validate/check`` and holds for both admins and users. The policy is
+evaluated before checking the password or OTP value.
 
 .. note:: This policy depends on reading the audit log. If you use a non-readable audit log like :ref:`logger_audit`
     this policy will not work.
