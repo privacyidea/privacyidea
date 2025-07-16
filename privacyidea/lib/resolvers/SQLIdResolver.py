@@ -10,6 +10,8 @@
 #             Simplifying out of bounds check
 #             Avoid repetition in comparison
 #
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
 # License as published by the Free Software Foundation; either
@@ -633,7 +635,7 @@ class IdResolver (UserIdResolver):
 
         return num, desc
 
-    def add_user(self, attributes=None):
+    def add_user(self, attributes: dict=None):
         """
         Add a new user to the SQL database.
 
