@@ -825,19 +825,6 @@ def check_serial(serial):
     return result, new_serial
 
 @log_with(log)
-def check_token_exists(*args, **kwargs):
-    """
-    This checks if a token with the given serial number exists.
-    If the token exists, True is returned, otherwise False.
-
-    :param serial: Serial number to check if it exists
-    :type serial: str
-    :return: True if the token exists, False otherwise
-    :rtype: bool
-    """
-    return get_tokens(*args, **kwargs) > 0
-
-@log_with(log)
 def get_num_tokens_in_realm(realm, active=True):
     """
     This returns the number of tokens in one realm.
