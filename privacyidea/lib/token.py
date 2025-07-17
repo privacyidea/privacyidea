@@ -824,6 +824,18 @@ def check_serial(serial):
 
     return result, new_serial
 
+@log_with(log)
+def check_token_exists(*args, **kwargs):
+    """
+    This checks if a token with the given serial number exists.
+    If the token exists, True is returned, otherwise False.
+
+    :param serial: Serial number to check if it exists
+    :type serial: str
+    :return: True if the token exists, False otherwise
+    :rtype: bool
+    """
+    return get_tokens(*args, **kwargs) > 0
 
 @log_with(log)
 def get_num_tokens_in_realm(realm, active=True):
@@ -2982,9 +2994,7 @@ def export_tokens(tokens: list[TokenClass]) -> str:
     :param tokens: list of token objects
     :return: JSON string representing a list of token dictionaries
     """
-    exported_tokens = []
-    for token in tokens:
-        exported_tokens.append(token.export_token())
+    exported_tokens = [token.export_token() for token in tokens]
 
     json_export = json.dumps(exported_tokens, default=repr, indent=2)
     return json_export
@@ -3004,20 +3014,20 @@ def import_tokens(tokens: str, update_existing_tokens: bool = True) -> TokenImpo
         for token_info_dict in tokens:
             serial = token_info_dict.get("serial")
             try:
-                serial_not_exists, a = check_serial(serial)  # replace check_serial
-                if serial_not_exists:
+                existing_token = get_one_token(serial=serial, silent_fail=True)
+                if not existing_token:
                     token_type = token_info_dict.get("type")
                     db_token = Token(serial, tokentype=token_type.lower())
                     token = create_tokenclass_object(db_token)
                     token.import_token(token_info_dict)
                     successful_tokens.append(serial)
                 elif update_existing_tokens:
-                    token = get_one_token(serial=serial)
-                    token.import_token(token_info_dict)
+                    existing_token.import_token(token_info_dict)
                     updated_tokens.append(serial)
                 else:
-                    raise TokenAdminError(f"Token with serial {serial} already exists. "
-                                          f"Set update_existing=True to update the token.")
+                    log.info(f"Token with serial {serial} already exists. "
+                             f"Set update_existing=True to update the token.")
+                    failed_tokens.append(serial)
             except Exception as e:
                 log.error(f"Could not import token {serial}: {e}")
                 failed_tokens.append(serial)

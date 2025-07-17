@@ -2009,7 +2009,7 @@ class TokenClass(object):
             "serial": self.token.serial,
             "otpkey": self.token.get_otpkey().getKey().decode("utf-8"),
             "otplen": self.token.otplen,
-            "_hashed_pin": self.token.pin_hash,
+            "hashed_pin": self.token.pin_hash,
             "tokeninfo": self.get_tokeninfo(decrypted=True)
         }
 
@@ -2019,13 +2019,10 @@ class TokenClass(object):
         """
         Import a given token.
         """
-        try:
-            self.token.set_otpkey(token_information.setdefault("otpkey", ''))
-            self.token.otplen = int(token_information.setdefault("otplen", 6))
-            self.token.description = token_information.setdefault("description", '')
-            self.token.pin_hash = token_information.setdefault("_hashed_pin", None)
-            self.add_tokeninfo_dict(token_information.setdefault("tokeninfo", {}))
-            self.add_tokeninfo("import_date", datetime.now(timezone.utc).isoformat(timespec="seconds"))
-            self.save()
-        except Exception as exx:
-            log.error(f'Failed to import token: {exx}')
+        self.token.set_otpkey(token_information.setdefault("otpkey", ''))
+        self.token.otplen = int(token_information.setdefault("otplen", 6))
+        self.token.description = token_information.setdefault("description", '')
+        self.token.pin_hash = token_information.setdefault("_hashed_pin", None)
+        self.add_tokeninfo_dict(token_information.setdefault("tokeninfo", {}))
+        self.add_tokeninfo("import_date", datetime.now(timezone.utc).isoformat(timespec="seconds"))
+        self.save()

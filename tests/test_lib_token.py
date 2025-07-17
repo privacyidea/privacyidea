@@ -1793,7 +1793,7 @@ class TokenTestCase(MyTestCase):
         hotptoken.delete_token()
         totptoken.delete_token()
 
-        # Impoert tokens
+        # Import tokens
         imported_tokens = import_tokens(exported_tokens)
         hotptoken = get_tokens(serial="OATH12345678")[0]
         totptoken = get_tokens(serial="TOTP12345678")[0]
@@ -1807,23 +1807,23 @@ class TokenTestCase(MyTestCase):
         self.assertEqual(totptoken.token.serial, "TOTP12345678")
         self.assertEqual(totptoken.token.tokentype, "totp")
 
+        # Test updating existing tokens
         hotptoken.set_description("this will be replaced by the import")
         totptoken.set_description("this will be replaced by the import")
         self.assertEqual(hotptoken.token.description, "this will be replaced by the import")
         self.assertEqual(totptoken.token.description, "this will be replaced by the import")
 
-        # Updating the tokens
         updated_tokens = import_tokens(exported_tokens, update_existing_tokens=True)
         self.assertEqual(hotptoken.token.description, "Hotp Token")
         self.assertEqual(totptoken.token.description, "Totp Token")
         self.assertEqual(len(updated_tokens.updated_tokens), 2)
 
+        # Test not updating existing tokens
         hotptoken.set_description("this will not be replaced by the import")
         totptoken.set_description("this will not be replaced by the import")
         self.assertEqual(hotptoken.token.description, "this will not be replaced by the import")
         self.assertEqual(totptoken.token.description, "this will not be replaced by the import")
 
-        # Import token but not updating
         updated_tokens = import_tokens(exported_tokens, update_existing_tokens=False)
         self.assertEqual(hotptoken.token.description, "this will not be replaced by the import")
         self.assertEqual(totptoken.token.description, "this will not be replaced by the import")
