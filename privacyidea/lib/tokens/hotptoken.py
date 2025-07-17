@@ -183,7 +183,7 @@ class HotpTokenClass(TokenClass):
                        'hotp_otplen': {'type': 'int',
                                        'value': [6, 8],
                                        'desc': HotpTokenClass.desc_otp_len},
-                       'hotp_force_server_generate': {
+                       ACTION.FORCE_SERVER_GENERATE: {
                            'type': 'bool',
                            'desc': HotpTokenClass.desc_key_gen},
                        'hotp_2step': {'type': 'str',
@@ -201,7 +201,9 @@ class HotpTokenClass(TokenClass):
                                        'desc': HotpTokenClass.desc_otp_len},
                        'hotp_2step': {'type': 'str',
                                       'value': ['allow', 'force'],
-                                      'desc': HotpTokenClass.desc_two_step_admin}
+                                      'desc': HotpTokenClass.desc_two_step_admin},
+                       ACTION.FORCE_SERVER_GENERATE: {'type': 'bool',
+                                                      'desc': HotpTokenClass.desc_key_gen}
                    }
                }
                }

@@ -18,6 +18,8 @@ This file contains the definition of the password token class
 
 import logging
 
+from flask_babel import lazy_gettext
+
 from privacyidea.lib.crypto import zerome, safe_compare
 from privacyidea.lib.utils import to_unicode
 from privacyidea.lib.tokenclass import TokenClass
@@ -49,6 +51,7 @@ class PasswordTokenClass(TokenClass):
     password_detail_key = "password"  # nosec B105 # key name
     default_length = DEFAULT_LENGTH
     default_contents = DEFAULT_CONTENTS
+    desc_key_gen = lazy_gettext("Force the key to be generated on the server.")
 
     class SecretPassword(object):
 

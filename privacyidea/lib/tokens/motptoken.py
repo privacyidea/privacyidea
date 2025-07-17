@@ -37,6 +37,8 @@ described in motp.sourceforge.net.
 
 The code is tested in tests/test_lib_tokens_motp
 """
+from flask_babel import lazy_gettext
+
 from .mOTP import mTimeOtp
 from privacyidea.lib.apps import create_motp_url
 from privacyidea.lib.tokenclass import TokenClass
@@ -56,6 +58,8 @@ log = logging.getLogger(__name__)
 
 
 class MotpTokenClass(TokenClass):
+
+    desc_key_gen = lazy_gettext("Force the key to be generated on the server.")
 
     @staticmethod
     def get_class_type():
@@ -96,6 +100,14 @@ class MotpTokenClass(TokenClass):
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
                'policy': {
+                   SCOPE.ADMIN: {
+                       ACTION.FORCE_SERVER_GENERATE: {'type': 'bool',
+                                                      'desc': MotpTokenClass.desc_key_gen}
+                   },
+                   SCOPE.USER: {
+                       ACTION.FORCE_SERVER_GENERATE: {'type': 'bool',
+                                                      'desc': MotpTokenClass.desc_key_gen}
+                   },
                    SCOPE.ENROLL: {
                        ACTION.MAXTOKENUSER: {
                            'type': 'int',
