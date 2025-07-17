@@ -2998,27 +2998,28 @@ def import_tokens(tokens: str, update_existing_tokens: bool = True) -> TokenImpo
     failed_tokens = []
     try:
         tokens = json.loads(tokens)
-        for token_info_dict in tokens:
-            serial = token_info_dict.get("serial")
-            try:
-                existing_token = get_one_token(serial=serial, silent_fail=True)
-                if not existing_token:
-                    token_type = token_info_dict.get("type")
-                    db_token = Token(serial, tokentype=token_type.lower())
-                    token = create_tokenclass_object(db_token)
-                    token.import_token(token_info_dict)
-                    successful_tokens.append(serial)
-                elif update_existing_tokens:
-                    existing_token.import_token(token_info_dict)
-                    updated_tokens.append(serial)
-                else:
-                    log.info(f"Token with serial {serial} already exists. "
-                             f"Set update_existing=True to update the token.")
-                    failed_tokens.append(serial)
-            except Exception as e:
-                log.error(f"Could not import token {serial}: {e}")
-                failed_tokens.append(serial)
     except Exception as ex:
         raise TokenAdminError(f"Could not parse the token import data from JSON: {ex}")
+
+    for token_info_dict in tokens:
+        serial = token_info_dict.get("serial")
+        try:
+            existing_token = get_one_token(serial=serial, silent_fail=True)
+            if not existing_token:
+                token_type = token_info_dict.get("type")
+                db_token = Token(serial, tokentype=token_type.lower())
+                token = create_tokenclass_object(db_token)
+                token.import_token(token_info_dict)
+                successful_tokens.append(serial)
+            elif update_existing_tokens:
+                existing_token.import_token(token_info_dict)
+                updated_tokens.append(serial)
+            else:
+                log.info(f"Token with serial {serial} already exists. "
+                         f"Set update_existing=True to update the token.")
+                failed_tokens.append(serial)
+        except Exception as e:
+            log.error(f"Could not import token {serial}: {e}")
+            failed_tokens.append(serial)
     return TokenImportResult(successful_tokens=successful_tokens, updated_tokens=updated_tokens,
                              failed_tokens=failed_tokens)
