@@ -5,17 +5,10 @@ Authorization policies
 
 .. index:: authorization policies
 
-The scope *authorization* provides means to define
-what should happen if a user proved their identity
-and authenticated successfully.
+The scope *authorization* provides means of granting permission, independently of the actual authentication process.
 
-Authorization policies take the realm, the user
-and the client into account.
-
-Technically the authorization policies apply
-to the :ref:`rest_validate` and are checked
-using :ref:`code_policy` and
-:ref:`policy_decorators`.
+Authorization policies can evaluate a wide range of parameters, such as the user, the token type,
+the IP address of the request or even custom request parameters.
 
 The following actions are available in the scope
 *authorization*:
