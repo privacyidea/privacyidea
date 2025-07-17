@@ -12,6 +12,7 @@ getTokens4UserOrSerial
 gettokensoftype
 getToken....
 """
+import json
 import logging
 from testfixtures import LogCapture
 from privacyidea.lib.container import init_container, add_token_to_container, find_container_by_serial
@@ -20,7 +21,7 @@ from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import (TokenClass, TOKENKIND,
                                         FAILCOUNTER_EXCEEDED,
                                         FAILCOUNTER_CLEAR_TIMEOUT)
-from privacyidea.lib.token import weigh_token_type
+from privacyidea.lib.token import weigh_token_type, import_tokens, export_tokens
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.models import (db, Token, Challenge, TokenRealm)
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
@@ -1751,6 +1752,90 @@ class TokenTestCase(MyTestCase):
         totp_enroll_url = totp.get_enroll_url(User(), {})
         self.assertEqual(totp_init["googleurl"]["value"], totp_enroll_url)
 
+    def test_61_import_list_of_tokens(self):
+        # Import a list of tokens
+        tokens = [
+            {"serial": "12345678901234567890", "type": "hotp", "otplen": "6"},
+            {"serial": "12345678901234567890123456789012", "type": "totp", "otplen": "8"},
+            {"serial": "987654321", "type": "hotp", "otplen": "6", "otpkey": "12345"}
+        ]
+        a = import_tokens(json.dumps(tokens))
+        imported_tokens = get_tokens()
+        for token in tokens:
+            serial = token["serial"]
+            self.assertEqual(get_tokens(serial=serial)[0].token.serial, serial)
+
+        # Clean up the imported tokens
+        remove_token(imported_tokens[0].token.serial)
+        remove_token(imported_tokens[1].token.serial)
+        remove_token(imported_tokens[2].token.serial)
+
+    def test_62_token_import_and_export(self):
+        hotptoken = init_token(param={'serial': "OATH12345678",
+                                      'type': 'hotp',
+                                      'otpkey': self.otpkey,
+                                      "otplen": '8',
+                                      "description": "Hotp Token"})
+        totptoken = init_token(param={'serial': "TOTP12345678",
+                                      'type': 'totp',
+                                      'otpkey': self.otpkey,
+                                      "otplen": '8',
+                                      "description": "Totp Token"})
+
+        # Export the tokens
+        exported_tokens = export_tokens([hotptoken, totptoken])
+        self.assertIn('"type": "hotp"', exported_tokens)
+        self.assertIn('"serial": "OATH12345678"', exported_tokens)
+        self.assertIn('"type": "totp"', exported_tokens)
+        self.assertIn('"serial": "TOTP12345678"', exported_tokens)
+
+        # Remove the tokens
+        hotptoken.delete_token()
+        totptoken.delete_token()
+
+        # Import tokens
+        imported_tokens = import_tokens(exported_tokens)
+        hotptoken = get_tokens(serial="OATH12345678")[0]
+        totptoken = get_tokens(serial="TOTP12345678")[0]
+        self.assertEqual(len(imported_tokens.successful_tokens), 2)
+        self.assertEqual(len(imported_tokens.failed_tokens), 0)
+        self.assertEqual(len(imported_tokens.updated_tokens), 0)
+        self.assertIn('OATH12345678', imported_tokens.successful_tokens)
+        self.assertIn('TOTP12345678', imported_tokens.successful_tokens)
+        self.assertEqual(hotptoken.token.serial, "OATH12345678")
+        self.assertEqual(hotptoken.token.tokentype, "hotp")
+        self.assertEqual(totptoken.token.serial, "TOTP12345678")
+        self.assertEqual(totptoken.token.tokentype, "totp")
+
+        # Test updating existing tokens
+        hotptoken.set_description("this will be replaced by the import")
+        totptoken.set_description("this will be replaced by the import")
+        self.assertEqual(hotptoken.token.description, "this will be replaced by the import")
+        self.assertEqual(totptoken.token.description, "this will be replaced by the import")
+
+        updated_tokens = import_tokens(exported_tokens, update_existing_tokens=True)
+        self.assertEqual(hotptoken.token.description, "Hotp Token")
+        self.assertEqual(totptoken.token.description, "Totp Token")
+        self.assertEqual(len(updated_tokens.updated_tokens), 2)
+
+        # Test not updating existing tokens
+        hotptoken.set_description("this will not be replaced by the import")
+        totptoken.set_description("this will not be replaced by the import")
+        self.assertEqual(hotptoken.token.description, "this will not be replaced by the import")
+        self.assertEqual(totptoken.token.description, "this will not be replaced by the import")
+
+        updated_tokens = import_tokens(exported_tokens, update_existing_tokens=False)
+        self.assertEqual(hotptoken.token.description, "this will not be replaced by the import")
+        self.assertEqual(totptoken.token.description, "this will not be replaced by the import")
+        self.assertEqual(len(updated_tokens.failed_tokens), 2)
+
+        # Remove the tokens
+        hotptoken.delete_token()
+        totptoken.delete_token()
+
+        # Import format not supported
+        self.assertRaises(TokenAdminError, import_tokens, "This is not a valid JSON string")
+
 class TokenOutOfBandTestCase(MyTestCase):
 
     def test_00_create_realms(self):
@@ -2312,62 +2397,6 @@ class ExportAndReencryptTestCase(MyTestCase):
             if d.get("type") == "totp":
                 tokeninfo = d.get("info_list")
                 self.assertEqual("30", tokeninfo.get("timeStep"), d)
-
-    def test_01_token_dump_load(self):
-        from privacyidea.lib.token import token_dump, token_load
-        self.setUp_user_realms()
-        key = "1234567890123456"
-        pin = "1234"
-        tokenobject = init_token({"serial": "s2",
-                                  "pin": pin,
-                                  "otpkey": key},
-                                 user=User("hans", self.realm1))
-        tokenobject.add_tokeninfo("secretkey", "secretvalue", value_type="password")
-        d = token_dump(tokenobject)
-        self.assertEqual(True, d.get("active"))
-        self.assertEqual("", d.get("description"))
-        self.assertEqual("software", d.get("info_list").get("tokenkind"))
-        self.assertEqual("sha1", d.get("info_list").get("hashlib"))
-        self.assertEqual(key, d.get("otpkey"))
-        self.assertNotIn("key_inc", d)
-        self.assertNotIn("key_iv", d)
-        self.assertNotIn("id", d)
-        tokeninfo = d.get("info_list")
-        # Check the encrypted values
-        self.assertEqual("secretvalue", tokeninfo.get("secretkey"))
-        self.assertEqual("password", tokeninfo.get("secretkey.type"))
-        tokenowner = d.get("owners")[0]
-        self.assertEqual("1118", tokenowner.get("uid"))
-        self.assertEqual("hans", tokenowner.get("login"))
-        self.assertEqual("resolver1", tokenowner.get("resolver"))
-        self.assertEqual("realm1", tokenowner.get("realm"))
-
-        # A token should not be overwritten, if it already exists
-        self.assertRaises(TokenAdminError, token_load, d)
-
-        # We overwrite the token
-        token_load(d, overwrite=True)
-
-        # We load a new token.
-        d["serial"] = "s3"
-        token_load(d)
-        # Read the token s3 from the database and check the PIN, that has been copied from token s2 to token s3
-        tok = get_one_token(serial="s3")
-        self.assertTrue(tok.check_pin(pin))
-
-        # Check the owner of the token
-        self.assertEqual("hans", tok.user.login)
-        self.assertEqual(self.realm1, tok.user.realm)
-
-        # Now we load the 3rd token, with a user, that does not exist
-        d["serial"] = "s4"
-        # Set an invalid uid, so that the user can not be assigned.
-        d["owners"][0]["uid"] = "987654321"
-        self.assertRaises(TokenAdminError, token_load, d)
-        tok = get_one_token(serial="s4")
-        # A user was not assigned
-        self.assertEqual(None, tok.user)
-
 
 class TestMultipleUserToken(MyTestCase):
     def test_01_user_with_multiple_token(self):

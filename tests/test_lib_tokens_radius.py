@@ -2,6 +2,7 @@
 This test file tests the lib.tokens.radiustoken
 This depends on lib.tokenclass
 """
+import json
 import logging
 from testfixtures import LogCapture
 
@@ -12,7 +13,7 @@ from privacyidea.models import Token
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.config import set_privacyidea_config
 from . import radiusmock
-from privacyidea.lib.token import init_token
+from privacyidea.lib.token import init_token, get_tokens, import_tokens
 from privacyidea.lib.radiusserver import add_radius
 
 DICT_FILE = "tests/testdata/dictionary"
@@ -372,3 +373,28 @@ class RadiusTokenTestCase(MyTestCase):
         r, otp_count, _rpl = token.authenticate("some_remote_value")
         self.assertFalse(r)
         self.assertTrue(otp_count < 0)
+
+    def test_17_radius_token_export(self):
+        token = init_token(param={'serial': "OATH12345678",
+                                  'type': 'radius',
+                                  'otpkey': self.otpkey,
+                                  'radius.server': 'my.radius.server:1812',
+                                  'radius.secret': 'testing',
+                                  'radius.user': 'user1'})
+        self.assertRaises(NotImplementedError, token.export_token)
+
+        # Clean up
+        token.token.delete()
+
+    def test_18_radius_token_import(self):
+        token_data = [{
+            "serial": "123456",
+            "type": "radius",
+            "description": "this token can't be imported",
+            "otpkey": self.otpkey,
+            "issuer": "privacyIDEA",
+        }]
+        before_import = get_tokens()
+        import_tokens(json.dumps(token_data))
+        after_import = get_tokens()
+        self.assertEqual(len(before_import), len(after_import))

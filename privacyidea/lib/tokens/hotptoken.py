@@ -903,3 +903,22 @@ class HotpTokenClass(TokenClass):
         init_details = self.get_init_detail(params, user)
         enroll_url = init_details.get("googleurl").get("value")
         return enroll_url
+
+
+    def export_token(self) -> dict:
+        """
+        Create a dictionary with the token information that can be exported.
+        """
+        token_dict = TokenClass.export_token(self)
+        token_dict["otplen"] = self.token.otplen
+        token_dict["count"] = self.token.count
+        return token_dict
+
+    def import_token(self, token_information: dict):
+        """
+        Import a hotp token.
+        """
+        TokenClass.import_token(self, token_information)
+        self.token.otplen = int(token_information.get("otplen", 6))
+        self.token.count = token_information.get("count", 0)
+        self.token.save()

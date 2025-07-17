@@ -28,7 +28,7 @@ from webauthn.helpers.structs import AttestationConveyancePreference
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.error import EnrollmentError, ParameterError, ResourceNotFoundError
 from privacyidea.lib.policy import SCOPE, ACTION
-from privacyidea.lib.token import (init_token, remove_token, unassign_token)
+from privacyidea.lib.token import (init_token, remove_token, unassign_token, import_tokens, get_tokens)
 from privacyidea.lib.fido2.util import get_credential_ids_for_user, get_fido2_token_by_credential_id, hash_credential_id
 from privacyidea.lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from privacyidea.lib.tokenclass import ROLLOUTSTATE, TokenClass
@@ -338,3 +338,85 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
             TokenCredentialIdHash.credential_id_hash == credential_id_hash).one()
         self.assertTrue(tcih)
         self.assertEqual(tcih.token_id, token2.token.id)
+
+    def test_10_passkey_token_export(self):
+        # Set up the passkey token for testing
+        token = self._create_token()
+
+        # Test that all expected keys are present in the exported dictionary
+        exported_data = token.export_token()
+
+        expected_keys = ["serial", "type", "description", "otpkey"]
+        self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
+
+        expected_tokeninfo_keys = ["public_key", "attestation_certificate"]
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+
+        # Test that the exported values match the token's data
+        exported_data = token.export_token()
+        self.assertEqual(exported_data["serial"], token.token.serial)
+        self.assertEqual(exported_data["type"], "passkey")
+        self.assertEqual(exported_data["description"], "Yubico U2F EE Serial 2109467376")
+        self.assertEqual(exported_data["otpkey"], "T9TJpDbUuq0TIdIpErltERuboEdR1GBa7pVtdYMQYTQZ582wmBwp5TWuZ_sE_Ag4")
+        self.assertEqual(exported_data["issuer"], "privacyIDEA")
+
+        # Clean up
+        remove_token(token.token.serial)
+
+    def test_11_passkey_token_import(self):
+        # Define the token data to be imported
+        attestation_certificate = ('-----BEGIN CERTIFICATE-----MIIC2TCCAcGgAwIBAgIJAPDqu31oBEyKMA0GCSqGSIb3DQEBCwUAMC'
+                                   '4xLDAqBgNVBAMTI1l1YmljbyBVMkYgUm9vdCBDQSBTZXJpYWwgNDU3MjAwNjMxMCAXDTE0MDgwMTAwMDA'
+                                   'wMFoYDzIwNTAwOTA0MDAwMDAwWjBvMQswCQYDVQQGEwJTRTESMBAGA1UECgwJWXViaWNvIEFCMSIwIAYD'
+                                   'VQQLDBlBdXRoZW50aWNhdG9yIEF0dGVzdGF0aW9uMSgwJgYDVQQDDB9ZdWJpY28gVTJGIEVFIFNlcmlhb'
+                                   'CAyMTA5NDY3Mzc2MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE5mfTO7qcRZuAnvzLaguuLFz8S9eB1X'
+                                   'NIPZb96SUfZCzN5sIGVRTzM4JGrJlSgAAq0jivvANxttf6w7/LnnnSMKOBgTB/MBMGCisGAQQBgsQKDQE'
+                                   'EBQQDBQQDMCIGCSsGAQQBgsQKAgQVMS4zLjYuMS40LjEuNDE0ODIuMS43MBMGCysGAQQBguUcAgEBBAQDA'
+                                   'gQwMCEGCysGAQQBguUcAQEEBBIEEC/AV5+BE0fqsRa7Wo25ICowDAYDVR0TAQH/BAIwADANBgkqhkiG9w'
+                                   '0BAQsFAAOCAQEAtjGoKNeTOK0pAIoNf3mjoD3PLgybH2L6z7SKnlWVd6dRbJWbZCsY8AxMdyKNGfnUQiJ'
+                                   'cEmi9IxigjGoXcwZPApnJm7JDike7Z7HQ2yUrlJZ+EgFamivp5C3UVCaIkGH+HyJW/vh23XOZMkaDcRqw'
+                                   'beq8b0Voavnu4YF5bCM7PtnsPcCsvfL5DahPGSfpc9YyANG49OQBOZolNF3MBKKrspOAI7RfW0JSQY0NU'
+                                   'nWFYx9hxFbNuYsKFN4NblJ/Zz9tMk1YYSkTJ6VfxHTo5tfIcaLfZ1dIrMeY12+WevjMufFW/qB4ErY5Gj'
+                                   'ft3cbiZBELmbQ9QLUyLX78lHiLC9pJIg==-----END CERTIFICATE-----')
+        token_data = [{
+            "serial": 'PIPK0004EFE2',
+            "type": 'passkey',
+            "description": 'Yubico U2F EE Serial 2109467376',
+            "otpkey": 'T9TJpDbUuq0TIdIpErltERuboEdR1GBa7pVtdYMQYTQZ582wmBwp5TWuZ_sE_Ag4',
+            "issuer": "privacyIDEA",
+            "tokeninfo": {
+                'aaguid': '2fc0579f-8113-47ea-b116-bb5a8db9202a',
+                'attestation_certificate': attestation_certificate,
+                'backed_up': 'False',
+                'credential_id_hash': '80a8d88c16b2808e9f52b9d14354432fd5205af665ea9a0878035c2b6cdba259',
+                'device_type': 'single_device',
+                'fido2_user_id': 'UpXCQyj0vXH06j3QRgKrOVYfaB7pstU9apV57SeHMUOtq3HLcbfzZx2mGdWxD4OF8-_0BEFUf_7qe-LfHAptag',
+                'public_key': 'pQECAyYgASFYIE_UyaQ21LqtEyHSKRJpShO-wOGDv7qDWURk30_U26xtIlgglAzzrE4UkAFqhrNdg2OToNFk6it8EAzLuZwfWM8neyc',
+                'relying_party_id': 'cool.nils',
+                'relying_party_name': 'cool.nils',
+                'sign_count': '4'
+            }
+        }]
+
+        # Import the token
+        import_tokens(json.dumps(token_data))
+
+        # Retrieve the imported token
+        token = get_tokens(serial=token_data[0]["serial"])[0]
+
+        # Verify that the token data matches the imported data
+        self.assertEqual(token.token.serial, token_data[0]["serial"])
+        self.assertEqual(token.type, token_data[0]["type"])
+        self.assertEqual(token.token.description, token_data[0]["description"])
+        self.assertEqual(token.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
+
+        # Check that the token actually works
+        challenge = self._initialize_authentication()
+        # UserVerification is preferred by default
+        authentication_response = self.authentication_response_no_uv
+        authentication_response["HTTP_ORIGIN"] = self.expected_origin
+        success = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
+        self.assertEqual(success, 1)
+
+        # Clean up
+        remove_token(token.token.serial)

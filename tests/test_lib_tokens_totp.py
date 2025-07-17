@@ -3,9 +3,12 @@ This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
+import json
 import logging
 
 from testfixtures import LogCapture
+
+from privacyidea.lib.token import init_token, remove_token, import_tokens, get_tokens
 from .base import MyTestCase, FakeAudit, FakeFlaskG
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
@@ -817,3 +820,74 @@ class TOTPTokenTestCase(MyTestCase):
         p = TotpTokenClass.get_default_settings(g, params)
         self.assertEqual(p, {})
         delete_policy("pol1")
+
+    def test_28_totp_token_export(self):
+        # Set up the TOTP token for testing
+        totptoken = init_token(param={'serial': "TOTP12345678", 'type': 'totp', 'otpkey': '12345', "otplen": '8'})
+        totptoken.set_description("this is a totp token export test")
+        totptoken.add_tokeninfo("hashlib", "sha256")
+
+        # Test that all expected keys are present in the exported dictionary
+        exported_data = totptoken.export_token()
+
+        expected_keys = ["serial", "type", "description", "count", "otplen", "otpkey"]
+        self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
+
+        expected_tokeninfo_keys = ["hashlib", "tokenkind", "timeWindow", "timeStep", "timeShift"]
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+
+        # Test that the exported values match the token's data
+        exported_data = totptoken.export_token()
+        self.assertEqual(exported_data["serial"], "TOTP12345678")
+        self.assertEqual(exported_data["type"], "totp")
+        self.assertEqual(exported_data["description"], "this is a totp token export test")
+        self.assertEqual(exported_data["tokeninfo"]["hashlib"], "sha256")
+        self.assertEqual(exported_data["otplen"], 8)
+        self.assertEqual(exported_data["otpkey"], '12345')
+        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
+        self.assertEqual(exported_data["issuer"], "privacyIDEA")
+
+        # Clean up
+        remove_token(totptoken.token.serial)
+
+    def test_29_totp_token_import(self):
+        # Define the token data to be imported
+        token_data = [{
+            "serial": "TOTP12345678",
+            "type": "totp",
+            "description": "this is a totp token import test",
+            "otpkey": self.otpkey,
+            "otplen": 8,
+            "issuer": "privacyIDEA",
+            "count": 0,
+            "tokeninfo": {"hashlib": "sha256", "timeShift": 0, "timeStep": 60, "timeWindow": 180,
+                          "tokenkind": "software"}
+        }]
+
+        # Import the token
+        import_tokens(json.dumps(token_data))
+
+        # Retrieve the imported token
+        totptoken = get_tokens(serial=token_data[0]["serial"])[0]
+
+        # Verify that the token data matches the imported data
+        self.assertEqual(totptoken.token.serial, token_data[0]["serial"])
+        self.assertEqual(totptoken.type, token_data[0]["type"])
+        self.assertEqual(totptoken.token.description, token_data[0]["description"])
+        self.assertEqual(totptoken.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
+        self.assertEqual(totptoken.get_tokeninfo("hashlib"), "sha256")
+        self.assertEqual(totptoken.token.otplen, token_data[0]["otplen"])
+        self.assertEqual(totptoken.get_tokeninfo("tokenkind"), "software")
+        self.assertEqual(totptoken.get_tokeninfo("timeWindow"), "180")
+        self.assertEqual(totptoken.get_tokeninfo("timeStep"), "60")
+        self.assertEqual(totptoken.get_tokeninfo("timeShift"), "0")
+
+        # Check that token works
+        with mock.patch('time.time') as MockTime:
+            MockTime.return_value = 1692662723.0  # 2023-08-22T00:55:23+00:00
+            # Current OTP works
+            # Found the counter 470184
+            self.assertEqual(28211045, totptoken.check_otp('34965900'))
+
+        # Clean up
+        remove_token(totptoken.token.serial)
