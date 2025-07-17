@@ -353,14 +353,16 @@ class HotpTokenClass(TokenClass):
 
         # check if the key_size is provided
         # if not, we could derive it from the hashlib
-        key_size = getParam(upd_param, 'key_size', optional) \
-                   or getParam(upd_param, 'keysize', optional)
+        key_size = upd_param.get('key_size') or upd_param.get('keysize')
         if key_size is None:
             upd_param['keysize'] = keylen.get(hashlibStr)
 
-        otpKey = getParam(upd_param, "otpkey", optional)
-        genkey = is_true(getParam(upd_param, "genkey", optional))
-        if genkey and otpKey:
+        otp_key = upd_param.get("otpkey")
+        force_genkey = param.get(f"{self.get_tokentype()}_{ACTION.FORCE_SERVER_GENERATE}")
+        if force_genkey or not otp_key:
+            upd_param["genkey"] = True
+        genkey = is_true(upd_param.get("genkey"))
+        if genkey and otp_key:
             # The Base TokenClass does not allow otpkey and genkey at the
             # same time
             del upd_param['otpkey']

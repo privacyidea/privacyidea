@@ -28,7 +28,6 @@ from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 from privacyidea.api.lib.prepolicy import _generate_pin_from_policy
-from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.utils import is_true
 
 optional = True
@@ -153,14 +152,18 @@ class PasswordTokenClass(TokenClass):
         :type param: dict
         :return: None
         """
-        genkey = is_true(getParam(param, "genkey", optional=True))
+        otp_key = param.get("otpkey")
+        force_genkey = param.get(f"{self.get_tokentype()}_{ACTION.FORCE_SERVER_GENERATE}")
+        if force_genkey or not otp_key:
+            param["genkey"] = True
+        genkey = is_true(param.get("genkey"))
         if genkey:
             # Otherwise genkey and otpkey will raise an exception in
             # PasswordTokenClass
             del param["genkey"]
             type_prefix = self.get_class_type()
-            length_param = "{0!s}.length".format(type_prefix)
-            contents_param = "{0!s}.contents".format(type_prefix)
+            length_param = f"{type_prefix}.length"
+            contents_param = f"{type_prefix}.contents"
             if length_param in param:
                 size = param[length_param]
                 del param[length_param]
@@ -172,8 +175,8 @@ class PasswordTokenClass(TokenClass):
             else:
                 contents = self.otp_contents
             param["otpkey"] = _generate_pin_from_policy(contents, size=int(size))
-        if "otpkey" in param:
-            param["otplen"] = len(param["otpkey"])
+        if otp_key:
+            param["otplen"] = len(otp_key)
         TokenClass.update(self, param)
 
     @log_with(log, log_entry=False)

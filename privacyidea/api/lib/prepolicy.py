@@ -1605,6 +1605,24 @@ def check_token_init(request=None, action=None):
     return True
 
 
+def force_server_generate_key(request=None, action=None):
+    """
+    Checks if for the given token type a policy to force the server to generate the key is set.
+
+    :param request:
+    :param action:
+    :return: True
+    """
+    params = request.all_data
+    tokentype = params.get("type", "HOTP")
+    action = f"{tokentype.lower()}_{ACTION.FORCE_SERVER_GENERATE}"
+    force_genkey = Match.admin_or_user(g, action=action, user_obj=request.User).allowed()
+    if force_genkey:
+        g.policies[action] = True
+
+    return True
+
+
 def check_external(request=None, action="init"):
     """
     This decorator is a hook to an external check function, that is called
@@ -2740,6 +2758,7 @@ def auth_timelimit(request, action):
         result, reply_dict = check_max_auth_success(user, user_search_dict, check_validate_check=not local_admin)
 
     if not result:
-        raise AuthError(_("Authentication failure. The account has exceeded the authentication time limit!"), details=reply_dict)
+        raise AuthError(_("Authentication failure. The account has exceeded the authentication time limit!"),
+                        details=reply_dict)
 
     return True

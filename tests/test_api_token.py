@@ -3264,6 +3264,94 @@ class APITokenTestCase(MyApiTestCase):
         remove_token(token.get_serial())
         delete_policy("helpdesk")
 
+    def test_62_init_token_with_force_genkey(self):
+        set_policy("enroll", scope=SCOPE.ADMIN, action="enrollHOTP, enrollTOTP, enrollMOTP, enrollAPPLSPEC")
+        # No policy set: but if genkey and otpkey are not provided, genkey is also set to true
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "hotp"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            serial = res.json["detail"].get("serial")
+            remove_token(serial)
+
+        # Set policy to enforce genkey
+        set_policy("hotp_genkey", scope=SCOPE.ADMIN, action=f"hotp_{ACTION.FORCE_SERVER_GENERATE}")
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "hotp"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            serial = res.json["detail"].get("serial")
+            remove_token(serial)
+
+        # passing key will be ignored
+        otpkey = "3132333435363738393031323334353637383930"
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "hotp", "otpkey": otpkey},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("detail")
+            used_key = result.get("otpkey").get("value")
+            self.assertNotIn(otpkey, used_key)
+            serial = res.json["detail"].get("serial")
+            remove_token(serial)
+        delete_policy("hotp_genkey")
+
+        # TOTP
+        set_policy("totp_genkey", scope=SCOPE.ADMIN, action=f"totp_{ACTION.FORCE_SERVER_GENERATE}")
+        otpkey = "3132333435363738393031323334353637383930"
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "totp", "otpkey": otpkey},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("detail")
+            used_key = result.get("otpkey").get("value")
+            self.assertNotIn(otpkey, used_key)
+            serial = res.json["detail"].get("serial")
+            remove_token(serial)
+        delete_policy("totp_genkey")
+
+        # MOTP
+        set_policy("motp_genkey", scope=SCOPE.ADMIN, action=f"motp_{ACTION.FORCE_SERVER_GENERATE}")
+        otpkey = "3132333435363738393031323334353637383930"
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "motp", "otpkey": otpkey, "motppin": "123"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("detail")
+            used_key = result.get("otpkey").get("value")
+            self.assertNotIn(otpkey, used_key)
+            serial = res.json["detail"].get("serial")
+            remove_token(serial)
+        delete_policy("motp_genkey")
+
+        # applspec
+        set_policy("applspec_genkey", scope=SCOPE.ADMIN, action=f"applspec_{ACTION.FORCE_SERVER_GENERATE}")
+        otpkey = "3132333435363738393031323334353637383930"
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "applspec", "otpkey": otpkey, "service_id": "123"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("detail")
+            used_key = result.get("otpkey").get("value")
+            self.assertNotIn(otpkey, used_key)
+            serial = res.json["detail"].get("serial")
+            remove_token(serial)
+        delete_policy("applspec_genkey")
+        delete_policy("enroll")
+
+
 
 class API00TokenPerformance(MyApiTestCase):
     token_count = 21

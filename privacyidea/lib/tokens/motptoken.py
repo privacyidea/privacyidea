@@ -58,7 +58,6 @@ log = logging.getLogger(__name__)
 
 
 class MotpTokenClass(TokenClass):
-
     desc_key_gen = lazy_gettext("Force the key to be generated on the server.")
 
     @staticmethod
@@ -163,7 +162,7 @@ class MotpTokenClass(TokenClass):
                                                   "value": motp_url,
                                                   "img": create_img(motp_url)
                                                   }
-                except Exception as ex:   # pragma: no cover
+                except Exception as ex:  # pragma: no cover
                     log.debug("{0!s}".format(traceback.format_exc()))
                     log.error('failed to set motp url: {0!r}'.format(ex))
 
@@ -180,7 +179,11 @@ class MotpTokenClass(TokenClass):
         :return: nothing
         """
         if self.hKeyRequired is True:
-            genkey = is_true(getParam(param, "genkey", optional))
+            otp_key = param.get("otpkey")
+            force_genkey = param.get(f"{self.get_tokentype()}_{ACTION.FORCE_SERVER_GENERATE}")
+            if force_genkey or not otp_key:
+                param["genkey"] = True
+            genkey = is_true(param.get("genkey"))
             if not param.get('keysize'):
                 param['keysize'] = 16
             if genkey:
