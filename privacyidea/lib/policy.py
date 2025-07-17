@@ -227,7 +227,7 @@ class SCOPE(object):
     WEBUI = "webui"
     REGISTER = "register"
     CONTAINER = "container"
-    MANAGEMENT = "management"
+    TOKEN = "token"
 
     @classmethod
     def get_all_scopes(cls) -> list[str]:
@@ -235,7 +235,7 @@ class SCOPE(object):
         Return all valid scopes as a list
         """
         valid_scopes = [cls.AUTHZ, cls.ADMIN, cls.AUTH, cls.AUDIT, cls.USER, cls.ENROLL, cls.WEBUI, cls.REGISTER,
-                        cls.CONTAINER, cls.MANAGEMENT]
+                        cls.CONTAINER, cls.TOKEN]
         return valid_scopes
 
 
@@ -3027,7 +3027,7 @@ def get_static_policy_definitions(scope=None):
                 'group': GROUP.SMARTPHONE
             }
         },
-        SCOPE.MANAGEMENT: {
+        SCOPE.TOKEN: {
             ACTION.REQUIRE_DESCRIPTION_ON_EDIT: {
                 'type': 'str',
                 'desc': _('This action makes the description required for all '

@@ -2540,7 +2540,7 @@ def require_description_on_edit(request=None, action=None):
     (role, username, realm, admin_user, admin_realm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     action_values = Match.generic(g, action=ACTION.REQUIRE_DESCRIPTION_ON_EDIT,
-                                  scope=SCOPE.MANAGEMENT,
+                                  scope=SCOPE.TOKEN,
                                   adminrealm=admin_realm,
                                   adminuser=admin_user,
                                   user=username,

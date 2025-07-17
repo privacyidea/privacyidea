@@ -1,15 +1,14 @@
-.. _management_policies:
+.. _token_policies:
 
-Management policies
+Token policies
 -------------------
 
-.. index:: management policies
+.. index:: token policies
 
-The scope *management* defines what happens when managing objects, like tokens or containers,
-in the system either by an administrator or the user.
+The scope *token* defines properties of token objects, which are not subject to :ref:`enrollment_policies` or :ref:`authentication_policies`, so
+typically revolving around the management of tokens.
 
-The following actions are available in the scope
-*management*:
+The following actions are available in the scope *token*:
 
 
 require_description_on_edit
