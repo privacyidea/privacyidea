@@ -29,6 +29,7 @@ the core API.
 The TiQR Token uses this API to implement its special functionalities. See
 :ref:`code_tiqr_token`.
 """
+import copy
 import threading
 
 from flask import (Blueprint,
@@ -60,7 +61,9 @@ def before_request():
     This is executed before the request
     """
     ensure_no_config_object()
-    request.all_data = get_all_params(request)
+    # Save the request data
+    g.request_data = get_all_params(request)
+    request.all_data = copy.deepcopy(g.request_data)
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     # Create a policy_object, that reads the database audit settings
     # and contains the complete policy definition during the request.

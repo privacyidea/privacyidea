@@ -22,7 +22,7 @@ from privacyidea.lib.config import (get_resolver_list,
                                     get_machine_resolver_class_dict,
                                     get_privacyidea_node, get_privacyidea_nodes,
                                     this, get_config_object, invalidate_config_object,
-                                    get_multichallenge_enrollable_tokentypes,
+                                    get_multichallenge_enrollable_types,
                                     get_email_validators,
                                     check_node_uuid_exists)
 from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PWResolver
@@ -74,6 +74,9 @@ class ConfigTestCase(MyTestCase):
         self.assertTrue("privacyidea.lib.resolvers.LDAPIdResolver" in r, r)
         self.assertTrue("privacyidea.lib.resolvers.SCIMIdResolver" in r, r)
         self.assertTrue("privacyidea.lib.resolvers.SQLIdResolver" in r, r)
+        self.assertTrue("privacyidea.lib.resolvers.HTTPResolver" in r, r)
+        self.assertTrue("privacyidea.lib.resolvers.EntraIDResolver" in r, r)
+        self.assertTrue("privacyidea.lib.resolvers.KeycloakResolver" in r, r)
 
         # check modules
         mlist = get_resolver_module_list()
@@ -271,19 +274,25 @@ class ConfigTestCase(MyTestCase):
         self.assertEqual(get_from_config("some_key", "default"), "some_value")
 
     def test_10_enrollable_tokentypes(self):
-        ttypes = get_multichallenge_enrollable_tokentypes()
-        self.assertIn("hotp", ttypes)
-        self.assertIn("totp", ttypes)
-        self.assertIn("sms", ttypes)
-        self.assertIn("email", ttypes)
-        self.assertIn("push", ttypes)
-        self.assertNotIn("tan", ttypes)
-        self.assertNotIn("daplug", ttypes)
-        self.assertNotIn("paper", ttypes)
+        # Execute the function twice to ensure the cache works
+        for i in range (2):
+            ttypes = get_multichallenge_enrollable_types()
+            self.assertIn("hotp", ttypes)
+            self.assertIn("totp", ttypes)
+            self.assertIn("sms", ttypes)
+            self.assertIn("email", ttypes)
+            self.assertIn("push", ttypes)
+            self.assertNotIn("tan", ttypes)
+            self.assertNotIn("daplug", ttypes)
+            self.assertNotIn("paper", ttypes)
+            self.assertIn("smartphone", ttypes)
+            self.assertNotIn("generic", ttypes)
+            self.assertNotIn("yubikey", ttypes)
 
     def test_11_get_email_validators(self):
         ev = get_email_validators()
-        self.assertEqual(['tests.testdata.gmailvalidator', 'privacyidea.lib.utils.emailvalidation'], list(ev.keys()))
+        self.assertEqual(['tests.testdata.gmailvalidator',
+                          'privacyidea.lib.utils.emailvalidation'], list(ev.keys()))
         validate_email = get_email_validators().get("privacyidea.lib.utils.emailvalidation")
         self.assertTrue(validate_email("valid@email.com"))
         self.assertFalse(validate_email("invalid@email.k"))

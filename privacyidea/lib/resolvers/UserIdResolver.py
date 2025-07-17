@@ -21,6 +21,8 @@
 #            http://www.lsexperts.de
 #            linotp@lsexperts.de
 #
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
 # License as published by the Free Software Foundation; either
@@ -50,7 +52,6 @@ Defines the rough interface for a UserId Resolver
 
 
 class UserIdResolver(object):
-
     fields = {"username": 1, "userid": 1,
               "description": 0,
               "phone": 0, "mobile": 0, "email": 0,
@@ -153,21 +154,21 @@ class UserIdResolver(object):
         """
         return {}
 
-    def getUserList(self, searchDict=None):
+    def getUserList(self, search_dict=None):
         """
         This function finds the user objects,
         that have the term 'value' in the user object field 'key'
 
-        :param searchDict:  dict with key values of user attributes -
+        :param search_dict:  dict with key values of user attributes -
                     the key may be something like 'loginname' or 'email'
                     the value is a regular expression.
-        :type searchDict: dict
+        :type search_dict: dict
 
         :return: list of dictionaries (each dictionary contains a
                  user object) or an empty string if no object is found.
         :rtype: list of dicts
         """
-        searchDict = searchDict or {}
+        search_dict = search_dict or {}
         return [{}]
 
     def getResolverId(self):
@@ -204,19 +205,16 @@ class UserIdResolver(object):
         """
         return False
 
-    def add_user(self, attributes=None):
+    def add_user(self, attributes: dict=None):
         """
         Add a new user in the useridresolver.
         This is only possible, if the UserIdResolver supports this and if
         we have write access to the user store.
 
-        :param username: The login name of the user
-        :type username: basestring
         :param attributes: Attributes according to the attribute mapping
         :return: The new UID of the user. The UserIdResolver needs to
-        determine the way how to create the UID.
+                 determine the way how to create the UID.
         """
-        attributes = attributes or {}
         return None
 
     def delete_user(self, uid):
@@ -283,3 +281,9 @@ class UserIdResolver(object):
         :return: bool
         """
         return False
+
+    def get_config(self) -> dict:
+        """
+        Returns the configuration of the resolver.
+        """
+        return {}

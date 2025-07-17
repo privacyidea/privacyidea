@@ -165,8 +165,9 @@ Time formats are::
 and any combination of it. ``dow`` being day of week Mon, Tue, Wed, Thu, Fri,
 Sat, Sun.
 """
+import copy
 from datetime import datetime
-from typing import Union
+from typing import Union, Optional
 
 from werkzeug.datastructures.headers import EnvironHeaders
 
@@ -178,10 +179,10 @@ import logging
 
 from ..api.lib.utils import check_policy_name
 from .policies.policy_conditions import PolicyConditionClass, ConditionCheck, ConditionSection
-from ..models import (Policy, db, save_config_timestamp, Token, PolicyDescription, PolicyCondition)
+from ..models import (Policy, db, save_config_timestamp, PolicyDescription, PolicyCondition)
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     get_config_object, get_privacyidea_node,
-                                    get_multichallenge_enrollable_tokentypes,
+                                    get_multichallenge_enrollable_types,
                                     get_email_validators, get_privacyidea_nodes)
 from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, ServerError
 from privacyidea.lib.realm import get_realms
@@ -378,6 +379,7 @@ class ACTION(object):
     RESYNC_VIA_MULTICHALLENGE = "resync_via_multichallenge"
     ENROLL_VIA_MULTICHALLENGE = "enroll_via_multichallenge"
     ENROLL_VIA_MULTICHALLENGE_TEXT = "enroll_via_multichallenge_text"
+    ENROLL_VIA_MULTICHALLENGE_TEMPLATE = "enroll_via_multichallenge_template"
     CLIENTTYPE = "clienttype"
     REGISTERBODY = "registration_body"
     RESETALLTOKENS = "reset_all_user_tokens"
@@ -450,6 +452,7 @@ class ACTION(object):
     CONTAINER_WIZARD_REGISTRATION = "container_wizard_registration"
     CLIENT_MODE_PER_USER = "client_mode_per_user"
     HIDE_CONTAINER_INFO = "hide_container_info"
+    DISABLED_TOKEN_TYPES = "disabled_token_types"
 
 
 class TYPE(object):
@@ -792,7 +795,7 @@ class PolicyClass(object):
                        time: datetime = None, sort_by_priority: bool = True, audit_data: dict = None,
                        request_headers=None, serial: str = None,
                        extended_condition_check: Union[int, list[str], None] = None, additional_realms: list = None,
-                       container_serial: str = None) -> list[dict]:
+                       container_serial: str = None, request_data: Optional[dict] = None) -> list[dict]:
         """
         Return all policies matching the given context.
         Optionally, write the matching policies to the audit log.
@@ -829,6 +832,7 @@ class PolicyClass(object):
         :param additional_realms: A list of realms that should be additionally checked besides the user realm
             combination
         :param container_serial: The container serial from the request if available
+        :param request_data: The request data as dictionary
         :return: a list of policy dictionaries
         """
         if user_object is not None:
@@ -874,7 +878,7 @@ class PolicyClass(object):
             try:
                 reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object, request_headers,
                                                                       serial, extended_condition_check,
-                                                                      container_serial)
+                                                                      container_serial, request_data)
             except PolicyError:
                 # Add the information on which actions triggered the error to the logs
                 log.error(f"Error checking extended conditions for action '{action}'.")
@@ -921,7 +925,7 @@ class PolicyClass(object):
     def filter_policies_by_conditions(self, policies: list[dict], user_object: User = None,
                                       request_headers: EnvironHeaders = None, serial: str = None,
                                       extended_condition_check: Union[None, int, list[str]] = None,
-                                      container_serial: str = None) -> list[dict]:
+                                      container_serial: str = None, request_data: Optional[dict] = None) -> list[dict]:
         """
         Evaluates for each policy condition if it matches the actual request (user / token / request headers) and
         returns a list of all matching policies.
@@ -935,6 +939,7 @@ class PolicyClass(object):
         :param extended_condition_check: One of CONDITION_CHECK (1 - not check, list of sections to check,
             None - check all).
         :param container_serial: The serial of a container or None if not contained in the request data
+        :param request_data: The request data as dictionary, if available
         :return: a list of matching policy dictionaries
         """
         reduced_policies = []
@@ -955,7 +960,7 @@ class PolicyClass(object):
                     # We check conditions, either if we are supposed to check everything or if
                     # the section is contained in the extended condition check
                     include_policy = condition.match(policy_name, user_object, serial, request_headers,
-                                                     container_serial)
+                                                     container_serial, request_data)
 
                     if not include_policy:
                         # condition does not match request, no need to check the remaining conditions
@@ -1685,7 +1690,7 @@ def get_static_policy_definitions(scope=None):
         description.
     :rtype: dict
     """
-    from .container import get_container_token_types, get_all_templates_with_type
+    from .container import get_container_token_types, get_all_templates_with_type, get_templates_by_query
     resolvers = list(get_resolver_list())
     realms = list(get_realms())
     smtpconfigs = [server.config.identifier for server in get_smtpservers()]
@@ -2587,6 +2592,13 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("If the PIN of a token is to be changed, this will allow the user to change the "
                           "PIN during a validate/check request via challenge / response."),
             },
+            ACTION.DISABLED_TOKEN_TYPES: {
+                'type': 'str',
+                'desc': _('Specify the list of token types, '
+                          'that can not be used for authentication.'),
+                'multiple': True,
+                'value': [token_obj.get_class_type() for token_obj in get_token_classes()]
+            },
             ACTION.RESYNC_VIA_MULTICHALLENGE: {
                 'type': 'bool',
                 'desc': _("The autoresync of a token can be done via a challenge response message."
@@ -2594,13 +2606,20 @@ def get_static_policy_definitions(scope=None):
             },
             ACTION.ENROLL_VIA_MULTICHALLENGE: {
                 'type': 'str',
-                'desc': _("In case of a successful authentication the following tokentype is enrolled. The "
-                          "maximum number of tokens for a user is checked."),
-                'value': [t.upper() for t in get_multichallenge_enrollable_tokentypes()]
+                'desc': _("In case of a successful authentication the following token or container type is enrolled. "
+                          "The maximum number of tokens for a user is checked."),
+                'value': [t.upper() for t in get_multichallenge_enrollable_types()]
             },
             ACTION.ENROLL_VIA_MULTICHALLENGE_TEXT: {
                 'type': 'str',
                 'desc': _("Change the default text that is shown during enrolling a token.")
+            },
+            ACTION.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: {
+                'type': 'str',
+                'desc': _(
+                    "Select the template to use for the enrollment of a smartphone container via multichallenge."),
+                'value': [template.get("name") for template in
+                          get_templates_by_query(container_type="smartphone").get("templates")]
             },
             ACTION.PASSTHRU: {
                 'type': 'str',
@@ -3099,6 +3118,9 @@ def get_policy_condition_sections():
         ConditionSection.CONTAINER_INFO: {
             "description": _("The policy only matches if certain conditions on the container info are fulfilled.")
         },
+        ConditionSection.REQUEST_DATA: {
+            "description": _("The policy only matches if certain conditions on the request data are fulfilled.")
+        }
     }
 
 
@@ -3189,12 +3211,17 @@ class Match(object):
             audit_data = self._g.audit_object.audit_data
         else:
             audit_data = None
-        if hasattr(self._g, "request_headers"):
-            request_headers = self._g.request_headers
-        else:
-            request_headers = None
+        request_headers = self._g.get("request_headers")
+        request_data = self._g.get("request_data")
+        if request_data and ("pass" in request_data or "password" in request_data):
+            request_data = copy.deepcopy(self._g.get("request_data"))  # Do not modify the original request_data
+            # Do not pass the password in the request data to the policy matching.
+            if "pass" in request_data:
+                del request_data["pass"]
+            if "password" in request_data:
+                del request_data["password"]
         return self._g.policy_object.match_policies(audit_data=audit_data, request_headers=request_headers,
-                                                    pinode=self.pinode, **self._match_kwargs)
+                                                    pinode=self.pinode, request_data=request_data, **self._match_kwargs)
 
     def any(self, write_to_audit_log=True):
         """

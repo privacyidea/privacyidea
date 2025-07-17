@@ -38,6 +38,8 @@
 #  2014-12-25 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Rewrite for flask migration
 #
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
 # License as published by the Free Software Foundation; either
@@ -450,7 +452,7 @@ class IdResolver(UserIdResolver):
             uid = entry.get("dn")
         else:
             attributes = entry.get("attributes")
-            if type(attributes.get(uidtype)) == list:
+            if isinstance(attributes.get(uidtype), list):
                 uid = attributes.get(uidtype)[0]
             else:
                 uid = attributes.get(uidtype)
@@ -1171,7 +1173,7 @@ class IdResolver(UserIdResolver):
 
         return success, message
 
-    def add_user(self, attributes=None):
+    def add_user(self, attributes: dict=None):
         """
         Add a new user to the LDAP directory.
         The user can only be created in the LDAP using a DN.
@@ -1184,7 +1186,7 @@ class IdResolver(UserIdResolver):
         :param attributes: Attributes according to the attribute mapping
         :type attributes: dict
         :return: The new UID of the user. The UserIdResolver needs to
-        determine the way how to create the UID.
+                 determine the way how to create the UID.
         """
         # TODO: We still have some utf8 issues creating users with special characters.
         attributes = attributes or {}

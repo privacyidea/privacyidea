@@ -183,7 +183,7 @@ class RemoteTokenClass(TokenClass):
 
         return local_check
 
-    @log_with(log)
+    @log_with(log, hide_args=[1])
     @check_token_locked
     def authenticate(self, passw, user=None, options=None):
         """
@@ -204,7 +204,7 @@ class RemoteTokenClass(TokenClass):
         reply = None
         otpval = passw
 
-        # should we check the pin localy?
+        # should we check the pin locally?
         if self.check_pin_local:
             (_res, pin, otpval) = self.split_pin_pass(passw, user,
                                                       options=options)

@@ -3,7 +3,6 @@ from privacyidea.lib.realm import set_realm
 from .base import MyApiTestCase
 from privacyidea.lib.policy import SCOPE, ACTION, set_policy
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
-import json
 from privacyidea.lib.smtpserver import add_smtpserver
 from . import smtpmock
 from privacyidea.lib.config import set_privacyidea_config
@@ -68,7 +67,10 @@ class RegisterTestCase(MyApiTestCase):
                                            data={"username": "cornelius",
                                                  "surname": "Kölbel"}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 400, res)
+            self.assertEqual(res.status_code, 400, res)
+            self.assertEqual(res.json["result"]["error"]["code"], 905, res.json)
+            self.assertEqual(res.json["result"]["error"]["message"],
+                             "ERR905: Missing parameter: 'givenname'", res.json)
 
         # Register fails, missing SMTP config
         with self.app.test_request_context('/register',
@@ -80,7 +82,7 @@ class RegisterTestCase(MyApiTestCase):
                                                  "email":
                                                      "cornelius@privacyidea.org"}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 400, res)
+            self.assertEqual(res.status_code, 400, res)
             data = res.json
             self.assertEqual(data.get("result").get("error").get("code"), ERROR.REGISTRATION)
             self.assertEqual(data.get("result").get("error").get("message"),
@@ -99,7 +101,9 @@ class RegisterTestCase(MyApiTestCase):
                                                  "email":
                                                      "cornelius@privacyidea.org"}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(res.status_code, 200, res)
+            self.assertTrue(res.json["result"]["value"], res.json)
+            # TODO: Check if the registration email was send through the logs
 
         # Registering the user a second time will fail
         with self.app.test_request_context('/register',
@@ -111,13 +115,16 @@ class RegisterTestCase(MyApiTestCase):
                                                  "email":
                                                      "cornelius@privacyidea.org"}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 400, res)
+            self.assertEqual(res.status_code, 400, res)
+            self.assertEqual(res.json["result"]["error"]["code"], 402, res.json)
+            self.assertEqual(res.json["result"]["error"]["message"],
+                             "ERR402: The username is already registered!", res.json)
 
         # get the register status
         with self.app.test_request_context('/register',
                                            method='GET'):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(res.status_code, 200, res)
             data = res.json
             self.assertEqual(data.get("result").get("value"), True)
 

@@ -39,6 +39,7 @@ Wrapping the functions in a decorator class enables easy modular testing.
 
 The functions of this module are tested in tests/test_api_lib_policy.py
 """
+import copy
 import datetime
 import functools
 import json
@@ -47,12 +48,12 @@ import re
 import traceback
 from urllib.parse import quote
 
-from flask import g, current_app, make_response
+from flask import g, current_app, make_response, Request
 
 from privacyidea.api.lib.utils import get_all_params
-from privacyidea.lib import lazy_gettext
+from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.auth import ROLE
-from privacyidea.lib.config import get_multichallenge_enrollable_tokentypes, get_token_class, get_privacyidea_node
+from privacyidea.lib.config import get_multichallenge_enrollable_types, get_token_class, get_privacyidea_node
 from privacyidea.lib.crypto import Sign
 from privacyidea.lib.error import PolicyError, ValidateError
 from privacyidea.lib.info.rss import FETCH_DAYS
@@ -66,13 +67,16 @@ from privacyidea.lib.subscriptions import (subscription_status,
                                            SubscriptionError,
                                            EXPIRE_MESSAGE)
 from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token, get_one_token, init_token
-from privacyidea.lib.tokenclass import ROLLOUTSTATE
+from privacyidea.lib.tokenclass import ROLLOUTSTATE, CHALLENGE_SESSION
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import (create_img, get_version, AUTH_RESPONSE,
                                    get_plugin_info_from_useragent)
-from .prepolicy import check_max_token_user, check_max_token_realm, fido2_enroll, rss_age
-from ...lib.container import get_all_containers
+from .prepolicy import check_max_token_user, check_max_token_realm, fido2_enroll, rss_age, container_registration_config
+from ...lib.challenge import get_challenges
+from ...lib.container import (get_all_containers, init_container, init_registration, find_container_by_serial,
+                              create_container_tokens_from_template)
+from ...lib.containers.container_info import SERVER_URL, CHALLENGE_TTL, REGISTRATION_TTL, SSL_VERIFY, RegistrationState
 from ...lib.users.custom_user_attributes import InternalCustomUserAttributes
 
 log = logging.getLogger(__name__)
@@ -166,8 +170,8 @@ def sign_response(request, response):
     .. note:: This only works for JSON responses. So if we fail to decode the
        JSON, we just pass on.
 
-    The usual way to use it is, to wrap the after_request, so that we can also
-    sign errors, like this:
+    The usual way to use it is to wrap the after_request, so that we can also
+    sign errors, like this::
 
         @postrequest(sign_response, request=request)
         def after_request(response):
@@ -193,7 +197,9 @@ def sign_response(request, response):
         log.debug(traceback.format_exc())
         return response
 
-    request.all_data = get_all_params(request)
+    # Save the request data
+    g.request_data = get_all_params(request)
+    request.all_data = copy.deepcopy(g.request_data)
     # response can be either a Response object or a Tuple (Response, ErrorID)
     response_value = 200
     response_is_tuple = False
@@ -367,7 +373,7 @@ def preferred_client_mode(request, response):
     # get the preferred client mode from a policy definition
     preferred_client_mode_pol = Match.user(g, scope=SCOPE.AUTH, action=ACTION.PREFERREDCLIENTMODE,
                                            user_object=user).action_values(allow_white_space_in_action=True,
-                                                                                  unique=True)
+                                                                           unique=True)
     if preferred_client_mode_pol:
         # Split at whitespaces and strip
         preferred_client_mode_list = str.split(list(preferred_client_mode_pol)[0])
@@ -845,6 +851,104 @@ def autoassign(request, response):
     return response
 
 
+def container_create_via_multichallenge(request: Request, content: dict, container_type: str) -> dict:
+    """
+    Checks if the user has no registered container of the given type. If not, the container is created and registration
+    is initialized. The registration data is written to the response data as multi challenge.
+    If the according policy is set, the container is created from a template.
+    Any errors that could occur (template not found, max user tokens reached, missing registration policies) are only
+    logged and the content is returned unchanged to not break the authentication flow.
+
+    :param request: The request object
+    :param content: The content of the response
+    :param container_type: The type of the container to create (e.g., "smartphone")
+    :return: The modified content with the registration data or unchanged content if no container was created
+    """
+    result = content.get("result")
+    user = request.User
+    containers = get_all_containers(user, ctype=container_type).get("containers")
+    container = None
+    container_already_exists = False
+    template_tokens = None
+    if len(containers) == 0:
+        # User has no container of that type: create a new one
+        # Check if a template should be used
+        template_policies = Match.user(g, scope=SCOPE.AUTH, action=ACTION.ENROLL_VIA_MULTICHALLENGE_TEMPLATE,
+                                       user_object=user).action_values(unique=True, write_to_audit_log=False)
+        template_name = list(template_policies)[0] if template_policies else None
+
+        init_result = init_container({"type": container_type, "user": user.login, "realm": user.realm,
+                                      "template_name": template_name})
+        template_tokens = init_result["template_tokens"]
+        container_serial = init_result.get("container_serial")
+        container = find_container_by_serial(container_serial)
+        # Template tokens are created later to be sure that the registration policies are set. Otherwise, we would
+        # create and afterward delete the tokens if the registration fails.
+    elif len(containers) == 1:
+        # If the user has exactly one smartphone container, we can (re)init the registration
+        container = containers[0]
+        container_already_exists = True
+        registration_state = container.registration_state
+        if registration_state not in [RegistrationState.NOT_REGISTERED, RegistrationState.CLIENT_WAIT]:
+            # Container is already registered: nothing to do here
+            container = None
+
+    if container:
+        # Get message
+        message_policies = Match.user(g, scope=SCOPE.AUTH, action=ACTION.ENROLL_VIA_MULTICHALLENGE_TEXT,
+                                      user_object=user).action_values(unique=True, write_to_audit_log=False,
+                                                                      allow_white_space_in_action=True)
+        message = _("Please scan the QR code to register the container.")
+        if message_policies:
+            message = list(message_policies)[0]
+        # Registration
+        # Get params from policies
+        request.all_data["container_serial"] = container.serial
+        try:
+            # We can not check this policy earlier as the container serial is required
+            container_registration_config(request)
+        except PolicyError:
+            log.debug("Missing container registration policy. Can not enroll container via multichallenge.")
+            if not container_already_exists:
+                # If a new container was created but the registration failed, we need to delete the container
+                container.delete()
+            return content
+
+        # Create tokens from template
+        if template_tokens:
+            # Some token policies require the logged_in_user to be set
+            g.logged_in_user = {"role": ROLE.USER, "username": user.login, "realm": user.realm,
+                                "resolver": user.resolver}
+            create_container_tokens_from_template(container.serial, template_tokens, request, ROLE.USER)
+            del g.logged_in_user
+
+        # Init registration
+        server_url = request.all_data.get(SERVER_URL)
+        challenge_ttl = request.all_data.get(CHALLENGE_TTL)
+        registration_ttl = request.all_data.get(REGISTRATION_TTL)
+        ssl_verify = request.all_data.get(SSL_VERIFY)
+        res = init_registration(container, False, server_url, registration_ttl, ssl_verify, challenge_ttl,
+                                request.all_data)
+        challenge = get_challenges(container.serial, transaction_id=res["transaction_id"])[0]
+        challenge.session = CHALLENGE_SESSION.ENROLLMENT
+        challenge.save()
+
+        # Write registration info to the response
+        detail = content.setdefault("detail", {})
+        challenge_data = {"serial": container.serial, "type": container_type,
+                          "message": message,
+                          "image": res["container_url"]["img"],
+                          "link": res["container_url"]["value"],
+                          "client_mode": "poll",
+                          "transaction_id": res["transaction_id"]}
+        detail["multi_challenge"] = [challenge_data]
+        detail.update(challenge_data)
+        # Change result to challenge
+        result["value"] = False
+        result["authentication"] = AUTH_RESPONSE.CHALLENGE
+    return content
+
+
 def multichallenge_enroll_via_validate(request, response):
     """
     This is a post decorator to allow enrolling tokens via /validate/check.
@@ -857,71 +961,85 @@ def multichallenge_enroll_via_validate(request, response):
     :param response:
     :return:
     """
-
     content = response.json
     result = content.get("result")
     # Check if the authentication was successful, only then attempt to enroll a new token
-    if result.get("value") and result.get("authentication") == AUTH_RESPONSE.ACCEPT:
-        user = request.User
-        if user.login and user.realm:
-            enroll_policies = Match.user(g, scope=SCOPE.AUTH, action=ACTION.ENROLL_VIA_MULTICHALLENGE,
-                                         user_object=user).action_values(unique=True, write_to_audit_log=False)
-            # Check if we have a policy to enroll a token and which type
-            if enroll_policies:
-                # First check if another policy restricts the token count and exit early if true
-                try:
-                    check_max_token_user(request=request)
-                    check_max_token_realm(request=request)
-                except PolicyError as e:
-                    g.audit_object.log({"success": True, "action_detail": f"{e}"})
-                    return response
+    if not result.get("value") or result.get("authentication") != AUTH_RESPONSE.ACCEPT:
+        # Authentication was not successful, so we do not enroll a token
+        return response
 
-                tokentype = list(enroll_policies)[0]
-                tokentype = tokentype.lower()
-                # Check if the user already has a token of the type that should be enrolled
-                # If so, do not enroll another one
-                if len(get_tokens(tokentype=tokentype, user=user)) == 0:
-                    if tokentype in get_multichallenge_enrollable_tokentypes():
-                        # Now get the alternative text from the policies
-                        text_policies = Match.user(g, scope=SCOPE.AUTH, action=ACTION.ENROLL_VIA_MULTICHALLENGE_TEXT,
-                                                   user_object=user).action_values(unique=True,
-                                                                                   write_to_audit_log=False,
-                                                                                   allow_white_space_in_action=True)
-                        message = None
-                        if text_policies:
-                            message = list(text_policies)[0]
-                        # -----------------------------
-                        # TODO this is not perfect yet, but the improved implementation of enroll_via_validate
-                        # TODO should go in this direction instead of putting the stuff in the token class
-                        if tokentype == PasskeyTokenClass.get_class_type().lower():
-                            request.all_data["type"] = tokentype
-                            fido2_enroll(request, None)
-                            token = init_token(request.all_data, user)
-                            try:
-                                init_details = token.get_init_detail(request.all_data, user)
-                                if not init_details:
-                                    token.token.delete()
-                                content.get("result")["value"] = False
-                                content.get("result")["authentication"] = AUTH_RESPONSE.CHALLENGE
-                                detail = content.setdefault("detail", {})
-                                detail["transaction_id"] = init_details["transaction_id"]
-                                detail["transaction_ids"] = [init_details["transaction_id"]]
-                                detail["multi_challenge"] = [init_details]
-                                detail["serial"] = token.token.serial
-                                detail["type"] = tokentype
-                                detail.pop("otplen", None)
-                                detail["message"] = PasskeyTokenClass.get_default_challenge_text_register()
-                                detail["client_mode"] = "webauthn"
-                            except Exception as e:
-                                log.error(f"Error during enroll_via_validate: {e}")
-                                token.token.delete()
-                                raise e
-                            response.set_data(json.dumps(content))
-                        # ------------------------------
-                        else:
-                            tokenclass = get_token_class(tokentype)
-                            tokenclass.enroll_via_validate(g, content, user, message)
-                            response.set_data(json.dumps(content))
+    user = request.User
+    if not user.login or not user.realm:
+        return response
+
+    # Check if we have a policy to enroll a token and which type
+    enroll_policies = Match.user(g, scope=SCOPE.AUTH, action=ACTION.ENROLL_VIA_MULTICHALLENGE,
+                                 user_object=user).action_values(unique=True, write_to_audit_log=False)
+    if not enroll_policies:
+        # No policy to enroll a token via multichallenge, so we do nothing
+        return response
+
+    # Check if the type is a valid multichallenge enrollable type
+    enroll_type = list(enroll_policies)[0]
+    enroll_type = enroll_type.lower()
+    if enroll_type not in get_multichallenge_enrollable_types():
+        return response
+
+    if enroll_type == "smartphone":
+        content = container_create_via_multichallenge(request, content, enroll_type)
+    else:
+        tokentype = enroll_type
+        # Check if the user already has a token of the type that should be enrolled
+        # If so, do not enroll another one
+        if len(get_tokens(tokentype=tokentype, user=user)) == 0:
+            # Check if another policy restricts the token count and exit early if true
+            try:
+                check_max_token_user(request=request)
+                check_max_token_realm(request=request)
+            except PolicyError as e:
+                g.audit_object.log({"success": True, "action_detail": f"{e}"})
+                return response
+
+            # Now get the alternative text from the policies
+            text_policies = Match.user(g, scope=SCOPE.AUTH,
+                                       action=ACTION.ENROLL_VIA_MULTICHALLENGE_TEXT,
+                                       user_object=user).action_values(unique=True,
+                                                                       write_to_audit_log=False,
+                                                                       allow_white_space_in_action=True)
+            message = None
+            if text_policies:
+                message = list(text_policies)[0]
+            # -----------------------------
+            # TODO this is not perfect yet, but the improved implementation of enroll_via_validate
+            # TODO should go in this direction instead of putting the stuff in the token class
+            if tokentype == PasskeyTokenClass.get_class_type().lower():
+                request.all_data["type"] = tokentype
+                fido2_enroll(request, None)
+                token = init_token(request.all_data, user)
+                try:
+                    init_details = token.get_init_detail(request.all_data, user)
+                    if not init_details:
+                        token.token.delete()
+                    content.get("result")["value"] = False
+                    content.get("result")["authentication"] = AUTH_RESPONSE.CHALLENGE
+                    detail = content.setdefault("detail", {})
+                    detail["transaction_id"] = init_details["transaction_id"]
+                    detail["transaction_ids"] = [init_details["transaction_id"]]
+                    detail["multi_challenge"] = [init_details]
+                    detail["serial"] = token.token.serial
+                    detail["type"] = tokentype
+                    detail.pop("otplen", None)
+                    detail["message"] = PasskeyTokenClass.get_default_challenge_text_register()
+                    detail["client_mode"] = "webauthn"
+                except Exception as e:
+                    log.error(f"Error during enroll_via_validate: {e}")
+                    token.token.delete()
+                    raise e
+            # ------------------------------
+            else:
+                tokenclass = get_token_class(tokentype)
+                tokenclass.enroll_via_validate(g, content, user, message)
+    response.set_data(json.dumps(content))
 
     return response
 

@@ -10,6 +10,8 @@
 #             Simplifying out of bounds check
 #             Avoid repetition in comparison
 #
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
 # License as published by the Free Software Foundation; either
@@ -45,6 +47,8 @@ from privacyidea.lib.pooling import get_engine
 from privacyidea.lib.lifecycle import register_finalizer
 from privacyidea.lib.utils import (is_true, censor_connect_string,
                                    convert_column_to_unicode)
+from privacyidea.lib.error import ParameterError
+
 from passlib.context import CryptContext
 from passlib.utils import h64
 from passlib.utils.compat import uascii_to_str
@@ -168,17 +172,6 @@ class IdResolver (UserIdResolver):
 
     # If the resolver could be configured editable
     updateable = True
-
-    @staticmethod
-    def setup(config=None, cache_dir=None):
-        """
-        this setup hook is triggered, when the server
-        starts to serve the first request
-
-        :param config: the privacyidea config
-        :type  config: the privacyidea config dict
-        """
-        log.info("Setting up the SQLResolver")
 
     def __init__(self):
         self.resolverId = ""
@@ -383,21 +376,33 @@ class IdResolver (UserIdResolver):
 
         return user
 
-    def getUserList(self, searchDict=None):
+    def getUserList(self, search_dict=None):
         """
-        :param searchDict: A dictionary with search parameters
-        :type searchDict: dict
+        :param search_dict: A dictionary with search parameters
+        :type search_dict: dict
         :return: list of users, where each user is a dictionary
+        :raises ParameterError: when the search key does not exist in the
+          mapping or database
         """
         users = []
         conditions = []
-        if searchDict is None:
-            searchDict = {}
-        for key in searchDict.keys():
+        if search_dict is None:
+            search_dict = {}
+        # Check if all the search keys are available in the mapping
+        broken_keys = list(filter(lambda x: x not in self.map.keys(), search_dict.keys()))
+        if broken_keys:
+            log.error(f"Could not find search key ({broken_keys}) in "
+                      f"the column mapping keys ({list(self.map.keys())}).")
+            raise ParameterError(f"Search parameter ({broken_keys}) not available in mapping.")
+        for key, value in search_dict.items():
             column = self.map.get(key)
-            value = searchDict.get(key)
             value = value.replace("*", "%")
-            conditions.append(self.TABLE.columns[column].like(value))
+            if column in self.TABLE.columns:
+                conditions.append(self.TABLE.columns[column].like(value))
+            else:
+                log.error(f"Mapped column ('{column}') is not available in the database "
+                          f"table '{self.table}' ({list(self.TABLE.columns.keys())}).")
+                raise ParameterError(f"Search parameter ({key}) not available in resolver.")
 
         conditions = self._append_where_filter(conditions, self.TABLE,
                                                self.where)
@@ -619,7 +624,7 @@ class IdResolver (UserIdResolver):
             desc = "Found {0:d} users.".format(num)
         except Exception as e:
             log.warning(f"Failed to retrieve users: {e!r}")
-            desc = f"Failed to retrieve users."
+            desc = "Failed to retrieve users."
         finally:
             # We do not want any leftover DB connection, so we first need to close
             # the session such that the DB connection gets returned to the pool (it
@@ -630,7 +635,7 @@ class IdResolver (UserIdResolver):
 
         return num, desc
 
-    def add_user(self, attributes=None):
+    def add_user(self, attributes: dict=None):
         """
         Add a new user to the SQL database.
 

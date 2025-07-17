@@ -22,6 +22,8 @@
 #            http://www.lsexperts.de
 #            linotp@lsexperts.de
 #
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
 # License as published by the Free Software Foundation; either
@@ -35,7 +37,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__ = '''There are the library functions for user functions.
+__doc__ = '''These are the library functions for user functions.
 It depends on the lib.resolver and lib.realm.
 
 There are and must be no dependencies to the token functions (lib.token)
@@ -68,8 +70,8 @@ log = logging.getLogger(__name__)
 
 class User(object):
     """
-    The user has the attributes
-      login, realm and resolver.
+    The user has the attributes ``login``, ``realm`` and ``resolver``.
+
     Usually a user can be found via "login@realm".
 
     A user object with an empty login and realm should not exist,
@@ -94,7 +96,9 @@ class User(object):
         if resolver == "**":
             resolver = ""
         self.resolver = resolver or ""
-        self.uid = uid
+        # We never specified the type of the UID, but internally we expect it to be a string (i.e. TokenOwner table)
+        # To avoid confusion here if an uid parameter is passed we convert it to a string.
+        self.uid = str(uid) if uid else None
         self.rtype = None
         # Hash of already checked passwords and their result. If a user has multiple token, it is not necessary to check
         # the same password multiple times. However, we can not differentiate between PIN+OTP and just PIN, so this dict
@@ -286,6 +290,7 @@ class User(object):
         the resolvertype and the resolvername
         (former: getUserId)
         (former: getUserResolverId)
+
         :return: The userid, the resolver type and the resolver name
                  like (1000, "passwdresolver", "resolver1")
         :rtype: tuple
@@ -379,7 +384,7 @@ class User(object):
         if phone_type in userinfo:
             phone = userinfo[phone_type]
             log.debug("got user phone {0!r} of type {1!r}".format(phone, phone_type))
-            if type(phone) == list and index is not None:
+            if isinstance(phone, list) and index is not None:
                 if len(phone) > index:
                     return phone[index]
                 else:
@@ -456,9 +461,14 @@ class User(object):
             res = self._get_resolvers()
             # Now we know, the resolvers of this user, and we can verify the password
             if len(res) == 1:
+                from .resolvers.HTTPResolver import HTTPResolver
                 y = get_resolver_object(self.resolver)
                 uid, _rtype, _rname = self.get_user_identifiers()
-                if y.checkPass(uid, password):
+                if isinstance(y, HTTPResolver):
+                    valid_credentials = y.checkPass(uid, password, self.login)
+                else:
+                    valid_credentials = y.checkPass(uid, password)
+                if valid_credentials:
                     success = f"{self.login}@{self.realm}"
                     log.debug(f"Successfully authenticated user {self}.")
                     self._checked_passwords[password_hash] = True
@@ -636,14 +646,14 @@ def split_user(username):
 
     split_at_sign = get_from_config(SYSCONF.SPLITATSIGN, return_bool=True)
     if split_at_sign:
-        l = user.split('@')
-        if len(l) >= 2:
-            if realm_is_defined(l[-1]):
+        user_split = user.split('@')
+        if len(user_split) >= 2:
+            if realm_is_defined(user_split[-1]):
                 # split the last only if the last part is really a realm
                 (user, realm) = user.rsplit('@', 1)
         else:
-            l = user.split('\\')
-            if len(l) >= 2:
+            user_split = user.split('\\')
+            if len(user_split) >= 2:
                 (realm, user) = user.rsplit('\\', 1)
 
     return user, realm
@@ -702,7 +712,7 @@ def get_user_list(param=None, user=None, custom_attributes=False):
     """
     users = []
     resolvers = []
-    searchDict = {"username": "*"}
+    search_dict = {"username": "*"}
     param = param or {}
 
     # we have to recreate a new searchdict without the realm key
@@ -711,16 +721,16 @@ def get_user_list(param=None, user=None, custom_attributes=False):
         lval = param[key]
         if key in ["realm", "resolver", "user", "username"]:
             continue
-        searchDict[key] = lval
+        search_dict[key] = lval
         log.debug("Parameter key:{0!r}={1!r}".format(key, lval))
 
     # update searchdict depending on existence of 'user' or 'username' in param
     # Since 'user' takes precedence over 'username' we have to check the order
     if 'username' in param:
-        searchDict['username'] = param['username']
+        search_dict['username'] = param['username']
     if 'user' in param:
-        searchDict['username'] = param['user']
-    log.debug('Changed search key to username: %s.', searchDict['username'])
+        search_dict['username'] = param['user']
+    log.debug('Changed search key to username: %s.', search_dict['username'])
 
     # determine which scope we want to show
     param_resolver = getParam(param, "resolver")
@@ -759,9 +769,11 @@ def get_user_list(param=None, user=None, custom_attributes=False):
         try:
             log.debug("Check for resolver class: {0!r}".format(resolver_name))
             y = get_resolver_object(resolver_name)
-            log.debug("with this search dictionary: {0!r} ".format(searchDict))
-
-            ulist = y.getUserList(searchDict)
+            # Continue if we couldn't find a resolver with the given name
+            if not y:
+                continue
+            log.debug("With this search dictionary: %r", search_dict)
+            ulist = y.getUserList(search_dict)
             # Add resolvername to the list
             realm_id = get_realm_id(param_realm or user_realm)
             for ue in ulist:
@@ -780,8 +792,8 @@ def get_user_list(param=None, user=None, custom_attributes=False):
             log.debug("{0!s}".format(traceback.format_exc()))
             raise exx
 
-        except Exception as ex:  # pragma: no cover
-            log.error(f"Unable to get user list: {ex}")
+        except Exception as ex:
+            log.error(f"Unable to get user list for resolver '{resolver_name}': {ex!r}")
             log.debug("{0!s}".format(traceback.format_exc()))
             continue
 

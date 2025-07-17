@@ -5,5 +5,7 @@
 # https://docs.docker.com/go/build-context-dockerignore/
 **/__pycache__
 **/.dockerignore
-**/.git
 **/Dockerfile*
+venv*
+.github*
+.circleci*

@@ -8,12 +8,9 @@ from .base import MyTestCase
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
-from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokens.daplugtoken import (DaplugTokenClass, _digi2daplug)
-from privacyidea.models import (Token,
-                                 Config,
-                                 Challenge)
+from privacyidea.models import Token, Config, Challenge
 from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
 import datetime
 from dateutil.tz import tzlocal

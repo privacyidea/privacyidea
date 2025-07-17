@@ -43,6 +43,8 @@ authenticated, the API returns a 401 response.
 To authenticate you need to send a POST request to /auth containing username
 and password.
 """
+import copy
+
 from flask import (Blueprint,
                    request,
                    current_app,
@@ -69,7 +71,7 @@ from privacyidea.api.lib.postpolicy import (postpolicy, add_user_detail_to_respo
 from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
                                            pushtoken_disable_wait, webauthntoken_authz, webauthntoken_request,
                                            fido2_auth, increase_failcounter_on_challenge,
-                                           jwt_validity)
+                                           jwt_validity, disabled_token_types, auth_timelimit)
 from privacyidea.api.lib.utils import (send_result, get_all_params,
                                        verify_auth_token, getParam, get_optional, get_required)
 from privacyidea.lib.utils import get_client_ip, hexlify_and_unicode, to_unicode, get_plugin_info_from_useragent
@@ -91,7 +93,9 @@ def before_request():
     This is executed before the request
     """
     ensure_no_config_object()
-    request.all_data = get_all_params(request)
+    # Save the request data
+    g.request_data = get_all_params(request)
+    request.all_data = copy.deepcopy(g.request_data)
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)
@@ -129,10 +133,12 @@ def before_request():
 
 
 @jwtauth.route('', methods=['POST'])
+@prepolicy(auth_timelimit, request=request)
 @prepolicy(increase_failcounter_on_challenge, request=request)
 @prepolicy(pushtoken_disable_wait, request)
 @prepolicy(webauthntoken_request, request=request)
 @prepolicy(webauthntoken_authz, request=request)
+@prepolicy(disabled_token_types, request=request)
 @prepolicy(fido2_auth, request=request)
 @prepolicy(jwt_validity, request)
 @postpolicy(get_webui_settings, request=request)

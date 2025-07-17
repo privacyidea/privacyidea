@@ -39,13 +39,13 @@ token database.
 
 import logging
 from collections import OrderedDict
-from privacyidea.lib.auditmodules.base import (Audit as AuditBase, Paginate)
+from privacyidea.lib.auditmodules.base import Audit as AuditBase, Paginate
 from privacyidea.lib.crypto import Sign
 from privacyidea.lib.pooling import get_engine
 from privacyidea.lib.utils import censor_connect_string
 from privacyidea.lib.lifecycle import register_finalizer
 from privacyidea.lib.utils import truncate_comma_list, is_true
-from sqlalchemy import MetaData, cast, String
+from sqlalchemy import MetaData
 from sqlalchemy import asc, desc, and_, or_
 from sqlalchemy.sql.expression import FunctionElement
 from sqlalchemy.ext.compiler import compiles
@@ -239,9 +239,15 @@ class Audit(AuditBase):
                             column = to_isodate(column)
                         search_value = search_value.replace('*', '%')
                         if '%' in search_value:
-                            conditions.append(column.like(search_value))
+                            if search_value.startswith("!"):
+                                conditions.append(column.notlike(search_value[1:]))
+                            else:
+                                conditions.append(column.like(search_value))
                         else:
-                            conditions.append(column == search_value)
+                            if search_value.startswith("!"):
+                                conditions.append(column != search_value[1:])
+                            else:
+                                conditions.append(column == search_value)
                 except Exception as exx:
                     # The search_key was no search key but some
                     # bullshit stuff in the param
@@ -286,7 +292,7 @@ class Audit(AuditBase):
             if "tokentype" in self.audit_data:
                 log.warning("We have a wrong 'tokentype' key. This should not happen. Fix it!. "
                             "Error occurs in action: {0!r}.".format(self.audit_data.get("action")))
-                if not "token_type" in self.audit_data:
+                if "token_type" not in self.audit_data:
                     self.audit_data["token_type"] = self.audit_data.get("tokentype")
             if self.audit_data.get("startdate"):
                 duration = datetime.datetime.now() - self.audit_data.get("startdate")
@@ -387,20 +393,20 @@ class Audit(AuditBase):
         # TODO: Add thread_id. We really should add a versioning to identify which audit data is signed.
         s = "id=%s,date=%s,action=%s,succ=%s,serial=%s,t=%s,u=%s,r=%s,adm=%s," \
             "ad=%s,i=%s,ps=%s,c=%s,l=%s,cl=%s" % (le.id,
-                                                   le.date,
-                                                   le.action,
-                                                   le.success,
-                                                   le.serial,
-                                                   le.token_type,
-                                                   le.user,
-                                                   le.realm,
-                                                   le.administrator,
-                                                   le.action_detail,
-                                                   le.info,
-                                                   le.privacyidea_server,
-                                                   le.client,
-                                                   le.loglevel,
-                                                   le.clearance_level)
+                                                  le.date,
+                                                  le.action,
+                                                  le.success,
+                                                  le.serial,
+                                                  le.token_type,
+                                                  le.user,
+                                                  le.realm,
+                                                  le.administrator,
+                                                  le.action_detail,
+                                                  le.info,
+                                                  le.privacyidea_server,
+                                                  le.client,
+                                                  le.loglevel,
+                                                  le.clearance_level)
         # If we have the new log entries, we also add them for signing and verification.
         if le.startdate:
             s += ",{0!s}".format(le.startdate)
