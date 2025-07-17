@@ -1,43 +1,38 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClient, provideHttpClient } from '@angular/common/http';
 import { lastValueFrom, of, throwError } from 'rxjs';
-import { signal } from '@angular/core';
 import { ContainerDetails, ContainerService } from './container.service';
 import { LocalService } from '../local/local.service';
 import { NotificationService } from '../notification/notification.service';
 import { TokenService } from '../token/token.service';
-import { ContentService } from '../content/content.service';
 import { environment } from '../../../environments/environment';
+import {
+  MockContentService,
+  MockLocalService,
+  MockNotificationService,
+  MockTokenService,
+} from '../../../testing/mock-services';
+import { ContentService } from '../content/content.service';
 
 environment.proxyUrl = '/api';
 
-const localServiceStub = {
-  getHeaders: jest.fn().mockReturnValue({ Authorization: 'Bearer x' }),
-};
-const notificationServiceStub = {
-  openSnackBar: jest.fn(),
-};
-const tokenServiceStub = {
-  toggleActive: jest.fn().mockReturnValue(of({ result: { value: true } })),
-};
-const contentServiceStub = {
-  selectedContent: signal<string>('container_overview'),
-  containerSerial: signal<string>(''),
-};
-
-describe('ContainerService (Jest)', () => {
+describe('ContainerService', () => {
   let containerService: ContainerService;
   let http: HttpClient;
+  let localService = new MockLocalService();
+  let notificationService = new MockNotificationService();
+  let tokenService = new MockTokenService();
+  let contentService = new MockContentService();
 
   beforeEach(() => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
-        { provide: LocalService, useValue: localServiceStub },
-        { provide: NotificationService, useValue: notificationServiceStub },
-        { provide: TokenService, useValue: tokenServiceStub },
-        { provide: ContentService, useValue: contentServiceStub },
+        { provide: LocalService, useValue: localService },
+        { provide: NotificationService, useValue: notificationService },
+        { provide: TokenService, useValue: tokenService },
+        { provide: ContentService, useValue: contentService },
       ],
     });
     containerService = TestBed.inject(ContainerService);
@@ -68,7 +63,7 @@ describe('ContainerService (Jest)', () => {
     await expect(
       lastValueFrom(containerService.assignContainer('tokX', 'contX')),
     ).rejects.toBeDefined();
-    expect(notificationServiceStub.openSnackBar).toHaveBeenCalled();
+    expect(notificationService.openSnackBar).toHaveBeenCalled();
   });
 
   it('toggleActive switches active → disabled', async () => {
@@ -133,8 +128,8 @@ describe('ContainerService (Jest)', () => {
 
     const res = await lastValueFrom(containerService.toggleAll('activate'));
 
-    expect(tokenServiceStub.toggleActive).toHaveBeenCalledTimes(1);
-    expect(tokenServiceStub.toggleActive).toHaveBeenCalledWith('t1', false);
+    expect(tokenService.toggleActive).toHaveBeenCalledTimes(1);
+    expect(tokenService.toggleActive).toHaveBeenCalledWith('t1', false);
 
     expect(res?.length).toBe(2);
     expect(res?.filter(Boolean).length).toBe(1);
@@ -142,7 +137,7 @@ describe('ContainerService (Jest)', () => {
   });
 
   it('toggleAll returns null when no token matches', async () => {
-    notificationServiceStub.openSnackBar.mockClear();
+    notificationService.openSnackBar.mockClear();
     const details: ContainerDetails = {
       count: 1,
       containers: [
@@ -159,7 +154,7 @@ describe('ContainerService (Jest)', () => {
     containerService.containerDetail.set(details);
     const r = await lastValueFrom(containerService.toggleAll('activate'));
     expect(r).toBeNull();
-    expect(notificationServiceStub.openSnackBar).toHaveBeenCalledWith(
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
       'No tokens for action.',
     );
   });
@@ -296,7 +291,7 @@ describe('ContainerService (Jest)', () => {
 
   it('loadAllContainers reflects selectedContent', () => {
     expect(containerService.loadAllContainers()).toBe(false);
-    contentServiceStub.selectedContent.set('token_enrollment');
+    contentService.selectedContent.set('token_enrollment');
     expect(containerService.loadAllContainers()).toBe(true);
   });
 
@@ -332,40 +327,40 @@ describe('ContainerService (Jest)', () => {
   });
 
   it('removeAll returns null when no tokens array', async () => {
-    notificationServiceStub.openSnackBar.mockClear();
+    notificationService.openSnackBar.mockClear();
     containerService.containerDetail.set({
       count: 1,
       containers: [{} as any],
     });
     const r = await lastValueFrom(containerService.removeAll('cX'));
     expect(r).toBeNull();
-    expect(notificationServiceStub.openSnackBar).toHaveBeenCalledWith(
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
       'No valid tokens array found in data.',
     );
   });
 
   it('removeAll returns null when no tokens array', async () => {
-    notificationServiceStub.openSnackBar.mockClear();
+    notificationService.openSnackBar.mockClear();
     containerService.containerDetail.set({
       count: 1,
       containers: [{} as any],
     });
     const r = await lastValueFrom(containerService.removeAll('cX'));
     expect(r).toBeNull();
-    expect(notificationServiceStub.openSnackBar).toHaveBeenCalledWith(
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
       'No valid tokens array found in data.',
     );
   });
 
   it('toggleAll returns null when containerDetail invalid', async () => {
-    notificationServiceStub.openSnackBar.mockClear();
+    notificationService.openSnackBar.mockClear();
     containerService.containerDetail.set({
       count: 1,
       containers: [{} as any],
     });
     const r = await lastValueFrom(containerService.toggleAll('activate'));
     expect(r).toBeNull();
-    expect(notificationServiceStub.openSnackBar).toHaveBeenCalledWith(
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
       'No valid tokens array found in data.',
     );
   });
@@ -407,7 +402,7 @@ describe('ContainerService (Jest)', () => {
   });
 
   it('selectedContainerType falls back to default when no data', () => {
-    contentServiceStub.selectedContent.set('container_overview');
+    contentService.selectedContent.set('container_overview');
     expect(containerService.selectedContainerType().containerType).toBe(
       'generic',
     );
@@ -428,7 +423,7 @@ describe('ContainerService (Jest)', () => {
     await expect(
       lastValueFrom(containerService.unassignContainer('tokX', 'contX')),
     ).rejects.toBeDefined();
-    expect(notificationServiceStub.openSnackBar).toHaveBeenCalled();
+    expect(notificationService.openSnackBar).toHaveBeenCalled();
   });
 
   it('setContainerRealm joins array, blank array ⇒ ""', async () => {
@@ -478,18 +473,18 @@ describe('ContainerService (Jest)', () => {
       ],
     });
     await lastValueFrom(containerService.toggleAll('deactivate'));
-    expect(tokenServiceStub.toggleActive).toHaveBeenCalledWith('tOn', true);
+    expect(tokenService.toggleActive).toHaveBeenCalledWith('tOn', true);
   });
 
   it('removeAll early‑returns when tokens array empty', async () => {
-    notificationServiceStub.openSnackBar.mockClear();
+    notificationService.openSnackBar.mockClear();
     containerService.containerDetail.set({
       count: 1,
       containers: [{ serial: 'c9', tokens: [] } as any],
     });
     const res = await lastValueFrom(containerService.removeAll('c9'));
     expect(res).toBeNull();
-    expect(notificationServiceStub.openSnackBar).toHaveBeenCalledWith(
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
       'No tokens to remove.',
     );
   });
