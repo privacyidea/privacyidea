@@ -175,8 +175,8 @@ class PasswordTokenClass(TokenClass):
             else:
                 contents = self.otp_contents
             param["otpkey"] = _generate_pin_from_policy(contents, size=int(size))
-        if otp_key:
-            param["otplen"] = len(otp_key)
+        if "otpkey" in param:
+            param["otplen"] = len(param.get("otpkey"))
         TokenClass.update(self, param)
 
     @log_with(log, log_entry=False)

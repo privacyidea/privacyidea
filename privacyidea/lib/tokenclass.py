@@ -611,7 +611,7 @@ class TokenClass(object):
             raise ParameterError('[ParameterError] You may either specify '
                                  'genkey or otpkey, but not both!', id=344)
 
-        if otpKey is None and genkey:
+        if otpKey is None and genkey and not verify:
             otpKey = self._genOtpKey_(key_size)
 
         # otpKey still None?? - raise the exception, if an otpkey is required, and we are not in verify state

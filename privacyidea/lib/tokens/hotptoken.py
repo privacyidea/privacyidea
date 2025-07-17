@@ -362,7 +362,7 @@ class HotpTokenClass(TokenClass):
         if force_genkey or not otp_key:
             upd_param["genkey"] = True
         genkey = is_true(upd_param.get("genkey"))
-        if genkey and otp_key:
+        if genkey and otp_key is not None:
             # The Base TokenClass does not allow otpkey and genkey at the
             # same time
             del upd_param['otpkey']
