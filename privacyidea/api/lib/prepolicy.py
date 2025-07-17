@@ -88,7 +88,7 @@ from privacyidea.lib.utils import (parse_timedelta, is_true,
                                    determine_logged_in_userparams, parse_string_to_dict)
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.auth import ROLE, get_db_admin
-from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn
+from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn, get_optional
 from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters,
                                               get_pushtoken_add_config,
                                               check_token_action_allowed,
@@ -2493,12 +2493,12 @@ def require_description(request=None, action=None):
     """
     params = request.all_data
     user_object = request.User
-    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+    (role, username, realm, admin_user, admin_realm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     action_values = Match.generic(g, action=ACTION.REQUIRE_DESCRIPTION,
                                   scope=SCOPE.ENROLL,
-                                  adminrealm=adminrealm,
-                                  adminuser=adminuser,
+                                  adminrealm=admin_realm,
+                                  adminuser=admin_user,
                                   user=username,
                                   realm=realm,
                                   user_object=user_object).action_values(unique=False)
@@ -2506,15 +2506,49 @@ def require_description(request=None, action=None):
     token_types = list(action_values.keys())
     type_value = request.all_data.get("type") or 'hotp'
     if type_value in token_types:
-        tok = None
-        serial = getParam(params, "serial")
+        token = None
+        serial = get_optional(params, "serial")
         if serial:
-            tok = (get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.VERIFYPENDING, silent_fail=True)
+            token = (get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.VERIFYPENDING, silent_fail=True)
                    or get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.CLIENTWAIT, silent_fail=True))
         # only if no token exists, yet, we need to check the description
-        if not tok and not request.all_data.get("description"):
-            log.warning(_("Missing description for {} token.").format(type_value))
-            raise PolicyError(_("Description required for {} token.").format(type_value))
+        if not token and not request.all_data.get("description"):
+            log.error(f"Missing description for {type_value} token.")
+            raise PolicyError(_(f"Description required for {type_value} token."))
+
+def require_description_on_edit(request=None, action=None):
+    """
+    Pre Policy
+    This checks whether a description is required while editing a specific token.
+    scope=SCOPE.TOKEN, action=REQUIRE_DESCRIPTION_ON_EDIT
+
+    An exception is raised, if the token types specified in the
+    REQUIRE_DESCRIPTION_ON_EDIT policy match the token to be edited,
+    but no description is given.
+
+    :param request:
+    :param action:
+    :return:
+    """
+    params = request.all_data
+    user_object = request.User
+    (role, username, realm, admin_user, admin_realm) = determine_logged_in_userparams(g.logged_in_user, params)
+
+    action_values = Match.generic(g, action=ACTION.REQUIRE_DESCRIPTION_ON_EDIT,
+                                  scope=SCOPE.TOKEN,
+                                  adminrealm=admin_realm,
+                                  adminuser=admin_user,
+                                  user=username,
+                                  realm=realm,
+                                  user_object=user_object).action_values(unique=False)
+
+    token_types = list(action_values.keys())
+    type_value = request.all_data.get("type") or 'hotp'
+    if type_value in token_types:
+        description = request.all_data.get("description", "").strip()
+        if not description:
+            log.error(f"Missing description for {type_value} token.")
+            raise PolicyError(_(f"Description required for {type_value} token."))
 
 
 def jwt_validity(request, action):

@@ -72,9 +72,10 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          set_hashlib, set_max_failcount, set_realms,
                          copy_token_user, copy_token_pin, lost_token,
                          get_serial_by_otp, get_tokens,
-                         set_validity_period_end, set_validity_period_start,
-                         add_tokeninfo, delete_tokeninfo, import_token,
-                         assign_tokengroup, unassign_tokengroup, set_tokengroups)
+                         set_validity_period_end, set_validity_period_start, add_tokeninfo,
+                         delete_tokeninfo, import_token,
+                         assign_tokengroup, unassign_tokengroup, set_tokengroups, get_one_token)
+
 from ..lib.fido2.util import get_credential_ids_for_user
 from werkzeug.datastructures import FileStorage
 from privacyidea.lib.error import (ParameterError, TokenAdminError,
@@ -104,7 +105,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_t
                                            check_admin_tokenlist, fido2_enroll, webauthntoken_allowed,
                                            webauthntoken_request, required_piv_attestation,
                                            hide_tokeninfo, init_ca_connector, init_ca_template,
-                                           init_subject_components, require_description,
+                                           init_subject_components, require_description_on_edit, require_description,
                                            check_container_action, check_user_params, check_token_list_action)
 from privacyidea.api.lib.postpolicy import (save_pin_change, check_verify_enrollment,
                                             postpolicy)
@@ -854,7 +855,7 @@ def setrandompin_api(serial=None):
 def set_description_api(serial=None):
     """
     This endpoint can be used by the user or by the admin to set
-    the description of a token.
+    the description of a token. Setting a description may be required by a policy.
 
     :jsonparam basestring description: The description for the token
     :param serial:
@@ -866,7 +867,10 @@ def set_description_api(serial=None):
     g.audit_object.log({"serial": serial})
     description = getParam(request.all_data, "description", optional=required)
     g.audit_object.add_to_log({'action_detail': "description={0!r}".format(description)})
-    res = set_description(serial, description, user=user)
+    token = get_one_token(serial=serial, user=user)
+    request.all_data["type"] = token.type
+    require_description_on_edit(request)
+    res = set_description(serial, description, user=user, token=token)
     g.audit_object.log({"success": True})
     return send_result(res)
 
