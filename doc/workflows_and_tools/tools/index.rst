@@ -653,6 +653,24 @@ Remove a tokeninfo from the found tokens.
 
         pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' remove_tokeninfo --tokeninfo_key 'import_time'
 
+export_for_privacyidea
+**********************
+Exports the found tokens in a format that can be imported into privacyIDEA.
+
+``--file``
+    The file to export the tokens to.
+
+    Example::
+
+        pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' export_for_privacyidea --file /path/to/privacyidea_export.yaml
+
+``--key``
+    The encryption key for the exported file. This is required for the privacyIDEA import.
+
+    Example::
+
+        pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' export_for_privacyidea --file /path/to/privacyidea_export.yaml --key 'myencryptionkey'
+
 Import
 ~~~~~~
 This command can be used to import token data from a file.
@@ -679,6 +697,24 @@ Example::
     - ``'check_fail_soft'``:  skip tokens with invalid HMAC
     - ``'check_fail_hard'``: only import tokens if all HMAC are valid.
 
+privacyidea
+***********
+Imports token data from a privacyIDEA created with pi-tokenjanitor export_for_privacyidea.
+
+``file``
+    The path to the privacyIDEA file to import.
+
+    Example::
+
+        pi-tokenjanitor import privacyidea /path/to/privacyidea
+
+``key``
+    Specify the encryption key for the privacyIDEA file.
+
+    Example::
+
+        pi-tokenjanitor import privacyidea /path/to/privacyidea --key 'myencryptionkey'
+
 Update
 ~~~~~~
 This command can be used to update already existing token data with a given YAML file.
@@ -686,3 +722,4 @@ This command can be used to update already existing token data with a given YAML
 Example::
 
     pi-tokenjanitor update /path/to/yamlfile.yaml
+

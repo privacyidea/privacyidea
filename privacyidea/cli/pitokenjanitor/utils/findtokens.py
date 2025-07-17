@@ -33,27 +33,26 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import sys
-
-from datetime import datetime
-from dateutil import parser
 import re
-from flask.cli import AppGroup
+import sys
+from collections import defaultdict
+from datetime import datetime
+from typing import Generator, Callable, Union
 
 import click
-from collections import defaultdict
+from cryptography.fernet import Fernet
+from dateutil import parser
 from dateutil.tz import tzlocal
-from typing import Generator, Callable, Union
+from flask.cli import AppGroup
 from yaml import safe_dump as yaml_safe_dump
 
 from privacyidea.lib.container import find_container_for_token
 from privacyidea.lib.error import ResolverError
 from privacyidea.lib.importotp import export_pskc
-from privacyidea.lib.utils import parse_legacy_time, is_true
-
-from privacyidea.models import Token, TokenContainer
-from privacyidea.lib.token import unassign_token, remove_token, get_tokens_paginated_generator
+from privacyidea.lib.token import unassign_token, remove_token, get_tokens_paginated_generator, export_tokens
 from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.utils import parse_legacy_time, is_true
+from privacyidea.models import Token, TokenContainer
 
 allowed_tokenattributes = [col.key for col in Token.__table__.columns]
 
@@ -696,3 +695,30 @@ def remove_tokeninfo(ctx, tokeninfo_key):
             token_obj.del_tokeninfo(tokeninfo_key)
             token_obj.save()
             click.echo(f"Removed tokeninfo '{tokeninfo_key}' for token {token_obj.token.serial}")
+
+@findtokens.command('export_for_privacyidea')
+@click.option('--key', required=False, type=str,
+              help='The key to encrypt the tokens. If not given, a new key is generated.')
+@click.option('--file', required=False, type=str,
+              help='The file to export the tokens to. Defaults to "exported_tokens.txt".')
+@click.pass_context
+def export_token_for_privacyidea(ctx, key, file):
+    """
+    Export the found tokens in a format which can be imported by privacyIDEA.
+    """
+    if not key:
+        key = Fernet.generate_key()
+    if not file:
+        file = 'exported_tokens.txt'
+    list_of_exported_tokens = ''
+    for tlist in ctx.obj['tokens']:
+        list_of_exported_tokens = list_of_exported_tokens + export_tokens(tlist)
+    f = Fernet(key)
+    list_of_exported_tokens = f.encrypt(list_of_exported_tokens.encode('utf-8'))
+    with open(file, 'wb') as f:
+        f.write(list_of_exported_tokens)
+    click.echo(f'Tokens are exported to "{file}".\n')
+    click.echo(f'The key to import the tokens is: {key.decode("utf-8")}\n'
+               f'You can use this key to import the tokens with the command:\n'
+               f'pi-tokenjanitor import privacyidea {file} {key.decode("utf-8")}\n')
+

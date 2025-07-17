@@ -48,9 +48,11 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE
 
-from flask.cli import AppGroup
 import click
-from privacyidea.lib.token import import_token
+from cryptography.fernet import Fernet
+from flask.cli import AppGroup
+
+from privacyidea.lib.token import import_token, import_tokens
 
 importtokens_cli = AppGroup("import", help="Import tokens from different sources.")
 
@@ -95,3 +97,23 @@ def pskc(pskc_file, preshared_key, validate_mac):
               f" because they could not be validated: {not_parsed_tokens}")
     print(f"Successfully imported {success} tokens.")
     print(f"Failed to import {failed} tokens: {failed_tokens}")
+
+@importtokens_cli.command('privacyidea')
+@click.argument('file', nargs=1, type=click.File())
+@click.argument('key', nargs=1, type=str)
+def import_token_from_privacyidea(file, key):
+    """
+    Import tokens from a PrivacyIDEA token file.
+
+    FILE is the file containing the tokens to be imported.
+    KEY is the encryption key used to decrypt the tokens.
+    """
+    decrypt_key = Fernet(key)
+    with open(file.name, 'rb') as f:
+        token_data = f.read()
+    token_list = decrypt_key.decrypt(token_data).decode("utf-8")
+    ret = import_tokens(token_list)
+    click.echo(f"{len(ret.successful_tokens)} tokens imported successfully.\n"
+               f"{len(ret.failed_tokens)} tokens failed to import.\n"
+               f"{len(ret.updated_tokens)} tokens updated.\n")
+
