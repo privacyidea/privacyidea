@@ -109,8 +109,7 @@ def import_token_from_privacyidea(file, key):
     KEY is the encryption key used to decrypt the tokens.
     """
     decrypt_key = Fernet(key)
-    with open(file.name, 'rb') as f:
-        token_data = f.read()
+    token_data = file.read()
     token_list = decrypt_key.decrypt(token_data).decode("utf-8")
     ret = import_tokens(token_list)
     click.echo(f"{len(ret.successful_tokens)} tokens imported successfully.\n"

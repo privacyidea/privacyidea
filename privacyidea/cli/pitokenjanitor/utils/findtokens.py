@@ -710,9 +710,10 @@ def export_token_for_privacyidea(ctx, key, file):
         key = Fernet.generate_key()
     if not file:
         file = 'exported_tokens.txt'
-    list_of_exported_tokens = ''
+    exported_tokens_chunks = []
     for tlist in ctx.obj['tokens']:
-        list_of_exported_tokens = list_of_exported_tokens + export_tokens(tlist)
+        exported_tokens_chunks.append(export_tokens(tlist))
+    list_of_exported_tokens = ''.join(exported_tokens_chunks)
     f = Fernet(key)
     list_of_exported_tokens = f.encrypt(list_of_exported_tokens.encode('utf-8'))
     with open(file, 'wb') as f:
