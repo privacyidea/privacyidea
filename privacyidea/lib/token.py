@@ -1972,7 +1972,7 @@ def set_count_window(serial, countwindow=10, user=None):
 
 @log_with(log)
 @check_user_or_serial
-def set_description(serial, description, user=None):
+def set_description(serial, description, user=None, token=None):
     """
     Set the description of a token
 
@@ -1982,16 +1982,15 @@ def set_description(serial, description, user=None):
     :type description: str
     :param user: The owner of the tokens, which should be modified
     :type user: User object
-    :return: number of modified tokens
+    :return: True. In case of an error raise an exception
     :rtype: int
     """
-    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
+    if token is None:
+        token = get_one_token(serial=serial, user=user)
+    token.set_description(description)
+    token.save()
 
-    for tokenobject in tokenobject_list:
-        tokenobject.set_description(description)
-        tokenobject.save()
-
-    return len(tokenobject_list)
+    return True
 
 
 @log_with(log)

@@ -24,6 +24,7 @@ privacyIDEA knows these scopes:
    webui
    register
    container
+   token
 
 You can define as many policies as you wish to.
 The logic of the policies in the scopes is additive.

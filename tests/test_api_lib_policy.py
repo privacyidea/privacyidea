@@ -63,7 +63,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_token_action, check_token_list_action, check_user_params,
                                            check_client_container_action, container_registration_config,
                                            smartphone_config, check_client_container_disabled_action, rss_age,
-                                           hide_container_info, force_server_generate_key)
+                                           hide_container_info, require_description_on_edit, force_server_generate_key)
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.realm import delete_realm
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
@@ -3427,6 +3427,45 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                                require_description, req)
 
         delete_policy("require_description")
+
+    def test_61a_required_description_on_edit(self):
+        self.setUp_user_realms()
+        serial = "HOTP1"
+
+        init_token({"serial": serial, "type": "hotp", "otpkey": "2", "user": "cornelius"})
+
+        # Set policies
+        set_policy(name="require_description_on_edit",
+                   scope=SCOPE.TOKEN,
+                   action=[f"{ACTION.REQUIRE_DESCRIPTION_ON_EDIT}=hotp"])
+
+        set_policy(name="set_description",
+                   scope=SCOPE.ADMIN,
+                   action=ACTION.SETDESCRIPTION)
+
+        with self.app.test_request_context('token/description/' + serial,
+                                           method='POST',
+                                           data={'description': 'test'},
+                                           headers={'Authorization': self.at}):
+            # This should work because the description is set
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+
+        with self.app.test_request_context('token/description/' + serial,
+                                           method='POST',
+                                           data={'description': ""},
+                                           headers={'Authorization': self.at}):
+            # Description is empty, this should not work
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403)
+            result = res.json.get("result")
+            self.assertIn("Description required for hotp token.", result.get("error").get("message"))
+
+        remove_token(serial=serial)
+        delete_policy("require_description_on_edit")
+        delete_policy("set_description")
 
     def test_62_jwt_validity(self):
         g.logged_in_user = {"username": "cornelius",
