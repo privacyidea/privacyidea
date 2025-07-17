@@ -4,7 +4,7 @@ import {
   HttpErrorResponse,
   provideHttpClient,
 } from '@angular/common/http';
-import { of, throwError } from 'rxjs';
+import { lastValueFrom, of, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 import { TokenService } from './token.service';
 import { LocalService } from '../local/local.service';
@@ -308,5 +308,249 @@ describe('TokenService', () => {
     jest.advanceTimersByTime(4000);
     expect(tokenService.getTokenDetails).toHaveBeenCalledTimes(3);
     jest.useRealTimers();
+  });
+
+  describe('reactive helpers', () => {
+    it('filterParams wildcard‑wraps non‑ID fields', () => {
+      tokenService.filterValue.set({
+        serial: 'otp',
+        user: 'alice',
+        description: 'vpn',
+      });
+      expect(tokenService.filterParams()).toEqual({
+        serial: '*otp*',
+        user: 'alice',
+        description: '*vpn*',
+      });
+    });
+
+    it('pageSize falls back to nearest default option', () => {
+      tokenService.pageSize.set(37 as any);
+      tokenService.filterValue.set({ foo: 'bar' } as any);
+      expect(tokenService.pageSize()).toBe(25);
+    });
+  });
+
+  describe('deleteTokens()', () => {
+    it('calls deleteToken for each serial and aggregates', (done) => {
+      const delMock = jest
+        .spyOn(tokenService, 'deleteToken')
+        .mockReturnValue(of({ ok: true } as any));
+
+      tokenService.deleteTokens(['A', 'B']).subscribe((arr) => {
+        expect(delMock).toHaveBeenCalledTimes(2);
+        expect(arr).toEqual([{ ok: true }, { ok: true }]);
+        done();
+      });
+    });
+  });
+
+  describe('revokeToken()', () => {
+    it('posts /revoke and propagates result', (done) => {
+      postSpy.mockReturnValue(of({ success: true } as any));
+
+      tokenService.revokeToken('SER').subscribe((r) => {
+        expect(postSpy).toHaveBeenCalledWith(
+          `${tokenService.tokenBaseUrl}revoke`,
+          { serial: 'SER' },
+          { headers: localService.getHeaders() },
+        );
+        expect(r).toEqual({ success: true });
+        done();
+      });
+    });
+
+    it('notifies on error', (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: 'rvk' } } },
+        status: 500,
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.revokeToken('SER').subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+            'Failed to revoke token. rvk',
+          );
+          done();
+        },
+      });
+    });
+  });
+
+  describe('PIN helpers', () => {
+    it('setPin posts /setpin', () => {
+      postSpy.mockReturnValue(of({}));
+      tokenService.setPin('SER', '9876').subscribe();
+      expect(postSpy).toHaveBeenCalledWith(
+        `${tokenService.tokenBaseUrl}setpin`,
+        { serial: 'SER', otppin: '9876' },
+        { headers: localService.getHeaders() },
+      );
+    });
+
+    it('setRandomPin posts /setrandompin', () => {
+      postSpy.mockReturnValue(of({}));
+      tokenService.setRandomPin('SER').subscribe();
+      expect(postSpy).toHaveBeenCalledWith(
+        `${tokenService.tokenBaseUrl}setrandompin`,
+        { serial: 'SER' },
+        { headers: localService.getHeaders() },
+      );
+    });
+
+    it('resyncOTPToken posts /resync', () => {
+      postSpy.mockReturnValue(of({}));
+      tokenService.resyncOTPToken('S', '111', '222').subscribe();
+      expect(postSpy).toHaveBeenCalledWith(
+        `${tokenService.tokenBaseUrl}resync`,
+        { serial: 'S', otp1: '111', otp2: '222' },
+        { headers: localService.getHeaders() },
+      );
+    });
+  });
+
+  describe('realm & lost token', () => {
+    it('setTokenRealm posts correct body', () => {
+      postSpy.mockReturnValue(of({}));
+      tokenService.setTokenRealm('SER', ['r1', 'r2']).subscribe();
+      expect(postSpy).toHaveBeenCalledWith(
+        `${tokenService.tokenBaseUrl}realm/SER`,
+        { realms: ['r1', 'r2'] },
+        { headers: localService.getHeaders() },
+      );
+    });
+
+    it('lostToken hits /lost endpoint', () => {
+      postSpy.mockReturnValue(of({}));
+      tokenService.lostToken('SER').subscribe();
+      expect(postSpy).toHaveBeenCalledWith(
+        `${tokenService.tokenBaseUrl}lost/SER`,
+        {},
+        { headers: localService.getHeaders() },
+      );
+    });
+  });
+
+  describe('bulk user assign/unassign', () => {
+    it('assignUserToAll maps serials to assignUser calls', (done) => {
+      const stub = jest
+        .spyOn(tokenService, 'assignUser')
+        .mockReturnValue(of({ ok: true } as any));
+
+      tokenService
+        .assignUserToAll({
+          tokenSerials: ['S1', 'S2'],
+          username: 'u',
+          realm: 'r',
+          pin: 'p',
+        })
+        .subscribe((arr) => {
+          expect(stub).toHaveBeenCalledTimes(2);
+          expect(arr.length).toBe(2);
+          done();
+        });
+    });
+
+    it('unassignUserFromAll maps serials to unassignUser calls', (done) => {
+      const un = jest
+        .spyOn(tokenService, 'unassignUser')
+        .mockReturnValue(of({ ok: true } as any));
+
+      tokenService.unassignUserFromAll(['X', 'Y']).subscribe((arr) => {
+        expect(un).toHaveBeenCalledTimes(2);
+        expect(arr.length).toBe(2);
+        done();
+      });
+    });
+  });
+
+  describe('helper methods – error branches', () => {
+    const makeErr = (msg: string) =>
+      new HttpErrorResponse({
+        error: { result: { error: { message: msg } } },
+        status: 500,
+      });
+
+    afterEach(() => postSpy.mockClear());
+
+    it.each([
+      [
+        'setPin',
+        () => tokenService.setPin('X', '1'),
+        'Failed to set PIN. boom',
+      ],
+      [
+        'setRandomPin',
+        () => tokenService.setRandomPin('X'),
+        'Failed to set random PIN. boom',
+      ],
+      [
+        'resyncOTPToken',
+        () => tokenService.resyncOTPToken('X', '111', '222'),
+        'Failed to resync OTP token. boom',
+      ],
+      [
+        'setTokenRealm',
+        () => tokenService.setTokenRealm('X', ['r']),
+        'Failed to set token realm. boom',
+      ],
+      [
+        'lostToken',
+        () => tokenService.lostToken('X'),
+        'Failed to mark token as lost. boom',
+      ],
+    ])('%s() notifies on error', async (_label, call, expected) => {
+      postSpy.mockReturnValue(throwError(() => makeErr('boom')));
+
+      await expect(lastValueFrom(call())).rejects.toMatchObject({
+        error: { result: { error: { message: 'boom' } } },
+      });
+
+      expect(notificationService.openSnackBar).toHaveBeenCalledWith(expected);
+    });
+
+    it('assignUserToAll stops on first error and shows snackbar', (done) => {
+      jest
+        .spyOn(tokenService, 'assignUser')
+        .mockReturnValueOnce(throwError(() => makeErr('first')))
+        .mockReturnValue(of({ ok: true } as any));
+
+      tokenService
+        .assignUserToAll({
+          tokenSerials: ['S1', 'S2'],
+          username: 'u',
+          realm: 'r',
+        })
+        .subscribe({
+          next: () => fail('should error'),
+          error: (e) => {
+            expect(e.error.result.error.message).toBe('first');
+            expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+              'Failed to assign user to all tokens. first',
+            );
+            done();
+          },
+        });
+    });
+
+    it('unassignUserFromAll propagates error and shows snackbar', (done) => {
+      jest
+        .spyOn(tokenService, 'unassignUser')
+        .mockReturnValueOnce(throwError(() => makeErr('oops')))
+        .mockReturnValue(of({ ok: true } as any));
+
+      tokenService.unassignUserFromAll(['T1', 'T2']).subscribe({
+        next: () => fail('should error'),
+        error: (e) => {
+          expect(e.error.result.error.message).toBe('oops');
+          expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+            'Failed to unassign user from all tokens. oops',
+          );
+          done();
+        },
+      });
+    });
   });
 });
