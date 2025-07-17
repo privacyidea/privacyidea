@@ -26,6 +26,7 @@ def register_finalizer(func):
     """
     Register ``func`` to be called after the request has ended (this includes
     cases in which an error has been thrown)
+
     :param func: a function that takes no arguments
     """
     # from http://flask.pocoo.org/snippets/53/

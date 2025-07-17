@@ -25,26 +25,26 @@ from privacyidea.models.utils import MethodsMixin
 from privacyidea.lib.utils import convert_column_to_unicode
 
 audit_column_length = {"signature": 620,
-                       "action": 50,
+                       "action": 200,
                        "serial": 40,
                        "token_type": 12,
-                       "user": 20,
-                       "realm": 20,
-                       "resolver": 50,
-                       "administrator": 20,
-                       "action_detail": 50,
-                       "info": 50,
+                       "user": 100,
+                       "realm": 255,
+                       "resolver": 255,
+                       "administrator": 100,
+                       "action_detail": 500,
+                       "info": 500,
                        "privacyidea_server": 255,
                        "client": 50,
                        "loglevel": 12,
                        "clearance_level": 12,
                        "thread_id": 20,
                        "authentication": 12,
-                       "user_agent": 20,
+                       "user_agent": 50,
                        "user_agent_version": 20,
                        "policies": 255,
-                       "container_serial": 20,
-                       "container_type": 20}
+                       "container_serial": 40,
+                       "container_type": 100}
 AUDIT_TABLE_NAME = 'pidea_audit'
 
 
