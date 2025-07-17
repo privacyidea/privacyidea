@@ -707,7 +707,7 @@ Imports token data from a privacyIDEA created with pi-tokenjanitor export_for_pr
 
     Example::
 
-        pi-tokenjanitor import privacyidea /path/to/privacyidea.txt key 'myencryptionkey'
+        pi-tokenjanitor import privacyidea /path/to/privacyidea.txt 'myencryptionkey'
 
 Update
 ~~~~~~
