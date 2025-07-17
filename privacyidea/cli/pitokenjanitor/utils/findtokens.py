@@ -697,7 +697,7 @@ def remove_tokeninfo(ctx, tokeninfo_key):
             click.echo(f"Removed tokeninfo '{tokeninfo_key}' for token {token_obj.token.serial}")
 
 @findtokens.command('export_for_privacyidea')
-@click.option('--file', required=False, type=str,
+@click.option('--file', required=False, type=click.Path(writable=True),
               help='The file to export the tokens to. Defaults to "exported_tokens.txt".')
 @click.pass_context
 def export_token_for_privacyidea(ctx, file):

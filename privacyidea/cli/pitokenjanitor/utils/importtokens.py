@@ -108,9 +108,24 @@ def import_token_from_privacyidea(file, key):
     FILE is the file containing the tokens to be imported.
     KEY is the encryption key used to decrypt the tokens.
     """
-    decrypt_key = Fernet(key)
-    token_data = file.read()
-    token_list = decrypt_key.decrypt(token_data).decode("utf-8")
+    try:
+        decrypt_key = Fernet(key)
+    except Exception as e:
+        click.echo(f"Error creating decryption key: {e}")
+        return
+
+    try:
+        token_data = file.read()
+    except Exception as e:
+        click.echo(f"Error reading file: {e}")
+        return
+
+    try:
+        token_list = decrypt_key.decrypt(token_data).decode("utf-8")
+    except Exception as e:
+        click.echo(f"Error decrypting token data: {e}")
+        return
+
     ret = import_tokens(token_list)
     click.echo(f"{len(ret.successful_tokens)} tokens imported successfully.\n"
                f"{len(ret.failed_tokens)} tokens failed to import.\n"
