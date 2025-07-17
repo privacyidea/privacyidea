@@ -364,19 +364,15 @@ def get_auth_token():
                 # This condition can only be checked if the user was authenticated as it
                 # is the only way to verify if such a user exists.
                 log.warning(f"A user '{user.login}' exists as local admin and as user in your default realm!")
+            g.audit_object.log({
+                "realm": user.realm,
+                "resolver": user.resolver,
+                "serial": serials,
+                "info": log_used_user(user, f"loginmode={details.get('loginmode')}")})
             if role == ROLE.ADMIN:
-                g.audit_object.log({"user": "",
-                                    "administrator": user.login,
-                                    "realm": user.realm,
-                                    "resolver": user.resolver,
-                                    "serial": serials,
-                                    "info": f"{log_used_user(user)}|loginmode={details.get('loginmode')}"})
+                g.audit_object.log({"user": "", "administrator": user.login})
             else:
-                g.audit_object.log({"user": user.login,
-                                    "realm": user.realm,
-                                    "resolver": user.resolver,
-                                    "serial": serials,
-                                    "info": f"{log_used_user(user)}|loginmode={details.get('loginmode')}"})
+                g.audit_object.log({"user": user.login})
 
             if not user_auth and "multi_challenge" in details and len(details["multi_challenge"]) > 0:
                 # Do not return user data in case of a challenge request.

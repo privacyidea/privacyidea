@@ -491,6 +491,7 @@ def after_request(response):
 @serviceid_blueprint.app_errorhandler(AuthError)
 @container_blueprint.app_errorhandler(AuthError)
 @info_blueprint.app_errorhandler(AuthError)
+@jwtauth.app_errorhandler(AuthError)
 def auth_error(error):
     if "audit_object" in g:
         message = ''
