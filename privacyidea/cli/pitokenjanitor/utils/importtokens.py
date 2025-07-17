@@ -111,7 +111,7 @@ def import_token_from_privacyidea(file, key):
     try:
         decrypt_key = Fernet(key)
     except Exception as e:
-        click.echo(f"Error creating decryption key: {e}")
+        click.echo(f"Invalid encryption key format. Please ensure the key is valid. Details: {e}")
         return
 
     try:
@@ -121,9 +121,15 @@ def import_token_from_privacyidea(file, key):
         return
 
     try:
-        token_list = decrypt_key.decrypt(token_data).decode("utf-8")
+        decrypted_data = decrypt_key.decrypt(token_data)
     except Exception as e:
         click.echo(f"Error decrypting token data: {e}")
+        return
+
+    try:
+        token_list = decrypted_data.decode("utf-8")
+    except UnicodeDecodeError as e:
+        click.echo(f"Error decoding token data: {e}")
         return
 
     ret = import_tokens(token_list)
