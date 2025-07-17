@@ -41,7 +41,7 @@ export class ContainerTabComponent {
     private containerService: ContainerService,
     private contentService: ContentService,
     @Inject(VersioningService)
-    private versioningService: VersioningServiceInterface,
+    protected versioningService: VersioningServiceInterface,
     private dialog: MatDialog,
   ) {}
 
