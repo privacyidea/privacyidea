@@ -1,52 +1,45 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { LoginComponent } from './components/login/login.component';
-import { TokenComponent } from './components/token/token.component';
-import { adminMatch, AuthGuard, selfServiceMatch } from './guards/auth.guard';
 import { LayoutComponent } from './components/layout/layout.component';
-import { TokenSelfServiceComponent } from './components/token/token.self-service.component';
-import { UserComponent } from './components/user/user.component';
-import { UserSelfServiceComponent } from './components/user/user.self-service.component';
 import { AuditComponent } from './components/audit/audit.component';
+import { adminMatch, AuthGuard, selfServiceMatch } from './guards/auth.guard';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   {
     path: '',
     component: LayoutComponent,
+    canActivateChild: [AuthGuard],
     children: [
       {
-        path: 'token',
+        path: 'tokens',
         canMatch: [adminMatch],
-        canActivate: [AuthGuard],
-        component: TokenComponent,
+        loadChildren: () => import('./admin.routes').then((m) => m.routes),
       },
       {
-        path: 'token',
+        path: 'tokens',
         canMatch: [selfServiceMatch],
-        canActivate: [AuthGuard],
-        component: TokenSelfServiceComponent,
+        loadChildren: () =>
+          import('./self-service.routes').then((m) => m.routes),
       },
       {
-        path: 'user',
+        path: 'users',
         canMatch: [adminMatch],
-        canActivate: [AuthGuard],
-        component: UserComponent,
+        loadChildren: () => import('./admin.routes').then((m) => m.routes),
       },
       {
-        path: 'user',
+        path: 'users',
         canMatch: [selfServiceMatch],
-        canActivate: [AuthGuard],
-        component: UserSelfServiceComponent,
+        loadChildren: () =>
+          import('./self-service.routes').then((m) => m.routes),
       },
-      {
-        path: 'audit',
-        canActivate: [AuthGuard],
-        component: AuditComponent,
-      },
-      { path: '', redirectTo: '/login', pathMatch: 'full' },
+
+      { path: 'audit', component: AuditComponent },
+      { path: '', redirectTo: 'tokens', pathMatch: 'full' },
     ],
   },
+  { path: '', redirectTo: '/login', pathMatch: 'full' },
   { path: '**', redirectTo: '/login' },
 ];
 

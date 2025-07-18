@@ -41,7 +41,7 @@ import { ContentService } from '../../../services/content/content.service';
   templateUrl: './token-get-serial.component.html',
   styleUrl: './token-get-serial.component.scss',
 })
-export class TokenGetSerial {
+export class TokenGetSerialComponent {
   selectedContent = this.contentService.selectedContent;
   tokenSerial = this.tokenService.tokenSerial;
   otpValue = signal<string>('');

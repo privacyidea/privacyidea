@@ -3,24 +3,20 @@
     <mat-divider />
     <br />
     <mat-list-item>
-      <button (click)="onClickContainerTab()"
-              [ngClass]="[
-          selectedContent() === 'container_overview'
-            ? 'card-button-active'
-            : 'card-button']"
+      <button (click)="go('/tokens/containers')"
+              [ngClass]="selectedContent() === 'container_overview' ? 'card-button-active' : 'card-button'"
               mat-flat-button>
-        <mat-icon class="mdi--folder-search" />
+        <mat-icon class="mdi--folder-search"></mat-icon>
         Overview
       </button>
     </mat-list-item>
-    <div [@toggleState]="containerIsSelected()">
-      @if (selectedContent() !== "container_details") {
+
+    <div [@toggleState]="selectedContent().startsWith('container')">
+      @if (selectedContent() !== 'container_details') {
+
         <mat-list-item>
-          <button (click)="onClickCreateContainer()"
-                  [ngClass]="[
-          selectedContent() === 'container_create'
-            ? 'card-button-active'
-            : 'card-button']"
+          <button (click)="go('/tokens/containers/create')"
+                  [ngClass]="selectedContent() === 'container_create' ? 'card-button-active' : 'card-button'"
                   mat-flat-button>
             <mat-icon>create_new_folder</mat-icon>
             Create
@@ -66,11 +62,7 @@
         }
       } @else {
         <mat-list-item>
-          <button [ngClass]="[
-              selectedContent() === 'container_details'
-                ? 'card-button-active'
-                : 'card-button',
-            ]"
+          <button [ngClass]="selectedContent() === 'container_details' ? 'card-button-active' : 'card-button'"
                   mat-flat-button>
             <mat-icon>health_and_safety</mat-icon>
             Container Details

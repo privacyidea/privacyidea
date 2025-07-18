@@ -1,4 +1,4 @@
-import { Component, effect, signal, ViewChild } from '@angular/core';
+import { Component, computed, effect, signal, ViewChild } from '@angular/core';
 import { TokenTableComponent } from './token-table/token-table.component';
 import { CommonModule } from '@angular/common';
 import { ContainerTableComponent } from './container-table/container-table.component';
@@ -13,14 +13,10 @@ import { MatFabButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { OverflowService } from '../../services/overflow/overflow.service';
 import { TokenCardComponent } from './token-card/token-card.component';
-import { TokenGetSerial } from './token-get-serial/token-get-serial.component';
-import { TokenEnrollmentComponent } from './token-enrollment/token-enrollment.component';
-import { TokenApplicationsComponent } from './token-applications/token-applications.component';
-import { ChallengesTableComponent } from './challenges-table/challenges-table.component';
 import { LoadingService } from '../../services/loading/loading-service';
-import { ContainerCreateComponent } from './container-create/container-create.component';
 import { TokenService } from '../../services/token/token.service';
 import { ContentService } from '../../services/content/content.service';
+import { Router, RouterOutlet } from '@angular/router';
 
 export type TokenTypeOption =
   | 'hotp'
@@ -69,21 +65,13 @@ export type TokenSelectedContentKey =
   standalone: true,
   imports: [
     CommonModule,
-    TokenTableComponent,
     TokenCardComponent,
-    TokenDetailsComponent,
-    TokenGetSerial,
-    ContainerTableComponent,
-    ContainerDetailsComponent,
     MatDrawerContainer,
     MatDrawer,
     MatSidenavModule,
     MatIcon,
     MatFabButton,
-    TokenEnrollmentComponent,
-    TokenApplicationsComponent,
-    ChallengesTableComponent,
-    ContainerCreateComponent,
+    RouterOutlet,
   ],
   templateUrl: './token.component.html',
   styleUrl: './token.component.scss',
@@ -197,6 +185,7 @@ export class TokenComponent {
   ];
   tokenTypeOptions = signal([]);
   isTokenDrawerOverflowing = signal(false);
+  currentTokenView = computed(() => this.router.url);
   @ViewChild('tokenDetailsComponent')
   tokenDetailsComponent!: TokenDetailsComponent;
   @ViewChild('containerDetailsComponent')
@@ -209,6 +198,7 @@ export class TokenComponent {
   constructor(
     protected overflowService: OverflowService,
     private loadingService: LoadingService,
+    private router: Router,
     protected tokenService: TokenService,
     protected contentService: ContentService,
   ) {

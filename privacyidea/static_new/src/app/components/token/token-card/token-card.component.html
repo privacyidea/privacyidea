@@ -1,21 +1,16 @@
-<mat-card [ngClass]="{
-    'card-margin-pad': !overflowService.isWidthOverflowing(
-      'body',
-      overflowService.getOverflowThreshold(selectedContent())
-    ),
-  }"
+<mat-card [ngClass]="{'card-margin-pad': !overflowService.isWidthOverflowing('body',
+                        overflowService.getOverflowThreshold(selectedContent()))}"
           appearance="outlined">
   <mat-card-content>
-    <mat-tab-group (selectedTabChange)="onTabChange()"
-                   [(selectedIndex)]="selectedTabIndex"
+    <mat-tab-group (selectedTabChange)="onTabChange($event)"
+                   [selectedIndex]="selectedTabIndex()"
                    animationDuration="400ms"
                    fitInkBarToContent
                    mat-align-tabs="center"
                    mat-stretch-tabs="false">
       <mat-tab>
         <ng-template mat-tab-label>
-          <mat-icon [ngClass]="{ 'tab-active': tokenTabActive() }">shield
-          </mat-icon>
+          <mat-icon [ngClass]="{ 'tab-active': tokenTabActive() }">shield</mat-icon>
           <h4 [ngClass]="{ 'tab-active': tokenTabActive() }">Token</h4>
         </ng-template>
         <ng-template matTabContent>
@@ -24,8 +19,7 @@
       </mat-tab>
       <mat-tab>
         <ng-template mat-tab-label>
-          <mat-icon [ngClass]="{ 'tab-active': containerTabActive() }">folder
-          </mat-icon>
+          <mat-icon [ngClass]="{ 'tab-active': containerTabActive() }">folder</mat-icon>
           <h4 [ngClass]="{ 'tab-active': containerTabActive() }">Container</h4>
         </ng-template>
         <ng-template matTabContent>

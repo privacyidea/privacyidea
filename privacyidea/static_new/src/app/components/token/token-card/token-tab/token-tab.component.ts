@@ -1,10 +1,11 @@
-import { NgClass } from '@angular/common';
 import { Component, computed, Inject, signal } from '@angular/core';
-import { MatButton } from '@angular/material/button';
-import { MatDialog } from '@angular/material/dialog';
-import { MatDivider } from '@angular/material/divider';
+import { Router } from '@angular/router';
+import { NgClass } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
 import { MatList, MatListItem } from '@angular/material/list';
+import { MatButton } from '@angular/material/button';
+import { MatDivider } from '@angular/material/divider';
+import { MatDialog } from '@angular/material/dialog';
 import { forkJoin, switchMap } from 'rxjs';
 import { tabToggleState } from '../../../../../styles/animations/animations';
 import { ContentService } from '../../../../services/content/content.service';
@@ -25,6 +26,7 @@ import { LostTokenComponent } from './lost-token/lost-token.component';
   animations: [tabToggleState],
 })
 export class TokenTabComponent {
+  /* existing reactive properties ------------------------------- */
   selectedContent = this.contentService.selectedContent;
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
@@ -35,6 +37,7 @@ export class TokenTabComponent {
   version!: string;
 
   constructor(
+    private router: Router,
     private tokenService: TokenService,
     private dialog: MatDialog,
     @Inject(VersioningService)
@@ -46,17 +49,18 @@ export class TokenTabComponent {
     this.version = this.versioningService.getVersion();
   }
 
+  go(path: string) {
+    this.contentService.isProgrammaticTabChange.set(true);
+    this.router.navigateByUrl(path);
+  }
+
   toggleActive(): void {
     this.tokenService
       .toggleActive(this.tokenSerial(), this.tokenIsActive())
       .pipe(
         switchMap(() => this.tokenService.getTokenDetails(this.tokenSerial())),
       )
-      .subscribe({
-        next: () => {
-          this.tokenService.tokenDetailResource.reload();
-        },
-      });
+      .subscribe(() => this.tokenService.tokenDetailResource.reload());
   }
 
   revokeToken(): void {
@@ -71,23 +75,17 @@ export class TokenTabComponent {
         },
       })
       .afterClosed()
-      .subscribe({
-        next: (result) => {
-          if (result) {
-            this.tokenService
-              .revokeToken(this.tokenSerial())
-              .pipe(
-                switchMap(() =>
-                  this.tokenService.getTokenDetails(this.tokenSerial()),
-                ),
-              )
-              .subscribe({
-                next: () => {
-                  this.tokenService.tokenDetailResource.reload();
-                },
-              });
-          }
-        },
+      .subscribe((ok) => {
+        if (ok) {
+          this.tokenService
+            .revokeToken(this.tokenSerial())
+            .pipe(
+              switchMap(() =>
+                this.tokenService.getTokenDetails(this.tokenSerial()),
+              ),
+            )
+            .subscribe(() => this.tokenService.tokenDetailResource.reload());
+        }
       });
   }
 
@@ -103,59 +101,40 @@ export class TokenTabComponent {
         },
       })
       .afterClosed()
-      .subscribe({
-        next: (result) => {
-          if (result) {
-            this.tokenService.deleteToken(this.tokenSerial()).subscribe({
-              next: () => {
-                this.selectedContent.set('token_overview');
-                this.tokenSerial.set('');
-              },
-            });
-          }
-        },
+      .subscribe((ok) => {
+        if (ok) {
+          this.tokenService.deleteToken(this.tokenSerial()).subscribe(() => {
+            this.go('/tokens');
+          });
+        }
       });
   }
 
   deleteSelectedTokens(): void {
-    const selectedTokens = this.tokenSelection();
+    const ts = this.tokenSelection();
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: selectedTokens.map((token) => token.serial),
+          serial_list: ts.map((t) => t.serial),
           title: 'Delete All Tokens',
           type: 'token',
           action: 'delete',
-          numberOfTokens: selectedTokens.length,
+          numberOfTokens: ts.length,
         },
       })
       .afterClosed()
-      .subscribe({
-        next: (result) => {
-          if (result) {
-            forkJoin(
-              selectedTokens.map((token) =>
-                this.tokenService.deleteToken(token.serial),
-              ),
-            ).subscribe({
-              next: () => {
-                this.tokenService.tokenResource.reload();
-              },
-              error: (err) => {
-                console.error('Error deleting tokens:', err);
-              },
-            });
-          }
-        },
+      .subscribe((ok) => {
+        if (ok) {
+          forkJoin(
+            ts.map((t) => this.tokenService.deleteToken(t.serial)),
+          ).subscribe(() => this.tokenService.tokenResource.reload());
+        }
       });
   }
 
   openLostTokenDialog() {
     this.dialog.open(LostTokenComponent, {
-      data: {
-        isLost: this.isLost,
-        tokenSerial: this.tokenSerial,
-      },
+      data: { isLost: this.isLost, tokenSerial: this.tokenSerial },
     });
   }
 }

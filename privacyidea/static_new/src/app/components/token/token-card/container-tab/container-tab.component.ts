@@ -1,10 +1,11 @@
-import { NgClass } from '@angular/common';
 import { Component, computed, Inject } from '@angular/core';
-import { MatButton } from '@angular/material/button';
-import { MatDialog } from '@angular/material/dialog';
-import { MatDivider } from '@angular/material/divider';
+import { NgClass } from '@angular/common';
+import { Router } from '@angular/router';
 import { MatIcon } from '@angular/material/icon';
 import { MatList, MatListItem } from '@angular/material/list';
+import { MatButton } from '@angular/material/button';
+import { MatDivider } from '@angular/material/divider';
+import { MatDialog } from '@angular/material/dialog';
 import { forkJoin } from 'rxjs';
 import { tabToggleState } from '../../../../../styles/animations/animations';
 import { ContainerService } from '../../../../services/container/container.service';
@@ -29,15 +30,14 @@ export class ContainerTabComponent {
   containerSerial = this.containerService.containerSerial;
   selectedContainer = this.containerService.selectedContainer;
   containerIsSelected = computed(() => this.containerSerial() !== '');
-  isProgrammaticTabChange = this.contentService.isProgrammaticTabChange;
   states = computed(() => {
-    const containerDetail =
-      this.containerService.containerDetailResource.value();
-    return containerDetail?.result?.value?.containers[0]?.states ?? [];
+    const detail = this.containerService.containerDetailResource.value();
+    return detail?.result?.value?.containers[0]?.states ?? [];
   });
   version!: string;
 
   constructor(
+    private router: Router,
     private containerService: ContainerService,
     private contentService: ContentService,
     @Inject(VersioningService)
@@ -49,12 +49,24 @@ export class ContainerTabComponent {
     this.version = this.versioningService.getVersion();
   }
 
+  go(path: string) {
+    this.contentService.isProgrammaticTabChange.set(true);
+    this.router.navigateByUrl(path);
+  }
+
+  onClickContainerOverview() {
+    this.go('/tokens/containers');
+  }
+
+  enrollTokenInContainer() {
+    this.selectedContainer.set(this.containerSerial());
+    this.go('/tokens/enroll');
+  }
+
   toggleActive(): void {
     this.containerService
       .toggleActive(this.containerSerial(), this.states())
-      .subscribe(() => {
-        this.containerService.containerDetailResource.reload();
-      });
+      .subscribe(() => this.containerService.containerDetailResource.reload());
   }
 
   deleteContainer() {
@@ -69,53 +81,37 @@ export class ContainerTabComponent {
         },
       })
       .afterClosed()
-      .subscribe({
-        next: (result) => {
-          if (result) {
-            this.containerService
-              .deleteContainer(this.containerSerial())
-              .subscribe({
-                next: () => {
-                  this.selectedContent.set('container_overview');
-                  this.containerSerial.set('');
-                },
-              });
-          }
-        },
+      .subscribe((ok) => {
+        if (ok) {
+          this.containerService
+            .deleteContainer(this.containerSerial())
+            .subscribe(() => this.go('/tokens/containers'));
+        }
       });
   }
 
   deleteSelectedContainer(): void {
-    const selectedContainers = this.containerSelection();
+    const cs = this.containerSelection();
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: selectedContainers.map((container) => container.serial),
+          serial_list: cs.map((c) => c.serial),
           title: 'Delete All Containers',
           type: 'container',
           action: 'delete',
-          numberOfContainers: selectedContainers.length,
+          numberOfContainers: cs.length,
         },
       })
       .afterClosed()
-      .subscribe({
-        next: (result) => {
-          if (result) {
-            forkJoin(
-              selectedContainers.map((container) =>
-                this.containerService.deleteContainer(container.serial),
-              ),
-            ).subscribe({
-              next: () => {
-                this.containerSelection.set([]);
-                this.containerService.containerResource.reload();
-              },
-              error: (err) => {
-                console.error('Error deleting containers:', err);
-              },
-            });
-          }
-        },
+      .subscribe((ok) => {
+        if (ok) {
+          forkJoin(
+            cs.map((c) => this.containerService.deleteContainer(c.serial)),
+          ).subscribe(() => {
+            this.containerSelection.set([]);
+            this.containerService.containerResource.reload();
+          });
+        }
       });
   }
 
@@ -125,21 +121,5 @@ export class ContainerTabComponent {
 
   damagedContainer() {
     // TODO: Missing API endpoint
-  }
-
-  onClickContainerTab = () => this.onClickContainerOverview();
-
-  onClickContainerOverview() {
-    this.selectedContent.set('container_overview');
-  }
-
-  enrollTokenInContainer() {
-    this.selectedContainer.set(this.containerSerial());
-    this.isProgrammaticTabChange.set(true);
-    this.selectedContent.set('token_enrollment');
-  }
-
-  onClickCreateContainer() {
-    this.selectedContent.set('container_create');
   }
 }

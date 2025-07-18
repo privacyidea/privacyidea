@@ -3,53 +3,36 @@
     <mat-divider />
     <br />
     <mat-list-item>
-      <button (click)="selectedContent.set('token_overview')"
-              [ngClass]="[
-          selectedContent() === 'token_overview'
-            ? 'card-button-active'
-            : 'card-button',]"
+      <button (click)="go('/tokens')"
+              [ngClass]="selectedContent() === 'token_overview' ? 'card-button-active' : 'card-button'"
               mat-flat-button>
         <mat-icon>policy</mat-icon>
         Overview
       </button>
     </mat-list-item>
-    <div [@toggleState]="tokenIsSelected()">
-      @if (selectedContent() !== "token_details") {
+
+    <div [@toggleState]="selectedContent().startsWith('token')">
+      @if (selectedContent() !== 'token_details') {
         <mat-list-item>
-          <button (click)="selectedContent.set('token_enrollment')"
-                  [ngClass]="[
-              selectedContent() === 'token_enrollment'
-                ? 'card-button-active'
-                : 'card-button',]"
+          <button (click)="go('/tokens/enroll')"
+                  [ngClass]="selectedContent() === 'token_enrollment' ? 'card-button-active' : 'card-button'"
                   mat-flat-button>
             <mat-icon>add_moderator</mat-icon>
             Enrollment
           </button>
         </mat-list-item>
         <mat-list-item>
-          <button class="card-button"
-                  mat-flat-button>
-            <mat-icon>file_upload</mat-icon>
-            Import
-          </button>
-        </mat-list-item>
-        <mat-list-item>
-          <button [ngClass]="[
-              selectedContent() === 'token_challenges'
-                ? 'card-button-active'
-                : 'card-button',]"
-                  (click)="selectedContent.set('token_challenges')"
+          <button (click)="go('/tokens/challenges')"
+                  [ngClass]="selectedContent() === 'token_challenges' ? 'card-button-active' : 'card-button'"
                   mat-flat-button>
             <mat-icon>cached</mat-icon>
             Show Challenges
           </button>
         </mat-list-item>
+
         <mat-list-item>
-          <button [ngClass]="[
-              selectedContent() === 'token_applications'
-                ? 'card-button-active'
-                : 'card-button',]"
-                  (click)="selectedContent.set('token_applications')"
+          <button (click)="go('/tokens/applications')"
+                  [ngClass]="selectedContent() === 'token_applications' ? 'card-button-active' : 'card-button'"
                   mat-flat-button>
             <mat-icon>now_widgets</mat-icon>
             Applications
@@ -62,7 +45,7 @@
                 ? 'card-button-active'
                 : 'card-button',]"
                   mat-flat-button
-                  (click)="selectedContent.set('token_get_serial')">
+                  (click)="go('/tokens/get-serial')">
             <mat-icon>help_outline</mat-icon>
             Get Serial Number
           </button>
@@ -91,10 +74,7 @@
         }
       } @else {
         <mat-list-item>
-          <button [ngClass]="[
-              selectedContent() === 'token_details'
-                ? 'card-button-active'
-                : 'card-button',]"
+          <button [ngClass]="selectedContent() === 'token_details' ? 'card-button-active' : 'card-button'"
                   mat-flat-button>
             <mat-icon>health_and_safety</mat-icon>
             Token Details
@@ -139,7 +119,7 @@
           <button (click)="deleteToken()"
                   class="card-button-delete"
                   mat-flat-button>
-            <mat-icon> delete </mat-icon>
+            <mat-icon> delete</mat-icon>
             Delete
           </button>
         </mat-list-item>
