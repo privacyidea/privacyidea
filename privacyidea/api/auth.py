@@ -124,12 +124,15 @@ def before_request():
         # overwrite the split realm if we have a realm parameter. Default back to default_realm
         realm = getParam(request.all_data, "realm") or realm or get_default_realm()
         # Prefill the request.User. This is used by some pre-event handlers
-        try:
-            request.User = User(login_name, realm)
-        except Exception as e:
-            request.User = None
-            log.warning(f"Problem resolving user {login_name} in realm {realm}: {e!s}.")
-            log.debug(f"{traceback.format_exc()!s}")
+        if db_admin_exist(login_name):
+            request.User = User()
+        else:
+            try:
+                request.User = User(login_name, realm)
+            except Exception as e:
+                request.User = None
+                log.warning(f"Problem resolving user {login_name} in realm {realm}: {e!s}.")
+                log.debug(f"{traceback.format_exc()!s}")
 
 
 @jwtauth.route('', methods=['POST'])
