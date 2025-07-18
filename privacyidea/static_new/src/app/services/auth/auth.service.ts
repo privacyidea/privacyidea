@@ -8,7 +8,10 @@ import {
   NotificationService,
   NotificationServiceInterface,
 } from '../notification/notification.service';
-import { VersioningService } from '../version/version.service';
+import {
+  VersioningService,
+  VersioningServiceInterface,
+} from '../version/version.service';
 
 export type AuthResponse = PiResponse<AuthData, AuthDetail>;
 
@@ -91,7 +94,8 @@ export class AuthService implements AuthServiceInterface {
     readonly http: HttpClient,
     @Inject(NotificationService)
     readonly notificationService: NotificationServiceInterface,
-    readonly versioningService: VersioningService,
+    @Inject(VersioningService)
+    readonly versioningService: VersioningServiceInterface,
   ) {}
 
   authenticate(params: any) {

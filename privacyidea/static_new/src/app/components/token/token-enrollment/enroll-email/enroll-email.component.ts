@@ -2,12 +2,10 @@ import {
   Component,
   computed,
   EventEmitter,
+  Inject,
   OnInit,
   Output,
 } from '@angular/core';
-import { MatCheckbox } from '@angular/material/checkbox';
-import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
 import {
   FormControl,
   FormGroup,
@@ -15,8 +13,17 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { SystemService } from '../../../../services/system/system.service';
-import { TokenService } from '../../../../services/token/token.service';
+import { MatCheckbox } from '@angular/material/checkbox';
+import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatInput } from '@angular/material/input';
+import {
+  SystemService,
+  SystemServiceInterface,
+} from '../../../../services/system/system.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
 import { Observable, of } from 'rxjs';
 import {
@@ -75,8 +82,10 @@ export class EnrollEmailComponent implements OnInit {
   });
 
   constructor(
-    private systemService: SystemService,
-    private tokenService: TokenService,
+    @Inject(SystemService)
+    private systemService: SystemServiceInterface,
+    @Inject(TokenService)
+    private tokenService: TokenServiceInterface,
     private enrollmentMapper: EmailApiPayloadMapper,
   ) {}
 

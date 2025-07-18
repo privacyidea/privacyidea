@@ -1,6 +1,7 @@
 import { HttpClient, HttpParams, httpResource } from '@angular/common/http';
 import {
   computed,
+  Inject,
   Injectable,
   linkedSignal,
   signal,
@@ -8,13 +9,19 @@ import {
 } from '@angular/core';
 import { Sort } from '@angular/material/sort';
 import { environment } from '../../../environments/environment';
-import { LocalService } from '../local/local.service';
-import { TableUtilsService } from '../table-utils/table-utils.service';
+import { LocalService, LocalServiceInterface } from '../local/local.service';
+import {
+  TableUtilsService,
+  TableUtilsServiceInterface,
+} from '../table-utils/table-utils.service';
 
 import { PageEvent } from '@angular/material/paginator';
 import { Observable } from 'rxjs';
 import { PiResponse } from '../../app.component';
-import { ContentService } from '../content/content.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../content/content.service';
 
 type TokenApplications = TokenApplication[];
 
@@ -40,11 +47,76 @@ export interface TokenApplication {
   };
 }
 
+export interface MachineServiceInterface {
+  sshApiFilter: string[];
+  sshAdvancedApiFilter: string[];
+  offlineApiFilter: string[];
+  offlineAdvancedApiFilter: string[];
+  machines: WritableSignal<Machines>;
+  tokenApplications: WritableSignal<TokenApplications>;
+  selectedApplicationType: WritableSignal<'ssh' | 'offline'>;
+  pageSize: WritableSignal<number>;
+  filterValue: WritableSignal<Record<string, string>>;
+  filterParams: () => Record<string, string>;
+  sort: WritableSignal<Sort>;
+  pageIndex: WritableSignal<number>;
+  machinesResource: any;
+  tokenApplicationResource: any;
+  postAssignMachineToToken(args: {
+    service_id: string;
+    user: string;
+    serial: string;
+    application: string;
+    machineid: string;
+    resolver: string;
+  }): Observable<any>;
+  postTokenOption(
+    hostname: string,
+    machineid: string,
+    resolver: string,
+    serial: string,
+    application: string,
+    mtid: string,
+  ): Observable<any>;
+  getAuthItem(
+    challenge: string,
+    hostname: string,
+    application?: string,
+  ): Observable<any>;
+  postToken(
+    hostname: string,
+    machineid: string,
+    resolver: string,
+    serial: string,
+    application: string,
+  ): Observable<any>;
+  getMachine(args: {
+    hostname?: string;
+    ip?: string;
+    id?: string;
+    resolver?: string;
+    any?: string;
+  }): Observable<PiResponse<Machines>>;
+  deleteToken(
+    serial: string,
+    machineid: string,
+    resolver: string,
+    application: string,
+  ): Observable<any>;
+  deleteTokenMtid(
+    serial: string,
+    application: string,
+    mtid: string,
+  ): Observable<any>;
+  onPageEvent(event: PageEvent): void;
+  onSortEvent($event: Sort): void;
+}
+
 @Injectable({
   providedIn: 'root',
 })
-export class MachineService {
-  baseUrl = environment.proxyUrl + '/machine/';
+export class MachineService implements MachineServiceInterface {
+  private baseUrl = environment.proxyUrl + '/machine/';
   sshApiFilter = ['serial', 'service_id'];
   sshAdvancedApiFilter = ['hostname', 'machineid & resolver'];
   offlineApiFilter = ['serial', 'count', 'rounds'];
@@ -161,9 +233,12 @@ export class MachineService {
 
   constructor(
     public http: HttpClient,
-    public localService: LocalService,
-    public tableUtilsService: TableUtilsService,
-    public contentService: ContentService,
+    @Inject(LocalService)
+    public localService: LocalServiceInterface,
+    @Inject(TableUtilsService)
+    public tableUtilsService: TableUtilsServiceInterface,
+    @Inject(ContentService)
+    public contentService: ContentServiceInterface,
   ) {}
 
   postTokenOption(

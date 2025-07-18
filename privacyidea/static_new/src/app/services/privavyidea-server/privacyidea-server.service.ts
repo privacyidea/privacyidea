@@ -1,13 +1,8 @@
-import {
-  computed,
-  Injectable,
-  linkedSignal,
-  WritableSignal,
-} from '@angular/core';
-import { httpResource } from '@angular/common/http';
-import { LocalService } from '../local/local.service';
+import { httpResource, HttpResourceRef } from '@angular/common/http';
+import { Injectable, linkedSignal, WritableSignal } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { PiResponse } from '../../app.component';
+import { LocalService } from '../local/local.service';
 
 export type RemoteServerOptions = RemoteServer[];
 export interface RemoteServer {
@@ -15,10 +10,19 @@ export interface RemoteServer {
   id: string;
 }
 
+export interface PrivacyideaServerServiceInterface {
+  remoteServerResource: HttpResourceRef<
+    PiResponse<RemoteServerOptions> | undefined
+  >;
+  remoteServerOptions: WritableSignal<RemoteServerOptions>;
+}
+
 @Injectable({
   providedIn: 'root',
 })
-export class PrivacyideaServerService {
+export class PrivacyideaServerService
+  implements PrivacyideaServerServiceInterface
+{
   remoteServerResource = httpResource<PiResponse<RemoteServerOptions>>(() => ({
     url: environment.proxyUrl + '/privacyideaserver/',
     method: 'GET',

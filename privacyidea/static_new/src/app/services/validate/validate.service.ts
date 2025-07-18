@@ -1,13 +1,23 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Inject, Injectable } from '@angular/core';
 import { from, Observable, switchMap, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { PiResponse } from '../../app.component';
-import { AuthResponse, AuthService } from '../auth/auth.service';
-import { Base64Service } from '../base64/base64.service';
-import { LocalService } from '../local/local.service';
-import { NotificationService } from '../notification/notification.service';
+import {
+  AuthResponse,
+  AuthService,
+  AuthServiceInterface,
+} from '../auth/auth.service';
+import {
+  Base64Service,
+  Base64ServiceInterface,
+} from '../base64/base64.service';
+import { LocalService, LocalServiceInterface } from '../local/local.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../notification/notification.service';
 
 export interface ValidateCheckDetail {
   attributes?: {
@@ -53,10 +63,14 @@ export class ValidateService implements ValidateServiceInterface {
 
   constructor(
     private http: HttpClient,
-    private localService: LocalService,
-    private notificationService: NotificationService,
-    private base64Service: Base64Service,
-    private authenticationService: AuthService,
+    @Inject(LocalService)
+    private localService: LocalServiceInterface,
+    @Inject(NotificationService)
+    private notificationService: NotificationServiceInterface,
+    @Inject(Base64Service)
+    private base64Service: Base64ServiceInterface,
+    @Inject(AuthService)
+    private authenticationService: AuthServiceInterface,
   ) {}
 
   testToken(tokenSerial: string, otpOrPinToTest: string, otponly?: string) {

@@ -1,6 +1,4 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
-import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
+import { Component, EventEmitter, Inject, OnInit, Output } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -8,7 +6,12 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { TokenService } from '../../../../services/token/token.service';
+import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatInput } from '@angular/material/input';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
 import { Observable, of } from 'rxjs';
 import {
@@ -58,7 +61,8 @@ export class EnrollIndexedsecretComponent implements OnInit {
   });
 
   constructor(
-    private tokenService: TokenService,
+    @Inject(TokenService)
+    private tokenService: TokenServiceInterface,
     private enrollmentMapper: IndexedSecretApiPayloadMapper,
   ) {}
 

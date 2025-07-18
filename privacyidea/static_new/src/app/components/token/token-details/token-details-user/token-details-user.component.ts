@@ -2,6 +2,7 @@ import { NgClass } from '@angular/common';
 import {
   Component,
   computed,
+  Inject,
   Input,
   signal,
   Signal,
@@ -20,12 +21,26 @@ import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatSelect } from '@angular/material/select';
 import { MatCell, MatColumnDef, MatTableModule } from '@angular/material/table';
-import { NotificationService } from '../../../../services/notification/notification.service';
-import { OverflowService } from '../../../../services/overflow/overflow.service';
-import { RealmService } from '../../../../services/realm/realm.service';
-import { TokenService } from '../../../../services/token/token.service';
-import { UiPolicyService } from '../../../../services/ui-policy/ui-policy.service';
-import { UserService } from '../../../../services/user/user.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../../../../services/notification/notification.service';
+import {
+  OverflowService,
+  OverflowServiceInterface,
+} from '../../../../services/overflow/overflow.service';
+import {
+  RealmService,
+  RealmServiceInterface,
+} from '../../../../services/realm/realm.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
+import {
+  UserService,
+  UserServiceInterface,
+} from '../../../../services/user/user.service';
 import {
   EditableElement,
   EditButtonsComponent,
@@ -71,12 +86,16 @@ export class TokenDetailsUserComponent {
   });
 
   constructor(
-    protected tokenService: TokenService,
-    protected realmService: RealmService,
-    protected userService: UserService,
-    protected notificationService: NotificationService,
-    protected overflowService: OverflowService,
-    protected uiPolicyService: UiPolicyService,
+    @Inject(TokenService)
+    protected tokenService: TokenServiceInterface,
+    @Inject(RealmService)
+    protected realmService: RealmServiceInterface,
+    @Inject(UserService)
+    protected userService: UserServiceInterface,
+    @Inject(NotificationService)
+    protected notificationService: NotificationServiceInterface,
+    @Inject(OverflowService)
+    protected overflowService: OverflowServiceInterface,
   ) {}
 
   unassignUser() {

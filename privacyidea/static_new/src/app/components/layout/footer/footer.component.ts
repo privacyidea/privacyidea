@@ -2,7 +2,10 @@ import { Component, Inject, OnInit, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBar } from '@angular/material/progress-bar';
-import { LoadingService } from '../../../services/loading/loading-service';
+import {
+  LoadingService,
+  LoadingServiceInterface,
+} from '../../../services/loading/loading-service';
 import {
   VersioningService,
   VersioningServiceInterface,
@@ -22,8 +25,9 @@ export class FooterComponent implements OnInit {
 
   constructor(
     @Inject(VersioningService)
-    private versioningService: VersioningServiceInterface,
-    private loadingService: LoadingService,
+    private readonly versioningService: VersioningServiceInterface,
+    @Inject(LoadingService)
+    private readonly loadingService: LoadingServiceInterface,
   ) {}
 
   ngOnInit(): void {

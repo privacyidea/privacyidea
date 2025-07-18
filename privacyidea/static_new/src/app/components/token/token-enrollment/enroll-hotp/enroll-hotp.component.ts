@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Inject, OnInit, Output } from '@angular/core';
 import {
   FormControl,
   FormsModule,
@@ -15,7 +15,10 @@ import {
   MatOption,
   MatSelect,
 } from '@angular/material/select';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
 import { NgClass } from '@angular/common';
 import { Observable, of } from 'rxjs';
@@ -82,8 +85,9 @@ export class EnrollHotpComponent implements OnInit {
   ];
 
   constructor(
-    private tokenService: TokenService,
     private enrollmentMapper: HotpApiPayloadMapper,
+    @Inject(TokenService)
+    private tokenService: TokenServiceInterface,
   ) {}
 
   ngOnInit(): void {

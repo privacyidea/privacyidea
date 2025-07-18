@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Inject, OnInit, Output } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -16,10 +16,22 @@ import {
   WebauthnEnrollmentResponse,
   WebauthnFinalizeData,
 } from '../../../../mappers/token-api-payload/webauthn-token-api-payload.mapper';
-import { Base64Service } from '../../../../services/base64/base64.service';
-import { DialogService } from '../../../../services/dialog/dialog.service';
-import { NotificationService } from '../../../../services/notification/notification.service';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  Base64Service,
+  Base64ServiceInterface,
+} from '../../../../services/base64/base64.service';
+import {
+  DialogService,
+  DialogServiceInterface,
+} from '../../../../services/dialog/dialog.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../../../../services/notification/notification.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 import { ReopenDialogFn } from '../token-enrollment.component';
 
 @Component({
@@ -52,11 +64,15 @@ export class EnrollWebauthnComponent implements OnInit {
 
   // Constructor to inject required services.
   constructor(
-    private notificationService: NotificationService,
-    private tokenService: TokenService,
-    private base64Service: Base64Service,
     private enrollmentMapper: WebAuthnApiPayloadMapper,
-    private dialogService: DialogService,
+    @Inject(NotificationService)
+    private notificationService: NotificationServiceInterface,
+    @Inject(TokenService)
+    private tokenService: TokenServiceInterface,
+    @Inject(Base64Service)
+    private base64Service: Base64ServiceInterface,
+    @Inject(DialogService)
+    private dialogService: DialogServiceInterface,
   ) {}
 
   /**

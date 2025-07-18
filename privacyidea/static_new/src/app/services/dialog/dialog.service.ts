@@ -1,4 +1,4 @@
-import { computed, Injectable } from '@angular/core';
+import { computed, Inject, Injectable } from '@angular/core';
 import {
   MatDialog,
   MatDialogConfig,
@@ -15,7 +15,7 @@ import {
   TokenEnrollmentLastStepDialogData,
 } from '../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component';
 import { EnrollmentResponse } from '../../mappers/token-api-payload/_token-api-payload.mapper';
-import { AuthService } from '../auth/auth.service';
+import { AuthService, AuthServiceInterface } from '../auth/auth.service';
 
 class MatDialogConfigRequired<D = any> extends MatDialogConfig<D> {
   override data!: D;
@@ -29,13 +29,46 @@ class MatDialogConfigRequired<D = any> extends MatDialogConfig<D> {
   }
 }
 
+export interface DialogServiceInterface {
+  isSelfServing: () => boolean;
+  tokenEnrollmentFirstStepRef: MatDialogRef<
+    TokenEnrollmentFirstStepDialogComponent,
+    any
+  > | null;
+  isTokenEnrollmentFirstStepDialogOpen: boolean;
+  tokenEnrollmentLastStepRef: MatDialogRef<
+    TokenEnrollmentLastStepDialogComponent,
+    any
+  > | null;
+  isTokenEnrollmentLastStepDialogOpen: boolean;
+
+  openTokenEnrollmentFirstStepDialog(
+    config: MatDialogConfigRequired<{ enrollmentResponse: EnrollmentResponse }>,
+  ): MatDialogRef<TokenEnrollmentFirstStepDialogComponent, any>;
+
+  closeTokenEnrollmentFirstStepDialog(): void;
+
+  openTokenEnrollmentLastStepDialog(
+    config: MatDialogConfigRequired<TokenEnrollmentLastStepDialogData>,
+  ): Promise<MatDialogRef<any>>;
+
+  closeTokenEnrollmentLastStepDialog(): void;
+
+  confirm(
+    config: MatDialogConfigRequired<ConfirmationDialogData>,
+  ): Promise<boolean>;
+
+  isAnyDialogOpen(): boolean;
+}
+
 @Injectable({ providedIn: 'root' })
-export class DialogService {
+export class DialogService implements DialogServiceInterface {
   readonly isSelfServing = computed(() => this.authService.role() === 'user');
 
   constructor(
     private dialog: MatDialog,
-    private authService: AuthService,
+    @Inject(AuthService)
+    private authService: AuthServiceInterface,
   ) {}
 
   private _tokenEnrollmentFirstStepRef: MatDialogRef<

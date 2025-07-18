@@ -1,15 +1,12 @@
 import {
   Component,
   computed,
-  Input,
+  EventEmitter,
+  Inject,
   OnInit,
   Output,
-  EventEmitter,
   Signal,
-  WritableSignal,
 } from '@angular/core';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
 import {
   FormControl,
   FormGroup,
@@ -17,22 +14,30 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { RealmService } from '../../../../services/realm/realm.service';
+import { MatCheckbox } from '@angular/material/checkbox';
 import {
   ErrorStateMatcher,
   MatOption,
   MatOptionSelectionChange,
 } from '@angular/material/core';
+import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatInput } from '@angular/material/input';
 import { MatError, MatSelect } from '@angular/material/select';
-import { MatCheckbox } from '@angular/material/checkbox';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  RealmService,
+  RealmServiceInterface,
+} from '../../../../services/realm/realm.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
 import { Observable, of } from 'rxjs';
+import { FourEyesApiPayloadMapper } from '../../../../mappers/token-api-payload/4eyes-token-api-payload.mapper';
 import {
   EnrollmentResponse,
   TokenEnrollmentData,
 } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
-import { FourEyesApiPayloadMapper } from '../../../../mappers/token-api-payload/4eyes-token-api-payload.mapper';
 
 export interface FourEyesEnrollmentOptions extends TokenEnrollmentData {
   type: '4eyes';
@@ -114,9 +119,11 @@ export class EnrollFoureyesComponent implements OnInit {
   requiredRealmsErrorStateMatcher = new RequiredRealmsErrorStateMatcher();
 
   constructor(
-    private realmService: RealmService,
-    private tokenService: TokenService,
     private enrollmentMapper: FourEyesApiPayloadMapper,
+    @Inject(RealmService)
+    private realmService: RealmServiceInterface,
+    @Inject(TokenService)
+    private tokenService: TokenServiceInterface,
   ) {}
 
   ngOnInit(): void {

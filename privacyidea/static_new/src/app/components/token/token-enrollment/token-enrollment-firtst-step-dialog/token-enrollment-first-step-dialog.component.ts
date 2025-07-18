@@ -8,9 +8,15 @@ import {
   MatDialogRef,
   MatDialogTitle,
 } from '@angular/material/dialog';
-import { TokenService } from '../../../../services/token/token.service';
-import { ContentService } from '../../../../services/content/content.service';
 import { EnrollmentResponse } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../../services/content/content.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
 @Component({
   selector: 'app-token-enrollment-first-step-dialog',
@@ -28,13 +34,15 @@ export class TokenEnrollmentFirstStepDialogComponent {
   protected readonly Object = Object;
 
   constructor(
-    protected tokenService: TokenService,
-    private contentService: ContentService,
     private dialogRef: MatDialogRef<TokenEnrollmentFirstStepDialogComponent>,
     @Inject(MAT_DIALOG_DATA)
     public data: {
       enrollmentResponse: EnrollmentResponse;
     },
+    @Inject(TokenService)
+    protected tokenService: TokenServiceInterface,
+    @Inject(ContentService)
+    private contentService: ContentServiceInterface,
   ) {}
 
   tokenSelected(tokenSerial: string) {

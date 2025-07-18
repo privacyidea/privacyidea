@@ -2,11 +2,10 @@ import {
   Component,
   computed,
   EventEmitter,
+  Inject,
   OnInit,
   Output,
 } from '@angular/core';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
 import {
   FormControl,
   FormGroup,
@@ -14,10 +13,18 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { SystemService } from '../../../../services/system/system.service';
 import { ErrorStateMatcher } from '@angular/material/core';
+import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatInput } from '@angular/material/input';
 import { MatError } from '@angular/material/select';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  SystemService,
+  SystemServiceInterface,
+} from '../../../../services/system/system.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
 import { Observable, of } from 'rxjs';
 import {
@@ -86,9 +93,11 @@ export class EnrollYubicoComponent implements OnInit {
   });
 
   constructor(
-    private systemService: SystemService,
-    private tokenService: TokenService,
     private enrollmentMapper: YubicoApiPayloadMapper,
+    @Inject(SystemService)
+    private systemService: SystemServiceInterface,
+    @Inject(TokenService)
+    private tokenService: TokenServiceInterface,
   ) {}
 
   ngOnInit(): void {

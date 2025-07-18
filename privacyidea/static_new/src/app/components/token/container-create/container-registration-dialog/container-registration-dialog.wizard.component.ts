@@ -1,3 +1,5 @@
+import { AsyncPipe } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { Component, Inject, WritableSignal } from '@angular/core';
 import {
   MAT_DIALOG_DATA,
@@ -5,13 +7,14 @@ import {
   MatDialogRef,
   MatDialogTitle,
 } from '@angular/material/dialog';
-import { ContainerRegistrationDialogComponent } from './container-registration-dialog.component';
-import { AsyncPipe } from '@angular/common';
-import { map } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
 import { DomSanitizer } from '@angular/platform-browser';
-import { ContainerService } from '../../../../services/container/container.service';
+import { map } from 'rxjs';
+import {
+  ContainerService,
+  ContainerServiceInterface,
+} from '../../../../services/container/container.service';
 import { LostTokenComponent } from '../../token-card/token-tab/lost-token/lost-token.component';
+import { ContainerRegistrationDialogComponent } from './container-registration-dialog.component';
 
 @Component({
   selector: 'app-container-registration-dialog',
@@ -35,7 +38,8 @@ export class ContainerRegistrationDialogWizardComponent extends ContainerRegistr
   constructor(
     private http: HttpClient,
     private sanitizer: DomSanitizer,
-    containerService: ContainerService,
+    @Inject(ContainerService)
+    containerService: ContainerServiceInterface,
     dialogRef: MatDialogRef<LostTokenComponent>,
     @Inject(MAT_DIALOG_DATA)
     data: {

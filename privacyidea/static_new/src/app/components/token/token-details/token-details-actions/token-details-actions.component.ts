@@ -1,14 +1,26 @@
-import { Component, Input, WritableSignal } from '@angular/core';
-import { TokenService } from '../../../../services/token/token.service';
-import { ValidateService } from '../../../../services/validate/validate.service';
+import { Component, Inject, Input, WritableSignal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatIcon } from '@angular/material/icon';
 import { MatFabButton, MatIconButton } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import { MatDivider } from '@angular/material/divider';
 import { MatSuffix } from '@angular/material/form-field';
-import { OverflowService } from '../../../../services/overflow/overflow.service';
-import { NotificationService } from '../../../../services/notification/notification.service';
-import { MatDialog } from '@angular/material/dialog';
+import { MatIcon } from '@angular/material/icon';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../../../../services/notification/notification.service';
+import {
+  OverflowService,
+  OverflowServiceInterface,
+} from '../../../../services/overflow/overflow.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
+import {
+  ValidateService,
+  ValidateServiceInterface,
+} from '../../../../services/validate/validate.service';
 import { TokenSshMachineAssignDialogComponent } from '../token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog';
 
 @Component({
@@ -34,11 +46,15 @@ export class TokenDetailsActionsComponent {
   hide: boolean = true;
 
   constructor(
-    private tokenService: TokenService,
-    private matDialog: MatDialog,
-    protected validateService: ValidateService,
-    protected overflowService: OverflowService,
-    protected notificationService: NotificationService,
+    private readonly matDialog: MatDialog,
+    @Inject(TokenService)
+    private readonly tokenService: TokenServiceInterface,
+    @Inject(ValidateService)
+    protected readonly validateService: ValidateServiceInterface,
+    @Inject(OverflowService)
+    protected readonly overflowService: OverflowServiceInterface,
+    @Inject(NotificationService)
+    protected readonly notificationService: NotificationServiceInterface,
   ) {}
 
   resyncOTPToken() {

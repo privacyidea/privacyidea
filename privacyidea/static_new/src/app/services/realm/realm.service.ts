@@ -6,6 +6,7 @@ import {
 import {
   computed,
   effect,
+  Inject,
   Injectable,
   Signal,
   signal,
@@ -13,9 +14,12 @@ import {
 } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { PiResponse } from '../../app.component';
-import { AuthService } from '../auth/auth.service';
-import { LocalService } from '../local/local.service';
-import { NotificationService } from '../notification/notification.service';
+import { AuthService, AuthServiceInterface } from '../auth/auth.service';
+import { LocalService, LocalServiceInterface } from '../local/local.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../notification/notification.service';
 
 export type Realms = Map<string, Realm>;
 
@@ -83,9 +87,12 @@ export class RealmService implements RealmServiceInterface {
   });
 
   constructor(
-    private localService: LocalService,
-    private notificationService: NotificationService,
-    private authService: AuthService,
+    @Inject(LocalService)
+    private localService: LocalServiceInterface,
+    @Inject(NotificationService)
+    private notificationService: NotificationServiceInterface,
+    @Inject(AuthService)
+    private authService: AuthServiceInterface,
   ) {
     effect(() => {
       if (this.realmResource.error()) {

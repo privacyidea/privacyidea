@@ -1,13 +1,23 @@
-import { computed, effect, Injectable, signal } from '@angular/core';
+import { computed, effect, Inject, Injectable, Signal, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { NotificationService } from '../notification/notification.service';
-import { LocalService } from '../local/local.service';
-import { AuthService } from '../auth/auth.service';
+import { AuthService, AuthServiceInterface } from '../auth/auth.service';
+import { LocalService, LocalServiceInterface } from '../local/local.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../notification/notification.service';
+
+export interface SessionTimerServiceInterface {
+  startTimer(): void;
+  resetTimer(): void;
+  startRefreshingRemainingTime(): void;
+  remainingTime: Signal<number>;
+}
 
 @Injectable({
   providedIn: 'root',
 })
-export class SessionTimerService {
+export class SessionTimerService implements SessionTimerServiceInterface {
   private readonly sessionTimeout = 3570_000;
   private timer: any;
   private intervalId: any;
@@ -18,10 +28,13 @@ export class SessionTimerService {
   );
 
   constructor(
-    private router: Router,
-    private notificationService: NotificationService,
-    private localService: LocalService,
-    private authService: AuthService,
+    private readonly router: Router,
+    @Inject(NotificationService)
+    private readonly notificationService: NotificationServiceInterface,
+    @Inject(LocalService)
+    private readonly localService: LocalServiceInterface,
+    @Inject(AuthService)
+    private readonly authService: AuthServiceInterface,
   ) {
     effect(() => {
       if (this.remainingTime() > 30_000 && this.remainingTime() < 31_000) {

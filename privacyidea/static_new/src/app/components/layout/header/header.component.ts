@@ -1,5 +1,5 @@
 import { DatePipe, NgClass, NgOptimizedImage } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, Inject } from '@angular/core';
 import {
   MatFabAnchor,
   MatFabButton,
@@ -8,10 +8,22 @@ import {
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenu, MatMenuTrigger } from '@angular/material/menu';
 import { Router, RouterLink } from '@angular/router';
-import { AuthService } from '../../../services/auth/auth.service';
-import { LocalService } from '../../../services/local/local.service';
-import { NotificationService } from '../../../services/notification/notification.service';
-import { SessionTimerService } from '../../../services/session-timer/session-timer.service';
+import {
+  AuthService,
+  AuthServiceInterface,
+} from '../../../services/auth/auth.service';
+import {
+  LocalService,
+  LocalServiceInterface,
+} from '../../../services/local/local.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../../../services/notification/notification.service';
+import {
+  SessionTimerService,
+  SessionTimerServiceInterface,
+} from '../../../services/session-timer/session-timer.service';
 import { UserSelfServiceComponent } from '../../user/user.self-service.component';
 
 @Component({
@@ -44,10 +56,15 @@ export class HeaderComponent {
     ')';
 
   constructor(
-    protected sessionTimerService: SessionTimerService,
-    protected authService: AuthService,
-    protected localService: LocalService,
-    protected notificationService: NotificationService,
+    @Inject(SessionTimerService)
+    protected sessionTimerService: SessionTimerServiceInterface,
+    @Inject(AuthService)
+    protected authService: AuthServiceInterface,
+    @Inject(LocalService)
+    protected localService: LocalServiceInterface,
+    @Inject(NotificationService)
+    protected notificationService: NotificationServiceInterface,
+    @Inject(Router)
     protected router: Router,
   ) {}
 

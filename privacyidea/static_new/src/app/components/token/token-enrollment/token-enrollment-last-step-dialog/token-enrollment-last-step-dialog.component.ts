@@ -16,8 +16,14 @@ import {
 } from '@angular/material/expansion';
 import { MatIcon } from '@angular/material/icon';
 import { EnrollmentResponse } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
-import { ContentService } from '../../../../services/content/content.service';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../../services/content/content.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 import { UserData } from '../../../../services/user/user.service';
 
 export type TokenEnrollmentLastStepDialogData = {
@@ -50,11 +56,13 @@ export class TokenEnrollmentLastStepDialogComponent {
   protected readonly Object = Object;
 
   constructor(
-    protected tokenService: TokenService,
-    protected contentService: ContentService,
     protected dialogRef: MatDialogRef<TokenEnrollmentLastStepDialogComponent>,
     @Inject(MAT_DIALOG_DATA)
     public data: TokenEnrollmentLastStepDialogData,
+    @Inject(TokenService)
+    protected tokenService: TokenServiceInterface,
+    @Inject(ContentService)
+    protected contentService: ContentServiceInterface,
   ) {
     this.dialogRef.afterClosed().subscribe(() => {
       this.tokenService.stopPolling();

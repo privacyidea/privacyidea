@@ -53,12 +53,31 @@ import {
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatOption, MatSelect } from '@angular/material/select';
-import { ContainerService } from '../../../services/container/container.service';
-import { ContentService } from '../../../services/content/content.service';
-import { NotificationService } from '../../../services/notification/notification.service';
-import { RealmService } from '../../../services/realm/realm.service';
-import { TokenService } from '../../../services/token/token.service';
-import { UserData, UserService } from '../../../services/user/user.service';
+import {
+  ContainerService,
+  ContainerServiceInterface,
+} from '../../../services/container/container.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../services/content/content.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../../../services/notification/notification.service';
+import {
+  RealmService,
+  RealmServiceInterface,
+} from '../../../services/realm/realm.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../services/token/token.service';
+import {
+  UserData,
+  UserService,
+  UserServiceInterface,
+} from '../../../services/user/user.service';
 import {
   VersioningService,
   VersioningServiceInterface,
@@ -100,7 +119,10 @@ import {
   EnrollmentResponse,
   TokenEnrollmentData,
 } from '../../../mappers/token-api-payload/_token-api-payload.mapper';
-import { DialogService } from '../../../services/dialog/dialog.service';
+import {
+  DialogService,
+  DialogServiceInterface,
+} from '../../../services/dialog/dialog.service';
 import { TokenEnrollmentLastStepDialogData } from './token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component';
 
 export type ClickEnrollFn = (
@@ -379,16 +401,23 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   });
 
   constructor(
-    protected containerService: ContainerService,
-    protected realmService: RealmService,
-    protected notificationService: NotificationService,
-    protected userService: UserService,
-    protected tokenService: TokenService,
+    private renderer: Renderer2,
+    @Inject(ContainerService)
+    protected containerService: ContainerServiceInterface,
+    @Inject(RealmService)
+    protected realmService: RealmServiceInterface,
+    @Inject(NotificationService)
+    protected notificationService: NotificationServiceInterface,
+    @Inject(UserService)
+    protected userService: UserServiceInterface,
+    @Inject(TokenService)
+    protected tokenService: TokenServiceInterface,
     @Inject(VersioningService)
     protected versioningService: VersioningServiceInterface,
-    protected contentService: ContentService,
-    protected dialogService: DialogService,
-    private renderer: Renderer2,
+    @Inject(ContentService)
+    protected contentService: ContentServiceInterface,
+    @Inject(DialogService)
+    protected dialogService: DialogServiceInterface,
   ) {
     effect(() => {
       const users = this.userService.filteredUsers();

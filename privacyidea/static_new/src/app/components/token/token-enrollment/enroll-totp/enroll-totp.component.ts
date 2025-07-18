@@ -1,5 +1,5 @@
 import { NgClass } from '@angular/common';
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Inject, OnInit, Output } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -23,7 +23,10 @@ import {
   TokenEnrollmentData,
 } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { TotpApiPayloadMapper } from '../../../../mappers/token-api-payload/totp-token-api-payload.mapper';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
 export interface TotpEnrollmentOptions extends TokenEnrollmentData {
   type: 'totp';
@@ -90,8 +93,9 @@ export class EnrollTotpComponent implements OnInit {
   readonly timeStepOptions = [30, 60];
 
   constructor(
-    private tokenService: TokenService,
     private enrollmentMapper: TotpApiPayloadMapper,
+    @Inject(TokenService)
+    private tokenService: TokenServiceInterface,
   ) {}
 
   ngOnInit(): void {

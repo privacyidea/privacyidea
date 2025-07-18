@@ -5,12 +5,13 @@ import {
   MatDialogRef,
   MatDialogTitle,
 } from '@angular/material/dialog';
-import { LostTokenComponent } from '../../token-card/token-tab/lost-token/lost-token.component';
+import { PiResponse } from '../../../../app.component';
 import {
   ContainerRegisterData,
   ContainerService,
+  ContainerServiceInterface,
 } from '../../../../services/container/container.service';
-import { PiResponse } from '../../../../app.component';
+import { LostTokenComponent } from '../../token-card/token-tab/lost-token/lost-token.component';
 
 @Component({
   selector: 'app-container-registration-dialog',
@@ -20,7 +21,8 @@ import { PiResponse } from '../../../../app.component';
 })
 export class ContainerRegistrationDialogComponent {
   constructor(
-    protected containerService: ContainerService,
+    @Inject(ContainerService)
+    protected containerService: ContainerServiceInterface,
     private dialogRef: MatDialogRef<LostTokenComponent>,
     @Inject(MAT_DIALOG_DATA)
     public data: {

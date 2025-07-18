@@ -1,6 +1,7 @@
 import { httpResource, HttpResourceRef } from '@angular/common/http';
 import {
   computed,
+  Inject,
   Injectable,
   linkedSignal,
   Signal,
@@ -8,11 +9,14 @@ import {
 } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { PiResponse } from '../../app.component';
-import { AuthService } from '../auth/auth.service';
-import { ContentService } from '../content/content.service';
-import { LocalService } from '../local/local.service';
-import { RealmService } from '../realm/realm.service';
-import { TokenService } from '../token/token.service';
+import { AuthService, AuthServiceInterface } from '../auth/auth.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../content/content.service';
+import { LocalService, LocalServiceInterface } from '../local/local.service';
+import { RealmService, RealmServiceInterface } from '../realm/realm.service';
+import { TokenService, TokenServiceInterface } from '../token/token.service';
 
 export interface UserData {
   description: string;
@@ -190,10 +194,15 @@ export class UserService implements UserServiceInterface {
   }
 
   constructor(
-    private localService: LocalService,
-    private realmService: RealmService,
-    private contentService: ContentService,
-    private tokenService: TokenService,
-    private authService: AuthService,
+    @Inject(LocalService)
+    private localService: LocalServiceInterface,
+    @Inject(RealmService)
+    private realmService: RealmServiceInterface,
+    @Inject(ContentService)
+    private contentService: ContentServiceInterface,
+    @Inject(TokenService)
+    private tokenService: TokenServiceInterface,
+    @Inject(AuthService)
+    private authService: AuthServiceInterface,
   ) {}
 }

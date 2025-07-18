@@ -1,15 +1,20 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Component, EventEmitter, Inject, OnInit, Output } from '@angular/core';
 import {
   FormControl,
   FormGroup,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { CommonModule } from '@angular/common';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
+import { MatOptionModule } from '@angular/material/core';
+import { MatSelect } from '@angular/material/select';
 import { Observable, of } from 'rxjs';
 import {
   EnrollmentResponse,
@@ -19,8 +24,6 @@ import {
   YubikeyApiPayloadMapper,
   YubikeyEnrollmentData,
 } from '../../../../mappers/token-api-payload/yubikey-token-api-payload.mapper';
-import { MatOptionModule } from '@angular/material/core';
-import { MatSelect } from '@angular/material/select';
 
 @Component({
   selector: 'app-enroll-yubikey',
@@ -65,8 +68,9 @@ export class EnrollYubikeyComponent implements OnInit {
       ?.text || 'The Yubikey token can be used in AES encryption mode...';
 
   constructor(
-    private tokenService: TokenService,
     private enrollmentMapper: YubikeyApiPayloadMapper,
+    @Inject(TokenService)
+    private tokenService: TokenServiceInterface,
   ) {}
 
   ngOnInit(): void {

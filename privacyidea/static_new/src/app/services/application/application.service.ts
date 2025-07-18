@@ -1,4 +1,4 @@
-import { httpResource } from '@angular/common/http';
+import { httpResource, HttpResourceRef } from '@angular/common/http';
 import { Injectable, linkedSignal, WritableSignal } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { PiResponse } from '../../app.component';
@@ -45,10 +45,16 @@ interface ApplicationSsh {
   };
 }
 
+export interface ApplicationServiceInterface {
+  applicationBaseUrl: string;
+  applicationResource: HttpResourceRef<PiResponse<Applications> | undefined>;
+  applications: WritableSignal<Applications>;
+}
+
 @Injectable({
   providedIn: 'root',
 })
-export class ApplicationService {
+export class ApplicationService implements ApplicationServiceInterface {
   readonly applicationBaseUrl = environment.proxyUrl + '/application/';
 
   constructor(private localService: LocalService) {}

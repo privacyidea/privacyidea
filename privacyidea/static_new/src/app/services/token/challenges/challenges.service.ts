@@ -1,16 +1,23 @@
+import { httpResource, HttpResourceRef } from '@angular/common/http';
 import {
   computed,
+  Inject,
   Injectable,
   linkedSignal,
   WritableSignal,
 } from '@angular/core';
 import { Sort } from '@angular/material/sort';
-import { httpResource } from '@angular/common/http';
-import { TokenService } from '../token.service';
-import { LocalService } from '../../local/local.service';
-import { TableUtilsService } from '../../table-utils/table-utils.service';
-import { ContentService } from '../../content/content.service';
 import { PiResponse } from '../../../app.component';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../content/content.service';
+import { LocalService, LocalServiceInterface } from '../../local/local.service';
+import {
+  TableUtilsService,
+  TableUtilsServiceInterface,
+} from '../../table-utils/table-utils.service';
+import { TokenService, TokenServiceInterface } from '../token.service';
 
 const apiFilter = ['serial', 'transaction_id'];
 const advancedApiFilter: string[] = [];
@@ -36,10 +43,21 @@ export interface Challenge {
   transaction_id: string;
 }
 
+export interface ChallengesServiceInterface {
+  apiFilter: string[];
+  advancedApiFilter: string[];
+  selectedContent: WritableSignal<string>;
+  filterValue: WritableSignal<Record<string, string>>;
+  pageSize: WritableSignal<number>;
+  pageIndex: WritableSignal<number>;
+  sort: WritableSignal<Sort>;
+  challengesResource: HttpResourceRef<PiResponse<Challenges> | undefined>;
+}
+
 @Injectable({
   providedIn: 'root',
 })
-export class ChallengesService {
+export class ChallengesService implements ChallengesServiceInterface {
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
   selectedContent = this.contentService.selectedContent;
@@ -111,9 +129,13 @@ export class ChallengesService {
   });
 
   constructor(
-    private tokenService: TokenService,
-    private localService: LocalService,
-    private tableUtilsService: TableUtilsService,
-    private contentService: ContentService,
+    @Inject(TokenService)
+    private tokenService: TokenServiceInterface,
+    @Inject(LocalService)
+    private localService: LocalServiceInterface,
+    @Inject(TableUtilsService)
+    private tableUtilsService: TableUtilsServiceInterface,
+    @Inject(ContentService)
+    private contentService: ContentServiceInterface,
   ) {}
 }

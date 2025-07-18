@@ -1,26 +1,38 @@
-import { Component, effect, signal, ViewChild } from '@angular/core';
-import { TokenTableComponent } from './token-table/token-table.component';
 import { CommonModule } from '@angular/common';
-import { ContainerTableComponent } from './container-table/container-table.component';
-import { TokenDetailsComponent } from './token-details/token-details.component';
-import { ContainerDetailsComponent } from './container-details/container-details.component';
+import { Component, effect, Inject, signal, ViewChild } from '@angular/core';
+import { MatFabButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
 import {
   MatDrawer,
   MatDrawerContainer,
   MatSidenavModule,
 } from '@angular/material/sidenav';
-import { MatFabButton } from '@angular/material/button';
-import { MatIcon } from '@angular/material/icon';
-import { OverflowService } from '../../services/overflow/overflow.service';
-import { TokenCardComponent } from './token-card/token-card.component';
-import { TokenGetSerial } from './token-get-serial/token-get-serial.component';
-import { TokenEnrollmentComponent } from './token-enrollment/token-enrollment.component';
-import { TokenApplicationsComponent } from './token-applications/token-applications.component';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../services/content/content.service';
+import {
+  LoadingService,
+  LoadingServiceInterface,
+} from '../../services/loading/loading-service';
+import {
+  OverflowService,
+  OverflowServiceInterface,
+} from '../../services/overflow/overflow.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../services/token/token.service';
 import { ChallengesTableComponent } from './challenges-table/challenges-table.component';
-import { LoadingService } from '../../services/loading/loading-service';
 import { ContainerCreateComponent } from './container-create/container-create.component';
-import { TokenService } from '../../services/token/token.service';
-import { ContentService } from '../../services/content/content.service';
+import { ContainerDetailsComponent } from './container-details/container-details.component';
+import { ContainerTableComponent } from './container-table/container-table.component';
+import { TokenApplicationsComponent } from './token-applications/token-applications.component';
+import { TokenCardComponent } from './token-card/token-card.component';
+import { TokenDetailsComponent } from './token-details/token-details.component';
+import { TokenEnrollmentComponent } from './token-enrollment/token-enrollment.component';
+import { TokenGetSerial } from './token-get-serial/token-get-serial.component';
+import { TokenTableComponent } from './token-table/token-table.component';
 
 export type TokenTypeOption =
   | 'hotp'
@@ -207,10 +219,14 @@ export class TokenComponent {
   @ViewChild('drawer') drawer!: MatDrawer;
 
   constructor(
-    protected overflowService: OverflowService,
-    private loadingService: LoadingService,
-    protected tokenService: TokenService,
-    protected contentService: ContentService,
+    @Inject(OverflowService)
+    protected overflowService: OverflowServiceInterface,
+    @Inject(LoadingService)
+    private loadingService: LoadingServiceInterface,
+    @Inject(TokenService)
+    private tokenService: TokenServiceInterface,
+    @Inject(ContentService)
+    protected contentService: ContentServiceInterface,
   ) {
     effect(() => {
       this.contentService.selectedContent();

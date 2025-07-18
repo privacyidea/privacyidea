@@ -7,8 +7,14 @@ import { MatIcon } from '@angular/material/icon';
 import { MatList, MatListItem } from '@angular/material/list';
 import { forkJoin, switchMap } from 'rxjs';
 import { tabToggleState } from '../../../../../styles/animations/animations';
-import { ContentService } from '../../../../services/content/content.service';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../../services/content/content.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 import {
   VersioningService,
   VersioningServiceInterface,
@@ -35,11 +41,13 @@ export class TokenTabComponent {
   version!: string;
 
   constructor(
-    private tokenService: TokenService,
-    private dialog: MatDialog,
+    @Inject(TokenService)
+    private readonly tokenService: TokenServiceInterface,
     @Inject(VersioningService)
-    protected versioningService: VersioningServiceInterface,
-    private contentService: ContentService,
+    protected readonly versioningService: VersioningServiceInterface,
+    @Inject(ContentService)
+    private contentService: ContentServiceInterface,
+    private readonly dialog: MatDialog,
   ) {}
 
   ngOnInit(): void {

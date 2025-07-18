@@ -8,6 +8,7 @@ import {
 import {
   computed,
   effect,
+  Inject,
   Injectable,
   linkedSignal,
   Signal,
@@ -35,9 +36,15 @@ import {
   TokenApiPayloadMapper,
   TokenEnrollmentData,
 } from '../../mappers/token-api-payload/_token-api-payload.mapper';
-import { ContentService } from '../content/content.service';
-import { LocalService } from '../local/local.service';
-import { NotificationService } from '../notification/notification.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../content/content.service';
+import { LocalService, LocalServiceInterface } from '../local/local.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../notification/notification.service';
 
 const apiFilter = [
   'serial',
@@ -144,7 +151,7 @@ export interface TokenServiceInterface {
   tokenBaseUrl: string;
   eventPageSize: number;
   selectedContent: Signal<string>;
-  tokenSerial: Signal<string>;
+  tokenSerial: WritableSignal<string>;
   selectedTokenType: Signal<TokenType>;
   showOnlyTokenNotInContainer: WritableSignal<boolean>;
   filterValue: WritableSignal<Record<string, string>>;
@@ -152,6 +159,11 @@ export interface TokenServiceInterface {
   tokenTypesResource: HttpResourceRef<PiResponse<{}> | undefined>;
   tokenTypeOptions: Signal<TokenType[]>;
   pageSize: WritableSignal<number>;
+  tokenIsActive: WritableSignal<boolean>;
+  tokenIsRevoked: WritableSignal<boolean>;
+  defaultSizeOptions: number[];
+  apiFilter: string[];
+  advancedApiFilter: string[];
 
   sort: WritableSignal<Sort>;
   pageIndex: WritableSignal<number>;
@@ -168,41 +180,67 @@ export interface TokenServiceInterface {
     key: string,
     value: any,
   ): Observable<PiResponse<boolean>>;
-
+  getSerial(
+    otp: string,
+    params: HttpParams,
+  ): Observable<
+    PiResponse<{ count: number; serial?: string | undefined }, unknown>
+  >;
   setTokenInfos(
     tokenSerial: string,
     infos: any,
   ): Observable<PiResponse<boolean>[]>;
-
   deleteToken(tokenSerial: string): Observable<Object>;
-
   deleteTokens(tokenSerials: string[]): Observable<Object[]>;
-
   revokeToken(tokenSerial: string): Observable<any>;
-
   deleteInfo(tokenSerial: string, infoKey: string): Observable<Object>;
   unassignUserFromAll(
     tokenSerials: string[],
   ): Observable<PiResponse<boolean>[]>;
 
   unassignUser(tokenSerial: string): Observable<PiResponse<boolean>>;
-
   assignUserToAll(args: {
     tokenSerials: string[];
     username: string;
     realm: string;
     pin?: string;
   }): Observable<PiResponse<boolean>[]>;
-
   assignUser(args: {
     tokenSerial: string;
     username: string;
     realm: string;
     pin: string;
   }): Observable<PiResponse<boolean>>;
-
   setPin(tokenSerial: string, userPin: string): Observable<any>;
   setRandomPin(tokenSerial: string): Observable<any>;
+  resyncOTPToken(
+    tokenSerial: string,
+    fristOTPValue: string,
+    secondOTPValue: string,
+  ): Observable<Object>;
+  getTokenDetails(tokenSerial: string): Observable<PiResponse<Tokens>>;
+  enrollToken<
+    T extends TokenEnrollmentData,
+    R extends EnrollmentResponse,
+  >(args: {
+    data: T;
+    mapper: TokenApiPayloadMapper<T>;
+  }): Observable<R>;
+  lostToken(tokenSerial: string): Observable<LostTokenResponse>;
+  stopPolling(): void;
+  pollTokenRolloutState(args: {
+    tokenSerial: string;
+    initDelay: number;
+  }): Observable<PiResponse<Tokens>>;
+  setTokenRealm(
+    tokenSerial: string,
+    value: string[],
+  ): Observable<PiResponse<boolean>>;
+  getTokengroups(): Observable<PiResponse<TokenGroups>>;
+  setTokengroup(
+    tokenSerial: string,
+    value: string | string[],
+  ): Observable<Object>;
 }
 
 @Injectable({
@@ -382,9 +420,12 @@ export class TokenService implements TokenServiceInterface {
 
   constructor(
     private http: HttpClient,
-    private localService: LocalService,
-    private notificationService: NotificationService,
-    private contentService: ContentService,
+    @Inject(LocalService)
+    private localService: LocalServiceInterface,
+    @Inject(NotificationService)
+    private notificationService: NotificationServiceInterface,
+    @Inject(ContentService)
+    private contentService: ContentServiceInterface,
   ) {
     effect(() => {
       if (this.tokenResource.error()) {

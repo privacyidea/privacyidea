@@ -1,17 +1,32 @@
-import { Component, signal } from '@angular/core';
-import { AuthService } from '../../services/auth/auth.service';
-import { Router } from '@angular/router';
-import { FormsModule } from '@angular/forms';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
-import { MatIconModule } from '@angular/material/icon';
-import { MatFabButton } from '@angular/material/button';
 import { NgOptimizedImage } from '@angular/common';
+import { Component, Inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { MatFabButton } from '@angular/material/button';
+import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInput } from '@angular/material/input';
+import { Router } from '@angular/router';
+import {
+  AuthService,
+  AuthServiceInterface,
+} from '../../services/auth/auth.service';
+import {
+  LocalService,
+  LocalServiceInterface,
+} from '../../services/local/local.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../../services/notification/notification.service';
+import {
+  SessionTimerService,
+  SessionTimerServiceInterface,
+} from '../../services/session-timer/session-timer.service';
+import {
+  ValidateService,
+  ValidateServiceInterface,
+} from '../../services/validate/validate.service';
 import { FooterComponent } from '../layout/footer/footer.component';
-import { LocalService } from '../../services/local/local.service';
-import { NotificationService } from '../../services/notification/notification.service';
-import { SessionTimerService } from '../../services/session-timer/session-timer.service';
-import { ValidateService } from '../../services/validate/validate.service';
 
 @Component({
   selector: 'app-login',
@@ -34,12 +49,18 @@ export class LoginComponent {
   password = signal<string>('');
 
   constructor(
-    private authService: AuthService,
+    @Inject(AuthService)
+    private authService: AuthServiceInterface,
+    @Inject(Router)
     private router: Router,
-    private localService: LocalService,
-    private notificationService: NotificationService,
-    private sessionTimerService: SessionTimerService,
-    private validateService: ValidateService,
+    @Inject(LocalService)
+    private localService: LocalServiceInterface,
+    @Inject(NotificationService)
+    private notificationService: NotificationServiceInterface,
+    @Inject(SessionTimerService)
+    private sessionTimerService: SessionTimerServiceInterface,
+    @Inject(ValidateService)
+    private validateService: ValidateServiceInterface,
   ) {
     if (this.authService.isAuthenticatedUser()) {
       console.warn('User is already logged in.');

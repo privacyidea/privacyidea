@@ -1,19 +1,21 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Inject, OnInit, Output } from '@angular/core';
 import {
+  AbstractControl,
   FormControl,
-  FormGroup,
   FormsModule,
   ReactiveFormsModule,
   ValidationErrors,
-  AbstractControl,
   Validators,
 } from '@angular/forms';
+import { MatCheckbox } from '@angular/material/checkbox';
 import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
-import { MatCheckbox } from '@angular/material/checkbox';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
 import {
   EnrollmentResponse,
   TokenEnrollmentData,
@@ -82,7 +84,8 @@ export class EnrollMotpComponent implements OnInit {
   }
 
   constructor(
-    private tokenService: TokenService,
+    @Inject(TokenService)
+    private tokenService: TokenServiceInterface,
     private enrollmentMapper: MotpApiPayloadMapper,
   ) {}
 

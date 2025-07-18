@@ -8,6 +8,7 @@ import {
 import {
   computed,
   effect,
+  Inject,
   Injectable,
   linkedSignal,
   Signal,
@@ -31,10 +32,16 @@ import { environment } from '../../../environments/environment';
 import { PiResponse } from '../../app.component';
 import { ContainerTypeOption } from '../../components/token/container-create/container-create.component';
 import { EnrollmentUrl } from '../../mappers/token-api-payload/_token-api-payload.mapper';
-import { ContentService } from '../content/content.service';
-import { LocalService } from '../local/local.service';
-import { NotificationService } from '../notification/notification.service';
-import { TokenService } from '../token/token.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../content/content.service';
+import { LocalService, LocalServiceInterface } from '../local/local.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../notification/notification.service';
+import { TokenService, TokenServiceInterface } from '../token/token.service';
 
 const apiFilter = ['container_serial', 'type', 'user'];
 const advancedApiFilter = ['token_serial'];
@@ -144,18 +151,20 @@ export interface ContainerRegisterData {
 }
 
 export interface ContainerServiceInterface {
+  apiFilter: string[];
+  advancedApiFilter: string[];
   stopPolling$: Subject<void>;
   containerBaseUrl: string;
   eventPageSize: number;
   states: WritableSignal<string[]>;
   selectedContent: Signal<string>;
-  containerSerial: Signal<string>;
+  containerSerial: WritableSignal<string>;
   selectedContainer: WritableSignal<string>;
   sort: WritableSignal<Sort>;
   filterValue: WritableSignal<Record<string, string>>;
   filterParams: Signal<Record<string, string>>;
-  pageSize: Signal<number>;
-  pageIndex: Signal<number>;
+  pageSize: WritableSignal<number>;
+  pageIndex: WritableSignal<number>;
   loadAllContainers: Signal<boolean>;
   containerResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
   containerOptions: Signal<string[]>;
@@ -230,7 +239,21 @@ export interface ContainerServiceInterface {
     container_serial: string;
     passphrase_prompt: string;
     passphrase_response: string;
-  }) => Observable<PiResponse<ContainerRegisterData, unknown>>;
+  }) => Observable<PiResponse<ContainerRegisterData>>;
+  stopPolling(): void;
+  createContainer(param: {
+    container_type: string;
+    description?: string;
+    user_realm?: string;
+    template?: string;
+    user?: string;
+    realm?: string;
+    options?: any;
+  }): Observable<PiResponse<{ container_serial: string }>>;
+  pollContainerRolloutState(
+    containerSerial: string,
+    startTime: number,
+  ): Observable<PiResponse<ContainerDetails>>;
 }
 
 @Injectable({
@@ -438,10 +461,14 @@ export class ContainerService implements ContainerServiceInterface {
 
   constructor(
     private http: HttpClient,
-    private localService: LocalService,
-    private tokenService: TokenService,
-    private notificationService: NotificationService,
-    private contentService: ContentService,
+    @Inject(LocalService)
+    private localService: LocalServiceInterface,
+    @Inject(TokenService)
+    private tokenService: TokenServiceInterface,
+    @Inject(NotificationService)
+    private notificationService: NotificationServiceInterface,
+    @Inject(ContentService)
+    private contentService: ContentServiceInterface,
   ) {
     effect(() => {
       this.selectedContainer(); // Trigger recomputation for enrollment from container details

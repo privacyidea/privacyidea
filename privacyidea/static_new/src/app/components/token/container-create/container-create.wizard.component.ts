@@ -18,12 +18,30 @@ import { MatInput } from '@angular/material/input';
 import { MatSelect } from '@angular/material/select';
 import { DomSanitizer } from '@angular/platform-browser';
 import { map } from 'rxjs';
-import { ContainerService } from '../../../services/container/container.service';
-import { ContentService } from '../../../services/content/content.service';
-import { NotificationService } from '../../../services/notification/notification.service';
-import { RealmService } from '../../../services/realm/realm.service';
-import { TokenService } from '../../../services/token/token.service';
-import { UserService } from '../../../services/user/user.service';
+import {
+  ContainerService,
+  ContainerServiceInterface,
+} from '../../../services/container/container.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../services/content/content.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../../../services/notification/notification.service';
+import {
+  RealmService,
+  RealmServiceInterface,
+} from '../../../services/realm/realm.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../services/token/token.service';
+import {
+  UserService,
+  UserServiceInterface,
+} from '../../../services/user/user.service';
 import {
   VersioningService,
   VersioningServiceInterface,
@@ -72,12 +90,18 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     registrationDialog: MatDialog,
     @Inject(VersioningService)
     versioningService: VersioningServiceInterface,
-    userService: UserService,
-    realmService: RealmService,
-    containerService: ContainerService,
-    notificationService: NotificationService,
-    tokenService: TokenService,
-    contentService: ContentService,
+    @Inject(UserService)
+    userService: UserServiceInterface,
+    @Inject(RealmService)
+    realmService: RealmServiceInterface,
+    @Inject(ContainerService)
+    containerService: ContainerServiceInterface,
+    @Inject(NotificationService)
+    notificationService: NotificationServiceInterface,
+    @Inject(TokenService)
+    tokenService: TokenServiceInterface,
+    @Inject(ContentService)
+    contentService: ContentServiceInterface,
   ) {
     super(
       registrationDialog,

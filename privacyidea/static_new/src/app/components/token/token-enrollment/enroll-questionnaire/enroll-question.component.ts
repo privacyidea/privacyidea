@@ -2,11 +2,10 @@ import {
   Component,
   computed,
   EventEmitter,
+  Inject,
   OnInit,
   Output,
 } from '@angular/core';
-import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
 import {
   AbstractControl,
   FormControl,
@@ -15,8 +14,16 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { TokenService } from '../../../../services/token/token.service';
-import { SystemService } from '../../../../services/system/system.service';
+import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatInput } from '@angular/material/input';
+import {
+  SystemService,
+  SystemServiceInterface,
+} from '../../../../services/system/system.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
 import { Observable, of } from 'rxjs';
 import {
@@ -88,10 +95,11 @@ export class EnrollQuestionComponent implements OnInit {
   }
 
   constructor(
-    // private questionService: QuestionService,
-    private tokenService: TokenService,
-    private systemService: SystemService,
     private enrollmentMapper: QuestionApiPayloadMapper,
+    @Inject(TokenService)
+    private tokenService: TokenServiceInterface,
+    @Inject(SystemService)
+    private systemService: SystemServiceInterface,
   ) {}
 
   ngOnInit(): void {

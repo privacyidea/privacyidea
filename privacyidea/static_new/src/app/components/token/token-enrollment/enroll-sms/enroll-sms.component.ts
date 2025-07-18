@@ -2,17 +2,11 @@ import {
   Component,
   computed,
   effect,
-  Input,
+  EventEmitter,
+  Inject,
   OnInit,
   Output,
-  EventEmitter,
-  WritableSignal,
 } from '@angular/core';
-import { MatCheckbox } from '@angular/material/checkbox';
-import { MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
-import { MatOption } from '@angular/material/core';
-import { MatError, MatSelect } from '@angular/material/select';
 import {
   FormControl,
   FormGroup,
@@ -20,9 +14,23 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { SmsGatewayService } from '../../../../services/sms-gateway/sms-gateway.service';
-import { SystemService } from '../../../../services/system/system.service';
-import { TokenService } from '../../../../services/token/token.service';
+import { MatCheckbox } from '@angular/material/checkbox';
+import { MatOption } from '@angular/material/core';
+import { MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
+import { MatInput } from '@angular/material/input';
+import { MatError, MatSelect } from '@angular/material/select';
+import {
+  SmsGatewayService,
+  SmsGatewayServiceInterface,
+} from '../../../../services/sms-gateway/sms-gateway.service';
+import {
+  SystemService,
+  SystemServiceInterface,
+} from '../../../../services/system/system.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
 import { Observable, of } from 'rxjs';
 import {
@@ -91,10 +99,13 @@ export class EnrollSmsComponent implements OnInit {
   });
 
   constructor(
-    private smsGatewayService: SmsGatewayService,
-    private systemService: SystemService,
-    private tokenService: TokenService,
     private enrollmentMapper: SmsApiPayloadMapper,
+    @Inject(SmsGatewayService)
+    private smsGatewayService: SmsGatewayServiceInterface,
+    @Inject(SystemService)
+    private systemService: SystemServiceInterface,
+    @Inject(TokenService)
+    private tokenService: TokenServiceInterface,
   ) {
     effect(() => {
       const id =

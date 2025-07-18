@@ -1,11 +1,22 @@
-import { Component, EventEmitter, OnInit, Output, signal } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Inject,
+  OnInit,
+  Output,
+  signal,
+} from '@angular/core';
 import {
   FormControl,
   FormGroup,
   FormsModule,
   ReactiveFormsModule,
 } from '@angular/forms';
-import { Tokens, TokenService } from '../../../../services/token/token.service';
+import {
+  Tokens,
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
 import { MatDialogRef } from '@angular/material/dialog';
 import { lastValueFrom } from 'rxjs';
@@ -15,7 +26,10 @@ import {
   TokenEnrollmentData,
 } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { PushApiPayloadMapper } from '../../../../mappers/token-api-payload/push-token-api-payload.mapper';
-import { DialogService } from '../../../../services/dialog/dialog.service';
+import {
+  DialogService,
+  DialogServiceInterface,
+} from '../../../../services/dialog/dialog.service';
 import { TokenEnrollmentFirstStepDialogComponent } from '../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component';
 import { ReopenDialogFn } from '../token-enrollment.component';
 
@@ -50,9 +64,11 @@ export class EnrollPushComponent implements OnInit {
   pushForm = new FormGroup({});
 
   constructor(
-    private tokenService: TokenService,
+    @Inject(TokenService)
+    private tokenService: TokenServiceInterface,
+    @Inject(DialogService)
+    private dialogService: DialogServiceInterface,
     private enrollmentMapper: PushApiPayloadMapper,
-    private dialogService: DialogService,
   ) {}
 
   ngOnInit(): void {

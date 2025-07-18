@@ -2,6 +2,7 @@ import {
   Component,
   computed,
   EventEmitter,
+  Inject,
   OnInit,
   Output,
 } from '@angular/core';
@@ -11,10 +12,16 @@ import {
   FormsModule,
   ReactiveFormsModule,
 } from '@angular/forms';
-import { SystemService } from '../../../../services/system/system.service';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  SystemService,
+  SystemServiceInterface,
+} from '../../../../services/system/system.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
 import {
   EnrollmentResponse,
   TokenEnrollmentData,
@@ -58,9 +65,11 @@ export class EnrollTiqrComponent implements OnInit {
   tiqrForm = new FormGroup({}); // No specific controls for TIQR
 
   constructor(
-    private systemService: SystemService,
-    private tokenService: TokenService,
     private enrollmentMapper: TiqrApiPayloadMapper,
+    @Inject(SystemService)
+    private systemService: SystemServiceInterface,
+    @Inject(TokenService)
+    private tokenService: TokenServiceInterface,
   ) {}
 
   ngOnInit(): void {

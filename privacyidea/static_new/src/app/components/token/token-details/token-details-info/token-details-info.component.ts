@@ -1,32 +1,42 @@
+import { NgClass } from '@angular/common';
 import {
   Component,
+  Inject,
   Input,
   linkedSignal,
   Signal,
   WritableSignal,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { MatIconButton } from '@angular/material/button';
+import { MatDivider } from '@angular/material/divider';
+import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatIcon } from '@angular/material/icon';
+import { MatInput } from '@angular/material/input';
+import { MatList, MatListItem } from '@angular/material/list';
 import {
   MatCell,
   MatColumnDef,
   MatRow,
   MatTableModule,
 } from '@angular/material/table';
-import { MatList, MatListItem } from '@angular/material/list';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
-import { FormsModule } from '@angular/forms';
-import { MatIconButton } from '@angular/material/button';
-import { MatIcon } from '@angular/material/icon';
-import { MatDivider } from '@angular/material/divider';
-import { TokenService } from '../../../../services/token/token.service';
 import { Observable, switchMap } from 'rxjs';
+import {
+  AuthService,
+  AuthServiceInterface,
+} from '../../../../services/auth/auth.service';
+import {
+  OverflowService,
+  OverflowServiceInterface,
+} from '../../../../services/overflow/overflow.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 import {
   EditableElement,
   EditButtonsComponent,
 } from '../../../shared/edit-buttons/edit-buttons.component';
-import { NgClass } from '@angular/common';
-import { OverflowService } from '../../../../services/overflow/overflow.service';
-import { AuthService } from '../../../../services/auth/auth.service';
 
 @Component({
   selector: 'app-token-details-info',
@@ -67,9 +77,12 @@ export class TokenDetailsInfoComponent {
   });
 
   constructor(
-    private tokenService: TokenService,
-    protected overflowService: OverflowService,
-    protected authService: AuthService,
+    @Inject(TokenService)
+    private tokenService: TokenServiceInterface,
+    @Inject(OverflowService)
+    protected overflowService: OverflowServiceInterface,
+    @Inject(AuthService)
+    protected authService: AuthServiceInterface,
   ) {}
 
   toggleInfoEdit(): void {

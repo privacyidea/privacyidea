@@ -1,14 +1,26 @@
-import { Component, linkedSignal } from '@angular/core';
-import { MatCard, MatCardContent } from '@angular/material/card';
-import { MatTabsModule } from '@angular/material/tabs';
-import { MatIcon } from '@angular/material/icon';
-import { TokenTabComponent } from './token-tab/token-tab.component';
-import { ContainerTabComponent } from './container-tab/container-tab.component';
 import { NgClass } from '@angular/common';
-import { OverflowService } from '../../../services/overflow/overflow.service';
-import { TokenService } from '../../../services/token/token.service';
-import { ContainerService } from '../../../services/container/container.service';
-import { ContentService } from '../../../services/content/content.service';
+import { Component, Inject, linkedSignal } from '@angular/core';
+import { MatCard, MatCardContent } from '@angular/material/card';
+import { MatIcon } from '@angular/material/icon';
+import { MatTabsModule } from '@angular/material/tabs';
+import {
+  ContainerService,
+  ContainerServiceInterface,
+} from '../../../services/container/container.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../services/content/content.service';
+import {
+  OverflowService,
+  OverflowServiceInterface,
+} from '../../../services/overflow/overflow.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../services/token/token.service';
+import { ContainerTabComponent } from './container-tab/container-tab.component';
+import { TokenTabComponent } from './token-tab/token-tab.component';
 
 @Component({
   selector: 'app-token-card',
@@ -43,10 +55,14 @@ export class TokenCardComponent {
   });
 
   constructor(
-    protected overflowService: OverflowService,
-    private tokenService: TokenService,
-    private containerService: ContainerService,
-    private contentService: ContentService,
+    @Inject(OverflowService)
+    protected overflowService: OverflowServiceInterface,
+    @Inject(TokenService)
+    private tokenService: TokenServiceInterface,
+    @Inject(ContainerService)
+    private containerService: ContainerServiceInterface,
+    @Inject(ContentService)
+    private contentService: ContentServiceInterface,
   ) {}
 
   onTabChange(): void {

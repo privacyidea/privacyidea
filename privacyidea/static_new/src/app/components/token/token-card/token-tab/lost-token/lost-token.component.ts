@@ -1,4 +1,6 @@
 import { Component, effect, Inject, WritableSignal } from '@angular/core';
+import { MatButton } from '@angular/material/button';
+import { MatCard, MatCardContent } from '@angular/material/card';
 import {
   MAT_DIALOG_DATA,
   MatDialogClose,
@@ -6,14 +8,16 @@ import {
   MatDialogRef,
   MatDialogTitle,
 } from '@angular/material/dialog';
-import { MatButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../../../../../services/notification/notification.service';
 import {
   LostTokenData,
   TokenService,
+  TokenServiceInterface,
 } from '../../../../../services/token/token.service';
-import { MatCard, MatCardContent } from '@angular/material/card';
-import { NotificationService } from '../../../../../services/notification/notification.service';
 
 @Component({
   selector: 'app-lost-token',
@@ -33,8 +37,10 @@ export class LostTokenComponent {
   lostTokenData?: LostTokenData;
 
   constructor(
-    protected tokenService: TokenService,
-    private notificationService: NotificationService,
+    @Inject(TokenService)
+    protected tokenService: TokenServiceInterface,
+    @Inject(NotificationService)
+    private notificationService: NotificationServiceInterface,
     @Inject(MAT_DIALOG_DATA)
     public data: {
       isLost: WritableSignal<boolean>;

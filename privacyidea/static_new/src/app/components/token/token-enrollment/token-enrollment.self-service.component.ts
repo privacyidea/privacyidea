@@ -21,13 +21,34 @@ import {
   MAT_TOOLTIP_DEFAULT_OPTIONS,
   MatTooltip,
 } from '@angular/material/tooltip';
-import { ContainerService } from '../../../services/container/container.service';
-import { ContentService } from '../../../services/content/content.service';
-import { DialogService } from '../../../services/dialog/dialog.service';
-import { NotificationService } from '../../../services/notification/notification.service';
-import { RealmService } from '../../../services/realm/realm.service';
-import { TokenService } from '../../../services/token/token.service';
-import { UserService } from '../../../services/user/user.service';
+import {
+  ContainerService,
+  ContainerServiceInterface,
+} from '../../../services/container/container.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../services/content/content.service';
+import {
+  DialogService,
+  DialogServiceInterface,
+} from '../../../services/dialog/dialog.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../../../services/notification/notification.service';
+import {
+  RealmService,
+  RealmServiceInterface,
+} from '../../../services/realm/realm.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../services/token/token.service';
+import {
+  UserService,
+  UserServiceInterface,
+} from '../../../services/user/user.service';
 import {
   VersioningService,
   VersioningServiceInterface,
@@ -123,18 +144,26 @@ import {
 })
 export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponent {
   constructor(
-    containerService: ContainerService,
-    realmService: RealmService,
-    notificationService: NotificationService,
-    userService: UserService,
-    tokenService: TokenService,
+    renderer: Renderer2,
+    @Inject(ContainerService)
+    containerService: ContainerServiceInterface,
+    @Inject(RealmService)
+    realmService: RealmServiceInterface,
+    @Inject(NotificationService)
+    notificationService: NotificationServiceInterface,
+    @Inject(UserService)
+    userService: UserServiceInterface,
+    @Inject(TokenService)
+    tokenService: TokenServiceInterface,
     @Inject(VersioningService)
     versioningService: VersioningServiceInterface,
-    contentService: ContentService,
-    dialogService: DialogService,
-    renderer: Renderer2,
+    @Inject(ContentService)
+    contentService: ContentServiceInterface,
+    @Inject(DialogService)
+    dialogService: DialogServiceInterface,
   ) {
     super(
+      renderer,
       containerService,
       realmService,
       notificationService,
@@ -143,7 +172,6 @@ export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponen
       versioningService,
       contentService,
       dialogService,
-      renderer,
     );
   }
 }

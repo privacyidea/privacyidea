@@ -1,8 +1,8 @@
+import { httpResource, HttpResourceRef } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { httpResource } from '@angular/common/http';
-import { LocalService } from '../local/local.service';
 import { environment } from '../../../environments/environment';
 import { PiResponse } from '../../app.component';
+import { LocalService } from '../local/local.service';
 
 type SmsGateways = SmsGateway[];
 export interface SmsGateway {
@@ -12,6 +12,10 @@ export interface SmsGateway {
   providermodule: string;
   options: Record<string, string>;
   headers: any;
+}
+
+export interface SmsGatewayServiceInterface {
+  smsGatewayResource: HttpResourceRef<PiResponse<SmsGateways> | undefined>;
 }
 
 @Injectable({

@@ -1,5 +1,5 @@
 import { NgClass } from '@angular/common';
-import { Component, computed } from '@angular/core';
+import { Component, computed, Inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
@@ -7,13 +7,23 @@ import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatSortModule } from '@angular/material/sort';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatTabsModule } from '@angular/material/tabs';
-import { ContentService } from '../../../../services/content/content.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../../services/content/content.service';
 import {
   MachineService,
+  MachineServiceInterface,
   TokenApplication,
 } from '../../../../services/machine/machine.service';
-import { TableUtilsService } from '../../../../services/table-utils/table-utils.service';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  TableUtilsService,
+  TableUtilsServiceInterface,
+} from '../../../../services/table-utils/table-utils.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 import { CopyButtonComponent } from '../../../shared/copy-button/copy-button.component';
 import { KeywordFilterComponent } from '../../../shared/keyword-filter/keyword-filter.component';
 
@@ -51,10 +61,14 @@ export class TokenApplicationsOfflineComponent {
   );
 
   constructor(
-    protected machineService: MachineService,
-    protected tableUtilsService: TableUtilsService,
-    protected tokenService: TokenService,
-    protected contentService: ContentService,
+    @Inject(MachineService)
+    protected machineService: MachineServiceInterface,
+    @Inject(TableUtilsService)
+    protected tableUtilsService: TableUtilsServiceInterface,
+    @Inject(TokenService)
+    protected tokenService: TokenServiceInterface,
+    @Inject(ContentService)
+    protected contentService: ContentServiceInterface,
   ) {}
 
   dataSource = computed(() => {

@@ -1,11 +1,17 @@
-import { Component, signal } from '@angular/core';
-import { MatInput } from '@angular/material/input';
-import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
+import { Component, Inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ContentService } from '../../../services/content/content.service';
 import { MatButton } from '@angular/material/button';
+import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
-import { TokenService } from '../../../services/token/token.service';
+import { MatInput } from '@angular/material/input';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../services/content/content.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../services/token/token.service';
 
 @Component({
   selector: 'app-assign-token-self-service',
@@ -30,8 +36,10 @@ export class AssignTokenSelfServiceComponent {
   repeatPinValue = signal('');
 
   constructor(
-    private contentService: ContentService,
-    protected tokenService: TokenService,
+    @Inject(ContentService)
+    private contentService: ContentServiceInterface,
+    @Inject(TokenService)
+    private tokenService: TokenServiceInterface,
   ) {}
 
   assignUserToToken() {

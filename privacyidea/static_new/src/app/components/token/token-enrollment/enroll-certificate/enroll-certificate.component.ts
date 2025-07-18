@@ -1,12 +1,11 @@
 import {
   Component,
   EventEmitter,
+  Inject,
   linkedSignal,
   OnInit,
   Output,
 } from '@angular/core';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
 import {
   FormControl,
   FormGroup,
@@ -19,9 +18,17 @@ import {
   MatButtonToggleGroup,
 } from '@angular/material/button-toggle';
 import { ErrorStateMatcher, MatOption } from '@angular/material/core';
+import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatInput } from '@angular/material/input';
 import { MatError, MatSelect } from '@angular/material/select';
-import { CaConnectorService } from '../../../../services/ca-connector/ca-connector.service';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  CaConnectorService,
+  CaConnectorServiceInterface,
+} from '../../../../services/ca-connector/ca-connector.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
 import { Observable, of } from 'rxjs';
 import {
@@ -116,9 +123,11 @@ export class EnrollCertificateComponent implements OnInit {
   caConnectorErrorStateMatcher = new CaConnectorErrorStateMatcher();
 
   constructor(
-    private caConnectorService: CaConnectorService,
-    private tokenService: TokenService,
     private enrollmentMapper: CertificateApiPayloadMapper,
+    @Inject(CaConnectorService)
+    private caConnectorService: CaConnectorServiceInterface,
+    @Inject(TokenService)
+    private tokenService: TokenServiceInterface,
   ) {}
 
   ngOnInit(): void {

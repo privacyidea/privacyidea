@@ -1,36 +1,47 @@
 import {
-  Component,
-  effect,
-  Input,
-  linkedSignal,
-  ViewChild,
-  WritableSignal,
-} from '@angular/core';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatInputModule } from '@angular/material/input';
-import { MatSortModule, Sort } from '@angular/material/sort';
-import { NgClass } from '@angular/common';
-import {
-  ContainerDetailData,
-  ContainerService,
-} from '../../../services/container/container.service';
-import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
-import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
-import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
-import { MatCheckboxModule } from '@angular/material/checkbox';
-import { FormsModule } from '@angular/forms';
-import { TokenService } from '../../../services/token/token.service';
-import { TokenSelectedContentKey } from '../token.component';
-import { ContentService } from '../../../services/content/content.service';
-import {
   animate,
   state,
   style,
   transition,
   trigger,
 } from '@angular/animations';
+import { NgClass } from '@angular/common';
+import {
+  Component,
+  effect,
+  Inject,
+  Input,
+  linkedSignal,
+  ViewChild,
+  WritableSignal,
+} from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatSortModule, Sort } from '@angular/material/sort';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import {
+  ContainerDetailData,
+  ContainerService,
+  ContainerServiceInterface,
+} from '../../../services/container/container.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../services/content/content.service';
+import {
+  TableUtilsService,
+  TableUtilsServiceInterface,
+} from '../../../services/table-utils/table-utils.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../services/token/token.service';
+import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
+import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
+import { TokenSelectedContentKey } from '../token.component';
 
 const columnsKeyMap = [
   { key: 'select', label: '' },
@@ -156,10 +167,14 @@ export class ContainerTableComponent {
   expandedElement: ContainerDetailData | null = null;
 
   constructor(
-    protected containerService: ContainerService,
-    protected tokenService: TokenService,
-    protected tableUtilsService: TableUtilsService,
-    protected contentService: ContentService,
+    @Inject(ContainerService)
+    protected containerService: ContainerServiceInterface,
+    @Inject(TokenService)
+    protected tokenService: TokenServiceInterface,
+    @Inject(TableUtilsService)
+    protected tableUtilsService: TableUtilsServiceInterface,
+    @Inject(ContentService)
+    protected contentService: ContentServiceInterface,
   ) {
     effect(() => {
       const filterValueString = this.filterValueString();

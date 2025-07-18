@@ -1,12 +1,4 @@
-import {
-  Component,
-  computed,
-  EventEmitter,
-  OnInit,
-  Output,
-} from '@angular/core';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
+import { Component, EventEmitter, Inject, OnInit, Output } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -14,14 +6,20 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { ErrorStateMatcher, MatOption } from '@angular/material/core';
-import { MatError, MatSelect } from '@angular/material/select';
 import { MatCheckbox } from '@angular/material/checkbox';
+import { ErrorStateMatcher, MatOption } from '@angular/material/core';
+import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatInput } from '@angular/material/input';
+import { MatError, MatSelect } from '@angular/material/select';
 import {
   PrivacyideaServerService,
+  PrivacyideaServerServiceInterface,
   RemoteServer,
 } from '../../../../services/privavyidea-server/privacyidea-server.service';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
 import { Observable, of } from 'rxjs';
 import {
@@ -94,9 +92,11 @@ export class EnrollRemoteComponent implements OnInit {
   remoteErrorStateMatcher = new RemoteErrorStateMatcher();
 
   constructor(
-    private privacyideaServerService: PrivacyideaServerService,
-    private tokenService: TokenService, // Keep original service name
     private enrollmentMapper: RemoteApiPayloadMapper,
+    @Inject(PrivacyideaServerService)
+    private privacyideaServerService: PrivacyideaServerServiceInterface,
+    @Inject(TokenService)
+    private tokenService: TokenServiceInterface,
   ) {}
 
   ngOnInit(): void {

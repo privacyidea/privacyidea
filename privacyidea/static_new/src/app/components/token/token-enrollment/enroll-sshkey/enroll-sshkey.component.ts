@@ -1,15 +1,18 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Inject, Output } from '@angular/core';
 import {
+  AbstractControl,
   FormControl,
   FormsModule,
-  AbstractControl,
-  Validators,
   ReactiveFormsModule,
+  Validators,
 } from '@angular/forms';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatError } from '@angular/material/select';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
 import { Observable, of } from 'rxjs';
 import {
@@ -54,8 +57,9 @@ export class EnrollSshkeyComponent {
   }>();
 
   constructor(
-    private tokenService: TokenService,
     private enrollmentMapper: SshkeyApiPayloadMapper,
+    @Inject(TokenService)
+    private tokenService: TokenServiceInterface,
   ) {}
 
   ngOnInit() {

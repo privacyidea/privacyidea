@@ -20,8 +20,14 @@ import { MatIcon } from '@angular/material/icon';
 import { DomSanitizer } from '@angular/platform-browser';
 import { map } from 'rxjs';
 import { EnrollmentResponse } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
-import { ContentService } from '../../../../services/content/content.service';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../../services/content/content.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 import { UserData } from '../../../../services/user/user.service';
 import { TokenEnrollmentLastStepDialogComponent } from './token-enrollment-last-step-dialog.component';
 
@@ -60,8 +66,6 @@ export class TokenEnrollmentSecondStepDialogWizardComponent extends TokenEnrollm
   constructor(
     private http: HttpClient,
     private sanitizer: DomSanitizer,
-    tokenService: TokenService,
-    contentService: ContentService,
     dialogRef: MatDialogRef<TokenEnrollmentLastStepDialogComponent>,
     @Inject(MAT_DIALOG_DATA)
     data: {
@@ -71,7 +75,11 @@ export class TokenEnrollmentSecondStepDialogWizardComponent extends TokenEnrollm
       userRealm: string;
       user: UserData;
     },
+    @Inject(TokenService)
+    tokenService: TokenServiceInterface,
+    @Inject(ContentService)
+    contentService: ContentServiceInterface,
   ) {
-    super(tokenService, contentService, dialogRef, data);
+    super(dialogRef, data, tokenService, contentService);
   }
 }

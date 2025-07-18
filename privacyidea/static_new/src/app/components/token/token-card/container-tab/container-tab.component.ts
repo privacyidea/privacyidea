@@ -7,8 +7,14 @@ import { MatIcon } from '@angular/material/icon';
 import { MatList, MatListItem } from '@angular/material/list';
 import { forkJoin } from 'rxjs';
 import { tabToggleState } from '../../../../../styles/animations/animations';
-import { ContainerService } from '../../../../services/container/container.service';
-import { ContentService } from '../../../../services/content/content.service';
+import {
+  ContainerService,
+  ContainerServiceInterface,
+} from '../../../../services/container/container.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../../services/content/content.service';
 import {
   VersioningService,
   VersioningServiceInterface,
@@ -38,11 +44,13 @@ export class ContainerTabComponent {
   version!: string;
 
   constructor(
-    private containerService: ContainerService,
-    private contentService: ContentService,
+    private dialog: MatDialog,
+    @Inject(ContainerService)
+    private containerService: ContainerServiceInterface,
+    @Inject(ContentService)
+    private contentService: ContentServiceInterface,
     @Inject(VersioningService)
     protected versioningService: VersioningServiceInterface,
-    private dialog: MatDialog,
   ) {}
 
   ngOnInit(): void {

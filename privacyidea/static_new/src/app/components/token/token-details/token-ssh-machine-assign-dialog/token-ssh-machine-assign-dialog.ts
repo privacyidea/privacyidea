@@ -14,30 +14,33 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
+import { MatOptionModule } from '@angular/material/core';
 import {
   MAT_DIALOG_DATA,
   MatDialogModule,
   MatDialogRef,
 } from '@angular/material/dialog';
 import {
+  ApplicationService,
+  ApplicationServiceInterface,
+} from '../../../../services/application/application.service';
+import {
   Machine,
   MachineService,
+  MachineServiceInterface,
 } from '../../../../services/machine/machine.service';
-import { ApplicationService } from '../../../../services/application/application.service';
-import { UserService } from '../../../../services/user/user.service';
-import { MatOptionModule } from '@angular/material/core';
-
-import { MatSelectModule } from '@angular/material/select';
-import { MatDividerModule } from '@angular/material/divider';
-import { MatAutocompleteModule } from '@angular/material/autocomplete';
-
-import { Observable } from 'rxjs';
 import {
-  EnrollmentResponse,
-  TokenEnrollmentData,
-} from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
-import { MatInputModule } from '@angular/material/input';
+  UserService,
+  UserServiceInterface,
+} from '../../../../services/user/user.service';
+
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatSelectModule } from '@angular/material/select';
+
 import { MatButtonModule } from '@angular/material/button';
+import { MatInputModule } from '@angular/material/input';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'token-ssh-machine-assign-dialog',
@@ -122,9 +125,6 @@ export class TokenSshMachineAssignDialogComponent {
 
   /// Computed properties ///
   constructor(
-    private applicationService: ApplicationService,
-    private machineService: MachineService,
-    private userService: UserService,
     @Inject(MAT_DIALOG_DATA)
     public data: {
       tokenSerial: string;
@@ -135,6 +135,12 @@ export class TokenSshMachineAssignDialogComponent {
       TokenSshMachineAssignDialogComponent,
       Observable<any> | null
     >,
+    @Inject(ApplicationService)
+    private applicationService: ApplicationServiceInterface,
+    @Inject(MachineService)
+    private machineService: MachineServiceInterface,
+    @Inject(UserService)
+    private userService: UserServiceInterface,
   ) {}
 
   ngOnInit() {

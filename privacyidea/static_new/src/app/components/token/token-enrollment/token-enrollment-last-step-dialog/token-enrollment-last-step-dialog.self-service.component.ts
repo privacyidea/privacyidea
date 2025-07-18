@@ -15,10 +15,10 @@ import {
   MatExpansionPanelTitle,
 } from '@angular/material/expansion';
 import { MatIcon } from '@angular/material/icon';
-import { TokenService } from '../../../../services/token/token.service';
-import { ContentService } from '../../../../services/content/content.service';
-import { UserData } from '../../../../services/user/user.service';
 import { EnrollmentResponse } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import { ContentService, ContentServiceInterface } from '../../../../services/content/content.service';
+import { TokenService, TokenServiceInterface } from '../../../../services/token/token.service';
+import { UserData } from '../../../../services/user/user.service';
 import { TokenEnrollmentLastStepDialogComponent } from './token-enrollment-last-step-dialog.component';
 
 export type TokenEnrollmentLastStepDialogData = {
@@ -52,12 +52,14 @@ export class TokenEnrollmentLastStepDialogSelfServiceComponent extends TokenEnro
   protected override readonly Object = Object;
 
   constructor(
-    protected override tokenService: TokenService,
-    protected override contentService: ContentService,
     protected override dialogRef: MatDialogRef<TokenEnrollmentLastStepDialogComponent>,
     @Inject(MAT_DIALOG_DATA)
     public override data: TokenEnrollmentLastStepDialogData,
+    @Inject(TokenService)
+    protected override tokenService: TokenServiceInterface,
+    @Inject(ContentService)
+    protected override contentService: ContentServiceInterface,
   ) {
-    super(tokenService, contentService, dialogRef, data);
+    super(dialogRef, data, tokenService, contentService);
   }
 }

@@ -1,7 +1,17 @@
+import { HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import * as CryptoJS from 'crypto-js';
 import { environment } from '../../../environments/environment';
-import { HttpHeaders } from '@angular/common/http';
+
+export interface LocalServiceInterface {
+  key: string;
+  bearerTokenKey: string;
+
+  saveData(key: string, value: string): void;
+  getData(key: string): string;
+  removeData(key: string): void;
+  getHeaders(): HttpHeaders;
+}
 
 @Injectable({
   providedIn: 'root',

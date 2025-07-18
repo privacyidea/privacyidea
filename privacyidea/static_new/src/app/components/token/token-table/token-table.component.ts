@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   effect,
+  Inject,
   linkedSignal,
   ViewChild,
   WritableSignal,
@@ -17,12 +18,22 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { lastValueFrom } from 'rxjs';
-import { ContentService } from '../../../services/content/content.service';
-import { DialogService } from '../../../services/dialog/dialog.service';
-import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../services/content/content.service';
+import {
+  DialogService,
+  DialogServiceInterface,
+} from '../../../services/dialog/dialog.service';
+import {
+  TableUtilsService,
+  TableUtilsServiceInterface,
+} from '../../../services/table-utils/table-utils.service';
 import {
   TokenDetails,
   TokenService,
+  TokenServiceInterface,
 } from '../../../services/token/token.service';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
@@ -134,10 +145,14 @@ export class TokenTableComponent {
   filterInput!: HTMLInputElement;
 
   constructor(
-    protected tokenService: TokenService,
-    protected tableUtilsService: TableUtilsService,
-    protected contentService: ContentService,
-    protected dialogService: DialogService,
+    @Inject(TokenService)
+    protected tokenService: TokenServiceInterface,
+    @Inject(TableUtilsService)
+    protected tableUtilsService: TableUtilsServiceInterface,
+    @Inject(ContentService)
+    protected contentService: ContentServiceInterface,
+    @Inject(DialogService)
+    protected dialogService: DialogServiceInterface,
   ) {
     effect(() => {
       const filterValueString = this.filterValueString();

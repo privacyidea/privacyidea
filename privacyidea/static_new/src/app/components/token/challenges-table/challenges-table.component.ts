@@ -1,29 +1,40 @@
+import { NgClass } from '@angular/common';
 import {
   Component,
+  Inject,
   linkedSignal,
   ViewChild,
   WritableSignal,
 } from '@angular/core';
-import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
 import {
   MatPaginator,
   MatPaginatorModule,
   PageEvent,
 } from '@angular/material/paginator';
 import { MatSort, MatSortModule, Sort } from '@angular/material/sort';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatIconModule } from '@angular/material/icon';
-import { NgClass } from '@angular/common';
-import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
-import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
-import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
-import { TokenService } from '../../../services/token/token.service';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../services/content/content.service';
+import {
+  TableUtilsService,
+  TableUtilsServiceInterface,
+} from '../../../services/table-utils/table-utils.service';
 import {
   Challenge,
   ChallengesService,
+  ChallengesServiceInterface,
 } from '../../../services/token/challenges/challenges.service';
-import { ContentService } from '../../../services/content/content.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../services/token/token.service';
+import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
+import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
 
 export const columnKeysMap = [
   { key: 'timestamp', label: 'Timestamp' },
@@ -89,10 +100,14 @@ export class ChallengesTableComponent {
   @ViewChild('filterInput', { static: true }) filterInput!: HTMLInputElement;
 
   constructor(
-    protected tokenService: TokenService,
-    protected tableUtilsService: TableUtilsService,
-    private challengesService: ChallengesService,
-    protected contentService: ContentService,
+    @Inject(TokenService)
+    protected tokenService: TokenServiceInterface,
+    @Inject(TableUtilsService)
+    protected tableUtilsService: TableUtilsServiceInterface,
+    @Inject(ChallengesService)
+    private challengesService: ChallengesServiceInterface,
+    @Inject(ContentService)
+    protected contentService: ContentServiceInterface,
   ) {}
 
   onFilterChange(newFilter: string) {

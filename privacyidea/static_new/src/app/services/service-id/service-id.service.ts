@@ -1,8 +1,8 @@
+import { httpResource, HttpResourceRef } from '@angular/common/http';
 import { Injectable, linkedSignal, WritableSignal } from '@angular/core';
-import { httpResource } from '@angular/common/http';
-import { LocalService } from '../local/local.service';
 import { environment } from '../../../environments/environment';
 import { PiResponse } from '../../app.component';
+import { LocalService } from '../local/local.service';
 
 type ServiceIds = {
   [key: string]: _ServiceId;
@@ -17,10 +17,15 @@ export interface ServiceId {
   id: number;
 }
 
+export interface ServiceIdServiceInterface {
+  serviceIdResource: HttpResourceRef<PiResponse<ServiceIds> | undefined>;
+  serviceIds: WritableSignal<ServiceId[]>;
+}
+
 @Injectable({
   providedIn: 'root',
 })
-export class ServiceIdService {
+export class ServiceIdService implements ServiceIdServiceInterface {
   serviceIdResource = httpResource<PiResponse<ServiceIds>>(() => ({
     url: environment.proxyUrl + '/serviceid/',
     method: 'GET',

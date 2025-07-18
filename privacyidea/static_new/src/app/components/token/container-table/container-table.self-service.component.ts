@@ -1,18 +1,34 @@
-import { Component, inject } from '@angular/core';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatTableModule } from '@angular/material/table';
-import { MatPaginatorModule } from '@angular/material/paginator';
-import { MatInputModule } from '@angular/material/input';
-import { MatSortModule } from '@angular/material/sort';
 import { NgClass } from '@angular/common';
-import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
-import { MatCheckboxModule } from '@angular/material/checkbox';
+import { Component, Inject, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ContainerTableComponent } from './container-table.component';
-import { MatIcon } from '@angular/material/icon';
 import { MatIconButton } from '@angular/material/button';
-import { ConfirmationDialogComponent } from '../../shared/confirmation-dialog/confirmation-dialog.component';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialog } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIcon } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatPaginatorModule } from '@angular/material/paginator';
+import { MatSortModule } from '@angular/material/sort';
+import { MatTableModule } from '@angular/material/table';
+import {
+  ContainerService,
+  ContainerServiceInterface,
+} from '../../../services/container/container.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../services/content/content.service';
+import {
+  TableUtilsService,
+  TableUtilsServiceInterface,
+} from '../../../services/table-utils/table-utils.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../services/token/token.service';
+import { ConfirmationDialogComponent } from '../../shared/confirmation-dialog/confirmation-dialog.component';
+import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
+import { ContainerTableComponent } from './container-table.component';
 
 @Component({
   selector: 'app-container-table-self-service',
@@ -45,6 +61,19 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
   readonly columnKeysSelfService: string[] = this.columnKeysMapSelfService.map(
     (column: { key: string; label: string }) => column.key,
   );
+
+  constructor(
+    @Inject(ContainerService)
+    protected override containerService: ContainerServiceInterface,
+    @Inject(TokenService)
+    protected override tokenService: TokenServiceInterface,
+    @Inject(TableUtilsService)
+    protected override tableUtilsService: TableUtilsServiceInterface,
+    @Inject(ContentService)
+    protected override contentService: ContentServiceInterface,
+  ) {
+    super(containerService, tokenService, tableUtilsService, contentService);
+  }
 
   deleteContainer(serial: string): void {
     this.dialog

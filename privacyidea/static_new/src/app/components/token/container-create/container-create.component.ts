@@ -27,12 +27,28 @@ import { PiResponse } from '../../../app.component';
 import {
   ContainerRegisterData,
   ContainerService,
+  ContainerServiceInterface,
 } from '../../../services/container/container.service';
-import { ContentService } from '../../../services/content/content.service';
-import { NotificationService } from '../../../services/notification/notification.service';
-import { RealmService } from '../../../services/realm/realm.service';
-import { TokenService } from '../../../services/token/token.service';
-import { UserService } from '../../../services/user/user.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../services/content/content.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../../../services/notification/notification.service';
+import {
+  RealmService,
+  RealmServiceInterface,
+} from '../../../services/realm/realm.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../services/token/token.service';
+import {
+  UserService,
+  UserServiceInterface,
+} from '../../../services/user/user.service';
 import {
   VersioningService,
   VersioningServiceInterface,
@@ -85,12 +101,18 @@ export class ContainerCreateComponent {
     protected registrationDialog: MatDialog,
     @Inject(VersioningService)
     protected versioningService: VersioningServiceInterface,
-    protected userService: UserService,
-    protected realmService: RealmService,
-    protected containerService: ContainerService,
-    private notificationService: NotificationService,
-    protected tokenService: TokenService,
-    private contentService: ContentService,
+    @Inject(UserService)
+    protected userService: UserServiceInterface,
+    @Inject(RealmService)
+    protected realmService: RealmServiceInterface,
+    @Inject(ContainerService)
+    protected containerService: ContainerServiceInterface,
+    @Inject(NotificationService)
+    protected notificationService: NotificationServiceInterface,
+    @Inject(TokenService)
+    protected tokenService: TokenServiceInterface,
+    @Inject(ContentService)
+    protected contentService: ContentServiceInterface,
   ) {
     effect(() => {
       if (
