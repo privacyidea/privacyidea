@@ -58,7 +58,6 @@ log = logging.getLogger(__name__)
 
 
 class MotpTokenClass(TokenClass):
-    desc_key_gen = lazy_gettext("Force the key to be generated on the server.")
 
     @staticmethod
     def get_class_type():
@@ -178,23 +177,22 @@ class MotpTokenClass(TokenClass):
 
         :return: nothing
         """
-        if self.hKeyRequired is True:
-            otp_key = param.get("otpkey")
-            force_genkey = param.get(f"{self.get_tokentype()}_{ACTION.FORCE_SERVER_GENERATE}")
-            if force_genkey or not otp_key:
-                param["genkey"] = True
-            genkey = is_true(param.get("genkey"))
-            if not param.get('keysize'):
-                param['keysize'] = 16
-            if genkey:
-                otpKey = generate_otpkey(param['keysize'])
-                del param['genkey']
-            else:
-                # genkey not set: check otpkey is given
-                # this will raise an exception if otpkey is not present
-                otpKey = getParam(param, "otpkey", required)
+        otp_key = param.get("otpkey")
+        force_genkey = param.get(f"{self.get_tokentype()}_{ACTION.FORCE_SERVER_GENERATE}")
+        if force_genkey or not otp_key:
+            param["genkey"] = True
+        genkey = is_true(param.get("genkey"))
+        if not param.get('keysize'):
+            param['keysize'] = 16
+        if genkey:
+            otpKey = generate_otpkey(param['keysize'])
+            del param['genkey']
+        else:
+            # genkey not set: check otpkey is given
+            # this will raise an exception if otpkey is not present
+            otpKey = getParam(param, "otpkey", required)
 
-            param['otpkey'] = otpKey
+        param['otpkey'] = otpKey
 
         # motp token specific
         mOTPPin = getParam(param, "motppin", required)

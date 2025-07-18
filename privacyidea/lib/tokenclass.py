@@ -84,6 +84,7 @@ from datetime import datetime, timedelta, timezone
 
 from dateutil.parser import parse as parse_date_string, ParserError
 from dateutil.tz import tzlocal, tzutc
+from flask_babel import lazy_gettext
 
 from privacyidea.lib import _
 from privacyidea.lib.crypto import (encryptPassword, decryptPassword,
@@ -165,6 +166,8 @@ class TokenClass(object):
     client_mode = CLIENTMODE.INTERACTIVE
     # If the token provides means that the user has to prove/verify that the token was successfully enrolled.
     can_verify_enrollment = False
+
+    desc_key_gen = lazy_gettext("Force the key to be generated on the server.")
 
     @log_with(log)
     def __init__(self, db_token):

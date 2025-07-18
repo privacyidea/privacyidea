@@ -97,7 +97,6 @@ class HotpTokenClass(TokenClass):
     desc_hash_func = lazy_gettext('Specify the hashing function to be used. '
                                   'Can be SHA1, SHA256 or SHA512.')
     desc_otp_len = lazy_gettext('Specify the OTP length to be used. Can be 6 or 8 digits.')
-    desc_key_gen = lazy_gettext("Force the key to be generated on the server.")
     desc_two_step_user = lazy_gettext('Specify whether users are allowed or forced to use '
                                       'two-step enrollment.')
     desc_two_step_admin = lazy_gettext('Specify whether admins are allowed or forced to '
@@ -353,7 +352,7 @@ class HotpTokenClass(TokenClass):
 
         # check if the key_size is provided
         # if not, we could derive it from the hashlib
-        key_size = upd_param.get('key_size') or upd_param.get('keysize')
+        key_size = upd_param.get('keysize')
         if key_size is None:
             upd_param['keysize'] = keylen.get(hashlibStr)
 

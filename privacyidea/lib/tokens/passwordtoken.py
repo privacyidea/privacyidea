@@ -50,7 +50,6 @@ class PasswordTokenClass(TokenClass):
     password_detail_key = "password"  # nosec B105 # key name
     default_length = DEFAULT_LENGTH
     default_contents = DEFAULT_CONTENTS
-    desc_key_gen = lazy_gettext("Force the key to be generated on the server.")
 
     class SecretPassword(object):
 

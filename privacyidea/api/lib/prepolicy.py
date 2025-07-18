@@ -1605,7 +1605,7 @@ def check_token_init(request=None, action=None):
     return True
 
 
-def force_server_generate_key(request=None, action=None):
+def force_server_generate_key(request: Request, action=None):
     """
     Checks if for the given token type a policy to force the server to generate the key is set.
 
