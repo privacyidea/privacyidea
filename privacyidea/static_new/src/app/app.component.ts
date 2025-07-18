@@ -1,9 +1,18 @@
-import { Component, HostListener } from '@angular/core';
+import { Component, HostListener, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterOutlet } from '@angular/router';
-import { AuthService } from './services/auth/auth.service';
-import { NotificationService } from './services/notification/notification.service';
-import { SessionTimerService } from './services/session-timer/session-timer.service';
+import {
+  AuthService,
+  AuthServiceInterface,
+} from './services/auth/auth.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from './services/notification/notification.service';
+import {
+  SessionTimerService,
+  SessionTimerServiceInterface,
+} from './services/session-timer/session-timer.service';
 
 export interface PiResponse<Value, Detail = unknown> {
   id: number;
@@ -35,11 +44,13 @@ export class AppComponent {
   title = 'privacyidea-webui';
   lastSessionReset = 0;
 
-  constructor(
-    private authService: AuthService,
-    private notificationService: NotificationService,
-    private sessionTimerService: SessionTimerService,
-  ) {
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  private readonly sessionTimerService: SessionTimerServiceInterface =
+    inject(SessionTimerService);
+
+  constructor() {
     this.sessionTimerService.startTimer();
 
     if (this.authService.isAuthenticatedUser()) {

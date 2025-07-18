@@ -1,8 +1,8 @@
+import { httpResource, HttpResourceRef } from '@angular/common/http';
 import { Injectable, linkedSignal, WritableSignal } from '@angular/core';
-import { httpResource } from '@angular/common/http';
-import { LocalService } from '../local/local.service';
 import { environment } from '../../../environments/environment';
 import { PiResponse } from '../../app.component';
+import { LocalService } from '../local/local.service';
 
 export type RadiusServerConfigurations = {
   [key: string]: any;
@@ -18,10 +18,17 @@ export interface RadiusServerConfiguration {
   timeout: number;
 }
 
+export interface RadiusServerServiceInterface {
+  radiusServerConfigurationResource: HttpResourceRef<
+    PiResponse<RadiusServerConfigurations> | undefined
+  >;
+  radiusServerConfigurations: WritableSignal<RadiusServerConfiguration[]>;
+}
+
 @Injectable({
   providedIn: 'root',
 })
-export class RadiusServerService {
+export class RadiusServerService implements RadiusServerServiceInterface {
   radiusServerConfigurationResource = httpResource<
     PiResponse<RadiusServerConfigurations>
   >(() => ({

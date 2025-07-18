@@ -1,13 +1,16 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
   FormsModule,
   ReactiveFormsModule,
 } from '@angular/forms';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
 import {
   EnrollmentResponse,
   TokenEnrollmentData,
@@ -16,7 +19,6 @@ import { RegistrationApiPayloadMapper } from '../../../../mappers/token-api-payl
 
 export interface RegistrationEnrollmentOptions extends TokenEnrollmentData {
   type: 'registration';
-  // No type-specific fields for initialization via EnrollmentOptions
 }
 @Component({
   selector: 'app-enroll-registration',
@@ -26,6 +28,11 @@ export interface RegistrationEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: './enroll-registration.component.scss',
 })
 export class EnrollRegistrationComponent implements OnInit {
+  protected readonly enrollmentMapper: RegistrationApiPayloadMapper = inject(
+    RegistrationApiPayloadMapper,
+  );
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'registration')?.text;
@@ -38,11 +45,6 @@ export class EnrollRegistrationComponent implements OnInit {
   >();
 
   registrationForm = new FormGroup({});
-
-  constructor(
-    private tokenService: TokenService,
-    private enrollmentMapper: RegistrationApiPayloadMapper,
-  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({});

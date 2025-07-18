@@ -1,26 +1,38 @@
-import { Component, effect, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { HttpParams } from '@angular/common/http';
+import { Component, effect, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { MatButton } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import {
   MatError,
   MatFormField,
   MatHint,
   MatLabel,
 } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
-import { MatOption, MatSelect } from '@angular/material/select';
-import { HttpParams } from '@angular/common/http';
-import { FormsModule } from '@angular/forms';
-import { TokenService } from '../../../services/token/token.service';
-import { NotificationService } from '../../../services/notification/notification.service';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { CommonModule } from '@angular/common';
-import { Subscription } from 'rxjs';
-import { MatButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
-import { LoadingService } from '../../../services/loading/loading-service';
-import { MatDialog } from '@angular/material/dialog';
-import { GetSerialResultDialogComponent } from './get-serial-result-dialog/get-serial-result-dialog.component';
+import { MatInput } from '@angular/material/input';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatOption, MatSelect } from '@angular/material/select';
+import { Subscription } from 'rxjs';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../services/content/content.service';
+import {
+  LoadingService,
+  LoadingServiceInterface,
+} from '../../../services/loading/loading-service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../../../services/notification/notification.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../services/token/token.service';
 import { ConfirmationDialogComponent } from '../../shared/confirmation-dialog/confirmation-dialog.component';
-import { ContentService } from '../../../services/content/content.service';
+import { GetSerialResultDialogComponent } from './get-serial-result-dialog/get-serial-result-dialog.component';
 
 @Component({
   selector: 'app-token-get-serial',
@@ -42,6 +54,15 @@ import { ContentService } from '../../../services/content/content.service';
   styleUrl: './token-get-serial.component.scss',
 })
 export class TokenGetSerialComponent {
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  protected readonly loadingService: LoadingServiceInterface =
+    inject(LoadingService);
+  protected readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+  private readonly dialog: MatDialog = inject(MatDialog);
+
   selectedContent = this.contentService.selectedContent;
   tokenSerial = this.tokenService.tokenSerial;
   otpValue = signal<string>('');
@@ -63,13 +84,7 @@ export class TokenGetSerialComponent {
     },
   ];
 
-  constructor(
-    private tokenService: TokenService,
-    private notificationService: NotificationService,
-    private loadingService: LoadingService,
-    private dialog: MatDialog,
-    private contentService: ContentService,
-  ) {
+  constructor() {
     const tokenWithOTP = [
       'hotp',
       'totp',

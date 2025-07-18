@@ -5,7 +5,7 @@ import {
   computed,
   effect,
   ElementRef,
-  Inject,
+  inject,
   Injectable,
   linkedSignal,
   OnDestroy,
@@ -53,12 +53,31 @@ import {
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatOption, MatSelect } from '@angular/material/select';
-import { ContainerService } from '../../../services/container/container.service';
-import { ContentService } from '../../../services/content/content.service';
-import { NotificationService } from '../../../services/notification/notification.service';
-import { RealmService } from '../../../services/realm/realm.service';
-import { TokenService } from '../../../services/token/token.service';
-import { UserData, UserService } from '../../../services/user/user.service';
+import {
+  ContainerService,
+  ContainerServiceInterface,
+} from '../../../services/container/container.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../services/content/content.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../../../services/notification/notification.service';
+import {
+  RealmService,
+  RealmServiceInterface,
+} from '../../../services/realm/realm.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../services/token/token.service';
+import {
+  UserData,
+  UserService,
+  UserServiceInterface,
+} from '../../../services/user/user.service';
 import {
   VersioningService,
   VersioningServiceInterface,
@@ -100,7 +119,10 @@ import {
   EnrollmentResponse,
   TokenEnrollmentData,
 } from '../../../mappers/token-api-payload/_token-api-payload.mapper';
-import { DialogService } from '../../../services/dialog/dialog.service';
+import {
+  DialogService,
+  DialogServiceInterface,
+} from '../../../services/dialog/dialog.service';
 import { TokenEnrollmentLastStepDialogData } from './token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component';
 
 export type ClickEnrollFn = (
@@ -228,22 +250,29 @@ export class CustomDateAdapter extends NativeDateAdapter {
   standalone: true,
 })
 export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
-  timezoneOptions = TIMEZONE_OFFSETS;
-  tokenSerial = this.tokenService.tokenSerial;
-  containerSerial = this.containerService.containerSerial;
-  selectedContent = this.contentService.selectedContent;
+  protected readonly containerService: ContainerServiceInterface =
+    inject(ContainerService);
+  protected readonly realmService: RealmServiceInterface = inject(RealmService);
+  protected readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  protected readonly userService: UserServiceInterface = inject(UserService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly versioningService: VersioningServiceInterface =
+    inject(VersioningService);
+  protected readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+  protected readonly dialogService: DialogServiceInterface =
+    inject(DialogService);
 
-  // Signals for basic enrollment options, to be replaced by FormControls
-  tokenTypeOptions = this.tokenService.tokenTypeOptions;
-  selectedTokenType = this.tokenService.selectedTokenType; // This will become a FormControl
+  timezoneOptions = TIMEZONE_OFFSETS;
 
   pollResponse: WritableSignal<any> = linkedSignal({
-    source: this.selectedTokenType,
+    source: this.tokenService.selectedTokenType,
     computation: () => null,
   });
 
   enrollResponse: WritableSignal<EnrollmentResponse | null> = linkedSignal({
-    source: this.selectedTokenType,
+    source: this.tokenService.selectedTokenType,
     computation: () => null,
   });
 
@@ -253,18 +282,12 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
 
   private observer!: IntersectionObserver;
 
-  // Effect to reset enrollResponse when token type changes, if selectedTokenTypeControl is used as source
-  // Alternatively, keep linkedSignal if selectedTokenType (service signal) is the desired source.
-  // For simplicity and consistency with formGroup driving state:
-
-  // FormControls for the main enrollment form
-
   onlyAddToRealm = computed(() => {
     if (this.tokenService.selectedTokenType()?.key === '4eyes') {
       const foureyesControls = this.additionalFormFields();
       const control = foureyesControls[
         'onlyAddToRealm'
-      ] as FormControl<boolean>; // Key from EnrollFoureyesComponent
+      ] as FormControl<boolean>;
       return !!control?.value;
     }
     return false;
@@ -275,14 +298,13 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     this.clickEnroll = event;
   }
   reopenDialogSignal: WritableSignal<ReopenDialogFn> = linkedSignal({
-    source: this.selectedTokenType,
+    source: this.tokenService.selectedTokenType,
     computation: () => undefined,
   });
   updateReopenDialog(event: ReopenDialogFn): void {
     this.reopenDialogSignal.set(event);
   }
 
-  // This signal might not be needed if children manage their forms entirely.
   additionalFormFields: WritableSignal<{
     [key: string]: FormControl<any>;
   }> = signal({});
@@ -328,9 +350,8 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   });
 
   updateAdditionalFormFields(event: {
-    [key: string]: FormControl<any> | undefined | null; // Allow undefined/null temporarily for safety
+    [key: string]: FormControl<any> | undefined | null;
   }): void {
-    // Filter out any null or undefined controls before setting the signal
     const validControls: { [key: string]: FormControl<any> } = {};
     for (const key in event) {
       if (event.hasOwnProperty(key) && event[key] instanceof FormControl) {
@@ -378,25 +399,13 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     nonNullable: true,
   });
 
-  constructor(
-    protected containerService: ContainerService,
-    protected realmService: RealmService,
-    protected notificationService: NotificationService,
-    protected userService: UserService,
-    protected tokenService: TokenService,
-    @Inject(VersioningService)
-    protected versioningService: VersioningServiceInterface,
-    protected contentService: ContentService,
-    protected dialogService: DialogService,
-    private renderer: Renderer2,
-  ) {
+  constructor(private renderer: Renderer2) {
     effect(() => {
       const users = this.userService.filteredUsers();
       if (
         users.length === 1 &&
         this.userFilterControl.value === users[0].username
       ) {
-        // If there's only one user, set the userFilterControl to that user
         this.userFilterControl.setValue(users[0]);
       }
     });

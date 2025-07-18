@@ -1,15 +1,16 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { CommonModule } from '@angular/common';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { TokenService } from '../../../../services/token/token.service';
 
+import { MatOptionModule } from '@angular/material/core';
+import { MatSelect } from '@angular/material/select';
 import { Observable, of } from 'rxjs';
 import {
   EnrollmentResponse,
@@ -19,13 +20,15 @@ import {
   YubikeyApiPayloadMapper,
   YubikeyEnrollmentData,
 } from '../../../../mappers/token-api-payload/yubikey-token-api-payload.mapper';
-import { MatOptionModule } from '@angular/material/core';
-import { MatSelect } from '@angular/material/select';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
 @Component({
   selector: 'app-enroll-yubikey',
   templateUrl: './enroll-yubikey.component.html',
-  styleUrls: ['./enroll-yubikey.component.scss'], // If present
+  styleUrls: ['./enroll-yubikey.component.scss'],
   standalone: true,
   imports: [
     CommonModule,
@@ -37,6 +40,11 @@ import { MatSelect } from '@angular/material/select';
   ],
 })
 export class EnrollYubikeyComponent implements OnInit {
+  protected readonly enrollmentMapper: YubikeyApiPayloadMapper = inject(
+    YubikeyApiPayloadMapper,
+  );
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
@@ -63,11 +71,6 @@ export class EnrollYubikeyComponent implements OnInit {
   text =
     this.tokenService.tokenTypeOptions().find((type) => type.key === 'yubikey')
       ?.text || 'The Yubikey token can be used in AES encryption mode...';
-
-  constructor(
-    private tokenService: TokenService,
-    private enrollmentMapper: YubikeyApiPayloadMapper,
-  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({

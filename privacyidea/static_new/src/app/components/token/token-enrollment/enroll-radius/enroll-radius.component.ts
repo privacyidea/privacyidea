@@ -2,17 +2,11 @@ import {
   Component,
   computed,
   effect,
-  Input,
+  EventEmitter,
+  inject,
   OnInit,
   Output,
-  EventEmitter,
-  WritableSignal,
 } from '@angular/core';
-import { MatCheckbox } from '@angular/material/checkbox';
-import { MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
-import { MatOption } from '@angular/material/core';
-import { MatError, MatSelect } from '@angular/material/select';
 import {
   FormControl,
   FormGroup,
@@ -20,9 +14,23 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { RadiusServerService } from '../../../../services/radius-server/radius-server.service';
-import { SystemService } from '../../../../services/system/system.service';
-import { TokenService } from '../../../../services/token/token.service';
+import { MatCheckbox } from '@angular/material/checkbox';
+import { MatOption } from '@angular/material/core';
+import { MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
+import { MatInput } from '@angular/material/input';
+import { MatError, MatSelect } from '@angular/material/select';
+import {
+  RadiusServerService,
+  RadiusServerServiceInterface,
+} from '../../../../services/radius-server/radius-server.service';
+import {
+  SystemService,
+  SystemServiceInterface,
+} from '../../../../services/system/system.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
 import { Observable, of } from 'rxjs';
 import {
@@ -57,6 +65,15 @@ export interface RadiusEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: './enroll-radius.component.scss',
 })
 export class EnrollRadiusComponent implements OnInit {
+  protected readonly enrollmentMapper: RadiusApiPayloadMapper = inject(
+    RadiusApiPayloadMapper,
+  );
+  protected readonly radiusServerService: RadiusServerServiceInterface =
+    inject(RadiusServerService);
+  protected readonly systemService: SystemServiceInterface =
+    inject(SystemService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'radius')?.text;
@@ -68,7 +85,7 @@ export class EnrollRadiusComponent implements OnInit {
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
-  radiusUserControl = new FormControl<string>(''); // Optional, depending on configuration
+  radiusUserControl = new FormControl<string>('');
   radiusServerConfigurationControl = new FormControl<string>('', [
     Validators.required,
   ]);
@@ -94,12 +111,7 @@ export class EnrollRadiusComponent implements OnInit {
     return !!cfg?.['radius.identifier'];
   });
 
-  constructor(
-    private radiusServerService: RadiusServerService,
-    private systemService: SystemService,
-    private tokenService: TokenService,
-    private enrollmentMapper: RadiusApiPayloadMapper,
-  ) {
+  constructor() {
     effect(() => {
       const id =
         this.systemService.systemConfigResource.value()?.result?.value?.[

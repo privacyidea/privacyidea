@@ -1,6 +1,4 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
-import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
+import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -10,7 +8,12 @@ import {
 } from '@angular/forms';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { ErrorStateMatcher } from '@angular/material/core';
-import { TokenService } from '../../../../services/token/token.service';
+import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatInput } from '@angular/material/input';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
 import { Observable, of } from 'rxjs';
 import {
@@ -22,7 +25,7 @@ import { VascoApiPayloadMapper } from '../../../../mappers/token-api-payload/vas
 export interface VascoEnrollmentOptions extends TokenEnrollmentData {
   type: 'vasco';
   otpKey?: string;
-  useVascoSerial: boolean; // Keep original type
+  useVascoSerial: boolean;
   vascoSerial?: string;
 }
 
@@ -50,6 +53,11 @@ export class VascoErrorStateMatcher implements ErrorStateMatcher {
   styleUrl: './enroll-vasco.component.scss',
 })
 export class EnrollVascoComponent implements OnInit {
+  protected readonly enrollmentMapper: VascoApiPayloadMapper = inject(
+    VascoApiPayloadMapper,
+  );
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'vasco')?.text;
@@ -61,11 +69,11 @@ export class EnrollVascoComponent implements OnInit {
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
-  otpKeyControl = new FormControl<string>(''); // Validator is set dynamically
+  otpKeyControl = new FormControl<string>('');
   useVascoSerialControl = new FormControl<boolean>(false, [
     Validators.required,
   ]);
-  vascoSerialControl = new FormControl<string>(''); // Validator is set dynamically
+  vascoSerialControl = new FormControl<string>('');
 
   vascoForm = new FormGroup({
     otpKey: this.otpKeyControl,
@@ -74,11 +82,6 @@ export class EnrollVascoComponent implements OnInit {
   });
 
   vascoErrorStatematcher = new VascoErrorStateMatcher();
-
-  constructor(
-    private tokenService: TokenService,
-    private enrollmentMapper: VascoApiPayloadMapper,
-  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({
@@ -95,7 +98,7 @@ export class EnrollVascoComponent implements OnInit {
       } else {
         this.otpKeyControl.setValidators([
           Validators.required,
-          Validators.minLength(496), // Vasco OTP key length
+          Validators.minLength(496),
           Validators.maxLength(496),
         ]);
         this.vascoSerialControl.clearValidators();
@@ -103,15 +106,13 @@ export class EnrollVascoComponent implements OnInit {
       this.otpKeyControl.updateValueAndValidity();
       this.vascoSerialControl.updateValueAndValidity();
     });
-    // Initial call to set validators based on default useVascoSerialControl value
     this.useVascoSerialControl.updateValueAndValidity();
   }
 
   static convertOtpKeyToVascoSerial(otpHex: string): string {
     let vascoOtpStr = '';
     if (!otpHex || otpHex.length !== 496) {
-      // Expecting 248 bytes hex encoded
-      return ''; // Or handle error appropriately
+      return '';
     }
     for (let i = 0; i < otpHex.length; i += 2) {
       vascoOtpStr += String.fromCharCode(parseInt(otpHex.slice(i, i + 2), 16));

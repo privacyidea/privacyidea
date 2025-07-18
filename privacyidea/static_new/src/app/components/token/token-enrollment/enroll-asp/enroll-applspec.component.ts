@@ -2,11 +2,10 @@ import {
   Component,
   computed,
   EventEmitter,
+  inject,
   OnInit,
   Output,
 } from '@angular/core';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
 import {
   FormControl,
   FormGroup,
@@ -15,10 +14,18 @@ import {
   Validators,
 } from '@angular/forms';
 import { MatCheckbox } from '@angular/material/checkbox';
-import { ServiceIdService } from '../../../../services/service-id/service-id.service';
 import { ErrorStateMatcher, MatOption } from '@angular/material/core';
+import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatInput } from '@angular/material/input';
 import { MatError, MatSelect } from '@angular/material/select';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  ServiceIdService,
+  ServiceIdServiceInterface,
+} from '../../../../services/service-id/service-id.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
 import { Observable, of } from 'rxjs';
 import {
@@ -29,8 +36,8 @@ import { ApplspecApiPayloadMapper } from '../../../../mappers/token-api-payload/
 
 export interface ApplspecEnrollmentOptions extends TokenEnrollmentData {
   type: 'applspec';
-  serviceId: string; // Keep original type
-  generateOnServer: boolean; // Keep original type
+  serviceId: string;
+  generateOnServer: boolean;
   otpKey?: string;
 }
 
@@ -59,6 +66,13 @@ export class ApplspecErrorStateMatcher implements ErrorStateMatcher {
   styleUrl: './enroll-applspec.component.scss',
 })
 export class EnrollApplspecComponent implements OnInit {
+  protected readonly enrollmentMapper: ApplspecApiPayloadMapper = inject(
+    ApplspecApiPayloadMapper,
+  );
+  protected readonly serviceIdService: ServiceIdServiceInterface =
+    inject(ServiceIdService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'applspec')?.text;
@@ -74,24 +88,17 @@ export class EnrollApplspecComponent implements OnInit {
   generateOnServerControl = new FormControl<boolean>(true, [
     Validators.required,
   ]);
-  otpKeyControl = new FormControl<string>(''); // Validator is set dynamically
+  otpKeyControl = new FormControl<string>('');
 
   applspecForm = new FormGroup({
     serviceId: this.serviceIdControl,
     generateOnServer: this.generateOnServerControl,
     otpKey: this.otpKeyControl,
   });
-  // Options for the template
   serviceIdOptions = computed(
     () => this.serviceIdService.serviceIds().map((s) => s.name) || [],
   );
   applspecErrorStateMatcher = new ApplspecErrorStateMatcher();
-
-  constructor(
-    private serviceIdService: ServiceIdService,
-    private tokenService: TokenService,
-    private enrollmentMapper: ApplspecApiPayloadMapper,
-  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({

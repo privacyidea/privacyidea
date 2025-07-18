@@ -8,7 +8,7 @@
     <mat-form-field subscriptSizing="dynamic">
       <mat-select
         [ngModelOptions]="{ standalone: true }"
-        [(ngModel)]="selectedTokenType"
+        [(ngModel)]="tokenService.selectedTokenType"
         [panelClass]="'multi-column-panel'">
         @for (type of tokenService.tokenTypeOptions(); track type) {
           <mat-option
@@ -35,12 +35,12 @@
             type="submit"
             [ngClass]="{
               'disabled-button':
-                formGroupSignal().invalid || !selectedTokenType(),
+                formGroupSignal().invalid || !tokenService.selectedTokenType(),
               'card-button': true,
             }"
             mat-flat-button>
             <mat-icon>add</mat-icon>
-            @if (selectedTokenType(); as tt) {
+            @if (tokenService.selectedTokenType(); as tt) {
               Enroll {{ tt.key }} Token
             } @else {
               Enroll Token
@@ -58,7 +58,7 @@
         </div>
       </div>
     </div>
-    @switch (selectedTokenType().key) {
+    @switch (tokenService.selectedTokenType().key) {
       @case ("hotp") {
         <app-enroll-hotp
           (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
@@ -232,7 +232,7 @@
             @if (
               !selectedUserRealmControl.value &&
               !onlyAddToRealm() &&
-              selectedTokenType()
+              tokenService.selectedTokenType()
             ) {
               <mat-hint>
                 Select a realm first to enable user selection.
@@ -252,7 +252,7 @@
           </mat-form-field>
         </div>
       </div>
-      @if (selectedTokenType().key !== "passkey") {
+      @if (tokenService.selectedTokenType().key !== "passkey") {
         <div class="flex-column user-pin-container">
           <h4 class="enroll-h4">Set PIN</h4>
           <input style="display: none" type="text" />

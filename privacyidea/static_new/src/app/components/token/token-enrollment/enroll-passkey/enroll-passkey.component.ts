@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -12,10 +12,22 @@ import {
   TokenEnrollmentData,
 } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { PasskeyApiPayloadMapper } from '../../../../mappers/token-api-payload/passkey-token-api-payload.mapper';
-import { Base64Service } from '../../../../services/base64/base64.service';
-import { DialogService } from '../../../../services/dialog/dialog.service';
-import { NotificationService } from '../../../../services/notification/notification.service';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  Base64Service,
+  Base64ServiceInterface,
+} from '../../../../services/base64/base64.service';
+import {
+  DialogService,
+  DialogServiceInterface,
+} from '../../../../services/dialog/dialog.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../../../../services/notification/notification.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 import { TokenEnrollmentFirstStepDialogComponent } from '../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component';
 import { ReopenDialogFn } from '../token-enrollment.component';
 
@@ -58,6 +70,17 @@ export interface PasskeyRegistrationParams {
   styleUrl: './enroll-passkey.component.scss',
 })
 export class EnrollPasskeyComponent implements OnInit {
+  protected readonly enrollmentMapper: PasskeyApiPayloadMapper = inject(
+    PasskeyApiPayloadMapper,
+  );
+  protected readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly base64Service: Base64ServiceInterface =
+    inject(Base64Service);
+  protected readonly dialogService: DialogServiceInterface =
+    inject(DialogService);
+
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'passkey')?.text;
@@ -71,14 +94,6 @@ export class EnrollPasskeyComponent implements OnInit {
   @Output() reopenDialogChange = new EventEmitter<ReopenDialogFn>();
 
   passkeyForm = new FormGroup({});
-
-  constructor(
-    private notificationService: NotificationService,
-    private tokenService: TokenService,
-    private base64Service: Base64Service,
-    private enrollmentMapper: PasskeyApiPayloadMapper,
-    private dialogService: DialogService,
-  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({});
@@ -249,7 +264,7 @@ export class EnrollPasskeyComponent implements OnInit {
           data: { enrollmentResponse },
           disableClose: true,
         });
-        const publicKeyCred = this.readPublicKeyCred(enrollmentResponse);
+        const publicKeyCred = await this.readPublicKeyCred(enrollmentResponse);
         const resposeLastStep = await this.finalizeEnrollment({
           enrollmentInitData,
           enrollmentResponse,

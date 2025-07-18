@@ -1,5 +1,5 @@
 import { DatePipe, NgClass, NgOptimizedImage } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import {
   MatFabAnchor,
   MatFabButton,
@@ -8,10 +8,22 @@ import {
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenu, MatMenuTrigger } from '@angular/material/menu';
 import { Router, RouterLink } from '@angular/router';
-import { AuthService } from '../../../services/auth/auth.service';
-import { LocalService } from '../../../services/local/local.service';
-import { NotificationService } from '../../../services/notification/notification.service';
-import { SessionTimerService } from '../../../services/session-timer/session-timer.service';
+import {
+  AuthService,
+  AuthServiceInterface,
+} from '../../../services/auth/auth.service';
+import {
+  LocalService,
+  LocalServiceInterface,
+} from '../../../services/local/local.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../../../services/notification/notification.service';
+import {
+  SessionTimerService,
+  SessionTimerServiceInterface,
+} from '../../../services/session-timer/session-timer.service';
 import { UserSelfServiceComponent } from '../../user/user.self-service.component';
 
 @Component({
@@ -34,6 +46,14 @@ import { UserSelfServiceComponent } from '../../user/user.self-service.component
   styleUrl: './header.component.scss',
 })
 export class HeaderComponent {
+  protected readonly sessionTimerService: SessionTimerServiceInterface =
+    inject(SessionTimerService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly localService: LocalServiceInterface = inject(LocalService);
+  protected readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  protected readonly router: Router = inject(Router);
+
   protected readonly AuthService = AuthService;
   profileText =
     this.authService.user() +
@@ -42,14 +62,6 @@ export class HeaderComponent {
     ' (' +
     this.authService.role() +
     ')';
-
-  constructor(
-    protected sessionTimerService: SessionTimerService,
-    protected authService: AuthService,
-    protected localService: LocalService,
-    protected notificationService: NotificationService,
-    protected router: Router,
-  ) {}
 
   isActive(link: string) {
     return this.router.url.includes(link);

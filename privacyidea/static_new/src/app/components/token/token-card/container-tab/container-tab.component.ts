@@ -1,6 +1,3 @@
-import { Component, computed, Inject } from '@angular/core';
-import { NgClass } from '@angular/common';
-import { Router } from '@angular/router';
 import { MatIcon } from '@angular/material/icon';
 import { MatList, MatListItem } from '@angular/material/list';
 import { MatButton } from '@angular/material/button';
@@ -8,13 +5,22 @@ import { MatDivider } from '@angular/material/divider';
 import { MatDialog } from '@angular/material/dialog';
 import { forkJoin } from 'rxjs';
 import { tabToggleState } from '../../../../../styles/animations/animations';
-import { ContainerService } from '../../../../services/container/container.service';
-import { ContentService } from '../../../../services/content/content.service';
+import {
+  ContainerService,
+  ContainerServiceInterface,
+} from '../../../../services/container/container.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../../services/content/content.service';
 import {
   VersioningService,
   VersioningServiceInterface,
 } from '../../../../services/version/version.service';
+import { NgClass } from '@angular/common';
+import { Component, computed, inject } from '@angular/core';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-container-tab',
@@ -25,25 +31,25 @@ import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog
   animations: [tabToggleState],
 })
 export class ContainerTabComponent {
+  private readonly dialog: MatDialog = inject(MatDialog);
+  private readonly containerService: ContainerServiceInterface =
+    inject(ContainerService);
+  private readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+  protected readonly versioningService: VersioningServiceInterface =
+    inject(VersioningService);
+  private router = inject(Router);
   containerSelection = this.containerService.containerSelection;
   selectedContent = this.contentService.selectedContent;
   containerSerial = this.containerService.containerSerial;
   selectedContainer = this.containerService.selectedContainer;
   containerIsSelected = computed(() => this.containerSerial() !== '');
   states = computed(() => {
-    const detail = this.containerService.containerDetailResource.value();
-    return detail?.result?.value?.containers[0]?.states ?? [];
+    const containerDetail =
+      this.containerService.containerDetailResource.value();
+    return containerDetail?.result?.value?.containers[0]?.states ?? [];
   });
   version!: string;
-
-  constructor(
-    private router: Router,
-    private containerService: ContainerService,
-    private contentService: ContentService,
-    @Inject(VersioningService)
-    protected versioningService: VersioningServiceInterface,
-    private dialog: MatDialog,
-  ) {}
 
   ngOnInit(): void {
     this.version = this.versioningService.getVersion();
@@ -66,7 +72,9 @@ export class ContainerTabComponent {
   toggleActive(): void {
     this.containerService
       .toggleActive(this.containerSerial(), this.states())
-      .subscribe(() => this.containerService.containerDetailResource.reload());
+      .subscribe(() => {
+        this.containerService.containerDetailResource.reload();
+      });
   }
 
   deleteContainer() {
@@ -81,8 +89,8 @@ export class ContainerTabComponent {
         },
       })
       .afterClosed()
-      .subscribe((ok) => {
-        if (ok) {
+      .subscribe((result) => {
+        if (result) {
           this.containerService
             .deleteContainer(this.containerSerial())
             .subscribe(() => this.go('/tokens/containers'));
@@ -91,27 +99,36 @@ export class ContainerTabComponent {
   }
 
   deleteSelectedContainer(): void {
-    const cs = this.containerSelection();
+    const selectedContainers = this.containerSelection();
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: cs.map((c) => c.serial),
+          serial_list: selectedContainers.map((container) => container.serial),
           title: 'Delete All Containers',
           type: 'container',
           action: 'delete',
-          numberOfContainers: cs.length,
+          numberOfContainers: selectedContainers.length,
         },
       })
       .afterClosed()
-      .subscribe((ok) => {
-        if (ok) {
-          forkJoin(
-            cs.map((c) => this.containerService.deleteContainer(c.serial)),
-          ).subscribe(() => {
-            this.containerSelection.set([]);
-            this.containerService.containerResource.reload();
-          });
-        }
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            forkJoin(
+              selectedContainers.map((container) =>
+                this.containerService.deleteContainer(container.serial),
+              ),
+            ).subscribe({
+              next: () => {
+                this.containerSelection.set([]);
+                this.containerService.containerResource.reload();
+              },
+              error: (err) => {
+                console.error('Error deleting containers:', err);
+              },
+            });
+          }
+        },
       });
   }
 

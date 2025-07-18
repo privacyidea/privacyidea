@@ -1,21 +1,40 @@
-import { Component, computed, effect, signal, ViewChild } from '@angular/core';
-import { TokenTableComponent } from './token-table/token-table.component';
 import { CommonModule } from '@angular/common';
-import { ContainerTableComponent } from './container-table/container-table.component';
-import { TokenDetailsComponent } from './token-details/token-details.component';
-import { ContainerDetailsComponent } from './container-details/container-details.component';
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  ViewChild,
+} from '@angular/core';
+import { MatFabButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
 import {
   MatDrawer,
   MatDrawerContainer,
   MatSidenavModule,
 } from '@angular/material/sidenav';
-import { MatFabButton } from '@angular/material/button';
-import { MatIcon } from '@angular/material/icon';
-import { OverflowService } from '../../services/overflow/overflow.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../services/content/content.service';
+import {
+  LoadingService,
+  LoadingServiceInterface,
+} from '../../services/loading/loading-service';
+import {
+  OverflowService,
+  OverflowServiceInterface,
+} from '../../services/overflow/overflow.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../services/token/token.service';
+import { ContainerDetailsComponent } from './container-details/container-details.component';
+import { ContainerTableComponent } from './container-table/container-table.component';
 import { TokenCardComponent } from './token-card/token-card.component';
-import { LoadingService } from '../../services/loading/loading-service';
-import { TokenService } from '../../services/token/token.service';
-import { ContentService } from '../../services/content/content.service';
+import { TokenDetailsComponent } from './token-details/token-details.component';
+import { TokenTableComponent } from './token-table/token-table.component';
 import { Router, RouterOutlet } from '@angular/router';
 
 export type TokenTypeOption =
@@ -77,6 +96,14 @@ export type TokenSelectedContentKey =
   styleUrl: './token.component.scss',
 })
 export class TokenComponent {
+  protected readonly overflowService: OverflowServiceInterface =
+    inject(OverflowService);
+  private readonly loadingService: LoadingServiceInterface =
+    inject(LoadingService);
+  private readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+  private router = inject(Router);
   static tokenTypeTexts = [
     {
       key: 'hotp',
@@ -195,13 +222,7 @@ export class TokenComponent {
   containerTableComponent!: ContainerTableComponent;
   @ViewChild('drawer') drawer!: MatDrawer;
 
-  constructor(
-    protected overflowService: OverflowService,
-    private loadingService: LoadingService,
-    private router: Router,
-    protected tokenService: TokenService,
-    protected contentService: ContentService,
-  ) {
+  constructor() {
     effect(() => {
       this.contentService.selectedContent();
       this.loadingService.clearAllLoadings();

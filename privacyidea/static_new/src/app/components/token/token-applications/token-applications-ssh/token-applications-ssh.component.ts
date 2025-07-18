@@ -1,5 +1,11 @@
 import { NgClass } from '@angular/common';
-import { Component, computed } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  linkedSignal,
+  WritableSignal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatFormField, MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -12,13 +18,23 @@ import {
   MatTableModule,
 } from '@angular/material/table';
 import { MatTabsModule } from '@angular/material/tabs';
-import { ContentService } from '../../../../services/content/content.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../../services/content/content.service';
 import {
   MachineService,
+  MachineServiceInterface,
   TokenApplication,
 } from '../../../../services/machine/machine.service';
-import { TableUtilsService } from '../../../../services/table-utils/table-utils.service';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  TableUtilsService,
+  TableUtilsServiceInterface,
+} from '../../../../services/table-utils/table-utils.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 import { CopyButtonComponent } from '../../../shared/copy-button/copy-button.component';
 import { KeywordFilterComponent } from '../../../shared/keyword-filter/keyword-filter.component';
 
@@ -50,17 +66,24 @@ const _sshColumnsKeyMap = [
   styleUrls: ['./token-applications-ssh.component.scss'],
 })
 export class TokenApplicationsSshComponent {
+  protected readonly machineService: MachineServiceInterface =
+    inject(MachineService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface =
+    inject(TableUtilsService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+
   columnsKeyMap = _sshColumnsKeyMap;
   pageSizeOptions = [5, 10, 15];
   length = computed(() => this.machineService.tokenApplications()?.length ?? 0);
   displayedColumns: string[] = _sshColumnsKeyMap.map((column) => column.key);
 
-  constructor(
-    protected machineService: MachineService,
-    protected tableUtilsService: TableUtilsService,
-    protected tokenService: TokenService,
-    protected contentService: ContentService,
-  ) {}
+  filterValueString: WritableSignal<string> = linkedSignal(() =>
+    Object.entries(this.machineService.filterValue())
+      .map(([key, value]) => `${key}: ${value}`)
+      .join(' '),
+  );
 
   dataSource = computed(() => {
     var data = this.machineService.tokenApplications();

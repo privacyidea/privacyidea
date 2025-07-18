@@ -1,5 +1,5 @@
 import { NgClass } from '@angular/common';
-import { Component, Inject, Renderer2 } from '@angular/core';
+import { Component, inject, Renderer2 } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {
   MatAutocomplete,
@@ -21,13 +21,34 @@ import {
   MAT_TOOLTIP_DEFAULT_OPTIONS,
   MatTooltip,
 } from '@angular/material/tooltip';
-import { ContainerService } from '../../../services/container/container.service';
-import { ContentService } from '../../../services/content/content.service';
-import { DialogService } from '../../../services/dialog/dialog.service';
-import { NotificationService } from '../../../services/notification/notification.service';
-import { RealmService } from '../../../services/realm/realm.service';
-import { TokenService } from '../../../services/token/token.service';
-import { UserService } from '../../../services/user/user.service';
+import {
+  ContainerService,
+  ContainerServiceInterface,
+} from '../../../services/container/container.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../services/content/content.service';
+import {
+  DialogService,
+  DialogServiceInterface,
+} from '../../../services/dialog/dialog.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../../../services/notification/notification.service';
+import {
+  RealmService,
+  RealmServiceInterface,
+} from '../../../services/realm/realm.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../services/token/token.service';
+import {
+  UserService,
+  UserServiceInterface,
+} from '../../../services/user/user.service';
 import {
   VersioningService,
   VersioningServiceInterface,
@@ -122,28 +143,21 @@ import {
   ],
 })
 export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponent {
-  constructor(
-    containerService: ContainerService,
-    realmService: RealmService,
-    notificationService: NotificationService,
-    userService: UserService,
-    tokenService: TokenService,
-    @Inject(VersioningService)
-    versioningService: VersioningServiceInterface,
-    contentService: ContentService,
-    dialogService: DialogService,
-    renderer: Renderer2,
-  ) {
-    super(
-      containerService,
-      realmService,
-      notificationService,
-      userService,
-      tokenService,
-      versioningService,
-      contentService,
-      dialogService,
-      renderer,
-    );
+  protected override containerService: ContainerServiceInterface =
+    inject(ContainerService);
+  protected override realmService: RealmServiceInterface = inject(RealmService);
+  protected override notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  protected override userService: UserServiceInterface = inject(UserService);
+  protected override tokenService: TokenServiceInterface = inject(TokenService);
+  protected override versioningService: VersioningServiceInterface =
+    inject(VersioningService);
+  protected override contentService: ContentServiceInterface =
+    inject(ContentService);
+  protected override dialogService: DialogServiceInterface =
+    inject(DialogService);
+
+  constructor(renderer: Renderer2) {
+    super(renderer);
   }
 }

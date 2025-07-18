@@ -2,11 +2,10 @@ import {
   Component,
   computed,
   EventEmitter,
+  inject,
   OnInit,
   Output,
 } from '@angular/core';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
 import {
   FormControl,
   FormGroup,
@@ -14,10 +13,18 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { SystemService } from '../../../../services/system/system.service';
 import { ErrorStateMatcher } from '@angular/material/core';
+import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatInput } from '@angular/material/input';
 import { MatError } from '@angular/material/select';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  SystemService,
+  SystemServiceInterface,
+} from '../../../../services/system/system.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
 import { Observable, of } from 'rxjs';
 import {
@@ -54,6 +61,13 @@ export class YubicoErrorStateMatcher implements ErrorStateMatcher {
   styleUrl: './enroll-yubico.component.scss',
 })
 export class EnrollYubicoComponent implements OnInit {
+  protected readonly enrollmentMapper: YubicoApiPayloadMapper = inject(
+    YubicoApiPayloadMapper,
+  );
+  protected readonly systemService: SystemServiceInterface =
+    inject(SystemService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+
   yubicoErrorStatematcher = new YubicoErrorStateMatcher();
   text = this.tokenService
     .tokenTypeOptions()
@@ -84,12 +98,6 @@ export class EnrollYubicoComponent implements OnInit {
       cfg?.['yubico.secret']
     );
   });
-
-  constructor(
-    private systemService: SystemService,
-    private tokenService: TokenService,
-    private enrollmentMapper: YubicoApiPayloadMapper,
-  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({

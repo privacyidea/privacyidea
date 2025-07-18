@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   effect,
+  inject,
   linkedSignal,
   ViewChild,
   WritableSignal,
@@ -17,12 +18,22 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { lastValueFrom } from 'rxjs';
-import { ContentService } from '../../../services/content/content.service';
-import { DialogService } from '../../../services/dialog/dialog.service';
-import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../services/content/content.service';
+import {
+  DialogService,
+  DialogServiceInterface,
+} from '../../../services/dialog/dialog.service';
+import {
+  TableUtilsService,
+  TableUtilsServiceInterface,
+} from '../../../services/table-utils/table-utils.service';
 import {
   TokenDetails,
   TokenService,
+  TokenServiceInterface,
 } from '../../../services/token/token.service';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
@@ -62,6 +73,14 @@ const columnKeysMap = [
   styleUrl: './token-table.component.scss',
 })
 export class TokenTableComponent {
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface =
+    inject(TableUtilsService);
+  protected readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+  protected readonly dialogService: DialogServiceInterface =
+    inject(DialogService);
+
   readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = columnKeysMap.map((column) => column.key);
   readonly apiFilter = this.tokenService.apiFilter;
@@ -133,12 +152,7 @@ export class TokenTableComponent {
   @ViewChild('filterHTMLInputElement', { static: true })
   filterInput!: HTMLInputElement;
 
-  constructor(
-    protected tokenService: TokenService,
-    protected tableUtilsService: TableUtilsService,
-    protected contentService: ContentService,
-    protected dialogService: DialogService,
-  ) {
+  constructor() {
     effect(() => {
       const filterValueString = this.filterValueString();
       if (this.filterInput) {

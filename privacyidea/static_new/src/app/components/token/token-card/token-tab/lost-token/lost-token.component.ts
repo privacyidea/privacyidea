@@ -1,4 +1,6 @@
-import { Component, effect, Inject, WritableSignal } from '@angular/core';
+import { Component, effect, inject, WritableSignal } from '@angular/core';
+import { MatButton } from '@angular/material/button';
+import { MatCard, MatCardContent } from '@angular/material/card';
 import {
   MAT_DIALOG_DATA,
   MatDialogClose,
@@ -6,17 +8,20 @@ import {
   MatDialogRef,
   MatDialogTitle,
 } from '@angular/material/dialog';
-import { MatButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../../../../../services/notification/notification.service';
 import {
   LostTokenData,
   TokenService,
+  TokenServiceInterface,
 } from '../../../../../services/token/token.service';
-import { MatCard, MatCardContent } from '@angular/material/card';
-import { NotificationService } from '../../../../../services/notification/notification.service';
 
 @Component({
   selector: 'app-lost-token',
+  standalone: true, // Add standalone: true as it's missing but common practice for new components
   imports: [
     MatDialogTitle,
     MatDialogContent,
@@ -30,18 +35,17 @@ import { NotificationService } from '../../../../../services/notification/notifi
   styleUrl: './lost-token.component.scss',
 })
 export class LostTokenComponent {
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  private readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  public readonly data: {
+    isLost: WritableSignal<boolean>;
+    tokenSerial: WritableSignal<string>;
+  } = inject(MAT_DIALOG_DATA);
+
   lostTokenData?: LostTokenData;
 
-  constructor(
-    protected tokenService: TokenService,
-    private notificationService: NotificationService,
-    @Inject(MAT_DIALOG_DATA)
-    public data: {
-      isLost: WritableSignal<boolean>;
-      tokenSerial: WritableSignal<string>;
-    },
-    private dialogRef: MatDialogRef<LostTokenComponent>,
-  ) {
+  constructor(private dialogRef: MatDialogRef<LostTokenComponent>) {
     effect(() => {
       this.dialogRef.disableClose = this.data.isLost();
     });

@@ -1,4 +1,5 @@
-import { Component, Inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { MatButton } from '@angular/material/button';
 import {
   MAT_DIALOG_DATA,
   MatDialogActions,
@@ -7,7 +8,13 @@ import {
   MatDialogRef,
   MatDialogTitle,
 } from '@angular/material/dialog';
-import { MatButton } from '@angular/material/button';
+
+export type GetSerialResultDialogData = {
+  foundSerial: string;
+  otpValue: string;
+  onClickSerial: () => void;
+  reset: () => void;
+};
 
 @Component({
   selector: 'app-get-serial-result-dialog',
@@ -23,14 +30,7 @@ import { MatButton } from '@angular/material/button';
   standalone: true,
 })
 export class GetSerialResultDialogComponent {
-  constructor(
-    @Inject(MAT_DIALOG_DATA)
-    public data: {
-      foundSerial: string;
-      otpValue: string;
-      dialogRef: MatDialogRef<GetSerialResultDialogComponent>;
-      onClickSerial: () => void;
-      reset: () => void;
-    },
-  ) {}
+  public readonly dialogRef: MatDialogRef<GetSerialResultDialogComponent> =
+    inject(MatDialogRef);
+  public readonly data: GetSerialResultDialogData = inject(MAT_DIALOG_DATA);
 }

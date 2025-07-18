@@ -1,6 +1,6 @@
 import { AsyncPipe, NgClass } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, Inject, Renderer2 } from '@angular/core';
+import { Component, Renderer2, inject } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {
   MatAutocomplete,
@@ -21,13 +21,35 @@ import { MatOption, MatSelect } from '@angular/material/select';
 import { DomSanitizer } from '@angular/platform-browser';
 import { map } from 'rxjs';
 import { EnrollmentResponse } from '../../../mappers/token-api-payload/_token-api-payload.mapper';
-import { ContainerService } from '../../../services/container/container.service';
-import { ContentService } from '../../../services/content/content.service';
-import { DialogService } from '../../../services/dialog/dialog.service';
-import { NotificationService } from '../../../services/notification/notification.service';
-import { RealmService } from '../../../services/realm/realm.service';
-import { TokenService } from '../../../services/token/token.service';
-import { UserData, UserService } from '../../../services/user/user.service';
+import {
+  ContainerService,
+  ContainerServiceInterface,
+} from '../../../services/container/container.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../services/content/content.service';
+import {
+  DialogService,
+  DialogServiceInterface,
+} from '../../../services/dialog/dialog.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../../../services/notification/notification.service';
+import {
+  RealmService,
+  RealmServiceInterface,
+} from '../../../services/realm/realm.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../services/token/token.service';
+import {
+  UserData,
+  UserService,
+  UserServiceInterface,
+} from '../../../services/user/user.service';
 import {
   VersioningService,
   VersioningServiceInterface,
@@ -112,6 +134,25 @@ import { TokenEnrollmentComponent } from './token-enrollment.component';
   styleUrl: './token-enrollment.component.scss',
 })
 export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
+  protected readonly http: HttpClient = inject(HttpClient);
+  protected readonly sanitizer: DomSanitizer = inject(DomSanitizer);
+  protected override readonly containerService: ContainerServiceInterface =
+    inject(ContainerService);
+  protected override readonly realmService: RealmServiceInterface =
+    inject(RealmService);
+  protected override readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  protected override readonly userService: UserServiceInterface =
+    inject(UserService);
+  protected override readonly tokenService: TokenServiceInterface =
+    inject(TokenService);
+  protected override readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+  protected override readonly versioningService: VersioningServiceInterface =
+    inject(VersioningService);
+  protected override readonly dialogService: DialogServiceInterface =
+    inject(DialogService);
+
   readonly preTopHtml$ = this.http
     .get('/customize/token-enrollment.wizard.pre.top.html', {
       responseType: 'text',
@@ -124,31 +165,8 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
     })
     .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)));
 
-  constructor(
-    private http: HttpClient,
-    private sanitizer: DomSanitizer,
-    containerService: ContainerService,
-    realmService: RealmService,
-    notificationService: NotificationService,
-    userService: UserService,
-    tokenService: TokenService,
-    contentService: ContentService,
-    @Inject(VersioningService)
-    versioningService: VersioningServiceInterface,
-    dialogService: DialogService,
-    renderer: Renderer2,
-  ) {
-    super(
-      containerService,
-      realmService,
-      notificationService,
-      userService,
-      tokenService,
-      versioningService,
-      contentService,
-      dialogService,
-      renderer,
-    );
+  constructor(renderer: Renderer2) {
+    super(renderer);
   }
 
   protected override openLastStepDialog(args: {

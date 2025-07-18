@@ -1,5 +1,5 @@
 import { DatePipe, NgClass, NgOptimizedImage } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import {
   MatFabAnchor,
   MatFabButton,
@@ -8,10 +8,22 @@ import {
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenu, MatMenuTrigger } from '@angular/material/menu';
 import { Router, RouterLink } from '@angular/router';
-import { AuthService } from '../../../services/auth/auth.service';
-import { LocalService } from '../../../services/local/local.service';
-import { NotificationService } from '../../../services/notification/notification.service';
-import { SessionTimerService } from '../../../services/session-timer/session-timer.service';
+import {
+  AuthService,
+  AuthServiceInterface,
+} from '../../../services/auth/auth.service';
+import {
+  LocalService,
+  LocalServiceInterface,
+} from '../../../services/local/local.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../../../services/notification/notification.service';
+import {
+  SessionTimerService,
+  SessionTimerServiceInterface,
+} from '../../../services/session-timer/session-timer.service';
 import { UserSelfServiceComponent } from '../../user/user.self-service.component';
 import { HeaderComponent } from './header.component';
 
@@ -35,19 +47,17 @@ import { HeaderComponent } from './header.component';
   styleUrl: './header.component.scss',
 })
 export class HeaderSelfServiceComponent extends HeaderComponent {
-  constructor(
-    protected override sessionTimerService: SessionTimerService,
-    protected override authService: AuthService,
-    protected override localService: LocalService,
-    protected override notificationService: NotificationService,
-    protected override router: Router,
-  ) {
-    super(
-      sessionTimerService,
-      authService,
-      localService,
-      notificationService,
-      router,
-    );
+  protected override readonly sessionTimerService: SessionTimerServiceInterface =
+    inject(SessionTimerService);
+  protected override readonly authService: AuthServiceInterface =
+    inject(AuthService);
+  protected override readonly localService: LocalServiceInterface =
+    inject(LocalService);
+  protected override readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  protected override readonly router: Router = inject(Router);
+
+  constructor() {
+    super();
   }
 }

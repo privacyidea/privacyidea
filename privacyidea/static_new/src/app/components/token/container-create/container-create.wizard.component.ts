@@ -1,6 +1,6 @@
 import { AsyncPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, Inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatCheckbox } from '@angular/material/checkbox';
@@ -18,12 +18,30 @@ import { MatInput } from '@angular/material/input';
 import { MatSelect } from '@angular/material/select';
 import { DomSanitizer } from '@angular/platform-browser';
 import { map } from 'rxjs';
-import { ContainerService } from '../../../services/container/container.service';
-import { ContentService } from '../../../services/content/content.service';
-import { NotificationService } from '../../../services/notification/notification.service';
-import { RealmService } from '../../../services/realm/realm.service';
-import { TokenService } from '../../../services/token/token.service';
-import { UserService } from '../../../services/user/user.service';
+import {
+  ContainerService,
+  ContainerServiceInterface,
+} from '../../../services/container/container.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../services/content/content.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../../../services/notification/notification.service';
+import {
+  RealmService,
+  RealmServiceInterface,
+} from '../../../services/realm/realm.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../services/token/token.service';
+import {
+  UserService,
+  UserServiceInterface,
+} from '../../../services/user/user.service';
 import {
   VersioningService,
   VersioningServiceInterface,
@@ -54,6 +72,21 @@ import { ContainerCreateComponent } from './container-create.component';
   styleUrl: './container-create.component.scss',
 })
 export class ContainerCreateWizardComponent extends ContainerCreateComponent {
+  protected override readonly versioningService: VersioningServiceInterface =
+    inject(VersioningService);
+  protected override readonly userService: UserServiceInterface =
+    inject(UserService);
+  protected override readonly realmService: RealmServiceInterface =
+    inject(RealmService);
+  protected override readonly containerService: ContainerServiceInterface =
+    inject(ContainerService);
+  protected override readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  protected override readonly tokenService: TokenServiceInterface =
+    inject(TokenService);
+  protected override readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+
   readonly preTopHtml$ = this.http
     .get('/customize/container-create.wizard.pre.top.html', {
       responseType: 'text',
@@ -70,24 +103,7 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     private http: HttpClient,
     private sanitizer: DomSanitizer,
     registrationDialog: MatDialog,
-    @Inject(VersioningService)
-    versioningService: VersioningServiceInterface,
-    userService: UserService,
-    realmService: RealmService,
-    containerService: ContainerService,
-    notificationService: NotificationService,
-    tokenService: TokenService,
-    contentService: ContentService,
   ) {
-    super(
-      registrationDialog,
-      versioningService,
-      userService,
-      realmService,
-      containerService,
-      notificationService,
-      tokenService,
-      contentService,
-    );
+    super(registrationDialog);
   }
 }

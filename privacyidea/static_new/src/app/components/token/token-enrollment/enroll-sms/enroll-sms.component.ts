@@ -2,17 +2,11 @@ import {
   Component,
   computed,
   effect,
-  Input,
+  EventEmitter,
+  inject,
   OnInit,
   Output,
-  EventEmitter,
-  WritableSignal,
 } from '@angular/core';
-import { MatCheckbox } from '@angular/material/checkbox';
-import { MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
-import { MatOption } from '@angular/material/core';
-import { MatError, MatSelect } from '@angular/material/select';
 import {
   FormControl,
   FormGroup,
@@ -20,9 +14,23 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { SmsGatewayService } from '../../../../services/sms-gateway/sms-gateway.service';
-import { SystemService } from '../../../../services/system/system.service';
-import { TokenService } from '../../../../services/token/token.service';
+import { MatCheckbox } from '@angular/material/checkbox';
+import { MatOption } from '@angular/material/core';
+import { MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
+import { MatInput } from '@angular/material/input';
+import { MatError, MatSelect } from '@angular/material/select';
+import {
+  SmsGatewayService,
+  SmsGatewayServiceInterface,
+} from '../../../../services/sms-gateway/sms-gateway.service';
+import {
+  SystemService,
+  SystemServiceInterface,
+} from '../../../../services/system/system.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
 import { Observable, of } from 'rxjs';
 import {
@@ -33,7 +41,7 @@ import { SmsApiPayloadMapper } from '../../../../mappers/token-api-payload/sms-t
 
 export interface SmsEnrollmentOptions extends TokenEnrollmentData {
   type: 'sms';
-  smsGateway: string; // Keep original type
+  smsGateway: string;
   phoneNumber?: string;
   readNumberDynamically: boolean;
 }
@@ -57,6 +65,14 @@ export interface SmsEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: './enroll-sms.component.scss',
 })
 export class EnrollSmsComponent implements OnInit {
+  protected readonly enrollmentMapper: SmsApiPayloadMapper =
+    inject(SmsApiPayloadMapper);
+  protected readonly smsGatewayService: SmsGatewayServiceInterface =
+    inject(SmsGatewayService);
+  protected readonly systemService: SystemServiceInterface =
+    inject(SystemService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+
   text = this.tokenService.tokenTypeOptions().find((type) => type.key === 'sms')
     ?.text;
 
@@ -68,7 +84,7 @@ export class EnrollSmsComponent implements OnInit {
   >();
 
   smsGatewayControl = new FormControl<string>('', [Validators.required]);
-  phoneNumberControl = new FormControl<string>(''); // Validator is set dynamically
+  phoneNumberControl = new FormControl<string>('');
   readNumberDynamicallyControl = new FormControl<boolean>(false, [
     Validators.required,
   ]);
@@ -78,7 +94,6 @@ export class EnrollSmsComponent implements OnInit {
     phoneNumber: this.phoneNumberControl,
     readNumberDynamically: this.readNumberDynamicallyControl,
   });
-  // Options for the template
   smsGatewayOptions = computed(() => {
     const raw =
       this.smsGatewayService.smsGatewayResource.value()?.result?.value;
@@ -90,12 +105,7 @@ export class EnrollSmsComponent implements OnInit {
     return !!cfg?.['sms.identifier'];
   });
 
-  constructor(
-    private smsGatewayService: SmsGatewayService,
-    private systemService: SystemService,
-    private tokenService: TokenService,
-    private enrollmentMapper: SmsApiPayloadMapper,
-  ) {
+  constructor() {
     effect(() => {
       const id =
         this.systemService.systemConfigResource.value()?.result?.value?.[

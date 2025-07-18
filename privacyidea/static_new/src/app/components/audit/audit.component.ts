@@ -1,5 +1,11 @@
 import { NgClass } from '@angular/common';
-import { Component, effect, linkedSignal, WritableSignal } from '@angular/core';
+import {
+  Component,
+  effect,
+  inject,
+  linkedSignal,
+  WritableSignal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
@@ -20,10 +26,23 @@ import {
   MatTableDataSource,
 } from '@angular/material/table';
 import { RouterLink } from '@angular/router';
-import { AuditData, AuditService } from '../../services/audit/audit.service';
-import { AuthService } from '../../services/auth/auth.service';
-import { ContentService } from '../../services/content/content.service';
-import { TableUtilsService } from '../../services/table-utils/table-utils.service';
+import {
+  AuditData,
+  AuditService,
+  AuditServiceInterface,
+} from '../../services/audit/audit.service';
+import {
+  AuthService,
+  AuthServiceInterface,
+} from '../../services/auth/auth.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../services/content/content.service';
+import {
+  TableUtilsService,
+  TableUtilsServiceInterface,
+} from '../../services/table-utils/table-utils.service';
 import { CopyButtonComponent } from '../shared/copy-button/copy-button.component';
 import { KeywordFilterComponent } from '../shared/keyword-filter/keyword-filter.component';
 
@@ -86,23 +105,25 @@ const columnKeysMap = [
   styleUrl: './audit.component.scss',
 })
 export class AuditComponent {
+  protected readonly auditService: AuditServiceInterface = inject(AuditService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface =
+    inject(TableUtilsService);
+  protected readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
+
   readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = this.columnKeysMap.map(
     (column) => column.key,
   );
-  readonly apiFilter = this.auditService.apiFilter;
-  readonly advancedApiFilter = this.auditService.advancedApiFilter;
-  auditResource = this.auditService.auditResource;
-  filterValue = this.auditService.filterValue;
+
   filterValueString: WritableSignal<string> = linkedSignal(() =>
-    Object.entries(this.filterValue())
+    Object.entries(this.auditService.filterValue())
       .map(([key, value]) => `${key}: ${value}`)
       .join(' '),
   );
-  pageSize = this.auditService.pageSize;
-  pageIndex = this.auditService.pageIndex;
   totalLength: WritableSignal<number> = linkedSignal({
-    source: this.auditResource.value,
+    source: this.auditService.auditResource.value,
     computation: (auditResource, previous) => {
       if (auditResource) {
         return auditResource.result?.value?.count ?? 0;
@@ -124,7 +145,7 @@ export class AuditComponent {
   });
 
   emptyResource: WritableSignal<AuditData[]> = linkedSignal({
-    source: this.pageSize,
+    source: this.auditService.pageSize,
     computation: (pageSize: number) =>
       Array.from({ length: pageSize }, () =>
         Object.fromEntries(this.columnKeysMap.map((col) => [col.key, ''])),
@@ -133,7 +154,7 @@ export class AuditComponent {
 
   auditDataSource: WritableSignal<MatTableDataSource<AuditData>> = linkedSignal(
     {
-      source: this.auditResource.value,
+      source: this.auditService.auditResource.value,
       computation: (auditResource, previous) => {
         if (auditResource) {
           return new MatTableDataSource(auditResource.result?.value?.auditdata);
@@ -143,23 +164,18 @@ export class AuditComponent {
     },
   );
 
-  constructor(
-    private auditService: AuditService,
-    protected tableUtilsService: TableUtilsService,
-    protected contentService: ContentService,
-    protected authService: AuthService,
-  ) {
+  constructor() {
     effect(() => {
       const recordsFromText = this.tableUtilsService.recordsFromText(
         this.filterValueString(),
       );
-      this.filterValue.set(recordsFromText);
-      this.pageIndex.set(0);
+      this.auditService.filterValue.set(recordsFromText);
+      this.auditService.pageIndex.set(0);
     });
   }
 
   onPageEvent(event: PageEvent) {
-    this.pageSize.set(event.pageSize);
-    this.pageIndex.set(event.pageIndex);
+    this.auditService.pageSize.set(event.pageSize);
+    this.auditService.pageIndex.set(event.pageIndex);
   }
 }

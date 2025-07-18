@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { MatButton } from '@angular/material/button';
 import {
   MAT_DIALOG_DATA,
@@ -8,9 +8,15 @@ import {
   MatDialogRef,
   MatDialogTitle,
 } from '@angular/material/dialog';
-import { TokenService } from '../../../../services/token/token.service';
-import { ContentService } from '../../../../services/content/content.service';
 import { EnrollmentResponse } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../../services/content/content.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
 @Component({
   selector: 'app-token-enrollment-first-step-dialog',
@@ -25,17 +31,16 @@ import { EnrollmentResponse } from '../../../../mappers/token-api-payload/_token
   styleUrl: './token-enrollment-first-step-dialog.component.scss',
 })
 export class TokenEnrollmentFirstStepDialogComponent {
-  protected readonly Object = Object;
+  protected readonly dialogRef: MatDialogRef<TokenEnrollmentFirstStepDialogComponent> =
+    inject(MatDialogRef);
+  public readonly data: {
+    enrollmentResponse: EnrollmentResponse;
+  } = inject(MAT_DIALOG_DATA);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly contentService: ContentServiceInterface =
+    inject(ContentService);
 
-  constructor(
-    protected tokenService: TokenService,
-    private contentService: ContentService,
-    private dialogRef: MatDialogRef<TokenEnrollmentFirstStepDialogComponent>,
-    @Inject(MAT_DIALOG_DATA)
-    public data: {
-      enrollmentResponse: EnrollmentResponse;
-    },
-  ) {}
+  protected readonly Object = Object;
 
   tokenSelected(tokenSerial: string) {
     this.dialogRef.close();

@@ -1,13 +1,16 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
   FormsModule,
   ReactiveFormsModule,
 } from '@angular/forms';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
 import {
   EnrollmentResponse,
   TokenEnrollmentData,
@@ -26,6 +29,10 @@ export interface U2fEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: './enroll-u2f.component.scss',
 })
 export class EnrollU2fComponent implements OnInit {
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly enrollmentMapper: U2fApiPayloadMapper =
+    inject(U2fApiPayloadMapper);
+
   text = this.tokenService.tokenTypeOptions().find((type) => type.key === 'u2f')
     ?.text;
 
@@ -37,11 +44,6 @@ export class EnrollU2fComponent implements OnInit {
   >();
 
   u2fForm = new FormGroup({}); // No specific controls for U2F
-
-  constructor(
-    private tokenService: TokenService,
-    private enrollmentMapper: U2fApiPayloadMapper,
-  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({});

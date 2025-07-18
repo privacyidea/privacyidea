@@ -1,4 +1,4 @@
-import { Component, effect, Inject, signal, untracked } from '@angular/core';
+import { Component, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   MatAutocomplete,
@@ -27,12 +27,28 @@ import { PiResponse } from '../../../app.component';
 import {
   ContainerRegisterData,
   ContainerService,
+  ContainerServiceInterface,
 } from '../../../services/container/container.service';
-import { ContentService } from '../../../services/content/content.service';
-import { NotificationService } from '../../../services/notification/notification.service';
-import { RealmService } from '../../../services/realm/realm.service';
-import { TokenService } from '../../../services/token/token.service';
-import { UserService } from '../../../services/user/user.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../services/content/content.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../../../services/notification/notification.service';
+import {
+  RealmService,
+  RealmServiceInterface,
+} from '../../../services/realm/realm.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../services/token/token.service';
+import {
+  UserService,
+  UserServiceInterface,
+} from '../../../services/user/user.service';
 import {
   VersioningService,
   VersioningServiceInterface,
@@ -68,6 +84,18 @@ export type ContainerTypeOption = 'generic' | 'smartphone' | 'yubikey';
   styleUrl: './container-create.component.scss',
 })
 export class ContainerCreateComponent {
+  protected readonly versioningService: VersioningServiceInterface =
+    inject(VersioningService);
+  protected readonly userService: UserServiceInterface = inject(UserService);
+  protected readonly realmService: RealmServiceInterface = inject(RealmService);
+  protected readonly containerService: ContainerServiceInterface =
+    inject(ContainerService);
+  protected readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+
   protected readonly TokenComponent = TokenComponent;
   selectedContent = this.contentService.selectedContent;
   containerSerial = this.containerService.containerSerial;
@@ -81,17 +109,7 @@ export class ContainerCreateComponent {
   registerResponse = signal<PiResponse<ContainerRegisterData> | null>(null);
   pollResponse = signal<any>(null);
 
-  constructor(
-    protected registrationDialog: MatDialog,
-    @Inject(VersioningService)
-    protected versioningService: VersioningServiceInterface,
-    protected userService: UserService,
-    protected realmService: RealmService,
-    protected containerService: ContainerService,
-    private notificationService: NotificationService,
-    protected tokenService: TokenService,
-    private contentService: ContentService,
-  ) {
+  constructor(protected registrationDialog: MatDialog) {
     effect(() => {
       if (
         this.containerService.selectedContainerType().containerType ===

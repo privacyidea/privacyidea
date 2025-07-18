@@ -1,5 +1,5 @@
 import { NgClass } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {
   MatAutocomplete,
@@ -13,12 +13,26 @@ import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatSelect } from '@angular/material/select';
 import { MatCell, MatColumnDef, MatTableModule } from '@angular/material/table';
-import { NotificationService } from '../../../../services/notification/notification.service';
-import { OverflowService } from '../../../../services/overflow/overflow.service';
-import { RealmService } from '../../../../services/realm/realm.service';
-import { TokenService } from '../../../../services/token/token.service';
-import { UiPolicyService } from '../../../../services/ui-policy/ui-policy.service';
-import { UserService } from '../../../../services/user/user.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../../../../services/notification/notification.service';
+import {
+  OverflowService,
+  OverflowServiceInterface,
+} from '../../../../services/overflow/overflow.service';
+import {
+  RealmService,
+  RealmServiceInterface,
+} from '../../../../services/realm/realm.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
+import {
+  UserService,
+  UserServiceInterface,
+} from '../../../../services/user/user.service';
 import { EditButtonsComponent } from '../../../shared/edit-buttons/edit-buttons.component';
 import { TokenDetailsUserComponent } from './token-details-user.component';
 
@@ -49,22 +63,16 @@ import { TokenDetailsUserComponent } from './token-details-user.component';
   styleUrl: './token-details-user.component.scss',
 })
 export class TokenDetailsUserSelfServiceComponent extends TokenDetailsUserComponent {
-  constructor(
-    protected override tokenService: TokenService,
-    protected override realmService: RealmService,
-    protected override userService: UserService,
-    protected override notificationService: NotificationService,
-    protected override overflowService: OverflowService,
-    protected override uiPolicyService: UiPolicyService,
-  ) {
-    super(
-      tokenService,
-      realmService,
-      userService,
-      notificationService,
-      overflowService,
-      uiPolicyService,
-    );
+  protected override tokenService: TokenServiceInterface = inject(TokenService);
+  protected override realmService: RealmServiceInterface = inject(RealmService);
+  protected override userService: UserServiceInterface = inject(UserService);
+  protected override notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  protected override overflowService: OverflowServiceInterface =
+    inject(OverflowService);
+
+  constructor() {
+    super();
   }
 
   override canSetRandomPin() {

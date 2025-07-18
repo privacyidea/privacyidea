@@ -1,15 +1,28 @@
+import { HttpEvent } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, Subscription } from 'rxjs';
-import { HttpEvent } from '@angular/common/http';
+
+export interface LoadingServiceInterface {
+  addListener(id: string, listener: (isLoading: boolean) => void): void;
+  removeListener(id: string): void;
+  notifyListeners(): void;
+  addLoading(loading: {
+    key: string;
+    observable: Observable<HttpEvent<unknown>>;
+    url: string;
+  }): void;
+  getLoadingUrls(): { key: string; url: string }[];
+  clearAllLoadings(): void;
+  isLoading(): boolean;
+  removeLoading(key: string): void;
+}
 
 @Injectable({
   providedIn: 'root',
 })
-export class LoadingService {
+export class LoadingService implements LoadingServiceInterface {
   listeners: { [key: string]: (isLoading: boolean) => void } = {};
   loadings: { key: string; subscription: Subscription; url: string }[] = [];
-
-  constructor() {}
 
   addListener(id: string, listener: (isLoading: boolean) => void): void {
     this.listeners[id] = listener;

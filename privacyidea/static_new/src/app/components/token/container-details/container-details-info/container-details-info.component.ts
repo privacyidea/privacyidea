@@ -1,27 +1,34 @@
 import {
   Component,
+  inject,
   Input,
   linkedSignal,
   Signal,
   WritableSignal,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { MatIconButton } from '@angular/material/button';
+import { MatDivider } from '@angular/material/divider';
+import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatIcon } from '@angular/material/icon';
+import { MatInput } from '@angular/material/input';
+import { MatList, MatListItem } from '@angular/material/list';
 import {
   MatCell,
   MatColumnDef,
   MatRow,
   MatTableModule,
 } from '@angular/material/table';
-import { MatList, MatListItem } from '@angular/material/list';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
-import { FormsModule } from '@angular/forms';
-import { MatIconButton } from '@angular/material/button';
-import { MatIcon } from '@angular/material/icon';
-import { MatDivider } from '@angular/material/divider';
 import { forkJoin, Observable, switchMap } from 'rxjs';
-import { OverflowService } from '../../../../services/overflow/overflow.service';
+import {
+  ContainerService,
+  ContainerServiceInterface,
+} from '../../../../services/container/container.service';
+import {
+  OverflowService,
+  OverflowServiceInterface,
+} from '../../../../services/overflow/overflow.service';
 import { EditButtonsComponent } from '../../../shared/edit-buttons/edit-buttons.component';
-import { ContainerService } from '../../../../services/container/container.service';
 
 export interface ContainerInfoDetail<T = any> {
   value: T;
@@ -52,6 +59,11 @@ export interface ContainerInfoDetail<T = any> {
   styleUrl: './container-details-info.component.scss',
 })
 export class ContainerDetailsInfoComponent {
+  private readonly containerService: ContainerServiceInterface =
+    inject(ContainerService);
+  protected readonly overflowService: OverflowServiceInterface =
+    inject(OverflowService);
+
   protected readonly Object = Object;
   containerSerial = this.containerService.containerSerial;
   @Input() infoData!: WritableSignal<ContainerInfoDetail[]>;
@@ -65,11 +77,6 @@ export class ContainerDetailsInfoComponent {
       return { key: '', value: '' };
     },
   });
-
-  constructor(
-    private containerService: ContainerService,
-    protected overflowService: OverflowService,
-  ) {}
 
   toggleInfoEdit(): void {
     this.isEditingInfo.update((b) => !b);

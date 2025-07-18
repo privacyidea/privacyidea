@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, inject, OnInit, Output } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -16,10 +16,22 @@ import {
   WebauthnEnrollmentResponse,
   WebauthnFinalizeData,
 } from '../../../../mappers/token-api-payload/webauthn-token-api-payload.mapper';
-import { Base64Service } from '../../../../services/base64/base64.service';
-import { DialogService } from '../../../../services/dialog/dialog.service';
-import { NotificationService } from '../../../../services/notification/notification.service';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  Base64Service,
+  Base64ServiceInterface,
+} from '../../../../services/base64/base64.service';
+import {
+  DialogService,
+  DialogServiceInterface,
+} from '../../../../services/dialog/dialog.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../../../../services/notification/notification.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 import { ReopenDialogFn } from '../token-enrollment.component';
 
 @Component({
@@ -30,6 +42,18 @@ import { ReopenDialogFn } from '../token-enrollment.component';
   styleUrl: './enroll-webauthn.component.scss',
 })
 export class EnrollWebauthnComponent implements OnInit {
+  // Injected services
+  protected readonly enrollmentMapper: WebAuthnApiPayloadMapper = inject(
+    WebAuthnApiPayloadMapper,
+  );
+  protected readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly base64Service: Base64ServiceInterface =
+    inject(Base64Service);
+  protected readonly dialogService: DialogServiceInterface =
+    inject(DialogService);
+
   // text property to display the token type name, retrieved from TokenService.
   text = this.tokenService
     .tokenTypeOptions()
@@ -49,15 +73,6 @@ export class EnrollWebauthnComponent implements OnInit {
 
   // WebAuthn has no direct form fields in this component for user input.
   webauthnForm = new FormGroup({});
-
-  // Constructor to inject required services.
-  constructor(
-    private notificationService: NotificationService,
-    private tokenService: TokenService,
-    private base64Service: Base64Service,
-    private enrollmentMapper: WebAuthnApiPayloadMapper,
-    private dialogService: DialogService,
-  ) {}
 
   /**
    * Initializes the component. Emits an empty object for additional form fields

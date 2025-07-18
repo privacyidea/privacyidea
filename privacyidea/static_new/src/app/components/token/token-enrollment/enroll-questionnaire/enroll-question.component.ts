@@ -2,11 +2,11 @@ import {
   Component,
   computed,
   EventEmitter,
+  inject,
   OnInit,
   Output,
+  Signal,
 } from '@angular/core';
-import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
 import {
   AbstractControl,
   FormControl,
@@ -15,8 +15,16 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { TokenService } from '../../../../services/token/token.service';
-import { SystemService } from '../../../../services/system/system.service';
+import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatInput } from '@angular/material/input';
+import {
+  SystemService,
+  SystemServiceInterface,
+} from '../../../../services/system/system.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
 import { Observable, of } from 'rxjs';
 import {
@@ -44,6 +52,13 @@ export interface QuestionEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: './enroll-question.component.scss',
 })
 export class EnrollQuestionComponent implements OnInit {
+  protected readonly enrollmentMapper: QuestionApiPayloadMapper = inject(
+    QuestionApiPayloadMapper,
+  );
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly systemService: SystemServiceInterface =
+    inject(SystemService);
+
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'question')?.text;
@@ -55,14 +70,12 @@ export class EnrollQuestionComponent implements OnInit {
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
-  // FormGroup that is dynamically filled with FormControls for each question
+  // FormGroup dynamically filled with FormControls for each question
   questionForm = new FormGroup<Record<string, AbstractControl<string>>>({});
   // Stores the names of the question FormControls for the template
   questionControlNames: string[] = [];
 
   // Configured questions from the system
-  // Continue to use `computed` to react to changes in the system configuration.
-  // The FormControls are created/updated in `ngOnInit` and on changes to `configQuestions`.
   readonly configQuestions = computed(() => {
     const cfg =
       this.systemService.systemConfigResource.value()?.result?.value || {};
@@ -74,7 +87,7 @@ export class EnrollQuestionComponent implements OnInit {
       }));
   });
 
-  readonly configMinNumberOfAnswers = computed(() => {
+  readonly configMinNumberOfAnswers: Signal<number> = computed(() => {
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
     return cfg && cfg['question.num_answers']
       ? parseInt(cfg['question.num_answers'], 10)
@@ -87,23 +100,9 @@ export class EnrollQuestionComponent implements OnInit {
     ).length;
   }
 
-  constructor(
-    // private questionService: QuestionService,
-    private tokenService: TokenService,
-    private systemService: SystemService,
-    private enrollmentMapper: QuestionApiPayloadMapper,
-  ) {}
-
   ngOnInit(): void {
     this.updateFormControls();
     this.clickEnrollChange.emit(this.onClickEnroll);
-
-    // Observe changes to `configQuestions` to recreate FormControls if necessary.
-    // This is important if the system configuration changes during the component's lifetime.
-    // `effect` would be an option here, or a more explicit subscription if `computed` does not directly support `valueChanges`.
-    // For this example, we assume that `configQuestions` is stable upon initialization
-    // or the component is recreated if the configuration changes.
-    // A more robust solution could use `effect` to call `updateFormControls`.
   }
 
   private updateFormControls(): void {
@@ -115,14 +114,14 @@ export class EnrollQuestionComponent implements OnInit {
 
     const newControls: { [key: string]: FormControl<string | null> } = {};
     this.configQuestions().forEach((q) => {
-      const controlName = `answer_${q.question.replace(/\s+/g, '_')}`; // Unique name for FormControl
+      const controlName = `answer_${q.question.replace(/\s+/g, '_')}`;
       this.questionControlNames.push(controlName);
-      const control = new FormControl<string | null>('', [Validators.required]); // Each answer is initially required
+      const control = new FormControl<string | null>('', [Validators.required]);
       this.questionForm.addControl(controlName, control);
       newControls[controlName] = control;
     });
     this.aditionalFormFieldsChange.emit(newControls);
-    // Validator for minimum number of answers (optional, if validated server-side)
+    // Validator for minimum number of answers
     this.questionForm.setValidators(() => {
       return this.answeredCount() >= this.configMinNumberOfAnswers()
         ? null

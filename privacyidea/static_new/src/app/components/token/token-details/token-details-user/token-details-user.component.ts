@@ -2,6 +2,7 @@ import { NgClass } from '@angular/common';
 import {
   Component,
   computed,
+  inject,
   Input,
   signal,
   Signal,
@@ -20,12 +21,26 @@ import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatSelect } from '@angular/material/select';
 import { MatCell, MatColumnDef, MatTableModule } from '@angular/material/table';
-import { NotificationService } from '../../../../services/notification/notification.service';
-import { OverflowService } from '../../../../services/overflow/overflow.service';
-import { RealmService } from '../../../../services/realm/realm.service';
-import { TokenService } from '../../../../services/token/token.service';
-import { UiPolicyService } from '../../../../services/ui-policy/ui-policy.service';
-import { UserService } from '../../../../services/user/user.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../../../../services/notification/notification.service';
+import {
+  OverflowService,
+  OverflowServiceInterface,
+} from '../../../../services/overflow/overflow.service';
+import {
+  RealmService,
+  RealmServiceInterface,
+} from '../../../../services/realm/realm.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
+import {
+  UserService,
+  UserServiceInterface,
+} from '../../../../services/user/user.service';
 import {
   EditableElement,
   EditButtonsComponent,
@@ -58,6 +73,14 @@ import {
   styleUrl: './token-details-user.component.scss',
 })
 export class TokenDetailsUserComponent {
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly realmService: RealmServiceInterface = inject(RealmService);
+  protected readonly userService: UserServiceInterface = inject(UserService);
+  protected readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  protected readonly overflowService: OverflowServiceInterface =
+    inject(OverflowService);
+
   @Input() userData = signal<EditableElement[]>([]);
   @Input() tokenSerial!: WritableSignal<string>;
   @Input() setPinValue!: WritableSignal<string>;
@@ -69,15 +92,6 @@ export class TokenDetailsUserComponent {
     const tokenDetail = this.tokenService.tokenDetailResource.value();
     return tokenDetail?.result?.value?.tokens?.[0].tokentype;
   });
-
-  constructor(
-    protected tokenService: TokenService,
-    protected realmService: RealmService,
-    protected userService: UserService,
-    protected notificationService: NotificationService,
-    protected overflowService: OverflowService,
-    protected uiPolicyService: UiPolicyService,
-  ) {}
 
   unassignUser() {
     this.tokenService.unassignUser(this.tokenSerial()).subscribe({

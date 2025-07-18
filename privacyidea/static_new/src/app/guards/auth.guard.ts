@@ -3,12 +3,16 @@ import {
   CanActivate,
   CanActivateChild,
   CanMatchFn,
-  Route,
   Router,
-  UrlSegment,
 } from '@angular/router';
-import { AuthService } from '../services/auth/auth.service';
-import { NotificationService } from '../services/notification/notification.service';
+import {
+  AuthService,
+  AuthServiceInterface,
+} from '../services/auth/auth.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../services/notification/notification.service';
 
 export const adminMatch: CanMatchFn = () =>
   inject(AuthService).role() === 'admin';
@@ -20,11 +24,10 @@ export const selfServiceMatch: CanMatchFn = () =>
   providedIn: 'root',
 })
 export class AuthGuard implements CanActivate, CanActivateChild {
-  constructor(
-    private authService: AuthService,
-    private router: Router,
-    private notificationService: NotificationService,
-  ) {}
+  private readonly router: Router = inject(Router);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
 
   canActivate(): boolean {
     return this.checkAuth();

@@ -2,6 +2,7 @@ import {
   Component,
   computed,
   EventEmitter,
+  inject,
   OnInit,
   Output,
 } from '@angular/core';
@@ -11,10 +12,16 @@ import {
   FormsModule,
   ReactiveFormsModule,
 } from '@angular/forms';
-import { SystemService } from '../../../../services/system/system.service';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  SystemService,
+  SystemServiceInterface,
+} from '../../../../services/system/system.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
 import {
   EnrollmentResponse,
   TokenEnrollmentData,
@@ -35,6 +42,12 @@ export interface TiqrEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: './enroll-tiqr.component.scss',
 })
 export class EnrollTiqrComponent implements OnInit {
+  protected readonly enrollmentMapper: TiqrApiPayloadMapper =
+    inject(TiqrApiPayloadMapper);
+  protected readonly systemService: SystemServiceInterface =
+    inject(SystemService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'tiqr')?.text;
@@ -56,12 +69,6 @@ export class EnrollTiqrComponent implements OnInit {
   });
 
   tiqrForm = new FormGroup({}); // No specific controls for TIQR
-
-  constructor(
-    private systemService: SystemService,
-    private tokenService: TokenService,
-    private enrollmentMapper: TiqrApiPayloadMapper,
-  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({});

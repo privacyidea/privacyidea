@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
 import {
   FormControl,
   FormsModule,
@@ -15,7 +15,10 @@ import {
   MatOption,
   MatSelect,
 } from '@angular/material/select';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
 import { NgClass } from '@angular/common';
 import { Observable, of } from 'rxjs';
@@ -29,7 +32,7 @@ export interface HotpEnrollmentOptions extends TokenEnrollmentData {
   type: 'hotp';
   generateOnServer: boolean;
   otpLength: number;
-  otpKey?: string; // Optional, da es von generateOnServer abhängt
+  otpKey?: string;
   hashAlgorithm: string;
 }
 
@@ -53,6 +56,10 @@ export interface HotpEnrollmentOptions extends TokenEnrollmentData {
   standalone: true,
 })
 export class EnrollHotpComponent implements OnInit {
+  protected readonly enrollmentMapper: HotpApiPayloadMapper =
+    inject(HotpApiPayloadMapper);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'hotp')?.text;
@@ -68,23 +75,17 @@ export class EnrollHotpComponent implements OnInit {
     Validators.required,
   ]);
   otpLengthFormControl = new FormControl<number>(6, [Validators.required]);
-  otpKeyFormControl = new FormControl<string>(''); // Validator is checked dynamically in onClickEnroll
+  otpKeyFormControl = new FormControl<string>('');
   hashAlgorithmFormControl = new FormControl<string>('sha1', [
     Validators.required,
   ]);
 
-  // Options for the template
   readonly otpLengthOptions = [6, 8];
   readonly hashAlgorithmOptions = [
     { value: 'sha1', viewValue: 'SHA1' },
     { value: 'sha256', viewValue: 'SHA256' },
     { value: 'sha512', viewValue: 'SHA512' },
   ];
-
-  constructor(
-    private tokenService: TokenService,
-    private enrollmentMapper: HotpApiPayloadMapper,
-  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({
@@ -95,7 +96,6 @@ export class EnrollHotpComponent implements OnInit {
     });
     this.clickEnrollChange.emit(this.onClickEnroll);
 
-    // OTP key validation based on generateOnServer
     this.generateOnServerFormControl.valueChanges.subscribe((generate) => {
       if (!generate) {
         this.otpKeyFormControl.setValidators([Validators.required]);
@@ -122,15 +122,15 @@ export class EnrollHotpComponent implements OnInit {
       if (!this.generateOnServerFormControl.value) {
         this.otpKeyFormControl.markAsTouched();
       }
-      return of(null); // Return an observable with null if the form is invalid
+      return of(null);
     }
 
     const enrollmentData: HotpEnrollmentOptions = {
       ...basicOptions,
       type: 'hotp',
-      generateOnServer: !!this.generateOnServerFormControl.value, // Ensure it is boolean
-      otpLength: this.otpLengthFormControl.value ?? 6, // Default value if null
-      hashAlgorithm: this.hashAlgorithmFormControl.value ?? 'sha1', // Default value if null
+      generateOnServer: !!this.generateOnServerFormControl.value,
+      otpLength: this.otpLengthFormControl.value ?? 6,
+      hashAlgorithm: this.hashAlgorithmFormControl.value ?? 'sha1',
     };
 
     if (!enrollmentData.generateOnServer) {

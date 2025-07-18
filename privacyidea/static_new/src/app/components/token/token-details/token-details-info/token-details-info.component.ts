@@ -1,32 +1,42 @@
+import { NgClass } from '@angular/common';
 import {
   Component,
+  inject,
   Input,
   linkedSignal,
   Signal,
   WritableSignal,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { MatIconButton } from '@angular/material/button';
+import { MatDivider } from '@angular/material/divider';
+import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatIcon } from '@angular/material/icon';
+import { MatInput } from '@angular/material/input';
+import { MatList, MatListItem } from '@angular/material/list';
 import {
   MatCell,
   MatColumnDef,
   MatRow,
   MatTableModule,
 } from '@angular/material/table';
-import { MatList, MatListItem } from '@angular/material/list';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
-import { FormsModule } from '@angular/forms';
-import { MatIconButton } from '@angular/material/button';
-import { MatIcon } from '@angular/material/icon';
-import { MatDivider } from '@angular/material/divider';
-import { TokenService } from '../../../../services/token/token.service';
 import { Observable, switchMap } from 'rxjs';
+import {
+  AuthService,
+  AuthServiceInterface,
+} from '../../../../services/auth/auth.service';
+import {
+  OverflowService,
+  OverflowServiceInterface,
+} from '../../../../services/overflow/overflow.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 import {
   EditableElement,
   EditButtonsComponent,
 } from '../../../shared/edit-buttons/edit-buttons.component';
-import { NgClass } from '@angular/common';
-import { OverflowService } from '../../../../services/overflow/overflow.service';
-import { AuthService } from '../../../../services/auth/auth.service';
 
 @Component({
   selector: 'app-token-details-info',
@@ -53,6 +63,10 @@ import { AuthService } from '../../../../services/auth/auth.service';
 })
 export class TokenDetailsInfoComponent {
   protected readonly Object = Object;
+  private tokenService: TokenServiceInterface = inject(TokenService);
+  protected overflowService: OverflowServiceInterface = inject(OverflowService);
+  protected authService: AuthServiceInterface = inject(AuthService);
+
   tokenSerial = this.tokenService.tokenSerial;
   @Input() infoData!: WritableSignal<EditableElement[]>;
   @Input() detailData!: WritableSignal<EditableElement[]>;
@@ -65,12 +79,6 @@ export class TokenDetailsInfoComponent {
       return { key: '', value: '' };
     },
   });
-
-  constructor(
-    private tokenService: TokenService,
-    protected overflowService: OverflowService,
-    protected authService: AuthService,
-  ) {}
 
   toggleInfoEdit(): void {
     if (this.isEditingInfo()) {

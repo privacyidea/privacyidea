@@ -1,6 +1,7 @@
 import { httpResource, HttpResourceRef } from '@angular/common/http';
 import {
   computed,
+  inject,
   Injectable,
   linkedSignal,
   Signal,
@@ -8,11 +9,14 @@ import {
 } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { PiResponse } from '../../app.component';
-import { AuthService } from '../auth/auth.service';
-import { ContentService } from '../content/content.service';
-import { LocalService } from '../local/local.service';
-import { RealmService } from '../realm/realm.service';
-import { TokenService } from '../token/token.service';
+import { AuthService, AuthServiceInterface } from '../auth/auth.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../content/content.service';
+import { LocalService, LocalServiceInterface } from '../local/local.service';
+import { RealmService, RealmServiceInterface } from '../realm/realm.service';
+import { TokenService, TokenServiceInterface } from '../token/token.service';
 
 export interface UserData {
   description: string;
@@ -47,6 +51,13 @@ export interface UserServiceInterface {
   providedIn: 'root',
 })
 export class UserService implements UserServiceInterface {
+  private readonly localService: LocalServiceInterface = inject(LocalService);
+  private readonly realmService: RealmServiceInterface = inject(RealmService);
+  private readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+  private readonly tokenService: TokenServiceInterface = inject(TokenService);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+
   private baseUrl = environment.proxyUrl + '/user/';
 
   selectedUserRealm = linkedSignal({
@@ -188,12 +199,4 @@ export class UserService implements UserServiceInterface {
     }
     return user ? user.username : '';
   }
-
-  constructor(
-    private localService: LocalService,
-    private realmService: RealmService,
-    private contentService: ContentService,
-    private tokenService: TokenService,
-    private authService: AuthService,
-  ) {}
 }

@@ -1,6 +1,4 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
-import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
+import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -8,7 +6,12 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { TokenService } from '../../../../services/token/token.service';
+import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatInput } from '@angular/material/input';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
 import { Observable, of } from 'rxjs';
 import {
@@ -37,6 +40,11 @@ export interface IndexedSecretEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: './enroll-indexedsecret.component.scss',
 })
 export class EnrollIndexedsecretComponent implements OnInit {
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly enrollmentMapper: IndexedSecretApiPayloadMapper = inject(
+    IndexedSecretApiPayloadMapper,
+  );
+
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'indexedsecret')?.text;
@@ -50,17 +58,12 @@ export class EnrollIndexedsecretComponent implements OnInit {
 
   otpKeyControl = new FormControl<string>('', [
     Validators.required,
-    Validators.minLength(16), // Example minimum length
+    Validators.minLength(16),
   ]);
 
   indexedSecretForm = new FormGroup({
     otpKey: this.otpKeyControl,
   });
-
-  constructor(
-    private tokenService: TokenService,
-    private enrollmentMapper: IndexedSecretApiPayloadMapper,
-  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({

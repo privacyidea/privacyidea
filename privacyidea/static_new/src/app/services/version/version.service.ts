@@ -1,7 +1,7 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, WritableSignal } from '@angular/core';
 
 export interface VersioningServiceInterface {
-  version: () => string;
+  version: WritableSignal<string>;
   getVersion(): string;
   openDocumentation(page: string): void;
 }
@@ -11,8 +11,6 @@ export interface VersioningServiceInterface {
 })
 export class VersioningService implements VersioningServiceInterface {
   version = signal('');
-
-  constructor() {}
 
   getVersion(): string {
     return this.version();

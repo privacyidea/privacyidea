@@ -13,16 +13,16 @@
       <mat-paginator
         (page)="onPageEvent($event)"
         [length]="totalLength()"
-        [pageIndex]="pageIndex()"
+        [pageIndex]="auditService.pageIndex()"
         [pageSizeOptions]="pageSizeOptions()"
-        [pageSize]="pageSize()"
+        [pageSize]="auditService.pageSize()"
         showFirstLastButtons></mat-paginator>
     </div>
     <app-keyword-filter
-      [advancedApiFilter]="advancedApiFilter"
-      [apiFilter]="apiFilter"
+      [advancedApiFilter]="auditService.advancedApiFilter"
+      [apiFilter]="auditService.apiFilter"
       [filterHTMLInputElement]="filterHTMLInputElement"
-      [filterValue]="filterValue"></app-keyword-filter>
+      [filterValue]="auditService.filterValue"></app-keyword-filter>
     <div class="audit-table-overflow">
       <table
         [dataSource]="auditDataSource()"

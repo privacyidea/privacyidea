@@ -1,10 +1,15 @@
-import { Component } from '@angular/core';
-import { TokenApplicationsSshComponent } from './token-applications-ssh/token-applications-ssh.component';
-import { TokenApplicationsOfflineComponent } from './token-applications-offline/token-applications-offline.component';
+import { Component, inject } from '@angular/core';
 import { MatSelectModule } from '@angular/material/select';
-import { MachineService } from '../../../services/machine/machine.service';
-
-import { ContentService } from '../../../services/content/content.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../services/content/content.service';
+import {
+  MachineService,
+  MachineServiceInterface,
+} from '../../../services/machine/machine.service';
+import { TokenApplicationsOfflineComponent } from './token-applications-offline/token-applications-offline.component';
+import { TokenApplicationsSshComponent } from './token-applications-ssh/token-applications-ssh.component';
 
 @Component({
   selector: 'app-token-applications',
@@ -18,11 +23,11 @@ import { ContentService } from '../../../services/content/content.service';
   styleUrls: ['./token-applications.component.scss'],
 })
 export class TokenApplicationsComponent {
+  private readonly machineService: MachineServiceInterface =
+    inject(MachineService);
+  private readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+
   selectedApplicationType = this.machineService.selectedApplicationType;
   selectedContent = this.contentService.selectedContent;
-
-  constructor(
-    private machineService: MachineService,
-    private contentService: ContentService,
-  ) {}
 }

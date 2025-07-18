@@ -1,11 +1,20 @@
-import { computed, Injectable, linkedSignal, signal } from '@angular/core';
-import { httpResource } from '@angular/common/http';
-import { LocalService } from '../local/local.service';
-import { environment } from '../../../environments/environment';
+import { httpResource, HttpResourceRef } from '@angular/common/http';
+import {
+  computed,
+  inject,
+  Injectable,
+  linkedSignal,
+  signal,
+  WritableSignal,
+} from '@angular/core';
 import { Sort } from '@angular/material/sort';
-import { ContentService } from '../content/content.service';
-import { TableUtilsService } from '../table-utils/table-utils.service';
+import { environment } from '../../../environments/environment';
 import { PiResponse } from '../../app.component';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../content/content.service';
+import { LocalService, LocalServiceInterface } from '../local/local.service';
 
 export interface Audit {
   auditcolumns: string[];
@@ -71,13 +80,28 @@ const apiFilter = [
 ];
 const advancedApiFilter: string[] = [];
 
+export interface AuditServiceInterface {
+  apiFilter: string[];
+  advancedApiFilter: string[];
+  filterValue: WritableSignal<Record<string, string>>;
+  filterParams: () => Record<string, string>;
+  pageSize: WritableSignal<number>;
+  sort: WritableSignal<Sort>;
+  pageIndex: WritableSignal<number>;
+  auditResource: HttpResourceRef<PiResponse<Audit> | undefined>;
+}
+
 @Injectable({
   providedIn: 'root',
 })
-export class AuditService {
+export class AuditService implements AuditServiceInterface {
+  private readonly localService: LocalServiceInterface = inject(LocalService);
+  private readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
-  auditBaseUrl = environment.proxyUrl + '/audit/';
+  private auditBaseUrl = environment.proxyUrl + '/audit/';
   filterValue = signal({} as Record<string, string>);
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
@@ -134,9 +158,4 @@ export class AuditService {
       },
     };
   });
-
-  constructor(
-    private localService: LocalService,
-    private contentService: ContentService,
-  ) {}
 }

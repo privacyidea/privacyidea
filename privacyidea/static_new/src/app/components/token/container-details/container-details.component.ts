@@ -1,14 +1,29 @@
+import { NgClass } from '@angular/common';
 import {
   Component,
   computed,
   effect,
   ElementRef,
+  inject,
   linkedSignal,
   signal,
   ViewChild,
   WritableSignal,
 } from '@angular/core';
-import { NgClass } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import {
+  MatAutocomplete,
+  MatAutocompleteTrigger,
+} from '@angular/material/autocomplete';
+import { MatIconButton } from '@angular/material/button';
+import { MatCheckbox } from '@angular/material/checkbox';
+import { MatDivider } from '@angular/material/divider';
+import { MatFormField } from '@angular/material/form-field';
+import { MatIcon } from '@angular/material/icon';
+import { MatInput } from '@angular/material/input';
+import { MatListItem } from '@angular/material/list';
+import { MatPaginator, PageEvent } from '@angular/material/paginator';
+import { MatSelectModule } from '@angular/material/select';
 import {
   MatCell,
   MatColumnDef,
@@ -16,42 +31,48 @@ import {
   MatTableModule,
 } from '@angular/material/table';
 import {
+  AuthService,
+  AuthServiceInterface,
+} from '../../../services/auth/auth.service';
+import {
   ContainerDetailData,
   ContainerDetailToken,
   ContainerService,
+  ContainerServiceInterface,
 } from '../../../services/container/container.service';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MatListItem } from '@angular/material/list';
-import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../services/content/content.service';
+import {
+  OverflowService,
+  OverflowServiceInterface,
+} from '../../../services/overflow/overflow.service';
+import {
+  RealmService,
+  RealmServiceInterface,
+} from '../../../services/realm/realm.service';
+import {
+  TableUtilsService,
+  TableUtilsServiceInterface,
+} from '../../../services/table-utils/table-utils.service';
+import {
+  TokenDetails,
+  TokenService,
+  TokenServiceInterface,
+} from '../../../services/token/token.service';
+import {
+  UserService,
+  UserServiceInterface,
+} from '../../../services/user/user.service';
+import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 import {
   EditableElement,
   EditButtonsComponent,
 } from '../../shared/edit-buttons/edit-buttons.component';
-import { MatFormField } from '@angular/material/form-field';
-import { MatSelectModule } from '@angular/material/select';
-import { RealmService } from '../../../services/realm/realm.service';
-import { MatInput } from '@angular/material/input';
-import {
-  MatAutocomplete,
-  MatAutocompleteTrigger,
-} from '@angular/material/autocomplete';
-import { MatIcon } from '@angular/material/icon';
-import { MatIconButton } from '@angular/material/button';
 import { infoDetailsKeyMap } from '../token-details/token-details.component';
 import { ContainerDetailsInfoComponent } from './container-details-info/container-details-info.component';
 import { ContainerDetailsTokenTableComponent } from './container-details-token-table/container-details-token-table.component';
-import { MatPaginator, PageEvent } from '@angular/material/paginator';
-import {
-  TokenDetails,
-  TokenService,
-} from '../../../services/token/token.service';
-import { MatDivider } from '@angular/material/divider';
-import { MatCheckbox } from '@angular/material/checkbox';
-import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
-import { UserService } from '../../../services/user/user.service';
-import { OverflowService } from '../../../services/overflow/overflow.service';
-import { AuthService } from '../../../services/auth/auth.service';
-import { ContentService } from '../../../services/content/content.service';
 
 export const containerDetailsKeyMap = [
   { key: 'type', label: 'Type' },
@@ -112,6 +133,19 @@ interface TokenOption {
   styleUrls: ['./container-details.component.scss'],
 })
 export class ContainerDetailsComponent {
+  protected readonly overflowService: OverflowServiceInterface =
+    inject(OverflowService);
+  protected readonly containerService: ContainerServiceInterface =
+    inject(ContainerService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface =
+    inject(TableUtilsService);
+  protected readonly realmService: RealmServiceInterface = inject(RealmService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly userService: UserServiceInterface = inject(UserService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+
   states = this.containerService.states;
   isEditingUser = signal(false);
   isEditingInfo = signal(false);
@@ -292,16 +326,7 @@ export class ContainerDetailsComponent {
   tokenAutoTrigger!: MatAutocompleteTrigger;
   selectedContent = this.contentService.selectedContent;
 
-  constructor(
-    protected overflowService: OverflowService,
-    protected containerService: ContainerService,
-    protected tableUtilsService: TableUtilsService,
-    protected realmService: RealmService,
-    protected tokenService: TokenService,
-    protected userService: UserService,
-    private authService: AuthService,
-    private contentService: ContentService,
-  ) {
+  constructor() {
     effect(() => {
       this.showOnlyTokenNotInContainer();
       if (this.filterHTMLInputElement) {

@@ -1,5 +1,4 @@
-import { Component, computed, Inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, computed, inject, signal } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
 import { MatList, MatListItem } from '@angular/material/list';
@@ -8,14 +7,21 @@ import { MatDivider } from '@angular/material/divider';
 import { MatDialog } from '@angular/material/dialog';
 import { forkJoin, switchMap } from 'rxjs';
 import { tabToggleState } from '../../../../../styles/animations/animations';
-import { ContentService } from '../../../../services/content/content.service';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../../services/content/content.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 import {
   VersioningService,
   VersioningServiceInterface,
 } from '../../../../services/version/version.service';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { LostTokenComponent } from './lost-token/lost-token.component';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-token-tab',
@@ -26,7 +32,13 @@ import { LostTokenComponent } from './lost-token/lost-token.component';
   animations: [tabToggleState],
 })
 export class TokenTabComponent {
-  /* existing reactive properties ------------------------------- */
+  private readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly versioningService: VersioningServiceInterface =
+    inject(VersioningService);
+  private readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+  private readonly dialog: MatDialog = inject(MatDialog);
+  private router = inject(Router);
   selectedContent = this.contentService.selectedContent;
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
@@ -35,15 +47,6 @@ export class TokenTabComponent {
   tokenIsSelected = computed(() => this.tokenSerial() !== '');
   isLost = signal(false);
   version!: string;
-
-  constructor(
-    private router: Router,
-    private tokenService: TokenService,
-    private dialog: MatDialog,
-    @Inject(VersioningService)
-    protected versioningService: VersioningServiceInterface,
-    private contentService: ContentService,
-  ) {}
 
   ngOnInit(): void {
     this.version = this.versioningService.getVersion();
@@ -60,7 +63,11 @@ export class TokenTabComponent {
       .pipe(
         switchMap(() => this.tokenService.getTokenDetails(this.tokenSerial())),
       )
-      .subscribe(() => this.tokenService.tokenDetailResource.reload());
+      .subscribe({
+        next: () => {
+          this.tokenService.tokenDetailResource.reload();
+        },
+      });
   }
 
   revokeToken(): void {
@@ -75,17 +82,23 @@ export class TokenTabComponent {
         },
       })
       .afterClosed()
-      .subscribe((ok) => {
-        if (ok) {
-          this.tokenService
-            .revokeToken(this.tokenSerial())
-            .pipe(
-              switchMap(() =>
-                this.tokenService.getTokenDetails(this.tokenSerial()),
-              ),
-            )
-            .subscribe(() => this.tokenService.tokenDetailResource.reload());
-        }
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            this.tokenService
+              .revokeToken(this.tokenSerial())
+              .pipe(
+                switchMap(() =>
+                  this.tokenService.getTokenDetails(this.tokenSerial()),
+                ),
+              )
+              .subscribe({
+                next: () => {
+                  this.tokenService.tokenDetailResource.reload();
+                },
+              });
+          }
+        },
       });
   }
 
@@ -101,40 +114,59 @@ export class TokenTabComponent {
         },
       })
       .afterClosed()
-      .subscribe((ok) => {
-        if (ok) {
-          this.tokenService.deleteToken(this.tokenSerial()).subscribe(() => {
-            this.go('/tokens');
-          });
-        }
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            this.tokenService.deleteToken(this.tokenSerial()).subscribe({
+              next: () => {
+                this.selectedContent.set('token_overview');
+                this.tokenSerial.set('');
+              },
+            });
+          }
+        },
       });
   }
 
   deleteSelectedTokens(): void {
-    const ts = this.tokenSelection();
+    const selectedTokens = this.tokenSelection();
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: ts.map((t) => t.serial),
+          serial_list: selectedTokens.map((token) => token.serial),
           title: 'Delete All Tokens',
           type: 'token',
           action: 'delete',
-          numberOfTokens: ts.length,
+          numberOfTokens: selectedTokens.length,
         },
       })
       .afterClosed()
-      .subscribe((ok) => {
-        if (ok) {
-          forkJoin(
-            ts.map((t) => this.tokenService.deleteToken(t.serial)),
-          ).subscribe(() => this.tokenService.tokenResource.reload());
-        }
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            forkJoin(
+              selectedTokens.map((token) =>
+                this.tokenService.deleteToken(token.serial),
+              ),
+            ).subscribe({
+              next: () => {
+                this.tokenService.tokenResource.reload();
+              },
+              error: (err) => {
+                console.error('Error deleting tokens:', err);
+              },
+            });
+          }
+        },
       });
   }
 
   openLostTokenDialog() {
     this.dialog.open(LostTokenComponent, {
-      data: { isLost: this.isLost, tokenSerial: this.tokenSerial },
+      data: {
+        isLost: this.isLost,
+        tokenSerial: this.tokenSerial,
+      },
     });
   }
 }

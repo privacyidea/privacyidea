@@ -1,5 +1,5 @@
 import { NgClass } from '@angular/common';
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -23,7 +23,10 @@ import {
   TokenEnrollmentData,
 } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { TotpApiPayloadMapper } from '../../../../mappers/token-api-payload/totp-token-api-payload.mapper';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
 export interface TotpEnrollmentOptions extends TokenEnrollmentData {
   type: 'totp';
@@ -53,6 +56,10 @@ export interface TotpEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: './enroll-totp.component.scss',
 })
 export class EnrollTotpComponent implements OnInit {
+  protected readonly enrollmentMapper: TotpApiPayloadMapper =
+    inject(TotpApiPayloadMapper);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'totp')?.text;
@@ -68,7 +75,7 @@ export class EnrollTotpComponent implements OnInit {
     Validators.required,
   ]);
   otpLengthControl = new FormControl<number>(6, [Validators.required]);
-  otpKeyControl = new FormControl<string>(''); // Validator is set dynamically
+  otpKeyControl = new FormControl<string>('');
   hashAlgorithmControl = new FormControl<string>('sha1', [Validators.required]);
   timeStepControl = new FormControl<number | string>(30, [Validators.required]);
 
@@ -82,17 +89,11 @@ export class EnrollTotpComponent implements OnInit {
 
   readonly otpLengthOptions = [6, 8];
   readonly hashAlgorithmOptions = [
-    // Keep original options
     { value: 'sha1', viewValue: 'SHA1' },
     { value: 'sha256', viewValue: 'SHA256' },
     { value: 'sha512', viewValue: 'SHA512' },
   ];
   readonly timeStepOptions = [30, 60];
-
-  constructor(
-    private tokenService: TokenService,
-    private enrollmentMapper: TotpApiPayloadMapper,
-  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({

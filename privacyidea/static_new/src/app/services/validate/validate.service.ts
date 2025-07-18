@@ -1,13 +1,23 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { from, Observable, switchMap, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { PiResponse } from '../../app.component';
-import { AuthResponse, AuthService } from '../auth/auth.service';
-import { Base64Service } from '../base64/base64.service';
-import { LocalService } from '../local/local.service';
-import { NotificationService } from '../notification/notification.service';
+import {
+  AuthResponse,
+  AuthService,
+  AuthServiceInterface,
+} from '../auth/auth.service';
+import {
+  Base64Service,
+  Base64ServiceInterface,
+} from '../base64/base64.service';
+import { LocalService, LocalServiceInterface } from '../local/local.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../notification/notification.service';
 
 export interface ValidateCheckDetail {
   attributes?: {
@@ -49,17 +59,22 @@ export interface ValidateServiceInterface {
   providedIn: 'root',
 })
 export class ValidateService implements ValidateServiceInterface {
+  private readonly http: HttpClient = inject(HttpClient);
+  private readonly localService: LocalServiceInterface = inject(LocalService);
+  private readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  private readonly base64Service: Base64ServiceInterface =
+    inject(Base64Service);
+  private readonly authenticationService: AuthServiceInterface =
+    inject(AuthService);
+
   private baseUrl = environment.proxyUrl + '/validate/';
 
-  constructor(
-    private http: HttpClient,
-    private localService: LocalService,
-    private notificationService: NotificationService,
-    private base64Service: Base64Service,
-    private authenticationService: AuthService,
-  ) {}
-
-  testToken(tokenSerial: string, otpOrPinToTest: string, otponly?: string) {
+  testToken(
+    tokenSerial: string,
+    otpOrPinToTest: string,
+    otponly?: string,
+  ): Observable<ValidateCheckResponse> {
     const headers = this.localService.getHeaders();
     return this.http
       .post<ValidateCheckResponse>(
@@ -83,7 +98,7 @@ export class ValidateService implements ValidateServiceInterface {
       );
   }
 
-  authenticatePasskey(args?: { isTest?: boolean }) {
+  authenticatePasskey(args?: { isTest?: boolean }): Observable<AuthResponse> {
     if (!window.PublicKeyCredential) {
       this.notificationService.openSnackBar(
         'WebAuthn is not supported by this browser.',

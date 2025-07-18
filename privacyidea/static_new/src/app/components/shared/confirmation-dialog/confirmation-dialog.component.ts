@@ -1,4 +1,6 @@
-import { Component, Inject } from '@angular/core';
+import { NgClass } from '@angular/common';
+import { Component, inject } from '@angular/core';
+import { MatButton } from '@angular/material/button';
 import {
   MAT_DIALOG_DATA,
   MatDialogActions,
@@ -6,8 +8,6 @@ import {
   MatDialogContent,
   MatDialogTitle,
 } from '@angular/material/dialog';
-import { MatButton } from '@angular/material/button';
-import { NgClass } from '@angular/common';
 
 @Component({
   selector: 'app-confirmation-dialog',
@@ -23,10 +23,7 @@ import { NgClass } from '@angular/common';
   styleUrl: './confirmation-dialog.component.scss',
 })
 export class ConfirmationDialogComponent {
-  constructor(
-    @Inject(MAT_DIALOG_DATA)
-    public data: ConfirmationDialogData,
-  ) {}
+  public readonly data: ConfirmationDialogData = inject(MAT_DIALOG_DATA);
 }
 
 export type ConfirmationDialogData = {

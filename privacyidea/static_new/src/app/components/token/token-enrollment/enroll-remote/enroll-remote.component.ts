@@ -1,12 +1,4 @@
-import {
-  Component,
-  computed,
-  EventEmitter,
-  OnInit,
-  Output,
-} from '@angular/core';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
+import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -14,14 +6,20 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { ErrorStateMatcher, MatOption } from '@angular/material/core';
-import { MatError, MatSelect } from '@angular/material/select';
 import { MatCheckbox } from '@angular/material/checkbox';
+import { ErrorStateMatcher, MatOption } from '@angular/material/core';
+import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatInput } from '@angular/material/input';
+import { MatError, MatSelect } from '@angular/material/select';
 import {
   PrivacyideaServerService,
+  PrivacyideaServerServiceInterface,
   RemoteServer,
 } from '../../../../services/privavyidea-server/privacyidea-server.service';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
 import { Observable, of } from 'rxjs';
 import {
@@ -58,6 +56,13 @@ export class RemoteErrorStateMatcher implements ErrorStateMatcher {
   styleUrl: './enroll-remote.component.scss',
 })
 export class EnrollRemoteComponent implements OnInit {
+  protected readonly enrollmentMapper: RemoteApiPayloadMapper = inject(
+    RemoteApiPayloadMapper,
+  );
+  protected readonly privacyideaServerService: PrivacyideaServerServiceInterface =
+    inject(PrivacyideaServerService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'remote')?.text;
@@ -92,12 +97,6 @@ export class EnrollRemoteComponent implements OnInit {
 
   remoteServerOptions = this.privacyideaServerService.remoteServerOptions;
   remoteErrorStateMatcher = new RemoteErrorStateMatcher();
-
-  constructor(
-    private privacyideaServerService: PrivacyideaServerService,
-    private tokenService: TokenService, // Keep original service name
-    private enrollmentMapper: RemoteApiPayloadMapper,
-  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({

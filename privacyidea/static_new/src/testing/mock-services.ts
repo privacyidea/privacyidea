@@ -26,6 +26,10 @@ import {
   TokenEnrollmentData,
 } from '../app/mappers/token-api-payload/_token-api-payload.mapper';
 import {
+  Audit,
+  AuditServiceInterface,
+} from '../app/services/audit/audit.service';
+import {
   AuthData,
   AuthDetail,
   AuthResponse,
@@ -45,10 +49,13 @@ import {
   ContentService,
   ContentServiceInterface,
 } from '../app/services/content/content.service';
-import { LocalService } from '../app/services/local/local.service';
+import {
+  LocalService,
+  LocalServiceInterface,
+} from '../app/services/local/local.service';
 import {
   Machines,
-  MachineService,
+  MachineServiceInterface,
   TokenApplication,
 } from '../app/services/machine/machine.service';
 import { NotificationServiceInterface } from '../app/services/notification/notification.service';
@@ -93,47 +100,6 @@ const assert = (condition: boolean, message: string) => {
     throw new Error(message);
   }
 };
-
-/*
-  log_level: number;
-  menus: string[];
-  realm: string;
-  rights: string[];
-  role: AuthRole;
-  token: string;
-  username: string;
-  logout_time: number;
-  audit_page_size: number;
-  token_page_size: number;
-  user_page_size: number;
-  policy_template_url: string;
-  default_tokentype: string;
-  default_container_type: string;
-  user_details: boolean;
-  token_wizard: boolean;
-  token_wizard_2nd: boolean;
-  admin_dashboard: boolean;
-  dialog_no_token: boolean;
-  search_on_enter: boolean;
-  timeout_action: string;
-  token_rollover: any;
-  hide_welcome: boolean;
-  hide_buttons: boolean;
-  deletion_confirmation: boolean;
-  show_seed: boolean;
-  show_node: string;
-  subscription_status: number;
-  subscription_status_push: number;
-  qr_image_android: string | null;
-  qr_image_ios: string | null;
-  qr_image_custom: string | null;
-  logout_redirect_url: string;
-  require_description: string[];
-  rss_age: number;
-  container_wizard: {
-    enabled: boolean;
-  };
-*/
 
 export class MockAuthData implements AuthData {
   log_level = 0;
@@ -878,7 +844,7 @@ export class MockTokenService implements TokenServiceInterface {
   }
 }
 
-export class MockMachineService implements MachineService {
+export class MockMachineService implements MachineServiceInterface {
   baseUrl: string = "environment.mockProxyUrl + '/machine/'";
   sshApiFilter: string[] = [];
   sshAdvancedApiFilter: string[] = [];
@@ -896,7 +862,7 @@ export class MockMachineService implements MachineService {
   tokenApplicationResource: HttpResourceRef<
     PiResponse<TokenApplication[], undefined> | undefined
   > = new MockHttpResourceRef(MockPiResponse.fromValue([]));
-  // }
+
   postTokenOption = jest.fn().mockReturnValue(of({} as any));
   getAuthItem = jest.fn().mockReturnValue(
     of({
@@ -905,15 +871,6 @@ export class MockMachineService implements MachineService {
       },
     }),
   );
-  // postTokenOption(
-  //   hostname: string,
-  //   machineid: string,
-  //   resolver: string,
-  //   serial: string,
-  //   application: string,
-  //   mtid: string,
-  // ): Observable<any> {
-  //   throw new Error('Mock method not implemented.');
   postToken = jest.fn().mockReturnValue(of({} as any));
   getMachine = jest.fn().mockReturnValue(
     of({
@@ -996,7 +953,49 @@ export class MockMachineService implements MachineService {
   }
 }
 
-export class MockTableUtilsService implements TableUtilsService {
+export class MockTableUtilsService implements AuthServiceInterface {
+  isAuthenticated: () => boolean = jest.fn().mockReturnValue(true);
+  user: () => string = jest.fn().mockReturnValue('alice');
+  realm: () => string = jest.fn().mockReturnValue('default');
+  role: () => AuthRole = jest.fn().mockReturnValue('admin');
+  menus: () => string[] = jest
+    .fn()
+    .mockReturnValue([
+      'token_overview',
+      'token_self-service_menu',
+      'container_overview',
+    ]);
+  isSelfServiceUser: () => boolean = jest
+    .fn()
+    .mockReturnValue(
+      this.role() === 'user' &&
+        this.menus().includes('token_self-service_menu'),
+    );
+  authenticate: (params: any) => Observable<AuthResponse> = jest
+    .fn()
+    .mockReturnValue(
+      of(
+        MockPiResponse.fromValue<AuthData, AuthDetail>(
+          new MockAuthData(),
+          new MockAuthDetail(),
+        ),
+      ),
+    );
+  isAuthenticatedUser: () => boolean = jest
+    .fn()
+    .mockReturnValue(this.isAuthenticated() && this.role() === 'user');
+  acceptAuthentication: () => void = jest.fn().mockImplementation(() => {
+    this.isAuthenticated = jest.fn().mockReturnValue(true);
+    this.role = jest.fn().mockReturnValue('admin');
+    this.user = jest.fn().mockReturnValue('alice');
+    this.realm = jest.fn().mockReturnValue('default');
+  });
+  deauthenticate: () => void = jest.fn().mockImplementation(() => {
+    this.isAuthenticated = jest.fn().mockReturnValue(false);
+    this.role = jest.fn().mockReturnValue('');
+    this.user = jest.fn().mockReturnValue('');
+    this.realm = jest.fn().mockReturnValue('');
+  });
   handleColumnClick = jest.fn();
   getClassForColumnKey = jest.fn();
   isLink = jest.fn().mockReturnValue(false);
@@ -1080,14 +1079,23 @@ export class MockTableUtilsService implements TableUtilsService {
   }
 }
 
-export class MockAuditService {
+export class MockAuditService implements AuditServiceInterface {
+  filterParams: Signal<Record<string, string>> = signal({});
+  sort: WritableSignal<Sort> = signal({ active: 'time', direction: 'desc' });
+  auditResource: HttpResourceRef<PiResponse<Audit> | undefined> =
+    new MockHttpResourceRef(
+      MockPiResponse.fromValue<Audit>({
+        auditcolumns: [],
+        auditdata: [],
+        count: 0,
+        current: 0,
+      }),
+    );
   apiFilter = ['user', 'success'];
   advancedApiFilter = ['machineid', 'resolver'];
 
   filterValue = signal<Record<string, string>>({});
-  auditResource = {
-    value: signal({ result: { value: { count: 0, auditdata: [] } } }),
-  };
+
   pageSize = linkedSignal({
     source: this.filterValue,
     computation: () => 10,
@@ -1102,6 +1110,32 @@ export class MockAuditService {
   });
 }
 
-export class MockLocalService {
+export class MockLocalService implements LocalServiceInterface {
+  key: string = 'mockLocalServiceKey';
+  bearerTokenKey: string = 'mockBearerTokenKey';
+  private data: Record<string, string> = {};
+  saveData = jest.fn().mockImplementation((key: string, value: string) => {
+    console.log(`MockLocalService: Saving data: ${key} = ${value}`);
+    this.data[key] = value;
+  });
+
+  getData = jest.fn().mockImplementation((key: string) => {
+    console.log(`MockLocalService: Getting data for key: ${key}`);
+    const dataValue = this.data[key];
+    if (dataValue === undefined) {
+      console.warn(`MockLocalService: No data found for key: ${key}`);
+      return '';
+    }
+    return dataValue;
+  });
+  removeData = jest.fn().mockImplementation((key: string) => {
+    console.log(`MockLocalService: Removing data for key: ${key}`);
+    if (this.data[key] !== undefined) {
+      delete this.data[key];
+    } else {
+      console.warn(`MockLocalService: No data found for key: ${key}`);
+    }
+  });
+
   getHeaders = jest.fn().mockReturnValue({ Authorization: 'Bearer x' });
 }

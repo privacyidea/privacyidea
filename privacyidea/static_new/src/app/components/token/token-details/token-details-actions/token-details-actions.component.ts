@@ -1,14 +1,26 @@
-import { Component, Input, WritableSignal } from '@angular/core';
-import { TokenService } from '../../../../services/token/token.service';
-import { ValidateService } from '../../../../services/validate/validate.service';
+import { Component, inject, Input, WritableSignal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatIcon } from '@angular/material/icon';
 import { MatFabButton, MatIconButton } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import { MatDivider } from '@angular/material/divider';
 import { MatSuffix } from '@angular/material/form-field';
-import { OverflowService } from '../../../../services/overflow/overflow.service';
-import { NotificationService } from '../../../../services/notification/notification.service';
-import { MatDialog } from '@angular/material/dialog';
+import { MatIcon } from '@angular/material/icon';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../../../../services/notification/notification.service';
+import {
+  OverflowService,
+  OverflowServiceInterface,
+} from '../../../../services/overflow/overflow.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
+import {
+  ValidateService,
+  ValidateServiceInterface,
+} from '../../../../services/validate/validate.service';
 import { TokenSshMachineAssignDialogComponent } from '../token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog';
 
 @Component({
@@ -26,20 +38,21 @@ import { TokenSshMachineAssignDialogComponent } from '../token-ssh-machine-assig
   styleUrl: './token-details-actions.component.scss',
 })
 export class TokenDetailsActionsComponent {
+  private readonly matDialog: MatDialog = inject(MatDialog);
+  private readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly validateService: ValidateServiceInterface =
+    inject(ValidateService);
+  protected readonly overflowService: OverflowServiceInterface =
+    inject(OverflowService);
+  protected readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+
   tokenSerial = this.tokenService.tokenSerial;
   @Input() tokenType!: WritableSignal<string>;
   fristOTPValue: string = '';
   secondOTPValue: string = '';
   otpOrPinToTest: string = '';
   hide: boolean = true;
-
-  constructor(
-    private tokenService: TokenService,
-    private matDialog: MatDialog,
-    protected validateService: ValidateService,
-    protected overflowService: OverflowService,
-    protected notificationService: NotificationService,
-  ) {}
 
   resyncOTPToken() {
     this.tokenService

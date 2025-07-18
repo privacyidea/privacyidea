@@ -1,13 +1,16 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
   FormsModule,
   ReactiveFormsModule,
 } from '@angular/forms';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
 import {
   EnrollmentResponse,
   TokenEnrollmentData,
@@ -26,6 +29,10 @@ export interface TanEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: './enroll-tan.component.scss',
 })
 export class EnrollTanComponent implements OnInit {
+  protected readonly enrollmentMapper: TanApiPayloadMapper =
+    inject(TanApiPayloadMapper);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+
   text = this.tokenService.tokenTypeOptions().find((type) => type.key === 'tan')
     ?.text;
 
@@ -37,11 +44,6 @@ export class EnrollTanComponent implements OnInit {
   >();
 
   tanForm = new FormGroup({});
-
-  constructor(
-    private tokenService: TokenService,
-    private enrollmentMapper: TanApiPayloadMapper,
-  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({});

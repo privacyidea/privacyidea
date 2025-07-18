@@ -1,13 +1,16 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
   FormsModule,
   ReactiveFormsModule,
 } from '@angular/forms';
-import { TokenService } from '../../../../services/token/token.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
 import {
   EnrollmentResponse,
   TokenEnrollmentData,
@@ -26,6 +29,11 @@ export interface SpassEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: './enroll-spass.component.scss',
 })
 export class EnrollSpassComponent implements OnInit {
+  protected readonly enrollmentMapper: SpassApiPayloadMapper = inject(
+    SpassApiPayloadMapper,
+  );
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'spass')?.text;
@@ -38,11 +46,6 @@ export class EnrollSpassComponent implements OnInit {
   >();
 
   spassForm = new FormGroup({});
-
-  constructor(
-    private tokenService: TokenService,
-    private enrollmentMapper: SpassApiPayloadMapper,
-  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({});

@@ -1,17 +1,20 @@
-import { Component, Inject, WritableSignal } from '@angular/core';
+import { AsyncPipe } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { Component, inject, WritableSignal } from '@angular/core';
 import {
   MAT_DIALOG_DATA,
   MatDialogContent,
   MatDialogRef,
   MatDialogTitle,
 } from '@angular/material/dialog';
-import { ContainerRegistrationDialogComponent } from './container-registration-dialog.component';
-import { AsyncPipe } from '@angular/common';
-import { map } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
 import { DomSanitizer } from '@angular/platform-browser';
-import { ContainerService } from '../../../../services/container/container.service';
+import { map } from 'rxjs';
+import {
+  ContainerService,
+  ContainerServiceInterface,
+} from '../../../../services/container/container.service';
 import { LostTokenComponent } from '../../token-card/token-tab/lost-token/lost-token.component';
+import { ContainerRegistrationDialogComponent } from './container-registration-dialog.component';
 
 @Component({
   selector: 'app-container-registration-dialog',
@@ -20,6 +23,14 @@ import { LostTokenComponent } from '../../token-card/token-tab/lost-token/lost-t
   styleUrl: './container-registration-dialog.component.scss',
 })
 export class ContainerRegistrationDialogWizardComponent extends ContainerRegistrationDialogComponent {
+  protected override readonly containerService: ContainerServiceInterface =
+    inject(ContainerService);
+  public override readonly data: {
+    response: any;
+    containerSerial: WritableSignal<string>;
+    selectedContent: WritableSignal<string>;
+  } = inject(MAT_DIALOG_DATA);
+
   readonly postTopHtml$ = this.http
     .get('/customize/container-create.wizard.post.top.html', {
       responseType: 'text',
@@ -35,15 +46,8 @@ export class ContainerRegistrationDialogWizardComponent extends ContainerRegistr
   constructor(
     private http: HttpClient,
     private sanitizer: DomSanitizer,
-    containerService: ContainerService,
     dialogRef: MatDialogRef<LostTokenComponent>,
-    @Inject(MAT_DIALOG_DATA)
-    data: {
-      response: any;
-      containerSerial: WritableSignal<string>;
-      selectedContent: WritableSignal<string>;
-    },
   ) {
-    super(containerService, dialogRef, data);
+    super(dialogRef);
   }
 }
