@@ -12,8 +12,6 @@ export interface VersioningServiceInterface {
 export class VersioningService implements VersioningServiceInterface {
   version = signal('');
 
-  constructor() {}
-
   getVersion(): string {
     return this.version();
   }

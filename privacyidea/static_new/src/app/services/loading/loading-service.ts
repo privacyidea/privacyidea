@@ -24,8 +24,6 @@ export class LoadingService implements LoadingServiceInterface {
   listeners: { [key: string]: (isLoading: boolean) => void } = {};
   loadings: { key: string; subscription: Subscription; url: string }[] = [];
 
-  constructor() {}
-
   addListener(id: string, listener: (isLoading: boolean) => void): void {
     this.listeners[id] = listener;
   }

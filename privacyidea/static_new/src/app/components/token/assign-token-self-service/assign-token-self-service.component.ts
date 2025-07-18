@@ -39,8 +39,6 @@ export class AssignTokenSelfServiceComponent {
   setPinValue = signal('');
   repeatPinValue = signal('');
 
-  constructor() {}
-
   assignUserToToken() {
     this.tokenService
       .assignUser({

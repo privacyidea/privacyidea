@@ -107,8 +107,6 @@ export class ChallengesTableComponent {
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild('filterInput', { static: true }) filterInput!: HTMLInputElement;
 
-  constructor() {}
-
   onFilterChange(newFilter: string) {
     const recordsFromText = this.tableUtilsService.recordsFromText(newFilter);
     this.filterValue.set(recordsFromText);

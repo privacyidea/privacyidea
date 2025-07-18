@@ -158,6 +158,4 @@ export class AuditService implements AuditServiceInterface {
       },
     };
   });
-
-  constructor() {}
 }

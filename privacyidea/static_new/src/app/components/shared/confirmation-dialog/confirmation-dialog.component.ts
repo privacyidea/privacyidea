@@ -24,8 +24,6 @@ import {
 })
 export class ConfirmationDialogComponent {
   public readonly data: ConfirmationDialogData = inject(MAT_DIALOG_DATA);
-
-  constructor() {}
 }
 
 export type ConfirmationDialogData = {

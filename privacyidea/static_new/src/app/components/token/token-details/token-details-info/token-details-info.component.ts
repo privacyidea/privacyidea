@@ -80,8 +80,6 @@ export class TokenDetailsInfoComponent {
     },
   });
 
-  constructor() {}
-
   toggleInfoEdit(): void {
     if (this.isEditingInfo()) {
       this.tokenService.tokenDetailResource.reload();

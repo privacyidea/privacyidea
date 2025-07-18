@@ -54,8 +54,6 @@ export class TokenDetailsActionsComponent {
   otpOrPinToTest: string = '';
   hide: boolean = true;
 
-  constructor() {}
-
   resyncOTPToken() {
     this.tokenService
       .resyncOTPToken(

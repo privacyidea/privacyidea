@@ -138,7 +138,6 @@ export class TokenSshMachineAssignDialogComponent {
   });
 
   /// Computed properties ///
-  constructor() {}
 
   ngOnInit() {
     this.selectedMachine.valueChanges.subscribe((value) => {

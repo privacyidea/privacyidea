@@ -47,8 +47,6 @@ export class EnrollPaperComponent implements OnInit {
 
   paperForm = new FormGroup({});
 
-  constructor() {}
-
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({});
     this.clickEnrollChange.emit(this.onClickEnroll);

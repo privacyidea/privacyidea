@@ -87,8 +87,6 @@ export class EnrollMotpComponent implements OnInit {
     return null;
   }
 
-  constructor() {}
-
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({
       generateOnServer: this.generateOnServerControl,

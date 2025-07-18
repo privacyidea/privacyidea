@@ -68,8 +68,6 @@ export class TokenApplicationsOfflineComponent {
     (column) => column.key,
   );
 
-  constructor() {}
-
   dataSource = computed(() => {
     var data = this.machineService.tokenApplications();
     if (data.length) {

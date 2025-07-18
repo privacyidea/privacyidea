@@ -238,8 +238,6 @@ export class MachineService implements MachineServiceInterface {
       tokenApplicationResource?.result?.value ?? previous?.value ?? [],
   });
 
-  constructor() {}
-
   postTokenOption(
     hostname: string,
     machineid: string,

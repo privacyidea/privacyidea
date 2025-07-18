@@ -93,8 +93,6 @@ export class TokenDetailsUserComponent {
     return tokenDetail?.result?.value?.tokens?.[0].tokentype;
   });
 
-  constructor() {}
-
   unassignUser() {
     this.tokenService.unassignUser(this.tokenSerial()).subscribe({
       next: () => {

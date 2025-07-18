@@ -62,8 +62,6 @@ export class TokenCardComponent {
     },
   });
 
-  constructor() {}
-
   onTabChange(): void {
     if (this.isProgrammaticTabChange()) {
       this.isProgrammaticTabChange.set(false);

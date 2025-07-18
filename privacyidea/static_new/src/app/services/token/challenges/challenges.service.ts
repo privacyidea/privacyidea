@@ -134,6 +134,4 @@ export class ChallengesService implements ChallengesServiceInterface {
       },
     };
   });
-
-  constructor() {}
 }

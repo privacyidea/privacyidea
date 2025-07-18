@@ -63,8 +63,6 @@ export class HeaderComponent {
     this.authService.role() +
     ')';
 
-  constructor() {}
-
   isActive(link: string) {
     return this.router.url.includes(link);
   }

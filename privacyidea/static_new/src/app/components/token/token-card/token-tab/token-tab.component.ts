@@ -47,8 +47,6 @@ export class TokenTabComponent {
   isLost = signal(false);
   version!: string;
 
-  constructor() {}
-
   ngOnInit(): void {
     this.version = this.versioningService.getVersion();
   }

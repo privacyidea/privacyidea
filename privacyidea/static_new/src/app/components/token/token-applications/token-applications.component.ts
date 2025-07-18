@@ -30,6 +30,4 @@ export class TokenApplicationsComponent {
 
   selectedApplicationType = this.machineService.selectedApplicationType;
   selectedContent = this.contentService.selectedContent;
-
-  constructor() {}
 }

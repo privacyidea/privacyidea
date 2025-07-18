@@ -10,8 +10,6 @@ export interface Base64ServiceInterface {
   providedIn: 'root',
 })
 export class Base64Service {
-  constructor() {}
-
   base64URLToBytes(base64URL: string): Uint8Array {
     const padding = '='.repeat((4 - (base64URL.length % 4)) % 4);
     const base64 = (base64URL + padding).replace(/-/g, '+').replace(/_/g, '/');

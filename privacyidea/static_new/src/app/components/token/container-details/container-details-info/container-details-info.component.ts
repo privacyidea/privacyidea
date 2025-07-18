@@ -78,8 +78,6 @@ export class ContainerDetailsInfoComponent {
     },
   });
 
-  constructor() {}
-
   toggleInfoEdit(): void {
     this.isEditingInfo.update((b) => !b);
     this.newInfo.set({ key: '', value: '' });

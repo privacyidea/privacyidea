@@ -51,8 +51,6 @@ export class ContainerTabComponent {
   });
   version!: string;
 
-  constructor() {}
-
   ngOnInit(): void {
     this.version = this.versioningService.getVersion();
   }

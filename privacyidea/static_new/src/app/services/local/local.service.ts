@@ -20,8 +20,6 @@ export class LocalService {
   key = environment.secretAESKey;
   bearerTokenKey = 'bearer_token';
 
-  constructor() {}
-
   public saveData(key: string, value: string) {
     localStorage.setItem(key, this.encrypt(value));
   }

@@ -67,8 +67,6 @@ export class EnrollPushComponent implements OnInit {
 
   pushForm = new FormGroup({});
 
-  constructor() {}
-
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({});
     this.clickEnrollChange.emit(this.onClickEnroll);

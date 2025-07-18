@@ -199,6 +199,4 @@ export class UserService implements UserServiceInterface {
     }
     return user ? user.username : '';
   }
-
-  constructor() {}
 }

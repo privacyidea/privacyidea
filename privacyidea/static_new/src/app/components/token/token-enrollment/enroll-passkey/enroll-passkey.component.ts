@@ -95,8 +95,6 @@ export class EnrollPasskeyComponent implements OnInit {
 
   passkeyForm = new FormGroup({});
 
-  constructor() {}
-
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({});
     this.clickEnrollChange.emit(this.onClickEnroll);

@@ -33,6 +33,4 @@ export class GetSerialResultDialogComponent {
   public readonly dialogRef: MatDialogRef<GetSerialResultDialogComponent> =
     inject(MatDialogRef);
   public readonly data: GetSerialResultDialogData = inject(MAT_DIALOG_DATA);
-
-  constructor() {}
 }

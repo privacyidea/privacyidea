@@ -100,8 +100,6 @@ export class EnrollQuestionComponent implements OnInit {
     ).length;
   }
 
-  constructor() {}
-
   ngOnInit(): void {
     this.updateFormControls();
     this.clickEnrollChange.emit(this.onClickEnroll);
