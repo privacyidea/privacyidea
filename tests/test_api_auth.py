@@ -596,7 +596,47 @@ class AuthApiTestCase(MyApiTestCase):
         delete_resolver("ldap1")
         ldap3mock.set_exception(False)
 
-    def test_06_auth_user_not_in_defrealm(self):
+    @ldap3mock.activate
+    def test_06_user_with_failing_resolver(self):
+        ldap3mock.setLDAPDirectory([])
+        # define, that we want to get an exception
+        ldap3mock.set_exception()
+        # Create an LDAP Realm as default realm
+        params = {'LDAPURI': 'ldap://localhost',
+                  'LDAPBASE': 'o=test',
+                  'BINDDN': 'cn=manager,ou=example,o=test',
+                  'BINDPW': 'ldaptest',
+                  'LOGINNAMEATTRIBUTE': 'cn',
+                  'LDAPSEARCHFILTER': '(cn=*)',
+                  'USERINFO': '{ "username": "cn",'
+                              '"phone" : "telephoneNumber", '
+                              '"mobile" : "mobile"'
+                              ', "email" : "mail", '
+                              '"surname" : "sn", '
+                              '"givenname" : "givenName" }',
+                  'UIDTYPE': 'DN',
+                  "resolver": "ldap1",
+                  "type": "ldapresolver"}
+        save_resolver(params)
+        set_realm("ldap1", [{'name': "ldap1"}])
+        set_default_realm("ldap1")
+
+        # Try to log in as user with a failing LDAP resolver
+        with mock.patch("logging.Logger.warning") as mock_log:
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "hans",
+                                                     "password": "test"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(401, res.status_code, res)
+                mock_log.assert_called_once_with("Problem resolving user hans in realm ldap1: ERR907: Error performing "
+                                                 "bind operation: LDAP request failed.")
+
+        delete_realm("ldap1")
+        delete_resolver("ldap1")
+        ldap3mock.set_exception(False)
+
+    def test_07_auth_user_not_in_defrealm(self):
         self.setUp_user_realms()
         self.setUp_user_realm3()
         set_default_realm(self.realm3)
@@ -638,7 +678,7 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertIn('token', result.get("value"), result)
             self.assertEqual('realm1', result['value']['realm'], result)
 
-    def test_07_user_not_in_userstore(self):
+    def test_08_user_not_in_userstore(self):
         # If a user can not be found in the userstore we always get the response
         # "Wrong Credentials"
         self.setUp_user_realms()
@@ -679,7 +719,7 @@ class AuthApiTestCase(MyApiTestCase):
         delete_realm(self.realm2)
         delete_resolver(self.resolvername1)
 
-    def test_08_auth_disabled_token_types(self):
+    def test_09_auth_disabled_token_types(self):
         self.setUp_user_realms()
         serial = "SPASS1"
 
