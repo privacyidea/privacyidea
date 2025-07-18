@@ -1,5 +1,5 @@
 import { NgClass } from '@angular/common';
-import { Component, Inject, linkedSignal } from '@angular/core';
+import { Component, inject, linkedSignal } from '@angular/core';
 import { MatCard, MatCardContent } from '@angular/material/card';
 import { MatIcon } from '@angular/material/icon';
 import { MatTabsModule } from '@angular/material/tabs';
@@ -38,6 +38,14 @@ import { TokenTabComponent } from './token-tab/token-tab.component';
   styleUrls: ['./token-card.component.scss'],
 })
 export class TokenCardComponent {
+  protected readonly overflowService: OverflowServiceInterface =
+    inject(OverflowService);
+  private readonly tokenService: TokenServiceInterface = inject(TokenService);
+  private readonly containerService: ContainerServiceInterface =
+    inject(ContainerService);
+  private readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+
   containerSerial = this.containerService.containerSerial;
   selectedContent = this.contentService.selectedContent;
   tokenSerial = this.tokenService.tokenSerial;
@@ -54,16 +62,7 @@ export class TokenCardComponent {
     },
   });
 
-  constructor(
-    @Inject(OverflowService)
-    protected overflowService: OverflowServiceInterface,
-    @Inject(TokenService)
-    private tokenService: TokenServiceInterface,
-    @Inject(ContainerService)
-    private containerService: ContainerServiceInterface,
-    @Inject(ContentService)
-    private contentService: ContentServiceInterface,
-  ) {}
+  constructor() {}
 
   onTabChange(): void {
     if (this.isProgrammaticTabChange()) {

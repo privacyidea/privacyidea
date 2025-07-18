@@ -1,4 +1,4 @@
-import { Component, effect, Inject, WritableSignal } from '@angular/core';
+import { Component, effect, inject, WritableSignal } from '@angular/core';
 import { MatButton } from '@angular/material/button';
 import { MatCard, MatCardContent } from '@angular/material/card';
 import {
@@ -21,6 +21,7 @@ import {
 
 @Component({
   selector: 'app-lost-token',
+  standalone: true, // Add standalone: true as it's missing but common practice for new components
   imports: [
     MatDialogTitle,
     MatDialogContent,
@@ -34,20 +35,17 @@ import {
   styleUrl: './lost-token.component.scss',
 })
 export class LostTokenComponent {
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  private readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  public readonly data: {
+    isLost: WritableSignal<boolean>;
+    tokenSerial: WritableSignal<string>;
+  } = inject(MAT_DIALOG_DATA);
+
   lostTokenData?: LostTokenData;
 
-  constructor(
-    @Inject(TokenService)
-    protected tokenService: TokenServiceInterface,
-    @Inject(NotificationService)
-    private notificationService: NotificationServiceInterface,
-    @Inject(MAT_DIALOG_DATA)
-    public data: {
-      isLost: WritableSignal<boolean>;
-      tokenSerial: WritableSignal<string>;
-    },
-    private dialogRef: MatDialogRef<LostTokenComponent>,
-  ) {
+  constructor(private dialogRef: MatDialogRef<LostTokenComponent>) {
     effect(() => {
       this.dialogRef.disableClose = this.data.isLost();
     });

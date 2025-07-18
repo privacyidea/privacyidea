@@ -1,4 +1,11 @@
-import { computed, effect, Inject, Injectable, Signal, signal } from '@angular/core';
+import {
+  computed,
+  effect,
+  inject,
+  Injectable,
+  Signal,
+  signal,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService, AuthServiceInterface } from '../auth/auth.service';
 import { LocalService, LocalServiceInterface } from '../local/local.service';
@@ -18,6 +25,12 @@ export interface SessionTimerServiceInterface {
   providedIn: 'root',
 })
 export class SessionTimerService implements SessionTimerServiceInterface {
+  private readonly router: Router = inject(Router);
+  private readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  private readonly localService: LocalServiceInterface = inject(LocalService);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+
   private readonly sessionTimeout = 3570_000;
   private timer: any;
   private intervalId: any;
@@ -27,15 +40,7 @@ export class SessionTimerService implements SessionTimerServiceInterface {
     () => this.sessionTimeout - (this.currentTime() - this.startTime()),
   );
 
-  constructor(
-    private readonly router: Router,
-    @Inject(NotificationService)
-    private readonly notificationService: NotificationServiceInterface,
-    @Inject(LocalService)
-    private readonly localService: LocalServiceInterface,
-    @Inject(AuthService)
-    private readonly authService: AuthServiceInterface,
-  ) {
+  constructor() {
     effect(() => {
       if (this.remainingTime() > 30_000 && this.remainingTime() < 31_000) {
         this.notificationService.openSnackBar(
@@ -45,7 +50,7 @@ export class SessionTimerService implements SessionTimerServiceInterface {
     });
   }
 
-  startTimer() {
+  startTimer(): void {
     this.resetTimer();
     this.startTime.set(Date.now());
     this.timer = setTimeout(() => {
@@ -53,19 +58,19 @@ export class SessionTimerService implements SessionTimerServiceInterface {
     }, this.sessionTimeout);
   }
 
-  resetTimer() {
+  resetTimer(): void {
     if (this.timer) {
       clearTimeout(this.timer);
     }
   }
 
-  startRefreshingRemainingTime() {
+  startRefreshingRemainingTime(): void {
     this.intervalId = setInterval(() => {
       this.currentTime.set(Date.now());
     }, 1000);
   }
 
-  private handleSessionTimeout() {
+  private handleSessionTimeout(): void {
     this.localService.removeData(this.localService.bearerTokenKey);
     this.authService.deauthenticate();
     this.notificationService.openSnackBar(
@@ -75,7 +80,7 @@ export class SessionTimerService implements SessionTimerServiceInterface {
     this.clearRefreshInterval();
   }
 
-  private clearRefreshInterval() {
+  private clearRefreshInterval(): void {
     if (this.intervalId) {
       clearInterval(this.intervalId);
     }

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Inject, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -29,7 +29,6 @@ import {
 export interface DaypasswordEnrollmentOptions extends TokenEnrollmentData {
   type: 'daypassword';
   otpKey?: string;
-  // Removed otplen, hashlib, timeStep, genkey as per "DO NOT CHANGE OTHER LINES"
   otpLength: number;
   hashAlgorithm: string;
   timeStep: number;
@@ -55,6 +54,11 @@ export interface DaypasswordEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: './enroll-daypassword.component.scss',
 })
 export class EnrollDaypasswordComponent implements OnInit {
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly enrollmentMapper: DaypasswordApiPayloadMapper = inject(
+    DaypasswordApiPayloadMapper,
+  );
+
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'daypassword')?.text;
@@ -66,16 +70,14 @@ export class EnrollDaypasswordComponent implements OnInit {
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
-  otpKeyControl = new FormControl<string>(''); // Validators set dynamically
+  otpKeyControl = new FormControl<string>('');
 
   hashAlgorithmControl = new FormControl<string>('sha256', [
-    // Keep original default
     Validators.required,
   ]);
   timeStepControl = new FormControl<number | string>(86400, [
-    // Keep original default
     Validators.required,
-  ]); // Default to 1 day
+  ]);
   generateOnServerControl = new FormControl(true);
   otpLengthControl = new FormControl<number>(10, [Validators.required]);
   daypasswordForm = new FormGroup({
@@ -85,21 +87,12 @@ export class EnrollDaypasswordComponent implements OnInit {
     timeStep: this.timeStepControl,
   });
 
-  // Options for the template
-  readonly otpLengthOptions = [6, 8]; // Keep original options
+  readonly otpLengthOptions = [6, 8];
   readonly hashAlgorithmOptions = [
     { value: 'sha1', viewValue: 'SHA1' },
     { value: 'sha256', viewValue: 'SHA256' },
     { value: 'sha512', viewValue: 'SHA512' },
   ];
-  // Time step is usually fixed for daypassword or configured server-side,
-  // but providing an input if it needs to be set.
-
-  constructor(
-    @Inject(TokenService)
-    private tokenService: TokenServiceInterface,
-    private enrollmentMapper: DaypasswordApiPayloadMapper,
-  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({
@@ -111,10 +104,8 @@ export class EnrollDaypasswordComponent implements OnInit {
     });
     this.clickEnrollChange.emit(this.onClickEnroll);
 
-    // Initially set the state based on the default value
     this.updateOtpKeyControlState(this.generateOnServerControl.value ?? true);
 
-    // Subscribe to changes to update the state dynamically
     this.generateOnServerControl.valueChanges.subscribe((generateOnServer) => {
       this.updateOtpKeyControlState(generateOnServer ?? true);
     });
@@ -144,13 +135,13 @@ export class EnrollDaypasswordComponent implements OnInit {
     const enrollmentData: DaypasswordEnrollmentOptions = {
       ...basicOptions,
       type: 'daypassword',
-      otpLength: this.otpLengthControl.value ?? 10, // Keep original logic
-      hashAlgorithm: this.hashAlgorithmControl.value ?? 'sha256', // Keep original logic
+      otpLength: this.otpLengthControl.value ?? 10,
+      hashAlgorithm: this.hashAlgorithmControl.value ?? 'sha256',
       timeStep:
         typeof this.timeStepControl.value === 'string'
           ? parseInt(this.timeStepControl.value, 10)
-          : (this.timeStepControl.value ?? 86400), // Default to 1 day
-      generateOnServer: !!(this.generateOnServerControl.value ?? true), // Keep original logic
+          : (this.timeStepControl.value ?? 86400),
+      generateOnServer: !!(this.generateOnServerControl.value ?? true),
     };
     if (!enrollmentData.generateOnServer) {
       enrollmentData.otpKey = this.otpKeyControl.value ?? '';

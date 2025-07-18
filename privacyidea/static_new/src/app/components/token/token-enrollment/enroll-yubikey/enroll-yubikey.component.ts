@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Inject, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -8,10 +8,6 @@ import {
 } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import {
-  TokenService,
-  TokenServiceInterface,
-} from '../../../../services/token/token.service';
 
 import { MatOptionModule } from '@angular/material/core';
 import { MatSelect } from '@angular/material/select';
@@ -24,11 +20,15 @@ import {
   YubikeyApiPayloadMapper,
   YubikeyEnrollmentData,
 } from '../../../../mappers/token-api-payload/yubikey-token-api-payload.mapper';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 
 @Component({
   selector: 'app-enroll-yubikey',
   templateUrl: './enroll-yubikey.component.html',
-  styleUrls: ['./enroll-yubikey.component.scss'], // If present
+  styleUrls: ['./enroll-yubikey.component.scss'],
   standalone: true,
   imports: [
     CommonModule,
@@ -40,6 +40,11 @@ import {
   ],
 })
 export class EnrollYubikeyComponent implements OnInit {
+  protected readonly enrollmentMapper: YubikeyApiPayloadMapper = inject(
+    YubikeyApiPayloadMapper,
+  );
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
@@ -66,12 +71,6 @@ export class EnrollYubikeyComponent implements OnInit {
   text =
     this.tokenService.tokenTypeOptions().find((type) => type.key === 'yubikey')
       ?.text || 'The Yubikey token can be used in AES encryption mode...';
-
-  constructor(
-    private enrollmentMapper: YubikeyApiPayloadMapper,
-    @Inject(TokenService)
-    private tokenService: TokenServiceInterface,
-  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({

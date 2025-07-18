@@ -9,7 +9,7 @@ import { NgClass } from '@angular/common';
 import {
   Component,
   effect,
-  Inject,
+  inject,
   Input,
   linkedSignal,
   ViewChild,
@@ -83,6 +83,14 @@ const columnsKeyMap = [
   ],
 })
 export class ContainerTableComponent {
+  protected readonly containerService: ContainerServiceInterface =
+    inject(ContainerService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface =
+    inject(TableUtilsService);
+  protected readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+
   readonly columnsKeyMap = columnsKeyMap;
   readonly columnKeys: string[] = columnsKeyMap.map((column) => column.key);
   readonly apiFilter = this.containerService.apiFilter;
@@ -166,16 +174,7 @@ export class ContainerTableComponent {
   @Input() selectedContent!: WritableSignal<TokenSelectedContentKey>;
   expandedElement: ContainerDetailData | null = null;
 
-  constructor(
-    @Inject(ContainerService)
-    protected containerService: ContainerServiceInterface,
-    @Inject(TokenService)
-    protected tokenService: TokenServiceInterface,
-    @Inject(TableUtilsService)
-    protected tableUtilsService: TableUtilsServiceInterface,
-    @Inject(ContentService)
-    protected contentService: ContentServiceInterface,
-  ) {
+  constructor() {
     effect(() => {
       const filterValueString = this.filterValueString();
       if (this.filterInput) {

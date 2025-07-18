@@ -1,6 +1,6 @@
 import { AsyncPipe, NgClass } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, Inject, Renderer2 } from '@angular/core';
+import { Component, Renderer2, inject } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {
   MatAutocomplete,
@@ -134,6 +134,25 @@ import { TokenEnrollmentComponent } from './token-enrollment.component';
   styleUrl: './token-enrollment.component.scss',
 })
 export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
+  protected readonly http: HttpClient = inject(HttpClient);
+  protected readonly sanitizer: DomSanitizer = inject(DomSanitizer);
+  protected override readonly containerService: ContainerServiceInterface =
+    inject(ContainerService);
+  protected override readonly realmService: RealmServiceInterface =
+    inject(RealmService);
+  protected override readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  protected override readonly userService: UserServiceInterface =
+    inject(UserService);
+  protected override readonly tokenService: TokenServiceInterface =
+    inject(TokenService);
+  protected override readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+  protected override readonly versioningService: VersioningServiceInterface =
+    inject(VersioningService);
+  protected override readonly dialogService: DialogServiceInterface =
+    inject(DialogService);
+
   readonly preTopHtml$ = this.http
     .get('/customize/token-enrollment.wizard.pre.top.html', {
       responseType: 'text',
@@ -146,38 +165,8 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
     })
     .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)));
 
-  constructor(
-    private http: HttpClient,
-    private sanitizer: DomSanitizer,
-    renderer: Renderer2,
-    @Inject(ContainerService)
-    containerService: ContainerServiceInterface,
-    @Inject(RealmService)
-    realmService: RealmServiceInterface,
-    @Inject(NotificationService)
-    notificationService: NotificationServiceInterface,
-    @Inject(UserService)
-    userService: UserServiceInterface,
-    @Inject(TokenService)
-    tokenService: TokenServiceInterface,
-    @Inject(ContentService)
-    contentService: ContentServiceInterface,
-    @Inject(VersioningService)
-    versioningService: VersioningServiceInterface,
-    @Inject(DialogService)
-    dialogService: DialogServiceInterface,
-  ) {
-    super(
-      renderer,
-      containerService,
-      realmService,
-      notificationService,
-      userService,
-      tokenService,
-      versioningService,
-      contentService,
-      dialogService,
-    );
+  constructor(renderer: Renderer2) {
+    super(renderer);
   }
 
   protected override openLastStepDialog(args: {

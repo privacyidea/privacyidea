@@ -1,7 +1,7 @@
 import { httpResource, HttpResourceRef } from '@angular/common/http';
 import {
   computed,
-  Inject,
+  inject,
   Injectable,
   linkedSignal,
   signal,
@@ -95,6 +95,10 @@ export interface AuditServiceInterface {
   providedIn: 'root',
 })
 export class AuditService implements AuditServiceInterface {
+  private readonly localService: LocalServiceInterface = inject(LocalService);
+  private readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
   private auditBaseUrl = environment.proxyUrl + '/audit/';
@@ -155,10 +159,5 @@ export class AuditService implements AuditServiceInterface {
     };
   });
 
-  constructor(
-    @Inject(LocalService)
-    private localService: LocalServiceInterface,
-    @Inject(ContentService)
-    private contentService: ContentServiceInterface,
-  ) {}
+  constructor() {}
 }

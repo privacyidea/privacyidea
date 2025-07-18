@@ -3,7 +3,7 @@ import {
   Component,
   computed,
   effect,
-  Inject,
+  inject,
   linkedSignal,
   ViewChild,
   WritableSignal,
@@ -73,6 +73,14 @@ const columnKeysMap = [
   styleUrl: './token-table.component.scss',
 })
 export class TokenTableComponent {
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface =
+    inject(TableUtilsService);
+  protected readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+  protected readonly dialogService: DialogServiceInterface =
+    inject(DialogService);
+
   readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = columnKeysMap.map((column) => column.key);
   readonly apiFilter = this.tokenService.apiFilter;
@@ -144,16 +152,7 @@ export class TokenTableComponent {
   @ViewChild('filterHTMLInputElement', { static: true })
   filterInput!: HTMLInputElement;
 
-  constructor(
-    @Inject(TokenService)
-    protected tokenService: TokenServiceInterface,
-    @Inject(TableUtilsService)
-    protected tableUtilsService: TableUtilsServiceInterface,
-    @Inject(ContentService)
-    protected contentService: ContentServiceInterface,
-    @Inject(DialogService)
-    protected dialogService: DialogServiceInterface,
-  ) {
+  constructor() {
     effect(() => {
       const filterValueString = this.filterValueString();
       if (this.filterInput) {

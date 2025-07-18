@@ -2,7 +2,7 @@ import { NgClass } from '@angular/common';
 import {
   Component,
   effect,
-  Inject,
+  inject,
   linkedSignal,
   WritableSignal,
 } from '@angular/core';
@@ -105,23 +105,25 @@ const columnKeysMap = [
   styleUrl: './audit.component.scss',
 })
 export class AuditComponent {
+  protected readonly auditService: AuditServiceInterface = inject(AuditService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface =
+    inject(TableUtilsService);
+  protected readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
+
   readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = this.columnKeysMap.map(
     (column) => column.key,
   );
-  readonly apiFilter = this.auditService.apiFilter;
-  readonly advancedApiFilter = this.auditService.advancedApiFilter;
-  auditResource = this.auditService.auditResource;
-  filterValue = this.auditService.filterValue;
+
   filterValueString: WritableSignal<string> = linkedSignal(() =>
-    Object.entries(this.filterValue())
+    Object.entries(this.auditService.filterValue())
       .map(([key, value]) => `${key}: ${value}`)
       .join(' '),
   );
-  pageSize = this.auditService.pageSize;
-  pageIndex = this.auditService.pageIndex;
   totalLength: WritableSignal<number> = linkedSignal({
-    source: this.auditResource.value,
+    source: this.auditService.auditResource.value,
     computation: (auditResource, previous) => {
       if (auditResource) {
         return auditResource.result?.value?.count ?? 0;
@@ -143,7 +145,7 @@ export class AuditComponent {
   });
 
   emptyResource: WritableSignal<AuditData[]> = linkedSignal({
-    source: this.pageSize,
+    source: this.auditService.pageSize,
     computation: (pageSize: number) =>
       Array.from({ length: pageSize }, () =>
         Object.fromEntries(this.columnKeysMap.map((col) => [col.key, ''])),
@@ -152,7 +154,7 @@ export class AuditComponent {
 
   auditDataSource: WritableSignal<MatTableDataSource<AuditData>> = linkedSignal(
     {
-      source: this.auditResource.value,
+      source: this.auditService.auditResource.value,
       computation: (auditResource, previous) => {
         if (auditResource) {
           return new MatTableDataSource(auditResource.result?.value?.auditdata);
@@ -162,27 +164,18 @@ export class AuditComponent {
     },
   );
 
-  constructor(
-    @Inject(AuditService)
-    private readonly auditService: AuditServiceInterface,
-    @Inject(TableUtilsService)
-    protected readonly tableUtilsService: TableUtilsServiceInterface,
-    @Inject(ContentService)
-    protected readonly contentService: ContentServiceInterface,
-    @Inject(AuthService)
-    protected authService: AuthServiceInterface,
-  ) {
+  constructor() {
     effect(() => {
       const recordsFromText = this.tableUtilsService.recordsFromText(
         this.filterValueString(),
       );
-      this.filterValue.set(recordsFromText);
-      this.pageIndex.set(0);
+      this.auditService.filterValue.set(recordsFromText);
+      this.auditService.pageIndex.set(0);
     });
   }
 
   onPageEvent(event: PageEvent) {
-    this.pageSize.set(event.pageSize);
-    this.pageIndex.set(event.pageIndex);
+    this.auditService.pageSize.set(event.pageSize);
+    this.auditService.pageIndex.set(event.pageIndex);
   }
 }

@@ -1,5 +1,5 @@
 import { NgClass } from '@angular/common';
-import { Component, Inject, Renderer2 } from '@angular/core';
+import { Component, inject, Renderer2 } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {
   MatAutocomplete,
@@ -143,35 +143,21 @@ import {
   ],
 })
 export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponent {
-  constructor(
-    renderer: Renderer2,
-    @Inject(ContainerService)
-    containerService: ContainerServiceInterface,
-    @Inject(RealmService)
-    realmService: RealmServiceInterface,
-    @Inject(NotificationService)
-    notificationService: NotificationServiceInterface,
-    @Inject(UserService)
-    userService: UserServiceInterface,
-    @Inject(TokenService)
-    tokenService: TokenServiceInterface,
-    @Inject(VersioningService)
-    versioningService: VersioningServiceInterface,
-    @Inject(ContentService)
-    contentService: ContentServiceInterface,
-    @Inject(DialogService)
-    dialogService: DialogServiceInterface,
-  ) {
-    super(
-      renderer,
-      containerService,
-      realmService,
-      notificationService,
-      userService,
-      tokenService,
-      versioningService,
-      contentService,
-      dialogService,
-    );
+  protected override containerService: ContainerServiceInterface =
+    inject(ContainerService);
+  protected override realmService: RealmServiceInterface = inject(RealmService);
+  protected override notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  protected override userService: UserServiceInterface = inject(UserService);
+  protected override tokenService: TokenServiceInterface = inject(TokenService);
+  protected override versioningService: VersioningServiceInterface =
+    inject(VersioningService);
+  protected override contentService: ContentServiceInterface =
+    inject(ContentService);
+  protected override dialogService: DialogServiceInterface =
+    inject(DialogService);
+
+  constructor(renderer: Renderer2) {
+    super(renderer);
   }
 }

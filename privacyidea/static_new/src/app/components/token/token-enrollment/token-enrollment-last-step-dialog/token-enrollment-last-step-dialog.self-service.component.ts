@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import {
   MAT_DIALOG_DATA,
@@ -16,8 +16,14 @@ import {
 } from '@angular/material/expansion';
 import { MatIcon } from '@angular/material/icon';
 import { EnrollmentResponse } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
-import { ContentService, ContentServiceInterface } from '../../../../services/content/content.service';
-import { TokenService, TokenServiceInterface } from '../../../../services/token/token.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../../services/content/content.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
 import { UserData } from '../../../../services/user/user.service';
 import { TokenEnrollmentLastStepDialogComponent } from './token-enrollment-last-step-dialog.component';
 
@@ -50,16 +56,16 @@ export type TokenEnrollmentLastStepDialogData = {
 })
 export class TokenEnrollmentLastStepDialogSelfServiceComponent extends TokenEnrollmentLastStepDialogComponent {
   protected override readonly Object = Object;
+  protected override readonly dialogRef: MatDialogRef<TokenEnrollmentLastStepDialogComponent> =
+    inject(MatDialogRef);
+  public override readonly data: TokenEnrollmentLastStepDialogData =
+    inject(MAT_DIALOG_DATA);
+  protected override readonly tokenService: TokenServiceInterface =
+    inject(TokenService);
+  protected override readonly contentService: ContentServiceInterface =
+    inject(ContentService);
 
-  constructor(
-    protected override dialogRef: MatDialogRef<TokenEnrollmentLastStepDialogComponent>,
-    @Inject(MAT_DIALOG_DATA)
-    public override data: TokenEnrollmentLastStepDialogData,
-    @Inject(TokenService)
-    protected override tokenService: TokenServiceInterface,
-    @Inject(ContentService)
-    protected override contentService: ContentServiceInterface,
-  ) {
-    super(dialogRef, data, tokenService, contentService);
+  constructor() {
+    super();
   }
 }

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Inject, Output } from '@angular/core';
+import { Component, EventEmitter, Output, inject } from '@angular/core';
 import {
   AbstractControl,
   FormControl,
@@ -24,7 +24,6 @@ import { SshkeyApiPayloadMapper } from '../../../../mappers/token-api-payload/ss
 export interface SshkeyEnrollmentOptions extends TokenEnrollmentData {
   type: 'sshkey';
   sshPublicKey: string;
-  // 'radius.system_settings': boolean;
 }
 
 @Component({
@@ -40,6 +39,11 @@ export interface SshkeyEnrollmentOptions extends TokenEnrollmentData {
   templateUrl: './enroll-sshkey.component.html',
 })
 export class EnrollSshkeyComponent {
+  protected readonly enrollmentMapper: SshkeyApiPayloadMapper = inject(
+    SshkeyApiPayloadMapper,
+  );
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'sshkey')?.text;
@@ -56,15 +60,8 @@ export class EnrollSshkeyComponent {
     [key: string]: FormControl<any>;
   }>();
 
-  constructor(
-    private enrollmentMapper: SshkeyApiPayloadMapper,
-    @Inject(TokenService)
-    private tokenService: TokenServiceInterface,
-  ) {}
-
   ngOnInit() {
     this.aditionalFormFieldsChange.emit({
-      // Keep original emit
       sshPublicKey: this.sshPublicKeyFormControl,
     });
     this.clickEnrollChange.emit(this.onClickEnroll);
@@ -74,7 +71,7 @@ export class EnrollSshkeyComponent {
     basicOptions: TokenEnrollmentData,
   ): Observable<EnrollmentResponse | null> => {
     if (this.sshPublicKeyFormControl.invalid) {
-      this.sshPublicKeyFormControl.markAsTouched(); // Keep original touch logic
+      this.sshPublicKeyFormControl.markAsTouched();
       return of(null);
     }
 
@@ -86,7 +83,6 @@ export class EnrollSshkeyComponent {
       : sshKeyDescriptionPart;
 
     const enrollmentData: SshkeyEnrollmentOptions = {
-      // Keep original data structure
       ...basicOptions,
       type: 'sshkey',
       sshPublicKey: sshPublicKey,
@@ -95,7 +91,7 @@ export class EnrollSshkeyComponent {
     return this.tokenService.enrollToken({
       data: enrollmentData,
       mapper: this.enrollmentMapper,
-    }); // Apply the requested change
+    });
   };
 
   static sshKeyValidator(

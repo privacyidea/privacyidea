@@ -1,5 +1,5 @@
 import { NgClass } from '@angular/common';
-import { Component, computed, Inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { MatButton } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatDivider } from '@angular/material/divider';
@@ -31,6 +31,13 @@ import { LostTokenComponent } from './lost-token/lost-token.component';
   animations: [tabToggleState],
 })
 export class TokenTabComponent {
+  private readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly versioningService: VersioningServiceInterface =
+    inject(VersioningService);
+  private readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+  private readonly dialog: MatDialog = inject(MatDialog);
+
   selectedContent = this.contentService.selectedContent;
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
@@ -40,15 +47,7 @@ export class TokenTabComponent {
   isLost = signal(false);
   version!: string;
 
-  constructor(
-    @Inject(TokenService)
-    private readonly tokenService: TokenServiceInterface,
-    @Inject(VersioningService)
-    protected readonly versioningService: VersioningServiceInterface,
-    @Inject(ContentService)
-    private contentService: ContentServiceInterface,
-    private readonly dialog: MatDialog,
-  ) {}
+  constructor() {}
 
   ngOnInit(): void {
     this.version = this.versioningService.getVersion();

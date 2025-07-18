@@ -1,4 +1,4 @@
-import { Component, Inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButton } from '@angular/material/button';
 import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
@@ -29,18 +29,17 @@ import {
   styleUrl: './assign-token-self-service.component.scss',
 })
 export class AssignTokenSelfServiceComponent {
+  private readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+  private readonly tokenService: TokenServiceInterface = inject(TokenService);
+
   tokenSerial = this.tokenService.tokenSerial;
   selectedContent = this.contentService.selectedContent;
   selectedToken = signal('');
   setPinValue = signal('');
   repeatPinValue = signal('');
 
-  constructor(
-    @Inject(ContentService)
-    private contentService: ContentServiceInterface,
-    @Inject(TokenService)
-    private tokenService: TokenServiceInterface,
-  ) {}
+  constructor() {}
 
   assignUserToToken() {
     this.tokenService

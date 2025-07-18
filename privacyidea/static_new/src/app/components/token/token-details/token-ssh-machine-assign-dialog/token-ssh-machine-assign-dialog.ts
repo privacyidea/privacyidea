@@ -1,7 +1,7 @@
 import {
   Component,
   computed,
-  Inject,
+  inject,
   linkedSignal,
   signal,
   WritableSignal,
@@ -61,6 +61,20 @@ import { Observable } from 'rxjs';
 })
 export class TokenSshMachineAssignDialogComponent {
   /// Data for the dialog ///
+  private applicationService: ApplicationServiceInterface =
+    inject(ApplicationService);
+  private machineService: MachineServiceInterface = inject(MachineService);
+  private userService: UserServiceInterface = inject(UserService);
+  public data: {
+    tokenSerial: string;
+    tokenDetails: Record<string, any>;
+    tokenType: string;
+  } = inject(MAT_DIALOG_DATA);
+  public dialogRef: MatDialogRef<
+    TokenSshMachineAssignDialogComponent,
+    Observable<any> | null
+  > = inject(MatDialogRef);
+
   availableApplications = linkedSignal({
     source: this.applicationService.applications,
     computation: (source) => {
@@ -124,24 +138,7 @@ export class TokenSshMachineAssignDialogComponent {
   });
 
   /// Computed properties ///
-  constructor(
-    @Inject(MAT_DIALOG_DATA)
-    public data: {
-      tokenSerial: string;
-      tokenDetails: Record<string, any>;
-      tokenType: string;
-    },
-    public dialogRef: MatDialogRef<
-      TokenSshMachineAssignDialogComponent,
-      Observable<any> | null
-    >,
-    @Inject(ApplicationService)
-    private applicationService: ApplicationServiceInterface,
-    @Inject(MachineService)
-    private machineService: MachineServiceInterface,
-    @Inject(UserService)
-    private userService: UserServiceInterface,
-  ) {}
+  constructor() {}
 
   ngOnInit() {
     this.selectedMachine.valueChanges.subscribe((value) => {

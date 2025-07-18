@@ -1,5 +1,5 @@
 import { NgClass } from '@angular/common';
-import { Component, computed, Inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { MatButton } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatDivider } from '@angular/material/divider';
@@ -30,6 +30,14 @@ import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog
   animations: [tabToggleState],
 })
 export class ContainerTabComponent {
+  private readonly dialog: MatDialog = inject(MatDialog);
+  private readonly containerService: ContainerServiceInterface =
+    inject(ContainerService);
+  private readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+  protected readonly versioningService: VersioningServiceInterface =
+    inject(VersioningService);
+
   containerSelection = this.containerService.containerSelection;
   selectedContent = this.contentService.selectedContent;
   containerSerial = this.containerService.containerSerial;
@@ -43,15 +51,7 @@ export class ContainerTabComponent {
   });
   version!: string;
 
-  constructor(
-    private dialog: MatDialog,
-    @Inject(ContainerService)
-    private containerService: ContainerServiceInterface,
-    @Inject(ContentService)
-    private contentService: ContentServiceInterface,
-    @Inject(VersioningService)
-    protected versioningService: VersioningServiceInterface,
-  ) {}
+  constructor() {}
 
   ngOnInit(): void {
     this.version = this.versioningService.getVersion();

@@ -6,7 +6,7 @@ import {
 import {
   computed,
   effect,
-  Inject,
+  inject,
   Injectable,
   Signal,
   signal,
@@ -51,6 +51,11 @@ export interface RealmServiceInterface {
   providedIn: 'root',
 })
 export class RealmService implements RealmServiceInterface {
+  private readonly localService: LocalServiceInterface = inject(LocalService);
+  private readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+
   selectedRealms = signal<string[]>([]);
 
   realmResource = httpResource<PiResponse<Realms>>(() => {
@@ -86,14 +91,7 @@ export class RealmService implements RealmServiceInterface {
     return '';
   });
 
-  constructor(
-    @Inject(LocalService)
-    private localService: LocalServiceInterface,
-    @Inject(NotificationService)
-    private notificationService: NotificationServiceInterface,
-    @Inject(AuthService)
-    private authService: AuthServiceInterface,
-  ) {
+  constructor() {
     effect(() => {
       if (this.realmResource.error()) {
         const realmError = this.realmResource.error() as HttpErrorResponse;

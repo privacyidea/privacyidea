@@ -1,4 +1,4 @@
-import { Component, HostListener, Inject } from '@angular/core';
+import { Component, HostListener, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterOutlet } from '@angular/router';
 import {
@@ -44,14 +44,13 @@ export class AppComponent {
   title = 'privacyidea-webui';
   lastSessionReset = 0;
 
-  constructor(
-    @Inject(AuthService)
-    private readonly authService: AuthServiceInterface,
-    @Inject(NotificationService)
-    private readonly notificationService: NotificationServiceInterface,
-    @Inject(SessionTimerService)
-    private readonly sessionTimerService: SessionTimerServiceInterface,
-  ) {
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  private readonly sessionTimerService: SessionTimerServiceInterface =
+    inject(SessionTimerService);
+
+  constructor() {
     this.sessionTimerService.startTimer();
 
     if (this.authService.isAuthenticatedUser()) {

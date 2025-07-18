@@ -2,7 +2,7 @@ import {
   Component,
   computed,
   EventEmitter,
-  Inject,
+  inject,
   OnInit,
   Output,
 } from '@angular/core';
@@ -61,6 +61,13 @@ export class YubicoErrorStateMatcher implements ErrorStateMatcher {
   styleUrl: './enroll-yubico.component.scss',
 })
 export class EnrollYubicoComponent implements OnInit {
+  protected readonly enrollmentMapper: YubicoApiPayloadMapper = inject(
+    YubicoApiPayloadMapper,
+  );
+  protected readonly systemService: SystemServiceInterface =
+    inject(SystemService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+
   yubicoErrorStatematcher = new YubicoErrorStateMatcher();
   text = this.tokenService
     .tokenTypeOptions()
@@ -91,14 +98,6 @@ export class EnrollYubicoComponent implements OnInit {
       cfg?.['yubico.secret']
     );
   });
-
-  constructor(
-    private enrollmentMapper: YubicoApiPayloadMapper,
-    @Inject(SystemService)
-    private systemService: SystemServiceInterface,
-    @Inject(TokenService)
-    private tokenService: TokenServiceInterface,
-  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({

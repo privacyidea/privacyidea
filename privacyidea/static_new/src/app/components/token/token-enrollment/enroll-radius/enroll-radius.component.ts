@@ -3,7 +3,7 @@ import {
   computed,
   effect,
   EventEmitter,
-  Inject,
+  inject,
   OnInit,
   Output,
 } from '@angular/core';
@@ -65,6 +65,15 @@ export interface RadiusEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: './enroll-radius.component.scss',
 })
 export class EnrollRadiusComponent implements OnInit {
+  protected readonly enrollmentMapper: RadiusApiPayloadMapper = inject(
+    RadiusApiPayloadMapper,
+  );
+  protected readonly radiusServerService: RadiusServerServiceInterface =
+    inject(RadiusServerService);
+  protected readonly systemService: SystemServiceInterface =
+    inject(SystemService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'radius')?.text;
@@ -76,7 +85,7 @@ export class EnrollRadiusComponent implements OnInit {
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
-  radiusUserControl = new FormControl<string>(''); // Optional, depending on configuration
+  radiusUserControl = new FormControl<string>('');
   radiusServerConfigurationControl = new FormControl<string>('', [
     Validators.required,
   ]);
@@ -102,15 +111,7 @@ export class EnrollRadiusComponent implements OnInit {
     return !!cfg?.['radius.identifier'];
   });
 
-  constructor(
-    private enrollmentMapper: RadiusApiPayloadMapper,
-    @Inject(RadiusServerService)
-    private radiusServerService: RadiusServerServiceInterface,
-    @Inject(SystemService)
-    private systemService: SystemServiceInterface,
-    @Inject(TokenService)
-    private tokenService: TokenServiceInterface,
-  ) {
+  constructor() {
     effect(() => {
       const id =
         this.systemService.systemConfigResource.value()?.result?.value?.[

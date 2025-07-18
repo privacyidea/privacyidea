@@ -1,6 +1,6 @@
 import {
   Component,
-  Inject,
+  inject,
   Input,
   linkedSignal,
   Signal,
@@ -59,6 +59,11 @@ export interface ContainerInfoDetail<T = any> {
   styleUrl: './container-details-info.component.scss',
 })
 export class ContainerDetailsInfoComponent {
+  private readonly containerService: ContainerServiceInterface =
+    inject(ContainerService);
+  protected readonly overflowService: OverflowServiceInterface =
+    inject(OverflowService);
+
   protected readonly Object = Object;
   containerSerial = this.containerService.containerSerial;
   @Input() infoData!: WritableSignal<ContainerInfoDetail[]>;
@@ -73,12 +78,7 @@ export class ContainerDetailsInfoComponent {
     },
   });
 
-  constructor(
-    @Inject(ContainerService)
-    private containerService: ContainerServiceInterface,
-    @Inject(OverflowService)
-    protected overflowService: OverflowServiceInterface,
-  ) {}
+  constructor() {}
 
   toggleInfoEdit(): void {
     this.isEditingInfo.update((b) => !b);

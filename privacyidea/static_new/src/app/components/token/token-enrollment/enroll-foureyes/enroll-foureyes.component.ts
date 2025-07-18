@@ -2,7 +2,7 @@ import {
   Component,
   computed,
   EventEmitter,
-  Inject,
+  inject,
   OnInit,
   Output,
   Signal,
@@ -44,7 +44,7 @@ export interface FourEyesEnrollmentOptions extends TokenEnrollmentData {
   separator: string;
   requiredTokenOfRealms: { realm: string; tokens: number }[];
   onlyAddToRealm: boolean;
-  userRealm?: string; // Optional, only if onlyAddToRealm is true
+  userRealm?: string;
 }
 
 export class RequiredRealmsErrorStateMatcher implements ErrorStateMatcher {
@@ -73,6 +73,12 @@ export class RequiredRealmsErrorStateMatcher implements ErrorStateMatcher {
   styleUrl: './enroll-foureyes.component.scss',
 })
 export class EnrollFoureyesComponent implements OnInit {
+  protected readonly enrollmentMapper: FourEyesApiPayloadMapper = inject(
+    FourEyesApiPayloadMapper,
+  );
+  protected readonly realmService: RealmServiceInterface = inject(RealmService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === '4eyes')?.text;
@@ -91,9 +97,6 @@ export class EnrollFoureyesComponent implements OnInit {
   onlyAddToRealmControl = new FormControl<boolean>(false, [
     Validators.required,
   ]);
-  // userRealmControl is needed if onlyAddToRealm is true,
-  // but this value comes from the parent component (userService.selectedUserRealm)
-  // and is passed in basicOptions.
 
   foureyesForm = new FormGroup({
     separator: this.separatorControl,
@@ -101,7 +104,6 @@ export class EnrollFoureyesComponent implements OnInit {
     onlyAddToRealm: this.onlyAddToRealmControl,
   });
 
-  // Options for the template
   realmOptions = this.realmService.realmOptions;
   tokenCountMapping: Signal<Record<string, number>> = computed(() => {
     const realms = this.requiredTokensOfRealmsControl.value;
@@ -117,14 +119,6 @@ export class EnrollFoureyesComponent implements OnInit {
     );
   });
   requiredRealmsErrorStateMatcher = new RequiredRealmsErrorStateMatcher();
-
-  constructor(
-    private enrollmentMapper: FourEyesApiPayloadMapper,
-    @Inject(RealmService)
-    private realmService: RealmServiceInterface,
-    @Inject(TokenService)
-    private tokenService: TokenServiceInterface,
-  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({
@@ -149,20 +143,33 @@ export class EnrollFoureyesComponent implements OnInit {
     const index = tokensArray.findIndex((item) => item.realm === realm);
     if (index > -1) {
       if (tokens === 0) {
-        // Remove if count is 0
-        tokensArray.splice(index, 1);
+        this.removeRealmFromSelection(tokensArray, index);
       } else {
         tokensArray[index] = { realm, tokens };
       }
     } else {
       if (tokens > 0) {
-        // Add only if count is > 0
-        tokensArray.push({ realm, tokens });
+        this.addRealmToSelection(tokensArray, realm, tokens);
       }
     }
     this.requiredTokensOfRealmsControl.setValue([...tokensArray]);
     this.requiredTokensOfRealmsControl.markAsDirty();
     this.requiredTokensOfRealmsControl.updateValueAndValidity();
+  }
+
+  private removeRealmFromSelection(
+    tokensArray: { realm: string; tokens: number }[],
+    index: number,
+  ): void {
+    tokensArray.splice(index, 1);
+  }
+
+  private addRealmToSelection(
+    tokensArray: { realm: string; tokens: number }[],
+    realm: string,
+    tokens: number,
+  ): void {
+    tokensArray.push({ realm, tokens });
   }
 
   onRealmSelectionChange(event: MatOptionSelectionChange, realm: string): void {
@@ -171,7 +178,7 @@ export class EnrollFoureyesComponent implements OnInit {
         this.updateTokenCount(realm, 1);
       }
     } else if (event.isUserInput && !event.source.selected) {
-      this.updateTokenCount(realm, 0); // Remove from selection
+      this.updateTokenCount(realm, 0);
     }
   }
 
@@ -188,7 +195,6 @@ export class EnrollFoureyesComponent implements OnInit {
       separator: this.separatorControl.value ?? ':',
       requiredTokenOfRealms: this.requiredTokensOfRealmsControl.value ?? [],
       onlyAddToRealm: !!this.onlyAddToRealmControl.value,
-      // userRealm wird von basicOptions übernommen, falls onlyAddToRealm true ist
     };
     return this.tokenService.enrollToken({
       data: enrollmentData,

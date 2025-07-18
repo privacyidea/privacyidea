@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams, httpResource } from '@angular/common/http';
 import {
   computed,
-  Inject,
+  inject,
   Injectable,
   linkedSignal,
   signal,
@@ -116,6 +116,13 @@ export interface MachineServiceInterface {
   providedIn: 'root',
 })
 export class MachineService implements MachineServiceInterface {
+  private readonly http: HttpClient = inject(HttpClient);
+  protected readonly localService: LocalServiceInterface = inject(LocalService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface =
+    inject(TableUtilsService);
+  protected readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+
   private baseUrl = environment.proxyUrl + '/machine/';
   sshApiFilter = ['serial', 'service_id'];
   sshAdvancedApiFilter = ['hostname', 'machineid & resolver'];
@@ -231,15 +238,7 @@ export class MachineService implements MachineServiceInterface {
       tokenApplicationResource?.result?.value ?? previous?.value ?? [],
   });
 
-  constructor(
-    public http: HttpClient,
-    @Inject(LocalService)
-    public localService: LocalServiceInterface,
-    @Inject(TableUtilsService)
-    public tableUtilsService: TableUtilsServiceInterface,
-    @Inject(ContentService)
-    public contentService: ContentServiceInterface,
-  ) {}
+  constructor() {}
 
   postTokenOption(
     hostname: string,
@@ -298,7 +297,7 @@ export class MachineService implements MachineServiceInterface {
     id?: string;
     resolver?: string;
     any?: string;
-  }) {
+  }): Observable<PiResponse<Machines>> {
     const { hostname, ip, id, resolver, any } = args;
     const headers = this.localService.getHeaders();
     let params = new HttpParams();
@@ -338,12 +337,12 @@ export class MachineService implements MachineServiceInterface {
     );
   }
 
-  onPageEvent(event: PageEvent) {
+  onPageEvent(event: PageEvent): void {
     this.pageSize.set(event.pageSize);
     this.pageIndex.set(event.pageIndex);
   }
 
-  onSortEvent($event: Sort) {
+  onSortEvent($event: Sort): void {
     this.sort.set($event);
   }
 }

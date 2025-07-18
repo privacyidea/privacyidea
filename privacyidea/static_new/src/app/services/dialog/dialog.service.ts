@@ -1,4 +1,4 @@
-import { computed, Inject, Injectable } from '@angular/core';
+import { computed, inject, Injectable } from '@angular/core';
 import {
   MatDialog,
   MatDialogConfig,
@@ -63,13 +63,10 @@ export interface DialogServiceInterface {
 
 @Injectable({ providedIn: 'root' })
 export class DialogService implements DialogServiceInterface {
-  readonly isSelfServing = computed(() => this.authService.role() === 'user');
+  private readonly dialog: MatDialog = inject(MatDialog);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
 
-  constructor(
-    private dialog: MatDialog,
-    @Inject(AuthService)
-    private authService: AuthServiceInterface,
-  ) {}
+  readonly isSelfServing = computed(() => this.authService.role() === 'user');
 
   private _tokenEnrollmentFirstStepRef: MatDialogRef<
     TokenEnrollmentFirstStepDialogComponent,

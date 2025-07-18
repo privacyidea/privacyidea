@@ -1,7 +1,7 @@
 import { NgClass } from '@angular/common';
 import {
   Component,
-  Inject,
+  inject,
   Input,
   linkedSignal,
   Signal,
@@ -63,6 +63,10 @@ import {
 })
 export class TokenDetailsInfoComponent {
   protected readonly Object = Object;
+  private tokenService: TokenServiceInterface = inject(TokenService);
+  protected overflowService: OverflowServiceInterface = inject(OverflowService);
+  protected authService: AuthServiceInterface = inject(AuthService);
+
   tokenSerial = this.tokenService.tokenSerial;
   @Input() infoData!: WritableSignal<EditableElement[]>;
   @Input() detailData!: WritableSignal<EditableElement[]>;
@@ -76,14 +80,7 @@ export class TokenDetailsInfoComponent {
     },
   });
 
-  constructor(
-    @Inject(TokenService)
-    private tokenService: TokenServiceInterface,
-    @Inject(OverflowService)
-    protected overflowService: OverflowServiceInterface,
-    @Inject(AuthService)
-    protected authService: AuthServiceInterface,
-  ) {}
+  constructor() {}
 
   toggleInfoEdit(): void {
     if (this.isEditingInfo()) {

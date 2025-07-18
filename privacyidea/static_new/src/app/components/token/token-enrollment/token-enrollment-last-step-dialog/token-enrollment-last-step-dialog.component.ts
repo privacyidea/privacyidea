@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import {
   MAT_DIALOG_DATA,
@@ -53,17 +53,17 @@ export type TokenEnrollmentLastStepDialogData = {
   styleUrl: './token-enrollment-last-step-dialog.component.scss',
 })
 export class TokenEnrollmentLastStepDialogComponent {
+  protected readonly dialogRef: MatDialogRef<TokenEnrollmentLastStepDialogComponent> =
+    inject(MatDialogRef);
+  public readonly data: TokenEnrollmentLastStepDialogData =
+    inject(MAT_DIALOG_DATA);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+
   protected readonly Object = Object;
 
-  constructor(
-    protected dialogRef: MatDialogRef<TokenEnrollmentLastStepDialogComponent>,
-    @Inject(MAT_DIALOG_DATA)
-    public data: TokenEnrollmentLastStepDialogData,
-    @Inject(TokenService)
-    protected tokenService: TokenServiceInterface,
-    @Inject(ContentService)
-    protected contentService: ContentServiceInterface,
-  ) {
+  constructor() {
     this.dialogRef.afterClosed().subscribe(() => {
       this.tokenService.stopPolling();
     });
@@ -91,23 +91,23 @@ export class TokenEnrollmentLastStepDialogComponent {
       if (printWindow) {
         printWindow.document.open();
         printWindow.document.write(`
-        <html lang="en">
-            <style>
-              .otp-values {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 8px;
-              }
-              .otp-value {
-                min-width: 6rem;
-                border: 1px solid #e2e2e2;
-                padding: 6px;
-                border-radius: 6px;
-              }
-            </style>
-            ${printContents}
-        </html>
-      `);
+          <html lang="en">
+              <style>
+                .otp-values {
+                  display: flex;
+                  flex-wrap: wrap;
+                  gap: 8px;
+                }
+                .otp-value {
+                  min-width: 6rem;
+                  border: 1px solid #e2e2e2;
+                  padding: 6px;
+                  border-radius: 6px;
+                }
+              </style>
+              ${printContents}
+          </html>
+        `);
         printWindow.document.close();
         printWindow.focus();
         printWindow.print();

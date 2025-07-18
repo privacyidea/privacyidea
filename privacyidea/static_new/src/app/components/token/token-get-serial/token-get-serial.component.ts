@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpParams } from '@angular/common/http';
-import { Component, effect, Inject, signal } from '@angular/core';
+import { Component, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButton } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
@@ -54,6 +54,15 @@ import { GetSerialResultDialogComponent } from './get-serial-result-dialog/get-s
   styleUrl: './token-get-serial.component.scss',
 })
 export class TokenGetSerial {
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  protected readonly loadingService: LoadingServiceInterface =
+    inject(LoadingService);
+  protected readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+  private readonly dialog: MatDialog = inject(MatDialog);
+
   selectedContent = this.contentService.selectedContent;
   tokenSerial = this.tokenService.tokenSerial;
   otpValue = signal<string>('');
@@ -75,17 +84,7 @@ export class TokenGetSerial {
     },
   ];
 
-  constructor(
-    @Inject(TokenService)
-    private readonly tokenService: TokenServiceInterface,
-    @Inject(NotificationService)
-    private readonly notificationService: NotificationServiceInterface,
-    @Inject(LoadingService)
-    private readonly loadingService: LoadingServiceInterface,
-    @Inject(ContentService)
-    private readonly contentService: ContentServiceInterface,
-    private readonly dialog: MatDialog,
-  ) {
+  constructor() {
     const tokenWithOTP = [
       'hotp',
       'totp',

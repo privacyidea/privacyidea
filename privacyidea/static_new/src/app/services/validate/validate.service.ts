@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Inject, Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { from, Observable, switchMap, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
@@ -59,21 +59,22 @@ export interface ValidateServiceInterface {
   providedIn: 'root',
 })
 export class ValidateService implements ValidateServiceInterface {
+  private readonly http: HttpClient = inject(HttpClient);
+  private readonly localService: LocalServiceInterface = inject(LocalService);
+  private readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  private readonly base64Service: Base64ServiceInterface =
+    inject(Base64Service);
+  private readonly authenticationService: AuthServiceInterface =
+    inject(AuthService);
+
   private baseUrl = environment.proxyUrl + '/validate/';
 
-  constructor(
-    private http: HttpClient,
-    @Inject(LocalService)
-    private localService: LocalServiceInterface,
-    @Inject(NotificationService)
-    private notificationService: NotificationServiceInterface,
-    @Inject(Base64Service)
-    private base64Service: Base64ServiceInterface,
-    @Inject(AuthService)
-    private authenticationService: AuthServiceInterface,
-  ) {}
-
-  testToken(tokenSerial: string, otpOrPinToTest: string, otponly?: string) {
+  testToken(
+    tokenSerial: string,
+    otpOrPinToTest: string,
+    otponly?: string,
+  ): Observable<ValidateCheckResponse> {
     const headers = this.localService.getHeaders();
     return this.http
       .post<ValidateCheckResponse>(
@@ -97,7 +98,7 @@ export class ValidateService implements ValidateServiceInterface {
       );
   }
 
-  authenticatePasskey(args?: { isTest?: boolean }) {
+  authenticatePasskey(args?: { isTest?: boolean }): Observable<AuthResponse> {
     if (!window.PublicKeyCredential) {
       this.notificationService.openSnackBar(
         'WebAuthn is not supported by this browser.',

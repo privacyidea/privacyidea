@@ -1,4 +1,4 @@
-import { Component, effect, Inject, signal, untracked } from '@angular/core';
+import { Component, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   MatAutocomplete,
@@ -84,6 +84,18 @@ export type ContainerTypeOption = 'generic' | 'smartphone' | 'yubikey';
   styleUrl: './container-create.component.scss',
 })
 export class ContainerCreateComponent {
+  protected readonly versioningService: VersioningServiceInterface =
+    inject(VersioningService);
+  protected readonly userService: UserServiceInterface = inject(UserService);
+  protected readonly realmService: RealmServiceInterface = inject(RealmService);
+  protected readonly containerService: ContainerServiceInterface =
+    inject(ContainerService);
+  protected readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+
   protected readonly TokenComponent = TokenComponent;
   selectedContent = this.contentService.selectedContent;
   containerSerial = this.containerService.containerSerial;
@@ -97,23 +109,7 @@ export class ContainerCreateComponent {
   registerResponse = signal<PiResponse<ContainerRegisterData> | null>(null);
   pollResponse = signal<any>(null);
 
-  constructor(
-    protected registrationDialog: MatDialog,
-    @Inject(VersioningService)
-    protected versioningService: VersioningServiceInterface,
-    @Inject(UserService)
-    protected userService: UserServiceInterface,
-    @Inject(RealmService)
-    protected realmService: RealmServiceInterface,
-    @Inject(ContainerService)
-    protected containerService: ContainerServiceInterface,
-    @Inject(NotificationService)
-    protected notificationService: NotificationServiceInterface,
-    @Inject(TokenService)
-    protected tokenService: TokenServiceInterface,
-    @Inject(ContentService)
-    protected contentService: ContentServiceInterface,
-  ) {
+  constructor(protected registrationDialog: MatDialog) {
     effect(() => {
       if (
         this.containerService.selectedContainerType().containerType ===

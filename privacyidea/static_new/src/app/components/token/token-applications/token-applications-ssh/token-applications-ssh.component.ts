@@ -1,5 +1,5 @@
 import { NgClass } from '@angular/common';
-import { Component, computed, Inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatFormField, MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -60,21 +60,20 @@ const _sshColumnsKeyMap = [
   styleUrls: ['./token-applications-ssh.component.scss'],
 })
 export class TokenApplicationsSshComponent {
+  protected readonly machineService: MachineServiceInterface =
+    inject(MachineService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface =
+    inject(TableUtilsService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+
   columnsKeyMap = _sshColumnsKeyMap;
   pageSizeOptions = [5, 10, 15];
   length = computed(() => this.machineService.tokenApplications()?.length ?? 0);
   displayedColumns: string[] = _sshColumnsKeyMap.map((column) => column.key);
 
-  constructor(
-    @Inject(MachineService)
-    protected machineService: MachineServiceInterface,
-    @Inject(TableUtilsService)
-    protected tableUtilsService: TableUtilsServiceInterface,
-    @Inject(TokenService)
-    protected tokenService: TokenServiceInterface,
-    @Inject(ContentService)
-    protected contentService: ContentServiceInterface,
-  ) {}
+  constructor() {}
 
   dataSource = computed(() => {
     var data = this.machineService.tokenApplications();

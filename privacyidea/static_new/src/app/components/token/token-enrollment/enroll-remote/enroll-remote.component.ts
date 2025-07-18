@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Inject, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -56,6 +56,13 @@ export class RemoteErrorStateMatcher implements ErrorStateMatcher {
   styleUrl: './enroll-remote.component.scss',
 })
 export class EnrollRemoteComponent implements OnInit {
+  protected readonly enrollmentMapper: RemoteApiPayloadMapper = inject(
+    RemoteApiPayloadMapper,
+  );
+  protected readonly privacyideaServerService: PrivacyideaServerServiceInterface =
+    inject(PrivacyideaServerService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'remote')?.text;
@@ -90,14 +97,6 @@ export class EnrollRemoteComponent implements OnInit {
 
   remoteServerOptions = this.privacyideaServerService.remoteServerOptions;
   remoteErrorStateMatcher = new RemoteErrorStateMatcher();
-
-  constructor(
-    private enrollmentMapper: RemoteApiPayloadMapper,
-    @Inject(PrivacyideaServerService)
-    private privacyideaServerService: PrivacyideaServerServiceInterface,
-    @Inject(TokenService)
-    private tokenService: TokenServiceInterface,
-  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({

@@ -10,7 +10,7 @@
       <mat-form-field class="flex-size-1" subscriptSizing="dynamic">
         <mat-select
           [ngModelOptions]="{ standalone: true }"
-          [(ngModel)]="selectedTokenType"
+          [(ngModel)]="tokenService.selectedTokenType"
           [panelClass]="'multi-column-panel'">
           @for (type of tokenService.tokenTypeOptions(); track type) {
             <mat-option
@@ -36,7 +36,7 @@
           type="submit"
           [ngClass]="{
             'disabled-button':
-              formGroupSignal().invalid || !selectedTokenType(),
+              formGroupSignal().invalid || !tokenService.selectedTokenType(),
             'card-button': true,
           }"
           mat-flat-button>
@@ -54,7 +54,7 @@
         </button>
       </div>
     </div>
-    @switch (selectedTokenType().key) {
+    @switch (tokenService.selectedTokenType().key) {
       @case ("hotp") {
         <app-enroll-hotp
           (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
@@ -217,7 +217,7 @@
           </mat-autocomplete>
         </mat-form-field>
       </div>
-      @if (selectedTokenType().key !== "passkey") {
+      @if (tokenService.selectedTokenType().key !== "passkey") {
         <div class="flex-column user-pin-container">
           <h4 class="enroll-h4">Set PIN</h4>
           <input style="display: none" type="text" />

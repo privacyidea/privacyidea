@@ -1,6 +1,6 @@
 import { AsyncPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, Inject, WritableSignal } from '@angular/core';
+import { Component, inject, WritableSignal } from '@angular/core';
 import {
   MAT_DIALOG_DATA,
   MatDialogContent,
@@ -23,6 +23,14 @@ import { ContainerRegistrationDialogComponent } from './container-registration-d
   styleUrl: './container-registration-dialog.component.scss',
 })
 export class ContainerRegistrationDialogWizardComponent extends ContainerRegistrationDialogComponent {
+  protected override readonly containerService: ContainerServiceInterface =
+    inject(ContainerService);
+  public override readonly data: {
+    response: any;
+    containerSerial: WritableSignal<string>;
+    selectedContent: WritableSignal<string>;
+  } = inject(MAT_DIALOG_DATA);
+
   readonly postTopHtml$ = this.http
     .get('/customize/container-create.wizard.post.top.html', {
       responseType: 'text',
@@ -38,16 +46,8 @@ export class ContainerRegistrationDialogWizardComponent extends ContainerRegistr
   constructor(
     private http: HttpClient,
     private sanitizer: DomSanitizer,
-    @Inject(ContainerService)
-    containerService: ContainerServiceInterface,
     dialogRef: MatDialogRef<LostTokenComponent>,
-    @Inject(MAT_DIALOG_DATA)
-    data: {
-      response: any;
-      containerSerial: WritableSignal<string>;
-      selectedContent: WritableSignal<string>;
-    },
   ) {
-    super(containerService, dialogRef, data);
+    super(dialogRef);
   }
 }

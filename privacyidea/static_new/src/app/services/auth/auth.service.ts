@@ -1,5 +1,5 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { computed, Inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
@@ -79,6 +79,12 @@ export interface AuthServiceInterface {
   providedIn: 'root',
 })
 export class AuthService implements AuthServiceInterface {
+  private readonly http: HttpClient = inject(HttpClient);
+  private readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  private readonly versioningService: VersioningServiceInterface =
+    inject(VersioningService);
+
   readonly authUrl = environment.proxyUrl + '/auth';
   isAuthenticated = signal(false);
   user = signal('');
@@ -90,15 +96,7 @@ export class AuthService implements AuthServiceInterface {
     return this.role() === 'user';
   });
 
-  constructor(
-    readonly http: HttpClient,
-    @Inject(NotificationService)
-    readonly notificationService: NotificationServiceInterface,
-    @Inject(VersioningService)
-    readonly versioningService: VersioningServiceInterface,
-  ) {}
-
-  authenticate(params: any) {
+  authenticate(params: any): Observable<AuthResponse> {
     return this.http
       .post<AuthResponse>(this.authUrl, JSON.stringify(params), {
         headers: new HttpHeaders({

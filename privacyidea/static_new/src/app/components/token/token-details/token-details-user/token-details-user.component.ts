@@ -2,7 +2,7 @@ import { NgClass } from '@angular/common';
 import {
   Component,
   computed,
-  Inject,
+  inject,
   Input,
   signal,
   Signal,
@@ -73,6 +73,14 @@ import {
   styleUrl: './token-details-user.component.scss',
 })
 export class TokenDetailsUserComponent {
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly realmService: RealmServiceInterface = inject(RealmService);
+  protected readonly userService: UserServiceInterface = inject(UserService);
+  protected readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  protected readonly overflowService: OverflowServiceInterface =
+    inject(OverflowService);
+
   @Input() userData = signal<EditableElement[]>([]);
   @Input() tokenSerial!: WritableSignal<string>;
   @Input() setPinValue!: WritableSignal<string>;
@@ -85,18 +93,7 @@ export class TokenDetailsUserComponent {
     return tokenDetail?.result?.value?.tokens?.[0].tokentype;
   });
 
-  constructor(
-    @Inject(TokenService)
-    protected tokenService: TokenServiceInterface,
-    @Inject(RealmService)
-    protected realmService: RealmServiceInterface,
-    @Inject(UserService)
-    protected userService: UserServiceInterface,
-    @Inject(NotificationService)
-    protected notificationService: NotificationServiceInterface,
-    @Inject(OverflowService)
-    protected overflowService: OverflowServiceInterface,
-  ) {}
+  constructor() {}
 
   unassignUser() {
     this.tokenService.unassignUser(this.tokenSerial()).subscribe({

@@ -1,7 +1,7 @@
 import {
   Component,
   EventEmitter,
-  Inject,
+  inject,
   OnInit,
   Output,
   signal,
@@ -35,7 +35,6 @@ import { ReopenDialogFn } from '../token-enrollment.component';
 
 export interface PushEnrollmentOptions extends TokenEnrollmentData {
   type: 'push';
-  // No type-specific fields for initialization via EnrollmentOptions // Keep original comment
 }
 
 @Component({
@@ -46,11 +45,17 @@ export interface PushEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: './enroll-push.component.scss',
 })
 export class EnrollPushComponent implements OnInit {
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly dialogService: DialogServiceInterface =
+    inject(DialogService);
+  protected readonly enrollmentMapper: PushApiPayloadMapper =
+    inject(PushApiPayloadMapper);
+
   pollResponse = signal<PiResponse<Tokens> | undefined>(undefined);
 
-  text = this.tokenService // Keep original initialization
+  text = this.tokenService
     .tokenTypeOptions()
-    .find((type) => type.key === 'push')?.text; // Corrected from 'spass' to 'push'
+    .find((type) => type.key === 'push')?.text;
 
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
@@ -59,17 +64,10 @@ export class EnrollPushComponent implements OnInit {
     (basicOptions: TokenEnrollmentData) => Promise<EnrollmentResponse | null>
   >();
   @Output() reopenDialogChange = new EventEmitter<ReopenDialogFn>();
-  // No specific FormControls needed for Push Token that the user sets directly.
-  // generateOnServer is implicit or can be treated as a constant.
+
   pushForm = new FormGroup({});
 
-  constructor(
-    @Inject(TokenService)
-    private tokenService: TokenServiceInterface,
-    @Inject(DialogService)
-    private dialogService: DialogServiceInterface,
-    private enrollmentMapper: PushApiPayloadMapper,
-  ) {}
+  constructor() {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({});
@@ -88,7 +86,7 @@ export class EnrollPushComponent implements OnInit {
         data: enrollmentData,
         mapper: this.enrollmentMapper,
       }),
-    ).catch((error) => {
+    ).catch(() => {
       return null;
     });
     if (!initResponse) {
@@ -97,7 +95,7 @@ export class EnrollPushComponent implements OnInit {
     const pollResponse = await this.pollTokenRolloutState(
       initResponse,
       5000,
-    ).catch((error) => {
+    ).catch(() => {
       return null;
     });
     if (!pollResponse) {

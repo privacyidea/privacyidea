@@ -3,7 +3,7 @@ import {
   computed,
   effect,
   EventEmitter,
-  Inject,
+  inject,
   OnInit,
   Output,
 } from '@angular/core';
@@ -41,7 +41,7 @@ import { SmsApiPayloadMapper } from '../../../../mappers/token-api-payload/sms-t
 
 export interface SmsEnrollmentOptions extends TokenEnrollmentData {
   type: 'sms';
-  smsGateway: string; // Keep original type
+  smsGateway: string;
   phoneNumber?: string;
   readNumberDynamically: boolean;
 }
@@ -65,6 +65,14 @@ export interface SmsEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: './enroll-sms.component.scss',
 })
 export class EnrollSmsComponent implements OnInit {
+  protected readonly enrollmentMapper: SmsApiPayloadMapper =
+    inject(SmsApiPayloadMapper);
+  protected readonly smsGatewayService: SmsGatewayServiceInterface =
+    inject(SmsGatewayService);
+  protected readonly systemService: SystemServiceInterface =
+    inject(SystemService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+
   text = this.tokenService.tokenTypeOptions().find((type) => type.key === 'sms')
     ?.text;
 
@@ -76,7 +84,7 @@ export class EnrollSmsComponent implements OnInit {
   >();
 
   smsGatewayControl = new FormControl<string>('', [Validators.required]);
-  phoneNumberControl = new FormControl<string>(''); // Validator is set dynamically
+  phoneNumberControl = new FormControl<string>('');
   readNumberDynamicallyControl = new FormControl<boolean>(false, [
     Validators.required,
   ]);
@@ -86,7 +94,6 @@ export class EnrollSmsComponent implements OnInit {
     phoneNumber: this.phoneNumberControl,
     readNumberDynamically: this.readNumberDynamicallyControl,
   });
-  // Options for the template
   smsGatewayOptions = computed(() => {
     const raw =
       this.smsGatewayService.smsGatewayResource.value()?.result?.value;
@@ -98,15 +105,7 @@ export class EnrollSmsComponent implements OnInit {
     return !!cfg?.['sms.identifier'];
   });
 
-  constructor(
-    private enrollmentMapper: SmsApiPayloadMapper,
-    @Inject(SmsGatewayService)
-    private smsGatewayService: SmsGatewayServiceInterface,
-    @Inject(SystemService)
-    private systemService: SystemServiceInterface,
-    @Inject(TokenService)
-    private tokenService: TokenServiceInterface,
-  ) {
+  constructor() {
     effect(() => {
       const id =
         this.systemService.systemConfigResource.value()?.result?.value?.[

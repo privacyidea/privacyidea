@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { MatSelectModule } from '@angular/material/select';
 import {
   ContentService,
@@ -23,13 +23,13 @@ import { TokenApplicationsSshComponent } from './token-applications-ssh/token-ap
   styleUrls: ['./token-applications.component.scss'],
 })
 export class TokenApplicationsComponent {
+  private readonly machineService: MachineServiceInterface =
+    inject(MachineService);
+  private readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+
   selectedApplicationType = this.machineService.selectedApplicationType;
   selectedContent = this.contentService.selectedContent;
 
-  constructor(
-    @Inject(MachineService)
-    private machineService: MachineServiceInterface,
-    @Inject(ContentService)
-    private contentService: ContentServiceInterface,
-  ) {}
+  constructor() {}
 }

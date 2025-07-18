@@ -2,7 +2,7 @@ import {
   Component,
   computed,
   EventEmitter,
-  Inject,
+  inject,
   OnInit,
   Output,
 } from '@angular/core';
@@ -16,6 +16,12 @@ import {
 import { MatCheckbox } from '@angular/material/checkbox';
 import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
+import { Observable, of } from 'rxjs';
+import {
+  EnrollmentResponse,
+  TokenEnrollmentData,
+} from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+import { EmailApiPayloadMapper } from '../../../../mappers/token-api-payload/email-token-api-payload.mapper';
 import {
   SystemService,
   SystemServiceInterface,
@@ -25,17 +31,10 @@ import {
   TokenServiceInterface,
 } from '../../../../services/token/token.service';
 
-import { Observable, of } from 'rxjs';
-import {
-  EnrollmentResponse,
-  TokenEnrollmentData,
-} from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
-import { EmailApiPayloadMapper } from '../../../../mappers/token-api-payload/email-token-api-payload.mapper';
-
 export interface EmailEnrollmentOptions extends TokenEnrollmentData {
   type: 'email';
   emailAddress?: string;
-  readEmailDynamically: boolean; // Keep original type
+  readEmailDynamically: boolean;
 }
 
 @Component({
@@ -54,6 +53,13 @@ export interface EmailEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: './enroll-email.component.scss',
 })
 export class EnrollEmailComponent implements OnInit {
+  protected readonly systemService: SystemServiceInterface =
+    inject(SystemService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly enrollmentMapper: EmailApiPayloadMapper = inject(
+    EmailApiPayloadMapper,
+  );
+
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'email')?.text;
@@ -62,10 +68,10 @@ export class EnrollEmailComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null> // Keep original type
+    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
-  emailAddressControl = new FormControl<string>('', [Validators.email]); // Validator is set dynamically
+  emailAddressControl = new FormControl<string>('', [Validators.email]);
   readEmailDynamicallyControl = new FormControl<boolean>(false, [
     Validators.required,
   ]);
@@ -75,19 +81,10 @@ export class EnrollEmailComponent implements OnInit {
     readEmailDynamically: this.readEmailDynamicallyControl,
   });
 
-  // Options for the template
   defaultSMTPisSet = computed(() => {
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
     return !!cfg?.['email.identifier'];
   });
-
-  constructor(
-    @Inject(SystemService)
-    private systemService: SystemServiceInterface,
-    @Inject(TokenService)
-    private tokenService: TokenServiceInterface,
-    private enrollmentMapper: EmailApiPayloadMapper,
-  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({
@@ -97,7 +94,6 @@ export class EnrollEmailComponent implements OnInit {
     this.clickEnrollChange.emit(this.onClickEnroll);
 
     this.readEmailDynamicallyControl.valueChanges.subscribe((dynamic) => {
-      // Keep original subscription
       this.emailAddressControl.updateValueAndValidity();
     });
   }
@@ -112,7 +108,7 @@ export class EnrollEmailComponent implements OnInit {
     const enrollmentData: EmailEnrollmentOptions = {
       ...basicOptions,
       type: 'email',
-      readEmailDynamically: !!this.readEmailDynamicallyControl.value, // Keep original logic
+      readEmailDynamically: !!this.readEmailDynamicallyControl.value,
     };
     if (!enrollmentData.readEmailDynamically) {
       enrollmentData.emailAddress = this.emailAddressControl.value ?? '';
@@ -120,6 +116,6 @@ export class EnrollEmailComponent implements OnInit {
     return this.tokenService.enrollToken({
       data: enrollmentData,
       mapper: this.enrollmentMapper,
-    }); // Apply the requested change
+    });
   };
 }

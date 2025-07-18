@@ -3,7 +3,7 @@ import {
   Component,
   computed,
   effect,
-  Inject,
+  inject,
   linkedSignal,
   signal,
   WritableSignal,
@@ -123,6 +123,15 @@ export const infoDetailsKeyMap = [{ key: 'info', label: 'Information' }];
   styleUrls: ['./token-details.component.scss'],
 })
 export class TokenDetailsComponent {
+  protected readonly matDialog: MatDialog = inject(MatDialog);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  protected readonly realmService: RealmServiceInterface = inject(RealmService);
+  protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
   selectedContent = this.contentService.selectedContent;
@@ -240,23 +249,7 @@ export class TokenDetailsComponent {
     );
   });
 
-  constructor(
-    protected matDialog: MatDialog,
-    @Inject(TokenService)
-    protected tokenService: TokenServiceInterface,
-    @Inject(ContainerService)
-    protected containerService: ContainerServiceInterface,
-    @Inject(RealmService)
-    protected realmService: RealmServiceInterface,
-    @Inject(OverflowService)
-    protected overflowService: OverflowServiceInterface,
-    @Inject(TableUtilsService)
-    protected tableUtilsService: TableUtilsServiceInterface,
-    @Inject(ContentService)
-    protected contentService: ContentServiceInterface,
-    @Inject(AuthService)
-    private authService: AuthServiceInterface,
-  ) {
+  constructor() {
     effect(() => {
       if (!this.tokenDetails()) return;
       this.tokenIsActive.set(this.tokenDetails().active);

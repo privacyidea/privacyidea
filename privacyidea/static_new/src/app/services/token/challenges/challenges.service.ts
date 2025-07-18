@@ -1,7 +1,7 @@
 import { httpResource, HttpResourceRef } from '@angular/common/http';
 import {
   computed,
-  Inject,
+  inject,
   Injectable,
   linkedSignal,
   WritableSignal,
@@ -58,6 +58,13 @@ export interface ChallengesServiceInterface {
   providedIn: 'root',
 })
 export class ChallengesService implements ChallengesServiceInterface {
+  private readonly tokenService: TokenServiceInterface = inject(TokenService);
+  private readonly localService: LocalServiceInterface = inject(LocalService);
+  private readonly tableUtilsService: TableUtilsServiceInterface =
+    inject(TableUtilsService);
+  private readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
   selectedContent = this.contentService.selectedContent;
@@ -128,14 +135,5 @@ export class ChallengesService implements ChallengesServiceInterface {
     };
   });
 
-  constructor(
-    @Inject(TokenService)
-    private tokenService: TokenServiceInterface,
-    @Inject(LocalService)
-    private localService: LocalServiceInterface,
-    @Inject(TableUtilsService)
-    private tableUtilsService: TableUtilsServiceInterface,
-    @Inject(ContentService)
-    private contentService: ContentServiceInterface,
-  ) {}
+  constructor() {}
 }

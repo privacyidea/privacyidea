@@ -1,7 +1,7 @@
 import { NgClass } from '@angular/common';
 import {
   Component,
-  Inject,
+  inject,
   linkedSignal,
   ViewChild,
   WritableSignal,
@@ -62,6 +62,14 @@ export const columnKeysMap = [
   styleUrls: ['./challenges-table.component.scss'],
 })
 export class ChallengesTableComponent {
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface =
+    inject(TableUtilsService);
+  private readonly challengesService: ChallengesServiceInterface =
+    inject(ChallengesService);
+  protected readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+
   columnsKeyMap = columnKeysMap;
   displayedColumns = columnKeysMap.map((c) => c.key);
   pageSizeOptions = [5, 10, 15];
@@ -99,16 +107,7 @@ export class ChallengesTableComponent {
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild('filterInput', { static: true }) filterInput!: HTMLInputElement;
 
-  constructor(
-    @Inject(TokenService)
-    protected tokenService: TokenServiceInterface,
-    @Inject(TableUtilsService)
-    protected tableUtilsService: TableUtilsServiceInterface,
-    @Inject(ChallengesService)
-    private challengesService: ChallengesServiceInterface,
-    @Inject(ContentService)
-    protected contentService: ContentServiceInterface,
-  ) {}
+  constructor() {}
 
   onFilterChange(newFilter: string) {
     const recordsFromText = this.tableUtilsService.recordsFromText(newFilter);

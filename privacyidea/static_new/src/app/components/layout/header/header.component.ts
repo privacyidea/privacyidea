@@ -1,5 +1,5 @@
 import { DatePipe, NgClass, NgOptimizedImage } from '@angular/common';
-import { Component, Inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import {
   MatFabAnchor,
   MatFabButton,
@@ -46,6 +46,14 @@ import { UserSelfServiceComponent } from '../../user/user.self-service.component
   styleUrl: './header.component.scss',
 })
 export class HeaderComponent {
+  protected readonly sessionTimerService: SessionTimerServiceInterface =
+    inject(SessionTimerService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly localService: LocalServiceInterface = inject(LocalService);
+  protected readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  protected readonly router: Router = inject(Router);
+
   protected readonly AuthService = AuthService;
   profileText =
     this.authService.user() +
@@ -55,18 +63,7 @@ export class HeaderComponent {
     this.authService.role() +
     ')';
 
-  constructor(
-    @Inject(SessionTimerService)
-    protected sessionTimerService: SessionTimerServiceInterface,
-    @Inject(AuthService)
-    protected authService: AuthServiceInterface,
-    @Inject(LocalService)
-    protected localService: LocalServiceInterface,
-    @Inject(NotificationService)
-    protected notificationService: NotificationServiceInterface,
-    @Inject(Router)
-    protected router: Router,
-  ) {}
+  constructor() {}
 
   isActive(link: string) {
     return this.router.url.includes(link);

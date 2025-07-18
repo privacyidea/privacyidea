@@ -4,7 +4,7 @@ import {
   computed,
   effect,
   ElementRef,
-  Inject,
+  inject,
   linkedSignal,
   signal,
   ViewChild,
@@ -133,6 +133,19 @@ interface TokenOption {
   styleUrls: ['./container-details.component.scss'],
 })
 export class ContainerDetailsComponent {
+  protected readonly overflowService: OverflowServiceInterface =
+    inject(OverflowService);
+  protected readonly containerService: ContainerServiceInterface =
+    inject(ContainerService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface =
+    inject(TableUtilsService);
+  protected readonly realmService: RealmServiceInterface = inject(RealmService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly userService: UserServiceInterface = inject(UserService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+
   states = this.containerService.states;
   isEditingUser = signal(false);
   isEditingInfo = signal(false);
@@ -313,24 +326,7 @@ export class ContainerDetailsComponent {
   tokenAutoTrigger!: MatAutocompleteTrigger;
   selectedContent = this.contentService.selectedContent;
 
-  constructor(
-    @Inject(OverflowService)
-    protected overflowService: OverflowServiceInterface,
-    @Inject(ContainerService)
-    protected containerService: ContainerServiceInterface,
-    @Inject(TableUtilsService)
-    protected tableUtilsService: TableUtilsServiceInterface,
-    @Inject(RealmService)
-    protected realmService: RealmServiceInterface,
-    @Inject(TokenService)
-    protected tokenService: TokenServiceInterface,
-    @Inject(UserService)
-    protected userService: UserServiceInterface,
-    @Inject(AuthService)
-    protected authService: AuthServiceInterface,
-    @Inject(ContentService)
-    protected contentService: ContentServiceInterface,
-  ) {
+  constructor() {
     effect(() => {
       this.showOnlyTokenNotInContainer();
       if (this.filterHTMLInputElement) {

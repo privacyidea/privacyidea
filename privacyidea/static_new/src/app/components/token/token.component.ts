@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, effect, Inject, signal, ViewChild } from '@angular/core';
+import { Component, effect, inject, signal, ViewChild } from '@angular/core';
 import { MatFabButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import {
@@ -101,6 +101,14 @@ export type TokenSelectedContentKey =
   styleUrl: './token.component.scss',
 })
 export class TokenComponent {
+  protected readonly overflowService: OverflowServiceInterface =
+    inject(OverflowService);
+  private readonly loadingService: LoadingServiceInterface =
+    inject(LoadingService);
+  private readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+
   static tokenTypeTexts = [
     {
       key: 'hotp',
@@ -218,16 +226,7 @@ export class TokenComponent {
   containerTableComponent!: ContainerTableComponent;
   @ViewChild('drawer') drawer!: MatDrawer;
 
-  constructor(
-    @Inject(OverflowService)
-    protected overflowService: OverflowServiceInterface,
-    @Inject(LoadingService)
-    private loadingService: LoadingServiceInterface,
-    @Inject(TokenService)
-    private tokenService: TokenServiceInterface,
-    @Inject(ContentService)
-    protected contentService: ContentServiceInterface,
-  ) {
+  constructor() {
     effect(() => {
       this.contentService.selectedContent();
       this.loadingService.clearAllLoadings();

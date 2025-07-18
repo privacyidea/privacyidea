@@ -1,5 +1,5 @@
 import { NgClass } from '@angular/common';
-import { Component, Inject, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatIconButton } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -50,7 +50,16 @@ import { ContainerTableComponent } from './container-table.component';
   styleUrl: './container-table.component.scss',
 })
 export class ContainerTableSelfServiceComponent extends ContainerTableComponent {
-  private dialog = inject(MatDialog);
+  private readonly dialog = inject(MatDialog);
+  protected override readonly containerService: ContainerServiceInterface =
+    inject(ContainerService);
+  protected override readonly tokenService: TokenServiceInterface =
+    inject(TokenService);
+  protected override readonly tableUtilsService: TableUtilsServiceInterface =
+    inject(TableUtilsService);
+  protected override readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+
   readonly columnKeysMapSelfService = [
     { key: 'serial', label: 'Serial' },
     { key: 'type', label: 'Type' },
@@ -62,17 +71,8 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
     (column: { key: string; label: string }) => column.key,
   );
 
-  constructor(
-    @Inject(ContainerService)
-    protected override containerService: ContainerServiceInterface,
-    @Inject(TokenService)
-    protected override tokenService: TokenServiceInterface,
-    @Inject(TableUtilsService)
-    protected override tableUtilsService: TableUtilsServiceInterface,
-    @Inject(ContentService)
-    protected override contentService: ContentServiceInterface,
-  ) {
-    super(containerService, tokenService, tableUtilsService, contentService);
+  constructor() {
+    super();
   }
 
   deleteContainer(serial: string): void {

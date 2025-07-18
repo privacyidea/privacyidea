@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBar } from '@angular/material/progress-bar';
@@ -19,16 +19,14 @@ import {
   styleUrl: './footer.component.scss',
 })
 export class FooterComponent implements OnInit {
+  private readonly versioningService: VersioningServiceInterface =
+    inject(VersioningService);
+  private readonly loadingService: LoadingServiceInterface =
+    inject(LoadingService);
+
   version!: string;
   showProgressBar = signal(false);
   loadingUrls = signal<{ key: string; url: string }[]>([]);
-
-  constructor(
-    @Inject(VersioningService)
-    private readonly versioningService: VersioningServiceInterface,
-    @Inject(LoadingService)
-    private readonly loadingService: LoadingServiceInterface,
-  ) {}
 
   ngOnInit(): void {
     this.version = this.versioningService.getVersion();

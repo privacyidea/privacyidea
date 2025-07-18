@@ -1,5 +1,5 @@
 import { NgClass } from '@angular/common';
-import { Component, Inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
@@ -73,29 +73,21 @@ import { ContainerDetailsTokenTableComponent } from './container-details-token-t
   styleUrl: './container-details-token-table.component.scss',
 })
 export class ContainerDetailsTokenTableSelfServiceComponent extends ContainerDetailsTokenTableComponent {
-  constructor(
-    protected override dialog: MatDialog,
-    @Inject(ContainerService)
-    protected override containerService: ContainerServiceInterface,
-    @Inject(TokenService)
-    protected override tokenService: TokenServiceInterface,
-    @Inject(TableUtilsService)
-    protected override tableUtilsService: TableUtilsServiceInterface,
-    @Inject(OverflowService)
-    protected override overflowService: OverflowServiceInterface,
-    @Inject(ContentService)
-    protected override contentService: ContentServiceInterface,
-    @Inject(AuthService)
-    protected override authService: AuthServiceInterface,
-  ) {
-    super(
-      dialog,
-      containerService,
-      tokenService,
-      tableUtilsService,
-      overflowService,
-      contentService,
-      authService,
-    );
+  protected override readonly dialog: MatDialog = inject(MatDialog);
+  protected override readonly containerService: ContainerServiceInterface =
+    inject(ContainerService);
+  protected override readonly tokenService: TokenServiceInterface =
+    inject(TokenService);
+  protected override readonly tableUtilsService: TableUtilsServiceInterface =
+    inject(TableUtilsService);
+  protected override readonly overflowService: OverflowServiceInterface =
+    inject(OverflowService);
+  protected override readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+  protected override readonly authService: AuthServiceInterface =
+    inject(AuthService);
+
+  constructor() {
+    super();
   }
 }

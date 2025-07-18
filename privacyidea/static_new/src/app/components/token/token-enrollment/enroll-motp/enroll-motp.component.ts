@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Inject, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
 import {
   AbstractControl,
   FormControl,
@@ -45,6 +45,10 @@ export interface MotpEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: './enroll-motp.component.scss',
 })
 export class EnrollMotpComponent implements OnInit {
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly enrollmentMapper: MotpApiPayloadMapper =
+    inject(MotpApiPayloadMapper);
+
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'motp')?.text;
@@ -59,7 +63,7 @@ export class EnrollMotpComponent implements OnInit {
   generateOnServerControl = new FormControl<boolean>(true, [
     Validators.required,
   ]);
-  otpKeyControl = new FormControl<string>(''); // Validator is set dynamically
+  otpKeyControl = new FormControl<string>('');
   motpPinControl = new FormControl<string>('', [
     Validators.required,
     Validators.minLength(4),
@@ -83,11 +87,7 @@ export class EnrollMotpComponent implements OnInit {
     return null;
   }
 
-  constructor(
-    @Inject(TokenService)
-    private tokenService: TokenServiceInterface,
-    private enrollmentMapper: MotpApiPayloadMapper,
-  ) {}
+  constructor() {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({
@@ -107,7 +107,6 @@ export class EnrollMotpComponent implements OnInit {
       this.otpKeyControl.updateValueAndValidity();
     });
 
-    // Explicitly trigger form re-validation when PIN controls change
     this.motpPinControl.valueChanges.subscribe(() => {
       this.repeatMotpPinControl.updateValueAndValidity();
     });

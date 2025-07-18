@@ -1,5 +1,5 @@
 import { NgClass } from '@angular/common';
-import { Component, computed, Inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
@@ -53,6 +53,14 @@ const _offlineColumnsKeyMap = [
   styleUrls: ['./token-applications-offline.component.scss'],
 })
 export class TokenApplicationsOfflineComponent {
+  protected readonly machineService: MachineServiceInterface =
+    inject(MachineService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface =
+    inject(TableUtilsService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+
   columnsKeyMap = _offlineColumnsKeyMap;
   pageSizeOptions = [5, 10, 15];
   length = computed(() => this.machineService.tokenApplications()?.length ?? 0);
@@ -60,16 +68,7 @@ export class TokenApplicationsOfflineComponent {
     (column) => column.key,
   );
 
-  constructor(
-    @Inject(MachineService)
-    protected machineService: MachineServiceInterface,
-    @Inject(TableUtilsService)
-    protected tableUtilsService: TableUtilsServiceInterface,
-    @Inject(TokenService)
-    protected tokenService: TokenServiceInterface,
-    @Inject(ContentService)
-    protected contentService: ContentServiceInterface,
-  ) {}
+  constructor() {}
 
   dataSource = computed(() => {
     var data = this.machineService.tokenApplications();

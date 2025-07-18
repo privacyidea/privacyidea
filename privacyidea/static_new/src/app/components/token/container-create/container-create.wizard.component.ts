@@ -1,6 +1,6 @@
 import { AsyncPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, Inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatCheckbox } from '@angular/material/checkbox';
@@ -72,6 +72,21 @@ import { ContainerCreateComponent } from './container-create.component';
   styleUrl: './container-create.component.scss',
 })
 export class ContainerCreateWizardComponent extends ContainerCreateComponent {
+  protected override readonly versioningService: VersioningServiceInterface =
+    inject(VersioningService);
+  protected override readonly userService: UserServiceInterface =
+    inject(UserService);
+  protected override readonly realmService: RealmServiceInterface =
+    inject(RealmService);
+  protected override readonly containerService: ContainerServiceInterface =
+    inject(ContainerService);
+  protected override readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  protected override readonly tokenService: TokenServiceInterface =
+    inject(TokenService);
+  protected override readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+
   readonly preTopHtml$ = this.http
     .get('/customize/container-create.wizard.pre.top.html', {
       responseType: 'text',
@@ -88,30 +103,7 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     private http: HttpClient,
     private sanitizer: DomSanitizer,
     registrationDialog: MatDialog,
-    @Inject(VersioningService)
-    versioningService: VersioningServiceInterface,
-    @Inject(UserService)
-    userService: UserServiceInterface,
-    @Inject(RealmService)
-    realmService: RealmServiceInterface,
-    @Inject(ContainerService)
-    containerService: ContainerServiceInterface,
-    @Inject(NotificationService)
-    notificationService: NotificationServiceInterface,
-    @Inject(TokenService)
-    tokenService: TokenServiceInterface,
-    @Inject(ContentService)
-    contentService: ContentServiceInterface,
   ) {
-    super(
-      registrationDialog,
-      versioningService,
-      userService,
-      realmService,
-      containerService,
-      notificationService,
-      tokenService,
-      contentService,
-    );
+    super(registrationDialog);
   }
 }

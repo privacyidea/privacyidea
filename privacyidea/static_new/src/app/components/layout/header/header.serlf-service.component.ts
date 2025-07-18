@@ -1,5 +1,5 @@
 import { DatePipe, NgClass, NgOptimizedImage } from '@angular/common';
-import { Component, Inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import {
   MatFabAnchor,
   MatFabButton,
@@ -47,23 +47,17 @@ import { HeaderComponent } from './header.component';
   styleUrl: './header.component.scss',
 })
 export class HeaderSelfServiceComponent extends HeaderComponent {
-  constructor(
-    @Inject(SessionTimerService)
-    protected override sessionTimerService: SessionTimerServiceInterface,
-    @Inject(AuthService)
-    protected override authService: AuthServiceInterface,
-    @Inject(LocalService)
-    protected override localService: LocalServiceInterface,
-    @Inject(NotificationService)
-    protected override notificationService: NotificationServiceInterface,
-    protected override router: Router,
-  ) {
-    super(
-      sessionTimerService,
-      authService,
-      localService,
-      notificationService,
-      router,
-    );
+  protected override readonly sessionTimerService: SessionTimerServiceInterface =
+    inject(SessionTimerService);
+  protected override readonly authService: AuthServiceInterface =
+    inject(AuthService);
+  protected override readonly localService: LocalServiceInterface =
+    inject(LocalService);
+  protected override readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  protected override readonly router: Router = inject(Router);
+
+  constructor() {
+    super();
   }
 }

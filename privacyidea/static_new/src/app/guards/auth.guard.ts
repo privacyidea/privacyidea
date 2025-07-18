@@ -1,4 +1,4 @@
-import { Inject, inject, Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import {
   CanActivate,
   CanActivateChild,
@@ -24,13 +24,10 @@ export const selfServiceMatch: CanMatchFn = () =>
   providedIn: 'root',
 })
 export class AuthGuard implements CanActivate, CanActivateChild {
-  constructor(
-    private router: Router,
-    @Inject(AuthService)
-    private authService: AuthServiceInterface,
-    @Inject(NotificationService)
-    private notificationService: NotificationServiceInterface,
-  ) {}
+  private readonly router: Router = inject(Router);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
 
   canActivate(): boolean {
     return this.checkAuth();

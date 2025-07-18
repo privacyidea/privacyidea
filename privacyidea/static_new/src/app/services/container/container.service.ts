@@ -8,7 +8,7 @@ import {
 import {
   computed,
   effect,
-  Inject,
+  inject,
   Injectable,
   linkedSignal,
   Signal,
@@ -260,6 +260,14 @@ export interface ContainerServiceInterface {
   providedIn: 'root',
 })
 export class ContainerService implements ContainerServiceInterface {
+  private readonly http: HttpClient = inject(HttpClient);
+  private readonly localService: LocalServiceInterface = inject(LocalService);
+  private readonly tokenService: TokenServiceInterface = inject(TokenService);
+  private readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  private readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
   stopPolling$ = new Subject<void>();
@@ -459,17 +467,7 @@ export class ContainerService implements ContainerServiceInterface {
       templatesResource?.result?.value?.templates ?? previous?.value ?? [],
   });
 
-  constructor(
-    private http: HttpClient,
-    @Inject(LocalService)
-    private localService: LocalServiceInterface,
-    @Inject(TokenService)
-    private tokenService: TokenServiceInterface,
-    @Inject(NotificationService)
-    private notificationService: NotificationServiceInterface,
-    @Inject(ContentService)
-    private contentService: ContentServiceInterface,
-  ) {
+  constructor() {
     effect(() => {
       this.selectedContainer(); // Trigger recomputation for enrollment from container details
     });
@@ -497,7 +495,10 @@ export class ContainerService implements ContainerServiceInterface {
     });
   }
 
-  assignContainer(tokenSerial: string, containerSerial: string) {
+  assignContainer(
+    tokenSerial: string,
+    containerSerial: string,
+  ): Observable<any> {
     const headers = this.localService.getHeaders();
     return this.http
       .post<
@@ -515,7 +516,10 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  unassignContainer(tokenSerial: string, containerSerial: string) {
+  unassignContainer(
+    tokenSerial: string,
+    containerSerial: string,
+  ): Observable<any> {
     const headers = this.localService.getHeaders();
     return this.http
       .post<
@@ -533,7 +537,7 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  setContainerRealm(containerSerial: string, value: string[]) {
+  setContainerRealm(containerSerial: string, value: string[]): Observable<any> {
     const headers = this.localService.getHeaders();
     const valueString = value ? value.join(',') : '';
     return this.http
@@ -554,7 +558,10 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  setContainerDescription(containerSerial: string, value: string) {
+  setContainerDescription(
+    containerSerial: string,
+    value: string,
+  ): Observable<any> {
     const headers = this.localService.getHeaders();
     return this.http
       .post(
@@ -574,7 +581,10 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  toggleActive(containerSerial: string, states: string[]) {
+  toggleActive(
+    containerSerial: string,
+    states: string[],
+  ): Observable<PiResponse<{ disabled: boolean } | { active: boolean }>> {
     const headers = this.localService.getHeaders();
     let new_states = states
       .map((state) => {
@@ -606,7 +616,11 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  unassignUser(containerSerial: string, username: string, userRealm: string) {
+  unassignUser(
+    containerSerial: string,
+    username: string,
+    userRealm: string,
+  ): Observable<any> {
     const headers = this.localService.getHeaders();
     return this.http
       .post(
@@ -630,7 +644,7 @@ export class ContainerService implements ContainerServiceInterface {
     containerSerial: string;
     username: string;
     userRealm: string;
-  }) {
+  }): Observable<any> {
     const headers = this.localService.getHeaders();
     return this.http
       .post(
@@ -650,7 +664,7 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  setContainerInfos(containerSerial: string, infos: any) {
+  setContainerInfos(containerSerial: string, infos: any): Observable<Object>[] {
     const headers = this.localService.getHeaders();
     const info_url = `${this.containerBaseUrl}${containerSerial}/info`;
     return Object.keys(infos).map((info) => {
@@ -670,7 +684,7 @@ export class ContainerService implements ContainerServiceInterface {
     });
   }
 
-  deleteInfo(containerSerial: string, key: string) {
+  deleteInfo(containerSerial: string, key: string): Observable<any> {
     const headers = this.localService.getHeaders();
     return this.http
       .delete(`${this.containerBaseUrl}${containerSerial}/info/delete/${key}`, {
@@ -688,7 +702,10 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  addTokenToContainer(containerSerial: string, tokenSerial: string) {
+  addTokenToContainer(
+    containerSerial: string,
+    tokenSerial: string,
+  ): Observable<any> {
     const headers = this.localService.getHeaders();
     return this.http
       .post(
@@ -708,7 +725,10 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  removeTokenFromContainer(containerSerial: string, tokenSerial: string) {
+  removeTokenFromContainer(
+    containerSerial: string,
+    tokenSerial: string,
+  ): Observable<any> {
     const headers = this.localService.getHeaders();
     return this.http
       .post(
@@ -808,7 +828,7 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  deleteContainer(containerSerial: string) {
+  deleteContainer(containerSerial: string): Observable<any> {
     const headers = this.localService.getHeaders();
     return this.http
       .delete(`${this.containerBaseUrl}${containerSerial}`, { headers })
@@ -824,7 +844,10 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  deleteAllTokens(param: { containerSerial: string; serialList: string }) {
+  deleteAllTokens(param: {
+    containerSerial: string;
+    serialList: string;
+  }): Observable<any> {
     const headers = this.localService.getHeaders();
     return this.http
       .post(
@@ -852,7 +875,7 @@ export class ContainerService implements ContainerServiceInterface {
     user?: string;
     realm?: string;
     options?: any;
-  }) {
+  }): Observable<PiResponse<{ container_serial: string }>> {
     const headers = this.localService.getHeaders();
     return this.http
       .post<PiResponse<{ container_serial: string }>>(
@@ -883,7 +906,7 @@ export class ContainerService implements ContainerServiceInterface {
     container_serial: string;
     passphrase_prompt: string;
     passphrase_response: string;
-  }) {
+  }): Observable<PiResponse<ContainerRegisterData>> {
     const headers = this.localService.getHeaders();
     return this.http
       .post<PiResponse<ContainerRegisterData>>(
@@ -908,11 +931,13 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  stopPolling() {
+  stopPolling(): void {
     this.stopPolling$.next();
   }
 
-  getContainerDetails(containerSerial: string) {
+  getContainerDetails(
+    containerSerial: string,
+  ): Observable<PiResponse<ContainerDetails>> {
     const headers = this.localService.getHeaders();
     let params = new HttpParams().set('container_serial', containerSerial);
     return this.http.get<PiResponse<ContainerDetails>>(this.containerBaseUrl, {
@@ -921,7 +946,10 @@ export class ContainerService implements ContainerServiceInterface {
     });
   }
 
-  pollContainerRolloutState(containerSerial: string, startTime: number) {
+  pollContainerRolloutState(
+    containerSerial: string,
+    startTime: number,
+  ): Observable<PiResponse<ContainerDetails>> {
     this.containerSerial.set(containerSerial);
     return timer(startTime, 2000).pipe(
       takeUntil(this.stopPolling$),

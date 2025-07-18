@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Inject, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -19,7 +19,6 @@ import { PaperApiPayloadMapper } from '../../../../mappers/token-api-payload/pap
 
 export interface PaperEnrollmentOptions extends TokenEnrollmentData {
   type: 'paper';
-  // No type-specific fields for initialization via EnrollmentOptions // Keep original comment
 }
 
 @Component({
@@ -30,6 +29,11 @@ export interface PaperEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: './enroll-paper.component.scss',
 })
 export class EnrollPaperComponent implements OnInit {
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly enrollmentMapper: PaperApiPayloadMapper = inject(
+    PaperApiPayloadMapper,
+  );
+
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'paper')?.text;
@@ -40,16 +44,10 @@ export class EnrollPaperComponent implements OnInit {
   @Output() clickEnrollChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
-  // Removed otpLengthControl and otpCountControl as per "DO NOT CHANGE OTHER LINES"
 
-  // No specific FormControls needed for Paper Token.
-  paperForm = new FormGroup({}); // Keep original form group
+  paperForm = new FormGroup({});
 
-  constructor(
-    @Inject(TokenService)
-    private tokenService: TokenServiceInterface,
-    private enrollmentMapper: PaperApiPayloadMapper,
-  ) {}
+  constructor() {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({});
@@ -62,7 +60,6 @@ export class EnrollPaperComponent implements OnInit {
     const enrollmentData: PaperEnrollmentOptions = {
       ...basicOptions,
       type: 'paper',
-      // Removed otpLength and otpCount from enrollmentData as per "DO NOT CHANGE OTHER LINES"
     };
     return this.tokenService.enrollToken({
       data: enrollmentData,

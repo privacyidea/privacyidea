@@ -1,6 +1,6 @@
 import { AsyncPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, Inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import {
   MAT_DIALOG_DATA,
@@ -31,6 +31,14 @@ import {
 import { UserData } from '../../../../services/user/user.service';
 import { TokenEnrollmentLastStepDialogComponent } from './token-enrollment-last-step-dialog.component';
 
+export type TokenEnrollmentLastStepDialogData = {
+  response: EnrollmentResponse;
+  enrollToken: () => void;
+  user: UserData | null;
+  userRealm: string;
+  onlyAddToRealm: boolean;
+};
+
 @Component({
   selector: 'app-token-enrollment-last-step-dialog-wizard',
   imports: [
@@ -51,6 +59,20 @@ import { TokenEnrollmentLastStepDialogComponent } from './token-enrollment-last-
   styleUrl: './token-enrollment-last-step-dialog.component.scss',
 })
 export class TokenEnrollmentSecondStepDialogWizardComponent extends TokenEnrollmentLastStepDialogComponent {
+  protected override readonly Object = Object;
+
+  private readonly http: HttpClient = inject(HttpClient);
+  private readonly sanitizer: DomSanitizer = inject(DomSanitizer);
+
+  protected override readonly dialogRef: MatDialogRef<TokenEnrollmentLastStepDialogComponent> =
+    inject(MatDialogRef);
+  public override readonly data: TokenEnrollmentLastStepDialogData =
+    inject(MAT_DIALOG_DATA);
+  protected override readonly tokenService: TokenServiceInterface =
+    inject(TokenService);
+  protected override readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+
   readonly postTopHtml$ = this.http
     .get('/customize/token-enrollment.wizard.post.top.html', {
       responseType: 'text',
@@ -63,23 +85,7 @@ export class TokenEnrollmentSecondStepDialogWizardComponent extends TokenEnrollm
     })
     .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)));
 
-  constructor(
-    private http: HttpClient,
-    private sanitizer: DomSanitizer,
-    dialogRef: MatDialogRef<TokenEnrollmentLastStepDialogComponent>,
-    @Inject(MAT_DIALOG_DATA)
-    data: {
-      enrollToken: () => void;
-      onlyAddToRealm: boolean;
-      response: EnrollmentResponse;
-      userRealm: string;
-      user: UserData;
-    },
-    @Inject(TokenService)
-    tokenService: TokenServiceInterface,
-    @Inject(ContentService)
-    contentService: ContentServiceInterface,
-  ) {
-    super(dialogRef, data, tokenService, contentService);
+  constructor() {
+    super();
   }
 }

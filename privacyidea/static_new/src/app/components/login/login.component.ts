@@ -1,5 +1,5 @@
 import { NgOptimizedImage } from '@angular/common';
-import { Component, Inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatFabButton } from '@angular/material/button';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
@@ -45,23 +45,20 @@ import { FooterComponent } from '../layout/footer/footer.component';
   styleUrl: './login.component.scss',
 })
 export class LoginComponent {
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly router: Router = inject(Router);
+  private readonly localService: LocalServiceInterface = inject(LocalService);
+  private readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  private readonly sessionTimerService: SessionTimerServiceInterface =
+    inject(SessionTimerService);
+  private readonly validateService: ValidateServiceInterface =
+    inject(ValidateService);
+
   username = signal<string>('');
   password = signal<string>('');
 
-  constructor(
-    @Inject(AuthService)
-    private authService: AuthServiceInterface,
-    @Inject(Router)
-    private router: Router,
-    @Inject(LocalService)
-    private localService: LocalServiceInterface,
-    @Inject(NotificationService)
-    private notificationService: NotificationServiceInterface,
-    @Inject(SessionTimerService)
-    private sessionTimerService: SessionTimerServiceInterface,
-    @Inject(ValidateService)
-    private validateService: ValidateServiceInterface,
-  ) {
+  constructor() {
     if (this.authService.isAuthenticatedUser()) {
       console.warn('User is already logged in.');
       this.notificationService.openSnackBar('User is already logged in.');

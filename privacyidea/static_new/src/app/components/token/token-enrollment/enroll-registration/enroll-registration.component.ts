@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Inject, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -19,7 +19,6 @@ import { RegistrationApiPayloadMapper } from '../../../../mappers/token-api-payl
 
 export interface RegistrationEnrollmentOptions extends TokenEnrollmentData {
   type: 'registration';
-  // No type-specific fields for initialization via EnrollmentOptions
 }
 @Component({
   selector: 'app-enroll-registration',
@@ -29,6 +28,11 @@ export interface RegistrationEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: './enroll-registration.component.scss',
 })
 export class EnrollRegistrationComponent implements OnInit {
+  protected readonly enrollmentMapper: RegistrationApiPayloadMapper = inject(
+    RegistrationApiPayloadMapper,
+  );
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'registration')?.text;
@@ -41,12 +45,6 @@ export class EnrollRegistrationComponent implements OnInit {
   >();
 
   registrationForm = new FormGroup({});
-
-  constructor(
-    private enrollmentMapper: RegistrationApiPayloadMapper,
-    @Inject(TokenService)
-    private tokenService: TokenServiceInterface,
-  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({});

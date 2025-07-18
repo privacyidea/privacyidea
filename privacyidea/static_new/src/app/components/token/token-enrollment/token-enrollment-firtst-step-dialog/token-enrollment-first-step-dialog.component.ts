@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { MatButton } from '@angular/material/button';
 import {
   MAT_DIALOG_DATA,
@@ -31,19 +31,16 @@ import {
   styleUrl: './token-enrollment-first-step-dialog.component.scss',
 })
 export class TokenEnrollmentFirstStepDialogComponent {
-  protected readonly Object = Object;
+  protected readonly dialogRef: MatDialogRef<TokenEnrollmentFirstStepDialogComponent> =
+    inject(MatDialogRef);
+  public readonly data: {
+    enrollmentResponse: EnrollmentResponse;
+  } = inject(MAT_DIALOG_DATA);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly contentService: ContentServiceInterface =
+    inject(ContentService);
 
-  constructor(
-    private dialogRef: MatDialogRef<TokenEnrollmentFirstStepDialogComponent>,
-    @Inject(MAT_DIALOG_DATA)
-    public data: {
-      enrollmentResponse: EnrollmentResponse;
-    },
-    @Inject(TokenService)
-    protected tokenService: TokenServiceInterface,
-    @Inject(ContentService)
-    private contentService: ContentServiceInterface,
-  ) {}
+  protected readonly Object = Object;
 
   tokenSelected(tokenSerial: string) {
     this.dialogRef.close();

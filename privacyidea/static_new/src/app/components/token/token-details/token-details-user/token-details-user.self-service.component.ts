@@ -1,5 +1,5 @@
 import { NgClass } from '@angular/common';
-import { Component, Inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {
   MatAutocomplete,
@@ -63,25 +63,16 @@ import { TokenDetailsUserComponent } from './token-details-user.component';
   styleUrl: './token-details-user.component.scss',
 })
 export class TokenDetailsUserSelfServiceComponent extends TokenDetailsUserComponent {
-  constructor(
-    @Inject(TokenService)
-    protected override tokenService: TokenServiceInterface,
-    @Inject(RealmService)
-    protected override realmService: RealmServiceInterface,
-    @Inject(UserService)
-    protected override userService: UserServiceInterface,
-    @Inject(NotificationService)
-    protected override notificationService: NotificationServiceInterface,
-    @Inject(OverflowService)
-    protected override overflowService: OverflowServiceInterface,
-  ) {
-    super(
-      tokenService,
-      realmService,
-      userService,
-      notificationService,
-      overflowService,
-    );
+  protected override tokenService: TokenServiceInterface = inject(TokenService);
+  protected override realmService: RealmServiceInterface = inject(RealmService);
+  protected override userService: UserServiceInterface = inject(UserService);
+  protected override notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  protected override overflowService: OverflowServiceInterface =
+    inject(OverflowService);
+
+  constructor() {
+    super();
   }
 
   override canSetRandomPin() {

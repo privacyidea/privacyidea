@@ -1,7 +1,7 @@
 import { httpResource, HttpResourceRef } from '@angular/common/http';
 import {
   computed,
-  Inject,
+  inject,
   Injectable,
   linkedSignal,
   Signal,
@@ -51,6 +51,13 @@ export interface UserServiceInterface {
   providedIn: 'root',
 })
 export class UserService implements UserServiceInterface {
+  private readonly localService: LocalServiceInterface = inject(LocalService);
+  private readonly realmService: RealmServiceInterface = inject(RealmService);
+  private readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+  private readonly tokenService: TokenServiceInterface = inject(TokenService);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+
   private baseUrl = environment.proxyUrl + '/user/';
 
   selectedUserRealm = linkedSignal({
@@ -193,16 +200,5 @@ export class UserService implements UserServiceInterface {
     return user ? user.username : '';
   }
 
-  constructor(
-    @Inject(LocalService)
-    private localService: LocalServiceInterface,
-    @Inject(RealmService)
-    private realmService: RealmServiceInterface,
-    @Inject(ContentService)
-    private contentService: ContentServiceInterface,
-    @Inject(TokenService)
-    private tokenService: TokenServiceInterface,
-    @Inject(AuthService)
-    private authService: AuthServiceInterface,
-  ) {}
+  constructor() {}
 }

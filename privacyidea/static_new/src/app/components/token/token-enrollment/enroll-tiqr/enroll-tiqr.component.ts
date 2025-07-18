@@ -2,7 +2,7 @@ import {
   Component,
   computed,
   EventEmitter,
-  Inject,
+  inject,
   OnInit,
   Output,
 } from '@angular/core';
@@ -42,6 +42,12 @@ export interface TiqrEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: './enroll-tiqr.component.scss',
 })
 export class EnrollTiqrComponent implements OnInit {
+  protected readonly enrollmentMapper: TiqrApiPayloadMapper =
+    inject(TiqrApiPayloadMapper);
+  protected readonly systemService: SystemServiceInterface =
+    inject(SystemService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'tiqr')?.text;
@@ -63,14 +69,6 @@ export class EnrollTiqrComponent implements OnInit {
   });
 
   tiqrForm = new FormGroup({}); // No specific controls for TIQR
-
-  constructor(
-    private enrollmentMapper: TiqrApiPayloadMapper,
-    @Inject(SystemService)
-    private systemService: SystemServiceInterface,
-    @Inject(TokenService)
-    private tokenService: TokenServiceInterface,
-  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({});

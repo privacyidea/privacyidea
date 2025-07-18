@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Inject, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -70,6 +70,17 @@ export interface PasskeyRegistrationParams {
   styleUrl: './enroll-passkey.component.scss',
 })
 export class EnrollPasskeyComponent implements OnInit {
+  protected readonly enrollmentMapper: PasskeyApiPayloadMapper = inject(
+    PasskeyApiPayloadMapper,
+  );
+  protected readonly notificationService: NotificationServiceInterface =
+    inject(NotificationService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly base64Service: Base64ServiceInterface =
+    inject(Base64Service);
+  protected readonly dialogService: DialogServiceInterface =
+    inject(DialogService);
+
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'passkey')?.text;
@@ -84,17 +95,7 @@ export class EnrollPasskeyComponent implements OnInit {
 
   passkeyForm = new FormGroup({});
 
-  constructor(
-    private enrollmentMapper: PasskeyApiPayloadMapper,
-    @Inject(NotificationService)
-    private notificationService: NotificationServiceInterface,
-    @Inject(TokenService)
-    private tokenService: TokenServiceInterface,
-    @Inject(Base64Service)
-    private base64Service: Base64ServiceInterface,
-    @Inject(DialogService)
-    private dialogService: DialogServiceInterface,
-  ) {}
+  constructor() {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({});
@@ -265,7 +266,7 @@ export class EnrollPasskeyComponent implements OnInit {
           data: { enrollmentResponse },
           disableClose: true,
         });
-        const publicKeyCred = this.readPublicKeyCred(enrollmentResponse);
+        const publicKeyCred = await this.readPublicKeyCred(enrollmentResponse);
         const resposeLastStep = await this.finalizeEnrollment({
           enrollmentInitData,
           enrollmentResponse,

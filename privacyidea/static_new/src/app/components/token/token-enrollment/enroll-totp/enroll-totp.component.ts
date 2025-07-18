@@ -1,5 +1,5 @@
 import { NgClass } from '@angular/common';
-import { Component, EventEmitter, Inject, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -56,6 +56,10 @@ export interface TotpEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: './enroll-totp.component.scss',
 })
 export class EnrollTotpComponent implements OnInit {
+  protected readonly enrollmentMapper: TotpApiPayloadMapper =
+    inject(TotpApiPayloadMapper);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'totp')?.text;
@@ -71,7 +75,7 @@ export class EnrollTotpComponent implements OnInit {
     Validators.required,
   ]);
   otpLengthControl = new FormControl<number>(6, [Validators.required]);
-  otpKeyControl = new FormControl<string>(''); // Validator is set dynamically
+  otpKeyControl = new FormControl<string>('');
   hashAlgorithmControl = new FormControl<string>('sha1', [Validators.required]);
   timeStepControl = new FormControl<number | string>(30, [Validators.required]);
 
@@ -85,18 +89,11 @@ export class EnrollTotpComponent implements OnInit {
 
   readonly otpLengthOptions = [6, 8];
   readonly hashAlgorithmOptions = [
-    // Keep original options
     { value: 'sha1', viewValue: 'SHA1' },
     { value: 'sha256', viewValue: 'SHA256' },
     { value: 'sha512', viewValue: 'SHA512' },
   ];
   readonly timeStepOptions = [30, 60];
-
-  constructor(
-    private enrollmentMapper: TotpApiPayloadMapper,
-    @Inject(TokenService)
-    private tokenService: TokenServiceInterface,
-  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({

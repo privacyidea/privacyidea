@@ -3,7 +3,7 @@ import {
   Component,
   computed,
   effect,
-  Inject,
+  inject,
   Input,
   linkedSignal,
   ViewChild,
@@ -92,6 +92,18 @@ const columnsKeyMap = [
   styleUrl: './container-details-token-table.component.scss',
 })
 export class ContainerDetailsTokenTableComponent {
+  protected readonly dialog: MatDialog = inject(MatDialog);
+  protected readonly containerService: ContainerServiceInterface =
+    inject(ContainerService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface =
+    inject(TableUtilsService);
+  protected readonly overflowService: OverflowServiceInterface =
+    inject(OverflowService);
+  protected readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
+
   protected readonly columnsKeyMap = columnsKeyMap;
   displayedColumns: string[] = [
     ...columnsKeyMap.map((column) => column.key),
@@ -141,21 +153,7 @@ export class ContainerDetailsTokenTableComponent {
     return tokens.some((token) => token.username !== '');
   });
 
-  constructor(
-    protected dialog: MatDialog,
-    @Inject(ContainerService)
-    protected containerService: ContainerServiceInterface,
-    @Inject(TokenService)
-    protected tokenService: TokenServiceInterface,
-    @Inject(TableUtilsService)
-    protected tableUtilsService: TableUtilsServiceInterface,
-    @Inject(OverflowService)
-    protected overflowService: OverflowServiceInterface,
-    @Inject(ContentService)
-    protected contentService: ContentServiceInterface,
-    @Inject(AuthService)
-    protected authService: AuthServiceInterface,
-  ) {
+  constructor() {
     effect(() => {
       if (!this.containerTokenData) {
         return;

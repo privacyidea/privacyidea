@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Inject, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -40,6 +40,11 @@ export interface IndexedSecretEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: './enroll-indexedsecret.component.scss',
 })
 export class EnrollIndexedsecretComponent implements OnInit {
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly enrollmentMapper: IndexedSecretApiPayloadMapper = inject(
+    IndexedSecretApiPayloadMapper,
+  );
+
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'indexedsecret')?.text;
@@ -53,18 +58,12 @@ export class EnrollIndexedsecretComponent implements OnInit {
 
   otpKeyControl = new FormControl<string>('', [
     Validators.required,
-    Validators.minLength(16), // Example minimum length
+    Validators.minLength(16),
   ]);
 
   indexedSecretForm = new FormGroup({
     otpKey: this.otpKeyControl,
   });
-
-  constructor(
-    @Inject(TokenService)
-    private tokenService: TokenServiceInterface,
-    private enrollmentMapper: IndexedSecretApiPayloadMapper,
-  ) {}
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({
