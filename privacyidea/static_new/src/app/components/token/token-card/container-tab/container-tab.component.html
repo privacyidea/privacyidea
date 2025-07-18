@@ -3,7 +3,7 @@
     <mat-divider />
     <br />
     <mat-list-item>
-      <button (click)="go('/tokens/containers')"
+      <button [routerLink]="['/tokens/containers']"
               [ngClass]="selectedContent() === 'container_overview' ? 'card-button-active' : 'card-button'"
               mat-flat-button>
         <mat-icon class="mdi--folder-search"></mat-icon>
@@ -15,7 +15,7 @@
       @if (selectedContent() !== 'container_details') {
 
         <mat-list-item>
-          <button (click)="go('/tokens/containers/create')"
+          <button [routerLink]="['/tokens/containers/create']"
                   [ngClass]="selectedContent() === 'container_create' ? 'card-button-active' : 'card-button'"
                   mat-flat-button>
             <mat-icon>create_new_folder</mat-icon>

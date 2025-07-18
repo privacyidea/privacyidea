@@ -21,12 +21,20 @@ import {
 } from '../../../../services/version/version.service';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { LostTokenComponent } from './lost-token/lost-token.component';
-import { Router } from '@angular/router';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-token-tab',
   standalone: true,
-  imports: [MatIcon, MatList, MatListItem, MatButton, MatDivider, NgClass],
+  imports: [
+    MatIcon,
+    MatList,
+    MatListItem,
+    MatButton,
+    MatDivider,
+    NgClass,
+    RouterLink,
+  ],
   templateUrl: './token-tab.component.html',
   styleUrl: './token-tab.component.scss',
   animations: [tabToggleState],
@@ -38,7 +46,6 @@ export class TokenTabComponent {
   private readonly contentService: ContentServiceInterface =
     inject(ContentService);
   private readonly dialog: MatDialog = inject(MatDialog);
-  private router = inject(Router);
   selectedContent = this.contentService.selectedContent;
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
@@ -50,11 +57,6 @@ export class TokenTabComponent {
 
   ngOnInit(): void {
     this.version = this.versioningService.getVersion();
-  }
-
-  go(path: string) {
-    this.contentService.isProgrammaticTabChange.set(true);
-    this.router.navigateByUrl(path);
   }
 
   toggleActive(): void {

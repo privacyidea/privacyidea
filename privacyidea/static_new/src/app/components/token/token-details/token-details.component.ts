@@ -125,11 +125,15 @@ export const infoDetailsKeyMap = [{ key: 'info', label: 'Information' }];
 export class TokenDetailsComponent {
   protected readonly matDialog: MatDialog = inject(MatDialog);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  protected readonly containerService: ContainerServiceInterface =
+    inject(ContainerService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
-  protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
-  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
-  protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly overflowService: OverflowServiceInterface =
+    inject(OverflowService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface =
+    inject(TableUtilsService);
+  protected readonly contentService: ContentServiceInterface =
+    inject(ContentService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
 
   tokenIsActive = this.tokenService.tokenIsActive;
@@ -384,6 +388,17 @@ export class TokenDetailsComponent {
     this.containerSerial.set(containerSerial);
   }
 
+  openSshMachineAssignDialog() {
+    this.matDialog.open(TokenSshMachineAssignDialogComponent, {
+      data: {
+        tokenSerial: this.tokenSerial(),
+        tokenDetails: this.tokenDetails(),
+        containerSerial: this.containerSerial(),
+        tokenType: this.tokenType(),
+      },
+    });
+  }
+
   private resetEdit(type: string): void {
     switch (type) {
       case 'container_serial':
@@ -423,17 +438,6 @@ export class TokenDetailsComponent {
     this.tokenService.setTokengroup(this.tokenSerial(), value).subscribe({
       next: () => {
         this.tokenDetailResource.reload();
-      },
-    });
-  }
-
-  openSshMachineAssignDialog() {
-    this.matDialog.open(TokenSshMachineAssignDialogComponent, {
-      data: {
-        tokenSerial: this.tokenSerial(),
-        tokenDetails: this.tokenDetails(),
-        containerSerial: this.containerSerial(),
-        tokenType: this.tokenType(),
       },
     });
   }

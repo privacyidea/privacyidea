@@ -3,7 +3,7 @@
     <mat-divider />
     <br />
     <mat-list-item>
-      <button (click)="go('/tokens')"
+      <button [routerLink]="['/tokens']"
               [ngClass]="selectedContent() === 'token_overview' ? 'card-button-active' : 'card-button'"
               mat-flat-button>
         <mat-icon>policy</mat-icon>
@@ -14,7 +14,7 @@
     <div [@toggleState]="selectedContent().startsWith('token')">
       @if (selectedContent() !== 'token_details') {
         <mat-list-item>
-          <button (click)="go('/tokens/enroll')"
+          <button [routerLink]="['/tokens/enroll']"
                   [ngClass]="selectedContent() === 'token_enrollment' ? 'card-button-active' : 'card-button'"
                   mat-flat-button>
             <mat-icon>add_moderator</mat-icon>
@@ -22,7 +22,7 @@
           </button>
         </mat-list-item>
         <mat-list-item>
-          <button (click)="go('/tokens/challenges')"
+          <button [routerLink]="['/tokens/challenges']"
                   [ngClass]="selectedContent() === 'token_challenges' ? 'card-button-active' : 'card-button'"
                   mat-flat-button>
             <mat-icon>cached</mat-icon>
@@ -31,7 +31,7 @@
         </mat-list-item>
 
         <mat-list-item>
-          <button (click)="go('/tokens/applications')"
+          <button [routerLink]="['/tokens/applications']"
                   [ngClass]="selectedContent() === 'token_applications' ? 'card-button-active' : 'card-button'"
                   mat-flat-button>
             <mat-icon>now_widgets</mat-icon>
@@ -45,7 +45,7 @@
                 ? 'card-button-active'
                 : 'card-button',]"
                   mat-flat-button
-                  (click)="go('/tokens/get-serial')">
+                  [routerLink]="['/tokens/get-serial']">
             <mat-icon>help_outline</mat-icon>
             Get Serial Number
           </button>

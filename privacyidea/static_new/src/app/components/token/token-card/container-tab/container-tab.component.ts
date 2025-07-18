@@ -20,12 +20,20 @@ import {
 import { NgClass } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-container-tab',
   standalone: true,
-  imports: [MatIcon, MatList, MatListItem, MatButton, NgClass, MatDivider],
+  imports: [
+    MatIcon,
+    MatList,
+    MatListItem,
+    MatButton,
+    NgClass,
+    MatDivider,
+    RouterLink,
+  ],
   templateUrl: './container-tab.component.html',
   styleUrl: './container-tab.component.scss',
   animations: [tabToggleState],
@@ -55,18 +63,14 @@ export class ContainerTabComponent {
     this.version = this.versioningService.getVersion();
   }
 
-  go(path: string) {
-    this.contentService.isProgrammaticTabChange.set(true);
-    this.router.navigateByUrl(path);
-  }
-
   onClickContainerOverview() {
-    this.go('/tokens/containers');
+    this.router.navigateByUrl('/tokens/containers');
   }
 
   enrollTokenInContainer() {
+    this.contentService.isProgrammaticTabChange.set(true);
     this.selectedContainer.set(this.containerSerial());
-    this.go('/tokens/enroll');
+    this.router.navigateByUrl('/tokens/enroll');
   }
 
   toggleActive(): void {
@@ -93,7 +97,7 @@ export class ContainerTabComponent {
         if (result) {
           this.containerService
             .deleteContainer(this.containerSerial())
-            .subscribe(() => this.go('/tokens/containers'));
+            .subscribe(() => this.router.navigateByUrl('/tokens/containers'));
         }
       });
   }
