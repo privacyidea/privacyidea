@@ -166,7 +166,6 @@ class SharedConfigClass(object):
                     if realm.default:
                         default_realm = realm.name
                     realmdef = {"id": realm.id,
-                                "option": realm.option,
                                 "default": realm.default,
                                 "resolver": []}
                     for x in realm.resolver_list:

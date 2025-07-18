@@ -94,7 +94,7 @@ class Challenge(MethodsMixin, db.Model):
     def get_data(self):
         try:
             data = json.loads(self.data)
-        except:
+        except (json.JSONDecodeError, UnicodeDecodeError):
             data = self.data
         return data
 
