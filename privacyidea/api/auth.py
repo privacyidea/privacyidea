@@ -57,7 +57,7 @@ from privacyidea.lib.error import AuthError, ERROR
 from privacyidea.lib.crypto import geturandom, init_hsm
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
-                                  db_admin_exist)
+                                  db_admin_exists)
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.fido2.challenge import verify_fido2_challenge
@@ -124,7 +124,7 @@ def before_request():
         # overwrite the split realm if we have a realm parameter. Default back to default_realm
         realm = getParam(request.all_data, "realm") or realm or get_default_realm()
         # Prefill the request.User. This is used by some pre-event handlers
-        if db_admin_exist(login_name):
+        if db_admin_exists(login_name):
             request.User = User()
         else:
             try:
@@ -297,7 +297,7 @@ def get_auth_token():
     if passkey_login_success:
         authtype = "pi"
         # Login is already completed, get the role of the logged-in user
-        if db_admin_exist(username):
+        if db_admin_exists(username):
             role = ROLE.ADMIN
             admin_auth = True
             g.audit_object.log({"success": True, "user": "", "administrator": username, "info": "internal admin"})
@@ -318,7 +318,7 @@ def get_auth_token():
         # 2. in a realm
         # 2a. is an admin realm
         authtype = "remote_user "
-        if db_admin_exist(username):
+        if db_admin_exists(username):
             role = ROLE.ADMIN
             admin_auth = True
             g.audit_object.log({"success": True, "user": "", "administrator": username, "info": "internal admin"})
@@ -359,7 +359,7 @@ def get_auth_token():
             details = details or {}
             serials = (",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
                        if 'multi_challenge' in details else details.get('serial'))
-            if db_admin_exist(user.login) and user_auth and realm == get_default_realm():
+            if db_admin_exists(user.login) and user_auth and realm == get_default_realm():
                 # If there is a local admin with the same login name as the user
                 # in the default realm, we inform about this in the log file.
                 # This condition can only be checked if the user was authenticated as it
