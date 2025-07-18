@@ -335,6 +335,8 @@ class WebAuthn(MyApiTestCase):
         remove_token(webauthn_serial)
 
     def test_20_authenticate_other_token(self):
+        set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollWEBAUTHN", "enrollHOTP", ACTION.ENROLLPIN,
+                                                        ACTION.TRIGGERCHALLENGE])
         # Ensure that a not readily enrolled WebAuthn token does not disturb the usage
         # of an HOTP token with challenge response.
         # First enrollment step
@@ -435,6 +437,7 @@ class WebAuthn(MyApiTestCase):
             self.assertTrue(result.get("value"))
 
         delete_policy("trigpol")
+        delete_policy("enroll")
         remove_token("hotpX1")
         remove_token(self.serial)
 

@@ -1,14 +1,16 @@
 <p class="help-block" translate>
-The mOTP token is a time based OTP token for mobile devices.
+    The mOTP token is a time based OTP token for mobile devices.
     You can
     have the server generate the secret and scan the QR code.
 </p>
 
 <h4 translate>Token data</h4>
 <div class="form-group">
-    <input type="checkbox" ng-model="form.genkey"
-           name="generate" id="generate">
-    <label for="generate" translate>Generate OTP Key on the Server</label>
+    <div ng-hide="checkRight('motp_force_server_generate')">
+        <input type="checkbox" ng-model="form.genkey"
+               name="generate" id="generate">
+        <label for="generate" translate>Generate OTP Key on the Server</label>
+    </div>
 
     <div ng-show="form.genkey">
         <p class="help-block" translate>

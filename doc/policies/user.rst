@@ -332,14 +332,15 @@ Possible values are *6* or *8*, default is *6*.
 .. _hotp-force-server-generate:
 .. _totp-force-server-generate:
 
-hotp_force_server_generate and totp_force_server_generate
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+hotp-, totp-, daypassword-, applspec- and motp_force_server_generate
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type: ``bool``
 
-Enforce the key generation on the server.
-A corresponding input field for the key data will be disabled/hidden
-in the web UI.
+Enforce the key generation on the server. Even if an otp key is passed, the server will generate a new key.
+
+In the web UI, a corresponding input field for the key is disabled/hidden.
+
 Default value is *false*.
 
 .. _totp-timestep:

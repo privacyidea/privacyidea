@@ -3422,18 +3422,17 @@ class RegistrationAndPasswordToken(MyApiTestCase):
             self.assertEqual("REJECT", data.get("result").get("authentication"), data)
 
     def test_01_password_tokens(self):
-        # The password token requires either an otpkey or genkey
+        set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollPW", ACTION.ENROLLPIN])
+        # always generate a key if non is given
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={'user': 'cornelius',
                                                  'type': 'pw'},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(400, res.status_code)
-            data = res.json
-            error = data.get("result").get("error")
-            self.assertEqual(905, error.get("code"))
-            self.assertEqual("ERR905: Missing parameter: 'otpkey'", error.get("message"), data)
+            self.assertEqual(200, res.status_code)
+            serial = res.json.get("detail").get("serial")
+            remove_token(serial)
 
         # Try setting an explicit password
         with self.app.test_request_context('/token/init',
@@ -3492,20 +3491,21 @@ class RegistrationAndPasswordToken(MyApiTestCase):
             self.assertEqual("ACCEPT", data.get("result").get("authentication"), (data, password))
         # delete token
         remove_token(serial)
+        delete_policy("enroll")
 
     def test_02_application_specific_password_token(self):
-        # The appl spec password token requires either an otpkey or genkey
+        set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollAPPLSPEC", ACTION.ENROLLPIN])
+        # always generate a key if non is give
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={'user': 'cornelius',
-                                                 'type': 'applspec'},
+                                                 'type': 'applspec',
+                                                 'service_id': 'thunderbird'},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(400, res.status_code)
-            data = res.json
-            error = data.get("result").get("error")
-            self.assertEqual(905, error.get("code"))
-            self.assertEqual("ERR905: Missing parameter: 'otpkey'", error.get("message"), data)
+            self.assertEqual(200, res.status_code, res.json.get("result"))
+            serial = res.json.get("detail").get("serial")
+            remove_token(serial)
 
         with self.app.test_request_context('/token/init',
                                            method='POST',
@@ -3622,6 +3622,7 @@ class MultiChallenge(MyApiTestCase):
         set_policy("first_use", scope=SCOPE.ENROLL, action=ACTION.CHANGE_PIN_FIRST_USE)
         set_policy("via_validate", scope=SCOPE.AUTH, action=ACTION.CHANGE_PIN_VIA_VALIDATE)
         set_policy("hotp_chalresp", scope=SCOPE.AUTH, action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+        set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollHOTP", ACTION.ENROLLPIN])
 
         with self.app.test_request_context('/token/init', method='POST',
                                            data={"user": "cornelius", "pin": "test",
@@ -3692,6 +3693,7 @@ class MultiChallenge(MyApiTestCase):
         delete_policy("first_use")
         delete_policy("via_validate")
         delete_policy("hotp_chalresp")
+        delete_policy("enroll")
 
     def test_01_pin_change_via_validate_single_shot(self):
         # Test PIN change after authentication with a single shot authentication
@@ -3699,6 +3701,7 @@ class MultiChallenge(MyApiTestCase):
         set_policy("first_use", scope=SCOPE.ENROLL, action=ACTION.CHANGE_PIN_FIRST_USE)
         set_policy("via_validate", scope=SCOPE.AUTH, action=ACTION.CHANGE_PIN_VIA_VALIDATE)
         set_policy("hotp_chalresp", scope=SCOPE.AUTH, action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+        set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollHOTP", ACTION.ENROLLPIN])
 
         with self.app.test_request_context('/token/init', method='POST',
                                            data={"user": "cornelius", "pin": "test",
@@ -3758,6 +3761,7 @@ class MultiChallenge(MyApiTestCase):
         delete_policy("first_use")
         delete_policy("via_validate")
         delete_policy("hotp_chalresp")
+        delete_policy("enroll")
 
     def test_02_challenge_text_header(self):
         # Test PIN change after authentication with a single shot authentication
@@ -3768,6 +3772,7 @@ class MultiChallenge(MyApiTestCase):
         challenge_header = "Choose one: <ul>"
         set_policy("challenge_header", scope=SCOPE.AUTH,
                    action="{0!s}={1!s}".format(ACTION.CHALLENGETEXT_HEADER, challenge_header))
+        set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollHOTP", ACTION.ENROLLPIN])
 
         with self.app.test_request_context('/token/init', method='POST',
                                            data={"user": "cornelius", "pin": "test",
@@ -3796,6 +3801,7 @@ class MultiChallenge(MyApiTestCase):
         delete_policy("via_validate")
         delete_policy("hotp_chalresp")
         delete_policy("challenge_header")
+        delete_policy("enroll")
 
     def test_03_preferred_client_mode(self):
         REGISTRATION_URL = "http://test/ttype/push"

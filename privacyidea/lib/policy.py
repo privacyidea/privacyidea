@@ -453,6 +453,7 @@ class ACTION(object):
     CLIENT_MODE_PER_USER = "client_mode_per_user"
     HIDE_CONTAINER_INFO = "hide_container_info"
     DISABLED_TOKEN_TYPES = "disabled_token_types"
+    FORCE_SERVER_GENERATE = "force_server_generate"
 
 
 class TYPE(object):

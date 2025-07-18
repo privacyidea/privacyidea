@@ -497,8 +497,8 @@ class API000TokenAdminRealmList(MyApiTestCase):
         container.remove_user(User(login="hans", realm=self.realm1))
         container.add_user(User(login="corny", realm=self.realm3))
         result = self.request_assert_200("/token/init", {"type": "hotp", "genkey": True, "user": "hans",
-                                                "realm": self.realm1, "container_serial": container_serial},
-                                self.at, "POST")
+                                                         "realm": self.realm1, "container_serial": container_serial},
+                                         self.at, "POST")
         self.assertIsNone(find_container_for_token(result["detail"]["serial"]))
 
         # no container owner but token_owner
@@ -619,14 +619,6 @@ class APITokenTestCase(MyApiTestCase):
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"type": "hmac"},
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertEqual(400, res.status_code, res)
-
-        # missing parameter otpkey
-        with self.app.test_request_context('/token/init',
-                                           method='POST',
-                                           data={"type": "hotp"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(400, res.status_code, res)
@@ -1216,6 +1208,8 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(result.get("value") == 1, result)
 
     def test_07_resync(self):
+        set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollHOTP", ACTION.RESYNC, ACTION.AUDIT, ACTION.TOKENLIST,
+                                                        ACTION.ASSIGN])
 
         with self.app.test_request_context('/token/init', method="POST",
                                            data={"serial": "Resync01",
@@ -1346,6 +1340,8 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             self.assertTrue(result.get("value") is True, result)
+
+        delete_policy("enroll")
 
     def test_08_setpin(self):
         self._create_temp_token("PToken")
@@ -2778,11 +2774,11 @@ class APITokenTestCase(MyApiTestCase):
             remaining, 1,
             f"challenge-cache contains {remaining} rows")
 
-
     def test_40_init_verify_hotp_token(self):
         set_policy("verify_toks1", scope=SCOPE.ENROLL, action="{0!s}=hotp top".format(ACTION.VERIFY_ENROLLMENT))
         set_policy("verify_toks2", scope=SCOPE.ENROLL, action="{0!s}=HOTP email".format(ACTION.VERIFY_ENROLLMENT))
         set_policy("require_description", scope=SCOPE.ENROLL, action="{0!s}=hotp".format(ACTION.REQUIRE_DESCRIPTION))
+        set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollHOTP"])
         # Enroll an HOTP token
         with self.app.test_request_context('/token/init',
                                            method='POST',
@@ -2856,6 +2852,7 @@ class APITokenTestCase(MyApiTestCase):
         delete_policy("verify_toks1")
         delete_policy("verify_toks2")
         delete_policy("require_description")
+        delete_policy("enroll")
 
     @mock.patch('privacyidea.lib.smtpserver.smtplib.SMTP', autospec=True)
     def test_41_init_verify_email_token(self, smtp_mock):
@@ -2865,6 +2862,7 @@ class APITokenTestCase(MyApiTestCase):
         set_policy("verify_toks1", scope=SCOPE.ENROLL, action="{0!s}=email".format(ACTION.VERIFY_ENROLLMENT))
         set_policy("email_challenge_text", scope=SCOPE.AUTH,
                    action=f"email_{ACTION.CHALLENGETEXT}=ENTER EMAIL TOKEN")
+        set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollEMAIL"])
         # Enroll an email token
         # TODO: Check mock mailserver for correct email subject and text
         with self.app.test_request_context('/token/init',
@@ -2905,6 +2903,7 @@ class APITokenTestCase(MyApiTestCase):
         delete_policy("verify_toks1")
         delete_policy("email_challenge_text")
         remove_token(serial=serial)
+        delete_policy("enroll")
 
     @mock.patch("privacyidea.lib.smsprovider.HttpSMSProvider.requests",
                 autospec=True)
@@ -2929,6 +2928,7 @@ class APITokenTestCase(MyApiTestCase):
         sms_text = "YOUR SMS TOKEN: {otp}"
         set_policy(name="smstext", scope=SCOPE.AUTH,
                    action=f"{SMSACTION.SMSTEXT}={sms_text}")
+        set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollSMS"])
 
         # Enroll an SMS token
         with self.app.test_request_context('/token/init',
@@ -2974,6 +2974,7 @@ class APITokenTestCase(MyApiTestCase):
         delete_policy("verify_toks1")
         delete_policy("smstext")
         delete_smsgateway(smsgw_id)
+        delete_policy("enroll")
 
     def test_43_init_verify_index_token(self):
         set_policy("verify_toks1", scope=SCOPE.ENROLL, action="{0!s}=indexedsecret".format(ACTION.VERIFY_ENROLLMENT))
@@ -3263,6 +3264,93 @@ class APITokenTestCase(MyApiTestCase):
 
         remove_token(token.get_serial())
         delete_policy("helpdesk")
+
+    def test_62_init_token_with_force_genkey(self):
+        set_policy("enroll", scope=SCOPE.ADMIN, action="enrollHOTP, enrollTOTP, enrollMOTP, enrollAPPLSPEC")
+        # No policy set: but if genkey and otpkey are not provided, genkey is also set to true
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "hotp"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            serial = res.json["detail"].get("serial")
+            remove_token(serial)
+
+        # Set policy to enforce genkey
+        set_policy("hotp_genkey", scope=SCOPE.ADMIN, action=f"hotp_{ACTION.FORCE_SERVER_GENERATE}")
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "hotp"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            serial = res.json["detail"].get("serial")
+            remove_token(serial)
+
+        # passing key will be ignored
+        otpkey = "3132333435363738393031323334353637383930"
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "hotp", "otpkey": otpkey},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("detail")
+            used_key = result.get("otpkey").get("value")
+            self.assertNotIn(otpkey, used_key)
+            serial = res.json["detail"].get("serial")
+            remove_token(serial)
+        delete_policy("hotp_genkey")
+
+        # TOTP
+        set_policy("totp_genkey", scope=SCOPE.ADMIN, action=f"totp_{ACTION.FORCE_SERVER_GENERATE}")
+        otpkey = "3132333435363738393031323334353637383930"
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "totp", "otpkey": otpkey},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("detail")
+            used_key = result.get("otpkey").get("value")
+            self.assertNotIn(otpkey, used_key)
+            serial = res.json["detail"].get("serial")
+            remove_token(serial)
+        delete_policy("totp_genkey")
+
+        # MOTP
+        set_policy("motp_genkey", scope=SCOPE.ADMIN, action=f"motp_{ACTION.FORCE_SERVER_GENERATE}")
+        otpkey = "3132333435363738393031323334353637383930"
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "motp", "otpkey": otpkey, "motppin": "123"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("detail")
+            used_key = result.get("otpkey").get("value")
+            self.assertNotIn(otpkey, used_key)
+            serial = res.json["detail"].get("serial")
+            remove_token(serial)
+        delete_policy("motp_genkey")
+
+        # applspec
+        set_policy("applspec_genkey", scope=SCOPE.ADMIN, action=f"applspec_{ACTION.FORCE_SERVER_GENERATE}")
+        otpkey = "3132333435363738393031323334353637383930"
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "applspec", "otpkey": otpkey, "service_id": "123"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("detail")
+            used_key = result.get("otpkey").get("value")
+            self.assertNotIn(otpkey, used_key)
+            serial = res.json["detail"].get("serial")
+            remove_token(serial)
+        delete_policy("applspec_genkey")
+        delete_policy("enroll")
 
 
 class API00TokenPerformance(MyApiTestCase):

@@ -325,6 +325,7 @@ def get_before_request_config():
     g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
     # Save the HTTP header in the localproxy object
     g.request_headers = request.headers
+    g.policies = {}
 
 
 def before_request():

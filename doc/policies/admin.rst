@@ -846,6 +846,19 @@ Possible values are *6* or *8*, default is *6*.
 
 .. versionadded:: 3.2
 
+.. _admin_policy_force-server-generate:
+
+hotp-, totp-, daypassword-, applspec- and motp_force_server_generate
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+Enforce the key generation on the server. Even if an otp key is passed, the server will generate a new key.
+
+In the web UI, a corresponding input field for the key is disabled/hidden.
+
+Default value is *false*.
+
 totp_timestep
 ~~~~~~~~~~~~~
 
