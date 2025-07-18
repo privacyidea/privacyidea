@@ -2754,10 +2754,10 @@ def auth_timelimit(request, action):
     user = request.User
     # check if the user is an admin
     admin_realms = [x.lower() for x in current_app.config.get("SUPERUSER_REALM", [])]
-    local_admin = get_db_admin(user.login)
-    if local_admin:
-        # local admin
-        user = User(login=local_admin.username)
+    local_admin = False
+    if user.login and not user.realm:
+        # local admin (checked in before_request)
+        local_admin = True
         user_search_dict = {"user": user.login}
     elif user.realm and user.realm.lower() in admin_realms:
         # external admin
@@ -2770,10 +2770,11 @@ def auth_timelimit(request, action):
     result, reply_dict = check_max_auth_fail(user, user_search_dict, check_validate_check=not local_admin)
     if result:
         if local_admin:
-            user_search_dict = {"administrator": local_admin.username}
+            user_search_dict = {"administrator": user.login}
         result, reply_dict = check_max_auth_success(user, user_search_dict, check_validate_check=not local_admin)
 
     if not result:
-        raise AuthError(_("Authentication failure. The account has exceeded the authentication time limit!"), details=reply_dict)
+        raise AuthError(_("Authentication failure. The account has exceeded the authentication time limit!"),
+                        details=reply_dict)
 
     return True

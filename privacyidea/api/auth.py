@@ -125,7 +125,7 @@ def before_request():
         realm = getParam(request.all_data, "realm") or realm or get_default_realm()
         # Prefill the request.User. This is used by some pre-event handlers
         if db_admin_exists(login_name):
-            request.User = User()
+            request.User = User(login_name)
         else:
             try:
                 request.User = User(login_name, realm)
