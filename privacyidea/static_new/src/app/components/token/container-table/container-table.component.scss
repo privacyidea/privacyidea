@@ -1,0 +1,73 @@
+@use "../../../../styles";
+
+.container-table-container {
+  @include styles.table-container-styles;
+  @include styles.base-table-structure(
+    ".container-table",
+    ".container-table-filter",
+    ".table-scroll-container"
+  );
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: calc(var(--main-height) - var(--global-padding) * 4);
+}
+
+.filter-paginator-container-selfservice {
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  gap: 16px;
+}
+
+tr.example-detail-row {
+  background: #f3f3f3;
+  height: 0;
+}
+
+tr.example-element-row:hover {
+  background: #f3f3f3;
+}
+
+tr.example-element-row:active {
+  background: #e0e0e0;
+}
+
+.example-element-row td {
+  border-bottom-width: 0;
+}
+tr.example-detail-row td {
+  border-top-width: 0;
+}
+
+.expanded-detail {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.expanded-token-list {
+  display: grid;
+  grid-template-columns: auto auto auto auto auto;
+  gap: 8px;
+  margin-bottom: 16px;
+  margin-top: 16px;
+}
+
+.expanded-token-list-self-serivce {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  gap: 8px;
+  margin-bottom: 16px;
+  margin-top: 16px;
+}
+
+.token-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: solid 1px #e0e2ec;
+  border-radius: var(--border-radius);
+  background: white;
+}
