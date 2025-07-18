@@ -268,10 +268,11 @@ def get_auth_token():
             raise AuthError(_("Authentication failure. Missing Username"), id=ERROR.AUTHENTICATE_MISSING_USERNAME)
 
         user = request.User
-        if not user:
+        if not user or not user.realm:
             # The user could not be resolved, but it could still be a local administrator
             login_name, realm = split_user(username)
-            realm = (realm_param or realm or get_default_realm()).lower()
+            realm = realm_param or realm or get_default_realm()
+            realm = realm.lower() if realm else None
             user = User()
         else:
             realm = user.realm
@@ -350,6 +351,16 @@ def get_auth_token():
         if password is None:
             g.audit_object.add_to_log({"info": 'Missing parameter "password"'}, add_with_comma=True)
         else:
+            # check if user is set correctly
+            if not user.realm:
+                # we only get here if a user and a local admin with the same username exists
+                try:
+                    user = User(login_name, realm)
+                except Exception:
+                    # Either this is already logged in before_request (user is no local admin) or the user is a local
+                    # admin that tries to authenticate with an invalid password (no need to log this)
+                    pass
+
             options = {"g": g, "clientip": g.client_ip}
             for key, value in request.all_data.items():
                 if value and key not in ["g", "clientip"]:
