@@ -2,6 +2,7 @@ import { NgClass } from '@angular/common';
 import {
   Component,
   computed,
+  effect,
   inject,
   linkedSignal,
   WritableSignal,
@@ -95,6 +96,16 @@ export class TokenApplicationsSshComponent {
       _sshColumnsKeyMap,
     );
   });
+
+  constructor() {
+    effect(() => {
+      const recordsFromText = this.tableUtilsService.recordsFromText(
+        this.filterValueString(),
+      );
+      this.machineService.filterValue.set(recordsFromText);
+      this.machineService.pageIndex.set(0);
+    });
+  }
 
   getObjectStrings(options: object) {
     return Object.entries(options).map(([key, value]) => `${key}: ${value}`);
