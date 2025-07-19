@@ -4,8 +4,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
-"PO-Revision-Date: 2025-06-24 11:15+0000\n"
-"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
+"PO-Revision-Date: 2025-07-19 15:02+0000\n"
+"Last-Translator: தமிழ்நேரம் <anishprabu.t@gmail.com>\n"
 "Language-Team: Tamil <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/ta/>\n"
 "Language: ta\n"
@@ -1028,7 +1028,7 @@ msgstr "புதிய PASSWD தீர்வை உருவாக்கவு
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:25
 msgid "Create a new Periodic Task"
-msgstr "புதிய கால பணியை உருவாக்கவும்"
+msgstr "ஒரு புதிய கால பணியை உருவாக்கவும்"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:24
 msgid "Create a new Policy"
@@ -1376,7 +1376,7 @@ msgstr "இந்த தீர்மானத்தை நீக்க விர
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:148
 msgid "Domain CA"
-msgstr "டொமைன் சி.ஏ."
+msgstr "டொமைன் சிஏ"
 
 #: privacyidea/static/components/directives/views/directive.csvdownload.html:3
 msgid "Download"
@@ -3392,7 +3392,7 @@ msgstr "மறுதொடக்கம் கிள்ளாக்கு"
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:56
 msgid "Retries"
-msgstr "மீண்டும் மீண்டும்"
+msgstr "மறுமுயற்சிகள்"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:92
 msgid "Retry If Failed"
@@ -4518,15 +4518,15 @@ msgid ""
 "        Yubico Validation Protocol</a>."
 msgstr ""
 "அங்கீகார கோரிக்கையை இயல்புநிலை தனியுரிமை மூலம் கையாளலாம் \n"
-"<a href="
+"    <a href="
 "\"https://privacyidea.readthedocs.io/en/latest/modules/api/validate.html\" "
-"target=\"_blank\"> \n"
-"API ஐ சரிபார்க்கவும் </a> ஆனால் ஆனால் கையாளலாம் \n"
-"<a href=\"https://privacyidea.readthedocs.io/en/latest/modules/lib/"
+"target=\"_blank\">\n"
+"API ஐ சரிபார்க்கவும்</a>ஆனால் இதன்மூலம் கையாளலாம்\n"
+"        <a href=\"https://privacyidea.readthedocs.io/en/latest/modules/lib/"
 "tokentypes/"
 "yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass."
 "api_endpoint\" target=\"_blank\">\n"
-"யூபிகோ சரிபார்ப்பு நெறிமுறை </a>."
+"        யூபிகோ சரிபார்ப்பு நெறிமுறை </a>."
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:8
 msgid ""
@@ -5036,10 +5036,10 @@ msgid ""
 "webauthn_authenticator_attestation_level\n"
 "        is set to \"trusted\" by a policy for any user."
 msgstr ""
-"வெபாஅ்ன் வேலை செய்ய இதை அமைக்க தேவையில்லை\n"
-" இது, ஒரு சான்றிதழ் சான்றிதழ் உள்ளதா என்பதை தனியுரிமைடியா சரிபார்க்க முடியாது\n"
-" உண்மையில் நம்பகமானவர் (இது இன்னும் செல்லுபடியாக்கத்திற்காக சரிபார்க்கப்படும்). எனவே அது\n"
-" இதை அமைக்க கட்டாயமாகும், webauthn_authenticator_attestation_level என்றால்\n"
+"வெபாஅ்ன் வேலை செய்ய இதை அமைக்கத் தேவையில்லை\n"
+" இது, ஒரு சான்றிதழ் உள்ளதா என்பதை தனியுரிமைடியா சரிபார்க்க முடியாது\n"
+" உண்மையில் நம்பகமானவர் (இது இன்னும் செல்லுபடியாக்கத்திற்காகச் சரிபார்க்கப்படும்). எனவே அது\n"
+" இதை அமைக்கக் கட்டாயமாகும், webauthn_authenticator_attestation_level என்றால்\n"
 " எந்தவொரு பயனருக்கும் ஒரு கொள்கையால் \"நம்பகமான\" என அமைக்கப்பட்டுள்ளது."
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:18
