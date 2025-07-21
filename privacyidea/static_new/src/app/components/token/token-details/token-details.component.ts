@@ -66,6 +66,7 @@ import { TokenDetailsActionsComponent } from './token-details-actions/token-deta
 import { TokenDetailsInfoComponent } from './token-details-info/token-details-info.component';
 import { TokenDetailsUserComponent } from './token-details-user/token-details-user.component';
 import { TokenSshMachineAssignDialogComponent } from './token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog';
+import { Router } from '@angular/router';
 
 export const tokenDetailsKeyMap = [
   { key: 'tokentype', label: 'Type' },
@@ -123,6 +124,7 @@ export const infoDetailsKeyMap = [{ key: 'info', label: 'Information' }];
   styleUrls: ['./token-details.component.scss'],
 })
 export class TokenDetailsComponent {
+  private router = inject(Router);
   protected readonly matDialog: MatDialog = inject(MatDialog);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly containerService: ContainerServiceInterface =
@@ -385,6 +387,7 @@ export class TokenDetailsComponent {
   containerSelected(containerSerial: string) {
     this.isProgrammaticTabChange.set(true);
     this.selectedContent.set('container_details');
+    this.router.navigateByUrl('/tokens/containers/' + containerSerial);
     this.containerSerial.set(containerSerial);
   }
 

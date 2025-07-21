@@ -12,6 +12,7 @@ import {
   TokenService,
   TokenServiceInterface,
 } from '../../../services/token/token.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-assign-token-self-service',
@@ -29,6 +30,7 @@ import {
   styleUrl: './assign-token-self-service.component.scss',
 })
 export class AssignTokenSelfServiceComponent {
+  private router = inject(Router);
   private readonly contentService: ContentServiceInterface =
     inject(ContentService);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -50,6 +52,7 @@ export class AssignTokenSelfServiceComponent {
       .subscribe({
         next: () => {
           this.selectedContent.set('token_details');
+          this.router.navigateByUrl('/tokens/' + this.selectedToken());
           this.tokenSerial.set(this.selectedToken());
         },
       });

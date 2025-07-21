@@ -21,7 +21,7 @@ import {
 } from '../../../../services/version/version.service';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { LostTokenComponent } from './lost-token/lost-token.component';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-token-tab',
@@ -40,6 +40,7 @@ import { RouterLink } from '@angular/router';
   animations: [tabToggleState],
 })
 export class TokenTabComponent {
+  private router = inject(Router);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly versioningService: VersioningServiceInterface =
     inject(VersioningService);
@@ -121,7 +122,8 @@ export class TokenTabComponent {
           if (result) {
             this.tokenService.deleteToken(this.tokenSerial()).subscribe({
               next: () => {
-                this.selectedContent.set('token_overview');
+                this.contentService.selectedContent.set('token_overview');
+                this.router.navigateByUrl('/tokens');
                 this.tokenSerial.set('');
               },
             });

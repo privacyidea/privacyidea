@@ -12,6 +12,7 @@ import {
   ContainerServiceInterface,
 } from '../../../../services/container/container.service';
 import { LostTokenComponent } from '../../token-card/token-tab/lost-token/lost-token.component';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-container-registration-dialog',
@@ -20,6 +21,7 @@ import { LostTokenComponent } from '../../token-card/token-tab/lost-token/lost-t
   styleUrl: './container-registration-dialog.component.scss',
 })
 export class ContainerRegistrationDialogComponent {
+  private router = inject(Router);
   protected readonly containerService: ContainerServiceInterface =
     inject(ContainerService);
   public readonly data: {
@@ -37,6 +39,7 @@ export class ContainerRegistrationDialogComponent {
   containerSelected(containerSerial: string) {
     this.dialogRef.close();
     this.data.selectedContent.set('container_details');
+    this.router.navigateByUrl('/tokens/containers/' + containerSerial);
     this.data.containerSerial.set(containerSerial);
   }
 }

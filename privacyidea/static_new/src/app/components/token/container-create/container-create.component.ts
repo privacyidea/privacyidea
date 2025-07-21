@@ -55,6 +55,7 @@ import {
 } from '../../../services/version/version.service';
 import { TokenComponent } from '../token.component';
 import { ContainerRegistrationDialogComponent } from './container-registration-dialog/container-registration-dialog.component';
+import { Router } from '@angular/router';
 
 export type ContainerTypeOption = 'generic' | 'smartphone' | 'yubikey';
 
@@ -84,6 +85,7 @@ export type ContainerTypeOption = 'generic' | 'smartphone' | 'yubikey';
   styleUrl: './container-create.component.scss',
 })
 export class ContainerCreateComponent {
+  private router = inject(Router);
   protected readonly versioningService: VersioningServiceInterface =
     inject(VersioningService);
   protected readonly userService: UserServiceInterface = inject(UserService);
@@ -177,6 +179,7 @@ export class ContainerCreateComponent {
               `Container ${containerSerial} enrolled successfully.`,
             );
             this.selectedContent.set('container_details');
+            this.router.navigateByUrl('/tokens/containers/' + containerSerial);
             this.containerSerial.set(containerSerial);
           }
         },
@@ -217,6 +220,7 @@ export class ContainerCreateComponent {
           ) {
             this.registrationDialog.closeAll();
             this.selectedContent.set('container_details');
+            this.router.navigateByUrl('/tokens/containers/' + containerSerial);
             this.notificationService.openSnackBar(
               `Container ${this.containerSerial()} enrolled successfully.`,
             );

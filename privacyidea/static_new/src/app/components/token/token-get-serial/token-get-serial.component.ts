@@ -33,6 +33,7 @@ import {
 } from '../../../services/token/token.service';
 import { ConfirmationDialogComponent } from '../../shared/confirmation-dialog/confirmation-dialog.component';
 import { GetSerialResultDialogComponent } from './get-serial-result-dialog/get-serial-result-dialog.component';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-token-get-serial',
@@ -54,6 +55,7 @@ import { GetSerialResultDialogComponent } from './get-serial-result-dialog/get-s
   styleUrl: './token-get-serial.component.scss',
 })
 export class TokenGetSerialComponent {
+  private router = inject(Router);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly notificationService: NotificationServiceInterface =
     inject(NotificationService);
@@ -210,6 +212,7 @@ export class TokenGetSerialComponent {
               onClickSerial: () => {
                 this.tokenSerial.set(serial);
                 this.selectedContent.set('token_details');
+                this.router.navigateByUrl('/tokens/' + serial);
                 this.dialog.closeAll();
               },
               reset: () => {

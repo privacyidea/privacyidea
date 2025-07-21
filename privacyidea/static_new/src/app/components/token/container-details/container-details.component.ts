@@ -73,6 +73,7 @@ import {
 import { infoDetailsKeyMap } from '../token-details/token-details.component';
 import { ContainerDetailsInfoComponent } from './container-details-info/container-details-info.component';
 import { ContainerDetailsTokenTableComponent } from './container-details-token-table/container-details-token-table.component';
+import { Router } from '@angular/router';
 
 export const containerDetailsKeyMap = [
   { key: 'type', label: 'Type' },
@@ -96,6 +97,7 @@ const allowedTokenTypesMap = new Map<string, string | string[]>([
   ['smartphone', ['daypassword', 'hotp', 'push', 'sms', 'totp']],
   ['generic', 'all'], // generic: all = no filter
 ]);
+
 interface TokenOption {
   serial: string;
   tokentype: string;
@@ -133,6 +135,7 @@ interface TokenOption {
   styleUrls: ['./container-details.component.scss'],
 })
 export class ContainerDetailsComponent {
+  private router = inject(Router);
   protected readonly overflowService: OverflowServiceInterface =
     inject(OverflowService);
   protected readonly containerService: ContainerServiceInterface =
@@ -336,7 +339,10 @@ export class ContainerDetailsComponent {
     effect(() => {
       const res = this.containerDetailResource.value();
       if (res && res?.result?.value?.containers.length === 0) {
-        setTimeout(() => this.selectedContent.set('container_overview'));
+        setTimeout(() => {
+          this.selectedContent.set('container_overview');
+          this.router.navigateByUrl('/tokens/containers/');
+        });
       }
     });
     effect(() => {
