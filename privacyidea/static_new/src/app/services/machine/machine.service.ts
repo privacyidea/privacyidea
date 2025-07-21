@@ -234,23 +234,18 @@ export class MachineService implements MachineServiceInterface {
       sortdir: this.sort()?.direction || 'asc',
       ...this.filterParams(),
     };
-    const asd = {
+    return {
       url: this.baseUrl + 'token',
       method: 'GET',
       headers: this.localService.getHeaders(),
       params: params,
     };
-    console.log('tokenApplicationResource:', asd);
-    return asd;
   });
   tokenApplications: WritableSignal<TokenApplications | undefined> =
     linkedSignal({
       source: this.tokenApplicationResource.value,
-      computation: (tokenApplicationResource, previous) => {
-        console.log('tokenApplicationResource:', tokenApplicationResource);
-        console.log('previous:', previous);
-        return tokenApplicationResource?.result?.value ?? previous?.value;
-      },
+      computation: (tokenApplicationResource, previous) =>
+        tokenApplicationResource?.result?.value ?? previous?.value,
     });
 
   postTokenOption(
@@ -365,9 +360,6 @@ export class MachineService implements MachineServiceInterface {
         this.filterValueString(),
       );
       this.filterValue.set(recordsFromText);
-    });
-    effect(() => {
-      console.log(this.filterParams());
     });
   }
 }
