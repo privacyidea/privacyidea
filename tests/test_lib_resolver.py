@@ -2410,13 +2410,15 @@ class ResolverTestCase(MyTestCase):
                              "desc.fileName": "The name of the file"})
         self.assertTrue(rid > 0, rid)
 
-        # Do not save empty values
+        # Do not save empty values, but bool False values
         rid = save_resolver({"resolver": self.resolvername1,
                              "type": "passwdresolver",
                              "test": "",
+                             "test_bool": False,
                              "description": "Test description"})
         self.assertTrue(rid > 0, rid)
         self.assertIsNone(ResolverConfig.query.filter_by(resolver_id=rid, Key="test").first())
+        self.assertEqual("False", ResolverConfig.query.filter_by(resolver_id=rid, Key="test_bool").first().Value)
         # But if the key already exists, delete it
         self.assertEqual("Test description",
                          ResolverConfig.query.filter_by(resolver_id=rid, Key="description").first().Value)
