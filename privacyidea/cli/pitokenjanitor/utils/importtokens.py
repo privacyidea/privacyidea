@@ -100,8 +100,10 @@ def pskc(pskc_file, preshared_key, validate_mac):
 
 @importtokens_cli.command('privacyidea')
 @click.argument('file', nargs=1, type=click.File())
-@click.argument('key', nargs=1, type=str)
-def import_token_from_privacyidea(file, key):
+@click.option('--key', required=True, type=str,
+              help='The encryption key given by PrivacyIDEA during token export.')
+@click.pass_context
+def import_token_from_privacyidea(ctx, file, key):
     """
     Import tokens from a PrivacyIDEA token file.
 
@@ -109,31 +111,34 @@ def import_token_from_privacyidea(file, key):
     KEY is the encryption key used to decrypt the tokens.
     """
     try:
-        decrypt_key = Fernet(key)
+        f = Fernet(key)
     except Exception as e:
         click.echo(f"Invalid encryption key format. Please ensure the key is valid. Details: {e}")
-        return
+        ctx.exit()
 
     try:
         token_data = file.read()
     except Exception as e:
         click.echo(f"Error reading file: {e}")
-        return
+        ctx.exit()
 
     try:
-        decrypted_data = decrypt_key.decrypt(token_data)
+        decrypted_data = f.decrypt(token_data)
     except Exception as e:
         click.echo(f"Error decrypting token data: {e}")
-        return
+        ctx.exit()
 
     try:
         token_list = decrypted_data.decode("utf-8")
     except UnicodeDecodeError as e:
         click.echo(f"Error decoding token data: {e}")
-        return
+        ctx.exit()
 
-    ret = import_tokens(token_list)
-    click.echo(f"{len(ret.successful_tokens)} tokens imported successfully.\n"
+    try:
+        ret = import_tokens(token_list)
+        click.echo(f"{len(ret.successful_tokens)} tokens imported successfully.\n"
                f"{len(ret.failed_tokens)} tokens failed to import.\n"
                f"{len(ret.updated_tokens)} tokens updated.\n")
-
+    except Exception as e:
+        click.echo(f"Error importing tokens: {e}")
+        ctx.exit()
