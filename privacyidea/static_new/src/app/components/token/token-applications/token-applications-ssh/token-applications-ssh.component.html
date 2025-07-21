@@ -20,7 +20,7 @@
         <mat-label>Enter Filter</mat-label>
         <input
           #filterInput
-          [(ngModel)]="filterValueString"
+          [(ngModel)]="machineService.filterValueString"
           aria-label="Filter Input"
           matInput
           placeholder="Example query: 'service_id: myService'" />

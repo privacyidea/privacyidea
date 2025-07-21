@@ -105,7 +105,7 @@ export class TokenSshMachineAssignDialogComponent {
     if (!filterString) {
       return this.availableMachines();
     }
-    return this.availableMachines().filter((machine) =>
+    return this.availableMachines()?.filter((machine) =>
       this.getFullMachineName(machine).toLowerCase().includes(filterString),
     );
   });

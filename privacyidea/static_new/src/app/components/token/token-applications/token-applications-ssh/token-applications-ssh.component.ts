@@ -1,11 +1,5 @@
 import { NgClass } from '@angular/common';
-import {
-  Component,
-  computed,
-  inject,
-  linkedSignal,
-  WritableSignal,
-} from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatFormField, MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -79,15 +73,9 @@ export class TokenApplicationsSshComponent {
   length = computed(() => this.machineService.tokenApplications()?.length ?? 0);
   displayedColumns: string[] = _sshColumnsKeyMap.map((column) => column.key);
 
-  filterValueString: WritableSignal<string> = linkedSignal(() =>
-    Object.entries(this.machineService.filterValue())
-      .map(([key, value]) => `${key}: ${value}`)
-      .join(' '),
-  );
-
   dataSource = computed(() => {
     var data = this.machineService.tokenApplications();
-    if (data.length) {
+    if (data) {
       return new MatTableDataSource<TokenApplication>(data);
     }
     return this.tableUtilsService.emptyDataSource(

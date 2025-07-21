@@ -7,7 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "jest",
-    "start-hmr": "ng serve --hmr --port 4200 --ssl --ssl-key /home/frank/GitHub/privacyidea/ca/pi_keypair.pem --ssl-cert /home/frank/GitHub/privacyidea/ca/pi.cert.pem"
+    "start-hmr": "ng serve --hmr --port 4200 --ssl --ssl-key /home/frank/GitHub/privacyidea/ca/pi.frank_keypair.pem --ssl-cert /home/frank/GitHub/privacyidea/ca/pi.frank.cert.pem"
   },
   "private": true,
   "dependencies": {
