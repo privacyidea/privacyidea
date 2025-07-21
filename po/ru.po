@@ -11,7 +11,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-07-21 06:02+0000\n"
+"PO-Revision-Date: 2025-07-22 06:06+0000\n"
 "Last-Translator: LS_Grand <lsg@lsgrand.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/ru/>\n"
@@ -5320,10 +5320,8 @@ msgid "Token Applications"
 msgstr "Приложения для токенов"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:448
-#, fuzzy
-#| msgid "Realms"
 msgid "Token Realms"
-msgstr "Домены"
+msgstr "Realm токенов"
 
 #: privacyidea/static/components/token/views/token.getserial.html:22
 msgid "Token Type"
