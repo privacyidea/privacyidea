@@ -152,7 +152,7 @@ class PasswordTokenClass(TokenClass):
         :return: None
         """
         otp_key = param.get("otpkey")
-        force_genkey = param.get(f"{self.get_tokentype()}_{ACTION.FORCE_SERVER_GENERATE}")
+        force_genkey = param.get("policies", {}).get(f"{self.get_tokentype()}_{ACTION.FORCE_SERVER_GENERATE}", False)
         if force_genkey or not otp_key:
             param["genkey"] = True
         genkey = is_true(param.get("genkey"))

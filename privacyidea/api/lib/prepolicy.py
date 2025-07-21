@@ -1617,8 +1617,7 @@ def force_server_generate_key(request: Request, action=None):
     tokentype = params.get("type", "HOTP")
     action = f"{tokentype.lower()}_{ACTION.FORCE_SERVER_GENERATE}"
     force_genkey = Match.admin_or_user(g, action=action, user_obj=request.User).allowed()
-    if force_genkey:
-        g.policies[action] = True
+    g.policies[action] = force_genkey
 
     return True
 

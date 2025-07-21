@@ -4829,13 +4829,13 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Policy is not set
         g.policies = {}
         force_server_generate_key(request)
-        self.assertNotIn(f"hotp_{ACTION.FORCE_SERVER_GENERATE}", g.policies)
+        self.assertFalse(g.policies.get(f"hotp_{ACTION.FORCE_SERVER_GENERATE}"))
 
         # Set policy for different token type
         g.policies = {}
         set_policy("totp_genkey", scope=SCOPE.USER, action=f"totp_{ACTION.FORCE_SERVER_GENERATE}")
         force_server_generate_key(request)
-        self.assertNotIn(f"hotp_{ACTION.FORCE_SERVER_GENERATE}", g.policies)
+        self.assertFalse(g.policies.get(f"hotp_{ACTION.FORCE_SERVER_GENERATE}"))
         self.assertNotIn(f"totp_{ACTION.FORCE_SERVER_GENERATE}", g.policies)
 
         # Set policy for hotp
@@ -4875,7 +4875,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.policies = {}
         request.all_data = {"type": "spass"}
         force_server_generate_key(request)
-        self.assertNotIn(f"spass_{ACTION.FORCE_SERVER_GENERATE}", g.policies)
+        self.assertFalse(g.policies.get(f"spass_{ACTION.FORCE_SERVER_GENERATE}"))
         self.assertNotIn(f"hotp_{ACTION.FORCE_SERVER_GENERATE}", g.policies)
         self.assertNotIn(f"totp_{ACTION.FORCE_SERVER_GENERATE}", g.policies)
         self.assertNotIn(f"motp_{ACTION.FORCE_SERVER_GENERATE}", g.policies)
@@ -4902,7 +4902,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Policy is not set
         g.policies = {}
         force_server_generate_key(request)
-        self.assertNotIn(f"hotp_{ACTION.FORCE_SERVER_GENERATE}", g.policies)
+        self.assertFalse(g.policies.get(f"hotp_{ACTION.FORCE_SERVER_GENERATE}"))
 
         # Set policy for hotp
         g.policies = {}

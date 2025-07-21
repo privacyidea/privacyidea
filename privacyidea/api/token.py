@@ -300,7 +300,7 @@ def init():
     """
     response_details = {}
     param = request.all_data.copy()
-    param.update(g.get("policies", {}))
+    param["policies"] = g.get("policies", {})
 
     user = request.User
     token = init_token(param, user)
