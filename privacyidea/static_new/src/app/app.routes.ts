@@ -7,6 +7,7 @@ import { adminMatch, AuthGuard, selfServiceMatch } from './guards/auth.guard';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
+  { path: '', redirectTo: '/login', pathMatch: 'full' },
   {
     path: '',
     component: LayoutComponent,
@@ -39,7 +40,6 @@ export const routes: Routes = [
       { path: '', redirectTo: 'tokens', pathMatch: 'full' },
     ],
   },
-  { path: '', redirectTo: '/login', pathMatch: 'full' },
   { path: '**', redirectTo: '/login' },
 ];
 
