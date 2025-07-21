@@ -190,6 +190,10 @@ The usual object classes for Active Directory are::
 
 Resolver settings
 ~~~~~~~~~~~~~~~~~
+
+Loginname Attribute
+"""""""""""""""""""
+
 The ``LoginName attribute`` is the attribute that holds the login name. It
 can be changed to your needs.
 
@@ -200,9 +204,15 @@ Starting with version 2.20 you can provide a list of attributes in
 
 This way a user can login with either his ``sAMAccountName`` or his ``principalName``.
 
+Search Filter
+"""""""""""""
+
 The ``searchfilter`` is used to list all possible users, that can be used
 in this resolver. The search filter is used for forward and backward
 search the object in LDAP.
+
+Attribute Mapping
+"""""""""""""""""
 
 The ``attribute mapping`` maps LDAP object attributes to user attributes in
 privacyIDEA. privacyIDEA knows the following attributes:
@@ -228,6 +238,9 @@ attribute mapping with a key, you make up and the LDAP attribute like::
 and ``"homedir"`` and ``"studentID"`` the keys returned in a SAML authentication
 request.
 
+Multivalue Attributes
+"""""""""""""""""""""
+
 The ``MULTIVALUEATTRIBUTES`` config value can be used to specify a list of
 user attributes, that should return a list of values. Imagine you have a user mapping like
 ``{ "phone" : "telephoneNumber", "email" : "mail", "surname" : "sn", "group": "memberOf"}``.
@@ -241,6 +254,8 @@ The ``MULTIVALUEATTRIBUTES`` can be well used with the ``samlcheck`` endpoint (s
 or with the policy
 :ref:`policy_add_user_in_response`.
 
+UID Type
+""""""""
 
 The ``UID Type`` is the unique identifier for the LDAP object. If it is left
 blank, the distinguished name will be used. In case of OpenLDAP this can be
@@ -250,10 +265,50 @@ can use *ipaUniqueID*.
 .. note:: The attributes *entryUUID*, *objectGUID*, and *ipaUniqueID*
    are case sensitive!
 
+Recursive Search of User Groups
+"""""""""""""""""""""""""""""""
+
+Active Directory only returns the direct group memberships of a user. If you are using nested groups and are interested
+in all group memberships, you can use this option. The resolver will then perform another search to retrieve all groups
+of the user, according to the defined search filter.
+
+**Search Filter for User Groups**
+
+Define a search filter to get the groups of the user. The following tags can be used:
+    * ``{base_dn}``: The base DN of the LDAP resolver as defined in ``Base DN``
+    * ``{username}``: The username of the user to search for
+    * All keys defined in the attribute mapping surrounded by curly braces
+
+For example, a valid search filter could be::
+
+    (&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={username},{base_dn}))
+
+The OID ``1.2.840.113556.1.4.1941`` stands for the ``LDAP_MATCHING_RULE_IN_CHAIN``, flag indicating that the search should
+be done recursively. This filter works if the user location is in the ``Base DN``. If this is not the case, you can
+add the user location to the attribute mapping, e.g., ``distinguishedName``. Then this attribute can be used as a tag
+in the search filter, such as ::
+
+    (&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:={distinguishedName}))
+
+**Group Name Attribute**
+
+The LDAP group attribute defining the group's name, which should be stored in the user info (attribute mapping value),
+e.g., ``distinguishedName``.
+
+**User Info Key**
+
+The key to store the groups in the user info (attribute mapping key).
+
+No anonymous referral chasing
+"""""""""""""""""""""""""""""
+
 In case of Active Directory connections you might need to check the box
 ``No anonymous referral chasing``. The underlying LDAP library is only
 able to do anonymous referral chasing. Active Directory will produce an
 error in this case [#adreferrals]_.
+
+No retrieval of schema information
+""""""""""""""""""""""""""""""""""
 
 The option ``No retrieval of schema information`` can be used to
 disable the retrieval of schema information [#ldapschema]_ in
