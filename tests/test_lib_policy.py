@@ -2301,6 +2301,39 @@ class PolicyTestCase(MyTestCase):
         NodeName.query.filter_by(name=node2).first().delete()
         delete_policy("test")
 
+    def test_56_list_policies_user_agent(self):
+        set_policy(name="policy-cp", scope=SCOPE.AUTH, action={ACTION.CHALLENGERESPONSE: ["hotp"]},
+                   user_agents=["privacyidea-cp", "PAM"])
+        set_policy(name="policy-keycloak", scope=SCOPE.AUTH, action={ACTION.CHALLENGERESPONSE: ["totp", "push"]},
+                   user_agents=["privacyIDEA-Keycloak", "Mozilla"])
+        set_policy(name="policy-no-agent", scope=SCOPE.AUTH, action={ACTION.CHALLENGERESPONSE: ["daypassword"]})
+        P = PolicyClass()
+
+        # get policies for CP
+        policies = P.list_policies(scope=SCOPE.AUTH, user_agent="privacyidea-cp")
+        self.assertEqual(2, len(policies), policies)
+        self.assertSetEqual({"policy-cp", "policy-no-agent"}, {policy["name"] for policy in policies})
+
+        # check that search is case-insensitive
+        policies = P.list_policies(scope=SCOPE.AUTH, user_agent="privacyIDEA-CP")
+        self.assertEqual(2, len(policies), policies)
+        self.assertSetEqual({"policy-cp", "policy-no-agent"}, {policy["name"] for policy in policies})
+
+        # get policies for PAM
+        policies = P.list_policies(scope=SCOPE.AUTH, user_agent="PAM")
+        self.assertEqual(2, len(policies), policies)
+        self.assertSetEqual({"policy-cp", "policy-no-agent"}, {policy["name"] for policy in policies})
+
+        # get policies for Keycloak
+        policies = P.list_policies(scope=SCOPE.AUTH, user_agent="privacyidea-keycloak")
+        self.assertEqual(2, len(policies), policies)
+        self.assertSetEqual({"policy-keycloak", "policy-no-agent"}, {policy["name"] for policy in policies})
+
+        # no user agent filter
+        policies = P.list_policies(scope=SCOPE.AUTH)
+        self.assertEqual(1, len(policies), policies)
+        self.assertSetEqual({"policy-no-agent"}, {policy["name"] for policy in policies})
+
 
 class PolicyConditionClassTestCase(MyTestCase):
 

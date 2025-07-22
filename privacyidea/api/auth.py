@@ -106,10 +106,12 @@ def before_request():
     # Save the HTTP header in the localproxy object
     g.request_headers = request.headers
     g.serial = getParam(request.all_data, "serial", default=None)
+    ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
+    g.user_agent = ua_name
     g.audit_object.log({"success": False,
                         "client": g.client_ip,
-                        "user_agent": get_plugin_info_from_useragent(request.user_agent.string)[0],
-                        "user_agent_version": get_plugin_info_from_useragent(request.user_agent.string)[1],
+                        "user_agent": ua_name,
+                        "user_agent_version": ua_version,
                         "privacyidea_server": privacyidea_server,
                         "action": f"{request.method!s} {request.url_rule!s}",
                         "action_detail": "",

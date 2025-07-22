@@ -114,7 +114,8 @@
                 class="btn btn-primary"
                 style="width: 121.667px">
             <span class="glyphicon glyphicon-plus"></span>
-            <span ng-style="{'margin-left': (!existingPolicyname || policyname === existingPolicyname ? '4.667px' : '0px')}" translate>
+            <span ng-style="{'margin-left': (!existingPolicyname || policyname === existingPolicyname ? '4.667px' : '0px')}"
+                  translate>
                  {{ (!existingPolicyname || policyname === existingPolicyname ? 'Save' : 'Clone') | translate }} Policy</span>
         </button>
         <button class="btn btn-primary"
@@ -275,6 +276,19 @@
             </div>
 
             <div class="form-group">
+                <label for="time" class="col-sm-3 control-label"
+                       translate>Valid time</label>
+
+                <div class="col-sm-9">
+                    <input name="time" class="form-control"
+                           id="time"
+                           type="text"
+                           ng-model="params.time"
+                           placeholder="Mon-Fri: 9-18, Sat: 10-15"/>
+                </div>
+            </div>
+
+            <div class="form-group">
                 <label for="client" class="col-sm-3 control-label"
                        translate>Client</label>
 
@@ -288,15 +302,33 @@
             </div>
 
             <div class="form-group">
-                <label for="time" class="col-sm-3 control-label"
-                       translate>Valid time</label>
-
+                <label for="user_agent" class="col-sm-3 control-label"
+                       translate>User Agent</label>
                 <div class="col-sm-9">
-                    <input name="time" class="form-control"
-                           id="time"
-                           type="text"
-                           ng-model="params.time"
-                           placeholder="Mon-Fri: 9-18, Sat: 10-15"/>
+                    <div isteven-multi-select
+                         id="user_agent"
+                         input-model="userAgents"
+                         output-model="selectedUserAgents"
+                         button-label="name"
+                         item-label="name"
+                         tick-property="ticked"
+                         output-properties="identifier">
+                    </div>
+                    <div class="form-group"></div>
+                    <div class="form-group row">
+                        <div class="col-sm-6">
+                            <input name="customUserAgent" class="form-control"
+                                   id="customUserAgent"
+                                   type="text"
+                                   ng-model="customUserAgent"
+                                   placeholder="custom-user-agent"/>
+                        </div>
+                        <div class="col-sm-6">
+                            <button class="btn btn-default col-sm-3" ng-click="addCustomUserAgent()" translate>
+                                Add
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -309,7 +341,7 @@
                 <div class="col-sm-9">
                     <div class="text text-right">
                         <a target="_external" href="{{ 'https://privacyidea.readthedocs.io/en/v'+
-                                            privacyideaVersionNumber+'/policies/conditions.html' }}">
+                                                privacyideaVersionNumber+'/policies/conditions.html' }}">
                             <span class="glyphicon glyphicon-info-sign"></span>
                         </a>
                     </div>
@@ -317,8 +349,8 @@
                                           defs="policyConditionDefs"></pi-policy-conditions>
                 </div>
             </div>
-
         </div>
+
         <div class="tab-pane action" id="action">
             <h3 translate>Action</h3>
             <div class="row">

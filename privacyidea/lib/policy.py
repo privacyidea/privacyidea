@@ -594,7 +594,7 @@ class PolicyClass(object):
     def list_policies(self, name: str = None, scope: str = None, realm: str = None, active: bool = None,
                       resolver: str = None, user: str = None, client=None, action=None, pinode=None,
                       adminrealm: str = None, adminuser: str = None, sort_by_priority: bool = True,
-                      additional_realms: list = None):
+                      additional_realms: list = None, user_agent: Optional[str] = None) -> list[dict]:
         """
         Return the policies, filtered by the given values.
 
@@ -631,6 +631,7 @@ class PolicyClass(object):
             combination
         :param sort_by_priority: If true, sort the resulting list by priority, ascending
             by their policy numbers.
+        :param user_agent: The user agent of the request
         :return: list of policies
         :rtype: list of dicts
         """
@@ -669,8 +670,7 @@ class PolicyClass(object):
                         # about the request value
                         new_policies.append(policy)
                     else:
-                        value_found, value_excluded = self._search_value(
-                            policy.get(searchkey), searchvalue)
+                        value_found, value_excluded = self._search_value(policy.get(searchkey), searchvalue)
                         if value_found and not value_excluded:
                             new_policies.append(policy)
                 reduced_policies = new_policies
@@ -750,7 +750,26 @@ class PolicyClass(object):
                     new_policies.append(policy)
 
             reduced_policies = new_policies
-            log.debug("Policies after matching pinode={1!s}: {0!s}".format(reduced_policies, pinode))
+            log.debug(f"Policies after matching pinode={pinode}: {reduced_policies}")
+
+        # Match the user agent
+        new_policies = []
+        for policy in reduced_policies:
+            policy_matches = False
+            # The policy either matches if it has no user agents defined or if the user agent is contained in the list
+            if not policy.get("user_agents"):
+                # If no user agent is defined, we match this policy
+                policy_matches = True
+            elif user_agent:
+                policy_agents = [user_agent.lower() for user_agent in policy.get("user_agents") if user_agent]
+                if user_agent.lower() in policy_agents:
+                    policy_matches = True
+
+            if policy_matches:
+                new_policies.append(policy)
+
+        reduced_policies = new_policies
+        log.debug(f"Policies after matching the user_agent={user_agent}: {reduced_policies}")
 
         # Match the client IP.
         # Client IPs may be direct match, may be located in subnets or may
@@ -795,7 +814,8 @@ class PolicyClass(object):
                        time: datetime = None, sort_by_priority: bool = True, audit_data: dict = None,
                        request_headers=None, serial: str = None,
                        extended_condition_check: Union[int, list[str], None] = None, additional_realms: list = None,
-                       container_serial: str = None, request_data: Optional[dict] = None) -> list[dict]:
+                       container_serial: str = None, request_data: Optional[dict] = None,
+                       user_agent: Optional[str] = None) -> list[dict]:
         """
         Return all policies matching the given context.
         Optionally, write the matching policies to the audit log.
@@ -833,6 +853,7 @@ class PolicyClass(object):
             combination
         :param container_serial: The container serial from the request if available
         :param request_data: The request data as dictionary
+        :param user_agent: The user agent of the request
         :return: a list of policy dictionaries
         """
         if user_object is not None:
@@ -855,7 +876,8 @@ class PolicyClass(object):
         reduced_policies = self.list_policies(name=name, scope=scope, realm=realm, active=active,
                                               resolver=resolver, user=user, client=client, action=action,
                                               adminrealm=adminrealm, adminuser=adminuser, pinode=pinode,
-                                              sort_by_priority=sort_by_priority, additional_realms=additional_realms)
+                                              sort_by_priority=sort_by_priority, additional_realms=additional_realms,
+                                              user_agent=user_agent)
 
         # filter policy for time. If no time is set or if a time is set, and
         # it matches the time_range, then we add this policy
@@ -1046,10 +1068,11 @@ class PolicyClass(object):
         return policy_values
 
     @log_with(log)
-    def get_action_values(self, action, scope=SCOPE.AUTHZ, realm=None,
-                          resolver=None, user=None, client=None, unique=False,
-                          allow_white_space_in_action=False, adminrealm=None, adminuser=None,
-                          user_object=None, audit_data=None):
+    def get_action_values(self, action: str, scope: str = SCOPE.AUTHZ, realm: Optional[str] = None,
+                          resolver: Optional[str] = None, user: Optional[str] = None, client: Optional[str] = None,
+                          unique: bool = False, allow_white_space_in_action: bool = False,
+                          adminrealm: Optional[str] = None, adminuser: Optional[str] = None,
+                          user_object: Optional[User] = None, audit_data=None, user_agent: Optional[str] = None):
         """
         Get the defined action values for a certain actions.
 
@@ -1080,12 +1103,12 @@ class PolicyClass(object):
             key "policies". This can be useful for policies like ACTION.OTPPIN - where it is clear, that the
             found policy will be used. It could make less sense with an action like ACTION.LASTAUTH - where
             the value of the action needs to be evaluated in a more special case.
+        :param user_agent: The user agent of the request
         :rtype: dict
         """
-        policies = self.match_policies(scope=scope, adminrealm=adminrealm, adminuser=adminuser,
-                                       action=action, active=True,
-                                       realm=realm, resolver=resolver, user=user, user_object=user_object,
-                                       client=client, sort_by_priority=True)
+        policies = self.match_policies(scope=scope, adminrealm=adminrealm, adminuser=adminuser, action=action,
+                                       active=True, realm=realm, resolver=resolver, user=user, user_object=user_object,
+                                       client=client, sort_by_priority=True, user_agent=user_agent)
         policy_values = self.extract_action_values(policies, action,
                                                    unique=unique,
                                                    allow_white_space_in_action=allow_white_space_in_action)
@@ -1128,7 +1151,8 @@ class PolicyClass(object):
         return main_menus
 
     @log_with(log)
-    def ui_get_rights(self, scope, realm, username, client=None):
+    def ui_get_rights(self, scope: str, realm: str, username: str, client: Optional[str] = None,
+                      user_agent: Optional[str] = None):
         """
         Get the rights derived from the policies for the given realm and user.
         Works for admins and normal users.
@@ -1139,6 +1163,7 @@ class PolicyClass(object):
         :param realm: Is either user users realm or the adminrealm
         :param username: The loginname of the user
         :param client: The HTTP client IP
+        :param user_agent: The user agent of the request
         :return: A list of actions
         """
         from privacyidea.lib.token import get_dynamic_policy_definitions
@@ -1169,7 +1194,8 @@ class PolicyClass(object):
                                    adminuser=admin_user,
                                    active=True,
                                    client=client,
-                                   extended_condition_check=extended_condition_check)
+                                   extended_condition_check=extended_condition_check,
+                                   user_agent=user_agent)
         for pol in pols:
             for action, action_value in pol.get("action").items():
                 if action_value:
@@ -1190,7 +1216,7 @@ class PolicyClass(object):
         return rights
 
     @log_with(log)
-    def ui_get_enroll_tokentypes(self, client, logged_in_user):
+    def ui_get_enroll_tokentypes(self, client: str, logged_in_user: dict, user_agent: Optional[str] = None):
         """
         Return a dictionary of the allowed tokentypes for the logged in user.
         This used for the token enrollment UI.
@@ -1214,6 +1240,7 @@ class PolicyClass(object):
         :type client: basestring
         :param logged_in_user: The Dict of the logged in user
         :type logged_in_user: dict
+        :param user_agent: The user agent of the request
         :return: list of token types, the user may enroll
         """
         enroll_types = {}
@@ -1251,7 +1278,8 @@ class PolicyClass(object):
                                                action="enroll" + tokentype.upper(),
                                                adminrealm=adminrealm,
                                                adminuser=adminuser,
-                                               extended_condition_check=extended_condition_check)
+                                               extended_condition_check=extended_condition_check,
+                                               user_agent=user_agent)
                 if typepols:
                     # If there is no policy allowing the enrollment of this
                     # tokentype, it is deleted.
@@ -1383,10 +1411,13 @@ def rename_policy(name: str, new_name: str) -> int:
 
 
 @log_with(log)
-def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
-               user=None, time=None, client=None, active=True,
-               adminrealm=None, adminuser=None, priority=None, check_all_resolvers=False,
-               conditions=None, pinode=None, description=None, user_case_insensitive=False):
+def set_policy(name: Optional[str] = None, scope: Optional[str] = None, action: Optional[str, list] = None,
+               realm: Optional[str, list] = None, resolver: Optional[str, list] = None,
+               user: Optional[str, list] = None, time: Optional[str] = None, client: Optional[str] = None,
+               active: bool = True, adminrealm: Optional[str, list]=None, adminuser: Optional[str, list] = None,
+               priority: Optional[int, str] = None, check_all_resolvers: bool = False,
+               conditions: Optional[list] = None, pinode: Optional[str, list] = None, description: Optional[str] = None,
+               user_case_insensitive: bool = False, user_agents: Optional[str, list[str]] = None) -> int:
     """
     Function to set a policy.
 
@@ -1420,8 +1451,8 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     :param pinode: A privacyIDEA node or a list of privacyIDEA nodes.
     :param description: A description for the policy
     :type description: str
+    :param user_agents: A list of user agents for which this policy is valid.
     :return: The database ID of the policy
-    :rtype: int
     """
     # TODO: Create update_policy function and restrict set_policy to only create new policies
     # validate scope
@@ -1479,6 +1510,10 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
             raise privacyIDEAError(_("Invalid client definition!"), id=302)
     if isinstance(pinode, list):
         pinode = ", ".join(pinode)
+    if isinstance(user_agents, list):
+        # Remove None or empty values
+        user_agents = [user_agent for user_agent in user_agents if user_agent]
+        user_agents = ", ".join(user_agents)
     # Evaluate condition parameter and convert tuple into PolicyConditionClass object
     conditions_data = []
     if conditions is not None:
@@ -1530,6 +1565,8 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
             p1.priority = priority
         if pinode is not None:
             p1.pinode = pinode
+        if user_agents is not None:
+            p1.user_agents = user_agents
         p1.active = active
         p1.check_all_resolvers = check_all_resolvers
         p1.user_case_insensitive = user_case_insensitive
@@ -1541,12 +1578,10 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         ret = p1.id
     else:
         # Create a new policy
-        policy = Policy(name, action=action, scope=scope, realm=realm,
-                        user=user, time=time, client=client, active=active,
-                        resolver=resolver, adminrealm=adminrealm,
-                        adminuser=adminuser, priority=priority,
-                        check_all_resolvers=check_all_resolvers,
-                        pinode=pinode, user_case_insensitive=user_case_insensitive)
+        policy = Policy(name, action=action, scope=scope, realm=realm, user=user, time=time, client=client,
+                        active=active, resolver=resolver, adminrealm=adminrealm, adminuser=adminuser,
+                        priority=priority, check_all_resolvers=check_all_resolvers, pinode=pinode,
+                        user_case_insensitive=user_case_insensitive, user_agents=user_agents)
         ret = policy.save()
         # Since we create a new policy we always set the conditions, even if the list is empty
         set_policy_conditions(conditions_data, policy)
@@ -1669,7 +1704,8 @@ def import_policies(file_contents):
                          client=ast.literal_eval(policy.get("client", "[]")),
                          pinode=ast.literal_eval(policy.get("pinode", "[]")),
                          time=policy.get("time", ""),
-                         priority=policy.get("priority", "1")
+                         priority=policy.get("priority", "1"),
+                         user_agents=policy.get("user_agents", None)
                          )
         if ret > 0:
             log.debug("import policy {0!s}: {1!s}".format(policy_name, ret))
@@ -3081,8 +3117,9 @@ def get_action_values_from_options(scope, action, options):
     g = options.get("g")
     if g:
         user_object = options.get("user")
-        value = Match.user(g, scope=scope, action=action, user_object=user_object) \
-            .action_values(unique=True, allow_white_space_in_action=True, write_to_audit_log=False)
+        value = Match.user(g, scope=scope, action=action,
+                           user_object=user_object).action_values(unique=True, allow_white_space_in_action=True,
+                                                                  write_to_audit_log=False)
         if len(value) >= 1:
             return list(value)[0]
         else:
@@ -3304,7 +3341,7 @@ class Match(object):
         return cls(g, name=None, scope=scope, realm=None, active=True,
                    resolver=None, user=None, user_object=None,
                    client=g.client_ip, action=action, adminrealm=None, time=None,
-                   sort_by_priority=True)
+                   sort_by_priority=True, user_agent=g.get("user_agents"))
 
     @classmethod
     def realm(cls, g, scope, action, realm):
@@ -3324,7 +3361,7 @@ class Match(object):
         return cls(g, name=None, scope=scope, realm=realm, active=True,
                    resolver=None, user=None, user_object=None,
                    client=g.client_ip, action=action, adminrealm=None, time=None,
-                   sort_by_priority=True, serial=g.serial)
+                   sort_by_priority=True, serial=g.serial, user_agent=g.get("user_agent"))
 
     @classmethod
     def user(cls, g, scope, action, user_object):
@@ -3350,7 +3387,7 @@ class Match(object):
         return cls(g, name=None, scope=scope, realm=None, active=True,
                    resolver=None, user=None, user_object=user_object,
                    client=g.client_ip, action=action, adminrealm=None, time=None,
-                   sort_by_priority=True, serial=g.serial)
+                   sort_by_priority=True, serial=g.serial, user_agent=g.get("user_agent"))
 
     @classmethod
     def token(cls, g, scope, action, token_obj):
@@ -3409,7 +3446,8 @@ class Match(object):
         return cls(g, name=None, scope=SCOPE.ADMIN, user_object=user_obj, active=True,
                    resolver=None, client=g.client_ip, action=action,
                    adminuser=adminuser, adminrealm=adminrealm, time=None,
-                   sort_by_priority=True, serial=serial, container_serial=container_serial)
+                   sort_by_priority=True, serial=serial, container_serial=container_serial,
+                   user_agent=g.get("user_agent"))
 
     @classmethod
     def admin_or_user(cls, g, action, user_obj, additional_realms=None, container_serial: str = None):
@@ -3447,7 +3485,7 @@ class Match(object):
                    resolver=None, user=username, user_object=user_obj,
                    client=g.client_ip, action=action, adminrealm=adminrealm, adminuser=adminuser,
                    time=None, sort_by_priority=True, serial=g.serial, additional_realms=additional_realms,
-                   container_serial=container_serial)
+                   container_serial=container_serial, user_agent=g.get("user_agent"))
 
     @classmethod
     def generic(cls, g, scope: str = None, realm: str = None, resolver: str = None, user: str = None,
@@ -3473,7 +3511,8 @@ class Match(object):
                    client=client, action=action, adminrealm=adminrealm,
                    adminuser=adminuser, time=time, serial=serial,
                    sort_by_priority=sort_by_priority, extended_condition_check=extended_condition_check,
-                   additional_realms=additional_realms, container_serial=container_serial)
+                   additional_realms=additional_realms, container_serial=container_serial,
+                   user_agent=g.get("user_agent"))
 
 
 def get_allowed_custom_attributes(g, user_obj):

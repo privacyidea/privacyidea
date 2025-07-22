@@ -134,6 +134,7 @@ def before_create_user_request():
     audit_username = get_optional(request.all_data, "user")
 
     ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
+    g.user_agent = ua_name
     g.audit_object.log({"success": False,
                         "user": audit_username,
                         "realm": audit_realm,
@@ -270,6 +271,7 @@ def before_container_request():
         audit_username = get_optional(request.all_data, "user")
 
     ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
+    g.user_agent = ua_name
     g.audit_object.log({"success": False,
                         "user": audit_username,
                         "realm": audit_realm,
@@ -402,6 +404,7 @@ def before_request():
         audit_username = get_optional(request.all_data, "user")
 
     ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
+    g.user_agent = ua_name
     g.audit_object.log({"success": False,
                         "serial": serial,
                         "user": audit_username,
