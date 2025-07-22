@@ -201,6 +201,10 @@ class PolicyTestCase(MyTestCase):
         policies = P.match_policies(name="pol4")
         self.assertEqual(policies[0].get('description'), 'test3')
 
+        # Find policy with user agent
+        policies = P.match_policies(user_agent="privacyidea-cp")
+        self.assertEqual("pol1", policies[0]["name"])
+
         delete_policy(name="pol5")
 
     def test_03_set_policy_fails(self):

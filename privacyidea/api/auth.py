@@ -394,8 +394,9 @@ def get_auth_token():
     if hsm.is_ready:
         nonce = geturandom(hex=True)
         # Add the role to the JWT, so that we can verify it internally and use the authtype for access definitions
-        rights = g.policy_object.ui_get_rights(role, realm, login_name, g.client_ip)
-        menus = g.policy_object.ui_get_main_menus({"username": login_name, "role": role, "realm": realm}, g.client_ip)
+        rights = g.policy_object.ui_get_rights(role, realm, login_name, g.client_ip, g.get("user_agent"))
+        menus = g.policy_object.ui_get_main_menus({"username": login_name, "role": role, "realm": realm}, g.client_ip,
+                                                  g.get("user_agent"))
     else:
         import os
         nonce = hexlify_and_unicode(os.urandom(20))
@@ -484,6 +485,6 @@ def get_rights():
 
     :reqheader Authorization: The authorization token acquired by /auth request
     """
-    enroll_types = g.policy_object.ui_get_enroll_tokentypes(g.client_ip, g.logged_in_user)
+    enroll_types = g.policy_object.ui_get_enroll_tokentypes(g.client_ip, g.logged_in_user, g.get("user_agent"))
     g.audit_object.log({"success": True})
     return send_result(enroll_types)

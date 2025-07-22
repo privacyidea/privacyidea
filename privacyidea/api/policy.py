@@ -202,7 +202,7 @@ def set_policy_api(name=None):
 
     action = get_required(param, "action")
     scope = get_required(param, "scope")
-    realm = get_required(param, "realm")
+    realm = param.get("realm")
     resolver = param.get("resolver")
     pinode = param.get("pinode")
     user = param.get("user")

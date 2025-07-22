@@ -1125,7 +1125,8 @@ class PolicyClass(object):
         return policy_values
 
     @log_with(log)
-    def ui_get_main_menus(self, logged_in_user, client=None):
+    def ui_get_main_menus(self, logged_in_user: dict, client: Optional[str] = None,
+                          user_agent: Optional[str] = None) -> list:
         """
         Get the list of allowed main menus derived from the policies for the
         given user - admin or normal user.
@@ -1135,6 +1136,7 @@ class PolicyClass(object):
         :param logged_in_user: The logged in user, a dictionary with keys
             "username", "realm" and "role".
         :param client: The IP address of the client
+        :param user_agent: The user agent of the request
         :return: A list of MENUs to be displayed
         """
         from privacyidea.lib.token import get_dynamic_policy_definitions
@@ -1142,7 +1144,8 @@ class PolicyClass(object):
         user_rights = self.ui_get_rights(role,
                                          logged_in_user.get("realm"),
                                          logged_in_user.get("username"),
-                                         client)
+                                         client,
+                                         user_agent)
         main_menus = []
         static_rights = get_static_policy_definitions(role)
         enroll_rights = get_dynamic_policy_definitions(role)
@@ -1710,7 +1713,7 @@ def import_policies(file_contents):
                          pinode=ast.literal_eval(policy.get("pinode", "[]")),
                          time=policy.get("time", ""),
                          priority=policy.get("priority", "1"),
-                         user_agents=policy.get("user_agents", None)
+                         user_agents=ast.literal_eval(policy.get("user_agents", "[]"))
                          )
         if ret > 0:
             log.debug("import policy {0!s}: {1!s}".format(policy_name, ret))
