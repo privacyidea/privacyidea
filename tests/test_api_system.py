@@ -164,9 +164,12 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             # An invalid policy name raises an exception
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 400, res)
+            self.assertEqual(400, res.status_code, res)
+            error = res.json.get("result").get("error")
+            self.assertEqual(905, error.get("code"))
+            self.assertIn("Policy name must not contain white spaces!", error.get("message"))
 
-        # setting policy with an empty name
+        # setting policy with a missing action
         with self.app.test_request_context('/policy/enroll',
                                            data={'scope': SCOPE.USER,
                                                  'client': "127.12.12.12",
@@ -176,6 +179,9 @@ class APIConfigTestCase(MyApiTestCase):
             # An invalid policy name raises an exception
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400, res)
+            error = res.json.get("result").get("error")
+            self.assertEqual(905, error.get("code"))
+            self.assertIn("Missing parameter: action", error.get("message"))
 
     def test_05_get_policy(self):
         with self.app.test_request_context('/policy/pol1',

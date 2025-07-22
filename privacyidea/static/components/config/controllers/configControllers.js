@@ -127,7 +127,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
                 });
                 $scope.customUserAgent = "";
             }
-        }
+        };
 
         let check_all_loaded = function () {
             if ($scope.resolversLoaded &&

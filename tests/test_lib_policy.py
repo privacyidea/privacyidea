@@ -2333,7 +2333,7 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual(2, len(policies), policies)
         self.assertSetEqual({"policy-keycloak", "policy-no-agent"}, {policy["name"] for policy in policies})
 
-        # no user agent filter
+        # no user agent filter: only get policies without user agent
         policies = P.list_policies(scope=SCOPE.AUTH)
         self.assertEqual(1, len(policies), policies)
         self.assertSetEqual({"policy-no-agent"}, {policy["name"] for policy in policies})

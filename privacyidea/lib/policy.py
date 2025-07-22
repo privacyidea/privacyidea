@@ -763,7 +763,7 @@ class PolicyClass(object):
                 # If no user agent is defined, we match this policy
                 policy_matches = True
             elif user_agent:
-                policy_agents = [user_agent.lower() for user_agent in policy.get("user_agents") if user_agent]
+                policy_agents = [agent.lower() for agent in policy.get("user_agents") if agent]
                 if user_agent.lower() in policy_agents:
                     policy_matches = True
 
@@ -1463,6 +1463,10 @@ def set_policy(name: Optional[str] = None, scope: Optional[str] = None, action: 
     :return: The database ID of the policy
     """
     # TODO: Create update_policy function and restrict set_policy to only create new policies
+    # validate name
+    if name and " " in name:
+        raise ParameterError("Policy name must not contain white spaces!")
+
     # validate scope
     if scope and scope not in SCOPE.get_all_scopes():
         log.error(f"Invalid scope '{scope}' in policy '{name}'. Valid scopes are: {SCOPE.get_all_scopes()}")
@@ -3349,7 +3353,7 @@ class Match(object):
         return cls(g, name=None, scope=scope, realm=None, active=True,
                    resolver=None, user=None, user_object=None,
                    client=g.client_ip, action=action, adminrealm=None, time=None,
-                   sort_by_priority=True, user_agent=g.get("user_agents"))
+                   sort_by_priority=True, user_agent=g.get("user_agent"))
 
     @classmethod
     def realm(cls, g, scope, action, realm):
