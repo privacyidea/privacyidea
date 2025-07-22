@@ -1,6 +1,7 @@
 import { HttpClient, HttpParams, httpResource } from '@angular/common/http';
 import {
   computed,
+  effect,
   inject,
   Injectable,
   linkedSignal,
@@ -52,11 +53,12 @@ export interface MachineServiceInterface {
   sshAdvancedApiFilter: string[];
   offlineApiFilter: string[];
   offlineAdvancedApiFilter: string[];
-  machines: WritableSignal<Machines>;
-  tokenApplications: WritableSignal<TokenApplications>;
+  machines: WritableSignal<Machines | undefined>;
+  tokenApplications: WritableSignal<TokenApplications | undefined>;
   selectedApplicationType: WritableSignal<'ssh' | 'offline'>;
   pageSize: WritableSignal<number>;
   filterValue: WritableSignal<Record<string, string>>;
+  filterValueString: WritableSignal<string>;
   filterParams: () => Record<string, string>;
   sort: WritableSignal<Sort>;
   pageIndex: WritableSignal<number>;
@@ -144,10 +146,10 @@ export class MachineService implements MachineServiceInterface {
     },
   }));
 
-  machines: WritableSignal<Machines> = linkedSignal({
+  machines: WritableSignal<Machines | undefined> = linkedSignal({
     source: this.machinesResource.value,
     computation: (machinesResource, previous) =>
-      machinesResource?.result?.value ?? previous?.value ?? [],
+      machinesResource?.result?.value ?? previous?.value,
   });
 
   postAssignMachineToToken(args: {
@@ -164,9 +166,19 @@ export class MachineService implements MachineServiceInterface {
 
   filterValue: WritableSignal<Record<string, string>> = linkedSignal({
     source: this.selectedApplicationType,
+    // This gets also updated by the effect in the constructor, when filterValueString changes.
     computation: () => ({}),
   });
-  filterParams = computed(() => {
+
+  filterValueString: WritableSignal<string> = linkedSignal({
+    source: this.filterValue,
+    computation: () =>
+      Object.entries(this.filterValue())
+        .map(([key, value]) => `${key}: ${value}`)
+        .join(' '),
+  });
+
+  filterParams = computed<Record<string, string>>(() => {
     let allowedKeywords =
       this.selectedApplicationType() === 'ssh'
         ? [...this.sshApiFilter, ...this.sshAdvancedApiFilter]
@@ -214,9 +226,6 @@ export class MachineService implements MachineServiceInterface {
     computation: () => 0,
   });
   tokenApplicationResource = httpResource<PiResponse<TokenApplications>>(() => {
-    if (this.selectedContent() !== 'token_applications') {
-      return undefined;
-    }
     const params = {
       application: this.selectedApplicationType(),
       page: this.pageIndex() + 1,
@@ -232,11 +241,12 @@ export class MachineService implements MachineServiceInterface {
       params: params,
     };
   });
-  tokenApplications: WritableSignal<TokenApplications> = linkedSignal({
-    source: this.tokenApplicationResource.value,
-    computation: (tokenApplicationResource, previous) =>
-      tokenApplicationResource?.result?.value ?? previous?.value ?? [],
-  });
+  tokenApplications: WritableSignal<TokenApplications | undefined> =
+    linkedSignal({
+      source: this.tokenApplicationResource.value,
+      computation: (tokenApplicationResource, previous) =>
+        tokenApplicationResource?.result?.value ?? previous?.value,
+    });
 
   postTokenOption(
     hostname: string,
@@ -342,5 +352,14 @@ export class MachineService implements MachineServiceInterface {
 
   onSortEvent($event: Sort): void {
     this.sort.set($event);
+  }
+
+  constructor() {
+    effect(() => {
+      const recordsFromText = this.tableUtilsService.recordsFromText(
+        this.filterValueString(),
+      );
+      this.filterValue.set(recordsFromText);
+    });
   }
 }

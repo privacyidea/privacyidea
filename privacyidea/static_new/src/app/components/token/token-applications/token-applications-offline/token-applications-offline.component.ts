@@ -70,7 +70,7 @@ export class TokenApplicationsOfflineComponent {
 
   dataSource = computed(() => {
     var data = this.machineService.tokenApplications();
-    if (data.length) {
+    if (data) {
       return new MatTableDataSource<TokenApplication>(data);
     }
     return this.tableUtilsService.emptyDataSource(
