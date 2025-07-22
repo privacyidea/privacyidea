@@ -15,7 +15,6 @@ $button-border-radius: var(--border-radius);
 $profile-bg: var(--background-yellow);
 $profile-hover-bg: var(--background-yellow-inset);
 $shadow-white: var(--box-shadow-white);
-$header-bg: white;
 
 // Mixins for common button styles
 @mixin button-base(
@@ -282,14 +281,14 @@ $header-bg: white;
   height: var(--header-height);
   cursor: pointer;
   border-radius: 0;
-  background: $header-bg;
-  color: #767676;
+  background: var(--mat-sys-surface-container-high);
+  color: var(--mat-sys-on-surface);
   box-shadow: none !important;
 
   &:hover {
-    background: #f8f8f8;
+    background: var(--mat-sys-surface-container-higher);
     mat-icon {
-      color: black;
+      color: var(--mat-sys-on-surface-variant);
     }
   }
 }
@@ -383,3 +382,4 @@ $header-bg: white;
   -webkit-mask-size: 100% 100%;
   mask-size: 100% 100%;
 }
+//

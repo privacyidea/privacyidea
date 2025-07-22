@@ -67,7 +67,7 @@ tr.example-detail-row td {
   align-items: center;
   gap: 8px;
   padding: 8px;
-  border: solid 1px #e0e2ec;
+  border: solid 1px var(--mat-sys-outline-variant);
   border-radius: var(--border-radius);
   background: white;
 }

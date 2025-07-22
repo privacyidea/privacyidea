@@ -1,6 +1,5 @@
 @use "@angular/material" as mat;
 
-$table-border-color: #e0e2ec;
 $td-max-width: 18rem;
 $filter-width: 54.5rem;
 $scrollable-height: calc(var(--mat-sys-body-medium-line-height) * 3);
@@ -10,18 +9,13 @@ $realm-margin-top: 17px;
 $realm-list-margin-top: 7px;
 
 $table-bg: var(--table-color);
-$link-color: var(--blue-base);
-$even-bg: #f3f3f3;
-$dimgray-color: dimgray;
+$link-color: var(--mat-sys-primary);
 $paginator-bg: var(--table-color);
 $highlight-padding: 2px 6px;
 $border-radius: 4px;
-$font-color-white: white;
-$divider-color: #e0e2ec;
 $icon-font-size: 22px;
 $fix-width: 20rem;
 
-$table-border-color: #e0e2ec;
 $table-max-width: 20rem;
 $gap-small: 8px;
 $margin-left-small: 10px;
@@ -46,7 +40,7 @@ $description-width: 18rem;
 
     td,
     th {
-      border: 1px solid $table-border-color;
+      border: 1px solid var(--mat-sys-outline-variant);
     }
 
     td {
@@ -115,7 +109,7 @@ a {
 
 td:nth-child(even),
 th:nth-child(even) {
-  background: $even-bg;
+  background: var(--mat-sys-surface-container-high);
 }
 
 .mat-mdc-form-field {
@@ -142,7 +136,7 @@ th:nth-child(even) {
 .highlight-disabled {
   border-radius: $border-radius;
   padding: $highlight-padding;
-  color: $font-color_white;
+  color: var(--mat-sys-on-primary);
   display: inline-block;
 
   &.highlight-true,
@@ -161,7 +155,7 @@ th:nth-child(even) {
   }
 
   &.highlight-disabled {
-    background-color: #969696;
+    background-color: var(--mat-sys-surface-dim);
   }
 
   &.highlight-true-clickable,
@@ -206,7 +200,7 @@ th:nth-child(even) {
 }
 
 .mat-divider {
-  border-top-color: $divider-color;
+  border-top-color: var(--mat-sys-color-on-surface);
 }
 
 .height-52 {
@@ -279,7 +273,7 @@ th:nth-child(even) {
     td {
       max-width: $table-max-width;
       margin-left: $margin-left-small;
-      border: 1px solid $table-border-color;
+      border: 1px solid var(--mat-sys-outline-variant);
     }
   }
 
@@ -368,3 +362,4 @@ th:nth-child(even) {
   overflow-y: auto;
   max-width: 70.5rem;
 }
+//

@@ -22,9 +22,9 @@
     color: white !important;
   }
 
-  .type-option.mdc-list-item--selected:not(
-      .mdc-list-item--disabled
-    ):not(.mat-mdc-option-multiple) {
+  .type-option.mdc-list-item--selected:not(.mdc-list-item--disabled):not(
+      .mat-mdc-option-multiple
+    ) {
     background-color: #217fa8 !important;
   }
 
@@ -34,11 +34,16 @@
 
   .type-option.mat-mdc-option.mdc-list-item--selected:not(
       .mdc-list-item--disabled
-    ) .mdc-list-item__primary-text {
+    )
+    .mdc-list-item__primary-text {
     color: white !important;
   }
 
-  .type-option.mat-mdc-option:hover:not(.mdc-list-item--selected, .mdc-list-item--disabled) {
+  .type-option.mat-mdc-option:hover:not(
+      .mdc-list-item--selected,
+      .mdc-list-item--disabled
+    ) {
     background-color: #f2f9fd;
   }
 }
+//

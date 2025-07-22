@@ -1,11 +1,10 @@
 @use "../../../../styles";
 @use "@angular/material" as mat;
 
-$header-bg: white;
 $header-shadow: var(--box-shadow);
 $menu-link-color: #767676;
-$hover-bg: var(--background-blue);
-$active-bg: var(--blue-base);
+$hover-bg: var(--mat-sys-surface-container-highest);
+$active-bg: var(--mat-sys-primary);
 $shadow-white: var(--box-shadow-white);
 $border-radius: var(--border-radius);
 
@@ -19,7 +18,7 @@ $border-radius: var(--border-radius);
 .header-container {
   @include flex-center;
   @include mat.elevation(3);
-  background: $header-bg;
+  background: var(--mat-sys-surface-container-high);
   border-bottom-left-radius: 5px;
   border-bottom-right-radius: 5px;
   z-index: 2;
@@ -60,7 +59,7 @@ $border-radius: var(--border-radius);
       height: 60px;
       min-width: 120px;
       padding: 20px;
-      background: $header-bg;
+      background: var(--mat-sys-surface-container-high);
       box-shadow: none;
       transition: 0ms;
 
@@ -127,3 +126,4 @@ $border-radius: var(--border-radius);
     padding: 0 !important;
   }
 }
+//

@@ -12,6 +12,7 @@
   max-width: var(--tile-max-width);
   height: var(--tile-height);
   border-radius: var(--border-radius);
+  background-color: var(--mat-sys-surface-container-high);
   @include mat.elevation(3);
 
   &:hover {
@@ -70,25 +71,27 @@
   text-align: center;
 }
 
-.tile-button.selected {
-  background-color: var(--blue-base);
-  color: white;
+.tile-size-scope .tile-button.selected {
+  background-color: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
   box-shadow:
-    var(--shadow-distance) var(--shadow-distance) var(--blur) var(--shadow),
+    var(--shadow-distance) var(--shadow-distance) var(--blur)
+      var(--mat-sys-shadow),
     var(--light-distance) var(--light-distance) var(--blur) var(--light);
 
   .mat-icon {
-    color: white;
+    color: var(--mat-sys-on-primary);
   }
 
   .bottom-content {
-    color: white;
+    color: var(--mat-sys-on-primary);
     font-weight: bold;
   }
 
   &:hover {
-    background-color: var(--blue-light);
+    background-color: var(--mat-sys-primary-light);
     @include mat.elevation(10);
     transform: translateY(-5px);
   }
 }
+//

@@ -1,5 +1,6 @@
 @use "sass:meta";
 @use "@angular/material" as mat;
+@use "theme";
 
 @include meta.load-css("table.scss");
 @include meta.load-css("buttons.scss");
@@ -12,7 +13,7 @@
 
 html,
 body {
-  background: var(--background);
+  background: var(--mat-sys-background);
   font-family: "Roboto", sans-serif;
   margin: 0;
   overflow: hidden;
@@ -46,9 +47,6 @@ body {
   --quarter-global-padding: calc(var(--global-padding) / 4);
   --eighth-global-padding: calc(var(--global-padding) / 8);
 
-  --background: #e6e6e6;
-
-  --shadow: #cccccc;
   --shadow-light: #d9d9d9;
   --light: #f3f3f3;
 
@@ -60,59 +58,34 @@ body {
     var(--green-brand-base)
   );
 
-  --blue-dark: hsl(198, 66%, 25%);
-  --blue-base: hsl(198, 66%, 30%);
-  --blue-light: hsl(198, 66%, 35%);
-  --blue-light-active: hsl(198, 66%, 40%);
-
-  --green-dark: hsl(120, 39%, 39%);
-  --green-base: hsl(120, 39%, 44%);
-  --green-light: hsl(120, 39%, 49%);
-  --green-light-active: hsl(120, 39%, 54%);
-
-  --red-dark: hsl(342, 100%, 32%);
-  --red-base: hsl(342, 100%, 37%);
-  --red-light: hsl(342, 100%, 42%);
-  --red-light-active: hsl(342, 100%, 57%);
-
-  --yellow-dark: hsl(28, 85%, 45%);
-  --yellow-base: hsl(28, 85%, 50%);
-  --yellow-light: hsl(28, 85%, 55%);
-  --yellow-light-active: hsl(28, 85%, 60%);
-
-  --grey-dark: hsl(0, 0%, 42%);
-  --grey-base: hsl(0, 0%, 50%);
-  --grey-light: hsl(0, 0%, 55%);
-  --grey-light-active: hsl(0, 0%, 60%);
-
   --box-shadow: var(--shadow-distance) var(--shadow-distance) var(--blur)
-      var(--shadow),
+      var(--mat-sys-shadow),
     var(--light-distance) var(--light-distance) var(--blur) var(--light);
   --box-shadow-white: var(--shadow-distance) var(--shadow-distance) var(--blur)
-      var(--shadow),
+      var(--mat-sys-shadow),
     var(--light-distance) var(--light-distance) var(--blur) white;
   --box-shadow-inset: inset var(--shadow-distance) var(--shadow-distance)
-      var(--blur) var(--shadow),
+      var(--blur) var(--mat-sys-shadow),
     inset var(--light-distance) var(--light-distance) var(--blur) white;
 
   --background-blue: linear-gradient(
     145deg,
-    var(--blue-base),
-    var(--blue-light)
+    var(--mat-sys-primary),
+    var(--mat-sys-primary-light)
   );
   --background-blue-inset: linear-gradient(
     145deg,
-    var(--blue-light-active),
-    var(--blue-light)
+    var(--mat-sys-primary-light-active),
+    var(--mat-sys-primary-light)
   );
   --box-shadow-blue: inset var(--shadow-distance) var(--shadow-distance)
-      var(--blur) var(--blue-light-active),
+      var(--blur) var(--mat-sys-primary-light-active),
     inset var(--light-distance) var(--light-distance) var(--blur)
-      var(--blue-dark);
+      var(--mat-sys-primary-dark);
   --box-shadow-blue-inset: inset var(--shadow-distance) var(--shadow-distance)
-      var(--blur) var(--blue-dark),
+      var(--blur) var(--mat-sys-primary-dark),
     inset var(--light-distance) var(--light-distance) var(--blur)
-      var(--blue-light-active);
+      var(--mat-sys-primary-light-active);
 
   --background-green: linear-gradient(
     145deg,
@@ -178,26 +151,24 @@ body {
     inset var(--light-distance) var(--light-distance) var(--blur)
       var(--grey-light-active);
 
-  --box-shadow-header: 4px 2px var(--blur) var(--shadow);
-  --box-shadow-hover: 2px 2px 32px #656668;
-  --table-color: white;
+  --box-shadow-header: 4px 2px var(--blur) var(--mat-sys-shadow);
+  --box-shadow-hover: 2px 2px 32px var(--mat-sys-shadow-color-heigher);
+  --table-color: var(--mat-sys-surface-container-lowest);
 
   --mdc-filled-text-field-container-color: var(--light);
-  --mdc-tab-indicator-active-indicator-color: var(--blue-base);
-  --mdc-filled-text-field-focus-active-indicator-color: var(--blue-light);
-  --mat-tab-header-active-focus-indicator-color: var(--blue-base);
+  --mdc-tab-indicator-active-indicator-color: var(--mat-sys-primary);
+  --mdc-filled-text-field-focus-active-indicator-color: var(
+    ---mat-sys-primary-light
+  );
+  --mat-tab-header-active-focus-indicator-color: var(--mat-sys-primary);
   --mat-tab-header-active-ripple-color: white;
   --mat-tab-header-inactive-ripple-color: white;
-  --mat-select-focused-arrow-color: var(--blue-light);
-  --mdc-outlined-text-field-focus-outline-color: var(--blue-light);
-  --mat-sys-primary: var(--blue-base);
-  --mat-sys-surface-container-low: white !important;
-  --mat-sys-primary-container: white !important;
-  --mat-sys-on-primary-container: #999999 !important;
+  --mat-select-focused-arrow-color: var(--mat-sys-primary-light);
+  --mdc-outlined-text-field-focus-outline-color: var(--mat-sys-primary-light);
 }
 
 .shadow {
-  color: var(--shadow);
+  color: var(--mat-sys-shadow);
 }
 
 .bold {
@@ -241,7 +212,7 @@ body {
 }
 
 .blue-base {
-  color: var(--blue-base);
+  color: var(--mat-sys-primary);
 }
 
 .black {
@@ -413,3 +384,4 @@ body {
 .content-layout {
   max-width: 81vw;
 }
+//
