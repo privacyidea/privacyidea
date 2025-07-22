@@ -591,10 +591,12 @@ class PolicyClass(object):
         return value_found, value_excluded
 
     @log_with(log)
-    def list_policies(self, name: str = None, scope: str = None, realm: str = None, active: bool = None,
-                      resolver: str = None, user: str = None, client=None, action=None, pinode=None,
-                      adminrealm: str = None, adminuser: str = None, sort_by_priority: bool = True,
-                      additional_realms: list = None, user_agent: Optional[str] = None) -> list[dict]:
+    def list_policies(self, name: Optional[str] = None, scope: Optional[str] = None, realm: Optional[str] = None,
+                      active: Optional[bool] = None, resolver: Optional[str] = None, user: Optional[str] = None,
+                      client: Optional[str] = None, action: Optional[str] = None, pinode: Optional[str] = None,
+                      adminrealm: Optional[str] = None, adminuser: Optional[str] = None,
+                      sort_by_priority: bool = True, additional_realms: Optional[list] = None,
+                      user_agent: Optional[str] = None) -> list[dict]:
         """
         Return the policies, filtered by the given values.
 
@@ -808,14 +810,15 @@ class PolicyClass(object):
         return reduced_policies
 
     @log_with(log)
-    def match_policies(self, name: str = None, scope: str = None, realm: str = None, active: bool = None,
-                       resolver: str = None, user: str = None, user_object: User = None, pinode: str = None,
-                       client: str = None, action: str = None, adminrealm: str = None, adminuser: str = None,
-                       time: datetime = None, sort_by_priority: bool = True, audit_data: dict = None,
-                       request_headers=None, serial: str = None,
-                       extended_condition_check: Union[int, list[str], None] = None, additional_realms: list = None,
-                       container_serial: str = None, request_data: Optional[dict] = None,
-                       user_agent: Optional[str] = None) -> list[dict]:
+    def match_policies(self, name: Optional[str] = None, scope: Optional[str] = None, realm: Optional[str] = None,
+                       active: Optional[bool] = None, resolver: Optional[str] = None, user: Optional[str] = None,
+                       user_object: Optional[User] = None, pinode: Optional[str] = None, client: Optional[str] = None,
+                       action: Optional[str] = None, adminrealm: Optional[str] = None, adminuser: Optional[str] = None,
+                       time: Optional[datetime] = None, sort_by_priority: bool = True,
+                       audit_data: Optional[dict] = None, request_headers: Optional[EnvironHeaders] = None,
+                       serial: Optional[str] = None, extended_condition_check: Union[int, list[str], None] = None,
+                       additional_realms: Optional[list] = None, container_serial: Optional[str] = None,
+                       request_data: Optional[dict] = None, user_agent: Optional[str] = None) -> list[dict]:
         """
         Return all policies matching the given context.
         Optionally, write the matching policies to the audit log.
@@ -944,10 +947,11 @@ class PolicyClass(object):
             raise ParameterError(f"Invalid condition of policy '{policy_name}': {e}")
         return condition
 
-    def filter_policies_by_conditions(self, policies: list[dict], user_object: User = None,
-                                      request_headers: EnvironHeaders = None, serial: str = None,
+    def filter_policies_by_conditions(self, policies: list[dict], user_object: Optional[User] = None,
+                                      request_headers: Optional[EnvironHeaders] = None, serial: Optional[str] = None,
                                       extended_condition_check: Union[None, int, list[str]] = None,
-                                      container_serial: str = None, request_data: Optional[dict] = None) -> list[dict]:
+                                      container_serial: Optional[str] = None,
+                                      request_data: Optional[dict] = None) -> list[dict]:
         """
         Evaluates for each policy condition if it matches the actual request (user / token / request headers) and
         returns a list of all matching policies.
@@ -1411,13 +1415,14 @@ def rename_policy(name: str, new_name: str) -> int:
 
 
 @log_with(log)
-def set_policy(name: Optional[str] = None, scope: Optional[str] = None, action: Optional[str, list] = None,
-               realm: Optional[str, list] = None, resolver: Optional[str, list] = None,
-               user: Optional[str, list] = None, time: Optional[str] = None, client: Optional[str] = None,
-               active: bool = True, adminrealm: Optional[str, list]=None, adminuser: Optional[str, list] = None,
-               priority: Optional[int, str] = None, check_all_resolvers: bool = False,
-               conditions: Optional[list] = None, pinode: Optional[str, list] = None, description: Optional[str] = None,
-               user_case_insensitive: bool = False, user_agents: Optional[str, list[str]] = None) -> int:
+def set_policy(name: Optional[str] = None, scope: Optional[str] = None, action: Union[str, list, None] = None,
+               realm: Union[str, list, None] = None, resolver: Union[str, list, None] = None,
+               user: Union[str, list, None] = None, time: Optional[str] = None, client: Optional[str] = None,
+               active: bool = True, adminrealm: Union[str, list, None] = None, adminuser: Union[str, list, None] = None,
+               priority: Union[int, str, None] = None, check_all_resolvers: bool = False,
+               conditions: Optional[list] = None, pinode: Union[str, list, None] = None,
+               description: Optional[str] = None, user_case_insensitive: bool = False,
+               user_agents: Union[str, list[str], None] = None) -> int:
     """
     Function to set a policy.
 
