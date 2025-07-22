@@ -27,10 +27,13 @@ export const routes: Routes = [
         children: [
           { path: '', component: ContainerTableSelfServiceComponent },
           { path: 'create', component: ContainerCreateSelfServiceComponent },
-          { path: ':serial', component: ContainerDetailsSelfServiceComponent },
+          {
+            path: 'details/:serial',
+            component: ContainerDetailsSelfServiceComponent,
+          },
         ],
       },
-      { path: ':serial', component: TokenDetailsSelfServiceComponent },
+      { path: 'details/:serial', component: TokenDetailsSelfServiceComponent },
     ],
   },
   {

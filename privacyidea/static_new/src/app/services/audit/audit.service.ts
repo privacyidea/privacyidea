@@ -7,7 +7,6 @@ import {
   signal,
   WritableSignal,
 } from '@angular/core';
-import { Sort } from '@angular/material/sort';
 import { environment } from '../../../environments/environment';
 import { PiResponse } from '../../app.component';
 import {
@@ -86,7 +85,6 @@ export interface AuditServiceInterface {
   filterValue: WritableSignal<Record<string, string>>;
   filterParams: () => Record<string, string>;
   pageSize: WritableSignal<number>;
-  sort: WritableSignal<Sort>;
   pageIndex: WritableSignal<number>;
   auditResource: HttpResourceRef<PiResponse<Audit> | undefined>;
 }
@@ -123,20 +121,11 @@ export class AuditService implements AuditServiceInterface {
     source: this.filterValue,
     computation: () => 10,
   });
-  sort = linkedSignal({
-    source: () => ({
-      pageSize: this.pageSize(),
-      selectedContent: this.contentService.selectedContent(),
-    }),
-    computation: () => {
-      return { active: 'serial', direction: 'asc' } as Sort;
-    },
-  });
   pageIndex = linkedSignal({
     source: () => ({
       filterValue: this.filterValue(),
       pageSize: this.pageSize(),
-      selectedContent: this.contentService.selectedContent(),
+      routeUrl: this.contentService.routeUrl(),
     }),
     computation: () => 0,
   });

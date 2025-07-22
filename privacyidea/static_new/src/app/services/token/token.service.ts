@@ -267,7 +267,7 @@ export class TokenService implements TokenServiceInterface {
   tokenSerial = this.contentService.tokenSerial;
   selectedContent = this.contentService.selectedContent;
   showOnlyTokenNotInContainer = linkedSignal({
-    source: this.contentService.selectedContent,
+    source: this.contentService.routeUrl,
     computation: (selectedContent) => {
       return selectedContent === 'container_details';
     },
@@ -275,15 +275,12 @@ export class TokenService implements TokenServiceInterface {
   filterValue: WritableSignal<Record<string, string>> = linkedSignal({
     source: () => ({
       showOnlyTokenNotInContainer: this.showOnlyTokenNotInContainer(),
-      selectedContent: this.contentService.selectedContent(),
+      routeUrl: this.contentService.routeUrl(),
     }),
     computation: (source, previous) => {
-      switch (source.selectedContent) {
+      switch (source.routeUrl) {
         case 'container_details':
-          if (
-            !previous ||
-            source.selectedContent !== previous.source.selectedContent
-          ) {
+          if (!previous || source.routeUrl !== previous.source.routeUrl) {
             return { container_serial: '' };
           } else {
             const current = { ...previous.value };
@@ -300,7 +297,7 @@ export class TokenService implements TokenServiceInterface {
     },
   });
   tokenDetailResource = httpResource<PiResponse<Tokens>>(() => {
-    if (this.selectedContent() !== 'token_details') {
+    if (!this.contentService.routeUrl().includes('/tokens/details', 0)) {
       return undefined;
     }
     return {
@@ -328,7 +325,7 @@ export class TokenService implements TokenServiceInterface {
   selectedTokenType = linkedSignal({
     source: () => ({
       tokenTypeOptions: this.tokenTypeOptions(),
-      selectedContent: this.contentService.selectedContent(),
+      routeUrl: this.contentService.routeUrl(),
     }),
     computation: (source) =>
       source.tokenTypeOptions.find((type) => type.key === 'hotp') ||
@@ -350,20 +347,12 @@ export class TokenService implements TokenServiceInterface {
       return previousValue;
     },
   });
-  sort = linkedSignal({
-    source: () => ({
-      pageSize: this.pageSize(),
-      selectedContent: this.contentService.selectedContent(),
-    }),
-    computation: () => {
-      return { active: 'serial', direction: 'asc' } as Sort;
-    },
-  });
+  sort = signal({ active: 'serial', direction: 'asc' } as Sort);
   pageIndex = linkedSignal({
     source: () => ({
       filterValue: this.filterValue(),
       pageSize: this.pageSize(),
-      selectedContent: this.contentService.selectedContent(),
+      routeUrl: this.contentService.routeUrl(),
       sort: this.sort(),
     }),
     computation: () => 0,
@@ -419,7 +408,7 @@ export class TokenService implements TokenServiceInterface {
 
   tokenSelection: WritableSignal<TokenDetails[]> = linkedSignal({
     source: () => ({
-      selectedContent: this.contentService.selectedContent(),
+      routeUrl: this.contentService.routeUrl(),
       tokenResource: this.tokenResource.value(),
     }),
     computation: () => [],
@@ -563,7 +552,6 @@ export class TokenService implements TokenServiceInterface {
   }
 
   deleteTokens(tokenSerials: string[]): Observable<Object[]> {
-    const headers = this.localService.getHeaders();
     const observables = tokenSerials.map((tokenSerial) =>
       this.deleteToken(tokenSerial),
     );

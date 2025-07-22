@@ -39,7 +39,7 @@ export class ContainerRegistrationDialogComponent {
   containerSelected(containerSerial: string) {
     this.dialogRef.close();
     this.data.selectedContent.set('container_details');
-    this.router.navigateByUrl('/tokens/containers/' + containerSerial);
+    this.router.navigateByUrl('/tokens/containers/details/' + containerSerial);
     this.data.containerSerial.set(containerSerial);
   }
 }

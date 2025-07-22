@@ -26,10 +26,10 @@ export const routes: Routes = [
         children: [
           { path: '', component: ContainerTableComponent },
           { path: 'create', component: ContainerCreateComponent },
-          { path: ':serial', component: ContainerDetailsComponent },
+          { path: 'details/:serial', component: ContainerDetailsComponent },
         ],
       },
-      { path: ':serial', component: TokenDetailsComponent },
+      { path: 'details/:serial', component: TokenDetailsComponent },
     ],
   },
   {

@@ -387,7 +387,7 @@ export class TokenDetailsComponent {
   containerSelected(containerSerial: string) {
     this.isProgrammaticTabChange.set(true);
     this.selectedContent.set('container_details');
-    this.router.navigateByUrl('/tokens/containers/' + containerSerial);
+    this.router.navigateByUrl('/tokens/containers/details/' + containerSerial);
     this.containerSerial.set(containerSerial);
   }
 

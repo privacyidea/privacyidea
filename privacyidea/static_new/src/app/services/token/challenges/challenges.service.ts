@@ -4,6 +4,7 @@ import {
   inject,
   Injectable,
   linkedSignal,
+  signal,
   WritableSignal,
 } from '@angular/core';
 import { Sort } from '@angular/material/sort';
@@ -70,7 +71,7 @@ export class ChallengesService implements ChallengesServiceInterface {
   selectedContent = this.contentService.selectedContent;
   tokenBaseUrl = this.tokenService.tokenBaseUrl;
   filterValue = linkedSignal({
-    source: this.selectedContent,
+    source: this.contentService.routeUrl,
     computation: () => ({}) as Record<string, string>,
   });
   private filterParams = computed(() => {
@@ -91,26 +92,18 @@ export class ChallengesService implements ChallengesServiceInterface {
     );
   });
   pageSize = linkedSignal({
-    source: this.selectedContent,
+    source: this.contentService.routeUrl,
     computation: () => 10,
   });
   pageIndex = linkedSignal({
     source: () => ({
       filterValue: this.filterValue(),
       pageSize: this.pageSize(),
-      selectedContent: this.selectedContent(),
+      routeUrl: this.contentService.routeUrl(),
     }),
     computation: () => 0,
   });
-  sort = linkedSignal({
-    source: () => ({
-      pageSize: this.pageSize(),
-      selectedContent: this.selectedContent(),
-    }),
-    computation: () => {
-      return { active: 'timestamp', direction: 'asc' } as Sort;
-    },
-  });
+  sort = signal({ active: 'timestamp', direction: 'asc' } as Sort);
   challengesResource = httpResource<PiResponse<Challenges>>(() => {
     if (this.selectedContent() !== 'token_challenges') {
       return undefined;

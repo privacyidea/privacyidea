@@ -44,7 +44,7 @@ export class TokenTabComponent {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly versioningService: VersioningServiceInterface =
     inject(VersioningService);
-  private readonly contentService: ContentServiceInterface =
+  protected readonly contentService: ContentServiceInterface =
     inject(ContentService);
   private readonly dialog: MatDialog = inject(MatDialog);
   selectedContent = this.contentService.selectedContent;

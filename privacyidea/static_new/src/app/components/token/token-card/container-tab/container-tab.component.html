@@ -3,20 +3,22 @@
     <mat-divider />
     <br />
     <mat-list-item>
-      <button [routerLink]="['/tokens/containers']"
-              [ngClass]="selectedContent() === 'container_overview' ? 'card-button-active' : 'card-button'"
+      <button [ngClass]="this.contentService.routeUrl() === '/tokens/containers' ?
+              'card-button-active' :
+              'card-button'"
+              [routerLink]="['/tokens/containers']"
               mat-flat-button>
         <mat-icon class="mdi--folder-search"></mat-icon>
         Overview
       </button>
     </mat-list-item>
 
-    <div [@toggleState]="selectedContent().startsWith('container')">
-      @if (selectedContent() !== 'container_details') {
-
+    <div [@toggleState]="this.contentService.routeUrl().startsWith('/tokens/containers')">
+      @if (!this.contentService.routeUrl().startsWith('/tokens/containers/details')) {
         <mat-list-item>
           <button [routerLink]="['/tokens/containers/create']"
-                  [ngClass]="selectedContent() === 'container_create' ? 'card-button-active' : 'card-button'"
+                  [ngClass]="this.contentService.routeUrl() === '/tokens/containers/create' ?
+                  'card-button-active' : 'card-button'"
                   mat-flat-button>
             <mat-icon>create_new_folder</mat-icon>
             Create
@@ -46,7 +48,7 @@
             Help
           </button>
         </mat-list-item>
-        @if (selectedContent() === "container_overview") {
+        @if (this.contentService.routeUrl() === "/tokens/containers") {
           <br />
           <mat-divider /><br />
           <mat-list-item>
@@ -55,14 +57,16 @@
                     (click)="deleteSelectedContainer()"
                     [disabled]="containerSelection().length === 0"
                     mat-flat-button>
-              <mat-icon> delete_sweep </mat-icon>
+              <mat-icon> delete_sweep</mat-icon>
               Delete Selected
             </button>
           </mat-list-item>
         }
       } @else {
         <mat-list-item>
-          <button [ngClass]="selectedContent() === 'container_details' ? 'card-button-active' : 'card-button'"
+          <button
+            [ngClass]="this.contentService.routeUrl().startsWith('/tokens/containers/details') ?
+          'card-button-active' : 'card-button'"
                   mat-flat-button>
             <mat-icon>health_and_safety</mat-icon>
             Container Details
@@ -118,7 +122,7 @@
           <button (click)="deleteContainer()"
                   class="card-button-delete"
                   mat-flat-button>
-            <mat-icon> delete </mat-icon>
+            <mat-icon> delete</mat-icon>
             Delete
           </button>
         </mat-list-item>

@@ -62,7 +62,7 @@ export class UserService implements UserServiceInterface {
 
   selectedUserRealm = linkedSignal({
     source: () => ({
-      selectedContent: this.contentService.selectedContent(),
+      routeUrl: this.contentService.routeUrl(),
       defaultRealm: this.realmService.defaultRealm(),
       selectedTokenType: this.tokenService.selectedTokenType(),
       authRole: this.authService.role(),
@@ -187,10 +187,9 @@ export class UserService implements UserServiceInterface {
       return this.users();
     }
     const filterValue = userFilter.toLowerCase().trim();
-    const filteredUsers = this.users().filter((user) =>
+    return this.users().filter((user) =>
       user.username.toLowerCase().includes(filterValue),
     );
-    return filteredUsers;
   });
 
   displayUser(user: UserData | string): string {

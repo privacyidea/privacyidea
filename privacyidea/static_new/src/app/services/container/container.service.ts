@@ -240,7 +240,9 @@ export interface ContainerServiceInterface {
     passphrase_prompt: string;
     passphrase_response: string;
   }) => Observable<PiResponse<ContainerRegisterData>>;
+
   stopPolling(): void;
+
   createContainer(param: {
     container_type: string;
     description?: string;
@@ -250,6 +252,7 @@ export interface ContainerServiceInterface {
     realm?: string;
     options?: any;
   }): Observable<PiResponse<{ container_serial: string }>>;
+
   pollContainerRolloutState(
     containerSerial: string,
     startTime: number,
@@ -278,18 +281,16 @@ export class ContainerService implements ContainerServiceInterface {
   containerSerial = this.contentService.containerSerial;
   selectedContainer: WritableSignal<string> = linkedSignal({
     source: () => ({
-      selectedContent: this.selectedContent(),
+      routeUrl: this.contentService.routeUrl(),
     }),
     computation: (source, previous) =>
-      source.selectedContent === 'token_enrollment'
-        ? (previous?.value ?? '')
-        : '',
+      source.routeUrl === 'token_enrollment' ? (previous?.value ?? '') : '',
   });
 
   sort = signal<Sort>({ active: 'serial', direction: 'asc' });
 
   filterValue: WritableSignal<Record<string, string>> = linkedSignal({
-    source: this.selectedContent,
+    source: this.contentService.routeUrl,
     computation: () => ({}),
   });
   filterParams = computed<Record<string, string>>(() => {
@@ -333,20 +334,22 @@ export class ContainerService implements ContainerServiceInterface {
     source: () => ({
       filterValue: this.filterValue(),
       pageSize: this.pageSize(),
-      selectedContent: this.selectedContent(),
+      routeUrl: this.contentService.routeUrl(),
     }),
     computation: () => 0,
   });
   loadAllContainers = computed(() => {
-    return ['token_details', 'token_enrollment'].includes(
-      this.selectedContent(),
+    return (
+      ['/tokens/enroll'].includes(this.contentService.routeUrl()) ||
+      this.contentService.routeUrl().startsWith('/tokens/details')
     );
   });
   containerResource = httpResource<PiResponse<ContainerDetails>>(() => {
     if (
-      !['container_overview', 'token_details', 'token_enrollment'].includes(
-        this.selectedContent(),
-      )
+      !['/tokens/containers', '/tokens/enroll'].includes(
+        this.contentService.routeUrl(),
+      ) &&
+      !this.contentService.routeUrl().startsWith('/tokens/details')
     ) {
       return undefined;
     }
@@ -414,7 +417,7 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   selectedContainerType = linkedSignal({
-    source: this.selectedContent,
+    source: this.contentService.routeUrl,
     computation: () =>
       this.containerTypeOptions()[0] ?? {
         containerType: 'generic',

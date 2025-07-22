@@ -51,8 +51,9 @@ export class TokenCardComponent {
   private router = inject(Router);
   selectedContent = this.contentService.selectedContent;
   selectedTabIndex = linkedSignal({
-    source: this.selectedContent,
-    computation: (c) => (c.startsWith('container') ? 1 : 0),
+    source: this.contentService.routeUrl,
+    computation: (routeUrl) =>
+      routeUrl.startsWith('/tokens/containers') ? 1 : 0,
   });
   tokenSerial = this.tokenService.tokenSerial;
   containerSerial = this.containerService.containerSerial;
@@ -72,6 +73,9 @@ export class TokenCardComponent {
     }
   }
 
-  tokenTabActive = () => this.selectedContent().startsWith('token');
-  containerTabActive = () => this.selectedContent().startsWith('container');
+  tokenTabActive = () =>
+    this.contentService.routeUrl().startsWith('/tokens') &&
+    !this.containerTabActive();
+  containerTabActive = () =>
+    this.contentService.routeUrl().startsWith('/tokens/containers');
 }

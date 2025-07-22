@@ -42,7 +42,7 @@ export class ContainerTabComponent {
   private readonly dialog: MatDialog = inject(MatDialog);
   private readonly containerService: ContainerServiceInterface =
     inject(ContainerService);
-  private readonly contentService: ContentServiceInterface =
+  protected readonly contentService: ContentServiceInterface =
     inject(ContentService);
   protected readonly versioningService: VersioningServiceInterface =
     inject(VersioningService);

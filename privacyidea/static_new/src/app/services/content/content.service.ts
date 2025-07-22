@@ -3,6 +3,7 @@ import {
   inject,
   Injectable,
   linkedSignal,
+  Signal,
   signal,
   WritableSignal,
 } from '@angular/core';
@@ -27,7 +28,7 @@ export interface ContentServiceInterface {
 export class ContentService {
   router = inject(Router);
   private authService = inject(AuthService);
-  routeUrl = toSignal(
+  routeUrl: Signal<string> = toSignal(
     this.router.events.pipe(
       filter((e): e is NavigationEnd => e instanceof NavigationEnd),
       map(() => this.router.url),
@@ -41,42 +42,29 @@ export class ContentService {
       return role === 'user' ? 'token_self-service_menu' : 'token_overview';
     },
   });
-  tokenSerial = linkedSignal({
-    source: this.selectedContent,
-    computation: () => '',
-  });
-  containerSerial = linkedSignal({
-    source: this.selectedContent,
-    computation: () => '',
-  });
+  tokenSerial = signal('');
+  containerSerial = signal('');
 
   constructor() {
     effect(() => this.updateFromUrl(this.router.url));
-
     this.router.events
       .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
       .subscribe((e) => this.updateFromUrl(e.urlAfterRedirects));
   }
 
   tokenSelected(serial: string) {
-    if (
-      this.selectedContent().includes('container') ||
-      !this.routeUrl().includes('token')
-    ) {
+    if (this.routeUrl().includes('container')) {
       this.isProgrammaticTabChange.set(true);
     }
-    this.router.navigate(['/tokens', serial]);
+    this.router.navigateByUrl('/tokens/details/' + serial);
     this.tokenSerial.set(serial);
   }
 
   containerSelected(containerSerial: string) {
-    if (
-      this.selectedContent().includes('token') ||
-      !this.routeUrl().includes('token')
-    ) {
+    if (this.routeUrl().includes('token')) {
       this.isProgrammaticTabChange.set(true);
     }
-    this.router.navigate(['/tokens', 'containers', containerSerial]);
+    this.router.navigateByUrl('/tokens/containers/details/' + containerSerial);
     this.containerSerial.set(containerSerial);
   }
 
