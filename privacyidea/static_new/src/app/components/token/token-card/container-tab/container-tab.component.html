@@ -42,7 +42,7 @@
         <mat-divider /><br />
         <mat-list-item>
           <button class="card-button"
-                  (click)="versioningService.openDocumentation(selectedContent())"
+                  (click)="versioningService.openDocumentation(contentService.routeUrl())"
                   mat-flat-button>
             <mat-icon>info_outline</mat-icon>
             Help
@@ -99,7 +99,7 @@
         </mat-list-item>
         <mat-list-item>
           <button class="card-button"
-                  (click)="versioningService.openDocumentation(selectedContent())"
+                  (click)="versioningService.openDocumentation(this.contentService.routeUrl())"
                   mat-flat-button>
             <mat-icon>info_outline</mat-icon>
             Help

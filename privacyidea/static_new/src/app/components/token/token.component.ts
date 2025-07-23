@@ -1,12 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  Component,
-  computed,
-  effect,
-  inject,
-  signal,
-  ViewChild,
-} from '@angular/core';
+import { Component, effect, inject, signal, ViewChild } from '@angular/core';
 import { MatFabButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import {
@@ -26,16 +19,12 @@ import {
   OverflowService,
   OverflowServiceInterface,
 } from '../../services/overflow/overflow.service';
-import {
-  TokenService,
-  TokenServiceInterface,
-} from '../../services/token/token.service';
 import { ContainerDetailsComponent } from './container-details/container-details.component';
 import { ContainerTableComponent } from './container-table/container-table.component';
 import { TokenCardComponent } from './token-card/token-card.component';
 import { TokenDetailsComponent } from './token-details/token-details.component';
 import { TokenTableComponent } from './token-table/token-table.component';
-import { Router, RouterOutlet } from '@angular/router';
+import { RouterOutlet } from '@angular/router';
 
 export type TokenTypeOption =
   | 'hotp'
@@ -65,20 +54,6 @@ export type TokenTypeOption =
   | 'webauthn'
   | 'passkey';
 
-export type TokenSelectedContentKey =
-  | 'token_overview'
-  | 'token_details'
-  | 'container_overview'
-  | 'container_details'
-  | 'container_create'
-  | 'token_enrollment'
-  | 'token_challenges'
-  | 'token_applications'
-  | 'token_get_serial'
-  | 'token_self-service_menu'
-  | 'assign_token'
-  | 'audit';
-
 @Component({
   selector: 'app-token',
   standalone: true,
@@ -100,10 +75,8 @@ export class TokenComponent {
     inject(OverflowService);
   private readonly loadingService: LoadingServiceInterface =
     inject(LoadingService);
-  private readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface =
     inject(ContentService);
-  private router = inject(Router);
   static tokenTypeTexts = [
     {
       key: 'hotp',
@@ -212,7 +185,6 @@ export class TokenComponent {
   ];
   tokenTypeOptions = signal([]);
   isTokenDrawerOverflowing = signal(false);
-  currentTokenView = computed(() => this.router.url);
   @ViewChild('tokenDetailsComponent')
   tokenDetailsComponent!: TokenDetailsComponent;
   @ViewChild('containerDetailsComponent')
@@ -224,7 +196,7 @@ export class TokenComponent {
 
   constructor() {
     effect(() => {
-      this.contentService.selectedContent();
+      this.contentService.routeUrl();
       this.loadingService.clearAllLoadings();
       this.updateOverflowState();
     });

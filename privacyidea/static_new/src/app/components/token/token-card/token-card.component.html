@@ -1,5 +1,5 @@
 <mat-card [ngClass]="{'card-margin-pad': !overflowService.isWidthOverflowing('body',
-                        overflowService.getOverflowThreshold(selectedContent()))}"
+                        overflowService.getOverflowThreshold())}"
           appearance="outlined">
   <mat-card-content>
     <mat-tab-group (selectedTabChange)="onTabChange($event)"

@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
+import { ContentService } from '../content/content.service';
 
 export interface OverflowServiceInterface {
   isWidthOverflowing(selector: string, threshold: number): boolean;
@@ -7,13 +8,14 @@ export interface OverflowServiceInterface {
     threshold?: number;
     thresholdSelector?: string;
   }): boolean;
-  getOverflowThreshold(selectedContent: string): number;
+  getOverflowThreshold(): number;
 }
 
 @Injectable({
   providedIn: 'root',
 })
 export class OverflowService implements OverflowServiceInterface {
+  private contentService = inject(ContentService);
   isWidthOverflowing(selector: string, threshold: number): boolean {
     const element = document.querySelector(selector);
     return element ? element.clientWidth < threshold : false;
@@ -44,25 +46,29 @@ export class OverflowService implements OverflowServiceInterface {
     }
   }
 
-  getOverflowThreshold(selectedContent: string): number {
-    switch (selectedContent) {
-      case 'token_details':
+  getOverflowThreshold(): number {
+    if (this.contentService.routeUrl().startsWith('/tokens/details')) {
+      return 1880;
+    }
+    if (
+      this.contentService.routeUrl().startsWith('/tokens/container/details')
+    ) {
+      return 1880;
+    }
+    switch (this.contentService.routeUrl()) {
+      case '/tokens':
         return 1880;
-      case 'container_details':
+      case '/tokens/containers':
         return 1880;
-      case 'token_overview':
+      case '/tokens/challenges':
         return 1880;
-      case 'container_overview':
-        return 1880;
-      case 'token_challenges':
-        return 1880;
-      case 'token_applications':
+      case '/tokens/applications':
         return 1500;
-      case 'token_enrollment':
+      case '/tokens/enroll':
         return 1240;
-      case 'container_create':
+      case '/tokens/containers/create':
         return 1240;
-      case 'token_get_serial':
+      case '/tokens/get-serial':
         return 1240;
     }
     return 1920;

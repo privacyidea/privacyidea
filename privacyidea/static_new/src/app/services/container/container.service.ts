@@ -157,7 +157,6 @@ export interface ContainerServiceInterface {
   containerBaseUrl: string;
   eventPageSize: number;
   states: WritableSignal<string[]>;
-  selectedContent: Signal<string>;
   containerSerial: WritableSignal<string>;
   selectedContainer: WritableSignal<string>;
   sort: WritableSignal<Sort>;
@@ -277,7 +276,6 @@ export class ContainerService implements ContainerServiceInterface {
   containerBaseUrl = environment.proxyUrl + '/container/';
   eventPageSize = 10;
   states = signal<string[]>([]);
-  selectedContent = this.contentService.selectedContent;
   containerSerial = this.contentService.containerSerial;
   selectedContainer: WritableSignal<string> = linkedSignal({
     source: () => ({

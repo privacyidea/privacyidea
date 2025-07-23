@@ -3,7 +3,7 @@
     <mat-divider />
     <br />
     <mat-list-item>
-      <button [ngClass]="this.contentService.routeUrl() === '/tokens' ? 'card-button-active' :
+      <button [ngClass]="contentService.routeUrl() === '/tokens' ? 'card-button-active' :
               'card-button'"
               [routerLink]="['/tokens']"
               mat-flat-button>
@@ -12,11 +12,11 @@
       </button>
     </mat-list-item>
 
-    <div [@toggleState]="this.contentService.routeUrl().startsWith('/tokens/containers')">
-      @if (!this.contentService.routeUrl().startsWith('/tokens/details')) {
+    <div [@toggleState]="contentService.routeUrl().startsWith('/tokens/containers')">
+      @if (!contentService.routeUrl().startsWith('/tokens/details')) {
         <mat-list-item>
           <button [routerLink]="['/tokens/enroll']"
-                  [ngClass]="this.contentService.routeUrl() === '/tokens/enroll' ?
+                  [ngClass]="contentService.routeUrl() === '/tokens/enroll' ?
                   'card-button-active' : 'card-button'"
                   mat-flat-button>
             <mat-icon>add_moderator</mat-icon>
@@ -25,7 +25,7 @@
         </mat-list-item>
         <mat-list-item>
           <button [routerLink]="['/tokens/challenges']"
-                  [ngClass]="this.contentService.routeUrl() === '/tokens/challenges'
+                  [ngClass]="contentService.routeUrl() === '/tokens/challenges'
                   ? 'card-button-active' : 'card-button'"
                   mat-flat-button>
             <mat-icon>cached</mat-icon>
@@ -35,7 +35,7 @@
 
         <mat-list-item>
           <button [routerLink]="['/tokens/applications']"
-                  [ngClass]="this.contentService.routeUrl() === '/tokens/applications'
+                  [ngClass]="contentService.routeUrl() === '/tokens/applications'
                   ? 'card-button-active' : 'card-button'"
                   mat-flat-button>
             <mat-icon>now_widgets</mat-icon>
@@ -45,7 +45,7 @@
         <mat-divider /><br />
         <mat-list-item>
           <button [ngClass]="[
-              this.contentService.routeUrl() === '/tokens/get-serial'
+              contentService.routeUrl() === '/tokens/get-serial'
                 ? 'card-button-active'
                 : 'card-button',]"
                   mat-flat-button
@@ -56,13 +56,13 @@
         </mat-list-item>
         <mat-list-item>
           <button class="card-button"
-                  (click)="versioningService.openDocumentation(selectedContent())"
+                  (click)="versioningService.openDocumentation(contentService.routeUrl())"
                   mat-flat-button>
             <mat-icon>info_outline</mat-icon>
             Help
           </button>
         </mat-list-item>
-        @if (selectedContent() === "token_overview") {
+        @if (contentService.routeUrl() === "/tokens") {
           <br />
           <mat-divider /><br />
           <mat-list-item>
@@ -78,7 +78,7 @@
         }
       } @else {
         <mat-list-item>
-          <button [ngClass]="this.contentService.routeUrl()
+          <button [ngClass]="contentService.routeUrl()
                   .startsWith('/tokens/details') ? 'card-button-active' : 'card-button'"
                   mat-flat-button>
             <mat-icon>health_and_safety</mat-icon>
@@ -103,7 +103,7 @@
         </mat-list-item>
         <mat-list-item>
           <button class="card-button"
-                  (click)="versioningService.openDocumentation(selectedContent())"
+                  (click)="versioningService.openDocumentation(contentService.routeUrl())"
                   mat-flat-button>
             <mat-icon>info_outline</mat-icon>
             Help

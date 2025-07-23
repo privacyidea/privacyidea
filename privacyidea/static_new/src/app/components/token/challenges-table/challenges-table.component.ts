@@ -75,7 +75,6 @@ export class ChallengesTableComponent {
   pageSizeOptions = [5, 10, 15];
   apiFilter = this.challengesService.apiFilter;
   advancedApiFilter = this.challengesService.advancedApiFilter;
-  selectedContent = this.contentService.selectedContent;
   tokenSerial = this.tokenService.tokenSerial;
   pageSize = this.challengesService.pageSize;
   pageIndex = this.challengesService.pageIndex;

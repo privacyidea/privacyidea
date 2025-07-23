@@ -135,6 +135,7 @@ export interface WebAuthnRegisterRequest {
 }
 
 export type LostTokenResponse = PiResponse<LostTokenData>;
+
 export interface LostTokenData {
   disable: number;
   end_date: string;
@@ -150,7 +151,6 @@ export interface TokenServiceInterface {
   stopPolling$: Subject<void>;
   tokenBaseUrl: string;
   eventPageSize: number;
-  selectedContent: Signal<string>;
   tokenSerial: WritableSignal<string>;
   selectedTokenType: Signal<TokenType>;
   showOnlyTokenNotInContainer: WritableSignal<boolean>;
@@ -170,55 +170,72 @@ export interface TokenServiceInterface {
   filterParams: Signal<Record<string, string>>;
   tokenResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   tokenSelection: WritableSignal<TokenDetails[]>;
+
   toggleActive(
     tokenSerial: string,
     active: boolean,
   ): Observable<PiResponse<boolean>>;
+
   resetFailCount(tokenSerial: string): Observable<PiResponse<boolean>>;
+
   saveTokenDetail(
     tokenSerial: string,
     key: string,
     value: any,
   ): Observable<PiResponse<boolean>>;
+
   getSerial(
     otp: string,
     params: HttpParams,
   ): Observable<
     PiResponse<{ count: number; serial?: string | undefined }, unknown>
   >;
+
   setTokenInfos(
     tokenSerial: string,
     infos: any,
   ): Observable<PiResponse<boolean>[]>;
+
   deleteToken(tokenSerial: string): Observable<Object>;
+
   deleteTokens(tokenSerials: string[]): Observable<Object[]>;
+
   revokeToken(tokenSerial: string): Observable<any>;
+
   deleteInfo(tokenSerial: string, infoKey: string): Observable<Object>;
+
   unassignUserFromAll(
     tokenSerials: string[],
   ): Observable<PiResponse<boolean>[]>;
 
   unassignUser(tokenSerial: string): Observable<PiResponse<boolean>>;
+
   assignUserToAll(args: {
     tokenSerials: string[];
     username: string;
     realm: string;
     pin?: string;
   }): Observable<PiResponse<boolean>[]>;
+
   assignUser(args: {
     tokenSerial: string;
     username: string;
     realm: string;
     pin: string;
   }): Observable<PiResponse<boolean>>;
+
   setPin(tokenSerial: string, userPin: string): Observable<any>;
+
   setRandomPin(tokenSerial: string): Observable<any>;
+
   resyncOTPToken(
     tokenSerial: string,
     fristOTPValue: string,
     secondOTPValue: string,
   ): Observable<Object>;
+
   getTokenDetails(tokenSerial: string): Observable<PiResponse<Tokens>>;
+
   enrollToken<
     T extends TokenEnrollmentData,
     R extends EnrollmentResponse,
@@ -226,17 +243,23 @@ export interface TokenServiceInterface {
     data: T;
     mapper: TokenApiPayloadMapper<T>;
   }): Observable<R>;
+
   lostToken(tokenSerial: string): Observable<LostTokenResponse>;
+
   stopPolling(): void;
+
   pollTokenRolloutState(args: {
     tokenSerial: string;
     initDelay: number;
   }): Observable<PiResponse<Tokens>>;
+
   setTokenRealm(
     tokenSerial: string,
     value: string[],
   ): Observable<PiResponse<boolean>>;
+
   getTokengroups(): Observable<PiResponse<TokenGroups>>;
+
   setTokengroup(
     tokenSerial: string,
     value: string | string[],
@@ -265,11 +288,10 @@ export class TokenService implements TokenServiceInterface {
   tokenIsActive = signal(true);
   tokenIsRevoked = signal(true);
   tokenSerial = this.contentService.tokenSerial;
-  selectedContent = this.contentService.selectedContent;
   showOnlyTokenNotInContainer = linkedSignal({
     source: this.contentService.routeUrl,
-    computation: (selectedContent) => {
-      return selectedContent === 'container_details';
+    computation: (routeUrl) => {
+      return routeUrl.startsWith('/tokens/containers/details');
     },
   });
   filterValue: WritableSignal<Record<string, string>> = linkedSignal({
@@ -278,21 +300,20 @@ export class TokenService implements TokenServiceInterface {
       routeUrl: this.contentService.routeUrl(),
     }),
     computation: (source, previous) => {
-      switch (source.routeUrl) {
-        case 'container_details':
-          if (!previous || source.routeUrl !== previous.source.routeUrl) {
-            return { container_serial: '' };
+      if (source.routeUrl.startsWith('/tokens/containers/details')) {
+        if (!previous || source.routeUrl !== previous.source.routeUrl) {
+          return { container_serial: '' };
+        } else {
+          const current = { ...previous.value };
+          if (source.showOnlyTokenNotInContainer) {
+            current['container_serial'] = '';
           } else {
-            const current = { ...previous.value };
-            if (source.showOnlyTokenNotInContainer) {
-              current['container_serial'] = '';
-            } else {
-              delete current['container_serial'];
-            }
-            return current;
+            delete current['container_serial'];
           }
-        default:
-          return {};
+          return current;
+        }
+      } else {
+        return {};
       }
     },
   });
@@ -386,9 +407,8 @@ export class TokenService implements TokenServiceInterface {
   });
   tokenResource = httpResource<PiResponse<Tokens>>(() => {
     if (
-      this.selectedContent() !== 'token_overview' &&
-      this.selectedContent() !== 'container_details' &&
-      this.selectedContent() !== 'token_self-service_menu'
+      this.contentService.routeUrl() !== '/tokens' &&
+      !this.contentService.routeUrl().includes('containers/details')
     ) {
       return undefined;
     }
@@ -433,6 +453,13 @@ export class TokenService implements TokenServiceInterface {
         );
         this.notificationService.openSnackBar(tokenTypesResourceError.message);
       }
+    });
+    effect(() => {
+      console.log('showOnly', this.showOnlyTokenNotInContainer());
+    });
+    effect(() => console.log('filterValue', this.filterValue()));
+    effect(() => {
+      console.log(this.contentService.routeUrl());
     });
   }
 

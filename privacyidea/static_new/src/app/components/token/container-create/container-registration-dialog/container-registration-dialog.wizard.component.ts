@@ -28,7 +28,6 @@ export class ContainerRegistrationDialogWizardComponent extends ContainerRegistr
   public override readonly data: {
     response: any;
     containerSerial: WritableSignal<string>;
-    selectedContent: WritableSignal<string>;
   } = inject(MAT_DIALOG_DATA);
 
   readonly postTopHtml$ = this.http

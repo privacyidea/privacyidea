@@ -47,7 +47,6 @@ export class TokenTabComponent {
   protected readonly contentService: ContentServiceInterface =
     inject(ContentService);
   private readonly dialog: MatDialog = inject(MatDialog);
-  selectedContent = this.contentService.selectedContent;
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
   tokenSerial = this.tokenService.tokenSerial;
@@ -122,7 +121,6 @@ export class TokenTabComponent {
           if (result) {
             this.tokenService.deleteToken(this.tokenSerial()).subscribe({
               next: () => {
-                this.contentService.selectedContent.set('token_overview');
                 this.router.navigateByUrl('/tokens');
                 this.tokenSerial.set('');
               },

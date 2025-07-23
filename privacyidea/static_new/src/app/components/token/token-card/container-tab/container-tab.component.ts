@@ -48,7 +48,6 @@ export class ContainerTabComponent {
     inject(VersioningService);
   private router = inject(Router);
   containerSelection = this.containerService.containerSelection;
-  selectedContent = this.contentService.selectedContent;
   containerSerial = this.containerService.containerSerial;
   selectedContainer = this.containerService.selectedContainer;
   containerIsSelected = computed(() => this.containerSerial() !== '');

@@ -7,7 +7,7 @@
      class="token-layout">
   @if (!overflowService.isWidthOverflowing(
     'body',
-    overflowService.getOverflowThreshold(currentTokenView())
+    overflowService.getOverflowThreshold()
   )) {
     <ng-container [ngTemplateOutlet]="tokenCard"
                   [ngTemplateOutletContext]="{ hasMargin: true }" />
@@ -15,7 +15,7 @@
   <mat-drawer-container>
     @if (overflowService.isWidthOverflowing(
       'body',
-      overflowService.getOverflowThreshold(currentTokenView())
+      overflowService.getOverflowThreshold()
     )) {
       <mat-drawer #drawer
                   [mode]="'over'"
@@ -32,7 +32,7 @@
       <div class="drawer-content-div">
         @if (overflowService.isWidthOverflowing(
           'body',
-          overflowService.getOverflowThreshold(currentTokenView())
+          overflowService.getOverflowThreshold()
         )) {
           <div class="drawer-button-div">
             <button mat-fab

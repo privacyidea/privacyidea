@@ -135,7 +135,6 @@ export class ContainerDetailsTokenTableComponent {
   });
   tokenSerial = this.tokenService.tokenSerial;
   isProgrammaticTabChange = this.contentService.isProgrammaticTabChange;
-  selectedContent = this.contentService.selectedContent;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
@@ -278,9 +277,6 @@ export class ContainerDetailsTokenTableComponent {
       .open(UserAssignmentDialogComponent)
       .afterClosed()
       .subscribe((pin: string) => {
-        if (typeof pin !== 'string') {
-          return;
-        }
         const tokenSerialsAssignedToOtherUser = tokensAssignedToOtherUser.map(
           (token) => token.serial,
         );

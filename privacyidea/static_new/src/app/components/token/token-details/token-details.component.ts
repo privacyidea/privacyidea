@@ -140,7 +140,6 @@ export class TokenDetailsComponent {
 
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
-  selectedContent = this.contentService.selectedContent;
   isProgrammaticTabChange = this.contentService.isProgrammaticTabChange;
   containerSerial = this.containerService.containerSerial;
   tokenSerial = this.tokenService.tokenSerial;
@@ -386,7 +385,6 @@ export class TokenDetailsComponent {
 
   containerSelected(containerSerial: string) {
     this.isProgrammaticTabChange.set(true);
-    this.selectedContent.set('container_details');
     this.router.navigateByUrl('/tokens/containers/details/' + containerSerial);
     this.containerSerial.set(containerSerial);
   }

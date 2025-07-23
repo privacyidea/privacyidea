@@ -99,7 +99,6 @@ export class ContainerCreateComponent {
     inject(ContentService);
 
   protected readonly TokenComponent = TokenComponent;
-  selectedContent = this.contentService.selectedContent;
   containerSerial = this.containerService.containerSerial;
   description = signal('');
   selectedTemplate = signal('');
@@ -178,7 +177,6 @@ export class ContainerCreateComponent {
             this.notificationService.openSnackBar(
               `Container ${containerSerial} enrolled successfully.`,
             );
-            this.selectedContent.set('container_details');
             this.router.navigateByUrl('/tokens/containers/' + containerSerial);
             this.containerSerial.set(containerSerial);
           }
@@ -200,7 +198,6 @@ export class ContainerCreateComponent {
       data: {
         response: response,
         containerSerial: this.containerSerial,
-        selectedContent: this.selectedContent,
       },
     });
   }
@@ -219,7 +216,6 @@ export class ContainerCreateComponent {
               .registration_state !== 'client_wait'
           ) {
             this.registrationDialog.closeAll();
-            this.selectedContent.set('container_details');
             this.router.navigateByUrl('/tokens/containers/' + containerSerial);
             this.notificationService.openSnackBar(
               `Container ${this.containerSerial()} enrolled successfully.`,

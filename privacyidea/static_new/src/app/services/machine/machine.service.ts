@@ -130,7 +130,6 @@ export class MachineService implements MachineServiceInterface {
   sshAdvancedApiFilter = ['hostname', 'machineid & resolver'];
   offlineApiFilter = ['serial', 'count', 'rounds'];
   offlineAdvancedApiFilter = ['hostname', 'machineid & resolver'];
-  selectedContent = this.contentService.selectedContent;
   selectedApplicationType = signal<'ssh' | 'offline'>('ssh');
   pageSize = linkedSignal({
     source: this.selectedApplicationType,

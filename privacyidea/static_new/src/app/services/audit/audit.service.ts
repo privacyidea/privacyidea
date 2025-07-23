@@ -130,10 +130,7 @@ export class AuditService implements AuditServiceInterface {
     computation: () => 0,
   });
   auditResource = httpResource<PiResponse<Audit>>(() => {
-    if (
-      this.contentService.routeUrl() !== '/audit' &&
-      this.contentService.selectedContent() !== 'audit'
-    ) {
+    if (this.contentService.routeUrl() !== '/audit') {
       return undefined;
     }
     return {

@@ -327,7 +327,6 @@ export class ContainerDetailsComponent {
   filterHTMLInputElement!: ElementRef<HTMLInputElement>;
   @ViewChild('tokenAutoTrigger', { read: MatAutocompleteTrigger })
   tokenAutoTrigger!: MatAutocompleteTrigger;
-  selectedContent = this.contentService.selectedContent;
 
   constructor() {
     effect(() => {
@@ -340,7 +339,6 @@ export class ContainerDetailsComponent {
       const res = this.containerDetailResource.value();
       if (res && res?.result?.value?.containers.length === 0) {
         setTimeout(() => {
-          this.selectedContent.set('container_overview');
           this.router.navigateByUrl('/tokens/containers/');
         });
       }
@@ -386,8 +384,7 @@ export class ContainerDetailsComponent {
       _currentFilter['type'] = allowedTokenTypes[0];
       delete _currentFilter['type_list'];
     } else {
-      const allowedTokenTypesString = allowedTokenTypes.join(',');
-      _currentFilter['type_list'] = allowedTokenTypesString;
+      _currentFilter['type_list'] = allowedTokenTypes.join(',');
 
       delete _currentFilter['type'];
     }

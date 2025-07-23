@@ -14,10 +14,6 @@ import {
   ContentServiceInterface,
 } from '../../content/content.service';
 import { LocalService, LocalServiceInterface } from '../../local/local.service';
-import {
-  TableUtilsService,
-  TableUtilsServiceInterface,
-} from '../../table-utils/table-utils.service';
 import { TokenService, TokenServiceInterface } from '../token.service';
 
 const apiFilter = ['serial', 'transaction_id'];
@@ -47,7 +43,6 @@ export interface Challenge {
 export interface ChallengesServiceInterface {
   apiFilter: string[];
   advancedApiFilter: string[];
-  selectedContent: WritableSignal<string>;
   filterValue: WritableSignal<Record<string, string>>;
   pageSize: WritableSignal<number>;
   pageIndex: WritableSignal<number>;
@@ -61,14 +56,11 @@ export interface ChallengesServiceInterface {
 export class ChallengesService implements ChallengesServiceInterface {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly localService: LocalServiceInterface = inject(LocalService);
-  private readonly tableUtilsService: TableUtilsServiceInterface =
-    inject(TableUtilsService);
   private readonly contentService: ContentServiceInterface =
     inject(ContentService);
 
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
-  selectedContent = this.contentService.selectedContent;
   tokenBaseUrl = this.tokenService.tokenBaseUrl;
   filterValue = linkedSignal({
     source: this.contentService.routeUrl,
@@ -105,7 +97,7 @@ export class ChallengesService implements ChallengesServiceInterface {
   });
   sort = signal({ active: 'timestamp', direction: 'asc' } as Sort);
   challengesResource = httpResource<PiResponse<Challenges>>(() => {
-    if (this.selectedContent() !== 'token_challenges') {
+    if (this.contentService.routeUrl() !== '/tokens/challenges') {
       return undefined;
     }
     const { params: filterParams, serial } = this.filterParams();

@@ -5,10 +5,6 @@ import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import {
-  ContentService,
-  ContentServiceInterface,
-} from '../../../services/content/content.service';
-import {
   TokenService,
   TokenServiceInterface,
 } from '../../../services/token/token.service';
@@ -30,13 +26,9 @@ import { Router } from '@angular/router';
   styleUrl: './assign-token-self-service.component.scss',
 })
 export class AssignTokenSelfServiceComponent {
-  private router = inject(Router);
-  private readonly contentService: ContentServiceInterface =
-    inject(ContentService);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
-
+  private router = inject(Router);
   tokenSerial = this.tokenService.tokenSerial;
-  selectedContent = this.contentService.selectedContent;
   selectedToken = signal('');
   setPinValue = signal('');
   repeatPinValue = signal('');
@@ -51,7 +43,6 @@ export class AssignTokenSelfServiceComponent {
       })
       .subscribe({
         next: () => {
-          this.selectedContent.set('token_details');
           this.router.navigateByUrl('/tokens/' + this.selectedToken());
           this.tokenSerial.set(this.selectedToken());
         },

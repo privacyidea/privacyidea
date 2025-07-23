@@ -2,7 +2,9 @@ import { Injectable, signal, WritableSignal } from '@angular/core';
 
 export interface VersioningServiceInterface {
   version: WritableSignal<string>;
+
   getVersion(): string;
+
   openDocumentation(page: string): void;
 }
 
@@ -19,43 +21,43 @@ export class VersioningService implements VersioningServiceInterface {
   openDocumentation(page: string) {
     const baseUrl = 'https://privacyidea.readthedocs.io/en/'; //TODO translation
     let page_url;
-    switch (page) {
-      case 'token_enrollment':
-        page_url = 'webui/token_details.html#enroll-token';
-        break;
-      case 'token_overview':
-        page_url = 'webui/index.html#tokens';
-        break;
-      case 'container_overview':
-        page_url = 'webui/index.html#containers';
-        break;
-      case 'token_details':
-        page_url = 'webui/token_details.html';
-        break;
-      case 'container_details':
-        page_url = 'webui/container_view.html#container-details';
-        break;
-      case 'tokentypes':
-        page_url = 'tokens/tokentypes.html';
-        break;
-      case 'token_get_serial':
-        page_url = 'webui/token_details.html#get-serial';
-        break;
-      case 'token_applications':
-        page_url = 'machines/index.html';
-        break;
-      case 'token_challenges':
-        page_url = 'tokens/authentication_modes.html#challenge-mode';
-        break;
-      case 'containertypes':
-        page_url = 'container/container_types.html';
-        break;
-      case 'container_create':
-        page_url = 'webui/container_view.html#container-create';
-        break;
-      default:
-        page_url = 'webui/index.html';
-        break;
+    if (page.startsWith('/tokens/details')) {
+      page_url = 'webui/token_details.html';
+    } else if (page.startsWith('/tokens/containers/details')) {
+      page_url = 'webui/container_view.html#container-details';
+    } else {
+      switch (page) {
+        case '/tokens/enroll':
+          page_url = 'webui/token_details.html#enroll-token';
+          break;
+        case '/tokens':
+          page_url = 'webui/index.html#tokens';
+          break;
+        case '/tokens/containers':
+          page_url = 'webui/index.html#containers';
+          break;
+        case 'tokentypes':
+          page_url = 'tokens/tokentypes.html';
+          break;
+        case '/tokens/get-serial':
+          page_url = 'webui/token_details.html#get-serial';
+          break;
+        case '/tokens/applications':
+          page_url = 'machines/index.html';
+          break;
+        case '/tokens/challenges':
+          page_url = 'tokens/authentication_modes.html#challenge-mode';
+          break;
+        case 'containertypes':
+          page_url = 'container/container_types.html';
+          break;
+        case '/tokens/containers/create':
+          page_url = 'webui/container_view.html#container-create';
+          break;
+        default:
+          page_url = 'webui/index.html';
+          break;
+      }
     }
     const versionUrl = `${baseUrl}v${this.version()}/${page_url}`;
     const fallbackUrl = `${baseUrl}latest/${page_url}`;

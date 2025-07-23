@@ -27,7 +27,6 @@ export class ContainerRegistrationDialogComponent {
   public readonly data: {
     response: PiResponse<ContainerRegisterData>;
     containerSerial: WritableSignal<string>;
-    selectedContent: WritableSignal<string>;
   } = inject(MAT_DIALOG_DATA);
 
   constructor(private dialogRef: MatDialogRef<LostTokenComponent>) {
@@ -38,7 +37,6 @@ export class ContainerRegistrationDialogComponent {
 
   containerSelected(containerSerial: string) {
     this.dialogRef.close();
-    this.data.selectedContent.set('container_details');
     this.router.navigateByUrl('/tokens/containers/details/' + containerSerial);
     this.data.containerSerial.set(containerSerial);
   }

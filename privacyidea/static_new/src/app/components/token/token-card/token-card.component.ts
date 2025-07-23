@@ -49,7 +49,6 @@ export class TokenCardComponent {
   private readonly contentService: ContentServiceInterface =
     inject(ContentService);
   private router = inject(Router);
-  selectedContent = this.contentService.selectedContent;
   selectedTabIndex = linkedSignal({
     source: this.contentService.routeUrl,
     computation: (routeUrl) =>
@@ -65,7 +64,7 @@ export class TokenCardComponent {
       this.isProgrammaticTabChange.set(false);
       return;
     }
-
+    console.log('onTabChange', evt);
     if (evt.index === 0) {
       this.router.navigate(['/tokens']);
     } else {

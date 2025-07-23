@@ -65,7 +65,6 @@ export class TokenGetSerialComponent {
     inject(ContentService);
   private readonly dialog: MatDialog = inject(MatDialog);
 
-  selectedContent = this.contentService.selectedContent;
   tokenSerial = this.tokenService.tokenSerial;
   otpValue = signal<string>('');
   tokenType = signal<string>('');
@@ -211,7 +210,6 @@ export class TokenGetSerialComponent {
               otpValue: this.otpValue(),
               onClickSerial: () => {
                 this.tokenSerial.set(serial);
-                this.selectedContent.set('token_details');
                 this.router.navigateByUrl('/tokens/' + serial);
                 this.dialog.closeAll();
               },

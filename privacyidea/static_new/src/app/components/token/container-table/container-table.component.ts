@@ -10,7 +10,6 @@ import {
   Component,
   effect,
   inject,
-  Input,
   linkedSignal,
   ViewChild,
   WritableSignal,
@@ -41,7 +40,6 @@ import {
 } from '../../../services/token/token.service';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
-import { TokenSelectedContentKey } from '../token.component';
 
 const columnsKeyMap = [
   { key: 'select', label: '' },
@@ -171,7 +169,6 @@ export class ContainerTableComponent {
 
   @ViewChild('filterHTMLInputElement', { static: true })
   filterInput!: HTMLInputElement;
-  @Input() selectedContent!: WritableSignal<TokenSelectedContentKey>;
   expandedElement: ContainerDetailData | null = null;
 
   constructor() {
