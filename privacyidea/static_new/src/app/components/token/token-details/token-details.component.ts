@@ -375,7 +375,7 @@ export class TokenDetailsComponent {
         key === 'container_serial'
       );
     } else {
-      return key === 'description';
+      return key === 'description' || key === 'container_serial';
     }
   }
 
