@@ -2743,7 +2743,7 @@ class APIContainer(APIContainerTest):
         self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
 
         # Remove non-existing not assigned user
-        payload = {"user": "another_invalid", "realm": self.realm1, "uid": "987"}
+        payload = {"user": "another_invalid", "realm": self.realm1, "user_id": "987"}
         result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
                                            payload, self.at, 'POST')
         error = result["result"]["error"]
