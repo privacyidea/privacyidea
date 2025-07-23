@@ -1,8 +1,8 @@
 @use "../../../../styles";
 @use "@angular/material" as mat;
 
-$card-bg: white;
-$card-border: white;
+$card-bg: var(--mat-sys-surface-container-lowest);
+$card-border: var(--mat-sys-surface-container-lowest);
 $card-padding: 8px;
 $card-margin: 32px;
 $tab-active-color: var(--mat-sys-primary);

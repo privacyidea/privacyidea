@@ -2,9 +2,7 @@
 @use "@angular/material" as mat;
 
 $header-shadow: var(--box-shadow);
-$menu-link-color: #767676;
 $hover-bg: var(--mat-sys-surface-container-highest);
-$active-bg: var(--mat-sys-primary);
 $shadow-white: var(--box-shadow-white);
 $border-radius: var(--border-radius);
 
@@ -55,7 +53,6 @@ $border-radius: var(--border-radius);
     a {
       text-decoration: none;
       border-radius: 0;
-      color: $menu-link-color;
       height: 60px;
       min-width: 120px;
       padding: 20px;
@@ -66,8 +63,8 @@ $border-radius: var(--border-radius);
       &:hover {
         box-shadow: var(--box-shadow-header);
         z-index: 1;
-        background: $hover-bg;
-        color: white;
+        background: var(--mat-sys-primary-dark);
+        color: var(--mat-sys-on-primary);
         transform: translateX(-2px);
         transition:
           transform 200ms,
@@ -77,12 +74,23 @@ $border-radius: var(--border-radius);
       &.active {
         box-shadow: var(--box-shadow-header);
         z-index: 1;
-        background: $active-bg;
-        color: white;
+        background: var(--mat-sys-primary-light-active);
+        color: var(--mat-sys-on-primary);
         transform: translateX(-2px);
         transition:
           transform 200ms,
           box-shadow 200ms ease;
+
+        &:hover {
+          box-shadow: var(--box-shadow-header);
+          z-index: 1;
+          background: var(--mat-sys-primary-dark);
+          color: var(--mat-sys-on-primary);
+          transform: translateX(-2px);
+          transition:
+            transform 200ms,
+            box-shadow 200ms ease;
+        }
       }
     }
   }
