@@ -47,7 +47,6 @@ body {
   --quarter-global-padding: calc(var(--global-padding) / 4);
   --eighth-global-padding: calc(var(--global-padding) / 8);
 
-  --shadow-light: #d9d9d9;
   --light: #f3f3f3;
 
   --green-brand-base: hsl(72, 100%, 32%);
@@ -60,13 +59,14 @@ body {
 
   --box-shadow: var(--shadow-distance) var(--shadow-distance) var(--blur)
       var(--mat-sys-shadow),
-    var(--light-distance) var(--light-distance) var(--blur) var(--light);
+    var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-light);
   --box-shadow-white: var(--shadow-distance) var(--shadow-distance) var(--blur)
       var(--mat-sys-shadow),
-    var(--light-distance) var(--light-distance) var(--blur) white;
+    var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-light);
   --box-shadow-inset: inset var(--shadow-distance) var(--shadow-distance)
       var(--blur) var(--mat-sys-shadow),
-    inset var(--light-distance) var(--light-distance) var(--blur) white;
+    inset var(--light-distance) var(--light-distance) var(--blur)
+      var(--mat-sys-light);
 
   --background-blue: linear-gradient(
     145deg,
@@ -142,6 +142,7 @@ body {
     var(--grey-light),
     var(--grey-base)
   );
+
   --box-shadow-gray: inset var(--shadow-distance) var(--shadow-distance)
       var(--blur) var(--grey-light-active),
     inset var(--light-distance) var(--light-distance) var(--blur)
@@ -155,7 +156,7 @@ body {
   --box-shadow-hover: 2px 2px 32px var(--mat-sys-shadow-color-heigher);
   --table-color: var(--mat-sys-surface-container-lowest);
 
-  --mdc-filled-text-field-container-color: var(--light);
+  --mdc-filled-text-field-container-color: var(--mat-sys-light);
   --mdc-tab-indicator-active-indicator-color: var(--mat-sys-primary);
   --mdc-filled-text-field-focus-active-indicator-color: var(
     ---mat-sys-primary-light
@@ -169,6 +170,10 @@ body {
 
 .shadow {
   color: var(--mat-sys-shadow);
+}
+
+.on-surface {
+  color: var(--mat-sys-on-surface);
 }
 
 .bold {

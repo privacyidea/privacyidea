@@ -66,7 +66,7 @@
             ? 'red-light'
             : sessionTimerService.remainingTime() < 60000
               ? 'yellow-light'
-              : 'shadow',
+              : 'on-surface',
         ]"
         class="session-timer">
         @if (sessionTimerService.remainingTime() < 60000) {

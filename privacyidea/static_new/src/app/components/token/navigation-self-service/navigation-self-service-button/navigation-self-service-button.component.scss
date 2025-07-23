@@ -77,7 +77,7 @@
   box-shadow:
     var(--shadow-distance) var(--shadow-distance) var(--blur)
       var(--mat-sys-shadow),
-    var(--light-distance) var(--light-distance) var(--blur) var(--light);
+    var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-light);
 
   .mat-icon {
     color: var(--mat-sys-on-primary);

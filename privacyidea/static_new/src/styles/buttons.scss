@@ -8,24 +8,35 @@ $button-gap-small: 10px;
 $padding-horizontal: 16px;
 $detail-icon-font-size: 18px;
 $margin-bottom-small: -6px;
-$keyword-bg: #f3f3f3;
+$keyword-bg: var(--mat-sys-surface-container-high);
 $keyword-font-size: 18px;
 $keyword-color: #999999;
 $button-border-radius: var(--border-radius);
 $profile-bg: var(--background-yellow);
 $profile-hover-bg: var(--background-yellow-inset);
-$shadow-white: var(--box-shadow-white);
+$background-low-contrast: linear-gradient(
+  145deg,
+  var(--mat-sys-surface-container-highest),
+  var(--mat-sys-surface-container-low)
+);
+
+$button-low-contrast-variant: linear-gradient(
+  145deg,
+  var(--mat-sys-surface-container-low),
+  var(--mat-sys-surface-container-highest)
+);
 
 // Mixins for common button styles
 @mixin button-base(
   $height,
   $width,
   $border-radius,
-  $background,
   $box-shadow,
+  $color: var(--mat-sys-on-primary),
+  $background: var(--mat-sys-primary),
   $cursor: pointer
 ) {
-  color: white;
+  color: $color;
   height: $height;
   width: $width;
   border: none;
@@ -51,16 +62,14 @@ $shadow-white: var(--box-shadow-white);
 
 .login-btn {
   text-decoration: none;
-  color: white;
+  color: var(--mat-sys-on-primary);
   padding: 10px;
   border-radius: $button-border-radius;
-  box-shadow: var(--box-shadow-white);
-  background: var(--background-blue);
+  background: var(--mat-sys-primary);
 
   &:hover {
     box-shadow: var(--box-shadow-blue-inset);
     background: var(--background-blue-inset);
-    color: white;
     transform: translateY(2px);
   }
 }
@@ -70,12 +79,19 @@ $shadow-white: var(--box-shadow-white);
   color: black;
   padding: 10px;
   border-radius: $button-border-radius;
-  box-shadow: var(--box-shadow-white);
-  background: linear-gradient(145deg, #efefef, #ffffff);
+  background: linear-gradient(
+    145deg,
+    var(--mat-sys-surface-container-highest),
+    var(--mat-sys-surface-container-low)
+  );
 
   &:hover {
     box-shadow: var(--box-shadow-inset);
-    background: linear-gradient(145deg, #ffffff, #efefef);
+    background: linear-gradient(
+      145deg,
+      var(--mat-sys-surface-container-low),
+      var(--mat-sys-surface-container-highest)
+    );
     color: black;
     transform: translateY(2px);
   }
@@ -101,11 +117,10 @@ $shadow-white: var(--box-shadow-white);
 
 .card-button {
   @include button-base(
-    $button-height,
-    $button-width,
-    $button-border-radius,
-    var(--background-blue),
-    var(--box-shadow-blue)
+    $height: $button-height,
+    $width: $button-width,
+    $border-radius: $button-border-radius,
+    $box-shadow: var(--box-shadow-blue)
   );
   @include button-hover(
     var(--background-blue-inset),
@@ -116,33 +131,33 @@ $shadow-white: var(--box-shadow-white);
 .card-button-reset {
   min-width: 240px;
   @include button-base(
-    $button-height,
-    $button-width,
-    $button-border-radius,
-    var(--background-green),
-    var(--box-shadow-green)
+    $height: $button-height,
+    $width: $button-width,
+    $border-radius: $button-border-radius,
+    $background: var(--background-green),
+    $box-shadow: var(--box-shadow-green)
   );
 }
 
 .card-button-active {
   min-width: 240px;
   @include button-base(
-    $button-height,
-    $button-width,
-    $button-border-radius,
-    var(--background-blue-inset),
-    var(--box-shadow-blue-inset)
+    $height: $button-height,
+    $width: $button-width,
+    $border-radius: $button-border-radius,
+    $background: var(--background-blue-inset),
+    $box-shadow: var(--box-shadow-blue-inset)
   );
 }
 
 .card-button-disabled {
   min-width: 240px;
   @include button-base(
-    $button-height,
-    $button-width,
-    $button-border-radius,
-    var(--background-gray),
-    var(--box-shadow-gray)
+    $height: $button-height,
+    $width: $button-width,
+    $border-radius: $button-border-radius,
+    $background: var(--background-gray),
+    $box-shadow: var(--box-shadow-gray)
   );
   color: #5b5b5b;
 }
@@ -150,11 +165,11 @@ $shadow-white: var(--box-shadow-white);
 .card-button-delete {
   min-width: 240px;
   @include button-base(
-    $button-height,
-    $button-width,
-    $button-border-radius,
-    var(--background-red),
-    var(--box-shadow-red)
+    $height: $button-height,
+    $width: $button-width,
+    $border-radius: $button-border-radius,
+    $background: var(--background-red),
+    $box-shadow: var(--box-shadow-red)
   );
   transition: 0ms;
 
@@ -171,11 +186,11 @@ $shadow-white: var(--box-shadow-white);
 .card-button-activate {
   min-width: 240px;
   @include button-base(
-    $button-height,
-    $button-width,
-    $button-border-radius,
-    var(--background-green),
-    var(--box-shadow-green)
+    $height: $button-height,
+    $width: $button-width,
+    $border-radius: $button-border-radius,
+    $background: var(--background-green),
+    $box-shadow: var(--box-shadow-green)
   );
   transition: 0ms;
 
@@ -193,11 +208,11 @@ $shadow-white: var(--box-shadow-white);
   min-width: 240px;
   color: white;
   @include button-base(
-    $button-height,
-    $button-width,
-    $button-border-radius,
-    var(--background-blue),
-    var(--box-shadow-blue)
+    $height: $button-height,
+    $width: $button-width,
+    $border-radius: $button-border-radius,
+    $background: var(--background-blue),
+    $box-shadow: var(--box-shadow-blue)
   );
   @include button-hover(
     var(--background-blue-inset),
@@ -301,8 +316,8 @@ $shadow-white: var(--box-shadow-white);
 }
 
 .enroll-button-spacer {
-  width: 40px; // Standard width of a mat-icon-button
-  height: 40px; // Standard height of a mat-icon-button, ensures alignment
+  width: 40px;
+  height: 40px;
 }
 
 .profile-btn {
@@ -311,7 +326,6 @@ $shadow-white: var(--box-shadow-white);
   border: none;
   border-radius: 0;
   background: $profile-bg;
-  box-shadow: var(--box-shadow-header);
   cursor: pointer;
   color: white;
 

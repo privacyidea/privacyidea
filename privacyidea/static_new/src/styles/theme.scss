@@ -66,6 +66,9 @@
 // }
 
 html {
+  // --mat-sys-shadow: light-dark(#cccccc, #000000)
+  --mat-sys-light: light-dark(#ffffff, #242424);
+
   --mat-sys-primary-dark: light-dark(hsl(198, 66%, 25%), hsl(198, 66%, 60%));
   --mat-sys-primary-base: var(--mat-sys-primary);
   --mat-sys-primary-light: light-dark(hsl(198, 66%, 35%), hsl(198, 66%, 50%));
@@ -84,10 +87,10 @@ html {
   --red-light: light-dark(hsl(342, 100%, 42%), hsl(342, 100%, 52%));
   --red-light-active: light-dark(hsl(342, 100%, 57%), hsl(342, 100%, 47%));
 
-  --yellow-dark: light-dark(hsl(28, 85%, 45%), hsl(28, 85%, 75%));
-  --yellow-base: light-dark(hsl(28, 85%, 50%), hsl(28, 85%, 70%));
-  --yellow-light: light-dark(hsl(28, 85%, 55%), hsl(28, 85%, 65%));
-  --yellow-light-active: light-dark(hsl(28, 85%, 60%), hsl(28, 85%, 60%));
+  --yellow-dark: light-dark(hsl(28, 85%, 45%), hsl(28, 85%, 35%));
+  --yellow-base: light-dark(hsl(28, 85%, 50%), hsl(28, 85%, 40%));
+  --yellow-light: light-dark(hsl(28, 85%, 55%), hsl(28, 85%, 45%));
+  --yellow-light-active: light-dark(hsl(28, 85%, 60%), hsl(28, 85%, 50%));
 
   --grey-dark: light-dark(hsl(0, 0%, 42%), hsl(0, 0%, 72%));
   --grey-base: light-dark(hsl(0, 0%, 50%), hsl(0, 0%, 65%));

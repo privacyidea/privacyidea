@@ -74,7 +74,7 @@ h5 {
   position: sticky;
   top: 0;
   z-index: 100;
-  background-color: white;
+  background-color: var(--mat-sys-surface-container-lowest);
   padding: 16px;
   transition: box-shadow 0.3s ease-in-out;
 }
