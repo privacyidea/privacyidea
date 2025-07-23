@@ -454,13 +454,6 @@ export class TokenService implements TokenServiceInterface {
         this.notificationService.openSnackBar(tokenTypesResourceError.message);
       }
     });
-    effect(() => {
-      console.log('showOnly', this.showOnlyTokenNotInContainer());
-    });
-    effect(() => console.log('filterValue', this.filterValue()));
-    effect(() => {
-      console.log(this.contentService.routeUrl());
-    });
   }
 
   toggleActive(

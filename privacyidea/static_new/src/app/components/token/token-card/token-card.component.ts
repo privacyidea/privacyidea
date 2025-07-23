@@ -64,7 +64,6 @@ export class TokenCardComponent {
       this.isProgrammaticTabChange.set(false);
       return;
     }
-    console.log('onTabChange', evt);
     if (evt.index === 0) {
       this.router.navigate(['/tokens']);
     } else {
