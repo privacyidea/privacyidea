@@ -106,7 +106,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_t
                                            webauthntoken_request, required_piv_attestation,
                                            hide_tokeninfo, init_ca_connector, init_ca_template,
                                            init_subject_components, require_description_on_edit, require_description,
-                                           check_container_action, check_user_params, check_token_list_action)
+                                           check_container_action, check_user_params, check_token_list_action,
+                                           force_server_generate_key)
 from privacyidea.api.lib.postpolicy import (save_pin_change, check_verify_enrollment,
                                             postpolicy)
 from privacyidea.lib.event import event
@@ -159,6 +160,7 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(fido2_enroll, request)
 @prepolicy(required_piv_attestation, request)
 @prepolicy(verify_enrollment, request)
+@prepolicy(force_server_generate_key, request)
 @postpolicy(save_pin_change, request)
 @event("token_init", request, g)
 @postpolicy(check_verify_enrollment, request)
@@ -297,7 +299,8 @@ def init():
     authentication.
     """
     response_details = {}
-    param = request.all_data
+    param = request.all_data.copy()
+    param["policies"] = g.get("policies", {})
 
     user = request.User
     token = init_token(param, user)

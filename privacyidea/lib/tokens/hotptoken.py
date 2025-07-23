@@ -97,7 +97,6 @@ class HotpTokenClass(TokenClass):
     desc_hash_func = lazy_gettext('Specify the hashing function to be used. '
                                   'Can be SHA1, SHA256 or SHA512.')
     desc_otp_len = lazy_gettext('Specify the OTP length to be used. Can be 6 or 8 digits.')
-    desc_key_gen = lazy_gettext("Force the key to be generated on the server.")
     desc_two_step_user = lazy_gettext('Specify whether users are allowed or forced to use '
                                       'two-step enrollment.')
     desc_two_step_admin = lazy_gettext('Specify whether admins are allowed or forced to '
@@ -183,7 +182,7 @@ class HotpTokenClass(TokenClass):
                        'hotp_otplen': {'type': 'int',
                                        'value': [6, 8],
                                        'desc': HotpTokenClass.desc_otp_len},
-                       'hotp_force_server_generate': {
+                       ACTION.FORCE_SERVER_GENERATE: {
                            'type': 'bool',
                            'desc': HotpTokenClass.desc_key_gen},
                        'hotp_2step': {'type': 'str',
@@ -201,7 +200,9 @@ class HotpTokenClass(TokenClass):
                                        'desc': HotpTokenClass.desc_otp_len},
                        'hotp_2step': {'type': 'str',
                                       'value': ['allow', 'force'],
-                                      'desc': HotpTokenClass.desc_two_step_admin}
+                                      'desc': HotpTokenClass.desc_two_step_admin},
+                       ACTION.FORCE_SERVER_GENERATE: {'type': 'bool',
+                                                      'desc': HotpTokenClass.desc_key_gen}
                    }
                }
                }
@@ -351,14 +352,16 @@ class HotpTokenClass(TokenClass):
 
         # check if the key_size is provided
         # if not, we could derive it from the hashlib
-        key_size = getParam(upd_param, 'key_size', optional) \
-                   or getParam(upd_param, 'keysize', optional)
+        key_size = upd_param.get('keysize')
         if key_size is None:
             upd_param['keysize'] = keylen.get(hashlibStr)
 
-        otpKey = getParam(upd_param, "otpkey", optional)
-        genkey = is_true(getParam(upd_param, "genkey", optional))
-        if genkey and otpKey:
+        otp_key = upd_param.get("otpkey")
+        force_genkey = param.get("policies", {}).get(f"{self.get_tokentype()}_{ACTION.FORCE_SERVER_GENERATE}", False)
+        if force_genkey or not otp_key:
+            upd_param["genkey"] = True
+        genkey = is_true(upd_param.get("genkey"))
+        if genkey and otp_key is not None:
             # The Base TokenClass does not allow otpkey and genkey at the
             # same time
             del upd_param['otpkey']

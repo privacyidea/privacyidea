@@ -37,6 +37,8 @@ described in motp.sourceforge.net.
 
 The code is tested in tests/test_lib_tokens_motp
 """
+from flask_babel import lazy_gettext
+
 from .mOTP import mTimeOtp
 from privacyidea.lib.apps import create_motp_url
 from privacyidea.lib.tokenclass import TokenClass
@@ -96,6 +98,14 @@ class MotpTokenClass(TokenClass):
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
                'policy': {
+                   SCOPE.ADMIN: {
+                       ACTION.FORCE_SERVER_GENERATE: {'type': 'bool',
+                                                      'desc': MotpTokenClass.desc_key_gen}
+                   },
+                   SCOPE.USER: {
+                       ACTION.FORCE_SERVER_GENERATE: {'type': 'bool',
+                                                      'desc': MotpTokenClass.desc_key_gen}
+                   },
                    SCOPE.ENROLL: {
                        ACTION.MAXTOKENUSER: {
                            'type': 'int',
@@ -151,7 +161,7 @@ class MotpTokenClass(TokenClass):
                                                   "value": motp_url,
                                                   "img": create_img(motp_url)
                                                   }
-                except Exception as ex:   # pragma: no cover
+                except Exception as ex:  # pragma: no cover
                     log.debug("{0!s}".format(traceback.format_exc()))
                     log.error('failed to set motp url: {0!r}'.format(ex))
 
@@ -167,19 +177,22 @@ class MotpTokenClass(TokenClass):
 
         :return: nothing
         """
-        if self.hKeyRequired is True:
-            genkey = is_true(getParam(param, "genkey", optional))
-            if not param.get('keysize'):
-                param['keysize'] = 16
-            if genkey:
-                otpKey = generate_otpkey(param['keysize'])
-                del param['genkey']
-            else:
-                # genkey not set: check otpkey is given
-                # this will raise an exception if otpkey is not present
-                otpKey = getParam(param, "otpkey", required)
+        otp_key = param.get("otpkey")
+        force_genkey = param.get("policies", {}).get(f"{self.get_tokentype()}_{ACTION.FORCE_SERVER_GENERATE}", False)
+        if force_genkey or not otp_key:
+            param["genkey"] = True
+        genkey = is_true(param.get("genkey"))
+        if not param.get('keysize'):
+            param['keysize'] = 16
+        if genkey:
+            otpKey = generate_otpkey(param['keysize'])
+            del param['genkey']
+        else:
+            # genkey not set: check otpkey is given
+            # this will raise an exception if otpkey is not present
+            otpKey = getParam(param, "otpkey", required)
 
-            param['otpkey'] = otpKey
+        param['otpkey'] = otpKey
 
         # motp token specific
         mOTPPin = getParam(param, "motppin", required)

@@ -97,8 +97,8 @@ class DayPasswordTokenClass(TotpTokenClass):
                        'otplen': {'type': 'int',
                                   'value': [6, 8],
                                   'desc': DayPasswordTokenClass.desc_otp_len},
-                       'force_server_generate': {'type': 'bool',
-                                                 'desc': DayPasswordTokenClass.desc_key_gen}
+                       ACTION.FORCE_SERVER_GENERATE: {'type': 'bool',
+                                                      'desc': DayPasswordTokenClass.desc_key_gen}
                    },
                    SCOPE.ADMIN: {
                        'timestep': {'type': 'str',
@@ -111,8 +111,8 @@ class DayPasswordTokenClass(TotpTokenClass):
                        'otplen': {'type': 'int',
                                   'value': [6, 8],
                                   'desc': DayPasswordTokenClass.desc_otp_len},
-                       'force_server_generate': {'type': 'bool',
-                                                 'desc': DayPasswordTokenClass.desc_key_gen}
+                       ACTION.FORCE_SERVER_GENERATE: {'type': 'bool',
+                                                      'desc': DayPasswordTokenClass.desc_key_gen}
                    },
                    SCOPE.ENROLL: {
                        ACTION.FORCE_APP_PIN: {

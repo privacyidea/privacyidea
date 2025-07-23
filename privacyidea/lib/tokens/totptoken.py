@@ -120,7 +120,7 @@ class TotpTokenClass(HotpTokenClass):
                        'totp_otplen': {'type': 'int',
                                        'value': [6, 8],
                                        'desc': TotpTokenClass.desc_otp_len},
-                       'totp_force_server_generate': {'type': 'bool',
+                       ACTION.FORCE_SERVER_GENERATE: {'type': 'bool',
                                                       'desc': TotpTokenClass.desc_key_gen},
                        '2step': {'type': 'str',
                                  'value': ['allow', 'force'],
@@ -138,6 +138,8 @@ class TotpTokenClass(HotpTokenClass):
                        'totp_otplen': {'type': 'int',
                                        'value': [6, 8],
                                        'desc': TotpTokenClass.desc_otp_len},
+                       ACTION.FORCE_SERVER_GENERATE: {'type': 'bool',
+                                                      'desc': TotpTokenClass.desc_key_gen},
                        '2step': {'type': 'str',
                                  'value': ['allow', 'force'],
                                  'desc': TotpTokenClass.desc_two_step_admin}

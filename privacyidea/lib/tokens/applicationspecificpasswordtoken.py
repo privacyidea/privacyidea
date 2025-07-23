@@ -79,6 +79,14 @@ class ApplicationSpecificPasswordTokenClass(PasswordTokenClass):
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
                'policy': {
+                   SCOPE.ADMIN: {
+                       ACTION.FORCE_SERVER_GENERATE: {'type': 'bool',
+                                                      'desc': ApplicationSpecificPasswordTokenClass.desc_key_gen}
+                   },
+                   SCOPE.USER: {
+                       ACTION.FORCE_SERVER_GENERATE: {'type': 'bool',
+                                                      'desc': ApplicationSpecificPasswordTokenClass.desc_key_gen}
+                   },
                    SCOPE.ENROLL: {
                        ACTION.MAXTOKENUSER: {
                            'type': 'int',
