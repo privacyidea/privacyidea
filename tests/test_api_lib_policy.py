@@ -5592,13 +5592,15 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         env["REMOTE_ADDR"] = "192.168.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
+        req.User = User("cornelius", self.realm1)
         req.all_data = {"user": "cornelius",
                         "pass": "offline287082"}
 
         res = {"jsonrpc": "2.0",
                "result": {"status": True,
                           "value": {"role": "user",
-                                    "username": "cornelius"}},
+                                    "username": "cornelius",
+                                    "realm": self.realm1}},
                "version": "privacyIDEA test",
                "detail": {"serial": None},
                "id": 1}
@@ -5725,13 +5727,15 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         env["REMOTE_ADDR"] = "192.168.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
+        req.User = User("cornelius", self.realm1)
         req.all_data = {"user": "cornelius",
                         "pass": "offline287082"}
 
         res = {"jsonrpc": "2.0",
                "result": {"status": True,
                           "value": {"role": "user",
-                                    "username": "cornelius"}},
+                                    "username": "cornelius",
+                                    "realm": self.realm1}},
                "version": "privacyIDEA test",
                "id": 1}
         resp = jsonify(res)
@@ -5779,12 +5783,14 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         env["REMOTE_ADDR"] = "192.168.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
+        req.User = User()
         req.all_data = {}
 
         res = {"jsonrpc": "2.0",
                "result": {"status": True,
                           "value": {"role": "admin",
-                                    "username": "cornelius"}},
+                                    "username": "cornelius",
+                                    "realm": ""}},
                "version": "privacyIDEA test",
                "id": 1}
         resp = jsonify(res)
@@ -5817,12 +5823,14 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         env["REMOTE_ADDR"] = "192.168.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
+        req.User = User()
         req.all_data = {}
 
         res = {"jsonrpc": "2.0",
                "result": {"status": True,
                           "value": {"role": "admin",
-                                    "username": "cornelius"}},
+                                    "username": "cornelius",
+                                    "realm": ""}},
                "version": "privacyIDEA test",
                "id": 1}
         resp = jsonify(res)
@@ -5857,18 +5865,21 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         builder = EnvironBuilder(method="POST", data={}, headers={})
         env = builder.get_environ()
         req = Request(env)
+        req.User = User("cornelius", self.realm1)
         req.all_data = {}
 
         user_response = {"jsonrpc": "2.0",
                          "result": {"status": True,
                                     "value": {"role": "user",
-                                              "username": "cornelius"}},
+                                              "username": "cornelius",
+                                              "realm": self.realm1}},
                          "version": "privacyIDEA test",
                          "id": 1}
         admin_response = {"jsonrpc": "2.0",
                           "result": {"status": True,
                                      "value": {"role": "admin",
-                                               "username": "cornelius"}},
+                                               "username": "cornelius",
+                                               "realm": ""}},
                           "version": "privacyIDEA test",
                           "id": 1}
 
@@ -5901,6 +5912,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # Admin without container: container wizard disabled
         resp = jsonify(admin_response)
+        req.User = User()
         new_response = get_webui_settings(req, resp)
         container_wizard = new_response.json["result"]["value"]["container_wizard"]
         self.assertFalse(container_wizard["enabled"])
@@ -5910,6 +5922,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         container_serial = init_container({"type": "generic", "user": "cornelius", "realm": self.realm1})[
             "container_serial"]
         resp = jsonify(user_response)
+        req.User = User("cornelius", self.realm1)
         new_response = get_webui_settings(req, resp)
         container_wizard = new_response.json["result"]["value"]["container_wizard"]
         self.assertFalse(container_wizard["enabled"])
