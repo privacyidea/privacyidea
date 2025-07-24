@@ -45,9 +45,6 @@ $button-low-contrast-variant: linear-gradient(
   background: $background;
   box-shadow: $box-shadow;
   cursor: $cursor;
-  transition:
-    background 400ms,
-    box-shadow 400ms;
 }
 
 @mixin button-hover($background, $box-shadow) {
