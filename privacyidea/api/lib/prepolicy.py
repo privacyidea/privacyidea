@@ -1246,8 +1246,8 @@ def check_base_action(request=None, action=None, anonymous=False):
              "admin": "Admin actions are defined, but the action %s is not "
                       "allowed!" % action}
     params = request.all_data
-    user_object = request.User
-    resolver = user_object.resolver if user_object else None
+    user = request.User
+    resolver = user.resolver if user else None
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     # In certain cases we can not resolve the user by the serial!
@@ -1271,6 +1271,7 @@ def check_base_action(request=None, action=None, anonymous=False):
     # by the pure serial number given.
     action_allowed = Match.generic(g, scope=role,
                                    action=action,
+                                   user_object=user,
                                    user=username,
                                    resolver=resolver,
                                    realm=realm,
@@ -1456,6 +1457,7 @@ def check_client_container_disabled_action(request=None, action=None):
     match = Match.generic(g,
                           scope=SCOPE.CONTAINER,
                           action=action,
+                          user_object=user_attributes.user,
                           user=user_attributes.username,
                           resolver=user_attributes.resolver,
                           realm=user_attributes.realm,
