@@ -346,16 +346,28 @@ class TokenContainerClass:
 
     def remove_user(self, user: User) -> bool:
         """
-        Remove a user from the container. Raises a ResourceNotFoundError if the user does not exist.
+        Remove a user from the container. Also, non-existing users can be removed without an error.
+        However, if no matching user is found to remove, we raise an error if the user does not exist.
 
         :param user: User object to be removed
         :return: True if the user was removed, False if the user was not found in the container
         """
-        (user_id, resolver_type, resolver_name) = user.get_user_identifiers()
-        count = TokenContainerOwner.query.filter_by(container_id=self._db_container.id,
-                                                    user_id=user_id,
-                                                    resolver=resolver_name).delete()
+        user_id = user.uid if user.uid else None
+        resolver = user.resolver if user.resolver else None
+        realm_id = user.realm_id if user.realm_id else None
+
+        query = TokenContainerOwner.query.filter_by(container_id=self._db_container.id, user_id=user_id)
+        if resolver:
+            query = query.filter_by(resolver=resolver)
+        if realm_id:
+            query = query.filter_by(realm_id=realm_id)
+        count = query.delete()
         db.session.commit()
+
+        if count <= 0:
+            # The user could not be unassigned, check if it might not exist
+            User(user.login, user.realm).get_user_identifiers()
+
         return count > 0
 
     def get_users(self) -> list[User]:

@@ -1,7 +1,14 @@
 Version 3.12dev1, 2025-07-16
 
+  Enhancements:
+  * Add 'force_server_generate' policies for HOTP, TOTP, mOTP, and Password tokens (#4410)
+  * Add section 'request_data' to extended policy conditions (#4190)
+  * Add policy condition comparators to compare dates and check for substrings (#4380)
+  * Add policy 'require_description_on_edit' in the new scope 'Token' (#4117)
+
   Fixes:
   * 'max_auth_fail' and 'max_auth_success' are also applied to local admins and evaluated before checking the password (#4340)
+  * Allow to unassign non-existing users from containers (#4208)
   * Extended policy conditions on user info also works for web UI policies (#4016)
 
 Version 3.12dev0, 2025-07-09
@@ -18,6 +25,11 @@ Version 3.12dev0, 2025-07-09
   * Clean up user cache and expired challenges via API/WebUI (#4280)
   * Allow to enroll smartphone containers via multi-challenge (#4361)
   * Add comparators for extended policy conditions to compare dates and check for substrings (#4470)
+  * Add 'container' and 'container_info' sections to the extended policy conditions (#4208)
+  * Add 'hide_container_info' policy (#4208)
+  * Secure container registration with user store password (#4208)
+  * Allow wildcards in container search query (#4208)
+  * Add endpoint for batch deletions of tokens (#4208)
 
   Fixes:
   * Reduce PyOpenSSL dependencies for certificate token (#4212)

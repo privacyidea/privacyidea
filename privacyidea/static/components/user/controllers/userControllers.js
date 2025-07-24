@@ -139,6 +139,8 @@ angular.module("privacyideaApp")
                 });
             };
 
+            $scope.isList = angular.isArray;
+
             $scope.getUserContainer = function () {
                 if (AuthFactory.checkRight("container_list")) {
                     ContainerFactory.getContainerForUser({
@@ -505,6 +507,9 @@ angular.module("privacyideaApp")
                     switch (resolver.type) {
                         case "ldapresolver":
                             userinfo = JSON.parse(resolver.data.USERINFO);
+                            if (resolver.data.recursive_group_search) {
+                                userinfo[resolver.data.group_attribute_mapping_key] = "";
+                            }
                             break;
                         case "sqlresolver":
                             userinfo = JSON.parse(resolver.data.Map);

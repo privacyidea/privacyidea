@@ -417,7 +417,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         container_realms = [realm.name for realm in container.realms]
         self.assertEqual(2, len(container_realms))
 
-    def test_21_assign_user(self):
+    def test_21_assign_unassign_user(self):
         # Arrange
         self.setUp_user_realms()
         container_serial = init_container({"type": "generic", "description": "assign user"})["container_serial"]
@@ -437,8 +437,25 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Assigning another user fails
         self.assertRaises(TokenAdminError, assign_user, container_serial, user_root)
 
+        # Unassign user
+        success = unassign_user(container_serial, user_hans)
+        self.assertTrue(success)
+
         # Assigning an invalid user raises exception
         self.assertRaises(UserError, assign_user, container_serial, invalid_user)
+
+        # Unassigning an invalid user with the user id and resolver should work
+        invalid_user = User(login="invalid", uid="123", realm=self.realm1, resolver=self.resolvername1)
+        assign_user(container_serial, invalid_user)
+        success = unassign_user(container_serial, invalid_user)
+        self.assertTrue(success)
+
+        # Unassign an invalid user without providing the user id and without resolver raises an Exception
+        assign_user(container_serial, invalid_user)
+        invalid_user = User(login="invalid", realm=self.realm1)
+        self.assertRaises(UserError, unassign_user, container_serial, invalid_user)
+
+        container.delete()
 
     def test_22_add_container_info(self):
         # Arrange

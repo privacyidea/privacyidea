@@ -1,58 +1,24 @@
-#  Copyright (C) 2014 Cornelius Kölbel
-#  contact:  corny@cornelinux.de
-#
-#  2024-06-25 Raphael Topel <raphael.topel@esh.essen.de>
-#             Change AUTHTYPE.SASL_KERBEROS behaviour if upn is present in userinfo values for multidomain support
-#  2018-12-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
-#             Add censored password functionality
-#  2017-12-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
-#             Add configurable multi-value-attributes
-#             with the help of Nomen Nescio
-#  2017-07-20 Cornelius Kölbel <cornelius.koelbel@netknights.it>
-#             Fix unicode usernames
-#  2017-01-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
-#             Add certificate verification
-#  2017-01-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
-#             Use get_info=ldap3.NONE for binds to avoid querying of subschema
-#             Remove LDAPFILTER and self.reversefilter
-#  2016-07-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
-#             Adding getUserId cache.
-#  2016-04-13 Cornelius Kölbel <cornelius.koelbel@netknights.it>
-#             Add object_classes and dn_composition to configuration
-#             to allow flexible user_add
-#  2016-04-10 Martin Wheldon <martin.wheldon@greenhills-it.co.uk>
-#             Allow user accounts held in LDAP to be edited, providing
-#             that the account they are using has permission to edit
-#             those attributes in the LDAP directory
-#  2016-02-22 Salvo Rapisarda
-#             Allow objectGUID to be a users attribute
-#  2016-02-19 Cornelius Kölbel <cornelius.koelbel@netknights.it>
-#             Allow objectGUID to be the uid.
-#  2015-10-05 Cornelius Kölbel <cornelius.koelbel@netknights.it>
-#             Remove reverse_map, so that one LDAP field can map
-#             to several privacyIDEA fields.
-#  2015-04-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
-#             Add redundancy with LDAP3 Server pools. Round Robin Strategy
-#  2015-04-15 Cornelius Kölbel <cornelius.koelbel@netknights.it>
-#             Increase test coverage
-#  2014-12-25 Cornelius Kölbel <cornelius@privacyidea.org>
-#             Rewrite for flask migration
-#
-# SPDX-License-Identifier: AGPL-3.0-or-later
+# (c) NetKnights GmbH 2025,  https://netknights.it
 #
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
-# License as published by the Free Software Foundation; either
+# as published by the Free Software Foundation; either
 # version 3 of the License, or any later version.
 #
 # This code is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU AFFERO GENERAL PUBLIC LICENSE for more details.
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+# SPDX-FileCopyrightText: 2024 Raphael Topel <raphael.topel@esh.essen.de>
+# SPDX-FileCopyrightText: 2018 Cornelius Kölbel <cornelius@privacyidea.org>
+# SPDX-FileCopyrightText: 2016 Martin Wheldon <martin.wheldon@greenhills-it.co.uk>
+# SPDX-FileCopyrightText: 2016 Salvo Rapisarda
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 __doc__ = """This is the resolver to find users in LDAP directories like
 OpenLDAP and Active Directory.
 
@@ -329,6 +295,10 @@ class IdResolver(UserIdResolver):
         self.serverpool_strategy = SERVERPOOL_STRATEGY
         self.serverpool = None
         self.keytabfile = None
+        self.recursive_group_search = False
+        self.group_name_attribute = ""
+        self.group_search_filter = ""
+        self.group_attribute_mapping_key = ""
         # The number of seconds that ldap3 waits if no server is left in the pool, before
         # starting the next round
         pooling_loop_timeout = get_app_config_value("PI_LDAP_POOLING_LOOP_TIMEOUT", 10)
@@ -626,6 +596,42 @@ class IdResolver(UserIdResolver):
 
         return user_info
 
+    def _get_user_groups_recursive(self, user_info: dict) -> list[str]:
+        """
+        Do a separate search to retrieve the groups of a user. This can be done recursively to all groups including
+        nested groups.
+        The search filter can contain the tags ``{base_dn}`` and all keys from the user_info dictionary such as
+        ``{username}``. This function replaces the tags with the corresponding values from the user_info dictionary.
+        A simple filter could be for example
+        ``(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={username},{base_dn}))``.
+        The OID "1.2.840.113556.1.4.1941" stands for the ``LDAP_MATCHING_RULE_IN_CHAIN`` flag indicating that the
+        search should be done recursively.
+
+        :param user_info: The user information dictionary containing the user's attributes.
+        :return: A list of group names the user is a member of.
+        """
+        groups = []
+
+        # replace tags in search filter
+        search_filter = self.group_search_filter
+        search_filter = search_filter.replace("{base_dn}", self.basedn)
+        for key, value in user_info.items():
+            if isinstance(value, str):
+                search_filter = search_filter.replace(f"{{{key}}}", value)
+        log.debug(f"Searching for groups with filter: {search_filter}")
+
+        try:
+            search_result = self._search(search_base=self.basedn, search_filter=search_filter,
+                                         attributes=[self.group_name_attribute])
+        except Exception as error:
+            search_result = []
+            log.debug(f"Failed to get the groups of the user: {error}")
+
+        for entry in search_result:
+            groups.append(entry.get("attributes").get(self.group_name_attribute))
+
+        return groups
+
     def _ldap_attributes_to_user_object(self, attributes):
         """
         This helper function converts the LDAP attributes to a dictionary for
@@ -655,6 +661,11 @@ class IdResolver(UserIdResolver):
                             user_info[map_k] = ""
                     else:
                         user_info[map_k] = ldap_v
+        if self.recursive_group_search:
+            # get all groups with recursive search
+            groups = self._get_user_groups_recursive(user_info)
+            user_info[self.group_attribute_mapping_key] = groups
+
         return user_info
 
     def getUsername(self, user_id):
@@ -882,6 +893,17 @@ class IdResolver(UserIdResolver):
         self.serverpool = None
         self.i_am_bound = False
 
+        # settings for recursive search of groups
+        self.recursive_group_search = is_true(config.get("recursive_group_search", False))
+        self.group_name_attribute = config.get("group_name_attribute")
+        self.group_search_filter = config.get("group_search_filter")
+        self.group_attribute_mapping_key = config.get("group_attribute_mapping_key")
+
+        if self.recursive_group_search:
+            if not self.group_name_attribute or not self.group_search_filter or not self.group_attribute_mapping_key:
+                log.info("Incomplete configuration for recursive user group search. Recursive search is not applied.")
+                self.recursive_group_search = False
+
         return self
 
     @property
@@ -1066,7 +1088,11 @@ class IdResolver(UserIdResolver):
                                 'SERVERPOOL_PERSISTENT': 'bool',
                                 'OBJECT_CLASSES': 'string',
                                 'DN_TEMPLATE': 'string',
-                                'MULTIVALUEATTRIBUTES': 'string'}
+                                'MULTIVALUEATTRIBUTES': 'string',
+                                'group_name_attribute': 'string',
+                                'group_search_filter': 'string',
+                                'group_attribute_mapping_key': 'string',
+                                'recursive_group_search': 'bool'}
         return {typ: descriptor}
 
     @classmethod

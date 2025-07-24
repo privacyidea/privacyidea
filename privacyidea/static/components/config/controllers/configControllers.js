@@ -99,7 +99,37 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
         $('html,body').scrollTop(0);
         $scope.onlySelectedVisible = false;
 
-        var check_all_loaded = function () {
+        $scope.userAgentsMapping = {
+            "Credential Provider": "privacyidea-cp",
+            "Keycloak": "privacyIDEA-Keycloak",
+            "AD FS": "PrivacyIDEA-ADFS",
+            "SimpleSAMLphp": "simpleSAMLphp",
+            "PAM": "PAM",
+            "Shibboleth": "privacyIDEA-Shibboleth",
+            "Nextcloud": "privacyidea-nextcloud",
+            "FreeRADIUS": "FreeRADIUS",
+            "LDAP Proxy": "privacyIDEA-LDAP-Proxy",
+            "privacyIDEA Authenticator": "privacyIDEA-App"
+        };
+        $scope.userAgents = [];
+        angular.forEach($scope.userAgentsMapping, function (value, key) {
+            $scope.userAgents.push({"name": key, "identifier": value, "ticked": false});
+        });
+        $scope.selectedUserAgents = {};
+        $scope.customUserAgent = "";
+
+        $scope.addCustomUserAgent = function () {
+            if ($scope.customUserAgent) {
+                $scope.userAgents.push({
+                    "name": $scope.customUserAgent,
+                    "identifier": $scope.customUserAgent,
+                    "ticked": true
+                });
+                $scope.customUserAgent = "";
+            }
+        };
+
+        let check_all_loaded = function () {
             if ($scope.resolversLoaded &&
                 $scope.adminRealmsLoaded &&
                 $scope.realmsLoaded &&
@@ -184,7 +214,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
         });
 
         ConfigFactory.getRealms(function (data) {
-            var realms = data.result.value;
+            const realms = data.result.value;
             angular.forEach(realms, function (value, key) {
                 $scope.realms.push({name: key, ticked: false});
             });
@@ -193,7 +223,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             check_all_loaded();
         });
         ConfigFactory.getAdminRealms(function (data) {
-            var adminRealms = data.result.value;
+            const adminRealms = data.result.value;
             angular.forEach(adminRealms, function (value, key) {
                 $scope.adminRealms.push({name: value, ticked: false});
             });
@@ -201,7 +231,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             check_all_loaded();
         });
         ConfigFactory.getResolvers(function (data) {
-            var resolvers = data.result.value;
+            const resolvers = data.result.value;
             angular.forEach(resolvers, function (value, key) {
                 $scope.resolvers.push({name: key, ticked: false});
             });
@@ -223,7 +253,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             // we can do this with include files like at token.enroll
             //debug: console.log(scope);
             //debug: console.log($scope.policyDefs);
-            var actions = $scope.policyDefs[scope];
+            const actions = $scope.policyDefs[scope];
             //debug: console.log(actions);
             $scope.actions = [];
             $scope.actionGroups = [];
@@ -240,7 +270,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
                     $scope.groupIsOpen[value.group] = false;
                 }
                 // Check the given policy actions
-                var ticked = false;
+                let ticked = false;
                 if (policyActions && policyActions[key] === true) {
                     ticked = true;
                 }
@@ -318,7 +348,8 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             description: "",
             priority: 1,
             conditions: [],
-            pinode: []
+            pinode: [],
+            user_agents: []
         };
 
         function _buildParamsForSave(targetName) {
@@ -331,6 +362,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             p.resolver = [];
             p.adminrealm = [];
             p.pinode = [];
+            p.user_agents = [];
 
             // get actions
             if ($scope.isActionValues) {
@@ -380,6 +412,8 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             angular.forEach($scope.selectedAdminRealms, r => p.adminrealm.push(r.name));
             // get PINodes
             angular.forEach($scope.selectedPINodes, n => p.pinode.push(n.name));
+            // get user agents
+            angular.forEach($scope.selectedUserAgents, agent => p.user_agents.push(agent.identifier));
             return p;
         }
 
@@ -444,6 +478,11 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             angular.forEach($scope.pinodes, function (value, key) {
                 if (policy.pinode.indexOf(value.name) > -1) {
                     $scope.pinodes[key].ticked = true;
+                }
+            });
+            angular.forEach($scope.userAgents, function (value, key) {
+                if (policy.user_agents.indexOf(value.identifier) > -1) {
+                    $scope.userAgents[key].ticked = true;
                 }
             });
             angular.forEach($scope.scopes, function (value, key) {
@@ -1020,7 +1059,7 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
             /* If we have a resolvername, we do an Edit
              and we need to fill all the $scope.params */
             ConfigFactory.getResolver($scope.resolvername, function (data) {
-                var resolver = data.result.value[$scope.resolvername];
+                const resolver = data.result.value[$scope.resolvername];
                 //debug: console.log(resolver);
                 $scope.params = resolver.data;
                 $scope.params.NOREFERRALS = isTrue($scope.params.NOREFERRALS);
@@ -1030,6 +1069,7 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
                 $scope.params.NOSCHEMAS = isTrue($scope.params.NOSCHEMAS);
                 $scope.params.SERVERPOOL_PERSISTENT = isTrue($scope.params.SERVERPOOL_PERSISTENT);
                 $scope.params.type = 'ldapresolver';
+                $scope.params.recursive_group_search = isTrue($scope.params.recursive_group_search);
             });
         }
 
@@ -1040,6 +1080,10 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
             $scope.params.NOREFERRALS = true;
             $scope.params.EDITABLE = false;
             $scope.params.UIDTYPE = "objectGUID";
+            $scope.params.recursive_group_search = false;
+            $scope.params.group_search_filter = "(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={distinguishedName},{base_dn}))";
+            $scope.params.group_name_attribute = "distinguishedName";
+            $scope.params.group_attribute_mapping_key = "groups";
         };
 
         $scope.presetLDAP = function () {
@@ -1052,6 +1096,11 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
         };
 
         $scope.setLDAPResolver = function () {
+            if (!$scope.params.recursive_group_search) {
+                $scope.params.group_name_attribute = "";
+                $scope.params.group_search_filter = "";
+                $scope.params.group_attribute_mapping_key = "";
+            }
             ConfigFactory.setResolver($scope.resolvername, $scope.params, function (data) {
                 $scope.set_result = data.result.value;
                 $scope.getResolvers();
