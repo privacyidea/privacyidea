@@ -117,6 +117,7 @@ def before_request():
                         "action_detail": "",
                         "thread_id": f"{threading.current_thread().ident!s}",
                         "info": ""})
+    g.resolved_user = {"is_local_admin": False}
 
     username = getParam(request.all_data, "username")
     if username:
@@ -127,6 +128,7 @@ def before_request():
         realm = getParam(request.all_data, "realm") or realm or get_default_realm()
         # Prefill the request.User. This is used by some pre-event handlers
         if db_admin_exists(login_name):
+            g.resolved_user["is_local_admin"] = True
             request.User = User(login_name)
         else:
             try:
@@ -227,8 +229,6 @@ def get_auth_token():
        }
 
     """
-    jwt_validity_param = get_optional(request.all_data, "jwt_validity")
-    validity = timedelta(seconds=int(jwt_validity_param))
     username = get_optional(request.all_data, "username")
     password = get_optional(request.all_data, "password")
     realm_param = get_optional(request.all_data, "realm")
@@ -353,15 +353,25 @@ def get_auth_token():
         if password is None:
             g.audit_object.add_to_log({"info": 'Missing parameter "password"'}, add_with_comma=True)
         else:
-            # check if user is set correctly
-            if not user.realm:
-                # we only get here if a user and a local admin with the same username exists
+            local_admin_exist = g.get("resolved_user", {}).get("is_local_admin", False)
+            if local_admin_exist:
+                # The user is a local admin, but a user with the same username can still exist in the default realm
                 try:
                     user = User(login_name, realm)
+                    reload_policies = True
                 except Exception:
                     # Either this is already logged in before_request (user is no local admin) or the user is a local
                     # admin that tries to authenticate with an invalid password (no need to log this)
-                    pass
+                    reload_policies = False
+
+                if reload_policies:
+                    # We need to reload the pre-policies as they were not matched with the users realm since we
+                    # expected a local admin
+                    request.User = user
+                    auth_timelimit(request, None)
+                    increase_failcounter_on_challenge(request, None)
+                    disabled_token_types(request, None)
+                    jwt_validity(request, None)
 
             options = {"g": g, "clientip": g.client_ip}
             for key, value in request.all_data.items():
@@ -372,7 +382,7 @@ def get_auth_token():
             details = details or {}
             serials = (",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
                        if 'multi_challenge' in details else details.get('serial'))
-            if db_admin_exists(user.login) and user_auth and realm == get_default_realm():
+            if local_admin_exist and user_auth and realm == get_default_realm():
                 # If there is a local admin with the same login name as the user
                 # in the default realm, we inform about this in the log file.
                 # This condition can only be checked if the user was authenticated as it
@@ -420,6 +430,8 @@ def get_auth_token():
     # What is the log level?
     log_level = current_app.config.get("PI_LOGLEVEL", 30)
 
+    jwt_validity_param = get_optional(request.all_data, "jwt_validity")
+    validity = timedelta(seconds=int(jwt_validity_param))
     token = jwt.encode({"username": login_name,
                         "realm": realm,
                         "nonce": nonce,
