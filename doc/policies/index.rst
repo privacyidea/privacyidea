@@ -58,6 +58,25 @@ Each policy can contain the following attributes:
 
   The scope of the policy as described above.
 
+**priority**
+
+  The priority field of policies contains a positive number and defaults to 1.
+  In case of policy conflicts, policies with a lower priority number take precedence.
+
+  It can be used to resolve policy conflicts. An example is the :ref:`passthru_policy` policy:
+  Assume there are two passthru policies ``pol1`` and ``pol2`` that
+  define different action values, e.g. ``pol1`` defines ``passthru=userstore``
+  and ``pol2`` defines ``passthru=radius1``.
+  If multiple policies match for an incoming authentication request, the priority
+  value is used to determine the policy that should take precedence: Assuming ``pol1``
+  has a priority of 3 and ``pol2`` has a priority of 2, privacyIDEA
+  will honor only the ``pol2`` policy and authenticate the user against the RADIUS server ``radius1``.
+
+  Policy conflicts can still occur if multiple policies with the same priority
+  specify different values for the same action.
+
+.. versionadded:: 2.23
+
 **description**
     Use this to describe your policy in more detail.
 
@@ -76,15 +95,15 @@ Each policy can contain the following attributes:
   `string` and `integer` actions require an additional value - like
   ``scope=authentication:action='otppin=userstore'``.
 
-**user**
 
-  This is the user, for whom this policy is valid. Depending on the scope
-  the user is either an administrator or a normal authenticating user.
+Conditions
+----------
 
-  If this field is left blank, this policy is valid for all users.
+**realm**
 
-  .. note:: Starting with version 3.10 you can choose if the username and the
-    adminname has to match case-sensitive or not.
+  This is the realm, for which this policy is valid.
+
+  If this field is left blank, this policy is valid for all realms.
 
 .. _check_all_resolvers:
 
@@ -109,23 +128,15 @@ Each policy can contain the following attributes:
      policy will match for all users, which are also contained in *resolver2*
      as a secondary resolver.
 
-**realm**
+**user**
 
-  This is the realm, for which this policy is valid.
+  This is the user, for whom this policy is valid. Depending on the scope
+  the user is either an administrator or a normal authenticating user.
 
-  If this field is left blank, this policy is valid for all realms.
+  If this field is left blank, this policy is valid for all users.
 
-.. _client_policies:
-
-**client**
-
-  This is the requesting client for which this action is valid.
-  You can use this to define policies in which the user is allowed to manage
-  their tokens depending on their IP addresses (like the internal network or
-  remotely via the firewall).
-
-  You can enter several IP addresses or subnets divided by comma. Exclude item
-  by prepending a minus sign (like ``10.2.0.0/16, -10.2.0.1, 192.168.0.1``).
+  .. note:: Starting with version 3.10 you can choose if the username and the
+    adminname has to match case-sensitive or not.
 
 **privacyIDEA Node**
 
@@ -162,24 +173,23 @@ Each policy can contain the following attributes:
 
 .. versionadded:: 2.12
 
-**priority**
+.. _client_policies:
 
-  The priority field of policies contains a positive number and defaults to 1.
-  In case of policy conflicts, policies with a lower priority number take precedence.
+**client**
 
-  It can be used to resolve policy conflicts. An example is the :ref:`passthru_policy` policy:
-  Assume there are two passthru policies ``pol1`` and ``pol2`` that
-  define different action values, e.g. ``pol1`` defines ``passthru=userstore``
-  and ``pol2`` defines ``passthru=radius1``.
-  If multiple policies match for an incoming authentication request, the priority
-  value is used to determine the policy that should take precedence: Assuming ``pol1``
-  has a priority of 3 and ``pol2`` has a priority of 2, privacyIDEA
-  will honor only the ``pol2`` policy and authenticate the user against the RADIUS server ``radius1``.
+  This is the requesting client for which this action is valid.
+  You can use this to define policies in which the user is allowed to manage
+  their tokens depending on their IP addresses (like the internal network or
+  remotely via the firewall).
 
-  Policy conflicts can still occur if multiple policies with the same priority
-  specify different values for the same action.
+  You can enter several IP addresses or subnets divided by comma. Exclude item
+  by prepending a minus sign (like ``10.2.0.0/16, -10.2.0.1, 192.168.0.1``).
 
-.. versionadded:: 2.23
+**User Agent**
+
+  This is the user agent of the requesting client for which this action is valid. You can use this to define policies
+  depending on the plugin. Multiple plugins can be selected from the drop-down list. But you can also add custom
+  user agents. The matching is applied to the name, but not to the version. It is case-insensitive.
 
 **additional conditions**
 
