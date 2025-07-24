@@ -6,7 +6,7 @@
 }
 
 .token-drawer {
-  border: solid 2px #efedec;
+  border: solid 2px var(--mat-sys-outline-variant);
   height: fit-content;
   @include mat.elevation(5);
   border-radius: var(--border-radius);
@@ -15,7 +15,7 @@
 }
 
 .token-drawer-overflow {
-  border: solid 2px #efedec;
+  border: solid 2px var(--mat-sys-outline-variant);
   height: auto;
   @include mat.elevation(5);
   border-radius: var(--border-radius);

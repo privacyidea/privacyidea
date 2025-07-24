@@ -97,7 +97,7 @@ html {
   --grey-light: light-dark(hsl(0, 0%, 55%), hsl(0, 0%, 60%));
   --grey-light-active: light-dark(hsl(0, 0%, 60%), hsl(0, 0%, 55%));
 
-  --shadow-color-heigher: light-dark(#656668, #333333);
+  --mat-sys-shadow-color-high: light-dark(#ababab, #050505);
 
   color-scheme: light dark;
   @include mat.theme(

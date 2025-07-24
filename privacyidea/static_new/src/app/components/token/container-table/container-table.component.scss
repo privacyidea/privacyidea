@@ -20,16 +20,16 @@
 }
 
 tr.example-detail-row {
-  background: #f3f3f3;
+  background: var(--mat-sys-surface-container-high);
   height: 0;
 }
 
 tr.example-element-row:hover {
-  background: #f3f3f3;
+  background: var(--mat-sys-surface-container-highest);
 }
 
 tr.example-element-row:active {
-  background: #e0e0e0;
+  background: var(--mat-sys-surface-container-low);
 }
 
 .example-element-row td {
@@ -69,5 +69,5 @@ tr.example-detail-row td {
   padding: 8px;
   border: solid 1px var(--mat-sys-outline-variant);
   border-radius: var(--border-radius);
-  background: white;
+  background: var(--mat-sys-surface-container);
 }

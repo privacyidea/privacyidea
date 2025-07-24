@@ -294,7 +294,7 @@ th:nth-child(even) {
   .details-flex-layout {
     display: flex;
     box-sizing: border-box;
-    background: white;
+    background: var(--mat-sys-surface);
   }
 
   .details-description-div {

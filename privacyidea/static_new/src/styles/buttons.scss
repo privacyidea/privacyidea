@@ -10,7 +10,7 @@ $detail-icon-font-size: 18px;
 $margin-bottom-small: -6px;
 $keyword-bg: var(--mat-sys-surface-container-high);
 $keyword-font-size: 18px;
-$keyword-color: #999999;
+$keyword-color: var(--mat-sys-on-surface-variant);
 $button-border-radius: var(--border-radius);
 $profile-bg: var(--background-yellow);
 $profile-hover-bg: var(--background-yellow-inset);
@@ -76,7 +76,7 @@ $button-low-contrast-variant: linear-gradient(
 
 .passkey-btn {
   text-decoration: none;
-  color: black;
+  color: $keyword-color;
   padding: 10px;
   border-radius: $button-border-radius;
   background: linear-gradient(
@@ -92,7 +92,6 @@ $button-low-contrast-variant: linear-gradient(
       var(--mat-sys-surface-container-low),
       var(--mat-sys-surface-container-highest)
     );
-    color: black;
     transform: translateY(2px);
   }
 }
@@ -251,7 +250,7 @@ $button-low-contrast-variant: linear-gradient(
   height: $keyword-height;
   margin: 3px;
   box-shadow: none;
-  color: black;
+  color: var(--mat-sys-on-surface-variant);
 
   &.keyword-button {
     padding: $keyword-padding;
@@ -350,10 +349,10 @@ $button-low-contrast-variant: linear-gradient(
   display: flex;
   justify-content: center;
   align-items: center;
-  background: white;
+  background: var(--mat-sys-surface-container-high);
   height: 48px;
   width: 48px;
-  color: black;
+  color: var(--mat-sys-on-surface);
   border-radius: calc(var(--border-radius) * 2);
   @include mat.elevation(5);
 }

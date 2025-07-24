@@ -1,6 +1,6 @@
 @use "../../../../../styles";
 
-$border-color: #e0e2ec;
+$border-color: var(--mat-sys-outline-variant);
 $gap-small: 8px;
 $padding-horizontal: 16px;
 $min-width-editable: 20rem;

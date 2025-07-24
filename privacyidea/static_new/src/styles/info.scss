@@ -1,6 +1,6 @@
-$border-color: #e0e2ec;
-$odd-row-bg: #f3f3f3;
-$even-row-bg: #ffffff;
+$border-color: var(--mat-sys-outline-variant);
+$odd-row-bg: var(--mat-sys-surface-container-high);
+$even-row-bg: var(--mat-sys-surface-container-lowest);
 $table-cell-font-size: 0.875rem;
 
 .info-container {
@@ -10,6 +10,7 @@ $table-cell-font-size: 0.875rem;
   border-top: 0;
 
   .info-title {
+    background-color: $even-row-bg;
     display: flex;
     align-items: center;
     padding-left: 16px;

@@ -72,7 +72,6 @@ $border-radius: var(--border-radius);
       }
 
       &.active {
-        box-shadow: var(--box-shadow-header);
         z-index: 1;
         background: var(--mat-sys-primary-light-active);
         color: var(--mat-sys-on-primary);
