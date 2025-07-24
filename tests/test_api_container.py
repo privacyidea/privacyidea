@@ -20,7 +20,7 @@ from privacyidea.lib.machine import attach_token
 from privacyidea.lib.policies.policy_conditions import ConditionSection, ConditionHandleMissingData
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from privacyidea.lib.privacyideaserver import add_privacyideaserver
-from privacyidea.lib.realm import set_realm
+from privacyidea.lib.realm import set_realm, set_default_realm
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.serviceid import set_serviceid
 from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
@@ -898,16 +898,16 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
 
     def test_17_admin_remove_user_allowed(self):
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_UNASSIGN_USER)
-        container_serial = init_container({"type": "generic", "user": "root", "realm": self.realm1})["container_serial"]
+        container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
         self.request_assert_success(f"/container/{container_serial}/unassign",
-                                    {"realm": "realm1", "user": "root", "resolver": self.resolvername1}, self.at)
+                                    {"realm": "realm1", "user": "hans", "resolver": self.resolvername1}, self.at)
         delete_policy("policy")
 
     def test_18_admin_remove_user_denied(self):
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE)
-        container_serial = init_container({"type": "generic", "user": "root", "realm": self.realm1})["container_serial"]
+        container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
         self.request_denied_assert_403(f"/container/{container_serial}/unassign",
-                                       {"realm": "realm1", "user": "root", "resolver": self.resolvername1}, self.at)
+                                       {"realm": "realm1", "user": "hans", "resolver": self.resolvername1}, self.at)
         delete_policy("policy")
 
     def test_19_admin_container_realms_allowed(self):
@@ -2621,42 +2621,169 @@ class APIContainer(APIContainerTest):
 
         container.delete()
 
-    def test_07_unassign_fail(self):
+    def test_07a_unassign_success(self):
         # Arrange
-        container_serial = init_container({"type": "generic"})["container_serial"]
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        set_default_realm(self.realm1)
+        user = User("hans", self.realm1)
+        container_serial = init_container({"type": "generic", "user": user.login, "realm": user.realm})[
+            "container_serial"]
+        container = find_container_by_serial(container_serial)
 
-        # Unassign without realm
-        payload = {"user": "root"}
+        # Unassign only with username works if user is in default realm
+        payload = {"user": "hans"}
+        result = self.request_assert_success(f'/container/{container_serial}/unassign', payload, self.at, 'POST')
+        self.assertTrue(result["result"].get("value"))
+        self.assertEqual(0, len(container.get_users()))
+
+        # username + realm
+        container.add_user(user)
+        payload = {"user": user.login, "realm": user.realm}
+        result = self.request_assert_success(f'/container/{container_serial}/unassign', payload, self.at, 'POST')
+        self.assertTrue(result["result"].get("value"))
+        self.assertEqual(0, len(container.get_users()))
+
+        # username + resolver
+        container.add_user(user)
+        payload = {"user": user.login, "resolver": user.resolver}
+        result = self.request_assert_success(f'/container/{container_serial}/unassign', payload, self.at, 'POST')
+        self.assertTrue(result["result"].get("value"))
+        self.assertEqual(0, len(container.get_users()))
+
+        # uid
+        container.add_user(user)
+        payload = {"user_id": user.uid}
+        result = self.request_assert_success(f'/container/{container_serial}/unassign', payload, self.at, 'POST')
+        self.assertTrue(result["result"].get("value"))
+        self.assertEqual(0, len(container.get_users()))
+
+        # uid + realm + resolver
+        container.add_user(user)
+        payload = {"user_id": user.uid, "realm": user.realm, "resolver": user.resolver}
+        result = self.request_assert_success(f'/container/{container_serial}/unassign', payload, self.at, 'POST')
+        self.assertTrue(result["result"].get("value"))
+        self.assertEqual(0, len(container.get_users()))
+
+        container.delete()
+
+    def test_07b_unassign_fail(self):
+        # Arrange
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        set_default_realm(self.realm1)
+        user = User("corny", self.realm3)
+        container_serial = init_container({"type": "generic", "user": user.login, "realm": user.realm})[
+            "container_serial"]
+
+        # Missing input parameters
+        # No parameters
+        result = self.request_assert_error(400, f'/container/{container_serial}/unassign', {}, self.at, 'POST')
+        error = result["result"]["error"]
+        self.assertEqual(905, error["code"])
+        self.assertEqual("ERR905: Missing one of the following parameters: ['user', 'user_id']", error["message"])
+
+        # Only username, realm / resolver / uid missing (if user is not in defrealm)
+        payload = {"user": user.login}
         result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
                                            payload, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(904, error["code"])
         self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
-
-        # Unassign user with non-existing realm
-        payload = {"user": "hans", "realm": "non_existing"}
-        result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
-                                           payload, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(904, error["code"])
-        self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
-
-        # Unassign without user
-        self.setUp_user_realm2()
-        payload = {"realm": self.realm2}
+        # If no default realm exists, another error is raised
+        set_default_realm()
         result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
                                            payload, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(905, error["code"])
-        self.assertEqual("ERR905: Missing parameter: 'user'", error["message"])
+        self.assertEqual("ERR905: Missing parameter 'realm', 'resolver', and/or 'user_id'", error["message"])
+
+        # Only realm: user / user_id missing
+        payload = {"realm": self.realm3}
+        result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
+                                           payload, self.at, 'POST')
+        error = result["result"]["error"]
+        self.assertEqual(905, error["code"])
+        self.assertEqual("ERR905: Missing one of the following parameters: ['user', 'user_id']", error["message"])
+
+        # Unassign user with non-existing realm
+        payload = {"user": user.login, "realm": "non_existing"}
+        result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
+                                           payload, self.at, 'POST')
+        error = result["result"]["error"]
+        self.assertEqual(904, error["code"])
+        self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
 
         # Unassign not assigned user
-        payload = {"user": "cornelius", "realm": self.realm2}
+        payload = {"user": "hans", "realm": self.realm1}
         result = self.request_assert_success(f'/container/{container_serial}/unassign',
                                              payload, self.at, 'POST')
         self.assertFalse(result["result"]["value"])
 
         delete_container_by_serial(container_serial)
+
+    def test_07c_unassign_non_existing_user(self):
+        # Arrange
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        set_default_realm(self.realm1)
+        invalid_user = User("invalid", self.realm1, self.resolvername1, "123")
+        container_serial = init_container({"type": "generic"})["container_serial"]
+        container = find_container_by_serial(container_serial)
+        container.add_user(invalid_user)
+        self.assertEqual(1, len(container.get_users()))
+
+        # --- Fail ---
+        # Only with username and realm
+        payload = {"user": "invalid", "realm": self.realm1}
+        result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
+                                           payload, self.at, 'POST')
+        error = result["result"]["error"]
+        self.assertEqual(904, error["code"])
+        self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
+
+        # Remove non-existing not assigned user
+        payload = {"user": "another_invalid", "realm": self.realm1, "user_id": "987"}
+        result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
+                                           payload, self.at, 'POST')
+        error = result["result"]["error"]
+        self.assertEqual(904, error["code"])
+        self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
+
+        # --- Success ---
+        # Only with user_id should work as long as the container can only have one user
+        payload = {"user_id": invalid_user.uid}
+        result = self.request_assert_success(f'/container/{container_serial}/unassign',
+                                             payload, self.at, 'POST')
+        self.assertTrue(result["result"].get("value"))
+        self.assertEqual(0, len(container.get_users()))
+
+        # With user_id and resolver success
+        container.add_user(invalid_user)
+        payload = {"user_id": invalid_user.uid, "resolver": invalid_user.resolver}
+        result = self.request_assert_success(f'/container/{container_serial}/unassign',
+                                             payload, self.at, 'POST')
+        self.assertTrue(result["result"].get("value"))
+        self.assertEqual(0, len(container.get_users()))
+
+        # Provide realm and user_id should work
+        container.add_user(invalid_user)
+        payload = {"realm": invalid_user.realm, "user_id": invalid_user.uid}
+        result = self.request_assert_success(f'/container/{container_serial}/unassign',
+                                             payload, self.at, 'POST')
+        self.assertTrue(result["result"].get("value"))
+        self.assertEqual(0, len(container.get_users()))
+
+        # Provide everything
+        container.add_user(invalid_user)
+        payload = {"user": invalid_user.login, "realm": invalid_user.realm, "resolver": invalid_user.resolver,
+                   "user_id": invalid_user.uid}
+        result = self.request_assert_success(f'/container/{container_serial}/unassign',
+                                             payload, self.at, 'POST')
+        self.assertTrue(result["result"].get("value"))
+        self.assertEqual(0, len(container.get_users()))
+
+        container.delete()
 
     def test_08_set_realms_success(self):
         # Arrange
