@@ -156,6 +156,12 @@
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
+                <th ng-show="audit_columns.includes('execution_times')"
+                    class="pifilter"><translate>execution times</translate>
+                    <pi-filter ng-model="filter.execution_times"
+                               ng-change="getAuditList('livesearch')"
+                               ng-keypress="($event.which==13)?getAuditList():return">
+                </th>
             </tr>
             </thead>
             <tbody>
@@ -217,6 +223,11 @@
                 <td ng-if="audit_columns.includes('clearance_level')">{{ audit.clearance_level }}</td>
                 <td ng-if="audit_columns.includes('log_level')">{{ audit.log_level }}</td>
                 <td ng-if="audit_columns.includes('privacyidea_server')">{{ audit.privacyidea_server }}</td>
+                <td ng-if="audit_columns.includes('execution_times')">
+                    <span ng-repeat="(key, value) in audit.execution_times">
+                        <span ng-if="value != null">{{ key }}: {{ value }} ms</span>
+                    </span>
+                </td>
             </tr>
             </tbody>
         </table>

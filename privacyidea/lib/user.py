@@ -47,6 +47,9 @@ This code is tested in tests/test_lib_user.py
 import hashlib
 import logging
 import traceback
+from datetime import timezone, datetime
+
+from flask import g
 
 from .error import UserError
 from ..api.lib.utils import (getParam,
@@ -760,13 +763,17 @@ def get_user_list(param=None, user=None, custom_attributes=False):
                 if not resolver_entry.get("node") or resolver_entry["node"] == local_node_uuid:
                     resolvers.append(resolver_entry.get("name"))
 
+    execution_times = {}
     for resolver_name in set(resolvers):
         try:
             log.debug("Check for resolver class: {0!r}".format(resolver_name))
             y = get_resolver_object(resolver_name)
             log.debug("with this search dictionary: {0!r} ".format(searchDict))
 
+            starttime = datetime.now(timezone.utc)
             ulist = y.getUserList(searchDict)
+            duration = (datetime.now(timezone.utc) - starttime).total_seconds()
+            execution_times[resolver_name] = duration
             # Add resolvername to the list
             realm_id = get_realm_id(param_realm or user_realm)
             for ue in ulist:
@@ -790,6 +797,9 @@ def get_user_list(param=None, user=None, custom_attributes=False):
             log.debug("{0!s}".format(traceback.format_exc()))
             continue
 
+    g.audit_object.add_to_log({
+        "execution_times": execution_times
+    })
     return users
 
 

@@ -2872,6 +2872,7 @@ class Audit(MethodsMixin, db.Model):
         "clearance_level")))
     thread_id = db.Column(db.Unicode(audit_column_length.get("thread_id")))
     policies = db.Column(db.Unicode(audit_column_length.get("policies")))
+    execution_times = db.Column(db.JSON, default={})
 
     def __init__(self,
                  action="",
@@ -2896,12 +2897,16 @@ class Audit(MethodsMixin, db.Model):
                  thread_id="0",
                  policies="",
                  startdate=None,
-                 duration=None
+                 duration=None,
+                 execution_times=None
                  ):
+        if execution_times is None:
+            execution_times = {}
         self.signature = ""
         self.date = datetime.now()
         self.startdate = startdate
         self.duration = duration
+        self.execution_times = execution_times
         self.action = convert_column_to_unicode(action)
         self.success = success
         self.authentication = convert_column_to_unicode(authentication)

@@ -68,6 +68,7 @@ myApp.controller("auditController", ["AuditFactory", "$scope", "$rootScope",
             $scope.params.duration = "*" + ($scope.filter.duration || "") + "*";
             $scope.params.container_serial = "*" + ($scope.filter.containerSerial || "") + "*";
             $scope.params.container_type = "*" + ($scope.filter.containerType || "") + "*";
+            $scope.params.execution_times = "*" + ($scope.filter.execution_times || "") + "*";
             //debug: console.log("Request Audit Trail with params");
             //debug: console.log($scope.params);
         };

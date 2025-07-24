@@ -314,7 +314,8 @@ class Audit(AuditBase):
                           policies=self.audit_data.get("policies"),
                           startdate=self.audit_data.get("startdate"),
                           duration=duration,
-                          thread_id=self.audit_data.get("thread_id")
+                          thread_id=self.audit_data.get("thread_id"),
+                          execution_times=self.audit_data.get("execution_times")
                           )
             self.session.add(le)
             self.session.commit()
@@ -610,4 +611,5 @@ class Audit(AuditBase):
         audit_dict['startdate'] = audit_entry.startdate.isoformat() if audit_entry.startdate else None
         audit_dict['duration'] = audit_entry.duration.total_seconds() if audit_entry.duration else None
         audit_dict['thread_id'] = audit_entry.thread_id
+        audit_dict['execution_times'] = audit_entry.execution_times
         return audit_dict
