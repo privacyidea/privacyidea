@@ -595,9 +595,7 @@ def get_webui_settings(request, response):
         realm = content.get("result").get("value").get("realm")
 
         # Usually the user is already resolved in the request, except for local admins
-        user = request.User
-        if not user:
-            user = User(username, realm)
+        user = request.User if not request.User.is_empty() else None
 
         # At this point the logged-in user is not necessarily a user object. It can
         # also be a local admin.
@@ -726,7 +724,7 @@ def get_webui_settings(request, response):
             policy_template_url = list(policy_template_url_pol)[0]
 
         indexed_preset_attribute = Match.realm(g, scope=SCOPE.WEBUI, action="indexedsecret_preset_attribute",
-                                               realm=realm or user.realm).action_values(unique=True)
+                                               realm=realm).action_values(unique=True)
         if len(indexed_preset_attribute) == 1:
             content["result"]["value"]["indexedsecret_preset_attribute"] = list(indexed_preset_attribute)[0]
 
@@ -776,8 +774,8 @@ def get_webui_settings(request, response):
                 # Check policy, if the admin is allowed to save config
                 action_allowed = Match.generic(g, scope=role,
                                                action=ACTION.SYSTEMWRITE,
-                                               adminuser=username or user.login,
-                                               adminrealm=realm or user.realm).allowed()
+                                               adminuser=username,
+                                               adminrealm=realm).allowed()
                 if action_allowed:
                     body = str(BODY_TEMPLATE).format(subscriptions=subscriptions,
                                                      version=version,

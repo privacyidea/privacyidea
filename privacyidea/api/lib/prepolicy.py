@@ -1271,7 +1271,6 @@ def check_base_action(request=None, action=None, anonymous=False):
     # by the pure serial number given.
     action_allowed = Match.generic(g, scope=role,
                                    action=action,
-                                   user_object=user,
                                    user=username,
                                    resolver=resolver,
                                    realm=realm,
