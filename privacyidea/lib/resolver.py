@@ -126,7 +126,7 @@ def save_resolver(params):
         resolver_id = resolver.save()
     # create the config
     for key, value in data.items():
-        if not value:
+        if not value and not isinstance(value, bool):
             # If the value is empty, we do not store it. But we check if an old entry already exists and delete it.
             old_entry = ResolverConfig.query.filter_by(resolver_id=resolver_id, Key=key).first()
             if old_entry:

@@ -1020,7 +1020,7 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
             /* If we have a resolvername, we do an Edit
              and we need to fill all the $scope.params */
             ConfigFactory.getResolver($scope.resolvername, function (data) {
-                var resolver = data.result.value[$scope.resolvername];
+                const resolver = data.result.value[$scope.resolvername];
                 //debug: console.log(resolver);
                 $scope.params = resolver.data;
                 $scope.params.NOREFERRALS = isTrue($scope.params.NOREFERRALS);
@@ -1030,6 +1030,7 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
                 $scope.params.NOSCHEMAS = isTrue($scope.params.NOSCHEMAS);
                 $scope.params.SERVERPOOL_PERSISTENT = isTrue($scope.params.SERVERPOOL_PERSISTENT);
                 $scope.params.type = 'ldapresolver';
+                $scope.params.recursive_group_search = isTrue($scope.params.recursive_group_search);
             });
         }
 
@@ -1040,6 +1041,10 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
             $scope.params.NOREFERRALS = true;
             $scope.params.EDITABLE = false;
             $scope.params.UIDTYPE = "objectGUID";
+            $scope.params.recursive_group_search = false;
+            $scope.params.group_search_filter = "(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={distinguishedName},{base_dn}))";
+            $scope.params.group_name_attribute = "distinguishedName";
+            $scope.params.group_attribute_mapping_key = "groups";
         };
 
         $scope.presetLDAP = function () {
@@ -1052,6 +1057,11 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
         };
 
         $scope.setLDAPResolver = function () {
+            if (!$scope.params.recursive_group_search) {
+                $scope.params.group_name_attribute = "";
+                $scope.params.group_search_filter = "";
+                $scope.params.group_attribute_mapping_key = "";
+            }
             ConfigFactory.setResolver($scope.resolvername, $scope.params, function (data) {
                 $scope.set_result = data.result.value;
                 $scope.getResolvers();
