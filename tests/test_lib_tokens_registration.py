@@ -2,10 +2,11 @@
 This test file tests the lib.tokens.passwordtoken
 This depends on lib.tokenclass
 """
+import json
 
 from .base import MyTestCase
 from privacyidea.lib.tokens.registrationtoken import RegistrationTokenClass
-from privacyidea.lib.token import init_token
+from privacyidea.lib.token import init_token, import_tokens, get_tokens
 from privacyidea.models import Token
 from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH
 
@@ -72,3 +73,64 @@ class RegistrationTokenTestCase(MyTestCase):
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         self.assertEqual(db_token, None)
 
+    def test_04_registration_token_export(self):
+        # Set up the RegistrationTokenClass for testing
+        token = init_token({"type": "registration",
+                            "serial": self.serial1,
+                            "description": "this is a registration token export test",
+                            "otp_len": 24
+                            })
+
+        # Test that all expected keys are present in the exported dictionary
+        exported_data = token.export_token()
+        expected_keys = ["serial", "type", "description", "issuer", "otpkey", "otplen"]
+        self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
+
+        expected_tokeninfo_keys = ["tokenkind"]
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+
+        # Test that the exported values match the token's data
+        self.assertEqual(exported_data["serial"], "ser1")
+        self.assertEqual(exported_data["type"], "registration")
+        self.assertEqual(exported_data["description"], "this is a registration token export test")
+        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
+        self.assertEqual(exported_data["issuer"], "privacyIDEA")
+        self.assertEqual(exported_data["otplen"], 24)
+        self.assertEqual(exported_data["otpkey"], token.token.get_otpkey().getKey().decode("utf-8"))
+
+        # Clean up
+        token.delete_token()
+
+    def test_05_registration_token_import(self):
+        # Define the token data to be imported
+        token_data = [{'description': 'this is a registration token export test',
+                       'issuer': 'privacyIDEA',
+                       'otpkey': ')%56YBF(1NAaX?k0hS,S}+bI',
+                       'otplen': 24,
+                       'serial': 'ser1',
+                       'type': 'registration',
+                       'tokeninfo': {'tokenkind': 'software'}
+                       }]
+
+        # Import the token
+        import_tokens(json.dumps(token_data))
+
+        # Retrieve the imported token
+        token = get_tokens(serial=token_data[0]["serial"])[0]
+
+        # Verify that the token data matches the imported data
+        self.assertEqual(token.token.serial, token_data[0]["serial"])
+        self.assertEqual(token.type, token_data[0]["type"])
+        self.assertEqual(token.token.description, token_data[0]["description"])
+        self.assertEqual(token.get_tokeninfo("tokenkind"), "software")
+        self.assertEqual(token.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
+        self.assertEqual(token.token.otplen, 24)
+        self.assertIsNotNone(token.get_tokeninfo(key="import_date"))
+
+        # cheak that the token can be used
+        detail = token.get_init_detail()
+        r = token.check_otp(detail.get("registrationcode"))
+        self.assertTrue(r == 0, r)
+
+        # Clean up
+        token.delete_token()

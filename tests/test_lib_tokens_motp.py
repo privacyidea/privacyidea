@@ -2,7 +2,9 @@
 This test file tests the lib.tokens.spasstoken
 This depends on lib.tokenclass
 """
+import json
 
+from privacyidea.lib.token import init_token, get_tokens, import_tokens
 from .base import MyTestCase
 from privacyidea.lib.tokens.motptoken import MotpTokenClass
 from privacyidea.lib.tokens.mOTP import mTimeOtp
@@ -181,3 +183,26 @@ class MotpTokenTestCase(MyTestCase):
         # Check the same value again
         r = token.check_otp("6ed4e4", options={"initTime": 129612120})
         self.assertTrue(r == -1, r)
+
+    def test_07_motp_token_export(self):
+        token = init_token(param={'serial': "OATH12345678",
+                                  'type': 'motp',
+                                  'otpkey': self.otpkey,
+                                  'motppin': self.motppin})
+        self.assertRaises(NotImplementedError, token.export_token)
+
+        # Clean up
+        token.token.delete()
+
+    def test_08_motp_token_import(self):
+        token_data = [{
+            "serial": "123456",
+            "type": "motp",
+            "description": "this token can't be imported",
+            "otpkey": self.otpkey,
+            "issuer": "privacyIDEA",
+        }]
+        before_import = get_tokens()
+        import_tokens(json.dumps(token_data))
+        after_import = get_tokens()
+        self.assertEqual(len(before_import), len(after_import))

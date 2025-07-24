@@ -2,6 +2,8 @@
 This test file tests the lib.tokens.tiqrtoken and lib.tokens.ocra
 This depends on lib.tokenclass
 """
+import json
+
 from tests import smtpmock
 from .base import MyTestCase, MyApiTestCase
 from privacyidea.lib.challenge import get_challenges
@@ -9,7 +11,7 @@ from privacyidea.lib.tokens.tiqrtoken import TiqrTokenClass
 from privacyidea.lib.tokens.ocratoken import OcraTokenClass
 from privacyidea.lib.tokens.ocra import OCRASuite, OCRA
 from privacyidea.lib.user import User
-from privacyidea.lib.token import init_token, remove_token
+from privacyidea.lib.token import init_token, remove_token, get_tokens, import_tokens
 from privacyidea.lib.utils import hexlify_and_unicode
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib import _
@@ -739,3 +741,56 @@ class TiQRTokenTestCase(MyApiTestCase):
         r = token.check_challenge_response(options={"transaction_id":
                                                     transaction_id})
         self.assertTrue(r < 0, r)
+
+    def test_06_tiqr_token_export(self):
+        # This test can't be run alone
+        # Set up the tiqr token for testing
+        self._test_create_token('cornelius')
+        token = get_tokens(serial="TIQR1")[0]
+        token.set_description("this is a tiqr token export test")
+
+        # Test that all expected keys are present in the exported dictionary
+        exported_data = token.export_token()
+        expected_keys = ["serial", "type", "otpkey", "description", "issuer"]
+        self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
+
+        expected_tokeninfo_keys = ["tokenkind", "ocrasuite", "session"]
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+
+        # Test that the exported values match the token's data
+        self.assertEqual(exported_data["serial"], "TIQR1")
+        self.assertEqual(exported_data["type"], "tiqr")
+        self.assertEqual(exported_data["description"], "this is a tiqr token export test")
+        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
+        self.assertEqual(exported_data["issuer"], "privacyIDEA")
+
+        # Clean up
+        remove_token(token.token.serial)
+
+    def test_07_tiqr_token_import(self):
+        # Define the token data to be imported
+        token_data = [{
+            "serial": "TIQR1",
+            "type": "tiqr",
+            "description": "this is a tiqr token import test",
+            "otpkey": '',
+            "tokeninfo": {'ocrasuite': 'OCRA-1:HOTP-SHA1-6:QN10',
+                          'session': 'c1c6664ab32f70b1dff792ac1525e7b06ea9d125',
+                          'tokenkind': 'software'},
+            "issuer": "privacyIDEA"
+        }]
+
+        # Import the token
+        import_tokens(json.dumps(token_data))
+
+        # Retrieve the imported token
+        token = get_tokens(serial=token_data[0]["serial"])[0]
+
+        # Verify that the token data matches the imported data
+        self.assertEqual(token.token.serial, token_data[0]["serial"])
+        self.assertEqual(token.type, token_data[0]["type"])
+        self.assertEqual(token.token.description, token_data[0]["description"])
+        self.assertEqual(token.get_tokeninfo("tokenkind"), token_data[0]["tokeninfo"]["tokenkind"])
+
+        # Clean up
+        remove_token(token.token.serial)

@@ -76,11 +76,13 @@ def before_request():
     g.client_ip = get_client_ip(request,
                                 get_from_config(SYSCONF.OVERRIDECLIENT))
     g.serial = getParam(request.all_data, "serial", default=None)
+    ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
+    g.user_agent = ua_name
     g.audit_object.log({"success": False,
                         "action_detail": "",
                         "client": g.client_ip,
-                        "user_agent": get_plugin_info_from_useragent(request.user_agent.string)[0],
-                        "user_agent_version": get_plugin_info_from_useragent(request.user_agent.string)[0],
+                        "user_agent": ua_name,
+                        "user_agent_version": ua_version,
                         "privacyidea_server": privacyidea_server,
                         "action": "{0!s} {1!s}".format(request.method, request.url_rule),
                         "thread_id": "{0!s}".format(threading.current_thread().ident),

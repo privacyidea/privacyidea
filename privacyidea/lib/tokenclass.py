@@ -84,6 +84,7 @@ from datetime import datetime, timedelta, timezone
 
 from dateutil.parser import parse as parse_date_string, ParserError
 from dateutil.tz import tzlocal, tzutc
+from flask_babel import lazy_gettext
 
 from privacyidea.lib import _
 from privacyidea.lib.crypto import (encryptPassword, decryptPassword,
@@ -165,6 +166,8 @@ class TokenClass(object):
     client_mode = CLIENTMODE.INTERACTIVE
     # If the token provides means that the user has to prove/verify that the token was successfully enrolled.
     can_verify_enrollment = False
+
+    desc_key_gen = lazy_gettext("Force the key to be generated on the server.")
 
     @log_with(log)
     def __init__(self, db_token):
@@ -377,14 +380,6 @@ class TokenClass(object):
         :return:
         """
         self.token.del_info()
-        for k, v in info.items():
-            # check if type is a password
-            if k.endswith(".type") and v == "password":
-                # of type password, so we need to encrypt the value of
-                # the original key (without type)
-                orig_key = ".".join(k.split(".")[:-1])
-                info[orig_key] = encryptPassword(info.get(orig_key, ""))
-
         self.token.set_info(info)
 
     @check_token_locked
@@ -399,9 +394,6 @@ class TokenClass(object):
         add_info = {key: value}
         if value_type:
             add_info[key + ".type"] = value_type
-            if value_type == "password":
-                # encrypt the value
-                add_info[key] = encryptPassword(value)
         self.token.set_info(add_info)
 
     @check_token_locked
@@ -611,7 +603,7 @@ class TokenClass(object):
             raise ParameterError('[ParameterError] You may either specify '
                                  'genkey or otpkey, but not both!', id=344)
 
-        if otpKey is None and genkey:
+        if otpKey is None and genkey and not verify:
             otpKey = self._genOtpKey_(key_size)
 
         # otpKey still None?? - raise the exception, if an otpkey is required, and we are not in verify state
@@ -2008,3 +2000,32 @@ class TokenClass(object):
         Return the URL to enroll this token. It is not supported by all token types.
         """
         return None
+
+    def export_token(self) -> dict:
+        """
+        Create a dictionary with the token information that can be exported.
+        """
+        token_dict = {
+            "type": self.type.lower(),
+            "issuer": "privacyIDEA",
+            "description": self.token.description,
+            "serial": self.token.serial,
+            "otpkey": self.token.get_otpkey().getKey().decode("utf-8"),
+            "otplen": self.token.otplen,
+            "hashed_pin": self.token.pin_hash,
+            "tokeninfo": self.get_tokeninfo(decrypted=True)
+        }
+
+        return token_dict
+
+    def import_token(self, token_information: dict):
+        """
+        Import a given token.
+        """
+        self.token.set_otpkey(token_information.setdefault("otpkey", ''))
+        self.token.otplen = int(token_information.setdefault("otplen", 6))
+        self.token.description = token_information.setdefault("description", '')
+        self.token.pin_hash = token_information.setdefault("_hashed_pin", None)
+        self.add_tokeninfo_dict(token_information.setdefault("tokeninfo", {}))
+        self.add_tokeninfo("import_date", datetime.now(timezone.utc).isoformat(timespec="seconds"))
+        self.save()

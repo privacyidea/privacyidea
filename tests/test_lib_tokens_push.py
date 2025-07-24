@@ -27,7 +27,7 @@ from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy, ACTION,
                                     LOGINMODE, PolicyClass)
 from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, delete_smsgateway
-from privacyidea.lib.token import get_tokens, remove_token, init_token
+from privacyidea.lib.token import get_tokens, remove_token, init_token, import_tokens
 from privacyidea.lib.tokenclass import CHALLENGE_SESSION
 from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PUSH_ACTION,
                                               DEFAULT_CHALLENGE_TEXT, strip_key,
@@ -1890,3 +1890,64 @@ class PushTokenTestCase(MyTestCase):
         delete_policy("push_presence")
         remove_token(serial1)
         remove_token(serial2)
+
+    def test_21_push_token_export(self):
+        # Set up the PushTokenClass for testing
+        pushtoken = self._create_push_token()
+        pushtoken.set_description("this is a push token export test")
+
+        # Test that all expected keys are present in the exported dictionary
+        exported_data = pushtoken.export_token()
+
+        expected_keys = ["serial", "type", "description", "otpkey", "issuer"]
+        self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
+
+        expected_tokeninfo_keys = ["tokenkind", PUBLIC_KEY_SMARTPHONE, PUBLIC_KEY_SERVER,
+                                   "firebase_token", PRIVATE_KEY_SERVER, "push_firebase_configuration"]
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+
+        # Test that the exported values match the token's data
+        self.assertEqual(exported_data["serial"], pushtoken.token.serial)
+        self.assertEqual(exported_data["type"], "push")
+        self.assertEqual(exported_data["description"], "this is a push token export test")
+        self.assertEqual(exported_data["otpkey"], pushtoken.token.get_otpkey().getKey().decode("utf-8"))
+        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
+        self.assertEqual(exported_data["issuer"], "privacyIDEA")
+
+        # Clean up
+        remove_token(pushtoken.token.serial)
+
+    def test_22_push_token_import(self):
+        # Define the token data to be imported
+        token_data = [{
+            "serial": "PUSH12345678",
+            "type": "push",
+            "description": "this is a push token import test",
+            "otpkey": "12345",
+            "issuer": "privacyIDEA",
+            "tokeninfo": {"hashlib": "sha256",
+                          "tokenkind": "software",
+                          PUBLIC_KEY_SMARTPHONE: self.smartphone_public_key_pem_urlsafe,
+                          PUBLIC_KEY_SERVER: self.server_public_key_pem,
+                          "firebase_token": "firebaseT",
+                          PRIVATE_KEY_SERVER: self.server_private_key_pem,
+                          "push_firebase_configuration": self.firebase_config_name,
+                          'private_key_server.type': 'password'}
+        }]
+
+        # Import the token
+        import_tokens(json.dumps(token_data))
+
+        # Retrieve the imported token
+        pushtoken = get_tokens(serial=token_data[0]["serial"])[0]
+
+        # Verify that the token data matches the imported data
+        self.assertEqual(pushtoken.token.serial, token_data[0]["serial"])
+        self.assertEqual(pushtoken.type, token_data[0]["type"])
+        self.assertEqual(pushtoken.token.description, token_data[0]["description"])
+        self.assertEqual(pushtoken.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
+        self.assertEqual(pushtoken.get_tokeninfo("hashlib"), token_data[0]["tokeninfo"]["hashlib"])
+        self.assertEqual(pushtoken.get_tokeninfo("tokenkind"), token_data[0]["tokeninfo"]["tokenkind"])
+
+        # Clean up
+        remove_token(pushtoken.token.serial)

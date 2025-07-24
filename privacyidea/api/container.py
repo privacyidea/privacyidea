@@ -28,7 +28,7 @@ from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy, check_u
                                            check_container_register_rollover, container_registration_config,
                                            smartphone_config, check_client_container_action, hide_tokeninfo,
                                            check_client_container_disabled_action, hide_container_info)
-from privacyidea.api.lib.utils import send_result, getParam, required
+from privacyidea.api.lib.utils import send_result, getParam, required, get_required_one_of
 from privacyidea.lib.container import (find_container_by_serial, init_container, get_container_classes_descriptions,
                                        get_container_token_types, get_all_containers, add_container_info,
                                        set_container_description, set_container_states, set_container_realms,
@@ -180,12 +180,26 @@ def assign(container_serial):
 def unassign(container_serial):
     """
     Unassign a user from a container
+    In case the user does not exist anymore, the user_id is required.
 
     :param container_serial: serial of the container
     :jsonparam user: Username of the user
     :jsonparam realm: Realm of the user
+    :jsonparam resolver: Resolver of the user
+    :jsonparam user_id: User ID of the user, to be able to unassign non-existing users
     """
-    user = get_user_from_param(request.all_data, required)
+    # Get user
+    user = request.User
+    # The user id is not set in before_request, but is required to remove users that do not exist (anymore)
+    user_id = request.all_data.get("user_id", None)
+    if user_id:
+        user.uid = str(user_id)
+
+    # Check if required parameter is present
+    _ = get_required_one_of(request.all_data, ["user", "user_id"])
+    if user.login and not user.realm and not user.resolver and not user.uid:
+        raise ParameterError("Missing parameter 'realm', 'resolver', and/or 'user_id'")
+
     res = unassign_user(container_serial, user)
 
     container = find_container_by_serial(container_serial)

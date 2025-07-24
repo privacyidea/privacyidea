@@ -331,3 +331,15 @@ class RemoteTokenClass(TokenClass):
                 request_is_valid = True
 
         return request_is_valid
+
+    def export_token(self) -> dict:
+        """
+        Export for this token is not supported.
+        """
+        raise NotImplementedError("Export for Remote token is not supported.")
+
+    def import_token(self, token_information: dict):
+        """
+        Import for this token is not supported.
+        """
+        raise NotImplementedError("Import for Remote token is not supported.")

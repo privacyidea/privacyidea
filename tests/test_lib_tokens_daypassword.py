@@ -2,10 +2,13 @@
 This test file tests the lib.tokens.daypasswordtoken.py
 """
 import binascii
+import json
 import logging
 import time
 from testfixtures import LogCapture
 from unittest import mock
+
+from privacyidea.lib.token import init_token, remove_token, import_tokens, get_tokens
 from .base import MyTestCase, FakeAudit, FakeFlaskG
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
@@ -353,11 +356,10 @@ class DayPasswordTokenTestCase(MyTestCase):
     def test_17_update_token(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = DayPasswordTokenClass(db_token)
-        # Failed update: genkey wrong
-        self.assertRaises(Exception,
-                          token.update,
-                          {"description": "new desc",
-                           "genkey": "17"})
+        # Wrong genkey is replaced with genkey=True
+        token.update({"description": "new desc",
+                      "genkey": "17"})
+        self.assertEqual("new desc", token.token.description)
         # genkey and otpkey used at the same time
         token.update({"otpkey": self.otpkey,
                       "genkey": "1"})
@@ -381,8 +383,9 @@ class DayPasswordTokenTestCase(MyTestCase):
         self.assertTrue(token.token.pin_hash.startswith("@@"),
                         token.token.pin_hash)
 
-        # update token without otpkey raises an error
-        self.assertRaises(Exception, token.update, {"description": "test"})
+        # update token without otpkey generates one
+        token.update({"description": "test"})
+        self.assertEqual("test", token.token.description)
 
         # update time settings
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -668,6 +671,69 @@ class DayPasswordTokenTestCase(MyTestCase):
         p = DayPasswordTokenClass.get_default_settings(g, params)
         self.assertEqual(p, {})
         delete_policy("pol1")
+
+    def test_28_daypassword_token_export(self):
+        # Set up the DayPasswordTokenClass for testing
+        daypasswordtoken = init_token(param={'serial': "DAYPASS12345678", 'type': 'daypassword', 'otpkey': '12345'})
+        daypasswordtoken.set_description("this is a day password token export test")
+        daypasswordtoken.add_tokeninfo("hashlib", "sha256")
+
+        # Test that all expected keys are present in the exported dictionary
+        exported_data = daypasswordtoken.export_token()
+        expected_keys = ["serial", "type", "description", "otpkey", "issuer"]
+        self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
+
+        expected_tokeninfo_keys = ["hashlib", "tokenkind"]
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+
+        # Test that the exported values match the token's data
+        self.assertEqual(exported_data["serial"], "DAYPASS12345678")
+        self.assertEqual(exported_data["type"], "daypassword")
+        self.assertEqual(exported_data["description"], "this is a day password token export test")
+        self.assertEqual(exported_data["tokeninfo"]["hashlib"], "sha256")
+        self.assertEqual(exported_data["otpkey"], '12345')
+        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
+        self.assertEqual(exported_data["issuer"], "privacyIDEA")
+
+        # Clean up
+        remove_token(daypasswordtoken.token.serial)
+
+    def test_29_daypassword_token_import(self):
+        # Define the token data to be imported
+        token_data = [{
+            "serial": "DAYPASS12345678",
+            "type": "daypassword",
+            "description": "this is a day password token import test",
+            "otpkey": self.otpkey,
+            "issuer": "privacyIDEA",
+            "count": 470184,
+            "tokeninfo": {"hashlib": "sha1", "timeShift": 0, "timeStep": 3600, "timeWindow": 180,
+                          "tokenkind": "software"}
+        }]
+
+        # Import the token
+        import_tokens(json.dumps(token_data))
+
+        # Retrieve the imported token
+        daypasswordtoken = get_tokens(serial=token_data[0]["serial"])[0]
+
+        # Verify that the token data matches the imported data
+        self.assertEqual(daypasswordtoken.token.serial, token_data[0]["serial"])
+        self.assertEqual(daypasswordtoken.type, token_data[0]["type"])
+        self.assertEqual(daypasswordtoken.token.description, token_data[0]["description"])
+        self.assertEqual(daypasswordtoken.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
+        self.assertEqual(daypasswordtoken.get_tokeninfo("hashlib"), token_data[0]["tokeninfo"]["hashlib"])
+        self.assertEqual(daypasswordtoken.get_tokeninfo("tokenkind"), token_data[0]["tokeninfo"]["tokenkind"])
+        self.assertEqual(daypasswordtoken.token.count, token_data[0]["count"])
+
+        with mock.patch('time.time') as MockTime:
+            MockTime.return_value = 1692662723.0  # 2023-08-22T00:55:23+00:00
+            # Current OTP works
+            # Found the counter 470184
+            self.assertEqual(470184, daypasswordtoken.check_otp("079551"))
+
+        # Clean up
+        remove_token(daypasswordtoken.token.serial)
 
     def test_99_delete_token(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()

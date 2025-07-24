@@ -6,7 +6,7 @@
 <h4 translate>Token data</h4>
 
 <div class="form-group">
-    <div ng-hide=False>
+    <div ng-hide=checkRight('applspec_force_server_generate')>
         <input type="checkbox" ng-model="form.genkey"
                name="generate" id="generate">
         <label for="generate" translate>Generate the static password on the Server</label>

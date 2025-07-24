@@ -879,7 +879,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
     def test_06_check_request_data_condition_success(self):
         set_policy("policy_hotp", scope=SCOPE.ENROLL, action={ACTION.TOKENLABEL: "pi_offline"},
                    conditions=[(ConditionSection.REQUEST_DATA, "type", PrimaryComparators.EQUALS, "hotp", True,
-                                                   ConditionHandleMissingData.IS_FALSE.value)])
+                                ConditionHandleMissingData.IS_FALSE.value)])
         set_policy("policy_totp", scope=SCOPE.ENROLL, action={ACTION.TOKENLABEL: "pi_online"},
                    conditions=[(ConditionSection.REQUEST_DATA, "type", PrimaryComparators.EQUALS, "totp", True,
                                 ConditionHandleMissingData.IS_FALSE.value)])
@@ -934,7 +934,8 @@ class APIPolicyConditionTestCase(MyApiTestCase):
         # Creation with template is allowed
         with self.app.test_request_context("/container/init",
                                            method="POST",
-                                           json={"type": "smartphone", "container_serial": "SMPH001", "template_name": "test"},
+                                           json={"type": "smartphone", "container_serial": "SMPH001",
+                                                 "template_name": "test"},
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
@@ -962,3 +963,79 @@ class APIPolicyConditionTestCase(MyApiTestCase):
         delete_policy("policy")
         delete_policy("policy_token")
         get_template_obj("test").delete()
+
+    def test_08_user_agent(self):
+        set_policy(name="policy-cp", scope=SCOPE.AUTH, action={ACTION.CHALLENGERESPONSE: "hotp"},
+                   user_agents=["privacyidea-cp", "PAM"])
+        set_policy(name="policy-keycloak", scope=SCOPE.AUTH, action={ACTION.CHALLENGERESPONSE: "totp push"},
+                   user_agents=["privacyIDEA-Keycloak"])
+        set_policy(name="policy-no-agent", scope=SCOPE.AUTH, action={ACTION.CHALLENGERESPONSE: "daypassword"})
+
+        self.setUp_user_realms()
+        user = User("selfservice", self.realm1)
+        hotp = init_token({"type": "hotp", "genkey": True, "pin": "1234"}, user=user)
+        totp = init_token({"type": "totp", "genkey": True, "pin": "1234"}, user=user)
+        daypassword = init_token({"type": "daypassword", "genkey": True, "pin": "1234"}, user=user)
+
+        # validate/check with CP triggers challenges for HOTP and daypassword
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": user.login, "pass": "1234"},
+                                           headers={"User-Agent": "privacyidea-cp"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertFalse(result.get("value"))
+            self.assertEqual(result.get("authentication"), "CHALLENGE")
+            challenges = res.json.get("detail").get("multi_challenge")
+            self.assertEqual(2, len(challenges))
+            challenge_serials = {c.get("serial") for c in challenges}
+            self.assertSetEqual({hotp.get_serial(), daypassword.get_serial()}, challenge_serials, challenge_serials)
+
+        # validate/check with Keycloak
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": user.login, "pass": "1234"},
+                                           headers={"User-Agent": "privacyidea-Keycloak"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertFalse(result.get("value"))
+            self.assertEqual(result.get("authentication"), "CHALLENGE")
+            challenges = res.json.get("detail").get("multi_challenge")
+            self.assertEqual(2, len(challenges))
+            challenge_serials = {c.get("serial") for c in challenges}
+            self.assertSetEqual({totp.get_serial(), daypassword.get_serial()}, challenge_serials, challenge_serials)
+
+        # validate/check with Mozilla
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": user.login, "pass": "1234"},
+                                           headers={"User-Agent": "Mozilla"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertFalse(result.get("value"))
+            self.assertEqual(result.get("authentication"), "CHALLENGE")
+            challenges = res.json.get("detail").get("multi_challenge")
+            self.assertEqual(1, len(challenges))
+            challenge_serials = {c.get("serial") for c in challenges}
+            self.assertSetEqual({daypassword.get_serial()}, challenge_serials, challenge_serials)
+
+        # validate/check without user agent
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": user.login, "pass": "1234"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertFalse(result.get("value"))
+            self.assertEqual(result.get("authentication"), "CHALLENGE")
+            challenges = res.json.get("detail").get("multi_challenge")
+            self.assertEqual(1, len(challenges))
+            challenge_serials = {c.get("serial") for c in challenges}
+            self.assertSetEqual({daypassword.get_serial()}, challenge_serials, challenge_serials)
