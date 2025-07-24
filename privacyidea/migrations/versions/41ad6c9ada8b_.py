@@ -1,19 +1,22 @@
 """v3.12: Increase audit column sizes and change policy action type to text
 
 Revision ID: 41ad6c9ada8b
-Revises: 5f40baab76ca
+Revises: 04c078e29924
 Create Date: 2025-07-17 09:22:35.283486
 
 """
 from alembic import op
+import logging
 import sqlalchemy as sa
-
+from sqlalchemy.exc import OperationalError, ProgrammingError
 
 # revision identifiers, used by Alembic.
 revision = '41ad6c9ada8b'
-down_revision = '5f40baab76ca'
+down_revision = '04c078e29924'
 branch_labels = None
 depends_on = None
+
+log = logging.getLogger('alembic.env.' + revision)
 
 
 def upgrade():
@@ -66,8 +69,15 @@ def upgrade():
                               type_=sa.Text(),
                               existing_nullable=True)
 
-    with op.batch_alter_table('realm', schema=None) as batch_op:
-        batch_op.drop_column('option')
+    try:
+        with op.batch_alter_table('realm', schema=None) as batch_op:
+            batch_op.drop_column('option')
+    except (OperationalError, ProgrammingError) as exx:
+        if "does not exist" in str(exx.orig).lower() or "check that it exists" in str(exx.orig).lower():
+            log.info("Column 'option' of table 'realm' already dropped.")
+        else:
+            log.error("Could not drop column 'option' of table 'realm'.")
+            raise
 
     # ### end Alembic commands ###
 
