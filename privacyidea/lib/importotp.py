@@ -12,7 +12,7 @@
 #  2017-01-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Avoid XML bombs
 #  2016-07-17 Cornelius Kölbel <cornelius.koelbel@netknights.it>
-#             Add GPG encrpyted import
+#             Add GPG encrypted import
 #  2016-01-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add PSKC import with pre shared key
 #  2015-05-28 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -153,7 +153,7 @@ def parseOATHcsv(csv):
             continue
 
         values = line.split(',')
-        # Do not parse emtpy lines, it could be [] or ['']
+        # Do not parse empty lines, it could be [] or ['']
         if len(values) <= 1:
             continue
 
@@ -408,7 +408,7 @@ def strip_prefix_from_soup(xml_soup):
     :return: Beautiful Soup without prefixes in the tags
     """
     # strip the prefixes from the tags!
-    for tag in xml_soup.findAll():
+    for tag in xml_soup.find_all():
         if tag.name.find(":") >= 1:
             prefix, name = tag.name.split(":")
             tag.name = name
@@ -485,7 +485,7 @@ def parsePSKCdata(xml_data,
         # KeyContainer
         preshared_key_hex = derive_key(xml, password)
 
-    key_packages = xml.keycontainer.findAll("keypackage")
+    key_packages = xml.keycontainer.find_all("keypackage")
     for key_package in key_packages:
         token = {}
         key = key_package.key
