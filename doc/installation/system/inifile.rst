@@ -334,6 +334,19 @@ in ``pi.cfg`` using the parameter ``PI_TOKEN_MODULES``::
 
     PI_TOKEN_MODULES = [ "myproject.cooltoken", "myproject.lametoken" ]
 
+.. _picfg_enable_token_type_enrollment:
+
+Enable Enrollment of Deprecated Token Types
+...........................................
+
+The *u2f* token type is deprecated due to an outdated technical standard.
+No new tokens of these type can be enrolled. However, existing tokens of this type can still be used.
+
+If you still want to enroll tokens of a deprecated type, add the type to the ``PI_ENABLE_TOKEN_TYPE_ENROLLMENT``
+parameter in the ``pi.cfg`` file::
+
+    PI_ENABLE_TOKEN_TYPE_ENROLLMENT = ['u2f']
+
 .. _picfg_email_validators:
 
 3rd party email validators

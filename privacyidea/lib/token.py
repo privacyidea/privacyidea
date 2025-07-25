@@ -83,7 +83,7 @@ from privacyidea.lib.challengeresponsedecorators import (generic_challenge_respo
                                                          generic_challenge_response_resync)
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_token_types, get_from_config,
-                                    get_inc_fail_count_on_false_pin, SYSCONF)
+                                    get_inc_fail_count_on_false_pin, SYSCONF, get_enrollable_token_types)
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.decorators import (check_user_or_serial,
                                         check_copy_serials)
@@ -824,6 +824,7 @@ def check_serial(serial):
 
     return result, new_serial
 
+
 @log_with(log)
 def get_num_tokens_in_realm(realm, active=True):
     """
@@ -1272,7 +1273,7 @@ def init_token(param, user=None, tokenrealms=None, tokenkind=None):
     """
     token_type = param.get("type") or "hotp"
     # Check for unsupported token type
-    token_types = get_token_types()
+    token_types = get_enrollable_token_types()
     if token_type.lower() not in token_types:
         log.error(f"type {token_type} not found in tokentypes: {token_types}")
         raise TokenAdminError(_("init token failed. Unknown token type:") + f" {token_type}", id=1610)
@@ -2484,7 +2485,8 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
 
     # Remove disabled token types from token_object_list
     if ACTION.DISABLED_TOKEN_TYPES in options and options[ACTION.DISABLED_TOKEN_TYPES]:
-        token_object_list = [token for token in token_object_list if token.type not in options[ACTION.DISABLED_TOKEN_TYPES]]
+        token_object_list = [token for token in token_object_list if
+                             token.type not in options[ACTION.DISABLED_TOKEN_TYPES]]
 
     # Remove certain disabled tokens from token_object_list
     if len(token_object_list) > 0:
@@ -2738,20 +2740,25 @@ def get_dynamic_policy_definitions(scope: str = None) -> dict:
            SCOPE.ENROLL: {},
            SCOPE.WEBUI: {},
            SCOPE.AUTHZ: {}}
-    for ttype in get_token_types():
-        pol[SCOPE.ADMIN]["enroll{0!s}".format(ttype.upper())] \
-            = {'type': 'bool',
-               'desc': _("Admin is allowed to initialize {0!s} tokens.").format(ttype.upper()),
-               'mainmenu': [MAIN_MENU.TOKENS],
-               'group': GROUP.ENROLLMENT}
 
-        conf = get_tokenclass_info(ttype, section='user')
-        if 'enroll' in conf:
-            pol[SCOPE.USER]["enroll{0!s}".format(ttype.upper())] = {
+    enrollable_token_types = get_enrollable_token_types()
+    for ttype in get_token_types():
+        if ttype in enrollable_token_types:
+            pol[SCOPE.ADMIN][f"enroll{ttype.upper()}"] = {
                 'type': 'bool',
-                'desc': _("The user is allowed to enroll a {0!s} token.").format(ttype.upper()),
+                'desc': _("Admin is allowed to initialize {0!s} tokens.").format(ttype.upper()),
                 'mainmenu': [MAIN_MENU.TOKENS],
-                'group': GROUP.ENROLLMENT}
+                'group': GROUP.ENROLLMENT
+            }
+
+            conf = get_tokenclass_info(ttype, section='user')
+            if 'enroll' in conf:
+                pol[SCOPE.USER][f"enroll{ttype.upper()}"] = {
+                    'type': 'bool',
+                    'desc': _("The user is allowed to enroll a {0!s} token.").format(ttype.upper()),
+                    'mainmenu': [MAIN_MENU.TOKENS],
+                    'group': GROUP.ENROLLMENT
+                }
 
         # now merge the dynamic Token policy definition
         # into the global definitions
@@ -2777,26 +2784,22 @@ def get_dynamic_policy_definitions(scope: str = None) -> dict:
         # PIN policies
         pin_scopes = get_tokenclass_info(ttype, section='pin_scopes') or []
         for pin_scope in pin_scopes:
-            pol[pin_scope]['{0!s}_otp_pin_maxlength'.format(ttype.lower())] = {
+            pol[pin_scope][f'{ttype.lower()}_otp_pin_maxlength'] = {
                 'type': 'int',
                 'value': list(range(0, 32)),
-                "desc": _("Set the maximum allowed PIN length of the {0!s}"
-                          " token.").format(ttype.upper()),
+                "desc": _("Set the maximum allowed PIN length of the {0!s} token.").format(ttype.upper()),
                 'group': GROUP.PIN
             }
-            pol[pin_scope]['{0!s}_otp_pin_minlength'.format(ttype.lower())] = {
+            pol[pin_scope][f'{ttype.lower()}_otp_pin_minlength'] = {
                 'type': 'int',
                 'value': list(range(0, 32)),
-                "desc": _("Set the minimum required PIN length of the {0!s}"
-                          " token.").format(ttype.upper()),
+                "desc": _("Set the minimum required PIN length of the {0!s} token.").format(ttype.upper()),
                 'group': GROUP.PIN
             }
-            pol[pin_scope]['{0!s}_otp_pin_contents'.format(ttype.lower())] = {
+            pol[pin_scope][f'{ttype.lower()}_otp_pin_contents'] = {
                 'type': 'str',
-                "desc": _("Specifiy the required PIN contents of the "
-                          "{0!s} token. "
-                          "(c)haracters, (n)umeric, "
-                          "(s)pecial, (o)thers. [+/-]!").format(ttype.upper()),
+                "desc": _("Specifiy the required PIN contents of the {0!s} token. (c)haracters, (n)umeric, (s)pecial, "
+                          "(o)thers. [+/-]!").format(ttype.upper()),
                 'group': GROUP.PIN
             }
 
@@ -2973,6 +2976,7 @@ def regenerate_enroll_url(serial: str, request: Request, g) -> Union[str, None]:
         log.warning(f"{ex}")
 
     return enroll_url
+
 
 def export_tokens(tokens: list[TokenClass]) -> str:
     """

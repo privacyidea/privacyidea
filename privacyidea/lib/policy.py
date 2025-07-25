@@ -183,7 +183,7 @@ from ..models import (Policy, db, save_config_timestamp, PolicyDescription, Poli
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     get_config_object, get_privacyidea_node,
                                     get_multichallenge_enrollable_types,
-                                    get_email_validators, get_privacyidea_nodes)
+                                    get_email_validators, get_privacyidea_nodes, get_enrollable_token_types)
 from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, ServerError
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
@@ -1263,9 +1263,10 @@ class PolicyClass(object):
         # check, if we have a policy definition at all.
         pols = self.list_policies(scope=role, active=True)
         tokenclasses = get_token_classes()
+        enrollable_token_types = get_enrollable_token_types()
         for tokenclass in tokenclasses:
             # Check if the tokenclass is ui enrollable for "user" or "admin"
-            if role in tokenclass.get_class_info("ui_enroll"):
+            if role in tokenclass.get_class_info("ui_enroll") and tokenclass.get_class_type() in enrollable_token_types:
                 enroll_types[tokenclass.get_class_type()] = tokenclass.get_class_info("description")
 
         if role == SCOPE.ADMIN:
