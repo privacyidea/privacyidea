@@ -3,7 +3,6 @@ import { signal } from '@angular/core';
 import { UserData, UserService } from './user.service';
 import { LocalService } from '../local/local.service';
 import { RealmService } from '../realm/realm.service';
-import { ContentService } from '../content/content.service';
 import { provideHttpClient } from '@angular/common/http';
 
 class MockLocalService {
@@ -14,10 +13,6 @@ class MockLocalService {
 
 class MockRealmService {
   defaultRealm = signal('defaultRealm');
-}
-
-class MockContentService {
-  selectedContent = signal(undefined);
 }
 
 function buildUser(username: string): UserData {
@@ -49,7 +44,6 @@ describe('UserService', () => {
         UserService,
         { provide: LocalService, useClass: MockLocalService },
         { provide: RealmService, useClass: MockRealmService },
-        { provide: ContentService, useClass: MockContentService },
       ],
     });
 

@@ -37,6 +37,7 @@ describe('LoginComponent (Jest)', () => {
   } as unknown as jest.Mocked<SessionTimerService>;
 
   const router = {
+    navigateByUrl: jest.fn().mockResolvedValue(true),
     navigate: jest.fn().mockResolvedValue(true),
   } as unknown as jest.Mocked<Router>;
 
@@ -113,7 +114,7 @@ describe('LoginComponent (Jest)', () => {
         sessionTimerService.startRefreshingRemainingTime,
       ).toHaveBeenCalled();
       expect(sessionTimerService.startTimer).toHaveBeenCalled();
-      expect(router.navigate).toHaveBeenCalledWith(['token']);
+      expect(router.navigateByUrl).toHaveBeenCalledWith('/tokens');
     });
 
     it('should handle missing or invalid token (challenge response)', () => {

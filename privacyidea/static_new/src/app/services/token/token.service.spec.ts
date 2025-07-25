@@ -24,7 +24,6 @@ class MockNotificationService {
 
 class MockContentService {
   tokenSerial = signal('');
-  selectedContent = signal<'token_overview'>('token_overview');
 }
 
 describe('TokenService', () => {

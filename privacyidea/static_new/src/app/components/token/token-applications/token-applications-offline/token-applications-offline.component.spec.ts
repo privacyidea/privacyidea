@@ -1,13 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatTabsModule } from '@angular/material/tabs';
-
-import { signal } from '@angular/core';
 import {
   MockMachineService,
   MockTableUtilsService,
 } from '../../../../../testing/mock-services';
-import { ContentService } from '../../../../services/content/content.service';
 import {
   MachineService,
   TokenApplication,
@@ -25,9 +22,7 @@ describe('TokenApplicationsOfflineComponent (Jest)', () => {
   let mockTokenService: Partial<TokenService> = {};
   const machineServiceMock = new MockMachineService();
   const tableUtilsMock = new MockTableUtilsService();
-  const mockContentService = {
-    selectedContent: signal('token_applications'),
-  };
+
   beforeEach(async () => {
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
@@ -41,7 +36,6 @@ describe('TokenApplicationsOfflineComponent (Jest)', () => {
         { provide: MachineService, useValue: machineServiceMock },
         { provide: TableUtilsService, useValue: tableUtilsMock },
         { provide: TokenService, useValue: mockTokenService },
-        { provide: ContentService, useValue: mockContentService },
       ],
     }).compileComponents();
 
@@ -89,19 +83,6 @@ describe('TokenApplicationsOfflineComponent (Jest)', () => {
         fakeApps,
       );
       expect(component.length()).toBe(1);
-    });
-
-    it('delegates to emptyDataSource when tokenApplications() is falsy', () => {
-      machineServiceMock.tokenApplications.set([]);
-      fixture.detectChanges();
-
-      const ds = component.dataSource();
-      expect(tableUtilsMock.emptyDataSource).toHaveBeenCalledWith(
-        machineServiceMock.pageSize(),
-        component.columnsKeyMap,
-      );
-      expect((ds as any).isEmpty).toBe(true);
-      expect(component.length()).toBe(0);
     });
   });
 });

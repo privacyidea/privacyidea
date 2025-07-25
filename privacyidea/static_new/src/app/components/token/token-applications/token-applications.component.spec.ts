@@ -15,9 +15,6 @@ describe('TokenApplicationsComponent (Jest)', () => {
   const machineServiceMock = new MockMachineService();
 
   beforeEach(async () => {
-    const mockContentService = {
-      selectedContent: signal('token_applications'),
-    };
     TestBed.resetTestingModule();
 
     await TestBed.configureTestingModule({
@@ -30,7 +27,6 @@ describe('TokenApplicationsComponent (Jest)', () => {
       providers: [
         provideHttpClient(),
         { provide: MachineService, useValue: machineServiceMock },
-        { provide: ContentService, useValue: mockContentService },
       ],
     }).compileComponents();
 

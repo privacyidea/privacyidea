@@ -59,12 +59,12 @@ export class TokenCardComponent {
   states = this.containerService.states;
   isProgrammaticTabChange = this.contentService.isProgrammaticTabChange;
 
-  onTabChange(evt: MatTabChangeEvent): void {
+  onTabChange(event: MatTabChangeEvent): void {
     if (this.isProgrammaticTabChange()) {
       this.isProgrammaticTabChange.set(false);
       return;
     }
-    if (evt.index === 0) {
+    if (event.index === 0) {
       this.router.navigate(['/tokens']);
     } else {
       this.router.navigate(['/tokens', 'containers']);

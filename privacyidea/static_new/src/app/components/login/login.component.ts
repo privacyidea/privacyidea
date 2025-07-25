@@ -118,7 +118,7 @@ export class LoginComponent {
           );
           this.sessionTimerService.startRefreshingRemainingTime();
           this.sessionTimerService.startTimer();
-          this.router.navigate(['token']).then();
+          this.router.navigate(['tokens']).then();
           this.notificationService.openSnackBar('Login successful.');
         } else {
           this.notificationService.openSnackBar('Login with passkey failed.');

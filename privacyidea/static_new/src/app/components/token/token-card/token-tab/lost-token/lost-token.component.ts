@@ -21,7 +21,7 @@ import {
 
 @Component({
   selector: 'app-lost-token',
-  standalone: true, // Add standalone: true as it's missing but common practice for new components
+  standalone: true,
   imports: [
     MatDialogTitle,
     MatDialogContent,

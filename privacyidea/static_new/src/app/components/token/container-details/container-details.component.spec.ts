@@ -143,7 +143,6 @@ describe('ContainerDetailsComponent (Jest)', () => {
         isEditing: signal(false),
       },
     ]);
-    component.selectedContent = signal('token_details');
 
     containerService = TestBed.inject(ContainerService);
     userService = TestBed.inject(UserService);

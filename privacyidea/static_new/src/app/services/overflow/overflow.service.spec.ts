@@ -86,14 +86,6 @@ describe('OverflowService (DOM logic)', () => {
   });
 
   it('getOverflowThreshold returns configured values', () => {
-    expect(service.getOverflowThreshold('token_applications')).toBe(1500);
-    expect(service.getOverflowThreshold('token_details')).toBe(1880);
-    expect(service.getOverflowThreshold('container_details')).toBe(1880);
-    expect(service.getOverflowThreshold('token_overview')).toBe(1880);
-    expect(service.getOverflowThreshold('container_overview')).toBe(1880);
-    expect(service.getOverflowThreshold('token_enrollment')).toBe(1240);
-    expect(service.getOverflowThreshold('container_create')).toBe(1240);
-    expect(service.getOverflowThreshold('token_get_serial')).toBe(1240);
-    expect(service.getOverflowThreshold('unknown_page')).toBe(1920);
+    expect(service.getOverflowThreshold()).toBe(1920);
   });
 });

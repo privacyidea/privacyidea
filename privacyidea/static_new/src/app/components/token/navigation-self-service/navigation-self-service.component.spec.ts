@@ -3,6 +3,8 @@ import { NavigationSelfServiceComponent } from './navigation-self-service.compon
 import { provideHttpClient } from '@angular/common/http';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { ActivatedRoute } from '@angular/router';
+import { of } from 'rxjs';
 
 describe('NavigationSelfServiceComponent', () => {
   let component: NavigationSelfServiceComponent;
@@ -10,7 +12,16 @@ describe('NavigationSelfServiceComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideAnimationsAsync()],
+      providers: [
+        provideHttpClient(),
+        provideAnimationsAsync(),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            params: of({ id: '123' }),
+          },
+        },
+      ],
       imports: [NavigationSelfServiceComponent, BrowserAnimationsModule],
     }).compileComponents();
 

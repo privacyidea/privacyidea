@@ -1,13 +1,17 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
-  BrowserAnimationsModule,
-  provideNoopAnimations,
-} from '@angular/platform-browser/animations';
+  ComponentFixture,
+  fakeAsync,
+  TestBed,
+  tick,
+} from '@angular/core/testing';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { TokenComponent } from './token.component';
 import { OverflowService } from '../../services/overflow/overflow.service';
 import { MockOverflowService } from '../../../testing/mock-services';
+import { ActivatedRoute } from '@angular/router';
+import { of } from 'rxjs';
 
 describe('TokenComponent', () => {
   let component: TokenComponent;
@@ -18,12 +22,17 @@ describe('TokenComponent', () => {
     mockOverflowService = new MockOverflowService();
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
-      imports: [BrowserAnimationsModule, TokenComponent],
+      imports: [TokenComponent, NoopAnimationsModule],
       providers: [
         { provide: OverflowService, useValue: mockOverflowService },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            params: of({ id: '123' }),
+          },
+        },
         provideHttpClient(),
         provideHttpClientTesting(),
-        provideNoopAnimations(),
       ],
     }).compileComponents();
 
@@ -49,16 +58,24 @@ describe('TokenComponent', () => {
     expect(drawer).toBeNull();
   });
 
-  it('should show token card in drawer if overflowService returns true', () => {
+  it('should show token card in drawer if overflowService returns true', async () => {
     mockOverflowService.setWidthOverflow(true);
+
+    component.updateOverflowState();
+
+    await new Promise((r) => setTimeout(r, 450));
+
     fixture.detectChanges();
 
+    const drawer: HTMLElement | null =
+      fixture.nativeElement.querySelector('mat-drawer');
+    const cardInsideDrawer = drawer?.querySelector('app-token-card');
     const cardOutsideDrawer = fixture.nativeElement.querySelector(
       'app-token-card.margin-right-1',
     );
-    const drawer = fixture.nativeElement.querySelector('mat-drawer');
 
-    expect(cardOutsideDrawer).toBeNull();
     expect(drawer).toBeTruthy();
+    expect(cardInsideDrawer).toBeTruthy();
+    expect(cardOutsideDrawer).toBeNull();
   });
 });

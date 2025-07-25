@@ -63,7 +63,7 @@ describe('versioningService', () => {
         .spyOn(global, 'fetch')
         .mockImplementation(() => mockFetchWithHTML(VALID_HTML));
 
-      versioningService.openDocumentation('token_enrollment');
+      versioningService.openDocumentation('/tokens/enroll');
       await flushPromises();
 
       const expectedUrl =
@@ -82,7 +82,7 @@ describe('versioningService', () => {
         .mockImplementationOnce(() => mockFetchWithHTML(NOT_FOUND_HTML))
         .mockImplementationOnce(() => mockFetchWithHTML(VALID_HTML));
 
-      versioningService.openDocumentation('token_enrollment');
+      versioningService.openDocumentation('/tokens/enroll');
       await flushPromises();
       await flushPromises();
 
@@ -101,7 +101,7 @@ describe('versioningService', () => {
         .spyOn(global, 'fetch')
         .mockImplementation(() => mockFetchWithHTML(NOT_FOUND_HTML));
 
-      versioningService.openDocumentation('token_enrollment');
+      versioningService.openDocumentation('/tokens/enroll');
       await flushPromises();
       await flushPromises();
 

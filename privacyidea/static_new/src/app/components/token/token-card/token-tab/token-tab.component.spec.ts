@@ -9,17 +9,15 @@ import {
 } from '@angular/platform-browser/animations';
 
 import { signal } from '@angular/core';
-import { By } from '@angular/platform-browser';
 import { of } from 'rxjs';
 
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { ContentService } from '../../../../services/content/content.service';
 import { NotificationService } from '../../../../services/notification/notification.service';
 import { TokenService } from '../../../../services/token/token.service';
 import { VersioningService } from '../../../../services/version/version.service';
 
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
-import { TokenSelectedContentKey } from '../../token.component';
+import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 
 describe('TokenTabComponent', () => {
   let component: TokenTabComponent;
@@ -56,11 +54,14 @@ describe('TokenTabComponent', () => {
     openSnackBar: jest.fn(),
   } as unknown as NotificationService;
 
-  const contentServiceStub = {
-    selectedContent: signal<TokenSelectedContentKey>('token_overview'),
-  } as unknown as ContentService;
+  let routerSpy: { navigateByUrl: jest.Mock; events: any; url: string };
 
   beforeEach(async () => {
+    routerSpy = {
+      navigateByUrl: jest.fn(),
+      events: of(new NavigationEnd(1, '/start', '/start')),
+      url: '/start',
+    };
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [TokenTabComponent, BrowserAnimationsModule],
@@ -68,11 +69,17 @@ describe('TokenTabComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideNoopAnimations(),
+        { provide: Router, useValue: routerSpy },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            params: of({ id: '123' }),
+          },
+        },
         { provide: TokenService, useValue: tokenServiceStub },
         { provide: MatDialog, useValue: matDialogStub },
         { provide: VersioningService, useValue: versioningServiceStub },
         { provide: NotificationService, useValue: notificationServiceStub },
-        { provide: ContentService, useValue: contentServiceStub },
       ],
     }).compileComponents();
 
@@ -126,7 +133,6 @@ describe('TokenTabComponent', () => {
       expect(matDialogStub.open).toHaveBeenCalled();
       expect(tokenServiceStub.deleteToken).toHaveBeenCalledWith('Mock serial');
       expect(tokenServiceStub.tokenSerial()).toBe('');
-      expect(contentServiceStub.selectedContent()).toBe('token_overview');
     });
   });
 
@@ -140,39 +146,6 @@ describe('TokenTabComponent', () => {
           tokenSerial: component.tokenSerial,
         },
       });
-    });
-  });
-
-  describe('template bindings', () => {
-    it('highlights “Token Details” when selectedContent = token_details', () => {
-      contentServiceStub.selectedContent.set('token_details');
-      fixture.detectChanges();
-
-      const btn = fixture.debugElement.query(
-        By.css('button.card-button-active'),
-      )?.nativeElement;
-
-      expect(btn).toBeTruthy();
-      expect(btn.textContent).toContain('Token Details');
-    });
-
-    it('highlights “Overview” when selectedContent = token_overview', () => {
-      contentServiceStub.selectedContent.set('token_overview');
-      fixture.detectChanges();
-
-      const btn = fixture.debugElement.query(
-        By.css('button.card-button-active'),
-      )?.nativeElement;
-
-      expect(btn).toBeTruthy();
-      expect(btn.textContent).toContain('Overview');
-
-      const icon = fixture.debugElement.query(
-        By.css(
-          'button.card-button-active mat-icon[textContent="health_and_safety"]',
-        ),
-      );
-      expect(icon).toBeNull();
     });
   });
 });

@@ -36,7 +36,7 @@ describe('LayoutComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should render the header, footer, and router-outlet in the DOM', () => {
+  it('should render the header and router-outlet in the DOM', () => {
     fixture.detectChanges();
 
     const layoutElement = fixture.nativeElement.querySelector('.layout');
@@ -51,10 +51,5 @@ describe('LayoutComponent', () => {
       'main[aria-label="Main Router Outlet"]',
     );
     expect(main).toBeTruthy();
-
-    const footer = fixture.nativeElement.querySelector(
-      'footer[aria-label="Footer"]',
-    );
-    expect(footer).toBeTruthy();
   });
 });

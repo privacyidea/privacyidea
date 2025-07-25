@@ -19,7 +19,6 @@ import { MatTableDataSource } from '@angular/material/table';
 import { Router } from '@angular/router';
 import { Observable, of, Subject, Subscription } from 'rxjs';
 import { PiResponse } from '../app/app.component';
-import { TokenSelectedContentKey } from '../app/components/token/token.component';
 import {
   EnrollmentResponse,
   TokenApiPayloadMapper,
@@ -406,18 +405,14 @@ export class MockContentService implements ContentServiceInterface {
     events: of({} as any),
   } as any;
   routeUrl: Signal<string> = signal('/home');
-  selectedContent: WritableSignal<TokenSelectedContentKey> =
-    signal('token_overview');
   tokenSerial: WritableSignal<string> = signal('');
   containerSerial: WritableSignal<string> = signal('');
 
   tokenSelected = jest.fn().mockImplementation((serial: string) => {
-    this.selectedContent.set('token_details');
     this.tokenSerial.set(serial);
   });
 
   containerSelected = jest.fn().mockImplementation((serial: string) => {
-    this.selectedContent.set('container_details');
     this.containerSerial.set(serial);
   });
   isProgrammaticTabChange = signal(false);
@@ -453,8 +448,6 @@ export class MockContainerService implements ContainerServiceInterface {
   stopPolling$: Subject<void> = new Subject<void>();
   containerBaseUrl: string = "mockEnvironment.proxyUrl + '/container'";
   eventPageSize: number = 10;
-  selectedContent: WritableSignal<TokenSelectedContentKey> =
-    signal('container_overview');
   sort: WritableSignal<Sort> = signal({ active: 'serial', direction: 'asc' });
   filterValue: WritableSignal<Record<string, string>> = signal({});
   filterParams: Signal<Record<string, string>> = computed(() =>
@@ -625,7 +618,7 @@ export class MockContainerService implements ContainerServiceInterface {
 export class MockOverflowService implements OverflowServiceInterface {
   private _overflow = false;
 
-  getOverflowThreshold(selectedContent: string): number {
+  getOverflowThreshold(): number {
     return 1920;
   }
 
@@ -654,8 +647,6 @@ export class MockTokenService implements TokenServiceInterface {
   stopPolling$: Subject<void> = new Subject<void>();
   tokenIsActive: WritableSignal<boolean> = signal(true);
   tokenIsRevoked: WritableSignal<boolean> = signal(false);
-  selectedContent: WritableSignal<TokenSelectedContentKey> =
-    signal('token_overview');
   tokenTypesResource: HttpResourceRef<PiResponse<{}, unknown> | undefined> =
     new MockHttpResourceRef(MockPiResponse.fromValue({}));
   sort: WritableSignal<Sort> = signal({ active: 'serial', direction: 'asc' });
@@ -850,13 +841,12 @@ export class MockMachineService implements MachineServiceInterface {
   sshAdvancedApiFilter: string[] = [];
   offlineApiFilter: string[] = [];
   offlineAdvancedApiFilter: string[] = [];
-  selectedContent: WritableSignal<TokenSelectedContentKey> =
-    signal('token_applications');
   machinesResource = new MockHttpResourceRef(
     MockPiResponse.fromValue<Machines>([]),
   );
   machines: WritableSignal<Machines> = signal<Machines>([]);
   filterValue: WritableSignal<Record<string, string>> = signal({});
+  filterValueString: WritableSignal<string> = signal('');
   sort: WritableSignal<Sort> = signal({ active: '', direction: '' });
   tokenApplications: WritableSignal<TokenApplication[]> = signal([]);
   tokenApplicationResource: HttpResourceRef<
@@ -938,7 +928,6 @@ export class MockMachineService implements MachineServiceInterface {
     public http: HttpClient = new HttpClient({} as any),
     public localService: LocalService = new LocalService(),
     public tableUtilsService: TableUtilsService = new MockTableUtilsService(),
-    public contentService: ContentService = new MockContentService(),
   ) {}
 
   postAssignMachineToToken(args: {

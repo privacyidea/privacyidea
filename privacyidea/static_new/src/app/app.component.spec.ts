@@ -134,10 +134,10 @@ describe('AppComponent', () => {
     });
 
     it('navigates to /token', async () => {
-      await router.navigate(['/token']);
+      await router.navigate(['/tokens']);
       jest.runOnlyPendingTimers();
       await Promise.resolve();
-      expect(location.path()).toBe('/token');
+      expect(location.path()).toBe('/tokens');
     });
 
     it('redirects unknown routes to /login', async () => {

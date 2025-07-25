@@ -40,9 +40,7 @@ const notificationServiceMock = {
   openSnackBar: jest.fn(),
 };
 
-const tokenServiceMock = {
-  selectedContent: signal('container_overview'),
-};
+const tokenServiceMock = {};
 
 const contentServiceMock = {};
 
@@ -117,9 +115,6 @@ describe('ContainerTableComponent (Jest)', () => {
 
     fixture = TestBed.createComponent(ContainerTableComponent);
     component = fixture.componentInstance;
-
-    component.selectedContent = signal('container_overview');
-
     fixture.detectChanges();
   });
 

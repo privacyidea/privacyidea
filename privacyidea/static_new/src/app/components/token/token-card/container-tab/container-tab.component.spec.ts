@@ -10,6 +10,8 @@ import {
   provideNoopAnimations,
 } from '@angular/platform-browser/animations';
 import { SelectionModel } from '@angular/cdk/collections';
+import { ActivatedRoute } from '@angular/router';
+import { of } from 'rxjs';
 
 describe('ContainerTabComponent', () => {
   let component: ContainerTabComponent;
@@ -22,12 +24,17 @@ describe('ContainerTabComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideNoopAnimations(),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            params: of({ id: '123' }),
+          },
+        },
       ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ContainerTabComponent);
     component = fixture.componentInstance;
-    component.selectedContent = signal('container_overview');
     component.containerSerial = signal('Mock serial');
     component.states = signal(['active']);
 

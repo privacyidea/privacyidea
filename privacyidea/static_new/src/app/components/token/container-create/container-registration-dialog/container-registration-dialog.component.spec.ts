@@ -26,7 +26,6 @@ describe('ContainerRegistrationDialogComponent', () => {
               },
             },
             containerSerial: signal(''),
-            selectedContent: signal(''),
           },
         },
       ],

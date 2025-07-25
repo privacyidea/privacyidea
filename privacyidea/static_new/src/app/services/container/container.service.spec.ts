@@ -289,12 +289,6 @@ describe('ContainerService', () => {
     expect(containerService.pageIndex()).toBe(0);
   });
 
-  it('loadAllContainers reflects selectedContent', () => {
-    expect(containerService.loadAllContainers()).toBe(false);
-    contentService.selectedContent.set('token_enrollment');
-    expect(containerService.loadAllContainers()).toBe(true);
-  });
-
   it('filteredContainerOptions respects selectedContainer filter', () => {
     containerService.containerOptions.set(['Alpha', 'Serial42', 'Beta']);
     containerService.selectedContainer.set('se');
@@ -398,13 +392,6 @@ describe('ContainerService', () => {
       '/api/container/cD/states',
       { states: 'active' },
       { headers: { Authorization: 'Bearer x' } },
-    );
-  });
-
-  it('selectedContainerType falls back to default when no data', () => {
-    contentService.selectedContent.set('container_overview');
-    expect(containerService.selectedContainerType().containerType).toBe(
-      'generic',
     );
   });
 

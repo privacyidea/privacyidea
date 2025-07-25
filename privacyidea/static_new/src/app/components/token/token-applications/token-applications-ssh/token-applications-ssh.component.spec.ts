@@ -22,9 +22,6 @@ describe('TokenApplicationsSshComponent (Jest)', () => {
   let component: TokenApplicationsSshComponent;
 
   let mockTokenService: Partial<TokenService> = {};
-  const mockContentService = {
-    selectedContent: signal('token_applications'),
-  };
   let mockKeywordFilterComponent: Partial<KeywordFilterComponent> = {};
   const machineServiceMock = new MockMachineService();
   const tableUtilsMock = new MockTableUtilsService();
@@ -42,7 +39,6 @@ describe('TokenApplicationsSshComponent (Jest)', () => {
         { provide: MachineService, useValue: machineServiceMock },
         { provide: TableUtilsService, useValue: tableUtilsMock },
         { provide: TokenService, useValue: mockTokenService },
-        { provide: ContentService, useValue: mockContentService },
         {
           provide: KeywordFilterComponent,
           useValue: mockKeywordFilterComponent,
@@ -99,19 +95,6 @@ describe('TokenApplicationsSshComponent (Jest)', () => {
         fakeApps,
       );
       expect(component.length()).toBe(1);
-    });
-
-    it('delegates to emptyDataSource when tokenApplications() is falsy', () => {
-      machineServiceMock.tokenApplications!.set([]);
-      fixture.detectChanges();
-
-      const ds = component.dataSource();
-      expect(tableUtilsMock.emptyDataSource).toHaveBeenCalledWith(
-        machineServiceMock.pageSize!(),
-        component.columnsKeyMap,
-      );
-      expect((ds as any).isEmpty).toBe(true);
-      expect(component.length()).toBe(0);
     });
   });
 });

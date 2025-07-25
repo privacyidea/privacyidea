@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NavigationSelfServiceButtonComponent } from './navigation-self-service-button.component';
 import { provideHttpClient } from '@angular/common/http';
+import { ActivatedRoute } from '@angular/router';
+import { of } from 'rxjs';
 
 describe('NavigationSelfServiceButtonComponent', () => {
   let component: NavigationSelfServiceButtonComponent;
@@ -8,7 +10,15 @@ describe('NavigationSelfServiceButtonComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      providers: [provideHttpClient()],
+      providers: [
+        provideHttpClient(),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            params: of({ id: '123' }),
+          },
+        },
+      ],
       imports: [NavigationSelfServiceButtonComponent],
     }).compileComponents();
 
