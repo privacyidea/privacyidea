@@ -128,6 +128,14 @@ class U2FTokenTestCase(MyTestCase):
 
     def test_01_create_token(self):
         pin = "test"
+
+        # By default init is disabled
+        self.assertRaises(TokenAdminError, init_token, {"type": "u2f", "pin": pin})
+
+        # Enable u2f enrollment in config
+        with self.app_context:
+            self.app.config['PI_ENABLE_TOKEN_TYPE_ENROLLMENT'] = ['u2f']
+
         # Init step1
         token = init_token({"type": "u2f",
                             "pin": pin})
@@ -334,6 +342,8 @@ class MultipleU2FTokenTestCase(MyTestCase):
         self.user = User(login='cornelius', resolver=self.resolvername1,
                          realm=self.realm1)
         set_privacyidea_config("u2f.appId", self.app_id)
+        with self.app_context:
+            self.app.config['PI_ENABLE_TOKEN_TYPE_ENROLLMENT'] = ['u2f']
         # init step 1
         self.token1 = init_token({'type': 'u2f'})
         self.serial1 = self.token1.token.serial
