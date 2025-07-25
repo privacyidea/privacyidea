@@ -4754,10 +4754,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req = Request(env)
         req.User = User("cornelius")
         req.all_data = {}
-        r = jwt_validity(req, None)
+        r = rss_age(req, None)
         self.assertTrue(r)
-        # We receive the default of None
-        self.assertEqual(None, req.all_data.get(f"{ACTION.RSS_AGE}"))
+        # We receive the default of 0
+        self.assertEqual(0, req.all_data.get(f"{ACTION.RSS_AGE}"))
 
         delete_policy("rssage")
 

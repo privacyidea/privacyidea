@@ -116,6 +116,7 @@ def before_request():
                         "info": ""})
     g.resolved_user = {"is_local_admin": False}
 
+    request.User = User()
     username = request.all_data.get("username")
     credential_id = request.all_data.get("credential_id")
     if username:

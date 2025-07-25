@@ -113,14 +113,15 @@ def get_jwt_validity(user: User) -> timedelta:
     :return: A timedelta object representing the JWT validity period.
     """
     validity_policy = (Match.user(g, scope=SCOPE.WEBUI, action=ACTION.JWTVALIDITY,
-                                    user_object=user).action_values(unique=True))
+                                  user_object=user).action_values(unique=True))
 
     validity_time = DEFAULT_JWT_VALIDITY
     if len(validity_policy) == 1:
         try:
             validity_time = int(list(validity_policy)[0])
         except ValueError:
-            log.warning(f"Invalid JWT validity period: {validity_time}. Using the default of 1 hour.")
+            log.warning(
+                f"Invalid JWT validity period: {list(validity_policy)[0]}. Using the default of {validity_time} s.")
 
     validity_time = timedelta(seconds=int(validity_time))
     return validity_time
