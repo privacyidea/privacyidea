@@ -45,7 +45,6 @@ export class ContentService {
     if (!this.routeUrl().includes('containers')) {
       this.isProgrammaticTabChange.set(true);
     }
-    console.log(this.isProgrammaticTabChange());
     this.router.navigateByUrl('/tokens/containers/details/' + containerSerial);
     this.containerSerial.set(containerSerial);
   }

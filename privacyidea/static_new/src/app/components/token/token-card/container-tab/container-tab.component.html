@@ -27,14 +27,16 @@
         <mat-divider /><br />
         <mat-list-item>
           <button class="card-button"
-                  mat-flat-button>
+                  mat-flat-button
+                  disabled>
             <mat-icon>plagiarism</mat-icon>
             Templates
           </button>
         </mat-list-item>
         <mat-list-item>
           <button class="card-button"
-                  mat-flat-button>
+                  mat-flat-button
+                  disabled>
             <mat-icon>note_add</mat-icon>
             Create Template
           </button>
@@ -64,8 +66,7 @@
         }
       } @else {
         <mat-list-item>
-          <button
-            [ngClass]="this.contentService.routeUrl().startsWith('/tokens/containers/details') ?
+          <button [ngClass]="this.contentService.routeUrl().startsWith('/tokens/containers/details') ?
           'card-button-active' : 'card-button'"
                   mat-flat-button>
             <mat-icon>health_and_safety</mat-icon>
@@ -84,7 +85,8 @@
         <mat-list-item>
           <button (click)="lostContainer()"
                   class="card-button"
-                  mat-flat-button>
+                  mat-flat-button
+                  disabled>
             <mat-icon>remove_red_eye</mat-icon>
             Lost Container
           </button>
@@ -92,7 +94,8 @@
         <mat-list-item>
           <button (click)="damagedContainer()"
                   class="card-button"
-                  mat-flat-button>
+                  mat-flat-button
+                  disabled>
             <mat-icon>broken_image</mat-icon>
             Damaged Container
           </button>

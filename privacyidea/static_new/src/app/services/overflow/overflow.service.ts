@@ -51,7 +51,7 @@ export class OverflowService implements OverflowServiceInterface {
       return 1880;
     }
     if (
-      this.contentService.routeUrl().startsWith('/tokens/container/details')
+      this.contentService.routeUrl().startsWith('/tokens/containers/details')
     ) {
       return 1880;
     }
