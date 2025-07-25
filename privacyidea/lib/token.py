@@ -2798,7 +2798,7 @@ def get_dynamic_policy_definitions(scope: str = None) -> dict:
             }
             pol[pin_scope][f'{ttype.lower()}_otp_pin_contents'] = {
                 'type': 'str',
-                "desc": _("Specifiy the required PIN contents of the {0!s} token. (c)haracters, (n)umeric, (s)pecial, "
+                "desc": _("Specify the required PIN contents of the {0!s} token. (c)haracters, (n)umeric, (s)pecial, "
                           "(o)thers. [+/-]!").format(ttype.upper()),
                 'group': GROUP.PIN
             }
