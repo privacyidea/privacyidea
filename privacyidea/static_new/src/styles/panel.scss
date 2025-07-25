@@ -7,11 +7,11 @@
 
 ::ng-deep {
   .mat-expansion-panel:not(.mat-expanded) .mat-expansion-panel-header:hover {
-    background: #f3f3f3 !important;
+    background: var(--mat-sys-surface-container-high) !important;
   }
 
   .mat-expansion-panel {
-    background: white !important;
+    background: var(--mat-sys-surface-container-low) !important;
   }
 
   .mat-accordion .mat-expansion-panel {
@@ -46,4 +46,3 @@
     background-color: #f2f9fd;
   }
 }
-//

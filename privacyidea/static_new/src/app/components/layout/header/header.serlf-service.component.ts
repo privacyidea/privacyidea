@@ -24,6 +24,7 @@ import {
   SessionTimerService,
   SessionTimerServiceInterface,
 } from '../../../services/session-timer/session-timer.service';
+import { ThemeSwitcherComponent } from '../../shared/theme-switcher/theme-switcher.component';
 import { UserSelfServiceComponent } from '../../user/user.self-service.component';
 import { HeaderComponent } from './header.component';
 
@@ -42,6 +43,7 @@ import { HeaderComponent } from './header.component';
     MatMenuTrigger,
     MatMenu,
     UserSelfServiceComponent,
+    ThemeSwitcherComponent,
   ],
   templateUrl: './header.self-service.component.html',
   styleUrl: './header.component.scss',

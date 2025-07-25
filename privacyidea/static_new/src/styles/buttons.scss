@@ -390,4 +390,34 @@ $button-low-contrast-variant: linear-gradient(
   -webkit-mask-size: 100% 100%;
   mask-size: 100% 100%;
 }
-//
+
+.theme-mode-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--mat-sys-surface-container-lowest);
+  margin: var(--the-mode-button-margin-px);
+  height: calc(var(--header-height) / 3);
+  width: calc(var(--header-height) / 3);
+  color: var(--mat-sys-on-surface);
+  border-radius: calc(var(--border-radius) / 4);
+  @include mat.elevation(5);
+
+  &:hover {
+    @include mat.elevation(8);
+    background: var(--mat-sys-surface-container-low);
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  &:active {
+    transform: scale(0.98);
+    background: var(--mat-sys-surface-container-lowest);
+    color: var(--mat-sys-on-surface);
+  }
+}
+.theme-mode-button-icon {
+  font-size: calc(var(--header-height) / 3 - 2px);
+  color: var(--mat-sys-on-surface);
+  width: calc(var(--header-height) / 3 - 2px);
+  height: calc(var(--header-height) / 3 - 2px);
+}
