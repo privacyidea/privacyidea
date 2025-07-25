@@ -4,8 +4,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
-"PO-Revision-Date: 2025-07-21 06:02+0000\n"
-"Last-Translator: தமிழ்நேரம் <anishprabu.t@gmail.com>\n"
+"PO-Revision-Date: 2025-07-25 09:04+0000\n"
+"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: Tamil <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/ta/>\n"
 "Language: ta\n"
@@ -5430,7 +5430,7 @@ msgstr "மொத்த கொள்கலன்கள்: {{ containerdata.coun
 
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:32
 msgid "Total Templates: {{ templatedata.count }}"
-msgstr "மொத்த வார்ப்புருக்கள்: {{ templatedata.count }}}"
+msgstr "மொத்த வார்ப்புருக்கள்: {{ templatedata.count }}"
 
 #: privacyidea/static/components/token/views/token.challenges.html:34
 msgid "Transaction ID"
@@ -6287,7 +6287,7 @@ msgstr "கிள்ளாக்கு வகை"
 
 #: privacyidea/static/components/token/views/token.list.html:12
 msgid "total tokens: {{ tokendata.count }}"
-msgstr "மொத்த டோக்கன்கள்: {{ tokendata.count }}}"
+msgstr "மொத்த டோக்கன்கள்: {{ tokendata.count }}"
 
 #: privacyidea/static/components/user/views/user.html:53
 msgid "total users:"
