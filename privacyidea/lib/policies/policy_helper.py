@@ -17,6 +17,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
 import logging
+from datetime import timedelta
 
 from flask import g
 
@@ -25,6 +26,8 @@ from privacyidea.lib.user import User
 from privacyidea.lib.utils import parse_timelimit, AUTH_RESPONSE
 
 log = logging.getLogger(__name__)
+
+DEFAULT_JWT_VALIDITY = 3600
 
 
 def check_max_auth_fail(user: User, user_search_dict: dict, check_validate_check: bool = True):
@@ -100,3 +103,24 @@ def check_max_auth_success(user: User, user_search_dict: dict, check_validate_ch
         reply_dict["message"] = f"Only {policy_count} successful authentications per {time_delta} allowed."
 
     return result, reply_dict
+
+
+def get_jwt_validity(user: User) -> timedelta:
+    """
+    Reads the JWT validity for the auth token from the policy or returns the default time of 1 hour if no policy is set.
+
+    :param user: The user for whom the JWT validity is checked.
+    :return: A timedelta object representing the JWT validity period.
+    """
+    validity_policy = (Match.user(g, scope=SCOPE.WEBUI, action=ACTION.JWTVALIDITY,
+                                    user_object=user).action_values(unique=True))
+
+    validity_time = DEFAULT_JWT_VALIDITY
+    if len(validity_policy) == 1:
+        try:
+            validity_time = int(list(validity_policy)[0])
+        except ValueError:
+            log.warning(f"Invalid JWT validity period: {validity_time}. Using the default of 1 hour.")
+
+    validity_time = timedelta(seconds=int(validity_time))
+    return validity_time

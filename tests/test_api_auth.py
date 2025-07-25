@@ -877,13 +877,14 @@ class DuplicateUserApiTestCase(MyApiTestCase):
             # check if we have the correct log entry
             mock_log.assert_called_with("user uid 1004 failed to authenticate")
 
-    def test_02_auth_timelimit(self):
+    def test_02_max_auth_failed(self):
         """
-        Test that the prepolicies "auth_max_fail" and "auth_max_success" are applied correctly to a local admin and
+        Test that the prepolicies "auth_max_fail" is applied correctly to a local admin and
         user with the same username in the defrealm
         """
         # Generic policy is applied to both
         set_policy("max_fail", scope=SCOPE.AUTHZ, action=f"{ACTION.AUTHMAXFAIL}=2/1m")
+        self.app_context.g.audit_object.clear()
 
         # Admin
         for i in range(2):
@@ -901,27 +902,10 @@ class DuplicateUserApiTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(401, res.status_code, res)
             details = res.json.get("detail")
-            self.assertEqual(details.get("message"),
-                             "Only 2 failed authentications per 0:01:00 allowed.",
-                             details)
+            self.assertEqual(details.get("message"), "Only 2 failed authentications per 0:01:00 allowed.", details)
 
-        # # authenticating the user should still be possible (TODO: can we achieve this somehow?)
-        # with self.app.test_request_context('/auth',
-        #                                    method='POST',
-        #                                    data={"username": "testadmin",
-        #                                          "password": "test"}):
-        #     res = self.app.full_dispatch_request()
-        #     self.assertEqual(200, res.status_code, res)
-
-        # User
-        for i in range(2):
-            with self.app.test_request_context('/auth',
-                                               method='POST',
-                                               data={"username": "testadmin",
-                                                     "password": "wrong"}):
-                res = self.app.full_dispatch_request()
-                self.assertEqual(401, res.status_code, res)
-        # third successful authentication fails due to policy
+        # Correct authentication for user also fails, since we can not differentiate between local admin and user
+        # before the authentication
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "testadmin",
@@ -929,14 +913,24 @@ class DuplicateUserApiTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(401, res.status_code, res)
             details = res.json.get("detail")
-            self.assertEqual(details.get("message"),
-                             "Only 2 failed authentications per 0:01:00 allowed.",
-                             details)
+            self.assertEqual(details.get("message"), "Only 2 failed authentications per 0:01:00 allowed.", details)
+
+        # Even if we explicitly pass the realm, the user can not authenticate since we can not distinguish admins and
+        # users in the audit log for failed authentications
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "realm": self.realm1,
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res)
+            details = res.json.get("detail")
+            self.assertEqual(details.get("message"), "Only 2 failed authentications per 0:01:00 allowed.", details)
 
         # Realm policy is only applied to user
         set_policy("max_fail", scope=SCOPE.AUTHZ, action=f"{ACTION.AUTHMAXFAIL}=2/1m", realm=self.realm1)
 
-        # Admin
+        # Failed authentications
         for i in range(2):
             with self.app.test_request_context('/auth',
                                                method='POST',
@@ -944,7 +938,8 @@ class DuplicateUserApiTestCase(MyApiTestCase):
                                                      "password": "wrong"}):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(401, res.status_code, res)
-        # third successful authentication is successful
+
+        # Admin: third successful authentication is successful
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "testadmin",
@@ -952,15 +947,7 @@ class DuplicateUserApiTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
 
-        # User
-        for i in range(2):
-            with self.app.test_request_context('/auth',
-                                               method='POST',
-                                               data={"username": "testadmin",
-                                                     "password": "wrong"}):
-                res = self.app.full_dispatch_request()
-                self.assertEqual(401, res.status_code, res)
-        # third successful authentication fails due to policy
+        # User: third successful authentication fails due to policy
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "testadmin",
@@ -972,17 +959,87 @@ class DuplicateUserApiTestCase(MyApiTestCase):
                              "Only 2 failed authentications per 0:01:00 allowed.",
                              details)
 
-        # But admin can still authenticate
+        delete_policy("max_fail")
+
+    def test_03_max_auth_success(self):
+        """
+        Test that the prepolicies "auth_max_success" is applied correctly to a local admin and user with the same
+        username in the defrealm
+        """
+        # Generic policy is applied to both
+        set_policy("max_success", scope=SCOPE.AUTHZ, action=f"{ACTION.AUTHMAXSUCCESS}=2/1m")
+        self.app_context.g.audit_object.clear()
+
+        # Admin
+        for i in range(2):
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "testadmin",
+                                                     "password": "testpw"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+        # third successful authentication fails due to policy
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "testadmin",
                                                  "password": "testpw"}):
             res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+            details = res.json.get("detail")
+            self.assertEqual(details.get("message"),
+                             "Only 2 successful authentications per 0:01:00 allowed.", details)
+
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res)
+            details = res.json.get("detail")
+            self.assertEqual(details.get("message"),
+                             "Only 2 successful authentications per 0:01:00 allowed.", details)
+
+        # But if we explicitly pass the realm, the user can authenticate
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "realm": self.realm1,
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
 
-        delete_policy("max_fail")
+        # Realm policy is only applied to user
+        set_policy("max_success", scope=SCOPE.AUTHZ, action=f"{ACTION.AUTHMAXSUCCESS}=2/1m", realm=self.realm1)
 
-    def test_03_increase_failcounter_on_challenge(self):
+        # Admin can log in successfully
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "testpw"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+
+        # User can also authenticate successfully a second time even without the realm
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+        # but third login still fails
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+            details = res.json.get("detail")
+            self.assertEqual(details.get("message"),
+                             "Only 2 successful authentications per 0:01:00 allowed.", details)
+
+        delete_policy("max_success")
+
+    def test_04_increase_failcounter_on_challenge(self):
         set_policy("pi_login", scope=SCOPE.WEBUI, action=f"{ACTION.LOGINMODE}=privacyIDEA")
         set_policy("challenge_response", scope=SCOPE.AUTH,
                    action=f"{ACTION.CHALLENGERESPONSE}=hotp,{ACTION.OTPPIN}=userstore")
@@ -1033,7 +1090,7 @@ class DuplicateUserApiTestCase(MyApiTestCase):
         delete_policy("challenge_response")
         delete_policy("failcounter_challenge")
 
-    def test_04_disabled_token_types(self):
+    def test_05_disabled_token_types(self):
         set_policy("pi_login", scope=SCOPE.WEBUI, action=f"{ACTION.LOGINMODE}=privacyIDEA")
         set_policy("otp_pin", scope=SCOPE.AUTH, action=f"{ACTION.OTPPIN}=userstore")
         set_policy("disabled_token_types", scope=SCOPE.AUTH, action=f"{ACTION.DISABLED_TOKEN_TYPES}=totp",
@@ -1075,7 +1132,7 @@ class DuplicateUserApiTestCase(MyApiTestCase):
         delete_policy("otp_pin")
         delete_policy("disabled_token_types")
 
-    def test_05_jwt_validity(self):
+    def test_06_jwt_validity(self):
         # generic policy applies to both
         set_policy("jwt_validity", scope=SCOPE.WEBUI, action=f"{ACTION.JWTVALIDITY}=1800")
 

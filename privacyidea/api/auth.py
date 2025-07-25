@@ -45,14 +45,10 @@ and password.
 """
 import copy
 
-from flask import (Blueprint,
-                   request,
-                   current_app,
-                   g)
+from flask import (Blueprint, request, current_app, g)
 import jwt
 from functools import wraps
-from datetime import (datetime,
-                      timedelta, timezone)
+from datetime import (datetime, timezone)
 from privacyidea.lib.error import AuthError, ERROR
 from privacyidea.lib.crypto import geturandom, init_hsm
 from privacyidea.lib.audit import getAudit
@@ -62,6 +58,7 @@ from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.fido2.challenge import verify_fido2_challenge
 from privacyidea.lib.fido2.util import get_fido2_token_by_credential_id
+from privacyidea.lib.policies.policy_helper import get_jwt_validity
 from privacyidea.lib.user import User, split_user, log_used_user
 from privacyidea.lib.policy import PolicyClass, REMOTE_USER
 from privacyidea.lib.realm import get_default_realm, realm_is_defined
@@ -71,7 +68,7 @@ from privacyidea.api.lib.postpolicy import (postpolicy, add_user_detail_to_respo
 from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
                                            pushtoken_disable_wait, webauthntoken_authz, webauthntoken_request,
                                            fido2_auth, increase_failcounter_on_challenge,
-                                           jwt_validity, disabled_token_types, auth_timelimit)
+                                           disabled_token_types, auth_timelimit)
 from privacyidea.api.lib.utils import (send_result, get_all_params,
                                        verify_auth_token, getParam, get_optional, get_required)
 from privacyidea.lib.utils import get_client_ip, hexlify_and_unicode, to_unicode, get_plugin_info_from_useragent
@@ -119,24 +116,32 @@ def before_request():
                         "info": ""})
     g.resolved_user = {"is_local_admin": False}
 
-    username = getParam(request.all_data, "username")
+    username = request.all_data.get("username")
+    credential_id = request.all_data.get("credential_id")
     if username:
         # We only fill request.User, if we really have a username.
         # On endpoints like /auth/rights, this is not available
         login_name, realm = split_user(username)
         # overwrite the split realm if we have a realm parameter. Default back to default_realm
-        realm = getParam(request.all_data, "realm") or realm or get_default_realm()
+        realm = getParam(request.all_data, "realm") or realm
         # Prefill the request.User. This is used by some pre-event handlers
-        if db_admin_exists(login_name):
+        if not realm and db_admin_exists(login_name):
+            # TODO: create an own local admin user object
             g.resolved_user["is_local_admin"] = True
             request.User = User(login_name)
         else:
+            realm = realm or get_default_realm()
             try:
                 request.User = User(login_name, realm)
             except Exception as e:
                 request.User = None
                 log.warning(f"Problem resolving user {login_name} in realm {realm}: {e!s}.")
                 log.debug(f"{traceback.format_exc()!s}")
+    elif credential_id:
+        # Get user for passkey and webauthn login
+        token = get_fido2_token_by_credential_id(credential_id)
+        if token:
+            request.User = token.user
 
 
 @jwtauth.route('', methods=['POST'])
@@ -147,7 +152,6 @@ def before_request():
 @prepolicy(webauthntoken_authz, request=request)
 @prepolicy(disabled_token_types, request=request)
 @prepolicy(fido2_auth, request=request)
-@prepolicy(jwt_validity, request)
 @postpolicy(get_webui_settings, request=request)
 @postpolicy(no_detail_on_success, request=request)
 @postpolicy(add_user_detail_to_response, request=request)
@@ -229,6 +233,11 @@ def get_auth_token():
        }
 
     """
+    # TODO: Get rid of username / realm params and use a user object
+    #  maybe a new user object that is not directly evaluated against the user store and where we can store some more
+    #  information like the role (local / external admin) would be helpful
+    user = request.User or User()
+    g.audit_object.log({"user": user.login, "realm": user.realm})
     username = get_optional(request.all_data, "username")
     password = get_optional(request.all_data, "password")
     realm_param = get_optional(request.all_data, "realm")
@@ -249,6 +258,9 @@ def get_auth_token():
         if not token.user:
             raise AuthError(_("Authentication failure. Token has no user."),
                             id=ERROR.AUTHENTICATE_MISSING_USERNAME)
+        if token.get_type() in request.all_data.get("disabled_token_types", []):
+            raise AuthError(_(f"Authentication failure. The token type {token.get_type()} is disabled."),
+                            id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS)
         # TODO For the WebUI login, always require user_verification so that it is a 2FA
         request.all_data.update({FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: "required"})
         passkey_login_success = verify_fido2_challenge(transaction_id, token, request.all_data) > 0
@@ -269,7 +281,6 @@ def get_auth_token():
         if username is None:
             raise AuthError(_("Authentication failure. Missing Username"), id=ERROR.AUTHENTICATE_MISSING_USERNAME)
 
-        user = request.User
         if not user or not user.realm:
             # The user could not be resolved, but it could still be a local administrator
             login_name, realm = split_user(username)
@@ -368,10 +379,10 @@ def get_auth_token():
                     # We need to reload the pre-policies as they were not matched with the users realm since we
                     # expected a local admin
                     request.User = user
+                    g.resolved_user["is_local_admin"] = False
                     auth_timelimit(request, None)
                     increase_failcounter_on_challenge(request, None)
                     disabled_token_types(request, None)
-                    jwt_validity(request, None)
 
             options = {"g": g, "clientip": g.client_ip}
             for key, value in request.all_data.items():
@@ -430,8 +441,7 @@ def get_auth_token():
     # What is the log level?
     log_level = current_app.config.get("PI_LOGLEVEL", 30)
 
-    jwt_validity_param = get_optional(request.all_data, "jwt_validity")
-    validity = timedelta(seconds=int(jwt_validity_param))
+    validity = get_jwt_validity(request.User)
     token = jwt.encode({"username": login_name,
                         "realm": realm,
                         "nonce": nonce,
