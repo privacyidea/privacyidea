@@ -67,6 +67,10 @@ class APIU2fTestCase(MyApiTestCase):
 
     serial = "U2F001"
 
+    def setUp(self):
+        with self.app_context:
+            self.app.config['PI_ENABLE_TOKEN_TYPE_ENROLLMENT'] = ['u2f']
+
     def test_000_setup_realms(self):
         self.setUp_user_realms()
         # U2F is not configured yet

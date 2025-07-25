@@ -7,6 +7,9 @@
   the token PIN or a generated password which is shown to the user during rollout, but only once!
 * The directory containing the database schema update scripts moved into the `privacyidea` package.
   The parameter `-d` is not required anymore to run database migration commands.
+* The `u2f` token has been added to the list of non-enrollable token types because it is no longer supported by most 
+  browsers. Existing tokens can still be used. The enrollment can be enabled by adding the type `u2f` to the 
+  configuration option list `PI_ENABLE_TOKEN_TYPE_ENROLLMENT`.
 
 ## Update from 3.10 to 3.11
 * To improve consistency of conditions for policies and eventhandlers, tokens that are not in any realm will not be

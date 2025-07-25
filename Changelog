@@ -5,6 +5,7 @@ Version 3.12dev1, 2025-07-16
   * Add section 'request_data' to extended policy conditions (#4190)
   * Add policy condition comparators to compare dates and check for substrings (#4380)
   * Add policy 'require_description_on_edit' in the new scope 'Token' (#4117)
+  * Remove 'u2f' from the enrollable token types (#4107)
 
   Fixes:
   * 'max_auth_fail' and 'max_auth_success' are also applied to local admins and evaluated before checking the password (#4340)

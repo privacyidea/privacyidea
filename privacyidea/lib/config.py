@@ -519,6 +519,26 @@ def get_token_types():
     return list(this.config["pi_token_types"].values())
 
 
+def get_enrollable_token_types() -> list[str]:
+    """
+    Returns a list of token types which can be enrolled.
+
+    This function removes deprecated token types from the complete token type list. In the pi.cfg file, deprecated
+    types can be re-enabled. These types will not be removed from the list.
+
+    :return: list of enrollable token types
+    """
+    token_types = get_token_types()
+    disabled_token_types = ['u2f']
+    enable_token_types = get_app_config_value("PI_ENABLE_TOKEN_TYPE_ENROLLMENT", [])
+    disabled_token_types = set(disabled_token_types) - set(enable_token_types)
+
+    # Remove the disabled token types
+    enrollable_token_types = list(set(token_types) - disabled_token_types)
+
+    return enrollable_token_types
+
+
 # @cache.cached(key_prefix="prefix")
 def get_token_prefix(tokentype=None, default=None):
     """

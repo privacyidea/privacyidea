@@ -24,7 +24,7 @@ from privacyidea.lib.config import (get_resolver_list,
                                     this, get_config_object, invalidate_config_object,
                                     get_multichallenge_enrollable_types,
                                     get_email_validators,
-                                    check_node_uuid_exists)
+                                    check_node_uuid_exists, get_enrollable_token_types)
 from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PWResolver
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
@@ -296,3 +296,20 @@ class ConfigTestCase(MyTestCase):
         validate_email = get_email_validators().get("privacyidea.lib.utils.emailvalidation")
         self.assertTrue(validate_email("valid@email.com"))
         self.assertFalse(validate_email("invalid@email.k"))
+
+
+    def test_12_enrollable_token_types(self):
+        enrollable_types = get_enrollable_token_types()
+        self.assertNotIn("u2f", enrollable_types, enrollable_types)
+        self.assertIn("hotp", enrollable_types, enrollable_types)
+        self.assertIn("totp", enrollable_types, enrollable_types)
+        self.assertIn("push", enrollable_types, enrollable_types)
+
+        # re-activate u2f
+        with self.app_context:
+            self.app.config['PI_ENABLE_TOKEN_TYPE_ENROLLMENT'] = ['u2f']
+        enrollable_types = get_enrollable_token_types()
+        self.assertIn("u2f", enrollable_types, enrollable_types)
+        self.assertIn("hotp", enrollable_types, enrollable_types)
+        self.assertIn("totp", enrollable_types, enrollable_types)
+        self.assertIn("push", enrollable_types, enrollable_types)
