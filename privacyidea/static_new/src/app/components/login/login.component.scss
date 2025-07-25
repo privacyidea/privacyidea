@@ -11,7 +11,7 @@ $border-radius: var(--border-radius);
   justify-content: center;
   overflow: auto;
   height: 100vh;
-  background: var(--mat-sys-background);
+  background: var(--mat-sys-surface-container-lowest);
 
   .login-scroll {
     display: flex;
