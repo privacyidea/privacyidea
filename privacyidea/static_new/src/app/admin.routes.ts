@@ -13,10 +13,10 @@ import { UserComponent } from './components/user/user.component';
 
 export const routes: Routes = [
   {
-    path: '',
+    path: 'tokens',
     component: TokenComponent,
     children: [
-      { path: '', pathMatch: 'full', component: TokenTableComponent },
+      { path: '', component: TokenTableComponent },
       { path: 'enroll', component: TokenEnrollmentComponent },
       { path: 'challenges', component: ChallengesTableComponent },
       { path: 'applications', component: TokenApplicationsComponent },

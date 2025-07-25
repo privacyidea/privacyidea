@@ -71,7 +71,22 @@ describe('AuditComponent (unit)', () => {
       'total=$count → pageSizeOptions=$expectedOptions',
       ({ count, expectedOptions }) => {
         mockAuditService.auditResource.value.set({
-          result: { value: { count, auditdata: [] } },
+          detail: undefined,
+          id: 0,
+          jsonrpc: '',
+          signature: '',
+          time: 0,
+          version: '',
+          versionnumber: '',
+          result: {
+            value: {
+              count,
+              auditdata: [],
+              auditcolumns: [],
+              current: 0,
+            },
+            status: true,
+          },
         });
         expect(component.totalLength()).toBe(count);
         expect(component.pageSizeOptions()).toEqual(expectedOptions);
@@ -89,7 +104,22 @@ describe('AuditComponent (unit)', () => {
   it('auditDataSource updates when auditResource changes', () => {
     const rows = [{ user: 'alice' } as any];
     mockAuditService.auditResource.value.set({
-      result: { value: { count: 1, auditdata: rows as any } },
+      detail: undefined,
+      id: 0,
+      jsonrpc: '',
+      signature: '',
+      time: 0,
+      version: '',
+      versionnumber: '',
+      result: {
+        value: {
+          count: 1,
+          auditdata: rows as any,
+          auditcolumns: [],
+          current: 0,
+        },
+        status: true,
+      },
     });
     expect(component.auditDataSource() instanceof MatTableDataSource).toBe(
       true,

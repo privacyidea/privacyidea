@@ -12,7 +12,7 @@ import { AssignTokenSelfServiceComponent } from './components/token/assign-token
 
 export const routes: Routes = [
   {
-    path: '',
+    path: 'tokens',
     component: TokenSelfServiceComponent,
     children: [
       {

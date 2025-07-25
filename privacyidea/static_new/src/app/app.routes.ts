@@ -14,28 +14,16 @@ export const routes: Routes = [
     canActivateChild: [AuthGuard],
     children: [
       {
-        path: 'tokens',
+        path: '',
         canMatch: [adminMatch],
         loadChildren: () => import('./admin.routes').then((m) => m.routes),
       },
       {
-        path: 'tokens',
+        path: '',
         canMatch: [selfServiceMatch],
         loadChildren: () =>
           import('./self-service.routes').then((m) => m.routes),
       },
-      {
-        path: 'users',
-        canMatch: [adminMatch],
-        loadChildren: () => import('./admin.routes').then((m) => m.routes),
-      },
-      {
-        path: 'users',
-        canMatch: [selfServiceMatch],
-        loadChildren: () =>
-          import('./self-service.routes').then((m) => m.routes),
-      },
-
       { path: 'audit', component: AuditComponent },
       { path: '', redirectTo: 'tokens', pathMatch: 'full' },
     ],
