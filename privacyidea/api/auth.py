@@ -102,7 +102,7 @@ def before_request():
                                 get_from_config(SYSCONF.OVERRIDECLIENT))
     # Save the HTTP header in the localproxy object
     g.request_headers = request.headers
-    g.serial = getParam(request.all_data, "serial", default=None)
+    g.serial = get_optional(request.all_data, "serial")
     ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
     g.user_agent = ua_name
     g.audit_object.log({"success": False,
@@ -124,7 +124,7 @@ def before_request():
         # On endpoints like /auth/rights, this is not available
         login_name, realm = split_user(username)
         # overwrite the split realm if we have a realm parameter. Default back to default_realm
-        realm = getParam(request.all_data, "realm") or realm
+        realm = get_optional(request.all_data, "realm") or realm
         # Prefill the request.User. This is used by some pre-event handlers
         if not realm and db_admin_exists(login_name):
             # TODO: create an own local admin user object
