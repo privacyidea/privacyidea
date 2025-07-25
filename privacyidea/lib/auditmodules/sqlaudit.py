@@ -45,7 +45,6 @@ from privacyidea.lib.pooling import get_engine
 from privacyidea.lib.utils import censor_connect_string
 from privacyidea.lib.lifecycle import register_finalizer
 from privacyidea.lib.utils import truncate_comma_list, is_true
-from sqlalchemy import MetaData
 from sqlalchemy import asc, desc, and_, or_
 from sqlalchemy.sql.expression import FunctionElement
 from sqlalchemy.ext.compiler import compiles
@@ -57,8 +56,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 
 log = logging.getLogger(__name__)
-
-metadata = MetaData()
 
 
 # Define function to convert SQL DateTime objects to an ISO-format string
@@ -192,17 +189,18 @@ class Audit(AuditBase):
     def _truncate_data(self):
         """
         Truncate self.audit_data according to the self.custom_column_length.
+
         :return: None
         """
-        for column, l in self.custom_column_length.items():
+        for column, length in self.custom_column_length.items():
             if column in self.audit_data:
                 data = self.audit_data[column]
                 if isinstance(data, str):
                     if column == "policies":
                         # The policies column is shortened per comma entry
-                        data = truncate_comma_list(data, l)
+                        data = truncate_comma_list(data, length)
                     else:
-                        data = data[:l]
+                        data = data[:length]
                 self.audit_data[column] = data
 
     @staticmethod

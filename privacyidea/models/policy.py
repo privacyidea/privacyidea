@@ -45,7 +45,7 @@ class Policy(TimestampMethodsMixin, db.Model):
     name = db.Column(db.Unicode(64), unique=True, nullable=False)
     user_case_insensitive = db.Column(db.Boolean, default=False)
     scope = db.Column(db.Unicode(32), nullable=False)
-    action = db.Column(db.Unicode(2000), default="")
+    action = db.Column(db.Text, default="")
     realm = db.Column(db.Unicode(256), default="")
     adminrealm = db.Column(db.Unicode(256), default="")
     adminuser = db.Column(db.Unicode(256), default="")
