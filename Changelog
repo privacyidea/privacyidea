@@ -9,6 +9,7 @@ Version 3.12dev1, 2025-07-16
   Fixes:
   * 'max_auth_fail' and 'max_auth_success' are also applied to local admins and evaluated before checking the password (#4340)
   * Allow to unassign non-existing users from containers (#4208)
+  * Extended policy conditions on user info also works for web UI policies (#4016)
 
 Version 3.12dev0, 2025-07-09
 
