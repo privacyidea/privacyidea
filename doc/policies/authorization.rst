@@ -217,6 +217,12 @@ evaluated before checking the password or OTP value.
    non-readable audit log like :ref:`logger_audit` this policy will not
    work.
 
+In case a local admin and a user in the default realm exist with the same username, we can not distinguish them before
+the authentication if no realm is passed. The policy is first checked for local admins; hence, if the admin reaches the
+time limit of successful authentications, the user will not be able to authenticate anymore. This can be avoided by
+explicitly passing the user's realm. Anyway, local admins are not affected by the number of successful user
+authentications.
+
 .. _policy_auth_max_fail:
 
 auth_max_fail
@@ -240,6 +246,10 @@ evaluated before checking the password or OTP value.
 
 .. note:: This policy depends on reading the audit log. If you use a non-readable audit log like :ref:`logger_audit`
     this policy will not work.
+
+In case a local admin and a user in the default realm exist with the same username, we can not distinguish their failed
+authentications. Hence, if the admin reaches the time limit of failed authentications, the user will not be able to
+authenticate anymore, and vice versa.
 
 last_auth
 ~~~~~~~~~
