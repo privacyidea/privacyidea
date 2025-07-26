@@ -1,0 +1,23 @@
+<div class="theme-picker">
+  <button
+    class="theme-toggle-button"
+    [matMenuTriggerFor]="themeMenu"
+    mat-icon-button
+    [disableRipple]="true">
+    <mat-icon>{{ currentThemeIcon() }}</mat-icon>
+  </button>
+  <mat-menu #themeMenu="matMenu">
+    <button mat-menu-item (click)="setTheme('light')">
+      <mat-icon>light_mode</mat-icon>
+      <span>Light Mode</span>
+    </button>
+    <button mat-menu-item (click)="setTheme('dark')">
+      <mat-icon>dark_mode</mat-icon>
+      <span>Dark Mode</span>
+    </button>
+    <button mat-menu-item (click)="setTheme('system')">
+      <mat-icon>computer</mat-icon>
+      <span>System</span>
+    </button>
+  </mat-menu>
+</div>

@@ -1,0 +1,37 @@
+$focus-outline: 3px solid var(--mat-sys-primary-light);
+
+.input {
+  height: 40px;
+  width: 107px;
+  border-radius: 3px;
+  outline: none;
+
+  &:focus {
+    outline: $focus-outline;
+  }
+}
+
+.input-height {
+  height: 76.5px;
+}
+
+.hint-spacer {
+  margin-bottom: 1rem;
+}
+
+.user-pin-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.user-pin-input {
+  display: flex;
+  gap: 8px;
+}
+
+.user-pin-button {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

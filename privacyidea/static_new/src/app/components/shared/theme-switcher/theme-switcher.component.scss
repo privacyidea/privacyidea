@@ -1,0 +1,55 @@
+@use "@angular/material" as mat;
+
+.theme-picker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.theme-toggle-button {
+  min-width: unset;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
+  background-color: transparent;
+  color: var(--mat-sys-on-surface);
+  border: none;
+  transition:
+    background-color 0.2s ease-in-out,
+    color 0.2s ease-in-out;
+
+  .mat-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.theme-toggle-button:hover {
+  background-color: var(--mat-sys-surface-container);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.theme-toggle-button.cdk-keyboard-focused {
+  outline: none;
+  background-color: var(--mat-sys-surface-container-highest);
+  color: var(--mat-sys-on-surface); // Keep the icon color subtle on focus
+}
+
+.mat-mdc-menu-panel {
+  background-color: var(--mat-sys-surface-container);
+  .mat-mdc-menu-item {
+    padding: 8px 16px;
+    color: var(--mat-sys-on-surface);
+
+    &:hover {
+      background-color: var(--mat-sys-surface-container-low);
+    }
+  }
+}
