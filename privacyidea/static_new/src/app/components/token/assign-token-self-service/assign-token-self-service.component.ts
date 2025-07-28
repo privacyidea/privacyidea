@@ -43,7 +43,7 @@ export class AssignTokenSelfServiceComponent {
       })
       .subscribe({
         next: () => {
-          this.router.navigateByUrl('/tokens/' + this.selectedToken());
+          this.router.navigateByUrl('/tokens/details/' + this.selectedToken());
           this.tokenSerial.set(this.selectedToken());
         },
       });

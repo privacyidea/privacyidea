@@ -1,4 +1,5 @@
 import {
+  computed,
   inject,
   Injectable,
   Signal,
@@ -6,12 +7,13 @@ import {
   WritableSignal,
 } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
-import { filter, map } from 'rxjs';
+import { filter, map, pairwise, startWith } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 
 export interface ContentServiceInterface {
   router: Router;
   routeUrl: () => string;
+  previousUrl: Signal<string>;
   isProgrammaticTabChange: WritableSignal<boolean>;
   tokenSerial: WritableSignal<string>;
   containerSerial: WritableSignal<string>;
@@ -21,13 +23,17 @@ export interface ContentServiceInterface {
 
 @Injectable({ providedIn: 'root' })
 export class ContentService {
+  readonly routeUrl = computed(() => this._urlPair()[1]);
+  readonly previousUrl = computed(() => this._urlPair()[0]);
   router = inject(Router);
-  routeUrl: Signal<string> = toSignal(
+  private readonly _urlPair = toSignal(
     this.router.events.pipe(
       filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-      map(() => this.router.url),
+      map((e) => e.urlAfterRedirects),
+      startWith(this.router.url),
+      pairwise(),
     ),
-    { initialValue: this.router.url },
+    { initialValue: [this.router.url, this.router.url] as const },
   );
   isProgrammaticTabChange = signal(false);
   tokenSerial = signal('');

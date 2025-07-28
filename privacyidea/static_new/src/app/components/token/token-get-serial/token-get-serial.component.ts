@@ -210,7 +210,7 @@ export class TokenGetSerialComponent {
               otpValue: this.otpValue(),
               onClickSerial: () => {
                 this.tokenSerial.set(serial);
-                this.router.navigateByUrl('/tokens/' + serial);
+                this.router.navigateByUrl('/tokens/details/' + serial);
                 this.dialog.closeAll();
               },
               reset: () => {

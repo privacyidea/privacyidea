@@ -8,8 +8,8 @@
   ) {
     <p>
       Are you sure you want to {{ data.action }}
-      @if (data.serial_list.length > 1 && data.type === "token") {
-        all ({{ data.serial_list.length }}) {{ data.type }}s?
+      @if ((data.serial_list?.length ?? 0) > 1 && data.type === "token") {
+        all ({{ data.serial_list?.length }}) {{ data.type }}s?
       } @else {
         this {{ data.type }}?
       }
@@ -21,7 +21,7 @@
     </ul>
   } @else if (data.action === "search") {
     <p>
-      This search request will check {{ data.serial_list.length }} tokens in the
+      This search request will check {{ data.numberOfTokens }} tokens in the
       system for the given OTP value. <br />This could take a lot of time and
       could even time out.<br />
     </p>

@@ -27,8 +27,9 @@ export class ConfirmationDialogComponent {
 }
 
 export type ConfirmationDialogData = {
+  numberOfTokens?: string;
   type: 'token' | string;
-  serial_list: string[];
+  serial_list?: string[];
   title: string;
   action: 'remove' | 'delete' | 'revoke' | 'search';
 };

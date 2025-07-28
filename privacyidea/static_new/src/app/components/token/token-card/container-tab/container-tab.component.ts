@@ -96,7 +96,16 @@ export class ContainerTabComponent {
         if (result) {
           this.containerService
             .deleteContainer(this.containerSerial())
-            .subscribe(() => this.router.navigateByUrl('/tokens/containers'));
+            .subscribe(() => {
+              const prev = this.contentService.previousUrl();
+
+              if (prev.startsWith('/tokens/details')) {
+                this.contentService.isProgrammaticTabChange.set(true);
+                this.router.navigateByUrl(prev);
+              } else {
+                this.router.navigateByUrl('/tokens/containers');
+              }
+            });
         }
       });
   }
