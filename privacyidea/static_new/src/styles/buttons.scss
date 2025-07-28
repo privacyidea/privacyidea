@@ -8,9 +8,7 @@ $button-gap-small: 10px;
 $padding-horizontal: 16px;
 $detail-icon-font-size: 18px;
 $margin-bottom-small: -6px;
-$keyword-bg: var(--mat-sys-surface-container-high);
 $keyword-font-size: 18px;
-$keyword-color: var(--mat-sys-on-surface-variant);
 $button-border-radius: var(--border-radius);
 $profile-bg: var(--background-yellow);
 $profile-hover-bg: var(--background-yellow-inset);
@@ -73,7 +71,7 @@ $button-low-contrast-variant: linear-gradient(
 
 .passkey-btn {
   text-decoration: none;
-  color: $keyword-color;
+  color: var(--mat-sys-on-surface-variant);
   padding: 10px;
   border-radius: $button-border-radius;
   background: linear-gradient(
@@ -242,7 +240,7 @@ $button-low-contrast-variant: linear-gradient(
 
 .keyword-button,
 .more-keyword-button {
-  background-color: $keyword-bg;
+  background-color: var(--mat-sys-surface-container-low);
   border-radius: $button-border-radius;
   height: $keyword-height;
   margin: 3px;
@@ -272,7 +270,7 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .add-keyword {
-  color: $keyword-color;
+  color: var(--grey-light-active);
 }
 
 .remove-keyword {
@@ -292,12 +290,12 @@ $button-low-contrast-variant: linear-gradient(
   height: var(--header-height);
   cursor: pointer;
   border-radius: 0;
-  background: var(--mat-sys-surface-container-high);
+  background: var(--mat-sys-surface-container-lowest);
   color: var(--mat-sys-on-surface);
   box-shadow: none !important;
 
   &:hover {
-    background: var(--mat-sys-surface-container-higher);
+    background: var(--mat-sys-surface-container-low);
     mat-icon {
       color: var(--mat-sys-on-surface-variant);
     }
@@ -346,11 +344,11 @@ $button-low-contrast-variant: linear-gradient(
   display: flex;
   justify-content: center;
   align-items: center;
-  background: var(--mat-sys-surface-container-high);
+  background: var(--mat-sys-surface-container-lowest);
   height: 48px;
   width: 48px;
   color: var(--mat-sys-on-surface);
-  border-radius: calc(var(--border-radius) * 2);
+  border-radius: calc(var(--border-radius) * 4);
   @include mat.elevation(5);
 }
 
@@ -392,4 +390,34 @@ $button-low-contrast-variant: linear-gradient(
   -webkit-mask-size: 100% 100%;
   mask-size: 100% 100%;
 }
-//
+
+.theme-mode-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--mat-sys-surface-container-lowest);
+  margin: var(--the-mode-button-margin-px);
+  height: calc(var(--header-height) / 3);
+  width: calc(var(--header-height) / 3);
+  color: var(--mat-sys-on-surface);
+  border-radius: calc(var(--border-radius) / 4);
+  @include mat.elevation(5);
+
+  &:hover {
+    @include mat.elevation(8);
+    background: var(--mat-sys-surface-container-low);
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  &:active {
+    transform: scale(0.98);
+    background: var(--mat-sys-surface-container-lowest);
+    color: var(--mat-sys-on-surface);
+  }
+}
+.theme-mode-button-icon {
+  font-size: calc(var(--header-height) / 3 - 2px);
+  color: var(--mat-sys-on-surface);
+  width: calc(var(--header-height) / 3 - 2px);
+  height: calc(var(--header-height) / 3 - 2px);
+}

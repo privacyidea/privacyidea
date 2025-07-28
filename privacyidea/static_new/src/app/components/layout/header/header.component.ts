@@ -5,6 +5,7 @@ import {
   MatFabButton,
   MatIconButton,
 } from '@angular/material/button';
+
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenu, MatMenuTrigger } from '@angular/material/menu';
 import { Router, RouterLink } from '@angular/router';
@@ -24,6 +25,7 @@ import {
   SessionTimerService,
   SessionTimerServiceInterface,
 } from '../../../services/session-timer/session-timer.service';
+import { ThemeSwitcherComponent } from '../../shared/theme-switcher/theme-switcher.component';
 import { UserSelfServiceComponent } from '../../user/user.self-service.component';
 
 @Component({
@@ -41,6 +43,7 @@ import { UserSelfServiceComponent } from '../../user/user.self-service.component
     MatMenuTrigger,
     MatMenu,
     UserSelfServiceComponent,
+    ThemeSwitcherComponent,
   ],
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss',

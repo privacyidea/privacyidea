@@ -1,4 +1,4 @@
-import { Component, HostListener, inject } from '@angular/core';
+import { Component, HostListener, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterOutlet } from '@angular/router';
 import {
@@ -13,6 +13,7 @@ import {
   SessionTimerService,
   SessionTimerServiceInterface,
 } from './services/session-timer/session-timer.service';
+import { ThemeService } from './services/theme/theme.service';
 
 export interface PiResponse<Value, Detail = unknown> {
   id: number;
@@ -40,7 +41,7 @@ export interface PiResponse<Value, Detail = unknown> {
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   title = 'privacyidea-webui';
   lastSessionReset = 0;
 
@@ -49,6 +50,7 @@ export class AppComponent {
     inject(NotificationService);
   private readonly sessionTimerService: SessionTimerServiceInterface =
     inject(SessionTimerService);
+  private readonly themeService: ThemeService = inject(ThemeService);
 
   constructor() {
     this.sessionTimerService.startTimer();
@@ -58,6 +60,8 @@ export class AppComponent {
       this.notificationService.openSnackBar('User is already logged in.');
     }
   }
+
+  ngOnInit(): void {}
 
   @HostListener('document:click')
   @HostListener('document:keydown')

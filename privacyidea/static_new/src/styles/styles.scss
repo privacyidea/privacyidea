@@ -156,7 +156,7 @@ body {
   --box-dialog-shadow: 0px 4px 20px var(--mat-sys-shadow-color-high);
   --table-color: var(--mat-sys-surface-container-lowest);
 
-  --mdc-filled-text-field-container-color: var(--mat-sys-light);
+  --mdc-filled-text-field-container-color: var(surface-container-low);
   --mdc-tab-indicator-active-indicator-color: var(--mat-sys-primary);
   --mdc-filled-text-field-focus-active-indicator-color: var(
     ---mat-sys-primary-light
@@ -385,4 +385,3 @@ body {
 .content-layout {
   max-width: 81vw;
 }
-//

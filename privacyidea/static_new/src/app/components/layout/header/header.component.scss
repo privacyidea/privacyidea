@@ -16,7 +16,7 @@ $border-radius: var(--border-radius);
 .header-container {
   @include flex-center;
   @include mat.elevation(3);
-  background: var(--mat-sys-surface-container-high);
+  background: var(--mat-sys-surface-container-lowest);
   border-bottom-left-radius: 5px;
   border-bottom-right-radius: 5px;
   z-index: 2;
@@ -56,14 +56,14 @@ $border-radius: var(--border-radius);
       height: 60px;
       min-width: 120px;
       padding: 20px;
-      background: var(--mat-sys-surface-container-high);
+      background: var(--mat-sys-surface-container-lowest);
       box-shadow: none;
       transition: 0ms;
 
       &:hover {
         box-shadow: var(--box-shadow-header);
         z-index: 1;
-        background: var(--mat-sys-primary-dark);
+        background: var(--mat-sys-primary-base);
         color: var(--mat-sys-on-primary);
         transform: translateX(-2px);
         transition:
@@ -73,7 +73,7 @@ $border-radius: var(--border-radius);
 
       &.active {
         z-index: 1;
-        background: var(--mat-sys-primary-light-active);
+        background: var(--mat-sys-primary-base-active);
         color: var(--mat-sys-on-primary);
         transform: translateX(-2px);
         transition:
@@ -83,7 +83,7 @@ $border-radius: var(--border-radius);
         &:hover {
           box-shadow: var(--box-shadow-header);
           z-index: 1;
-          background: var(--mat-sys-primary-dark);
+          background: var(--mat-sys-primary-base);
           color: var(--mat-sys-on-primary);
           transform: translateX(-2px);
           transition:
@@ -133,4 +133,3 @@ $border-radius: var(--border-radius);
     padding: 0 !important;
   }
 }
-//

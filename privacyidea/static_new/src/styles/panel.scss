@@ -7,11 +7,11 @@
 
 ::ng-deep {
   .mat-expansion-panel:not(.mat-expanded) .mat-expansion-panel-header:hover {
-    background: #f3f3f3 !important;
+    background: var(--mat-sys-surface-container-high) !important;
   }
 
   .mat-expansion-panel {
-    background: white !important;
+    background: var(--mat-sys-surface-container-low) !important;
   }
 
   .mat-accordion .mat-expansion-panel {
@@ -25,11 +25,11 @@
   .type-option.mdc-list-item--selected:not(.mdc-list-item--disabled):not(
       .mat-mdc-option-multiple
     ) {
-    background-color: #217fa8 !important;
+    background-color: var(--mat-sys-primary-light) !important;
   }
 
   .type-option.mat-mdc-option.mdc-list-item {
-    background: #efedf0;
+    background: var(--mat-sys-surface-container-low) !important;
   }
 
   .type-option.mat-mdc-option.mdc-list-item--selected:not(
@@ -46,4 +46,3 @@
     background-color: #f2f9fd;
   }
 }
-//

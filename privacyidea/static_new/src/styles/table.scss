@@ -109,7 +109,7 @@ a {
 
 td:nth-child(even),
 th:nth-child(even) {
-  background: var(--mat-sys-surface-container-high);
+  background: var(--mat-sys-surface-container-low);
 }
 
 .mat-mdc-form-field {
@@ -362,4 +362,3 @@ th:nth-child(even) {
   overflow-y: auto;
   max-width: 70.5rem;
 }
-//
