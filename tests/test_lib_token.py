@@ -1850,6 +1850,27 @@ class TokenTestCase(MyTestCase):
         hotptoken.delete_token()
         totptoken.delete_token()
 
+        # Import format not supported
+        self.assertRaises(TokenAdminError, import_tokens, "This is not a valid JSON string")
+
+    def test_63_token_export_with_user(self):
+        # Set up a user and a token
+        user = User("cornelius", self.realm1)
+        hotptoken = init_token(param={'serial': "OATH12345678",
+                                      'type': 'hotp',
+                                      'otpkey': self.otpkey,
+                                      "otplen": '8',
+                                      "description": "Hotp Token"})
+        totptoken = init_token(param={'serial': "TOTP12345678",
+                                      'type': 'totp',
+                                      'otpkey': self.otpkey,
+                                      "otplen": '8',
+                                      "description": "Totp Token"})
+
+        hotptoken.assign_to_user(user)
+        totptoken.assign_to_user(user)
+
+
 class TokenOutOfBandTestCase(MyTestCase):
 
     def test_00_create_realms(self):

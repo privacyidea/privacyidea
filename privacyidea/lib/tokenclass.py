@@ -1998,7 +1998,7 @@ class TokenClass(object):
         """
         return None
 
-    def export_token(self) -> dict:
+    def export_token(self, export_user: bool = False) -> dict:
         """
         Create a dictionary with the token information that can be exported.
         """
@@ -2012,6 +2012,8 @@ class TokenClass(object):
             "hashed_pin": self.token.pin_hash,
             "tokeninfo": self.get_tokeninfo(decrypted=True)
         }
+        if export_user and self.token.user:
+            token_dict["user"] = self.token.user.export_user()
 
         return token_dict
 
@@ -2026,3 +2028,23 @@ class TokenClass(object):
         self.add_tokeninfo_dict(token_information.setdefault("tokeninfo", {}))
         self.add_tokeninfo("import_date", datetime.now(timezone.utc).isoformat(timespec="seconds"))
         self.save()
+
+    def assign_user_during_token_import(self, user: dict):
+        """
+        Assign a user to the token during import.
+        This is called from the import_token method.
+        """
+        try:
+            owner = User(login=user.get("login"),
+                         resolver=user.get("resolver"),
+                         realm=user.get("realm"),
+                         uid=user.get("uid"))
+            self.add_user(owner)
+        except Exception as ex:
+            log.error(f"Could not assign token {self.token.serial} to user: {ex}")
+
+        for attributes in user.get("attributes", []):
+            try:
+                User.set_attribute(attributes.get("key"), attributes.get("value"))
+            except Exception as ex:
+                log.error(f'Could not set attribute {attributes.get("key")} for user {user.get("login")}: {ex}')
