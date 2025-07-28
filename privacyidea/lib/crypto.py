@@ -268,7 +268,7 @@ def init_hsm():
         config = get_app_config()
         HSM_config = {"obj": create_hsm_object(config)}
         app_store["pi_hsm"] = HSM_config
-        log.info("Initialized HSM object {0}".format(HSM_config))
+        log.debug(f"Initialized HSM object {HSM_config}")
     return app_store["pi_hsm"]["obj"]
 
 
@@ -836,7 +836,7 @@ def create_hsm_object(config):
                                  "privacyidea.lib.security.default.DefaultSecurityModule")
     package_name, class_name = hsm_module_name.rsplit(".", 1)
     hsm_class = get_module_class(package_name, class_name, "setup_module")
-    log.info("initializing HSM class: {0!s}".format(hsm_class))
+    log.debug(f"initializing HSM class: {hsm_class}")
     if class_name == "DefaultSecurityModule":
         hsm_parameters = {"file": config.get("PI_ENCFILE")}
     else:
@@ -850,7 +850,7 @@ def create_hsm_object(config):
         logging_params = dict(hsm_parameters)
         if "password" in logging_params:
             logging_params["password"] = "XXXX"  # nosec B105 # Hide password
-        log.info("calling HSM module with parameters {0}".format(logging_params))
+        log.debug(f"calling HSM module with parameters {logging_params}")
 
     return hsm_class(hsm_parameters)
 
