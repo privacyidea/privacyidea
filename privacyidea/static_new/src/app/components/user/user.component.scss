@@ -3,43 +3,84 @@
 
 .user-layout {
   display: flex;
-  justify-content: center;
 }
 
-.user-table-container {
-  @include styles.table-container-styles;
-  @include styles.base-table-structure(
-    ".token-table",
-    ".token-table-filter",
-    ".table-scroll-container"
-  );
-  overflow: auto;
-  max-height: calc(var(--main-height) - var(--global-padding) * 4);
-}
-
-.user-self-service-card {
+.token-drawer {
+  border: solid 2px var(--mat-sys-outline-variant);
+  height: fit-content;
+  @include mat.elevation(5);
   border-radius: var(--border-radius);
-  padding: var(--global-padding);
-  background: #efedf0;
+  position: fixed;
+  margin-top: 94px;
 }
 
-.user-details-grid {
+.token-drawer-overflow {
+  border: solid 2px var(--mat-sys-outline-variant);
+  height: auto;
+  @include mat.elevation(5);
+  border-radius: var(--border-radius);
+  position: fixed;
+  margin-top: 94px;
+  overflow: auto;
+  padding-bottom: 64px;
+}
+
+$margin-bottom-main: 136px;
+
+.main-margin-overflow {
+  margin: 0 32px $margin-bottom-main 0;
+}
+
+.mat-drawer {
+  width: fit-content;
+}
+
+.mat-drawer-container {
+  width: 100%;
+}
+
+.mat-drawer-content {
+  background: var(--mat-sys-background);
+}
+
+.drawer-button-div {
   display: flex;
-  gap: 32px;
-  margin-top: 32px;
+  margin-top: 284px;
+  margin-left: var(--global-padding);
+  height: 100%;
+  position: fixed;
 }
 
-.user-details-column {
+.drawer-content-div {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+}
+
+.margin-right-1 {
+  margin-right: 16px;
+}
+
+::ng-deep {
+  .mat-drawer-backdrop {
+    opacity: 0.5;
+  }
+}
+
+.token-selfservice-layout {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.main-content-container {
   display: grid;
-  grid-template-columns: auto 1fr;
-  row-gap: 16px;
-  column-gap: 16px;
+  justify-items: center;
+  align-content: start;
+  height: calc(var(--main-height) - var(--global-padding) * 2);
+  padding: var(--global-padding);
 }
 
-.user-details-column .label {
-  font-weight: 600;
-}
-
-.user-details-column .value {
-  word-break: break-word;
+.tile-header {
+  padding: 0;
 }

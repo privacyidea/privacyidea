@@ -1,0 +1,45 @@
+@use "../../../../styles";
+@use "@angular/material" as mat;
+
+.user-layout {
+  display: flex;
+  justify-content: center;
+}
+
+.user-table-container {
+  @include styles.table-container-styles;
+  @include styles.base-table-structure(
+      ".token-table",
+      ".token-table-filter",
+      ".table-scroll-container"
+  );
+  overflow: auto;
+  max-height: calc(var(--main-height) - var(--global-padding) * 4);
+}
+
+.user-self-service-card {
+  border-radius: var(--border-radius);
+  padding: var(--global-padding);
+  background: #efedf0;
+}
+
+.user-details-grid {
+  display: flex;
+  gap: 32px;
+  margin-top: 32px;
+}
+
+.user-details-column {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  row-gap: 16px;
+  column-gap: 16px;
+}
+
+.user-details-column .label {
+  font-weight: 600;
+}
+
+.user-details-column .value {
+  word-break: break-word;
+}

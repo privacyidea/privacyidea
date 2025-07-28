@@ -10,6 +10,8 @@ import { ContainerTableComponent } from './components/token/container-table/cont
 import { ContainerCreateComponent } from './components/token/container-create/container-create.component';
 import { ContainerDetailsComponent } from './components/token/container-details/container-details.component';
 import { UserComponent } from './components/user/user.component';
+import { UserTableComponent } from './components/user/user-table/user-table.component';
+import { UserDetailsComponent } from './components/user/user-details/user-details.component';
 
 export const routes: Routes = [
   {
@@ -35,5 +37,9 @@ export const routes: Routes = [
   {
     path: 'users',
     component: UserComponent,
+    children: [
+      { path: '', component: UserTableComponent },
+      { path: 'details/:username', component: UserDetailsComponent },
+    ],
   },
 ];

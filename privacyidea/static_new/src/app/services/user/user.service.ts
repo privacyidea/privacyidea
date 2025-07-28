@@ -77,13 +77,6 @@ export class UserService implements UserServiceInterface {
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
   private baseUrl = environment.proxyUrl + '/user/';
-
-  constructor() {
-    effect(() => {
-      console.log(this.usersResource.value());
-    });
-  }
-
   filterValue = signal({} as Record<string, string>);
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
@@ -128,12 +121,10 @@ export class UserService implements UserServiceInterface {
       return source.defaultRealm;
     },
   });
-
   userFilter = linkedSignal<string, UserData | string>({
     source: this.selectedUserRealm,
     computation: () => '',
   });
-
   userNameFilter = computed<string>(() => {
     const filter = this.userFilter();
     if (typeof filter === 'string') {
@@ -141,7 +132,6 @@ export class UserService implements UserServiceInterface {
     }
     return filter?.username ?? '';
   });
-
   userResource = httpResource<PiResponse<UserData[]>>(() => {
     if (this.authService.role() !== 'user') {
       return undefined;
@@ -152,7 +142,6 @@ export class UserService implements UserServiceInterface {
       headers: this.localService.getHeaders(),
     };
   });
-
   user: WritableSignal<UserData> = linkedSignal({
     source: this.userResource.value,
     computation: (source, previous) => {
@@ -173,7 +162,6 @@ export class UserService implements UserServiceInterface {
       );
     },
   });
-
   usersResource = httpResource<PiResponse<UserData[]>>(() => {
     const selectedUserRealm = this.selectedUserRealm();
     if (selectedUserRealm === '' || this.authService.role() === 'user') {
@@ -190,7 +178,6 @@ export class UserService implements UserServiceInterface {
     };
   });
   sort = signal({ active: 'serial', direction: 'asc' } as Sort);
-
   users: WritableSignal<UserData[]> = linkedSignal({
     source: this.usersResource.value,
     computation: (source, previous) =>
@@ -217,7 +204,6 @@ export class UserService implements UserServiceInterface {
   allUsernames = computed<string[]>(() =>
     this.users().map((user) => user.username),
   );
-
   usersOfRealmResource = httpResource<PiResponse<UserData[]>>(() => {
     const selectedUserRealm = this.selectedUserRealm();
     if (selectedUserRealm === '') {
