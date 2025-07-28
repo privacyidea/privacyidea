@@ -351,7 +351,6 @@ export class MockNotificationService implements NotificationServiceInterface {
 
   openSnackBar = jest.fn().mockImplementation((message: string) => {
     // Simulate showing a notification
-    console.log('Mock Notification:', message);
   });
 }
 
@@ -1104,12 +1103,10 @@ export class MockLocalService implements LocalServiceInterface {
   bearerTokenKey: string = 'mockBearerTokenKey';
   private data: Record<string, string> = {};
   saveData = jest.fn().mockImplementation((key: string, value: string) => {
-    console.log(`MockLocalService: Saving data: ${key} = ${value}`);
     this.data[key] = value;
   });
 
   getData = jest.fn().mockImplementation((key: string) => {
-    console.log(`MockLocalService: Getting data for key: ${key}`);
     const dataValue = this.data[key];
     if (dataValue === undefined) {
       console.warn(`MockLocalService: No data found for key: ${key}`);
@@ -1118,7 +1115,6 @@ export class MockLocalService implements LocalServiceInterface {
     return dataValue;
   });
   removeData = jest.fn().mockImplementation((key: string) => {
-    console.log(`MockLocalService: Removing data for key: ${key}`);
     if (this.data[key] !== undefined) {
       delete this.data[key];
     } else {
