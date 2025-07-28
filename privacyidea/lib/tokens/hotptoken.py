@@ -909,11 +909,11 @@ class HotpTokenClass(TokenClass):
         return enroll_url
 
 
-    def export_token(self) -> dict:
+    def export_token(self, export_user: bool = False) -> dict:
         """
         Create a dictionary with the token information that can be exported.
         """
-        token_dict = TokenClass.export_token(self)
+        token_dict = TokenClass.export_token(self, export_user)
         token_dict["otplen"] = self.token.otplen
         token_dict["count"] = self.token.count
         return token_dict

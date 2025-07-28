@@ -3020,7 +3020,7 @@ def import_tokens(tokens: list[dict], update_existing_tokens: bool = True, assig
                 token.import_token(token_info_dict)
                 successful_tokens.append(serial)
                 if assign_to_user and token_info_dict.get("user"):
-                    existing_token.assign_user_during_token_import(token_info_dict.get("user"))
+                    token.assign_user_during_token_import(token_info_dict.get("user"))
             elif update_existing_tokens:
                 existing_token.import_token(token_info_dict)
                 updated_tokens.append(serial)

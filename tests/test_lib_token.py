@@ -1855,7 +1855,8 @@ class TokenTestCase(MyTestCase):
 
     def test_63_token_export_with_user(self):
         # Set up a user and a token
-        user = User("cornelius", self.realm1)
+        self.setUp_user_realm2()
+        user = User("cornelius", self.realm2)
         hotptoken = init_token(param={'serial': "OATH12345678",
                                       'type': 'hotp',
                                       'otpkey': self.otpkey,
@@ -1866,9 +1867,67 @@ class TokenTestCase(MyTestCase):
                                       'otpkey': self.otpkey,
                                       "otplen": '8',
                                       "description": "Totp Token"})
+        assign_token(user=user, serial="OATH12345678")
+        assign_token(user=user, serial="TOTP12345678")
 
-        hotptoken.assign_to_user(user)
-        totptoken.assign_to_user(user)
+        exported_tokens = export_tokens([hotptoken, totptoken], export_user=True)
+
+        self.assertIn('"login": "cornelius"', exported_tokens)
+
+        # Remove the tokens
+        unassign_token(user=user, serial="OATH12345678")
+        unassign_token(user=user, serial="TOTP12345678")
+        hotptoken.delete_token()
+        totptoken.delete_token()
+
+        #import the tokens with user assignment
+        updated_tokens = import_tokens(exported_tokens , update_existing_tokens=True, assign_to_user=True)
+        hotptoken = get_tokens(serial="OATH12345678")[0]
+        totptoken = get_tokens(serial="TOTP12345678")[0]
+
+        self.assertEqual(hotptoken.owners[0].login, "cornelius")
+        self.assertEqual(totptoken.owners[0].login, "cornelius")
+
+        #cheak custom user attributes are exported and imported correctly
+        user.set_attribute("custom_attr", "custom_value")
+        exported_tokens = export_tokens([hotptoken, totptoken], export_user=True)
+
+        self.assertIn('"custom_attr": "custom_value"', exported_tokens)
+
+        # Remove user attributes
+        user.delete_attribute("custom_attr")
+
+        #cheak that the user attributes are empty after import
+        self.assertEqual(user.attributes, {})
+        updated_tokens = import_tokens(exported_tokens , update_existing_tokens=True, assign_to_user=True)
+
+        #cheak that the user attributes are imported correctly
+        self.assertEqual(user.attributes, {"custom_attr": "custom_value"})
+
+        #unassign the tokens
+        unassign_token(user=user, serial="OATH12345678")
+        unassign_token(user=user, serial="TOTP12345678")
+
+        self.assertEqual(hotptoken.token.first_owner, None)
+        self.assertEqual(totptoken.token.first_owner, None)
+
+        #cheak token will be assigned to the user on update
+        updated_tokens = import_tokens(exported_tokens , update_existing_tokens=True, assign_to_user=True)
+        self.assertEqual(hotptoken.owners[0].login, "cornelius")
+        self.assertEqual(totptoken.owners[0].login, "cornelius")
+
+        #unassign the tokens
+        unassign_token(user=user, serial="OATH12345678")
+        unassign_token(user=user, serial="TOTP12345678")
+
+        self.assertEqual(hotptoken.token.first_owner, None)
+        self.assertEqual(totptoken.token.first_owner, None)
+
+        #cheak token will not be assigned to the user on no update
+        updated_tokens = import_tokens(exported_tokens , update_existing_tokens=False, assign_to_user=True)
+        self.assertEqual(hotptoken.token.first_owner, None)
+        self.assertEqual(totptoken.token.first_owner, None)
+
 
 
 class TokenOutOfBandTestCase(MyTestCase):
