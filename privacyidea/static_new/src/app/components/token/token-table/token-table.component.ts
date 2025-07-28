@@ -37,6 +37,7 @@ import {
 } from '../../../services/token/token.service';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
+import { MatTooltip } from '@angular/material/tooltip';
 
 const columnKeysMap = [
   { key: 'select', label: '' },
@@ -68,6 +69,7 @@ const columnKeysMap = [
     FormsModule,
     MatIconModule,
     MatIconButton,
+    MatTooltip,
   ],
   templateUrl: './token-table.component.html',
   styleUrl: './token-table.component.scss',

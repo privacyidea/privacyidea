@@ -48,4 +48,8 @@ export class ContentService {
     this.router.navigateByUrl('/tokens/containers/details/' + containerSerial);
     this.containerSerial.set(containerSerial);
   }
+
+  userSelected(elementElement: any) {
+    return;
+  }
 }

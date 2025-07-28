@@ -22,7 +22,6 @@
         <a [ngClass]="{ active: isActive('/user') }"
            extended
            mat-fab
-           disabled
            routerLink="users">
           <mat-icon>supervised_user_circle</mat-icon>
           <h4>{{ authService.role() === "admin" ? "Users" : "User" }}</h4></a>

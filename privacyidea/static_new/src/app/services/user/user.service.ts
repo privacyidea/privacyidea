@@ -1,9 +1,11 @@
 import { httpResource, HttpResourceRef } from '@angular/common/http';
 import {
   computed,
+  effect,
   inject,
   Injectable,
   linkedSignal,
+  signal,
   Signal,
   WritableSignal,
 } from '@angular/core';
@@ -17,6 +19,20 @@ import {
 import { LocalService, LocalServiceInterface } from '../local/local.service';
 import { RealmService, RealmServiceInterface } from '../realm/realm.service';
 import { TokenService, TokenServiceInterface } from '../token/token.service';
+import { Sort } from '@angular/material/sort';
+
+const apiFilter = [
+  'description',
+  'email',
+  'givenname',
+  'mobile',
+  'phone',
+  'resolver',
+  'surname',
+  'userid',
+  'username',
+];
+const advancedApiFilter: string[] = [];
 
 export interface UserData {
   description: string;
@@ -44,6 +60,7 @@ export interface UserServiceInterface {
   usersOfRealmResource: HttpResourceRef<PiResponse<UserData[]> | undefined>;
   filteredUsernames: Signal<string[]>;
   filteredUsers: Signal<UserData[]>;
+
   displayUser(user: UserData | string): string;
 }
 
@@ -57,9 +74,45 @@ export class UserService implements UserServiceInterface {
     inject(ContentService);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
-
+  readonly apiFilter = apiFilter;
+  readonly advancedApiFilter = advancedApiFilter;
   private baseUrl = environment.proxyUrl + '/user/';
 
+  constructor() {
+    effect(() => {
+      console.log(this.usersResource.value());
+    });
+  }
+
+  filterValue = signal({} as Record<string, string>);
+  filterParams = computed<Record<string, string>>(() => {
+    const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
+    const filterPairs = Object.entries(this.filterValue())
+      .map(([key, value]) => ({ key, value }))
+      .filter(({ key }) => allowedFilters.includes(key));
+    if (filterPairs.length === 0) {
+      return {};
+    }
+    return filterPairs.reduce(
+      (acc, { key, value }) => ({
+        ...acc,
+        [key]: `*${value}*`,
+      }),
+      {} as Record<string, string>,
+    );
+  });
+  pageSize = linkedSignal({
+    source: this.filterValue,
+    computation: () => 10,
+  });
+  pageIndex = linkedSignal({
+    source: () => ({
+      filterValue: this.filterValue(),
+      pageSize: this.pageSize(),
+      routeUrl: this.contentService.routeUrl(),
+    }),
+    computation: () => 0,
+  });
   selectedUserRealm = linkedSignal({
     source: () => ({
       routeUrl: this.contentService.routeUrl(),
@@ -76,25 +129,6 @@ export class UserService implements UserServiceInterface {
     },
   });
 
-  selectedUser = computed<UserData | null>(() => {
-    var userName = '';
-    if (this.authService.role() === 'user') {
-      userName = this.authService.user();
-    } else {
-      userName = this.userNameFilter();
-    }
-    if (!userName) {
-      return null;
-    }
-    const users = this.users();
-    const user = users.find((user) => user.username === userName);
-    if (user) {
-      return user;
-    } else {
-      return null;
-    }
-  });
-
   userFilter = linkedSignal<string, UserData | string>({
     source: this.selectedUserRealm,
     computation: () => '',
@@ -109,6 +143,9 @@ export class UserService implements UserServiceInterface {
   });
 
   userResource = httpResource<PiResponse<UserData[]>>(() => {
+    if (this.authService.role() !== 'user') {
+      return undefined;
+    }
     return {
       url: this.baseUrl,
       method: 'GET',
@@ -139,7 +176,7 @@ export class UserService implements UserServiceInterface {
 
   usersResource = httpResource<PiResponse<UserData[]>>(() => {
     const selectedUserRealm = this.selectedUserRealm();
-    if (selectedUserRealm === '') {
+    if (selectedUserRealm === '' || this.authService.role() === 'user') {
       return undefined;
     }
     return {
@@ -147,17 +184,36 @@ export class UserService implements UserServiceInterface {
       method: 'GET',
       headers: this.localService.getHeaders(),
       params: {
-        realm: selectedUserRealm,
+        realm: this.selectedUserRealm(),
+        ...this.filterParams(),
       },
     };
   });
+  sort = signal({ active: 'serial', direction: 'asc' } as Sort);
 
   users: WritableSignal<UserData[]> = linkedSignal({
     source: this.usersResource.value,
     computation: (source, previous) =>
       source?.result?.value ?? previous?.value ?? [],
   });
-
+  selectedUser = computed<UserData | null>(() => {
+    var userName = '';
+    if (this.authService.role() === 'user') {
+      userName = this.authService.user();
+    } else {
+      userName = this.userNameFilter();
+    }
+    if (!userName) {
+      return null;
+    }
+    const users = this.users();
+    const user = users.find((user) => user.username === userName);
+    if (user) {
+      return user;
+    } else {
+      return null;
+    }
+  });
   allUsernames = computed<string[]>(() =>
     this.users().map((user) => user.username),
   );
@@ -176,11 +232,6 @@ export class UserService implements UserServiceInterface {
       },
     };
   });
-
-  filteredUsernames = computed<string[]>(() =>
-    this.filteredUsers().map((user) => user.username),
-  );
-
   filteredUsers = computed<UserData[]>(() => {
     var userFilter = this.userFilter();
     if (typeof userFilter !== 'string' || userFilter.trim() === '') {
@@ -191,6 +242,9 @@ export class UserService implements UserServiceInterface {
       user.username.toLowerCase().includes(filterValue),
     );
   });
+  filteredUsernames = computed<string[]>(() =>
+    this.filteredUsers().map((user) => user.username),
+  );
 
   displayUser(user: UserData | string): string {
     if (typeof user === 'string') {

@@ -36,7 +36,7 @@ import {
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
 
-export const columnKeysMap = [
+const columnKeysMap = [
   { key: 'timestamp', label: 'Timestamp' },
   { key: 'serial', label: 'Serial' },
   { key: 'transaction_id', label: 'Transaction ID' },
