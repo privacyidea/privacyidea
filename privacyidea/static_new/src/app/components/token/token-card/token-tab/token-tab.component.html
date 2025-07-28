@@ -66,8 +66,8 @@
           <br />
           <mat-divider /><br />
           <mat-list-item>
-            <button class="card-button-delete"
-                    [ngClass]="{'disabled-button': tokenSelection().length === 0}"
+            <button [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' :
+            'card-button-delete']"
                     (click)="deleteSelectedTokens()"
                     [disabled]="tokenSelection().length === 0"
                     mat-flat-button>

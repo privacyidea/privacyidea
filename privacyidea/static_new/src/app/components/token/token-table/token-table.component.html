@@ -23,19 +23,6 @@
       [apiFilter]="apiFilter"
       [filterHTMLInputElement]="filterHTMLInputElement"
       [filterValue]="filterValue"></app-keyword-filter>
-
-    <button
-      mat-icon-button
-      [ngClass]="
-        tokenSelection().length === 0 ? 'grey-light flex' : 'red-light flex'
-      "
-      [disabled]="tokenSelection().length === 0"
-      (click)="deleteSelectedTokens()"
-      aria-label="Delete selected Tokens"
-      matTooltip="Delete selected tokens"
-      matTooltipPosition="above">
-      <mat-icon> delete </mat-icon>
-    </button>
   </div>
   <table
     (matSortChange)="onSortEvent($event)"

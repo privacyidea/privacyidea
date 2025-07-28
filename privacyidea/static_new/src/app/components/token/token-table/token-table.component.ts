@@ -9,7 +9,6 @@ import {
   WritableSignal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatIconButton } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -17,7 +16,6 @@ import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { lastValueFrom } from 'rxjs';
 import {
   ContentService,
   ContentServiceInterface,
@@ -37,7 +35,6 @@ import {
 } from '../../../services/token/token.service';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
-import { MatTooltip } from '@angular/material/tooltip';
 
 const columnKeysMap = [
   { key: 'select', label: '' },
@@ -68,8 +65,6 @@ const columnKeysMap = [
     MatCheckboxModule,
     FormsModule,
     MatIconModule,
-    MatIconButton,
-    MatTooltip,
   ],
   templateUrl: './token-table.component.html',
   styleUrl: './token-table.component.scss',
@@ -225,32 +220,5 @@ export class TokenTableComponent {
       return;
     }
     this.sort.set($event);
-  }
-
-  async deleteSelectedTokens() {
-    if (this.tokenSelection().length === 0) {
-      return;
-    }
-    const confirmation = await this.dialogService.confirm({
-      data: {
-        action: 'delete',
-        title: 'Delete Tokens',
-        serial_list: this.tokenSelection().map((token) => token.serial),
-        type: 'token',
-      },
-    });
-    if (!confirmation) {
-      return;
-    }
-    // Extract serials from the selected tokens
-    const tokenSerials = this.tokenSelection().map((token) => token.serial);
-    try {
-      await lastValueFrom(this.tokenService.deleteTokens(tokenSerials));
-      this.tokenSelection.set([]);
-      this.tokenResource.reload();
-    } catch (error) {
-      console.error('Error deleting tokens:', error);
-      // Handle error appropriately, e.g., show a notification
-    }
   }
 }
