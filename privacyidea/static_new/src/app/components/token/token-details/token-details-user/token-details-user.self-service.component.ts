@@ -77,6 +77,6 @@ export class TokenDetailsUserSelfServiceComponent extends TokenDetailsUserCompon
 
   override canSetRandomPin() {
     console.warn('canSetRandomPin Method not implemented.');
-    return false; // Placeholder for actual implementation
+    return false;
   }
 }

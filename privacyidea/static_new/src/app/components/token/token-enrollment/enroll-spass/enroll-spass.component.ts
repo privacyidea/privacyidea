@@ -19,7 +19,6 @@ import { SpassApiPayloadMapper } from '../../../../mappers/token-api-payload/spa
 
 export interface SpassEnrollmentOptions extends TokenEnrollmentData {
   type: 'spass';
-  // No type-specific fields for initialization via EnrollmentOptions
 }
 @Component({
   selector: 'app-enroll-spass',

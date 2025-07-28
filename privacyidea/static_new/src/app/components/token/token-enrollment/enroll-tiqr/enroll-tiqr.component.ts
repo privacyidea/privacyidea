@@ -30,9 +30,6 @@ import { TiqrApiPayloadMapper } from '../../../../mappers/token-api-payload/tiqr
 
 export interface TiqrEnrollmentOptions extends TokenEnrollmentData {
   type: 'tiqr';
-  // No type-specific fields for initialization via EnrollmentOptions
-  // TIQR-specific data (tiqr.infoUrl etc.) comes from the system configuration
-  // and are not passed directly as EnrollmentOptions.
 }
 @Component({
   selector: 'app-enroll-tiqr',
@@ -68,7 +65,7 @@ export class EnrollTiqrComponent implements OnInit {
     );
   });
 
-  tiqrForm = new FormGroup({}); // No specific controls for TIQR
+  tiqrForm = new FormGroup({});
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({});

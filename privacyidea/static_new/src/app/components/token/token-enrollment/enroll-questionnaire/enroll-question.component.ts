@@ -70,12 +70,9 @@ export class EnrollQuestionComponent implements OnInit {
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
-  // FormGroup dynamically filled with FormControls for each question
   questionForm = new FormGroup<Record<string, AbstractControl<string>>>({});
-  // Stores the names of the question FormControls for the template
   questionControlNames: string[] = [];
 
-  // Configured questions from the system
   readonly configQuestions = computed(() => {
     const cfg =
       this.systemService.systemConfigResource.value()?.result?.value || {};
@@ -106,7 +103,6 @@ export class EnrollQuestionComponent implements OnInit {
   }
 
   private updateFormControls(): void {
-    // Remove existing controls
     Object.keys(this.questionForm.controls).forEach((key) => {
       this.questionForm.removeControl(key);
     });
@@ -121,7 +117,6 @@ export class EnrollQuestionComponent implements OnInit {
       newControls[controlName] = control;
     });
     this.aditionalFormFieldsChange.emit(newControls);
-    // Validator for minimum number of answers
     this.questionForm.setValidators(() => {
       return this.answeredCount() >= this.configMinNumberOfAnswers()
         ? null

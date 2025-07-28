@@ -60,14 +60,12 @@ export class EnrollYubikeyComponent implements OnInit {
   ]);
   otpLengthControl = new FormControl<number | null>(44, [Validators.required]);
 
-  // FormGroup for bundling and easier value monitoring
   yubikeyForm = new FormGroup({
     testYubiKey: this.testYubiKeyControl,
     otpKey: this.otpKeyControl,
     otpLength: this.otpLengthControl,
   });
 
-  // Example text, if still needed and not coming from outside
   text =
     this.tokenService.tokenTypeOptions().find((type) => type.key === 'yubikey')
       ?.text || 'The Yubikey token can be used in AES encryption mode...';

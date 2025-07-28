@@ -19,7 +19,6 @@ import { U2fApiPayloadMapper } from '../../../../mappers/token-api-payload/u2f-t
 
 export interface U2fEnrollmentOptions extends TokenEnrollmentData {
   type: 'u2f';
-  // No type-specific fields for initialization via EnrollmentOptions
 }
 @Component({
   selector: 'app-enroll-u2f',
@@ -43,7 +42,7 @@ export class EnrollU2fComponent implements OnInit {
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
-  u2fForm = new FormGroup({}); // No specific controls for U2F
+  u2fForm = new FormGroup({});
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({});

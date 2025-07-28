@@ -19,7 +19,6 @@ import { TanApiPayloadMapper } from '../../../../mappers/token-api-payload/tan-t
 
 export interface TanEnrollmentOptions extends TokenEnrollmentData {
   type: 'tan';
-  // No type-specific fields for initialization via EnrollmentOptions
 }
 @Component({
   selector: 'app-enroll-tan',

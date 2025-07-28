@@ -78,12 +78,11 @@ export class EnrollRemoteComponent implements OnInit {
     Validators.required,
   ]);
   remoteServerControl = new FormControl<RemoteServer | null>(null, [
-    // Keep original type
     Validators.required,
   ]);
   remoteSerialControl = new FormControl<string>('', [Validators.required]);
-  remoteUserControl = new FormControl<string>(''); // Optional, depending on configuration
-  remoteRealmControl = new FormControl<string>(''); // Optional
+  remoteUserControl = new FormControl<string>('');
+  remoteRealmControl = new FormControl<string>('');
   remoteResolverControl = new FormControl<string>('', [Validators.required]);
 
   remoteForm = new FormGroup({

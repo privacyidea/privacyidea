@@ -95,7 +95,7 @@ const allowedTokenTypesMap = new Map<string, string | string[]>([
     ['certificate', 'hotp', 'passkey', 'webauthn', 'yubico', 'yubikey'],
   ],
   ['smartphone', ['daypassword', 'hotp', 'push', 'sms', 'totp']],
-  ['generic', 'all'], // generic: all = no filter
+  ['generic', 'all'],
 ]);
 
 interface TokenOption {
