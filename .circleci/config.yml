@@ -1,9 +1,13 @@
+# SPDX-FileCopyrightText: (C) 2025 NetKnights GmbH <https://netknights.it>
+#
+# SPDX-License-Identifier: CC0-1.0
+
 version: 2.1
 
 executors:
   mysql:
     docker:
-      - image: cimg/python:3.10
+      - image: cimg/python:3.12
         environment:
           TEST_DATABASE_URL: mysql+pymysql://pi:test123@localhost/pi
       - image: cimg/mysql:8.0
@@ -14,10 +18,10 @@ executors:
           MYSQL_RANDOM_ROOT_PASSWORD: yes
   mariadb:
     docker:
-      - image: cimg/python:3.10
+      - image: cimg/python:3.12
         environment:
           TEST_DATABASE_URL: mysql+pymysql://pi:test123@localhost/pi
-      - image: cimg/mariadb:10.6
+      - image: cimg/mariadb:10.11
         environment:
           MARIADB_DATABASE: pi
           MARIADB_USER: pi
@@ -25,10 +29,10 @@ executors:
           MARIADB_RANDOM_ROOT_PASSWORD: yes
   postgres:
     docker:
-      - image: cimg/python:3.10
+      - image: cimg/python:3.12
         environment:
           TEST_DATABASE_URL: postgresql+psycopg2://pi:test123@localhost/pi
-      - image: cimg/postgres:14.7
+      - image: cimg/postgres:16
         environment:
           POSTGRES_DB: pi
           POSTGRES_USER: pi
@@ -39,11 +43,9 @@ jobs:
     description: Run all tests with the latest packages
     docker:
       # in the long run we could use matrix tests here for multiple python versions
-      - image: cimg/python:3.10
+      - image: cimg/python:3.13
     steps:
       - checkout
-      - run: git submodule sync
-      - run: git submodule update --init
       - run: mkdir -p test-results/generic
       - run: pip install -U pip
       # We do not want any caching (always the latest packages) therefore we
@@ -68,8 +70,6 @@ jobs:
     executor: << parameters.db >>
     steps:
       - checkout
-      - run: git submodule sync
-      - run: git submodule update --init
       - restore_cache:
           key: v1-deps-<< parameters.db >>-{{ checksum "requirements.txt" }}
       - run: pip install -U pip
