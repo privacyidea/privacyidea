@@ -98,12 +98,11 @@ def get_pushtoken_add_config(g, params=None, user_obj=None):
     params = params or {}
     from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
 
+    user = user_obj or None
+
     # Get the firebase configuration from the policies
-    firebase_config = Match.user(g, scope=SCOPE.ENROLL,
-                                 action=PUSH_ACTION.FIREBASE_CONFIG,
-                                 user_object=user_obj if user_obj else None
-                                 ).action_values(unique=True,
-                                                 allow_white_space_in_action=True)
+    firebase_config = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.FIREBASE_CONFIG,
+                                 user_object=user).action_values(unique=True, allow_white_space_in_action=True)
     if len(firebase_config) == 1:
         params[PUSH_ACTION.FIREBASE_CONFIG] = list(firebase_config)[0]
     else:
@@ -111,7 +110,7 @@ def get_pushtoken_add_config(g, params=None, user_obj=None):
 
     # Get the sslverify definition from the policies
     ssl_verify = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.SSL_VERIFY,
-                            user_object=user_obj if user_obj else None).action_values(unique=True)
+                            user_object=user).action_values(unique=True)
     if len(ssl_verify) == 1:
         params[PUSH_ACTION.SSL_VERIFY] = list(ssl_verify)[0]
     else:
@@ -119,19 +118,22 @@ def get_pushtoken_add_config(g, params=None, user_obj=None):
 
     # Get the TTL and the registration URL from the policies
     registration_url = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.REGISTRATION_URL,
-                                  user_object=user_obj if user_obj else None) \
-        .action_values(unique=True, allow_white_space_in_action=True)
+                                  user_object=user).action_values(unique=True, allow_white_space_in_action=True)
     if len(registration_url) == 1:
         params[PUSH_ACTION.REGISTRATION_URL] = list(registration_url)[0]
     else:
-        raise PolicyError("Missing enrollment policy for push token: {0!s}".format(PUSH_ACTION.REGISTRATION_URL))
+        raise PolicyError(f"Missing enrollment policy for push token: {PUSH_ACTION.REGISTRATION_URL}")
     ttl = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.TTL,
-                     user_object=user_obj if user_obj else None) \
-        .action_values(unique=True, allow_white_space_in_action=True)
+                     user_object=user).action_values(unique=True, allow_white_space_in_action=True)
     if len(ttl) == 1:
         params[PUSH_ACTION.TTL] = list(ttl)[0]
     else:
         params[PUSH_ACTION.TTL] = "10"
+
+    # check which scheme to use
+    use_pia_scheme = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.USE_PIA_SCHEME,
+                                user_object=user).allowed()
+    params[PUSH_ACTION.USE_PIA_SCHEME] = use_pia_scheme
     return params
 
 
