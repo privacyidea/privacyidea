@@ -22,6 +22,7 @@ import {
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { LostTokenComponent } from './lost-token/lost-token.component';
 import { Router, RouterLink } from '@angular/router';
+import { AuditService } from '../../../../services/audit/audit.service';
 
 @Component({
   selector: 'app-token-tab',
@@ -40,13 +41,13 @@ import { Router, RouterLink } from '@angular/router';
   animations: [tabToggleState],
 })
 export class TokenTabComponent {
-  private router = inject(Router);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly versioningService: VersioningServiceInterface =
     inject(VersioningService);
   protected readonly contentService: ContentServiceInterface =
     inject(ContentService);
   private readonly dialog: MatDialog = inject(MatDialog);
+  private router = inject(Router);
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
   tokenSerial = this.tokenService.tokenSerial;
@@ -54,6 +55,7 @@ export class TokenTabComponent {
   tokenIsSelected = computed(() => this.tokenSerial() !== '');
   isLost = signal(false);
   version!: string;
+  protected auditService = inject(AuditService);
 
   ngOnInit(): void {
     this.version = this.versioningService.getVersion();

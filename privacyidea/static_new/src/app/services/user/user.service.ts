@@ -1,7 +1,6 @@
 import { httpResource, HttpResourceRef } from '@angular/common/http';
 import {
   computed,
-  effect,
   inject,
   Injectable,
   linkedSignal,

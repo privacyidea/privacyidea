@@ -87,7 +87,9 @@
         </mat-list-item>
         <mat-list-item>
           <button class="card-button"
-                  mat-flat-button>
+                  mat-flat-button
+                  [routerLink]="['/audit']"
+                  (click)="auditService.filterValue.set({'serial': tokenSerial()})">
             <mat-icon>manage_search</mat-icon>
             Show in Audit Log
           </button>
