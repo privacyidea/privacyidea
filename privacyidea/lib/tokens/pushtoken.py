@@ -177,7 +177,7 @@ def create_push_token_url(url: Optional[str] = None, ttl: Union[int, str] = 10, 
 
     scheme = "pia" if pia_scheme else "otpauth"
 
-    token_url = (f"{scheme}://pipush/{url_label!s}?url={url_url!s}&ttl={ttl!s}&issuer={url_issuer!s}"
+    token_url = (f"{scheme}://pipush/{url_label}?url={url_url}&ttl={ttl}&issuer={url_issuer}"
                  f"{_construct_extra_parameters(extra_data)}")
 
     return token_url
@@ -1185,12 +1185,12 @@ class PushTokenClass(TokenClass):
         :return: None, the content is modified
         """
         # Get the firebase configuration from the policies
-        params = get_pushtoken_add_config(g, user_obj=user_obj)
+        push_params = get_pushtoken_add_config(g, user_obj=user_obj)
         token_obj = init_token({"type": cls.get_class_type(), "genkey": 1, "2stepinit": 1}, user=user_obj)
         # We are in step 1:
         token_obj.add_tokeninfo("enrollment_credential", geturandom(20, hex=True))
         # We also store the Firebase config, that was used during the enrollment.
-        token_obj.add_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG, params.get(PUSH_ACTION.FIREBASE_CONFIG))
+        token_obj.add_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG, push_params.get(PUSH_ACTION.FIREBASE_CONFIG))
         content.get("result")["value"] = False
         content.get("result")["authentication"] = "CHALLENGE"
 
@@ -1198,8 +1198,8 @@ class PushTokenClass(TokenClass):
         # Create a challenge!
         c = token_obj.create_challenge(options={"g": g, "user": user_obj, "session": CHALLENGE_SESSION.ENROLLMENT})
         # get details of token
-        enroll_params = get_init_tokenlabel_parameters(g, user_object=user_obj, token_type=cls.get_class_type())
-        params.update(enroll_params)
+        params = get_init_tokenlabel_parameters(g, user_object=user_obj, token_type=cls.get_class_type())
+        params["policies"] = push_params
         init_details = token_obj.get_init_detail(params=params, user=user_obj)
 
         detail["transaction_ids"] = [c[2]]

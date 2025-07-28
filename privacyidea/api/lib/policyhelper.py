@@ -106,7 +106,7 @@ def get_pushtoken_add_config(g, params=None, user_obj=None):
     if len(firebase_config) == 1:
         params[PUSH_ACTION.FIREBASE_CONFIG] = list(firebase_config)[0]
     else:
-        raise PolicyError("Missing enrollment policy for push token: {0!s}".format(PUSH_ACTION.FIREBASE_CONFIG))
+        raise PolicyError(f"Missing enrollment policy for push token: {PUSH_ACTION.FIREBASE_CONFIG}")
 
     # Get the sslverify definition from the policies
     ssl_verify = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.SSL_VERIFY,

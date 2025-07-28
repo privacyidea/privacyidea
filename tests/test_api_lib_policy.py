@@ -6423,6 +6423,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         request.all_data = {}
         request.User = hans
         g.policy_object = PolicyClass()
+        g.policies = {}
 
         response_data = {"jsonrpc": "2.0",
                          "result": {"status": True, "value": True, "authentication": AUTH_RESPONSE.ACCEPT},
@@ -6465,6 +6466,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         response = jsonify(response_data)
 
         # User has token, but no container
+        g.policies = {}
         token = init_token({"type": "hotp", "genkey": True}, user=hans)
         response = multichallenge_enroll_via_validate(request, response)
         check_response(response)
@@ -6474,6 +6476,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         response = jsonify(response_data)
 
         # User has generic container, but not smartphone container
+        g.policies = {}
         init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
         response = multichallenge_enroll_via_validate(request, response)
         check_response(response)
@@ -6482,6 +6485,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         response = jsonify(response_data)
 
         # User has smartphone container, but it is not registered
+        g.policies = {}
         container_serial = init_container({"type": "smartphone", "user": "hans", "realm": self.realm1})[
             "container_serial"]
         response = multichallenge_enroll_via_validate(request, response)
@@ -6492,6 +6496,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         response = jsonify(response_data)
 
         # use template policy
+        g.policies = {}
         set_policy("enroll_via_multichallenge_template", scope=SCOPE.AUTH,
                    action={ACTION.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: "test"})
         response = multichallenge_enroll_via_validate(request, response)
@@ -6506,6 +6511,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         response = jsonify(response_data)
 
         # User max token reached, but container is created anyway
+        g.policies = {}
         set_policy("max_token_user", scope=SCOPE.ENROLL, action={ACTION.MAXTOKENUSER: 1})
         token = init_token({"type": "hotp", "genkey": True}, user=hans)
         with LogCapture() as capture:
@@ -6535,6 +6541,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         response = jsonify(response_data)
 
         # use custom text
+        g.policies = {}
         set_policy("enroll_via_multichallenge_text", scope=SCOPE.AUTH,
                    action={ACTION.ENROLL_VIA_MULTICHALLENGE_TEXT: "Test custom text!"})
         response = multichallenge_enroll_via_validate(request, response)
@@ -6545,6 +6552,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         response = jsonify(response_data)
 
         # Invalid template name: container is created anyway
+        g.policies = {}
         set_policy("enroll_via_multichallenge_template", scope=SCOPE.AUTH,
                    action={ACTION.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: "invalid"})
         response = multichallenge_enroll_via_validate(request, response)
@@ -6584,6 +6592,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         request.all_data = {}
         request.User = hans
         g.policy_object = PolicyClass()
+        g.policies = {}
 
         response_data = {"jsonrpc": "2.0",
                          "result": {"status": True, "value": True, "authentication": AUTH_RESPONSE.ACCEPT},
@@ -6611,6 +6620,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # Missing registration policies
         delete_policy("registration")
+        g.policies = {}
         # create with template to check that also no tokens are created
         template_options = {"tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True}]}
         create_container_template(container_type="smartphone", template_name="test", options=template_options)
