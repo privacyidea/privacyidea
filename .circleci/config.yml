@@ -32,7 +32,7 @@ executors:
       - image: cimg/python:3.12
         environment:
           TEST_DATABASE_URL: postgresql+psycopg2://pi:test123@localhost/pi
-      - image: cimg/postgres:16
+      - image: cimg/postgres:16.8
         environment:
           POSTGRES_DB: pi
           POSTGRES_USER: pi
