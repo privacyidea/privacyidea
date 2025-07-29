@@ -21,7 +21,7 @@
     </mat-form-field>
     <button (click)="onClickRunSearch()"
             [disabled]="otpValue() === ''"
-            [ngClass]="{ 'disabled-button': otpValue() === '' }"
+            [ngClass]="{ 'card-button-disabled': otpValue() === '' }"
             class="card-button"
             mat-flat-button>
       <mat-icon>{{ currentStep() !== 'searching' ? "play_arrow" : "stop" }}</mat-icon>

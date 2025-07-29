@@ -25,7 +25,7 @@
           <button [ngClass]="
               contentService.routeUrl() === '/users/add'
                 ? 'card-button-active'
-                : 'card-button'"
+                : 'card-button-disabled'"
                   [routerLink]="['/users', 'add']"
                   disabled
                   mat-flat-button>
@@ -38,7 +38,7 @@
           <button [ngClass]="
               contentService.routeUrl() === '/users/edit-realm'
                 ? 'card-button-active'
-                : 'card-button'"
+                : 'card-button-disabled'"
                   [routerLink]="['#']"
                   disabled
                   mat-flat-button>

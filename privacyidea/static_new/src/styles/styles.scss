@@ -285,6 +285,11 @@ body {
   text-align: center;
 }
 
+.flex-just-start {
+  display: flex;
+  justify-content: flex-start;
+}
+
 .mat-mdc-input-element {
   font-size: 14px;
 }
@@ -379,6 +384,10 @@ body {
 
   .cdk-overlay-pane.mat-mdc-dialog-panel {
     max-width: unset;
+  }
+
+  .mat-divider {
+    border-top-color: #E0E2EC !important;
   }
 }
 

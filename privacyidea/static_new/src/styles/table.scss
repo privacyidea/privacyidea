@@ -72,10 +72,10 @@ $description-width: 18rem;
   }
   ::ng-deep {
     .mdc-checkbox
-      .mdc-checkbox__native-control:not(.mdc-checkbox--selected):not(
+    .mdc-checkbox__native-control:not(.mdc-checkbox--selected):not(
         [aria-checked="mixed"]
       )
-      ~ .mdc-checkbox__background {
+    ~ .mdc-checkbox__background {
       border: 2px solid #999;
     }
 
@@ -136,7 +136,7 @@ th:nth-child(even) {
 .highlight-disabled {
   border-radius: $border-radius;
   padding: $highlight-padding;
-  color: var(--mat-sys-on-primary);
+  color: white;
   display: inline-block;
 
   &.highlight-true,
@@ -155,7 +155,7 @@ th:nth-child(even) {
   }
 
   &.highlight-disabled {
-    background-color: var(--mat-sys-surface-dim);
+    background-color: #a0a0a0;
   }
 
   &.highlight-true-clickable,
@@ -294,7 +294,7 @@ th:nth-child(even) {
   .details-flex-layout {
     display: flex;
     box-sizing: border-box;
-    background: var(--mat-sys-surface);
+    background: var(--mat-sys-light);
   }
 
   .details-description-div {

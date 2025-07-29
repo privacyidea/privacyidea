@@ -31,8 +31,8 @@ $border-radius: var(--border-radius);
 
     img {
       margin-left: var(--double-global-padding);
-      height: var(--header-height);
-      width: var(--header-height);
+      height: 52px;
+      width: 52px;
       border-radius: 50%;
       @include mat.elevation(5);
     }

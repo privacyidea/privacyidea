@@ -34,7 +34,7 @@
           <button
             type="submit"
             [ngClass]="{
-              'disabled-button':
+              'card-button-disabled':
                 formGroupSignal().invalid || !tokenService.selectedTokenType(),
               'card-button': true,
             }"
