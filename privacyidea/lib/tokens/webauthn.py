@@ -58,6 +58,7 @@ import struct
 
 import cbor2
 import cryptography.x509
+from OpenSSL import crypto
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
@@ -66,8 +67,7 @@ from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicNumb
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15, PSS, MGF1
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicNumbers
 from cryptography.hazmat.primitives.hashes import SHA256, SHA1
-from cryptography.x509 import load_der_x509_certificate, Certificate, BasicConstraints
-from cryptography.x509.verification import ExtensionPolicy, Criticality, Store, PolicyBuilder
+from cryptography.x509 import load_der_x509_certificate
 from webauthn import base64url_to_bytes
 
 from privacyidea.lib.tokens.u2f import url_encode, url_decode
@@ -1880,24 +1880,21 @@ def _get_trust_anchors(attestation_type, attestation_fmt, trust_anchor_dir):
     return trust_anchors
 
 
-def _is_trusted_x509_attestation_cert(trust_path: list[Certificate], trust_anchors: list[Certificate]):
+def _is_trusted_x509_attestation_cert(trust_path, trust_anchors):
     if not trust_path or not isinstance(trust_path, list) or not trust_anchors or not isinstance(trust_anchors, list):
         return False
 
-    store = Store(trust_anchors)
-    policy_builder = PolicyBuilder().store(store)
-
-    # Extensions are evaluated separately, hence we can use loose extension policies
-    extension_policy_ee = ExtensionPolicy.permit_all()
-    extension_policy_ca = extension_policy_ee.require_present(BasicConstraints, Criticality.NON_CRITICAL, None)
-    policy_builder = policy_builder.extension_policies(ca_policy=extension_policy_ca,
-                                                       ee_policy=extension_policy_ee)
-    verifier = policy_builder.build_client_verifier()
-    leaf_certificate = trust_path[0]
-    intermediates = trust_path[1:] if len(trust_path) > 1 else []
+    # TODO: this could be a certificate chain. We should treat it as such
+    attestation_cert = trust_path[0]
+    store = crypto.X509Store()
+    # Since the certificates are in pyca.cryptography format, we need to convert
+    # them to the OpenSSL.crypto format
+    for i in trust_anchors:
+        store.add_cert(crypto.X509.from_cryptography(i))
+    store_ctx = crypto.X509StoreContext(store, crypto.X509.from_cryptography(attestation_cert))
 
     try:
-        verifier.verify(leaf_certificate, intermediates)
+        store_ctx.verify_certificate()
         return True
     except Exception as e:
         log.info('Unable to verify certificate: {}'.format(e))
