@@ -247,11 +247,8 @@ class LocalCATestCase(MyTestCase):
         cert_obj = x509.load_pem_x509_certificate(cert.encode())
         serial = cert_obj.serial_number
 
-        self.assertEqual("{0!r}".format(cert_obj.issuer),
-                         "<Name(C=DE,ST=Hessen,O=privacyidea,CN=CA001)>")
-        self.assertEqual("{0!r}".format(cert_obj.subject),
-                         "<Name(C=DE,ST=Hessen,O=privacyidea,CN=requester"
-                         ".localdomain)>")
+        self.assertEqual("<Name(C=DE,ST=Hessen,O=privacyidea,CN=CA001)>", f"{cert_obj.issuer!r}")
+        self.assertEqual("<Name(C=DE,ST=Hessen,O=privacyidea,CN=requester.localdomain)>", f"{cert_obj.subject!r}")
 
         # Fail to revoke certificate due to non-existing-reasing
         self.assertRaises(CAError, cacon.revoke_cert, cert, reason="$(rm -fr)")
