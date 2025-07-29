@@ -177,7 +177,9 @@ export class ContainerCreateComponent {
             this.notificationService.openSnackBar(
               `Container ${containerSerial} enrolled successfully.`,
             );
-            this.router.navigateByUrl('/tokens/containers/' + containerSerial);
+            this.router.navigateByUrl(
+              '/tokens/containers/details/' + containerSerial,
+            );
             this.containerSerial.set(containerSerial);
           }
         },

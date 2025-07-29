@@ -42,7 +42,13 @@
             </button>
           </div>
         }
-        <div class="main-margin overflow padding-32">
+        <div class="main-margin overflow padding-32"
+        [ngClass]="{
+               'margin-left-64': overflowService.isWidthOverflowing(
+                 'body',
+                 overflowService.getOverflowThreshold()
+               )
+             }">
           <router-outlet></router-outlet>
         </div>
       </div>
