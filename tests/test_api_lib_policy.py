@@ -11,6 +11,7 @@ from werkzeug.datastructures.headers import Headers
 from privacyidea.lib.container import (init_container, find_container_by_serial, create_container_template,
                                        get_all_containers)
 from privacyidea.lib.containers.container_info import RegistrationState
+from privacyidea.lib.policies.policy_helper import get_jwt_validity
 from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AuthenticatorAttachmentType,
                                              AttestationLevel, AttestationForm,
                                              UserVerificationLevel)
@@ -3468,35 +3469,27 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("set_description")
 
     def test_62_jwt_validity(self):
-        g.logged_in_user = {"username": "cornelius",
-                            "role": "user"}
-        builder = EnvironBuilder(method='POST',
-                                 headers={})
-        env = builder.get_environ()
+        user = User("cornelius", realm=self.realm1, resolver=self.resolvername1)
+
+        # Default validity.
+        validity = get_jwt_validity(user)
+        self.assertEqual(timedelta(hours=1), validity)
+
         # Set policy
-        set_policy(name="jwt_validity",
-                   scope=SCOPE.WEBUI,
-                   action=[f"{ACTION.JWTVALIDITY}=12"])
-        req = Request(env)
-        req.User = User("cornelius")
-        req.all_data = {}
+        set_policy(name="jwt_validity", scope=SCOPE.WEBUI, action=[f"{ACTION.JWTVALIDITY}=12"], realm=self.realm1)
 
         # The validity of the JWT is set.
-        r = jwt_validity(req, None)
-        self.assertTrue(r)
-        self.assertEqual(12, req.all_data.get("jwt_validity"))
+        validity = get_jwt_validity(user)
+        self.assertEqual(timedelta(seconds=12), validity)
+
+        # Passing an empty user returns the default validity.
+        validity = get_jwt_validity(User())
+        self.assertEqual(timedelta(hours=1), validity)
 
         # Now test a bogus policy
-        set_policy(name="jwt_validity",
-                   scope=SCOPE.WEBUI,
-                   action=[f"{ACTION.JWTVALIDITY}=oneMinute"])
-        req = Request(env)
-        req.User = User("cornelius")
-        req.all_data = {}
-        r = jwt_validity(req, None)
-        self.assertTrue(r)
-        # We receive the default of 1 hour
-        self.assertEqual(3600, req.all_data.get("jwt_validity"))
+        set_policy(name="jwt_validity", scope=SCOPE.WEBUI, action=[f"{ACTION.JWTVALIDITY}=oneMinute"])
+        validity = get_jwt_validity(user)
+        self.assertEqual(timedelta(hours=1), validity)
 
         delete_policy("jwt_validity")
 
@@ -4761,10 +4754,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req = Request(env)
         req.User = User("cornelius")
         req.all_data = {}
-        r = jwt_validity(req, None)
+        r = rss_age(req, None)
         self.assertTrue(r)
-        # We receive the default of None
-        self.assertEqual(None, req.all_data.get(f"{ACTION.RSS_AGE}"))
+        # We receive the default of 0
+        self.assertEqual(0, req.all_data.get(f"{ACTION.RSS_AGE}"))
 
         delete_policy("rssage")
 

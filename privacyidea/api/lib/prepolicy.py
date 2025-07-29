@@ -129,8 +129,6 @@ log = logging.getLogger(__name__)
 optional = True
 required = False
 
-DEFAULT_JWT_VALIDITY = 3600
-
 
 class prepolicy(object):
     """
@@ -2772,11 +2770,15 @@ def auth_timelimit(request, action):
     user = request.User
     # check if the user is an admin
     admin_realms = [x.lower() for x in current_app.config.get("SUPERUSER_REALM", [])]
-    local_admin = get_db_admin(user.login)
+    local_admin = g.get("resolved_user", {}).get("is_local_admin", False)
     if local_admin:
         # local admin
-        user = User(login=local_admin.username)
-        user_search_dict = {"user": user.login}
+        if get_default_realm() in admin_realms:
+            # for external admins the username is always written to the "administrator" column, which is also done for
+            # local admins if the default realm is an admin realm
+            user_search_dict = {"administrator": user.login}
+        else:
+            user_search_dict = {"user": user.login}
     elif user.realm and user.realm.lower() in admin_realms:
         # external admin
         user_search_dict = {"administrator": user.login, "realm": user.realm}
@@ -2788,7 +2790,7 @@ def auth_timelimit(request, action):
     result, reply_dict = check_max_auth_fail(user, user_search_dict, check_validate_check=not local_admin)
     if result:
         if local_admin:
-            user_search_dict = {"administrator": local_admin.username}
+            user_search_dict = {"administrator": user.login}
         result, reply_dict = check_max_auth_success(user, user_search_dict, check_validate_check=not local_admin)
 
     if not result:

@@ -53,7 +53,7 @@ def verify_db_admin(username, password):
     return success
 
 
-def db_admin_exist(username):
+def db_admin_exists(username):
     """
     Checks if a local admin in the database exists
 
