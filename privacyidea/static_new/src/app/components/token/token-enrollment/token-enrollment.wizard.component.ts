@@ -81,6 +81,7 @@ import { EnrollWebauthnComponent } from './enroll-webauthn/enroll-webauthn.compo
 import { EnrollYubicoComponent } from './enroll-yubico/enroll-yubico.component';
 import { EnrollYubikeyComponent } from './enroll-yubikey/enroll-yubikey.component';
 import { TokenEnrollmentComponent } from './token-enrollment.component';
+import { MatTooltip } from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-token-enrollment-wizard',
@@ -129,6 +130,7 @@ import { TokenEnrollmentComponent } from './token-enrollment.component';
     EnrollPasskeyComponent,
     AsyncPipe,
     MatError,
+    MatTooltip,
   ],
   templateUrl: './token-enrollment.wizard.component.html',
   styleUrl: './token-enrollment.component.scss',

@@ -67,7 +67,7 @@
             ? 'red-light'
             : sessionTimerService.remainingTime() < 60000
               ? 'yellow-light'
-              : 'on-surface',
+              : 'surface-highest',
         ]"
         class="session-timer">
         @if (sessionTimerService.remainingTime() < 60000) {
@@ -83,7 +83,7 @@
       </div>
       <div class="profile-logout-div flex-row">
         @if (authService.role() === "admin") {
-          <button class="profile-btn" extended href="#" mat-fab>
+          <button class="profile-btn" extended href="#" mat-fab disabled>
             <mat-icon>account_box</mat-icon>
             <h4>{{ profileText }}</h4>
           </button>
@@ -101,6 +101,7 @@
             <mat-icon>account_box</mat-icon>
             <h4>{{ profileText }}</h4>
           </button>
+        }
           <button
             (click)="logout()"
             class="logout-btn"
@@ -108,7 +109,6 @@
             mat-icon-button>
             <mat-icon>logout</mat-icon>
           </button>
-        }
       </div>
     </div>
   </div>

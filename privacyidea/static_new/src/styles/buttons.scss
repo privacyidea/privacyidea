@@ -291,7 +291,7 @@ $button-low-contrast-variant: linear-gradient(
   cursor: pointer;
   border-radius: 0;
   background: var(--mat-sys-surface-container-lowest);
-  color: var(--mat-sys-on-surface);
+  color: var(--mat-sys-surface-container-highest);
   box-shadow: none !important;
 
   &:hover {
@@ -321,7 +321,7 @@ $button-low-contrast-variant: linear-gradient(
   border-radius: 0;
   background: $profile-bg;
   cursor: pointer;
-  color: white;
+  color: white !important;
 
   &.active,
   &:hover {
@@ -333,10 +333,11 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .logout-btn {
-  color: #767676;
+  color: var(--mat-sys-surface-container-highest);
+
 
   &:hover {
-    color: black;
+    color: var(--mat-sys-on-surface-variant);
   }
 }
 

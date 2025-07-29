@@ -4,7 +4,6 @@
   class="token-enrollment-container">
   <h3 class="margin-left-1"> Enroll a new Token </h3>
   <form [formGroup]="formGroupSignal()" (ngSubmit)="enrollToken()">
-    <!-- This invisible sentinel element is used to detect when the header becomes sticky. -->
     <div #stickySentinel></div>
     <div class="select-token-type-container">
       <mat-form-field class="flex-size-1" subscriptSizing="dynamic">
@@ -43,7 +42,6 @@
           <mat-icon>add</mat-icon>
           Enroll Token
         </button>
-        <!-- type="button" to prevent form submission -->
         <button
           type="button"
           (click)="reopenEnrollmentDialog()"

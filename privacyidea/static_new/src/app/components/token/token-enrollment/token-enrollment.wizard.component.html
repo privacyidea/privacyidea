@@ -27,12 +27,11 @@
   </mat-form-field>
   <form [formGroup]="formGroup">
     <div class="enroll-button-container">
-      <!-- type="button" to prevent form submission -->
       <button
         type="button"
         (click)="reopenEnrollmentDialog()"
         [disabled]="!canReopenEnrollmentDialog()"
-        matTooltip]="'Reopen enrollment dialog'"
+        [matTooltip]="'Reopen enrollment dialog'"
         mat-icon-button>
         <mat-icon>open_in_new</mat-icon>
       </button>
