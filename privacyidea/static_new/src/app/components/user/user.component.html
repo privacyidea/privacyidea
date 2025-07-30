@@ -45,13 +45,13 @@
           </div>
         }
 
-        <div class="main-margin overflow padding-32"
-             [ngClass]="{
+        <div [ngClass]="{
                'margin-left-64': overflowService.isWidthOverflowing(
                  'body',
                  overflowService.getOverflowThreshold()
                )
-             }">
+             }"
+             class="main-margin overflow padding-32">
           <router-outlet></router-outlet>
         </div>
       </div>

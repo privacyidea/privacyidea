@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
+import { Component, EventEmitter, inject, OnInit, Output } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -20,6 +20,7 @@ import { SpassApiPayloadMapper } from '../../../../mappers/token-api-payload/spa
 export interface SpassEnrollmentOptions extends TokenEnrollmentData {
   type: 'spass';
 }
+
 @Component({
   selector: 'app-enroll-spass',
   standalone: true,

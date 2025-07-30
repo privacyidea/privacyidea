@@ -1,14 +1,12 @@
 import {
   TokenApiPayloadMapper,
-  TokenEnrollmentPayload,
   TokenEnrollmentData,
+  TokenEnrollmentPayload,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
 
-// Interface for SPASS-specific enrollment data
 export interface SpassEnrollmentData extends TokenEnrollmentData {
   type: 'spass';
-  // No type-specific fields identified from EnrollSpassComponent or TokenService handling
 }
 
 export interface SpassEnrollmentPayload extends TokenEnrollmentPayload {}
@@ -18,7 +16,6 @@ export class SpassApiPayloadMapper
   implements TokenApiPayloadMapper<SpassEnrollmentData>
 {
   toApiPayload(data: SpassEnrollmentData): SpassEnrollmentPayload {
-    // No type-specific fields in switch statement for 'spass'
     return {
       type: data.type,
       description: data.description,

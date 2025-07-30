@@ -124,7 +124,6 @@ export const infoDetailsKeyMap = [{ key: 'info', label: 'Information' }];
   styleUrls: ['./token-details.component.scss'],
 })
 export class TokenDetailsComponent {
-  private router = inject(Router);
   protected readonly matDialog: MatDialog = inject(MatDialog);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly containerService: ContainerServiceInterface =
@@ -137,7 +136,7 @@ export class TokenDetailsComponent {
   protected readonly contentService: ContentServiceInterface =
     inject(ContentService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
-
+  private router = inject(Router);
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
   isProgrammaticTabChange = this.contentService.isProgrammaticTabChange;

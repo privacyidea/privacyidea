@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
+import { Component, EventEmitter, inject, OnInit, Output } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -20,6 +20,7 @@ import { TanApiPayloadMapper } from '../../../../mappers/token-api-payload/tan-t
 export interface TanEnrollmentOptions extends TokenEnrollmentData {
   type: 'tan';
 }
+
 @Component({
   selector: 'app-enroll-tan',
   standalone: true,

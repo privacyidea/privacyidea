@@ -6,10 +6,8 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import {
   BrowserAnimationsModule,
-  NoopAnimationsModule,
   provideNoopAnimations,
 } from '@angular/platform-browser/animations';
-import { SelectionModel } from '@angular/cdk/collections';
 import { ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
 

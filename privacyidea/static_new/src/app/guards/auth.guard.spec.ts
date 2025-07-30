@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { Route, UrlSegment, Router } from '@angular/router';
-import { adminMatch, selfServiceMatch, AuthGuard } from './auth.guard';
+import { Route, Router, UrlSegment } from '@angular/router';
+import { adminMatch, AuthGuard, selfServiceMatch } from './auth.guard';
 import { AuthService } from '../services/auth/auth.service';
 import { NotificationService } from '../services/notification/notification.service';
 
@@ -10,9 +10,11 @@ class MockAuthService {
   isAuthenticatedUser = jest.fn();
   role = jest.fn();
 }
+
 class MockNotificationService {
   openSnackBar = jest.fn();
 }
+
 const routerMock = {
   navigate: jest.fn().mockResolvedValue(true),
 } as unknown as Router;
@@ -99,7 +101,7 @@ describe('AuthGuard class', () => {
     expect(authService.isAuthenticatedUser).toHaveBeenCalledTimes(2);
     expect(routerMock.navigate).toHaveBeenCalledWith(['/login']);
 
-    await flushPromises(); // wait for .then() in guard
+    await flushPromises();
     expect(notificationService.openSnackBar).toHaveBeenCalledWith(
       'Navigation blocked by AuthGuard!',
     );

@@ -1,11 +1,10 @@
 import {
   TokenApiPayloadMapper,
-  TokenEnrollmentPayload,
   TokenEnrollmentData,
+  TokenEnrollmentPayload,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
 
-// Interface for HOTP-specific enrollment data
 export interface HotpEnrollmentData extends TokenEnrollmentData {
   type: 'hotp';
   generateOnServer?: boolean;

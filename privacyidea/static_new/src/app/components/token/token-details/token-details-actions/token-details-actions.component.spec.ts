@@ -11,6 +11,7 @@ class MockTokenService {
   resyncOTPToken() {
     return of(null);
   }
+
   testToken() {
     return of(null);
   }

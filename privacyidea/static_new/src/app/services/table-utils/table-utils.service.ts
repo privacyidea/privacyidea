@@ -11,6 +11,7 @@ export interface TableUtilsServiceInterface {
     pageSize: number,
     columnsKeyMap: { key: string; label: string }[],
   ): MatTableDataSource<T>;
+
   parseFilterString(
     filterValue: string,
     apiFilter: string[],
@@ -18,27 +19,42 @@ export interface TableUtilsServiceInterface {
     filterPairs: FilterPair[];
     remainingFilterText: string;
   };
+
   toggleKeywordInFilter(currentValue: string, keyword: string): string;
+
   toggleBooleanInFilter(args: {
     keyword: string;
     currentValue: string;
   }): string;
+
   recordsFromText(textValue: string): Record<string, string>;
+
   isLink(columnKey: string): boolean;
+
   getClassForColumn(columnKey: string, element: any): string;
+
   getTooltipForColumn(columnKey: string, element: any): string;
+
   getDisplayText(columnKey: string, element: any): string;
+
   getSpanClassForKey(args: { key: string; value?: any; maxfail?: any }): string;
+
   getDivClassForKey(key: string): string;
+
   getClassForColumnKey(columnKey: string): string;
+
   getChildClassForColumnKey(columnKey: string): string;
+
   getDisplayTextForKeyAndRevoked(
     key: string,
     value: any,
     revoked: boolean,
   ): string;
+
   getTdClassForKey(key: string): string[];
+
   getSpanClassForState(state: string, clickable: boolean): string;
+
   getDisplayTextForState(state: string): string;
 }
 

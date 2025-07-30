@@ -3,10 +3,9 @@
     <p>{{ text }}</p>
   </div>
   <h4 class="enroll-h4">Token Configuration</h4>
-  <mat-button-toggle-group
-    [formControl]="intentionToggleControl"
-    [hideSingleSelectionIndicator]="true"
-    class="button-toggle-group">
+  <mat-button-toggle-group [formControl]="intentionToggleControl"
+                           [hideSingleSelectionIndicator]="true"
+                           class="button-toggle-group">
     <mat-button-toggle value="generate">Generate Request</mat-button-toggle>
     <mat-button-toggle value="uploadRequest">Upload Request</mat-button-toggle>
     <mat-button-toggle value="uploadCert">Upload Certificate</mat-button-toggle>
@@ -15,10 +14,9 @@
   <div class="flex-row gap-1">
     <mat-form-field class="width-33">
       <mat-label>CA Connector</mat-label>
-      <mat-select
-        [formControl]="caConnectorControl"
-        [errorStateMatcher]="caConnectorErrorStateMatcher"
-        required>
+      <mat-select [errorStateMatcher]="caConnectorErrorStateMatcher"
+                  [formControl]="caConnectorControl"
+                  required>
         @for (option of caConnectorOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
         }
@@ -40,20 +38,17 @@
 
   @switch (intentionToggleControl.value) {
     @case ("generate") {
-      <span class="margin-bottom-1"
-        >The server will create the private RSA key and store it in the
+      <span class="margin-bottom-1">The server will create the private RSA key and store it in the
         database. <br />
-        You can later download the PKCS#12 file.</span
-      >
+        You can later download the PKCS#12 file.</span>
     }
     @case ("upload") {
       <mat-form-field class="width-66">
         <mat-label> Certificate Signing Request (PEM)</mat-label>
-        <textarea
-          [formControl]="pemControl"
-          matInput
-          placeholder="Paste the Certificate Signing Request here"
-          rows="3"></textarea>
+        <textarea [formControl]="pemControl"
+                  matInput
+                  placeholder="Paste the Certificate Signing Request here"
+                  rows="3"></textarea>
       </mat-form-field>
     }
   }

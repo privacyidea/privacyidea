@@ -15,11 +15,10 @@ import { Subject } from 'rxjs'; // fromEvent and debounceTime are not directly u
   standalone: true,
 })
 export class ScrollAdjusterDirective implements AfterViewInit, OnDestroy {
-  @Input() scrollItemSelector: string = '.scroll-item'; // Default selector, can be overridden
-
   private destroy$ = new Subject<void>();
   private resizeObserver!: ResizeObserver;
   private mutationObserver!: MutationObserver;
+  @Input() scrollItemSelector: string = '.scroll-item'; // Default selector, can be overridden
 
   constructor(
     private el: ElementRef<HTMLElement>,

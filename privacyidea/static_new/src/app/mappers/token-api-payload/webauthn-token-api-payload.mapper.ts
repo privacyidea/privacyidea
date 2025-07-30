@@ -1,10 +1,10 @@
 import { WebAuthnRegisterRequest } from '../../services/token/token.service';
 import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentPayload,
-  TokenEnrollmentData,
-  EnrollmentResponseDetail,
   EnrollmentResponse,
+  EnrollmentResponseDetail,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData,
+  TokenEnrollmentPayload,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
 

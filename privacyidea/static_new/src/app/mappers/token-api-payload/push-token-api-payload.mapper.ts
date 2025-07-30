@@ -1,15 +1,12 @@
 import {
   TokenApiPayloadMapper,
-  TokenEnrollmentPayload,
   TokenEnrollmentData,
+  TokenEnrollmentPayload,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
 
-// Interface for Push Token-specific enrollment data
 export interface PushEnrollmentData extends TokenEnrollmentData {
   type: 'push';
-  // No type-specific fields from EnrollmentOptions are directly used for params in TokenService.
-  // genkey=1 is hardcoded.
 }
 
 export interface PushEnrollmentPayload extends TokenEnrollmentPayload {
@@ -29,7 +26,7 @@ export class PushApiPayloadMapper
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
       pin: data.pin,
-      genkey: 1, // Hardcoded as per switch statement
+      genkey: 1,
     };
   }
 

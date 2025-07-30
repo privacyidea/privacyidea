@@ -53,7 +53,7 @@
         <mat-icon class="detail-button-icon">help_outline</mat-icon>
         Verify OTP Value
       </button>
-      @if(tokenType() === 'sshkey') {
+      @if (tokenType() === 'sshkey') {
         <button (click)="assignSSHMachineDialog()"
                 class="detail-button"
                 extended

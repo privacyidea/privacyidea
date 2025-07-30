@@ -1,7 +1,7 @@
 import {
   TokenApiPayloadMapper,
-  TokenEnrollmentPayload,
   TokenEnrollmentData,
+  TokenEnrollmentPayload,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
 

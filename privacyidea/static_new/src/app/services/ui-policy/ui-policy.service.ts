@@ -50,50 +50,63 @@ export class UiPolicyService {
     }
   }
 
-  getConfig(): AppConfig {
-    return this.config;
-  }
-
   get remoteUser(): string {
     return this.config.remoteUser;
   }
+
   get hasJobQueue(): boolean {
     return !!this.config.hasJobQueue.toLowerCase();
   }
+
   get passwordReset(): boolean {
     return this.config.passwordReset;
   }
+
   get hsmReady(): boolean {
     return this.config.hsmReady;
   }
+
   get customization(): string {
     return this.config.customization;
   }
+
   get realms(): string {
     return this.config.realms;
   }
+
   get logo(): string {
     return this.config.logo;
   }
+
   get showNode(): string {
     return this.config.showNode;
   }
+
   get externalLinks(): boolean {
     return this.config.externalLinks;
   }
+
   get loginText(): string {
     return this.config.loginText;
   }
+
   get logoutRedirectUrl(): string {
     return this.config.logoutRedirectUrl;
   }
+
   get gdprLink(): string {
     return this.config.gdprLink;
   }
+
   get privacyideaVersionNumber(): string {
     return this.config.privacyideaVersionNumber;
   }
+
   get translationWarning(): boolean {
     return this.config.translationWarning;
+  }
+
+  getConfig(): AppConfig {
+    return this.config;
   }
 }

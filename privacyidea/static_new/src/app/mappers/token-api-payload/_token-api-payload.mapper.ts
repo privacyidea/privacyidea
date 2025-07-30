@@ -2,6 +2,7 @@ export interface EnrollmentResponse<
   D extends EnrollmentResponseDetail = EnrollmentResponseDetail,
 > {
   detail: D;
+
   [key: string]: any;
 }
 
@@ -16,6 +17,7 @@ export interface EnrollmentResponseDetail {
   otpkey?: EnrollmentUrl;
   motpurl?: EnrollmentUrl;
   tiqrenroll?: EnrollmentUrl;
+
   [key: string]: any;
 }
 
@@ -43,12 +45,12 @@ export interface TokenEnrollmentPayload {
   container_serial: string;
   validity_period_start: string;
   validity_period_end: string;
-  user: string | null; // User can be null for some types like 4eyes
+  user: string | null;
   pin: string;
-  // Other common fields can be added here if necessary
 }
 
 export interface TokenApiPayloadMapper<T> {
   toApiPayload(data: T): any;
+
   fromApiPayload(data: any): T;
 }

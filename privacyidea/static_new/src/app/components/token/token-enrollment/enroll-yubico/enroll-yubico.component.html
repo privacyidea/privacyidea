@@ -4,25 +4,18 @@
   </div>
   <h4 class="enroll-h4">Token Configuration</h4>
   @if (!yubicoIsConfigured()) {
-    <span class="inline-warning"
-      >For Yubico tokens to work properly you need to set the
-      <a href="#">Yubico Token Config</a>!</span
-    >
-    <!-- TODO: Link -->
+    <span class="inline-warning">For Yubico tokens to work properly you need to set the
+      <a href="#">Yubico Token Config</a>!</span><!-- TODO: Link -->
   }
   <div class="flex-row gap-1">
     <mat-form-field class="input-height width-33">
       <mat-label>Yubikey Identifier</mat-label>
-      <input
-        [formControl]="yubikeyIdentifierControl"
-        [errorStateMatcher]="yubicoErrorStatematcher"
-        matInput
-        placeholder="Enter the 12 digit identifier"
-        required />
-      <mat-error
-        >Yubikey identifier with 12 digits is
-        <strong>required</strong></mat-error
-      >
+      <input [errorStateMatcher]="yubicoErrorStatematcher"
+             [formControl]="yubikeyIdentifierControl"
+             matInput
+             placeholder="Enter the 12 digit identifier"
+             required />
+      <mat-error>Yubikey identifier with 12 digits is <strong>required</strong></mat-error>
     </mat-form-field>
   </div>
 </div>

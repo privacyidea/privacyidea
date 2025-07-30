@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, inject } from '@angular/core';
+import { Component, EventEmitter, inject, Output } from '@angular/core';
 import {
   AbstractControl,
   FormControl,
@@ -60,6 +60,17 @@ export class EnrollSshkeyComponent {
     [key: string]: FormControl<any>;
   }>();
 
+  static sshKeyValidator(
+    control: AbstractControl,
+  ): { [key: string]: boolean } | null {
+    const sshKeyPattern =
+      /^ssh-(rsa|dss|ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) [A-Za-z0-9+/=]+( .+)?$/;
+    if (control.value && !sshKeyPattern.test(control.value)) {
+      return { invalidSshKey: true };
+    }
+    return null;
+  }
+
   ngOnInit() {
     this.aditionalFormFieldsChange.emit({
       sshPublicKey: this.sshPublicKeyFormControl,
@@ -93,15 +104,4 @@ export class EnrollSshkeyComponent {
       mapper: this.enrollmentMapper,
     });
   };
-
-  static sshKeyValidator(
-    control: AbstractControl,
-  ): { [key: string]: boolean } | null {
-    const sshKeyPattern =
-      /^ssh-(rsa|dss|ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) [A-Za-z0-9+/=]+( .+)?$/;
-    if (control.value && !sshKeyPattern.test(control.value)) {
-      return { invalidSshKey: true };
-    }
-    return null;
-  }
 }

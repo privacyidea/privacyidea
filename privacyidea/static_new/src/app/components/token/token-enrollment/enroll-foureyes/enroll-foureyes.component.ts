@@ -157,21 +157,6 @@ export class EnrollFoureyesComponent implements OnInit {
     this.requiredTokensOfRealmsControl.updateValueAndValidity();
   }
 
-  private removeRealmFromSelection(
-    tokensArray: { realm: string; tokens: number }[],
-    index: number,
-  ): void {
-    tokensArray.splice(index, 1);
-  }
-
-  private addRealmToSelection(
-    tokensArray: { realm: string; tokens: number }[],
-    realm: string,
-    tokens: number,
-  ): void {
-    tokensArray.push({ realm, tokens });
-  }
-
   onRealmSelectionChange(event: MatOptionSelectionChange, realm: string): void {
     if (event.isUserInput && event.source.selected) {
       if (this.getTokenCount(realm) === 0) {
@@ -201,4 +186,19 @@ export class EnrollFoureyesComponent implements OnInit {
       mapper: this.enrollmentMapper,
     });
   };
+
+  private removeRealmFromSelection(
+    tokensArray: { realm: string; tokens: number }[],
+    index: number,
+  ): void {
+    tokensArray.splice(index, 1);
+  }
+
+  private addRealmToSelection(
+    tokensArray: { realm: string; tokens: number }[],
+    realm: string,
+    tokens: number,
+  ): void {
+    tokensArray.push({ realm, tokens });
+  }
 }

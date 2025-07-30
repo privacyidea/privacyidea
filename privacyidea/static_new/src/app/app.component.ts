@@ -42,15 +42,14 @@ export interface PiResponse<Value, Detail = unknown> {
   styleUrl: './app.component.scss',
 })
 export class AppComponent implements OnInit {
-  title = 'privacyidea-webui';
-  lastSessionReset = 0;
-
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface =
     inject(NotificationService);
   private readonly sessionTimerService: SessionTimerServiceInterface =
     inject(SessionTimerService);
   private readonly themeService: ThemeService = inject(ThemeService);
+  title = 'privacyidea-webui';
+  lastSessionReset = 0;
 
   constructor() {
     this.sessionTimerService.startTimer();

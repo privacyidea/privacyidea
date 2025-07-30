@@ -1,10 +1,10 @@
 import {
   Component,
   EventEmitter,
-  OnInit,
-  Output,
   inject,
   linkedSignal,
+  OnInit,
+  Output,
 } from '@angular/core';
 import {
   FormControl,
@@ -43,6 +43,7 @@ export interface CertificateEnrollmentOptions extends TokenEnrollmentData {
   certTemplate: string;
   pem?: string;
 }
+
 export class CaConnectorErrorStateMatcher implements ErrorStateMatcher {
   isErrorState(control: FormControl | null): boolean {
     const invalid = control && control.value ? control.value === '' : true;

@@ -1,11 +1,10 @@
 import {
   TokenApiPayloadMapper,
-  TokenEnrollmentPayload,
   TokenEnrollmentData,
+  TokenEnrollmentPayload,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
 
-// Interface for mOTP-specific enrollment data
 export interface MotpEnrollmentData extends TokenEnrollmentData {
   type: 'motp';
   generateOnServer?: boolean;

@@ -31,6 +31,7 @@ import { TiqrApiPayloadMapper } from '../../../../mappers/token-api-payload/tiqr
 export interface TiqrEnrollmentOptions extends TokenEnrollmentData {
   type: 'tiqr';
 }
+
 @Component({
   selector: 'app-enroll-tiqr',
   standalone: true,

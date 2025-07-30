@@ -5,6 +5,7 @@ import { PiResponse } from '../../app.component';
 import { LocalService } from '../local/local.service';
 
 type SmsGateways = SmsGateway[];
+
 export interface SmsGateway {
   id: number;
   name: string;

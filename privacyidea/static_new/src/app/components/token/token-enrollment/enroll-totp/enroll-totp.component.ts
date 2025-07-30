@@ -1,5 +1,5 @@
 import { NgClass } from '@angular/common';
-import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
+import { Component, EventEmitter, inject, OnInit, Output } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -36,6 +36,7 @@ export interface TotpEnrollmentOptions extends TokenEnrollmentData {
   hashAlgorithm: string;
   timeStep: number;
 }
+
 @Component({
   selector: 'app-enroll-totp',
   standalone: true,
@@ -59,34 +60,6 @@ export class EnrollTotpComponent implements OnInit {
   protected readonly enrollmentMapper: TotpApiPayloadMapper =
     inject(TotpApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === 'totp')?.text;
-
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
-    [key: string]: FormControl<any>;
-  }>();
-  @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
-  >();
-
-  generateOnServerFormControl = new FormControl<boolean>(true, [
-    Validators.required,
-  ]);
-  otpLengthControl = new FormControl<number>(6, [Validators.required]);
-  otpKeyControl = new FormControl<string>('');
-  hashAlgorithmControl = new FormControl<string>('sha1', [Validators.required]);
-  timeStepControl = new FormControl<number | string>(30, [Validators.required]);
-
-  totpForm = new FormGroup({
-    generateOnServer: this.generateOnServerFormControl,
-    otpLength: this.otpLengthControl,
-    otpKey: this.otpKeyControl,
-    hashAlgorithm: this.hashAlgorithmControl,
-    timeStep: this.timeStepControl,
-  });
-
   readonly otpLengthOptions = [6, 8];
   readonly hashAlgorithmOptions = [
     { value: 'sha1', viewValue: 'SHA1' },
@@ -94,6 +67,29 @@ export class EnrollTotpComponent implements OnInit {
     { value: 'sha512', viewValue: 'SHA512' },
   ];
   readonly timeStepOptions = [30, 60];
+  text = this.tokenService
+    .tokenTypeOptions()
+    .find((type) => type.key === 'totp')?.text;
+  @Output() aditionalFormFieldsChange = new EventEmitter<{
+    [key: string]: FormControl<any>;
+  }>();
+  @Output() clickEnrollChange = new EventEmitter<
+    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+  >();
+  generateOnServerFormControl = new FormControl<boolean>(true, [
+    Validators.required,
+  ]);
+  otpLengthControl = new FormControl<number>(6, [Validators.required]);
+  otpKeyControl = new FormControl<string>('');
+  hashAlgorithmControl = new FormControl<string>('sha1', [Validators.required]);
+  timeStepControl = new FormControl<number | string>(30, [Validators.required]);
+  totpForm = new FormGroup({
+    generateOnServer: this.generateOnServerFormControl,
+    otpLength: this.otpLengthControl,
+    otpKey: this.otpKeyControl,
+    hashAlgorithm: this.hashAlgorithmControl,
+    timeStep: this.timeStepControl,
+  });
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({

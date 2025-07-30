@@ -36,7 +36,6 @@ import { TokenTableComponent } from './token-table.component';
   styleUrl: './token-table.component.scss',
 })
 export class TokenTableSelfServiceComponent extends TokenTableComponent {
-  private dialog = inject(MatDialog);
   readonly columnKeysMapSelfService = [
     { key: 'serial', label: 'Serial' },
     { key: 'tokentype', label: 'Type' },
@@ -50,6 +49,7 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
   readonly columnKeysSelfService: string[] = this.columnKeysMapSelfService.map(
     (column: { key: string; label: string }) => column.key,
   );
+  private dialog = inject(MatDialog);
 
   ngOnInit(): void {
     this.pageSize.set(5);

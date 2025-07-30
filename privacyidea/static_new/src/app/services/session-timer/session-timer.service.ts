@@ -15,10 +15,13 @@ import {
 } from '../notification/notification.service';
 
 export interface SessionTimerServiceInterface {
-  startTimer(): void;
-  resetTimer(): void;
-  startRefreshingRemainingTime(): void;
   remainingTime: Signal<number>;
+
+  startTimer(): void;
+
+  resetTimer(): void;
+
+  startRefreshingRemainingTime(): void;
 }
 
 @Injectable({

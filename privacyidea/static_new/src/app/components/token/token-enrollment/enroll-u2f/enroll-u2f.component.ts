@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
+import { Component, EventEmitter, inject, OnInit, Output } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -20,6 +20,7 @@ import { U2fApiPayloadMapper } from '../../../../mappers/token-api-payload/u2f-t
 export interface U2fEnrollmentOptions extends TokenEnrollmentData {
   type: 'u2f';
 }
+
 @Component({
   selector: 'app-enroll-u2f',
   standalone: true,

@@ -7,10 +7,12 @@ import { LocalService } from '../local/local.service';
 type ServiceIds = {
   [key: string]: _ServiceId;
 };
+
 interface _ServiceId {
   description: string;
   id: number;
 }
+
 export interface ServiceId {
   name: string;
   description: string;

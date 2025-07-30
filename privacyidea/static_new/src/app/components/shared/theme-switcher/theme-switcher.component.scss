@@ -20,9 +20,8 @@
   background-color: transparent;
   color: var(--mat-sys-surface-container-highest);
   border: none;
-  transition:
-    background-color 0.2s ease-in-out,
-    color 0.2s ease-in-out;
+  transition: background-color 0.2s ease-in-out,
+  color 0.2s ease-in-out;
 
   .mat-icon {
     font-size: 24px;
@@ -44,6 +43,7 @@
 
 .mat-mdc-menu-panel {
   background-color: var(--mat-sys-surface-container);
+
   .mat-mdc-menu-item {
     padding: 8px 16px;
     color: var(--mat-sys-on-surface);

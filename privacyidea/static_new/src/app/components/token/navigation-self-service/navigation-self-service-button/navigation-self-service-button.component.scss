@@ -7,6 +7,7 @@
   --tile-max-width: 12vw;
   --tile-height: calc(var(--tile-width) / 1.618); // Golden ratio
 }
+
 .tile-size-scope .tile-button {
   width: var(--tile-width);
   max-width: var(--tile-max-width);
@@ -44,6 +45,7 @@
   height: calc(var(--tile-height) / 3.333);
   max-height: calc(var(--tile-height) / 3.333);
 }
+
 .tile-size-scope .tile-icon-large {
   font-size: calc(var(--tile-height) / 2.7);
   width: calc(var(--tile-height) / 2.7);
@@ -51,12 +53,14 @@
   height: calc(var(--tile-height) / 2.7);
   max-height: calc(var(--tile-height) / 2.7);
 }
+
 .top-content {
   flex: 3;
   display: flex;
   justify-content: center;
   align-items: center;
 }
+
 .tile-size-scope .bottom-content {
   flex: 2;
   display: flex;
@@ -75,6 +79,7 @@
   background-color: var(--mat-sys-primary);
   color: var(--mat-sys-on-primary);
   @include mat.elevation(3);
+
   .mat-icon {
     color: var(--mat-sys-on-primary);
   }

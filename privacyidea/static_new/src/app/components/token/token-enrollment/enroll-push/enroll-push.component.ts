@@ -145,6 +145,7 @@ export class EnrollPushComponent implements OnInit {
       data: { enrollmentResponse },
     });
   }
+
   private _closeStepOneDialog(): void {
     this.reopenDialogChange.emit(undefined);
     this.dialogService.closeTokenEnrollmentFirstStepDialog();

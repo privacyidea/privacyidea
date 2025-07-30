@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
+import { Component, EventEmitter, inject, OnInit, Output } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -20,6 +20,7 @@ import { RegistrationApiPayloadMapper } from '../../../../mappers/token-api-payl
 export interface RegistrationEnrollmentOptions extends TokenEnrollmentData {
   type: 'registration';
 }
+
 @Component({
   selector: 'app-enroll-registration',
   standalone: true,

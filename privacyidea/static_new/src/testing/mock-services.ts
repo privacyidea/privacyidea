@@ -44,10 +44,7 @@ import {
   ContainerType,
   ContainerTypes,
 } from '../app/services/container/container.service';
-import {
-  ContentService,
-  ContentServiceInterface,
-} from '../app/services/content/content.service';
+import { ContentServiceInterface } from '../app/services/content/content.service';
 import {
   LocalService,
   LocalServiceInterface,
@@ -404,6 +401,7 @@ export class MockContentService implements ContentServiceInterface {
     events: of({} as any),
   } as any;
   routeUrl: Signal<string> = signal('/home');
+  previousUrl: Signal<string> = signal('/home');
   tokenSerial: WritableSignal<string> = signal('');
   containerSerial: WritableSignal<string> = signal('');
 
@@ -1099,9 +1097,9 @@ export class MockAuditService implements AuditServiceInterface {
 }
 
 export class MockLocalService implements LocalServiceInterface {
+  private data: Record<string, string> = {};
   key: string = 'mockLocalServiceKey';
   bearerTokenKey: string = 'mockBearerTokenKey';
-  private data: Record<string, string> = {};
   saveData = jest.fn().mockImplementation((key: string, value: string) => {
     this.data[key] = value;
   });

@@ -85,7 +85,7 @@ describe('AppComponent', () => {
     ) as unknown as MockSessionTimerService;
 
     const fixture = TestBed.createComponent(AppComponent);
-    fixture.detectChanges(); // registers HostListeners
+    fixture.detectChanges();
 
     document.dispatchEvent(new Event('click'));
 

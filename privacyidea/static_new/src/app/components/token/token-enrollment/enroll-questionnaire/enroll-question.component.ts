@@ -32,6 +32,7 @@ import {
   TokenEnrollmentData,
 } from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
 import { QuestionApiPayloadMapper } from '../../../../mappers/token-api-payload/question-token-api-payload.mapper';
+
 export interface QuestionEnrollmentOptions extends TokenEnrollmentData {
   type: 'question';
   answers: Record<string, string>;
@@ -58,21 +59,6 @@ export class EnrollQuestionComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly systemService: SystemServiceInterface =
     inject(SystemService);
-
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === 'question')?.text;
-
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
-    [key: string]: FormControl<any>;
-  }>();
-  @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
-  >();
-
-  questionForm = new FormGroup<Record<string, AbstractControl<string>>>({});
-  questionControlNames: string[] = [];
-
   readonly configQuestions = computed(() => {
     const cfg =
       this.systemService.systemConfigResource.value()?.result?.value || {};
@@ -83,46 +69,27 @@ export class EnrollQuestionComponent implements OnInit {
         text: v,
       }));
   });
-
   readonly configMinNumberOfAnswers: Signal<number> = computed(() => {
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
     return cfg && cfg['question.num_answers']
       ? parseInt(cfg['question.num_answers'], 10)
       : 0;
   });
-
-  private answeredCount(): number {
-    return Object.values(this.questionForm.controls).filter(
-      (control) => control?.value && control.value.trim() !== '',
-    ).length;
-  }
+  text = this.tokenService
+    .tokenTypeOptions()
+    .find((type) => type.key === 'question')?.text;
+  @Output() aditionalFormFieldsChange = new EventEmitter<{
+    [key: string]: FormControl<any>;
+  }>();
+  @Output() clickEnrollChange = new EventEmitter<
+    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+  >();
+  questionForm = new FormGroup<Record<string, AbstractControl<string>>>({});
+  questionControlNames: string[] = [];
 
   ngOnInit(): void {
     this.updateFormControls();
     this.clickEnrollChange.emit(this.onClickEnroll);
-  }
-
-  private updateFormControls(): void {
-    Object.keys(this.questionForm.controls).forEach((key) => {
-      this.questionForm.removeControl(key);
-    });
-    this.questionControlNames = [];
-
-    const newControls: { [key: string]: FormControl<string | null> } = {};
-    this.configQuestions().forEach((q) => {
-      const controlName = `answer_${q.question.replace(/\s+/g, '_')}`;
-      this.questionControlNames.push(controlName);
-      const control = new FormControl<string | null>('', [Validators.required]);
-      this.questionForm.addControl(controlName, control);
-      newControls[controlName] = control;
-    });
-    this.aditionalFormFieldsChange.emit(newControls);
-    this.questionForm.setValidators(() => {
-      return this.answeredCount() >= this.configMinNumberOfAnswers()
-        ? null
-        : { minAnswers: true };
-    });
-    this.questionForm.updateValueAndValidity();
   }
 
   onClickEnroll = (
@@ -149,4 +116,33 @@ export class EnrollQuestionComponent implements OnInit {
       mapper: this.enrollmentMapper,
     });
   };
+
+  private answeredCount(): number {
+    return Object.values(this.questionForm.controls).filter(
+      (control) => control?.value && control.value.trim() !== '',
+    ).length;
+  }
+
+  private updateFormControls(): void {
+    Object.keys(this.questionForm.controls).forEach((key) => {
+      this.questionForm.removeControl(key);
+    });
+    this.questionControlNames = [];
+
+    const newControls: { [key: string]: FormControl<string | null> } = {};
+    this.configQuestions().forEach((q) => {
+      const controlName = `answer_${q.question.replace(/\s+/g, '_')}`;
+      this.questionControlNames.push(controlName);
+      const control = new FormControl<string | null>('', [Validators.required]);
+      this.questionForm.addControl(controlName, control);
+      newControls[controlName] = control;
+    });
+    this.aditionalFormFieldsChange.emit(newControls);
+    this.questionForm.setValidators(() => {
+      return this.answeredCount() >= this.configMinNumberOfAnswers()
+        ? null
+        : { minAnswers: true };
+    });
+    this.questionForm.updateValueAndValidity();
+  }
 }

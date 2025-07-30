@@ -1,14 +1,13 @@
 import {
   TokenApiPayloadMapper,
-  TokenEnrollmentPayload,
   TokenEnrollmentData,
+  TokenEnrollmentPayload,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
 
-// Interface for SSHKey-specific enrollment data
 export interface SshkeyEnrollmentData extends TokenEnrollmentData {
   type: 'sshkey';
-  sshPublicKey?: string; // Corresponds to 'sshkey' in API payload (from TokenService)
+  sshPublicKey?: string;
 }
 
 export interface SshkeyEnrollmentPayload extends TokenEnrollmentPayload {

@@ -1,14 +1,13 @@
 import {
   TokenApiPayloadMapper,
-  TokenEnrollmentPayload,
   TokenEnrollmentData,
+  TokenEnrollmentPayload,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
 
-// Interface for Yubico Cloud-specific enrollment data
 export interface YubicoEnrollmentData extends TokenEnrollmentData {
   type: 'yubico';
-  yubicoIdentifier?: string; // This will be mapped to 'yubico.tokenid' in toApiPayload
+  yubicoIdentifier?: string;
 }
 
 export interface YubicoEnrollmentPayload extends TokenEnrollmentPayload {

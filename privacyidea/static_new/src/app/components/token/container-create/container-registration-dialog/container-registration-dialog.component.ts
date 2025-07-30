@@ -21,13 +21,13 @@ import { Router } from '@angular/router';
   styleUrl: './container-registration-dialog.component.scss',
 })
 export class ContainerRegistrationDialogComponent {
-  private router = inject(Router);
   protected readonly containerService: ContainerServiceInterface =
     inject(ContainerService);
   public readonly data: {
     response: PiResponse<ContainerRegisterData>;
     containerSerial: WritableSignal<string>;
   } = inject(MAT_DIALOG_DATA);
+  private router = inject(Router);
 
   constructor(private dialogRef: MatDialogRef<LostTokenComponent>) {
     this.dialogRef.afterClosed().subscribe(() => {

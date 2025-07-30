@@ -1,21 +1,19 @@
 @use "@angular/material" as mat;
 
 html {
-  // Das ist deine bestehende .system Klasse, die light-dark benutzt
   &.system {
-    // --mat-sys-shadow: light-dark(#cccccc, #000000)
     --mat-sys-light: light-dark(#ffffff, #242424);
 
     --mat-sys-primary-dark: light-dark(hsl(198, 66%, 25%), hsl(198, 66%, 60%));
     --mat-sys-primary-base: light-dark(hsl(198, 66%, 30%), hsl(198, 66%, 55%));
     --mat-sys-primary-base-active: light-dark(
-      hsl(198, 66%, 32.5%),
-      hsl(198, 66%, 52.5%)
+        hsl(198, 66%, 32.5%),
+        hsl(198, 66%, 52.5%)
     );
     --mat-sys-primary-light: light-dark(hsl(198, 66%, 35%), hsl(198, 66%, 50%));
     --mat-sys-primary-light-active: light-dark(
-      hsl(198, 66%, 37.5%),
-      hsl(198, 66%, 47.5%)
+        hsl(198, 66%, 37.5%),
+        hsl(198, 66%, 47.5%)
     );
 
     --green-dark: light-dark(hsl(120, 39%, 39%), hsl(120, 39%, 69%));
@@ -43,12 +41,9 @@ html {
     color-scheme: light dark;
   }
 
-  // --- HIER BEGINNEN DIE NEUEN DEFINITIONEN ---
-
   &.light {
     color-scheme: light;
 
-    // Feste Werte für den Light-Modus
     --mat-sys-light: #ffffff;
 
     --mat-sys-primary-dark: hsl(198, 66%, 25%);
@@ -79,7 +74,6 @@ html {
 
     --mat-sys-shadow-color-high: #ababab;
 
-    // Material Theme Overrides für Light
     --mat-sys-primary: var(--mat-sys-primary-base);
     --mat-sys-on-primary: hsl(198, 66%, 95%);
     --mat-sys-primary-container: hsl(0, 0%, 100%);
@@ -99,7 +93,6 @@ html {
   &.dark {
     color-scheme: dark;
 
-    // Feste Werte für den Dark-Modus
     --mat-sys-light: #242424;
 
     --mat-sys-primary-dark: hsl(198, 66%, 60%);
@@ -129,8 +122,6 @@ html {
     --grey-light-active: hsl(0, 0%, 55%);
 
     --mat-sys-shadow-color-high: #050505;
-
-    // Material Theme Overrides für Dark
     --mat-sys-primary: var(--mat-sys-primary-base);
     --mat-sys-on-primary: hsl(198, 66%, 10%);
     --mat-sys-primary-container: hsl(198, 66%, 40%);
@@ -147,18 +138,12 @@ html {
     --mat-sys-shadow: #000000;
   }
 
-  // Dieser mat.theme-Block wendet die über die CSS-Variablen definierten Farben an.
-  // Er muss nur einmal im HTML-Kontext (dem Eltern-Selektor, z.B. 'html') stehen.
-  // Die spezifische Klasse (.system, .light, .dark) am html-Tag bestimmt, welche Variablen aktiv sind.
   @include mat.theme(
-    (
-      color: mat.$blue-palette,
-    ),
+      (
+        color: mat.$blue-palette,
+      ),
     $overrides: (
-      // Layout definitions
       "corner-large": 16px,
-
-      // Color definitions (diese greifen auf die oben definierten CSS-Variablen zu)
       "primary": var(--mat-sys-primary-base),
       "on-primary": var(--mat-sys-on-primary),
       "primary-container": var(--mat-sys-primary-container),

@@ -1,21 +1,19 @@
 import {
   TokenApiPayloadMapper,
-  TokenEnrollmentPayload,
   TokenEnrollmentData,
+  TokenEnrollmentPayload,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
 
-// Interface for Vasco Token-specific enrollment data
 export interface VascoEnrollmentData extends TokenEnrollmentData {
   type: 'vasco';
   useVascoSerial?: boolean;
-  vascoSerial?: string; // Used if useVascoSerial is true
+  vascoSerial?: string;
   otpKey?: string;
-  // genkey=0 is hardcoded in TokenService
 }
 
 export interface VascoEnrollmentPayload extends TokenEnrollmentPayload {
-  serial?: string; // This is the Vasco device serial, conditionally set
+  serial?: string;
   otpkey?: string;
   genkey: 0;
 }
@@ -33,8 +31,7 @@ export class VascoApiPayloadMapper
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
       pin: data.pin,
-      genkey: 0, // Hardcoded as per switch statement
-      // otpkey is always set from data.otpKey as per switch (will be undefined if useVascoSerial is true, based on component logic)
+      genkey: 0,
       otpkey: data.otpKey,
     };
 

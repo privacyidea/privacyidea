@@ -1,11 +1,10 @@
 import {
   TokenApiPayloadMapper,
-  TokenEnrollmentPayload,
   TokenEnrollmentData,
+  TokenEnrollmentPayload,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
 
-// Interface for Email Token-specific enrollment data
 export interface EmailEnrollmentData extends TokenEnrollmentData {
   type: 'email';
   emailAddress?: string;
@@ -13,7 +12,7 @@ export interface EmailEnrollmentData extends TokenEnrollmentData {
 }
 
 export interface EmailEnrollmentPayload extends TokenEnrollmentPayload {
-  email?: string; // Set if readEmailDynamically is false
+  email?: string;
   dynamic_email: boolean;
 }
 
@@ -30,7 +29,6 @@ export class EmailApiPayloadMapper
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
       pin: data.pin,
-      // Based on component logic, data.emailAddress is set if !readEmailDynamically
       email: data.emailAddress,
       dynamic_email: !!data.readEmailDynamically,
     };

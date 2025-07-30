@@ -64,9 +64,6 @@ import {
 export class TokenDetailsInfoComponent {
   protected readonly Object = Object;
   private tokenService: TokenServiceInterface = inject(TokenService);
-  protected overflowService: OverflowServiceInterface = inject(OverflowService);
-  protected authService: AuthServiceInterface = inject(AuthService);
-
   tokenSerial = this.tokenService.tokenSerial;
   @Input() infoData!: WritableSignal<EditableElement[]>;
   @Input() detailData!: WritableSignal<EditableElement[]>;
@@ -79,6 +76,8 @@ export class TokenDetailsInfoComponent {
       return { key: '', value: '' };
     },
   });
+  protected overflowService: OverflowServiceInterface = inject(OverflowService);
+  protected authService: AuthServiceInterface = inject(AuthService);
 
   toggleInfoEdit(): void {
     if (this.isEditingInfo()) {

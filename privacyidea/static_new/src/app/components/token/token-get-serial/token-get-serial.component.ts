@@ -55,7 +55,6 @@ import { Router } from '@angular/router';
   styleUrl: './token-get-serial.component.scss',
 })
 export class TokenGetSerialComponent {
-  private router = inject(Router);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly notificationService: NotificationServiceInterface =
     inject(NotificationService);
@@ -64,7 +63,7 @@ export class TokenGetSerialComponent {
   protected readonly contentService: ContentServiceInterface =
     inject(ContentService);
   private readonly dialog: MatDialog = inject(MatDialog);
-
+  private router = inject(Router);
   tokenSerial = this.tokenService.tokenSerial;
   otpValue = signal<string>('');
   tokenType = signal<string>('');

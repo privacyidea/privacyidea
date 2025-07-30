@@ -8,8 +8,11 @@ export interface LocalServiceInterface {
   bearerTokenKey: string;
 
   saveData(key: string, value: string): void;
+
   getData(key: string): string;
+
   removeData(key: string): void;
+
   getHeaders(): HttpHeaders;
 }
 

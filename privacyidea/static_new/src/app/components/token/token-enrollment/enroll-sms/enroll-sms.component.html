@@ -4,11 +4,8 @@
   </div>
   <h4 class="enroll-h4">Token Configuration</h4>
   @if (!defaultSMSGatewayIsSet()) {
-    <span class="inline-hint"
-      >For SMS tokens to work properly you need to set the
-      <a href="#">SMS Token Config</a>!</span
-    >
-    <!-- TODO: Link should be dynamic or removed if not applicable -->
+    <span class="inline-hint">For SMS tokens to work properly you need to set the
+      <a href="#">SMS Token Config</a>!</span><!-- TODO: Link should be dynamic or removed if not applicable -->
   }
   <mat-checkbox [formControl]="readNumberDynamicallyControl">
     Read number dynamically from user source on each request.
@@ -17,7 +14,9 @@
     @if (!readNumberDynamicallyControl.value) {
       <mat-form-field class="width-33 input-height">
         <mat-label>Phone number</mat-label>
-        <input [formControl]="phoneNumberControl" matInput required />
+        <input [formControl]="phoneNumberControl"
+               matInput
+               required />
         <mat-error>Phone number is <strong>required</strong></mat-error>
       </mat-form-field>
     } @else {
@@ -25,9 +24,8 @@
     }
     <mat-form-field class="width-66 input-height">
       <mat-label> A token specific SMS gateway</mat-label>
-      <mat-hint
-        >If this token should not use the system wide SMS gateway but an
-        individual SMS gateway, you can select the gateway here.
+      <mat-hint>If this token should not use the system wide SMS gateway but an individual SMS
+        gateway, you can select the gateway here.
       </mat-hint>
       <mat-select [formControl]="smsGatewayControl">
         @for (option of smsGatewayOptions(); track option) {

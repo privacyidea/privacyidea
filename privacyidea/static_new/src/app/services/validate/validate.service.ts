@@ -52,6 +52,7 @@ export interface ValidateServiceInterface {
     otpOrPinToTest: string,
     otponly?: string,
   ): Observable<ValidateCheckResponse>;
+
   authenticatePasskey(args?: { isTest?: boolean }): Observable<AuthResponse>;
 }
 

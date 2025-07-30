@@ -64,6 +64,7 @@ export interface MachineServiceInterface {
   pageIndex: WritableSignal<number>;
   machinesResource: any;
   tokenApplicationResource: any;
+
   postAssignMachineToToken(args: {
     service_id: string;
     user: string;
@@ -72,6 +73,7 @@ export interface MachineServiceInterface {
     machineid: string;
     resolver: string;
   }): Observable<any>;
+
   postTokenOption(
     hostname: string,
     machineid: string,
@@ -80,11 +82,13 @@ export interface MachineServiceInterface {
     application: string,
     mtid: string,
   ): Observable<any>;
+
   getAuthItem(
     challenge: string,
     hostname: string,
     application?: string,
   ): Observable<any>;
+
   postToken(
     hostname: string,
     machineid: string,
@@ -92,6 +96,7 @@ export interface MachineServiceInterface {
     serial: string,
     application: string,
   ): Observable<any>;
+
   getMachine(args: {
     hostname?: string;
     ip?: string;
@@ -99,18 +104,22 @@ export interface MachineServiceInterface {
     resolver?: string;
     any?: string;
   }): Observable<PiResponse<Machines>>;
+
   deleteToken(
     serial: string,
     machineid: string,
     resolver: string,
     application: string,
   ): Observable<any>;
+
   deleteTokenMtid(
     serial: string,
     application: string,
     mtid: string,
   ): Observable<any>;
+
   onPageEvent(event: PageEvent): void;
+
   onSortEvent($event: Sort): void;
 }
 
@@ -150,25 +159,11 @@ export class MachineService implements MachineServiceInterface {
     computation: (machinesResource, previous) =>
       machinesResource?.result?.value ?? previous?.value,
   });
-
-  postAssignMachineToToken(args: {
-    service_id: string;
-    user: string;
-    serial: string;
-    application: string;
-    machineid: string;
-    resolver: string;
-  }): Observable<any> {
-    const headers = this.localService.getHeaders();
-    return this.http.post(`${this.baseUrl}token`, args, { headers });
-  }
-
   filterValue: WritableSignal<Record<string, string>> = linkedSignal({
     source: this.selectedApplicationType,
     // This gets also updated by the effect in the constructor, when filterValueString changes.
     computation: () => ({}),
   });
-
   filterValueString: WritableSignal<string> = linkedSignal({
     source: this.filterValue,
     computation: () =>
@@ -176,7 +171,6 @@ export class MachineService implements MachineServiceInterface {
         .map(([key, value]) => `${key}: ${value}`)
         .join(' '),
   });
-
   filterParams = computed<Record<string, string>>(() => {
     let allowedKeywords =
       this.selectedApplicationType() === 'ssh'
@@ -246,6 +240,27 @@ export class MachineService implements MachineServiceInterface {
       computation: (tokenApplicationResource, previous) =>
         tokenApplicationResource?.result?.value ?? previous?.value,
     });
+
+  constructor() {
+    effect(() => {
+      const recordsFromText = this.tableUtilsService.recordsFromText(
+        this.filterValueString(),
+      );
+      this.filterValue.set(recordsFromText);
+    });
+  }
+
+  postAssignMachineToToken(args: {
+    service_id: string;
+    user: string;
+    serial: string;
+    application: string;
+    machineid: string;
+    resolver: string;
+  }): Observable<any> {
+    const headers = this.localService.getHeaders();
+    return this.http.post(`${this.baseUrl}token`, args, { headers });
+  }
 
   postTokenOption(
     hostname: string,
@@ -351,14 +366,5 @@ export class MachineService implements MachineServiceInterface {
 
   onSortEvent($event: Sort): void {
     this.sort.set($event);
-  }
-
-  constructor() {
-    effect(() => {
-      const recordsFromText = this.tableUtilsService.recordsFromText(
-        this.filterValueString(),
-      );
-      this.filterValue.set(recordsFromText);
-    });
   }
 }

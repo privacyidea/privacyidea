@@ -1,15 +1,14 @@
 import {
   TokenApiPayloadMapper,
-  TokenEnrollmentPayload,
   TokenEnrollmentData,
+  TokenEnrollmentPayload,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
 
-// Interface for TAN Token-specific enrollment data
 export interface TanEnrollmentData extends TokenEnrollmentData {
   type: 'tan';
-  tanCount?: number; // Corresponds to 'tancount' in EnrollTanComponent
-  tanLength?: number; // Corresponds to 'tanlength' in EnrollTanComponent
+  tanCount?: number;
+  tanLength?: number;
 }
 
 export interface TanEnrollmentPayload extends TokenEnrollmentPayload {
@@ -22,8 +21,6 @@ export class TanApiPayloadMapper
   implements TokenApiPayloadMapper<TanEnrollmentData>
 {
   toApiPayload(data: TanEnrollmentData): TanEnrollmentPayload {
-    // 'tan' type is not in the main switch statement.
-    // Mapping based on defined interfaces.
     const payload: TanEnrollmentPayload = {
       type: data.type,
       description: data.description,
@@ -41,7 +38,6 @@ export class TanApiPayloadMapper
   }
 
   fromApiPayload(payload: any): TanEnrollmentData {
-    // Placeholder: Implement transformation from API payload.
     return {
       ...payload,
       tanCount: payload.tancount,

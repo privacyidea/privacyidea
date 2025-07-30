@@ -1,4 +1,3 @@
-import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatTabsModule } from '@angular/material/tabs';
@@ -6,7 +5,6 @@ import {
   MockMachineService,
   MockTableUtilsService,
 } from '../../../../../testing/mock-services';
-import { ContentService } from '../../../../services/content/content.service';
 import {
   MachineService,
   TokenApplication,

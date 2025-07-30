@@ -6,6 +6,7 @@ export interface NotificationServiceInterface {
   remainingTime: number;
   timerSub: Subscription;
   startTime: number;
+
   openSnackBar(message: string): void;
 }
 

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
+import { Component, EventEmitter, inject, OnInit, Output } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -83,6 +83,17 @@ export class EnrollVascoComponent implements OnInit {
 
   vascoErrorStatematcher = new VascoErrorStateMatcher();
 
+  static convertOtpKeyToVascoSerial(otpHex: string): string {
+    let vascoOtpStr = '';
+    if (!otpHex || otpHex.length !== 496) {
+      return '';
+    }
+    for (let i = 0; i < otpHex.length; i += 2) {
+      vascoOtpStr += String.fromCharCode(parseInt(otpHex.slice(i, i + 2), 16));
+    }
+    return vascoOtpStr.slice(0, 10);
+  }
+
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({
       otpKey: this.otpKeyControl,
@@ -107,17 +118,6 @@ export class EnrollVascoComponent implements OnInit {
       this.vascoSerialControl.updateValueAndValidity();
     });
     this.useVascoSerialControl.updateValueAndValidity();
-  }
-
-  static convertOtpKeyToVascoSerial(otpHex: string): string {
-    let vascoOtpStr = '';
-    if (!otpHex || otpHex.length !== 496) {
-      return '';
-    }
-    for (let i = 0; i < otpHex.length; i += 2) {
-      vascoOtpStr += String.fromCharCode(parseInt(otpHex.slice(i, i + 2), 16));
-    }
-    return vascoOtpStr.slice(0, 10);
   }
 
   onClickEnroll = (

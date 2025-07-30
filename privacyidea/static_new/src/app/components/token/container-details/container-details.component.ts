@@ -135,7 +135,6 @@ interface TokenOption {
   styleUrls: ['./container-details.component.scss'],
 })
 export class ContainerDetailsComponent {
-  private router = inject(Router);
   protected readonly overflowService: OverflowServiceInterface =
     inject(OverflowService);
   protected readonly containerService: ContainerServiceInterface =
@@ -148,7 +147,7 @@ export class ContainerDetailsComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly contentService: ContentServiceInterface =
     inject(ContentService);
-
+  private router = inject(Router);
   states = this.containerService.states;
   isEditingUser = signal(false);
   isEditingInfo = signal(false);

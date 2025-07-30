@@ -4,10 +4,8 @@
   </div>
   <h4 class="enroll-h4">Token Configuration</h4>
   @if (!defaultRadiusServerIsSet()) {
-    <span class="inline-hint"
-      >To ease the enrolling of RADIUS tokens you can set default values in the
-      <a href="#">RADIUS Token Config</a>.</span
-    >
+    <span class="inline-hint">To ease the enrolling of RADIUS tokens you can set default values in the
+      <a href="#">RADIUS Token Config</a>.</span>
   }
   <mat-checkbox [formControl]="checkPinLocallyControl">
     Check the PIN locally
@@ -16,10 +14,11 @@
     <mat-form-field class="width-66">
       <mat-label>RADIUS server configuration</mat-label>
       <mat-hint>
-        Select a predefined <a href="#">RADIUS server configuration</a>. The
-        RADIUS request will be forwarded to this RADIUS server.
+        Select a predefined <a href="#">RADIUS server configuration</a>. The RADIUS request will be
+        forwarded to this RADIUS server.
       </mat-hint>
-      <mat-select [formControl]="radiusServerConfigurationControl" required>
+      <mat-select [formControl]="radiusServerConfigurationControl"
+                  required>
         @for (option of radiusServerConfigurationOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
         }
@@ -28,7 +27,8 @@
     </mat-form-field>
     <mat-form-field class="input-height width-33">
       <mat-label>RADIUS User</mat-label>
-      <input [formControl]="radiusUserControl" matInput />
+      <input [formControl]="radiusUserControl"
+             matInput />
       <mat-error>RADIUS User is <strong>required</strong></mat-error>
     </mat-form-field>
   </div>

@@ -1,27 +1,25 @@
 import {
   TokenApiPayloadMapper,
-  TokenEnrollmentPayload,
   TokenEnrollmentData,
+  TokenEnrollmentPayload,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
 
-// Interface for 4Eyes Token-specific enrollment data
 export interface FourEyesEnrollmentData extends TokenEnrollmentData {
-  type: '4eyes'; // type is part of TokenEnrollmentData
+  type: '4eyes';
   separator: string;
   requiredTokenOfRealms: {
     realm: string;
     tokens: number;
   }[];
   onlyAddToRealm: boolean;
-  userRealm?: string; // Used if onlyAddToRealm is true
+  userRealm?: string;
 }
 
 export interface FourEyesEnrollmentPayload extends TokenEnrollmentPayload {
   separator: string;
   '4eyes': { [key: string]: { count: number; selected: boolean } };
-  realm?: string; // Conditionally set if onlyAddToRealm is true
-  // user property is inherited from TokenEnrollmentPayload and can be string | null
+  realm?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -36,7 +34,7 @@ export class FourEyesApiPayloadMapper
       validity_period_start: data.validityPeriodStart,
       validity_period_end: data.validityPeriodEnd,
       pin: data.pin,
-      user: data.user, // Initially set user from data
+      user: data.user,
       separator: data.separator,
       '4eyes': (data.requiredTokenOfRealms ?? []).reduce(
         (
@@ -52,7 +50,7 @@ export class FourEyesApiPayloadMapper
 
     if (data.onlyAddToRealm) {
       payload.realm = data.userRealm;
-      payload.user = null; // Override user to null as per switch logic
+      payload.user = null;
     }
     return payload;
   }

@@ -85,7 +85,6 @@ export type ContainerTypeOption = 'generic' | 'smartphone' | 'yubikey';
   styleUrl: './container-create.component.scss',
 })
 export class ContainerCreateComponent {
-  private router = inject(Router);
   protected readonly versioningService: VersioningServiceInterface =
     inject(VersioningService);
   protected readonly userService: UserServiceInterface = inject(UserService);
@@ -97,8 +96,8 @@ export class ContainerCreateComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface =
     inject(ContentService);
-
   protected readonly TokenComponent = TokenComponent;
+  private router = inject(Router);
   containerSerial = this.containerService.containerSerial;
   description = signal('');
   selectedTemplate = signal('');

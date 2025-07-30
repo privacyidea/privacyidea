@@ -1,27 +1,22 @@
-<div class="navigation-self-service-column" [@componentFade]>
-  <app-navigation-self-service-button
-    key="/tokens"
-    title="Token Overview"
-    matIconName="shield" />
-  <app-navigation-self-service-button
-    key="/tokens/enroll"
-    title="Token Enrollment"
-    matIconName="add_moderator" />
-  <app-navigation-self-service-button
-    key="/tokens/assign-token"
-    title="Assign Token"
-    matIconName="admin_panel_settings"
-    matIconSize="tile-icon-large" />
-  <app-navigation-self-service-button
-    key="/tokens/containers"
-    title="Container Overview"
-    matIconClass="mdi--folder-search" />
-  <app-navigation-self-service-button
-    key="/tokens/containers/create"
-    title="Create Container"
-    matIconName="create_new_folder" />
-  <app-navigation-self-service-button
-    key="/audit"
-    title="Audit Log"
-    matIconName="manage_search" />
+<div [@componentFade]
+     class="navigation-self-service-column">
+  <app-navigation-self-service-button key="/tokens"
+                                      matIconName="shield"
+                                      title="Token Overview" />
+  <app-navigation-self-service-button key="/tokens/enroll"
+                                      matIconName="add_moderator"
+                                      title="Token Enrollment" />
+  <app-navigation-self-service-button key="/tokens/assign-token"
+                                      matIconName="admin_panel_settings"
+                                      matIconSize="tile-icon-large"
+                                      title="Assign Token" />
+  <app-navigation-self-service-button key="/tokens/containers"
+                                      matIconClass="mdi--folder-search"
+                                      title="Container Overview" />
+  <app-navigation-self-service-button key="/tokens/containers/create"
+                                      matIconName="create_new_folder"
+                                      title="Create Container" />
+  <app-navigation-self-service-button key="/audit"
+                                      matIconName="manage_search"
+                                      title="Audit Log" />
 </div>

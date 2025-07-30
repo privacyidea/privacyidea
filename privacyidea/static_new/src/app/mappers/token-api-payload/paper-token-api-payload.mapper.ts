@@ -1,15 +1,14 @@
 import {
   TokenApiPayloadMapper,
-  TokenEnrollmentPayload,
   TokenEnrollmentData,
+  TokenEnrollmentPayload,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
 
-// Interface for Paper Token-specific enrollment data (distinct from 'papertoken')
 export interface PaperEnrollmentData extends TokenEnrollmentData {
   type: 'paper';
-  otpLength?: number; // Corresponds to 'otplen' in EnrollPaperComponent
-  otpCount?: number; // Corresponds to 'otpcount' in EnrollPaperComponent
+  otpLength?: number;
+  otpCount?: number;
 }
 
 export interface PaperEnrollmentPayload extends TokenEnrollmentPayload {
@@ -22,8 +21,6 @@ export class PaperApiPayloadMapper
   implements TokenApiPayloadMapper<PaperEnrollmentData>
 {
   toApiPayload(data: PaperEnrollmentData): PaperEnrollmentPayload {
-    // 'paper' type is not in the main switch statement.
-    // Mapping based on defined interfaces and component behavior.
     const payload: PaperEnrollmentPayload = {
       type: data.type,
       description: data.description,
@@ -41,7 +38,6 @@ export class PaperApiPayloadMapper
   }
 
   fromApiPayload(payload: any): PaperEnrollmentData {
-    // Placeholder: Implement transformation from API payload.
     return {
       ...payload,
       otpLength: payload.otplen,

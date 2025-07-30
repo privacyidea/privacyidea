@@ -263,25 +263,27 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     inject(ContentService);
   protected readonly dialogService: DialogServiceInterface =
     inject(DialogService);
-
+  private observer!: IntersectionObserver;
   timezoneOptions = TIMEZONE_OFFSETS;
-
   pollResponse: WritableSignal<any> = linkedSignal({
     source: this.tokenService.selectedTokenType,
     computation: () => null,
   });
-
   enrollResponse: WritableSignal<EnrollmentResponse | null> = linkedSignal({
     source: this.tokenService.selectedTokenType,
     computation: () => null,
   });
-
   @ViewChild('scrollContainer') scrollContainer!: ElementRef<HTMLElement>;
   @ViewChild('stickyHeader') stickyHeader!: ElementRef<HTMLElement>;
   @ViewChild('stickySentinel') stickySentinel!: ElementRef<HTMLElement>;
-
-  private observer!: IntersectionObserver;
-
+  clickEnroll?: ClickEnrollFn;
+  reopenDialogSignal: WritableSignal<ReopenDialogFn> = linkedSignal({
+    source: this.tokenService.selectedTokenType,
+    computation: () => undefined,
+  });
+  additionalFormFields: WritableSignal<{
+    [key: string]: FormControl<any>;
+  }> = signal({});
   onlyAddToRealm = computed(() => {
     if (this.tokenService.selectedTokenType()?.key === '4eyes') {
       const foureyesControls = this.additionalFormFields();
@@ -292,79 +294,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
     return false;
   });
-
-  clickEnroll?: ClickEnrollFn;
-  updateClickEnroll(event: ClickEnrollFn): void {
-    this.clickEnroll = event;
-  }
-  reopenDialogSignal: WritableSignal<ReopenDialogFn> = linkedSignal({
-    source: this.tokenService.selectedTokenType,
-    computation: () => undefined,
-  });
-  updateReopenDialog(event: ReopenDialogFn): void {
-    this.reopenDialogSignal.set(event);
-  }
-
-  additionalFormFields: WritableSignal<{
-    [key: string]: FormControl<any>;
-  }> = signal({});
-
-  formGroupSignal: WritableSignal<FormGroup> = linkedSignal({
-    source: () => ({
-      additionalFormFields: this.additionalFormFields(),
-      selectedUser: this.userService.selectedUser(),
-    }),
-    computation: (source, previous) => {
-      const { additionalFormFields, selectedUser } = source;
-      this.selectedUserRealmControl.setValidators(
-        this.isUserRequired ? [Validators.required] : [],
-      );
-
-      this.userFilterControl.setValidators(
-        this.isUserRequired
-          ? [Validators.required, this.userExistsValidator]
-          : [this.userExistsValidator],
-      );
-
-      if (selectedUser !== this.userFilterControl.value) {
-        this.userFilterControl.setValue(selectedUser, { emitEvent: false });
-      }
-      return new FormGroup(
-        {
-          description: this.descriptionControl,
-          selectedUserRealm: this.selectedUserRealmControl,
-          userFilter: this.userFilterControl,
-          setPin: this.setPinControl,
-          repeatPin: this.repeatPinControl,
-          selectedContainer: this.selectedContainerControl,
-          selectedStartDate: this.selectedStartDateControl,
-          selectedStartTime: this.selectedStartTimeControl,
-          selectedTimezoneOffset: this.selectedTimezoneOffsetControl,
-          selectedEndDate: this.selectedEndDateControl,
-          selectedEndTime: this.selectedEndTimeControl,
-          ...additionalFormFields,
-        },
-        { validators: TokenEnrollmentComponent.pinMismatchValidator },
-      );
-    },
-  });
-
-  updateAdditionalFormFields(event: {
-    [key: string]: FormControl<any> | undefined | null;
-  }): void {
-    const validControls: { [key: string]: FormControl<any> } = {};
-    for (const key in event) {
-      if (event.hasOwnProperty(key) && event[key] instanceof FormControl) {
-        validControls[key] = event[key];
-      } else {
-        console.warn(
-          `Ignoring invalid form control for key "${key}" emitted by child component.`,
-        );
-      }
-    }
-    this.additionalFormFields.set(validControls);
-  }
-
   descriptionControl = new FormControl<string>('', {
     nonNullable: true,
     validators: [Validators.maxLength(80)],
@@ -398,6 +327,16 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   selectedEndTimeControl = new FormControl<string>('23:59', {
     nonNullable: true,
   });
+  _lastTokenEnrollmentLastStepDialogData: WritableSignal<TokenEnrollmentLastStepDialogData | null> =
+    linkedSignal({
+      source: this.tokenService.selectedTokenType,
+      computation: () => null,
+    });
+  canReopenEnrollmentDialog = computed(
+    () =>
+      !!this.reopenDialogSignal() ||
+      !!this._lastTokenEnrollmentLastStepDialogData(),
+  );
 
   constructor(private renderer: Renderer2) {
     effect(() => {
@@ -409,6 +348,46 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
         this.userFilterControl.setValue(users[0]);
       }
     });
+  }
+
+  get isUserRequired() {
+    return ['tiqr', 'webauthn', 'passkey', 'certificate'].includes(
+      this.tokenService.selectedTokenType()?.key ?? '',
+    );
+  }
+
+  static pinMismatchValidator(
+    group: AbstractControl,
+  ): { [key: string]: boolean } | null {
+    const setPin = group.get('setPin');
+    const repeatPin = group.get('repeatPin');
+    return setPin && repeatPin && setPin.value !== repeatPin.value
+      ? { pinMismatch: true }
+      : null;
+  }
+
+  updateClickEnroll(event: ClickEnrollFn): void {
+    this.clickEnroll = event;
+  }
+
+  updateReopenDialog(event: ReopenDialogFn): void {
+    this.reopenDialogSignal.set(event);
+  }
+
+  updateAdditionalFormFields(event: {
+    [key: string]: FormControl<any> | undefined | null;
+  }): void {
+    const validControls: { [key: string]: FormControl<any> } = {};
+    for (const key in event) {
+      if (event.hasOwnProperty(key) && event[key] instanceof FormControl) {
+        validControls[key] = event[key];
+      } else {
+        console.warn(
+          `Ignoring invalid form control for key "${key}" emitted by child component.`,
+        );
+      }
+    }
+    this.additionalFormFields.set(validControls);
   }
 
   ngOnInit(): void {
@@ -483,6 +462,74 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
 
     return `${year}-${month}-${day}T${formattedHours}:${formattedMinutes}${offsetNoColon}`;
   }
+
+  reopenEnrollmentDialog() {
+    const reopenFunction = this.reopenDialogSignal();
+    if (reopenFunction) {
+      reopenFunction();
+      return;
+    }
+    const lastStepData = this._lastTokenEnrollmentLastStepDialogData();
+    if (lastStepData) {
+      this.dialogService.openTokenEnrollmentLastStepDialog({
+        data: lastStepData,
+      });
+      return;
+    }
+  }
+
+  userExistsValidator: ValidatorFn = (
+    control: AbstractControl<string | UserData | null>,
+  ): ValidationErrors | null => {
+    const value = control.value;
+    if (typeof value === 'string' && value !== '') {
+      const users = this.userService.users();
+      const userFound = users.some((user) => user.username === value);
+      return userFound ? null : { userNotInRealm: { value: value } };
+    }
+
+    return null;
+  };
+
+  formGroupSignal: WritableSignal<FormGroup> = linkedSignal({
+    source: () => ({
+      additionalFormFields: this.additionalFormFields(),
+      selectedUser: this.userService.selectedUser(),
+    }),
+    computation: (source, previous) => {
+      const { additionalFormFields, selectedUser } = source;
+      this.selectedUserRealmControl.setValidators(
+        this.isUserRequired ? [Validators.required] : [],
+      );
+
+      this.userFilterControl.setValidators(
+        this.isUserRequired
+          ? [Validators.required, this.userExistsValidator]
+          : [this.userExistsValidator],
+      );
+
+      if (selectedUser !== this.userFilterControl.value) {
+        this.userFilterControl.setValue(selectedUser, { emitEvent: false });
+      }
+      return new FormGroup(
+        {
+          description: this.descriptionControl,
+          selectedUserRealm: this.selectedUserRealmControl,
+          userFilter: this.userFilterControl,
+          setPin: this.setPinControl,
+          repeatPin: this.repeatPinControl,
+          selectedContainer: this.selectedContainerControl,
+          selectedStartDate: this.selectedStartDateControl,
+          selectedStartTime: this.selectedStartTimeControl,
+          selectedTimezoneOffset: this.selectedTimezoneOffsetControl,
+          selectedEndDate: this.selectedEndDateControl,
+          selectedEndTime: this.selectedEndTimeControl,
+          ...additionalFormFields,
+        },
+        { validators: TokenEnrollmentComponent.pinMismatchValidator },
+      );
+    },
+  });
 
   protected async enrollToken(): Promise<void> {
     const currentTokenType = this.tokenService.selectedTokenType();
@@ -562,39 +609,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  _lastTokenEnrollmentLastStepDialogData: WritableSignal<TokenEnrollmentLastStepDialogData | null> =
-    linkedSignal({
-      source: this.tokenService.selectedTokenType,
-      computation: () => null,
-    });
-
-  canReopenEnrollmentDialog = computed(
-    () =>
-      !!this.reopenDialogSignal() ||
-      !!this._lastTokenEnrollmentLastStepDialogData(),
-  );
-
-  reopenEnrollmentDialog() {
-    const reopenFunction = this.reopenDialogSignal();
-    if (reopenFunction) {
-      reopenFunction();
-      return;
-    }
-    const lastStepData = this._lastTokenEnrollmentLastStepDialogData();
-    if (lastStepData) {
-      this.dialogService.openTokenEnrollmentLastStepDialog({
-        data: lastStepData,
-      });
-      return;
-    }
-  }
-
-  get isUserRequired() {
-    return ['tiqr', 'webauthn', 'passkey', 'certificate'].includes(
-      this.tokenService.selectedTokenType()?.key ?? '',
-    );
-  }
-
   protected openLastStepDialog(args: {
     response: EnrollmentResponse | null;
     user: UserData | null;
@@ -618,29 +632,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     this.dialogService.openTokenEnrollmentLastStepDialog({
       data: dialogData,
     });
-  }
-
-  userExistsValidator: ValidatorFn = (
-    control: AbstractControl<string | UserData | null>,
-  ): ValidationErrors | null => {
-    const value = control.value;
-    if (typeof value === 'string' && value !== '') {
-      const users = this.userService.users();
-      const userFound = users.some((user) => user.username === value);
-      return userFound ? null : { userNotInRealm: { value: value } };
-    }
-
-    return null;
-  };
-
-  static pinMismatchValidator(
-    group: AbstractControl,
-  ): { [key: string]: boolean } | null {
-    const setPin = group.get('setPin');
-    const repeatPin = group.get('repeatPin');
-    return setPin && repeatPin && setPin.value !== repeatPin.value
-      ? { pinMismatch: true }
-      : null;
   }
 
   private _handleEnrollmentResponse(args: {

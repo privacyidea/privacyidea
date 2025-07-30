@@ -3,11 +3,13 @@ import { ContentService } from '../content/content.service';
 
 export interface OverflowServiceInterface {
   isWidthOverflowing(selector: string, threshold: number): boolean;
+
   isHeightOverflowing(params: {
     selector: string;
     threshold?: number;
     thresholdSelector?: string;
   }): boolean;
+
   getOverflowThreshold(): number;
 }
 
@@ -16,6 +18,7 @@ export interface OverflowServiceInterface {
 })
 export class OverflowService implements OverflowServiceInterface {
   private contentService = inject(ContentService);
+
   isWidthOverflowing(selector: string, threshold: number): boolean {
     const element = document.querySelector(selector);
     return element ? element.clientWidth < threshold : false;

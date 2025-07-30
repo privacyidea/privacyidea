@@ -1,14 +1,12 @@
 import {
   TokenApiPayloadMapper,
-  TokenEnrollmentPayload,
   TokenEnrollmentData,
+  TokenEnrollmentPayload,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
 
-// Interface for TIQR Token-specific enrollment data
 export interface TiqrEnrollmentData extends TokenEnrollmentData {
   type: 'tiqr';
-  // No type-specific fields identified from EnrollTiqrComponent or TokenService handling
 }
 
 export interface TiqrEnrollmentPayload extends TokenEnrollmentPayload {}
@@ -18,7 +16,6 @@ export class TiqrApiPayloadMapper
   implements TokenApiPayloadMapper<TiqrEnrollmentData>
 {
   toApiPayload(data: TiqrEnrollmentData): TiqrEnrollmentPayload {
-    // No type-specific fields in switch statement for 'tiqr'
     return {
       type: data.type,
       description: data.description,

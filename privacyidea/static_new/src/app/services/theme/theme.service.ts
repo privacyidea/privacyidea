@@ -15,10 +15,8 @@ export type Theme = 'light' | 'dark' | 'system';
 export class ThemeService {
   private renderer: Renderer2;
   private htmlElement: HTMLHtmlElement;
-
-  currentTheme = signal<Theme>('system');
-
   private mediaQueryListener?: (event: MediaQueryListEvent) => void;
+  currentTheme = signal<Theme>('system');
 
   constructor(
     private rendererFactory: RendererFactory2,
@@ -28,15 +26,6 @@ export class ThemeService {
 
     this.htmlElement = this.document.documentElement as HTMLHtmlElement;
     this.loadInitialTheme();
-  }
-
-  private loadInitialTheme(): void {
-    const savedTheme = localStorage.getItem('appTheme') as Theme;
-    if (savedTheme) {
-      this.setTheme(savedTheme);
-    } else {
-      this.setTheme('system');
-    }
   }
 
   setTheme(theme: Theme): void {
@@ -81,6 +70,15 @@ export class ThemeService {
       prefersDark.addEventListener('change', this.mediaQueryListener);
     } else {
       this.renderer.addClass(this.htmlElement, theme);
+    }
+  }
+
+  private loadInitialTheme(): void {
+    const savedTheme = localStorage.getItem('appTheme') as Theme;
+    if (savedTheme) {
+      this.setTheme(savedTheme);
+    } else {
+      this.setTheme('system');
     }
   }
 }

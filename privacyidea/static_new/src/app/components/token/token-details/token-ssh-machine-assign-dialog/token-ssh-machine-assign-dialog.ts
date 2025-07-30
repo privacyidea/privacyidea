@@ -188,6 +188,7 @@ export class TokenSshMachineAssignDialogComponent {
     });
     this.dialogRef.close(request);
   }
+
   onCancel(): void {
     this.dialogRef.close(null);
   }

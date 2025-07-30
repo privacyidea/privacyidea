@@ -1,11 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { signal } from '@angular/core';
 import { TokenApplicationsComponent } from './token-applications.component';
 import { TokenApplicationsSshComponent } from './token-applications-ssh/token-applications-ssh.component';
 import { TokenApplicationsOfflineComponent } from './token-applications-offline/token-applications-offline.component';
 import { MatSelectModule } from '@angular/material/select';
 import { MachineService } from '../../../services/machine/machine.service';
-import { ContentService } from '../../../services/content/content.service';
 import { provideHttpClient } from '@angular/common/http';
 import { MockMachineService } from '../../../../testing/mock-services';
 

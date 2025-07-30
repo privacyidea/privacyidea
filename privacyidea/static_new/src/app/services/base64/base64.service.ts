@@ -2,7 +2,9 @@ import { Injectable } from '@angular/core';
 
 export interface Base64ServiceInterface {
   base64URLToBytes(base64URL: string): Uint8Array;
+
   bytesToBase64(buffer: Uint8Array): string;
+
   bufferToBase64Url(buffer: Uint8Array): string;
 }
 

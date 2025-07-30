@@ -1,7 +1,8 @@
 <h2 mat-dialog-title>Container successfully created</h2>
 <mat-dialog-content>
 
-  <div [innerHTML]="postTopHtml$ | async" class="margin-top-1"></div>
+  <div [innerHTML]="postTopHtml$ | async"
+       class="margin-top-1"></div>
 
   <span>The container was successfully created with serial number
         <a (click)="containerSelected(data.containerSerial())">
@@ -20,6 +21,7 @@
       your container. It will send the missing registration data to the configured endpoint. </p>
   </div>
 
-  <div [innerHTML]="postBottomHtml$ | async" class="margin-bottom-1"></div>
+  <div [innerHTML]="postBottomHtml$ | async"
+       class="margin-bottom-1"></div>
 
 </mat-dialog-content>

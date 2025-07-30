@@ -4,16 +4,23 @@ import { Observable, Subscription } from 'rxjs';
 
 export interface LoadingServiceInterface {
   addListener(id: string, listener: (isLoading: boolean) => void): void;
+
   removeListener(id: string): void;
+
   notifyListeners(): void;
+
   addLoading(loading: {
     key: string;
     observable: Observable<HttpEvent<unknown>>;
     url: string;
   }): void;
+
   getLoadingUrls(): { key: string; url: string }[];
+
   clearAllLoadings(): void;
+
   isLoading(): boolean;
+
   removeLoading(key: string): void;
 }
 

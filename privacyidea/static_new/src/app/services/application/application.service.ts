@@ -18,6 +18,7 @@ interface ApplicationLuks {
     };
   };
 }
+
 interface ApplicationOffline {
   options: {
     hotp: {
@@ -56,15 +57,11 @@ export interface ApplicationServiceInterface {
 })
 export class ApplicationService implements ApplicationServiceInterface {
   readonly applicationBaseUrl = environment.proxyUrl + '/application/';
-
-  constructor(private localService: LocalService) {}
-
   applicationResource = httpResource<PiResponse<Applications>>(() => ({
     url: `${this.applicationBaseUrl}`,
     method: 'GET',
     headers: this.localService.getHeaders(),
   }));
-
   applications: WritableSignal<Applications> = linkedSignal({
     source: this.applicationResource.value,
     computation: (source, previous) => {
@@ -97,4 +94,6 @@ export class ApplicationService implements ApplicationServiceInterface {
       );
     },
   });
+
+  constructor(private localService: LocalService) {}
 }

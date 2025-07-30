@@ -5,6 +5,7 @@ import { PiResponse } from '../../app.component';
 import { LocalService } from '../local/local.service';
 
 export type CaConnectors = CaConnector[];
+
 export interface CaConnector {
   connectorname: string;
   templates?: Record<string, any>;

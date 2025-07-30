@@ -1,16 +1,15 @@
 import {
   TokenApiPayloadMapper,
-  TokenEnrollmentPayload,
   TokenEnrollmentData,
+  TokenEnrollmentPayload,
 } from './_token-api-payload.mapper';
 import { Injectable } from '@angular/core';
 
-// Interface for SMS Token-specific enrollment data
 export interface SmsEnrollmentData extends TokenEnrollmentData {
   type: 'sms';
-  smsGateway?: string; // Mapped to 'sms.identifier'
+  smsGateway?: string;
   phoneNumber?: string;
-  readNumberDynamically?: boolean; // Mapped to 'dynamic_phone'
+  readNumberDynamically?: boolean;
 }
 
 export interface SmsEnrollmentPayload extends TokenEnrollmentPayload {
@@ -41,7 +40,6 @@ export class SmsApiPayloadMapper
       delete payload['sms.identifier'];
     }
     if (payload.dynamic_phone === undefined) {
-      // Should always be boolean due to component
       delete payload.dynamic_phone;
     }
     return payload;

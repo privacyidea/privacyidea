@@ -5,6 +5,7 @@ import { PiResponse } from '../../app.component';
 import { LocalService } from '../local/local.service';
 
 export type RemoteServerOptions = RemoteServer[];
+
 export interface RemoteServer {
   url: string;
   id: string;

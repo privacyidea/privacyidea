@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
+import { Component, EventEmitter, inject, OnInit, Output } from '@angular/core';
 import {
   FormControl,
   FormsModule,
@@ -59,18 +59,21 @@ export class EnrollHotpComponent implements OnInit {
   protected readonly enrollmentMapper: HotpApiPayloadMapper =
     inject(HotpApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-
+  readonly otpLengthOptions = [6, 8];
+  readonly hashAlgorithmOptions = [
+    { value: 'sha1', viewValue: 'SHA1' },
+    { value: 'sha256', viewValue: 'SHA256' },
+    { value: 'sha512', viewValue: 'SHA512' },
+  ];
   text = this.tokenService
     .tokenTypeOptions()
     .find((type) => type.key === 'hotp')?.text;
-
   @Output() clickEnrollChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-
   generateOnServerFormControl = new FormControl<boolean>(true, [
     Validators.required,
   ]);
@@ -79,13 +82,6 @@ export class EnrollHotpComponent implements OnInit {
   hashAlgorithmFormControl = new FormControl<string>('sha1', [
     Validators.required,
   ]);
-
-  readonly otpLengthOptions = [6, 8];
-  readonly hashAlgorithmOptions = [
-    { value: 'sha1', viewValue: 'SHA1' },
-    { value: 'sha256', viewValue: 'SHA256' },
-    { value: 'sha512', viewValue: 'SHA512' },
-  ];
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({
