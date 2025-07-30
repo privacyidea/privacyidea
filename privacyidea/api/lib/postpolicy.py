@@ -1056,8 +1056,8 @@ def multichallenge_enroll_via_validate(request, response):
             challenge = challenges[0]
             # enroll_via_multichallenge_optional
             enrollment_optional = Match.user(g, scope=SCOPE.AUTH,
-                          action=ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL,
-                          user_object=user).any(write_to_audit_log=False)
+                                             action=ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL,
+                                             user_object=user).any(write_to_audit_log=False)
             # Set the enroll_via_multichallenge and enroll_via_multichallenge_optional flags
             data = challenge.get_data()
             data.update({"enroll_via_multichallenge": True})
