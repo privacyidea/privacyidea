@@ -339,8 +339,8 @@ in ``pi.cfg`` using the parameter ``PI_TOKEN_MODULES``::
 Enable Enrollment of Deprecated Token Types
 ...........................................
 
-The *u2f* token type is deprecated due to an outdated technical standard.
-No new tokens of these type can be enrolled. However, existing tokens of this type can still be used.
+The *u2f* token type is deprecated because it has been superseded by WebAuthn/FIDO2, which are more modern and secure authentication standards.
+No new tokens of this type can be enrolled. However, existing tokens of this type can still be used.
 
 If you still want to enroll tokens of a deprecated type, add the type to the ``PI_ENABLE_TOKEN_TYPE_ENROLLMENT``
 parameter in the ``pi.cfg`` file::
