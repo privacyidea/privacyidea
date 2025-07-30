@@ -170,7 +170,7 @@ class MachineApplication(MachineApplicationBase):
         :param user_agent: The user agent of the request
         :return auth_item: A list of hashed OTP values or pubKey, rpId and credentialId for WebAuthn token
         """
-        ret = {}
+        ret = {"response": {}}
         options = options or {}
         password = challenge
         token_type = token_type.lower()
@@ -183,7 +183,7 @@ class MachineApplication(MachineApplicationBase):
                 if "username" in user_info:
                     ret["user"] = ret["username"] = user_info.get("username")
                 if token_type in ["webauthn", "passkey"] and FIDO2TokenInfo.USER_ID in user_info:
-                    ret["response"] = {"userId": user_info[FIDO2TokenInfo.USER_ID]}
+                    ret["response"].update({"userId": user_info[FIDO2TokenInfo.USER_ID]})
 
             ret["refilltoken"] = MachineApplication.generate_new_refilltoken(token, user_agent)
 
