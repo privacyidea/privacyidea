@@ -986,5 +986,5 @@ For privacyIDEA plugins, enabling this is generally not recommended, unless stat
 It is advised to use a condition with this policy, for example on the user-agent.
 
 .. note:: Make the sure the user only has a WebAuthn **or** Passkey token assigned when using this policy.
-    Triggering both types at the same type will probably result in a failed authentication because challenges are currently
+    Triggering both types at the same time will probably result in a failed authentication because challenges are currently
     encoded differently for each token of these token types.

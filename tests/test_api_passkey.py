@@ -18,7 +18,6 @@
 #
 from unittest.mock import patch
 
-from pyasn1.debug import scope
 from webauthn.helpers.structs import AttestationConveyancePreference
 
 import privacyidea.lib.token
