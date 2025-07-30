@@ -62,6 +62,8 @@ export class OverflowService implements OverflowServiceInterface {
         return 1880;
       case '/tokens/challenges':
         return 1880;
+      case '/users':
+        return 1880;
       case '/tokens/applications':
         return 1500;
       case '/tokens/enroll':
