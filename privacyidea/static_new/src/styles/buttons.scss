@@ -76,7 +76,7 @@ $button-low-contrast-variant: linear-gradient(
   border-radius: $button-border-radius;
   background: linear-gradient(
     145deg,
-    var(--mat-sys-surface-container-highest),
+    var(--mat-sys-surface-container),
     var(--mat-sys-surface-container-low)
   );
 
@@ -84,28 +84,29 @@ $button-low-contrast-variant: linear-gradient(
     box-shadow: var(--box-shadow-inset);
     background: linear-gradient(
       145deg,
-      var(--mat-sys-surface-container-low),
-      var(--mat-sys-surface-container-highest)
+      var(--mat-sys-surface-container-lowest),
+      var(--mat-sys-surface-container-low)
     );
     transform: translateY(2px);
   }
 }
 
 .support-btn {
-  height: 40px;
-  margin: 0 20px;
+  height: var(--header-height);
+  margin: 0;
   border: none;
-  border-radius: $button-border-radius;
+  box-shadow: none;
+  border-radius: 0;
   background: var(--background-green-brand);
   cursor: pointer;
   color: white;
 
+  &.active,
   &:hover {
-    opacity: 0.9;
-  }
-
-  &:active {
-    transform: scale(0.98);
+    box-shadow: none;
+    background: var(--background-green-brand);
+    color: white;
+    transform: translateX(2px);
   }
 }
 
@@ -321,6 +322,7 @@ $button-low-contrast-variant: linear-gradient(
   border-radius: 0;
   background: $profile-bg;
   cursor: pointer;
+  box-shadow: none;
   color: white !important;
 
   &.active,

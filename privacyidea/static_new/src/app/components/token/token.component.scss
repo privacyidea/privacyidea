@@ -78,7 +78,7 @@ $margin-bottom-main: 136px;
   justify-items: center;
   align-content: start;
   height: calc(var(--main-height) - var(--global-padding) * 2);
-  padding: var(--global-padding);
+  padding: calc(2*var(--global-padding));
 }
 
 .tile-header {

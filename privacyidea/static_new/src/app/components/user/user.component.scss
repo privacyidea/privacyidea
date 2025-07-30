@@ -73,14 +73,6 @@ $margin-bottom-main: 136px;
   align-items: flex-start;
 }
 
-.main-content-container {
-  display: grid;
-  justify-items: center;
-  align-content: start;
-  height: calc(var(--main-height) - var(--global-padding) * 2);
-  padding: var(--global-padding);
-}
-
 .tile-header {
   padding: 0;
 }

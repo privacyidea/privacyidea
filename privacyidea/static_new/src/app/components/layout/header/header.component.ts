@@ -7,7 +7,6 @@ import {
 } from '@angular/material/button';
 
 import { MatIconModule } from '@angular/material/icon';
-import { MatMenu, MatMenuTrigger } from '@angular/material/menu';
 import { Router, RouterLink } from '@angular/router';
 import {
   AuthService,
@@ -26,7 +25,6 @@ import {
   SessionTimerServiceInterface,
 } from '../../../services/session-timer/session-timer.service';
 import { ThemeSwitcherComponent } from '../../shared/theme-switcher/theme-switcher.component';
-import { UserSelfServiceComponent } from '../../user/user.self-service.component';
 import { ContentService } from '../../../services/content/content.service';
 import { TokenService } from '../../../services/token/token.service';
 import { ContainerService } from '../../../services/container/container.service';
@@ -47,9 +45,6 @@ import { AuditService } from '../../../services/audit/audit.service';
     DatePipe,
     NgClass,
     MatIconButton,
-    MatMenuTrigger,
-    MatMenu,
-    UserSelfServiceComponent,
     ThemeSwitcherComponent,
   ],
   templateUrl: './header.component.html',

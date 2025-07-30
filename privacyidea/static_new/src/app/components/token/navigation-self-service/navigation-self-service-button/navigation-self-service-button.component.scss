@@ -74,11 +74,7 @@
 .tile-size-scope .tile-button.selected {
   background-color: var(--mat-sys-primary);
   color: var(--mat-sys-on-primary);
-  box-shadow:
-    var(--shadow-distance) var(--shadow-distance) var(--blur)
-      var(--mat-sys-shadow),
-    var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-light);
-
+  @include mat.elevation(3);
   .mat-icon {
     color: var(--mat-sys-on-primary);
   }
@@ -90,7 +86,7 @@
 
   &:hover {
     background-color: var(--mat-sys-primary-light);
-    @include mat.elevation(10);
+    @include mat.elevation(6);
     transform: translateY(-5px);
   }
 }
