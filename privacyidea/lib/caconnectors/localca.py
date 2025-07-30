@@ -30,7 +30,6 @@ from privacyidea.lib.utils import int_to_hex, to_unicode
 from privacyidea.lib.caconnectors.baseca import BaseCAConnector, AvailableCAConnectors
 from cryptography import x509
 from cryptography.hazmat.primitives.serialization import Encoding
-from OpenSSL import crypto
 from subprocess import Popen, PIPE  # nosec B404
 import yaml
 import datetime
@@ -320,7 +319,7 @@ class LocalCAConnector(BaseCAConnector):
         self.templates = self.get_templates()
 
     @staticmethod
-    def _filename_from_x509(x509_name, file_extension="pem"):
+    def _filename_from_x509(x509_name: x509.Name, file_extension="pem"):
         """
         return a filename from the subject from a x509 object
 
@@ -331,8 +330,7 @@ class LocalCAConnector(BaseCAConnector):
         :return: filename
         :rtype: str
         """
-        name_components = x509_name.get_components()
-        filename = "_".join([to_unicode(value) for (key, value) in name_components])
+        filename = "_".join([to_unicode(name_attribute.value) for name_attribute in x509_name])
         return ".".join([filename, file_extension])
 
     def sign_request(self, csr: str, options: dict = None) -> tuple[int, Union[str, None]]:
@@ -394,11 +392,9 @@ class LocalCAConnector(BaseCAConnector):
             csr_filename = common_name + ".txt"
             certificate_filename = common_name + ".der"
         else:
-            csr_obj = crypto.load_certificate_request(crypto.FILETYPE_PEM, csr.encode())
-            csr_filename = self._filename_from_x509(csr_obj.get_subject(),
-                                                    file_extension="req")
-            certificate_filename = self._filename_from_x509(
-                csr_obj.get_subject(), file_extension="pem")
+            csr_obj = x509.load_pem_x509_csr(csr.encode())
+            csr_filename = self._filename_from_x509(csr_obj.subject, file_extension="req")
+            certificate_filename = self._filename_from_x509(csr_obj.subject, file_extension="pem")
         csr_filename = csr_filename.replace(" ", "_")
         certificate_filename = certificate_filename.replace(" ", "_")
         # dump the file
