@@ -270,6 +270,9 @@ class PasskeyAPITest(PasskeyAPITestBase):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code)
             self._assert_result_value_true(res.json)
+            detail = res.json["detail"]
+            self.assertNotIn(ACTION.ENROLL_VIA_MULTICHALLENGE, detail)
+            self.assertNotIn(ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL, detail)
 
         remove_token(serial)
         delete_policy("user_verification")
@@ -802,7 +805,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         remove_token(evm_serial)
         delete_policy("evm")
 
-    def test_15_cancel_enroll_via_multichallenge(self):
+    def test_15_cancel_enroll_via_multichallenge_hotp(self):
         """
         Verify that enroll_via_multichallenge_optional=true allows cancellation of the enrollment and is followed by
         a successful authentication.
@@ -856,6 +859,65 @@ class PasskeyAPITest(PasskeyAPITestBase):
         remove_token(serial)
         delete_policy("evm")
         delete_policy("evm_optional")
+
+    def test_16_cancel_enroll_via_multichallenge_smartphone(self):
+        """
+        Verify that enroll_via_multichallenge_optional=true allows cancellation of the enrollment and is followed by
+        a successful authentication.
+        """
+        set_policy("evm", scope=SCOPE.AUTH, action=f"{ACTION.ENROLL_VIA_MULTICHALLENGE}=smartphone")
+        set_policy("container_enroll", scope=SCOPE.CONTAINER,
+                   action=f"{ACTION.CONTAINER_SERVER_URL}=https://doesntmatter.com")
+        set_policy("evm_optional", scope=SCOPE.AUTH, action=f"{ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL}=true")
+        serial = self._enroll_static_passkey()
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
+        self.assertIn("user_verification", passkey_challenge)
+        # By default, user_verification is preferred
+        self.assertEqual("preferred", passkey_challenge["user_verification"])
+
+        transaction_id = passkey_challenge["transaction_id"]
+        # Answer the challenge
+        data = self.authentication_response_no_uv
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            j = res.json
+            self.assertFalse(j["result"]["value"])
+            self.assertEqual("CHALLENGE", j["result"]["authentication"])
+            self.assertNotIn("auth_items", j)
+            detail = j["detail"]
+            evm_serial = detail["serial"]
+            self.assertTrue(evm_serial)
+            transaction_id = detail["transaction_id"]
+            self.assertTrue(transaction_id)
+
+            self.assertTrue(detail.get(ACTION.ENROLL_VIA_MULTICHALLENGE))
+            self.assertTrue(detail.get(ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
+            self.assertIn("multi_challenge", detail)
+            mc = detail["multi_challenge"]
+            self.assertEqual(1, len(mc))
+            self.assertIn("transaction_id", mc[0])
+            self.assertIn("image", mc[0])
+            self.assertIn("type", mc[0])
+            self.assertEqual("smartphone", mc[0]["type"])
+            self.assertIn("link", mc[0])
+
+        # Cancel the enrollment
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"transaction_id": transaction_id, "cancel_enrollment": True},
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            j = res.json
+            self._assert_result_value_true(j)
+            self.assertIn("Cancelled enrollment via multichallenge", j.get("detail", {}).get("message"), "")
+
+        remove_token(serial)
+        delete_policy("evm")
+        delete_policy("evm_optional")
+        delete_policy("container_enroll")
 
 
 class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):

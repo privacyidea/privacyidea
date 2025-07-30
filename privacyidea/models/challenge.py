@@ -93,13 +93,15 @@ class Challenge(MethodsMixin, db.Model):
         else:
             self.data = convert_column_to_unicode(data)
 
-    def get_data(self) -> dict:
+    def get_data(self):
         if not self.data:
             return {}
         try:
             data = json.loads(self.data)
         except (json.JSONDecodeError, UnicodeDecodeError):
-            data = self.data #todo the return type should be clear, not string or dict but just dict
+            # todo the return type should be clear, not string or dict but just dict
+            # todo check for __init__ of this class to see what type of data is used when refactoring
+            data = self.data
         return data
 
     def get_session(self):

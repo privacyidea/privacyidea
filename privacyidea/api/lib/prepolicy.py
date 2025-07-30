@@ -2611,11 +2611,11 @@ def container_registration_config(request, action=None):
         log.error(f"Could not find container with serial {container_serial}.")
 
     # Get server url the client can contact
-    server_url_config = list(Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.PI_SERVER_URL,
+    server_url_config = list(Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_SERVER_URL,
                                            user_object=user, additional_realms=container_realms,
                                            container_serial=container_serial).action_values(unique=True))
     if len(server_url_config) == 0:
-        raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot register container.")
+        raise PolicyError(f"Missing enrollment policy {ACTION.CONTAINER_SERVER_URL}. Cannot register container.")
     request.all_data[SERVER_URL] = server_url_config[0]
 
     # Get validity time for the registration

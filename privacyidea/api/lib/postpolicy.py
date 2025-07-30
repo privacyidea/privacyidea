@@ -912,7 +912,7 @@ def container_create_via_multichallenge(request: Request, content: dict, contain
             # We can not check this policy earlier as the container serial is required
             container_registration_config(request)
         except PolicyError:
-            log.debug("Missing container registration policy. Can not enroll container via multichallenge.")
+            log.warning("Missing container registration policy. Can not enroll container via multichallenge.")
             if not container_already_exists:
                 # If a new container was created but the registration failed, we need to delete the container
                 container.delete()
@@ -1049,8 +1049,8 @@ def multichallenge_enroll_via_validate(request, response):
     # enroll_via_multichallenge
     # TODO this is not optimal because we load the challenge again
     transaction_id = content.get("detail", {}).get("transaction_id")
-    enrollment_optional = False
     if transaction_id:
+        enrollment_optional = False
         challenges = get_challenges(transaction_id=transaction_id, serial=None)
         if challenges:
             challenge = challenges[0]
@@ -1062,11 +1062,12 @@ def multichallenge_enroll_via_validate(request, response):
             data = challenge.get_data()
             data.update({"enroll_via_multichallenge": True})
             data.update({"enroll_via_multichallenge_optional": enrollment_optional})
+            if not "type" in data:
+                data.update({"type": enroll_type})
             challenge.set_data(data)
             challenge.save()
-
-    content.get("detail", {})["enroll_via_multichallenge"] = True
-    content.get("detail", {})["enroll_via_multichallenge_optional"] = enrollment_optional
+        content.get("detail", {})["enroll_via_multichallenge"] = True
+        content.get("detail", {})["enroll_via_multichallenge_optional"] = enrollment_optional
     response.set_data(json.dumps(content))
 
     return response

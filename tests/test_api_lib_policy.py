@@ -4350,7 +4350,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # Set a policy only valid for another realm
         set_policy("policy_realm2", SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://test.com",
+                   action={ACTION.CONTAINER_SERVER_URL: "https://test.com",
                            ACTION.CONTAINER_REGISTRATION_TTL: 60,
                            ACTION.CONTAINER_CHALLENGE_TTL: 50,
                            ACTION.CONTAINER_SSL_VERIFY: "False"},
@@ -4358,7 +4358,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # policy including server url + default values for ttl and ssl_verify
         req, container = self.mock_container_request("user")
-        set_policy("policy", SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.com"})
+        set_policy("policy", SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.com"})
         container_registration_config(req)
         self.assertEqual("https://pi.com", req.all_data["server_url"])
         self.assertEqual(10, req.all_data["registration_ttl"])
@@ -4370,7 +4370,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # specifying valid values in generic policy
         req, container = self.mock_container_request("user")
         set_policy("generic_policy", SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://pi.com",
+                   action={ACTION.CONTAINER_SERVER_URL: "https://pi.com",
                            ACTION.CONTAINER_REGISTRATION_TTL: 20,
                            ACTION.CONTAINER_CHALLENGE_TTL: 6,
                            ACTION.CONTAINER_SSL_VERIFY: "False"},
@@ -4385,7 +4385,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # specifying valid values in policy for realm with higher priority than generic policy
         req, container = self.mock_container_request("user")
         set_policy("policy", SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://pi.com",
+                   action={ACTION.CONTAINER_SERVER_URL: "https://pi.com",
                            ACTION.CONTAINER_REGISTRATION_TTL: 30,
                            ACTION.CONTAINER_CHALLENGE_TTL: 8,
                            ACTION.CONTAINER_SSL_VERIFY: "False"},
@@ -4402,7 +4402,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # specifying invalid values sets default values
         req, container = self.mock_container_request("user")
-        set_policy("policy", SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.com",
+        set_policy("policy", SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.com",
                                                       ACTION.CONTAINER_REGISTRATION_TTL: -20,
                                                       ACTION.CONTAINER_CHALLENGE_TTL: -6,
                                                       ACTION.CONTAINER_SSL_VERIFY: "maybe"})
@@ -4427,7 +4427,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # specifying valid values in policy for another realm
         req, container = self.mock_container_request("user")
-        set_policy("policy", SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.com",
+        set_policy("policy", SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.com",
                                                       ACTION.CONTAINER_REGISTRATION_TTL: 20,
                                                       ACTION.CONTAINER_CHALLENGE_TTL: 6,
                                                       ACTION.CONTAINER_SSL_VERIFY: "False"}, realm=self.realm2)
@@ -4436,8 +4436,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # conflicting policies for server url shall raise error
         req, container = self.mock_container_request("user")
-        set_policy("policy1", SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.com"})
-        set_policy("policy2", SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test.com"})
+        set_policy("policy1", SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.com"})
+        set_policy("policy2", SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://test.com"})
         self.assertRaises(PolicyError, container_registration_config, req)
         delete_policy("policy1")
         delete_policy("policy2")
@@ -4446,7 +4446,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # conflicting policies for registration ttl shall raise error
         req, container = self.mock_container_request("user")
         set_policy("policy1", SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://pi.com", ACTION.CONTAINER_REGISTRATION_TTL: 20})
+                   action={ACTION.CONTAINER_SERVER_URL: "https://pi.com", ACTION.CONTAINER_REGISTRATION_TTL: 20})
         set_policy("policy2", SCOPE.CONTAINER, action={ACTION.CONTAINER_REGISTRATION_TTL: 30})
         self.assertRaises(PolicyError, container_registration_config, req)
         delete_policy("policy1")
@@ -4456,7 +4456,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # conflicting policies for challenge ttl shall raise error
         req, container = self.mock_container_request("user")
         set_policy("policy1", SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://pi.com", ACTION.CONTAINER_CHALLENGE_TTL: 20})
+                   action={ACTION.CONTAINER_SERVER_URL: "https://pi.com", ACTION.CONTAINER_CHALLENGE_TTL: 20})
         set_policy("policy2", SCOPE.CONTAINER, action={ACTION.CONTAINER_CHALLENGE_TTL: 30})
         self.assertRaises(PolicyError, container_registration_config, req)
         delete_policy("policy1")
@@ -4466,7 +4466,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # conflicting policies for challenge ttl shall raise error
         req, container = self.mock_container_request("user")
         set_policy("policy1", SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://pi.com", ACTION.CONTAINER_SSL_VERIFY: "False"})
+                   action={ACTION.CONTAINER_SERVER_URL: "https://pi.com", ACTION.CONTAINER_SSL_VERIFY: "False"})
         set_policy("policy2", SCOPE.CONTAINER, action={ACTION.CONTAINER_SSL_VERIFY: "True"})
         self.assertRaises(PolicyError, container_registration_config, req)
         delete_policy("policy1")
@@ -6397,7 +6397,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         create_container_template(container_type="smartphone", template_name="test", options=template_options)
         set_policy("enroll_via_multichallenge", scope=SCOPE.AUTH,
                    action={ACTION.ENROLL_VIA_MULTICHALLENGE: "smartphone", ACTION.PASSTHRU: True})
-        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"})
+        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/"})
 
         self.setUp_user_realms()
         hans = User("hans", self.realm1)
@@ -6556,7 +6556,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         logging.getLogger('privacyidea.api.lib.postpolicy').setLevel(logging.DEBUG)
         set_policy("enroll_via_multichallenge", scope=SCOPE.AUTH,
                    action={ACTION.ENROLL_VIA_MULTICHALLENGE: "smartphone", ACTION.PASSTHRU: True})
-        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"})
+        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/"})
         set_policy("enroll_via_multichallenge_template", scope=SCOPE.AUTH,
                    action={ACTION.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: "test"})
 

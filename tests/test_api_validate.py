@@ -6324,7 +6324,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
                    action={ACTION.ENROLL_VIA_MULTICHALLENGE: "smartphone",
                            ACTION.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: "test",
                            ACTION.PASSTHRU: True})
-        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"})
+        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/"})
 
         # Init LDAP
         ldap3mock.setLDAPDirectory(LDAPDirectory)

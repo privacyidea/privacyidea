@@ -26,6 +26,7 @@ The method is tested in test_lib_challenges
 """
 import datetime
 import logging
+
 from .log import log_with
 from .policy import ACTION
 from .sqlutils import delete_matching_rows
@@ -247,8 +248,12 @@ def cancel_enrollment_via_multichallenge(transaction_id: str) -> bool:
         )
         return False
 
-    # If we reach this point, we can cancel the enrollment
-    from .token import remove_token
-    remove_token(challenge.serial)
+    # If we reach this point, we can cancel the enrollment, depending on the type
+    if "type" in data and data["type"] == "container":
+        from .container import delete_container_by_serial
+        delete_container_by_serial(challenge.serial)
+    else:
+        from .token import remove_token
+        remove_token(challenge.serial)
     challenge.delete()
     return True

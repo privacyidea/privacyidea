@@ -433,7 +433,7 @@ class ACTION(object):
     CONTAINER_REGISTER = "container_register"
     CONTAINER_UNREGISTER = "container_unregister"
     CONTAINER_ROLLOVER = "container_rollover"
-    PI_SERVER_URL = "privacyIDEA_server_url"
+    CONTAINER_SERVER_URL = "privacyIDEA_server_url"
     CONTAINER_REGISTRATION_TTL = "container_registration_ttl"
     CONTAINER_CHALLENGE_TTL = "container_challenge_ttl"
     FORCE_CHALLENGE_RESPONSE = "force_challenge_response"
@@ -3049,7 +3049,7 @@ def get_static_policy_definitions(scope=None):
                                                    'group': GROUP.WIZARD}
         },
         SCOPE.CONTAINER: {
-            ACTION.PI_SERVER_URL: {
+            ACTION.CONTAINER_SERVER_URL: {
                 'type': 'str',
                 'desc': _('The URL of your privacyIDEA server, e.g. <code>https://pi/</code>. '
                           'It is used to build URLs the container can contact for registration and synchronization.'),
