@@ -83,19 +83,23 @@ class Challenge(MethodsMixin, db.Model):
         """
         set the internal data of the challenge
 
-        :param data: unicode data
+        :param data: Unicode data
         :type data: string, length 512
         """
         if isinstance(data, str):
             self.data = data
+        elif isinstance(data, dict):
+            self.data = json.dumps(data)
         else:
             self.data = convert_column_to_unicode(data)
 
-    def get_data(self):
+    def get_data(self) -> dict:
+        if not self.data:
+            return {}
         try:
             data = json.loads(self.data)
         except (json.JSONDecodeError, UnicodeDecodeError):
-            data = self.data
+            data = self.data #todo the return type should be clear, not string or dict but just dict
         return data
 
     def get_session(self):

@@ -380,6 +380,7 @@ class ACTION(object):
     ENROLL_VIA_MULTICHALLENGE = "enroll_via_multichallenge"
     ENROLL_VIA_MULTICHALLENGE_TEXT = "enroll_via_multichallenge_text"
     ENROLL_VIA_MULTICHALLENGE_TEMPLATE = "enroll_via_multichallenge_template"
+    ENROLL_VIA_MULTICHALLENGE_OPTIONAL = "enroll_via_multichallenge_optional"
     CLIENTTYPE = "clienttype"
     REGISTERBODY = "registration_body"
     RESETALLTOKENS = "reset_all_user_tokens"
@@ -2669,6 +2670,11 @@ def get_static_policy_definitions(scope=None):
                     "Select the template to use for the enrollment of a smartphone container via multichallenge."),
                 'value': [template.get("name") for template in
                           get_templates_by_query(container_type="smartphone").get("templates")]
+            },
+            ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL: {
+                'type': 'bool',
+                'desc': _('If enabled, the user can choose to skip enrollment of the token during authentication. '
+                          'If disabled, the user must enroll a token. This is also the default behavior.'),
             },
             ACTION.PASSTHRU: {
                 'type': 'str',

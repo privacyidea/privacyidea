@@ -2207,8 +2207,7 @@ def lost_token(serial, new_serial=None, password=None,
 
 
 @log_with(log)
-def check_realm_pass(realm, passw, options=None,
-                     include_types=None, exclude_types=None):
+def check_realm_pass(realm, passw, options=None, include_types=None, exclude_types=None):
     """
     This function checks, if the given passw matches any token in the given
     realm. This can be used for the 4-eyes token.
