@@ -250,6 +250,10 @@ class LocalCATestCase(MyTestCase):
         self.assertEqual("<Name(C=DE,ST=Hessen,O=privacyidea,CN=CA001)>", f"{cert_obj.issuer!r}")
         self.assertEqual("<Name(C=DE,ST=Hessen,O=privacyidea,CN=requester.localdomain)>", f"{cert_obj.subject!r}")
 
+        # Check output files
+        self.assertTrue(os.path.isfile(f"{self.ca_path}/DE_Hessen_privacyidea_requester.localdomain.pem"))
+        self.assertTrue(os.path.isfile(f"{self.ca_path}/DE_Hessen_privacyidea_requester.localdomain.req"))
+
         # Fail to revoke certificate due to non-existing-reasing
         self.assertRaises(CAError, cacon.revoke_cert, cert, reason="$(rm -fr)")
 
@@ -295,6 +299,10 @@ class LocalCATestCase(MyTestCase):
                          "<Name(C=DE,ST=Hessen,O=privacyidea,CN=CA001)>")
         self.assertEqual("{0!r}".format(cert_obj.subject),
                          "<Name(C=DE,ST=Hessen,O=privacyidea,CN=usercert)>")
+
+        # Check output files
+        self.assertTrue(os.path.isfile(f"{self.ca_path}/DE_Hessen_privacyidea_usercert.pem"))
+        self.assertTrue(os.path.isfile(f"{self.ca_path}/DE_Hessen_privacyidea_usercert.req"))
 
     def test_04_sign_SPKAC_request(self):
         # Our example SPKAC uses MD5 as signature algorithm
