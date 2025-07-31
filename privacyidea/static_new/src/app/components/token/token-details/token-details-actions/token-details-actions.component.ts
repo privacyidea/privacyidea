@@ -3,7 +3,11 @@ import { FormsModule } from '@angular/forms';
 import { MatFabButton, MatIconButton } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatDivider } from '@angular/material/divider';
-import { MatSuffix } from '@angular/material/form-field';
+import {
+  MatFormField,
+  MatLabel,
+  MatSuffix,
+} from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import {
   NotificationService,
@@ -22,6 +26,8 @@ import {
   ValidateServiceInterface,
 } from '../../../../services/validate/validate.service';
 import { TokenSshMachineAssignDialogComponent } from '../token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog';
+import { NgClass } from '@angular/common';
+import { MatInput } from '@angular/material/input';
 
 @Component({
   selector: 'app-token-details-actions',
@@ -33,6 +39,10 @@ import { TokenSshMachineAssignDialogComponent } from '../token-ssh-machine-assig
     MatDivider,
     MatIconButton,
     MatSuffix,
+    NgClass,
+    MatFormField,
+    MatLabel,
+    MatInput,
   ],
   templateUrl: './token-details-actions.component.html',
   styleUrl: './token-details-actions.component.scss',
@@ -46,9 +56,10 @@ export class TokenDetailsActionsComponent {
     inject(OverflowService);
   protected readonly notificationService: NotificationServiceInterface =
     inject(NotificationService);
-
-  tokenSerial = this.tokenService.tokenSerial;
+  @Input() setPinValue!: WritableSignal<string>;
+  @Input() repeatPinValue!: WritableSignal<string>;
   @Input() tokenType!: WritableSignal<string>;
+  tokenSerial = this.tokenService.tokenSerial;
   fristOTPValue: string = '';
   secondOTPValue: string = '';
   otpOrPinToTest: string = '';
@@ -72,7 +83,16 @@ export class TokenDetailsActionsComponent {
     this.validateService
       .testToken(this.tokenSerial(), this.otpOrPinToTest)
       .subscribe({
-        next: () => {
+        next: (response) => {
+          if (response.result?.authentication === 'ACCEPT') {
+            this.notificationService.openSnackBar(
+              'OTP or Pin tested with token was accepted.',
+            );
+          } else {
+            this.notificationService.openSnackBar(
+              'OTP or Pin tested with token was rejected.',
+            );
+          }
           this.tokenService.tokenDetailResource.reload();
         },
       });
@@ -114,5 +134,31 @@ export class TokenDetailsActionsComponent {
       autoFocus: false,
       restoreFocus: false,
     });
+  }
+
+  setPin() {
+    if (this.setPinValue() !== this.repeatPinValue()) {
+      console.error('PINs do not match.');
+      this.notificationService.openSnackBar('PINs do not match.');
+      return;
+    }
+    this.tokenService.setPin(this.tokenSerial(), this.setPinValue()).subscribe({
+      next: () => {
+        this.notificationService.openSnackBar('PIN set successfully.');
+      },
+    });
+  }
+
+  setRandomPin() {
+    this.tokenService.setRandomPin(this.tokenSerial()).subscribe({
+      next: () => {
+        this.notificationService.openSnackBar('PIN set successfully.');
+      },
+    });
+  }
+
+  canSetRandomPin() {
+    console.warn('canSetRandomPin Method not implemented.');
+    return true;
   }
 }

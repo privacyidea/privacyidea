@@ -1,16 +1,9 @@
 <div [ngClass]="{
-    'margin-top-20': overflowService.isWidthOverflowing('body', 1580),
     'pad-0': overflowService.isWidthOverflowing('body', 1310),
   }"
      class="info-container">
-  <span [ngClass]="{
-      'border-top': overflowService.isWidthOverflowing('body', 1580),
-    }"
-        class="info-title details-key-row">Information</span>
+  <span class="info-title details-key-row">Information</span>
   <table [dataSource]="infoData()"
-         [ngClass]="{
-      'border-top': overflowService.isWidthOverflowing('body', 1580),
-    }"
          aria-label="Token Detail Data Table"
          class="info-table"
          mat-table>

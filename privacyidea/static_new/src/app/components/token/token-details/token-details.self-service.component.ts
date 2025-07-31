@@ -6,7 +6,6 @@ import {
   MatAutocompleteTrigger,
 } from '@angular/material/autocomplete';
 import { MatIconButton } from '@angular/material/button';
-import { MatDivider } from '@angular/material/divider';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
@@ -50,7 +49,6 @@ import { TokenDetailsComponent } from './token-details.component';
     TokenDetailsInfoComponent,
     TokenDetailsActionsComponent,
     EditButtonsComponent,
-    MatDivider,
     CopyButtonComponent,
   ],
   templateUrl: './token-details.self-service.component.html',

@@ -1,4 +1,3 @@
-import { NgClass } from '@angular/common';
 import {
   Component,
   computed,
@@ -14,8 +13,7 @@ import {
   MatAutocompleteTrigger,
   MatOption,
 } from '@angular/material/autocomplete';
-import { MatFabButton, MatIconButton } from '@angular/material/button';
-import { MatDivider } from '@angular/material/divider';
+import { MatIconButton } from '@angular/material/button';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
@@ -45,6 +43,7 @@ import {
   EditableElement,
   EditButtonsComponent,
 } from '../../../shared/edit-buttons/edit-buttons.component';
+import { NgClass } from '@angular/common';
 
 @Component({
   selector: 'app-token-details-user',
@@ -64,8 +63,6 @@ import {
     MatSelect,
     MatIconButton,
     MatIcon,
-    MatDivider,
-    MatFabButton,
     EditButtonsComponent,
     NgClass,
   ],
@@ -83,8 +80,6 @@ export class TokenDetailsUserComponent {
 
   @Input() userData = signal<EditableElement[]>([]);
   @Input() tokenSerial!: WritableSignal<string>;
-  @Input() setPinValue!: WritableSignal<string>;
-  @Input() repeatPinValue!: WritableSignal<string>;
   @Input() isEditingUser!: WritableSignal<boolean>;
   @Input() isEditingInfo!: WritableSignal<boolean>;
   @Input() isAnyEditingOrRevoked!: Signal<boolean>;
@@ -101,27 +96,6 @@ export class TokenDetailsUserComponent {
     });
   }
 
-  setPin() {
-    if (this.setPinValue() !== this.repeatPinValue()) {
-      console.error('PINs do not match.');
-      this.notificationService.openSnackBar('PINs do not match.');
-      return;
-    }
-    this.tokenService.setPin(this.tokenSerial(), this.setPinValue()).subscribe({
-      next: () => {
-        this.notificationService.openSnackBar('PIN set successfully.');
-      },
-    });
-  }
-
-  setRandomPin() {
-    this.tokenService.setRandomPin(this.tokenSerial()).subscribe({
-      next: () => {
-        this.notificationService.openSnackBar('PIN set successfully.');
-      },
-    });
-  }
-
   toggleUserEdit(): void {
     this.isEditingUser.update((b) => !b);
     this.realmService.defaultRealmResource.reload();
@@ -133,32 +107,19 @@ export class TokenDetailsUserComponent {
   }
 
   saveUser() {
-    if (this.setPinValue() !== this.repeatPinValue()) {
-      console.error('PINs do not match.');
-      this.notificationService.openSnackBar('PINs do not match.');
-      return;
-    }
     this.tokenService
       .assignUser({
         tokenSerial: this.tokenSerial(),
         username: this.userService.userNameFilter(),
         realm: this.userService.selectedUserRealm(),
-        pin: this.setPinValue(),
       })
       .subscribe({
         next: () => {
-          this.setPinValue.set('');
-          this.repeatPinValue.set('');
           this.userService.userFilter.set('');
           this.userService.selectedUserRealm.set('');
           this.isEditingUser.update((b) => !b);
           this.tokenService.tokenDetailResource.reload();
         },
       });
-  }
-
-  canSetRandomPin() {
-    console.warn('canSetRandomPin Method not implemented.');
-    return true;
   }
 }

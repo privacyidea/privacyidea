@@ -1,4 +1,3 @@
-import { NgClass } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {
@@ -6,8 +5,7 @@ import {
   MatAutocompleteTrigger,
   MatOption,
 } from '@angular/material/autocomplete';
-import { MatFabButton, MatIconButton } from '@angular/material/button';
-import { MatDivider } from '@angular/material/divider';
+import { MatIconButton } from '@angular/material/button';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
@@ -35,9 +33,10 @@ import {
 } from '../../../../services/user/user.service';
 import { EditButtonsComponent } from '../../../shared/edit-buttons/edit-buttons.component';
 import { TokenDetailsUserComponent } from './token-details-user.component';
+import { NgClass } from '@angular/common';
 
 @Component({
-  selector: 'app-token-details-user',
+  selector: 'app-token-details-user-self-service',
   standalone: true,
   imports: [
     MatTableModule,
@@ -54,8 +53,6 @@ import { TokenDetailsUserComponent } from './token-details-user.component';
     MatSelect,
     MatIconButton,
     MatIcon,
-    MatDivider,
-    MatFabButton,
     EditButtonsComponent,
     NgClass,
   ],
@@ -73,10 +70,5 @@ export class TokenDetailsUserSelfServiceComponent extends TokenDetailsUserCompon
 
   constructor() {
     super();
-  }
-
-  override canSetRandomPin() {
-    console.warn('canSetRandomPin Method not implemented.');
-    return false;
   }
 }

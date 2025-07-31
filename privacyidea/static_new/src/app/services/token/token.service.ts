@@ -221,7 +221,7 @@ export interface TokenServiceInterface {
     tokenSerial: string;
     username: string;
     realm: string;
-    pin: string;
+    pin?: string;
   }): Observable<PiResponse<boolean>>;
 
   setPin(tokenSerial: string, userPin: string): Observable<any>;
@@ -661,7 +661,7 @@ export class TokenService implements TokenServiceInterface {
     pin?: string;
   }): Observable<PiResponse<boolean>[]> {
     const { tokenSerials, username, realm, pin } = args;
-    var observables = tokenSerials.map((tokenSerial) =>
+    const observables = tokenSerials.map((tokenSerial) =>
       this.assignUser({
         tokenSerial: tokenSerial,
         username: username,
@@ -685,7 +685,7 @@ export class TokenService implements TokenServiceInterface {
     tokenSerial: string;
     username: string;
     realm: string;
-    pin: string;
+    pin?: string;
   }): Observable<PiResponse<boolean>> {
     const { tokenSerial, username, realm, pin } = args;
     const headers = this.localService.getHeaders();
@@ -696,7 +696,7 @@ export class TokenService implements TokenServiceInterface {
           serial: tokenSerial,
           user: username !== '' ? username : null,
           realm: realm !== '' ? realm : null,
-          pin: pin,
+          pin: pin || '',
         },
         { headers },
       )

@@ -15,7 +15,6 @@ import {
 } from '@angular/material/autocomplete';
 import { MatIconButton } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
-import { MatDivider } from '@angular/material/divider';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
@@ -117,7 +116,6 @@ export const infoDetailsKeyMap = [{ key: 'info', label: 'Information' }];
     TokenDetailsInfoComponent,
     TokenDetailsActionsComponent,
     EditButtonsComponent,
-    MatDivider,
     CopyButtonComponent,
   ],
   templateUrl: './token-details.component.html',

@@ -20,7 +20,7 @@ export interface PiResponse<Value, Detail = unknown> {
   jsonrpc: string;
   detail: Detail;
   result?: {
-    authentication?: 'CHALLENGE' | 'POLL' | 'PUSH';
+    authentication?: 'CHALLENGE' | 'POLL' | 'PUSH' | 'ACCEPT' | 'REJECT';
     status: boolean;
     value?: Value;
     error?: {

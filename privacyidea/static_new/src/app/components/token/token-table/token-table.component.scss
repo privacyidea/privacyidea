@@ -7,7 +7,7 @@
       ".token-table-filter",
       ".table-scroll-container"
   );
-  max-height: calc(var(--main-height) - var(--global-padding) * 4);
+  max-height: calc(var(--main-height) - var(--global-padding) * 5);
   overflow: auto;
 }
 

@@ -4,7 +4,7 @@
 .token-enrollment-container {
   @include styles.table-container-styles;
   width: 49.5rem;
-  max-height: calc(var(--main-height) - var(--global-padding) * 4);
+  max-height: calc(var(--main-height) - var(--global-padding) * 5);
   overflow: auto;
 }
 

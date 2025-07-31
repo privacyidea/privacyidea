@@ -205,32 +205,27 @@
               mat-row></tr>
         </table>
       </div>
-      @if (overflowService.isWidthOverflowing("body", 1310)) {
-        <br style="margin: 10px" />
-        <mat-divider /><br style="margin: 10px" />
-      }
-      <div class="details-flex-layout flex-column">
-        <app-token-details-user [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
-                                [isEditingInfo]="isEditingInfo"
-                                [isEditingUser]="isEditingUser"
-                                [repeatPinValue]="repeatPinValue"
-                                [setPinValue]="setPinValue"
-                                [tokenSerial]="tokenSerial"
-                                [userData]="userData"
-                                class="flex"></app-token-details-user>
-        <div [ngClass]="[
+      <div [ngClass]="[
             overflowService.isWidthOverflowing('.token-layout', 1580)
-              ? 'flex-column ali-center'
+              ? 'flex-column'
               : 'flex-row',
-          ]"
-             class="details-flex-layout">
+          ]">
+        <div class="flex-column">
+          <app-token-details-user [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
+                                  [isEditingInfo]="isEditingInfo"
+                                  [isEditingUser]="isEditingUser"
+                                  [tokenSerial]="tokenSerial"
+                                  [userData]="userData"
+                                  class="flex"></app-token-details-user>
           <app-token-details-info [detailData]="tokenDetailData"
                                   [infoData]="infoData"
                                   [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
                                   [isEditingInfo]="isEditingInfo"
                                   [isEditingUser]="isEditingUser"></app-token-details-info>
-          <app-token-details-actions [tokenType]="tokenType"></app-token-details-actions>
         </div>
+        <app-token-details-actions [repeatPinValue]="repeatPinValue"
+                                   [setPinValue]="setPinValue"
+                                   [tokenType]="tokenType"></app-token-details-actions>
       </div>
     </div>
   </div>
