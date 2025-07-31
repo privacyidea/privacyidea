@@ -31,17 +31,17 @@
   </mat-form-field>
 
   <div class="enroll-button-container">
-    <button (click)="reopenEnrollmentDialog()"
-            [disabled]="registerResponse() === null"
-            mat-icon-button
-            matTooltip="Reopen enrollment dialog">
-      <mat-icon>open_in_new</mat-icon>
-    </button>
     <button (click)="createContainer()"
             class="card-button"
             mat-flat-button>
       <mat-icon>add</mat-icon>
       Create Container
+    </button>
+    <button (click)="reopenEnrollmentDialog()"
+            [disabled]="registerResponse() === null"
+            mat-icon-button
+            matTooltip="Reopen enrollment dialog">
+      <mat-icon>open_in_new</mat-icon>
     </button>
   </div>
 

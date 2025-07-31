@@ -76,3 +76,32 @@ $margin-bottom-main: 136px;
 .tile-header {
   padding: 0;
 }
+
+.user-details-grid {
+  display: flex;
+  gap: 32px;
+  margin-top: 32px;
+}
+
+.user-details-column {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  row-gap: 16px;
+  column-gap: 16px;
+}
+
+
+.user-self-service-card {
+  border-radius: var(--border-radius);
+  border: solid 3px var(--mat-sys-outline-variant);
+  padding: var(--global-padding);
+  background: white;
+}
+
+.user-details-column .label {
+  font-weight: 600;
+}
+
+.user-details-column .value {
+  word-break: break-word;
+}

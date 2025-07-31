@@ -129,7 +129,7 @@
         ]"
               mat-flat-button>
         <mat-icon>playlist_add</mat-icon>
-        {{ "Assign to All Token" }}
+        {{ "Assign to All Tokens" }}
       </button>
       <button (click)="unassignFromAllToken()"
               [disabled]="!isUnassignableFromAllToken()"
@@ -138,31 +138,31 @@
         ]"
               mat-flat-button>
         <mat-icon>playlist_remove</mat-icon>
-        {{ "Unassign from All Token" }}
+        {{ "Unassign from All Tokens" }}
       </button>
       <button (click)="toggleAll('activate')"
               class="card-button-activate"
               mat-flat-button>
         <mat-icon>playlist_play</mat-icon>
-        {{ "Activate All Token" }}
+        {{ "Activate All Tokens" }}
       </button>
       <button (click)="toggleAll('deactivate')"
               class="card-button-delete"
               mat-flat-button>
         <mat-icon class="mdi--list-lock" />
-        {{ "Deactivate All Token" }}
+        {{ "Deactivate All Tokens" }}
       </button>
       <button (click)="removeAll()"
               class="card-button-delete"
               mat-flat-button>
         <mat-icon> playlist_remove</mat-icon>
-        {{ "Remove All Token" }}
+        {{ "Remove All Tokens" }}
       </button>
       <button (click)="deleteAllTokens()"
               class="card-button-delete"
               mat-flat-button>
         <mat-icon> delete_sweep</mat-icon>
-        {{ "Delete All Token" }}
+        {{ "Delete All Tokens" }}
       </button>
     </div>
   </div>

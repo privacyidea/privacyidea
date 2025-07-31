@@ -5,7 +5,7 @@
   <form (ngSubmit)="enrollToken()"
         [formGroup]="formGroupSignal()">
     <div #stickySentinel></div>
-    <div class="select-token-type-container">
+    <div class="select-token-type-container-self-service">
       <mat-form-field class="flex-size-1"
                       subscriptSizing="dynamic">
         <mat-select [(ngModel)]="tokenService.selectedTokenType"
