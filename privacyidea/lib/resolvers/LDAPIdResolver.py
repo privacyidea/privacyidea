@@ -500,7 +500,7 @@ class IdResolver(UserIdResolver):
         """
         Unbind and close open connection
         """
-        if hasattr(self, "connection") and self.connection.bound:
+        if hasattr(self, "connection") and self.connection is not None and self.connection.bound:
             try:
                 self.connection.unbind()
                 self.i_am_bound = False
