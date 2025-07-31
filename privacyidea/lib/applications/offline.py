@@ -170,12 +170,13 @@ class MachineApplication(MachineApplicationBase):
         :param user_agent: The user agent of the request
         :return auth_item: A list of hashed OTP values or pubKey, rpId and credentialId for WebAuthn token
         """
-        ret = {"response": {}}
+        ret = {}
         options = options or {}
         password = challenge
         token_type = token_type.lower()
         # TODO improve where the information about offline capabilities is stored
         if token_type in ["hotp", "webauthn", "passkey"]:
+            ret["response"] = {}
             token = get_one_token(serial=serial)
             user = token.user
             if user:

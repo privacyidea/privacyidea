@@ -6608,7 +6608,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(0, len(container_of_hans))
         tokens_of_hans = get_tokens(user=hans)
         self.assertEqual(0, len(tokens_of_hans))
-        capture.check_present(("privacyidea.api.lib.postpolicy", "DEBUG",
+        capture.check_present(("privacyidea.api.lib.postpolicy", "WARNING",
                                "Missing container registration policy. Can not enroll container via multichallenge."))
 
         delete_policy("enroll_via_multichallenge")

@@ -801,12 +801,13 @@ def poll_transaction(transaction_id=None):
                     challenge_type = challenge_data.get("type", "token")
             except json.JSONDecodeError:
                 pass
-        if challenge_type == "token":
+        if challenge_type in ["token", "push"]:
             user = get_one_token(serial=log_challenges[0].serial).user
         else:
             container = find_container_by_serial(log_challenges[0].serial)
             users = container.get_users()
             user = users[0] if users else User()
+
         if user:
             g.audit_object.log({
                 "user": user.login,
@@ -816,8 +817,8 @@ def poll_transaction(transaction_id=None):
 
     # In any case, we log the transaction ID
     g.audit_object.log({
-        "info": "status: {}".format(details.get("challenge_status")),
-        "action_detail": "transaction_id: {}".format(transaction_id),
+        "info": f"status: {details.get('challenge_status')}",
+        "action_detail": f"transaction_id: {transaction_id}",
         "success": result
     })
 
