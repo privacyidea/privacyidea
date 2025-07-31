@@ -540,39 +540,31 @@ def list_cmd(ctx, user_attributes, token_attributes, sum_tokens):
 
 @findtokens.command('export')
 @click.option('--format', 'export_format',
-              type=click.Choice(['csv', 'yaml', 'pskc','stdout'], case_sensitive=False),
-              default='stdout', show_default=True,
+              type=click.Choice(['csv', 'yaml', 'pskc','pi'], case_sensitive=False),
+              default='pi', show_default=True,
               help='The output format of the token export. CSV export only '
                    'allows TOTP and HOTP token types')
 @click.option('--b32', is_flag=True,
               help='In case of exporting tokens to CSV or YAML, the seed is '
                    'written as base32 encoded instead of hex.')
-@click.option('--file', required=False, type=click.Path(writable=True),
-              help='The file to export the tokens to. Defaults to "exported_tokens.txt".')
+@click.option('--file', required=False, type=click.File('w'), default=sys.stdout,
+              help='The file to export the tokens to. Defaults to "stdout".')
 @click.pass_context
 def export(ctx, export_format, b32, file):
     """
     Export found tokens.
     """
-    if not file:
-        file = 'exported_tokens'
-    if export_format == "stdout":
-        key = Fernet.generate_key()
-        exported_tokens_chunks = []
+    if export_format == "pskc":
+        all_tokens = []
         for tlist in ctx.obj['tokens']:
-            exported_tokens_chunks.append(export_tokens(tlist))
-        list_of_exported_tokens = ''.join(exported_tokens_chunks)
-        f = Fernet(key)
-        list_of_exported_tokens = f.encrypt(list_of_exported_tokens.encode('utf-8'))
-        click.secho(click.style(f'The key to import the tokens is:\n\n\t{key.decode("utf-8")}\n\n', fg='red')+
-                    f'You can use this key to import the tokens with the command:\n'
-                    f'pi-tokenjanitor import privacyidea {file} --key {key.decode("utf-8")}\n')
-        value = click.prompt('Do you want to save the key to a file?', type=bool, default=False)
-        if is_true(value):
-            key_file = click.prompt('Please enter the file name to save the key to', default='key.txt')
-            with open(key_file, 'wb') as f:
-                f.write(key)
-            click.echo(f'The key is saved to {key_file}')
+            all_tokens.extend(tlist)
+        key, token_num, soup = export_pskc(all_tokens)
+        sys.stderr.write(f"\n{token_num} tokens exported.\n")
+        sys.stderr.write(f"\nThis is the AES encryption key of the token seeds.\n"
+                         f"You need this key to import the "
+                         f"tokens again:\n\n\t{key}\n\n")
+        file.write(str(soup))
+
     elif export_format == "csv":
         exported_tokens_chunks = []
         for tlist in ctx.obj['tokens']:
@@ -587,7 +579,8 @@ def export(ctx, export_format, b32, file):
                     exported_tokens_chunks.append(export_string + f", {token_dict.get('info_list', {}).get('timeStep')}")
                 else:
                     exported_tokens_chunks.append(export_string)
-        list_of_exported_tokens = '\n'.join(exported_tokens_chunks).encode('utf-8')
+        file.write('\n'.join(exported_tokens_chunks))
+
     elif export_format == "yaml":
         token_list = []
         for tlist in ctx.obj['tokens']:
@@ -598,21 +591,26 @@ def export(ctx, export_format, b32, file):
                     token_list.append(token_dict)
                 except Exception as e:
                     sys.stderr.write(f"\nFailed to export token {tokenobj.get_serial()} ({e}).\n")
-        list_of_exported_tokens = yaml_safe_dump(token_list).encode('utf-8')
-    else:
-        all_tokens = []
-        for tlist in ctx.obj['tokens']:
-            all_tokens.extend(tlist)
-        key, token_num, soup = export_pskc(all_tokens)
-        sys.stderr.write(f"\n{token_num} tokens exported.\n")
-        sys.stderr.write(f"\nThis is the AES encryption key of the token seeds.\n"
-                    f"You need this key to import the "
-                    f"tokens again:\n\n\t{key}\n\n")
-        list_of_exported_tokens = soup.encode('utf-8')
+        file.write(yaml_safe_dump(token_list))
 
-    with open(file, 'wb') as f:
-        f.write(list_of_exported_tokens)
-    click.echo(f'Tokens are exported to "{file}".\n')
+    else:
+        key = Fernet.generate_key()
+        exported_tokens_chunks = []
+        for tlist in ctx.obj['tokens']:
+            exported_tokens_chunks.append(export_tokens(tlist))
+        list_of_exported_tokens = ''.join(exported_tokens_chunks)
+        f = Fernet(key)
+        file.write(f.encrypt(list_of_exported_tokens.encode('utf-8')).decode('utf-8'))
+        click.secho(click.style(f'The key to import the tokens is:\n\n\t{key.decode("utf-8")}\n\n', fg='red')+
+                    f'You can use this key to import the tokens with the command:\n'
+                    f'pi-tokenjanitor import privacyidea {file.name} --key {key.decode("utf-8")}\n')
+        value = click.prompt('Do you want to save the key to a file?', type=bool, default=False)
+        if is_true(value):
+            key_file = click.prompt('Please enter the file name to save the key to', type=click.File('wb'), default=sys.stdout)
+            key_file.write(key)
+            click.echo(f'The key is saved to {key_file.name}')
+
+    click.echo(f'\nTokens are exported to "{file.name}".\n')
 
 
 @findtokens.command('set_tokenrealms')
@@ -725,4 +723,3 @@ def remove_tokeninfo(ctx, tokeninfo_key):
             token_obj.del_tokeninfo(tokeninfo_key)
             token_obj.save()
             click.echo(f"Removed tokeninfo '{tokeninfo_key}' for token {token_obj.token.serial}")
-
