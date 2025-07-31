@@ -39,7 +39,7 @@ class Challenge(MethodsMixin, db.Model):
                    nullable=False)
     transaction_id = db.Column(db.Unicode(64), nullable=False, index=True)
     data = db.Column(db.Unicode(512), default='')
-    challenge = db.Column(db.Unicode(512), default='')
+    challenge = db.Column(db.Text, default='')
     session = db.Column(db.Unicode(512), default='', quote=True, name="session")
     # The token serial number
     serial = db.Column(db.Unicode(40), default='', index=True)
