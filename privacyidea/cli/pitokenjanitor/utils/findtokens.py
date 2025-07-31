@@ -567,6 +567,12 @@ def export(ctx, export_format, b32, file):
         click.secho(click.style(f'The key to import the tokens is:\n\n\t{key.decode("utf-8")}\n\n', fg='red')+
                     f'You can use this key to import the tokens with the command:\n'
                     f'pi-tokenjanitor import privacyidea {file} --key {key.decode("utf-8")}\n')
+        value = click.prompt('Do you want to save the key to a file?', type=bool, default=False)
+        if is_true(value):
+            key_file = click.prompt('Please enter the file name to save the key to', default='key.txt')
+            with open(key_file, 'wb') as f:
+                f.write(key)
+            click.echo(f'The key is saved to {key_file}')
     elif export_format == "csv":
         exported_tokens_chunks = []
         for tlist in ctx.obj['tokens']:
