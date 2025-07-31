@@ -114,8 +114,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokenclass import TOKENKIND
 from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.user import User, get_user_from_param
-from privacyidea.lib.user import get_username
+from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true, BASE58, hexlify_and_unicode, check_serial_valid, create_tag_dict
 from privacyidea.models import (db, Token, Realm, TokenRealm, Challenge,
                                 TokenInfo, TokenOwner, TokenTokengroup, Tokengroup, TokenContainer,
@@ -2989,6 +2988,8 @@ def export_tokens(tokens: list[TokenClass], export_user: bool = True) -> list[di
 
     :param tokens: list of token objects
     :return: list of dict with token information
+    :param export_user: bool
+    :return: JSON string representing a list of token dictionaries
     """
     exported_tokens = [token.export_token(export_user=export_user) for token in tokens]
     return exported_tokens

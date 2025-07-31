@@ -597,7 +597,6 @@ class User(object):
         Returns a dictionary with the user identifiers, which can be used to
         assign a token to the same user after import.
 
-        :param user: The user object
         :return: A dictionary with the user identifiers
         """
         return {
