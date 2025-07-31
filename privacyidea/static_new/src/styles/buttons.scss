@@ -288,16 +288,13 @@ $button-low-contrast-variant: linear-gradient(
   height: var(--header-height);
   cursor: pointer;
   border-radius: 0;
-  background: var(--mat-sys-surface-container-lowest);
-  color: var(--mat-sys-surface-container-highest);
+  background-color: transparent;
+  color: var(--mat-sys-on-surface-variant);
   box-shadow: none !important;
+  transition: background-color 0.2s ease-in-out;
 
   &:hover {
-    background: var(--mat-sys-surface-container-low);
-
-    mat-icon {
-      color: var(--mat-sys-on-surface-variant);
-    }
+    background-color: var(--mat-sys-surface-container);
   }
 }
 
@@ -333,11 +330,12 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .logout-btn {
-  color: var(--mat-sys-surface-container-highest);
-
+  color: var(--mat-sys-on-surface-variant);
+  background-color: transparent;
+  transition: background-color 0.2s ease-in-out;
 
   &:hover {
-    color: var(--mat-sys-on-surface-variant);
+    background-color: var(--mat-sys-surface-container);
   }
 }
 

@@ -18,10 +18,9 @@
   justify-content: center;
   box-shadow: none;
   background-color: transparent;
-  color: var(--mat-sys-surface-container-highest);
+  color: var(--mat-sys-on-surface-variant);
   border: none;
-  transition: background-color 0.2s ease-in-out,
-  color 0.2s ease-in-out;
+  transition: background-color 0.2s ease-in-out;
 
   .mat-icon {
     font-size: 24px;
@@ -32,7 +31,6 @@
 
 .theme-toggle-button:hover {
   background-color: var(--mat-sys-surface-container);
-  color: var(--mat-sys-on-surface-variant);
 }
 
 .theme-toggle-button.cdk-keyboard-focused {
