@@ -30,7 +30,7 @@ import copy
 from .lib.utils import (send_error, get_all_params, verify_auth_token, get_optional)
 from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
-from ..lib.framework import get_app_config_value
+from ..lib.framework import get_app_config_value, get_request_local_store
 from ..lib.user import get_user_from_param
 import logging
 from flask import request, g
@@ -469,6 +469,11 @@ def after_request(response):
     This function is called after a request
     :return: The response
     """
+    # close any open ldap connection
+    store = get_request_local_store()
+    resolvers = store.get("resolver_objects", {})
+    for resolver in resolvers.values():
+        resolver.unbind()
     # No caching!
     response.headers['Cache-Control'] = 'no-cache'
     return response

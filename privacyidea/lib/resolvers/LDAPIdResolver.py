@@ -496,6 +496,18 @@ class IdResolver(UserIdResolver):
                 log.info(f"The filter '{search_filter}' returned no DN.")
         return dn
 
+    def unbind(self):
+        """
+        Unbind and close open connection
+        """
+        if hasattr(self, "connection") and self.connection.bound:
+            try:
+                self.connection.unbind()
+                self.i_am_bound = False
+                log.debug("LDAP unbind operation successful.")
+            except Exception as e:
+                log.debug(f"Error during LDAP unbind operation: {e}")
+
     def _bind(self):
         """
         Perform LDAP bind operation on a connection.
