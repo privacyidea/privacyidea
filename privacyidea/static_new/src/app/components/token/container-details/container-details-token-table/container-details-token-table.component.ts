@@ -6,6 +6,7 @@ import {
   inject,
   Input,
   linkedSignal,
+  signal,
   ViewChild,
   WritableSignal,
 } from '@angular/core';
@@ -110,7 +111,7 @@ export class ContainerDetailsTokenTableComponent {
     'remove',
   ];
   pageSize = 10;
-  pageSizeOptions = [5, 10, 15];
+  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   filterValue = '';
   @Input() containerTokenData!: WritableSignal<
     MatTableDataSource<ContainerDetailToken, MatPaginator>

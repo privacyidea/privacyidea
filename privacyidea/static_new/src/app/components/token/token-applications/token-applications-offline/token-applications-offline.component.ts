@@ -62,7 +62,7 @@ export class TokenApplicationsOfflineComponent {
     inject(ContentService);
 
   columnsKeyMap = _offlineColumnsKeyMap;
-  pageSizeOptions = [5, 10, 15];
+  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   length = computed(() => this.machineService.tokenApplications()?.length ?? 0);
   displayedColumns: string[] = _offlineColumnsKeyMap.map(
     (column) => column.key,

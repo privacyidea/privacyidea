@@ -13,7 +13,7 @@
                placeholder="Filter across all columns." />
       </mat-form-field>
     }
-    <mat-paginator [pageSizeOptions]="pageSizeOptions"
+    <mat-paginator [pageSizeOptions]="pageSizeOptions()"
                    [pageSize]="pageSize"
                    class="flex-just-start"
                    showFirstLastButtons></mat-paginator>

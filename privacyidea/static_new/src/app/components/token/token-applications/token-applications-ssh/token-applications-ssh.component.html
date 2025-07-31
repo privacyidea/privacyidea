@@ -22,7 +22,7 @@
       <mat-paginator (page)="machineService.onPageEvent($event)"
                      [length]="length()"
                      [pageIndex]="machineService.pageIndex()"
-                     [pageSizeOptions]="pageSizeOptions"
+                     [pageSizeOptions]="pageSizeOptions()"
                      [pageSize]="machineService.pageSize()"
                      showFirstLastButtons></mat-paginator>
     </div>

@@ -1,5 +1,5 @@
 import { NgClass } from '@angular/common';
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatFormField, MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -69,7 +69,7 @@ export class TokenApplicationsSshComponent {
     inject(ContentService);
 
   columnsKeyMap = _sshColumnsKeyMap;
-  pageSizeOptions = [5, 10, 15];
+  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   length = computed(() => this.machineService.tokenApplications()?.length ?? 0);
   displayedColumns: string[] = _sshColumnsKeyMap.map((column) => column.key);
 

@@ -99,6 +99,14 @@ $border-radius: var(--border-radius);
     display: flex;
   }
 
+  .session-timer-selfservice {
+    width: 48px;
+    height: 19px;
+    padding: 16px;
+    justify-content: center;
+    display: flex;
+  }
+
   .profile-div {
     margin-left: auto;
     width: fit-content;

@@ -131,18 +131,7 @@ export class AuditComponent {
       return previous?.value ?? 0;
     },
   });
-  pageSizeOptions = linkedSignal({
-    source: this.totalLength,
-    computation: (total) => {
-      if (total > 50) {
-        return [5, 10, 15, 50];
-      }
-      if ([5, 10, 15].includes(total)) {
-        return [5, 10, 15];
-      }
-      return [5, 10, 15, total];
-    },
-  });
+  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
   emptyResource: WritableSignal<AuditData[]> = linkedSignal({
     source: this.auditService.pageSize,

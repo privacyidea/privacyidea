@@ -40,7 +40,7 @@
                   ">
                   @switch (column.key) {
                     @case ("serial") {
-                      <div class="flex-row">
+                      <div class="flex-row ali-center">
                         <a attr.aria-label="{{ column.label }} Link"
                            (click)="
                             contentService.tokenSelected(element.serial)
@@ -49,17 +49,19 @@
                       </div>
                     }
                     @case ("container_serial") {
-                      <a attr.aria-label="{{ column.label }} Link"
-                         (click)="
+                      <div class="flex-row ali-center">
+                        <a attr.aria-label="{{ column.label }} Link"
+                           (click)="
                           contentService.containerSelected(
                             element.container_serial
                           )
                         "> {{ element[column.key] }} </a>
-                      @if (element.container_serial !== "") {
-                        <app-copy-button [copyText]="
+                        @if (element.container_serial !== "") {
+                          <app-copy-button [copyText]="
                             element.container_serial
                           "></app-copy-button>
-                      }
+                        }
+                      </div>
                     }
                     @case ("active") {
                       <span [ngClass]="

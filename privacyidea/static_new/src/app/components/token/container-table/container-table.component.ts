@@ -159,13 +159,7 @@ export class ContainerTableComponent {
     },
   });
 
-  pageSizeOptions = linkedSignal({
-    source: this.total,
-    computation: (total) =>
-      [5, 10, 15].includes(total) || total > 50
-        ? [5, 10, 15]
-        : [5, 10, 15, total],
-  });
+  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
   @ViewChild('filterHTMLInputElement', { static: true })
   filterInput!: HTMLInputElement;

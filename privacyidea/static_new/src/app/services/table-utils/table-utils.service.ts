@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal, WritableSignal } from '@angular/core';
 import { MatTableDataSource } from '@angular/material/table';
 
 export interface FilterPair {
@@ -7,6 +7,8 @@ export interface FilterPair {
 }
 
 export interface TableUtilsServiceInterface {
+  pageSizeOptions: WritableSignal<number[]>;
+
   emptyDataSource<T>(
     pageSize: number,
     columnsKeyMap: { key: string; label: string }[],
@@ -62,6 +64,8 @@ export interface TableUtilsServiceInterface {
   providedIn: 'root',
 })
 export class TableUtilsService implements TableUtilsServiceInterface {
+  pageSizeOptions = signal([5, 10, 25, 50]);
+
   emptyDataSource<T>(
     pageSize: number,
     columnsKeyMap: { key: string; label: string }[],

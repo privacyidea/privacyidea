@@ -72,7 +72,7 @@ export class ChallengesTableComponent {
 
   columnsKeyMap = columnKeysMap;
   displayedColumns = columnKeysMap.map((c) => c.key);
-  pageSizeOptions = [5, 10, 15];
+  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   apiFilter = this.challengesService.apiFilter;
   advancedApiFilter = this.challengesService.advancedApiFilter;
   tokenSerial = this.tokenService.tokenSerial;

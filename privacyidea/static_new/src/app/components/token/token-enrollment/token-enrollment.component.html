@@ -28,7 +28,8 @@
          class="sticky-header">
       <div class="sticky-controls">
         <div class="enroll-button-container">
-          <button [ngClass]="{
+          <button [disabled]="formGroupSignal().invalid || !tokenService.selectedTokenType()"
+                  [ngClass]="{
               'card-button-disabled':
                 formGroupSignal().invalid || !tokenService.selectedTokenType(),
               'card-button': true,

@@ -132,18 +132,7 @@ export class TokenTableComponent {
     },
   });
 
-  pageSizeOptions = computed(() => {
-    const total = this.totalLength();
-    const defaultSizeOptions = this.tokenService.defaultSizeOptions;
-    if (total < defaultSizeOptions[defaultSizeOptions.length - 1]) {
-      const filtered = defaultSizeOptions.filter((size) => size <= total);
-      if (filtered.length < 2) {
-        return defaultSizeOptions.slice(0, 2);
-      }
-      return [...filtered, total];
-    }
-    return defaultSizeOptions;
-  });
+  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
   @ViewChild('filterHTMLInputElement', { static: true })
   filterInput!: HTMLInputElement;

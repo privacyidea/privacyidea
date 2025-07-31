@@ -7,7 +7,7 @@ import {
 } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenu, MatMenuTrigger } from '@angular/material/menu';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import {
   AuthService,
   AuthServiceInterface,
@@ -36,7 +36,6 @@ import { HeaderComponent } from './header.component';
     MatFabButton,
     MatFabAnchor,
     MatIconModule,
-    RouterLink,
     DatePipe,
     NgClass,
     MatIconButton,

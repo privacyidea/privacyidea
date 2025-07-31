@@ -80,7 +80,7 @@ export class UserTableComponent {
   private tableUtilsService = inject(TableUtilsService);
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
-  pageSizeOptions = signal([5, 10, 15, 50]);
+  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   protected contentService = inject(ContentService);
   protected userService = inject(UserService);
   filterValueString: WritableSignal<string> = linkedSignal(() =>
