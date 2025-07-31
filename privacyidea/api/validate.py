@@ -434,20 +434,24 @@ def check():
     is_container_challenge = False
 
     if "cancel_enrollment" in request.all_data:
-        transaction_id = get_optional(request.all_data, "transaction_id")
-        if not transaction_id:
-            log.warning("No transaction_id in request data, but cancel_enrollment is set!")
-        elif cancel_enrollment_via_multichallenge(transaction_id):
+        transaction_id = get_required(request.all_data, "transaction_id")
+        success = cancel_enrollment_via_multichallenge(transaction_id)
+        if success:
             details.update({"message": gettext("Cancelled enrollment via multichallenge")})
             ret = send_result(True, rid=2, details=details)
-            g.audit_object.log({
-                "info": log_used_user(user, details.get("message")),
-                "success": True,
-                "authentication": ret.json.get("result").get("authentication") or "",
-                "action_detail": gettext("Cancelled enrollment via multichallenge for transaction_id")
-                                 + f"{transaction_id}",
-            })
-            return ret
+            action_detail = (gettext("Cancelled enrollment via multichallenge for transaction_id") +
+                             f"{transaction_id}")
+        else:
+            details.update({"message": gettext("Failed to cancel enrollment via multichallenge")})
+            ret = send_result(False, rid=2, details=details)
+            action_detail = (gettext("Failed to cancel enrollment via multichallenge for transaction_id")
+                             + f"{transaction_id}")
+        g.audit_object.log({
+            "success": success,
+            "authentication": ret.json.get("result").get("authentication") or "",
+            "action_detail": action_detail,
+        })
+        return ret
 
     # Passkey/FIDO2: Identify the user by the credential ID
     credential_id: str = get_optional_one_of(request.all_data, ["credential_id", "credentialid"])
@@ -801,12 +805,12 @@ def poll_transaction(transaction_id=None):
                     challenge_type = challenge_data.get("type", "token")
             except json.JSONDecodeError:
                 pass
-        if challenge_type in ["token", "push"]:
-            user = get_one_token(serial=log_challenges[0].serial).user
-        else:
+        if challenge_type == "container":
             container = find_container_by_serial(log_challenges[0].serial)
             users = container.get_users()
             user = users[0] if users else User()
+        else:
+            user = get_one_token(serial=log_challenges[0].serial).user
 
         if user:
             g.audit_object.log({
@@ -835,9 +839,11 @@ def initialize():
     token_type = get_required(request.all_data, "type")
     details = {}
     if token_type.lower() == "passkey":
-        rp_id = get_first_policy_value(policy_action=FIDO2PolicyAction.RELYING_PARTY_ID, default="", scope=SCOPE.ENROLL)
+        rp_id = get_first_policy_value(policy_action=FIDO2PolicyAction.RELYING_PARTY_ID, default="",
+                                       scope=SCOPE.ENROLL)
         if not rp_id:
-            raise PolicyError(f"Missing policy for {FIDO2PolicyAction.RELYING_PARTY_ID}, unable to create challenge!")
+            raise PolicyError(
+                f"Missing policy for {FIDO2PolicyAction.RELYING_PARTY_ID}, unable to create challenge!")
 
         user_verification = get_first_policy_value(policy_action=FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT,
                                                    default="preferred", scope=SCOPE.AUTH)
