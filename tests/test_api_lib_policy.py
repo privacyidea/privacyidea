@@ -1472,7 +1472,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                           "enrollHOTP, enrollQUESTION, enrollCERTIFICATE, "
                           "copytokenuser, configwrite, enrollTOTP, "
                           "enrollREGISTRATION, enrollYUBICO, resolverwrite, "
-                          "updateuser, enable, enrollU2F, "
+                          "updateuser, enable, "
                           "manage_machine_tokens, getrandom, userlist, "
                           "getserial, radiusserver_write, system_documentation,"
                           " caconnectordelete, caconnectorwrite, disable, "
