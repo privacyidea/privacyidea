@@ -95,9 +95,13 @@ def rotate_audit(highwatermark, lowwatermark, age, config,
     metadata.create_all(engine)
     if config:
         yml_config = yaml.safe_load(config)
-        auditlogs = session.query(LogEntry).all()
+        query = session.query(LogEntry)
+        if chunksize is None:
+            audit_logs = query.all()
+        else:
+            audit_logs = query.yield_per(chunksize)
         delete_list = []
-        for log in auditlogs:
+        for log in audit_logs:
             click.echo("investigating log entry {0!s}".format(log.id))
             for rule in yml_config:
                 age = int(rule.get("rotate"))
