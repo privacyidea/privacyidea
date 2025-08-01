@@ -150,14 +150,21 @@ class PushTokenTestCase(MyTestCase):
                            fb_config)
         self.assertTrue(r > 0)
 
-        detail = token.get_init_detail(params={"firebase_config": self.firebase_config_name,
-                                               "push_registration_url": "https://privacyidea.com/enroll"})
+        detail = token.get_init_detail(params={"policies": {"firebase_config": self.firebase_config_name,
+                                               "push_registration_url": "https://privacyidea.com/enroll"}})
+        self.assertTrue(detail['pushurl']['value'].startswith("otpauth"))
+
+        # set policy to use pia scheme
+        detail = token.get_init_detail(params={"policies": {"firebase_config": self.firebase_config_name,
+                                                            "push_registration_url": "https://privacyidea.com/enroll",
+                                                            PUSH_ACTION.USE_PIA_SCHEME: True}})
         self.assertEqual(detail.get("serial"), self.serial1)
         self.assertEqual(detail.get("rollout_state"), "clientwait")
         enrollment_credential = detail.get("enrollment_credential")
         self.assertTrue("pushurl" in detail)
         self.assertNotIn('pin=True', detail['pushurl']['value'])
         self.assertFalse("otpkey" in detail)
+        self.assertTrue(detail['pushurl']['value'].startswith("pia"))
 
         # Run enrollment step 2
         token.update({"enrollment_credential": enrollment_credential,
@@ -193,8 +200,8 @@ class PushTokenTestCase(MyTestCase):
         token_param = {"type": "push", "genkey": 1}
         token_param.update(FB_CONFIG_VALS)
         token = init_token(param=token_param)
-        detail = token.get_init_detail(params={PUSH_ACTION.FIREBASE_CONFIG: POLL_ONLY,
-                                               PUSH_ACTION.REGISTRATION_URL: "https://privacyidea.com/enroll",
+        detail = token.get_init_detail(params={"policies": {PUSH_ACTION.FIREBASE_CONFIG: POLL_ONLY,
+                                               PUSH_ACTION.REGISTRATION_URL: "https://privacyidea.com/enroll"},
                                                ACTION.FORCE_APP_PIN: True})
         self.assertIn("pin=True", detail["pushurl"]["value"])
         remove_token(token.get_serial())

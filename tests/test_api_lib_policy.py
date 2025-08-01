@@ -1875,6 +1875,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
         g.client_ip = env["REMOTE_ADDR"]
+        g.policies = {}
         req = Request(env)
         req.User = User()
         req.all_data = {
@@ -1896,36 +1897,47 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                                             PUSH_ACTION.REGISTRATION_URL,
                                             PUSH_ACTION.TTL))
         g.policy_object = PolicyClass()
-        req.all_data = {
-            "type": "push"}
+        g.policies = {}
+        req.all_data = {"type": "push"}
         pushtoken_add_config(req, "init")
-        self.assertEqual(req.all_data.get(PUSH_ACTION.FIREBASE_CONFIG), "some-fb-config")
-        self.assertEqual(req.all_data.get(PUSH_ACTION.REGISTRATION_URL), "https://privacyidea.com/enroll")
-        self.assertEqual("10", req.all_data.get(PUSH_ACTION.TTL))
-        self.assertEqual("1", req.all_data.get(PUSH_ACTION.SSL_VERIFY))
+        policies = g.policies
+        self.assertEqual("some-fb-config", policies.get(PUSH_ACTION.FIREBASE_CONFIG))
+        self.assertEqual("https://privacyidea.com/enroll", policies.get(PUSH_ACTION.REGISTRATION_URL))
+        self.assertEqual("10", policies.get(PUSH_ACTION.TTL))
+        self.assertEqual("1", policies.get(PUSH_ACTION.SSL_VERIFY))
+        self.assertFalse(policies.get(PUSH_ACTION.USE_PIA_SCHEME))
 
         # the request tries to inject a rogue value, but we assure sslverify=1
         g.policy_object = PolicyClass()
+        g.policies = {}
         req.all_data = {
             "type": "push",
             "sslverify": "rogue"}
         pushtoken_add_config(req, "init")
-        self.assertEqual("1", req.all_data.get(PUSH_ACTION.SSL_VERIFY))
+        self.assertEqual("1", g.policies.get(PUSH_ACTION.SSL_VERIFY))
 
         # set sslverify="0"
         set_policy(name="push_pol2",
                    scope=SCOPE.ENROLL,
                    action="{0!s}=0".format(PUSH_ACTION.SSL_VERIFY))
         g.policy_object = PolicyClass()
-        req.all_data = {
-            "type": "push"}
+        g.policies = {}
+        req.all_data = {"type": "push"}
         pushtoken_add_config(req, "init")
-        self.assertEqual(req.all_data.get(PUSH_ACTION.FIREBASE_CONFIG), "some-fb-config")
-        self.assertEqual("0", req.all_data.get(PUSH_ACTION.SSL_VERIFY))
+        self.assertEqual("some-fb-config", g.policies.get(PUSH_ACTION.FIREBASE_CONFIG))
+        self.assertEqual("0", g.policies.get(PUSH_ACTION.SSL_VERIFY))
+
+        # Set policy to use pia scheme
+        set_policy("pia_scheme", scope=SCOPE.ENROLL, action=PUSH_ACTION.USE_PIA_SCHEME)
+        req.all_data = {"type": "push"}
+        g.policies = {}
+        pushtoken_add_config(req, "init")
+        self.assertTrue(g.policies.get(PUSH_ACTION.USE_PIA_SCHEME))
 
         # finally delete policy
         delete_policy("push_pol")
         delete_policy("push_pol2")
+        delete_policy("pia_scheme")
 
     def test_23_enroll_different_tokentypes_in_different_resolvers(self):
         # One realm has different resolvers.
@@ -6404,6 +6416,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         request.all_data = {}
         request.User = hans
         g.policy_object = PolicyClass()
+        g.policies = {}
 
         response_data = {"jsonrpc": "2.0",
                          "result": {"status": True, "value": True, "authentication": AUTH_RESPONSE.ACCEPT},
@@ -6446,6 +6459,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         response = jsonify(response_data)
 
         # User has token, but no container
+        g.policies = {}
         token = init_token({"type": "hotp", "genkey": True}, user=hans)
         response = multichallenge_enroll_via_validate(request, response)
         check_response(response)
@@ -6455,6 +6469,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         response = jsonify(response_data)
 
         # User has generic container, but not smartphone container
+        g.policies = {}
         init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
         response = multichallenge_enroll_via_validate(request, response)
         check_response(response)
@@ -6463,6 +6478,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         response = jsonify(response_data)
 
         # User has smartphone container, but it is not registered
+        g.policies = {}
         container_serial = init_container({"type": "smartphone", "user": "hans", "realm": self.realm1})[
             "container_serial"]
         response = multichallenge_enroll_via_validate(request, response)
@@ -6473,6 +6489,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         response = jsonify(response_data)
 
         # use template policy
+        g.policies = {}
         set_policy("enroll_via_multichallenge_template", scope=SCOPE.AUTH,
                    action={ACTION.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: "test"})
         response = multichallenge_enroll_via_validate(request, response)
@@ -6487,6 +6504,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         response = jsonify(response_data)
 
         # User max token reached, but container is created anyway
+        g.policies = {}
         set_policy("max_token_user", scope=SCOPE.ENROLL, action={ACTION.MAXTOKENUSER: 1})
         token = init_token({"type": "hotp", "genkey": True}, user=hans)
         with LogCapture() as capture:
@@ -6516,6 +6534,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         response = jsonify(response_data)
 
         # use custom text
+        g.policies = {}
         set_policy("enroll_via_multichallenge_text", scope=SCOPE.AUTH,
                    action={ACTION.ENROLL_VIA_MULTICHALLENGE_TEXT: "Test custom text!"})
         response = multichallenge_enroll_via_validate(request, response)
@@ -6526,6 +6545,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         response = jsonify(response_data)
 
         # Invalid template name: container is created anyway
+        g.policies = {}
         set_policy("enroll_via_multichallenge_template", scope=SCOPE.AUTH,
                    action={ACTION.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: "invalid"})
         response = multichallenge_enroll_via_validate(request, response)
@@ -6565,6 +6585,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         request.all_data = {}
         request.User = hans
         g.policy_object = PolicyClass()
+        g.policies = {}
 
         response_data = {"jsonrpc": "2.0",
                          "result": {"status": True, "value": True, "authentication": AUTH_RESPONSE.ACCEPT},
@@ -6592,6 +6613,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # Missing registration policies
         delete_policy("registration")
+        g.policies = {}
         # create with template to check that also no tokens are created
         template_options = {"tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True}]}
         create_container_template(container_type="smartphone", template_name="test", options=template_options)

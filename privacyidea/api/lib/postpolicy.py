@@ -1021,7 +1021,9 @@ def multichallenge_enroll_via_validate(request, response):
                 fido2_enroll(request, None)
                 token = init_token(request.all_data, user)
                 try:
-                    init_details = token.get_init_detail(request.all_data, user)
+                    params = request.all_data.copy()
+                    params["policies"] = g.get("policies", {})
+                    init_details = token.get_init_detail(params, user)
                     if not init_details:
                         token.token.delete()
                     content.get("result")["value"] = False

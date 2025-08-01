@@ -1795,7 +1795,8 @@ def pushtoken_add_config(request, action):
     """
     ttype = request.all_data.get("type")
     if ttype and ttype.lower() == "push":
-        request.all_data = get_pushtoken_add_config(g, request.all_data, request.User)
+        push_config = get_pushtoken_add_config(g, request.all_data, request.User)
+        g.policies.update(push_config)
 
 
 def u2ftoken_verify_cert(request, action):
