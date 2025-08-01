@@ -287,3 +287,9 @@ class UserIdResolver(object):
         Returns the configuration of the resolver.
         """
         return {}
+
+    def unbind(self):
+        """
+        Unbind from any connection.
+        """
+        return None
