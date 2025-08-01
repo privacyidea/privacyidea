@@ -423,6 +423,8 @@ class PushAPITestCase(MyApiTestCase):
             detail = res.json.get("detail")
             transaction_id = detail.get("transaction_id")
             self.assertTrue("Please scan the QR code!" in detail.get("message"), detail.get("message"))
+            self.assertTrue(detail.get(ACTION.ENROLL_VIA_MULTICHALLENGE))
+            self.assertFalse(detail.get(ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
             # Get image and client_mode
             self.assertEqual(CLIENTMODE.POLL, detail.get("client_mode"))
             # Check, that multi_challenge is also contained.

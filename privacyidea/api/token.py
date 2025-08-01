@@ -414,7 +414,7 @@ def delete_expired_challenges_api():
           "version": "privacyIDEA unknown"
         }
     """
-    row_count = cleanup_expired_challenges(chunksize=None, age=None)
+    row_count = cleanup_expired_challenges(chunk_size=None, age=None)
     g.audit_object.log({"success": True, "info": f"Deleted {row_count} entries from challenges"})
     return send_result({"status": True, "deleted": row_count})
 

@@ -173,7 +173,7 @@ def generic_challenge_response_resync(wrapped_function, *args, **kwds):
     Conditions: To do so we check for "otp1c" in the tokeninfo data.
 
     Policies: A policy defines that the token resync should be allowed this way.
-    Note: The general config "autoresync" needs to be set anyways.
+    Note: The general config "autoresync" needs to be set anyway.
 
     args are:
     :param tokenobject_list: The list of all the tokens of the user, that will be checked

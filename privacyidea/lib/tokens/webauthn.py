@@ -1611,14 +1611,17 @@ class WebAuthnAssertionResponse:
             # that was sent to the authenticator in the
             # PublicKeyCredentialRequestOptions passed to the get() call.
             if not _verify_challenge(c.get('challenge'), self.challenge):
-                raise AuthenticationRejectedException('Unable to verify challenge.')
+                raise AuthenticationRejectedException(
+                    f"Unable to verify challenge. Should be {self.challenge}, but is {c.get('challenge')}."
+                )
 
             # Step 9.
             #
-            # Verify that the value of C.origin matches the Relying
-            # Party's origin.
+            # Verify that the value of C.origin matches the Relying Party's origin.
             if not _verify_origin(c, self.origin):
-                raise AuthenticationRejectedException('Unable to verify origin.')
+                raise AuthenticationRejectedException(
+                    f"Unable to verify origin. Should be {self.origin}, but is {c.get('origin')}."
+                )
 
             # Step 10.
             #
