@@ -1,0 +1,94 @@
+import { Injectable, signal, WritableSignal } from '@angular/core';
+
+export interface VersioningServiceInterface {
+  version: WritableSignal<string>;
+
+  getVersion(): string;
+
+  openDocumentation(page: string): void;
+}
+
+@Injectable({
+  providedIn: 'root',
+})
+export class VersioningService implements VersioningServiceInterface {
+  version = signal('');
+
+  getVersion(): string {
+    return this.version();
+  }
+
+  openDocumentation(page: string) {
+    const baseUrl = 'https://privacyidea.readthedocs.io/en/'; //TODO translation
+    let page_url;
+    if (page.startsWith('/tokens/details')) {
+      page_url = 'webui/token_details.html';
+    } else if (page.startsWith('/tokens/containers/details')) {
+      page_url = 'webui/container_view.html#container-details';
+    } else {
+      switch (page) {
+        case '/tokens/enroll':
+          page_url = 'webui/token_details.html#enroll-token';
+          break;
+        case '/tokens':
+          page_url = 'webui/index.html#tokens';
+          break;
+        case '/tokens/containers':
+          page_url = 'webui/index.html#containers';
+          break;
+        case 'tokentypes':
+          page_url = 'tokens/tokentypes.html';
+          break;
+        case '/tokens/get-serial':
+          page_url = 'webui/token_details.html#get-serial';
+          break;
+        case '/tokens/applications':
+          page_url = 'machines/index.html';
+          break;
+        case '/tokens/challenges':
+          page_url = 'tokens/authentication_modes.html#challenge-mode';
+          break;
+        case 'containertypes':
+          page_url = 'container/container_types.html';
+          break;
+        case '/tokens/containers/create':
+          page_url = 'webui/container_view.html#container-create';
+          break;
+        default:
+          page_url = 'webui/index.html';
+          break;
+      }
+    }
+    const versionUrl = `${baseUrl}v${this.version()}/${page_url}`;
+    const fallbackUrl = `${baseUrl}latest/${page_url}`;
+
+    async function checkPage(url: any) {
+      try {
+        const response = await fetch(url);
+        const html = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        return !doc.querySelector(
+          'div.document div.documentwrapper div.bodywrapper div.body h1#notfound',
+        );
+      } catch (error) {
+        console.error('Error checking the page:', error);
+        return false;
+      }
+    }
+
+    checkPage(versionUrl).then((found) => {
+      if (found) {
+        window.open(versionUrl, '_blank');
+      } else {
+        checkPage(fallbackUrl).then((foundFallback) => {
+          if (foundFallback) {
+            window.open(fallbackUrl, '_blank');
+          } else {
+            alert('The documentation page is currently not available.');
+          }
+        });
+      }
+    });
+  }
+}

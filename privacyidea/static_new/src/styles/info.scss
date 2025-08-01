@@ -1,0 +1,114 @@
+$border-color: var(--mat-sys-outline-variant);
+$odd-row-bg: var(--mat-sys-surface-container-low);
+$even-row-bg: var(--mat-sys-surface-container-lowest);
+$table-cell-font-size: 0.875rem;
+
+.info-container {
+  display: flex;
+  flex-direction: row;
+  width: auto;
+  border-top: 0;
+
+  .info-title {
+    background-color: $even-row-bg;
+    display: flex;
+    align-items: center;
+    padding-left: 16px;
+    border-left: 1px solid $border-color;
+    border-bottom: 1px solid $border-color;
+    box-sizing: border-box;
+    font-size: $table-cell-font-size;
+  }
+
+  .info-table {
+    border-collapse: collapse;
+
+    th,
+    td {
+      border: 1px solid $border-color;
+      border-top: none;
+      box-sizing: border-box;
+
+      &:nth-child(odd) {
+        background: $odd-row-bg;
+      }
+
+      &:nth-child(even) {
+        background: $even-row-bg;
+      }
+    }
+  }
+
+  .info-value-container {
+    // width: 19rem;
+  }
+
+  .info-input {
+    margin-left: 5px;
+    margin-top: 4px;
+  }
+
+  .info-row {
+    margin-top: 1px;
+    height: 5rem;
+  }
+
+  .info-span {
+    display: flex;
+    flex-direction: column;
+    margin-left: 0.5rem;
+    margin-top: 3px;
+    font-size: $table-cell-font-size;
+  }
+
+  .info-span-title {
+    margin-left: -4px;
+    overflow-y: auto;
+  }
+
+  .info-span-value {
+    margin-left: 2px;
+    margin-top: 3px;
+    white-space: normal;
+    max-height: calc(var(--mat-sys-body-large-line-height) * 2);
+    overflow-y: auto;
+    overflow-wrap: anywhere;
+  }
+
+  .info-divider {
+    width: 16rem;
+    margin: 3px 0 4px -8px;
+  }
+
+  .border-top {
+    border-top: 1px solid $border-color;
+  }
+
+  ::ng-deep {
+    .mat-mdc-list-item {
+      padding: 0;
+    }
+
+    .mat-mdc-form-field-subscript-wrapper {
+      height: 4px;
+    }
+
+    .mat-mdc-text-field-wrapper {
+      padding-left: 5px;
+    }
+
+    .mat-mdc-form-field {
+      font-size: 14px;
+      width: 16rem;
+    }
+
+    .mat-mdc-form-field-infix {
+      padding-top: 24px;
+      padding-bottom: 4px;
+    }
+  }
+}
+
+.margin-top-20 {
+  margin-top: 20px;
+}

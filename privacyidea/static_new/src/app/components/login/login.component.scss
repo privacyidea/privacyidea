@@ -1,0 +1,54 @@
+@use "../../../styles";
+@use "@angular/material" as mat;
+
+$btn-bg: var(--background-blue);
+$btn-hover-bg: var(--background-blue-inset);
+$border-radius: var(--border-radius);
+
+.login-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: auto;
+  height: 100vh;
+  background: var(--mat-sys-surface-container-lowest);
+
+  .login-scroll {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 96px;
+  }
+
+  .logo {
+    width: 8%;
+    height: auto;
+    border-radius: 50%;
+    @include mat.elevation(5);
+    margin-bottom: 20px;
+  }
+
+  .logo-text {
+    width: 15%;
+    height: auto;
+  }
+
+  .login-form {
+    display: flex;
+    flex-direction: column;
+    margin-top: 64px;
+    width: 300px;
+
+    mat-form-field {
+      width: 100%;
+      margin-bottom: 16px;
+    }
+  }
+
+  .passkey-form {
+    display: flex;
+    flex-direction: column;
+    width: 300px;
+  }
+}

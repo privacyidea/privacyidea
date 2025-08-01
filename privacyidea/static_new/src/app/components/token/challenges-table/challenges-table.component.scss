@@ -1,0 +1,11 @@
+@use "../../../../styles";
+
+.challenges-table-container {
+  @include styles.table-container-styles;
+  @include styles.base-table-structure(
+      ".challenges-table",
+      ".challenges-table-filter",
+      ".table-scroll-container"
+  );
+  overflow: auto;
+}

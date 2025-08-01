@@ -1,0 +1,74 @@
+@use "../../../../styles";
+
+.container-table-container {
+  @include styles.table-container-styles;
+  @include styles.base-table-structure(
+      ".container-table",
+      ".container-table-filter",
+      ".table-scroll-container"
+  );
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: calc(var(--main-height) - var(--global-padding) * 5);
+}
+
+.filter-paginator-container-selfservice {
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  gap: 16px;
+}
+
+tr.example-detail-row {
+  background: var(--mat-sys-surface-container-lowest);
+  height: 0;
+}
+
+tr.example-element-row:hover {
+  background: var(--mat-sys-surface-container-low);
+}
+
+tr.example-element-row:active {
+  background: var(--mat-sys-surface-container-low);
+}
+
+.example-element-row td {
+  border-bottom-width: 0;
+}
+
+tr.example-detail-row td {
+  border-top-width: 0;
+}
+
+.expanded-detail {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.expanded-token-list {
+  display: grid;
+  grid-template-columns: auto auto auto auto auto;
+  gap: 8px;
+  margin-bottom: 16px;
+  margin-top: 16px;
+}
+
+.expanded-token-list-self-serivce {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  gap: 8px;
+  margin-bottom: 16px;
+  margin-top: 16px;
+}
+
+.token-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: solid 1px var(--mat-sys-outline-variant);
+  border-radius: var(--border-radius);
+  background: var(--mat-sys-surface-container-low);
+}

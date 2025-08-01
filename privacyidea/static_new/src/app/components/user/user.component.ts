@@ -1,0 +1,82 @@
+import { CommonModule } from '@angular/common';
+import { Component, effect, inject, signal, ViewChild } from '@angular/core';
+import { MatDrawer, MatSidenavModule } from '@angular/material/sidenav';
+import {
+  OverflowService,
+  OverflowServiceInterface,
+} from '../../services/overflow/overflow.service';
+import {
+  LoadingService,
+  LoadingServiceInterface,
+} from '../../services/loading/loading-service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../services/content/content.service';
+import { UserDetailsComponent } from './user-details/user-details.component';
+import { UserTableComponent } from './user-table/user-table.component';
+import { UserCardComponent } from './user-card/user-card.component';
+import { RouterOutlet } from '@angular/router';
+import { MatIcon } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { UserService } from '../../services/user/user.service';
+
+@Component({
+  selector: 'app-user',
+  standalone: true,
+  imports: [
+    CommonModule,
+    UserCardComponent,
+    MatSidenavModule,
+    RouterOutlet,
+    MatIcon,
+    MatButtonModule,
+  ],
+  templateUrl: './user.component.html',
+  styleUrl: './user.component.scss',
+})
+export class UserComponent {
+  protected readonly overflowService: OverflowServiceInterface =
+    inject(OverflowService);
+  private readonly loadingService: LoadingServiceInterface =
+    inject(LoadingService);
+  protected readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+  protected readonly userService = inject(UserService);
+
+  isUserDrawerOverflowing = signal(false);
+
+  @ViewChild('userDetailsComponent')
+  userDetailsComponent!: UserDetailsComponent;
+  @ViewChild('userTableComponent')
+  userTableComponent!: UserTableComponent;
+  @ViewChild('drawer') drawer!: MatDrawer;
+
+  constructor() {
+    effect(() => {
+      this.contentService.routeUrl();
+      this.loadingService.clearAllLoadings();
+      this.updateOverflowState();
+    });
+  }
+
+  ngAfterViewInit() {
+    window.addEventListener('resize', this.updateOverflowState.bind(this));
+    this.updateOverflowState();
+  }
+
+  ngOnDestroy() {
+    window.removeEventListener('resize', this.updateOverflowState);
+  }
+
+  updateOverflowState = () => {
+    setTimeout(() => {
+      this.isUserDrawerOverflowing.set(
+        this.overflowService.isHeightOverflowing({
+          selector: '.user-layout',
+          thresholdSelector: '.drawer',
+        }),
+      );
+    }, 400);
+  };
+}

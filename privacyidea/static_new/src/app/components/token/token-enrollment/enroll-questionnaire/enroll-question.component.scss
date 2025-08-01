@@ -1,0 +1,15 @@
+@use "../../../../../styles";
+
+.form-group {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 16px;
+}
+
+.question-input-width {
+  width: calc((100% - 32px) / 3);
+}
+
+.question-description {
+  width: calc((100% - 8px) * 2 / 3);
+}

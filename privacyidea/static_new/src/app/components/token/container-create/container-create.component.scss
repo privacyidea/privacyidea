@@ -1,0 +1,13 @@
+@use "../../../../styles";
+
+.container-create-container {
+  @include styles.table-container-styles;
+  width: 920px;
+  max-height: calc(var(--main-height) - var(--global-padding) * 5);
+  overflow: auto;
+}
+
+.container-type-hint {
+  margin-top: 8px;
+  font-size: 16px;
+}

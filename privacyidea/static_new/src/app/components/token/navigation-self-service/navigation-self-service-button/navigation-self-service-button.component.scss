@@ -1,0 +1,97 @@
+@use "sass:meta";
+@use "../../../../../styles/styles";
+@use "@angular/material" as mat;
+
+.tile-size-scope {
+  --tile-width: 12rem;
+  --tile-max-width: 12vw;
+  --tile-height: calc(var(--tile-width) / 1.618); // Golden ratio
+}
+
+.tile-size-scope .tile-button {
+  width: var(--tile-width);
+  max-width: var(--tile-max-width);
+  height: var(--tile-height);
+  border-radius: var(--border-radius);
+  background-color: var(--mat-sys-surface-container-low);
+  @include mat.elevation(3);
+
+  &:hover {
+    @include mat.elevation(6);
+    transform: translateY(-2px);
+  }
+}
+
+.tile-size-scope .tile-button-content {
+  width: var(--tile-width);
+  max-width: var(--tile-max-width);
+  height: var(--tile-height);
+  display: flex;
+  flex-direction: column;
+}
+
+.tile-size-scope .tile-icon-small {
+  font-size: calc(var(--tile-height) / 4);
+  width: calc(var(--tile-height) / 4);
+  max-width: calc(var(--tile-height) / 4);
+  height: calc(var(--tile-height) / 4);
+  max-height: calc(var(--tile-height) / 4);
+}
+
+.tile-size-scope .tile-icon-medium {
+  font-size: calc(var(--tile-height) / 3.333);
+  width: calc(var(--tile-height) / 3.333);
+  max-width: calc(var(--tile-height) / 3.333);
+  height: calc(var(--tile-height) / 3.333);
+  max-height: calc(var(--tile-height) / 3.333);
+}
+
+.tile-size-scope .tile-icon-large {
+  font-size: calc(var(--tile-height) / 2.7);
+  width: calc(var(--tile-height) / 2.7);
+  max-width: calc(var(--tile-height) / 2.7);
+  height: calc(var(--tile-height) / 2.7);
+  max-height: calc(var(--tile-height) / 2.7);
+}
+
+.top-content {
+  flex: 3;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.tile-size-scope .bottom-content {
+  flex: 2;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+
+  font-weight: bold;
+  font-size: min(
+    calc(var(--tile-height) / 7.5),
+    calc(var(--tile-max-width) / 4)
+  );
+  text-align: center;
+}
+
+.tile-size-scope .tile-button.selected {
+  background-color: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+  @include mat.elevation(3);
+
+  .mat-icon {
+    color: var(--mat-sys-on-primary);
+  }
+
+  .bottom-content {
+    color: var(--mat-sys-on-primary);
+    font-weight: bold;
+  }
+
+  &:hover {
+    background-color: var(--mat-sys-primary-light);
+    @include mat.elevation(6);
+    transform: translateY(-5px);
+  }
+}

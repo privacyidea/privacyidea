@@ -1,0 +1,78 @@
+@use "../../../../styles";
+@use "sass:color";
+@use "@angular/material" as mat;
+
+$footer-bg: #3f3f3f;
+$footer-text-color: white;
+$link-color: #c8c8c8;
+$btn-bg: var(--background-green-brand);
+$box-shadow: var(--box-shadow-white);
+$border-radius: var(--border-radius);
+
+// Mixin for Flexbox
+@mixin flex-center($justify: space-between, $align: center) {
+  display: flex;
+  justify-content: $justify;
+  align-items: $align;
+}
+
+.footer-container {
+  display: block;
+  // justify-content: space-between;
+  // align-items: center;
+  // position: fixed;
+  // bottom: 0;
+  width: 100%;
+  // z-index: 1;
+
+  .progress-bar {
+    @include flex-center;
+    width: 100%;
+  }
+
+  .footer-bottom {
+    @include flex-center;
+    @include mat.elevation(3);
+    background: $footer-bg;
+    color: $footer-text-color;
+    padding-bottom: 10px;
+    padding-top: 10px;
+    gap: 20px;
+
+    span {
+      margin-left: 20px;
+      color: $link-color;
+    }
+  }
+
+  .footer-right {
+    @include flex-center;
+    margin-left: auto;
+    margin-right: 80px;
+    gap: 20px;
+  }
+
+  .loading-urls-container {
+    position: fixed;
+    bottom: 6vh;
+    right: 0;
+    z-index: 9999;
+  }
+
+  .loading-url {
+    margin-left: auto;
+    margin-right: 16px;
+    margin-bottom: 2px;
+    color: var(--mat-sys-primary);
+    opacity: 0.33;
+  }
+
+  a {
+    text-decoration: none;
+    color: $link-color;
+
+    &:hover {
+      color: color.adjust($link-color, $lightness: 10%);
+    }
+  }
+}

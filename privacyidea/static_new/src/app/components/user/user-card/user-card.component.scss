@@ -1,0 +1,54 @@
+@use "../../../../styles";
+@use "@angular/material" as mat;
+
+$card-bg: var(--mat-sys-surface-container-lowest);
+$card-border: var(--mat-sys-surface-container-lowest);
+$card-padding: 8px;
+$card-margin: 32px;
+$tab-active-color: var(--mat-sys-primary);
+$h4-padding: 8px;
+$h4-margin: 0;
+$transition-duration: 400ms;
+
+mat-card {
+  @include mat.elevation(5);
+  background: $card-bg;
+  box-sizing: content-box;
+  border: $card-border;
+  border-radius: var(--border-radius);
+  padding: $card-padding;
+}
+
+.card-margin-pad {
+  margin: $card-margin 0 0 $card-margin;
+}
+
+mat-tab-group {
+  display: flex;
+  align-items: center;
+}
+
+.mat-mdc-card-content:first-child,
+.mat-mdc-card-content:last-child {
+  padding: 0;
+}
+
+h4 {
+  padding: $h4-padding;
+  margin: $h4-margin;
+}
+
+.tab-active {
+  color: $tab-active-color;
+  transition: $transition-duration;
+}
+
+.padding-18 {
+  padding: 18px !important;
+}
+
+::ng-deep {
+  .mat-mdc-tab-label-container {
+    border-bottom-style: none !important;
+  }
+}
