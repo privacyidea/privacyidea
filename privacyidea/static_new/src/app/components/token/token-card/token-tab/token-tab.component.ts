@@ -5,7 +5,16 @@ import { MatList, MatListItem } from '@angular/material/list';
 import { MatButton } from '@angular/material/button';
 import { MatDivider } from '@angular/material/divider';
 import { MatDialog } from '@angular/material/dialog';
-import { forkJoin, switchMap } from 'rxjs';
+import {
+  catchError,
+  concatMap,
+  EMPTY,
+  filter,
+  forkJoin,
+  from,
+  reduce,
+  switchMap,
+} from 'rxjs';
 import { tabToggleState } from '../../../../../styles/animations/animations';
 import {
   ContentService,
@@ -23,6 +32,8 @@ import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog
 import { LostTokenComponent } from './lost-token/lost-token.component';
 import { Router, RouterLink } from '@angular/router';
 import { AuditService } from '../../../../services/audit/audit.service';
+import { SelectedUserAssignDialogComponent } from '../selected-user-assign-dialog/selected-user-assign-dialog.component';
+import { tap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-token-tab',
@@ -172,5 +183,40 @@ export class TokenTabComponent {
         tokenSerial: this.tokenSerial,
       },
     });
+  }
+
+  assignSelectedTokens() {
+    this.dialog
+      .open(SelectedUserAssignDialogComponent)
+      .afterClosed()
+      .pipe(
+        filter(Boolean),
+        switchMap((result) =>
+          from(this.tokenSelection()).pipe(
+            concatMap((token) => {
+              const assign$ = this.tokenService.assignUser({
+                tokenSerial: token.serial,
+                username: result.username,
+                realm: result.realm,
+              });
+              return token.username
+                ? this.tokenService
+                    .unassignUser(token.serial)
+                    .pipe(switchMap(() => assign$))
+                : assign$;
+            }),
+            reduce(() => null, null),
+            switchMap(() =>
+              this.tokenService.getTokenDetails(this.tokenSerial()),
+            ),
+          ),
+        ),
+        tap(() => this.tokenService.tokenResource.reload()),
+        catchError((err) => {
+          console.error('Error assigning tokens:', err);
+          return EMPTY;
+        }),
+      )
+      .subscribe();
   }
 }

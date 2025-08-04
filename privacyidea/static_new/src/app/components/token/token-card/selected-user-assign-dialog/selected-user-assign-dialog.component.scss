@@ -1,0 +1,10 @@
+@use "../../../../../styles";
+@use "@angular/material" as mat;
+
+
+.selected-user-assign-container {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 16px;
+}
