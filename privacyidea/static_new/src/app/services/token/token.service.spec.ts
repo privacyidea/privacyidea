@@ -140,11 +140,11 @@ describe('TokenService', () => {
     it('maps "maxfail" to "max_failcount"', () => {
       postSpy.mockReturnValue(of({ success: true } as any));
 
-      tokenService.saveTokenDetail('SER', 'maxfail', 3).subscribe();
+      tokenService.saveTokenDetail('serial', 'maxfail', 3).subscribe();
 
       expect(postSpy).toHaveBeenCalledWith(
         `${tokenService.tokenBaseUrl}set`,
-        { serial: 'SER', max_failcount: 3 },
+        { serial: 'serial', max_failcount: 3 },
         { headers: localService.getHeaders() },
       );
     });
@@ -152,11 +152,13 @@ describe('TokenService', () => {
     it('passes other keys through unchanged', () => {
       postSpy.mockReturnValue(of({ success: true } as any));
 
-      tokenService.saveTokenDetail('SER', 'description', 'A token').subscribe();
+      tokenService
+        .saveTokenDetail('serial', 'description', 'A token')
+        .subscribe();
 
       expect(postSpy).toHaveBeenCalledWith(
         `${tokenService.tokenBaseUrl}set`,
-        { serial: 'SER', description: 'A token' },
+        { serial: 'serial', description: 'A token' },
         { headers: localService.getHeaders() },
       );
     });
@@ -169,17 +171,17 @@ describe('TokenService', () => {
       const infos = { hashlib: 'sha1', custom: 'foo' };
       postSpy.mockReturnValue(of({ success: true } as any));
 
-      tokenService.setTokenInfos('SER', infos).subscribe();
+      tokenService.setTokenInfos('serial', infos).subscribe();
 
       expect(postSpy).toHaveBeenNthCalledWith(
         1,
         `${tokenService.tokenBaseUrl}set`,
-        { serial: 'SER', hashlib: 'sha1' },
+        { serial: 'serial', hashlib: 'sha1' },
         { headers: localService.getHeaders() },
       );
       expect(postSpy).toHaveBeenNthCalledWith(
         2,
-        `${tokenService.tokenBaseUrl}info/SER/custom`,
+        `${tokenService.tokenBaseUrl}info/serial/custom`,
         { value: 'foo' },
         { headers: localService.getHeaders() },
       );
@@ -191,12 +193,17 @@ describe('TokenService', () => {
       postSpy.mockReturnValue(of({ success: true } as any));
 
       tokenService
-        .assignUser({ tokenSerial: 'SER', username: '', realm: '', pin: '123' })
+        .assignUser({
+          tokenSerial: 'serial',
+          username: '',
+          realm: '',
+          pin: '123',
+        })
         .subscribe();
 
       expect(postSpy).toHaveBeenCalledWith(
         `${tokenService.tokenBaseUrl}assign`,
-        { serial: 'SER', user: null, realm: null, pin: '123' },
+        { serial: 'serial', user: null, realm: null, pin: '123' },
         { headers: localService.getHeaders() },
       );
     });
@@ -214,10 +221,10 @@ describe('TokenService', () => {
   describe('setTokengroup()', () => {
     it('accepts a single string', () => {
       postSpy.mockReturnValue(of({ success: true } as any));
-      tokenService.setTokengroup('SER', 'group1').subscribe();
+      tokenService.setTokengroup('serial', 'group1').subscribe();
 
       expect(postSpy).toHaveBeenCalledWith(
-        `${tokenService.tokenBaseUrl}group/SER`,
+        `${tokenService.tokenBaseUrl}group/serial`,
         { groups: ['group1'] },
         { headers: localService.getHeaders() },
       );
@@ -226,11 +233,11 @@ describe('TokenService', () => {
     it('accepts an object and flattens values', () => {
       postSpy.mockReturnValue(of({ success: true } as any));
       tokenService
-        .setTokengroup('SER', { a: 'g1', b: 'g2' } as any)
+        .setTokengroup('serial', { a: 'g1', b: 'g2' } as any)
         .subscribe();
 
       expect(postSpy).toHaveBeenCalledWith(
-        `${tokenService.tokenBaseUrl}group/SER`,
+        `${tokenService.tokenBaseUrl}group/serial`,
         { groups: ['g1', 'g2'] },
         { headers: localService.getHeaders() },
       );
@@ -250,7 +257,7 @@ describe('TokenService', () => {
 
       const errors: any[] = [];
       tokenService
-        .pollTokenRolloutState({ tokenSerial: 'SER', initDelay: 0 })
+        .pollTokenRolloutState({ tokenSerial: 'serial', initDelay: 0 })
         .subscribe({ error: (e) => errors.push(e) });
 
       jest.runOnlyPendingTimers();
@@ -348,10 +355,10 @@ describe('TokenService', () => {
     it('posts /revoke and propagates result', (done) => {
       postSpy.mockReturnValue(of({ success: true } as any));
 
-      tokenService.revokeToken('SER').subscribe((r) => {
+      tokenService.revokeToken('serial').subscribe((r) => {
         expect(postSpy).toHaveBeenCalledWith(
           `${tokenService.tokenBaseUrl}revoke`,
-          { serial: 'SER' },
+          { serial: 'serial' },
           { headers: localService.getHeaders() },
         );
         expect(r).toEqual({ success: true });
@@ -366,7 +373,7 @@ describe('TokenService', () => {
       });
       postSpy.mockReturnValue(throwError(() => boom));
 
-      tokenService.revokeToken('SER').subscribe({
+      tokenService.revokeToken('serial').subscribe({
         error: (e) => {
           expect(e).toBe(boom);
           expect(notificationService.openSnackBar).toHaveBeenCalledWith(
@@ -381,20 +388,20 @@ describe('TokenService', () => {
   describe('PIN helpers', () => {
     it('setPin posts /setpin', () => {
       postSpy.mockReturnValue(of({}));
-      tokenService.setPin('SER', '9876').subscribe();
+      tokenService.setPin('serial', '9876').subscribe();
       expect(postSpy).toHaveBeenCalledWith(
         `${tokenService.tokenBaseUrl}setpin`,
-        { serial: 'SER', otppin: '9876' },
+        { serial: 'serial', otppin: '9876' },
         { headers: localService.getHeaders() },
       );
     });
 
     it('setRandomPin posts /setrandompin', () => {
       postSpy.mockReturnValue(of({}));
-      tokenService.setRandomPin('SER').subscribe();
+      tokenService.setRandomPin('serial').subscribe();
       expect(postSpy).toHaveBeenCalledWith(
         `${tokenService.tokenBaseUrl}setrandompin`,
-        { serial: 'SER' },
+        { serial: 'serial' },
         { headers: localService.getHeaders() },
       );
     });
@@ -413,9 +420,9 @@ describe('TokenService', () => {
   describe('realm & lost token', () => {
     it('setTokenRealm posts correct body', () => {
       postSpy.mockReturnValue(of({}));
-      tokenService.setTokenRealm('SER', ['r1', 'r2']).subscribe();
+      tokenService.setTokenRealm('serial', ['r1', 'r2']).subscribe();
       expect(postSpy).toHaveBeenCalledWith(
-        `${tokenService.tokenBaseUrl}realm/SER`,
+        `${tokenService.tokenBaseUrl}realm/serial`,
         { realms: ['r1', 'r2'] },
         { headers: localService.getHeaders() },
       );
@@ -423,9 +430,9 @@ describe('TokenService', () => {
 
     it('lostToken hits /lost endpoint', () => {
       postSpy.mockReturnValue(of({}));
-      tokenService.lostToken('SER').subscribe();
+      tokenService.lostToken('serial').subscribe();
       expect(postSpy).toHaveBeenCalledWith(
-        `${tokenService.tokenBaseUrl}lost/SER`,
+        `${tokenService.tokenBaseUrl}lost/serial`,
         {},
         { headers: localService.getHeaders() },
       );

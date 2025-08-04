@@ -47,7 +47,7 @@ describe('MachineService (with mock classes)', () => {
     const args = {
       service_id: 'svc',
       user: 'alice',
-      serial: 'T1',
+      serial: 'serial',
       application: 'ssh',
       machineid: 'MID',
       resolver: 'RES',
@@ -65,7 +65,7 @@ describe('MachineService (with mock classes)', () => {
         'host',
         'mid',
         'res',
-        'SER',
+        'serial',
         'ssh',
         'mtid',
       ),
@@ -76,7 +76,7 @@ describe('MachineService (with mock classes)', () => {
         hostname: 'host',
         machineid: 'mid',
         resolver: 'res',
-        serial: 'SER',
+        serial: 'serial',
         application: 'ssh',
         mtid: 'mtid',
       },
@@ -87,7 +87,7 @@ describe('MachineService (with mock classes)', () => {
   it('postToken hits /token endpoint', async () => {
     httpStub.post.mockReturnValue(of({}));
     await lastValueFrom(
-      machineService.postToken('host', 'mid', 'res', 'SER', 'offline'),
+      machineService.postToken('host', 'mid', 'res', 'serial', 'offline'),
     );
     expect(httpStub.post).toHaveBeenCalledWith(
       '/api/machine/token',
@@ -95,7 +95,7 @@ describe('MachineService (with mock classes)', () => {
         hostname: 'host',
         machineid: 'mid',
         resolver: 'res',
-        serial: 'SER',
+        serial: 'serial',
         application: 'offline',
       },
       { headers: { Authorization: 'Bearer x' } },
