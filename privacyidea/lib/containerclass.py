@@ -380,12 +380,13 @@ class TokenContainerClass:
         users: list[User] = []
         for owner in db_container_owners:
             realm = Realm.query.filter_by(id=owner.realm_id).first()
+            realm_name = realm.name if realm else None
             try:
-                user = User(uid=owner.user_id, realm=realm.name, resolver=owner.resolver)
+                user = User(uid=owner.user_id, realm=realm_name, resolver=owner.resolver)
             except Exception as ex:
                 log.error(f"Unable to get user {owner.user_id} for container {self.serial}: {ex!r}")
                 # We return an empty User object here to notify that we ran into an error
-                user = User(login=None, realm=realm.name, resolver=owner.resolver)
+                user = User(login=None, realm=realm_name, resolver=owner.resolver)
             users.append(user)
 
         return users
