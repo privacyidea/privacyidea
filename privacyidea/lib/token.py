@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: (C) 2014 NetKnights GmbH <https://netknights.it>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 #  privacyIDEA is a fork of LinOTP
 #
 #  2018-12-10 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -108,7 +112,6 @@ from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokenclass import TOKENKIND
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
-from privacyidea.lib.user import get_username
 from privacyidea.lib.utils import is_true, BASE58, hexlify_and_unicode, check_serial_valid, create_tag_dict
 from privacyidea.models import (Token, Realm, TokenRealm, Challenge,
                                 TokenInfo, TokenOwner, TokenTokengroup, Tokengroup, TokenContainer,
@@ -2974,9 +2977,11 @@ def regenerate_enroll_url(serial: str, request: Request, g) -> Union[str, None]:
 
     return enroll_url
 
+
 def export_tokens(tokens: list[TokenClass]) -> str:
     """
     Takes a list of tokens and returns an exportable JSON string.
+
     :param tokens: list of token objects
     :return: JSON string representing a list of token dictionaries
     """
@@ -2989,6 +2994,7 @@ def export_tokens(tokens: list[TokenClass]) -> str:
 def import_tokens(tokens: str, update_existing_tokens: bool = True) -> TokenImportResult:
     """
     Import a list of token dictionaries.
+
     :param tokens: JSON string representing a list of token dictionaries
     :return: list of token objects
     """
