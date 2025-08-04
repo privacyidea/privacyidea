@@ -58,6 +58,8 @@ import uuid
 from ldap3.utils.conv import escape_bytes
 from operator import itemgetter
 
+from ..lifecycle import register_finalizer
+
 log = logging.getLogger(__name__)
 
 try:
@@ -916,6 +918,8 @@ class IdResolver(UserIdResolver):
                 log.info("Incomplete configuration for recursive user group search. Recursive search is not applied.")
                 self.recursive_group_search = False
 
+        # register finalizer to unbind the connection after the request
+        register_finalizer(self.unbind)
         return self
 
     @property
