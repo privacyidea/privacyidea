@@ -12,6 +12,7 @@ Version 3.12dev1, 2025-07-16
   * Allow to unassign non-existing users from containers (#4208)
   * Extended policy conditions on user info also works for web UI policies (#4016)
   * Close LDAP connection after each request (#4148)
+  * list containers with users from deleted realms and allow to unassign them (#4530)
 
 Version 3.12dev0, 2025-07-09
 
