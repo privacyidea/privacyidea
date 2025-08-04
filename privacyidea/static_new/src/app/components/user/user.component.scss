@@ -95,7 +95,7 @@ $margin-bottom-main: 136px;
   border-radius: var(--border-radius);
   border: solid 3px var(--mat-sys-outline-variant);
   padding: var(--global-padding);
-  background: white;
+  background: var(--mat-sys-surface-container-lowest);
 }
 
 .user-details-column .label {

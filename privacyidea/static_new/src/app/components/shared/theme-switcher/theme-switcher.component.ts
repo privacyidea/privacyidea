@@ -1,33 +1,37 @@
+import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Component, computed } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatMenuModule } from '@angular/material/menu';
-import { Theme, ThemeService } from '../../../services/theme/theme.service';
+import { MatButtonModule } from '@angular/material/button';
+import { ThemeService } from '../../../services/theme/theme.service';
 
-export type ThemeIcon = 'light_mode' | 'dark_mode' | 'computer';
+type ThemeIcon = 'light_mode' | 'dark_mode';
 
 @Component({
   selector: 'app-theme-switcher',
   standalone: true,
-  imports: [CommonModule, MatIconModule, MatButtonModule, MatMenuModule],
+  imports: [CommonModule, MatIconModule, MatButtonModule],
   templateUrl: './theme-switcher.component.html',
   styleUrls: ['./theme-switcher.component.scss'],
 })
 export class ThemeSwitcherComponent {
-  private themeIconMap: Map<Theme, ThemeIcon> = new Map<Theme, ThemeIcon>([
-    ['light', 'light_mode'],
-    ['dark', 'dark_mode'],
-    ['system', 'computer'],
-  ]);
-
-  currentThemeIcon = computed<ThemeIcon>(
-    () => this.themeIconMap.get(this.themeService.currentTheme())!,
+  private readonly systemPrefersDark = signal(
+    window.matchMedia('(prefers-color-scheme: dark)').matches,
   );
 
-  constructor(private themeService: ThemeService) {}
+  readonly isDark = computed(() => {
+    const current = this.themeService.currentTheme();
+    return (
+      current === 'dark' || (current === 'system' && this.systemPrefersDark())
+    );
+  });
 
-  setTheme(theme: 'light' | 'dark' | 'system'): void {
-    this.themeService.setTheme(theme);
+  readonly icon = computed<ThemeIcon>(() =>
+    this.isDark() ? 'dark_mode' : 'light_mode',
+  );
+
+  constructor(private readonly themeService: ThemeService) {}
+
+  toggleTheme(): void {
+    this.themeService.setTheme(this.isDark() ? 'light' : 'dark');
   }
 }

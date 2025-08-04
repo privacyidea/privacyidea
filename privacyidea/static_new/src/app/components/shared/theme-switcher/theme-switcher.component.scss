@@ -1,4 +1,4 @@
-@use "@angular/material" as mat;
+@use '@angular/material' as mat;
 
 .theme-picker {
   display: flex;
@@ -8,46 +8,32 @@
 }
 
 .theme-toggle-button {
-  min-width: unset;
-  width: 40px;
-  height: 40px;
+  --size: 40px;
+  width: var(--size);
+  height: var(--size);
+  border: none;
   padding: 0;
   border-radius: 50%;
+  background-color: transparent;
+  color: var(--mat-sys-on-surface-variant);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: none;
-  background-color: transparent;
-  color: var(--mat-sys-on-surface-variant);
-  border: none;
-  transition: background-color 0.2s ease-in-out;
+  transition: background-color 200ms ease-in-out;
 
   .mat-icon {
     font-size: 24px;
     width: 24px;
     height: 24px;
   }
-}
 
-.theme-toggle-button:hover {
-  background-color: var(--mat-sys-surface-container);
-}
+  &:hover {
+    background-color: var(--mat-sys-surface-container);
+  }
 
-.theme-toggle-button.cdk-keyboard-focused {
-  outline: none;
-  background-color: var(--mat-sys-surface-container-highest);
-  color: var(--mat-sys-on-surface); // Keep the icon color subtle on focus
-}
-
-.mat-mdc-menu-panel {
-  background-color: var(--mat-sys-surface-container);
-
-  .mat-mdc-menu-item {
-    padding: 8px 16px;
+  &:focus-visible {
+    outline: none;
+    background-color: var(--mat-sys-surface-container-highest);
     color: var(--mat-sys-on-surface);
-
-    &:hover {
-      background-color: var(--mat-sys-surface-container-low);
-    }
   }
 }
