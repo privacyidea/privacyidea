@@ -1,3 +1,20 @@
+# SPDX-FileCopyrightText: (C) 2015 NetKnights GmbH <https://netknights.it>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# This code is free software; you can redistribute it and/or
+# modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+# as published by the Free Software Foundation; either
+# version 3 of the License, or any later version.
+#
+# This code is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+#
+# You should have received a copy of the GNU Affero General Public
+# License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import os
 import logging
 from pathlib import Path
@@ -32,6 +49,23 @@ WQIDAQAB
 """
 
 
+class CONFIG_KEY:
+    SECRET_KEY = "SECRET_KEY"
+    PI_PEPPER = "PI_PEPPER"
+    PI_ENCFILE = "PI_ENCFILE"
+    SQLALCHEMY_DATABASE_URI = "SQLALCHEMY_DATABASE_URI"
+    DEV_DATABASE_URL = "DEV_DATABASE_URL"
+    TEST_DATABASE_URL = "TEST_DATABASE_URL"
+    DB_EXTRA_PARAMS = "DB_EXTRA_PARAMS"
+    PI_AUDIT_KEY_PRIVATE = "PI_AUDIT_KEY_PRIVATE"
+    PI_AUDIT_KEY_PUBLIC = "PI_AUDIT_KEY_PUBLIC"
+    PI_AUDIT_MODULE = "PI_AUDIT_MODULE"
+    PI_LOGLEVEL = "PI_LOGLEVEL"
+    PI_LOGCONFIG = "PI_LOGCONFIG"
+    SUPERUSER_REALM = "SUPERUSER_REALM"
+    PI_AUDIT_SQL_TRUNCATE = "PI_AUDIT_SQL_TRUNCATE"
+
+
 def _random_password(size):
     log.info("SECRET_KEY not set in config. Generating a random key.")
     passwd = [secrets.choice(string.ascii_lowercase + \
@@ -40,7 +74,7 @@ def _random_password(size):
 
 
 class Config(object):
-    SECRET_KEY = os.environ.get('SECRET_KEY')
+    SECRET_KEY = os.environ.get(CONFIG_KEY.SECRET_KEY)
     PI_ENCFILE = os.path.join(basedir, "tests/testdata/enckey")
     PI_HSM = "default"
     PI_AUDIT_MODULE = "privacyidea.lib.auditmodules.sqlaudit"
@@ -60,8 +94,8 @@ class Config(object):
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 't0p s3cr3t'
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
+    SECRET_KEY = os.environ.get(CONFIG_KEY.SECRET_KEY) or 't0p s3cr3t'
+    SQLALCHEMY_DATABASE_URI = os.environ.get(CONFIG_KEY.DEV_DATABASE_URL) or \
         'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
     PI_LOGLEVEL = logging.DEBUG
     PI_TRANSLATION_WARNING = "[Missing]"
@@ -72,7 +106,7 @@ class TestingConfig(Config):
     # This is used to encrypt the auth token
     SUPERUSER_REALM = ['adminrealm']
     SECRET_KEY = 'secret'  # nosec B105 # used for testing
-    SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or \
+    SQLALCHEMY_DATABASE_URI = os.environ.get(CONFIG_KEY.TEST_DATABASE_URL) or \
         'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')
     # This is used to encrypt the admin passwords
     PI_PEPPER = ""
@@ -124,7 +158,7 @@ class ProductionConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
         'sqlite:///' + os.path.join(basedir, 'data.sqlite')
     # This is used to encrypt the auth_token
-    SECRET_KEY = os.environ.get('SECRET_KEY') or _random_password(24)
+    SECRET_KEY = os.environ.get(CONFIG_KEY.SECRET_KEY) or _random_password(24)
     # This is used to encrypt the admin passwords
     PI_PEPPER = "Never know..."
     # This is used to encrypt the token data and token passwords
@@ -137,27 +171,38 @@ class ProductionConfig(Config):
 
 
 class DockerConfig:
-    # TODO: Make secrets available through the docker secrets API (env or file)
-    confdir = Path("/etc/privacyidea/")
-    if "PI_DATABASE_URI" in os.environ:
-        SQLALCHEMY_DATABASE_URI = os.getenv("PI_DATABASE_URI")
+    secrets_dir = Path("/run/secrets/")
+    # Try to set the database uri from the environment variables
+    if CONFIG_KEY.SQLALCHEMY_DATABASE_URI in os.environ:
+        SQLALCHEMY_DATABASE_URI = os.getenv(CONFIG_KEY.SQLALCHEMY_DATABASE_URI)
     elif all(x in os.environ for x in ["DB_API", "DB_USER", "DB_PASSWORD", "DB_HOST", "DB_PORT", "DB_NAME"]):
         SQLALCHEMY_DATABASE_URI = ("{DB_API}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:"
                                    "{DB_PORT}/{DB_NAME}").format(**os.environ)
-        if "DB_EXTRA_PARAMS" in os.environ:
-            SQLALCHEMY_DATABASE_URI += f"?{os.getenv('DB_EXTRA_PARAMS')}"
-    else:
-        SQLALCHEMY_DATABASE_URI = f"sqlite:///{confdir / 'privacyidea.sqlite'}"
+        if CONFIG_KEY.DB_EXTRA_PARAMS in os.environ:
+            SQLALCHEMY_DATABASE_URI += f"?{os.getenv(CONFIG_KEY.DB_EXTRA_PARAMS)}"
 
-    # TODO: These files must be generated externally. If not, weird things might happen.
-    PI_ENCFILE = str(confdir / "enckey")
-    # This is used to sign the audit log
     PI_AUDIT_MODULE = "privacyidea.lib.auditmodules.sqlaudit"
-    PI_AUDIT_KEY_PRIVATE = str(confdir / "private.pem")
-    PI_AUDIT_KEY_PUBLIC = str(confdir / "public.pem")
-    # TODO: These variables must be set from the outside. If not, weird things might happen.
-    SECRET_KEY = os.getenv("PI_SECRET")
-    PI_PEPPER = os.getenv("PI_PEPPER")
+    PI_AUDIT_SQL_TRUNCATE = True
+
+    if (secrets_dir / "enckey").is_file():
+        PI_ENCFILE = str(secrets_dir / "enckey")
+    if (secrets_dir / "pi_audit_key_public").is_file():
+        PI_AUDIT_KEY_PUBLIC = str(secrets_dir / "pi_audit_key_public")
+    if (secrets_dir / "pi_audit_key_private").is_file():
+        PI_AUDIT_KEY_PRIVATE = str(secrets_dir / "pi_audit_key_private")
+
+    try:
+        with open(secrets_dir / "secret_key", "r") as f:
+            SECRET_KEY = f.read().strip()
+    except IOError as _e:
+        if CONFIG_KEY.SECRET_KEY in os.environ:
+            SECRET_KEY = os.getenv(CONFIG_KEY.SECRET_KEY)
+    try:
+        with open(secrets_dir / "pi_pepper", "r") as f:
+            PI_PEPPER = f.read().strip()
+    except IOError as _e:
+        if CONFIG_KEY.PI_PEPPER in os.environ:
+            PI_PEPPER = os.getenv(CONFIG_KEY.PI_PEPPER)
 
 
 config = {

@@ -30,8 +30,10 @@ import os
 import os.path
 import logging
 import logging.config
+import secrets
 import sys
 import uuid
+from pathlib import Path
 
 import yaml
 from flask import Flask, render_template, jsonify, request
@@ -79,7 +81,7 @@ from privacyidea.api.serviceid import serviceid_blueprint
 from privacyidea.api.info import info_blueprint
 from privacyidea.lib import queue
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
-from privacyidea.config import config
+from privacyidea.config import config, DockerConfig, CONFIG_KEY
 from privacyidea.models import db, NodeName
 from privacyidea.lib.crypto import init_hsm
 
@@ -137,7 +139,7 @@ def _setup_logging(app, logging_config=DEFAULT_LOGGING_CONFIG):
     }
     have_config = False
     log_exception = None
-    log_config_file = app.config.get("PI_LOGCONFIG", "/etc/privacyidea/logging.cfg")
+    log_config_file = app.config.get(CONFIG_KEY.PI_LOGCONFIG, "/etc/privacyidea/logging.cfg")
     if os.path.isfile(log_config_file):
         for cnf_type in ['cfg', 'yaml']:
             if app.config["VERBOSE"]:
@@ -152,10 +154,81 @@ def _setup_logging(app, logging_config=DEFAULT_LOGGING_CONFIG):
     if not have_config:
         if log_exception:
             # We tried to read the logging configuration from a given file but failed
-            sys.stderr.write("Could not use PI_LOGCONFIG: " + str(log_exception) + "\n")
+            sys.stderr.write(f"Could not use {CONFIG_KEY.PI_LOGCONFIG}: {log_exception}\n")
         if app.config["VERBOSE"]:
             sys.stderr.write(f"Using logging configuration {logging_config}.\n")
         logging.config.dictConfig(logging_config)
+
+
+def _check_config(app: Flask):
+    if CONFIG_KEY.PI_ENCFILE in app.config and Path(app.config[CONFIG_KEY.PI_ENCFILE]).is_file():
+        # We have a proper encryption file to work with
+        pass
+    else:
+        raise RuntimeError(f"'{CONFIG_KEY.PI_ENCFILE}' must be set and point to "
+                           f"a file with the database encryption key!")
+    if CONFIG_KEY.PI_PEPPER not in app.config:
+        raise RuntimeError("'PI_PEPPER' must be defined in the app configuration")
+    if "SECRET_KEY" not in app.config or not app.config["SECRET_KEY"]:
+        sys.stderr.write("'SECRET_KEY' not defined in the app configuration! "
+                         "Generating a random key.\n")
+        app.config["SECRET_KEY"] = secrets.token_hex()
+        sys.stderr.write(f"secret key: {app.config['SECRET_KEY']}\n")
+    if not all([x in app.config for x in ["PI_AUDIT_KEY_PUBLIC", "PI_AUDIT_KEY_PRIVATE"]]):
+        sys.stderr.write("No keypair for audit signing defined. Disabling audit signing!\n")
+        app.config["PI_AUDIT_NO_SIGN"] = True
+
+
+def _setup_node_configuration(app: Flask):
+    # check that we have a correct node_name -> UUID relation
+    with app.app_context():
+        # TODO: this is not multi-process-safe since every process runs its own `create_app()`
+        # First check if we have a UUID in the config file which takes precedence
+        try:
+            pi_uuid = uuid.UUID(app.config.get("PI_NODE_UUID"))
+        except (ValueError, TypeError) as e:
+            log.debug(f"Could not determine UUID from config: {e}")
+            # check if we can get the UUID from an external file
+            pi_uuid_file = app.config.get('PI_UUID_FILE', DEFAULT_UUID_FILE)
+            try:
+                with open(pi_uuid_file) as f:
+                    pi_uuid = uuid.UUID(f.read().strip())
+            except Exception as e:  # pragma: no cover
+                log.debug(f"Could not determine UUID from file '{pi_uuid_file}': {e}")
+
+                # we try to get the unique installation id (See <https://0pointer.de/blog/projects/ids.html>)
+                try:
+                    with open("/etc/machine-id") as f:
+                        pi_uuid = uuid.UUID(f.read().strip())
+                except Exception as e:  # pragma: no cover
+                    log.debug(f"Could not determine the machine id: {e}")
+                    # we generate a random UUID which will change on every startup
+                    # unless it is persisted to the pi_uuid_file
+                    pi_uuid = uuid.uuid4()
+                    log.warning(f"Generating a random UUID: {pi_uuid}! If "
+                                f"persisting the UUID fails, it will change on every application start")
+                    # only in case of a generated UUID we save it to the uuid file
+                    try:
+                        with open(pi_uuid_file, 'w') as f:  # pragma: no cover
+                            f.write(f"{str(pi_uuid)}\n")
+                            log.info(f"Successfully wrote current UUID to file '{pi_uuid_file}'")
+                    except IOError as exx:
+                        log.warning(f"Could not write UUID to file '{pi_uuid_file}': {exx}")
+
+            app.config["PI_NODE_UUID"] = str(pi_uuid)
+            log.debug(f"Current UUID: '{pi_uuid}'")
+
+        pi_node_name = app.config.get("PI_NODE") or app.config.get("PI_AUDIT_SERVERNAME", "localnode")
+
+        insp = sa.inspect(db.get_engine())
+        if insp.has_table(NodeName.__tablename__):
+            db.session.merge(NodeName(id=str(pi_uuid), name=pi_node_name,
+                                      lastseen=datetime.datetime.utcnow()))
+            db.session.commit()
+        else:
+            log.warning(f"Could not update node names in db. "
+                        f"Check that table '{NodeName.__tablename__}' exists.")
+        log.debug("Finished setting up node names.")
 
 
 def create_app(config_name="development",
@@ -269,57 +342,87 @@ def create_app(config_name="development",
         with app.app_context():
             init_hsm()
 
-    # check that we have a correct node_name -> UUID relation
-    with app.app_context():
-        # TODO: this is not multi-process-safe since every process runs its own `create_app()`
-        # First check if we have a UUID in the config file which takes precedence
-        try:
-            pi_uuid = uuid.UUID(app.config.get("PI_NODE_UUID", ""))
-        except ValueError as e:
-            log.debug(f"Could not determine UUID from config: {e}")
-            # check if we can get the UUID from an external file
-            pi_uuid_file = app.config.get('PI_UUID_FILE', DEFAULT_UUID_FILE)
-            try:
-                with open(pi_uuid_file) as f:
-                    pi_uuid = uuid.UUID(f.read().strip())
-            except Exception as e:  # pragma: no cover
-                log.debug(f"Could not determine UUID from file '{pi_uuid_file}': {e}")
-
-                # we try to get the unique installation id (See <https://0pointer.de/blog/projects/ids.html>)
-                try:
-                    with open("/etc/machine-id") as f:
-                        pi_uuid = uuid.UUID(f.read().strip())
-                except Exception as e:  # pragma: no cover
-                    log.debug(f"Could not determine the machine id: {e}")
-                    # we generate a random UUID which will change on every startup
-                    # unless it is persisted to the pi_uuid_file
-                    pi_uuid = uuid.uuid4()
-                    log.warning(f"Generating a random UUID: {pi_uuid}! If "
-                                f"persisting the UUID fails, it will change on every application start")
-                    # only in case of a generated UUID we save it to the uuid file
-                    try:
-                        with open(pi_uuid_file, 'w') as f:  # pragma: no cover
-                            f.write(f"{str(pi_uuid)}\n")
-                            log.info(f"Successfully wrote current UUID to file '{pi_uuid_file}'")
-                    except IOError as exx:
-                        log.warning(f"Could not write UUID to file '{pi_uuid_file}': {exx}")
-
-            app.config["PI_NODE_UUID"] = str(pi_uuid)
-            log.debug(f"Current UUID: '{pi_uuid}'")
-
-        pi_node_name = app.config.get("PI_NODE") or app.config.get("PI_AUDIT_SERVERNAME", "localnode")
-
-        insp = sa.inspect(db.get_engine())
-        if insp.has_table(NodeName.__tablename__):
-            db.session.merge(NodeName(id=str(pi_uuid), name=pi_node_name,
-                                      lastseen=datetime.datetime.utcnow()))
-            db.session.commit()
-        else:
-            log.warning(f"Could not update node names in db. "
-                        f"Check that table '{NodeName.__tablename__}' exists.")
+    _setup_node_configuration(app)
 
     log.debug(f"Reading application from the static folder {app.static_folder} "
               f"and the template folder {app.template_folder}")
+    app.config['APP_READY'] = True
+
+    def exit_func():
+        # Destroy the engine pool and close all open database connections on exit
+        with app.app_context():
+            db.engine.dispose()
+    atexit.register(exit_func)
+
+    return app
+
+
+def create_docker_app():
+    """
+    Create a Flask-app for docker deployment.
+    The app is configured exclusively through environment variables and secret
+    files via docker-compose.
+    """
+    app = Flask(__name__, static_folder="static",
+                template_folder="static/templates")
+    app.config["APP_READY"] = False
+    app.config["VERBOSE"] = bool(app.debug)
+
+    # Begin the app configuration
+    # First we load a default configuration
+    if app.debug:
+        sys.stderr.write(f"Reading default config: {DockerConfig}\n")
+    app.config.from_object(DockerConfig)
+    # Then we check if a config file is present in /etc/privacyidea/pi.cfg
+    # (either mounted or built into the container image)
+    try:
+        app.config.from_pyfile("/etc/privacyidea/pi.cfg", silent=False)
+        if app.debug:
+            sys.stderr.write("Read configuration from file: '/etc/privacyidea/pi.cfg'\n")
+    except IOError as _e:
+        pass
+    # Then we update the configuration with stuff from the environment
+    if app.debug:
+        sys.stderr.write("Reading configuration from environment with prefix 'PRIVACYIDEA'\n")
+    app.config.from_prefixed_env("PRIVACYIDEA")
+    # And then we check if we have a minimal viable config
+    _check_config(app)
+
+    if app.debug:
+        DOCKER_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = logging.DEBUG
+    if "PI_LOGLEVEL" in app.config:
+        DOCKER_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = app.config.get("PI_LOGLEVEL")
+    _setup_logging(app, DOCKER_LOGGING_CONFIG)
+
+    # We allow to set different static folders
+    app.static_folder = app.config.get("PI_STATIC_FOLDER", "static/")
+    app.template_folder = app.config.get("PI_TEMPLATE_FOLDER", "static/templates/")
+
+    _register_blueprints(app)
+
+    # Set up Plug-Ins
+    db.init_app(app)
+
+    Versioned(app, format='%(path)s?v=%(version)s')
+
+    babel.init_app(app, locale_selector=get_accepted_language)
+
+    queue.register_app(app)
+
+    if app.config.get("PI_INITIALIZE_HSM", False):
+        with app.app_context():
+            init_hsm()
+
+    # Check database connection
+    with app.app_context():
+        try:
+            db.session.execute(sa.text('SELECT 1'))
+            log.debug("Database Connection successful!")
+        except Exception as e:
+            raise RuntimeError(f"Could not connect to database: {e}")
+
+    _setup_node_configuration(app)
+
     app.config['APP_READY'] = True
 
     def exit_func():
