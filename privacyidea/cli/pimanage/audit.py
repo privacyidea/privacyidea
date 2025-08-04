@@ -48,8 +48,10 @@ audit_cli = AppGroup("audit", help="Manage Audit log")
               help="Do not actually delete, only show what would be done.")
 @click.option('--chunksize', type=int,
               help="Delete entries in chunks of the given size to avoid deadlocks")
+@click.option('--debug', is_flag=True,
+              help="Detailed logging output for the filtering process when using the --config option.")
 def rotate_audit(highwatermark, lowwatermark, age, config,
-                 dryrun, chunksize):
+                 dryrun, chunksize, debug):
     """
     Clean the SQL audit log.
 
@@ -101,8 +103,10 @@ def rotate_audit(highwatermark, lowwatermark, age, config,
         else:
             audit_logs = query.yield_per(chunksize)
         delete_list = []
+        rule_statistics = {str(rule): 0 for rule in yml_config}
         for log in audit_logs:
-            click.echo("investigating log entry {0!s}".format(log.id))
+            if debug:
+                click.echo(f"investigating log entry {log.id}")
             for rule in yml_config:
                 age = int(rule.get("rotate"))
                 rotate_date = datetime.datetime.now() - datetime.timedelta(days=age)
@@ -111,33 +115,37 @@ def rotate_audit(highwatermark, lowwatermark, age, config,
                 for key in rule.keys():
                     if key not in ["rotate"]:
                         search_value = str(rule.get(key))
-                        click.echo(" + searching for {0!r} in {1!s}".format(search_value,
-                                                                            getattr(LogEntry, key)))
+                        if debug:
+                            click.echo(f" + searching for {search_value!r} in {getattr(LogEntry, key)!s}")
                         audit_value = str(getattr(log, key, ""))
                         m = re.search(search_value, audit_value)
                         if m:
                             # it matches!
-                            click.echo(" + -- found {0!r}".format(audit_value))
+                            if debug:
+                                click.echo(f" + -- found {audit_value!r}")
                             match = True
                         else:
                             # It does not match, we continue to next rule
-                            click.echo(" + NO MATCH - SKIPPING rest of conditions!")
+                            if debug:
+                                click.echo(" + NO MATCH - SKIPPING rest of conditions!")
                             match = False
                             break
 
                 if match:
                     if log.date < rotate_date:
-                        # Delete it!
-                        click.echo(" + Deleting {0!s} due to rule {1!s}".format(log.id, rule))
+                        if debug:
+                            click.echo(f" + Deleting {log.id} due to rule {rule}")
+                        rule_statistics[str(rule)] += 1
                         # Delete it
                         delete_list.append(log.id)
                     # skip all other rules and go to the next log entry
                     break
+        for rule, count in rule_statistics.items():
+            click.echo(f"Rule {rule} matched {count} times.")
         if dryrun:
-            click.echo("If you only would let me I would clean up "
-                       "{0!s} entries!".format(len(delete_list)))
+            click.echo(f"If you only would let me I would clean up {len(delete_list)} entries!")
         else:
-            click.echo("Cleaning up {0!s} entries.".format(len(delete_list)))
+            click.echo(f"Cleaning up {len(delete_list)} entries.")
             delete_matching_rows(session, LogEntry.__table__,
                                  LogEntry.id.in_(delete_list), chunksize)
     elif age:
