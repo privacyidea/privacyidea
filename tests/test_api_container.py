@@ -2784,26 +2784,26 @@ class APIContainer(APIContainerTest):
         self.assertEqual(0, len(container.get_users()))
 
         # ---- Invalid realm ---
-        user = User("hans", self.realm1)
+        user = User("corny", self.realm3)
         container.add_user(user)
-        delete_realm(self.realm1)
+        delete_realm(self.realm3)
         # Success if providing everything (realm does not exist, hence realm_id is not set)
-        payload = {"user": "hans", "realm": self.realm1, "user_id": user.uid, "resolver": user.resolver}
+        payload = {"user": "corny", "realm": self.realm3, "user_id": user.uid, "resolver": user.resolver}
         result = self.request_assert_success(f'/container/{container_serial}/unassign', payload, self.at, 'POST')
         self.assertTrue(result["result"].get("value"))
         self.assertEqual(0, len(container.get_users()))
-        self.setUp_user_realms()
+        self.setUp_user_realm3()
         container.add_user(user)
-        delete_realm(self.realm1)
+        delete_realm(self.realm3)
         # Fails also if not providing realm (sets default realm)
-        payload = {"user": "hans", "user_id": user.uid, "resolver": user.resolver}
+        payload = {"user": "corny", "user_id": user.uid, "resolver": user.resolver}
         result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
                                            payload, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(904, error["code"])
         self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
         # Success only providing user id and resolver
-        # Fails if providing everything (realm does nt exist)
+        # Fails if providing everything (realm does not exist)
         payload = {"user_id": user.uid, "resolver": user.resolver}
         result = self.request_assert_success(f'/container/{container_serial}/unassign', payload, self.at, 'POST')
         self.assertTrue(result["result"].get("value"))
