@@ -26,7 +26,7 @@ export class ThemeSwitcherComponent {
   });
 
   readonly icon = computed<ThemeIcon>(() =>
-    this.isDark() ? 'dark_mode' : 'light_mode',
+    this.isDark() ? 'light_mode' : 'dark_mode',
   );
 
   constructor(private readonly themeService: ThemeService) {}
