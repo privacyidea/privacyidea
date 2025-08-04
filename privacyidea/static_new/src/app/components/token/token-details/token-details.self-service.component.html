@@ -171,7 +171,15 @@
                 class="edit-column-cell"
                 mat-cell>
               <div class="ali-center">
-                @if (element.keyMap.key === "failcount" && !isAnyEditingOrRevoked()) {
+                @if (element.keyMap.key === "active" && !isAnyEditingOrRevoked()) {
+                  <div class="edit-button-container">
+                    <button mat-icon-button
+                            (click)="toggleActive(element.value)">
+                      <mat-icon>{{ tokenIsActive() ? "lock" : "play_circle" }}</mat-icon>
+                    </button>
+                  </div>
+                }
+                @else if (element.keyMap.key === "failcount" && !isAnyEditingOrRevoked()) {
                   <div class="edit-button-container">
                     <button mat-icon-button
                             (click)="resetFailCount()">
