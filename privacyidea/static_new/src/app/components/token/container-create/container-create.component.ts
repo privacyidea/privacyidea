@@ -56,6 +56,7 @@ import {
 import { TokenComponent } from '../token.component';
 import { ContainerRegistrationDialogComponent } from './container-registration-dialog/container-registration-dialog.component';
 import { Router } from '@angular/router';
+import { MatTooltip } from '@angular/material/tooltip';
 
 export type ContainerTypeOption = 'generic' | 'smartphone' | 'yubikey';
 
@@ -80,6 +81,7 @@ export type ContainerTypeOption = 'generic' | 'smartphone' | 'yubikey';
     MatExpansionPanel,
     MatExpansionPanelTitle,
     MatExpansionPanelHeader,
+    MatTooltip,
   ],
   templateUrl: './container-create.component.html',
   styleUrl: './container-create.component.scss',
