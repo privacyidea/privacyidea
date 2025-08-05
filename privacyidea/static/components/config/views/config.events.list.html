@@ -78,7 +78,7 @@
             <td>
                 <button class="btn btn-danger"
                         ng-show="checkRight('eventhandling_write')"
-                        aria-details="{{ 'Do you really want to delete this event?' | translate }}"
+                        data-confirmation-text="{{ 'Do you really want to delete this event?' | translate }}"
                         ng-click="confirmDelete(delEvent, event.id)">
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete</span>

@@ -49,7 +49,7 @@
             <td>
                 <button class="btn btn-danger"
                         ng-show="checkRight('periodictask_write')"
-                        aria-details="{{ 'Do you really want to delete this periodic task?' | translate }}"
+                        data-confirmation-text="{{ 'Do you really want to delete this periodic task?' | translate }}"
                         ng-click="confirmDelete(delPeriodicTask, ptask.id)">
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete</span>

@@ -14,7 +14,7 @@
         Enable
     </button>
     <button class="btn btn-danger"
-            aria-details="{{ 'Do you really want to delete this event?' | translate }}"
+            data-confirmation-text="{{ 'Do you really want to delete this event?' | translate }}"
             ng-click="confirmDelete(delEvent, eventid)">
         <span class="glyphicon glyphicon-trash"></span>
         <span translate>Delete</span>

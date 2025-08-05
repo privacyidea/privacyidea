@@ -26,7 +26,7 @@ To view attached tokens go to <a ui-sref="token.applications">token applications
             <td>
                 <button class="btn btn-danger"
                         ng-show="checkRight('serviceid_delete')"
-                        aria-details="{{ 'Do you really want to delete this service ID?' | translate }}"
+                        data-confirmation-text="{{ 'Do you really want to delete this service ID?' | translate }}"
                         ng-click="confirmDelete(delServiceid, servicename)">
                         <span class="glyphicon glyphicon-trash"></span>
                     <span translate>Delete</span>
