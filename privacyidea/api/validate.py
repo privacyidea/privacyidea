@@ -433,18 +433,18 @@ def check():
     details: dict = {}
     is_container_challenge = False
 
-    if "cancel_enrollment" in request.all_data:
+    if "cancel_enrollment" in request.all_data and is_true(request.all_data["cancel_enrollment"]):
         transaction_id = get_required(request.all_data, "transaction_id")
         success = cancel_enrollment_via_multichallenge(transaction_id)
         if success:
             details.update({"message": gettext("Cancelled enrollment via multichallenge")})
             ret = send_result(True, rid=2, details=details)
-            action_detail = (gettext("Cancelled enrollment via multichallenge for transaction_id") +
+            action_detail = (gettext("Cancelled enrollment via multichallenge for transaction_id ") +
                              f"{transaction_id}")
         else:
             details.update({"message": gettext("Failed to cancel enrollment via multichallenge")})
             ret = send_result(False, rid=2, details=details)
-            action_detail = (gettext("Failed to cancel enrollment via multichallenge for transaction_id")
+            action_detail = (gettext("Failed to cancel enrollment via multichallenge for transaction_id ")
                              + f"{transaction_id}")
         g.audit_object.log({
             "success": success,

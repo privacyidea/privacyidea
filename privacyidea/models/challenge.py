@@ -55,7 +55,7 @@ class Challenge(MethodsMixin, db.Model):
         self.transaction_id = transaction_id or self.create_transaction_id()
         self.challenge = challenge
         self.serial = serial
-        self.data = data
+        self.set_data(data)
         self.timestamp = datetime.utcnow()
         self.session = session
         self.received_count = 0
