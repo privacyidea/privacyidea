@@ -312,12 +312,7 @@ def get_auth_token():
     if passkey_login_success:
         authtype = "pi"
         # Login is already completed, get the role of the logged-in user
-        if db_admin_exists(username):
-            role = ROLE.ADMIN
-            admin_auth = True
-            g.audit_object.log({"success": True, "user": "", "administrator": username, "info": "internal admin"})
-            user = User()
-        elif user.realm in superuser_realms:
+        if user.realm in superuser_realms:
             role = ROLE.ADMIN
             admin_auth = True
             g.audit_object.log({"user": user.login, "realm": user.realm, "info": log_used_user(user)})
