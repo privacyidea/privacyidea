@@ -18,6 +18,7 @@ import {
   TokenService,
   TokenServiceInterface,
 } from '../../../../../services/token/token.service';
+import { DatePipe } from '@angular/common';
 
 @Component({
   selector: 'app-lost-token',
@@ -30,6 +31,7 @@ import {
     MatIcon,
     MatCard,
     MatCardContent,
+    DatePipe,
   ],
   templateUrl: './lost-token.component.html',
   styleUrl: './lost-token.component.scss',

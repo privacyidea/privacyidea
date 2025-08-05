@@ -38,16 +38,25 @@
 
   @switch (intentionToggleControl.value) {
     @case ("generate") {
-      <span class="margin-bottom-1">The server will create the private RSA key and store it in the
-        database. <br />
+      <span class="margin-bottom-1">
+        The server will create the private RSA key and store it in the database. <br />
         You can later download the PKCS#12 file.</span>
     }
-    @case ("upload") {
+    @case ("uploadRequest") {
       <mat-form-field class="width-66">
         <mat-label> Certificate Signing Request (PEM)</mat-label>
         <textarea [formControl]="pemControl"
                   matInput
                   placeholder="Paste the Certificate Signing Request here"
+                  rows="3"></textarea>
+      </mat-form-field>
+    }
+    @case ("uploadCert") {
+      <mat-form-field class="width-66">
+        <mat-label> Certificate (PEM)</mat-label>
+        <textarea [formControl]="pemControl"
+                  matInput
+                  placeholder="Paste the Certificate here"
                   rows="3"></textarea>
       </mat-form-field>
     }

@@ -258,7 +258,7 @@ export class ContainerDetailsTokenTableComponent {
       this.dialog.open(ConfirmationDialogComponent, {
         data: {
           title: 'No User Assigned',
-          message: 'Please assign a user to the Container first.',
+          message: 'Please assign a user to the container first.',
         },
       });
       return;

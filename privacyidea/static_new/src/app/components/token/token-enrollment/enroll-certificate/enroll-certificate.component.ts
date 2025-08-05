@@ -91,9 +91,9 @@ export class EnrollCertificateComponent implements OnInit {
   caConnectorControl = new FormControl<string>('', [Validators.required]);
   certTemplateControl = new FormControl<string>('');
   pemControl = new FormControl<string>('');
-  intentionToggleControl = new FormControl<'generate' | 'upload'>('generate', [
-    Validators.required,
-  ]);
+  intentionToggleControl = new FormControl<
+    'generate' | 'uploadRequest' | 'uploadCert'
+  >('generate', [Validators.required]);
 
   certificateForm = new FormGroup({
     caConnector: this.caConnectorControl,
@@ -137,7 +137,7 @@ export class EnrollCertificateComponent implements OnInit {
     this.clickEnrollChange.emit(this.onClickEnroll);
 
     this.intentionToggleControl.valueChanges.subscribe((intention) => {
-      if (intention === 'upload') {
+      if (intention === 'uploadRequest' || intention === 'uploadCert') {
         this.pemControl.setValidators([Validators.required]);
         this.caConnectorControl.clearValidators();
         this.certTemplateControl.clearValidators();
@@ -165,7 +165,10 @@ export class EnrollCertificateComponent implements OnInit {
       caConnector: this.caConnectorControl.value ?? '',
       certTemplate: this.certTemplateControl.value ?? '',
     };
-    if (this.intentionToggleControl.value === 'upload') {
+    if (
+      this.intentionToggleControl.value === 'uploadRequest' ||
+      this.intentionToggleControl.value === 'uploadCert'
+    ) {
       enrollmentData.pem = this.pemControl.value ?? '';
     }
     return this.tokenService.enrollToken({

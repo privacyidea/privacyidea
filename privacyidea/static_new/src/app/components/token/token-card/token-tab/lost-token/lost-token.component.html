@@ -26,16 +26,27 @@
               class="lost-card">
       <mat-card-content class="lost-card-content">Token was marked as lost successfully.
       </mat-card-content>
-    </mat-card><p>
+    </mat-card>
+
+    <p>
       The serial of the new token is
       <a (click)="tokenSelected(lostTokenData?.serial)"> {{ lostTokenData?.serial ?? "" }} </a>
       <br /> The password that needs to be combined with the OTP PIN: </p>
-    <p class="lost-password"> {{ lostTokenData?.password }} </p><p style="font-weight: bold">
-      The password can not be shown again later! </p><p> The token is valid
-      till {{ lostTokenData?.end_date }} </p>
+
+    <p class="lost-password">
+      {{ lostTokenData?.password }} </p>
+
+    <p style="font-weight: bold">
+      The password can not be shown again later! </p>
+
+    <p>
+      The token is valid until {{ lostTokenData?.end_date | date:'longDate' }}
+      at {{ lostTokenData?.end_date | date:'shortTime' }}.</p>
+
     <div class="dialog-div">
       <button mat-button
-              mat-dialog-close>Close
+              mat-dialog-close>
+        Close
       </button>
     </div>
   }
