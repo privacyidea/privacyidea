@@ -828,9 +828,10 @@ myApp.controller("PasswdResolverController", ["$scope", "ConfigFactory",
             /* If we have a resolvername, we do an Edit
              and we need to fill all the $scope.params */
             ConfigFactory.getResolver($scope.resolvername, function (data) {
-                var resolver = data.result.value[$scope.resolvername];
+                const resolver = data.result.value[$scope.resolvername];
                 $scope.params = resolver.data;
                 $scope.params.type = 'passwdresolver';
+                $scope.params.fileName = resolver.data.fileName || resolver.data.filename;
             });
         }
 

@@ -671,7 +671,7 @@ angular.module("privacyideaApp")
             };
 
             $scope.createDefaultRealm = function () {
-                const resolver_params = {type: "passwdresolver", filename: "/etc/passwd"};
+                const resolver_params = {type: "passwdresolver", fileName: "/etc/passwd"};
                 const realm_params = {resolvers: "deflocal"};
                 ConfigFactory.setResolver("deflocal",
                     resolver_params,
