@@ -42,8 +42,9 @@
           <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
             @switch (column.key) {
               @case ("serial") {
-                <div>
-                  <a (click)="contentService.tokenSelected(element.serial)"> {{ element.serial }} </a>
+                <div class="flex-row">
+                  <a class="flex ali-center" (click)="serialClicked(element)">
+                    {{ element.serial }} </a>
                   @if (element.serial) {
                     <app-copy-button [copyText]="element.serial"></app-copy-button>
                   }

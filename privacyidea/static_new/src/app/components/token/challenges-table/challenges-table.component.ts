@@ -120,4 +120,12 @@ export class ChallengesTableComponent {
   onSortEvent($event: Sort) {
     this.sortby_sortdir.set($event);
   }
+
+  serialClicked(element: { data: { type: string }; serial: string }): void {
+    if (element.data && element.data.type === 'container') {
+      this.contentService.containerSelected(element.serial);
+    } else {
+      this.contentService.tokenSelected(element.serial);
+    }
+  }
 }

@@ -8,7 +8,7 @@
                     [value]="type">{{ type.description }}
         </mat-option>
       }
-      <div class="en-enrollment-container">
+      <div class="flex just-center">
         <button (click)="versioningService.openDocumentation('containertypes')"
                 class="card-button"
                 mat-flat-button>
@@ -54,22 +54,22 @@
               rows="3"></textarea>
   </mat-form-field>
 
-  <div class="flex-row width-100 gap-1">
+  <div class="flex-column width-100 gap-1">
     <div class="flex-column width-66">
       <h4 class="enroll-h4"> Use a Template</h4>
       <mat-form-field class="width-100 input-height">
         <mat-label>Template</mat-label>
-        <mat-select [(ngModel)]="selectedTemplate">
+        <mat-select [(ngModel)]="selectedTemplate"
+                    disabled>
           @for (option of templateOptions(); track option) {
             <mat-option [value]="option">{{ option.name }}</mat-option>
           }
         </mat-select>
       </mat-form-field>
     </div>
-
-    <div class="flex-column width-33">
-      <h4 class="enroll-h4"> Assign the Container to a User </h4>
-      <mat-form-field class="width-100 input-height">
+    <h4 class="enroll-h4"> Assign the Container to a User </h4>
+    <div class="flex-row gap-1">
+      <mat-form-field class="width-32 input-height">
         <mat-label>Select Realm of User</mat-label>
         <mat-select [(ngModel)]="userService.selectedUserRealm">
           @for (option of realmService.realmOptions(); track option) {
@@ -77,22 +77,22 @@
           }
         </mat-select>
       </mat-form-field>
-      <mat-checkbox [(ngModel)]="onlyAddToRealm">
-        Only add to the realm <br /> (no user assignment)
-      </mat-checkbox>
-      <mat-form-field class="width-100 input-height">
-        <mat-label>Enter User</mat-label>
-        <input [(ngModel)]="userService.userFilter"
-               [disabled]="onlyAddToRealm()"
-               [matAutocomplete]="userAuto"
-               matInput />
-        <mat-error>User is <strong>required</strong></mat-error>
-        <mat-autocomplete #userAuto="matAutocomplete">
-          @for (option of userService.filteredUsernames(); track option) {
-            <mat-option [value]="option">{{ option }}</mat-option>
-          }
-        </mat-autocomplete>
-      </mat-form-field>
+        <mat-form-field class="width-32 input-height">
+          <mat-label>Enter User</mat-label>
+          <input [(ngModel)]="userService.userFilter"
+                 [disabled]="onlyAddToRealm()"
+                 [matAutocomplete]="userAuto"
+                 matInput />
+          <mat-error>User is <strong>required</strong></mat-error>
+          <mat-autocomplete #userAuto="matAutocomplete">
+            @for (option of userService.filteredUsernames(); track option) {
+              <mat-option [value]="option">{{ option }}</mat-option>
+            }
+          </mat-autocomplete>
+        </mat-form-field>
+        <mat-checkbox [(ngModel)]="onlyAddToRealm">
+          Only add to the realm <br /> (no user assignment)
+        </mat-checkbox>
     </div>
   </div>
 

@@ -58,7 +58,7 @@
     <h4 class="enroll-h4"> Use a Template</h4>
     <mat-form-field class="width-100 input-height">
       <mat-label>Template</mat-label>
-      <mat-select [(ngModel)]="selectedTemplate">
+      <mat-select [(ngModel)]="selectedTemplate" disabled>
         @for (option of templateOptions(); track option) {
           <mat-option [value]="option">{{ option.name }}</mat-option>
         }

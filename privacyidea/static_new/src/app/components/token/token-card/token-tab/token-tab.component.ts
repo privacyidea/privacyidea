@@ -75,9 +75,6 @@ export class TokenTabComponent {
   toggleActive(): void {
     this.tokenService
       .toggleActive(this.tokenSerial(), this.tokenIsActive())
-      .pipe(
-        switchMap(() => this.tokenService.getTokenDetails(this.tokenSerial())),
-      )
       .subscribe({
         next: () => {
           this.tokenService.tokenDetailResource.reload();
