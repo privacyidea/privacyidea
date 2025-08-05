@@ -52,6 +52,7 @@ const columnKeysMap = [
   { key: 'success', label: 'Success' },
   { key: 'authentication', label: 'Authentication' },
   { key: 'serial', label: 'Serial' },
+  { key: 'container_serial', label: 'Container Serial' },
   { key: 'date', label: 'End Date' },
   { key: 'startdate', label: 'Start Date' },
   { key: 'duration', label: 'Duration' },
@@ -72,7 +73,6 @@ const columnKeysMap = [
   { key: 'missing_line', label: 'Missing Line' },
   { key: 'resolver', label: 'Resolver' },
   { key: 'thread_id', label: 'Thread ID' },
-  { key: 'container_serial', label: 'Container Serial' },
   { key: 'container_type', label: 'Container Type' },
 ];
 

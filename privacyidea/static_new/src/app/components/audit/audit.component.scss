@@ -1,11 +1,6 @@
 @use "../../../styles";
 @use "@angular/material" as mat;
 
-.audit-table-overflow {
-  padding-bottom: 12px;
-  overflow: auto;
-}
-
 .audit-table-container {
   @include styles.table-container-styles;
   @include styles.base-table-structure(

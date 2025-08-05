@@ -60,7 +60,7 @@ export class VersioningService implements VersioningServiceInterface {
       }
     }
     const versionUrl = `${baseUrl}v${this.version()}/${page_url}`;
-    const fallbackUrl = `${baseUrl}latest/${page_url}`;
+    const fallbackUrl = `${baseUrl}stable/${page_url}`;
 
     async function checkPage(url: any) {
       try {
