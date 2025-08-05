@@ -99,7 +99,7 @@ angular.module("privacyideaApp")
 
             $scope.confirmDelete = function (delete_function, identifier) {
                 $scope.confirmDeleteObj = {
-                    question: document.activeElement.getAttribute('aria-label'),
+                    question: document.activeElement.getAttribute('aria-details'),
                     identifier: identifier,
                     delete_function: delete_function
                 };
