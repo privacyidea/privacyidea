@@ -2795,15 +2795,14 @@ class APIContainer(APIContainerTest):
         self.setUp_user_realm3()
         container.add_user(user)
         delete_realm(self.realm3)
-        # Fails also if not providing realm (sets default realm)
+        # Also fails if not providing realm (sets default realm)
         payload = {"user": "corny", "user_id": user.uid, "resolver": user.resolver}
         result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
                                            payload, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(904, error["code"])
         self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
-        # Success only providing user id and resolver
-        # Fails if providing everything (realm does not exist)
+        # Success when providing only user_id and resolver, even if realm does not exist
         payload = {"user_id": user.uid, "resolver": user.resolver}
         result = self.request_assert_success(f'/container/{container_serial}/unassign', payload, self.at, 'POST')
         self.assertTrue(result["result"].get("value"))
