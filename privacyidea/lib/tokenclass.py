@@ -292,8 +292,9 @@ class TokenClass(object):
         user_object = None
         tokenowner = self.token.first_owner
         if tokenowner:
+            realm_name = tokenowner.realm.name if tokenowner.realm else None
             user_object = User(resolver=tokenowner.resolver,
-                               realm=tokenowner.realm.name,
+                               realm=realm_name,
                                uid=tokenowner.user_id)
         return user_object
 
