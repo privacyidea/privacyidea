@@ -239,6 +239,7 @@ export interface ContainerServiceInterface {
     passphrase_prompt: string;
     passphrase_response: string;
   }) => Observable<PiResponse<ContainerRegisterData>>;
+  containerBelongsToUser: (containerSerial: string) => false | true | undefined;
 
   stopPolling(): void;
 
@@ -344,7 +345,7 @@ export class ContainerService implements ContainerServiceInterface {
   });
   containerResource = httpResource<PiResponse<ContainerDetails>>(() => {
     if (
-      !['/tokens/containers', '/tokens/enroll'].includes(
+      !['/tokens/containers', '/tokens/enroll', '/tokens'].includes(
         this.contentService.routeUrl(),
       ) &&
       !this.contentService.routeUrl().startsWith('/tokens/details')
@@ -970,5 +971,13 @@ export class ContainerService implements ContainerServiceInterface {
         return throwError(() => error);
       }),
     );
+  }
+
+  containerBelongsToUser(containerSerial: any): false | true | undefined {
+    return this.containerResource
+      .value()
+      ?.result?.value?.containers?.some(
+        (container) => container.serial === containerSerial,
+      );
   }
 }

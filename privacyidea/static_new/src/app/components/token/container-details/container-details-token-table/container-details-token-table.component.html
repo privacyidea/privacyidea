@@ -93,12 +93,28 @@
             aria-label="Remove Button Cell"
             mat-cell>
           <div class="flex just-center">
-            <button (click)="
-                removeTokenFromContainer(containerSerial(), element.serial)
-              "
+            <button (click)="removeTokenFromContainer(containerSerial(), element.serial)"
                     mat-icon-button
                     matTooltip="Remove Token from Container">
               <mat-icon> highlight_remove</mat-icon>
+            </button>
+          </div>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="delete">
+        <th *matHeaderCellDef
+            aria-label="Delete Column Header"
+            mat-header-cell>
+          Delete
+        </th>
+        <td *matCellDef="let element"
+            aria-label="Delete Button Cell"
+            mat-cell>
+          <div class="flex just-center">
+            <button (click)="deleteTokenFromContainer(element.serial)"
+                    mat-icon-button
+                    matTooltip="Delete Token">
+              <mat-icon> delete</mat-icon>
             </button>
           </div>
         </td>

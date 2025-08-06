@@ -43,11 +43,18 @@
                       </mat-autocomplete>
                     </mat-form-field>
                   } @else {
-                    <a attr.aria-label="{{ element.keyMap.label }} Link"
-                       (click)="contentService.containerSelected(element.value)"> {{ element.value }} </a>
-                    @if (element.value !== "") {
-                      <app-copy-button [copyText]="element.value"></app-copy-button>
-                    }
+                    <div class="flex ali-center">
+                      @if (containerService.containerBelongsToUser(element.value)) {
+                        <a attr.aria-label="{{ element.keyMap.label }} Link"
+                           (click)="contentService.containerSelected(element.value)">
+                          {{ element.value }} </a>
+                      } @else {
+                        {{ element.value }}
+                      }
+                      @if (element.value !== "") {
+                        <app-copy-button [copyText]="element.value"></app-copy-button>
+                      }
+                    </div>
                   }
                 }
                 @case ("realms") {
@@ -178,8 +185,7 @@
                       <mat-icon>{{ tokenIsActive() ? "lock" : "play_circle" }}</mat-icon>
                     </button>
                   </div>
-                }
-                @else if (element.keyMap.key === "failcount" && !isAnyEditingOrRevoked()) {
+                } @else if (element.keyMap.key === "failcount" && !isAnyEditingOrRevoked()) {
                   <div class="edit-button-container">
                     <button mat-icon-button
                             (click)="resetFailCount()">

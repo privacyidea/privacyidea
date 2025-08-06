@@ -6,7 +6,6 @@ import {
   inject,
   Input,
   linkedSignal,
-  signal,
   ViewChild,
   WritableSignal,
 } from '@angular/core';
@@ -109,6 +108,7 @@ export class ContainerDetailsTokenTableComponent {
   displayedColumns: string[] = [
     ...columnsKeyMap.map((column) => column.key),
     'remove',
+    'delete',
   ];
   pageSize = 10;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
@@ -383,6 +383,31 @@ export class ContainerDetailsTokenTableComponent {
                   this.containerService.containerDetailResource.reload();
                 },
               });
+          }
+        },
+      });
+  }
+
+  deleteTokenFromContainer(tokenSerial: string) {
+    this.dialog
+      .open(ConfirmationDialogComponent, {
+        data: {
+          serial_list: [tokenSerial],
+          title: 'Delete Token',
+          type: 'token',
+          action: 'delete',
+          numberOfTokens: [tokenSerial].length,
+        },
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            this.tokenService.deleteToken(tokenSerial).subscribe({
+              next: () => {
+                this.containerService.containerDetailResource.reload();
+              },
+            });
           }
         },
       });

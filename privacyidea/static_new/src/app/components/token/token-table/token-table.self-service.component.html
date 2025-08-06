@@ -42,20 +42,20 @@
                     @case ("serial") {
                       <div class="flex-row ali-center">
                         <a attr.aria-label="{{ column.label }} Link"
-                           (click)="
-                            contentService.tokenSelected(element.serial)
-                          "> {{ element[column.key] }} </a>
+                           (click)="contentService.tokenSelected(element.serial)">
+                          {{ element[column.key] }} </a>
                         <app-copy-button [copyText]="element.serial"></app-copy-button>
                       </div>
                     }
                     @case ("container_serial") {
                       <div class="flex-row ali-center">
-                        <a attr.aria-label="{{ column.label }} Link"
-                           (click)="
-                          contentService.containerSelected(
-                            element.container_serial
-                          )
-                        "> {{ element[column.key] }} </a>
+                        @if (containerService.containerBelongsToUser(element.container_serial)) {
+                          <a attr.aria-label="{{ column.label }} Link"
+                             (click)="contentService.containerSelected(element.container_serial)">
+                            {{ element[column.key] }} </a>
+                        } @else {
+                          {{ element[column.key] }}
+                        }
                         @if (element.container_serial !== "") {
                           <app-copy-button [copyText]="
                             element.container_serial
