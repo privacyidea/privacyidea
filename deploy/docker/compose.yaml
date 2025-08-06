@@ -9,16 +9,20 @@ services:
       MARIADB_DATABASE: pi
       MARIADB_RANDOM_ROOT_PASSWORD: true
     healthcheck:
+      # The mysqladmin command needs a username/password to avoid spamming the
+      # logs with failed authentication messages (it works nevertheless)
       test: mysqladmin ping -h localhost -u $$MARIADB_USER --password=$$MARIADB_PASSWORD
 
   pi:
     depends_on:
       db:
+        # The healthcheck attribute must be set for the db service for this to work
         condition: service_healthy
     build:
       context: "../../"
       dockerfile: ./deploy/docker/Dockerfile
       network: host
+#    image: pi:latest
     ports:
       - "8080:8080"
     secrets:
@@ -37,6 +41,7 @@ secrets:
     file: ./encKey
   secret_key:
     # Create a suitable secret key with "SECRET_KEY=$(python -c 'import secrets;print(secrets.token_hex())')"
-    environment: "SECRET_KEY"
+    environment: SECRET_KEY
   pi_pepper:
-    en
+    # Create a suitable pepper with "PI_PEPPER=$(python -c 'import secrets;print(secrets.token_urlsafe())')"
+    environment: PI_PEPPER

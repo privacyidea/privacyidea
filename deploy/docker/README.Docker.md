@@ -21,9 +21,11 @@ container. An existing volume can be given at the container start with:
 ```
 docker run -v <volume-id>:/etc/privacyidea -p 8080:8080 <pi-tag>:latest
 ```
+Some configuration data is required and will be checked at the application start.
+The data can be passed to the container through environment files and/or secrets.
 
-Some configuration data is required at `/etc/privacyidea` for this container to
-work. See  https://privacyidea.readthedocs.io/en/latest/installation/pip.html#database
+Some additional configuration data can be set at `/etc/privacyidea` for this
+container. See  https://privacyidea.readthedocs.io/en/latest/installation/pip.html#database
 and https://privacyidea.readthedocs.io/en/latest/installation/system/inifile.html#cfgfile
 for configuration options.
 
@@ -32,18 +34,37 @@ Configuration options can be given as environment variables with the `PRIVACYIDE
 docker run -p 8080:8080 -e PRIVACYIDEA_PI_PEPPER="Never know..." -e PRIVACYIDEA_PI_SECRET="t0p s3cr3t" <pi-tag>:latest
 ```
 
+Docker compose
+--------------
+
+A compose file can be used to start up the complete stack. An example is given
+in `deploy/docker/compose.yaml`:
+```
+SECRET_KEY=$SECRET_KEY PI_PEPPER=$PI_PEPPER docker compose -f deploy/docker/compose.yaml up
+```
+
+Setup privacyIDEA
+-----------------
+
 Commands can be run inside the container with:
 ```
 docker exec -i <container name> pi-manage ...
 ```
+---
+**Note**
+
+Currently, the `pi-manage` command does not recognize the docker environment
+automatically. As a work around it can be called like this:
+```
+docker exec -i <container name> pi-manage -A privacyidea.app:create_docker_app ...
+```
+
+---
 
 To set up a running container use:
 ```
 docker exec -i <privacyidea-container> pi-manage setup create_tables
-docker exec -i <privacyidea-container> pi-manage setup create_enckey
-docker exec -i <privacyidea-container> pi-manage setup create_audit_keys
 ```
-The created files will be added to the mounted volume.
 
 Configuration can be imported in the container with:
 ```
@@ -53,8 +74,8 @@ cat <policy template yaml> | docker exec -i <container name> pi-manage config im
 TODO:
 -----
 
-* Don't start the container if the configuration is missing or incomplete
-  * Alternatively create a running configuration during container startup
-* Pass configuration parameters via variables for better use with `compose`
+* Use the `_FILE` suffix for secrets mounted into the container
+* Compose the `SQLALCHEMY_DATABASE_URI` from secrets passed through the environment or files
+* Add an example on how to manually mount the secret file into the container using `docker run`
 * Add dependencies in the container (PyKCS11, gssapi)
 * Add recurring tasks runner (cron? via docker? via redis?)

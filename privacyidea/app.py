@@ -168,12 +168,11 @@ def _check_config(app: Flask):
         raise RuntimeError(f"'{CONFIG_KEY.PI_ENCFILE}' must be set and point to "
                            f"a file with the database encryption key!")
     if CONFIG_KEY.PI_PEPPER not in app.config:
-        raise RuntimeError("'PI_PEPPER' must be defined in the app configuration")
-    if "SECRET_KEY" not in app.config or not app.config["SECRET_KEY"]:
-        sys.stderr.write("'SECRET_KEY' not defined in the app configuration! "
-                         "Generating a random key.\n")
-        app.config["SECRET_KEY"] = secrets.token_hex()
-        sys.stderr.write(f"secret key: {app.config['SECRET_KEY']}\n")
+        raise RuntimeError(f"'{CONFIG_KEY.PI_PEPPER}' must be defined in the app configuration")
+    if CONFIG_KEY.SECRET_KEY not in app.config or not app.config[CONFIG_KEY.SECRET_KEY]:
+        sys.stderr.write(f"'{CONFIG_KEY.SECRET_KEY}' not defined in the app "
+                         f"configuration! Generating a random key.\n")
+        app.config[CONFIG_KEY.SECRET_KEY] = secrets.token_hex()
     if not all([x in app.config for x in ["PI_AUDIT_KEY_PUBLIC", "PI_AUDIT_KEY_PRIVATE"]]):
         sys.stderr.write("No keypair for audit signing defined. Disabling audit signing!\n")
         app.config["PI_AUDIT_NO_SIGN"] = True
