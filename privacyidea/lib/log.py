@@ -1,7 +1,3 @@
-# SPDX-FileCopyrightText: (C) 2014 NetKnights GmbH <https://netknights.it>
-#
-# SPDX-License-Identifier: AGPL-3.0-or-later
-#
 #  privacyIDEA is a fork of LinOTP
 #  May 08, 2014 Cornelius Kölbel
 #  License:  AGPLv3
@@ -25,6 +21,9 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# SPDX-FileCopyrightText: 2025 Paul Lettich <paul.lettich@netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
 #
 from logging import Formatter
 import logging

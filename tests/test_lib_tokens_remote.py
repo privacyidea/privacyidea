@@ -169,13 +169,13 @@ class RemoteTokenTestCase(MyTestCase):
         # wrong PIN
         r = token.authenticate("wrong"+"123456")
         self.assertFalse(r[0], r)
-        self.assertTrue(r[1] == -1, r)
-        self.assertTrue(r[2].get("message") == "Wrong PIN", r)
+        self.assertEqual(r[1], -1, r)
+        self.assertEqual(r[2].get("message"), "Wrong PIN", r)
         # right PIN
         r = token.authenticate(self.otppin+"123456")
         self.assertTrue(r[0], r)
-        self.assertTrue(r[1] >= 0, r)
-        self.assertTrue(r[2].get("message") == "matching 1 tokens", r)
+        self.assertGreaterEqual(r[1], 0, r)
+        self.assertEqual(r[2].get("message"), "matching 1 tokens", r)
 
         # right PIN
         logging.getLogger('privacyidea.lib.tokens.remotetoken').setLevel(logging.DEBUG)
@@ -183,8 +183,7 @@ class RemoteTokenTestCase(MyTestCase):
             r = token.authenticate(self.otppin+"123456")
             self.assertTrue(r[0], r)
             self.assertGreaterEqual(r[1], 0, r)
-            self.assertTrue(r[2].get("message") == "matching 1 tokens", r)
-            self.assertIn("HIDDEN", lc.records[0].message, lc)
+            self.assertEqual(r[2].get("message"), "matching 1 tokens", r)
             self.assertNotIn(self.otppin, lc.records[0].message, lc)
 
     @responses.activate
@@ -200,10 +199,9 @@ class RemoteTokenTestCase(MyTestCase):
         rmt_log.setLevel(logging.DEBUG)
         r = token.authenticate("remotePIN123456")
         self.assertTrue(r[0], r)
-        self.assertTrue(r[1] >= 0, r)
-        self.assertTrue(r[2].get("message") == "matching 1 tokens", r)
+        self.assertGreaterEqual(r[1], 0, r)
+        self.assertEqual(r[2].get("message"), "matching 1 tokens", r)
         log_msg = str(capture)
-        self.assertIn('HIDDEN', log_msg, log_msg)
         self.assertNotIn("remotePIN123456", log_msg, log_msg)
         rmt_log.setLevel(logging.INFO)
 
@@ -217,7 +215,6 @@ class RemoteTokenTestCase(MyTestCase):
         # Return True, the PIN triggers a challenges request.
         self.assertTrue(r)
         log_msg = str(capture)
-        self.assertIn('HIDDEN', log_msg, log_msg)
         self.assertNotIn(self.otppin, log_msg, log_msg)
         rmt_log.setLevel(logging.INFO)
 

@@ -1,7 +1,3 @@
-# SPDX-FileCopyrightText: (C) 2014 NetKnights GmbH <https://netknights.it>
-#
-# SPDX-License-Identifier: AGPL-3.0-or-later
-#
 #  2016-04-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Avoid consecutive if-statements
 #  2015-12-12 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -26,6 +22,9 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# SPDX-FileCopyrightText: 2025 Paul Lettich <paul.lettich@netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
 #
 __doc__ = """The config module takes care about storing server configuration in
 the Config database table.

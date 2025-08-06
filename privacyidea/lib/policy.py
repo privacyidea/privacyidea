@@ -1,7 +1,3 @@
-# SPDX-FileCopyrightText: (C) 2014 NetKnights GmbH <https://netknights.it>
-#
-# SPDX-License-Identifier: AGPL-3.0-or-later
-#
 #  2021-09-06 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add extended condition for HTTP environment
 #  2021-02-01 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -104,6 +100,9 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# SPDX-FileCopyrightText: 2025 Paul Lettich <paul.lettich@netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
 #
 """
 Base function to handle the policy entries in the database.
@@ -3358,7 +3357,7 @@ class Match(object):
         :param scope: the policy scope. SCOPE.ADMIN cannot be passed, ``admin``
             must be used instead.
         :param action: the policy action, or None
-        :rtype: ``Match``
+        :rtype: Match
         """
         if scope == SCOPE.ADMIN:
             raise MatchingError("Match.action_only cannot be used for policies with scope ADMIN")
@@ -3378,7 +3377,7 @@ class Match(object):
             must be used instead.
         :param action: the policy action
         :param realm: the realm to match
-        :rtype: ``Match``
+        :rtype: Match
         """
         if scope == SCOPE.ADMIN:
             raise MatchingError("Match.realm cannot be used for policies with scope ADMIN")
@@ -3401,7 +3400,7 @@ class Match(object):
             means that the policy attributes ``user``, ``realm`` and
             ``resolver`` are ignored.
         :type user_object: User or None
-        :rtype: ``Match``
+        :rtype: Match
         """
         if scope == SCOPE.ADMIN:
             raise MatchingError("Match.user cannot be used for policies with scope ADMIN")
@@ -3427,7 +3426,7 @@ class Match(object):
             must be used instead.
         :param action: the policy action
         :param token_obj: The token where the user object or the realm should match.
-        :rtype: ``Match``
+        :rtype: Match
         """
         if token_obj.user:
             return cls.user(g, scope, action, token_obj.user)
@@ -3458,7 +3457,7 @@ class Match(object):
         :type user_obj: User or None
         :param serial: The serial of a token from the request
         :param container_serial: The serial of a container from the request data.
-        :rtype: ``Match``
+        :rtype: Match
         """
         adminuser = g.logged_in_user["username"]
         adminrealm = g.logged_in_user["realm"]
@@ -3488,7 +3487,7 @@ class Match(object):
         :param additional_realms: list of realms where at least one has to match the policy condition to be applied
         :param container_serial: The serial of a container from the request data (used to check extended policy
             conditions).
-        :rtype: ``Match``
+        :rtype: Match
         """
         from privacyidea.lib.auth import ROLE
         adminrealm = adminuser = username = userrealm = None
@@ -3502,7 +3501,6 @@ class Match(object):
                 # Otherwise, we take the user from the logged-in user.
                 username = g.logged_in_user["username"]
                 userrealm = g.logged_in_user["realm"]
-            allowed_realms = None  # admin only attribute
         else:
             raise MatchingError("Unknown role")
         return cls(g, name=None, scope=scope, realm=userrealm, active=True,
@@ -3524,7 +3522,7 @@ class Match(object):
         The client IP has to be passed explicitly.
         See :py:func:`privacyidea.lib.policy.PolicyClass.match_policies` for details.
 
-        :rtype: ``Match``
+        :rtype: Match
         """
         if client is None:
             client = g.client_ip if hasattr(g, "client_ip") else None
