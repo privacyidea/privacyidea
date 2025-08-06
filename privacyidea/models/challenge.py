@@ -55,7 +55,7 @@ class Challenge(MethodsMixin, db.Model):
         self.transaction_id = transaction_id or self.create_transaction_id()
         self.challenge = challenge
         self.serial = serial
-        self.data = data
+        self.set_data(data)
         self.timestamp = datetime.utcnow()
         self.session = session
         self.received_count = 0
@@ -83,18 +83,24 @@ class Challenge(MethodsMixin, db.Model):
         """
         set the internal data of the challenge
 
-        :param data: unicode data
+        :param data: Unicode data
         :type data: string, length 512
         """
         if isinstance(data, str):
             self.data = data
+        elif isinstance(data, dict):
+            self.data = json.dumps(data)
         else:
             self.data = convert_column_to_unicode(data)
 
     def get_data(self):
+        if not self.data:
+            return {}
         try:
             data = json.loads(self.data)
         except (json.JSONDecodeError, UnicodeDecodeError):
+            # todo the return type should be clear, not string or dict but just dict
+            # todo check for __init__ of this class to see what type of data is used when refactoring
             data = self.data
         return data
 

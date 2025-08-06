@@ -501,9 +501,9 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         container_serial = self.create_container_for_user("smartphone")
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_REGISTER)
         # set two policies, but only one applicable for the realm of the user
-        set_policy("another_container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://random"},
+        set_policy("another_container_policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://random"},
                    realm=self.realm2)
-        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"},
+        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://test"},
                    realm=self.realm1)
         data = {"container_serial": container_serial}
         self.request_assert_success('/container/register/initialize', data, self.at_user, 'POST')
@@ -514,7 +514,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
 
     def test_21_user_container_register_denied(self):
         container_serial = self.create_container_for_user("smartphone")
-        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
+        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://test"})
         # User does not have CONTAINER_REGISTER rights
         set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_CREATE)
         data = {"container_serial": container_serial}
@@ -551,7 +551,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         another_container_serial = init_container({"type": "smartphone",
                                                    "user": "hans",
                                                    "realm": self.realm1})["container_serial"]
-        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
+        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://test"})
         data = {"container_serial": container_serial}
         self.request_assert_success('/container/register/initialize', data, self.at, 'POST')
 
@@ -569,7 +569,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
                                                                 info_type=PI_INTERNAL)])
         set_policy("policy", scope=SCOPE.USER,
                    action={ACTION.CONTAINER_ROLLOVER: True})
-        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
+        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://test"})
         data = {"container_serial": container_serial, "rollover": True}
         self.request_assert_success('/container/register/initialize', data, self.at_user, 'POST')
 
@@ -583,7 +583,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         container.update_container_info([TokenContainerInfoData(key=RegistrationState.get_key(),
                                                                 value=RegistrationState.REGISTERED.value,
                                                                 info_type=PI_INTERNAL)])
-        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
+        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://test"})
         set_policy("policy", scope=SCOPE.USER,
                    action={ACTION.CONTAINER_REGISTER: True})
         data = {"container_serial": container_serial, "rollover": True}
@@ -940,7 +940,7 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
     def test_23_admin_container_register_allowed(self):
         container_serial = self.create_container_for_user("smartphone")
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REGISTER)
-        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
+        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://test"})
         data = {"container_serial": container_serial}
         self.request_assert_success('/container/register/initialize', data, self.at, 'POST')
         delete_policy("policy")
@@ -951,7 +951,7 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         container_serial = self.create_container_for_user("smartphone")
         # Admin does not have CONTAINER_REGISTER rights
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE)
-        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
+        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://test"})
         data = {"container_serial": container_serial}
         self.request_denied_assert_403('/container/register/initialize', data, self.at, 'POST')
         delete_policy("policy")
@@ -978,7 +978,7 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
                                                                 info_type=PI_INTERNAL)])
         set_policy("policy", scope=SCOPE.ADMIN,
                    action={ACTION.CONTAINER_ROLLOVER: True})
-        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
+        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://test"})
         data = {"container_serial": container_serial, "rollover": True}
         self.request_assert_success('/container/register/initialize', data, self.at, 'POST')
 
@@ -992,7 +992,7 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         container.update_container_info([TokenContainerInfoData(RegistrationState.get_key(),
                                                                 RegistrationState.REGISTERED.value,
                                                                 info_type=PI_INTERNAL)])
-        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
+        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://test"})
         set_policy("policy", scope=SCOPE.ADMIN,
                    action={ACTION.CONTAINER_REGISTER: True})
         data = {"container_serial": container_serial, "rollover": True}
@@ -1732,7 +1732,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
     def test_20_helpdesk_container_register_allowed(self):
         container_serial = self.create_container_for_user("smartphone")
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REGISTER, realm=[self.realm2, self.realm1])
-        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
+        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://test"})
         data = {"container_serial": container_serial}
         self.request_assert_success('/container/register/initialize', data, self.at, 'POST')
         delete_policy("policy")
@@ -1741,7 +1741,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
 
     def test_21_helpdesk_container_register_denied(self):
         container_serial = self.create_container_for_user("smartphone")
-        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
+        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://test"})
 
         # Helpdesk does not have CONTAINER_REGISTER rights for the realm of the container
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REGISTER, realm=self.realm2)
@@ -1770,7 +1770,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
                                                                 value=RegistrationState.REGISTERED.value,
                                                                 info_type=PI_INTERNAL)])
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ROLLOVER, realm=self.realm1)
-        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
+        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://test"})
         data = {"container_serial": container_serial, "rollover": True}
         self.request_assert_success('/container/register/initialize', data, self.at, 'POST')
 
@@ -1784,7 +1784,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         container.update_container_info([TokenContainerInfoData(key=RegistrationState.get_key(),
                                                                 value=RegistrationState.REGISTERED.value,
                                                                 info_type=PI_INTERNAL)])
-        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
+        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://test"})
         set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REGISTER, realm=self.realm2)
         data = {"container_serial": container_serial, "rollover": True}
         self.request_denied_assert_403('/container/register/initialize', data, self.at, 'POST')
@@ -2237,11 +2237,11 @@ class ContainerPolicyConditions(APIContainerAuthorization):
                                 ContainerStates.DAMAGED.value, True)
                                ])
         # users should register at different pi servers
-        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"},
+        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/"},
                    conditions=[(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES,
                                 ".*@localhost.localdomain", True, ConditionHandleMissingData.IS_FALSE.value)])
         set_policy("registration_external", scope=SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://pi-external.net/"},
+                   action={ACTION.CONTAINER_SERVER_URL: "https://pi-external.net/"},
                    conditions=[(ConditionSection.USERINFO, "email", PrimaryComparators.NOT_MATCHES,
                                 ".*@localhost.localdomain", True, ConditionHandleMissingData.IS_TRUE.value)])
         container_serial = init_container({"type": "smartphone", "user": "selfservice", "realm": self.realm1})[
@@ -2280,7 +2280,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
                         True),
                        (ConditionSection.USERINFO, "phone", PrimaryComparators.MATCHES, ".+", True,
                         ConditionHandleMissingData.IS_FALSE.value)])
-        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"})
+        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/"})
         container_serial = init_container({"type": "smartphone", "user": "selfservice", "realm": self.realm1})[
             "container_serial"]
         container = find_container_by_serial(container_serial)
@@ -2310,7 +2310,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
 
     def test_09_register_finalize(self):
         # initially add tokens only allowed if container was not created from a template
-        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"})
+        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/"})
         set_policy("initially_add_tokens", scope=SCOPE.CONTAINER, action=ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
                    conditions=[(ConditionSection.CONTAINER, "template", PrimaryComparators.NOT_MATCHES, ".+", True)])
         container_serial = init_container({"type": "smartphone", "user": "selfservice", "realm": self.realm1})[
@@ -2354,7 +2354,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
 
     def test_10_synchronization(self):
         # initially add tokens only allowed for internal users (specific mail domain) + specific client
-        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"})
+        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/"})
         set_policy("initially_add_tokens", scope=SCOPE.CONTAINER, action=ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
                    conditions=[(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES,
                                 ".+@localhost.localdomain", True, ConditionHandleMissingData.IS_FALSE.value)])
@@ -2398,7 +2398,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
 
     def test_11_client_rollover(self):
         # Only allowed if state != lost && userinfo
-        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"})
+        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/"})
         set_policy("rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER,
                    conditions=[(ConditionSection.CONTAINER, "states", PrimaryComparators.NOT_CONTAINS,
                                 ContainerStates.LOST.value, True),
@@ -3253,7 +3253,7 @@ class APIContainerSynchronization(APIContainerTest):
         return smartphone
 
     def register_smartphone_success(self, smartphone_serial=None):
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
+        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/",
                                                             ACTION.CONTAINER_REGISTRATION_TTL: 24,
                                                             ACTION.CONTAINER_CHALLENGE_TTL: 1,
                                                             ACTION.CONTAINER_SSL_VERIFY: "True"}, priority=2)
@@ -3361,13 +3361,13 @@ class APIContainerSynchronization(APIContainerTest):
         self.setUp_user_realms()
         self.setUp_user_realm2()
         set_policy("another_policy", scope=SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://another-pi.net/", ACTION.CONTAINER_REGISTRATION_TTL: 24},
+                   action={ACTION.CONTAINER_SERVER_URL: "https://another-pi.net/", ACTION.CONTAINER_REGISTRATION_TTL: 24},
                    realm=self.realm2)
         set_policy("low_prio_policy", scope=SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://pi-low_prio.net/", ACTION.CONTAINER_REGISTRATION_TTL: 24},
+                   action={ACTION.CONTAINER_SERVER_URL: "https://pi-low_prio.net/", ACTION.CONTAINER_REGISTRATION_TTL: 24},
                    realm=self.realm1, priority=2)
         set_policy("policy", scope=SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://pi.net/", ACTION.CONTAINER_REGISTRATION_TTL: 24},
+                   action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/", ACTION.CONTAINER_REGISTRATION_TTL: 24},
                    realm=self.realm1, priority=1)
         smartphone_serial = init_container({"type": "smartphone",
                                             "user": "hans",
@@ -3411,10 +3411,10 @@ class APIContainerSynchronization(APIContainerTest):
         self.setUp_user_realms()
         self.setUp_user_realm2()
         set_policy("another_policy", scope=SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://another-pi.net/", ACTION.CONTAINER_REGISTRATION_TTL: 24},
+                   action={ACTION.CONTAINER_SERVER_URL: "https://another-pi.net/", ACTION.CONTAINER_REGISTRATION_TTL: 24},
                    realm=self.realm2, priority=1)
         set_policy("policy", scope=SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://pi.net/", ACTION.CONTAINER_REGISTRATION_TTL: 24},
+                   action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/", ACTION.CONTAINER_REGISTRATION_TTL: 24},
                    realm=self.realm1, priority=1)
         smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
         data = {"container_serial": smartphone_serial,
@@ -3461,7 +3461,7 @@ class APIContainerSynchronization(APIContainerTest):
 
     def test_05_register_finalize_invalid_challenge(self):
         # Invalid challenge
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
+        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/",
                                                             ACTION.CONTAINER_REGISTRATION_TTL: 24})
         smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
         data = {"container_serial": smartphone_serial,
@@ -3484,7 +3484,7 @@ class APIContainerSynchronization(APIContainerTest):
 
     def test_06_register_twice_fails(self):
         # register container successfully
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
+        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/",
                                                             ACTION.CONTAINER_REGISTRATION_TTL: 24})
         smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
         data = {"container_serial": smartphone_serial,
@@ -3805,7 +3805,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertEqual(3001, result["result"]["error"]["code"])
 
     def test_22_register_generic_fail(self):
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
+        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/",
                                                             ACTION.CONTAINER_REGISTRATION_TTL: 24})
         generic_serial = init_container({"type": "generic"})["container_serial"]
         data = {"container_serial": generic_serial,
@@ -3830,7 +3830,7 @@ class APIContainerSynchronization(APIContainerTest):
         delete_policy('policy')
 
     def test_23_register_yubikey_fail(self):
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
+        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/",
                                                             ACTION.CONTAINER_REGISTRATION_TTL: 24})
         yubi_serial = init_container({"type": "yubikey"})["container_serial"]
         data = {"container_serial": yubi_serial,
@@ -4317,7 +4317,7 @@ class APIContainerSynchronization(APIContainerTest):
         return params
 
     def client_rollover_success(self, smartphone_serial=None):
-        set_policy("register_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
+        set_policy("register_policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/",
                                                                      ACTION.CONTAINER_REGISTRATION_TTL: 24},
                    priority=3)
         # Register, create challenge for rollover and mock smartphone for rollover
@@ -4362,7 +4362,7 @@ class APIContainerSynchronization(APIContainerTest):
         delete_policy("register_policy")
 
     def client_rollover_denied(self, smartphone_serial=None):
-        set_policy("register_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
+        set_policy("register_policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/",
                                                                      ACTION.CONTAINER_REGISTRATION_TTL: 24}, priority=1)
         # Register, create challenge for rollover and mock smartphone for rollover
         smartphone_params = self.setup_rollover(smartphone_serial)
@@ -4547,7 +4547,7 @@ class APIContainerSynchronization(APIContainerTest):
         hotp = init_token({"genkey": "1", "type": "hotp"})
         smartphone.add_token(hotp)
 
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
+        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/",
                                                             ACTION.CONTAINER_REGISTRATION_TTL: 36})
 
         # Challenge for init rollover
@@ -4582,7 +4582,7 @@ class APIContainerSynchronization(APIContainerTest):
         hotp = init_token({"genkey": "1", "type": "hotp"})
         smartphone.add_token(hotp)
 
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
+        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/",
                                                             ACTION.CONTAINER_REGISTRATION_TTL: 36})
 
         # Challenge for init rollover
@@ -4623,7 +4623,7 @@ class APIContainerSynchronization(APIContainerTest):
         hotp = init_token({"genkey": "1", "type": "hotp"})
         smartphone.add_token(hotp)
 
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
+        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/",
                                                             ACTION.CONTAINER_REGISTRATION_TTL: 36})
 
         # Challenge for init rollover
@@ -4683,7 +4683,7 @@ class APIContainerSynchronization(APIContainerTest):
         delete_policy("policy_rollover")
 
     def test_48_rollover_client_missing_serial(self):
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
+        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/",
                                                             ACTION.CONTAINER_REGISTRATION_TTL: 36,
                                                             ACTION.CONTAINER_CLIENT_ROLLOVER: True})
 
@@ -4709,7 +4709,7 @@ class APIContainerSynchronization(APIContainerTest):
         hotp = get_one_token(serial=result["detail"]["serial"])
         smartphone.add_token(hotp)
 
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://new-pi.net/",
+        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://new-pi.net/",
                                                             ACTION.CONTAINER_REGISTRATION_TTL: 36})
 
         # Challenge for init rollover
@@ -4801,7 +4801,7 @@ class APIContainerSynchronization(APIContainerTest):
         hotp = init_token({"genkey": "1", "type": "hotp"})
         smartphone.add_token(hotp)
 
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
+        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/",
                                                             ACTION.CONTAINER_REGISTRATION_TTL: 36})
 
         # Challenge for init rollover
@@ -4860,7 +4860,7 @@ class APIContainerSynchronization(APIContainerTest):
         smartphone.add_token(offline_hotp)
         self.create_offline_token(offline_hotp.get_serial(), offline_hotp_otps)
 
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://new-pi.net/",
+        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://new-pi.net/",
                                                             ACTION.CONTAINER_REGISTRATION_TTL: 36})
         # Firebase config
         fb_config = {FirebaseConfig.REGISTRATION_URL: "http://test/ttype/push",
@@ -4973,7 +4973,7 @@ class APIContainerSynchronization(APIContainerTest):
         hotp_secret = hotp.token.get_otpkey().getKey().decode("utf-8")
         smartphone.add_token(hotp)
 
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
+        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/",
                                                             ACTION.CONTAINER_REGISTRATION_TTL: 36})
 
         # Rollover init

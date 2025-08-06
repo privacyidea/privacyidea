@@ -2126,7 +2126,7 @@ def fido2_auth(request, action):
     return True
 
 
-def get_first_policy_value(policy_action: str, default: str, scope: SCOPE, user: Union[User, None] = None,
+def get_first_policy_value(policy_action: str, default: str, scope: str, user: Union[User, None] = None,
                            allowed_values: Union[list, None] = None) -> str:
     """
     Get the first policy value for the given policy action and scope, using Match.user. If the policy does not exist,
@@ -2610,11 +2610,11 @@ def container_registration_config(request, action=None):
         log.error(f"Could not find container with serial {container_serial}.")
 
     # Get server url the client can contact
-    server_url_config = list(Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.PI_SERVER_URL,
+    server_url_config = list(Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_SERVER_URL,
                                            user_object=user, additional_realms=container_realms,
                                            container_serial=container_serial).action_values(unique=True))
     if len(server_url_config) == 0:
-        raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot register container.")
+        raise PolicyError(f"Missing enrollment policy {ACTION.CONTAINER_SERVER_URL}. Cannot register container.")
     request.all_data[SERVER_URL] = server_url_config[0]
 
     # Get validity time for the registration
