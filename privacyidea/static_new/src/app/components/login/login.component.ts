@@ -26,7 +26,6 @@ import {
   ValidateService,
   ValidateServiceInterface,
 } from '../../services/validate/validate.service';
-import { FooterComponent } from '../layout/footer/footer.component';
 
 @Component({
   selector: 'app-login',
@@ -40,7 +39,6 @@ import { FooterComponent } from '../layout/footer/footer.component';
     NgOptimizedImage,
     MatIconModule,
     MatFabButton,
-    FooterComponent,
   ],
   styleUrl: './login.component.scss',
 })

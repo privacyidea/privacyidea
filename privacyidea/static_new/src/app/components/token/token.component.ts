@@ -12,10 +12,6 @@ import {
   ContentServiceInterface,
 } from '../../services/content/content.service';
 import {
-  LoadingService,
-  LoadingServiceInterface,
-} from '../../services/loading/loading-service';
-import {
   OverflowService,
   OverflowServiceInterface,
 } from '../../services/overflow/overflow.service';
@@ -73,8 +69,6 @@ export type TokenTypeOption =
 export class TokenComponent {
   protected readonly overflowService: OverflowServiceInterface =
     inject(OverflowService);
-  private readonly loadingService: LoadingServiceInterface =
-    inject(LoadingService);
   protected readonly contentService: ContentServiceInterface =
     inject(ContentService);
   static tokenTypeTexts = [
@@ -197,7 +191,6 @@ export class TokenComponent {
   constructor() {
     effect(() => {
       this.contentService.routeUrl();
-      this.loadingService.clearAllLoadings();
       this.updateOverflowState();
     });
   }

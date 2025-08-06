@@ -59,6 +59,11 @@ export interface UserServiceInterface {
   usersOfRealmResource: HttpResourceRef<PiResponse<UserData[]> | undefined>;
   filteredUsernames: Signal<string[]>;
   filteredUsers: Signal<UserData[]>;
+  filterValue: WritableSignal<Record<string, string>>;
+  pageIndex: WritableSignal<number>;
+  pageSize: WritableSignal<number>;
+  apiFilter: string[];
+  advancedApiFilter: string[];
 
   displayUser(user: UserData | string): string;
 }

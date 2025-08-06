@@ -20,10 +20,6 @@ import {
   ContentServiceInterface,
 } from '../../../services/content/content.service';
 import {
-  LoadingService,
-  LoadingServiceInterface,
-} from '../../../services/loading/loading-service';
-import {
   NotificationService,
   NotificationServiceInterface,
 } from '../../../services/notification/notification.service';
@@ -58,8 +54,6 @@ export class TokenGetSerialComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly notificationService: NotificationServiceInterface =
     inject(NotificationService);
-  protected readonly loadingService: LoadingServiceInterface =
-    inject(LoadingService);
   protected readonly contentService: ContentServiceInterface =
     inject(ContentService);
   private readonly dialog: MatDialog = inject(MatDialog);
@@ -226,7 +220,6 @@ export class TokenGetSerialComponent {
   resetSteps(): void {
     this.serialSubscription?.unsubscribe();
     this.serialSubscription = null;
-    this.loadingService.clearAllLoadings();
     this.currentStep.set('init');
     this.foundSerial.set('');
     this.tokenCount.set('');

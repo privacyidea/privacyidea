@@ -25,13 +25,34 @@ import {
   SessionTimerServiceInterface,
 } from '../../../services/session-timer/session-timer.service';
 import { ThemeSwitcherComponent } from '../../shared/theme-switcher/theme-switcher.component';
-import { ContentService } from '../../../services/content/content.service';
-import { TokenService } from '../../../services/token/token.service';
-import { ContainerService } from '../../../services/container/container.service';
-import { ChallengesService } from '../../../services/token/challenges/challenges.service';
-import { MachineService } from '../../../services/machine/machine.service';
-import { UserService } from '../../../services/user/user.service';
-import { AuditService } from '../../../services/audit/audit.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../services/content/content.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../services/token/token.service';
+import {
+  ContainerService,
+  ContainerServiceInterface,
+} from '../../../services/container/container.service';
+import {
+  ChallengesService,
+  ChallengesServiceInterface,
+} from '../../../services/token/challenges/challenges.service';
+import {
+  MachineService,
+  MachineServiceInterface,
+} from '../../../services/machine/machine.service';
+import {
+  UserService,
+  UserServiceInterface,
+} from '../../../services/user/user.service';
+import {
+  AuditService,
+  AuditServiceInterface,
+} from '../../../services/audit/audit.service';
 
 @Component({
   selector: 'app-header',
@@ -59,13 +80,17 @@ export class HeaderComponent {
     inject(NotificationService);
   protected readonly router: Router = inject(Router);
   protected readonly AuthService = AuthService;
-  private readonly contentService = inject(ContentService);
-  private readonly tokenService = inject(TokenService);
-  private readonly containerService = inject(ContainerService);
-  private readonly challengeService = inject(ChallengesService);
-  private readonly machineService = inject(MachineService);
-  private readonly userService = inject(UserService);
-  private readonly auditService = inject(AuditService);
+  private readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+  private readonly tokenService: TokenServiceInterface = inject(TokenService);
+  private readonly containerService: ContainerServiceInterface =
+    inject(ContainerService);
+  private readonly challengeService: ChallengesServiceInterface =
+    inject(ChallengesService);
+  private readonly machineService: MachineServiceInterface =
+    inject(MachineService);
+  private readonly userService: UserServiceInterface = inject(UserService);
+  private readonly auditService: AuditServiceInterface = inject(AuditService);
   profileText =
     this.authService.user() +
     ' @' +

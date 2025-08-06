@@ -4,7 +4,10 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 import { MatFabAnchor } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
-import { ContentService } from '../../../../services/content/content.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../../services/content/content.service';
 
 @Component({
   selector: 'app-navigation-self-service-button',
@@ -20,7 +23,8 @@ import { ContentService } from '../../../../services/content/content.service';
   styleUrl: './navigation-self-service-button.component.scss',
 })
 export class NavigationSelfServiceButtonComponent {
-  private contentService = inject(ContentService);
+  private readonly contentService: ContentServiceInterface =
+    inject(ContentService);
   @Input({ required: true }) key!: string;
   @Input({ required: true }) title!: string;
   @Input() matIconName?: string;

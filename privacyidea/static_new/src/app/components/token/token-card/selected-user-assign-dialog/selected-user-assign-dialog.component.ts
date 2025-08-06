@@ -24,9 +24,19 @@ import {
 } from '@angular/material/autocomplete';
 import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatSelect } from '@angular/material/select';
-import { UserData, UserService } from '../../../../services/user/user.service';
-import { TokenService } from '../../../../services/token/token.service';
-import { RealmService } from '../../../../services/realm/realm.service';
+import {
+  UserData,
+  UserService,
+  UserServiceInterface,
+} from '../../../../services/user/user.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../../services/token/token.service';
+import {
+  RealmService,
+  RealmServiceInterface,
+} from '../../../../services/realm/realm.service';
 import { MatInput } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
@@ -60,11 +70,13 @@ export interface SelectedUserAssignResult {
   styleUrl: './selected-user-assign-dialog.component.scss',
 })
 export class SelectedUserAssignDialogComponent {
+  protected readonly userService: UserServiceInterface = inject(UserService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly realmService: RealmServiceInterface = inject(RealmService);
   pin: WritableSignal<string> = signal('');
   pinRepeat: WritableSignal<string> = signal('');
   hidePin: WritableSignal<boolean> = signal(true);
   pinsMatch = computed(() => this.pin() === this.pinRepeat());
-  protected userService = inject(UserService);
   selectedUserRealmControl = new FormControl<string>(
     this.userService.selectedUserRealm(),
     { nonNullable: true, validators: [Validators.required] },
@@ -73,13 +85,11 @@ export class SelectedUserAssignDialogComponent {
     this.userService.userFilter(),
     { nonNullable: true, validators: [Validators.required] },
   );
-  protected tokenService = inject(TokenService);
   selectionContainsAssignedToken = computed(() =>
     this.tokenService
       .tokenSelection()
       .some((token) => token.username && token.username !== ''),
   );
-  protected realmService = inject(RealmService);
 
   constructor(
     public dialogRef: MatDialogRef<

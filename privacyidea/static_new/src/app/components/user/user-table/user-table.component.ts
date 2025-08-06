@@ -3,7 +3,6 @@ import {
   effect,
   inject,
   linkedSignal,
-  signal,
   ViewChild,
   WritableSignal,
 } from '@angular/core';
@@ -24,11 +23,21 @@ import {
   MatTableDataSource,
 } from '@angular/material/table';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { TableUtilsService } from '../../../services/table-utils/table-utils.service';
+import {
+  TableUtilsService,
+  TableUtilsServiceInterface,
+} from '../../../services/table-utils/table-utils.service';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatSort, MatSortModule } from '@angular/material/sort';
-import { ContentService } from '../../../services/content/content.service';
-import { UserData, UserService } from '../../../services/user/user.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../services/content/content.service';
+import {
+  UserData,
+  UserService,
+  UserServiceInterface,
+} from '../../../services/user/user.service';
 import { MatInput } from '@angular/material/input';
 import { NgClass } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -77,12 +86,14 @@ export class UserTableComponent {
   readonly columnKeys: string[] = this.columnKeysMap.map(
     (column) => column.key,
   );
-  private tableUtilsService = inject(TableUtilsService);
+  private readonly tableUtilsService: TableUtilsServiceInterface =
+    inject(TableUtilsService);
+  protected readonly contentService: ContentServiceInterface =
+    inject(ContentService);
+  protected readonly userService: UserServiceInterface = inject(UserService);
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
-  protected contentService = inject(ContentService);
-  protected userService = inject(UserService);
   filterValueString: WritableSignal<string> = linkedSignal(() =>
     Object.entries(this.userService.filterValue())
       .map(([key, value]) => `${key}: ${value}`)

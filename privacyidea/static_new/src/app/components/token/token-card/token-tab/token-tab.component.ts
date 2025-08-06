@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
 import { MatList, MatListItem } from '@angular/material/list';
@@ -31,7 +31,10 @@ import {
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { LostTokenComponent } from './lost-token/lost-token.component';
 import { Router, RouterLink } from '@angular/router';
-import { AuditService } from '../../../../services/audit/audit.service';
+import {
+  AuditService,
+  AuditServiceInterface,
+} from '../../../../services/audit/audit.service';
 import { SelectedUserAssignDialogComponent } from '../selected-user-assign-dialog/selected-user-assign-dialog.component';
 import { tap } from 'rxjs/operators';
 
@@ -58,15 +61,14 @@ export class TokenTabComponent {
   protected readonly contentService: ContentServiceInterface =
     inject(ContentService);
   private readonly dialog: MatDialog = inject(MatDialog);
+  protected readonly auditService: AuditServiceInterface = inject(AuditService);
   private router = inject(Router);
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
   tokenSerial = this.tokenService.tokenSerial;
   tokenSelection = this.tokenService.tokenSelection;
-  tokenIsSelected = computed(() => this.tokenSerial() !== '');
   isLost = signal(false);
   version!: string;
-  protected auditService = inject(AuditService);
 
   ngOnInit(): void {
     this.version = this.versioningService.getVersion();

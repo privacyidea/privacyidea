@@ -6,10 +6,6 @@ import {
   OverflowServiceInterface,
 } from '../../services/overflow/overflow.service';
 import {
-  LoadingService,
-  LoadingServiceInterface,
-} from '../../services/loading/loading-service';
-import {
   ContentService,
   ContentServiceInterface,
 } from '../../services/content/content.service';
@@ -19,7 +15,10 @@ import { UserCardComponent } from './user-card/user-card.component';
 import { RouterOutlet } from '@angular/router';
 import { MatIcon } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { UserService } from '../../services/user/user.service';
+import {
+  UserService,
+  UserServiceInterface,
+} from '../../services/user/user.service';
 
 @Component({
   selector: 'app-user',
@@ -38,11 +37,9 @@ import { UserService } from '../../services/user/user.service';
 export class UserComponent {
   protected readonly overflowService: OverflowServiceInterface =
     inject(OverflowService);
-  private readonly loadingService: LoadingServiceInterface =
-    inject(LoadingService);
   protected readonly contentService: ContentServiceInterface =
     inject(ContentService);
-  protected readonly userService = inject(UserService);
+  protected readonly userService: UserServiceInterface = inject(UserService);
 
   isUserDrawerOverflowing = signal(false);
 
@@ -55,7 +52,6 @@ export class UserComponent {
   constructor() {
     effect(() => {
       this.contentService.routeUrl();
-      this.loadingService.clearAllLoadings();
       this.updateOverflowState();
     });
   }

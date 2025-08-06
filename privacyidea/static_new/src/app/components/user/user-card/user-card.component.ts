@@ -24,8 +24,14 @@ import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatSelect } from '@angular/material/select';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatOption } from '@angular/material/core';
-import { RealmService } from '../../../services/realm/realm.service';
-import { UserService } from '../../../services/user/user.service';
+import {
+  RealmService,
+  RealmServiceInterface,
+} from '../../../services/realm/realm.service';
+import {
+  UserService,
+  UserServiceInterface,
+} from '../../../services/user/user.service';
 
 @Component({
   selector: 'app-user-card',
@@ -58,8 +64,8 @@ export class UserCardComponent {
     inject(ContentService);
   protected readonly versioningService: VersioningServiceInterface =
     inject(VersioningService);
-  protected readonly realmService = inject(RealmService);
-  protected userService = inject(UserService);
+  protected readonly realmService: RealmServiceInterface = inject(RealmService);
+  protected readonly userService: UserServiceInterface = inject(UserService);
   selectedUserRealmControl = new FormControl<string>(
     this.userService.selectedUserRealm(),
     { nonNullable: true },

@@ -1,5 +1,8 @@
 import { inject, Injectable } from '@angular/core';
-import { ContentService } from '../content/content.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../content/content.service';
 
 export interface OverflowServiceInterface {
   isWidthOverflowing(selector: string, threshold: number): boolean;
@@ -17,7 +20,8 @@ export interface OverflowServiceInterface {
   providedIn: 'root',
 })
 export class OverflowService implements OverflowServiceInterface {
-  private contentService = inject(ContentService);
+  private readonly contentService: ContentServiceInterface =
+    inject(ContentService);
 
   isWidthOverflowing(selector: string, threshold: number): boolean {
     const element = document.querySelector(selector);
