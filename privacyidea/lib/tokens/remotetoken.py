@@ -306,7 +306,7 @@ class RemoteTokenClass(TokenClass):
 
         return otp_count
 
-    @log_with(log)
+    @log_with(log, hide_args=[1])
     @challenge_response_allowed
     def is_challenge_request(self, passw, user=None, options=None):
         """

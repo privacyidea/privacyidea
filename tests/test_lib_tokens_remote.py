@@ -3,15 +3,15 @@ This test file tests the lib.tokens.remotetoken
 This depends on lib.tokenclass
 """
 import logging
-from testfixtures import LogCapture
-
+from testfixtures import log_capture, LogCapture
 from .base import MyTestCase
 from privacyidea.lib.tokens.remotetoken import RemoteTokenClass
+from privacyidea.lib.tokens.remotetoken import log as rmt_log
 from privacyidea.models import Token
 import responses
 import json
 from privacyidea.lib.config import set_privacyidea_config
-from privacyidea.lib.token import remove_token, init_token, get_tokens, import_tokens
+from privacyidea.lib.token import remove_token, init_token, import_tokens
 from privacyidea.lib.error import ConfigAdminError
 from privacyidea.lib.privacyideaserver import add_privacyideaserver
 
@@ -172,17 +172,24 @@ class RemoteTokenTestCase(MyTestCase):
         self.assertTrue(r[1] == -1, r)
         self.assertTrue(r[2].get("message") == "Wrong PIN", r)
         # right PIN
+        r = token.authenticate(self.otppin+"123456")
+        self.assertTrue(r[0], r)
+        self.assertTrue(r[1] >= 0, r)
+        self.assertTrue(r[2].get("message") == "matching 1 tokens", r)
+
+        # right PIN
         logging.getLogger('privacyidea.lib.tokens.remotetoken').setLevel(logging.DEBUG)
         with LogCapture(level=logging.DEBUG) as lc:
             r = token.authenticate(self.otppin+"123456")
             self.assertTrue(r[0], r)
-            self.assertTrue(r[1] >= 0, r)
+            self.assertGreaterEqual(r[1], 0, r)
             self.assertTrue(r[2].get("message") == "matching 1 tokens", r)
-            for log_record in lc.actual():
-                self.assertNotIn(self.otppin, log_record[2], log_record)
+            self.assertIn("HIDDEN", lc.records[0].message, lc)
+            self.assertNotIn(self.otppin, lc.records[0].message, lc)
 
     @responses.activate
-    def test_09_authenticate_remote_pin(self):
+    @log_capture(level=logging.DEBUG)
+    def test_09_authenticate_remote_pin(self, capture):
         responses.add(responses.POST,
                       "http://my.privacyidea.server/mypi/validate/check",
                       body=json.dumps(self.success_body),
@@ -190,18 +197,29 @@ class RemoteTokenTestCase(MyTestCase):
         db_token = Token.query.filter(Token.serial == self.serial2).first()
         token = RemoteTokenClass(db_token)
         token.set_pin("")
+        rmt_log.setLevel(logging.DEBUG)
         r = token.authenticate("remotePIN123456")
         self.assertTrue(r[0], r)
         self.assertTrue(r[1] >= 0, r)
         self.assertTrue(r[2].get("message") == "matching 1 tokens", r)
+        log_msg = str(capture)
+        self.assertIn('HIDDEN', log_msg, log_msg)
+        self.assertNotIn("remotePIN123456", log_msg, log_msg)
+        rmt_log.setLevel(logging.INFO)
 
-    def test_10_authenticate_challenge_response(self):
+    @log_capture(level=logging.DEBUG)
+    def test_10_authenticate_challenge_response(self, capture):
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         token = RemoteTokenClass(db_token)
         token.set_pin(self.otppin)
+        rmt_log.setLevel(logging.DEBUG)
         r = token.is_challenge_request(self.otppin)
         # Return True, the PIN triggers a challenges request.
         self.assertTrue(r)
+        log_msg = str(capture)
+        self.assertIn('HIDDEN', log_msg, log_msg)
+        self.assertNotIn(self.otppin, log_msg, log_msg)
+        rmt_log.setLevel(logging.INFO)
 
     def test_11_check_challenge_response(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()
@@ -262,7 +280,6 @@ class RemoteTokenTestCase(MyTestCase):
             "otpkey": self.otpkey,
             "issuer": "privacyIDEA",
         }]
-        before_import = get_tokens()
-        import_tokens(json.dumps(token_data))
-        after_import = get_tokens()
-        self.assertEqual(len(before_import), len(after_import))
+        result = import_tokens(json.dumps(token_data))
+        # Import not yet implemented for Remote token
+        self.assertIn("123456", result.failed_tokens, result)

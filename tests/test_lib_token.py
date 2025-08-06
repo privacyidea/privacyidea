@@ -12,10 +12,17 @@ getTokens4UserOrSerial
 gettokensoftype
 getToken....
 """
+import binascii
+import datetime
+from dateutil import parser
+from dateutil.tz import tzlocal
+import hashlib
 import json
 import logging
-from testfixtures import LogCapture
-from privacyidea.lib.container import init_container, add_token_to_container, find_container_by_serial
+import mock
+from testfixtures import log_capture, LogCapture
+import warnings
+
 from .base import MyTestCase, FakeAudit, FakeFlaskG
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import (TokenClass, TOKENKIND,
@@ -23,6 +30,8 @@ from privacyidea.lib.tokenclass import (TokenClass, TOKENKIND,
                                         FAILCOUNTER_CLEAR_TIMEOUT)
 from privacyidea.lib.token import weigh_token_type, import_tokens, export_tokens
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
+from privacyidea.lib.container import (init_container, add_token_to_container,
+                                       find_container_by_serial)
 from privacyidea.models import (db, Token, Challenge, TokenRealm)
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
                                     delete_privacyidea_config, SYSCONF)
@@ -30,12 +39,6 @@ from privacyidea.lib.policy import (set_policy, SCOPE, ACTION, PolicyClass,
                                     delete_policy)
 from privacyidea.lib.utils import b32encode_and_unicode, hexlify_and_unicode
 from privacyidea.lib.error import PolicyError
-import datetime
-from dateutil import parser
-import hashlib
-import binascii
-import warnings
-import mock
 from privacyidea.lib.token import (create_tokenclass_object,
                                    get_tokens, list_tokengroups,
                                    get_token_type, check_serial,
@@ -45,7 +48,7 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    get_tokenclass_info,
                                    get_tokens_in_resolver, get_otp,
                                    get_token_by_otp, get_serial_by_otp,
-                                   gen_serial, init_token, remove_token,
+                                   gen_serial, init_token,
                                    set_realms, set_defaults, assign_token,
                                    unassign_token, resync_token,
                                    reset_token, set_pin, set_pin_user,
@@ -62,17 +65,15 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    get_dynamic_policy_definitions,
                                    get_tokens_paginate,
                                    set_validity_period_end,
-                                   set_validity_period_start, delete_tokeninfo,
-                                   import_token, get_one_token,
-                                   get_tokens_from_serial_or_user,
-                                   get_tokens_paginated_generator,
-                                   assign_tokengroup, unassign_tokengroup)
+                                   set_validity_period_start, remove_token, delete_tokeninfo,
+                                   import_token, get_one_token, get_tokens_from_serial_or_user,
+                                   get_tokens_paginated_generator, assign_tokengroup, unassign_tokengroup)
+from privacyidea.lib.token import log as token_log
 from privacyidea.lib.tokengroup import set_tokengroup, delete_tokengroup
 from privacyidea.lib.error import (TokenAdminError, ParameterError,
                                    privacyIDEAError, ResourceNotFoundError)
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.framework import get_app_config
-from dateutil.tz import tzlocal
 
 PWFILE = "tests/testdata/passwords"
 OTPKEY = "3132333435363738393031323334353637383930"
@@ -737,7 +738,8 @@ class TokenTestCase(MyTestCase):
         remove_token("losttoken")
         remove_token("lostlosttoken")
 
-    def test_34_check_token_list(self):
+    @log_capture(level=logging.DEBUG)
+    def test_34_check_token_list(self, capture):
         # We can not authenticate with an unknown type
         # Such a token will not be returned by get_tokens...
         db_token = Token("serial72", tokentype="unknown")
@@ -753,11 +755,16 @@ class TokenTestCase(MyTestCase):
         hotp_tokenobject.set_pin("hotppin")
         hotp_tokenobject.save()
         old_failcount = hotp_tokenobject.token.failcount
+        token_log.setLevel(logging.DEBUG)
         res, reply = check_token_list(tokenobject_list, "hotppin40123456")
         self.assertFalse(res)
         failcount = hotp_tokenobject.token.failcount
         self.assertEqual(failcount, old_failcount + 1, (old_failcount,
                                                         failcount))
+        log_msg = str(capture)
+        self.assertIn('HIDDEN', log_msg, log_msg)
+        self.assertNotIn("hotppin40123456", log_msg, log_msg)
+        token_log.setLevel(logging.INFO)
 
         # if there is no token with at least a correct pin, we increase all
         # failcounters
@@ -864,7 +871,8 @@ class TokenTestCase(MyTestCase):
         hotp_tokenobject.save()
         delete_policy("check_token_list_CR")
 
-    def test_35_check_serial_pass(self):
+    @log_capture(level=logging.DEBUG)
+    def test_35_check_serial_pass(self, capture):
         hotp_tokenobject = get_tokens(serial="hotptoken")[0]
         hotp_tokenobject.set_pin("hotppin")
         hotp_tokenobject.token.count = 10
@@ -873,11 +881,16 @@ class TokenTestCase(MyTestCase):
         with self.assertRaises(ResourceNotFoundError):
             check_serial_pass("XXXXXXXXX", "password")
 
+        token_log.setLevel(logging.DEBUG)
         r, reply = check_serial_pass("hotptoken", "hotppin481090")
         self.assertTrue(r)
         # the same OTP value  must not match!
         r, reply = check_serial_pass("hotptoken", "hotppin481090")
         self.assertFalse(r)
+        log_msg = str(capture)
+        self.assertIn('HIDDEN', log_msg, log_msg)
+        self.assertNotIn('hotppin481090', log_msg, log_msg)
+        token_log.setLevel(logging.INFO)
 
     def test_36_check_user_pass(self):
         user = User("shadow", realm=self.realm1)
@@ -1759,7 +1772,9 @@ class TokenTestCase(MyTestCase):
             {"serial": "12345678901234567890123456789012", "type": "totp", "otplen": "8"},
             {"serial": "987654321", "type": "hotp", "otplen": "6", "otpkey": "12345"}
         ]
-        a = import_tokens(json.dumps(tokens))
+        result = import_tokens(json.dumps(tokens))
+        self.assertEqual(set(["12345678901234567890", "12345678901234567890123456789012", "987654321"]),
+                         set(result.successful_tokens), result)
         imported_tokens = get_tokens()
         for token in tokens:
             serial = token["serial"]

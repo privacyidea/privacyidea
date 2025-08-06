@@ -940,7 +940,7 @@ class PushTokenClass(TokenClass):
 
         return "json", prepare_result(result, details=details)
 
-    @log_with(log)
+    @log_with(log, hide_args=[1])
     def is_challenge_request(self, passw, user=None, options=None):
         """
         check, if the request would start a challenge
