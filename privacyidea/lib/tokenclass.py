@@ -311,7 +311,7 @@ class TokenClass(object):
         orphaned = False
         if self.token.first_owner:
             try:
-                if not self.user or not self.user.login:
+                if not self.user or not self.user.login or not self.user.realm:
                     # The token is assigned, but the username does not resolve
                     orphaned = True
             except Exception:
