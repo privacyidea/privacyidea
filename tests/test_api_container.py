@@ -20,7 +20,7 @@ from privacyidea.lib.machine import attach_token
 from privacyidea.lib.policies.policy_conditions import ConditionSection, ConditionHandleMissingData
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from privacyidea.lib.privacyideaserver import add_privacyideaserver
-from privacyidea.lib.realm import set_realm, set_default_realm
+from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.serviceid import set_serviceid
 from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
@@ -2780,6 +2780,32 @@ class APIContainer(APIContainerTest):
                    "user_id": invalid_user.uid}
         result = self.request_assert_success(f'/container/{container_serial}/unassign',
                                              payload, self.at, 'POST')
+        self.assertTrue(result["result"].get("value"))
+        self.assertEqual(0, len(container.get_users()))
+
+        # ---- Invalid realm ---
+        user = User("corny", self.realm3)
+        container.add_user(user)
+        delete_realm(self.realm3)
+        # Success if providing everything (realm does not exist, hence realm_id is not set)
+        payload = {"user": "corny", "realm": self.realm3, "user_id": user.uid, "resolver": user.resolver}
+        result = self.request_assert_success(f'/container/{container_serial}/unassign', payload, self.at, 'POST')
+        self.assertTrue(result["result"].get("value"))
+        self.assertEqual(0, len(container.get_users()))
+        self.setUp_user_realm3()
+        container.add_user(user)
+        delete_realm(self.realm3)
+        # Fails also if not providing realm (sets default realm)
+        payload = {"user": "corny", "user_id": user.uid, "resolver": user.resolver}
+        result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
+                                           payload, self.at, 'POST')
+        error = result["result"]["error"]
+        self.assertEqual(904, error["code"])
+        self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
+        # Success only providing user id and resolver
+        # Fails if providing everything (realm does not exist)
+        payload = {"user_id": user.uid, "resolver": user.resolver}
+        result = self.request_assert_success(f'/container/{container_serial}/unassign', payload, self.at, 'POST')
         self.assertTrue(result["result"].get("value"))
         self.assertEqual(0, len(container.get_users()))
 
