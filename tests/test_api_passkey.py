@@ -291,8 +291,12 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual("REJECT", res.json["result"]["authentication"])
             self.assertFalse(res.json["result"]["value"])
 
-        # Now set the policy to trigger the passkey with the PIN
+        # Set the policy to trigger the passkey with the PIN, UV=discouraged and a challenge text
         set_policy("passkey_trigger_with_pin", scope=SCOPE.AUTH, action=f"{PasskeyAction.EnableTriggerByPIN}=true")
+        set_policy("user_verification", scope=SCOPE.AUTH,
+                   action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=discouraged")
+        set_policy("challenge_text", scope=SCOPE.AUTH, action=f"passkey_challenge_text=test text")
+
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
             get_nonce.return_value = self.authentication_challenge_no_uv
             with self.app.test_request_context('/validate/check', method='POST',
@@ -314,6 +318,9 @@ class PasskeyAPITest(PasskeyAPITestBase):
                 self.assertIn("challenge", challenge)
                 self.assertEqual(self.authentication_challenge_no_uv, challenge["challenge"])
 
+                self.assertEqual("test text", detail["message"])
+                self.assertEqual("test text", challenge["message"])
+
                 self.assertIn("serial", challenge)
                 self.assertEqual(serial, challenge["serial"])
 
@@ -321,7 +328,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
                 self.assertEqual("passkey", challenge["type"])
 
                 self.assertIn("userVerification", challenge)
-                self.assertTrue(challenge["userVerification"])
+                self.assertEqual("discouraged", challenge["userVerification"])
 
                 self.assertIn("rpId", challenge)
                 self.assertEqual(self.rp_id, challenge["rpId"])
@@ -350,8 +357,11 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertIn("username", detail)
             self.assertEqual(self.user.login, detail["username"])
             self.assertNotIn("auth_items", res.json)
+
         remove_token(serial)
         delete_policy("passkey_trigger_with_pin")
+        delete_policy("user_verification")
+        delete_policy("challenge_text")
 
     def test_06_validate_check_wrong_serial(self):
         """
