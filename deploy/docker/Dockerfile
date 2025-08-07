@@ -27,7 +27,7 @@ COPY requirements.txt .
 
 RUN /opt/privacyidea/bin/pip install --no-cache-dir -r requirements.txt
 
-COPY README.rst MANIFEST.in setup.py pyproject.toml ./
+COPY README.rst MANIFEST.in pyproject.toml ./
 COPY ./.git ./.git
 COPY ./deploy/ ./deploy
 COPY ./tools/ ./tools
