@@ -1459,7 +1459,7 @@ def get_policies(active: Optional[bool] = None, name: Optional[str] = None, scop
             else:
                 sql_query = sql_query.filter(getattr(Policy, attribute) == value)
 
-    # Other data typs
+    # Other data types
     if active is not None:
         sql_query = sql_query.filter(Policy.active.is_(active))
 
