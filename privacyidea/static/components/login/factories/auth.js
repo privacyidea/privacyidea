@@ -59,6 +59,10 @@ angular.module("privacyideaAuth", ['privacyideaApp.errorMessage'])
                                 $state.go('login');
                             }
                         }
+                        // If the error is 4305 Signature expired, redirect to login
+                        else if (error.result.error.code === 4305) {
+                            $state.go('login');
+                        }
                     }
                 },
                 dropUser: function () {
