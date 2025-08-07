@@ -304,7 +304,6 @@ class PasskeyAPITest(PasskeyAPITestBase):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(200, res.status_code)
                 self.assertIn("detail", res.json)
-                print(res.json)
                 detail = res.json["detail"]
                 self.assertIn("multi_challenge", detail)
 
