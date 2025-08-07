@@ -12,16 +12,26 @@ getTokens4UserOrSerial
 gettokensoftype
 getToken....
 """
+import binascii
+import datetime
+from dateutil import parser
+from dateutil.tz import tzlocal
+import hashlib
+import json
 import logging
-from testfixtures import LogCapture
-from privacyidea.lib.container import init_container, add_token_to_container, find_container_by_serial
+import mock
+from testfixtures import log_capture, LogCapture
+import warnings
+
 from .base import MyTestCase, FakeAudit, FakeFlaskG
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import (TokenClass, TOKENKIND,
                                         FAILCOUNTER_EXCEEDED,
                                         FAILCOUNTER_CLEAR_TIMEOUT)
-from privacyidea.lib.token import weigh_token_type
+from privacyidea.lib.token import weigh_token_type, import_tokens, export_tokens
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
+from privacyidea.lib.container import (init_container, add_token_to_container,
+                                       find_container_by_serial)
 from privacyidea.models import (db, Token, Challenge, TokenRealm)
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
                                     delete_privacyidea_config, SYSCONF)
@@ -29,12 +39,6 @@ from privacyidea.lib.policy import (set_policy, SCOPE, ACTION, PolicyClass,
                                     delete_policy)
 from privacyidea.lib.utils import b32encode_and_unicode, hexlify_and_unicode
 from privacyidea.lib.error import PolicyError
-import datetime
-from dateutil import parser
-import hashlib
-import binascii
-import warnings
-import mock
 from privacyidea.lib.token import (create_tokenclass_object,
                                    get_tokens, list_tokengroups,
                                    get_token_type, check_serial,
@@ -44,7 +48,7 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    get_tokenclass_info,
                                    get_tokens_in_resolver, get_otp,
                                    get_token_by_otp, get_serial_by_otp,
-                                   gen_serial, init_token, remove_token,
+                                   gen_serial, init_token,
                                    set_realms, set_defaults, assign_token,
                                    unassign_token, resync_token,
                                    reset_token, set_pin, set_pin_user,
@@ -61,17 +65,15 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    get_dynamic_policy_definitions,
                                    get_tokens_paginate,
                                    set_validity_period_end,
-                                   set_validity_period_start, delete_tokeninfo,
-                                   import_token, get_one_token,
-                                   get_tokens_from_serial_or_user,
-                                   get_tokens_paginated_generator,
-                                   assign_tokengroup, unassign_tokengroup)
+                                   set_validity_period_start, remove_token, delete_tokeninfo,
+                                   import_token, get_one_token, get_tokens_from_serial_or_user,
+                                   get_tokens_paginated_generator, assign_tokengroup, unassign_tokengroup)
+from privacyidea.lib.token import log as token_log
 from privacyidea.lib.tokengroup import set_tokengroup, delete_tokengroup
 from privacyidea.lib.error import (TokenAdminError, ParameterError,
                                    privacyIDEAError, ResourceNotFoundError)
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.framework import get_app_config
-from dateutil.tz import tzlocal
 
 PWFILE = "tests/testdata/passwords"
 OTPKEY = "3132333435363738393031323334353637383930"
@@ -736,7 +738,8 @@ class TokenTestCase(MyTestCase):
         remove_token("losttoken")
         remove_token("lostlosttoken")
 
-    def test_34_check_token_list(self):
+    @log_capture(level=logging.DEBUG)
+    def test_34_check_token_list(self, capture):
         # We can not authenticate with an unknown type
         # Such a token will not be returned by get_tokens...
         db_token = Token("serial72", tokentype="unknown")
@@ -752,11 +755,16 @@ class TokenTestCase(MyTestCase):
         hotp_tokenobject.set_pin("hotppin")
         hotp_tokenobject.save()
         old_failcount = hotp_tokenobject.token.failcount
+        token_log.setLevel(logging.DEBUG)
         res, reply = check_token_list(tokenobject_list, "hotppin40123456")
         self.assertFalse(res)
         failcount = hotp_tokenobject.token.failcount
         self.assertEqual(failcount, old_failcount + 1, (old_failcount,
                                                         failcount))
+        log_msg = str(capture)
+        self.assertIn('HIDDEN', log_msg, log_msg)
+        self.assertNotIn("hotppin40123456", log_msg, log_msg)
+        token_log.setLevel(logging.INFO)
 
         # if there is no token with at least a correct pin, we increase all
         # failcounters
@@ -863,7 +871,8 @@ class TokenTestCase(MyTestCase):
         hotp_tokenobject.save()
         delete_policy("check_token_list_CR")
 
-    def test_35_check_serial_pass(self):
+    @log_capture(level=logging.DEBUG)
+    def test_35_check_serial_pass(self, capture):
         hotp_tokenobject = get_tokens(serial="hotptoken")[0]
         hotp_tokenobject.set_pin("hotppin")
         hotp_tokenobject.token.count = 10
@@ -872,11 +881,16 @@ class TokenTestCase(MyTestCase):
         with self.assertRaises(ResourceNotFoundError):
             check_serial_pass("XXXXXXXXX", "password")
 
+        token_log.setLevel(logging.DEBUG)
         r, reply = check_serial_pass("hotptoken", "hotppin481090")
         self.assertTrue(r)
         # the same OTP value  must not match!
         r, reply = check_serial_pass("hotptoken", "hotppin481090")
         self.assertFalse(r)
+        log_msg = str(capture)
+        self.assertIn('HIDDEN', log_msg, log_msg)
+        self.assertNotIn('hotppin481090', log_msg, log_msg)
+        token_log.setLevel(logging.INFO)
 
     def test_36_check_user_pass(self):
         user = User("shadow", realm=self.realm1)
@@ -1636,8 +1650,8 @@ class TokenTestCase(MyTestCase):
         unassign_token(serial=None, user=user)
 
     def test_55_get_tokens_paginated_generator(self):
-        def flatten_tokens(l):
-            return [token.token.id for l2 in l for token in l2]
+        def flatten_tokens(token_list):
+            return [token.token.id for l2 in token_list for token in l2]
 
         # serial72 token has invalid type. Check behavior and remove it.
         self.assertEqual(list(get_tokens_paginated_generator(serial_wildcard="serial*")), [[]])
@@ -1750,6 +1764,92 @@ class TokenTestCase(MyTestCase):
         totp_init = totp.get_init_detail(totp_params, User())
         totp_enroll_url = totp.get_enroll_url(User(), {})
         self.assertEqual(totp_init["googleurl"]["value"], totp_enroll_url)
+
+    def test_61_import_list_of_tokens(self):
+        # Import a list of tokens
+        tokens = [
+            {"serial": "12345678901234567890", "type": "hotp", "otplen": "6"},
+            {"serial": "12345678901234567890123456789012", "type": "totp", "otplen": "8"},
+            {"serial": "987654321", "type": "hotp", "otplen": "6", "otpkey": "12345"}
+        ]
+        result = import_tokens(json.dumps(tokens))
+        self.assertEqual(set(["12345678901234567890", "12345678901234567890123456789012", "987654321"]),
+                         set(result.successful_tokens), result)
+        imported_tokens = get_tokens()
+        for token in tokens:
+            serial = token["serial"]
+            self.assertEqual(get_tokens(serial=serial)[0].token.serial, serial)
+
+        # Clean up the imported tokens
+        remove_token(imported_tokens[0].token.serial)
+        remove_token(imported_tokens[1].token.serial)
+        remove_token(imported_tokens[2].token.serial)
+
+    def test_62_token_import_and_export(self):
+        hotptoken = init_token(param={'serial': "OATH12345678",
+                                      'type': 'hotp',
+                                      'otpkey': self.otpkey,
+                                      "otplen": '8',
+                                      "description": "Hotp Token"})
+        totptoken = init_token(param={'serial': "TOTP12345678",
+                                      'type': 'totp',
+                                      'otpkey': self.otpkey,
+                                      "otplen": '8',
+                                      "description": "Totp Token"})
+
+        # Export the tokens
+        exported_tokens = export_tokens([hotptoken, totptoken])
+        self.assertIn('"type": "hotp"', exported_tokens)
+        self.assertIn('"serial": "OATH12345678"', exported_tokens)
+        self.assertIn('"type": "totp"', exported_tokens)
+        self.assertIn('"serial": "TOTP12345678"', exported_tokens)
+
+        # Remove the tokens
+        hotptoken.delete_token()
+        totptoken.delete_token()
+
+        # Import tokens
+        imported_tokens = import_tokens(exported_tokens)
+        hotptoken = get_tokens(serial="OATH12345678")[0]
+        totptoken = get_tokens(serial="TOTP12345678")[0]
+        self.assertEqual(len(imported_tokens.successful_tokens), 2)
+        self.assertEqual(len(imported_tokens.failed_tokens), 0)
+        self.assertEqual(len(imported_tokens.updated_tokens), 0)
+        self.assertIn('OATH12345678', imported_tokens.successful_tokens)
+        self.assertIn('TOTP12345678', imported_tokens.successful_tokens)
+        self.assertEqual(hotptoken.token.serial, "OATH12345678")
+        self.assertEqual(hotptoken.token.tokentype, "hotp")
+        self.assertEqual(totptoken.token.serial, "TOTP12345678")
+        self.assertEqual(totptoken.token.tokentype, "totp")
+
+        # Test updating existing tokens
+        hotptoken.set_description("this will be replaced by the import")
+        totptoken.set_description("this will be replaced by the import")
+        self.assertEqual(hotptoken.token.description, "this will be replaced by the import")
+        self.assertEqual(totptoken.token.description, "this will be replaced by the import")
+
+        updated_tokens = import_tokens(exported_tokens, update_existing_tokens=True)
+        self.assertEqual(hotptoken.token.description, "Hotp Token")
+        self.assertEqual(totptoken.token.description, "Totp Token")
+        self.assertEqual(len(updated_tokens.updated_tokens), 2)
+
+        # Test not updating existing tokens
+        hotptoken.set_description("this will not be replaced by the import")
+        totptoken.set_description("this will not be replaced by the import")
+        self.assertEqual(hotptoken.token.description, "this will not be replaced by the import")
+        self.assertEqual(totptoken.token.description, "this will not be replaced by the import")
+
+        updated_tokens = import_tokens(exported_tokens, update_existing_tokens=False)
+        self.assertEqual(hotptoken.token.description, "this will not be replaced by the import")
+        self.assertEqual(totptoken.token.description, "this will not be replaced by the import")
+        self.assertEqual(len(updated_tokens.failed_tokens), 2)
+
+        # Remove the tokens
+        hotptoken.delete_token()
+        totptoken.delete_token()
+
+        # Import format not supported
+        self.assertRaises(TokenAdminError, import_tokens, "This is not a valid JSON string")
 
 class TokenOutOfBandTestCase(MyTestCase):
 
@@ -2244,19 +2344,23 @@ class TokenGroupTestCase(MyTestCase):
         grouplist = list_tokengroups("g2")
         self.assertEqual(len(grouplist), 2)
 
-        # unassign tokengroups
+        # Remove tokengroup "g1" from token "s1"
         tok1.del_tokengroup("g1")
-        # only the 2nd group remains
+        # Only the 2nd group remains
         self.assertEqual(tok1.token.tokengroup_list[0].tokengroup.name, "g2")
-        # remove it
+        # Remove it from token "s2"
         unassign_tokengroup("s2", "g2")
         tok2 = get_one_token(serial="s2")
         self.assertEqual(len(tok2.token.tokengroup_list), 0)
 
-        # check that deleting a tokengroup with tokens still assigned results in an error
+        # Check that deleting a tokengroup with tokens still assigned results in an error
         self.assertRaises(privacyIDEAError, delete_tokengroup, name='g2')
 
-        # cleanup
+        # Remove all tokengroups from token "s1"
+        tok1.del_tokengroup()
+        self.assertEqual(len(tok1.token.tokengroup_list), 0)
+
+        # Cleanup
         for s in serials:
             remove_token(s)
         delete_tokengroup('g1')
@@ -2309,62 +2413,6 @@ class ExportAndReencryptTestCase(MyTestCase):
                 tokeninfo = d.get("info_list")
                 self.assertEqual("30", tokeninfo.get("timeStep"), d)
 
-    def test_01_token_dump_load(self):
-        from privacyidea.lib.token import token_dump, token_load
-        self.setUp_user_realms()
-        key = "1234567890123456"
-        pin = "1234"
-        tokenobject = init_token({"serial": "s2",
-                                  "pin": pin,
-                                  "otpkey": key},
-                                 user=User("hans", self.realm1))
-        tokenobject.add_tokeninfo("secretkey", "secretvalue", value_type="password")
-        d = token_dump(tokenobject)
-        self.assertEqual(True, d.get("active"))
-        self.assertEqual("", d.get("description"))
-        self.assertEqual("software", d.get("info_list").get("tokenkind"))
-        self.assertEqual("sha1", d.get("info_list").get("hashlib"))
-        self.assertEqual(key, d.get("otpkey"))
-        self.assertNotIn("key_inc", d)
-        self.assertNotIn("key_iv", d)
-        self.assertNotIn("id", d)
-        tokeninfo = d.get("info_list")
-        # Check the encrypted values
-        self.assertEqual("secretvalue", tokeninfo.get("secretkey"))
-        self.assertEqual("password", tokeninfo.get("secretkey.type"))
-        tokenowner = d.get("owners")[0]
-        self.assertEqual("1118", tokenowner.get("uid"))
-        self.assertEqual("hans", tokenowner.get("login"))
-        self.assertEqual("resolver1", tokenowner.get("resolver"))
-        self.assertEqual("realm1", tokenowner.get("realm"))
-
-        # A token should not be overwritten, if it already exists
-        self.assertRaises(TokenAdminError, token_load, d)
-
-        # We overwrite the token
-        token_load(d, overwrite=True)
-
-        # We load a new token.
-        d["serial"] = "s3"
-        token_load(d)
-        # Read the token s3 from the database and check the PIN, that has been copied from token s2 to token s3
-        tok = get_one_token(serial="s3")
-        self.assertTrue(tok.check_pin(pin))
-
-        # Check the owner of the token
-        self.assertEqual("hans", tok.user.login)
-        self.assertEqual(self.realm1, tok.user.realm)
-
-        # Now we load the 3rd token, with a user, that does not exist
-        d["serial"] = "s4"
-        # Set an invalid uid, so that the user can not be assigned.
-        d["owners"][0]["uid"] = "987654321"
-        self.assertRaises(TokenAdminError, token_load, d)
-        tok = get_one_token(serial="s4")
-        # A user was not assigned
-        self.assertEqual(None, tok.user)
-
-
 class TestMultipleUserToken(MyTestCase):
     def test_01_user_with_multiple_token(self):
         self.setUp_user_realms()
@@ -2376,10 +2424,10 @@ class TestMultipleUserToken(MyTestCase):
         # To test whether the password caching works, we need to set the otppin policy to userstore
         set_policy("otppin", scope=SCOPE.AUTH, action=f"{ACTION.OTPPIN}=userstore")
 
-        g = FakeFlaskG()
-        g.policy_object = PolicyClass()
-        g.audit_object = FakeAudit()
-        options = {"g": g}
+        self.set_default_g_variables()
+        self.app_context.g.policy_object = PolicyClass()
+        self.app_context.g.audit_object = FakeAudit()
+        options = {"g": self.app_context.g}
 
         logging.getLogger('privacyidea.lib.user').setLevel(logging.DEBUG)
 
@@ -2590,3 +2638,4 @@ class TestMultipleUserToken(MyTestCase):
         delete_policy("force_chalresp")
         remove_token("s1")
         remove_token("s2")
+        self.set_default_g_variables()

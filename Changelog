@@ -1,12 +1,51 @@
-Version 3.12dev1, 2025-03-14
+Version 3.12dev1, 2025-07-16
+
+  Enhancements:
+  * Add 'force_server_generate' policies for HOTP, TOTP, mOTP, and Password tokens (#4410)
+  * Add section 'request_data' to extended policy conditions (#4190)
+  * Add policy condition comparators to compare dates and check for substrings (#4380)
+  * Add policy 'require_description_on_edit' in the new scope 'Token' (#4117)
+  * Remove 'u2f' from the enrollable token types (#4107)
+
+  Fixes:
+  * 'max_auth_fail' and 'max_auth_success' are also applied to local admins and evaluated before checking the password (#4340)
+  * Allow to unassign non-existing users from containers (#4208)
+  * Extended policy conditions on user info also works for web UI policies (#4016)
+  * Close LDAP connection after each request (#4148)
+
+Version 3.12dev0, 2025-07-09
+
+  Features:
+  * Entra ID and Keycloak resolver (#4217)
 
   Enhancements:
   * Remember last used token type per user and application for multi-challenge (#4179)
   * Add option 'handle_missing_data' to the extended policy conditions (#4339)
   * Move project description and building metadata into pyproject.toml (#3525)
+  * Policy to disable specific token types for authentication (#4371)
+  * Dedicated functions to rename and clone policies (#4293)
+  * Clean up user cache and expired challenges via API/WebUI (#4280)
+  * Allow to enroll smartphone containers via multi-challenge (#4361)
+  * Add comparators for extended policy conditions to compare dates and check for substrings (#4470)
+  * Add 'container' and 'container_info' sections to the extended policy conditions (#4208)
+  * Add 'hide_container_info' policy (#4208)
+  * Secure container registration with user store password (#4208)
+  * Allow wildcards in container search query (#4208)
+  * Add endpoint for batch deletions of tokens (#4208)
 
   Fixes:
   * Reduce PyOpenSSL dependencies for certificate token (#4212)
+  * Consistent handling of whitespaces in usernames for policy checks (#4385)
+  * Increase column sizes in policy and audit table (#4353)
+
+Version 3.11.4, 2025-06-26
+
+  Fixes:
+  * Fix wrong token assignment view tokens when using the usercache (#4454)
+  * Remove superfluous error message when max_token_user/realm is set (#4434)
+  * Fix logging passwords in debug mode with some specific token tpes (#4457)
+  * Fix error when wrong key is used in SQL-resolver mapping  (#4461)
+  * Fix error when listing containers with non-existing users/resolver errors (#4464)
 
 Version 3.11.3, 2025-05-28
 

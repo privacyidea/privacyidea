@@ -65,6 +65,7 @@ In case if authenticating a serial number:
 
 """
 
+import copy
 import json
 import logging
 import threading
@@ -89,17 +90,18 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            check_base_action, pushtoken_validate, fido2_auth,
                                            webauthntoken_authz,
                                            webauthntoken_request, check_application_tokentype,
-                                           increase_failcounter_on_challenge, get_first_policy_value, fido2_enroll)
-from privacyidea.api.lib.utils import get_all_params, get_optional_one_of
+                                           increase_failcounter_on_challenge, get_first_policy_value, fido2_enroll,
+                                           disabled_token_types)
+from privacyidea.api.lib.utils import get_all_params, get_optional_one_of, get_optional
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
 from privacyidea.lib.audit import getAudit
-from privacyidea.lib.challenge import get_challenges, extract_answered_challenges
+from privacyidea.lib.challenge import get_challenges, extract_answered_challenges, cancel_enrollment_via_multichallenge
 from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     return_saml_attributes_on_fail,
                                     SYSCONF, ensure_no_config_object, get_privacyidea_node)
-from privacyidea.lib.container import find_container_for_token
+from privacyidea.lib.container import find_container_for_token, find_container_by_serial, check_container_challenge
 from privacyidea.lib.error import ParameterError, PolicyError
 from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.event import event
@@ -136,7 +138,10 @@ def before_request():
     This is executed before the request
     """
     ensure_no_config_object()
-    request.all_data = get_all_params(request)
+    # Save the request data
+    g.request_data = get_all_params(request)
+    request.all_data = copy.deepcopy(g.request_data)
+
     request.User = get_user_from_param(request.all_data)
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     # Create a policy_object, that reads the database audit settings
@@ -153,11 +158,13 @@ def before_request():
     # Save the HTTP header in the localproxy object
     g.request_headers = request.headers
     g.serial = getParam(request.all_data, "serial", default=None)
+    ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
+    g.user_agent = ua_name
     g.audit_object.log({"success": False,
                         "action_detail": "",
                         "client": g.client_ip,
-                        "user_agent": get_plugin_info_from_useragent(request.user_agent.string)[0],
-                        "user_agent_version": get_plugin_info_from_useragent(request.user_agent.string)[1],
+                        "user_agent": ua_name,
+                        "user_agent_version": ua_version,
                         "privacyidea_server": privacyidea_server,
                         "action": "{0!s} {1!s}".format(request.method, request.url_rule),
                         "thread_id": "{0!s}".format(threading.current_thread().ident),
@@ -256,6 +263,7 @@ def offlinerefill():
 @prepolicy(save_client_application_type, request=request)
 @prepolicy(webauthntoken_request, request=request)
 @prepolicy(webauthntoken_authz, request=request)
+@prepolicy(disabled_token_types, request=request)
 @prepolicy(fido2_auth, request=request)
 @check_user_serial_or_cred_id_in_request(request)
 @CheckSubscription(request)
@@ -412,10 +420,10 @@ def check():
     mapping.
     """
     user: User = request.User
-    serial: str = getParam(request.all_data, "serial")
-    password: str = getParam(request.all_data, "pass")
-    otp_only: bool = getParam(request.all_data, "otponly")
-    token_type: str = getParam(request.all_data, "type")
+    serial: str = get_optional(request.all_data, "serial")
+    password: str = get_optional(request.all_data, "pass")
+    otp_only: bool = get_optional(request.all_data, "otponly")
+    token_type: str = get_optional(request.all_data, "type")
 
     # Add all params to the options
     options: dict = {}
@@ -423,9 +431,30 @@ def check():
     options.update({"g": g, "clientip": g.client_ip, "user": user})
 
     details: dict = {}
+    is_container_challenge = False
+
+    if "cancel_enrollment" in request.all_data and is_true(request.all_data["cancel_enrollment"]):
+        transaction_id = get_required(request.all_data, "transaction_id")
+        success = cancel_enrollment_via_multichallenge(transaction_id)
+        if success:
+            details.update({"message": gettext("Cancelled enrollment via multichallenge")})
+            ret = send_result(True, rid=2, details=details)
+            action_detail = (gettext("Cancelled enrollment via multichallenge for transaction_id ") +
+                             f"{transaction_id}")
+        else:
+            details.update({"message": gettext("Failed to cancel enrollment via multichallenge")})
+            ret = send_result(False, rid=2, details=details)
+            action_detail = (gettext("Failed to cancel enrollment via multichallenge for transaction_id ")
+                             + f"{transaction_id}")
+        g.audit_object.log({
+            "success": success,
+            "authentication": ret.json.get("result").get("authentication") or "",
+            "action_detail": action_detail,
+        })
+        return ret
+
     # Passkey/FIDO2: Identify the user by the credential ID
     credential_id: str = get_optional_one_of(request.all_data, ["credential_id", "credentialid"])
-
     # If only the credential ID is given, try to use it to identify the token
     if credential_id:
         # Find the token that responded to the challenge
@@ -448,7 +477,7 @@ def check():
                 return send_result(False, rid=2, details={
                     "message": "No user found for the token with the given credential ID!"})
         user = token.user
-
+        request.User = user
         # The request could also be an enrollment via validate. In that case, the param "attestationObject" is present
         # This does behave correctly but is obviously not a good solution in the long run
         attestation_object: str = get_optional_one_of(request.all_data, ["attestationObject", "attestationobject"])
@@ -484,26 +513,35 @@ def check():
         result = success
 
     else:
-        options["token_type"] = token_type
-        success, details = check_user_pass(user, password, options=options)
-        result = success
-        if request.path.endswith("samlcheck"):
-            result = {"auth": success, "attributes": {}}
-            if return_saml_attributes():
-                if success or return_saml_attributes_on_fail():
-                    # privacyIDEA's own attribute map
-                    user_info = user.info
-                    result["attributes"] = {"username": user_info.get("username"),
-                                            "realm": user.realm,
-                                            "resolver": user.resolver,
-                                            "email": user_info.get("email"),
-                                            "surname": user_info.get("surname"),
-                                            "givenname": user_info.get("givenname"),
-                                            "mobile": user_info.get("mobile"),
-                                            "phone": user_info.get("phone")}
-                    # Additional attributes
-                    for k, v in user_info.items():
-                        result["attributes"][k] = v
+        # Check if the transaction_id belongs to a container challenge
+        transaction_id = request.all_data.get("transaction_id")
+        container_result = check_container_challenge(transaction_id)
+        success = result = container_result.get("success", False)
+        details = container_result.get("details", {})
+        is_container_challenge = success
+
+        if not success:
+            # Challenge is for a token
+            options["token_type"] = token_type
+            success, details = check_user_pass(user, password, options=options)
+            result = success
+            if request.path.endswith("samlcheck"):
+                result = {"auth": success, "attributes": {}}
+                if return_saml_attributes():
+                    if success or return_saml_attributes_on_fail():
+                        # privacyIDEA's own attribute map
+                        user_info = user.info
+                        result["attributes"] = {"username": user_info.get("username"),
+                                                "realm": user.realm,
+                                                "resolver": user.resolver,
+                                                "email": user_info.get("email"),
+                                                "surname": user_info.get("surname"),
+                                                "givenname": user_info.get("givenname"),
+                                                "mobile": user_info.get("mobile"),
+                                                "phone": user_info.get("phone")}
+                        # Additional attributes
+                        for k, v in user_info.items():
+                            result["attributes"][k] = v
     # At this point there will be a user, even for FIDO2 credentials
     g.audit_object.log({"user": user.login, "resolver": user.resolver, "realm": user.realm})
 
@@ -516,14 +554,15 @@ def check():
         serial_list = []
 
     if success:
-        # update container last_auth
         for serial in serial_list:
-            try:
-                container = find_container_for_token(serial)
-                if container:
-                    container.update_last_authentication()
-            except Exception as e:
-                log.debug(f"Could not find container for token {serial}: {e}")
+            # update container last_authentication
+            if not is_container_challenge:
+                try:
+                    container = find_container_for_token(serial)
+                    if container:
+                        container.update_last_authentication()
+                except Exception as e:
+                    log.debug(f"Could not find container for token {serial}: {e}")
 
             # check policy if client mode per user shall be set
             client_mode_per_user_pol = Match.user(g, scope=SCOPE.AUTH, action=ACTION.CLIENT_MODE_PER_USER,
@@ -756,8 +795,23 @@ def poll_transaction(transaction_id=None):
         g.audit_object.log({
             "serial": ",".join(challenge.serial for challenge in log_challenges),
         })
-        # The token owner should be the same for all matching transactions
-        user = get_one_token(serial=log_challenges[0].serial).user
+        # check if the challenge is from a token or container
+        challenge = log_challenges[0]
+        challenge_type = "token"
+        if challenge.data:
+            try:
+                challenge_data = json.loads(challenge.data)
+                if isinstance(challenge_data, dict):
+                    challenge_type = challenge_data.get("type", "token")
+            except json.JSONDecodeError:
+                pass
+        if challenge_type == "container":
+            container = find_container_by_serial(log_challenges[0].serial)
+            users = container.get_users()
+            user = users[0] if users else User()
+        else:
+            user = get_one_token(serial=log_challenges[0].serial).user
+
         if user:
             g.audit_object.log({
                 "user": user.login,
@@ -767,8 +821,8 @@ def poll_transaction(transaction_id=None):
 
     # In any case, we log the transaction ID
     g.audit_object.log({
-        "info": "status: {}".format(details.get("challenge_status")),
-        "action_detail": "transaction_id: {}".format(transaction_id),
+        "info": f"status: {details.get('challenge_status')}",
+        "action_detail": f"transaction_id: {transaction_id}",
         "success": result
     })
 
@@ -785,9 +839,11 @@ def initialize():
     token_type = get_required(request.all_data, "type")
     details = {}
     if token_type.lower() == "passkey":
-        rp_id = get_first_policy_value(policy_action=FIDO2PolicyAction.RELYING_PARTY_ID, default="", scope=SCOPE.ENROLL)
+        rp_id = get_first_policy_value(policy_action=FIDO2PolicyAction.RELYING_PARTY_ID, default="",
+                                       scope=SCOPE.ENROLL)
         if not rp_id:
-            raise PolicyError(f"Missing policy for {FIDO2PolicyAction.RELYING_PARTY_ID}, unable to create challenge!")
+            raise PolicyError(
+                f"Missing policy for {FIDO2PolicyAction.RELYING_PARTY_ID}, unable to create challenge!")
 
         user_verification = get_first_policy_value(policy_action=FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT,
                                                    default="preferred", scope=SCOPE.AUTH)

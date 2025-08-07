@@ -2,14 +2,17 @@
 This test file tests the lib.tokens.yubikeytoken
 
 """
+import json
 import logging
+from testfixtures import log_capture
 
 from testfixtures import LogCapture
 from .base import MyTestCase
 from privacyidea.lib.tokens.yubikeytoken import (YubikeyTokenClass,
                                                  yubico_api_signature,
                                                  yubico_check_api_signature)
-from privacyidea.lib.token import init_token
+from privacyidea.lib.tokens.yubikeytoken import log as yklog
+from privacyidea.lib.token import init_token, remove_token, import_tokens, get_tokens
 from privacyidea.lib.error import EnrollmentError
 from privacyidea.models import Token
 from flask import Request, g
@@ -29,6 +32,7 @@ class YubikeyTokenTestCase(MyTestCase):
     realm1 = "realm1"
     realm2 = "realm2"
     serial1 = "UBAM01382015_1"
+    serial2 = "UBAM01382015_2"
     otpkey = "9163508031b20d2fbb1868954e041729"
     pin = "yubikeypin"
 
@@ -88,12 +92,18 @@ class YubikeyTokenTestCase(MyTestCase):
         ci = token.get_class_info()
         self.assertTrue(ci.get("title") == "Yubikey in AES mode", ci)
 
-    def test_03_is_challenge_request(self):
+    @log_capture(level=logging.DEBUG)
+    def test_03_is_challenge_request(self, capture):
+        yklog.setLevel(logging.DEBUG)
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         token = YubikeyTokenClass(db_token)
 
         r = token.is_challenge_request(self.pin)
         self.assertTrue(r)
+        log_msg = str(capture)
+        self.assertIn('HIDDEN', log_msg, log_msg)
+        self.assertNotIn(self.pin, log_msg, log_msg)
+        yklog.setLevel(logging.INFO)
 
     def test_04_check_yubikey_pass(self):
         # Check_yubikey_pass only works without pin!
@@ -175,7 +185,6 @@ class YubikeyTokenTestCase(MyTestCase):
     def test_10_api_endpoint(self):
         fixed = "ebedeeefegeheiej"
         otpkey = "cc17a4d77eaed96e9d14b5c87a02e718"
-        uid = "000000000000"
         otps = ["ebedeeefegeheiejtjtrutblehenfjljrirgdihrfuetljtt",
                 "ebedeeefegeheiejlekvlrlkrcluvctenlnnjfknrhgtjned",
                 "ebedeeefegeheiejktudedbktcnbuntrhdueikggtrugckij",
@@ -183,11 +192,11 @@ class YubikeyTokenTestCase(MyTestCase):
                 "ebedeeefegeheiejdruibhvlvktcgfjiruhltketifnitbuk"
                 ]
 
-        token = init_token({"type": "yubikey",
-                            "otpkey": otpkey,
-                            "otplen": len(otps[0]),
-                            "yubikey.prefix": fixed,
-                            "serial": "UBAM12345678_1"})
+        init_token({"type": "yubikey",
+                    "otpkey": otpkey,
+                    "otplen": len(otps[0]),
+                    "yubikey.prefix": fixed,
+                    "serial": "UBAM12345678_1"})
 
         builder = EnvironBuilder(method='GET',
                                  headers={})
@@ -212,7 +221,6 @@ class YubikeyTokenTestCase(MyTestCase):
         fixed = "ebedeeefegeheiej"
         # The backend automatically strips whitespace from the OTP key
         otpkey = "cc 17 a4 d7 7e ae d9 6e 9d 14 b5 c8 7a 02 e7 18"
-        uid = "000000000000"
         otps = ["ebedeeefegeheiejtjtrutblehenfjljrirgdihrfuetljtt",
                 "ebedeeefegeheiejlekvlrlkrcluvctenlnnjfknrhgtjned",
                 "ebedeeefegeheiejktudedbktcnbuntrhdueikggtrugckij",
@@ -220,11 +228,11 @@ class YubikeyTokenTestCase(MyTestCase):
                 "ebedeeefegeheiejdruibhvlvktcgfjiruhltketifnitbuk"
                 ]
 
-        token = init_token({"type": "yubikey",
-                            "otpkey": otpkey,
-                            "otplen": len(otps[0]),
-                            "yubikey.prefix": fixed,
-                            "serial": "UBAM12345678_1"})
+        init_token({"type": "yubikey",
+                    "otpkey": otpkey,
+                    "otplen": len(otps[0]),
+                    "yubikey.prefix": fixed,
+                    "serial": "UBAM12345678_1"})
 
         builder = EnvironBuilder(method='GET',
                                  headers={})
@@ -273,6 +281,73 @@ class YubikeyTokenTestCase(MyTestCase):
         # check an all-caps Yubikey-OTP
         self.assertLessEqual(0, token.check_otp(self.valid_otps[4].upper()))
         token.delete_token()
+
+    def test_21_yubikey_token_export(self):
+        # Set up the yubikey token for testing
+        db_token = Token(self.serial2, tokentype="yubikey")
+        db_token.save()
+        token = YubikeyTokenClass(db_token)
+        token.set_otpkey(self.otpkey)
+        token.set_otplen(48)
+        token.set_pin(self.pin)
+        token.set_description("this is a yubikey token export test")
+        token.save()
+
+        # Test that all expected keys are present in the exported dictionary
+        exported_data = token.export_token()
+
+        expected_keys = ["serial", "type", "description", "issuer", "otpkey"]
+        self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
+
+        # Test that the exported values match the token's data
+        exported_data = token.export_token()
+        self.assertEqual(exported_data["serial"], self.serial2)
+        self.assertEqual(exported_data["type"], "yubikey")
+        self.assertEqual(exported_data["description"], "this is a yubikey token export test")
+        self.assertEqual(exported_data["otpkey"], self.otpkey)
+        self.assertEqual(exported_data["issuer"], "privacyIDEA")
+
+        # Clean up
+        remove_token(token.token.serial)
+
+    def test_22_yubikey_token_import(self):
+        # Define the token data to be imported
+        token_data = [{
+            "serial": self.serial2,
+            "type": "yubikey",
+            "description": "this is a yubikey token import test",
+            "otpkey": self.otpkey,
+            "issuer": "privacyIDEA",
+            "otplen": 48,
+            "tokeninfo": {}
+        }]
+
+        # Import the token
+        result = import_tokens(json.dumps(token_data))
+        self.assertIn(self.serial2, result.successful_tokens, result)
+
+        # Retrieve the imported token
+        token = get_tokens(serial=token_data[0]["serial"])[0]
+
+        # Verify that the token data matches the imported data
+        self.assertEqual(token.token.serial, token_data[0]["serial"])
+        self.assertEqual(token.type, token_data[0]["type"])
+        self.assertEqual(token.token.description, token_data[0]["description"])
+        self.assertEqual(token.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
+
+        # Test a bunch of otp values
+        old_r = 0
+        for otp in self.valid_otps:
+            r = token.check_otp(otp)
+            # check if the newly returned counter is bigger than the old one
+            self.assertTrue(r > old_r, (r, old_r))
+            old_r = r
+
+        # test otp_exist
+        r = token.check_otp_exist(self.further_otps[0])
+        self.assertTrue(r > old_r, (r, old_r))
+        # Clean up
+        remove_token(token.token.serial)
 
     def test_97_wrong_tokenid(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()

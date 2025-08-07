@@ -7,7 +7,6 @@ import datetime
 import os
 import types
 
-import sqlalchemy.engine
 from mock import mock
 
 from privacyidea.config import TestingConfig
@@ -15,6 +14,7 @@ from privacyidea.lib.audit import getAudit, search
 from privacyidea.lib.auditmodules.containeraudit import Audit as ContainerAudit
 from privacyidea.lib.auditmodules.loggeraudit import Audit as LoggerAudit
 from privacyidea.lib.auditmodules.sqlaudit import column_length
+from privacyidea.lib.utils import AUTH_RESPONSE
 from .base import MyTestCase, OverrideConfigTestCase
 from testfixtures import log_capture
 
@@ -70,6 +70,7 @@ class AuditTestCase(MyTestCase):
         tot = self.Audit.get_total({})
         self.assertTrue(tot == 3, tot)
         audit_log = self.Audit.search({}, sortorder="desc")
+        self.assertEqual(3, audit_log.total, audit_log)
 
         # with search filter
         tot = self.Audit.get_total({"action": "action2",
@@ -117,7 +118,15 @@ class AuditTestCase(MyTestCase):
                         "success": True})
         self.Audit.finalize_log()
 
-        self.Audit.log({"action": "/validate/check",
+        self.Audit.log({"action": "/validate/check", "authentication": AUTH_RESPONSE.REJECT,
+                        "success": False})
+        self.Audit.finalize_log()
+
+        self.Audit.log({"action": "/validate/check", "authentication": AUTH_RESPONSE.DECLINED,
+                        "success": False})
+        self.Audit.finalize_log()
+
+        self.Audit.log({"action": "/validate/check", "authentication": AUTH_RESPONSE.CHALLENGE,
                         "success": False})
         self.Audit.finalize_log()
 
@@ -125,7 +134,7 @@ class AuditTestCase(MyTestCase):
         current_timestamp = datetime.datetime.now()
 
         # create a new audit log entry 2 seconds after the previous ones
-        with mock.patch('privacyidea.models.datetime') as mock_dt:
+        with mock.patch('privacyidea.models.audit.datetime') as mock_dt:
             mock_dt.now.return_value = current_timestamp + datetime.timedelta(seconds=2)
             self.Audit.log({"action": "/validate/check",
                             "success": True})
@@ -140,11 +149,26 @@ class AuditTestCase(MyTestCase):
 
             # get 4 authentications
             r = self.Audit.get_count({"action": "/validate/check"})
-            self.assertEqual(r, 4)
+            self.assertEqual(r, 6)
 
             # get one failed authentication
             r = self.Audit.get_count({"action": "/validate/check"}, success=False)
+            self.assertEqual(r, 3)
+
+            # get one challenge authentication
+            r = self.Audit.get_count({"action": "/validate/check", "authentication": AUTH_RESPONSE.CHALLENGE},
+                                     success=False)
             self.assertEqual(r, 1)
+
+            # get failed authentication
+            r = self.Audit.get_count({"action": "/validate/check", "authentication": f"!{AUTH_RESPONSE.CHALLENGE}"},
+                                     success=False)
+            self.assertEqual(r, 2)
+
+            # get failed authentication
+            r = self.Audit.get_count({"action": "/validate/check", "authentication": "!CHAL%"},
+                                     success=False)
+            self.assertEqual(r, 2)
 
             # get one authentication during the last second
             r = self.Audit.get_count({"action": "/validate/check"}, success=True,
@@ -387,7 +411,7 @@ class AuditFileTestCase(OverrideConfigTestCase):
         a.log({"action": "something"})
         a.finalize_log()
         r = a.search({"action": "something"})
-        # This is a non readable audit, so we got nothing
+        # This is a non-readable audit, so we got nothing
         self.assertEqual(r.auditdata, [])
         self.assertEqual(r.total, 0)
 
@@ -435,8 +459,6 @@ class ContainerAuditTestCase(OverrideConfigTestCase):
         PI_LOGCONFIG = "tests/testdata/logging.cfg"
 
     def test_10_container_audit(self):
-        import os
-        basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
         a = ContainerAudit({"PI_AUDIT_CONTAINER_WRITE": ["privacyidea.lib.auditmodules.loggeraudit",
                                                          "privacyidea.lib.auditmodules.sqlaudit"],
                             "PI_AUDIT_CONTAINER_READ": "privacyidea.lib.auditmodules.sqlaudit",
@@ -469,7 +491,6 @@ class ContainerAuditTestCase(OverrideConfigTestCase):
 
     def test_15_container_audit_check_audit(self):
         import os
-        basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
         a = ContainerAudit({"PI_AUDIT_CONTAINER_WRITE": ["privacyidea.lib.auditmodules.loggeraudit",
                                                          "privacyidea.lib.auditmodules.sqlaudit"],
                             "PI_AUDIT_CONTAINER_READ": "privacyidea.lib.auditmodules.sqlaudit",
@@ -498,12 +519,10 @@ class ContainerAuditTestCase(OverrideConfigTestCase):
         self.assertIsInstance(csv, types.GeneratorType)
         csv_list = [c for c in csv]
         self.assertGreater(len(csv_list), 0, csv_list)
-        self.assertTrue(any(['something_test_35' in l for l in csv_list]))
+        self.assertTrue(any(['something_test_35' in line for line in csv_list]))
 
     def test_20_container_audit_wrong_module(self):
         # Test what happens with a non-existing module
-        import os
-        basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
         module_config = {
             "PI_AUDIT_CONTAINER_WRITE": ["privacyidea.lib.auditmodules.doesnotexist",
                                          "privacyidea.lib.auditmodules.sqlaudit"],

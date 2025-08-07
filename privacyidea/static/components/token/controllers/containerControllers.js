@@ -699,7 +699,9 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             let params = {
                 container_serial: $scope.containerSerial,
                 user: fixUser($scope.containerOwner.user_name),
-                realm: $scope.containerOwner.user_realm
+                realm: $scope.containerOwner.user_realm,
+                user_id: $scope.containerOwner.user_id,
+                resolver: $scope.containerOwner.user_resolver
             }
             ContainerFactory.unassignUser(
                 params

@@ -22,9 +22,9 @@ from privacyidea.lib.config import (get_resolver_list,
                                     get_machine_resolver_class_dict,
                                     get_privacyidea_node, get_privacyidea_nodes,
                                     this, get_config_object, invalidate_config_object,
-                                    get_multichallenge_enrollable_tokentypes,
+                                    get_multichallenge_enrollable_types,
                                     get_email_validators,
-                                    check_node_uuid_exists)
+                                    check_node_uuid_exists, get_enrollable_token_types)
 from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PWResolver
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
@@ -74,6 +74,9 @@ class ConfigTestCase(MyTestCase):
         self.assertTrue("privacyidea.lib.resolvers.LDAPIdResolver" in r, r)
         self.assertTrue("privacyidea.lib.resolvers.SCIMIdResolver" in r, r)
         self.assertTrue("privacyidea.lib.resolvers.SQLIdResolver" in r, r)
+        self.assertTrue("privacyidea.lib.resolvers.HTTPResolver" in r, r)
+        self.assertTrue("privacyidea.lib.resolvers.EntraIDResolver" in r, r)
+        self.assertTrue("privacyidea.lib.resolvers.KeycloakResolver" in r, r)
 
         # check modules
         mlist = get_resolver_module_list()
@@ -271,19 +274,42 @@ class ConfigTestCase(MyTestCase):
         self.assertEqual(get_from_config("some_key", "default"), "some_value")
 
     def test_10_enrollable_tokentypes(self):
-        ttypes = get_multichallenge_enrollable_tokentypes()
-        self.assertIn("hotp", ttypes)
-        self.assertIn("totp", ttypes)
-        self.assertIn("sms", ttypes)
-        self.assertIn("email", ttypes)
-        self.assertIn("push", ttypes)
-        self.assertNotIn("tan", ttypes)
-        self.assertNotIn("daplug", ttypes)
-        self.assertNotIn("paper", ttypes)
+        # Execute the function twice to ensure the cache works
+        for i in range (2):
+            ttypes = get_multichallenge_enrollable_types()
+            self.assertIn("hotp", ttypes)
+            self.assertIn("totp", ttypes)
+            self.assertIn("sms", ttypes)
+            self.assertIn("email", ttypes)
+            self.assertIn("push", ttypes)
+            self.assertNotIn("tan", ttypes)
+            self.assertNotIn("daplug", ttypes)
+            self.assertNotIn("paper", ttypes)
+            self.assertIn("smartphone", ttypes)
+            self.assertNotIn("generic", ttypes)
+            self.assertNotIn("yubikey", ttypes)
 
     def test_11_get_email_validators(self):
         ev = get_email_validators()
-        self.assertEqual(['tests.testdata.gmailvalidator', 'privacyidea.lib.utils.emailvalidation'], list(ev.keys()))
+        self.assertEqual(['tests.testdata.gmailvalidator',
+                          'privacyidea.lib.utils.emailvalidation'], list(ev.keys()))
         validate_email = get_email_validators().get("privacyidea.lib.utils.emailvalidation")
         self.assertTrue(validate_email("valid@email.com"))
         self.assertFalse(validate_email("invalid@email.k"))
+
+
+    def test_12_enrollable_token_types(self):
+        enrollable_types = get_enrollable_token_types()
+        self.assertNotIn("u2f", enrollable_types, enrollable_types)
+        self.assertIn("hotp", enrollable_types, enrollable_types)
+        self.assertIn("totp", enrollable_types, enrollable_types)
+        self.assertIn("push", enrollable_types, enrollable_types)
+
+        # re-activate u2f
+        with self.app_context:
+            self.app.config['PI_ENABLE_TOKEN_TYPE_ENROLLMENT'] = ['u2f']
+        enrollable_types = get_enrollable_token_types()
+        self.assertIn("u2f", enrollable_types, enrollable_types)
+        self.assertIn("hotp", enrollable_types, enrollable_types)
+        self.assertIn("totp", enrollable_types, enrollable_types)
+        self.assertIn("push", enrollable_types, enrollable_types)

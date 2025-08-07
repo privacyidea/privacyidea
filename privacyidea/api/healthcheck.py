@@ -21,11 +21,11 @@ and provide insights into whether the application and its dependencies are opera
 A primary intention was to create a way for Kubernetes to check on containers.
 
 Endpoints:
-    - `/healthz` : Combined health check for liveness and readiness.
-    - `/healthz/startupz` : Startup check to confirm if the app has started.
-    - `/healthz/livez` : Liveness check to verify if the app is running.
-    - `/healthz/readyz` : Readiness check to confirm if the app is ready to serve requests.
-    - `/healthz/resolversz` : Resolver check to test the connection to all LDAP and SQL resolvers.
+    - :http:get:`/healthz/` : Combined health check for liveness and readiness.
+    - :http:get:`/healthz/startupz` : Startup check to confirm if the app has started.
+    - :http:get:`/healthz/livez` : Liveness check to verify if the app is running.
+    - :http:get:`/healthz/readyz` : Readiness check to confirm if the app is ready to serve requests.
+    - :http:get:`/healthz/resolversz` : Resolver check to test the connection to all LDAP and SQL resolvers.
 
 The corresponding code is tested in tests/test_api_healthcheck.py.
 """
@@ -50,8 +50,29 @@ def healthz():
     and the readiness, ensuring the app and its dependencies are ready to serve
     requests.
 
-    :return: A tuple containing the readiness status and HTTP response code.
-    :rtype: tuple
+    :resheader Content-Type: application/json
+    :status 200: Application is live and ready.
+    :status 503: Application is live but not ready.
+
+   **Example Request**:
+
+   .. sourcecode:: http
+
+      GET /healthz HTTP/1.1
+      Host: example.com
+      Accept: application/json
+
+   **Example Response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+          "status": "ready",
+          "hsm": "OK"
+      }
     """
     livez_status, livez_code = livez()
     if livez_code != 200:
@@ -69,8 +90,28 @@ def startupz():
     This endpoint returns a status of "started" if the app is initialized and
     running, otherwise it returns "not started" with an HTTP status code of 503.
 
-    :return: A tuple containing the startup status and HTTP response code.
-    :rtype: tuple
+    :resheader Content-Type: application/json
+    :status 200: Application has started.
+    :status 503: Application has not started yet.
+
+   **Example Request**:
+
+   .. sourcecode:: http
+
+      GET /healthz/startupz HTTP/1.1
+      Host: example.com
+      Accept: application/json
+
+   **Example Response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+          "status": "started"
+      }
     """
     if current_app.config.get('APP_READY'):
         return send_result({"status": "started"}), 200
@@ -86,8 +127,27 @@ def livez():
     This endpoint returns an HTTP status 200 and a JSON object indicating that
     the application is live and running.
 
-    :return: A tuple containing the liveness status and HTTP response code.
-    :rtype: tuple
+    :resheader Content-Type: application/json
+    :status 200: Application is live.
+
+   **Example Request**:
+
+   .. sourcecode:: http
+
+      GET /healthz/livez HTTP/1.1
+      Host: example.com
+      Accept: application/json
+
+   **Example Response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+          "status": "OK"
+      }
     """
     return send_result({"status": "OK"}), 200
 
@@ -101,8 +161,29 @@ def readyz():
     and the HSM (Hardware Security Module) is in a ready state. If any condition is
     not met, a 503 status is returned with appropriate information.
 
-    :return: A tuple containing the readiness status and HTTP response code.
-    :rtype: tuple
+    :resheader Content-Type: application/json
+    :status 200: Application is ready.
+    :status 503: Application is not ready or HSM is not ready.
+
+   **Example Request**:
+
+   .. sourcecode:: http
+
+      GET /healthz/readyz HTTP/1.1
+      Host: example.com
+      Accept: application/json
+
+   **Example Response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+          "status": "ready",
+          "hsm": "OK"
+      }
     """
     if not current_app.config.get('APP_READY'):
         return send_result({"status": "not ready",
@@ -125,8 +206,36 @@ def resolversz():
     or "fail"). It attempts to establish a connection to each resolver, and if any
     exception occurs during the check, a 503 status is returned.
 
-    :return: A tuple containing the resolver status and HTTP response code.
-    :rtype: tuple
+    :resheader Content-Type: application/json
+    :status 200: All resolvers have been successfully checked.
+    :status 503: Failed to check resolvers or an error occurred.
+
+   **Example Request**:
+
+   .. sourcecode:: http
+
+      GET /healthz/resolversz HTTP/1.1
+      Host: example.com
+      Accept: application/json
+
+   **Example Response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+          "status": "ready",
+          "ldapresolvers": {
+              "ldapresolver1": "OK",
+              "ldapresolver2": "OK"
+          },
+          "sqlresolvers": {
+              "sqlresolver1": "OK",
+              "sqlresolver2": "OK"
+          },
+      }
     """
     result = {}
     resolver_types = ["ldapresolver", "sqlresolver"]

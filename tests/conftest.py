@@ -41,6 +41,6 @@ def setup_local_ca(tmp_path):
             "openssl.cnf": OPENSSLCNF,
             "CSRDir": "",
             "CertificateDir": "",
-            "WorkingDir": tmp_path,
+            "WorkingDir": str(tmp_path),
         }
     )

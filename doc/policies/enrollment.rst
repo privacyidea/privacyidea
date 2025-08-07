@@ -19,6 +19,8 @@ Technically the decorators in :ref:`code_api_policy` are used.
 The following actions are available in the scope
 *enrollment*:
 
+.. _policy_max_token_per_realm:
+
 max_token_per_realm
 ~~~~~~~~~~~~~~~~~~~
 
@@ -33,6 +35,8 @@ This is the maximum allowed number of tokens in the specified realm.
 .. note:: If there are multiple matching policies, the *highest* maximum
    allowed number of tokens among the matching policies is enforced.
    Policy priorities are ignored.
+
+.. _policy_max_token_per_user:
 
 max_token_per_user
 ~~~~~~~~~~~~~~~~~~
@@ -460,6 +464,17 @@ The smartphone needs to verify the SSL certificate of the privacyIDEA server dur
 the enrollment of push tokens. By default, the verification is enabled. To disable
 verification during authentication, see :ref:`policy_push_ssl_verify_auth`.
 
+
+.. _policy_use_pia_scheme:
+
+use_pia_scheme
+~~~~~~~~~~~~~~
+
+type: ``bool``
+
+Use the ``pia`` scheme in the enrollment URL for push tokens to automatically open the privacyIDEA Authenticator app.
+If this policy is not enabled, the ``otpauth`` scheme is used by default.
+
 .. _policy_verify_enrollment:
 
 verify_enrollment
@@ -478,7 +493,7 @@ successfully enrolled the token.
 As long as no OTP value is provided by the user during the enrollment process, the
 token can not be used for authentication.
 
-.. note:: This does not work in combination with the admin policy :ref:`admin_policies_2step` and
+.. note:: This does not work in combination with the admin policy :ref:`admin_policy_2step` and
   the user policy :ref:`user_policy_2step`.
 
 .. _policy_webauthn_enroll_relying_party_id:
@@ -724,8 +739,8 @@ This action configures the attestation conveyance preference for the passkey enr
 "none", "indirect" and "direct" and "enterprise". The default is "none". If attestation is requested and the
 authenticator return a statement, the certificate will be saved in the token info. Currently, there is no further
 validation.
-This policy is separate from :ref:`policy_webauthn_authenticator_attestation_form` and
-:ref:`policy_webauthn_authenticator_attestation_level` which are not used for passkey enrollment.
+This policy is separate from :ref:`policy_webauthn_enroll_authenticator_attestation_form` and
+:ref:`policy_webauthn_enroll_authenticator_attestation_level` which are not used for passkey enrollment.
 
 .. _policy_webauthn_enroll_req:
 

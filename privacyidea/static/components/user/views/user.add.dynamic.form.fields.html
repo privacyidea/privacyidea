@@ -5,8 +5,19 @@
            type="{{ field.type }}" name="{{ field.name }}"
            id="{{ field.name }}" ng-model="User[field.name]"
            class="form-control" ng-required="{{ field.required }}"/>
-    <div ng-hide="{{ editUser }}" name="{{ field.name }}" >
-        {{ User[field.name] }}</div>
+    <div ng-hide="{{ editUser }}" name="{{ field.name }}" ng-switch="isList(User[field.name])">
+        <div ng-switch-when="true">
+            <!-- Multi value -->
+            <ul>
+                <li ng-repeat="item in User[field.name]">
+                    {{ item }}
+                </li>
+            </ul>
+        </div>
+        <div ng-switch-default>
+            {{ User[field.name] }}
+        </div>
+    </div>
 </div>
 <!-- PASSWORD FIELDS -->
 <div ng-if="field.type=='password'" class="form-group">
@@ -22,7 +33,7 @@
 </div>
 <!-- EMAIL FIELDS -->
 <div ng-if="field.type=='email'" class="form-group">
-    <label for="{{ field.label }}">{{field.label}}</label>
+    <label for="{{ field.label }}">{{ field.label }}</label>
     <input ng-show="{{ editUser }}"
            type="{{ field.type }}" name="{{ field.name }}"
            id="{{ field.name }}" ng-model="User[field.name]"

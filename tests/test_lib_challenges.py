@@ -3,8 +3,10 @@ This test file tests the lib.challange methods.
 
 This tests the token functions on an interface level
 """
+from privacyidea.lib.crypto import get_rand_digit_str
 from .base import MyTestCase
-from privacyidea.lib.challenge import get_challenges, extract_answered_challenges, delete_challenges
+from privacyidea.lib.challenge import (get_challenges, extract_answered_challenges, delete_challenges,
+                                       cancel_enrollment_via_multichallenge)
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE,
                                     ACTION)
 from privacyidea.models import Challenge, db
@@ -96,3 +98,55 @@ class ChallengeTestCase(MyTestCase):
         self.assertEqual(1, len(get_challenges(transaction_id=transaction_id)))
         delete_challenges(transaction_id=transaction_id)
         self.assertEqual(0, len(get_challenges(transaction_id=transaction_id)))
+
+    def test_04_cancel_enrollment_failures(self):
+        transaction_id = get_rand_digit_str()
+        ret = cancel_enrollment_via_multichallenge(transaction_id=transaction_id)
+        self.assertFalse(ret)
+
+        # More than one challenge found returns False because that should not be possible in that step
+        c1 = Challenge(serial="test1", transaction_id=transaction_id)
+        c2 = Challenge(serial="test2", transaction_id=transaction_id)
+        c1.save()
+        c2.save()
+        ret = cancel_enrollment_via_multichallenge(transaction_id=transaction_id)
+        self.assertFalse(ret)
+        c1.delete()
+        c2.delete()
+
+        # Challenge without data can not be confirmed to be for enrollment, so it won't be cancelled
+        c1 = Challenge(serial="test1", transaction_id=transaction_id)
+        c1.save()
+        ret = cancel_enrollment_via_multichallenge(transaction_id=transaction_id)
+        self.assertFalse(ret)
+        c1.delete()
+
+        # Challenge without action ENROLL_VIA_MULTICHALLENGE can not be confirmed to be for enrollment,
+        # so it won't be cancelled
+        c1 = Challenge(serial="test1", transaction_id=transaction_id, data={"type": "token"})
+        c1.save()
+        ret = cancel_enrollment_via_multichallenge(transaction_id=transaction_id)
+        self.assertFalse(ret)
+        c1.delete()
+
+        # Challenge without action ENROLL_VIA_MULTICHALLENGE_OPTIONAL can not be confirmed to be cancellable
+        c1 = Challenge(serial="test1", transaction_id=transaction_id, data={
+            "type": "token",
+            ACTION.ENROLL_VIA_MULTICHALLENGE: True
+        })
+        c1.save()
+        ret = cancel_enrollment_via_multichallenge(transaction_id=transaction_id)
+        self.assertFalse(ret)
+        c1.delete()
+
+        # Trying to cancel an enrollment which has optional=False will not cancel the enrollment
+        c1 = Challenge(serial="test1", transaction_id=transaction_id, data={
+            "type": "token",
+            ACTION.ENROLL_VIA_MULTICHALLENGE: True,
+            ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL: False
+        })
+        c1.save()
+        ret = cancel_enrollment_via_multichallenge(transaction_id=transaction_id)
+        self.assertFalse(ret)
+        c1.delete()
+

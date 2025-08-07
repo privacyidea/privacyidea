@@ -17,6 +17,7 @@
 # SPDX-FileCopyrightText: 2024 Jelina Unger <jelina.unger@netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
+import copy
 import importlib
 import json
 import logging
@@ -24,17 +25,19 @@ import os
 from datetime import timezone, datetime
 from typing import Union
 
+from flask import g
 from sqlalchemy import func
 from sqlalchemy.orm import Query
 
 from privacyidea.api.lib.utils import send_result
-from privacyidea.lib.challenge import delete_challenges
+from privacyidea.lib.challenge import delete_challenges, get_challenges
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.containers.container_info import (PI_INTERNAL, TokenContainerInfoData, RegistrationState,
                                                        SERVER_URL, CHALLENGE_TTL)
 from privacyidea.lib.containertemplate.containertemplatebase import ContainerTemplateBase
-from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError
+from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError,
+                                   ContainerNotRegistered, ContainerError)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.machine import is_offline_token
 from privacyidea.lib.token import (get_tokens_from_serial_or_user, get_tokens,
@@ -600,6 +603,8 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
     realms = get_container_realms(container_serial)
 
     init_result = {}
+    request_all_data_original = copy.deepcopy(request.all_data)
+    policies = copy.deepcopy(g.policies)
 
     # Get policies for the token
     from privacyidea.api.lib.prepolicy import (check_max_token_realm, sms_identifiers,
@@ -609,7 +614,7 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
                                                init_random_pin, twostep_enrollment_parameters,
                                                twostep_enrollment_activation, enroll_pin,
                                                init_tokenlabel, check_token_init, check_max_token_user,
-                                               require_description)
+                                               require_description, force_server_generate_key)
     from privacyidea.api.lib.postpolicy import check_verify_enrollment, save_pin_change
 
     # Create each token defined in the template. The template contains the enroll information for each token.
@@ -643,6 +648,7 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
         # information for the current token.
         request.all_data = {}
         request.all_data.update(token_info)
+        g.policies = {}
 
         # Pre-policy checks
         # TODO: Refactor including original uses of these functions (decorators on token init endpoint)
@@ -666,11 +672,13 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
             tantoken_count(request, None)
             pushtoken_add_config(request, None)
             indexedsecret_force_attribute(request, None)
+            force_server_generate_key(request, None)
         except Exception as ex:
             log.warning(f"Error checking pre-policies for token {token_info} created from template: {ex}")
             continue
 
         init_params = request.all_data
+        init_params["policies"] = g.policies
         try:
             token = init_token(init_params, user)
             init_result[token.get_serial()] = {"type": token.get_type()}
@@ -697,6 +705,8 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
         init_result[token.get_serial()].update(response.json["detail"])
         init_result[token.get_serial()]["init_params"] = init_params
 
+    request.all_data = request_all_data_original
+    g.policies = policies
     return init_result
 
 
@@ -1146,6 +1156,73 @@ def create_endpoint_url(base_url: str, endpoint: str) -> str:
     return endpoint_url
 
 
+def init_registration(container: TokenContainerClass, container_rollover: bool, server_url: str, registration_ttl: int,
+                      ssl_verify: bool, challenge_ttl: int, params: dict) -> dict:
+    """
+    Initiates the registration or rollover of a container. Checks if the container is in a valid registration state to
+    do so. The last synchronization and authentication timestamps from a potential previous old registration are
+    deleted and according registration data is written to the container info.
+
+    :param container: The container to be registered
+    :param container_rollover: True if a rollover should be performed instead of a fresh registration
+    :param server_url: The base url of the privacyIDEA server the container can contact
+    :param registration_ttl: The time in minutes the registration link is valid
+    :param ssl_verify: True if SSL should be used for the communication between the client and the server
+    :param challenge_ttl: Time in minutes a challenge is valid
+    :param params: Further container type specific parameters required for the registration
+    :return: A dictionary with the registration data (container type specific)
+
+        An example of a returned dictionary for a smartphone container:
+            ::
+
+                {
+                    "container_url": {
+                        "description": "URL for privacyIDEA Container Registration",
+                        "value": <url>,
+                        "img": <qr code of the url>
+                    },
+                    "nonce": "ajhbdsuiuojno49877n4no3u09on38r98n",
+                    "time_stamp": "2020-08-25T14:00:00.000000+00:00",
+                    "key_algorithm": "secp384r1",
+                    "hash_algorithm": "SHA256",
+                    "ssl_verify": "True",
+                    "ttl": 10,
+                    "passphrase": <Passphrase prompt displayed to the user in the app> (optional)
+                }
+    """
+    # Check registration state: registration init is only allowed for None (not yet registered) and "client_wait"
+    # otherwise do a rollover
+    registration_state = container.registration_state
+    if container_rollover:
+        if registration_state not in [RegistrationState.REGISTERED, RegistrationState.ROLLOVER,
+                                      RegistrationState.ROLLOVER_COMPLETED]:
+            raise ContainerNotRegistered("Container is not registered.")
+    elif registration_state not in [RegistrationState.NOT_REGISTERED, RegistrationState.CLIENT_WAIT]:
+        raise ContainerError("Container is already registered.")
+
+    # Reset last synchronization and authentication time stamps from possible previous registration
+    container.reset_last_synchronization()
+    container.reset_last_authentication()
+
+    # registration
+    scope = create_endpoint_url(server_url, "container/register/finalize")
+    res = container.init_registration(server_url, scope, registration_ttl, ssl_verify, params)
+
+    if container_rollover:
+        # Set registration state
+        info = [TokenContainerInfoData(key=RegistrationState.get_key(), value=RegistrationState.ROLLOVER.value,
+                                       info_type=PI_INTERNAL),
+                TokenContainerInfoData(key="rollover_server_url", value=server_url, info_type=PI_INTERNAL),
+                TokenContainerInfoData(key="rollover_challenge_ttl", value=str(challenge_ttl), info_type=PI_INTERNAL)]
+    else:
+        # save policy values in container info
+        info = [TokenContainerInfoData(key="server_url", value=server_url, info_type=PI_INTERNAL),
+                TokenContainerInfoData(key="challenge_ttl", value=str(challenge_ttl), info_type=PI_INTERNAL)]
+    container.update_container_info(info)
+
+    return res
+
+
 def finalize_registration(container_serial: str, params: dict) -> dict:
     """
     Finalize the registration of a container if the challenge response is valid.
@@ -1158,7 +1235,7 @@ def finalize_registration(container_serial: str, params: dict) -> dict:
     # Get container
     container = find_container_by_serial(container_serial)
     container_info = container.get_container_info_dict()
-    registration_state = RegistrationState(container_info.get(RegistrationState.get_key()))
+    registration_state = container.registration_state
 
     # Update params with registration url
     if registration_state == RegistrationState.ROLLOVER:
@@ -1562,3 +1639,47 @@ def get_offline_token_serials(container: TokenContainerClass) -> list[str]:
     tokens = container.get_tokens()
     offline_serials = [token.get_serial() for token in tokens if is_offline_token(token.get_serial())]
     return offline_serials
+
+
+def check_container_challenge(transaction_id: str):
+    """
+    Check if the challenge for the given transaction_id belongs to a container.
+    If this is the case it checks if the challenge is valid and was already answered. Then it deletes the challenge
+    and returns a successful authentication response.
+    This function is used as last step during enroll via multi challenge.
+
+    :param transaction_id: The transaction ID of the challenge
+    :return: A dictionary with the success state and details of the authentication in the format
+
+        ::
+
+            {
+            "success": True,
+            "details": {"serial": "CONT0001", "message": "Found matching challenge"}
+            }
+    """
+    success = False
+    details = {}
+    challenge_type = None
+    if transaction_id:
+        challenges = get_challenges(transaction_id=transaction_id)
+        challenge = challenges[0] if challenges else None
+        if challenge:
+            if challenge.data:
+                # check if the challenge is for a container
+                try:
+                    challenge_data = json.loads(challenge.data)
+                    if isinstance(challenge_data, dict):
+                        challenge_type = challenge_data.get("type")
+                except json.JSONDecodeError:
+                    pass
+            if challenge_type and challenge_type == "container":
+                # The challenge belongs to a container, if the challenge is already answered, we can delete it and
+                # return a successful authentication
+                if challenge.is_valid():
+                    _, status = challenge.get_otp_status()
+                    success = status
+                    if success:
+                        details = {"serial": challenge.serial, "message": "Found matching challenge"}
+                        challenge.delete()
+    return {"success": success, "details": details}

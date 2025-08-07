@@ -8,12 +8,9 @@ from .base import MyTestCase
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
-from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokens.daplugtoken import (DaplugTokenClass, _digi2daplug)
-from privacyidea.models import (Token,
-                                 Config,
-                                 Challenge)
+from privacyidea.models import Token, Config, Challenge
 from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
 import datetime
 from dateutil.tz import tzlocal
@@ -400,11 +397,10 @@ class DaplugTokenTestCase(MyTestCase):
     def test_17_update_token(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = DaplugTokenClass(db_token)
-        # Failed update: genkey wrong
-        self.assertRaises(Exception,
-                          token.update,
-                          {"description": "new desc",
-                           "genkey": "17"})
+        # Wrong genkey is replaced with genkey=True
+        token.update({"description": "new desc",
+                      "genkey": "17"})
+        self.assertEqual("new desc", token.token.description)
         # genkey and otpkey used at the same time
         token.update({"otpkey": self.otpkey,
                       "genkey": "1"})
@@ -429,8 +425,9 @@ class DaplugTokenTestCase(MyTestCase):
         self.assertTrue(token.token.pin_hash.startswith("@@"),
                         token.token.pin_hash)
 
-        # update token without otpkey raises an error
-        self.assertRaises(Exception, token.update, {"description": "test"})
+        # update token without otpkey generates one
+        token.update({"description": "test"})
+        self.assertEqual("test", token.token.description)
 
     def test_18_challenges(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()

@@ -2,15 +2,18 @@
 This test file tests the lib.tokens.radiustoken
 This depends on lib.tokenclass
 """
-
+import json
+import logging
+from testfixtures import log_capture
 from .base import MyTestCase
 from privacyidea.lib.tokens.radiustoken import RadiusTokenClass
+from privacyidea.lib.tokens.radiustoken import log as radt_log
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.models import Token
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.config import set_privacyidea_config
 from . import radiusmock
-from privacyidea.lib.token import init_token
+from privacyidea.lib.token import init_token, import_tokens
 from privacyidea.lib.radiusserver import add_radius
 
 DICT_FILE = "tests/testdata/dictionary"
@@ -61,7 +64,6 @@ class RadiusTokenTestCase(MyTestCase):
         self.assertTrue(class_prefix == "PIRA", class_prefix)
         self.assertTrue(token.get_class_type() == "radius", token)
 
-
     def test_02_class_methods(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         token = RadiusTokenClass(db_token)
@@ -99,7 +101,9 @@ class RadiusTokenTestCase(MyTestCase):
         self.assertTrue(otpcount == -1, otpcount)
 
     @radiusmock.activate
-    def test_08_authenticate_local_pin(self):
+    @log_capture(level=logging.DEBUG)
+    def test_08_authenticate_local_pin(self, capture):
+        radt_log.setLevel(logging.DEBUG)
         radiusmock.setdata(response=radiusmock.AccessAccept)
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         token = RadiusTokenClass(db_token)
@@ -111,7 +115,11 @@ class RadiusTokenTestCase(MyTestCase):
         # right PIN
         r = token.authenticate(self.otppin+"123456")
         self.assertTrue(r[0], r)
-        self.assertTrue(r[1] >= 0, r)
+        self.assertGreaterEqual(r[1], 0, r)
+        log_msg = str(capture)
+        self.assertNotIn(self.otppin, log_msg, log_msg)
+        self.assertIn('HIDDEN', log_msg, log_msg)
+        radt_log.setLevel(logging.INFO)
 
     @radiusmock.activate
     def test_09_authenticate_radius_pin(self):
@@ -175,6 +183,8 @@ class RadiusTokenTestCase(MyTestCase):
                             "radius.local_checkpin": True,
                             "radius.user": "nönäscii"})
 
+        self.assertIsInstance(token, RadiusTokenClass)
+
         # check the working of internal _check_radius
         radiusmock.setdata(response=radiusmock.AccessChallenge)
         r = token._check_radius("123456")
@@ -189,20 +199,22 @@ class RadiusTokenTestCase(MyTestCase):
         self.assertEqual(r, radiusmock.AccessReject)
 
     @radiusmock.activate
-    def test_13_privacyidea_challenge_response(self):
+    @log_capture(level=logging.DEBUG)
+    def test_13_privacyidea_challenge_response(self, capture):
         # This tests the challenge response with the privacyIDEA PIN.
         # First an authentication request with only the local PIN of the
         # radius token is sent.
+        radt_log.setLevel(logging.DEBUG)
         r = add_radius(identifier="myserver", server="1.2.3.4",
                        secret="testing123", dictionary=DICT_FILE)
         self.assertTrue(r > 0)
         token = init_token({"type": "radius",
-                            "pin": "local",
+                            "pin": "localpin",
                             "radius.identifier": "myserver",
                             "radius.local_checkpin": True,
                             "radius.user": "nönäscii"})
 
-        r = token.is_challenge_request("local")
+        r = token.is_challenge_request("localpin")
         self.assertTrue(r)
 
         # create challenge of privacyidea
@@ -224,6 +236,10 @@ class RadiusTokenTestCase(MyTestCase):
         r = token.check_challenge_response(passw="radiuscode",
                                            options={"transaction_id": transaction_id})
         self.assertTrue(r)
+        log_msg = str(capture)
+        self.assertNotIn('localpin', log_msg, log_msg)
+        self.assertIn('HIDDEN', log_msg, log_msg)
+        radt_log.setLevel(logging.INFO)
 
     @radiusmock.activate
     def test_14_simple_challenge_response_in_radius_server(self):
@@ -366,3 +382,26 @@ class RadiusTokenTestCase(MyTestCase):
         self.assertFalse(r)
         self.assertTrue(otp_count < 0)
 
+    def test_17_radius_token_export(self):
+        token = init_token(param={'serial': "OATH12345678",
+                                  'type': 'radius',
+                                  'otpkey': self.otpkey,
+                                  'radius.server': 'my.radius.server:1812',
+                                  'radius.secret': 'testing',
+                                  'radius.user': 'user1'})
+        self.assertRaises(NotImplementedError, token.export_token)
+
+        # Clean up
+        token.token.delete()
+
+    def test_18_radius_token_import(self):
+        token_data = [{
+            "serial": "123456",
+            "type": "radius",
+            "description": "this token can't be imported",
+            "otpkey": self.otpkey,
+            "issuer": "privacyIDEA",
+        }]
+        result = import_tokens(json.dumps(token_data))
+        # Import for RADIUS token currently not implemented
+        self.assertIn("123456", result.failed_tokens, result)

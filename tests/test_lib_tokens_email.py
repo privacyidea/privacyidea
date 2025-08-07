@@ -1,7 +1,10 @@
 """
 This test file tests the lib.tokens.smstoken
 """
+import json
+import logging
 from testfixtures import log_capture
+
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
@@ -9,6 +12,8 @@ from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokens.emailtoken import EmailTokenClass, EMAILACTION
+from privacyidea.lib.tokens.emailtoken import log as email_log
+from privacyidea.lib.token import remove_token, get_tokens, import_tokens, init_token
 from privacyidea.models import Token, Config
 from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin,
                                     delete_privacyidea_config)
@@ -330,13 +335,18 @@ class EmailTokenTestCase(MyTestCase):
         self.assertTrue(token.check_pin("test"))
         self.assertFalse(token.check_pin("wrong pin"))
 
-    def test_17_challenge_token(self):
+    @log_capture(level=logging.DEBUG)
+    def test_17_challenge_token(self, capture):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = EmailTokenClass(db_token)
         token.set_pin(self.otppin)
 
+        email_log.setLevel(logging.DEBUG)
         r = token.is_challenge_request(self.otppin)
         self.assertTrue(r)
+        log_msg = str(capture)
+        self.assertNotIn(self.otppin, log_msg, log_msg)
+        email_log.setLevel(logging.INFO)
 
     @smtpmock.activate
     def test_18_challenge_request(self):
@@ -520,3 +530,71 @@ class EmailTokenTestCase(MyTestCase):
         r = token.check_challenge_response(passw=otp)
         self.assertTrue(r, r)
         delete_smtpserver("myServer")
+
+    def test_24_email_token_export(self):
+        # Set up the EmailTokenClass for testing
+        emailtoken = init_token(param={'serial': "PIEM12345678", 'type': 'email', 'otpkey': '12345',
+                                       "email": "test@example.com"})
+        emailtoken.set_description("this is a email token export test")
+        emailtoken.add_tokeninfo("hashlib", "sha512")
+
+        # Test that all expected keys are present in the exported dictionary
+        exported_data = emailtoken.export_token()
+
+        expected_keys = ["serial", "type", "description", "otpkey", "issuer"]
+        self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
+
+        expected_tokeninfo_keys = ["email", "hashlib", "tokenkind"]
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+
+        # Test that the exported values match the token's data
+        exported_data = emailtoken.export_token()
+        self.assertEqual(exported_data["serial"], "PIEM12345678")
+        self.assertEqual(exported_data["type"], "email")
+        self.assertEqual(exported_data["tokeninfo"]["email"], "test@example.com")
+        self.assertEqual(exported_data["description"], "this is a email token export test")
+        self.assertEqual(exported_data["tokeninfo"]["hashlib"], "sha512")
+        self.assertEqual(exported_data["otpkey"], '12345')
+        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
+        self.assertEqual(exported_data["issuer"], "privacyIDEA")
+
+        # Clean up
+        remove_token(emailtoken.token.serial)
+
+    @smtpmock.activate
+    def test_25_email_token_import(self):
+        # Define the token data to be imported
+        token_data = [{
+            "serial": "PIEM12345678",
+            "type": "email",
+            "description": "this is an email token import test",
+            "otpkey": self.otpkey,
+            "email": self.email,
+            "hashlib": "sha512",
+            "tokenkind": "software",
+            "issuer": "privacyIDEA",
+            "tokeninfo": {"hashlib": "sha512", "timeWindow": 180, "email": self.email,
+                          "tokenkind": "software"}
+        }]
+
+        # Import the token
+        result = import_tokens(json.dumps(token_data))
+        self.assertIn("PIEM12345678", result.successful_tokens, result)
+
+        # Retrieve the imported token
+        emailtoken = get_tokens(serial=token_data[0]["serial"])[0]
+
+        # Verify that the token data matches the imported data
+        self.assertEqual(emailtoken.token.serial, token_data[0]["serial"])
+        self.assertEqual(emailtoken.type, token_data[0]["type"])
+        self.assertEqual(emailtoken.token.description, token_data[0]["description"])
+        self.assertEqual(emailtoken.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
+        self.assertEqual(emailtoken.get_tokeninfo("email"), token_data[0]["tokeninfo"]["email"])
+        self.assertEqual(emailtoken.get_tokeninfo("hashlib"), token_data[0]["tokeninfo"]["hashlib"])
+        self.assertEqual(emailtoken.get_tokeninfo("tokenkind"), token_data[0]["tokeninfo"]["tokenkind"])
+
+        # Check that token works
+        self.assertEqual(0, emailtoken.check_otp('125165'))
+
+        # Clean up
+        remove_token(emailtoken.token.serial)

@@ -13,7 +13,7 @@ from privacyidea.lib.policies.policy_conditions import (PolicyConditionClass, Co
                                                         ConditionHandleMissingData)
 from privacyidea.lib.token import init_token
 from privacyidea.lib.tokens.emailtoken import EMAILACTION
-from privacyidea.lib.utils.compare import Comparators
+from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import PolicyDescription, Policy, PolicyCondition, db, NodeName
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 
@@ -200,6 +200,10 @@ class PolicyTestCase(MyTestCase):
 
         policies = P.match_policies(name="pol4")
         self.assertEqual(policies[0].get('description'), 'test3')
+
+        # Find policy with user agent
+        policies = P.match_policies(user_agent="privacyidea-cp")
+        self.assertEqual("pol1", policies[0]["name"])
 
         delete_policy(name="pol5")
 
@@ -1330,62 +1334,64 @@ class PolicyTestCase(MyTestCase):
 
         # Set policy with conditions
         set_policy("act1", scope=SCOPE.AUTH, action=f"{ACTION.OTPPIN}=userstore",
-                   conditions=[(ConditionSection.USERINFO, "type", Comparators.EQUALS, "verysecure", True)])
+                   conditions=[(ConditionSection.USERINFO, "type", PrimaryComparators.EQUALS, "verysecure", True)])
 
         P = PolicyClass()
-        self.assertEqual([(ConditionSection.USERINFO, "type", Comparators.EQUALS, "verysecure", True,
+        self.assertEqual([(ConditionSection.USERINFO, "type", PrimaryComparators.EQUALS, "verysecure", True,
                            ConditionHandleMissingData.RAISE_ERROR.value)], P.list_policies()[0]["conditions"])
 
         # Update existing policy with conditions
         set_policy("act1", conditions=[
-            (ConditionSection.USERINFO, "type", Comparators.EQUALS, "notverysecure", True),
-            (ConditionSection.HTTP_REQUEST_HEADER, "user_agent", Comparators.EQUALS, "vpn", True,
+            (ConditionSection.USERINFO, "type", PrimaryComparators.EQUALS, "notverysecure", True),
+            (ConditionSection.HTTP_REQUEST_HEADER, "user_agent", PrimaryComparators.EQUALS, "vpn", True,
              ConditionHandleMissingData.RAISE_ERROR.value)
         ])
 
-        self.assertEqual([(ConditionSection.USERINFO, "type", Comparators.EQUALS, "notverysecure", True,
+        self.assertEqual([(ConditionSection.USERINFO, "type", PrimaryComparators.EQUALS, "notverysecure", True,
                            ConditionHandleMissingData.RAISE_ERROR.value),
-                          (ConditionSection.HTTP_REQUEST_HEADER, "user_agent", Comparators.EQUALS, "vpn", True,
+                          (ConditionSection.HTTP_REQUEST_HEADER, "user_agent", PrimaryComparators.EQUALS, "vpn", True,
                            ConditionHandleMissingData.RAISE_ERROR.value)], P.list_policies()[0]["conditions"])
         # check that old condition is not contained in the database anymore
         self.assertIsNone(PolicyCondition.query.filter_by(section=ConditionSection.USERINFO, Key="type",
-                                                          comparator=Comparators.EQUALS,
+                                                          comparator=PrimaryComparators.EQUALS,
                                                           Value="verysecure", active=True).first())
 
         # Set None for handle missing data is allowed, but is replaced with the default
         set_policy("act1",
-                   conditions=[(ConditionSection.USERINFO, "type", Comparators.EQUALS, "notverysecure", True),
-                               (ConditionSection.HTTP_REQUEST_HEADER, "user_agent", Comparators.EQUALS, "vpn", True,
+                   conditions=[(ConditionSection.USERINFO, "type", PrimaryComparators.EQUALS, "notverysecure", True),
+                               (ConditionSection.HTTP_REQUEST_HEADER, "user_agent", PrimaryComparators.EQUALS, "vpn",
+                                True,
                                 None)])
-        self.assertSetEqual({(ConditionSection.USERINFO, "type", Comparators.EQUALS, "notverysecure", True,
+        self.assertSetEqual({(ConditionSection.USERINFO, "type", PrimaryComparators.EQUALS, "notverysecure", True,
                               ConditionHandleMissingData.RAISE_ERROR.value),
-                             (ConditionSection.HTTP_REQUEST_HEADER, "user_agent", Comparators.EQUALS, "vpn", True,
-                              ConditionHandleMissingData.RAISE_ERROR.value)}, set(P.list_policies()[0]["conditions"]))
+                             (ConditionSection.HTTP_REQUEST_HEADER, "user_agent", PrimaryComparators.EQUALS, "vpn",
+                              True, ConditionHandleMissingData.RAISE_ERROR.value)},
+                            set(P.list_policies()[0]["conditions"]))
 
         # Set policy with invalid condition tuple
         # Missing active value
         self.assertRaises(ParameterError, set_policy, "invalid_policy",
-                          conditions=[(ConditionSection.USERINFO, "type", Comparators.EQUALS, "verysecure")])
+                          conditions=[(ConditionSection.USERINFO, "type", PrimaryComparators.EQUALS, "verysecure")])
         # check that policy is not set in the db
         self.assertIsNone(Policy.query.filter_by(name="invalid_policy").first())
 
         # invalid data type
         self.assertRaises(ParameterError, set_policy, "invalid_policy",
-                          conditions=[(ConditionSection.USERINFO, ["type", "password"], Comparators.EQUALS,
+                          conditions=[(ConditionSection.USERINFO, ["type", "password"], PrimaryComparators.EQUALS,
                                        "verysecure", True)])
         # check that policy is not set in the db
         self.assertIsNone(Policy.query.filter_by(name="invalid_policy").first())
 
         # invalid data type of handle missing data
         self.assertRaises(ParameterError, set_policy, "invalid_policy",
-                          conditions=[
-                              (ConditionSection.USERINFO, "type", Comparators.EQUALS, "verysecure", True, False)])
+                          conditions=[(ConditionSection.USERINFO, "type", PrimaryComparators.EQUALS, "verysecure", True,
+                                       False)])
         # check that policy is not set in the db
         self.assertIsNone(Policy.query.filter_by(name="invalid_policy").first())
 
         # also raises an error if the condition is not active
         self.assertRaises(ParameterError, set_policy, "invalid_policy",
-                          conditions=[("invalid", "type", Comparators.EQUALS, "verysecure", False)])
+                          conditions=[("invalid", "type", PrimaryComparators.EQUALS, "verysecure", False)])
         # check that policy is not set in the db
         self.assertIsNone(Policy.query.filter_by(name="invalid_policy").first())
 
@@ -1398,10 +1404,10 @@ class PolicyTestCase(MyTestCase):
             return set(p['name'] for p in policies)
 
         set_policy("verysecure", scope=SCOPE.AUTH, action=f"{ACTION.OTPPIN}=userstore",
-                   conditions=[(ConditionSection.USERINFO, "type", Comparators.EQUALS, "verysecure", True)])
+                   conditions=[(ConditionSection.USERINFO, "type", PrimaryComparators.EQUALS, "verysecure", True)])
         set_policy("notverysecure", scope=SCOPE.AUTH, action=f"{ACTION.OTPPIN}=userstore",
-                   conditions=[(ConditionSection.USERINFO, "type", Comparators.EQUALS, "notverysecure", True),
-                               (ConditionSection.USERINFO, "groups", Comparators.CONTAINS, "b", True)])
+                   conditions=[(ConditionSection.USERINFO, "type", PrimaryComparators.EQUALS, "notverysecure", True),
+                               (ConditionSection.USERINFO, "groups", PrimaryComparators.CONTAINS, "b", True)])
         P = PolicyClass()
 
         class MockUser(object):
@@ -1448,14 +1454,14 @@ class PolicyTestCase(MyTestCase):
 
         # Policy with initially inactive condition
         set_policy("extremelysecure", scope=SCOPE.AUTH, action=f"{ACTION.OTPPIN}=userstore",
-                   conditions=[(ConditionSection.USERINFO, "type", Comparators.EQUALS, "notverysecure", False)])
+                   conditions=[(ConditionSection.USERINFO, "type", PrimaryComparators.EQUALS, "notverysecure", False)])
 
         # user1 matches, because the condition on type is inactive
         self.assertSetEqual({"extremelysecure"}, _names(P.match_policies(user_object=user1)))
 
         # activate the condition
         set_policy("extremelysecure",
-                   conditions=[(ConditionSection.USERINFO, "type", Comparators.EQUALS, "notverysecure", True)])
+                   conditions=[(ConditionSection.USERINFO, "type", PrimaryComparators.EQUALS, "notverysecure", True)])
 
         # user1 does not match anymore, because the condition on type is active
         self.assertSetEqual(set(), _names(P.match_policies(user_object=user1)))
@@ -1484,7 +1490,7 @@ class PolicyTestCase(MyTestCase):
 
         # an unknown section in the condition
         set_invalid_policy("unknownsection", scope=SCOPE.AUTH, action=f"{ACTION.OTPPIN}=userstore",
-                           conditions=[{"section": "somesection", "Key": "bla", "comparator": Comparators.EQUALS,
+                           conditions=[{"section": "somesection", "Key": "bla", "comparator": PrimaryComparators.EQUALS,
                                         "Value": "verysecure", "active": True}])
         with self.assertRaisesRegex(PolicyError, r".*Unknown section.*"):
             P.match_policies(user_object=user1)
@@ -1492,7 +1498,7 @@ class PolicyTestCase(MyTestCase):
 
         # ... but the error does not occur if the condition is inactive
         set_invalid_policy("unknownsection", scope=SCOPE.AUTH, action=f"{ACTION.OTPPIN}=userstore",
-                           conditions=[{"section": "somesection", "Key": "bla", "comparator": Comparators.EQUALS,
+                           conditions=[{"section": "somesection", "Key": "bla", "comparator": PrimaryComparators.EQUALS,
                                         "Value": "verysecure", "active": False}])
         all_policies = P.list_policies()
         self.assertEqual(all_policies, P.match_policies(user_object=user1))
@@ -1500,7 +1506,7 @@ class PolicyTestCase(MyTestCase):
 
         # an unknown key in the condition
         set_policy("unknownkey", scope=SCOPE.AUTH, action=f"{ACTION.OTPPIN}=userstore",
-                   conditions=[(ConditionSection.USERINFO, "bla", Comparators.EQUALS, "verysecure", True)])
+                   conditions=[(ConditionSection.USERINFO, "bla", PrimaryComparators.EQUALS, "verysecure", True)])
         with self.assertRaisesRegex(PolicyError, r".*Unknown .*key.*"):
             P.match_policies(user_object=user1)
         delete_policy("unknownkey")
@@ -1510,7 +1516,7 @@ class PolicyTestCase(MyTestCase):
         user4.info = {"type": "notverysecure", "number": 5}
 
         set_policy("error", scope=SCOPE.AUTH, action=f"{ACTION.OTPPIN}=userstore",
-                   conditions=[(ConditionSection.USERINFO, "number", Comparators.CONTAINS, "b", True)])
+                   conditions=[(ConditionSection.USERINFO, "number", PrimaryComparators.CONTAINS, "b", True)])
         with self.assertRaisesRegex(PolicyError, r".*Invalid comparison.*"):
             P.match_policies(user_object=user4)
         delete_policy("error")
@@ -1617,14 +1623,14 @@ class PolicyTestCase(MyTestCase):
 
         # Policy with initially inactive condition, setpin is allowed for this token
         set_policy("setpin_pol", scope=SCOPE.USER, action=ACTION.SETPIN,
-                   conditions=[(ConditionSection.TOKENINFO, "fixedpin", Comparators.EQUALS, "false", False)])
+                   conditions=[(ConditionSection.TOKENINFO, "fixedpin", PrimaryComparators.EQUALS, "false", False)])
 
         # policy matches, because the condition on tokeninfo is inactive
         self.assertSetEqual({"setpin_pol"}, _names(P.match_policies(user_object=user1, serial=serial)))
 
         # activate the condition
         set_policy("setpin_pol",
-                   conditions=[(ConditionSection.TOKENINFO, "fixedpin", Comparators.EQUALS, "false", True,
+                   conditions=[(ConditionSection.TOKENINFO, "fixedpin", PrimaryComparators.EQUALS, "false", True,
                                 ConditionHandleMissingData.RAISE_ERROR.value)])
 
         # policy does not match anymore, because the condition on tokeninfo is active
@@ -1637,12 +1643,12 @@ class PolicyTestCase(MyTestCase):
 
         # policy matches, because the condition shall be true if no token is available
         set_policy("setpin_pol",
-                   conditions=[(ConditionSection.TOKENINFO, "fixedpin", Comparators.EQUALS, "false", True,
+                   conditions=[(ConditionSection.TOKENINFO, "fixedpin", PrimaryComparators.EQUALS, "false", True,
                                 ConditionHandleMissingData.IS_TRUE.value)])
         self.assertSetEqual({"setpin_pol"}, _names(P.match_policies(user_object=user1)))
 
         # policy not matches, because the condition shall be false if no token is available, but not raise an error
-        set_policy("setpin_pol", conditions=[(ConditionSection.TOKENINFO, "fixedpin", Comparators.EQUALS,
+        set_policy("setpin_pol", conditions=[(ConditionSection.TOKENINFO, "fixedpin", PrimaryComparators.EQUALS,
                                               "false", True, ConditionHandleMissingData.IS_FALSE.value)])
         self.assertSetEqual(set(), _names(P.match_policies(user_object=user1)))
 
@@ -1670,24 +1676,26 @@ class PolicyTestCase(MyTestCase):
 
         # Policy with initially inactive condition, setpin is allowed for this token
         set_policy("setpin_pol", scope=SCOPE.USER, action=ACTION.SETPIN,
-                   conditions=[(ConditionSection.TOKEN, "tokentype", Comparators.EQUALS, "hotp", False)])
+                   conditions=[(ConditionSection.TOKEN, "tokentype", PrimaryComparators.EQUALS, "hotp", False)])
 
         # policy matches, because the condition on tokeninfo is inactive
         self.assertSetEqual({"setpin_pol"}, _names(P.match_policies(user_object=user1, serial=serial)))
 
         # activate the condition
-        set_policy("setpin_pol", conditions=[(ConditionSection.TOKEN, "tokentype", Comparators.EQUALS, "hotp", True)])
+        set_policy("setpin_pol",
+                   conditions=[(ConditionSection.TOKEN, "tokentype", PrimaryComparators.EQUALS, "hotp", True)])
 
         # policy does not match anymore, because the condition on tokeninfo is active
         # setpin action not returned for our token with tokentype == spass
         self.assertSetEqual(set(), _names(P.match_policies(user_object=user1, serial=serial)))
 
         # Now set a policy condition with a non-case matching token type!
-        set_policy("setpin_pol", conditions=[(ConditionSection.TOKEN, "tokentype", Comparators.EQUALS, "Spass", True)])
+        set_policy("setpin_pol",
+                   conditions=[(ConditionSection.TOKEN, "tokentype", PrimaryComparators.EQUALS, "Spass", True)])
         self.assertSetEqual(set(), _names(P.match_policies(user_object=user1, serial=serial)))
 
         # Now check, if we can compare numbers.
-        set_policy("setpin_pol", conditions=[(ConditionSection.TOKEN, "count", Comparators.SMALLER, "100", True,
+        set_policy("setpin_pol", conditions=[(ConditionSection.TOKEN, "count", PrimaryComparators.SMALLER, "100", True,
                                               ConditionHandleMissingData.RAISE_ERROR.value)])
         self.assertSetEqual({"setpin_pol"}, _names(P.match_policies(user_object=user1, serial=serial)))
         # The the counter of the token is >=100, the policy will not match anymore
@@ -1699,22 +1707,23 @@ class PolicyTestCase(MyTestCase):
         # on the token is there, but no dbtoken object is available.
         self.assertRaises(PolicyError, P.match_policies, user_object=user1)
         # raise error if key is not available
-        set_policy("setpin_pol", conditions=[(ConditionSection.TOKEN, "random", Comparators.SMALLER, "100", True)])
+        set_policy("setpin_pol",
+                   conditions=[(ConditionSection.TOKEN, "random", PrimaryComparators.SMALLER, "100", True)])
         self.assertRaises(PolicyError, P.match_policies, user_object=user1, serial=serial)
 
         # policy matches, because the condition shall be true if no token is available
-        set_policy("setpin_pol", conditions=[(ConditionSection.TOKEN, "count", Comparators.SMALLER, "100", True,
+        set_policy("setpin_pol", conditions=[(ConditionSection.TOKEN, "count", PrimaryComparators.SMALLER, "100", True,
                                               ConditionHandleMissingData.IS_TRUE.value)])
         self.assertSetEqual({"setpin_pol"}, _names(P.match_policies(user_object=user1)))
 
         # policy not matches, because the condition shall be false if no token is available
-        set_policy("setpin_pol", conditions=[(ConditionSection.TOKEN, "count", Comparators.SMALLER, "100", True,
+        set_policy("setpin_pol", conditions=[(ConditionSection.TOKEN, "count", PrimaryComparators.SMALLER, "100", True,
                                               ConditionHandleMissingData.IS_FALSE.value)])
         self.assertSetEqual(set(), _names(P.match_policies(user_object=user1)))
 
         # Now check, if a wrong comparison raises an exception
         set_policy("setpin_pol",
-                   conditions=[(ConditionSection.TOKEN, "count", Comparators.SMALLER, "not a number", True)])
+                   conditions=[(ConditionSection.TOKEN, "count", PrimaryComparators.SMALLER, "not a number", True)])
         self.assertRaises(PolicyError, P.match_policies, user_object=user1, serial=serial)
 
         delete_policy("setpin_pol")
@@ -1903,7 +1912,7 @@ class PolicyTestCase(MyTestCase):
         policy_class = PolicyClass()
         # Define condition
         set_policy("policy", scope=SCOPE.USER, action=ACTION.SETPIN,
-                   conditions=[(ConditionSection.TOKENINFO, "fixedpin", Comparators.EQUALS, "false", True,
+                   conditions=[(ConditionSection.TOKENINFO, "fixedpin", PrimaryComparators.EQUALS, "false", True,
                                 ConditionHandleMissingData.RAISE_ERROR.value)])
 
         # Create token for a user
@@ -1924,7 +1933,7 @@ class PolicyTestCase(MyTestCase):
         # Compare Error
         token.set_tokeninfo({"count_auth": "invalid_count"})
         set_policy("policy", scope=SCOPE.USER, action=ACTION.SETPIN,
-                   conditions=[(ConditionSection.TOKENINFO, "count_auth", Comparators.BIGGER, "3", True,
+                   conditions=[(ConditionSection.TOKENINFO, "count_auth", PrimaryComparators.BIGGER, "3", True,
                                 ConditionHandleMissingData.RAISE_ERROR.value)])
         self.assertRaises(PolicyError, policy_class.match_policies, user_object=user, serial=token.get_serial())
 
@@ -1937,7 +1946,7 @@ class PolicyTestCase(MyTestCase):
         policy_class = PolicyClass()
         # Define condition
         set_policy("policy", scope=SCOPE.USER, action=ACTION.SETPIN,
-                   conditions=[(ConditionSection.TOKENINFO, "fixedpin", Comparators.EQUALS, "false", True,
+                   conditions=[(ConditionSection.TOKENINFO, "fixedpin", PrimaryComparators.EQUALS, "false", True,
                                 ConditionHandleMissingData.IS_TRUE.value)])
 
         # Create token for a user
@@ -1955,7 +1964,7 @@ class PolicyTestCase(MyTestCase):
         # Compare Error still raises error
         token.set_tokeninfo({"count_auth": "3"})
         set_policy("policy", scope=SCOPE.USER, action=ACTION.SETPIN,
-                   conditions=[(ConditionSection.TOKENINFO, "count_auth", Comparators.BIGGER, "3.5", True,
+                   conditions=[(ConditionSection.TOKENINFO, "count_auth", PrimaryComparators.BIGGER, "3.5", True,
                                 ConditionHandleMissingData.IS_TRUE.value)])
         self.assertRaises(PolicyError, policy_class.match_policies, user_object=user, serial=token.get_serial())
 
@@ -1968,7 +1977,7 @@ class PolicyTestCase(MyTestCase):
         policy_class = PolicyClass()
         # Define condition
         set_policy("policy", scope=SCOPE.USER, action=ACTION.SETPIN,
-                   conditions=[(ConditionSection.TOKENINFO, "fixedpin", Comparators.EQUALS, "false", True,
+                   conditions=[(ConditionSection.TOKENINFO, "fixedpin", PrimaryComparators.EQUALS, "false", True,
                                 ConditionHandleMissingData.IS_FALSE.value)])
 
         # Create token for a user
@@ -1986,7 +1995,7 @@ class PolicyTestCase(MyTestCase):
         # Compare Error still raises error
         token.set_tokeninfo({"count_auth": "three"})
         set_policy("policy", scope=SCOPE.USER, action=ACTION.SETPIN,
-                   conditions=[(ConditionSection.TOKENINFO, "count_auth", Comparators.SMALLER, "3", True,
+                   conditions=[(ConditionSection.TOKENINFO, "count_auth", PrimaryComparators.SMALLER, "3", True,
                                 ConditionHandleMissingData.IS_FALSE.value)])
         self.assertRaises(PolicyError, policy_class.match_policies, user_object=user, serial=token.get_serial())
 
@@ -1998,7 +2007,7 @@ class PolicyTestCase(MyTestCase):
         policy_class = PolicyClass()
 
         set_policy("policy", scope=SCOPE.USER, action=ACTION.SETPIN,
-                   conditions=[(ConditionSection.USERINFO, "phone", Comparators.MATCHES, "\+49.*", True,
+                   conditions=[(ConditionSection.USERINFO, "phone", PrimaryComparators.MATCHES, "\+49.*", True,
                                 ConditionHandleMissingData.RAISE_ERROR.value)])
 
         # Policy matches
@@ -2019,7 +2028,7 @@ class PolicyTestCase(MyTestCase):
 
         # ---- Condition is true on missing data ----
         set_policy("policy", scope=SCOPE.USER, action=ACTION.SETPIN,
-                   conditions=[(ConditionSection.USERINFO, "phone", Comparators.MATCHES, "\+49.*", True,
+                   conditions=[(ConditionSection.USERINFO, "phone", PrimaryComparators.MATCHES, "\+49.*", True,
                                 ConditionHandleMissingData.IS_TRUE.value)])
         # missing user object
         policies = policy_class.match_policies(user_object=None)
@@ -2033,7 +2042,7 @@ class PolicyTestCase(MyTestCase):
 
         # ---- Condition is false on missing data ----
         set_policy("policy", scope=SCOPE.USER, action=ACTION.SETPIN,
-                   conditions=[(ConditionSection.USERINFO, "phone", Comparators.MATCHES, "\+49.*", True,
+                   conditions=[(ConditionSection.USERINFO, "phone", PrimaryComparators.MATCHES, "\+49.*", True,
                                 ConditionHandleMissingData.IS_FALSE.value)])
         # missing user object
         policies = policy_class.match_policies(user_object=None)
@@ -2053,32 +2062,32 @@ class PolicyTestCase(MyTestCase):
 
     def test_50_get_policy_condition_from_tuple(self):
         # No handle missing data
-        condition_tuple = (ConditionSection.USERINFO, "email", Comparators.MATCHES, ".*@example.com", True)
+        condition_tuple = (ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES, ".*@example.com", True)
         condition = PolicyClass.get_policy_condition_from_tuple(condition_tuple, "policy")
         self.assertEqual(ConditionSection.USERINFO, condition.section)
         self.assertEqual("email", condition.key)
-        self.assertEqual(Comparators.MATCHES, condition.comparator)
+        self.assertEqual(PrimaryComparators.MATCHES, condition.comparator)
         self.assertEqual(".*@example.com", condition.value)
         self.assertTrue(condition.active)
         self.assertEqual(ConditionHandleMissingData.RAISE_ERROR, condition.handle_missing_data)
 
         # Pass None for handle_missing_data
-        condition_tuple = (ConditionSection.USERINFO, "email", Comparators.MATCHES, ".*@example.com", True, None)
+        condition_tuple = (ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES, ".*@example.com", True, None)
         condition = PolicyClass.get_policy_condition_from_tuple(condition_tuple, "policy")
         self.assertEqual(ConditionSection.USERINFO, condition.section)
         self.assertEqual("email", condition.key)
-        self.assertEqual(Comparators.MATCHES, condition.comparator)
+        self.assertEqual(PrimaryComparators.MATCHES, condition.comparator)
         self.assertEqual(".*@example.com", condition.value)
         self.assertTrue(condition.active)
         self.assertEqual(ConditionHandleMissingData.RAISE_ERROR, condition.handle_missing_data)
 
         # With handle missing data
-        condition_tuple = (ConditionSection.USERINFO, "email", Comparators.MATCHES, ".*@example.com", True,
+        condition_tuple = (ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES, ".*@example.com", True,
                            ConditionHandleMissingData.IS_TRUE.value)
         condition = PolicyClass.get_policy_condition_from_tuple(condition_tuple, "policy")
         self.assertEqual(ConditionSection.USERINFO, condition.section)
         self.assertEqual("email", condition.key)
-        self.assertEqual(Comparators.MATCHES, condition.comparator)
+        self.assertEqual(PrimaryComparators.MATCHES, condition.comparator)
         self.assertEqual(".*@example.com", condition.value)
         self.assertTrue(condition.active)
         self.assertEqual(ConditionHandleMissingData.IS_TRUE, condition.handle_missing_data)
@@ -2088,8 +2097,9 @@ class PolicyTestCase(MyTestCase):
         policy = Policy(name="policy", scope=SCOPE.USER, action=ACTION.ENABLE)
         policy.save()
         conditions = [
-            PolicyConditionClass(ConditionSection.USERINFO, "email", Comparators.MATCHES, ".*@example.com", True),
-            PolicyConditionClass(ConditionSection.TOKEN, "tokentype", Comparators.EQUALS, "hotp", True,
+            PolicyConditionClass(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES, ".*@example.com",
+                                 True),
+            PolicyConditionClass(ConditionSection.TOKEN, "tokentype", PrimaryComparators.EQUALS, "hotp", True,
                                  ConditionHandleMissingData.IS_FALSE.value)]
         set_policy_conditions(conditions, policy)
         db.session.commit()
@@ -2100,14 +2110,14 @@ class PolicyTestCase(MyTestCase):
         for condition in conditions:
             if condition.section == ConditionSection.USERINFO:
                 self.assertEqual("email", condition.Key)
-                self.assertEqual(Comparators.MATCHES, condition.comparator)
+                self.assertEqual(PrimaryComparators.MATCHES, condition.comparator)
                 self.assertEqual(".*@example.com", condition.Value)
                 self.assertTrue(condition.active)
                 self.assertEqual(ConditionHandleMissingData.RAISE_ERROR.value, condition.handle_missing_data)
             else:
                 self.assertEqual(ConditionSection.TOKEN, condition.section)
                 self.assertEqual("tokentype", condition.Key)
-                self.assertEqual(Comparators.EQUALS, condition.comparator)
+                self.assertEqual(PrimaryComparators.EQUALS, condition.comparator)
                 self.assertEqual("hotp", condition.Value)
                 self.assertTrue(condition.active)
                 self.assertEqual(ConditionHandleMissingData.IS_FALSE.value, condition.handle_missing_data)
@@ -2295,25 +2305,61 @@ class PolicyTestCase(MyTestCase):
         NodeName.query.filter_by(name=node2).first().delete()
         delete_policy("test")
 
+    def test_56_list_policies_user_agent(self):
+        set_policy(name="policy-cp", scope=SCOPE.AUTH, action={ACTION.CHALLENGERESPONSE: ["hotp"]},
+                   user_agents=["privacyidea-cp", "PAM"])
+        set_policy(name="policy-keycloak", scope=SCOPE.AUTH, action={ACTION.CHALLENGERESPONSE: ["totp", "push"]},
+                   user_agents=["privacyIDEA-Keycloak", "Mozilla"])
+        set_policy(name="policy-no-agent", scope=SCOPE.AUTH, action={ACTION.CHALLENGERESPONSE: ["daypassword"]})
+        P = PolicyClass()
+
+        # get policies for CP
+        policies = P.list_policies(scope=SCOPE.AUTH, user_agent="privacyidea-cp")
+        self.assertEqual(2, len(policies), policies)
+        self.assertSetEqual({"policy-cp", "policy-no-agent"}, {policy["name"] for policy in policies})
+
+        # check that search is case-insensitive
+        policies = P.list_policies(scope=SCOPE.AUTH, user_agent="privacyIDEA-CP")
+        self.assertEqual(2, len(policies), policies)
+        self.assertSetEqual({"policy-cp", "policy-no-agent"}, {policy["name"] for policy in policies})
+
+        # get policies for PAM
+        policies = P.list_policies(scope=SCOPE.AUTH, user_agent="PAM")
+        self.assertEqual(2, len(policies), policies)
+        self.assertSetEqual({"policy-cp", "policy-no-agent"}, {policy["name"] for policy in policies})
+
+        # get policies for Keycloak
+        policies = P.list_policies(scope=SCOPE.AUTH, user_agent="privacyidea-keycloak")
+        self.assertEqual(2, len(policies), policies)
+        self.assertSetEqual({"policy-keycloak", "policy-no-agent"}, {policy["name"] for policy in policies})
+
+        # no user agent filter: only get policies without user agent
+        policies = P.list_policies(scope=SCOPE.AUTH)
+        self.assertEqual(1, len(policies), policies)
+        self.assertSetEqual({"policy-no-agent"}, {policy["name"] for policy in policies})
+
 
 class PolicyConditionClassTestCase(MyTestCase):
 
     def test_01_init_success(self):
         # All parameters are valid and default is set
-        condition = PolicyConditionClass(ConditionSection.USERINFO, "email", Comparators.MATCHES, ".*@example.com",
+        condition = PolicyConditionClass(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES,
+                                         ".*@example.com",
                                          True)
         self.assertTrue(isinstance(condition, PolicyConditionClass))
         self.assertEqual(ConditionHandleMissingData.RAISE_ERROR, condition.handle_missing_data)
 
         # All parameters are valid with handle_missing_data
-        condition = PolicyConditionClass(ConditionSection.USERINFO, "email", Comparators.MATCHES, ".*@example.com",
+        condition = PolicyConditionClass(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES,
+                                         ".*@example.com",
                                          True,
                                          ConditionHandleMissingData.IS_TRUE.value)
         self.assertTrue(isinstance(condition, PolicyConditionClass))
         self.assertEqual(ConditionHandleMissingData.IS_TRUE, condition.handle_missing_data)
 
         # Pass None for handle_missing_data
-        condition = PolicyConditionClass(ConditionSection.USERINFO, "email", Comparators.MATCHES, ".*@example.com",
+        condition = PolicyConditionClass(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES,
+                                         ".*@example.com",
                                          True, None)
         self.assertTrue(isinstance(condition, PolicyConditionClass))
         self.assertEqual(ConditionHandleMissingData.RAISE_ERROR, condition.handle_missing_data)
@@ -2321,12 +2367,13 @@ class PolicyConditionClassTestCase(MyTestCase):
     def test_02_init_invalid_parameters(self):
         # Invalid section
         with self.assertRaises(ParameterError) as exception:
-            PolicyConditionClass("invalid", "email", Comparators.MATCHES, ".*@example.com", True)
+            PolicyConditionClass("invalid", "email", PrimaryComparators.MATCHES, ".*@example.com", True)
             self.assertIn("Unknown section", exception.exception.message)
 
         # Invalid key
         with self.assertRaises(ParameterError) as exception:
-            PolicyConditionClass(ConditionSection.USERINFO, ["email"], Comparators.MATCHES, ".*@example.com", True)
+            PolicyConditionClass(ConditionSection.USERINFO, ["email"], PrimaryComparators.MATCHES, ".*@example.com",
+                                 True)
             self.assertEqual("Key must be a non-empty string. Got '[\"email\"]' of type 'list' instead.",
                              exception.exception.message)
 
@@ -2337,17 +2384,18 @@ class PolicyConditionClassTestCase(MyTestCase):
 
         # Invalid value
         with self.assertRaises(ParameterError) as exception:
-            PolicyConditionClass(ConditionSection.USERINFO, "email", Comparators.MATCHES, False, True)
+            PolicyConditionClass(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES, False, True)
             self.assertIn("Value must be a non-empty string.", exception.exception.message)
 
         # Invalid active
         with self.assertRaises(ParameterError) as exception:
-            PolicyConditionClass(ConditionSection.USERINFO, "email", Comparators.MATCHES, ".*@example.com", "True")
+            PolicyConditionClass(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES, ".*@example.com",
+                                 "True")
             self.assertIn("Active must be a boolean.", exception.exception.message)
 
         # Invalid handle_missing_data
         with self.assertRaises(ParameterError) as exception:
-            PolicyConditionClass(ConditionSection.USERINFO, "email", Comparators.MATCHES, ".*@example.com", True,
+            PolicyConditionClass(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES, ".*@example.com", True,
                                  "random")
             self.assertIn("Unknown handle missing data value", exception.exception.message)
 
@@ -2359,7 +2407,7 @@ class PolicyConditionClassTestCase(MyTestCase):
         """
         # --- Invalid section ---
         # inactive condition
-        condition = PolicyConditionClass("invalid", "email", Comparators.MATCHES, ".*@example.com", False,
+        condition = PolicyConditionClass("invalid", "email", PrimaryComparators.MATCHES, ".*@example.com", False,
                                          pass_if_inactive=True)
         self.assertTrue(isinstance(condition, PolicyConditionClass))
         self.assertEqual("invalid", condition.section)
@@ -2372,13 +2420,14 @@ class PolicyConditionClassTestCase(MyTestCase):
 
         # active condition will still raise error
         with self.assertRaises(ParameterError) as exception:
-            PolicyConditionClass("invalid", "email", Comparators.MATCHES, ".*@example.com", True,
+            PolicyConditionClass("invalid", "email", PrimaryComparators.MATCHES, ".*@example.com", True,
                                  pass_if_inactive=True)
             self.assertIn("Unknown section", exception.exception.message)
 
         # --- Invalid key ---
         # inactive condition
-        condition = PolicyConditionClass(ConditionSection.USERINFO, ["email"], Comparators.MATCHES, ".*@example.com",
+        condition = PolicyConditionClass(ConditionSection.USERINFO, ["email"], PrimaryComparators.MATCHES,
+                                         ".*@example.com",
                                          False,
                                          pass_if_inactive=True)
         self.assertTrue(isinstance(condition, PolicyConditionClass))
@@ -2392,7 +2441,8 @@ class PolicyConditionClassTestCase(MyTestCase):
 
         # active condition will still raise error
         with self.assertRaises(ParameterError) as exception:
-            PolicyConditionClass(ConditionSection.USERINFO, ["email"], Comparators.MATCHES, ".*@example.com", True,
+            PolicyConditionClass(ConditionSection.USERINFO, ["email"], PrimaryComparators.MATCHES, ".*@example.com",
+                                 True,
                                  pass_if_inactive=True)
             self.assertEqual("Key must be a non-empty string. Got '[\"email\"]' of type 'list' instead.",
                              exception.exception.message)
@@ -2418,7 +2468,7 @@ class PolicyConditionClassTestCase(MyTestCase):
 
         # --- Invalid value ---
         # inactive condition
-        condition = PolicyConditionClass(ConditionSection.USERINFO, "email", Comparators.MATCHES, False, False,
+        condition = PolicyConditionClass(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES, False, False,
                                          pass_if_inactive=True)
         self.assertTrue(isinstance(condition, PolicyConditionClass))
         self.assertEqual(False, condition.value)
@@ -2426,23 +2476,26 @@ class PolicyConditionClassTestCase(MyTestCase):
         # --- Invalid active ---
         # active condition will still raise error
         with self.assertRaises(ParameterError) as exception:
-            PolicyConditionClass(ConditionSection.USERINFO, "email", Comparators.MATCHES, False, True,
+            PolicyConditionClass(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES, False, True,
                                  pass_if_inactive=True)
             self.assertIn("Value must be a non-empty string.", exception.exception.message)
 
         # Invalid active always raises error
         with self.assertRaises(ParameterError) as exception:
-            PolicyConditionClass(ConditionSection.USERINFO, "email", Comparators.MATCHES, ".*@example.com", "True",
+            PolicyConditionClass(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES, ".*@example.com",
+                                 "True",
                                  pass_if_inactive=True)
             self.assertIn("Active must be a boolean.", exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
-            PolicyConditionClass(ConditionSection.USERINFO, "email", Comparators.MATCHES, ".*@example.com", "False",
+            PolicyConditionClass(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES, ".*@example.com",
+                                 "False",
                                  pass_if_inactive=True)
             self.assertIn("Active must be a boolean.", exception.exception.message)
 
         # --- Invalid handle_missing_data ---
         # inactive condition
-        condition = PolicyConditionClass(ConditionSection.USERINFO, "email", Comparators.MATCHES, ".*@example.com",
+        condition = PolicyConditionClass(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES,
+                                         ".*@example.com",
                                          False, "random", True)
         self.assertTrue(isinstance(condition, PolicyConditionClass))
         self.assertEqual("random", condition.handle_missing_data)
@@ -2455,7 +2508,7 @@ class PolicyConditionClassTestCase(MyTestCase):
 
         # active condition will still raise error
         with self.assertRaises(ParameterError) as exception:
-            PolicyConditionClass(ConditionSection.USERINFO, "email", Comparators.MATCHES, ".*@example.com", True,
+            PolicyConditionClass(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES, ".*@example.com", True,
                                  "random", True)
             self.assertIn("Unknown handle missing data value", exception.exception.message)
 
@@ -2464,7 +2517,7 @@ class PolicyConditionClassTestCase(MyTestCase):
         cornelius = User(login="cornelius", realm=self.realm1)
         selfservice = User(login="selfservice", realm=self.realm1)
         condition = PolicyConditionClass(section=ConditionSection.USERINFO, key="birthday",
-                                         comparator=Comparators.MATCHES, value=".*May.*", active=True)
+                                         comparator=PrimaryComparators.MATCHES, value=".*May.*", active=True)
 
         # user object not available
         data = condition.get_user_data(user=None)
@@ -2482,7 +2535,7 @@ class PolicyConditionClassTestCase(MyTestCase):
 
         # user and key available, but key is empty
         condition = PolicyConditionClass(section=ConditionSection.USERINFO, key="email",
-                                         comparator=Comparators.MATCHES, value=".*@example.com", active=True)
+                                         comparator=PrimaryComparators.MATCHES, value=".*@example.com", active=True)
         data = condition.get_user_data(selfservice)
         self.assertEqual("user", data.object_name)
         self.assertTrue(data.object_available)
@@ -2491,7 +2544,7 @@ class PolicyConditionClassTestCase(MyTestCase):
 
         # user and key available
         condition = PolicyConditionClass(section=ConditionSection.USERINFO, key="email",
-                                         comparator=Comparators.MATCHES, value=".*@example.com", active=True)
+                                         comparator=PrimaryComparators.MATCHES, value=".*@example.com", active=True)
         data = condition.get_user_data(cornelius)
         self.assertEqual("user", data.object_name)
         self.assertTrue(data.object_available)
@@ -2500,7 +2553,7 @@ class PolicyConditionClassTestCase(MyTestCase):
 
     def test_05_get_token_data_object_not_available(self):
         condition = PolicyConditionClass(section=ConditionSection.TOKEN, key="tokentype",
-                                         comparator=Comparators.EQUALS, value="hotp", active=True)
+                                         comparator=PrimaryComparators.EQUALS, value="hotp", active=True)
 
         # Pass invalid serial
         data = condition.get_token_data("1234")
@@ -2511,7 +2564,7 @@ class PolicyConditionClassTestCase(MyTestCase):
 
     def test_06_get_token_data_token(self):
         condition = PolicyConditionClass(section=ConditionSection.TOKEN, key="tokentype",
-                                         comparator=Comparators.EQUALS, value="hotp", active=True)
+                                         comparator=PrimaryComparators.EQUALS, value="hotp", active=True)
         token = init_token({"type": "hotp", "genkey": True})
 
         # Everything available
@@ -2522,7 +2575,8 @@ class PolicyConditionClassTestCase(MyTestCase):
         self.assertIsNone(data.available_keys)
 
         # Key not available
-        condition = PolicyConditionClass(section=ConditionSection.TOKEN, key="hashlib", comparator=Comparators.EQUALS,
+        condition = PolicyConditionClass(section=ConditionSection.TOKEN, key="hashlib",
+                                         comparator=PrimaryComparators.EQUALS,
                                          value="sha256", active=True)
         data = condition.get_token_data(token.get_serial())
         self.assertEqual("token", data.object_name)
@@ -2532,7 +2586,7 @@ class PolicyConditionClassTestCase(MyTestCase):
 
     def test_07_get_token_data_token_info(self):
         condition = PolicyConditionClass(section=ConditionSection.TOKENINFO, key="hashlib",
-                                         comparator=Comparators.EQUALS, value="sha256", active=True)
+                                         comparator=PrimaryComparators.EQUALS, value="sha256", active=True)
         token = init_token({"type": "hotp", "genkey": True, "hashlib": "sha1"})
 
         # Everything available
@@ -2544,7 +2598,7 @@ class PolicyConditionClassTestCase(MyTestCase):
 
         # Key not available
         condition = PolicyConditionClass(section=ConditionSection.TOKENINFO, key="tokentype",
-                                         comparator=Comparators.EQUALS, value="hotp", active=True)
+                                         comparator=PrimaryComparators.EQUALS, value="hotp", active=True)
         data = condition.get_token_data(token.get_serial())
         self.assertEqual("token", data.object_name)
         self.assertTrue(data.object_available)
@@ -2553,7 +2607,7 @@ class PolicyConditionClassTestCase(MyTestCase):
 
     def test_08_get_request_header_data(self):
         condition = PolicyConditionClass(section=ConditionSection.HTTP_REQUEST_HEADER, key="User-Agent",
-                                         comparator=Comparators.EQUALS, value="SpecialApp", active=True)
+                                         comparator=PrimaryComparators.EQUALS, value="SpecialApp", active=True)
         request_headers = Headers({})
 
         # Request header not available
@@ -2580,7 +2634,7 @@ class PolicyConditionClassTestCase(MyTestCase):
 
     def test_09_get_request_environment_data(self):
         condition = PolicyConditionClass(section=ConditionSection.HTTP_ENVIRONMENT, key="REQUEST_METHOD",
-                                         comparator=Comparators.EQUALS, value="POST", active=True)
+                                         comparator=PrimaryComparators.EQUALS, value="POST", active=True)
         request_headers = EnvironHeaders({})
 
         # Request header not available
@@ -2608,7 +2662,7 @@ class PolicyConditionClassTestCase(MyTestCase):
     def test_10_do_handle_missing_data_raise_error(self):
         # ---- Test for ConditionHandleMissingData.RAISE_ERROR ----
         condition = PolicyConditionClass(section=ConditionSection.TOKENINFO, key="hashlib",
-                                         comparator=Comparators.EQUALS, value="sha256", active=True,
+                                         comparator=PrimaryComparators.EQUALS, value="sha256", active=True,
                                          handle_missing_data=ConditionHandleMissingData.RAISE_ERROR.value)
         # Token object not available
         error_message = (r"Policy 'test' has a condition on the section 'tokeninfo' with key 'hashlib', but a token is "
@@ -2631,7 +2685,7 @@ class PolicyConditionClassTestCase(MyTestCase):
     def test_11_do_handle_missing_data_is_true(self):
         # ---- Test for ConditionHandleMissingData.IS_TRUE ----
         condition = PolicyConditionClass(section=ConditionSection.TOKENINFO, key="hashlib",
-                                         comparator=Comparators.EQUALS, value="sha256", active=True,
+                                         comparator=PrimaryComparators.EQUALS, value="sha256", active=True,
                                          handle_missing_data=ConditionHandleMissingData.IS_TRUE.value)
         # Token object not available
         self.assertTrue(condition._do_handle_missing_data(policy_name="test", missing="token", object_name="token"))
@@ -2646,7 +2700,7 @@ class PolicyConditionClassTestCase(MyTestCase):
     def test_12_do_handle_missing_data_is_false(self):
         # ---- Test for ConditionHandleMissingData.IS_FALSE ----
         condition = PolicyConditionClass(section=ConditionSection.TOKENINFO, key="hashlib",
-                                         comparator=Comparators.EQUALS, value="sha256", active=True,
+                                         comparator=PrimaryComparators.EQUALS, value="sha256", active=True,
                                          handle_missing_data=ConditionHandleMissingData.IS_FALSE.value)
         # Token object not available
         self.assertFalse(condition._do_handle_missing_data(policy_name="test", missing="token", object_name="token"))
@@ -2673,14 +2727,14 @@ class PolicyConditionClassTestCase(MyTestCase):
         self.assertFalse(ConditionHandleMissingData.RANDOM in ConditionHandleMissingData.__members__)
         error_message = r"Unknown handle missing data random defined in condition of policy test."
         condition = PolicyConditionClass(section=ConditionSection.TOKENINFO, key="hashlib",
-                                         comparator=Comparators.EQUALS, value="sha256", active=False,
+                                         comparator=PrimaryComparators.EQUALS, value="sha256", active=False,
                                          handle_missing_data=ConditionHandleMissingData.RANDOM, pass_if_inactive=True)
         with self.assertRaisesRegex(PolicyError, error_message):
             condition._do_handle_missing_data(policy_name="test", missing="token", object_name="token")
 
     def test_14_match_success(self):
         condition = PolicyConditionClass(section=ConditionSection.TOKEN, key="tokentype",
-                                         comparator=Comparators.EQUALS, value="hotp", active=True,
+                                         comparator=PrimaryComparators.EQUALS, value="hotp", active=True,
                                          handle_missing_data=ConditionHandleMissingData.RAISE_ERROR.value)
         hotp = init_token({"type": "hotp", "genkey": True})
         totp = init_token({"type": "totp", "genkey": True})
@@ -2701,7 +2755,7 @@ class PolicyConditionClassTestCase(MyTestCase):
 
     def test_15_match_fails(self):
         condition = PolicyConditionClass(section=ConditionSection.TOKENINFO, key="count_auth",
-                                         comparator=Comparators.BIGGER, value="3", active=True)
+                                         comparator=PrimaryComparators.BIGGER, value="3", active=True)
 
         token = init_token({"type": "hotp", "genkey": True})
 
@@ -2728,7 +2782,7 @@ class PolicyConditionClassTestCase(MyTestCase):
 
     def test_16_get_container_data_container(self):
         condition = PolicyConditionClass(section=ConditionSection.CONTAINER, key="type",
-                                         comparator=Comparators.EQUALS, value="smartphone", active=True)
+                                         comparator=PrimaryComparators.EQUALS, value="smartphone", active=True)
         container_serial = init_container({"type": "smartphone"})["container_serial"]
 
         # Everything available
@@ -2740,7 +2794,7 @@ class PolicyConditionClassTestCase(MyTestCase):
 
         # Key not available
         condition = PolicyConditionClass(section=ConditionSection.CONTAINER, key="hashlib",
-                                         comparator=Comparators.EQUALS, value="sha256", active=True)
+                                         comparator=PrimaryComparators.EQUALS, value="sha256", active=True)
         data = condition.get_container_data(container_serial)
         self.assertEqual("container", data.object_name)
         self.assertTrue(data.object_available)
@@ -2764,7 +2818,8 @@ class PolicyConditionClassTestCase(MyTestCase):
 
     def test_17_get_container_data_container_info(self):
         condition = PolicyConditionClass(section=ConditionSection.CONTAINER_INFO, key="registration_state",
-                                         comparator=Comparators.EQUALS, value=RegistrationState.CLIENT_WAIT.value,
+                                         comparator=PrimaryComparators.EQUALS,
+                                         value=RegistrationState.CLIENT_WAIT.value,
                                          active=True)
         container_serial = init_container({"type": "smartphone"})["container_serial"]
         container = find_container_by_serial(container_serial)
@@ -2798,6 +2853,41 @@ class PolicyConditionClassTestCase(MyTestCase):
         self.assertFalse(data.object_available)
         self.assertIsNone(data.value)
         self.assertIsNone(data.available_keys)
+
+    def test_18_get_data_from_dict(self):
+        condition = PolicyConditionClass(section=ConditionSection.REQUEST_DATA, key="type",
+                                         comparator=PrimaryComparators.EQUALS, value="hotp", active=True)
+
+        # Request data not available
+        data = condition.get_data_from_dict(None)
+        self.assertEqual(ConditionSection.REQUEST_DATA, data.object_name)
+        self.assertFalse(data.object_available)
+        self.assertIsNone(data.value)
+        self.assertIsNone(data.available_keys)
+
+        # Invalid data type for request data
+        data = condition.get_data_from_dict("type: hotp")
+        self.assertEqual(ConditionSection.REQUEST_DATA, data.object_name)
+        self.assertFalse(data.object_available)
+        self.assertIsNone(data.value)
+        self.assertIsNone(data.available_keys)
+
+        # Key not available
+        request_data = {"user": "hans", "serial": "1234567890"}
+        data = condition.get_data_from_dict(request_data)
+        self.assertEqual(ConditionSection.REQUEST_DATA, data.object_name)
+        self.assertTrue(data.object_available)
+        self.assertIsNone(data.value)
+        self.assertTrue(isinstance(data.available_keys, list))
+
+        # Everything available
+        request_data = {"user": "hans", "type": "hotp", "serial": "1234567890"}
+        data = condition.get_data_from_dict(request_data)
+        self.assertEqual(ConditionSection.REQUEST_DATA, data.object_name)
+        self.assertTrue(data.object_available)
+        self.assertEqual("hotp", data.value)
+        self.assertIsNone(data.available_keys)
+
 
 class ConditionHandleMissingDataTestCase(MyTestCase):
 

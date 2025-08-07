@@ -1,8 +1,12 @@
 """ Test for the '/auth' API-endpoint """
+import datetime
 import json
 import logging
 
 from testfixtures import log_capture
+
+from privacyidea.api.lib.utils import verify_auth_token
+from privacyidea.lib.challenge import get_challenges
 from .base import MyApiTestCase, OverrideConfigTestCase
 import mock
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
@@ -14,12 +18,11 @@ from privacyidea.lib.realm import (set_realm, set_default_realm, delete_realm,
                                    get_default_realm)
 from privacyidea.lib.event import set_event, delete_event
 from privacyidea.lib.eventhandler.base import CONDITION
-from privacyidea.lib.token import get_tokens, remove_token
+from privacyidea.lib.token import get_tokens, remove_token, init_token, get_one_token
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import to_unicode, AUTH_RESPONSE
 from privacyidea.config import TestingConfig
 from . import ldap3mock
-
 
 PWFILE = "tests/testdata/passwd-duplicate-name"
 
@@ -591,15 +594,53 @@ class AuthApiTestCase(MyApiTestCase):
                 self.assertIn('token', result.get("value"), result)
                 # role should be 'admin'
                 self.assertEqual('admin', result['value']['role'], result)
-                mock_log.assert_called_once_with("Problem resolving user testadmin in "
-                                                 "realm ldap1: ERR907: Error performing "
+                mock_log.assert_not_called()
+
+        delete_realm("ldap1")
+        delete_resolver("ldap1")
+        ldap3mock.set_exception(False)
+
+    @ldap3mock.activate
+    def test_06_user_with_failing_resolver(self):
+        ldap3mock.setLDAPDirectory([])
+        # define, that we want to get an exception
+        ldap3mock.set_exception()
+        # Create an LDAP Realm as default realm
+        params = {'LDAPURI': 'ldap://localhost',
+                  'LDAPBASE': 'o=test',
+                  'BINDDN': 'cn=manager,ou=example,o=test',
+                  'BINDPW': 'ldaptest',
+                  'LOGINNAMEATTRIBUTE': 'cn',
+                  'LDAPSEARCHFILTER': '(cn=*)',
+                  'USERINFO': '{ "username": "cn",'
+                              '"phone" : "telephoneNumber", '
+                              '"mobile" : "mobile"'
+                              ', "email" : "mail", '
+                              '"surname" : "sn", '
+                              '"givenname" : "givenName" }',
+                  'UIDTYPE': 'DN',
+                  "resolver": "ldap1",
+                  "type": "ldapresolver"}
+        save_resolver(params)
+        set_realm("ldap1", [{'name': "ldap1"}])
+        set_default_realm("ldap1")
+
+        # Try to log in as user with a failing LDAP resolver
+        with mock.patch("logging.Logger.warning") as mock_log:
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "hans",
+                                                     "password": "test"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(401, res.status_code, res)
+                mock_log.assert_called_once_with("Problem resolving user hans in realm ldap1: ERR907: Error performing "
                                                  "bind operation: LDAP request failed.")
 
         delete_realm("ldap1")
         delete_resolver("ldap1")
         ldap3mock.set_exception(False)
 
-    def test_06_auth_user_not_in_defrealm(self):
+    def test_07_auth_user_not_in_defrealm(self):
         self.setUp_user_realms()
         self.setUp_user_realm3()
         set_default_realm(self.realm3)
@@ -641,7 +682,7 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertIn('token', result.get("value"), result)
             self.assertEqual('realm1', result['value']['realm'], result)
 
-    def test_07_user_not_in_userstore(self):
+    def test_08_user_not_in_userstore(self):
         # If a user can not be found in the userstore we always get the response
         # "Wrong Credentials"
         self.setUp_user_realms()
@@ -681,6 +722,53 @@ class AuthApiTestCase(MyApiTestCase):
         delete_realm(self.realm1)
         delete_realm(self.realm2)
         delete_resolver(self.resolvername1)
+
+    def test_09_auth_disabled_token_types(self):
+        self.setUp_user_realms()
+        serial = "SPASS1"
+
+        # Create a working Simple-Pass token
+        init_token({"serial": serial,
+                    "type": "spass",
+                    "pin": "1"},
+                   user=User("cornelius", self.realm1))
+
+        # Set the policy to use privacyIDEA for authentication
+        set_policy("piLogin", scope=SCOPE.WEBUI, action=f"{ACTION.LOGINMODE}=privacyIDEA")
+
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "realm": "realm1",
+                                                 "password": "1"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertIn('token', result.get('value'), result)
+            self.assertEqual(result.get("value").get('role'), 'user', result)
+
+        # Disable the spass token for authentication
+        set_policy(name="disable_spass_token", scope=SCOPE.AUTH, action=f"{ACTION.DISABLED_TOKEN_TYPES}=spass")
+
+        # The very same auth must now be rejected
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "realm": "realm1",
+                                                 "password": "1"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), result)
+            self.assertEqual(4031, result['error']['code'], result)
+            self.assertEqual('Authentication failure. Wrong credentials',
+                             result['error']['message'], result)
+
+        # Clean-up
+        remove_token(serial=serial)
+        delete_policy("disable_spass_token")
+        delete_policy("piLogin")
 
 
 class AdminFromUserstore(OverrideConfigTestCase):
@@ -724,9 +812,8 @@ class AdminFromUserstore(OverrideConfigTestCase):
 
 class DuplicateUserApiTestCase(MyApiTestCase):
 
-    def test_01_admin_and_user_same_name(self):
-        # Test the logging, if admin and user have the same name (testadmin/testpw)
-        # Now create a default realm, that contains the used "testadmin"
+    def setUp(self):
+        # create a default realm, that contains the used "testadmin"
         rid = save_resolver({"resolver": self.resolvername1,
                              "type": "passwdresolver",
                              "fileName": PWFILE})
@@ -738,6 +825,9 @@ class DuplicateUserApiTestCase(MyApiTestCase):
         self.assertTrue(len(added) == 1)
 
         set_default_realm(self.realm1)
+
+    def test_01_admin_and_user_same_name(self):
+        # Test the logging, if admin and user have the same name (testadmin/testpw)
 
         # If the admin logs in, everything is fine
         with mock.patch("logging.Logger.info") as mock_log:
@@ -786,6 +876,322 @@ class DuplicateUserApiTestCase(MyApiTestCase):
                                  'Authentication failure. Wrong credentials', result)
             # check if we have the correct log entry
             mock_log.assert_called_with("user uid 1004 failed to authenticate")
+
+    def test_02_max_auth_failed(self):
+        """
+        Test that the prepolicies "auth_max_fail" is applied correctly to a local admin and
+        user with the same username in the defrealm
+        """
+        # Generic policy is applied to both
+        set_policy("max_fail", scope=SCOPE.AUTHZ, action=f"{ACTION.AUTHMAXFAIL}=2/1m")
+        self.app_context.g.audit_object.clear()
+
+        # Admin
+        for i in range(2):
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "testadmin",
+                                                     "password": "wrong"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(401, res.status_code, res)
+        # third successful authentication fails due to policy
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "testpw"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res)
+            details = res.json.get("detail")
+            self.assertEqual(details.get("message"), "Only 2 failed authentications per 0:01:00 allowed.", details)
+
+        # Correct authentication for user also fails, since we can not differentiate between local admin and user
+        # before the authentication
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res)
+            details = res.json.get("detail")
+            self.assertEqual(details.get("message"), "Only 2 failed authentications per 0:01:00 allowed.", details)
+
+        # Even if we explicitly pass the realm, the user can not authenticate since we can not distinguish admins and
+        # users in the audit log for failed authentications
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "realm": self.realm1,
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res)
+            details = res.json.get("detail")
+            self.assertEqual(details.get("message"), "Only 2 failed authentications per 0:01:00 allowed.", details)
+
+        # Realm policy is only applied to user
+        set_policy("max_fail", scope=SCOPE.AUTHZ, action=f"{ACTION.AUTHMAXFAIL}=2/1m", realm=self.realm1)
+
+        # Failed authentications
+        for i in range(2):
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "testadmin",
+                                                     "password": "wrong"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(401, res.status_code, res)
+
+        # Admin: third successful authentication is successful
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "testpw"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+
+        # User: third successful authentication fails due to policy
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res)
+            details = res.json.get("detail")
+            self.assertEqual(details.get("message"),
+                             "Only 2 failed authentications per 0:01:00 allowed.",
+                             details)
+
+        delete_policy("max_fail")
+
+    def test_03_max_auth_success(self):
+        """
+        Test that the prepolicies "auth_max_success" is applied correctly to a local admin and user with the same
+        username in the defrealm
+        """
+        # Generic policy is applied to both
+        set_policy("max_success", scope=SCOPE.AUTHZ, action=f"{ACTION.AUTHMAXSUCCESS}=2/1m")
+        self.app_context.g.audit_object.clear()
+
+        # Admin
+        for i in range(2):
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "testadmin",
+                                                     "password": "testpw"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+        # third successful authentication fails due to policy
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "testpw"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+            details = res.json.get("detail")
+            self.assertEqual(details.get("message"),
+                             "Only 2 successful authentications per 0:01:00 allowed.", details)
+
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res)
+            details = res.json.get("detail")
+            self.assertEqual(details.get("message"),
+                             "Only 2 successful authentications per 0:01:00 allowed.", details)
+
+        # But if we explicitly pass the realm, the user can authenticate
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "realm": self.realm1,
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+
+        # Realm policy is only applied to user
+        set_policy("max_success", scope=SCOPE.AUTHZ, action=f"{ACTION.AUTHMAXSUCCESS}=2/1m", realm=self.realm1)
+
+        # Admin can log in successfully
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "testpw"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+
+        # User can also authenticate successfully a second time even without the realm
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+        # but third login still fails
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+            details = res.json.get("detail")
+            self.assertEqual(details.get("message"),
+                             "Only 2 successful authentications per 0:01:00 allowed.", details)
+
+        delete_policy("max_success")
+
+    def test_04_increase_failcounter_on_challenge(self):
+        set_policy("pi_login", scope=SCOPE.WEBUI, action=f"{ACTION.LOGINMODE}=privacyIDEA")
+        set_policy("challenge_response", scope=SCOPE.AUTH,
+                   action=f"{ACTION.CHALLENGERESPONSE}=hotp,{ACTION.OTPPIN}=userstore")
+        set_policy("failcounter_challenge", scope=SCOPE.AUTH, action=ACTION.INCREASE_FAILCOUNTER_ON_CHALLENGE,
+                   realm=self.realm1)
+
+        user = User(self.testadmin, self.realm1)
+        hotp = init_token({"type": "hotp"}, user)
+        serial = hotp.get_serial()
+
+        # Authenticate with admin not triggers a challenge
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "testpw"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(AUTH_RESPONSE.ACCEPT, res.json.get("result").get("authentication"))
+            hotp = get_one_token(serial=serial)
+            self.assertEqual(0, hotp.get_failcount())
+            self.assertEqual(0, len(get_challenges(serial)))
+
+        # Failed admin authentication also increases the fail counter of the user token
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "wrong"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res)
+            hotp = get_one_token(serial=serial)
+            self.assertEqual(1, hotp.get_failcount())
+            self.assertEqual(0, len(get_challenges(serial)))
+
+        # Authenticate with user triggers a challenge and increase the fail counter
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(AUTH_RESPONSE.CHALLENGE, res.json.get("result").get("authentication"))
+            hotp = get_one_token(serial=serial)
+            self.assertEqual(2, hotp.get_failcount())
+            self.assertEqual(1, len(get_challenges(serial)))
+
+        hotp.delete_token()
+        delete_policy("pi_login")
+        delete_policy("challenge_response")
+        delete_policy("failcounter_challenge")
+
+    def test_05_disabled_token_types(self):
+        set_policy("pi_login", scope=SCOPE.WEBUI, action=f"{ACTION.LOGINMODE}=privacyIDEA")
+        set_policy("otp_pin", scope=SCOPE.AUTH, action=f"{ACTION.OTPPIN}=userstore")
+        set_policy("disabled_token_types", scope=SCOPE.AUTH, action=f"{ACTION.DISABLED_TOKEN_TYPES}=totp",
+                   realm=self.realm1)
+        user = User(self.testadmin, self.realm1)
+        totp = init_token({"type": "totp"}, user=user)
+        hotp = init_token({"type": "hotp"}, user=user)
+
+        # Authenticate with admin works without token
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "testpw"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(AUTH_RESPONSE.ACCEPT, res.json.get("result").get("authentication"))
+
+        # Authenticate user with TOTP token fails
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": f"test{totp.get_otp()[2]}"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res)
+
+        # Authenticate user with HOTP token works
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": f"test{hotp.get_otp()[2]}"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(AUTH_RESPONSE.ACCEPT, res.json.get("result").get("authentication"))
+
+        # Clean-up
+        totp.delete_token()
+        hotp.delete_token()
+        delete_policy("pi_login")
+        delete_policy("otp_pin")
+        delete_policy("disabled_token_types")
+
+    def test_06_jwt_validity(self):
+        # generic policy applies to both
+        set_policy("jwt_validity", scope=SCOPE.WEBUI, action=f"{ACTION.JWTVALIDITY}=1800")
+
+        # Admin
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "testpw"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            jwt = res.json.get("result").get("value").get("token")
+            verify_result = verify_auth_token(jwt)
+            expiration = datetime.datetime.fromtimestamp(verify_result.get("exp"), tz=datetime.timezone.utc)
+            expected_expiration = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=1800)
+            self.assertAlmostEqual(expected_expiration, expiration, delta=datetime.timedelta(seconds=5))
+
+        # User
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            jwt = res.json.get("result").get("value").get("token")
+            verify_result = verify_auth_token(jwt)
+            expiration = datetime.datetime.fromtimestamp(verify_result.get("exp"), tz=datetime.timezone.utc)
+            expected_expiration = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=1800)
+            self.assertAlmostEqual(expected_expiration, expiration, delta=datetime.timedelta(seconds=5))
+
+        # change to realm policy
+        set_policy("jwt_validity", scope=SCOPE.WEBUI, action=f"{ACTION.JWTVALIDITY}=7200", realm=self.realm1)
+
+        # Admin: Default time 3600 s
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "testpw"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            jwt = res.json.get("result").get("value").get("token")
+            verify_result = verify_auth_token(jwt)
+            expiration = datetime.datetime.fromtimestamp(verify_result.get("exp"), tz=datetime.timezone.utc)
+            expected_expiration = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=3600)
+            self.assertAlmostEqual(expected_expiration, expiration, delta=datetime.timedelta(seconds=5))
+
+        # User: takes value from policy
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            jwt = res.json.get("result").get("value").get("token")
+            verify_result = verify_auth_token(jwt)
+            expiration = datetime.datetime.fromtimestamp(verify_result.get("exp"), tz=datetime.timezone.utc)
+            expected_expiration = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=7200)
+            self.assertAlmostEqual(expected_expiration, expiration, delta=datetime.timedelta(seconds=5))
+
+        delete_policy("jwt_validity")
 
 
 class EventHandlerTest(MyApiTestCase):

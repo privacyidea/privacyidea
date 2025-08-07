@@ -66,7 +66,7 @@ to consider the following aspects:
 
 * Define your **concept of roles** for administrators, operators, help desk
   users and normal users. Read more about it in the
-  :ref:`admin_polices` and :ref:`user_policies`.
+  :ref:`admin_policies` and :ref:`user_policies`.
 
 * In privacyIDEA you have a lot
   of possibilities to design automatation and **processes** like

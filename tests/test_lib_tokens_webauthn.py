@@ -54,7 +54,7 @@
 This file tests the lib.tokens.webauthntoken, along with lib.tokens.webauthn.
 This depends on lib.tokenclass
 """
-
+import json
 import os
 import struct
 import unittest
@@ -68,7 +68,7 @@ from privacyidea.lib.fido2.config import FIDO2ConfigOptions
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
-from privacyidea.lib.token import init_token, check_user_pass, remove_token
+from privacyidea.lib.token import init_token, check_user_pass, remove_token, import_tokens, get_tokens
 from privacyidea.lib.tokens.webauthn import (CoseAlgorithm, RegistrationRejectedException,
                                              WebAuthnMakeCredentialOptions, AuthenticationRejectedException,
                                              webauthn_b64_decode, webauthn_b64_encode,
@@ -533,6 +533,83 @@ class WebAuthnTokenTestCase(MyTestCase):
         })
         # Returns the sign count on success which is 79
         self.assertEqual(res, 79)
+
+    def test_12_webauthn_token_export(self):
+        # Set up the webauthn token for testing
+        self._setup_token()
+        token = self.token
+
+        # Test that all expected keys are present in the exported dictionary
+        exported_data = token.export_token()
+
+        expected_keys = ["serial", "type", "description", "otpkey", "issuer"]
+        self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
+
+        expected_tokeninfo_keys = ["tokenkind", "pubKey", "attestation_serial", "attestation_issuer",
+                                   "attestation_subject"]
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+
+        # Test that the exported values match the token's data
+        exported_data = token.export_token()
+        self.assertEqual(exported_data["serial"], token.token.serial)
+        self.assertEqual(exported_data["type"], "webauthn")
+        self.assertEqual(exported_data["description"], "Yubico U2F EE Serial 23925734811117901")
+        self.assertEqual(exported_data["otpkey"], "8a535a698e5f609a11d6c839201ec52f66686bea8177fe50f7965ccb1364"
+                                                  "9a39280e188b08b8042a829f0941252edebfe839a3fc452e38765423ac7f802df62d")
+        self.assertEqual(exported_data["issuer"], "privacyIDEA")
+        self.assertEqual(exported_data["tokeninfo"]["pubKey"], "a401020326215820319ea01f1125ce6232947365800ae5d"
+                                                               "9ddc874247c55d1516bad3ca3ca32075c22582059f1f07f3b2f86c"
+                                                               "0a51e0cfa13dc57e7c77a110e796f8a0b27741fe58663cb3a")
+
+        # Clean up
+        remove_token(token.token.serial)
+
+    def test_13_webauthn_token_import(self):
+        # Define the token data to be imported
+        token_data = [{
+            "serial": 'WAN0000FE64',
+            "type": 'webauthn',
+            "description": 'Yubico U2F EE Serial 23925734811117901',
+            "otpkey": '8a535a698e5f609a11d6c839201ec52f66686bea8177fe50f7965ccb13649a39280e188b08b8042a829f0941252ede'
+                      'bfe839a3fc452e38765423ac7f802df62d',
+            "issuer": "privacyIDEA",
+            "tokeninfo": {'aaguid': '00000000000000000000000000000000',
+                          'attestation_issuer': 'CN=Yubico U2F Root CA Serial 457200631',
+                          'attestation_level': 'trusted', 'attestation_serial': '1013459277',
+                          'attestation_subject': 'CN=Yubico U2F EE Serial 23925734811117901',
+                          'credential_id_hash': 'a4bde50896eff4605bb451a18eb56ed6fc5dbc561cff0478dd8e2480a4c4bd66',
+                          'origin': 'https://webauthn.io',
+                          'pubKey': 'a401020326215820319ea01f1125ce6232947365800ae5d9ddc874247c55d1516bad3ca3ca32075c22'
+                                    '582059f1f07f3b2f86c0a51e0cfa13dc57e7c77a110e796f8a0b27741fe58663cb3a',
+                          'relying_party_id': 'webauthn.io',
+                          'relying_party_name': 'Web Authentication',
+                          'tokenkind': 'software'}
+        }]
+
+        # Import the token
+        import_tokens(json.dumps(token_data))
+
+        # Retrieve the imported token
+        token = get_tokens(serial=token_data[0]["serial"])[0]
+
+        # Verify that the token data matches the imported data
+        self.assertEqual(token.token.serial, token_data[0]["serial"])
+        self.assertEqual(token.type, token_data[0]["type"])
+        self.assertEqual(token.token.description, token_data[0]["description"])
+        self.assertEqual(token.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
+
+        reply_dict = self._create_challenge()
+        attributes = reply_dict.get("attributes")
+        web_authn_sign_request = attributes.get("webAuthnSignRequest")
+
+        self.assertEqual(RP_ID, web_authn_sign_request.get('rpId'))
+        self.assertEqual(1, len(web_authn_sign_request.get('allowCredentials') or []))
+        self.assertEqual('public-key', web_authn_sign_request.get('allowCredentials')[0].get('type'))
+        self.assertEqual(CRED_ID, web_authn_sign_request.get('allowCredentials')[0].get('id'))
+        self.assertEqual(ALLOWED_TRANSPORTS, web_authn_sign_request.get('allowCredentials')[0].get('transports'))
+
+        # Clean up
+        remove_token(token.token.serial)
 
 
 class WebAuthnTestCase(unittest.TestCase):

@@ -1,3 +1,9 @@
+# SPDX-FileCopyrightText: (C) 2015 NetKnights GmbH <https://netknights.it>
+# SPDX-FileCopyrightText: (C) 2015 Cornelius Kölbel, <info@privacyidea.org>
+# SPDX-FileCopyrightText: (C) 2025 Paul Lettich <paul.lettich@netknights.it>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 # 2014-11-15 Cornelius Kölbel, info@privacyidea.org
 #            Initial creation
 #
@@ -17,6 +23,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import atexit
 import datetime
 import os
 import os.path
@@ -319,5 +326,11 @@ def create_app(config_name="development",
     log.debug(f"Reading application from the static folder {app.static_folder} "
               f"and the template folder {app.template_folder}")
     app.config['APP_READY'] = True
+
+    def exit_func():
+        # Destroy the engine pool and close all open database connections on exit
+        with app.app_context():
+            db.engine.dispose()
+    atexit.register(exit_func)
 
     return app

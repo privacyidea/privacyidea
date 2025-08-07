@@ -3,8 +3,11 @@ This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
+import json
 import warnings
 from testfixtures import log_capture
+
+from privacyidea.lib.token import import_tokens, get_tokens, init_token, remove_token
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.resolver import (save_resolver)
@@ -410,11 +413,10 @@ class HOTPTokenTestCase(MyTestCase):
     def test_17_update_token(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = HotpTokenClass(db_token)
-        # Failed update: genkey wrong
-        self.assertRaises(Exception,
-                          token.update,
-                          {"description": "new desc",
+        # Wrong genkey is replaced with genkey=True
+        token.update({"description": "new desc",
                            "genkey": "17"})
+        self.assertEqual("new desc", token.token.description)
         # genkey and otpkey used at the same time
         token.update({"otpkey": self.otpkey,
                       "genkey": "1"})
@@ -439,8 +441,9 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertTrue(token.token.pin_hash.startswith("@@"),
                         token.token.pin_hash)
 
-        # update token without otpkey raises an error
-        self.assertRaises(Exception, token.update, {"description": "test"})
+        # update token without otpkey generates one
+        token.update({"description": "test"})
+        self.assertEqual("test", token.token.description)
 
     def test_18_challenges(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -854,3 +857,68 @@ class HOTPTokenTestCase(MyTestCase):
             _detail = token.get_init_detail(user=User("cornelius",
                                                       self.realm1), params=params)
             mock_log.assert_any_call("Unknown Tag 'real' in one of your policy definition")
+
+    def test_32_hotp_token_export(self):
+        # Set up the HOTP token for testing
+        hotptoken = init_token(param={'serial': "OATH12345678", 'type': 'hotp', 'otpkey': '12345'})
+        hotptoken.set_description("this is a hotp token export test")
+        hotptoken.add_tokeninfo("hashlib", "sha256")
+
+        # Test that all expected keys are present in the exported dictionary
+        exported_data = hotptoken.export_token()
+
+        expected_keys = ["serial", "type", "description", "count", "otplen", "otpkey", "issuer"]
+        self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
+
+        expected_tokeninfo_keys = ["hashlib", "tokenkind"]
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+
+        # Test that the exported values match the token's data
+        exported_data = hotptoken.export_token()
+        self.assertEqual(exported_data["serial"], "OATH12345678")
+        self.assertEqual(exported_data["type"], "hotp")
+        self.assertEqual(exported_data["description"], "this is a hotp token export test")
+        self.assertEqual(exported_data["tokeninfo"]["hashlib"], "sha256")
+        self.assertEqual(exported_data["otplen"], 6)
+        self.assertEqual(exported_data["otpkey"], '12345')
+        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
+        self.assertEqual(exported_data["issuer"], "privacyIDEA")
+        self.assertEqual(exported_data["count"], 0)
+
+        # Clean up
+        remove_token(hotptoken.token.serial)
+
+    def test_33_hotp_token_import(self):
+        # Define the token data to be imported
+        token_data = [{
+            "serial": "OATH12345678",
+            "type": "hotp",
+            "description": "this is a hotp token import test",
+            "otpkey": self.otpkey,
+            "otplen": 8,
+            "issuer": "privacyIDEA",
+            "count": 7,
+            "tokeninfo": {"hashlib": "sha256", "tokenkind": "software"}
+        }]
+
+        # Import the token
+        import_tokens(json.dumps(token_data))
+
+        # Retrieve the imported token
+        hotptoken = get_tokens(serial=token_data[0]["serial"])[0]
+
+        # Verify that the token data matches the imported data
+        self.assertEqual(hotptoken.token.serial, token_data[0]["serial"])
+        self.assertEqual(hotptoken.type, token_data[0]["type"])
+        self.assertEqual(hotptoken.token.description, token_data[0]["description"])
+        self.assertEqual(hotptoken.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
+        self.assertEqual(hotptoken.get_tokeninfo("hashlib"), token_data[0]["tokeninfo"]["hashlib"])
+        self.assertEqual(hotptoken.get_tokeninfo("tokenkind"), token_data[0]["tokeninfo"]["tokenkind"])
+        self.assertEqual(hotptoken.export_token()["otplen"], token_data[0]["otplen"])
+        self.assertEqual(hotptoken.token.count, token_data[0]["count"])
+
+        # Check that token works
+        self.assertEqual(7, hotptoken.check_otp('67579288'))
+
+        # Clean up
+        remove_token(hotptoken.token.serial)

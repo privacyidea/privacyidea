@@ -139,6 +139,7 @@ def set_policy_api(name=None):
     :jsonparam pinode: The privacyIDEA node (or list of nodes) for which this policy is valid
     :jsonparam client: for which requesting client this should be
     :jsontype client: IP address with subnet
+    :jsonparam user_agents: List of user agents for which this policy is valid.
     :jsonparam active: bool, whether this policy is active or not
     :jsonparam check_all_resolvers: bool, whether all all resolvers in which
         the user exists should be checked with this policy.
@@ -199,21 +200,22 @@ def set_policy_api(name=None):
     param = request.all_data
     check_policy_name(name)
 
-    action = getParam(param, "action", required)
-    scope = getParam(param, "scope", required)
-    realm = getParam(param, "realm", required)
-    resolver = getParam(param, "resolver", optional)
-    pinode = getParam(param, "pinode", optional)
-    user = getParam(param, "user", optional)
-    time = getParam(param, "time", optional)
-    client = getParam(param, "client", optional)
-    active = getParam(param, "active", optional)
-    check_all_resolvers = getParam(param, "check_all_resolvers", optional)
-    admin_realm = getParam(param, "adminrealm", optional)
-    admin_user = getParam(param, "adminuser", optional)
-    priority = int(getParam(param, "priority", optional, default=1))
-    conditions = getParam(param, "conditions", optional)
-    description = getParam(param, "description", optional)
+    action = get_required(param, "action")
+    scope = get_required(param, "scope")
+    realm = param.get("realm")
+    resolver = param.get("resolver")
+    pinode = param.get("pinode")
+    user = param.get("user")
+    time = param.get("time")
+    client = param.get("client")
+    active = param.get("active")
+    check_all_resolvers = param.get("check_all_resolvers")
+    admin_realm = param.get("adminrealm")
+    admin_user = param.get("adminuser")
+    priority = int(param.get("priority", 1))
+    conditions = param.get("conditions")
+    description = param.get("description")
+    user_agents = param.get("user_agents", None)
 
     # Validate admin realms here, because the allowed realms need to be read from the config file
     # (avoid flask imports on lib level)
@@ -228,7 +230,7 @@ def set_policy_api(name=None):
                      adminuser=admin_user, pinode=pinode,
                      check_all_resolvers=check_all_resolvers or False,
                      priority=priority, conditions=conditions,
-                     description=description)
+                     description=description, user_agents=user_agents)
     log.debug("policy {0!s} successfully saved.".format(name))
     string = "setPolicy " + name
     res[string] = ret

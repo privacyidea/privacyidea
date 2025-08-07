@@ -42,7 +42,7 @@ Its only dependencies are to the database model.py and to the
 config.py, so this can be tested standalone without realms, tokens and
 webservice!
 """
-
+import json
 import logging
 
 from .log import log_with
@@ -126,11 +126,34 @@ def save_resolver(params):
         resolver_id = resolver.save()
     # create the config
     for key, value in data.items():
+        if not value and not isinstance(value, bool):
+            # If the value is empty, we do not store it. But we check if an old entry already exists and delete it.
+            old_entry = ResolverConfig.query.filter_by(resolver_id=resolver_id, Key=key).first()
+            if old_entry:
+                old_entry.delete()
+            continue
         if types.get(key) == "password":
             if value == CENSORED:
                 continue
             else:
                 value = encryptPassword(value)
+        elif types.get(key) == "dict_with_password":
+            resolver_data_types = resolver_config.get(resolvertype, {}).get("config")
+            for (dict_key, dict_value) in value.items():
+                if resolver_data_types.get(f"{key}.{dict_key}") == "password":
+                    if dict_value == CENSORED:
+                        # Fetch the old value from the database to not delete the password from the config
+                        old_dict_serialized = ResolverConfig.query.filter_by(resolver_id=resolver_id, Key=key).first()
+                        if old_dict_serialized:
+                            old_dict = json.loads(old_dict_serialized.Value)
+                            old_entry = old_dict.get(dict_key)
+                            if old_entry:
+                                value[dict_key] = old_entry # It is already encrypted
+                    else:
+                        value[dict_key] = encryptPassword(dict_value)
+
+        if isinstance(value, dict):
+            value = json.dumps(value)
 
         ResolverConfig(resolver_id=resolver_id,
                        Key=key,
@@ -199,7 +222,15 @@ def get_resolver_list(filter_resolver_type=None,
     if censor:
         for reso_name, reso in resolvers.items():
             for censor_key in reso.get("censor_keys", []):
-                reso["data"][censor_key] = CENSORED
+                if censor_key in reso["data"]:
+                    reso["data"][censor_key] = CENSORED
+                else:
+                    # it might be a sub key
+                    data = reso["data"]
+                    keys = censor_key.split('.')
+                    for key in keys[:-1]:
+                        data = data[key]
+                    data[keys[-1]] = CENSORED
 
     return resolvers
 

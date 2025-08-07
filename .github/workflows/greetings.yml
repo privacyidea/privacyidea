@@ -1,6 +1,12 @@
 name: Greetings
 
-on: [pull_request, issues]
+on:
+  pull_request:
+    types:
+      - opened
+  issues:
+    types:
+      - opened
 
 permissions: {}
 
@@ -11,10 +17,9 @@ jobs:
       issues: write  # for actions/first-interaction to comment on first issue
       pull-requests: write  # for actions/first-interaction to comment on first PR
     steps:
-    - uses: actions/first-interaction@34f15e814fe48ac9312ccf29db4e74fa767cbab7 # v1.3.0
+    - uses: actions/first-interaction@2d4393e6bc0e2efb2e48fba7e06819c3bf61ffc9 # v2.0.0
       continue-on-error: true
       with:
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
         issue-message: |
           Thank you for filing an issue and sharing your observations or ideas.
           Please make sure to provide as much information as possible to help us work on this issue.

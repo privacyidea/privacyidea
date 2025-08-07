@@ -800,12 +800,12 @@ class TokenBaseTestCase(MyTestCase):
 
         # set last auth and check correct format
         last_auth = datetime(year=2025, month=3, day=21, hour=7, minute=24, second=12, microsecond=164578,
-                                      tzinfo=timezone.utc)
+                             tzinfo=timezone.utc)
         token.add_tokeninfo(ACTION.LASTAUTH, last_auth.strftime(AUTH_DATE_FORMAT))
         self.assertEqual("2025-03-21 07:24:12.164578+0000", token.get_tokeninfo(ACTION.LASTAUTH))
         # microseconds are also included if they are 0
         last_auth = datetime(year=2025, month=3, day=21, hour=16, minute=3, second=8, microsecond=0,
-                                      tzinfo=timezone.utc)
+                             tzinfo=timezone.utc)
         token.add_tokeninfo(ACTION.LASTAUTH, last_auth.strftime(AUTH_DATE_FORMAT))
         self.assertEqual("2025-03-21 16:03:08.000000+0000", token.get_tokeninfo(ACTION.LASTAUTH))
 
@@ -853,7 +853,7 @@ class TokenBaseTestCase(MyTestCase):
 
         # 2. step
         client_component = "AAAAAA"
-        token_obj.update({"serial": serial, "otpkey": client_component })
+        token_obj.update({"serial": serial, "otpkey": client_component})
         self.assertEqual(db_token.rollout_state, "")
         self.assertEqual(db_token.active, True)
 

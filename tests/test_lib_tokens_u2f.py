@@ -2,12 +2,14 @@
 This test file tests the lib.tokens.u2ftoken
 This depends on lib.tokenclass
 """
+import json
+
 from .base import MyTestCase
 from privacyidea.lib.tokens.u2ftoken import U2fTokenClass
 from privacyidea.lib.tokens.u2f import (check_registration_data,
                                         parse_registration_data, url_decode,
                                         check_response, parse_response_data)
-from privacyidea.lib.token import init_token, remove_token, check_user_pass
+from privacyidea.lib.token import init_token, remove_token, check_user_pass, get_tokens, import_tokens
 from privacyidea.lib.user import User
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from privacyidea.lib.config import set_privacyidea_config
@@ -126,6 +128,14 @@ class U2FTokenTestCase(MyTestCase):
 
     def test_01_create_token(self):
         pin = "test"
+
+        # By default init is disabled
+        self.assertRaises(TokenAdminError, init_token, {"type": "u2f", "pin": pin})
+
+        # Enable u2f enrollment in config
+        with self.app_context:
+            self.app.config['PI_ENABLE_TOKEN_TYPE_ENROLLMENT'] = ['u2f']
+
         # Init step1
         token = init_token({"type": "u2f",
                             "pin": pin})
@@ -252,6 +262,28 @@ class U2FTokenTestCase(MyTestCase):
                                     'The registration data is in a wrong format.'):
             parse_registration_data(reg_data)
 
+    def test_05_u2f_token_export(self):
+        token = init_token(param={'serial': "OATH12345678",
+                                  'type': 'u2f',
+                                  'otpkey': self.otpkey})
+        self.assertRaises(NotImplementedError, token.export_token)
+
+        # Clean up
+        token.token.delete()
+
+    def test_06_u2f_token_import(self):
+        token_data = [{
+            "serial": "123456",
+            "type": "u2f",
+            "description": "this token can't be imported",
+            "otpkey": self.otpkey,
+            "issuer": "privacyIDEA",
+        }]
+        before_import = get_tokens()
+        import_tokens(json.dumps(token_data))
+        after_import = get_tokens()
+        self.assertEqual(len(before_import), len(after_import))
+
 
 class MultipleU2FTokenTestCase(MyTestCase):
     app_id = 'https://localhost:5000'
@@ -310,6 +342,8 @@ class MultipleU2FTokenTestCase(MyTestCase):
         self.user = User(login='cornelius', resolver=self.resolvername1,
                          realm=self.realm1)
         set_privacyidea_config("u2f.appId", self.app_id)
+        with self.app_context:
+            self.app.config['PI_ENABLE_TOKEN_TYPE_ENROLLMENT'] = ['u2f']
         # init step 1
         self.token1 = init_token({'type': 'u2f'})
         self.serial1 = self.token1.token.serial

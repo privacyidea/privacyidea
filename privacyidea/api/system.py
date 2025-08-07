@@ -74,7 +74,6 @@ from privacyidea.lib.crypto import geturandom, set_hsm_password, get_hsm
 from privacyidea.lib.importotp import GPGImport
 from privacyidea.lib.utils import hexlify_and_unicode, b64encode_and_unicode
 from privacyidea.lib.usercache import delete_user_cache
-from privacyidea.lib.challenge import cleanup_expired_challenges
 
 log = logging.getLogger(__name__)
 

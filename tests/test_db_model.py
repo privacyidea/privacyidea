@@ -25,7 +25,7 @@ from sqlalchemy import func
 from privacyidea.lib.policies.policy_conditions import (PolicyConditionClass, ConditionSection,
                                                         ConditionHandleMissingData)
 from privacyidea.lib.policy import set_policy_conditions
-from privacyidea.lib.utils.compare import Comparators
+from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import (Token,
                                 Resolver,
                                 ResolverRealm, NodeName,
@@ -434,23 +434,24 @@ class TokenModelTestCase(MyTestCase):
         p3.save()
 
         # set conditions
-        conditions = [PolicyConditionClass(ConditionSection.USERINFO, "type", Comparators.EQUALS, "foobar", False),
-                      PolicyConditionClass(ConditionSection.HTTP_REQUEST_HEADER, "user_agent", Comparators.EQUALS,
-                                           "abcd", True)]
+        conditions = [
+            PolicyConditionClass(ConditionSection.USERINFO, "type", PrimaryComparators.EQUALS, "foobar", False),
+            PolicyConditionClass(ConditionSection.HTTP_REQUEST_HEADER, "user_agent", PrimaryComparators.EQUALS,
+                                 "abcd", True)]
         set_policy_conditions(conditions, p3)
-        expected = [(ConditionSection.USERINFO, "type", Comparators.EQUALS, "foobar", False,
+        expected = [(ConditionSection.USERINFO, "type", PrimaryComparators.EQUALS, "foobar", False,
                      ConditionHandleMissingData.default().value),
-                    (ConditionSection.HTTP_REQUEST_HEADER, "user_agent", Comparators.EQUALS, "abcd", True,
+                    (ConditionSection.HTTP_REQUEST_HEADER, "user_agent", PrimaryComparators.EQUALS, "abcd", True,
                      ConditionHandleMissingData.default().value)]
         self.assertEqual(expected, p3.get_conditions_tuples())
         self.assertEqual(expected, p3.get()["conditions"])
         self.assertEqual(2, PolicyCondition.query.count())
 
         set_policy_conditions(
-            [PolicyConditionClass(ConditionSection.USERINFO, "type", Comparators.EQUALS, "baz", True)],
+            [PolicyConditionClass(ConditionSection.USERINFO, "type", PrimaryComparators.EQUALS, "baz", True)],
             p3)
         p3.save()
-        self.assertEqual([(ConditionSection.USERINFO, "type", Comparators.EQUALS, "baz", True,
+        self.assertEqual([(ConditionSection.USERINFO, "type", PrimaryComparators.EQUALS, "baz", True,
                            ConditionHandleMissingData.default().value)], p3.get()["conditions"])
         self.assertEqual(1, len(p3.conditions))
         self.assertEqual("baz", p3.conditions[0].Value)
@@ -459,9 +460,8 @@ class TokenModelTestCase(MyTestCase):
         # Check that the change has been persisted to the database
         p3_reloaded1 = Policy.query.filter_by(name="pol3").one()
         self.assertEqual(["pinode3"], p3_reloaded1.get()["pinode"])
-        self.assertEqual(
-            [("userinfo", "type", Comparators.EQUALS, "baz", True, ConditionHandleMissingData.default().value)],
-            p3_reloaded1.get()["conditions"])
+        self.assertEqual([("userinfo", "type", PrimaryComparators.EQUALS, "baz", True,
+                           ConditionHandleMissingData.default().value)], p3_reloaded1.get()["conditions"])
         self.assertEqual(1, len(p3_reloaded1.conditions))
         self.assertEqual("baz", p3_reloaded1.conditions[0].Value)
         self.assertEqual(1, PolicyCondition.query.count())
@@ -718,7 +718,7 @@ class TokenModelTestCase(MyTestCase):
     def test_21_add_update_delete_clientapp(self):
         # MySQLs DATETIME type supports only seconds so we have to mock now()
         current_time = datetime(2018, 3, 4, 5, 6, 8)
-        with mock.patch('privacyidea.models.datetime') as mock_dt:
+        with mock.patch('privacyidea.models.subscription.datetime') as mock_dt:
             mock_dt.now.return_value = current_time
 
             ClientApplication(ip="1.2.3.4", hostname="host1",
@@ -884,7 +884,7 @@ class TokenModelTestCase(MyTestCase):
 
     def test_26_periodictask(self):
         current_utc_time = datetime(2018, 3, 4, 5, 6, 8)
-        with mock.patch('privacyidea.models.datetime') as mock_dt:
+        with mock.patch('privacyidea.models.periodictask.datetime') as mock_dt:
             mock_dt.utcnow.return_value = current_utc_time
 
             task1 = PeriodicTask("task1", False, "0 5 * * *", ["localhost"], "some.module", 2, {
@@ -924,7 +924,7 @@ class TokenModelTestCase(MyTestCase):
 
         # assert we can update the task
         later_utc_time = current_utc_time + timedelta(seconds=1)
-        with mock.patch('privacyidea.models.datetime') as mock_dt:
+        with mock.patch('privacyidea.models.periodictask.datetime') as mock_dt:
             mock_dt.utcnow.return_value = later_utc_time
             PeriodicTask("task one", True, "0 8 * * *", ["localhost", "otherhost"], "some.module", 3, {
                 "KEY2": "value number 2",
@@ -1080,9 +1080,9 @@ class TokengroupTestCase(MyTestCase):
         self.assertEqual(tok2.serial, "tok2")
 
         # assign tokens to token groups
-        t = TokenTokengroup(token_id=tok1.id, tokengroupname="gruppe1").save()
-        t = TokenTokengroup(token_id=tok1.id, tokengroupname="gruppe2").save()
-        t = TokenTokengroup(token_id=tok2.id, tokengroup_id=tg2.id).save()
+        TokenTokengroup(token_id=tok1.id, tokengroupname="gruppe1").save()
+        TokenTokengroup(token_id=tok1.id, tokengroupname="gruppe2").save()
+        TokenTokengroup(token_id=tok2.id, tokengroup_id=tg2.id).save()
         ttg = TokenTokengroup.query.all()
         self.assertEqual(len(ttg), 3)
         # It does not change anything, if we try to save the same assignment!

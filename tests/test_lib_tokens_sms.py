@@ -1,20 +1,20 @@
 """
 This test file tests the lib.tokens.smstoken
 """
+import json
 import logging
 
 from .base import MyTestCase, FakeFlaskG, FakeAudit
-from privacyidea.lib.resolver import (save_resolver)
-from privacyidea.lib.realm import (set_realm)
-from privacyidea.lib.user import (User)
+from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.realm import set_realm
+from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true
-from privacyidea.lib.token import init_token, remove_token
+from privacyidea.lib.token import init_token, remove_token, import_tokens, get_tokens
 from privacyidea.lib.tokens.smstoken import SmsTokenClass, SMSACTION
-from privacyidea.models import (Token, Config, Challenge)
-from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
+from privacyidea.models import Token, Config
+from privacyidea.lib.config import set_privacyidea_config, set_prepend_pin
 from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass
 from privacyidea.lib import _
-import datetime
 import mock
 import responses
 from testfixtures import log_capture
@@ -51,13 +51,12 @@ class SMSTokenTestCase(MyTestCase):
     }'''
     success_body = "ID 12345"
 
-
     # add_user, get_user, reset, set_user_identifiers
 
     def test_00_create_user_realm(self):
         rid = save_resolver({"resolver": self.resolvername1,
-                               "type": "passwdresolver",
-                               "fileName": PWFILE})
+                             "type": "passwdresolver",
+                             "fileName": PWFILE})
         self.assertTrue(rid > 0, rid)
 
         (added, failed) = set_realm(self.realm1, [{'name': self.resolvername1}])
@@ -503,6 +502,68 @@ class SMSTokenTestCase(MyTestCase):
         self.assertRaises(Exception, token.create_challenge, transactionid, {"exception": "1"})
 
         remove_token(token.get_serial())
+
+    def test_22_sms_token_export(self):
+        # Set up the SMSTokenClass for testing
+        smstoken = init_token(
+            param={'serial': "SMS12345678", 'type': 'sms', 'otpkey': '12345', "phone": "+49123456789"})
+        smstoken.set_description("this is a sms token export test")
+        smstoken.add_tokeninfo("hashlib", "sha256")
+
+        # Test that all expected keys are present in the exported dictionary
+        exported_data = smstoken.export_token()
+
+        expected_keys = ["serial", "type", "description", "otpkey", "issuer"]
+        self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
+
+        expected_tokeninfo_keys = ["phone", "hashlib", "tokenkind"]
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+
+        # Test that the exported values match the token's data
+        exported_data = smstoken.export_token()
+        self.assertEqual(exported_data["serial"], "SMS12345678")
+        self.assertEqual(exported_data["type"], "sms")
+        self.assertEqual(exported_data["tokeninfo"]["phone"], "+49123456789")
+        self.assertEqual(exported_data["description"], "this is a sms token export test")
+        self.assertEqual(exported_data["tokeninfo"]["hashlib"], "sha256")
+        self.assertEqual(exported_data["otpkey"], '12345')
+        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
+        self.assertEqual(exported_data["issuer"], "privacyIDEA")
+
+        # Clean up
+        remove_token(smstoken.token.serial)
+
+    def test_23_sms_token_import(self):
+        # Define the token data to be imported
+        token_data = [{
+            "serial": "SMS12345678",
+            "type": "sms",
+            "description": "this is a sms token import test",
+            "otpkey": self.otpkey,
+            "tokeninfo": {"phone": "+49123456789", "hashlib": "sha256", "tokenkind": "software"},
+            "issuer": "privacyIDEA"
+        }]
+
+        # Import the token
+        import_tokens(json.dumps(token_data))
+
+        # Retrieve the imported token
+        smstoken = get_tokens(serial=token_data[0]["serial"])[0]
+
+        # Verify that the token data matches the imported data
+        self.assertEqual(smstoken.token.serial, token_data[0]["serial"])
+        self.assertEqual(smstoken.type, token_data[0]["type"])
+        self.assertEqual(smstoken.token.description, token_data[0]["description"])
+        self.assertEqual(smstoken.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
+        self.assertEqual(smstoken.get_tokeninfo("phone"), token_data[0]["tokeninfo"]["phone"])
+        self.assertEqual(smstoken.get_tokeninfo("hashlib"), token_data[0]["tokeninfo"]["hashlib"])
+        self.assertEqual(smstoken.get_tokeninfo("tokenkind"), token_data[0]["tokeninfo"]["tokenkind"])
+
+        # Check that token works
+        self.assertEqual(0, smstoken.check_otp('875740'))
+
+        # Clean up
+        remove_token(smstoken.token.serial)
 
     def test_99_delete_token(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()

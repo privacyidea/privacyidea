@@ -120,7 +120,7 @@ class TotpTokenClass(HotpTokenClass):
                        'totp_otplen': {'type': 'int',
                                        'value': [6, 8],
                                        'desc': TotpTokenClass.desc_otp_len},
-                       'totp_force_server_generate': {'type': 'bool',
+                       ACTION.FORCE_SERVER_GENERATE: {'type': 'bool',
                                                       'desc': TotpTokenClass.desc_key_gen},
                        '2step': {'type': 'str',
                                  'value': ['allow', 'force'],
@@ -138,6 +138,8 @@ class TotpTokenClass(HotpTokenClass):
                        'totp_otplen': {'type': 'int',
                                        'value': [6, 8],
                                        'desc': TotpTokenClass.desc_otp_len},
+                       ACTION.FORCE_SERVER_GENERATE: {'type': 'bool',
+                                                      'desc': TotpTokenClass.desc_key_gen},
                        '2step': {'type': 'str',
                                  'value': ['allow', 'force'],
                                  'desc': TotpTokenClass.desc_two_step_admin}
@@ -579,7 +581,7 @@ class TotpTokenClass(HotpTokenClass):
         :param epoch_start: not implemented
         :param epoch_end: not implemented
         :param curTime: Simulate the servertime
-        :type curTime: datetime
+        :type curTime: datetime.datetime
         :param timestamp: Simulate the servertime
         :type timestamp: epoch time
         :return: tuple of status: boolean, error: text and the OTP dictionary

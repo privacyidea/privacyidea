@@ -79,7 +79,7 @@ class APIAuditTestCase(MyApiTestCase):
         def _fake_time(t):
             """ context manager that fakes the current time that is written
             to the database """
-            with mock.patch("privacyidea.models.datetime") as mock_dt:
+            with mock.patch("privacyidea.models.audit.datetime") as mock_dt:
                 mock_dt.now.return_value = t
                 yield
 

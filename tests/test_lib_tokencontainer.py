@@ -417,7 +417,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         container_realms = [realm.name for realm in container.realms]
         self.assertEqual(2, len(container_realms))
 
-    def test_21_assign_user(self):
+    def test_21_assign_unassign_user(self):
         # Arrange
         self.setUp_user_realms()
         container_serial = init_container({"type": "generic", "description": "assign user"})["container_serial"]
@@ -437,8 +437,25 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Assigning another user fails
         self.assertRaises(TokenAdminError, assign_user, container_serial, user_root)
 
+        # Unassign user
+        success = unassign_user(container_serial, user_hans)
+        self.assertTrue(success)
+
         # Assigning an invalid user raises exception
         self.assertRaises(UserError, assign_user, container_serial, invalid_user)
+
+        # Unassigning an invalid user with the user id and resolver should work
+        invalid_user = User(login="invalid", uid="123", realm=self.realm1, resolver=self.resolvername1)
+        assign_user(container_serial, invalid_user)
+        success = unassign_user(container_serial, invalid_user)
+        self.assertTrue(success)
+
+        # Unassign an invalid user without providing the user id and without resolver raises an Exception
+        assign_user(container_serial, invalid_user)
+        invalid_user = User(login="invalid", realm=self.realm1)
+        self.assertRaises(UserError, unassign_user, container_serial, invalid_user)
+
+        container.delete()
 
     def test_22_add_container_info(self):
         # Arrange
@@ -846,7 +863,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         container_3 = find_container_by_serial(container_serials[3])
         container_3.set_container_info({"key1": "value1", "key2": "value2"})
         container_4 = find_container_by_serial(container_serials[4])
-        container_4.set_container_info({"key1": "value1", "test": "1234"})
+        container_4.set_container_info({"key1": "value1", "test": "1234", "test.type": "number"})
         # exact
         container_data = get_all_containers(info={"key1": "value1"}, pagesize=15)
         self.assertEqual(2, len(container_data["containers"]))
@@ -861,6 +878,15 @@ class TokenContainerManagementTestCase(MyTestCase):
         # no match
         container_data = get_all_containers(info={"test": "*value*"}, pagesize=15)
         self.assertEqual(0, len(container_data["containers"]))
+
+        # Get container info type
+        container_data = get_all_containers(info={"test": "*"})
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(container_serials[4], container_data["containers"][0].serial)
+        container_info = container_data["containers"][0].get_container_info()
+        self.assertGreaterEqual(len(container_info), 2, container_info)
+        test_info = [x for x in container_info if x.key == "test"][0]
+        self.assertEqual("number", test_info.type, test_info)
 
         # ---- description ----
         # filter by description
@@ -1507,7 +1533,7 @@ class TokenContainerSynchronization(MyTestCase):
         container_info_keys = container_info.keys()
         self.assertIn("public_key_client", container_info_keys)
         self.assertEqual(f"{mock_smph.device_brand} {mock_smph.device_model}", container_info["device"])
-        self.assertEqual(RegistrationState.REGISTERED.value, container_info[RegistrationState.get_key()])
+        self.assertEqual(RegistrationState.REGISTERED, smartphone.registration_state)
 
         return mock_smph
 
@@ -1606,7 +1632,7 @@ class TokenContainerSynchronization(MyTestCase):
         container_info_keys = container_info.keys()
         self.assertIn("public_key_client", container_info_keys)
         self.assertEqual(f"{mock_smph.device_brand} {mock_smph.device_model}", container_info["device"])
-        self.assertEqual(RegistrationState.REGISTERED.value, container_info[RegistrationState.get_key()])
+        self.assertEqual(RegistrationState.REGISTERED, smartphone.registration_state)
 
     def test_05c_register_smartphone_passphrase_user_fails(self):
         """
@@ -1987,7 +2013,7 @@ class TokenContainerSynchronization(MyTestCase):
         container_info_keys = container_info.keys()
         self.assertIn("public_key_client", container_info_keys)
         self.assertEqual(f"{mock_smph_new.device_brand} {mock_smph_new.device_model}", container_info["device"])
-        self.assertEqual(RegistrationState.ROLLOVER_COMPLETED.value, container_info[RegistrationState.get_key()])
+        self.assertEqual(RegistrationState.ROLLOVER_COMPLETED, smartphone.registration_state)
         self.assertEqual("https://pi.net/", container_info["server_url"])
         self.assertEqual("20", container_info["challenge_ttl"])
 

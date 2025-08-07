@@ -30,6 +30,7 @@ from privacyidea.lib.applications import MachineApplicationBase
 from privacyidea.lib.config import get_prepend_pin
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.error import ValidateError, ParameterError
+from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
 from privacyidea.lib.policy import TYPE
 from privacyidea.lib.token import get_one_token
 from privacyidea.lib.utils import get_computer_name_from_user_agent
@@ -175,12 +176,15 @@ class MachineApplication(MachineApplicationBase):
         token_type = token_type.lower()
         # TODO improve where the information about offline capabilities is stored
         if token_type in ["hotp", "webauthn", "passkey"]:
+            ret["response"] = {}
             token = get_one_token(serial=serial)
             user = token.user
             if user:
                 user_info = user.info
                 if "username" in user_info:
                     ret["user"] = ret["username"] = user_info.get("username")
+                if token_type in ["webauthn", "passkey"] and FIDO2TokenInfo.USER_ID in user_info:
+                    ret["response"].update({"userId": user_info[FIDO2TokenInfo.USER_ID]})
 
             ret["refilltoken"] = MachineApplication.generate_new_refilltoken(token, user_agent)
 
@@ -188,11 +192,11 @@ class MachineApplication(MachineApplicationBase):
             if token_type == "webauthn":
                 # return the pubKey, rpId and the credentialId (contained in the otpkey) to allow the machine to
                 # verify the WebAuthn assertions signed with the token
-                ret["response"] = {
+                ret["response"].update({
                     "pubKey": token.get_tokeninfo("pubKey"),
                     "credentialId": token.decrypt_otpkey(),
                     "rpId": token.get_tokeninfo("relying_party_id")
-                }
+                })
             elif token_type == "hotp":
                 if password:
                     success, otppin, _ = token.split_pin_pass(password)
@@ -206,11 +210,11 @@ class MachineApplication(MachineApplicationBase):
                                                                       int(options.get("count", 100)),
                                                                       int(options.get("rounds", ROUNDS)))
             elif token_type == "passkey":
-                ret["response"] = {
+                ret["response"].update({
                     "pubKey": token.get_tokeninfo("public_key"),
                     "rpId": token.get_tokeninfo("relying_party_id"),
                     "credentialId": token.token.get_otpkey().getKey().decode("utf-8")
-                }
+                })
         else:
             log.info(f"Token {serial} of type {token_type} is not supported by OFFLINE application module")
 

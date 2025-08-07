@@ -29,6 +29,7 @@ the core API.
 The TiQR Token uses this API to implement its special functionalities. See
 :ref:`code_tiqr_token`.
 """
+import copy
 import threading
 
 from flask import (Blueprint,
@@ -60,7 +61,9 @@ def before_request():
     This is executed before the request
     """
     ensure_no_config_object()
-    request.all_data = get_all_params(request)
+    # Save the request data
+    g.request_data = get_all_params(request)
+    request.all_data = copy.deepcopy(g.request_data)
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     # Create a policy_object, that reads the database audit settings
     # and contains the complete policy definition during the request.
@@ -73,11 +76,13 @@ def before_request():
     g.client_ip = get_client_ip(request,
                                 get_from_config(SYSCONF.OVERRIDECLIENT))
     g.serial = getParam(request.all_data, "serial", default=None)
+    ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
+    g.user_agent = ua_name
     g.audit_object.log({"success": False,
                         "action_detail": "",
                         "client": g.client_ip,
-                        "user_agent": get_plugin_info_from_useragent(request.user_agent.string)[0],
-                        "user_agent_version": get_plugin_info_from_useragent(request.user_agent.string)[0],
+                        "user_agent": ua_name,
+                        "user_agent_version": ua_version,
                         "privacyidea_server": privacyidea_server,
                         "action": "{0!s} {1!s}".format(request.method, request.url_rule),
                         "thread_id": "{0!s}".format(threading.current_thread().ident),

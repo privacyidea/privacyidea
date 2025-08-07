@@ -71,8 +71,10 @@ from privacyidea.lib import _
 from privacyidea.lib.container import find_container_by_serial, get_container_realms
 from privacyidea.lib.containers.container_info import CHALLENGE_TTL, REGISTRATION_TTL, SERVER_URL
 from privacyidea.lib.error import (PolicyError, RegistrationError,
-                                   TokenAdminError, ResourceNotFoundError)
+                                   TokenAdminError, ResourceNotFoundError, AuthError)
 from flask import g, current_app, Request
+
+from privacyidea.lib.policies.policy_helper import check_max_auth_fail, check_max_auth_success
 from privacyidea.lib.policy import SCOPE, ACTION, REMOTE_USER
 from privacyidea.lib.policy import Match, check_pin
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
@@ -85,8 +87,8 @@ from privacyidea.lib.utils import (parse_timedelta, is_true,
                                    get_module_class,
                                    determine_logged_in_userparams, parse_string_to_dict)
 from privacyidea.lib.crypto import generate_password
-from privacyidea.lib.auth import ROLE
-from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn
+from privacyidea.lib.auth import ROLE, get_db_admin
+from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn, get_optional
 from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters,
                                               get_pushtoken_add_config,
                                               check_token_action_allowed,
@@ -94,7 +96,7 @@ from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters,
                                               UserAttributes,
                                               get_container_user_attributes)
 from privacyidea.lib.clientapplication import save_clientapplication
-from privacyidea.lib.config import (get_token_class)
+from privacyidea.lib.config import get_token_class
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
 from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
 from privacyidea.lib.token import get_one_token
@@ -126,8 +128,6 @@ log = logging.getLogger(__name__)
 
 optional = True
 required = False
-
-DEFAULT_JWT_VALIDITY = 3600
 
 
 class prepolicy(object):
@@ -1244,8 +1244,8 @@ def check_base_action(request=None, action=None, anonymous=False):
              "admin": "Admin actions are defined, but the action %s is not "
                       "allowed!" % action}
     params = request.all_data
-    user_object = request.User
-    resolver = user_object.resolver if user_object else None
+    user = request.User
+    resolver = user.resolver if user else None
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     # In certain cases we can not resolve the user by the serial!
@@ -1454,6 +1454,7 @@ def check_client_container_disabled_action(request=None, action=None):
     match = Match.generic(g,
                           scope=SCOPE.CONTAINER,
                           action=action,
+                          user_object=user_attributes.user,
                           user=user_attributes.username,
                           resolver=user_attributes.resolver,
                           realm=user_attributes.realm,
@@ -1600,6 +1601,23 @@ def check_token_init(request=None, action=None):
                                  user_object=request.User).allowed()
     if not init_allowed:
         raise PolicyError(ERROR.get(role))
+    return True
+
+
+def force_server_generate_key(request: Request, action=None):
+    """
+    Checks if for the given token type a policy to force the server to generate the key is set.
+
+    :param request:
+    :param action:
+    :return: True
+    """
+    params = request.all_data
+    tokentype = params.get("type", "HOTP")
+    action = f"{tokentype.lower()}_{ACTION.FORCE_SERVER_GENERATE}"
+    force_genkey = Match.admin_or_user(g, action=action, user_obj=request.User).allowed()
+    g.policies[action] = force_genkey
+
     return True
 
 
@@ -1777,7 +1795,8 @@ def pushtoken_add_config(request, action):
     """
     ttype = request.all_data.get("type")
     if ttype and ttype.lower() == "push":
-        request.all_data = get_pushtoken_add_config(g, request.all_data, request.User)
+        push_config = get_pushtoken_add_config(g, request.all_data, request.User)
+        g.policies.update(push_config)
 
 
 def u2ftoken_verify_cert(request, action):
@@ -2107,7 +2126,7 @@ def fido2_auth(request, action):
     return True
 
 
-def get_first_policy_value(policy_action: str, default: str, scope: SCOPE, user: Union[User, None] = None,
+def get_first_policy_value(policy_action: str, default: str, scope: str, user: Union[User, None] = None,
                            allowed_values: Union[list, None] = None) -> str:
     """
     Get the first policy value for the given policy action and scope, using Match.user. If the policy does not exist,
@@ -2310,20 +2329,13 @@ def webauthntoken_allowed(request, action):
         # TODO: trust_path can be a certificate chain. All certificates in the
         #  path should be considered
         attestation_cert = trust_path[0] if trust_path else None
-        allowed_certs_pols = Match\
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=FIDO2PolicyAction.REQ,
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=False)
+        allowed_certs_pols = Match.user(g, scope=SCOPE.ENROLL, action=FIDO2PolicyAction.REQ,
+                                        user_object=request.User if hasattr(request, 'User')
+                                        else None).action_values(unique=False)
 
-        allowed_aaguids_pols = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST,
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=False,
-                           allow_white_space_in_action=True)
+        allowed_aaguids_pols = Match.user(g, scope=SCOPE.ENROLL, action=FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST,
+                                          user_object=request.User if hasattr(request, 'User')
+                                          else None).action_values(unique=False, allow_white_space_in_action=True)
         allowed_aaguids = set(
             aaguid
             for allowed_aaguid_pol in allowed_aaguids_pols
@@ -2498,12 +2510,12 @@ def require_description(request=None, action=None):
     """
     params = request.all_data
     user_object = request.User
-    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+    (role, username, realm, admin_user, admin_realm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     action_values = Match.generic(g, action=ACTION.REQUIRE_DESCRIPTION,
                                   scope=SCOPE.ENROLL,
-                                  adminrealm=adminrealm,
-                                  adminuser=adminuser,
+                                  adminrealm=admin_realm,
+                                  adminuser=admin_user,
                                   user=username,
                                   realm=realm,
                                   user_object=user_object).action_values(unique=False)
@@ -2511,15 +2523,49 @@ def require_description(request=None, action=None):
     token_types = list(action_values.keys())
     type_value = request.all_data.get("type") or 'hotp'
     if type_value in token_types:
-        tok = None
-        serial = getParam(params, "serial")
+        token = None
+        serial = get_optional(params, "serial")
         if serial:
-            tok = (get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.VERIFYPENDING, silent_fail=True)
+            token = (get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.VERIFYPENDING, silent_fail=True)
                    or get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.CLIENTWAIT, silent_fail=True))
         # only if no token exists, yet, we need to check the description
-        if not tok and not request.all_data.get("description"):
-            log.warning(_("Missing description for {} token.").format(type_value))
-            raise PolicyError(_("Description required for {} token.").format(type_value))
+        if not token and not request.all_data.get("description"):
+            log.error(f"Missing description for {type_value} token.")
+            raise PolicyError(_(f"Description required for {type_value} token."))
+
+def require_description_on_edit(request=None, action=None):
+    """
+    Pre Policy
+    This checks whether a description is required while editing a specific token.
+    scope=SCOPE.TOKEN, action=REQUIRE_DESCRIPTION_ON_EDIT
+
+    An exception is raised, if the token types specified in the
+    REQUIRE_DESCRIPTION_ON_EDIT policy match the token to be edited,
+    but no description is given.
+
+    :param request:
+    :param action:
+    :return:
+    """
+    params = request.all_data
+    user_object = request.User
+    (role, username, realm, admin_user, admin_realm) = determine_logged_in_userparams(g.logged_in_user, params)
+
+    action_values = Match.generic(g, action=ACTION.REQUIRE_DESCRIPTION_ON_EDIT,
+                                  scope=SCOPE.TOKEN,
+                                  adminrealm=admin_realm,
+                                  adminuser=admin_user,
+                                  user=username,
+                                  realm=realm,
+                                  user_object=user_object).action_values(unique=False)
+
+    token_types = list(action_values.keys())
+    type_value = request.all_data.get("type") or 'hotp'
+    if type_value in token_types:
+        description = request.all_data.get("description", "").strip()
+        if not description:
+            log.error(f"Missing description for {type_value} token.")
+            raise PolicyError(_(f"Description required for {type_value} token."))
 
 
 def jwt_validity(request, action):
@@ -2564,11 +2610,11 @@ def container_registration_config(request, action=None):
         log.error(f"Could not find container with serial {container_serial}.")
 
     # Get server url the client can contact
-    server_url_config = list(Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.PI_SERVER_URL,
+    server_url_config = list(Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_SERVER_URL,
                                            user_object=user, additional_realms=container_realms,
                                            container_serial=container_serial).action_values(unique=True))
     if len(server_url_config) == 0:
-        raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot register container.")
+        raise PolicyError(f"Missing enrollment policy {ACTION.CONTAINER_SERVER_URL}. Cannot register container.")
     request.all_data[SERVER_URL] = server_url_config[0]
 
     # Get validity time for the registration
@@ -2687,4 +2733,69 @@ def rss_age(request, action):
         except ValueError:
             log.warning(f"Invalid RSS_AGE: {age_list}. Using the default.")
     request.all_data[ACTION.RSS_AGE] = age
+    return True
+
+
+def disabled_token_types(request, action):
+    """
+    This decorator retrieves the disabled token types from the policies and adds them to the request data,
+    to disable them for the authentication in check_token_list.
+
+    :param request: The request object
+    :param action: The action parameter is not used in this decorator
+    :return: True
+    """
+    disabled = Match.user(g, scope=SCOPE.AUTH, action=ACTION.DISABLED_TOKEN_TYPES,
+                          user_object=request.User if hasattr(request, 'User') else None).action_values(unique=False)
+
+    if disabled:
+        request.all_data[ACTION.DISABLED_TOKEN_TYPES] = list(disabled)
+    else:
+        request.all_data[ACTION.DISABLED_TOKEN_TYPES] = []
+
+    return True
+
+
+def auth_timelimit(request, action):
+    """
+    This decorator retrieves the auth timelimit from the policies and adds it to the request data.
+    The auth timelimit is used to limit the time a user has to complete the authentication process.
+
+    :param request: The request object
+    :param action: The action parameter is not used in this decorator
+    :return: True
+    """
+    if not hasattr(request, 'User') or not request.User:
+        return False
+
+    user = request.User
+    # check if the user is an admin
+    admin_realms = [x.lower() for x in current_app.config.get("SUPERUSER_REALM", [])]
+    local_admin = g.get("resolved_user", {}).get("is_local_admin", False)
+    if local_admin:
+        # local admin
+        if get_default_realm() in admin_realms:
+            # for external admins the username is always written to the "administrator" column, which is also done for
+            # local admins if the default realm is an admin realm
+            user_search_dict = {"administrator": user.login}
+        else:
+            user_search_dict = {"user": user.login}
+    elif user.realm and user.realm.lower() in admin_realms:
+        # external admin
+        user_search_dict = {"administrator": user.login, "realm": user.realm}
+    else:
+        # normal user
+        user_search_dict = {"user": user.login, "realm": user.realm}
+
+    # Check policies
+    result, reply_dict = check_max_auth_fail(user, user_search_dict, check_validate_check=not local_admin)
+    if result:
+        if local_admin:
+            user_search_dict = {"administrator": user.login}
+        result, reply_dict = check_max_auth_success(user, user_search_dict, check_validate_check=not local_admin)
+
+    if not result:
+        raise AuthError(_("Authentication failure. The account has exceeded the authentication time limit!"),
+                        details=reply_dict)
+
     return True

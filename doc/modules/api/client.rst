@@ -5,7 +5,7 @@ Client endpoints
 
 .. automodule:: privacyidea.api.clienttype
 
-.. autoflask:: privacyidea.app:create_app()
+.. autoflask:: privacyidea.app:create_app(silent=True)
    :endpoints:
    :blueprints: client_blueprint
 

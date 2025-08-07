@@ -237,10 +237,9 @@ def delete_user(resolvername=None, username=None):
 
     .. sourcecode:: http
 
-       DELETE /user/<resolvername>/<username>
-       Host: example.com
-       Accept: application/json
-
+      DELETE /user/<resolvername>/<username> HTTP/1.1
+      Host: example.com
+      Accept: application/json
     """
     user_obj = request.User
     res = user_obj.delete()
@@ -262,7 +261,10 @@ def create_user_api():
 
     .. sourcecode:: http
 
-       POST /user
+       POST /user HTTP/1.1
+       Host: example.com
+       Accept: application/json
+
        user=new_user
        resolver=<resolvername>
        surname=...
@@ -272,10 +274,6 @@ def create_user_api():
        phone=...
        password=...
        description=...
-
-       Host: example.com
-       Accept: application/json
-
     """
     # We can not use "get_user_from_param", since this checks the existence
     # of the user.
@@ -287,11 +285,11 @@ def create_user_api():
     password = attributes.get("password")
     if "password" in attributes:
         del attributes["password"]
-    r = create_user(resolvername, attributes, password=password)
-    g.audit_object.log({"success": True,
-                        "info": "{0!s}: {1!s}/{2!s}".format(r, username,
+    uid = create_user(resolvername, attributes, password=password)
+    g.audit_object.log({"success": True if uid else False,
+                        "info": "{0!s}: {1!s}/{2!s}".format(uid, username,
                                                             resolvername)})
-    return send_result(r)
+    return send_result(uid)
 
 
 @user_blueprint.route('', methods=['PUT'])
@@ -308,7 +306,10 @@ def update_user():
 
     .. sourcecode:: http
 
-       PUT /user
+       PUT /user HTTP/1.1
+       Host: example.com
+       Accept: application/json
+
        user=existing_user
        resolver=<resolvername>
        surname=...
@@ -318,9 +319,6 @@ def update_user():
        phone=...
        password=...
        description=...
-
-       Host: example.com
-       Accept: application/json
 
     .. note:: Also a user can call this function to e.g. change his password.
        But in this case the parameter "user" and "resolver" get overwritten
@@ -341,10 +339,10 @@ def update_user():
     password = attributes.get("password")
     if password:
         del attributes["password"]
-    r = user_obj.update_user_info(attributes, password=password)
-    g.audit_object.log({"success": True,
-                        "info": "{0!s}: {1!s}/{2!s}".format(r, username, resolvername)})
-    return send_result(r)
+    success = user_obj.update_user_info(attributes, password=password)
+    g.audit_object.log({"success": success,
+                        "info": "{0!s}: {1!s}/{2!s}".format(success, username, resolvername)})
+    return send_result(success)
 
 
 def _get_attributes_from_param(param):

@@ -60,12 +60,14 @@ This is the middleware/glue between the HTTP API and the database
 """
 import base64
 import datetime
+import json
 import logging
 import os
 import random
 import string
 import traceback
 from collections import defaultdict
+from dataclasses import dataclass
 from typing import Union
 
 from dateutil.tz import tzlocal
@@ -81,7 +83,8 @@ from privacyidea.lib.challengeresponsedecorators import (generic_challenge_respo
                                                          generic_challenge_response_resync)
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_token_types, get_from_config,
-                                    get_inc_fail_count_on_false_pin, SYSCONF)
+                                    get_inc_fail_count_on_false_pin, SYSCONF,
+                                    get_enrollable_token_types)
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.decorators import (check_user_or_serial,
                                         check_copy_serials)
@@ -102,16 +105,12 @@ from privacyidea.lib.policydecorators import (libpolicy,
                                               reset_all_user_tokens, force_challenge_response)
 from privacyidea.lib.realm import realm_is_defined, get_realms
 from privacyidea.lib.resolver import get_resolver_object
-from privacyidea.lib.tokenclass import DATE_FORMAT
-from privacyidea.lib.tokenclass import TOKENKIND
-from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenclass import DATE_FORMAT, TOKENKIND, TokenClass
 from privacyidea.lib.user import User
-from privacyidea.lib.user import get_username
 from privacyidea.lib.utils import is_true, BASE58, hexlify_and_unicode, check_serial_valid, create_tag_dict
-from privacyidea.models import (Token, Realm, TokenRealm, Challenge,
+from privacyidea.models import (db, Token, Realm, TokenRealm, Challenge,
                                 TokenInfo, TokenOwner, TokenTokengroup, Tokengroup, TokenContainer,
                                 TokenContainerToken)
-from privacyidea.models import (db)
 
 log = logging.getLogger(__name__)
 
@@ -138,6 +137,13 @@ class clob_to_varchar(FunctionElement):
 @compiles(clob_to_varchar)
 def fn_clob_to_varchar_default(element, compiler, **kw):
     return compiler.process(element.clauses, **kw)
+
+
+@dataclass(frozen=True)
+class TokenImportResult:
+    successful_tokens: list[str]
+    updated_tokens: list[str]
+    failed_tokens: list[str]
 
 
 @compiles(clob_to_varchar, 'oracle')
@@ -698,8 +704,8 @@ def get_tokens_paginate(tokentype=None, token_type_list=None, realm=None, assign
                     token_dict["user_realm"] = user.realm
                     token_dict["user_editable"] = get_resolver_object(
                         user.resolver).editable
-            except Exception as exx:
-                log.error("User information can not be retrieved: {0!s}".format(exx))
+            except Exception as ex:
+                log.error(f"User information can not be retrieved: {ex!r}")
                 log.debug(traceback.format_exc())
                 token_dict["username"] = "**resolver error**"
 
@@ -1237,7 +1243,7 @@ def import_token(serial, token_dict, tokenrealms=None):
     return token
 
 
-@log_with(log)
+@log_with(log, hide_args_keywords={'param': 'pin'})
 def init_token(param, user=None, tokenrealms=None, tokenkind=None):
     """
     Create a new token or update an existing token with the specified parameters.
@@ -1264,7 +1270,7 @@ def init_token(param, user=None, tokenrealms=None, tokenkind=None):
     """
     token_type = param.get("type") or "hotp"
     # Check for unsupported token type
-    token_types = get_token_types()
+    token_types = get_enrollable_token_types()
     if token_type.lower() not in token_types:
         log.error(f"type {token_type} not found in tokentypes: {token_types}")
         raise TokenAdminError(_("init token failed. Unknown token type:") + f" {token_type}", id=1610)
@@ -1972,7 +1978,7 @@ def set_count_window(serial, countwindow=10, user=None):
 
 @log_with(log)
 @check_user_or_serial
-def set_description(serial, description, user=None):
+def set_description(serial, description, user=None, token=None):
     """
     Set the description of a token
 
@@ -1982,16 +1988,15 @@ def set_description(serial, description, user=None):
     :type description: str
     :param user: The owner of the tokens, which should be modified
     :type user: User object
-    :return: number of modified tokens
+    :return: True. In case of an error raise an exception
     :rtype: int
     """
-    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
+    if token is None:
+        token = get_one_token(serial=serial, user=user)
+    token.set_description(description)
+    token.save()
 
-    for tokenobject in tokenobject_list:
-        tokenobject.set_description(description)
-        tokenobject.save()
-
-    return len(tokenobject_list)
+    return True
 
 
 @log_with(log)
@@ -2200,8 +2205,7 @@ def lost_token(serial, new_serial=None, password=None,
 
 
 @log_with(log)
-def check_realm_pass(realm, passw, options=None,
-                     include_types=None, exclude_types=None):
+def check_realm_pass(realm, passw, options=None, include_types=None, exclude_types=None):
     """
     This function checks, if the given passw matches any token in the given
     realm. This can be used for the 4-eyes token.
@@ -2251,7 +2255,7 @@ def check_realm_pass(realm, passw, options=None,
                                 allow_reset_all_tokens=False)
 
 
-@log_with(log)
+@log_with(log, hide_args=[1])
 @libpolicy(auth_lastauth)
 def check_serial_pass(serial, passw, options=None):
     """
@@ -2474,6 +2478,11 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
         if len(token_object_list) == 0:
             # If there is no unlocked token left.
             raise TokenAdminError(_("This action is not possible, since the token is locked"), id=1007)
+
+    # Remove disabled token types from token_object_list
+    if ACTION.DISABLED_TOKEN_TYPES in options and options[ACTION.DISABLED_TOKEN_TYPES]:
+        token_object_list = [token for token in token_object_list if
+                             token.type not in options[ACTION.DISABLED_TOKEN_TYPES]]
 
     # Remove certain disabled tokens from token_object_list
     if len(token_object_list) > 0:
@@ -2727,20 +2736,25 @@ def get_dynamic_policy_definitions(scope: str = None) -> dict:
            SCOPE.ENROLL: {},
            SCOPE.WEBUI: {},
            SCOPE.AUTHZ: {}}
-    for ttype in get_token_types():
-        pol[SCOPE.ADMIN]["enroll{0!s}".format(ttype.upper())] \
-            = {'type': 'bool',
-               'desc': _("Admin is allowed to initialize {0!s} tokens.").format(ttype.upper()),
-               'mainmenu': [MAIN_MENU.TOKENS],
-               'group': GROUP.ENROLLMENT}
 
-        conf = get_tokenclass_info(ttype, section='user')
-        if 'enroll' in conf:
-            pol[SCOPE.USER]["enroll{0!s}".format(ttype.upper())] = {
+    enrollable_token_types = get_enrollable_token_types()
+    for ttype in get_token_types():
+        if ttype in enrollable_token_types:
+            pol[SCOPE.ADMIN][f"enroll{ttype.upper()}"] = {
                 'type': 'bool',
-                'desc': _("The user is allowed to enroll a {0!s} token.").format(ttype.upper()),
+                'desc': _("Admin is allowed to initialize {0!s} tokens.").format(ttype.upper()),
                 'mainmenu': [MAIN_MENU.TOKENS],
-                'group': GROUP.ENROLLMENT}
+                'group': GROUP.ENROLLMENT
+            }
+
+            conf = get_tokenclass_info(ttype, section='user')
+            if 'enroll' in conf:
+                pol[SCOPE.USER][f"enroll{ttype.upper()}"] = {
+                    'type': 'bool',
+                    'desc': _("The user is allowed to enroll a {0!s} token.").format(ttype.upper()),
+                    'mainmenu': [MAIN_MENU.TOKENS],
+                    'group': GROUP.ENROLLMENT
+                }
 
         # now merge the dynamic Token policy definition
         # into the global definitions
@@ -2766,26 +2780,22 @@ def get_dynamic_policy_definitions(scope: str = None) -> dict:
         # PIN policies
         pin_scopes = get_tokenclass_info(ttype, section='pin_scopes') or []
         for pin_scope in pin_scopes:
-            pol[pin_scope]['{0!s}_otp_pin_maxlength'.format(ttype.lower())] = {
+            pol[pin_scope][f'{ttype.lower()}_otp_pin_maxlength'] = {
                 'type': 'int',
                 'value': list(range(0, 32)),
-                "desc": _("Set the maximum allowed PIN length of the {0!s}"
-                          " token.").format(ttype.upper()),
+                "desc": _("Set the maximum allowed PIN length of the {0!s} token.").format(ttype.upper()),
                 'group': GROUP.PIN
             }
-            pol[pin_scope]['{0!s}_otp_pin_minlength'.format(ttype.lower())] = {
+            pol[pin_scope][f'{ttype.lower()}_otp_pin_minlength'] = {
                 'type': 'int',
                 'value': list(range(0, 32)),
-                "desc": _("Set the minimum required PIN length of the {0!s}"
-                          " token.").format(ttype.upper()),
+                "desc": _("Set the minimum required PIN length of the {0!s} token.").format(ttype.upper()),
                 'group': GROUP.PIN
             }
-            pol[pin_scope]['{0!s}_otp_pin_contents'.format(ttype.lower())] = {
+            pol[pin_scope][f'{ttype.lower()}_otp_pin_contents'] = {
                 'type': 'str',
-                "desc": _("Specifiy the required PIN contents of the "
-                          "{0!s} token. "
-                          "(c)haracters, (n)umeric, "
-                          "(s)pecial, (o)thers. [+/-]!").format(ttype.upper()),
+                "desc": _("Specify the required PIN contents of the {0!s} token. (c)haracters, (n)umeric, (s)pecial, "
+                          "(o)thers. [+/-]!").format(ttype.upper()),
                 'group': GROUP.PIN
             }
 
@@ -2864,84 +2874,6 @@ def list_tokengroups(tokengroup=None):
         tgs = TokenTokengroup.query.all()
 
     return tgs
-
-
-def token_dump(token, tokenowner=True):
-    """
-    Store the database columns of the token into a dict.
-    Also store the tokeninfo into a list of dicts.
-
-    :param token: A token object
-    :param tokenowner: Also dump the tokenowners
-    :type tokenowner: bool
-    :return: a dict, containing the token and the tokeninfo
-    """
-    token_dict = token._to_dict()
-    if tokenowner:
-        # handle all assigned users
-        owners = []
-        for owner in token.owners:
-            owners.append({"uid": owner.uid,
-                           "login": owner.login,
-                           "resolver": owner.resolver,
-                           "realm": owner.realm})
-        token_dict["owners"] = owners
-    return token_dict
-
-
-def token_load(token_dict, tokenowner=True, overwrite=False):
-    """
-    Load the token that has previously been dumped with the function token_dump.
-
-    :param token_dict: The token in a dict
-    :param tokenowner: The tokenowner should also be assigned. If the tokenowner can not be found or
-        identified, the token is created anyway, but not assigned to a user; an exception is raised.
-    :type tokenowner: bool
-    :param overwrite: If a token with the given serial number already exist, it should be overwritten. If the token
-        should not be overwritten but already exists, an exception is raised.
-    :type overwrite: bool
-    :return:
-    """
-    serial = token_dict.get("serial")
-    old_token_obj = get_one_token(serial=serial, silent_fail=True)
-    # Check if overwriting is not allowed and the token already exists
-    if not overwrite and old_token_obj:
-        raise TokenAdminError("Token already exists!")
-
-    tokeninfos = token_dict.get("info_list", {})
-    hashed_pin = token_dict.get("_hashed_pin")
-    # Creating a new dictionary without special keys
-    stripped_token = {k: v for k, v in token_dict.items() if k not in ["info_list", "owners", "_hashed_pin"]}
-    # Initialize or update token
-    token = init_token(stripped_token)
-    # Add token information
-    for key, value in tokeninfos.items():
-        token.add_tokeninfo(key, value)
-    # Set PIN if hashed_pin is available
-    if hashed_pin:
-        token.token.pin_hash = hashed_pin
-        token.token.save()
-
-    # Add the tokenowners
-    if tokenowner:
-        for owner in token_dict.get("owners", []):
-            # uid, login, resolver, realm
-            # We might need to create the user object
-            # Now we add the user as tokenowner
-            try:
-                loginname = get_username(owner.get("uid"), owner.get("resolver"))
-                if loginname == owner.get("login"):
-                    u = User(login=owner.get("login"),
-                             resolver=owner.get("resolver"),
-                             realm=owner.get("realm"),
-                             uid=owner.get("uid"))
-                    token.add_user(u)
-            except Exception as ex:
-                log.warning("Failed to add user {0!s} to token {1!s}: {2!s}".format(owner, token, ex))
-                log.debug(traceback.format_exc())
-                raise TokenAdminError("Token can not be assiend to the specified user!")
-
-    return token
 
 
 def challenge_text_replace(message, user, token_obj, additional_tags: dict = None):
@@ -3026,6 +2958,7 @@ def regenerate_enroll_url(serial: str, request: Request, g) -> Union[str, None]:
 
     params = request.all_data
     params.update({"genkey": True, "rollover": True})
+    params["policies"] = g.policies
     token = init_token(params)
     enroll_url = token.get_enroll_url(token_owner, params)
 
@@ -3040,3 +2973,53 @@ def regenerate_enroll_url(serial: str, request: Request, g) -> Union[str, None]:
         log.warning(f"{ex}")
 
     return enroll_url
+
+
+def export_tokens(tokens: list[TokenClass]) -> str:
+    """
+    Takes a list of tokens and returns an exportable JSON string.
+    :param tokens: list of token objects
+    :return: JSON string representing a list of token dictionaries
+    """
+    exported_tokens = [token.export_token() for token in tokens]
+
+    json_export = json.dumps(exported_tokens, default=repr, indent=2)
+    return json_export
+
+
+def import_tokens(tokens: str, update_existing_tokens: bool = True) -> TokenImportResult:
+    """
+    Import a list of token dictionaries.
+    :param tokens: JSON string representing a list of token dictionaries
+    :return: list of token objects
+    """
+    successful_tokens = []
+    updated_tokens = []
+    failed_tokens = []
+    try:
+        tokens = json.loads(tokens)
+    except Exception as ex:
+        raise TokenAdminError(f"Could not parse the token import data from JSON: {ex}")
+
+    for token_info_dict in tokens:
+        serial = token_info_dict.get("serial")
+        try:
+            existing_token = get_one_token(serial=serial, silent_fail=True)
+            if not existing_token:
+                token_type = token_info_dict.get("type")
+                db_token = Token(serial, tokentype=token_type.lower())
+                token = create_tokenclass_object(db_token)
+                token.import_token(token_info_dict)
+                successful_tokens.append(serial)
+            elif update_existing_tokens:
+                existing_token.import_token(token_info_dict)
+                updated_tokens.append(serial)
+            else:
+                log.info(f"Token with serial {serial} already exists. "
+                         f"Set update_existing=True to update the token.")
+                failed_tokens.append(serial)
+        except Exception as e:
+            log.error(f"Could not import token {serial}: {e}")
+            failed_tokens.append(serial)
+    return TokenImportResult(successful_tokens=successful_tokens, updated_tokens=updated_tokens,
+                             failed_tokens=failed_tokens)

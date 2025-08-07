@@ -139,6 +139,8 @@ angular.module("privacyideaApp")
                 });
             };
 
+            $scope.isList = angular.isArray;
+
             $scope.getUserContainer = function () {
                 if (AuthFactory.checkRight("container_list")) {
                     ContainerFactory.getContainerForUser({
@@ -254,6 +256,7 @@ angular.module("privacyideaApp")
                             // ...and update the user details
                             $scope.getUserDetails();
                             $scope.getUserContainer()
+                            $scope.editUser = false;
                         } else {
                             inform.add(gettextCatalog.getString("Failed to update user."), {type: "danger"});
                         }
@@ -504,9 +507,22 @@ angular.module("privacyideaApp")
                     switch (resolver.type) {
                         case "ldapresolver":
                             userinfo = JSON.parse(resolver.data.USERINFO);
+                            if (resolver.data.recursive_group_search) {
+                                userinfo[resolver.data.group_attribute_mapping_key] = "";
+                            }
                             break;
                         case "sqlresolver":
                             userinfo = JSON.parse(resolver.data.Map);
+                            delete userinfo["userid"];
+                            break;
+                        case "httpresolver":
+                        case "entraidresolver":
+                            userinfo = resolver.data.attribute_mapping || {};
+                            delete userinfo["userid"];
+                            userinfo["password"] = "";
+                            break;
+                        case "keycloakresolver":
+                            userinfo = resolver.data.attribute_mapping || {};
                             delete userinfo["userid"];
                             break;
                     }
@@ -518,11 +534,12 @@ angular.module("privacyideaApp")
                             "name": key,
                             "label": gettextCatalog.getString(key),
                             "data": "",
-                            "required": true
+                            "required": false
                         };
                         switch (key) {
                             case "username":
                                 this.push(field);
+                                field["required"] = true;
                                 break;
                             case "email":
                                 field["type"] = "email";
@@ -533,7 +550,6 @@ angular.module("privacyideaApp")
                                 this.push(field);
                                 break;
                             default:
-                                field["required"] = false;
                                 this.push(field);
                                 break;
                         }

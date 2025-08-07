@@ -12,7 +12,7 @@ config = context.config
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 fileConfig(config.config_file_name)
-logger = logging.getLogger('alembic.env')
+log = logging.getLogger('alembic.env')
 
 
 def get_engine():
@@ -88,7 +88,7 @@ def run_migrations_online():
             script = directives[0]
             if script.upgrade_ops.is_empty():
                 directives[:] = []
-                logger.info('No changes in schema detected.')
+                log.info('No changes in schema detected.')
 
     conf_args = current_app.extensions['migrate'].configure_args
     if conf_args.get("process_revision_directives") is None:
@@ -112,6 +112,8 @@ def run_migrations_online():
 
 
 if context.is_offline_mode():
+    log.info("Running migrations offline")
     run_migrations_offline()
 else:
+    log.info("Running migrations online")
     run_migrations_online()

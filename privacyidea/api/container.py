@@ -28,7 +28,7 @@ from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy, check_u
                                            check_container_register_rollover, container_registration_config,
                                            smartphone_config, check_client_container_action, hide_tokeninfo,
                                            check_client_container_disabled_action, hide_container_info)
-from privacyidea.api.lib.utils import send_result, getParam, required
+from privacyidea.api.lib.utils import send_result, getParam, required, get_required_one_of
 from privacyidea.lib.container import (find_container_by_serial, init_container, get_container_classes_descriptions,
                                        get_container_token_types, get_all_containers, add_container_info,
                                        set_container_description, set_container_states, set_container_realms,
@@ -44,11 +44,11 @@ from privacyidea.lib.container import (find_container_by_serial, init_container,
                                        finalize_registration, init_container_rollover,
                                        get_container_realms,
                                        add_not_authorized_tokens_result, get_offline_token_serials,
-                                       delete_container_info)
+                                       delete_container_info, init_registration)
 from privacyidea.lib.containers.container_info import (TokenContainerInfoData, PI_INTERNAL, RegistrationState,
-    CHALLENGE_TTL, REGISTRATION_TTL, SERVER_URL, SSL_VERIFY)
+                                                       CHALLENGE_TTL, REGISTRATION_TTL, SERVER_URL, SSL_VERIFY)
 from privacyidea.lib.containers.container_states import ContainerStates
-from privacyidea.lib.error import ParameterError, ContainerNotRegistered, ContainerError
+from privacyidea.lib.error import ParameterError, ContainerNotRegistered
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import ACTION
@@ -180,12 +180,26 @@ def assign(container_serial):
 def unassign(container_serial):
     """
     Unassign a user from a container
+    In case the user does not exist anymore, the user_id is required.
 
     :param container_serial: serial of the container
     :jsonparam user: Username of the user
     :jsonparam realm: Realm of the user
+    :jsonparam resolver: Resolver of the user
+    :jsonparam user_id: User ID of the user, to be able to unassign non-existing users
     """
-    user = get_user_from_param(request.all_data, required)
+    # Get user
+    user = request.User
+    # The user id is not set in before_request, but is required to remove users that do not exist (anymore)
+    user_id = request.all_data.get("user_id", None)
+    if user_id:
+        user.uid = str(user_id)
+
+    # Check if required parameter is present
+    _ = get_required_one_of(request.all_data, ["user", "user_id"])
+    if user.login and not user.realm and not user.resolver and not user.uid:
+        raise ParameterError("Missing parameter 'realm', 'resolver', and/or 'user_id'")
+
     res = unassign_user(container_serial, user)
 
     container = find_container_by_serial(container_serial)
@@ -652,35 +666,8 @@ def registration_init():
                         "action_detail": f"rollover={container_rollover}",
                         "info": info_str})
 
-    # Check registration state: registration init is only allowed for None (not yet registered) and "client_wait"
-    # otherwise do a rollover
-    registration_state = RegistrationState(container.get_container_info_dict().get(RegistrationState.get_key()))
-    if container_rollover:
-        if registration_state not in [RegistrationState.REGISTERED, RegistrationState.ROLLOVER,
-                                      RegistrationState.ROLLOVER_COMPLETED]:
-            raise ContainerNotRegistered("Container is not registered.")
-    elif registration_state not in [RegistrationState.NOT_REGISTERED, RegistrationState.CLIENT_WAIT]:
-        raise ContainerError("Container is already registered.")
-
-    # Reset last synchronization and authentication time stamps from possible previous registration
-    container.reset_last_synchronization()
-    container.reset_last_authentication()
-
-    # registration
-    scope = create_endpoint_url(server_url, "container/register/finalize")
-    res = container.init_registration(server_url, scope, registration_ttl, ssl_verify, params)
-
-    if container_rollover:
-        # Set registration state
-        info = [TokenContainerInfoData(key=RegistrationState.get_key(), value=RegistrationState.ROLLOVER.value,
-                                       info_type=PI_INTERNAL),
-                TokenContainerInfoData(key="rollover_server_url", value=server_url, info_type=PI_INTERNAL),
-                TokenContainerInfoData(key="rollover_challenge_ttl", value=challenge_ttl, info_type=PI_INTERNAL)]
-    else:
-        # save policy values in container info
-        info = [TokenContainerInfoData(key="server_url", value=server_url, info_type=PI_INTERNAL),
-                TokenContainerInfoData(key="challenge_ttl", value=challenge_ttl, info_type=PI_INTERNAL)]
-    container.update_container_info(info)
+    res = init_registration(container, container_rollover, server_url, registration_ttl, ssl_verify, challenge_ttl,
+                            params)
 
     # Check for offline tokens
     res["offline_tokens"] = get_offline_token_serials(container)

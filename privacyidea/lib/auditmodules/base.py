@@ -84,7 +84,7 @@ class Audit(object):  # pragma: no cover
                        the special module implementation can get its configuration.
         :type config: dict
         :param startdate: The datetime of the beginning of the request
-        :type startdate: datetime
+        :type startdate: datetime.datetime
         :return: Audit object
         """
         self.name = "AuditBase"

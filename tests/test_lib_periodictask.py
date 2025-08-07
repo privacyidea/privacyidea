@@ -4,13 +4,13 @@ This file contains the tests for periodic tasks.
 In particular, this tests
 lib/periodictask.py
 """
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from dateutil.parser import parse as parse_timestamp
 from dateutil.tz import gettz, tzutc
 from mock import mock
 
-from privacyidea.lib.error import ServerError, ParameterError, ResourceNotFoundError
+from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 from privacyidea.lib.periodictask import calculate_next_timestamp, set_periodic_task, get_periodic_tasks, \
     enable_periodic_task, delete_periodic_task, set_periodic_task_last_run, get_scheduled_periodic_tasks, \
     get_periodic_task_by_name, TASK_MODULES, execute_task, get_periodic_task_by_id
@@ -349,7 +349,7 @@ class BasePeriodicTaskTestCase(MyTestCase):
         })
         # at 08:00 on wednesdays
         current_utc_time = parse_timestamp("2018-05-31 05:08:00")
-        with mock.patch('privacyidea.models.datetime') as mock_dt:
+        with mock.patch('privacyidea.models.periodictask.datetime') as mock_dt:
             mock_dt.utcnow.return_value = current_utc_time
             task2 = set_periodic_task("task two", "0 8 * * WED", ["pinode2", "pinode3"], "some.task.module", 1, {
                 "key1": "value",
@@ -430,7 +430,7 @@ class BasePeriodicTaskTestCase(MyTestCase):
         self.assertEqual([task["name"] for task in scheduled], ["task four"])
 
         # Enable task2, now we also have to run it on pinode2 and pinode3
-        with mock.patch('privacyidea.models.datetime') as mock_dt:
+        with mock.patch('privacyidea.models.periodictask.datetime') as mock_dt:
             mock_dt.utcnow.return_value = current_utc_time
             enable_periodic_task(task2)
 

@@ -136,7 +136,7 @@ Get the challenge
       "detail": {
         "attributes": {
                         "hideResponseInput": true,
-                        "img": ...imageUrl...
+                        "img": "...imageUrl...",
                         "u2fSignRequest": {
                             "challenge": "...",
                             "appId": "...",
@@ -150,11 +150,11 @@ Get the challenge
       "id": 1,
       "jsonrpc": "2.0",
       "result": {
-          "status": true,
-          "value": false,
+         "status": true,
+         "value": false,
       },
       "version": "privacyIDEA unknown"
-    }
+   }
 
 Send the Response
 ~~~~~~~~~~~~~~~~~
@@ -600,3 +600,15 @@ class U2fTokenClass(TokenClass):
                                  ]
                }
         return "fido.trusted-apps+json", res
+
+    def export_token(self) -> dict:
+        """
+        Export for this token is not supported.
+        """
+        raise NotImplementedError("Export for U2F token is not supported.")
+
+    def import_token(self, token_information: dict):
+        """
+        Import for this token is not supported.
+        """
+        raise NotImplementedError("Import for U2F token is not supported.")

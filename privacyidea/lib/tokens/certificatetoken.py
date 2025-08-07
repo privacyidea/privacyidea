@@ -1,4 +1,5 @@
-#  privacyIDEA
+# SPDX-FileCopyrightText: (C) 2025 NetKnights GmbH <https://netknights.it>
+#
 #  Aug 12, 2014 Cornelius Kölbel
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
@@ -11,6 +12,8 @@
 #
 #  2015-05-15 Adapt during migration to flask
 #             Cornelius Kölbel <cornelius@privacyidea.org>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
 #
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -430,7 +433,9 @@ class CertificateTokenClass(TokenClass):
         :type param: dict
         :return: None
         """
-        TokenClass.update(self, param)
+        # Remove genkey and otpkey from params to avoid generating an otpkey
+        token_params = {k:v for k, v in param.items() if k not in ["genkey", "otpkey"]}
+        TokenClass.update(self, token_params)
 
         request = get_optional(param, "request")
         spkac = get_optional(param, "spkac")

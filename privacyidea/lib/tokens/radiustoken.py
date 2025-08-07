@@ -133,7 +133,7 @@ class RadiusTokenClass(RemoteTokenClass):
 
         return ret
 
-    @log_with(log)
+    @log_with(log, hide_args_keywords={'param': 'pin'})
     def update(self, param):
         # New value
         radius_identifier = getParam(param, "radius.identifier")
@@ -162,7 +162,7 @@ class RadiusTokenClass(RemoteTokenClass):
         self.add_tokeninfo("radius.user", val)
         self.add_tokeninfo("tokenkind", TOKENKIND.VIRTUAL)
 
-    @log_with(log)
+    @log_with(log, hide_args=[1])
     @challenge_response_allowed
     def is_challenge_request(self, passw, user=None, options=None):
         """
@@ -282,14 +282,14 @@ class RadiusTokenClass(RemoteTokenClass):
 
         return challenge_response
 
-    @log_with(log)
+    @log_with(log, hide_kwargs=['passw'])
     @check_token_locked
     def check_challenge_response(self, user=None, passw=None, options=None):
         """
         This method verifies if there is a matching question for the given
         passw and also verifies if the answer is correct.
 
-        It then returns the the otp_counter = 1
+        It then returns the otp_counter = 1
 
         :param user: the requesting user
         :type user: User object
@@ -354,7 +354,7 @@ class RadiusTokenClass(RemoteTokenClass):
 
         return local_check
 
-    @log_with(log)
+    @log_with(log, hide_args=[1], log_exit=False)
     def split_pin_pass(self, passw, user=None, options=None):
         """
         Split the PIN and the OTP value.
@@ -368,7 +368,7 @@ class RadiusTokenClass(RemoteTokenClass):
 
         return res, pin, otpval
 
-    @log_with(log)
+    @log_with(log, hide_args=[1])
     @check_token_locked
     def authenticate(self, passw, user=None, options=None):
         """
@@ -439,7 +439,7 @@ class RadiusTokenClass(RemoteTokenClass):
         else:
             return -1
 
-    @log_with(log)
+    @log_with(log, hide_args=[1])
     @check_token_locked
     def _check_radius(self, otpval, options=None, radius_state=None):
         """
@@ -486,7 +486,7 @@ class RadiusTokenClass(RemoteTokenClass):
         # here we also need to check for radius.user
         log.debug("checking OTP len:{0!s} on radius server: "
                   "{1!s}, user: {2!r}".format(len(otpval), radius_server,
-                                               radius_user))
+                                              radius_user))
 
         try:
             # pyrad does not allow to set timeout and retries.
@@ -567,3 +567,15 @@ class RadiusTokenClass(RemoteTokenClass):
         options.update({'radius_state': radius_state})
         options.update({'radius_message': radius_message})
         return result
+
+    def export_token(self) -> dict:
+        """
+        Export for this token is not supported.
+        """
+        raise NotImplementedError("Export for RADIUS token is not supported.")
+
+    def import_token(self, token_information: dict):
+        """
+        Import for this token is not supported.
+        """
+        raise NotImplementedError("Import for RADIUS token is not supported.")

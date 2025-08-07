@@ -23,6 +23,9 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+# SPDX-FileCopyrightText: 2025 Paul Lettich <paul.lettich@netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 __doc__ = """The config module takes care about storing server configuration in
 the Config database table.
 
@@ -32,6 +35,7 @@ The code is tested in tests/test_lib_config
 """
 
 import copy
+import json
 import sys
 import logging
 import inspect
@@ -99,6 +103,8 @@ class SharedConfigClass(object):
         the internal timestamp, then read the complete data
         :return:
         """
+        from .resolvers.HTTPResolver import ADVANCED, HEADERS
+        from .resolver import get_resolver_class
         check_reload_config = get_app_config_value("PI_CHECK_RELOAD_CONFIG", 0)
         if not self.timestamp or \
                 self.timestamp + datetime.timedelta(seconds=check_reload_config) < datetime.datetime.now():
@@ -123,14 +129,39 @@ class SharedConfigClass(object):
                     resolverdef = {"type": resolver.rtype,
                                    "resolvername": resolver.name,
                                    "censor_keys": []}
+                    resolver_class = get_resolver_class(resolver.rtype)
+                    class_descriptor_config = resolver_class.getResolverClassDescriptor()[resolver.rtype]["config"]
                     data = {}
                     for rconf in resolver.config_list:
                         if rconf.Type == "password":
                             value = decryptPassword(rconf.Value)
                             resolverdef["censor_keys"].append(rconf.Key)
+                        elif rconf.Type == "dict":
+                            try:
+                                value = json.loads(rconf.Value)
+                            except json.JSONDecodeError as error:
+                                log.debug(
+                                    f"Could not load {rconf.Key} ({rconf.Value}) from resolver config as JSON: {error}")
+                                value = rconf.Value
+                        elif rconf.Type == "dict_with_password":
+                            # An entry in the dict is a password which needs to be decrypted
+                            try:
+                                value = json.loads(rconf.Value)
+                                for key, val in value.items():
+                                    if class_descriptor_config.get(f"{rconf.Key}.{key}", "") == "password":
+                                        value[key] = decryptPassword(val)
+                                        resolverdef["censor_keys"].append(f"{rconf.Key}.{key}")
+                            except json.JSONDecodeError as error:
+                                log.debug(
+                                    f"Could not load {rconf.Key} ({rconf.Value}) from resolver config as JSON: {error}")
+                                value = rconf.Value
                         else:
                             value = rconf.Value
                         data[rconf.Key] = value
+                    if data.get(ADVANCED, False) and HEADERS in data:
+                        # For advanced HTTP resolvers, the headers config is loaded as dict
+                        if data.get(HEADERS):
+                            data[HEADERS] = json.loads(data.get(HEADERS, "{}"))
                     resolverdef["data"] = data
                     resolverconfig[resolver.name] = resolverdef
                 # Load realm configuration
@@ -138,7 +169,6 @@ class SharedConfigClass(object):
                     if realm.default:
                         default_realm = realm.name
                     realmdef = {"id": realm.id,
-                                "option": realm.option,
                                 "default": realm.default,
                                 "resolver": []}
                     for x in realm.resolver_list:
@@ -408,7 +438,6 @@ def get_resolver_classes():
     :return: array of resolver classes
     :rtype: array
     """
-    resolver_classes = {}
     if "pi_resolver_classes" not in this.config:
         (r_classes, r_types) = get_resolver_class_dict()
         this.config["pi_resolver_types"] = r_types
@@ -462,6 +491,7 @@ def get_token_class(tokentype):
     """
     This takes a token type like "hotp" and returns a class
     like <class privacidea.lib.tokens.hotptoken.HotpTokenClass>
+
     :return: The tokenclass for the given type
     :rtype: tokenclass.TokenClass
     """
@@ -491,6 +521,26 @@ def get_token_types():
         this.config["pi_token_classes"] = t_classes
 
     return list(this.config["pi_token_types"].values())
+
+
+def get_enrollable_token_types() -> list[str]:
+    """
+    Returns a list of token types which can be enrolled.
+
+    This function removes deprecated token types from the complete token type list. In the pi.cfg file, deprecated
+    types can be re-enabled. These types will not be removed from the list.
+
+    :return: list of enrollable token types
+    """
+    token_types = get_token_types()
+    disabled_token_types = ['u2f']
+    enable_token_types = get_app_config_value("PI_ENABLE_TOKEN_TYPE_ENROLLMENT", [])
+    disabled_token_types = set(disabled_token_types) - set(enable_token_types)
+
+    # Remove the disabled token types
+    enrollable_token_types = list(set(token_types) - disabled_token_types)
+
+    return enrollable_token_types
 
 
 # @cache.cached(key_prefix="prefix")
@@ -670,6 +720,8 @@ def get_resolver_list():
     module_list.add("privacyidea.lib.resolvers.SCIMIdResolver")
     module_list.add("privacyidea.lib.resolvers.SQLIdResolver")
     module_list.add("privacyidea.lib.resolvers.HTTPResolver")
+    module_list.add("privacyidea.lib.resolvers.EntraIDResolver")
+    module_list.add("privacyidea.lib.resolvers.KeycloakResolver")
 
     # Dynamic Resolver modules
     # TODO: Migration
@@ -814,7 +866,6 @@ def get_token_module_list():
             module = importlib.import_module(mod_name)
             modules.append(module)
         except Exception as exx:  # pragma: no cover
-            module = None
             log.warning('unable to load token module : {0!r} ({1!r})'.format(mod_name, exx))
 
     return modules
@@ -865,7 +916,6 @@ def get_caconnector_module_list():
     modules = []
     for mod_name in module_list:
         mod_name = ".".join(mod_name.split(".")[:-1])
-        class_name = mod_name.split(".")[-1:]
         try:
             log.debug("import module: {0!s}".format(mod_name))
             module = importlib.import_module(mod_name)
@@ -1095,10 +1145,22 @@ def import_config(data, name=None):
         ', '.join([k for k, v in res.items() if v == 'update'])))
 
 
-def get_multichallenge_enrollable_tokentypes():
-    enrollable_tokentypes = []
-    # If the token is enrollable via multichallenge
-    for tclass in get_token_classes():
-        if tclass.is_multichallenge_enrollable():
-            enrollable_tokentypes.append(tclass.get_class_type())
-    return enrollable_tokentypes
+def get_multichallenge_enrollable_types() -> list[str]:
+    """
+    Returns a list of token and container types which can be enrolled during a successful authentication using the
+    policy "enroll_via_multichallenge"
+    """
+    if "pi_multichallenge_enrollable_types" not in this.config:
+        from .container import get_container_classes
+        enrollable_types = []
+        # Get token types enrollable via multichallenge
+        for tclass in get_token_classes():
+            if tclass.is_multichallenge_enrollable():
+                enrollable_types.append(tclass.get_class_type())
+        # Get container types enrollable via multichallenge
+        for class_name, container_class in get_container_classes().items():
+            if container_class.is_multi_challenge_enrollable():
+                enrollable_types.append(container_class.get_class_type())
+
+        this.config["pi_multichallenge_enrollable_types"] = enrollable_types
+    return this.config["pi_multichallenge_enrollable_types"]

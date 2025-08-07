@@ -5,17 +5,10 @@ Authorization policies
 
 .. index:: authorization policies
 
-The scope *authorization* provides means to define
-what should happen if a user proved their identity
-and authenticated successfully.
+The scope *authorization* provides means of granting permission, independently of the actual authentication process.
 
-Authorization policies take the realm, the user
-and the client into account.
-
-Technically the authorization policies apply
-to the :ref:`rest_validate` and are checked
-using :ref:`code_policy` and
-:ref:`policy_decorators`.
+Authorization policies can evaluate a wide range of parameters, such as the user, the token type,
+the IP address of the request or even custom request parameters.
 
 The following actions are available in the scope
 *authorization*:
@@ -217,9 +210,18 @@ invalidated.
 
 Allowed time specifiers are *s* (second), *m* (minute) and *h* (hour).
 
+This policy applies to ``/auth`` and ``/validate/check`` and holds for both admins and users. The policy is
+evaluated before checking the password or OTP value.
+
 .. note:: This policy depends on reading the audit log. If you use a
    non-readable audit log like :ref:`logger_audit` this policy will not
    work.
+
+In case a local admin and a user in the default realm exist with the same username, we can not distinguish them before
+the authentication if no realm is passed. The policy is first checked for local admins; hence, if the admin reaches the
+time limit of successful authentications, the user will not be able to authenticate anymore. This can be avoided by
+explicitly passing the user's realm. Anyway, local admins are not affected by the number of successful user
+authentications.
 
 .. _policy_auth_max_fail:
 
@@ -228,25 +230,26 @@ auth_max_fail
 
 type: ``string``
 
-Here you can specify how many failed authentication requests a user is
-allowed to perform during a given time.
+Here you can specify how many failed authentication requests a user is allowed to perform during a given time.
 
-If this value is exceeded, authentication is not possible anymore. The user
-will have to wait.
+If this value is exceeded, authentication is not possible anymore. The user will have to wait.
 
-If this policy is not defined, the normal behaviour of the failcounter
-applies. (see :term:`failcount`)
+If this policy is not defined, the normal behaviour of the failcounter applies. (see :term:`failcount`)
 
-Specify the value like ``2/1m`` meaning 2 successful authentication requests
-per minute. If during the last 5 minutes 2 successful authentications were
-performed the authentication request is discarded. The used OTP value is
-invalidated.
+Specify the value like ``2/1m`` meaning 2 failed authentication requests per minute. If during the last 5 minutes 2
+failed authentications were performed the authentication request is discarded. The used OTP value is invalidated.
 
 Allowed time specifiers are *s* (second), *m* (minute) and *h* (hour).
 
-.. note:: This policy depends on reading the audit log. If you use a
-   non-readable audit log like :ref:`logger_audit` this policy will not
-   work.
+This policy applies to ``/auth`` and ``/validate/check`` and holds for both admins and users. The policy is
+evaluated before checking the password or OTP value.
+
+.. note:: This policy depends on reading the audit log. If you use a non-readable audit log like :ref:`logger_audit`
+    this policy will not work.
+
+In case a local admin and a user in the default realm exist with the same username, we can not distinguish their failed
+authentications. Hence, if the admin reaches the time limit of failed authentications, the user will not be able to
+authenticate anymore, and vice versa.
 
 last_auth
 ~~~~~~~~~

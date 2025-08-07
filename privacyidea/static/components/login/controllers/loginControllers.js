@@ -99,7 +99,7 @@ angular.module("privacyideaApp")
 
             $scope.confirmDelete = function (delete_function, identifier) {
                 $scope.confirmDeleteObj = {
-                    question: document.activeElement.getAttribute('aria-label'),
+                    question: document.activeElement.getAttribute('data-confirmation-text'),
                     identifier: identifier,
                     delete_function: delete_function
                 };
@@ -671,7 +671,7 @@ angular.module("privacyideaApp")
             };
 
             $scope.createDefaultRealm = function () {
-                const resolver_params = {type: "passwdresolver", filename: "/etc/passwd"};
+                const resolver_params = {type: "passwdresolver", fileName: "/etc/passwd"};
                 const realm_params = {resolvers: "deflocal"};
                 ConfigFactory.setResolver("deflocal",
                     resolver_params,

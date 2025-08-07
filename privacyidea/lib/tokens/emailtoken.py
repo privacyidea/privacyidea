@@ -241,7 +241,7 @@ class EmailTokenClass(HotpTokenClass):
         HotpTokenClass.update(self, param, reset_failcount)
         return
 
-    @log_with(log)
+    @log_with(log, hide_args=[1])
     def is_challenge_request(self, passw, user=None, options=None):
         """
         check, if the request would start a challenge

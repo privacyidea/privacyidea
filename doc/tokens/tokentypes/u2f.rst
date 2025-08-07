@@ -29,3 +29,6 @@ For configuring privacyIDEA for the use of U2F token, please see
 For further details and for information how to add this to your application you
 can see the code documentation at
 :ref:`code_u2f_token`.
+
+.. note:: This token type is marked as deprecated. Enrollment of this token type is disabled. You can re-activate the
+    enrollment in the ``pi.cfg`` file. See :ref:`picfg_enable_token_type_enrollment`

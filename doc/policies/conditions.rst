@@ -33,7 +33,7 @@ Sections
 ~~~~~~~~
 
 privacyIDEA implements the sections ``userinfo``, ``token``, ``tokeninfo``, ``HTTP Request Headers``,
-``HTTP Environment``, ``Container``, and ``Container Info``.
+``HTTP Environment``, ``Container``, ``Container Info``, and ``Request Data``.
 
 userinfo
 ^^^^^^^^
@@ -207,6 +207,17 @@ endpoints. It does not work for the actions ``container_list`` (:http:get:`/cont
 ``container_create`` (:http:post:`/container/init`) and the template actions.
 
 
+Request Data
+^^^^^^^^^^^^
+
+This section can be used to define conditions based on the request data.
+The key defines the name of a request parameter. Check out the :ref:`rest_api` documentation for more information on
+the available request parameters for a specific request. Note that these are only the expected parameters.
+A requester could send any parameter in the request.
+
+Passwords are excluded from the request data, so they cannot be used in conditions.
+
+
 Comparators
 ~~~~~~~~~~~
 
@@ -223,6 +234,22 @@ The following comparators can be used in definitions of policy conditions:
   ``!matches`` evaluates to true if this is not the case.
 * ``<`` evaluates to true if the left value is smaller than the right value.
 * ``>`` evaluates to true if the left value is greater than the right value.
+* ``date_before`` evaluates to true if the left value is a date and time that occurs before the right value.
+  Both values must be a date in ISO format (e.g. "YYYY-MM-DD hh:mm:ss±hh:mm").
+* ``date_after`` evaluates to true if the left value is a date and time that occurs after the right value.
+  Both values must be a date in ISO format (e.g. "YYYY-MM-DD hh:mm:ss±hh:mm").
+* ``date_within_last`` evaluates to true if the left-hand value is a date and time that falls within the past time
+  interval specified by the right-hand value. ``!date_within_last`` evaluates to true if this is not the case.
+  The right-hand value must be a duration expressed as an integer
+  immediately followed by a time unit:
+    * ``y`` for years
+    * ``d`` for days
+    * ``h`` for hours
+    * ``m`` for minutes
+    * ``s`` for seconds
+  For example, "7d" means "within the last 7 days", "2h" means "within the last 2 hours".
+* ``string_contains`` evaluates to true if the left value (a string) contains the right value as a substring.
+  ``!string_contains`` evaluates to true if this is not the case.
 
 
 If you want to define a policy that e.g. only matches users from Active Directory that are in a

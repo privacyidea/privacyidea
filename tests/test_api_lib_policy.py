@@ -5,10 +5,13 @@ The api.lib.policy.py depends on lib.policy and on flask!
 """
 import json
 import logging
-from testfixtures import log_capture
+from testfixtures import log_capture, LogCapture
 from werkzeug.datastructures.headers import Headers
 
-from privacyidea.lib.container import init_container, find_container_by_serial
+from privacyidea.lib.container import (init_container, find_container_by_serial, create_container_template,
+                                       get_all_containers)
+from privacyidea.lib.containers.container_info import RegistrationState
+from privacyidea.lib.policies.policy_helper import get_jwt_validity
 from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AuthenticatorAttachmentType,
                                              AttestationLevel, AttestationForm,
                                              UserVerificationLevel)
@@ -61,7 +64,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_token_action, check_token_list_action, check_user_params,
                                            check_client_container_action, container_registration_config,
                                            smartphone_config, check_client_container_disabled_action, rss_age,
-                                           hide_container_info)
+                                           hide_container_info, require_description_on_edit, force_server_generate_key)
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.realm import delete_realm
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
@@ -73,7 +76,8 @@ from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             save_pin_change,
                                             add_user_detail_to_response,
                                             mangle_challenge_response, is_authorized,
-                                            check_verify_enrollment, preferred_client_mode)
+                                            check_verify_enrollment, preferred_client_mode,
+                                            multichallenge_enroll_via_validate)
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    set_realms, check_user_pass, unassign_token,
                                    enable_token)
@@ -1468,7 +1472,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                           "enrollHOTP, enrollQUESTION, enrollCERTIFICATE, "
                           "copytokenuser, configwrite, enrollTOTP, "
                           "enrollREGISTRATION, enrollYUBICO, resolverwrite, "
-                          "updateuser, enable, enrollU2F, "
+                          "updateuser, enable, "
                           "manage_machine_tokens, getrandom, userlist, "
                           "getserial, radiusserver_write, system_documentation,"
                           " caconnectordelete, caconnectorwrite, disable, "
@@ -1871,6 +1875,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
         g.client_ip = env["REMOTE_ADDR"]
+        g.policies = {}
         req = Request(env)
         req.User = User()
         req.all_data = {
@@ -1892,36 +1897,47 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                                             PUSH_ACTION.REGISTRATION_URL,
                                             PUSH_ACTION.TTL))
         g.policy_object = PolicyClass()
-        req.all_data = {
-            "type": "push"}
+        g.policies = {}
+        req.all_data = {"type": "push"}
         pushtoken_add_config(req, "init")
-        self.assertEqual(req.all_data.get(PUSH_ACTION.FIREBASE_CONFIG), "some-fb-config")
-        self.assertEqual(req.all_data.get(PUSH_ACTION.REGISTRATION_URL), "https://privacyidea.com/enroll")
-        self.assertEqual("10", req.all_data.get(PUSH_ACTION.TTL))
-        self.assertEqual("1", req.all_data.get(PUSH_ACTION.SSL_VERIFY))
+        policies = g.policies
+        self.assertEqual("some-fb-config", policies.get(PUSH_ACTION.FIREBASE_CONFIG))
+        self.assertEqual("https://privacyidea.com/enroll", policies.get(PUSH_ACTION.REGISTRATION_URL))
+        self.assertEqual("10", policies.get(PUSH_ACTION.TTL))
+        self.assertEqual("1", policies.get(PUSH_ACTION.SSL_VERIFY))
+        self.assertFalse(policies.get(PUSH_ACTION.USE_PIA_SCHEME))
 
         # the request tries to inject a rogue value, but we assure sslverify=1
         g.policy_object = PolicyClass()
+        g.policies = {}
         req.all_data = {
             "type": "push",
             "sslverify": "rogue"}
         pushtoken_add_config(req, "init")
-        self.assertEqual("1", req.all_data.get(PUSH_ACTION.SSL_VERIFY))
+        self.assertEqual("1", g.policies.get(PUSH_ACTION.SSL_VERIFY))
 
         # set sslverify="0"
         set_policy(name="push_pol2",
                    scope=SCOPE.ENROLL,
                    action="{0!s}=0".format(PUSH_ACTION.SSL_VERIFY))
         g.policy_object = PolicyClass()
-        req.all_data = {
-            "type": "push"}
+        g.policies = {}
+        req.all_data = {"type": "push"}
         pushtoken_add_config(req, "init")
-        self.assertEqual(req.all_data.get(PUSH_ACTION.FIREBASE_CONFIG), "some-fb-config")
-        self.assertEqual("0", req.all_data.get(PUSH_ACTION.SSL_VERIFY))
+        self.assertEqual("some-fb-config", g.policies.get(PUSH_ACTION.FIREBASE_CONFIG))
+        self.assertEqual("0", g.policies.get(PUSH_ACTION.SSL_VERIFY))
+
+        # Set policy to use pia scheme
+        set_policy("pia_scheme", scope=SCOPE.ENROLL, action=PUSH_ACTION.USE_PIA_SCHEME)
+        req.all_data = {"type": "push"}
+        g.policies = {}
+        pushtoken_add_config(req, "init")
+        self.assertTrue(g.policies.get(PUSH_ACTION.USE_PIA_SCHEME))
 
         # finally delete policy
         delete_policy("push_pol")
         delete_policy("push_pol2")
+        delete_policy("pia_scheme")
 
     def test_23_enroll_different_tokentypes_in_different_resolvers(self):
         # One realm has different resolvers.
@@ -3425,36 +3441,67 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         delete_policy("require_description")
 
+    def test_61a_required_description_on_edit(self):
+        self.setUp_user_realms()
+        serial = "HOTP1"
+
+        init_token({"serial": serial, "type": "hotp", "otpkey": "2", "user": "cornelius"})
+
+        # Set policies
+        set_policy(name="require_description_on_edit",
+                   scope=SCOPE.TOKEN,
+                   action=[f"{ACTION.REQUIRE_DESCRIPTION_ON_EDIT}=hotp"])
+
+        set_policy(name="set_description",
+                   scope=SCOPE.ADMIN,
+                   action=ACTION.SETDESCRIPTION)
+
+        with self.app.test_request_context('token/description/' + serial,
+                                           method='POST',
+                                           data={'description': 'test'},
+                                           headers={'Authorization': self.at}):
+            # This should work because the description is set
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+
+        with self.app.test_request_context('token/description/' + serial,
+                                           method='POST',
+                                           data={'description': ""},
+                                           headers={'Authorization': self.at}):
+            # Description is empty, this should not work
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403)
+            result = res.json.get("result")
+            self.assertIn("Description required for hotp token.", result.get("error").get("message"))
+
+        remove_token(serial=serial)
+        delete_policy("require_description_on_edit")
+        delete_policy("set_description")
+
     def test_62_jwt_validity(self):
-        g.logged_in_user = {"username": "cornelius",
-                            "role": "user"}
-        builder = EnvironBuilder(method='POST',
-                                 headers={})
-        env = builder.get_environ()
+        user = User("cornelius", realm=self.realm1, resolver=self.resolvername1)
+
+        # Default validity.
+        validity = get_jwt_validity(user)
+        self.assertEqual(timedelta(hours=1), validity)
+
         # Set policy
-        set_policy(name="jwt_validity",
-                   scope=SCOPE.WEBUI,
-                   action=[f"{ACTION.JWTVALIDITY}=12"])
-        req = Request(env)
-        req.User = User("cornelius")
-        req.all_data = {}
+        set_policy(name="jwt_validity", scope=SCOPE.WEBUI, action=[f"{ACTION.JWTVALIDITY}=12"], realm=self.realm1)
 
         # The validity of the JWT is set.
-        r = jwt_validity(req, None)
-        self.assertTrue(r)
-        self.assertEqual(12, req.all_data.get("jwt_validity"))
+        validity = get_jwt_validity(user)
+        self.assertEqual(timedelta(seconds=12), validity)
+
+        # Passing an empty user returns the default validity.
+        validity = get_jwt_validity(User())
+        self.assertEqual(timedelta(hours=1), validity)
 
         # Now test a bogus policy
-        set_policy(name="jwt_validity",
-                   scope=SCOPE.WEBUI,
-                   action=[f"{ACTION.JWTVALIDITY}=oneMinute"])
-        req = Request(env)
-        req.User = User("cornelius")
-        req.all_data = {}
-        r = jwt_validity(req, None)
-        self.assertTrue(r)
-        # We receive the default of 1 hour
-        self.assertEqual(3600, req.all_data.get("jwt_validity"))
+        set_policy(name="jwt_validity", scope=SCOPE.WEBUI, action=[f"{ACTION.JWTVALIDITY}=oneMinute"])
+        validity = get_jwt_validity(user)
+        self.assertEqual(timedelta(hours=1), validity)
 
         delete_policy("jwt_validity")
 
@@ -3601,8 +3648,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("policy")
 
         # Policy for user
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN, user="root", realm=[self.realm3],
-                   resolver=[self.resolvername3])
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN, user="root",
+                   realm=[self.realm3], resolver=[self.resolvername3])
         self.assertTrue(check_token_action(request=req, action=ACTION.CONTAINER_ADD_TOKEN))
         # Request user is different from token owner: use token owner (can only happen in add/remove token)
         req.User = User("selfservice", self.realm1, self.resolvername1)
@@ -4308,7 +4355,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # Set a policy only valid for another realm
         set_policy("policy_realm2", SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://test.com",
+                   action={ACTION.CONTAINER_SERVER_URL: "https://test.com",
                            ACTION.CONTAINER_REGISTRATION_TTL: 60,
                            ACTION.CONTAINER_CHALLENGE_TTL: 50,
                            ACTION.CONTAINER_SSL_VERIFY: "False"},
@@ -4316,7 +4363,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # policy including server url + default values for ttl and ssl_verify
         req, container = self.mock_container_request("user")
-        set_policy("policy", SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.com"})
+        set_policy("policy", SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.com"})
         container_registration_config(req)
         self.assertEqual("https://pi.com", req.all_data["server_url"])
         self.assertEqual(10, req.all_data["registration_ttl"])
@@ -4328,7 +4375,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # specifying valid values in generic policy
         req, container = self.mock_container_request("user")
         set_policy("generic_policy", SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://pi.com",
+                   action={ACTION.CONTAINER_SERVER_URL: "https://pi.com",
                            ACTION.CONTAINER_REGISTRATION_TTL: 20,
                            ACTION.CONTAINER_CHALLENGE_TTL: 6,
                            ACTION.CONTAINER_SSL_VERIFY: "False"},
@@ -4343,7 +4390,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # specifying valid values in policy for realm with higher priority than generic policy
         req, container = self.mock_container_request("user")
         set_policy("policy", SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://pi.com",
+                   action={ACTION.CONTAINER_SERVER_URL: "https://pi.com",
                            ACTION.CONTAINER_REGISTRATION_TTL: 30,
                            ACTION.CONTAINER_CHALLENGE_TTL: 8,
                            ACTION.CONTAINER_SSL_VERIFY: "False"},
@@ -4360,7 +4407,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # specifying invalid values sets default values
         req, container = self.mock_container_request("user")
-        set_policy("policy", SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.com",
+        set_policy("policy", SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.com",
                                                       ACTION.CONTAINER_REGISTRATION_TTL: -20,
                                                       ACTION.CONTAINER_CHALLENGE_TTL: -6,
                                                       ACTION.CONTAINER_SSL_VERIFY: "maybe"})
@@ -4385,7 +4432,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # specifying valid values in policy for another realm
         req, container = self.mock_container_request("user")
-        set_policy("policy", SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.com",
+        set_policy("policy", SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.com",
                                                       ACTION.CONTAINER_REGISTRATION_TTL: 20,
                                                       ACTION.CONTAINER_CHALLENGE_TTL: 6,
                                                       ACTION.CONTAINER_SSL_VERIFY: "False"}, realm=self.realm2)
@@ -4394,8 +4441,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # conflicting policies for server url shall raise error
         req, container = self.mock_container_request("user")
-        set_policy("policy1", SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.com"})
-        set_policy("policy2", SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test.com"})
+        set_policy("policy1", SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.com"})
+        set_policy("policy2", SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://test.com"})
         self.assertRaises(PolicyError, container_registration_config, req)
         delete_policy("policy1")
         delete_policy("policy2")
@@ -4404,7 +4451,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # conflicting policies for registration ttl shall raise error
         req, container = self.mock_container_request("user")
         set_policy("policy1", SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://pi.com", ACTION.CONTAINER_REGISTRATION_TTL: 20})
+                   action={ACTION.CONTAINER_SERVER_URL: "https://pi.com", ACTION.CONTAINER_REGISTRATION_TTL: 20})
         set_policy("policy2", SCOPE.CONTAINER, action={ACTION.CONTAINER_REGISTRATION_TTL: 30})
         self.assertRaises(PolicyError, container_registration_config, req)
         delete_policy("policy1")
@@ -4414,7 +4461,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # conflicting policies for challenge ttl shall raise error
         req, container = self.mock_container_request("user")
         set_policy("policy1", SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://pi.com", ACTION.CONTAINER_CHALLENGE_TTL: 20})
+                   action={ACTION.CONTAINER_SERVER_URL: "https://pi.com", ACTION.CONTAINER_CHALLENGE_TTL: 20})
         set_policy("policy2", SCOPE.CONTAINER, action={ACTION.CONTAINER_CHALLENGE_TTL: 30})
         self.assertRaises(PolicyError, container_registration_config, req)
         delete_policy("policy1")
@@ -4424,7 +4471,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # conflicting policies for challenge ttl shall raise error
         req, container = self.mock_container_request("user")
         set_policy("policy1", SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://pi.com", ACTION.CONTAINER_SSL_VERIFY: "False"})
+                   action={ACTION.CONTAINER_SERVER_URL: "https://pi.com", ACTION.CONTAINER_SSL_VERIFY: "False"})
         set_policy("policy2", SCOPE.CONTAINER, action={ACTION.CONTAINER_SSL_VERIFY: "True"})
         self.assertRaises(PolicyError, container_registration_config, req)
         delete_policy("policy1")
@@ -4719,10 +4766,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req = Request(env)
         req.User = User("cornelius")
         req.all_data = {}
-        r = jwt_validity(req, None)
+        r = rss_age(req, None)
         self.assertTrue(r)
-        # We receive the default of None
-        self.assertEqual(None, req.all_data.get(f"{ACTION.RSS_AGE}"))
+        # We receive the default of 0
+        self.assertEqual(0, req.all_data.get(f"{ACTION.RSS_AGE}"))
 
         delete_policy("rssage")
 
@@ -4768,6 +4815,138 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         delete_policy("admin")
         delete_policy("user")
+
+    def test_86_force_server_generate_key_user(self):
+        g.logged_in_user = {"username": "hans",
+                            "realm": self.realm1,
+                            "resolver": self.resolvername1,
+                            "role": "user"}
+        user = User("hans", self.realm1)
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+        env = builder.get_environ()
+        # Test default for users:
+        request = Request(env)
+        request.User = user
+        request.all_data = {"type": "hotp"}
+        set_policy("enroll", SCOPE.USER, action="enrollHOTP, enrollTOTP")
+
+        # Policy is not set
+        g.policies = {}
+        force_server_generate_key(request)
+        self.assertFalse(g.policies.get(f"hotp_{ACTION.FORCE_SERVER_GENERATE}"))
+
+        # Set policy for different token type
+        g.policies = {}
+        set_policy("totp_genkey", scope=SCOPE.USER, action=f"totp_{ACTION.FORCE_SERVER_GENERATE}")
+        force_server_generate_key(request)
+        self.assertFalse(g.policies.get(f"hotp_{ACTION.FORCE_SERVER_GENERATE}"))
+        self.assertNotIn(f"totp_{ACTION.FORCE_SERVER_GENERATE}", g.policies)
+
+        # Set policy for hotp
+        g.policies = {}
+        set_policy("hotp_genkey", scope=SCOPE.USER, action=f"hotp_{ACTION.FORCE_SERVER_GENERATE}")
+        force_server_generate_key(request)
+        self.assertTrue(g.policies.get(f"hotp_{ACTION.FORCE_SERVER_GENERATE}"))
+        self.assertNotIn(f"totp_{ACTION.FORCE_SERVER_GENERATE}", g.policies)
+
+        # Test for TOTP
+        g.policies = {}
+        request.all_data = {"type": "totp"}
+        force_server_generate_key(request)
+        self.assertTrue(g.policies.get(f"totp_{ACTION.FORCE_SERVER_GENERATE}"))
+        self.assertNotIn(f"hotp_{ACTION.FORCE_SERVER_GENERATE}", g.policies)
+
+        # Test for mOTP
+        set_policy("motp_genkey", scope=SCOPE.USER, action=f"motp_{ACTION.FORCE_SERVER_GENERATE}")
+        g.policies = {}
+        request.all_data = {"type": "motp", "motppin": "123"}
+        force_server_generate_key(request)
+        self.assertTrue(g.policies.get(f"motp_{ACTION.FORCE_SERVER_GENERATE}"))
+        self.assertNotIn(f"hotp_{ACTION.FORCE_SERVER_GENERATE}", g.policies)
+        self.assertNotIn(f"totp_{ACTION.FORCE_SERVER_GENERATE}", g.policies)
+
+        # Test for applspec
+        set_policy("applspec_genkey", scope=SCOPE.USER, action=f"applspec_{ACTION.FORCE_SERVER_GENERATE}")
+        g.policies = {}
+        request.all_data = {"type": "applspec", "motppin": "123", "service_id": "123"}
+        force_server_generate_key(request)
+        self.assertTrue(g.policies.get(f"applspec_{ACTION.FORCE_SERVER_GENERATE}"))
+        self.assertNotIn(f"hotp_{ACTION.FORCE_SERVER_GENERATE}", g.policies)
+        self.assertNotIn(f"totp_{ACTION.FORCE_SERVER_GENERATE}", g.policies)
+        self.assertNotIn(f"motp_{ACTION.FORCE_SERVER_GENERATE}", g.policies)
+
+        # Test for a token type not having this policy
+        g.policies = {}
+        request.all_data = {"type": "spass"}
+        force_server_generate_key(request)
+        self.assertFalse(g.policies.get(f"spass_{ACTION.FORCE_SERVER_GENERATE}"))
+        self.assertNotIn(f"hotp_{ACTION.FORCE_SERVER_GENERATE}", g.policies)
+        self.assertNotIn(f"totp_{ACTION.FORCE_SERVER_GENERATE}", g.policies)
+        self.assertNotIn(f"motp_{ACTION.FORCE_SERVER_GENERATE}", g.policies)
+        self.assertNotIn(f"applspec_{ACTION.FORCE_SERVER_GENERATE}", g.policies)
+
+        delete_policy("enroll")
+        delete_policy("totp_genkey")
+        delete_policy("hotp_genkey")
+        delete_policy("motp_genkey")
+        delete_policy("applspec_genkey")
+
+    def test_86_force_server_generate_key_admin(self):
+        g.logged_in_user = {"username": self.testadmin, "realm": "",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+        env = builder.get_environ()
+        # Test default for users:
+        request = Request(env)
+        request.User = User()
+        request.all_data = {"type": "hotp"}
+        set_policy("enroll", SCOPE.ADMIN, action="enrollHOTP, enrollTOTP")
+
+        # Policy is not set
+        g.policies = {}
+        force_server_generate_key(request)
+        self.assertFalse(g.policies.get(f"hotp_{ACTION.FORCE_SERVER_GENERATE}"))
+
+        # Set policy for hotp
+        g.policies = {}
+        set_policy("hotp_genkey", scope=SCOPE.ADMIN, action=f"hotp_{ACTION.FORCE_SERVER_GENERATE}")
+        force_server_generate_key(request)
+        self.assertTrue(g.policies.get(f"hotp_{ACTION.FORCE_SERVER_GENERATE}"))
+
+        # Test for TOTP
+        set_policy("totp_genkey", scope=SCOPE.ADMIN, action=f"totp_{ACTION.FORCE_SERVER_GENERATE}")
+        g.policies = {}
+        request.all_data = {"type": "totp"}
+        force_server_generate_key(request)
+        self.assertTrue(g.policies.get(f"totp_{ACTION.FORCE_SERVER_GENERATE}"))
+        self.assertNotIn(f"hotp_{ACTION.FORCE_SERVER_GENERATE}", g.policies)
+
+        # Test for mOTP
+        set_policy("motp_genkey", scope=SCOPE.ADMIN, action=f"motp_{ACTION.FORCE_SERVER_GENERATE}")
+        g.policies = {}
+        request.all_data = {"type": "motp", "motppin": "123"}
+        force_server_generate_key(request)
+        self.assertTrue(g.policies.get(f"motp_{ACTION.FORCE_SERVER_GENERATE}"))
+        self.assertNotIn(f"hotp_{ACTION.FORCE_SERVER_GENERATE}", g.policies)
+        self.assertNotIn(f"totp_{ACTION.FORCE_SERVER_GENERATE}", g.policies)
+
+        # Test for applspec
+        set_policy("applspec_genkey", scope=SCOPE.ADMIN, action=f"applspec_{ACTION.FORCE_SERVER_GENERATE}")
+        g.policies = {}
+        request.all_data = {"type": "applspec", "motppin": "123", "service_id": "123"}
+        force_server_generate_key(request)
+        self.assertTrue(g.policies.get(f"applspec_{ACTION.FORCE_SERVER_GENERATE}"))
+        self.assertNotIn(f"hotp_{ACTION.FORCE_SERVER_GENERATE}", g.policies)
+        self.assertNotIn(f"totp_{ACTION.FORCE_SERVER_GENERATE}", g.policies)
+        self.assertNotIn(f"motp_{ACTION.FORCE_SERVER_GENERATE}", g.policies)
+
+        delete_policy("enroll")
+        delete_policy("totp_genkey")
+        delete_policy("hotp_genkey")
+        delete_policy("motp_genkey")
+        delete_policy("applspec_genkey")
 
 
 class PostPolicyDecoratorTestCase(MyApiTestCase):
@@ -5418,13 +5597,15 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         env["REMOTE_ADDR"] = "192.168.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
+        req.User = User("cornelius", self.realm1)
         req.all_data = {"user": "cornelius",
                         "pass": "offline287082"}
 
         res = {"jsonrpc": "2.0",
                "result": {"status": True,
                           "value": {"role": "user",
-                                    "username": "cornelius"}},
+                                    "username": "cornelius",
+                                    "realm": self.realm1}},
                "version": "privacyIDEA test",
                "detail": {"serial": None},
                "id": 1}
@@ -5551,13 +5732,15 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         env["REMOTE_ADDR"] = "192.168.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
+        req.User = User("cornelius", self.realm1)
         req.all_data = {"user": "cornelius",
                         "pass": "offline287082"}
 
         res = {"jsonrpc": "2.0",
                "result": {"status": True,
                           "value": {"role": "user",
-                                    "username": "cornelius"}},
+                                    "username": "cornelius",
+                                    "realm": self.realm1}},
                "version": "privacyIDEA test",
                "id": 1}
         resp = jsonify(res)
@@ -5605,12 +5788,14 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         env["REMOTE_ADDR"] = "192.168.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
+        req.User = User()
         req.all_data = {}
 
         res = {"jsonrpc": "2.0",
                "result": {"status": True,
                           "value": {"role": "admin",
-                                    "username": "cornelius"}},
+                                    "username": "cornelius",
+                                    "realm": ""}},
                "version": "privacyIDEA test",
                "id": 1}
         resp = jsonify(res)
@@ -5643,12 +5828,14 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         env["REMOTE_ADDR"] = "192.168.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
+        req.User = User()
         req.all_data = {}
 
         res = {"jsonrpc": "2.0",
                "result": {"status": True,
                           "value": {"role": "admin",
-                                    "username": "cornelius"}},
+                                    "username": "cornelius",
+                                    "realm": ""}},
                "version": "privacyIDEA test",
                "id": 1}
         resp = jsonify(res)
@@ -5683,18 +5870,21 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         builder = EnvironBuilder(method="POST", data={}, headers={})
         env = builder.get_environ()
         req = Request(env)
+        req.User = User("cornelius", self.realm1)
         req.all_data = {}
 
         user_response = {"jsonrpc": "2.0",
                          "result": {"status": True,
                                     "value": {"role": "user",
-                                              "username": "cornelius"}},
+                                              "username": "cornelius",
+                                              "realm": self.realm1}},
                          "version": "privacyIDEA test",
                          "id": 1}
         admin_response = {"jsonrpc": "2.0",
                           "result": {"status": True,
                                      "value": {"role": "admin",
-                                               "username": "cornelius"}},
+                                               "username": "cornelius",
+                                               "realm": ""}},
                           "version": "privacyIDEA test",
                           "id": 1}
 
@@ -5727,6 +5917,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # Admin without container: container wizard disabled
         resp = jsonify(admin_response)
+        req.User = User()
         new_response = get_webui_settings(req, resp)
         container_wizard = new_response.json["result"]["value"]["container_wizard"]
         self.assertFalse(container_wizard["enabled"])
@@ -5736,6 +5927,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         container_serial = init_container({"type": "generic", "user": "cornelius", "realm": self.realm1})[
             "container_serial"]
         resp = jsonify(user_response)
+        req.User = User("cornelius", self.realm1)
         new_response = get_webui_settings(req, resp)
         container_wizard = new_response.json["result"]["value"]["container_wizard"]
         self.assertFalse(container_wizard["enabled"])
@@ -6113,7 +6305,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # No preferred client mode policy set only custom user attribute: use user+application preference
         response = jsonify(response_data)
         user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-cp", "push", INTERNAL_USAGE)
-        user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-Shibbole", "u2f", INTERNAL_USAGE)
+        user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-Shibbole", "u2f",
+                           INTERNAL_USAGE)
 
         preferred_client_mode(request, response)
 
@@ -6200,3 +6393,238 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         delete_policy("preferred_client_mode")
         delete_policy("challenge")
+
+    def test_23_enroll_via_multichallenge_smartphone_is_triggered(self):
+        """
+        Here we only test that the enroll_via_multichallenge is triggered correctly for different scenarios
+        """
+        template_options = {"tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True}]}
+        create_container_template(container_type="smartphone", template_name="test", options=template_options)
+        set_policy("enroll_via_multichallenge", scope=SCOPE.AUTH,
+                   action={ACTION.ENROLL_VIA_MULTICHALLENGE: "smartphone", ACTION.PASSTHRU: True})
+        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/"})
+
+        self.setUp_user_realms()
+        hans = User("hans", self.realm1)
+
+        # Mock request
+        builder = EnvironBuilder(method='POST', data={}, headers=Headers({"user_agent": "privacyidea-cp"}))
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        request = Request(env)
+        request.all_data = {}
+        request.User = hans
+        g.policy_object = PolicyClass()
+        g.policies = {}
+
+        response_data = {"jsonrpc": "2.0",
+                         "result": {"status": True, "value": True, "authentication": AUTH_RESPONSE.ACCEPT},
+                         "version": "privacyIDEA test"}
+        response = jsonify(response_data)
+
+        def check_response(response, message=None):
+            result = response.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertFalse(result.get("value"))
+            self.assertEqual(AUTH_RESPONSE.CHALLENGE, result.get("authentication"))
+            details = response.json.get("detail", {})
+            self.assertIn("multi_challenge", details)
+            self.assertEqual(1, len(details.get("multi_challenge", [])))
+            challenge_data = details.get("multi_challenge")[0]
+            # Data in the challenge is equal to the data in the details
+            self.assertEqual(details.get("serial"), challenge_data.get("serial"))
+            self.assertEqual(details.get("type"), challenge_data.get("type"))
+            self.assertEqual(details.get("transaction_id"), challenge_data.get("transaction_id"))
+            self.assertEqual(details.get("client_mode"), challenge_data.get("client_mode"))
+            self.assertEqual(details.get("message"), challenge_data.get("message"))
+            self.assertEqual(details.get("image"), challenge_data.get("image"))
+            self.assertEqual(details.get("link"), challenge_data.get("link"))
+            # As it is equal we only need to check for valid values once
+            self.assertEqual("smartphone", challenge_data.get("type"))
+            self.assertEqual("poll", challenge_data.get("client_mode"))
+            self.assertTrue(challenge_data.get("link").startswith("pia://container"))
+            # Default message
+            message = message or "Please scan the QR code to register the container."
+            self.assertEqual(message, challenge_data.get("message"))
+
+        # User has no container
+        response = multichallenge_enroll_via_validate(request, response)
+        check_response(response)
+        container = find_container_by_serial(response.json.get("detail").get("serial"))
+        # container is created without template hence there are no tokens
+        self.assertEqual(0, len(container.tokens))
+        # clean up
+        container.delete()
+        response = jsonify(response_data)
+
+        # User has token, but no container
+        g.policies = {}
+        token = init_token({"type": "hotp", "genkey": True}, user=hans)
+        response = multichallenge_enroll_via_validate(request, response)
+        check_response(response)
+        # clean up
+        token.delete_token()
+        [container.delete() for container in get_all_containers(user=hans)["containers"]]
+        response = jsonify(response_data)
+
+        # User has generic container, but not smartphone container
+        g.policies = {}
+        init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
+        response = multichallenge_enroll_via_validate(request, response)
+        check_response(response)
+        # clean up
+        [container.delete() for container in get_all_containers(user=hans)["containers"]]
+        response = jsonify(response_data)
+
+        # User has smartphone container, but it is not registered
+        g.policies = {}
+        container_serial = init_container({"type": "smartphone", "user": "hans", "realm": self.realm1})[
+            "container_serial"]
+        response = multichallenge_enroll_via_validate(request, response)
+        check_response(response)
+        self.assertEqual(container_serial, response.json.get("detail").get("serial"))
+        # clean up
+        [container.delete() for container in get_all_containers(user=hans)["containers"]]
+        response = jsonify(response_data)
+
+        # use template policy
+        g.policies = {}
+        set_policy("enroll_via_multichallenge_template", scope=SCOPE.AUTH,
+                   action={ACTION.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: "test"})
+        response = multichallenge_enroll_via_validate(request, response)
+        check_response(response)
+        container = find_container_by_serial(response.json.get("detail").get("serial"))
+        self.assertEqual("test", container.template.name)
+        tokens = container.tokens
+        self.assertSetEqual({"hotp", "totp"}, {token.type for token in tokens})
+        # clean up
+        [token.delete_token() for token in tokens]
+        [container.delete() for container in get_all_containers(user=hans)["containers"]]
+        response = jsonify(response_data)
+
+        # User max token reached, but container is created anyway
+        g.policies = {}
+        set_policy("max_token_user", scope=SCOPE.ENROLL, action={ACTION.MAXTOKENUSER: 1})
+        token = init_token({"type": "hotp", "genkey": True}, user=hans)
+        with LogCapture() as capture:
+            logging.getLogger('privacyidea.lib.container').setLevel(logging.WARNING)
+            response = multichallenge_enroll_via_validate(request, response)
+            token_info = {"type": "hotp", "genkey": True, "user": hans.login, "realm": hans.realm,
+                          "resolver": hans.resolver}
+            log_message = (f"Error checking pre-policies for token {token_info} created from template: ERR303: The "
+                           "number of tokens for this user is limited!")
+            capture.check_present(("privacyidea.lib.container", "WARNING", log_message))
+            token_info["type"] = "totp"
+            log_message = (f"Error checking pre-policies for token {token_info} created from template: ERR303: The "
+                           "number of tokens for this user is limited!")
+            capture.check_present(("privacyidea.lib.container", "WARNING", log_message))
+        check_response(response)
+        container = find_container_by_serial(response.json.get("detail").get("serial"))
+        self.assertEqual("test", container.template.name)
+        # token is not created as the user already had one token
+        tokens = container.tokens
+        self.assertEqual(0, len(tokens))
+
+        # clean up
+        [container.delete() for container in get_all_containers(user=hans)["containers"]]
+        token.delete_token()
+        delete_policy("max_token_user")
+        delete_policy("enroll_via_multichallenge_template")
+        response = jsonify(response_data)
+
+        # use custom text
+        g.policies = {}
+        set_policy("enroll_via_multichallenge_text", scope=SCOPE.AUTH,
+                   action={ACTION.ENROLL_VIA_MULTICHALLENGE_TEXT: "Test custom text!"})
+        response = multichallenge_enroll_via_validate(request, response)
+        check_response(response, message="Test custom text!")
+        # clean up
+        [container.delete() for container in get_all_containers(user=hans)["containers"]]
+        delete_policy("enroll_via_multichallenge_text")
+        response = jsonify(response_data)
+
+        # Invalid template name: container is created anyway
+        g.policies = {}
+        set_policy("enroll_via_multichallenge_template", scope=SCOPE.AUTH,
+                   action={ACTION.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: "invalid"})
+        response = multichallenge_enroll_via_validate(request, response)
+        check_response(response)
+        container = find_container_by_serial(response.json.get("detail").get("serial"))
+        self.assertEqual(0, len(container.tokens))
+        self.assertIsNone(container.template)
+        # clean up
+        [container.delete() for container in get_all_containers(user=hans)["containers"]]
+        delete_policy("enroll_via_multichallenge_template")
+        response = jsonify(response_data)
+
+        delete_policy("enroll_via_multichallenge")
+        delete_policy("registration")
+
+    @log_capture(level=logging.DEBUG)
+    def test_24_enroll_smartphone_is_not_triggered(self, capture):
+        """
+        Here we only test that the enroll_via_multichallenge is not triggered correctly for different scenarios
+        """
+        logging.getLogger('privacyidea.api.lib.postpolicy').setLevel(logging.DEBUG)
+        set_policy("enroll_via_multichallenge", scope=SCOPE.AUTH,
+                   action={ACTION.ENROLL_VIA_MULTICHALLENGE: "smartphone", ACTION.PASSTHRU: True})
+        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/"})
+        set_policy("enroll_via_multichallenge_template", scope=SCOPE.AUTH,
+                   action={ACTION.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: "test"})
+
+        self.setUp_user_realms()
+        hans = User("hans", self.realm1)
+
+        # Mock request
+        builder = EnvironBuilder(method='POST', data={}, headers=Headers({"user_agent": "privacyidea-cp"}))
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        request = Request(env)
+        request.all_data = {}
+        request.User = hans
+        g.policy_object = PolicyClass()
+        g.policies = {}
+
+        response_data = {"jsonrpc": "2.0",
+                         "result": {"status": True, "value": True, "authentication": AUTH_RESPONSE.ACCEPT},
+                         "version": "privacyIDEA test"}
+        response = jsonify(response_data)
+
+        def check_response(response):
+            result = response.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+            self.assertEqual(AUTH_RESPONSE.ACCEPT, result.get("authentication"))
+
+        # User has registered smartphone container
+        container_serial = init_container({"type": "smartphone", "user": "hans", "realm": self.realm1})[
+            "container_serial"]
+        container = find_container_by_serial(container_serial)
+        container.set_container_info({RegistrationState.get_key(): RegistrationState.REGISTERED.value})
+        response = multichallenge_enroll_via_validate(request, response)
+        check_response(response)
+        container_of_hans = get_all_containers(user=hans)["containers"]
+        self.assertEqual(1, len(container_of_hans))
+        self.assertEqual(container_serial, container_of_hans[0].serial)
+        [container.delete() for container in get_all_containers(user=hans)["containers"]]
+        response = jsonify(response_data)
+
+        # Missing registration policies
+        delete_policy("registration")
+        g.policies = {}
+        # create with template to check that also no tokens are created
+        template_options = {"tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True}]}
+        create_container_template(container_type="smartphone", template_name="test", options=template_options)
+        response = multichallenge_enroll_via_validate(request, response)
+        check_response(response)
+        container_of_hans = get_all_containers(user=hans)["containers"]
+        self.assertEqual(0, len(container_of_hans))
+        tokens_of_hans = get_tokens(user=hans)
+        self.assertEqual(0, len(tokens_of_hans))
+        capture.check_present(("privacyidea.api.lib.postpolicy", "WARNING",
+                               "Missing container registration policy. Can not enroll container via multichallenge."))
+
+        delete_policy("enroll_via_multichallenge")
+        delete_policy("enroll_via_multichallenge_template")
