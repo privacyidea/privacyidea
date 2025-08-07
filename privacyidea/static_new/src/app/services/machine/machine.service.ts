@@ -23,6 +23,7 @@ import {
   ContentService,
   ContentServiceInterface,
 } from '../content/content.service';
+import { ROUTE_PATHS } from '../../app.routes';
 
 type TokenApplications = TokenApplication[];
 
@@ -146,7 +147,9 @@ export class MachineService implements MachineServiceInterface {
   });
 
   machinesResource = httpResource<PiResponse<Machines>>(() => {
-    if (!this.contentService.routeUrl().includes('/tokens/applications')) {
+    if (
+      !this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_APPLICATIONS)
+    ) {
       return undefined;
     }
     return {
@@ -224,7 +227,9 @@ export class MachineService implements MachineServiceInterface {
     computation: () => 0,
   });
   tokenApplicationResource = httpResource<PiResponse<TokenApplications>>(() => {
-    if (!this.contentService.routeUrl().includes('/tokens/applications')) {
+    if (
+      !this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_APPLICATIONS)
+    ) {
       return undefined;
     }
     const params = {

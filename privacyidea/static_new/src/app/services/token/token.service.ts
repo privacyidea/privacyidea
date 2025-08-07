@@ -45,6 +45,7 @@ import {
   NotificationService,
   NotificationServiceInterface,
 } from '../notification/notification.service';
+import { ROUTE_PATHS } from '../../app.routes';
 
 const apiFilter = [
   'serial',
@@ -291,7 +292,7 @@ export class TokenService implements TokenServiceInterface {
   showOnlyTokenNotInContainer = linkedSignal({
     source: this.contentService.routeUrl,
     computation: (routeUrl) => {
-      return routeUrl.startsWith('/tokens/containers/details');
+      return routeUrl.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS);
     },
   });
   filterValue: WritableSignal<Record<string, string>> = linkedSignal({
@@ -300,7 +301,7 @@ export class TokenService implements TokenServiceInterface {
       routeUrl: this.contentService.routeUrl(),
     }),
     computation: (source, previous) => {
-      if (source.routeUrl.startsWith('/tokens/containers/details')) {
+      if (source.routeUrl.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
         if (!previous || source.routeUrl !== previous.source.routeUrl) {
           return { container_serial: '' };
         } else {
@@ -318,7 +319,9 @@ export class TokenService implements TokenServiceInterface {
     },
   });
   tokenDetailResource = httpResource<PiResponse<Tokens>>(() => {
-    if (!this.contentService.routeUrl().includes('/tokens/details', 0)) {
+    if (
+      !this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_DETAILS, 0)
+    ) {
       return undefined;
     }
     return {
@@ -329,7 +332,7 @@ export class TokenService implements TokenServiceInterface {
     };
   });
   tokenTypesResource = httpResource<PiResponse<{}>>(() => {
-    if (this.contentService.routeUrl() !== '/tokens/enroll') {
+    if (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_ENROLLMENT) {
       return undefined;
     }
     return {
@@ -413,8 +416,10 @@ export class TokenService implements TokenServiceInterface {
   });
   tokenResource = httpResource<PiResponse<Tokens>>(() => {
     if (
-      this.contentService.routeUrl() !== '/tokens' &&
-      !this.contentService.routeUrl().includes('containers/details')
+      this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS &&
+      !this.contentService
+        .routeUrl()
+        .includes(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)
     ) {
       return undefined;
     }

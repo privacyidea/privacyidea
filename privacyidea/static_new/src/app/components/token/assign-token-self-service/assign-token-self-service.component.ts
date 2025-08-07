@@ -9,6 +9,7 @@ import {
   TokenServiceInterface,
 } from '../../../services/token/token.service';
 import { Router } from '@angular/router';
+import { ROUTE_PATHS } from '../../../app.routes';
 
 @Component({
   selector: 'app-assign-token-self-service',
@@ -43,7 +44,9 @@ export class AssignTokenSelfServiceComponent {
       })
       .subscribe({
         next: () => {
-          this.router.navigateByUrl('/tokens/details/' + this.selectedToken());
+          this.router.navigateByUrl(
+            ROUTE_PATHS.TOKENS_DETAILS + this.selectedToken(),
+          );
           this.tokenSerial.set(this.selectedToken());
         },
       });

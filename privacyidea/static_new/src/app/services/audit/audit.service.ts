@@ -14,6 +14,7 @@ import {
   ContentServiceInterface,
 } from '../content/content.service';
 import { LocalService, LocalServiceInterface } from '../local/local.service';
+import { ROUTE_PATHS } from '../../app.routes';
 
 export interface Audit {
   auditcolumns: string[];
@@ -130,7 +131,7 @@ export class AuditService implements AuditServiceInterface {
     computation: () => 0,
   });
   auditResource = httpResource<PiResponse<Audit>>(() => {
-    if (this.contentService.routeUrl() !== '/audit') {
+    if (this.contentService.routeUrl() !== ROUTE_PATHS.AUDIT) {
       return undefined;
     }
     return {

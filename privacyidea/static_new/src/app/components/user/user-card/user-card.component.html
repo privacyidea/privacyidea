@@ -11,10 +11,10 @@
       <mat-list class="padding-18">
         <mat-list-item>
           <button [ngClass]="
-              contentService.routeUrl() === '/users'
+              contentService.routeUrl() === ROUTE_PATHS.USERS
                 ? 'card-button-active'
                 : 'card-button'"
-                  [routerLink]="['/users']"
+                  [routerLink]=ROUTE_PATHS.USERS
                   mat-flat-button>
             <mat-icon>person</mat-icon>
             Overview
@@ -23,10 +23,10 @@
 
         <mat-list-item>
           <button [ngClass]="
-              contentService.routeUrl() === '/users/add'
+              contentService.routeUrl() === '#'
                 ? 'card-button-active'
                 : 'card-button-disabled'"
-                  [routerLink]="['/users', 'add']"
+                  [routerLink]="['#']"
                   disabled
                   mat-flat-button>
             <mat-icon>person_add</mat-icon>
@@ -36,7 +36,7 @@
 
         <mat-list-item>
           <button [ngClass]="
-              contentService.routeUrl() === '/users/edit-realm'
+              contentService.routeUrl() === '#'
                 ? 'card-button-active'
                 : 'card-button-disabled'"
                   [routerLink]="['#']"

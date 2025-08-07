@@ -26,6 +26,7 @@ import {
   ValidateService,
   ValidateServiceInterface,
 } from '../../services/validate/validate.service';
+import { ROUTE_PATHS } from '../../app.routes';
 
 @Component({
   selector: 'app-login',
@@ -81,7 +82,7 @@ export class LoginComponent {
           );
           this.sessionTimerService.startRefreshingRemainingTime();
           this.sessionTimerService.startTimer();
-          this.router.navigateByUrl('/tokens');
+          this.router.navigateByUrl(ROUTE_PATHS.TOKENS);
           this.notificationService.openSnackBar('Login successful.');
         } else {
           console.error('Login failed. Challenge response required.');

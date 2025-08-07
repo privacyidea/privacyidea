@@ -66,6 +66,7 @@ import { TokenDetailsInfoComponent } from './token-details-info/token-details-in
 import { TokenDetailsUserComponent } from './token-details-user/token-details-user.component';
 import { TokenSshMachineAssignDialogComponent } from './token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog';
 import { Router } from '@angular/router';
+import { ROUTE_PATHS } from '../../../app.routes';
 
 export const tokenDetailsKeyMap = [
   { key: 'tokentype', label: 'Type' },
@@ -382,7 +383,9 @@ export class TokenDetailsComponent {
 
   containerSelected(containerSerial: string) {
     this.isProgrammaticTabChange.set(true);
-    this.router.navigateByUrl('/tokens/containers/details/' + containerSerial);
+    this.router.navigateByUrl(
+      ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial,
+    );
     this.containerSerial.set(containerSerial);
   }
 

@@ -21,6 +21,7 @@ import { NgClass } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
 import { Router, RouterLink } from '@angular/router';
+import { ROUTE_PATHS } from '../../../../app.routes';
 
 @Component({
   selector: 'app-container-tab',
@@ -46,6 +47,7 @@ export class ContainerTabComponent {
     inject(ContentService);
   protected readonly versioningService: VersioningServiceInterface =
     inject(VersioningService);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
   private router = inject(Router);
   containerSelection = this.containerService.containerSelection;
   containerSerial = this.containerService.containerSerial;
@@ -63,13 +65,13 @@ export class ContainerTabComponent {
   }
 
   onClickContainerOverview() {
-    this.router.navigateByUrl('/tokens/containers');
+    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS);
   }
 
   enrollTokenInContainer() {
     this.contentService.isProgrammaticTabChange.set(true);
     this.selectedContainer.set(this.containerSerial());
-    this.router.navigateByUrl('/tokens/enroll');
+    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_ENROLLMENT);
   }
 
   toggleActive(): void {
@@ -99,11 +101,11 @@ export class ContainerTabComponent {
             .subscribe(() => {
               const prev = this.contentService.previousUrl();
 
-              if (prev.startsWith('/tokens/details')) {
+              if (prev.startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
                 this.contentService.isProgrammaticTabChange.set(true);
                 this.router.navigateByUrl(prev);
               } else {
-                this.router.navigateByUrl('/tokens/containers');
+                this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS);
               }
             });
         }

@@ -19,6 +19,7 @@ import { LocalService, LocalServiceInterface } from '../local/local.service';
 import { RealmService, RealmServiceInterface } from '../realm/realm.service';
 import { TokenService, TokenServiceInterface } from '../token/token.service';
 import { Sort } from '@angular/material/sort';
+import { ROUTE_PATHS } from '../../app.routes';
 
 const apiFilter = [
   'description',
@@ -171,11 +172,11 @@ export class UserService implements UserServiceInterface {
       selectedUserRealm === '' ||
       this.authService.role() === 'user' ||
       ![
-        '/users',
-        '/tokens/details',
-        '/tokens/containers/details',
-        '/tokens/containers/create',
-        '/tokens/enrollment',
+        ROUTE_PATHS.USERS,
+        ROUTE_PATHS.TOKENS_DETAILS,
+        ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS,
+        ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
+        ROUTE_PATHS.TOKENS_ENROLLMENT,
       ].includes(this.contentService.routeUrl())
     ) {
       return undefined;

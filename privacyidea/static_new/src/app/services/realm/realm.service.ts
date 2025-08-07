@@ -24,6 +24,7 @@ import {
   ContentService,
   ContentServiceInterface,
 } from '../content/content.service';
+import { ROUTE_PATHS } from '../../app.routes';
 
 export type Realms = Map<string, Realm>;
 
@@ -67,11 +68,11 @@ export class RealmService implements RealmServiceInterface {
     if (
       this.authService.role() === 'user' ||
       ![
-        '/users',
-        '/tokens/details',
-        '/tokens/containers/details',
-        '/tokens/containers/create',
-        '/tokens/enrollment',
+        ROUTE_PATHS.USERS,
+        ROUTE_PATHS.TOKENS_DETAILS,
+        ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS,
+        ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
+        ROUTE_PATHS.TOKENS_ENROLLMENT,
       ].includes(this.contentService.routeUrl())
     ) {
       return undefined;
@@ -91,11 +92,11 @@ export class RealmService implements RealmServiceInterface {
     if (
       this.authService.role() === 'user' ||
       ![
-        '/users',
-        '/tokens/details',
-        '/tokens/containers/details',
-        '/tokens/containers/create',
-        '/tokens/enrollment',
+        ROUTE_PATHS.USERS,
+        ROUTE_PATHS.TOKENS_DETAILS,
+        ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS,
+        ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
+        ROUTE_PATHS.TOKENS_ENROLLMENT,
       ].includes(this.contentService.routeUrl())
     ) {
       return undefined;

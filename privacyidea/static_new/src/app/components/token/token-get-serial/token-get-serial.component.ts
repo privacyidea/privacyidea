@@ -30,6 +30,7 @@ import {
 import { ConfirmationDialogComponent } from '../../shared/confirmation-dialog/confirmation-dialog.component';
 import { GetSerialResultDialogComponent } from './get-serial-result-dialog/get-serial-result-dialog.component';
 import { Router } from '@angular/router';
+import { ROUTE_PATHS } from '../../../app.routes';
 
 @Component({
   selector: 'app-token-get-serial',
@@ -203,7 +204,7 @@ export class TokenGetSerialComponent {
               otpValue: this.otpValue(),
               onClickSerial: () => {
                 this.tokenSerial.set(serial);
-                this.router.navigateByUrl('/tokens/details/' + serial);
+                this.router.navigateByUrl(ROUTE_PATHS.TOKENS_DETAILS + serial);
                 this.dialog.closeAll();
               },
               reset: () => {

@@ -20,7 +20,7 @@ export const routes: Routes = [
         pathMatch: 'full',
         component: TokenTableSelfServiceComponent,
       },
-      { path: 'enroll', component: TokenEnrollmentSelfServiceComponent },
+      { path: 'enrollment', component: TokenEnrollmentSelfServiceComponent },
       { path: 'assign-token', component: AssignTokenSelfServiceComponent },
       {
         path: 'containers',

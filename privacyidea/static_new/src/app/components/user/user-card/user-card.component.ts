@@ -32,6 +32,7 @@ import {
   UserService,
   UserServiceInterface,
 } from '../../../services/user/user.service';
+import { ROUTE_PATHS } from '../../../app.routes';
 
 @Component({
   selector: 'app-user-card',
@@ -70,4 +71,5 @@ export class UserCardComponent {
     this.userService.selectedUserRealm(),
     { nonNullable: true },
   );
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
 }

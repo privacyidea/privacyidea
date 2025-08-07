@@ -15,6 +15,7 @@ import {
 } from '../../content/content.service';
 import { LocalService, LocalServiceInterface } from '../../local/local.service';
 import { TokenService, TokenServiceInterface } from '../token.service';
+import { ROUTE_PATHS } from '../../../app.routes';
 
 const apiFilter = ['serial', 'transaction_id'];
 const advancedApiFilter: string[] = [];
@@ -97,7 +98,7 @@ export class ChallengesService implements ChallengesServiceInterface {
   });
   sort = signal({ active: 'timestamp', direction: 'asc' } as Sort);
   challengesResource = httpResource<PiResponse<Challenges>>(() => {
-    if (this.contentService.routeUrl() !== '/tokens/challenges') {
+    if (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CHALLENGES) {
       return undefined;
     }
     const { params: filterParams, serial } = this.filterParams();

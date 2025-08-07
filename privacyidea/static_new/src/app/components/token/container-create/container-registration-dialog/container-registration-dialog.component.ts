@@ -13,6 +13,7 @@ import {
 } from '../../../../services/container/container.service';
 import { LostTokenComponent } from '../../token-card/token-tab/lost-token/lost-token.component';
 import { Router } from '@angular/router';
+import { ROUTE_PATHS } from '../../../../app.routes';
 
 @Component({
   selector: 'app-container-registration-dialog',
@@ -37,7 +38,9 @@ export class ContainerRegistrationDialogComponent {
 
   containerSelected(containerSerial: string) {
     this.dialogRef.close();
-    this.router.navigateByUrl('/tokens/containers/details/' + containerSerial);
+    this.router.navigateByUrl(
+      ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial,
+    );
     this.data.containerSerial.set(containerSerial);
   }
 }

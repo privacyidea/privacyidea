@@ -24,6 +24,7 @@ import {
 import { TokenTabComponent } from './token-tab/token-tab.component';
 import { ContainerTabComponent } from './container-tab/container-tab.component';
 import { Router } from '@angular/router';
+import { ROUTE_PATHS } from '../../../app.routes';
 
 @Component({
   selector: 'app-token-card',
@@ -52,7 +53,7 @@ export class TokenCardComponent {
   selectedTabIndex = linkedSignal({
     source: this.contentService.routeUrl,
     computation: (routeUrl) =>
-      routeUrl.startsWith('/tokens/containers') ? 1 : 0,
+      routeUrl.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS) ? 1 : 0,
   });
   tokenSerial = this.tokenService.tokenSerial;
   containerSerial = this.containerService.containerSerial;
@@ -65,15 +66,15 @@ export class TokenCardComponent {
       return;
     }
     if (event.index === 0) {
-      this.router.navigate(['/tokens']);
+      this.router.navigateByUrl(ROUTE_PATHS.TOKENS);
     } else {
-      this.router.navigate(['/tokens', 'containers']);
+      this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS);
     }
   }
 
   tokenTabActive = () =>
-    this.contentService.routeUrl().startsWith('/tokens') &&
+    this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS) &&
     !this.containerTabActive();
   containerTabActive = () =>
-    this.contentService.routeUrl().startsWith('/tokens/containers');
+    this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS);
 }

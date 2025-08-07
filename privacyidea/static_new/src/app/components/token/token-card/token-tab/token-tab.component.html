@@ -3,20 +3,20 @@
     <mat-divider />
     <br />
     <mat-list-item>
-      <button [ngClass]="contentService.routeUrl() === '/tokens' ? 'card-button-active' :
+      <button [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS ? 'card-button-active' :
               'card-button'"
-              [routerLink]="['/tokens']"
+              [routerLink]="[ROUTE_PATHS.TOKENS]"
               mat-flat-button>
         <mat-icon>policy</mat-icon>
         Overview
       </button>
     </mat-list-item>
 
-    <div [@toggleState]="contentService.routeUrl().startsWith('/tokens/containers')">
-      @if (!contentService.routeUrl().startsWith('/tokens/details')) {
+    <div [@toggleState]="contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS)">
+      @if (!contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
         <mat-list-item>
-          <button [routerLink]="['/tokens/enroll']"
-                  [ngClass]="contentService.routeUrl() === '/tokens/enroll' ?
+          <button [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
+                  [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT ?
                   'card-button-active' : 'card-button'"
                   mat-flat-button>
             <mat-icon>add_moderator</mat-icon>
@@ -24,8 +24,8 @@
           </button>
         </mat-list-item>
         <mat-list-item>
-          <button [routerLink]="['/tokens/challenges']"
-                  [ngClass]="contentService.routeUrl() === '/tokens/challenges'
+          <button [routerLink]="[ROUTE_PATHS.TOKENS_CHALLENGES]"
+                  [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_CHALLENGES
                   ? 'card-button-active' : 'card-button'"
                   mat-flat-button>
             <mat-icon>cached</mat-icon>
@@ -34,8 +34,8 @@
         </mat-list-item>
 
         <mat-list-item>
-          <button [routerLink]="['/tokens/applications']"
-                  [ngClass]="contentService.routeUrl() === '/tokens/applications'
+          <button [routerLink]="[ROUTE_PATHS.TOKENS_APPLICATIONS]"
+                  [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_APPLICATIONS
                   ? 'card-button-active' : 'card-button'"
                   mat-flat-button>
             <mat-icon>now_widgets</mat-icon>
@@ -45,11 +45,11 @@
         <mat-divider /><br />
         <mat-list-item>
           <button [ngClass]="[
-              contentService.routeUrl() === '/tokens/get-serial'
+              contentService.routeUrl() === ROUTE_PATHS.TOKENS_GET_SERIAL
                 ? 'card-button-active'
                 : 'card-button',]"
                   mat-flat-button
-                  [routerLink]="['/tokens/get-serial']">
+                  [routerLink]="[ROUTE_PATHS.TOKENS_GET_SERIAL]">
             <mat-icon>help_outline</mat-icon>
             Get Serial Number
           </button>
@@ -62,7 +62,7 @@
             Help
           </button>
         </mat-list-item>
-        @if (contentService.routeUrl() === "/tokens") {
+        @if (contentService.routeUrl() === ROUTE_PATHS.TOKENS) {
           <br />
           <mat-divider /><br />
           <mat-list-item>
@@ -89,7 +89,7 @@
       } @else {
         <mat-list-item>
           <button [ngClass]="contentService.routeUrl()
-                  .startsWith('/tokens/details') ? 'card-button-active' : 'card-button'"
+                  .startsWith(ROUTE_PATHS.TOKENS_DETAILS) ? 'card-button-active' : 'card-button'"
                   mat-flat-button>
             <mat-icon>health_and_safety</mat-icon>
             Token Details
@@ -98,7 +98,7 @@
         <mat-list-item>
           <button class="card-button"
                   mat-flat-button
-                  [routerLink]="['/audit']"
+                  [routerLink]="[ROUTE_PATHS.AUDIT]"
                   (click)="auditService.filterValue.set({'serial': tokenSerial()})">
             <mat-icon>manage_search</mat-icon>
             Show in Audit Log

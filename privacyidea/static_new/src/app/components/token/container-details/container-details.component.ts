@@ -74,6 +74,7 @@ import { infoDetailsKeyMap } from '../token-details/token-details.component';
 import { ContainerDetailsInfoComponent } from './container-details-info/container-details-info.component';
 import { ContainerDetailsTokenTableComponent } from './container-details-token-table/container-details-token-table.component';
 import { Router } from '@angular/router';
+import { ROUTE_PATHS } from '../../../app.routes';
 
 export const containerDetailsKeyMap = [
   { key: 'type', label: 'Type' },
@@ -338,7 +339,7 @@ export class ContainerDetailsComponent {
       const res = this.containerDetailResource.value();
       if (res && res?.result?.value?.containers.length === 0) {
         setTimeout(() => {
-          this.router.navigateByUrl('/tokens/containers/');
+          this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS);
         });
       }
     });

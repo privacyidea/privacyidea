@@ -129,6 +129,17 @@ $border-radius: var(--border-radius);
     align-items: center;
     gap: 16px;
   }
+
+  .preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 8px 32px 8px 32px;
+    border: 2px solid var(--mat-sys-on-surface);
+    padding: 8px;
+    border-radius: var(--border-radius);
+    color: var(--mat-sys-on-surface);
+  }
 }
 
 ::ng-deep {

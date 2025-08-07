@@ -12,17 +12,17 @@
   <div class="nav-div">
     <nav class="nav-menu">
       @if (authService.role() === "admin") {
-        <a [ngClass]="{ active: isActive('/tokens') }"
+        <a [ngClass]="{ active: isActive(ROUTE_PATHS.TOKENS) }"
            extended
            mat-fab
-           routerLink="/tokens">
+           routerLink="{{this.ROUTE_PATHS.TOKENS}}">
           <mat-icon>shield</mat-icon>
           <h4>Tokens</h4></a>
 
-        <a [ngClass]="{ active: isActive('/users') }"
+        <a [ngClass]="{ active: isActive(ROUTE_PATHS.USERS) }"
            extended
            mat-fab
-           routerLink="/users">
+           routerLink="{{this.ROUTE_PATHS.USERS}}">
           <mat-icon>supervised_user_circle</mat-icon>
           <h4>{{ authService.role() === "admin" ? "Users" : "User" }}</h4></a>
 
@@ -40,10 +40,10 @@
           <mat-icon>miscellaneous_services</mat-icon>
           <h4>Configuration</h4></a>
 
-        <a [ngClass]="{ active: isActive('/audit') }"
+        <a [ngClass]="{ active: isActive(ROUTE_PATHS.AUDIT) }"
            extended
            mat-fab
-           routerLink="/audit">
+           routerLink="{{ ROUTE_PATHS.AUDIT }}">
           <mat-icon>manage_search</mat-icon>
           <h4>Audit</h4></a>
 
@@ -60,6 +60,7 @@
         <mat-icon>refresh</mat-icon>
       </button>
     </nav>
+    <h4 class="preview"> Preview</h4>
     <div class="profile-div">
       <app-theme-switcher />
       <div [ngClass]="[

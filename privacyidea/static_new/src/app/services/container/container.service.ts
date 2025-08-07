@@ -43,6 +43,7 @@ import {
 } from '../notification/notification.service';
 import { TokenService, TokenServiceInterface } from '../token/token.service';
 import { AuthService, AuthServiceInterface } from '../auth/auth.service';
+import { ROUTE_PATHS } from '../../app.routes';
 
 const apiFilter = ['container_serial', 'type', 'user'];
 const advancedApiFilter = ['token_serial'];
@@ -341,18 +342,21 @@ export class ContainerService implements ContainerServiceInterface {
   });
   loadAllContainers = computed(() => {
     return (
-      ['/tokens/enroll'].includes(this.contentService.routeUrl()) ||
-      this.contentService.routeUrl().startsWith('/tokens/details')
+      [ROUTE_PATHS.TOKENS_ENROLLMENT].includes(
+        this.contentService.routeUrl(),
+      ) || this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)
     );
   });
   containerResource = httpResource<PiResponse<ContainerDetails>>(() => {
     if (
-      (!this.contentService.routeUrl().startsWith('/tokens/details') &&
-        !['/tokens/containers', '/tokens/enroll', '/tokens'].includes(
-          this.contentService.routeUrl(),
-        )) ||
+      (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS) &&
+        ![
+          ROUTE_PATHS.TOKENS_CONTAINERS,
+          ROUTE_PATHS.TOKENS_ENROLLMENT,
+          ROUTE_PATHS.TOKENS,
+        ].includes(this.contentService.routeUrl())) ||
       (this.authService.role() === 'admin' &&
-        this.contentService.routeUrl() === '/tokens')
+        this.contentService.routeUrl() === ROUTE_PATHS.TOKENS)
     ) {
       return undefined;
     }
@@ -402,7 +406,9 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   containerTypesResource = httpResource<PiResponse<ContainerTypes>>(() => {
-    if (this.contentService.routeUrl() !== '/tokens/containers/create') {
+    if (
+      this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CONTAINERS_CREATE
+    ) {
       return undefined;
     }
     return {
@@ -467,7 +473,9 @@ export class ContainerService implements ContainerServiceInterface {
   templatesResource = httpResource<
     PiResponse<{ templates: ContainerTemplate[] }>
   >(() => {
-    if (this.contentService.routeUrl() !== '/tokens/containers/create') {
+    if (
+      this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CONTAINERS_CREATE
+    ) {
       return undefined;
     }
     return {

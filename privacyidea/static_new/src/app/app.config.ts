@@ -15,7 +15,7 @@ export const appConfig: ApplicationConfig = {
     provideExperimentalZonelessChangeDetection(),
     provideRouter(routes),
     provideAnimationsAsync(),
-    { provide: APP_BASE_HREF, useValue: '/ui/' },
+    { provide: APP_BASE_HREF, useValue: '/app/v2/' },
     AuthService,
     provideHttpClient(withInterceptors([loadingInterceptor])),
   ],

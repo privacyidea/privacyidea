@@ -3,6 +3,7 @@ import {
   ContentService,
   ContentServiceInterface,
 } from '../content/content.service';
+import { ROUTE_PATHS } from '../../app.routes';
 
 export interface OverflowServiceInterface {
   isWidthOverflowing(selector: string, threshold: number): boolean;
@@ -54,30 +55,32 @@ export class OverflowService implements OverflowServiceInterface {
   }
 
   getOverflowThreshold(): number {
-    if (this.contentService.routeUrl().startsWith('/tokens/details')) {
+    if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
       return 1880;
     }
     if (
-      this.contentService.routeUrl().startsWith('/tokens/containers/details')
+      this.contentService
+        .routeUrl()
+        .startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)
     ) {
       return 1880;
     }
     switch (this.contentService.routeUrl()) {
-      case '/tokens':
+      case ROUTE_PATHS.TOKENS:
         return 1880;
-      case '/tokens/containers':
+      case ROUTE_PATHS.TOKENS_CONTAINERS:
         return 1880;
-      case '/tokens/challenges':
+      case ROUTE_PATHS.TOKENS_CHALLENGES:
         return 1880;
-      case '/users':
+      case ROUTE_PATHS.USERS:
         return 1880;
-      case '/tokens/applications':
+      case ROUTE_PATHS.TOKENS_APPLICATIONS:
         return 1500;
-      case '/tokens/enroll':
+      case ROUTE_PATHS.TOKENS_ENROLLMENT:
         return 1240;
-      case '/tokens/containers/create':
+      case ROUTE_PATHS.TOKENS_CONTAINERS_CREATE:
         return 1240;
-      case '/tokens/get-serial':
+      case ROUTE_PATHS.TOKENS_GET_SERIAL:
         return 1240;
     }
     return 1920;

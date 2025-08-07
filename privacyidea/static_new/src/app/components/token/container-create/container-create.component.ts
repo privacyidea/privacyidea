@@ -57,6 +57,7 @@ import { TokenComponent } from '../token.component';
 import { ContainerRegistrationDialogComponent } from './container-registration-dialog/container-registration-dialog.component';
 import { Router } from '@angular/router';
 import { MatTooltip } from '@angular/material/tooltip';
+import { ROUTE_PATHS } from '../../../app.routes';
 
 export type ContainerTypeOption = 'generic' | 'smartphone' | 'yubikey';
 
@@ -179,7 +180,7 @@ export class ContainerCreateComponent {
               `Container ${containerSerial} enrolled successfully.`,
             );
             this.router.navigateByUrl(
-              '/tokens/containers/details/' + containerSerial,
+              ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial,
             );
             this.containerSerial.set(containerSerial);
           }
@@ -219,7 +220,9 @@ export class ContainerCreateComponent {
               .registration_state !== 'client_wait'
           ) {
             this.registrationDialog.closeAll();
-            this.router.navigateByUrl('/tokens/containers/' + containerSerial);
+            this.router.navigateByUrl(
+              ROUTE_PATHS.TOKENS_CONTAINERS + containerSerial,
+            );
             this.notificationService.openSnackBar(
               `Container ${this.containerSerial()} enrolled successfully.`,
             );

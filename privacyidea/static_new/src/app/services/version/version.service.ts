@@ -1,4 +1,5 @@
 import { Injectable, signal, WritableSignal } from '@angular/core';
+import { ROUTE_PATHS } from '../../app.routes';
 
 export interface VersioningServiceInterface {
   version: WritableSignal<string>;
@@ -21,37 +22,37 @@ export class VersioningService implements VersioningServiceInterface {
   openDocumentation(page: string) {
     const baseUrl = 'https://privacyidea.readthedocs.io/en/'; //TODO translation
     let page_url;
-    if (page.startsWith('/tokens/details')) {
+    if (page.startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
       page_url = 'webui/token_details.html';
-    } else if (page.startsWith('/tokens/containers/details')) {
+    } else if (page.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
       page_url = 'webui/container_view.html#container-details';
     } else {
       switch (page) {
-        case '/tokens/enroll':
+        case ROUTE_PATHS.TOKENS_ENROLLMENT:
           page_url = 'webui/token_details.html#enroll-token';
           break;
-        case '/tokens':
+        case ROUTE_PATHS.TOKENS:
           page_url = 'webui/index.html#tokens';
           break;
-        case '/tokens/containers':
+        case ROUTE_PATHS.TOKENS_CONTAINERS:
           page_url = 'webui/index.html#containers';
           break;
         case 'tokentypes':
           page_url = 'tokens/tokentypes.html';
           break;
-        case '/tokens/get-serial':
+        case ROUTE_PATHS.TOKENS_GET_SERIAL:
           page_url = 'webui/token_details.html#get-serial';
           break;
-        case '/tokens/applications':
+        case ROUTE_PATHS.TOKENS_APPLICATIONS:
           page_url = 'machines/index.html';
           break;
-        case '/tokens/challenges':
+        case ROUTE_PATHS.TOKENS_CHALLENGES:
           page_url = 'tokens/authentication_modes.html#challenge-mode';
           break;
         case 'containertypes':
           page_url = 'container/container_types.html';
           break;
-        case '/tokens/containers/create':
+        case ROUTE_PATHS.TOKENS_CONTAINERS_CREATE:
           page_url = 'webui/container_view.html#container-create';
           break;
         default:

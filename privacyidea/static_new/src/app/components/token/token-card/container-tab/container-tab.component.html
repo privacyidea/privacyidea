@@ -3,21 +3,22 @@
     <mat-divider />
     <br />
     <mat-list-item>
-      <button [ngClass]="this.contentService.routeUrl() === '/tokens/containers' ?
+      <button [ngClass]="this.contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS ?
               'card-button-active' :
               'card-button'"
-              [routerLink]="['/tokens/containers']"
+              [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS]"
               mat-flat-button>
         <mat-icon class="mdi--folder-search"></mat-icon>
         Overview
       </button>
     </mat-list-item>
 
-    <div [@toggleState]="this.contentService.routeUrl().startsWith('/tokens/containers')">
-      @if (!this.contentService.routeUrl().startsWith('/tokens/containers/details')) {
+    <div [@toggleState]="this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS)">
+      @if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
         <mat-list-item>
-          <button [routerLink]="['/tokens/containers/create']"
-                  [ngClass]="this.contentService.routeUrl() === '/tokens/containers/create' ?
+          <button [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS_CREATE]"
+                  [ngClass]="this.contentService.routeUrl() ===
+                  ROUTE_PATHS.TOKENS_CONTAINERS_CREATE ?
                   'card-button-active' : 'card-button'"
                   mat-flat-button>
             <mat-icon>create_new_folder</mat-icon>
@@ -50,7 +51,7 @@
             Help
           </button>
         </mat-list-item>
-        @if (this.contentService.routeUrl() === "/tokens/containers") {
+        @if (this.contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS) {
           <br />
           <mat-divider /><br />
           <mat-list-item>
@@ -66,7 +67,7 @@
         }
       } @else {
         <mat-list-item>
-          <button [ngClass]="this.contentService.routeUrl().startsWith('/tokens/containers/details') ?
+          <button [ngClass]="this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS) ?
           'card-button-active' : 'card-button'"
                   mat-flat-button>
             <mat-icon>health_and_safety</mat-icon>

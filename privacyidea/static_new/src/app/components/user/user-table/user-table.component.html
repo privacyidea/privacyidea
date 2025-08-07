@@ -45,7 +45,7 @@
                 @switch (column.key) {
                   @case ("username") {
                     <a attr.aria-label="{{ column.label }} Link"
-                       [routerLink]="['/users/details', element.username]"> {{ element[column.key] }} </a>
+                       [routerLink]="['#', element.username]"> {{ element[column.key] }} </a>
                   }
                   @default {
                     <span>

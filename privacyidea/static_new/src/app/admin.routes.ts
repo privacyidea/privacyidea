@@ -19,7 +19,7 @@ export const routes: Routes = [
     component: TokenComponent,
     children: [
       { path: '', component: TokenTableComponent },
-      { path: 'enroll', component: TokenEnrollmentComponent },
+      { path: 'enrollment', component: TokenEnrollmentComponent },
       { path: 'challenges', component: ChallengesTableComponent },
       { path: 'applications', component: TokenApplicationsComponent },
       { path: 'get-serial', component: TokenGetSerialComponent },

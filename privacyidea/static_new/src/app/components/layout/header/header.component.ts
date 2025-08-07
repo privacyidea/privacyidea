@@ -53,6 +53,7 @@ import {
   AuditService,
   AuditServiceInterface,
 } from '../../../services/audit/audit.service';
+import { ROUTE_PATHS } from '../../../app.routes';
 
 @Component({
   selector: 'app-header',
@@ -91,6 +92,7 @@ export class HeaderComponent {
     inject(MachineService);
   private readonly userService: UserServiceInterface = inject(UserService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
   profileText =
     this.authService.user() +
     ' @' +
@@ -104,40 +106,42 @@ export class HeaderComponent {
   }
 
   refreshPage() {
-    if (this.contentService.routeUrl().startsWith('/tokens/details')) {
+    if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
       this.tokenService.tokenDetailResource.reload();
       this.containerService.containerResource.reload();
     }
     if (
-      this.contentService.routeUrl().startsWith('/tokens/containers/details')
+      this.contentService
+        .routeUrl()
+        .startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)
     ) {
       this.containerService.containerDetailResource.reload();
       this.tokenService.tokenResource.reload();
     }
     switch (this.contentService.routeUrl()) {
-      case '/tokens':
+      case ROUTE_PATHS.TOKENS:
         this.tokenService.tokenResource.reload();
         break;
-      case '/tokens/containers':
+      case ROUTE_PATHS.TOKENS_CONTAINERS:
         this.containerService.containerResource.reload();
         break;
-      case '/tokens/challenges':
+      case ROUTE_PATHS.TOKENS_CHALLENGES:
         this.challengeService.challengesResource.reload();
         break;
-      case '/tokens/applications':
+      case ROUTE_PATHS.TOKENS_APPLICATIONS:
         this.machineService.tokenApplicationResource.reload();
         break;
-      case '/tokens/enroll':
+      case ROUTE_PATHS.TOKENS_ENROLLMENT:
         this.containerService.containerResource.reload();
         this.userService.usersResource.reload();
         break;
-      case '/tokens/containers/create':
+      case ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS:
         this.userService.usersResource.reload();
         break;
-      case '/audit':
+      case ROUTE_PATHS.AUDIT:
         this.auditService.auditResource.reload();
         break;
-      case '/users':
+      case ROUTE_PATHS.USERS:
         this.userService.usersResource.reload();
         break;
     }

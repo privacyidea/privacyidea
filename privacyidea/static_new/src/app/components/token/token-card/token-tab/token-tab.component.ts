@@ -37,6 +37,7 @@ import {
 } from '../../../../services/audit/audit.service';
 import { SelectedUserAssignDialogComponent } from '../selected-user-assign-dialog/selected-user-assign-dialog.component';
 import { tap } from 'rxjs/operators';
+import { ROUTE_PATHS } from '../../../../app.routes';
 
 @Component({
   selector: 'app-token-tab',
@@ -62,6 +63,7 @@ export class TokenTabComponent {
     inject(ContentService);
   private readonly dialog: MatDialog = inject(MatDialog);
   protected readonly auditService: AuditServiceInterface = inject(AuditService);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
   private router = inject(Router);
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
@@ -133,7 +135,7 @@ export class TokenTabComponent {
           if (result) {
             this.tokenService.deleteToken(this.tokenSerial()).subscribe({
               next: () => {
-                this.router.navigateByUrl('/tokens');
+                this.router.navigateByUrl(ROUTE_PATHS.TOKENS);
                 this.tokenSerial.set('');
               },
             });
