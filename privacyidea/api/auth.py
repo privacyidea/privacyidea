@@ -327,6 +327,7 @@ def get_auth_token():
         # 1. in local admins
         # 2. in a realm
         # 2a. is an admin realm
+        log.debug(f"Checking remote user: {username}")
         authtype = "remote_user "
         if db_admin_exists(username):
             role = ROLE.ADMIN

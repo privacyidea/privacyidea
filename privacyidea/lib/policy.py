@@ -101,6 +101,9 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+# SPDX-FileCopyrightText: 2025 Paul Lettich <paul.lettich@netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 """
 Base function to handle the policy entries in the database.
 This module only depends on the db/models.py
@@ -592,7 +595,7 @@ class PolicyClass(object):
 
         return value_found, value_excluded
 
-    @log_with(log)
+    @log_with(log, log_exit=False)
     def list_policies(self, name: Optional[str] = None, scope: Optional[str] = None, realm: Optional[str] = None,
                       active: Optional[bool] = None, resolver: Optional[str] = None, user: Optional[str] = None,
                       client: Optional[str] = None, action: Optional[str] = None, pinode: Optional[str] = None,
@@ -649,7 +652,7 @@ class PolicyClass(object):
                 reduced_policies = [policy for policy in reduced_policies if
                                     policy.get(searchkey) == searchvalue]
                 log.debug("Policies after matching {1!s}={2!s}: {0!s}".format(
-                    reduced_policies, searchkey, searchvalue))
+                    [p.get('name') for p in reduced_policies], searchkey, searchvalue))
 
         if additional_realms:
             if realm and realm not in additional_realms:
@@ -679,7 +682,7 @@ class PolicyClass(object):
                             new_policies.append(policy)
                 reduced_policies = new_policies
                 log.debug("Policies after matching {1!s}={2!s}: {0!s}".format(
-                    reduced_policies, searchkey, searchvalue))
+                    [p.get('name') for p in reduced_policies], searchkey, searchvalue))
 
         for searchkey, searchvalue in q:
             if searchvalue is not None:
@@ -708,7 +711,7 @@ class PolicyClass(object):
                                 new_policies.append(policy)
                 reduced_policies = new_policies
                 log.debug("Policies after matching {1!s}={2!s}: {0!s}".format(
-                    reduced_policies, searchkey, searchvalue))
+                    [p.get('name') for p in reduced_policies], searchkey, searchvalue))
 
         # We need to act individually on the resolver key word
         # We either match the resolver exactly or we match another resolver (
@@ -743,7 +746,7 @@ class PolicyClass(object):
 
             reduced_policies = new_policies
             log.debug("Policies after matching resolver={1!s}: {0!s}".format(
-                reduced_policies, resolver))
+                [p.get('name') for p in reduced_policies], resolver))
 
         # Match the privacyIDEA node
         if pinode is not None:
@@ -754,7 +757,8 @@ class PolicyClass(object):
                     new_policies.append(policy)
 
             reduced_policies = new_policies
-            log.debug(f"Policies after matching pinode={pinode}: {reduced_policies}")
+            log.debug("Policies after matching pinode={1!s}: {0!s}".format(
+                [p.get('name') for p in reduced_policies], pinode))
 
         # Match the user agent
         new_policies = []
@@ -773,7 +777,8 @@ class PolicyClass(object):
                 new_policies.append(policy)
 
         reduced_policies = new_policies
-        log.debug(f"Policies after matching the user_agent={user_agent}: {reduced_policies}")
+        log.debug("Policies after matching the user_agent={1!s}: {0!s}".format(
+            [p.get('name') for p in reduced_policies], user_agent))
 
         # Match the client IP.
         # Client IPs may be direct match, may be located in subnets or may
@@ -790,7 +795,6 @@ class PolicyClass(object):
 
             new_policies = []
             for policy in reduced_policies:
-                log.debug("checking client ip in policy {0!s}.".format(policy))
                 client_found, client_excluded = check_ip_in_policy(client, policy.get("client"))
                 if client_found and not client_excluded:
                     # The client was contained in the defined subnets and was
@@ -804,7 +808,7 @@ class PolicyClass(object):
                     new_policies.append(policy)
             reduced_policies = new_policies
             log.debug("Policies after matching client={1!s}: {0!s}".format(
-                reduced_policies, client))
+                [p.get('name') for p in reduced_policies], client))
 
         if sort_by_priority:
             reduced_policies = sorted(reduced_policies, key=itemgetter("priority"))
@@ -847,6 +851,7 @@ class PolicyClass(object):
         :param adminuser: see ``list_policies``
         :param time: return only policies that are valid at the specified time.
             Defaults to the current time.
+        :type time: datetime or None
         :param sort_by_priority:
         :param audit_data: A dictionary with audit data collected during a request. This
             method will add found policies to the dictionary.
@@ -878,6 +883,8 @@ class PolicyClass(object):
             realm = user_object.realm
             resolver = user_object.resolver
 
+        log.debug("Trying to match policy for action \"{0!s}\". Policies: {1!s}".format(
+            action, [p.get("name") for p in self.policies]))
         reduced_policies = self.list_policies(name=name, scope=scope, realm=realm, active=active,
                                               resolver=resolver, user=user, client=client, action=action,
                                               adminrealm=adminrealm, adminuser=adminuser, pinode=pinode,
@@ -898,7 +905,8 @@ class PolicyClass(object):
             else:
                 policies_match_time.append(policy)
         reduced_policies = policies_match_time
-        log.debug(f"Policies after matching time: {[p.get('name') for p in reduced_policies]}")
+        log.debug("Policies after matching time={1!s}: {0!s}".format(
+            [p.get('name') for p in reduced_policies], time))
 
         # filter policies by the policy conditions
         if extended_condition_check != ConditionCheck.DO_NOT_CHECK_AT_ALL:
@@ -910,7 +918,8 @@ class PolicyClass(object):
                 # Add the information on which actions triggered the error to the logs
                 log.error(f"Error checking extended conditions for action '{action}'.")
                 raise
-            log.debug(f"Policies after matching extended conditions: {[p.get('name') for p in reduced_policies]}")
+            log.debug("Policies after matching extended conditions: {0!s}".format(
+                [p.get('name') for p in reduced_policies]))
 
         if audit_data is not None:
             for p in reduced_policies:
@@ -3354,7 +3363,7 @@ class Match(object):
         :param scope: the policy scope. SCOPE.ADMIN cannot be passed, ``admin``
             must be used instead.
         :param action: the policy action, or None
-        :rtype: ``Match``
+        :rtype: Match
         """
         if scope == SCOPE.ADMIN:
             raise MatchingError("Match.action_only cannot be used for policies with scope ADMIN")
@@ -3374,7 +3383,7 @@ class Match(object):
             must be used instead.
         :param action: the policy action
         :param realm: the realm to match
-        :rtype: ``Match``
+        :rtype: Match
         """
         if scope == SCOPE.ADMIN:
             raise MatchingError("Match.realm cannot be used for policies with scope ADMIN")
@@ -3397,7 +3406,7 @@ class Match(object):
             means that the policy attributes ``user``, ``realm`` and
             ``resolver`` are ignored.
         :type user_object: User or None
-        :rtype: ``Match``
+        :rtype: Match
         """
         if scope == SCOPE.ADMIN:
             raise MatchingError("Match.user cannot be used for policies with scope ADMIN")
@@ -3423,7 +3432,7 @@ class Match(object):
             must be used instead.
         :param action: the policy action
         :param token_obj: The token where the user object or the realm should match.
-        :rtype: ``Match``
+        :rtype: Match
         """
         if token_obj.user:
             return cls.user(g, scope, action, token_obj.user)
@@ -3454,7 +3463,7 @@ class Match(object):
         :type user_obj: User or None
         :param serial: The serial of a token from the request
         :param container_serial: The serial of a container from the request data.
-        :rtype: ``Match``
+        :rtype: Match
         """
         adminuser = g.logged_in_user["username"]
         adminrealm = g.logged_in_user["realm"]
@@ -3484,7 +3493,7 @@ class Match(object):
         :param additional_realms: list of realms where at least one has to match the policy condition to be applied
         :param container_serial: The serial of a container from the request data (used to check extended policy
             conditions).
-        :rtype: ``Match``
+        :rtype: Match
         """
         from privacyidea.lib.auth import ROLE
         adminrealm = adminuser = username = userrealm = None
@@ -3498,7 +3507,6 @@ class Match(object):
                 # Otherwise, we take the user from the logged-in user.
                 username = g.logged_in_user["username"]
                 userrealm = g.logged_in_user["realm"]
-            allowed_realms = None  # admin only attribute
         else:
             raise MatchingError("Unknown role")
         return cls(g, name=None, scope=scope, realm=userrealm, active=True,
@@ -3520,7 +3528,7 @@ class Match(object):
         The client IP has to be passed explicitly.
         See :py:func:`privacyidea.lib.policy.PolicyClass.match_policies` for details.
 
-        :rtype: ``Match``
+        :rtype: Match
         """
         if client is None:
             client = g.client_ip if hasattr(g, "client_ip") else None

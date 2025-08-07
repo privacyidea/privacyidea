@@ -25,6 +25,7 @@ from privacyidea.lib.token import check_user_pass
 from privacyidea.lib.policydecorators import libpolicy, login_mode
 from privacyidea.lib.crypto import hash_with_pepper, verify_with_pepper
 from privacyidea.lib.utils import fetch_one_resource
+from privacyidea.lib.log import log_with
 import logging
 
 log = logging.getLogger(__name__)
@@ -36,6 +37,7 @@ class ROLE(object):
     VALIDATE = "validate"
 
 
+@log_with(log, hide_args=[1])
 def verify_db_admin(username, password):
     """
     This function is used to verify the username and the password against the
