@@ -5,8 +5,8 @@
      ng-show="welcomeStep < 5"
      data-backdrop="static" data-keyboard="false"
      aria-labelledby="myModalLabel"
-     aria-hidden="true">
-    <div class="modal-dialog">
+     aria-hidden="{{ welcomeStep >= 5 }}">
+    <div class="modal-dialog" aria-live="polite">
 
         <div class="modal-content" ng-show="welcomeStep === 0">
             <div class="modal-header">
@@ -61,7 +61,7 @@
                     You do not have to worry about end-of-life.
                 </p>
                 <p>
-                    <b>Using open source is not about spending no money, but is is about full control you get over
+                    <b>Using open source is not about spending no money, but it is about full control you get over
                         your own system! Forever!</b>
                 </p>
             </div>

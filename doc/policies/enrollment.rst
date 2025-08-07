@@ -464,6 +464,17 @@ The smartphone needs to verify the SSL certificate of the privacyIDEA server dur
 the enrollment of push tokens. By default, the verification is enabled. To disable
 verification during authentication, see :ref:`policy_push_ssl_verify_auth`.
 
+
+.. _policy_use_pia_scheme:
+
+use_pia_scheme
+~~~~~~~~~~~~~~
+
+type: ``bool``
+
+Use the ``pia`` scheme in the enrollment URL for push tokens to automatically open the privacyIDEA Authenticator app.
+If this policy is not enabled, the ``otpauth`` scheme is used by default.
+
 .. _policy_verify_enrollment:
 
 verify_enrollment

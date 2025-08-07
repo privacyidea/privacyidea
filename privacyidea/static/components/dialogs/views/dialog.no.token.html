@@ -7,7 +7,7 @@
      ng-show="dialogNoToken == true"
      data-backdrop="static" data-keyboard="false"
      aria-labelledby="myModalNoToken"
-     aria-hidden="true">
+     aria-hidden="{{ dialogNoToken == false }}">
     <div class="modal-dialog">
 
         <div class="modal-content">

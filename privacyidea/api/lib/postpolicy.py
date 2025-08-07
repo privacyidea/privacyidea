@@ -912,7 +912,7 @@ def container_create_via_multichallenge(request: Request, content: dict, contain
             # We can not check this policy earlier as the container serial is required
             container_registration_config(request)
         except PolicyError:
-            log.debug("Missing container registration policy. Can not enroll container via multichallenge.")
+            log.warning("Missing container registration policy. Can not enroll container via multichallenge.")
             if not container_already_exists:
                 # If a new container was created but the registration failed, we need to delete the container
                 container.delete()
@@ -1004,7 +1004,7 @@ def multichallenge_enroll_via_validate(request, response):
                 g.audit_object.log({"success": True, "action_detail": f"{e}"})
                 return response
 
-            # Now get the alternative text from the policies
+            # Get the alternative text from the policies
             text_policies = Match.user(g, scope=SCOPE.AUTH,
                                        action=ACTION.ENROLL_VIA_MULTICHALLENGE_TEXT,
                                        user_object=user).action_values(unique=True,
@@ -1013,6 +1013,7 @@ def multichallenge_enroll_via_validate(request, response):
             message = None
             if text_policies:
                 message = list(text_policies)[0]
+
             # -----------------------------
             # TODO this is not perfect yet, but the improved implementation of enroll_via_validate
             # TODO should go in this direction instead of putting the stuff in the token class
@@ -1021,7 +1022,9 @@ def multichallenge_enroll_via_validate(request, response):
                 fido2_enroll(request, None)
                 token = init_token(request.all_data, user)
                 try:
-                    init_details = token.get_init_detail(request.all_data, user)
+                    params = request.all_data.copy()
+                    params["policies"] = g.get("policies", {})
+                    init_details = token.get_init_detail(params, user)
                     if not init_details:
                         token.token.delete()
                     content.get("result")["value"] = False
@@ -1043,6 +1046,30 @@ def multichallenge_enroll_via_validate(request, response):
             else:
                 tokenclass = get_token_class(tokentype)
                 tokenclass.enroll_via_validate(g, content, user, message)
+
+    # Write the enroll_via_multichallenge_optional information to the challenge, also generally marking the challenge as
+    # enroll_via_multichallenge
+    # TODO this is not optimal because we load the challenge again
+    transaction_id = content.get("detail", {}).get("transaction_id")
+    if transaction_id:
+        enrollment_optional = False
+        challenges = get_challenges(transaction_id=transaction_id, serial=None)
+        if challenges:
+            challenge = challenges[0]
+            # enroll_via_multichallenge_optional
+            enrollment_optional = Match.user(g, scope=SCOPE.AUTH,
+                                             action=ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL,
+                                             user_object=user).any(write_to_audit_log=False)
+            # Set the enroll_via_multichallenge and enroll_via_multichallenge_optional flags
+            data = challenge.get_data()
+            data.update({"enroll_via_multichallenge": True})
+            data.update({"enroll_via_multichallenge_optional": enrollment_optional})
+            if not "type" in data:
+                data.update({"type": enroll_type})
+            challenge.set_data(data)
+            challenge.save()
+        content.get("detail", {})["enroll_via_multichallenge"] = True
+        content.get("detail", {})["enroll_via_multichallenge_optional"] = enrollment_optional
     response.set_data(json.dumps(content))
 
     return response

@@ -92,12 +92,12 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            webauthntoken_request, check_application_tokentype,
                                            increase_failcounter_on_challenge, get_first_policy_value, fido2_enroll,
                                            disabled_token_types)
-from privacyidea.api.lib.utils import get_all_params, get_optional_one_of
+from privacyidea.api.lib.utils import get_all_params, get_optional_one_of, get_optional
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
 from privacyidea.lib.audit import getAudit
-from privacyidea.lib.challenge import get_challenges, extract_answered_challenges
+from privacyidea.lib.challenge import get_challenges, extract_answered_challenges, cancel_enrollment_via_multichallenge
 from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     return_saml_attributes_on_fail,
                                     SYSCONF, ensure_no_config_object, get_privacyidea_node)
@@ -420,10 +420,10 @@ def check():
     mapping.
     """
     user: User = request.User
-    serial: str = getParam(request.all_data, "serial")
-    password: str = getParam(request.all_data, "pass")
-    otp_only: bool = getParam(request.all_data, "otponly")
-    token_type: str = getParam(request.all_data, "type")
+    serial: str = get_optional(request.all_data, "serial")
+    password: str = get_optional(request.all_data, "pass")
+    otp_only: bool = get_optional(request.all_data, "otponly")
+    token_type: str = get_optional(request.all_data, "type")
 
     # Add all params to the options
     options: dict = {}
@@ -431,11 +431,30 @@ def check():
     options.update({"g": g, "clientip": g.client_ip, "user": user})
 
     details: dict = {}
-    # Passkey/FIDO2: Identify the user by the credential ID
-    credential_id: str = get_optional_one_of(request.all_data, ["credential_id", "credentialid"])
-
     is_container_challenge = False
 
+    if "cancel_enrollment" in request.all_data and is_true(request.all_data["cancel_enrollment"]):
+        transaction_id = get_required(request.all_data, "transaction_id")
+        success = cancel_enrollment_via_multichallenge(transaction_id)
+        if success:
+            details.update({"message": gettext("Cancelled enrollment via multichallenge")})
+            ret = send_result(True, rid=2, details=details)
+            action_detail = (gettext("Cancelled enrollment via multichallenge for transaction_id ") +
+                             f"{transaction_id}")
+        else:
+            details.update({"message": gettext("Failed to cancel enrollment via multichallenge")})
+            ret = send_result(False, rid=2, details=details)
+            action_detail = (gettext("Failed to cancel enrollment via multichallenge for transaction_id ")
+                             + f"{transaction_id}")
+        g.audit_object.log({
+            "success": success,
+            "authentication": ret.json.get("result").get("authentication") or "",
+            "action_detail": action_detail,
+        })
+        return ret
+
+    # Passkey/FIDO2: Identify the user by the credential ID
+    credential_id: str = get_optional_one_of(request.all_data, ["credential_id", "credentialid"])
     # If only the credential ID is given, try to use it to identify the token
     if credential_id:
         # Find the token that responded to the challenge
@@ -458,7 +477,7 @@ def check():
                 return send_result(False, rid=2, details={
                     "message": "No user found for the token with the given credential ID!"})
         user = token.user
-
+        request.User = user
         # The request could also be an enrollment via validate. In that case, the param "attestationObject" is present
         # This does behave correctly but is obviously not a good solution in the long run
         attestation_object: str = get_optional_one_of(request.all_data, ["attestationObject", "attestationobject"])
@@ -786,12 +805,13 @@ def poll_transaction(transaction_id=None):
                     challenge_type = challenge_data.get("type", "token")
             except json.JSONDecodeError:
                 pass
-        if challenge_type == "token":
-            user = get_one_token(serial=log_challenges[0].serial).user
-        else:
+        if challenge_type == "container":
             container = find_container_by_serial(log_challenges[0].serial)
             users = container.get_users()
             user = users[0] if users else User()
+        else:
+            user = get_one_token(serial=log_challenges[0].serial).user
+
         if user:
             g.audit_object.log({
                 "user": user.login,
@@ -801,8 +821,8 @@ def poll_transaction(transaction_id=None):
 
     # In any case, we log the transaction ID
     g.audit_object.log({
-        "info": "status: {}".format(details.get("challenge_status")),
-        "action_detail": "transaction_id: {}".format(transaction_id),
+        "info": f"status: {details.get('challenge_status')}",
+        "action_detail": f"transaction_id: {transaction_id}",
         "success": result
     })
 
@@ -819,9 +839,11 @@ def initialize():
     token_type = get_required(request.all_data, "type")
     details = {}
     if token_type.lower() == "passkey":
-        rp_id = get_first_policy_value(policy_action=FIDO2PolicyAction.RELYING_PARTY_ID, default="", scope=SCOPE.ENROLL)
+        rp_id = get_first_policy_value(policy_action=FIDO2PolicyAction.RELYING_PARTY_ID, default="",
+                                       scope=SCOPE.ENROLL)
         if not rp_id:
-            raise PolicyError(f"Missing policy for {FIDO2PolicyAction.RELYING_PARTY_ID}, unable to create challenge!")
+            raise PolicyError(
+                f"Missing policy for {FIDO2PolicyAction.RELYING_PARTY_ID}, unable to create challenge!")
 
         user_verification = get_first_policy_value(policy_action=FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT,
                                                    default="preferred", scope=SCOPE.AUTH)

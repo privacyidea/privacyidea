@@ -24,7 +24,7 @@ import privacyidea.lib.token
 from privacyidea.config import TestingConfig
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.framework import get_app_config_value
-from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
+from privacyidea.lib.policy import set_policy, SCOPE, delete_policy, ACTION
 from privacyidea.lib.token import remove_token, init_token, get_tokens
 from privacyidea.lib.tokens.webauthn import CoseAlgorithm
 from privacyidea.lib.user import User
@@ -269,6 +269,9 @@ class PasskeyAPITest(PasskeyAPITestBase):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code)
             self._assert_result_value_true(res.json)
+            detail = res.json["detail"]
+            self.assertNotIn(ACTION.ENROLL_VIA_MULTICHALLENGE, detail)
+            self.assertNotIn(ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL, detail)
 
         remove_token(serial)
         delete_policy("user_verification")
@@ -567,7 +570,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual(905, error["code"])
         remove_token(serial)
 
-    def test_09_enroll_via_multichallenge(self):
+    def test_09_enroll_passkey_via_multichallenge(self):
         spass_token = init_token({"type": "spass", "pin": "1"}, self.user)
         action = "enroll_via_multichallenge=PASSKEY, enroll_via_multichallenge_text=enrollVia multichallenge test text"
         set_policy("enroll_passkey", scope=SCOPE.AUTH, action=action)
@@ -770,6 +773,202 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self._assert_result_value_true(res.json)
         remove_token(serial)
         delete_policy("user_verification")
+
+    def test_14_enroll_via_multichallenge_after_passkey(self):
+        """
+        Verify that enroll_via_multichallenge works after a passkey authentication.
+        """
+        set_policy("evm", scope=SCOPE.AUTH, action=f"{ACTION.ENROLL_VIA_MULTICHALLENGE}=hotp")
+        serial = self._enroll_static_passkey()
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
+        self.assertIn("user_verification", passkey_challenge)
+        # By default, user_verification is preferred
+        self.assertEqual("preferred", passkey_challenge["user_verification"])
+
+        transaction_id = passkey_challenge["transaction_id"]
+        # Answer the challenge
+        data = self.authentication_response_no_uv
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            j = res.json
+            self.assertFalse(j["result"]["value"])
+            self.assertEqual("CHALLENGE", j["result"]["authentication"])
+            self.assertNotIn("auth_items", j)
+            detail = j["detail"]
+            evm_serial = detail["serial"]
+            self.assertTrue(evm_serial)
+            self.assertTrue(detail.get(ACTION.ENROLL_VIA_MULTICHALLENGE))
+            self.assertFalse(detail.get(ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
+            self.assertIn("multi_challenge", detail)
+            mc = detail["multi_challenge"]
+            self.assertEqual(1, len(mc))
+            self.assertIn("transaction_id", mc[0])
+            self.assertIn("image", mc[0])
+            self.assertIn("type", mc[0])
+            self.assertEqual("hotp", mc[0]["type"])
+            self.assertIn("link", mc[0])
+        remove_token(serial)
+        remove_token(evm_serial)
+        delete_policy("evm")
+
+    def test_15_cancel_enroll_via_multichallenge_hotp(self):
+        """
+        Verify that enroll_via_multichallenge_optional=true allows cancellation of the enrollment and is followed by
+        a successful authentication.
+        """
+        set_policy("evm", scope=SCOPE.AUTH, action=f"{ACTION.ENROLL_VIA_MULTICHALLENGE}=hotp")
+        set_policy("evm_optional", scope=SCOPE.AUTH, action=f"{ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL}=true")
+        serial = self._enroll_static_passkey()
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
+        transaction_id = passkey_challenge["transaction_id"]
+        data = self.authentication_response_no_uv
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            j = res.json
+            self.assertFalse(j["result"]["value"])
+            self.assertEqual("CHALLENGE", j["result"]["authentication"])
+            self.assertNotIn("auth_items", j)
+            detail = j["detail"]
+            evm_serial = detail["serial"]
+            self.assertTrue(evm_serial)
+            transaction_id = detail["transaction_id"]
+            self.assertTrue(transaction_id)
+
+            self.assertTrue(detail.get(ACTION.ENROLL_VIA_MULTICHALLENGE))
+            self.assertTrue(detail.get(ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
+            self.assertIn("multi_challenge", detail)
+            mc = detail["multi_challenge"]
+            self.assertEqual(1, len(mc))
+            self.assertIn("transaction_id", mc[0])
+            self.assertIn("image", mc[0])
+            self.assertIn("type", mc[0])
+            self.assertEqual("hotp", mc[0]["type"])
+            self.assertIn("link", mc[0])
+
+        # Cancel the enrollment
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"transaction_id": transaction_id, "cancel_enrollment": True},
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            j = res.json
+            self._assert_result_value_true(j)
+            self.assertIn("Cancelled enrollment via multichallenge", j.get("detail", {}).get("message"), "")
+        remove_token(serial)
+        delete_policy("evm")
+        delete_policy("evm_optional")
+
+    def test_16_cancel_enroll_via_multichallenge_smartphone(self):
+        """
+        Verify that enroll_via_multichallenge_optional=true allows cancellation of the enrollment and is followed by
+        a successful authentication.
+        """
+        set_policy("evm", scope=SCOPE.AUTH, action=f"{ACTION.ENROLL_VIA_MULTICHALLENGE}=smartphone")
+        set_policy("container_enroll", scope=SCOPE.CONTAINER,
+                   action=f"{ACTION.CONTAINER_SERVER_URL}=https://doesntmatter.com")
+        set_policy("evm_optional", scope=SCOPE.AUTH, action=f"{ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL}=true")
+        serial = self._enroll_static_passkey()
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
+        transaction_id = passkey_challenge["transaction_id"]
+        data = self.authentication_response_no_uv
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            j = res.json
+            self.assertFalse(j["result"]["value"])
+            self.assertEqual("CHALLENGE", j["result"]["authentication"])
+            self.assertNotIn("auth_items", j)
+            detail = j["detail"]
+            evm_serial = detail["serial"]
+            self.assertTrue(evm_serial)
+            transaction_id = detail["transaction_id"]
+            self.assertTrue(transaction_id)
+
+            self.assertTrue(detail.get(ACTION.ENROLL_VIA_MULTICHALLENGE))
+            self.assertTrue(detail.get(ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
+            self.assertIn("multi_challenge", detail)
+            mc = detail["multi_challenge"]
+            self.assertEqual(1, len(mc))
+            self.assertIn("transaction_id", mc[0])
+            self.assertIn("image", mc[0])
+            self.assertIn("type", mc[0])
+            self.assertEqual("smartphone", mc[0]["type"])
+            self.assertIn("link", mc[0])
+
+        # Cancel the enrollment, will work and return a successful authentication
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"transaction_id": transaction_id, "cancel_enrollment": True},
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            j = res.json
+            self._assert_result_value_true(j)
+            self.assertIn("Cancelled enrollment via multichallenge", j.get("detail", {}).get("message"), "")
+
+        remove_token(serial)
+        delete_policy("evm")
+        delete_policy("evm_optional")
+        delete_policy("container_enroll")
+
+    def test_17_cancel_enroll_via_multichallenge_not_allowed(self):
+        """
+        Trying to cancel an enrollment via multichallenge that is not cancellable will result in a REJECT just like
+        an authentication with a wrong OTP.
+        """
+        set_policy("evm", scope=SCOPE.AUTH, action=f"{ACTION.ENROLL_VIA_MULTICHALLENGE}=hotp")
+        serial = self._enroll_static_passkey()
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
+        transaction_id = passkey_challenge["transaction_id"]
+        data = self.authentication_response_no_uv
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            j = res.json
+            self.assertFalse(j["result"]["value"])
+            self.assertEqual("CHALLENGE", j["result"]["authentication"])
+            self.assertNotIn("auth_items", j)
+            detail = j["detail"]
+            evm_serial = detail["serial"]
+            self.assertTrue(evm_serial)
+            transaction_id = detail["transaction_id"]
+            self.assertTrue(transaction_id)
+
+            self.assertTrue(detail.get(ACTION.ENROLL_VIA_MULTICHALLENGE))
+            self.assertFalse(detail.get(ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
+            self.assertIn("multi_challenge", detail)
+            mc = detail["multi_challenge"]
+            self.assertEqual(1, len(mc))
+            self.assertIn("transaction_id", mc[0])
+            self.assertIn("image", mc[0])
+            self.assertIn("type", mc[0])
+            self.assertEqual("hotp", mc[0]["type"])
+            self.assertIn("link", mc[0])
+
+        # Try to cancel the enrollment, will result in a REJECT
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"transaction_id": transaction_id, "cancel_enrollment": True},
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            j = res.json
+            result = j["result"]
+            self.assertFalse(result["value"])
+            self.assertEqual("REJECT", result["authentication"])
+            self.assertIn("Failed to cancel enrollment", j["detail"]["message"])
+        remove_token(serial)
+        remove_token(evm_serial) # the token still exists because the enrollment was not cancelled
+        delete_policy("evm")
 
 
 class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):

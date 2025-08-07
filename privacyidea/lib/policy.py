@@ -380,6 +380,7 @@ class ACTION(object):
     ENROLL_VIA_MULTICHALLENGE = "enroll_via_multichallenge"
     ENROLL_VIA_MULTICHALLENGE_TEXT = "enroll_via_multichallenge_text"
     ENROLL_VIA_MULTICHALLENGE_TEMPLATE = "enroll_via_multichallenge_template"
+    ENROLL_VIA_MULTICHALLENGE_OPTIONAL = "enroll_via_multichallenge_optional"
     CLIENTTYPE = "clienttype"
     REGISTERBODY = "registration_body"
     RESETALLTOKENS = "reset_all_user_tokens"
@@ -432,7 +433,7 @@ class ACTION(object):
     CONTAINER_REGISTER = "container_register"
     CONTAINER_UNREGISTER = "container_unregister"
     CONTAINER_ROLLOVER = "container_rollover"
-    PI_SERVER_URL = "privacyIDEA_server_url"
+    CONTAINER_SERVER_URL = "privacyIDEA_server_url"
     CONTAINER_REGISTRATION_TTL = "container_registration_ttl"
     CONTAINER_CHALLENGE_TTL = "container_challenge_ttl"
     FORCE_CHALLENGE_RESPONSE = "force_challenge_response"
@@ -2671,6 +2672,11 @@ def get_static_policy_definitions(scope=None):
                 'value': [template.get("name") for template in
                           get_templates_by_query(container_type="smartphone").get("templates")]
             },
+            ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL: {
+                'type': 'bool',
+                'desc': _('If enabled, the user can choose to skip enrollment of the token during authentication. '
+                          'If disabled, the user must enroll a token. This is also the default behavior.'),
+            },
             ACTION.PASSTHRU: {
                 'type': 'str',
                 'value': radiusconfigs,
@@ -3044,7 +3050,7 @@ def get_static_policy_definitions(scope=None):
                                                    'group': GROUP.WIZARD}
         },
         SCOPE.CONTAINER: {
-            ACTION.PI_SERVER_URL: {
+            ACTION.CONTAINER_SERVER_URL: {
                 'type': 'str',
                 'desc': _('The URL of your privacyIDEA server, e.g. <code>https://pi/</code>. '
                           'It is used to build URLs the container can contact for registration and synchronization.'),

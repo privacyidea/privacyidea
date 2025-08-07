@@ -2208,8 +2208,7 @@ def lost_token(serial, new_serial=None, password=None,
 
 
 @log_with(log)
-def check_realm_pass(realm, passw, options=None,
-                     include_types=None, exclude_types=None):
+def check_realm_pass(realm, passw, options=None, include_types=None, exclude_types=None):
     """
     This function checks, if the given passw matches any token in the given
     realm. This can be used for the 4-eyes token.
@@ -2962,6 +2961,7 @@ def regenerate_enroll_url(serial: str, request: Request, g) -> Union[str, None]:
 
     params = request.all_data
     params.update({"genkey": True, "rollover": True})
+    params["policies"] = g.policies
     token = init_token(params)
     enroll_url = token.get_enroll_url(token_owner, params)
 

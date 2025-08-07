@@ -5572,7 +5572,9 @@ class TriggeredPoliciesTestCase(MyApiTestCase):
 
 class MultiChallengeEnrollTest(MyApiTestCase):
 
-    # Note: Testing the enrollment of the push token is done in test_api_push_validate.py
+    # Note: Testing the enrollment of the push token is done in test_api_push_validate.py,
+    # passkey in test_api_passkey_validate.py
+    # container in the container tests
 
     def setUp(self):
         super(MultiChallengeEnrollTest, self).setUp()
@@ -5647,6 +5649,8 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             transaction_id = detail.get("transaction_id")
             self.assertTrue("Please scan the QR code and enter the OTP value!" in detail.get("message"),
                             detail.get("message"))
+            self.assertTrue(detail.get(ACTION.ENROLL_VIA_MULTICHALLENGE))
+            self.assertFalse(detail.get(ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
             # Get image and client_mode
             self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("client_mode"), detail)
             # Check, that multi_challenge is also contained.
@@ -6320,7 +6324,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
                    action={ACTION.ENROLL_VIA_MULTICHALLENGE: "smartphone",
                            ACTION.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: "test",
                            ACTION.PASSTHRU: True})
-        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"})
+        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/"})
 
         # Init LDAP
         ldap3mock.setLDAPDirectory(LDAPDirectory)
