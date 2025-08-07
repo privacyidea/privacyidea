@@ -757,24 +757,23 @@ class PolicyClass(object):
             log.debug(f"Policies after matching pinode={pinode}: {reduced_policies}")
 
         # Match the user agent
-        if user_agent is not None:
-            new_policies = []
-            for policy in reduced_policies:
-                policy_matches = False
-                # The policy either matches if it has no user agents defined or if the user agent is contained in the list
-                if not policy.get("user_agents"):
-                    # If no user agent is defined, we match this policy
+        new_policies = []
+        for policy in reduced_policies:
+            policy_matches = False
+            # The policy either matches if it has no user agents defined or if the user agent is contained in the list
+            if not policy.get("user_agents"):
+                # If no user agent is defined, we match this policy
+                policy_matches = True
+            elif user_agent:
+                policy_agents = [agent.lower() for agent in policy.get("user_agents") if agent]
+                if user_agent.lower() in policy_agents:
                     policy_matches = True
-                elif user_agent:
-                    policy_agents = [agent.lower() for agent in policy.get("user_agents") if agent]
-                    if user_agent.lower() in policy_agents:
-                        policy_matches = True
 
-                if policy_matches:
-                    new_policies.append(policy)
+            if policy_matches:
+                new_policies.append(policy)
 
-            reduced_policies = new_policies
-            log.debug(f"Policies after matching the user_agent={user_agent}: {reduced_policies}")
+        reduced_policies = new_policies
+        log.debug(f"Policies after matching the user_agent={user_agent}: {reduced_policies}")
 
         # Match the client IP.
         # Client IPs may be direct match, may be located in subnets or may
@@ -1420,6 +1419,58 @@ def rename_policy(name: str, new_name: str) -> int:
 
     return policy.id
 
+def get_policies(active: Optional[bool] = None, name: Optional[str] = None, scope: Optional[str] = None,
+                 action: Optional[str] = None, realm: Optional[str] = None, admin_realm: Optional[str] = None,
+                 admin_user: Optional[str] = None, resolver: Optional[str] = None, pi_node: Optional[str] = None,
+                 user: Optional[str] = None, client: Optional[str] = None, time: Optional[str] = None,
+                 priority: Optional[int] = None, user_agent: Optional[str] = None) -> list[dict]:
+    """
+    Get all policies from the database, optionally filtered by the given parameters.
+
+    :param active: If the policy is active or not
+    :param name: The name of the policy
+    :param scope: The scope of the policy
+    :param action: A scope specific action or a comma separated list of actions
+    :param realm: A realm, for which this policy is valid
+    :param admin_realm: The name of the realm of administrators
+    :param admin_user: A comma separated list of administrator user names
+    :param resolver: A resolver, for which this policy is valid
+    :param pi_node: A privacyIDEA node or a list of privacyIDEA node names
+    :param user: A username or a list of usernames
+    :param client: A client for which this policy is valid
+    :param time: A time frame when the policy is valid, e.g. "Mon-Fri: 8-16"
+    :param priority: The priority of the policy
+    :param user_agent: A list of user agents for which this policy is valid
+    :return: A list of all policies as dictionaries
+    """
+    policies = []
+    sql_query = Policy.query
+
+    # Filter for all attributes that are strings
+    filter_options = {"name": name, "scope": scope, "action": action, "realm": realm, "adminrealm": admin_realm,
+                      "adminuser": admin_user, "resolver": resolver, "pinode": pi_node, "user": user,
+                      "client": client, "time": time, "user_agents": user_agent}
+
+    for attribute, value in filter_options.items():
+        if value is not None:
+            if "*" in value:
+                value = value.replace("*", "%")
+                sql_query = sql_query.filter(getattr(Policy, attribute).ilike(value))
+            else:
+                sql_query = sql_query.filter(getattr(Policy, attribute) == value)
+
+    # Other data typs
+    if active is not None:
+        sql_query = sql_query.filter(Policy.active.is_(active))
+
+    if priority is not None:
+        sql_query = sql_query.filter(Policy.priority == priority)
+
+    # Get policies as dict
+    for policy in sql_query.all():
+        policies.append(policy.get())
+
+    return policies
 
 @log_with(log)
 def set_policy(name: Optional[str] = None, scope: Optional[str] = None, action: Union[str, list, None] = None,
