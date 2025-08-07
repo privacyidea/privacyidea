@@ -145,14 +145,19 @@ export class MachineService implements MachineServiceInterface {
     computation: () => 10,
   });
 
-  machinesResource = httpResource<PiResponse<Machines>>(() => ({
-    url: `${this.baseUrl}`,
-    method: 'GET',
-    headers: this.localService.getHeaders(),
-    params: {
-      any: '',
-    },
-  }));
+  machinesResource = httpResource<PiResponse<Machines>>(() => {
+    if (!this.contentService.routeUrl().includes('/tokens/applications')) {
+      return undefined;
+    }
+    return {
+      url: `${this.baseUrl}`,
+      method: 'GET',
+      headers: this.localService.getHeaders(),
+      params: {
+        any: '',
+      },
+    };
+  });
 
   machines: WritableSignal<Machines | undefined> = linkedSignal({
     source: this.machinesResource.value,
@@ -219,6 +224,9 @@ export class MachineService implements MachineServiceInterface {
     computation: () => 0,
   });
   tokenApplicationResource = httpResource<PiResponse<TokenApplications>>(() => {
+    if (!this.contentService.routeUrl().includes('/tokens/applications')) {
+      return undefined;
+    }
     const params = {
       application: this.selectedApplicationType(),
       page: this.pageIndex() + 1,

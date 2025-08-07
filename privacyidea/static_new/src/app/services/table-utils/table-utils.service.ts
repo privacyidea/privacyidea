@@ -202,9 +202,6 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     currentValue: string;
   }): string {
     const { keyword, currentValue } = args;
-    console.debug(
-      `Toggling boolean for keyword: ${keyword}, currentValue: ${currentValue}`,
-    );
     const regex = new RegExp(
       `\\b${keyword}:\\s?([\\w\\d]*)(?![\\w\\d]*:)`,
       'i',

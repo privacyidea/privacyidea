@@ -42,6 +42,7 @@ import {
   NotificationServiceInterface,
 } from '../notification/notification.service';
 import { TokenService, TokenServiceInterface } from '../token/token.service';
+import { AuthService, AuthServiceInterface } from '../auth/auth.service';
 
 const apiFilter = ['container_serial', 'type', 'user'];
 const advancedApiFilter = ['token_serial'];
@@ -270,6 +271,7 @@ export class ContainerService implements ContainerServiceInterface {
     inject(NotificationService);
   private readonly contentService: ContentServiceInterface =
     inject(ContentService);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
 
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
@@ -345,10 +347,12 @@ export class ContainerService implements ContainerServiceInterface {
   });
   containerResource = httpResource<PiResponse<ContainerDetails>>(() => {
     if (
-      !['/tokens/containers', '/tokens/enroll', '/tokens'].includes(
-        this.contentService.routeUrl(),
-      ) &&
-      !this.contentService.routeUrl().startsWith('/tokens/details')
+      (!this.contentService.routeUrl().startsWith('/tokens/details') &&
+        !['/tokens/containers', '/tokens/enroll', '/tokens'].includes(
+          this.contentService.routeUrl(),
+        )) ||
+      (this.authService.role() === 'admin' &&
+        this.contentService.routeUrl() === '/tokens')
     ) {
       return undefined;
     }
@@ -397,11 +401,16 @@ export class ContainerService implements ContainerServiceInterface {
     computation: () => [],
   });
 
-  containerTypesResource = httpResource<PiResponse<ContainerTypes>>(() => ({
-    url: `${this.containerBaseUrl}types`,
-    method: 'GET',
-    headers: this.localService.getHeaders(),
-  }));
+  containerTypesResource = httpResource<PiResponse<ContainerTypes>>(() => {
+    if (this.contentService.routeUrl() !== '/tokens/containers/create') {
+      return undefined;
+    }
+    return {
+      url: `${this.containerBaseUrl}types`,
+      method: 'GET',
+      headers: this.localService.getHeaders(),
+    };
+  });
 
   containerTypeOptions = computed<ContainerType[]>(() => {
     const value = this.containerTypesResource.value()?.result?.value;
@@ -457,11 +466,16 @@ export class ContainerService implements ContainerServiceInterface {
 
   templatesResource = httpResource<
     PiResponse<{ templates: ContainerTemplate[] }>
-  >(() => ({
-    url: `${this.containerBaseUrl}templates`,
-    method: 'GET',
-    headers: this.localService.getHeaders(),
-  }));
+  >(() => {
+    if (this.contentService.routeUrl() !== '/tokens/containers/create') {
+      return undefined;
+    }
+    return {
+      url: `${this.containerBaseUrl}templates`,
+      method: 'GET',
+      headers: this.localService.getHeaders(),
+    };
+  });
 
   templates: WritableSignal<ContainerTemplate[]> = linkedSignal({
     source: this.templatesResource.value,

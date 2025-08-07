@@ -20,6 +20,10 @@ import {
   NotificationService,
   NotificationServiceInterface,
 } from '../notification/notification.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../content/content.service';
 
 export type Realms = Map<string, Realm>;
 
@@ -55,11 +59,21 @@ export class RealmService implements RealmServiceInterface {
   private readonly notificationService: NotificationServiceInterface =
     inject(NotificationService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
-
+  private readonly contentService: ContentServiceInterface =
+    inject(ContentService);
   selectedRealms = signal<string[]>([]);
 
   realmResource = httpResource<PiResponse<Realms>>(() => {
-    if (this.authService.role() === 'user') {
+    if (
+      this.authService.role() === 'user' ||
+      ![
+        '/users',
+        '/tokens/details',
+        '/tokens/containers/details',
+        '/tokens/containers/create',
+        '/tokens/enrollment',
+      ].includes(this.contentService.routeUrl())
+    ) {
       return undefined;
     }
     return {
@@ -74,7 +88,16 @@ export class RealmService implements RealmServiceInterface {
   });
 
   defaultRealmResource = httpResource<PiResponse<Realms>>(() => {
-    if (this.authService.role() === 'user') {
+    if (
+      this.authService.role() === 'user' ||
+      ![
+        '/users',
+        '/tokens/details',
+        '/tokens/containers/details',
+        '/tokens/containers/create',
+        '/tokens/enrollment',
+      ].includes(this.contentService.routeUrl())
+    ) {
       return undefined;
     }
     return {

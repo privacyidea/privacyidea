@@ -328,11 +328,16 @@ export class TokenService implements TokenServiceInterface {
       params: { serial: this.tokenSerial() },
     };
   });
-  tokenTypesResource = httpResource<PiResponse<{}>>(() => ({
-    url: environment.proxyUrl + '/auth/rights',
-    method: 'GET',
-    headers: this.localService.getHeaders(),
-  }));
+  tokenTypesResource = httpResource<PiResponse<{}>>(() => {
+    if (this.contentService.routeUrl() !== '/tokens/enroll') {
+      return undefined;
+    }
+    return {
+      url: environment.proxyUrl + '/auth/rights',
+      method: 'GET',
+      headers: this.localService.getHeaders(),
+    };
+  });
   tokenTypeOptions = computed<TokenType[]>(() => {
     const obj = this.tokenTypesResource?.value()?.result?.value;
     if (!obj) return [];
@@ -350,7 +355,8 @@ export class TokenService implements TokenServiceInterface {
     }),
     computation: (source) =>
       source.tokenTypeOptions.find((type) => type.key === 'hotp') ||
-      source.tokenTypeOptions[0],
+      source.tokenTypeOptions[0] ||
+      ({ key: 'hotp', info: '', text: '' } as TokenType),
   });
   pageSize = linkedSignal<Record<string, string>, number>({
     source: this.filterValue,

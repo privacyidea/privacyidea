@@ -56,7 +56,6 @@ export interface UserServiceInterface {
   usersResource: HttpResourceRef<PiResponse<UserData[]> | undefined>;
   users: WritableSignal<UserData[]>;
   allUsernames: Signal<string[]>;
-  usersOfRealmResource: HttpResourceRef<PiResponse<UserData[]> | undefined>;
   filteredUsernames: Signal<string[]>;
   filteredUsers: Signal<UserData[]>;
   filterValue: WritableSignal<Record<string, string>>;
@@ -168,7 +167,17 @@ export class UserService implements UserServiceInterface {
   });
   usersResource = httpResource<PiResponse<UserData[]>>(() => {
     const selectedUserRealm = this.selectedUserRealm();
-    if (selectedUserRealm === '' || this.authService.role() === 'user') {
+    if (
+      selectedUserRealm === '' ||
+      this.authService.role() === 'user' ||
+      ![
+        '/users',
+        '/tokens/details',
+        '/tokens/containers/details',
+        '/tokens/containers/create',
+        '/tokens/enrollment',
+      ].includes(this.contentService.routeUrl())
+    ) {
       return undefined;
     }
     return {
@@ -176,7 +185,7 @@ export class UserService implements UserServiceInterface {
       method: 'GET',
       headers: this.localService.getHeaders(),
       params: {
-        realm: this.selectedUserRealm(),
+        realm: selectedUserRealm,
         ...this.filterParams(),
       },
     };
@@ -208,20 +217,6 @@ export class UserService implements UserServiceInterface {
   allUsernames = computed<string[]>(() =>
     this.users().map((user) => user.username),
   );
-  usersOfRealmResource = httpResource<PiResponse<UserData[]>>(() => {
-    const selectedUserRealm = this.selectedUserRealm();
-    if (selectedUserRealm === '') {
-      return undefined;
-    }
-    return {
-      url: this.baseUrl,
-      method: 'GET',
-      headers: this.localService.getHeaders(),
-      params: {
-        realm: selectedUserRealm,
-      },
-    };
-  });
   filteredUsers = computed<UserData[]>(() => {
     var userFilter = this.userFilter();
     if (typeof userFilter !== 'string' || userFilter.trim() === '') {

@@ -4,6 +4,7 @@ import {
   effect,
   inject,
   linkedSignal,
+  ViewChild,
   WritableSignal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -153,12 +154,23 @@ export class AuditComponent {
     },
   );
 
+  @ViewChild('filterHTMLInputElement', { static: true })
+  filterInput!: HTMLInputElement;
+
   constructor() {
     effect(() => {
-      const recordsFromText = this.tableUtilsService.recordsFromText(
-        this.filterValueString(),
-      );
-      this.auditService.filterValue.set(recordsFromText);
+      const filterValueString = this.filterValueString();
+      const recordsFromText =
+        this.tableUtilsService.recordsFromText(filterValueString);
+      if (this.filterInput) {
+        this.filterInput.value = filterValueString;
+      }
+      if (
+        JSON.stringify(this.auditService.filterValue()) !==
+        JSON.stringify(recordsFromText)
+      ) {
+        this.auditService.filterValue.set(recordsFromText);
+      }
       this.auditService.pageIndex.set(0);
     });
   }
