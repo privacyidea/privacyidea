@@ -2125,7 +2125,7 @@ def fido2_auth(request, action):
     return True
 
 
-def get_first_policy_value(policy_action: str, default: str, scope: SCOPE, user: Union[User, None] = None,
+def get_first_policy_value(policy_action: str, default: str, scope: str, user: Union[User, None] = None,
                            allowed_values: Union[list, None] = None) -> str:
     """
     Get the first policy value for the given policy action and scope, using Match.user. If the policy does not exist,
