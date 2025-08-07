@@ -183,7 +183,8 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
                     resolver: data.resolver || [],
                     adminrealm: data.adminrealm || [],
                     conditions: data.conditions || [],
-                    pinode: []
+                    pinode: [],
+                    user_agents: data.user_agents || []
                 });
             });
         };

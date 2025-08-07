@@ -2333,10 +2333,13 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual(2, len(policies), policies)
         self.assertSetEqual({"policy-keycloak", "policy-no-agent"}, {policy["name"] for policy in policies})
 
-        # no user agent filter: only get policies without user agent
+        # no user agent filter: get all policies
+        # As this function is not only used to match policies but also to list policies, we need to return all policies
+        # in this case. Usually, there is always a user_agent present when matching the policies, hence, this should
+        # cause any issues.
         policies = P.list_policies(scope=SCOPE.AUTH)
-        self.assertEqual(1, len(policies), policies)
-        self.assertSetEqual({"policy-no-agent"}, {policy["name"] for policy in policies})
+        self.assertEqual(3, len(policies), policies)
+        self.assertSetEqual({"policy-no-agent", "policy-cp", "policy-keycloak"}, {policy["name"] for policy in policies})
 
 
 class PolicyConditionClassTestCase(MyTestCase):
