@@ -39,7 +39,8 @@ from privacyidea.lib import _
 from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass, AUTHENTICATIONMODE
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.policy import SCOPE, ACTION, GROUP
+from privacyidea.lib.policy import SCOPE, GROUP
+from privacyidea.lib.policies.actions import PolicyAction
 
 optional = True
 required = False
@@ -93,12 +94,12 @@ class SpassTokenClass(TokenClass):
                'pin_scopes': [SCOPE.ADMIN, SCOPE.USER],
                'policy': {
                    SCOPE.ENROLL: {
-                       ACTION.MAXTOKENUSER: {
+                       PolicyAction.MAXTOKENUSER: {
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of SPASS tokens assigned."),
                            'group': GROUP.TOKEN
                        },
-                       ACTION.MAXACTIVETOKENUSER: {
+                       PolicyAction.MAXACTIVETOKENUSER: {
                            'type': 'int',
                            'desc': _(
                                "The user may only have this maximum number of active SPASS tokens assigned."),

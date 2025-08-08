@@ -1,7 +1,8 @@
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
 from .base import MyApiTestCase
-from privacyidea.lib.policy import SCOPE, ACTION, set_policy
+from privacyidea.lib.policy import SCOPE, set_policy
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
 from privacyidea.lib.smtpserver import add_smtpserver
 from . import smtpmock
@@ -58,8 +59,8 @@ class RegisterTestCase(MyApiTestCase):
 
         # create policy
         r = set_policy(name="pol2", scope=SCOPE.REGISTER,
-                       action="{0!s}={1!s}, {2!s}={3!s}".format(ACTION.REALM, "register",
-                                                ACTION.RESOLVER, "register"))
+                       action="{0!s}={1!s}, {2!s}={3!s}".format(PolicyAction.REALM, "register",
+                                                                PolicyAction.RESOLVER, "register"))
 
         # Try to register, but missing parameter
         with self.app.test_request_context('/register',
@@ -91,7 +92,7 @@ class RegisterTestCase(MyApiTestCase):
         # Set SMTP config and policy
         add_smtpserver("myserver", "1.2.3.4", sender="pi@localhost")
         set_policy("pol3", scope=SCOPE.REGISTER,
-                   action="{0!s}=myserver".format(ACTION.EMAILCONFIG))
+                   action="{0!s}=myserver".format(PolicyAction.EMAILCONFIG))
         with self.app.test_request_context('/register',
                                            method='POST',
                                            data={"username": "corneliusReg",

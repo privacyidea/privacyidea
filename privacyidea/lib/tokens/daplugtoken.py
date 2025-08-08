@@ -40,7 +40,9 @@ from privacyidea.lib.config import get_prepend_pin
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.utils import to_bytes, to_unicode
 from privacyidea.lib import _
-from privacyidea.lib.policy import SCOPE, ACTION, GROUP
+from privacyidea.lib.policy import SCOPE, GROUP
+from privacyidea.lib.policies.actions import PolicyAction
+
 optional = True
 required = False
 
@@ -125,12 +127,12 @@ class DaplugTokenClass(HotpTokenClass):
                                 "the HOTP algorithm"),
                'policy': {
                    SCOPE.ENROLL: {
-                       ACTION.MAXTOKENUSER: {
+                       PolicyAction.MAXTOKENUSER: {
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of daplug tokens assigned."),
                            'group': GROUP.TOKEN
                        },
-                       ACTION.MAXACTIVETOKENUSER: {
+                       PolicyAction.MAXACTIVETOKENUSER: {
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of active daplug tokens assigned."),
                            'group': GROUP.TOKEN

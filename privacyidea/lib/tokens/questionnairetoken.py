@@ -34,7 +34,8 @@ from privacyidea.models import Challenge
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib import _
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
+from privacyidea.lib.policy import SCOPE, GROUP, get_action_values_from_options
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.crypto import safe_compare
 import secrets
 import json
@@ -110,12 +111,12 @@ class QuestionnaireTokenClass(TokenClass):
                        }
                    },
                    SCOPE.ENROLL: {
-                       ACTION.MAXTOKENUSER: {
+                       PolicyAction.MAXTOKENUSER: {
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of questionaire tokens assigned."),
                            'group': GROUP.TOKEN
                        },
-                       ACTION.MAXACTIVETOKENUSER: {
+                       PolicyAction.MAXACTIVETOKENUSER: {
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of active questionaire tokens assigned."),
                            'group': GROUP.TOKEN

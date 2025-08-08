@@ -1,7 +1,8 @@
 """ API testcases for the "/user/" endpoint """
 
 from .base import MyApiTestCase
-from privacyidea.lib.policy import set_policy, SCOPE, delete_policy, ACTION
+from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.resolver import save_resolver, get_resolver_object
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
@@ -390,7 +391,7 @@ class APIUsersTestCase(MyApiTestCase):
 
         # Allow to set custom attributes
         set_policy("custom_attr", scope=SCOPE.ADMIN,
-                   action="{0!s}=:*:*".format(ACTION.SET_USER_ATTRIBUTES))
+                   action="{0!s}=:*:*".format(PolicyAction.SET_USER_ATTRIBUTES))
 
         # Check that the user has not attribute
         with self.app.test_request_context('/user/attribute',
@@ -474,7 +475,7 @@ class APIUsersTestCase(MyApiTestCase):
         # The additional attribute should also be returned, if the user authenticates successfully.
         init_token({"serial": "SPASS1", "type": "spass", "pin": "test"},
                    user=User("cornelius", self.realm1))
-        set_policy(name="POL1", scope=SCOPE.AUTHZ, action=ACTION.ADDUSERINRESPONSE)
+        set_policy(name="POL1", scope=SCOPE.AUTHZ, action=PolicyAction.ADDUSERINRESPONSE)
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "cornelius@realm1",
@@ -503,7 +504,7 @@ class APIUsersTestCase(MyApiTestCase):
 
         # Now we delete the additional user attribute
         set_policy("custom_attr", scope=SCOPE.ADMIN,
-                   action="{0!s}=*".format(ACTION.DELETE_USER_ATTRIBUTES))
+                   action="{0!s}=*".format(PolicyAction.DELETE_USER_ATTRIBUTES))
         with self.app.test_request_context('/user/attribute/newattribute/cornelius/realm1',
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
@@ -538,13 +539,13 @@ class APIUsersTestCase(MyApiTestCase):
 
         # Check, which attributes the admin is allowed to set or delete
         set_policy("custom_attr", scope=SCOPE.ADMIN,
-                   action="{0!s}=:hello: one two".format(ACTION.SET_USER_ATTRIBUTES))
+                   action="{0!s}=:hello: one two".format(PolicyAction.SET_USER_ATTRIBUTES))
         set_policy("custom_attr2", scope=SCOPE.ADMIN,
-                   action="{0!s}=:hello2: * :hello: three".format(ACTION.SET_USER_ATTRIBUTES))
+                   action="{0!s}=:hello2: * :hello: three".format(PolicyAction.SET_USER_ATTRIBUTES))
         set_policy("custom_attr3", scope=SCOPE.ADMIN,
-                   action="{0!s}=:*: on off".format(ACTION.SET_USER_ATTRIBUTES))
+                   action="{0!s}=:*: on off".format(PolicyAction.SET_USER_ATTRIBUTES))
         set_policy("custom_attr4", scope=SCOPE.ADMIN,
-                   action="{0!s}=*".format(ACTION.DELETE_USER_ATTRIBUTES))
+                   action="{0!s}=*".format(PolicyAction.DELETE_USER_ATTRIBUTES))
         with self.app.test_request_context('/user/editable_attributes/',
                                            method='GET',
                                            query_string={"user": "cornelius@realm1"},
@@ -567,7 +568,7 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertEqual(["*"], setables.get("hello2"))
 
         set_policy("custom_create_user", scope=SCOPE.ADMIN,
-                   action=ACTION.ADDUSER)
+                   action=PolicyAction.ADDUSER)
         # CREATE a user
         self._create_user_wordy()
         self._get_wordy_auth_token()
@@ -632,7 +633,7 @@ class APIUsersTestCase(MyApiTestCase):
         self.setUp_user_realms()
         # Allow to set custom attributes
         set_policy("custom_attribute", scope=SCOPE.ADMIN,
-                   action=f"{ACTION.SET_USER_ATTRIBUTES}=:*:*,{ACTION.DELETE_USER_ATTRIBUTES}='*'")
+                   action=f"{PolicyAction.SET_USER_ATTRIBUTES}=:*:*,{PolicyAction.DELETE_USER_ATTRIBUTES}='*'")
 
         # try to set an internal custom user attribute
         with self.app.test_request_context("/user/attribute",

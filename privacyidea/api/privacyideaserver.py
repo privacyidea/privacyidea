@@ -28,7 +28,7 @@ from .lib.utils import (getParam,
                         required,
                         send_result)
 from ..lib.log import log_with
-from ..lib.policy import ACTION
+from ..lib.policies.actions import PolicyAction
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.utils import is_true
 from flask import g
@@ -46,7 +46,7 @@ privacyideaserver_blueprint = Blueprint('privacyideaserver_blueprint', __name__)
 
 
 @privacyideaserver_blueprint.route('/<identifier>', methods=['POST'])
-@prepolicy(check_base_action, request, ACTION.PRIVACYIDEASERVERWRITE)
+@prepolicy(check_base_action, request, PolicyAction.PRIVACYIDEASERVERWRITE)
 @log_with(log)
 def create(identifier=None):
     """
@@ -73,7 +73,7 @@ def create(identifier=None):
 
 @privacyideaserver_blueprint.route('/', methods=['GET'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.PRIVACYIDEASERVERREAD)
+@prepolicy(check_base_action, request, PolicyAction.PRIVACYIDEASERVERREAD)
 def list_privacyidea():
     """
     This call gets the list of privacyIDEA server definitions
@@ -85,7 +85,7 @@ def list_privacyidea():
 
 
 @privacyideaserver_blueprint.route('/<identifier>', methods=['DELETE'])
-@prepolicy(check_base_action, request, ACTION.PRIVACYIDEASERVERWRITE)
+@prepolicy(check_base_action, request, PolicyAction.PRIVACYIDEASERVERWRITE)
 @log_with(log)
 def delete_server(identifier=None):
     """
@@ -101,7 +101,7 @@ def delete_server(identifier=None):
 
 
 @privacyideaserver_blueprint.route('/test_request', methods=['POST'])
-@prepolicy(check_base_action, request, ACTION.PRIVACYIDEASERVERWRITE)
+@prepolicy(check_base_action, request, PolicyAction.PRIVACYIDEASERVERWRITE)
 @log_with(log)
 def test():
     """

@@ -11,7 +11,8 @@ from privacyidea.lib.tokens.u2f import (check_registration_data,
                                         check_response, parse_response_data)
 from privacyidea.lib.token import init_token, remove_token, check_user_pass, get_tokens, import_tokens
 from privacyidea.lib.user import User
-from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
+from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.utils import hexlify_and_unicode, to_bytes
@@ -374,7 +375,7 @@ class MultipleU2FTokenTestCase(MyTestCase):
 
     # TODO: also test challenge-response with different tokens (u2f + totp)
     def test_01_multiple_token(self):
-        set_policy("otppin", scope=SCOPE.AUTH, action="{0!s}=none".format(ACTION.OTPPIN))
+        set_policy("otppin", scope=SCOPE.AUTH, action="{0!s}=none".format(PolicyAction.OTPPIN))
         res, reply = check_user_pass(self.user, '')
         self.assertFalse(res)
         self.assertIn('transaction_id', reply, reply)

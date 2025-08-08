@@ -37,7 +37,7 @@ import click
 from flask.cli import with_appcontext
 from privacyidea.lib.utils import get_version_number
 from privacyidea.lib.token import get_tokens, remove_token, enable_token
-from privacyidea.lib.policy import ACTION
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.cli import NoPluginsFlaskGroup, create_silent_app
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -95,7 +95,7 @@ def list_tokens(age):
         click.echo("Token serial\tLast authentication")
         click.echo("=" * 50)
         for token_obj in tlist:
-            click.echo(f"{token_obj.token.serial}\t{token_obj.get_tokeninfo(ACTION.LASTAUTH)}")
+            click.echo(f"{token_obj.token.serial}\t{token_obj.get_tokeninfo(PolicyAction.LASTAUTH)}")
 
 
 @click.command()

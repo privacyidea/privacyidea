@@ -37,7 +37,8 @@ from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
 from privacyidea.lib.fido2.util import hash_credential_id, save_credential_id_hash
 from privacyidea.lib.log import log_with
-from privacyidea.lib.policy import SCOPE, GROUP, ACTION
+from privacyidea.lib.policy import SCOPE, GROUP
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import TokenClass, CLIENTMODE, ROLLOUTSTATE
 from privacyidea.lib.tokens.u2ftoken import IMAGES
@@ -580,7 +581,7 @@ class WebAuthnTokenClass(TokenClass):
                             'discouraged'
                         ]
                     },
-                    ACTION.CHALLENGETEXT: {
+                    PolicyAction.CHALLENGETEXT: {
                         'type': 'str',
                         'desc': _("Use an alternative challenge text for telling "
                                   "the user to confirm the login with his WebAuthn token. "
@@ -692,17 +693,17 @@ class WebAuthnTokenClass(TokenClass):
                         'desc': _("Only the specified WebAuthn-tokens are allowed to be registered."),
                         'group': WebAuthnGroup.WEBAUTHN
                     },
-                    ACTION.MAXTOKENUSER: {
+                    PolicyAction.MAXTOKENUSER: {
                         'type': 'int',
                         'desc': _("The user may only have this number of WebAuthn tokens assigned."),
                         'group': GROUP.TOKEN
                     },
-                    ACTION.MAXACTIVETOKENUSER: {
+                    PolicyAction.MAXACTIVETOKENUSER: {
                         'type': 'int',
                         'desc': _('The user may only have this number of active WebAuthn tokens assigned.'),
                         'group': GROUP.TOKEN
                     },
-                    ACTION.CHALLENGETEXT: {
+                    PolicyAction.CHALLENGETEXT: {
                         'type': 'str',
                         'desc': _("Use an alternative challenge text for telling the "
                                   "user to confirm the enrollment with his WebAuthn device. "
@@ -757,7 +758,7 @@ class WebAuthnTokenClass(TokenClass):
         self.hKeyRequired = False
 
     def _get_message(self, options):
-        challengetext = get_optional(options, f"{self.get_class_type()}_{ACTION.CHALLENGETEXT!s}")
+        challengetext = get_optional(options, f"{self.get_class_type()}_{PolicyAction.CHALLENGETEXT!s}")
         return challengetext.format(self.token.description) if challengetext else ""
 
     def _get_webauthn_user(self, user):

@@ -35,8 +35,9 @@ from privacyidea.lib.container import (init_container, add_token_to_container,
 from privacyidea.models import (db, Token, Challenge, TokenRealm)
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
                                     delete_privacyidea_config, SYSCONF)
-from privacyidea.lib.policy import (set_policy, SCOPE, ACTION, PolicyClass,
+from privacyidea.lib.policy import (set_policy, SCOPE, PolicyClass,
                                     delete_policy)
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.utils import b32encode_and_unicode, hexlify_and_unicode
 from privacyidea.lib.error import PolicyError
 from privacyidea.lib.token import (create_tokenclass_object,
@@ -833,7 +834,7 @@ class TokenTestCase(MyTestCase):
 
         # Set HOTP as challenge response
         set_policy("check_token_list_CR", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
-            ACTION.CHALLENGERESPONSE))
+            PolicyAction.CHALLENGERESPONSE))
 
         hotp_tokenobject.add_tokeninfo("next_pin_change", "{0!s}".format(datetime.datetime(2019, 1, 7, 0, 0)))
         hotp_tokenobject.add_tokeninfo("next_password_change", "{0!s}".format(datetime.datetime(2019, 1, 7, 0, 0)))
@@ -1332,7 +1333,7 @@ class TokenTestCase(MyTestCase):
         enable_token("CR2B", False)
         # Allow HOTP for chalresp
         set_policy("test48", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
-            ACTION.CHALLENGERESPONSE))
+            PolicyAction.CHALLENGERESPONSE))
         r, r_dict = check_token_list([token_a, token_b], pin, user)
         self.assertFalse(r)
         self.assertTrue("message" in r_dict)
@@ -1378,7 +1379,7 @@ class TokenTestCase(MyTestCase):
                               "otpkey": self.otpkey,
                               "pin": pin}, user)
         set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
-            ACTION.CHALLENGERESPONSE))
+            PolicyAction.CHALLENGERESPONSE))
         # both tokens will be a valid challenge response token!
         r, r_dict = check_token_list([token_a, token_b], pin, user)
         multi_challenge = r_dict.get("multi_challenge")
@@ -1998,7 +1999,7 @@ class TokenFailCounterTestCase(MyTestCase):
 
     def test_04_reset_all_failcounters(self):
         set_policy("reset_all", scope=SCOPE.AUTH,
-                   action=ACTION.RESETALLTOKENS)
+                   action=PolicyAction.RESETALLTOKENS)
 
         user = User(login="cornelius", realm=self.realm1)
         pin1 = "pin1"
@@ -2141,11 +2142,11 @@ class PINChangeTestCase(MyTestCase):
     def test_00_create_realms(self):
         self.setUp_user_realms()
         # Set a policy to change the pin every 10d
-        set_policy("every10d", scope=SCOPE.ENROLL, action="{0!s}=10d".format(ACTION.CHANGE_PIN_EVERY))
+        set_policy("every10d", scope=SCOPE.ENROLL, action="{0!s}=10d".format(PolicyAction.CHANGE_PIN_EVERY))
         # set policy for chalresp
-        set_policy("chalresp", scope=SCOPE.AUTH, action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+        set_policy("chalresp", scope=SCOPE.AUTH, action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE))
         # Change PIN via validate
-        set_policy("viaValidate", scope=SCOPE.AUTH, action=ACTION.CHANGE_PIN_VIA_VALIDATE)
+        set_policy("viaValidate", scope=SCOPE.AUTH, action=PolicyAction.CHANGE_PIN_VIA_VALIDATE)
 
     def test_01_successfully_change_pin(self):
         """
@@ -2282,7 +2283,7 @@ class PINChangeTestCase(MyTestCase):
         # Check it
         self.assertTrue(tok.is_pin_change())
         # Require minimum length of 5
-        set_policy("minpin", scope=SCOPE.USER, action="{0!s}=5".format(ACTION.OTPPINMINLEN))
+        set_policy("minpin", scope=SCOPE.USER, action="{0!s}=5".format(PolicyAction.OTPPINMINLEN))
 
         # successfully authenticate, but thus trigger a PIN change
         r, reply_dict = check_token_list([tok, tok2], "test{0!s}".format(self.valid_otp_values[1]),
@@ -2422,7 +2423,7 @@ class TestMultipleUserToken(MyTestCase):
         init_token({"serial": "s2", "otpkey": OTPKE2, "type": "HOTP"},
                    user=user)
         # To test whether the password caching works, we need to set the otppin policy to userstore
-        set_policy("otppin", scope=SCOPE.AUTH, action=f"{ACTION.OTPPIN}=userstore")
+        set_policy("otppin", scope=SCOPE.AUTH, action=f"{PolicyAction.OTPPIN}=userstore")
 
         self.set_default_g_variables()
         self.app_context.g.policy_object = PolicyClass()
@@ -2479,7 +2480,7 @@ class TestMultipleUserToken(MyTestCase):
             self.assertEqual(1, len(resolver_logs), resolver_logs)
 
         # Now we enable the challenge-response policy for HOTP token
-        set_policy("chalresp", scope=SCOPE.AUTH, action=f"{ACTION.CHALLENGERESPONSE}=hotp")
+        set_policy("chalresp", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
 
         # First we try again with a wrong password
         with LogCapture(level=logging.DEBUG) as lc:
@@ -2605,7 +2606,7 @@ class TestMultipleUserToken(MyTestCase):
 
         # Now set the force_challenge_response policy and try again.
         # We should only have on password check
-        set_policy("force_chalresp", scope=SCOPE.AUTH, action=f"{ACTION.FORCE_CHALLENGE_RESPONSE}")
+        set_policy("force_chalresp", scope=SCOPE.AUTH, action=f"{PolicyAction.FORCE_CHALLENGE_RESPONSE}")
 
         with LogCapture(level=logging.DEBUG) as lc:
             res, res_data = check_user_pass(user, "test376074", options=options)

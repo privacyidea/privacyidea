@@ -15,7 +15,7 @@ from werkzeug.test import EnvironBuilder
 from privacyidea.lib.eventhandler.base import CONDITION
 from privacyidea.lib.eventhandler.usernotification import (UserNotificationEventHandler,
                                                            NOTIFY_TYPE)
-from privacyidea.lib.policy import ACTION
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
@@ -1270,7 +1270,7 @@ class UserNotificationTestCase(MyTestCase):
                           "otppin": "spass"},
                          user=user)
         # Add last authentication
-        tok.add_tokeninfo(ACTION.LASTAUTH, "2016-10-10 10:10:10.000")
+        tok.add_tokeninfo(PolicyAction.LASTAUTH, "2016-10-10 10:10:10.000")
         env = builder.get_environ()
         req = Request(env)
         req.all_data = {"user": "cornelius@realm1",

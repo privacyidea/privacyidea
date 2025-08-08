@@ -12,7 +12,8 @@ from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.user import User
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
-from privacyidea.lib.policy import ACTION, SCOPE, set_policy, PolicyClass
+from privacyidea.lib.policy import SCOPE, set_policy, PolicyClass
+from privacyidea.lib.policies.actions import PolicyAction
 
 
 class RecoveryTestCase(MyTestCase):
@@ -90,12 +91,12 @@ class RecoveryTestCase(MyTestCase):
         self.assertEqual(r, True)
 
         # create policy
-        set_policy(name="pwrest", scope=SCOPE.USER, action=ACTION.PASSWORDRESET)
+        set_policy(name="pwrest", scope=SCOPE.USER, action=PolicyAction.PASSWORDRESET)
         r = is_password_reset(g)
         self.assertEqual(r, True)
 
         # create policy that does not allow password_reset
-        set_policy(name="pwrest", scope=SCOPE.USER, action=ACTION.DELETE)
+        set_policy(name="pwrest", scope=SCOPE.USER, action=PolicyAction.DELETE)
         r = is_password_reset(g)
         self.assertEqual(r, False)
 

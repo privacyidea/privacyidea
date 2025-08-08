@@ -30,7 +30,8 @@ from flask import (Blueprint, request, g)
 from .lib.utils import send_result, getParam
 from .lib.utils import required
 import logging
-from privacyidea.lib.policy import ACTION, SCOPE
+from privacyidea.lib.policy import SCOPE
+from ..lib.policies.actions import PolicyAction
 from privacyidea.lib.user import create_user
 from privacyidea.lib.user import User
 from privacyidea.lib.token import init_token
@@ -59,7 +60,7 @@ def register_status():
 
     :return: JSON with value=True or value=False
     """
-    resolvername = Match.action_only(g, scope=SCOPE.REGISTER, action=ACTION.RESOLVER)\
+    resolvername = Match.action_only(g, scope=SCOPE.REGISTER, action=PolicyAction.RESOLVER)\
         .action_values(unique=True)
     result = bool(resolvername)
     g.audit_object.log({"info": result,
@@ -116,13 +117,13 @@ def register_post():
                 options[key] = value
 
     # 0. check, if we can do the registration at all!
-    smtpconfig = Match.action_only(g, scope=SCOPE.REGISTER, action=ACTION.EMAILCONFIG)\
+    smtpconfig = Match.action_only(g, scope=SCOPE.REGISTER, action=PolicyAction.EMAILCONFIG)\
         .action_values(unique=True)
     if not smtpconfig:
         raise RegistrationError("No SMTP server configuration specified!")
 
     # 1. determine, in which resolver/realm the user should be created
-    realm = Match.action_only(g, scope=SCOPE.REGISTER, action=ACTION.REALM)\
+    realm = Match.action_only(g, scope=SCOPE.REGISTER, action=PolicyAction.REALM)\
         .action_values(unique=True)
     if not realm:
         # No policy for realm, so we use the default realm
@@ -130,7 +131,7 @@ def register_post():
     else:
         # we use the first realm in the list
         realm = list(realm)[0]
-    resolvername = Match.action_only(g, scope=SCOPE.REGISTER, action=ACTION.RESOLVER)\
+    resolvername = Match.action_only(g, scope=SCOPE.REGISTER, action=PolicyAction.RESOLVER)\
         .action_values(unique=True)
     if not resolvername:
         raise RegistrationError("No resolver specified to register in!")
@@ -156,7 +157,7 @@ def register_post():
 
     smtpconfig = list(smtpconfig)[0]
     # Send the registration key via email
-    body = Match.action_only(g, scope=SCOPE.REGISTER, action=ACTION.REGISTERBODY)\
+    body = Match.action_only(g, scope=SCOPE.REGISTER, action=PolicyAction.REGISTERBODY)\
         .action_values(unique=True)
     body = body or DEFAULT_BODY
     email_sent = send_email_identifier(

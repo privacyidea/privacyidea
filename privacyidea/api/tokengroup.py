@@ -22,7 +22,7 @@ from .lib.utils import (getParam, send_result)
 from ..lib.log import log_with
 from privacyidea.lib.tokengroup import get_tokengroups, set_tokengroup, delete_tokengroup
 from privacyidea.lib.event import event
-from privacyidea.lib.policy import ACTION
+from ..lib.policies.actions import PolicyAction
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
 
 from flask import g
@@ -34,7 +34,7 @@ tokengroup_blueprint = Blueprint('tokengroup_blueprint', __name__)
 
 
 @tokengroup_blueprint.route('/<groupname>', methods=['POST'])
-@prepolicy(check_base_action, request, ACTION.TOKENGROUP_ADD)
+@prepolicy(check_base_action, request, PolicyAction.TOKENGROUP_ADD)
 @event("tokengroup_add", request, g)
 @log_with(log)
 def set_tokengroup_api(groupname):
@@ -91,7 +91,7 @@ def set_tokengroup_api(groupname):
 
 @tokengroup_blueprint.route('/<groupname>', methods=['GET'])
 @tokengroup_blueprint.route('/', methods=['GET'])
-@prepolicy(check_base_action, request, ACTION.TOKENGROUP_LIST)
+@prepolicy(check_base_action, request, PolicyAction.TOKENGROUP_LIST)
 @event("tokengroup_list", request, g)
 @log_with(log)
 def get_tokengroup_api(groupname=None):
@@ -142,7 +142,7 @@ def get_tokengroup_api(groupname=None):
 
 
 @tokengroup_blueprint.route('/<groupname>', methods=['DELETE'])
-@prepolicy(check_base_action, request, ACTION.TOKENGROUP_DELETE)
+@prepolicy(check_base_action, request, PolicyAction.TOKENGROUP_DELETE)
 @event("tokengroup_delete", request, g)
 @log_with(log)
 def delete_tokengroup_api(groupname=None):

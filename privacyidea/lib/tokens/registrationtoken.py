@@ -32,7 +32,8 @@ from privacyidea.lib.tokens.passwordtoken import PasswordTokenClass
 from privacyidea.lib.log import log_with
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib import _
-from privacyidea.lib.policy import SCOPE, ACTION, GROUP
+from privacyidea.lib.policy import SCOPE, GROUP
+from privacyidea.lib.policies.actions import PolicyAction
 
 # We use the old default length of 24 for registration tokens
 DEFAULT_LENGTH = 24
@@ -134,12 +135,12 @@ class RegistrationTokenClass(PasswordTokenClass):
                'ui_enroll': ["admin"],
                'policy': {
                    SCOPE.ENROLL: {
-                       ACTION.MAXTOKENUSER: {
+                       PolicyAction.MAXTOKENUSER: {
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of registration tokens assigned."),
                            'group': GROUP.TOKEN
                        },
-                       ACTION.MAXACTIVETOKENUSER: {
+                       PolicyAction.MAXACTIVETOKENUSER: {
                            'type': 'int',
                            'desc': _(
                                "The user may only have this maximum number of active registration tokens assigned."),

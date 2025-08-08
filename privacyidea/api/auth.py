@@ -49,6 +49,8 @@ from flask import (Blueprint, request, current_app, g)
 import jwt
 from functools import wraps
 from datetime import (datetime, timezone)
+
+from privacyidea.api.lib.policyhelper import check_last_auth_policy
 from privacyidea.lib.error import AuthError, ERROR
 from privacyidea.lib.crypto import geturandom, init_hsm
 from privacyidea.lib.audit import getAudit
@@ -58,7 +60,7 @@ from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.fido2.challenge import verify_fido2_challenge
 from privacyidea.lib.fido2.util import get_fido2_token_by_credential_id
-from privacyidea.lib.policies.policy_helper import get_jwt_validity
+from privacyidea.lib.policies.helper import get_jwt_validity
 from privacyidea.lib.user import User, split_user, log_used_user
 from privacyidea.lib.policy import PolicyClass, REMOTE_USER
 from privacyidea.lib.realm import get_default_realm, realm_is_defined
@@ -260,8 +262,14 @@ def get_auth_token():
             raise AuthError(_("Authentication failure. Token has no user."),
                             id=ERROR.AUTHENTICATE_MISSING_USERNAME)
         if token.get_type() in request.all_data.get("disabled_token_types", []):
-            raise AuthError(_(f"Authentication failure. The token type {token.get_type()} is disabled."),
+            raise AuthError(_("Authentication failure. The token type {token_type} is disabled.").format(token.get_type()),
                             id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS)
+        if not check_last_auth_policy(g, token):
+            log.debug(f"Last authentication policy check failed for token {token.get_serial()}.")
+            raise AuthError(
+                _("Authentication failure. Last authentication policy check failed for token {serial}").format(
+                    serial=token.get_serial()), id=ERROR.AUTHENTICATE_MISSING_RIGHT)
+
         # TODO For the WebUI login, always require user_verification so that it is a 2FA
         request.all_data.update({FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: "required"})
         passkey_login_success = verify_fido2_challenge(transaction_id, token, request.all_data) > 0

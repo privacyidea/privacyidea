@@ -16,15 +16,15 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import logging
 import functools
+import logging
 
 from privacyidea.api.lib.utils import get_optional_one_of, get_optional
-from privacyidea.lib.challenge import cancel_enrollment_via_multichallenge
-from privacyidea.lib.error import TokenAdminError
-from privacyidea.lib.error import ParameterError
 from privacyidea.lib import _
+from privacyidea.lib.error import ParameterError
+from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.utils import check_serial_valid
+
 log = logging.getLogger(__name__)
 
 

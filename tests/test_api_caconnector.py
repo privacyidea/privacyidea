@@ -4,7 +4,8 @@ to create, update, delete CA connectors.
 """
 from .base import MyApiTestCase
 from privacyidea.lib.caconnector import get_caconnector_list
-from privacyidea.lib.policy import set_policy, SCOPE, ACTION
+from privacyidea.lib.policy import set_policy, SCOPE
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.error import ERROR
 
 
@@ -164,7 +165,7 @@ class CAConnectorTestCase(MyApiTestCase):
                           result['error']['message'])
 
         # We should get the same error message if a USER policy is defined.
-        set_policy("user", scope=SCOPE.USER, action=ACTION.AUDIT, realm="")
+        set_policy("user", scope=SCOPE.USER, action=PolicyAction.AUDIT, realm="")
         with self.app.test_request_context('/caconnector/con1',
                                            data={},
                                            method='DELETE',

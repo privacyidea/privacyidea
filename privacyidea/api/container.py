@@ -51,7 +51,7 @@ from privacyidea.lib.containers.container_states import ContainerStates
 from privacyidea.lib.error import ParameterError, ContainerNotRegistered
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
-from privacyidea.lib.policy import ACTION
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.token import regenerate_enroll_url
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.utils import is_true
@@ -65,9 +65,9 @@ API for managing token containers
 
 
 @container_blueprint.route('/', methods=['GET'])
-@prepolicy(check_base_action, request, action=ACTION.CONTAINER_LIST)
-@prepolicy(check_admin_tokenlist, request, ACTION.CONTAINER_LIST)
-@prepolicy(check_admin_tokenlist, request, ACTION.TOKENLIST)
+@prepolicy(check_base_action, request, action=PolicyAction.CONTAINER_LIST)
+@prepolicy(check_admin_tokenlist, request, PolicyAction.CONTAINER_LIST)
+@prepolicy(check_admin_tokenlist, request, PolicyAction.TOKENLIST)
 @prepolicy(hide_container_info, request)
 @prepolicy(hide_tokeninfo, request)
 @log_with(log)
@@ -149,8 +149,8 @@ def list_containers():
 
 
 @container_blueprint.route('<string:container_serial>/assign', methods=['POST'])
-@prepolicy(check_user_params, request, action=ACTION.CONTAINER_ASSIGN_USER)
-@prepolicy(check_container_action, request, action=ACTION.CONTAINER_ASSIGN_USER)
+@prepolicy(check_user_params, request, action=PolicyAction.CONTAINER_ASSIGN_USER)
+@prepolicy(check_container_action, request, action=PolicyAction.CONTAINER_ASSIGN_USER)
 @event('container_assign', request, g)
 @log_with(log)
 def assign(container_serial):
@@ -173,8 +173,8 @@ def assign(container_serial):
 
 
 @container_blueprint.route('<string:container_serial>/unassign', methods=['POST'])
-@prepolicy(check_user_params, request, action=ACTION.CONTAINER_UNASSIGN_USER)
-@prepolicy(check_container_action, request, action=ACTION.CONTAINER_UNASSIGN_USER)
+@prepolicy(check_user_params, request, action=PolicyAction.CONTAINER_UNASSIGN_USER)
+@prepolicy(check_container_action, request, action=PolicyAction.CONTAINER_UNASSIGN_USER)
 @event('container_unassign', request, g)
 @log_with(log)
 def unassign(container_serial):
@@ -211,8 +211,8 @@ def unassign(container_serial):
 
 
 @container_blueprint.route('init', methods=['POST'])
-@prepolicy(check_admin_tokenlist, request, action=ACTION.CONTAINER_CREATE)
-@prepolicy(check_container_action, request, action=ACTION.CONTAINER_CREATE)
+@prepolicy(check_admin_tokenlist, request, action=PolicyAction.CONTAINER_CREATE)
+@prepolicy(check_container_action, request, action=PolicyAction.CONTAINER_CREATE)
 @event('container_init', request, g)
 @log_with(log)
 def init():
@@ -267,7 +267,7 @@ def init():
 
 
 @container_blueprint.route('<string:container_serial>', methods=['DELETE'])
-@prepolicy(check_container_action, request, action=ACTION.CONTAINER_DELETE)
+@prepolicy(check_container_action, request, action=PolicyAction.CONTAINER_DELETE)
 @event('container_delete', request, g)
 @log_with(log)
 def delete(container_serial):
@@ -295,8 +295,8 @@ def delete(container_serial):
 
 
 @container_blueprint.route('<string:container_serial>/add', methods=['POST'])
-@prepolicy(check_container_action, request, action=ACTION.CONTAINER_ADD_TOKEN)
-@prepolicy(check_token_action, request, action=ACTION.CONTAINER_ADD_TOKEN)
+@prepolicy(check_container_action, request, action=PolicyAction.CONTAINER_ADD_TOKEN)
+@prepolicy(check_token_action, request, action=PolicyAction.CONTAINER_ADD_TOKEN)
 @event('container_add_token', request, g)
 @log_with(log)
 def add_token(container_serial):
@@ -326,8 +326,8 @@ def add_token(container_serial):
 
 
 @container_blueprint.route('<string:container_serial>/addall', methods=['POST'])
-@prepolicy(check_container_action, request, action=ACTION.CONTAINER_ADD_TOKEN)
-@prepolicy(check_token_list_action, request, action=ACTION.CONTAINER_ADD_TOKEN)
+@prepolicy(check_container_action, request, action=PolicyAction.CONTAINER_ADD_TOKEN)
+@prepolicy(check_token_list_action, request, action=PolicyAction.CONTAINER_ADD_TOKEN)
 @event('container_add_token', request, g)
 @log_with(log)
 def add_all_tokens(container_serial):
@@ -364,8 +364,8 @@ def add_all_tokens(container_serial):
 
 
 @container_blueprint.route('<string:container_serial>/remove', methods=['POST'])
-@prepolicy(check_container_action, request, action=ACTION.CONTAINER_REMOVE_TOKEN)
-@prepolicy(check_token_action, request, action=ACTION.CONTAINER_REMOVE_TOKEN)
+@prepolicy(check_container_action, request, action=PolicyAction.CONTAINER_REMOVE_TOKEN)
+@prepolicy(check_token_action, request, action=PolicyAction.CONTAINER_REMOVE_TOKEN)
 @event('container_remove_token', request, g)
 @log_with(log)
 def remove_token(container_serial):
@@ -395,8 +395,8 @@ def remove_token(container_serial):
 
 
 @container_blueprint.route('<string:container_serial>/removeall', methods=['POST'])
-@prepolicy(check_container_action, request, action=ACTION.CONTAINER_REMOVE_TOKEN)
-@prepolicy(check_token_list_action, request, action=ACTION.CONTAINER_REMOVE_TOKEN)
+@prepolicy(check_container_action, request, action=PolicyAction.CONTAINER_REMOVE_TOKEN)
+@prepolicy(check_token_list_action, request, action=PolicyAction.CONTAINER_REMOVE_TOKEN)
 @event('container_remove_token', request, g)
 @log_with(log)
 def remove_all_tokens(container_serial):
@@ -455,7 +455,7 @@ def get_types():
 
 
 @container_blueprint.route('<string:container_serial>/description', methods=['POST'])
-@prepolicy(check_container_action, request, action=ACTION.CONTAINER_DESCRIPTION)
+@prepolicy(check_container_action, request, action=PolicyAction.CONTAINER_DESCRIPTION)
 @event('container_set_description', request, g)
 @log_with(log)
 def set_description(container_serial):
@@ -484,7 +484,7 @@ def set_description(container_serial):
 
 
 @container_blueprint.route('<string:container_serial>/states', methods=['POST'])
-@prepolicy(check_container_action, request, action=ACTION.CONTAINER_STATE)
+@prepolicy(check_container_action, request, action=PolicyAction.CONTAINER_STATE)
 @event('container_set_states', request, g)
 @log_with(log)
 def set_states(container_serial):
@@ -537,8 +537,8 @@ def get_state_types():
 
 @container_blueprint.route('<string:container_serial>/realms', methods=['POST'])
 @admin_required
-@prepolicy(check_admin_tokenlist, request, action=ACTION.CONTAINER_REALMS)
-@prepolicy(check_container_action, request, action=ACTION.CONTAINER_REALMS)
+@prepolicy(check_admin_tokenlist, request, action=PolicyAction.CONTAINER_REALMS)
+@prepolicy(check_container_action, request, action=PolicyAction.CONTAINER_REALMS)
 @event('container_set_realms', request, g)
 @log_with(log)
 def set_realms(container_serial):
@@ -577,7 +577,7 @@ def set_realms(container_serial):
 
 @container_blueprint.route('<string:container_serial>/info/<key>', methods=['POST'])
 @admin_required
-@prepolicy(check_container_action, request, action=ACTION.CONTAINER_INFO)
+@prepolicy(check_container_action, request, action=PolicyAction.CONTAINER_INFO)
 @log_with(log)
 def set_container_info(container_serial, key):
     """
@@ -601,7 +601,7 @@ def set_container_info(container_serial, key):
 
 @container_blueprint.route('<string:container_serial>/info/delete/<key>', methods=['DELETE'])
 @admin_required
-@prepolicy(check_container_action, request, action=ACTION.CONTAINER_INFO)
+@prepolicy(check_container_action, request, action=PolicyAction.CONTAINER_INFO)
 @log_with(log)
 def delete_container_info_entry(container_serial, key):
     """
@@ -709,7 +709,7 @@ def registration_finalize():
 
 
 @container_blueprint.route('register/<string:container_serial>/terminate', methods=['POST'])
-@prepolicy(check_container_action, request, action=ACTION.CONTAINER_UNREGISTER)
+@prepolicy(check_container_action, request, action=PolicyAction.CONTAINER_UNREGISTER)
 @event('container_unregister', request, g)
 @log_with(log)
 def registration_terminate(container_serial: str):
@@ -735,7 +735,7 @@ def registration_terminate(container_serial: str):
 
 
 @container_blueprint.route('register/terminate/client', methods=['POST'])
-@prepolicy(check_client_container_disabled_action, request, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER)
+@prepolicy(check_client_container_disabled_action, request, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER)
 @event('container_unregister', request, g)
 @log_with(log)
 def registration_terminate_client():
@@ -897,7 +897,7 @@ def synchronize():
 
     # 2nd synchronization step: Validate challenge and get container diff between client and server
     container.check_challenge_response(params)
-    initially_add_tokens = request.all_data.get("client_policies").get(ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER)
+    initially_add_tokens = request.all_data.get("client_policies").get(PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER)
     container_dict = container.synchronize_container_details(container_client, initially_add_tokens)
 
     # Write token serials to audit log
@@ -949,7 +949,7 @@ def synchronize():
 
 
 @container_blueprint.route('/rollover', methods=['POST'])
-@prepolicy(check_client_container_action, request, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+@prepolicy(check_client_container_action, request, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER)
 @prepolicy(container_registration_config, request)
 @event('container_init_rollover', request, g)
 def rollover():
@@ -1011,7 +1011,7 @@ def rollover():
 
 # TEMPLATES
 @container_blueprint.route('/templates', methods=['GET'])
-@prepolicy(check_base_action, request, action=ACTION.CONTAINER_TEMPLATE_LIST)
+@prepolicy(check_base_action, request, action=PolicyAction.CONTAINER_TEMPLATE_LIST)
 @log_with(log)
 def get_template():
     """
@@ -1058,7 +1058,7 @@ def get_template():
 
 
 @container_blueprint.route('<string:container_type>/template/<string:template_name>', methods=['POST'])
-@prepolicy(check_base_action, request, action=ACTION.CONTAINER_TEMPLATE_CREATE)
+@prepolicy(check_base_action, request, action=PolicyAction.CONTAINER_TEMPLATE_CREATE)
 @log_with(log)
 def create_template_with_name(container_type, template_name):
     """
@@ -1114,7 +1114,7 @@ def create_template_with_name(container_type, template_name):
 
 
 @container_blueprint.route('template/<string:template_name>', methods=['DELETE'])
-@prepolicy(check_base_action, request, action=ACTION.CONTAINER_TEMPLATE_DELETE)
+@prepolicy(check_base_action, request, action=PolicyAction.CONTAINER_TEMPLATE_DELETE)
 @log_with(log)
 def delete_template(template_name):
     """
@@ -1136,9 +1136,9 @@ def delete_template(template_name):
 
 
 @container_blueprint.route('template/<string:template_name>/compare', methods=['GET'])
-@prepolicy(check_base_action, request, action=ACTION.CONTAINER_TEMPLATE_LIST)
-@prepolicy(check_base_action, request, action=ACTION.CONTAINER_LIST)
-@prepolicy(check_admin_tokenlist, request, action=ACTION.CONTAINER_LIST)
+@prepolicy(check_base_action, request, action=PolicyAction.CONTAINER_TEMPLATE_LIST)
+@prepolicy(check_base_action, request, action=PolicyAction.CONTAINER_LIST)
+@prepolicy(check_admin_tokenlist, request, action=PolicyAction.CONTAINER_LIST)
 @log_with(log)
 def compare_template_with_containers(template_name):
     """

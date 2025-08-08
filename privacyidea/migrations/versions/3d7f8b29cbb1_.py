@@ -16,7 +16,8 @@ import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import orm
 from sqlalchemy.schema import Sequence
-from privacyidea.lib.policy import SCOPE, ACTION
+from privacyidea.lib.policy import SCOPE
+from privacyidea.lib.policies.actions import PolicyAction
 
 Base = declarative_base()
 
@@ -57,17 +58,17 @@ class Policy(Base):
 
 def upgrade():
     """
-    During upgrade we check, if admin policies exist.
+    During upgrade, we check if admin policies exist.
     If so, we add a generic policy for all admins, that allows to
-    read all configuration, which mimicks the previous behaviour
+    read all configuration, which mimics the previous behaviour
     :return:
     """
-    actions = u",".join([ACTION.PERIODICTASKREAD, ACTION.MACHINERESOLVERREAD,
-                         ACTION.PRIVACYIDEASERVERREAD, ACTION.RADIUSSERVERREAD,
-                         ACTION.SMTPSERVERREAD, ACTION.EVENTHANDLINGREAD,
-                         ACTION.POLICYREAD, ACTION.RESOLVERREAD,
-                         ACTION.CACONNECTORREAD, ACTION.SMSGATEWAYREAD,
-                         ACTION.STATISTICSREAD, ACTION.SYSTEMREAD])
+    actions = u",".join([PolicyAction.PERIODICTASKREAD, PolicyAction.MACHINERESOLVERREAD,
+                         PolicyAction.PRIVACYIDEASERVERREAD, PolicyAction.RADIUSSERVERREAD,
+                         PolicyAction.SMTPSERVERREAD, PolicyAction.EVENTHANDLINGREAD,
+                         PolicyAction.POLICYREAD, PolicyAction.RESOLVERREAD,
+                         PolicyAction.CACONNECTORREAD, PolicyAction.SMSGATEWAYREAD,
+                         PolicyAction.STATISTICSREAD, PolicyAction.SYSTEMREAD])
 
     bind = op.get_bind()
     session = orm.Session(bind=bind)

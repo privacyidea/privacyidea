@@ -22,8 +22,8 @@ from mock import mock
 import os
 from sqlalchemy import func
 
-from privacyidea.lib.policies.policy_conditions import (PolicyConditionClass, ConditionSection,
-                                                        ConditionHandleMissingData)
+from privacyidea.lib.policies.conditions import (PolicyConditionClass, ConditionSection,
+                                                 ConditionHandleMissingData)
 from privacyidea.lib.policy import set_policy_conditions
 from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import (Token,

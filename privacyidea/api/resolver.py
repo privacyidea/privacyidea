@@ -38,7 +38,7 @@ from ..lib.resolver import get_resolver_list, save_resolver, delete_resolver, pr
 from flask import g
 import logging
 from ..api.lib.prepolicy import prepolicy, check_base_action
-from ..lib.policy import ACTION
+from ..lib.policies.actions import PolicyAction
 from ..lib.utils import is_true
 
 log = logging.getLogger(__name__)
@@ -50,7 +50,7 @@ resolver_blueprint = Blueprint('resolver_blueprint', __name__)
 @resolver_blueprint.route('/', methods=['GET'])
 @resolver_blueprint.route('/<resolver>', methods=['GET'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.RESOLVERREAD)
+@prepolicy(check_base_action, request, PolicyAction.RESOLVERREAD)
 def get_resolvers(resolver=None):
     """
     returns a json list of the specified resolvers.
@@ -83,7 +83,7 @@ def get_resolvers(resolver=None):
 
 @resolver_blueprint.route('/<resolver>', methods=['POST'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.RESOLVERWRITE)
+@prepolicy(check_base_action, request, PolicyAction.RESOLVERWRITE)
 def set_resolver(resolver=None):
     """
     This creates a new resolver or updates an existing one.
@@ -151,7 +151,7 @@ def set_resolver(resolver=None):
 
 @resolver_blueprint.route('/<resolver>', methods=['DELETE'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.RESOLVERDELETE)
+@prepolicy(check_base_action, request, PolicyAction.RESOLVERDELETE)
 def delete_resolver_api(resolver=None):
     """
     This function deletes an existing resolver.
@@ -169,7 +169,7 @@ def delete_resolver_api(resolver=None):
 
 @resolver_blueprint.route('/test', methods=["POST"])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.RESOLVERWRITE)
+@prepolicy(check_base_action, request, PolicyAction.RESOLVERWRITE)
 def test_resolver():
     """
     Send the complete parameters of a resolver to the privacyIDEA server

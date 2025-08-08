@@ -22,7 +22,7 @@ from .lib.utils import (getParam, send_result)
 from ..lib.log import log_with
 from privacyidea.lib.serviceid import get_serviceids, delete_serviceid, set_serviceid
 from privacyidea.lib.event import event
-from privacyidea.lib.policy import ACTION
+from ..lib.policies.actions import PolicyAction
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
 
 from flask import g
@@ -36,7 +36,7 @@ serviceid_blueprint = Blueprint('serviceid_blueprint', __name__)
 
 
 @serviceid_blueprint.route('/<name>', methods=['POST'])
-@prepolicy(check_base_action, request, ACTION.SERVICEID_ADD)
+@prepolicy(check_base_action, request, PolicyAction.SERVICEID_ADD)
 @event("serviceid_add", request, g)
 @log_with(log)
 def set_serviceid_api(name):
@@ -93,7 +93,7 @@ def set_serviceid_api(name):
 
 @serviceid_blueprint.route('/<name>', methods=['GET'])
 @serviceid_blueprint.route('/', methods=['GET'])
-@prepolicy(check_base_action, request, ACTION.SERVICEID_LIST)
+@prepolicy(check_base_action, request, PolicyAction.SERVICEID_LIST)
 @event("serviceid_list", request, g)
 @log_with(log)
 def get_serviceid_api(name=None):
@@ -144,7 +144,7 @@ def get_serviceid_api(name=None):
 
 
 @serviceid_blueprint.route('/<name>', methods=['DELETE'])
-@prepolicy(check_base_action, request, ACTION.SERVICEID_DELETE)
+@prepolicy(check_base_action, request, PolicyAction.SERVICEID_DELETE)
 @event("serviceid_delete", request, g)
 @log_with(log)
 def delete_serviceid_api(name=None):

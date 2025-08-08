@@ -1641,7 +1641,7 @@ def get_offline_token_serials(container: TokenContainerClass) -> list[str]:
     return offline_serials
 
 
-def check_container_challenge(transaction_id: str):
+def check_container_challenge(transaction_id: str) -> dict:
     """
     Check if the challenge for the given transaction_id belongs to a container.
     If this is the case it checks if the challenge is valid and was already answered. Then it deletes the challenge

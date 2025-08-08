@@ -5,7 +5,8 @@ implementation is contained webui/login.py
 """
 from flask_babel import refresh
 from .base import MyTestCase, MyApiTestCase
-from privacyidea.lib.policy import set_policy, SCOPE, ACTION, PolicyClass, delete_all_policies
+from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass, delete_all_policies
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.utils import to_unicode
 import re
 from privacyidea.app import create_app
@@ -58,7 +59,7 @@ class LoginUITestCase(MyTestCase):
 
     def test_03_realm_dropdown(self):
         set_policy("realmdrop", scope=SCOPE.WEBUI,
-                   action="{0!s}=Hello World".format(ACTION.REALMDROPDOWN))
+                   action="{0!s}=Hello World".format(PolicyAction.REALMDROPDOWN))
         with self.app.test_request_context('/', method='GET'):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -68,9 +69,9 @@ class LoginUITestCase(MyTestCase):
     def test_04_custom_menu_baseline(self):
         # We provide a non-existing file, so we can not read "privacyIDEA" in the footer.
         set_policy("custom1", scope=SCOPE.WEBUI,
-                   action="{0!s}=mytemplates/nonexist_base.html".format(ACTION.CUSTOM_BASELINE))
+                   action="{0!s}=mytemplates/nonexist_base.html".format(PolicyAction.CUSTOM_BASELINE))
         set_policy("custom2", scope=SCOPE.WEBUI,
-                   action="{0!s}=mytemplates/nonexist_menu.html".format(ACTION.CUSTOM_MENU))
+                   action="{0!s}=mytemplates/nonexist_menu.html".format(PolicyAction.CUSTOM_MENU))
 
         with self.app.test_request_context('/',
                                            method='GET'):
@@ -81,7 +82,7 @@ class LoginUITestCase(MyTestCase):
 
     def test_05_custom_login_text(self):
         set_policy("logtext", scope=SCOPE.WEBUI,
-                   action="{0!s}=Go for it!".format(ACTION.LOGIN_TEXT))
+                   action="{0!s}=Go for it!".format(PolicyAction.LOGIN_TEXT))
         with self.app.test_request_context('/',
                                            method='GET'):
             res = self.app.full_dispatch_request()
@@ -101,7 +102,7 @@ class LoginUITestCase(MyTestCase):
 
         # test login with remote_user policy set
         set_policy("remote_user", scope=SCOPE.WEBUI,
-                   action="{0!s}=allowed".format(ACTION.REMOTE_USER))
+                   action="{0!s}=allowed".format(PolicyAction.REMOTE_USER))
         with self.app.test_request_context('/',
                                            method='GET',
                                            environ_base={'REMOTE_USER': 'foo'}):
@@ -111,7 +112,7 @@ class LoginUITestCase(MyTestCase):
 
     def test_07_privacy_statement_link(self):
         set_policy("gdpr_link", scope=SCOPE.WEBUI,
-                   action="{0!s}=https://privacyidea.org/".format(ACTION.GDPR_LINK))
+                   action="{0!s}=https://privacyidea.org/".format(PolicyAction.GDPR_LINK))
         with self.app.test_request_context('/',
                                            method='GET'):
             res = self.app.full_dispatch_request()

@@ -7,8 +7,8 @@ from privacyidea.lib.crypto import get_rand_digit_str
 from .base import MyTestCase
 from privacyidea.lib.challenge import (get_challenges, extract_answered_challenges, delete_challenges,
                                        cancel_enrollment_via_multichallenge)
-from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE,
-                                    ACTION)
+from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE)
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.models import Challenge, db
 from privacyidea.lib.token import init_token, check_serial_pass
 from privacyidea.lib import _
@@ -21,7 +21,7 @@ class ChallengeTestCase(MyTestCase):
 
     def test_01_challenge(self):
 
-        set_policy("chalresp", scope=SCOPE.AUTH, action=f"{ACTION.CHALLENGERESPONSE}=hotp")
+        set_policy("chalresp", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
         token = init_token({"genkey": 1, "serial": "CHAL1", "pin": "pin"})
 
         r = check_serial_pass(token.token.serial, "pin")
@@ -132,7 +132,7 @@ class ChallengeTestCase(MyTestCase):
         # Challenge without action ENROLL_VIA_MULTICHALLENGE_OPTIONAL can not be confirmed to be cancellable
         c1 = Challenge(serial="test1", transaction_id=transaction_id, data={
             "type": "token",
-            ACTION.ENROLL_VIA_MULTICHALLENGE: True
+            PolicyAction.ENROLL_VIA_MULTICHALLENGE: True
         })
         c1.save()
         ret = cancel_enrollment_via_multichallenge(transaction_id=transaction_id)
@@ -142,8 +142,8 @@ class ChallengeTestCase(MyTestCase):
         # Trying to cancel an enrollment which has optional=False will not cancel the enrollment
         c1 = Challenge(serial="test1", transaction_id=transaction_id, data={
             "type": "token",
-            ACTION.ENROLL_VIA_MULTICHALLENGE: True,
-            ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL: False
+            PolicyAction.ENROLL_VIA_MULTICHALLENGE: True,
+            PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL: False
         })
         c1.save()
         ret = cancel_enrollment_via_multichallenge(transaction_id=transaction_id)

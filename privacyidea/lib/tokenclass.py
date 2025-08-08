@@ -87,9 +87,9 @@ from dateutil.tz import tzlocal, tzutc
 from flask_babel import lazy_gettext
 
 from privacyidea.lib import _
-from privacyidea.lib.crypto import (encryptPassword, decryptPassword,
+from privacyidea.lib.crypto import (decryptPassword,
                                     generate_otpkey)
-from privacyidea.lib.policy import (get_action_values_from_options, SCOPE, ACTION)
+from .policies.actions import PolicyAction
 from privacyidea.lib.utils import (is_true, decode_base32check,
                                    to_unicode, create_img, parse_timedelta,
                                    parse_legacy_time, split_pin_pass)
@@ -1685,10 +1685,7 @@ class TokenClass(object):
         additional challenge ``reply_dict``, which are displayed in the JSON challenges response.
         """
         options = options or {}
-        message = get_action_values_from_options(SCOPE.AUTH,
-                                                 ACTION.CHALLENGETEXT,
-                                                 options) or _('please enter otp: ')
-        message = message.replace(r"\,", ",")
+        message = options.get(PolicyAction.CHALLENGETEXT, _('please enter otp: ')).replace(r"\,", ",")
 
         data = None
         reply_dict = {}
@@ -1821,7 +1818,7 @@ class TokenClass(object):
         tdelta = parse_timedelta(last_auth)
 
         # The last successful authentication of the token
-        date_s = self.get_tokeninfo(ACTION.LASTAUTH)
+        date_s = self.get_tokeninfo(PolicyAction.LASTAUTH)
         if date_s:
             log.debug("Compare the last successful authentication of "
                       "token %s with policy "

@@ -30,7 +30,7 @@ from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
 from privacyidea.api.lib.utils import send_result, getParam
 from privacyidea.lib.error import ParameterError
-from privacyidea.lib.policy import ACTION
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.log import log_with
 from privacyidea.lib.periodictask import get_periodic_tasks, set_periodic_task, delete_periodic_task, \
     enable_periodic_task, get_periodic_task_by_id, get_taskmodule, get_available_taskmodules
@@ -93,7 +93,7 @@ def get_taskmodule_options(taskmodule):
 
 @periodictask_blueprint.route('/', methods=['GET'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.PERIODICTASKREAD)
+@prepolicy(check_base_action, request, PolicyAction.PERIODICTASKREAD)
 def list_periodic_tasks():
     """
     Return a list of objects of defined periodic tasks.
@@ -106,7 +106,7 @@ def list_periodic_tasks():
 
 @periodictask_blueprint.route('/<ptaskid>', methods=['GET'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.PERIODICTASKREAD)
+@prepolicy(check_base_action, request, PolicyAction.PERIODICTASKREAD)
 def get_periodic_task_api(ptaskid):
     """
     Return the dictionary describing a periodic task.
@@ -119,7 +119,7 @@ def get_periodic_task_api(ptaskid):
 
 
 @periodictask_blueprint.route('/', methods=['POST'])
-@prepolicy(check_base_action, request, ACTION.PERIODICTASKWRITE)
+@prepolicy(check_base_action, request, PolicyAction.PERIODICTASKWRITE)
 @log_with(log)
 def set_periodic_task_api():
     """
@@ -167,7 +167,7 @@ def set_periodic_task_api():
 
 
 @periodictask_blueprint.route('/enable/<ptaskid>', methods=['POST'])
-@prepolicy(check_base_action, request, ACTION.PERIODICTASKWRITE)
+@prepolicy(check_base_action, request, PolicyAction.PERIODICTASKWRITE)
 @log_with(log)
 def enable_periodic_task_api(ptaskid):
     """
@@ -182,7 +182,7 @@ def enable_periodic_task_api(ptaskid):
 
 
 @periodictask_blueprint.route('/disable/<ptaskid>', methods=['POST'])
-@prepolicy(check_base_action, request, ACTION.PERIODICTASKWRITE)
+@prepolicy(check_base_action, request, PolicyAction.PERIODICTASKWRITE)
 @log_with(log)
 def disable_periodic_task_api(ptaskid):
     """
@@ -197,7 +197,7 @@ def disable_periodic_task_api(ptaskid):
 
 
 @periodictask_blueprint.route('/<ptaskid>', methods=['DELETE'])
-@prepolicy(check_base_action, request, ACTION.PERIODICTASKWRITE)
+@prepolicy(check_base_action, request, PolicyAction.PERIODICTASKWRITE)
 @log_with(log)
 def delete_periodic_task_api(ptaskid):
     """

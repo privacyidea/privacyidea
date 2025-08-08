@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 from .base import MyApiTestCase
 from urllib.parse import urlencode, quote
-from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, ACTION
+from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
+from privacyidea.lib.policies.actions import PolicyAction
 import mock
 
 
@@ -36,7 +37,7 @@ class RSSTest(MyApiTestCase):
 
     def test_03_custom_rssfeeds_success(self):
         set_policy("rssfeed", scope=SCOPE.WEBUI,
-                   action={ACTION.RSS_FEEDS: "'Community News':'https://community.privacyidea.org/c/news.rss'-"
+                   action={PolicyAction.RSS_FEEDS: "'Community News':'https://community.privacyidea.org/c/news.rss'-"
                                              "'privacyIDEA News':'https://privacyidea.org/feed'"})
 
         with self.app.test_request_context('/info/rss', method='GET', headers={'Authorization': self.at}):
@@ -54,7 +55,7 @@ class RSSTest(MyApiTestCase):
 
     def test_04_custom_rssfeeds_fail(self):
         # Wrong policy (wrong separator)
-        action = {ACTION.RSS_FEEDS: "'Community News': 'https://community.privacyidea.org/c/news.rss', "
+        action = {PolicyAction.RSS_FEEDS: "'Community News': 'https://community.privacyidea.org/c/news.rss', "
                                     "'privacyIDEA News':'https://privacyidea.org/feed'"}
 
         set_policy("rssfeed", scope=SCOPE.WEBUI, action=action)

@@ -47,7 +47,8 @@ from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
 from privacyidea.lib.fido2.util import hash_credential_id, save_credential_id_hash
 from privacyidea.lib.log import log_with
-from privacyidea.lib.policy import ACTION, SCOPE
+from privacyidea.lib.policy import SCOPE
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE, CLIENTMODE, AUTHENTICATIONMODE
 from privacyidea.models import Challenge
 
@@ -97,7 +98,7 @@ class PasskeyTokenClass(TokenClass):
             'ui_enroll': ["admin", "user"],
             'policy': {
                 SCOPE.AUTH: {
-                    ACTION.CHALLENGETEXT: {
+                    PolicyAction.CHALLENGETEXT: {
                         'type': 'str',
                         'desc': _("Alternative challenge message to use when authenticating with a passkey."
                                   "You can also use tags for replacement, "

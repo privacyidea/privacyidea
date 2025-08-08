@@ -31,8 +31,7 @@ from privacyidea.lib.monitoringstats import (get_stats_keys, get_values,
 from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
 from flask import g
 import logging
-from privacyidea.lib.policy import ACTION
-
+from privacyidea.lib.policies.actions import PolicyAction
 
 log = logging.getLogger(__name__)
 
@@ -43,7 +42,7 @@ monitoring_blueprint = Blueprint('monitoring_blueprint', __name__)
 @monitoring_blueprint.route('/', methods=['GET'])
 @monitoring_blueprint.route('/<stats_key>', methods=['GET'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.STATISTICSREAD)
+@prepolicy(check_base_action, request, PolicyAction.STATISTICSREAD)
 def get_statistics(stats_key=None):
     """
     return a list of all available statistics keys in the database if no *stats_key*
@@ -74,7 +73,7 @@ def get_statistics(stats_key=None):
 
 @monitoring_blueprint.route('/<stats_key>', methods=['DELETE'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.STATISTICSDELETE)
+@prepolicy(check_base_action, request, PolicyAction.STATISTICSDELETE)
 def delete_statistics(stats_key):
     """
     Delete the statistics data of a certain stats_key.
@@ -101,7 +100,7 @@ def delete_statistics(stats_key):
 
 @monitoring_blueprint.route('/<stats_key>/last', methods=['GET'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.STATISTICSREAD)
+@prepolicy(check_base_action, request, PolicyAction.STATISTICSREAD)
 def get_statistics_last(stats_key):
     """
     Get the last value of the stats key

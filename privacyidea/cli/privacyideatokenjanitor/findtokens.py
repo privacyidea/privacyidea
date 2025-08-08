@@ -49,7 +49,7 @@ from flask.cli import AppGroup
 from dateutil import parser
 from dateutil.tz import tzlocal, tzutc
 
-from privacyidea.lib.policy import ACTION
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.utils import parse_legacy_time
 from privacyidea.lib.importotp import export_pskc
 from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
@@ -149,7 +149,7 @@ def _compare_less_than(_key, given_value_string):
 
 
 def _parse_datetime(key, value):
-    if key == ACTION.LASTAUTH:
+    if key == PolicyAction.LASTAUTH:
         # Special case for last_auth: Legacy values are given in UTC time!
         last_auth = parser.parse(value)
         if not last_auth.tzinfo:

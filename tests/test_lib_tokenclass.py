@@ -8,7 +8,7 @@ from .base import MyTestCase, FakeFlaskG
 from privacyidea.lib.resolver import (save_resolver, delete_resolver)
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.user import (User)
-from privacyidea.lib.policy import ACTION
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.tokenclass import (TokenClass, DATE_FORMAT, AUTH_DATE_FORMAT)
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.crypto import geturandom
@@ -801,16 +801,16 @@ class TokenBaseTestCase(MyTestCase):
         # set last auth and check correct format
         last_auth = datetime(year=2025, month=3, day=21, hour=7, minute=24, second=12, microsecond=164578,
                              tzinfo=timezone.utc)
-        token.add_tokeninfo(ACTION.LASTAUTH, last_auth.strftime(AUTH_DATE_FORMAT))
-        self.assertEqual("2025-03-21 07:24:12.164578+0000", token.get_tokeninfo(ACTION.LASTAUTH))
+        token.add_tokeninfo(PolicyAction.LASTAUTH, last_auth.strftime(AUTH_DATE_FORMAT))
+        self.assertEqual("2025-03-21 07:24:12.164578+0000", token.get_tokeninfo(PolicyAction.LASTAUTH))
         # microseconds are also included if they are 0
         last_auth = datetime(year=2025, month=3, day=21, hour=16, minute=3, second=8, microsecond=0,
                              tzinfo=timezone.utc)
-        token.add_tokeninfo(ACTION.LASTAUTH, last_auth.strftime(AUTH_DATE_FORMAT))
-        self.assertEqual("2025-03-21 16:03:08.000000+0000", token.get_tokeninfo(ACTION.LASTAUTH))
+        token.add_tokeninfo(PolicyAction.LASTAUTH, last_auth.strftime(AUTH_DATE_FORMAT))
+        self.assertEqual("2025-03-21 16:03:08.000000+0000", token.get_tokeninfo(PolicyAction.LASTAUTH))
 
         tdelta = timedelta(days=1)
-        token.add_tokeninfo(ACTION.LASTAUTH, datetime.now(tzlocal()) - tdelta)
+        token.add_tokeninfo(PolicyAction.LASTAUTH, datetime.now(tzlocal()) - tdelta)
         r = token.check_last_auth_newer("10h")
         self.assertFalse(r)
         r = token.check_last_auth_newer("2d")
@@ -818,14 +818,14 @@ class TokenBaseTestCase(MyTestCase):
 
         # Old time format
         # lastauth_alt = datetime.utcnow().isoformat()
-        token.add_tokeninfo(ACTION.LASTAUTH, datetime.now(timezone.utc) - tdelta)
+        token.add_tokeninfo(PolicyAction.LASTAUTH, datetime.now(timezone.utc) - tdelta)
         r = token.check_last_auth_newer("10h")
         self.assertFalse(r)
         r = token.check_last_auth_newer("2d")
         self.assertTrue(r)
 
         # Test a fault last_auth entry does not compute to True
-        token.add_tokeninfo(ACTION.LASTAUTH, "faulty format")
+        token.add_tokeninfo(PolicyAction.LASTAUTH, "faulty format")
         r = token.check_last_auth_newer("10h")
         self.assertFalse(r)
 

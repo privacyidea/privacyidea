@@ -1,5 +1,6 @@
 from .base import MyApiTestCase
-from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, ACTION
+from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
+from privacyidea.lib.policies.actions import PolicyAction
 
 
 class APISmsGatewayTestCase(MyApiTestCase):
@@ -233,7 +234,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
 
     def test_05_read_write_policies(self):
         set_policy(name="pol_read", scope=SCOPE.ADMIN,
-                   action=ACTION.SMSGATEWAYREAD)
+                   action=PolicyAction.SMSGATEWAYREAD)
         # create an sms gateway configuration
         param = {
             "name": "myGW",
@@ -250,7 +251,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
 
         # Now we create a write policy, and we are allowed to write
         set_policy(name="pol_write", scope=SCOPE.ADMIN,
-                   action=ACTION.SMSGATEWAYWRITE)
+                   action=PolicyAction.SMSGATEWAYWRITE)
         with self.app.test_request_context('/smsgateway',
                                            data=param,
                                            method='POST',

@@ -56,7 +56,8 @@ from privacyidea.lib import _
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import check_node_uuid_exists
 from privacyidea.lib.error import ParameterError
-from privacyidea.lib.policy import ConditionCheck, ACTION, Match
+from privacyidea.lib.policy import ConditionCheck, Match
+from ..lib.policies.actions import PolicyAction
 import logging
 
 log = logging.getLogger(__name__)
@@ -73,7 +74,7 @@ defaultrealm_blueprint = Blueprint('defaultrealm_blueprint', __name__)
 
 @realm_blueprint.route('/<realm>', methods=['POST'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.RESOLVERWRITE)
+@prepolicy(check_base_action, request, PolicyAction.RESOLVERWRITE)
 def set_realm_api(realm=None):
     """
     This call creates a new realm or reconfigures a realm.
@@ -264,7 +265,7 @@ def get_super_user_realms():
 
 @defaultrealm_blueprint.route('/<realm>', methods=['POST'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.RESOLVERWRITE)
+@prepolicy(check_base_action, request, PolicyAction.RESOLVERWRITE)
 def set_default_realm_api(realm=None):
     """
     This call sets the default realm.
@@ -307,7 +308,7 @@ def set_default_realm_api(realm=None):
 
 @defaultrealm_blueprint.route('', methods=['DELETE'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.RESOLVERDELETE)
+@prepolicy(check_base_action, request, PolicyAction.RESOLVERDELETE)
 def delete_default_realm_api(realm=None):
     """
     This call deletes the default realm.
@@ -406,7 +407,7 @@ def get_default_realm_api():
 
 @realm_blueprint.route('/<realm>', methods=['DELETE'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.RESOLVERDELETE)
+@prepolicy(check_base_action, request, PolicyAction.RESOLVERDELETE)
 def delete_realm_api(realm=None):
     """
     This call deletes the given realm.
@@ -454,7 +455,7 @@ def delete_realm_api(realm=None):
 #  the param dict and handle them separately in the corresponding API function.
 @realm_blueprint.route('/<string:realm>/node/<string:nodeid>', methods=['POST'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.RESOLVERWRITE)
+@prepolicy(check_base_action, request, PolicyAction.RESOLVERWRITE)
 def set_realm_node_api(realm, nodeid):
     """
     This call creates or reconfigures a realm with node specific settings.
