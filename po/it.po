@@ -2,12 +2,13 @@
 # "Enrico M. V. Fasanelli" <enrico@infn.it>, 2024.
 # Paul Lettich <paul.lettich@netknights.it>, 2024, 2025.
 # Federico Cucinella <fede.cuci@gmail.com>, 2024.
+# Davide Secco <d.secco2000@gmail.com>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
-"PO-Revision-Date: 2025-04-10 22:38+0000\n"
-"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
+"PO-Revision-Date: 2025-08-08 21:02+0000\n"
+"Last-Translator: Davide Secco <d.secco2000@gmail.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/it/>\n"
 "Language: it\n"
@@ -15,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.11-dev\n"
+"X-Generator: Weblate 5.13-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -1132,9 +1133,8 @@ msgid "Create a new SQL Resolver"
 msgstr "Crea un nuovo resolver SQL"
 
 #: privacyidea/static/components/config/views/config.serviceid.edit.html:5
-#, fuzzy
 msgid "Create a new Service ID {{ params.servicename }}"
-msgstr "Crea un nuovo server SMTP {{ params.identifier }}"
+msgstr "Crea un nuovo Service ID {{ params.servicename }}"
 
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:5
 msgid "Create a new Tokengroup {{ params.groupname }}"
