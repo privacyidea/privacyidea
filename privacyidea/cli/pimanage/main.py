@@ -65,7 +65,10 @@ from .pi_config import (config_cli, ca_cli, realm_cli, resolver_cli, event_cli,
 from .api import api_cli
 from .token import token_cli
 
-CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
+CONTEXT_SETTINGS = dict(
+    help_option_names=['-h', '--help'],
+    show_default=True,
+)
 
 
 @click.group(cls=FlaskGroup, create_app=create_silent_app, context_settings=CONTEXT_SETTINGS,

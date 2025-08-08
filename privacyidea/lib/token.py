@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: (C) 2014 NetKnights GmbH <https://netknights.it>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 #  privacyIDEA is a fork of LinOTP
 #
 #  2018-12-10 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -2978,6 +2982,7 @@ def regenerate_enroll_url(serial: str, request: Request, g) -> Union[str, None]:
 def export_tokens(tokens: list[TokenClass]) -> str:
     """
     Takes a list of tokens and returns an exportable JSON string.
+
     :param tokens: list of token objects
     :return: JSON string representing a list of token dictionaries
     """
@@ -2990,6 +2995,7 @@ def export_tokens(tokens: list[TokenClass]) -> str:
 def import_tokens(tokens: str, update_existing_tokens: bool = True) -> TokenImportResult:
     """
     Import a list of token dictionaries.
+
     :param tokens: JSON string representing a list of token dictionaries
     :return: list of token objects
     """
