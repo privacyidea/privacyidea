@@ -174,8 +174,8 @@ def single_page_application():
     else:
         gdpr_link = ""
 
-    otp_pin_set_random_user = Match.action_only(g, scope=SCOPE.USER, action=ACTION.OTPPINSETRANDOM) \
-        .policies(write_to_audit_log=False)
+    otp_pin_set_random_user = Match.action_only(g, scope=SCOPE.USER, action=PolicyAction.OTPPINSETRANDOM).policies(
+        write_to_audit_log=False)
 
     render_context: dict = {
         'instance': instance,

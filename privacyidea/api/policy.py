@@ -39,6 +39,7 @@ from .lib.utils import (getParam,
                         send_result,
                         check_policy_name, send_file, get_required)
 from ..lib.log import log_with
+from ..lib.policies.actions import PolicyAction
 from ..lib.policies.conditions import ConditionHandleMissingData
 from ..lib.policy import (set_policy, rename_policy,
                           export_policies, import_policies,
