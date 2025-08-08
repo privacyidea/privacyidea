@@ -37,7 +37,7 @@ m+qnl1W6iD0z5ws/SrtWBJiMuFm3hGaXdQLZVABSqgmvaru3GZbldlQU/0pcV855
 NwIDAQAB
 -----END PUBLIC KEY-----"""
 
-non_matchin_pubkey = b"""-----BEGIN PUBLIC KEY-----
+non_matching_pubkey = b"""-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0R9Nos93gt6JdiY/Q+ac
 WuukYcwr+JlCDa+RX8UDuKfF3wVkSjwAl6s3ADrEnRIgi9qCQD52o29YEVugftVh
 HKiC+Gw5Cf95hkWKLl1MFoI6JUMDnNtPlPJrsCwLCi79TV+24BZ0v19P9ivxDa+c
@@ -49,21 +49,38 @@ WQIDAQAB
 """
 
 
-class CONFIG_KEY:
+class ConfigKey:
     SECRET_KEY = "SECRET_KEY"
-    PI_PEPPER = "PI_PEPPER"
-    PI_ENCFILE = "PI_ENCFILE"
+    PEPPER = "PI_PEPPER"
+    ENCFILE = "PI_ENCFILE"
+
     SQLALCHEMY_DATABASE_URI = "SQLALCHEMY_DATABASE_URI"
     DEV_DATABASE_URL = "DEV_DATABASE_URL"
     TEST_DATABASE_URL = "TEST_DATABASE_URL"
     DB_EXTRA_PARAMS = "DB_EXTRA_PARAMS"
-    PI_AUDIT_KEY_PRIVATE = "PI_AUDIT_KEY_PRIVATE"
-    PI_AUDIT_KEY_PUBLIC = "PI_AUDIT_KEY_PUBLIC"
-    PI_AUDIT_MODULE = "PI_AUDIT_MODULE"
-    PI_LOGLEVEL = "PI_LOGLEVEL"
-    PI_LOGCONFIG = "PI_LOGCONFIG"
+
+    AUDIT_KEY_PRIVATE = "PI_AUDIT_KEY_PRIVATE"
+    AUDIT_KEY_PUBLIC = "PI_AUDIT_KEY_PUBLIC"
+    AUDIT_MODULE = "PI_AUDIT_MODULE"
+    AUDIT_SERVERNAME = "PI_AUDIT_SERVERNAME"
+    AUDIT_SQL_TRUNCATE = "PI_AUDIT_SQL_TRUNCATE"
+    AUDIT_NO_SIGN = "PI_AUDIT_NO_SIGN"
+
+    LOGLEVEL = "PI_LOGLEVEL"
+    LOGCONFIG = "PI_LOGCONFIG"
+    LOGFILE = "PI_LOGFILE"
+
+    NODE = "PI_NODE"
+    NODE_UUID = "PI_NODE_UUID"
+    UUID_FILE = "PI_UUID_FILE"
+
+    VERBOSE = "VERBOSE"
     SUPERUSER_REALM = "SUPERUSER_REALM"
-    PI_AUDIT_SQL_TRUNCATE = "PI_AUDIT_SQL_TRUNCATE"
+    APP_READY = "APP_READY"
+    HSM_INITIALIZE = "PI_INITIALIZE_HSM"
+    CONFIG_NAME = "PI_CONFIG_NAME"
+    STATIC_FOLDER = "PI_STATIC_FOLDER"
+    TEMPLATE_FOLDER = "PI_TEMPLATE_FOLDER"
 
 
 def _random_password(size):
@@ -73,8 +90,8 @@ def _random_password(size):
     return "".join(passwd)
 
 
-class Config(object):
-    SECRET_KEY = os.environ.get(CONFIG_KEY.SECRET_KEY)
+class Config:
+    SECRET_KEY = os.environ.get(ConfigKey.SECRET_KEY)
     PI_ENCFILE = os.path.join(basedir, "tests/testdata/enckey")
     PI_HSM = "default"
     PI_AUDIT_MODULE = "privacyidea.lib.auditmodules.sqlaudit"
@@ -94,8 +111,8 @@ class Config(object):
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    SECRET_KEY = os.environ.get(CONFIG_KEY.SECRET_KEY) or 't0p s3cr3t'
-    SQLALCHEMY_DATABASE_URI = os.environ.get(CONFIG_KEY.DEV_DATABASE_URL) or \
+    SECRET_KEY = os.environ.get(ConfigKey.SECRET_KEY) or 't0p s3cr3t'
+    SQLALCHEMY_DATABASE_URI = os.environ.get(ConfigKey.DEV_DATABASE_URL) or \
         'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
     PI_LOGLEVEL = logging.DEBUG
     PI_TRANSLATION_WARNING = "[Missing]"
@@ -106,7 +123,7 @@ class TestingConfig(Config):
     # This is used to encrypt the auth token
     SUPERUSER_REALM = ['adminrealm']
     SECRET_KEY = 'secret'  # nosec B105 # used for testing
-    SQLALCHEMY_DATABASE_URI = os.environ.get(CONFIG_KEY.TEST_DATABASE_URL) or \
+    SQLALCHEMY_DATABASE_URI = os.environ.get(ConfigKey.TEST_DATABASE_URL) or \
         'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')
     # This is used to encrypt the admin passwords
     PI_PEPPER = ""
@@ -128,7 +145,7 @@ class TestingConfig(Config):
                        "realm": "realm1",
                        "username": "userA",
                        "resolver": "resolverX"},
-                      {"public_key": non_matchin_pubkey,
+                      {"public_key": non_matching_pubkey,
                        "algorithm": "RS256",
                        "role": "user",
                        "realm": "realm1",
@@ -158,7 +175,7 @@ class ProductionConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
         'sqlite:///' + os.path.join(basedir, 'data.sqlite')
     # This is used to encrypt the auth_token
-    SECRET_KEY = os.environ.get(CONFIG_KEY.SECRET_KEY) or _random_password(24)
+    SECRET_KEY = os.environ.get(ConfigKey.SECRET_KEY) or _random_password(24)
     # This is used to encrypt the admin passwords
     PI_PEPPER = "Never know..."
     # This is used to encrypt the token data and token passwords
@@ -173,13 +190,13 @@ class ProductionConfig(Config):
 class DockerConfig:
     secrets_dir = Path("/run/secrets/")
     # Try to set the database uri from the environment variables
-    if CONFIG_KEY.SQLALCHEMY_DATABASE_URI in os.environ:
-        SQLALCHEMY_DATABASE_URI = os.getenv(CONFIG_KEY.SQLALCHEMY_DATABASE_URI)
+    if ConfigKey.SQLALCHEMY_DATABASE_URI in os.environ:
+        SQLALCHEMY_DATABASE_URI = os.getenv(ConfigKey.SQLALCHEMY_DATABASE_URI)
     elif all(x in os.environ for x in ["DB_API", "DB_USER", "DB_PASSWORD", "DB_HOST", "DB_PORT", "DB_NAME"]):
         SQLALCHEMY_DATABASE_URI = ("{DB_API}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:"
                                    "{DB_PORT}/{DB_NAME}").format(**os.environ)
-        if CONFIG_KEY.DB_EXTRA_PARAMS in os.environ:
-            SQLALCHEMY_DATABASE_URI += f"?{os.getenv(CONFIG_KEY.DB_EXTRA_PARAMS)}"
+        if ConfigKey.DB_EXTRA_PARAMS in os.environ:
+            SQLALCHEMY_DATABASE_URI += f"?{os.getenv(ConfigKey.DB_EXTRA_PARAMS)}"
 
     PI_AUDIT_MODULE = "privacyidea.lib.auditmodules.sqlaudit"
     PI_AUDIT_SQL_TRUNCATE = True
@@ -195,14 +212,14 @@ class DockerConfig:
         with open(secrets_dir / "secret_key", "r") as f:
             SECRET_KEY = f.read().strip()
     except IOError as _e:
-        if CONFIG_KEY.SECRET_KEY in os.environ:
-            SECRET_KEY = os.getenv(CONFIG_KEY.SECRET_KEY)
+        if ConfigKey.SECRET_KEY in os.environ:
+            SECRET_KEY = os.getenv(ConfigKey.SECRET_KEY)
     try:
         with open(secrets_dir / "pi_pepper", "r") as f:
             PI_PEPPER = f.read().strip()
     except IOError as _e:
-        if CONFIG_KEY.PI_PEPPER in os.environ:
-            PI_PEPPER = os.getenv(CONFIG_KEY.PI_PEPPER)
+        if ConfigKey.PEPPER in os.environ:
+            PI_PEPPER = os.getenv(ConfigKey.PEPPER)
 
 
 config = {

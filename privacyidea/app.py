@@ -81,14 +81,19 @@ from privacyidea.api.serviceid import serviceid_blueprint
 from privacyidea.api.info import info_blueprint
 from privacyidea.lib import queue
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
-from privacyidea.config import config, DockerConfig, CONFIG_KEY
+from privacyidea.config import config, DockerConfig, ConfigKey
 from privacyidea.models import db, NodeName
 from privacyidea.lib.crypto import init_hsm
-
 
 ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
 
 DEFAULT_UUID_FILE = "/etc/privacyidea/uuid.txt"
+DEFAULT_NODE_NAME = "localnode"
+
+DEFAULT_STATIC_FOLDER = "static/"
+DEFAULT_TEMPLATE_FOLDER = "static/templates/"
+
+PI_CFG_PATH = "/etc/privacyidea/pi.cfg"
 
 migrate = Migrate()
 babel = Babel()
@@ -139,10 +144,10 @@ def _setup_logging(app, logging_config=DEFAULT_LOGGING_CONFIG):
     }
     have_config = False
     log_exception = None
-    log_config_file = app.config.get(CONFIG_KEY.PI_LOGCONFIG, "/etc/privacyidea/logging.cfg")
+    log_config_file = app.config.get(ConfigKey.LOGCONFIG, "/etc/privacyidea/logging.cfg")
     if os.path.isfile(log_config_file):
         for cnf_type in ['cfg', 'yaml']:
-            if app.config["VERBOSE"]:
+            if app.config[ConfigKey.VERBOSE]:
                 sys.stderr.write(f"Read Logging settings from {log_config_file}\n")
             try:
                 log_read_func[cnf_type](log_config_file)
@@ -154,28 +159,28 @@ def _setup_logging(app, logging_config=DEFAULT_LOGGING_CONFIG):
     if not have_config:
         if log_exception:
             # We tried to read the logging configuration from a given file but failed
-            sys.stderr.write(f"Could not use {CONFIG_KEY.PI_LOGCONFIG}: {log_exception}\n")
-        if app.config["VERBOSE"]:
+            sys.stderr.write(f"Could not use {ConfigKey.LOGCONFIG}: {log_exception}\n")
+        if app.config[ConfigKey.VERBOSE]:
             sys.stderr.write(f"Using logging configuration {logging_config}.\n")
         logging.config.dictConfig(logging_config)
 
 
 def _check_config(app: Flask):
-    if CONFIG_KEY.PI_ENCFILE in app.config and Path(app.config[CONFIG_KEY.PI_ENCFILE]).is_file():
+    if ConfigKey.ENCFILE in app.config and Path(app.config[ConfigKey.ENCFILE]).is_file():
         # We have a proper encryption file to work with
         pass
     else:
-        raise RuntimeError(f"'{CONFIG_KEY.PI_ENCFILE}' must be set and point to "
+        raise RuntimeError(f"'{ConfigKey.ENCFILE}' must be set and point to "
                            f"a file with the database encryption key!")
-    if CONFIG_KEY.PI_PEPPER not in app.config:
-        raise RuntimeError(f"'{CONFIG_KEY.PI_PEPPER}' must be defined in the app configuration")
-    if CONFIG_KEY.SECRET_KEY not in app.config or not app.config[CONFIG_KEY.SECRET_KEY]:
-        sys.stderr.write(f"'{CONFIG_KEY.SECRET_KEY}' not defined in the app "
+    if ConfigKey.PEPPER not in app.config:
+        raise RuntimeError(f"'{ConfigKey.PEPPER}' must be defined in the app configuration")
+    if ConfigKey.SECRET_KEY not in app.config or not app.config[ConfigKey.SECRET_KEY]:
+        sys.stderr.write(f"'{ConfigKey.SECRET_KEY}' not defined in the app "
                          f"configuration! Generating a random key.\n")
-        app.config[CONFIG_KEY.SECRET_KEY] = secrets.token_hex()
-    if not all([x in app.config for x in ["PI_AUDIT_KEY_PUBLIC", "PI_AUDIT_KEY_PRIVATE"]]):
+        app.config[ConfigKey.SECRET_KEY] = secrets.token_hex()
+    if not all([x in app.config for x in [ConfigKey.AUDIT_KEY_PUBLIC, ConfigKey.AUDIT_KEY_PRIVATE]]):
         sys.stderr.write("No keypair for audit signing defined. Disabling audit signing!\n")
-        app.config["PI_AUDIT_NO_SIGN"] = True
+        app.config[ConfigKey.AUDIT_NO_SIGN] = True
 
 
 def _setup_node_configuration(app: Flask):
@@ -184,11 +189,11 @@ def _setup_node_configuration(app: Flask):
         # TODO: this is not multi-process-safe since every process runs its own `create_app()`
         # First check if we have a UUID in the config file which takes precedence
         try:
-            pi_uuid = uuid.UUID(app.config.get("PI_NODE_UUID"))
+            pi_uuid = uuid.UUID(app.config.get(ConfigKey.NODE_UUID))
         except (ValueError, TypeError) as e:
             log.debug(f"Could not determine UUID from config: {e}")
             # check if we can get the UUID from an external file
-            pi_uuid_file = app.config.get('PI_UUID_FILE', DEFAULT_UUID_FILE)
+            pi_uuid_file = app.config.get(ConfigKey.UUID_FILE, DEFAULT_UUID_FILE)
             try:
                 with open(pi_uuid_file) as f:
                     pi_uuid = uuid.UUID(f.read().strip())
@@ -214,15 +219,17 @@ def _setup_node_configuration(app: Flask):
                     except IOError as exx:
                         log.warning(f"Could not write UUID to file '{pi_uuid_file}': {exx}")
 
-            app.config["PI_NODE_UUID"] = str(pi_uuid)
+            app.config[ConfigKey.NODE_UUID] = str(pi_uuid)
             log.debug(f"Current UUID: '{pi_uuid}'")
 
-        pi_node_name = app.config.get("PI_NODE") or app.config.get("PI_AUDIT_SERVERNAME", "localnode")
+        pi_node_name = app.config.get(ConfigKey.NODE) or app.config.get(ConfigKey.AUDIT_SERVERNAME,
+                                                                        DEFAULT_NODE_NAME)
 
-        insp = sa.inspect(db.get_engine())
-        if insp.has_table(NodeName.__tablename__):
-            db.session.merge(NodeName(id=str(pi_uuid), name=pi_node_name,
-                                      lastseen=datetime.datetime.utcnow()))
+        inspect = sa.inspect(db.get_engine())
+        if inspect.has_table(NodeName.__tablename__):
+            db.session.merge(NodeName(node_id=str(pi_uuid),
+                                      name=pi_node_name,
+                                      last_seen=datetime.datetime.now(datetime.timezone.utc)))
             db.session.commit()
         else:
             log.warning(f"Could not update node names in db. "
@@ -253,9 +260,9 @@ def create_app(config_name="development",
     :return: The flask application
     :rtype: App object
     """
-    app = Flask(__name__, static_folder="static",
-                template_folder="static/templates")
-    app.config["APP_READY"] = False
+    app = Flask(__name__, static_folder=DEFAULT_STATIC_FOLDER, template_folder=DEFAULT_TEMPLATE_FOLDER)
+    app.config[ConfigKey.APP_READY] = False
+    app.config[ConfigKey.VERBOSE] = not silent
 
     # Routed apps must fall back to index.html
     @app.errorhandler(404)
@@ -266,11 +273,9 @@ def create_app(config_name="development",
                     "index.html"))
         return jsonify(error="Not found"), 404
 
-    app.config["VERBOSE"] = not silent
-
     # Overwrite default config with environment setting
-    config_name = os.environ.get("PI_CONFIG_NAME", config_name)
-    if app.config.get("VERBOSE"):
+    config_name = os.environ.get(ConfigKey.CONFIG_NAME, config_name)
+    if app.config.get(ConfigKey.VERBOSE):
         print("The configuration name is: {0!s}".format(config_name))
     app.config.from_object(config[config_name])
 
@@ -279,9 +284,8 @@ def create_app(config_name="development",
 
     if ENV_KEY in os.environ:
         config_file = os.environ[ENV_KEY]
-    if app.config.get("VERBOSE"):
-        print("Additional configuration will be read "
-              "from the file {0!s}".format(config_file))
+    if app.config.get(ConfigKey.VERBOSE):
+        print("Additional configuration will be read from the file {0!s}".format(config_file))
 
     try:
         # Try to load the given config_file.
@@ -291,27 +295,27 @@ def create_app(config_name="development",
             sys.stderr.write("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
             sys.stderr.write("  WARNING: Unable to load additional configuration\n")
             sys.stderr.write(f"  from {config_file}!\n")
-            if app.config.get("VERBOSE"):
+            if app.config.get(ConfigKey.VERBOSE):
                 sys.stderr.write(f"  ({e})\n")
             sys.stderr.write("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
 
     # Setup logging
     if config_name == "docker":
-        if "PI_LOGLEVEL" in app.config:
-            DOCKER_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = app.config.get("PI_LOGLEVEL")
+        if ConfigKey.LOGLEVEL in app.config:
+            DOCKER_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = app.config.get(ConfigKey.LOGLEVEL)
         _setup_logging(app, DOCKER_LOGGING_CONFIG)
     else:
-        if "PI_LOGLEVEL" in app.config:
-            DEFAULT_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = app.config.get("PI_LOGLEVEL")
-        if "PI_LOGFILE" in app.config:
-            DEFAULT_LOGGING_CONFIG["handlers"]["file"]["filename"] = app.config.get("PI_LOGFILE")
+        if ConfigKey.LOGLEVEL in app.config:
+            DEFAULT_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = app.config.get(ConfigKey.LOGLEVEL)
+        if ConfigKey.LOGFILE in app.config:
+            DEFAULT_LOGGING_CONFIG["handlers"]["file"]["filename"] = app.config.get(ConfigKey.LOGFILE)
         _setup_logging(app, DEFAULT_LOGGING_CONFIG)
 
     log = logging.getLogger(__name__)
 
     # We allow to set different static folders
-    app.static_folder = app.config.get("PI_STATIC_FOLDER", "static/")
-    app.template_folder = app.config.get("PI_TEMPLATE_FOLDER", "static/templates/")
+    app.static_folder = app.config.get(ConfigKey.STATIC_FOLDER, DEFAULT_STATIC_FOLDER)
+    app.template_folder = app.config.get(ConfigKey.TEMPLATE_FOLDER, DEFAULT_TEMPLATE_FOLDER)
 
     _register_blueprints(app)
 
@@ -345,12 +349,13 @@ def create_app(config_name="development",
 
     log.debug(f"Reading application from the static folder {app.static_folder} "
               f"and the template folder {app.template_folder}")
-    app.config['APP_READY'] = True
+    app.config[ConfigKey.APP_READY] = True
 
     def exit_func():
         # Destroy the engine pool and close all open database connections on exit
         with app.app_context():
             db.engine.dispose()
+
     atexit.register(exit_func)
 
     return app
@@ -362,10 +367,9 @@ def create_docker_app():
     The app is configured exclusively through environment variables and secret
     files via docker-compose.
     """
-    app = Flask(__name__, static_folder="static",
-                template_folder="static/templates")
-    app.config["APP_READY"] = False
-    app.config["VERBOSE"] = bool(app.debug)
+    app = Flask(__name__, static_folder=DEFAULT_STATIC_FOLDER, template_folder=DEFAULT_TEMPLATE_FOLDER)
+    app.config[ConfigKey.APP_READY] = False
+    app.config[ConfigKey.VERBOSE] = bool(app.debug)
 
     # Begin the app configuration
     # First we load a default configuration
@@ -375,9 +379,9 @@ def create_docker_app():
     # Then we check if a config file is present in /etc/privacyidea/pi.cfg
     # (either mounted or built into the container image)
     try:
-        app.config.from_pyfile("/etc/privacyidea/pi.cfg", silent=False)
+        app.config.from_pyfile(PI_CFG_PATH, silent=False)
         if app.debug:
-            sys.stderr.write("Read configuration from file: '/etc/privacyidea/pi.cfg'\n")
+            sys.stderr.write(f"Read configuration from file: '{PI_CFG_PATH}'\n")
     except IOError as _e:
         pass
     # Then we update the configuration with stuff from the environment
@@ -389,13 +393,13 @@ def create_docker_app():
 
     if app.debug:
         DOCKER_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = logging.DEBUG
-    if "PI_LOGLEVEL" in app.config:
-        DOCKER_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = app.config.get("PI_LOGLEVEL")
+    if ConfigKey.LOGLEVEL in app.config:
+        DOCKER_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = app.config.get(ConfigKey.LOGLEVEL)
     _setup_logging(app, DOCKER_LOGGING_CONFIG)
 
     # We allow to set different static folders
-    app.static_folder = app.config.get("PI_STATIC_FOLDER", "static/")
-    app.template_folder = app.config.get("PI_TEMPLATE_FOLDER", "static/templates/")
+    app.static_folder = app.config.get(ConfigKey.STATIC_FOLDER, DEFAULT_STATIC_FOLDER)
+    app.template_folder = app.config.get(ConfigKey.TEMPLATE_FOLDER, DEFAULT_TEMPLATE_FOLDER)
 
     _register_blueprints(app)
 
@@ -408,7 +412,7 @@ def create_docker_app():
 
     queue.register_app(app)
 
-    if app.config.get("PI_INITIALIZE_HSM", False):
+    if app.config.get(ConfigKey.HSM_INITIALIZE, False):
         with app.app_context():
             init_hsm()
 
@@ -422,12 +426,13 @@ def create_docker_app():
 
     _setup_node_configuration(app)
 
-    app.config['APP_READY'] = True
+    app.config[ConfigKey.APP_READY] = True
 
     def exit_func():
         # Destroy the engine pool and close all open database connections on exit
         with app.app_context():
             db.engine.dispose()
+
     atexit.register(exit_func)
 
     return app

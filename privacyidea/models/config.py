@@ -122,13 +122,17 @@ class NodeName(db.Model, TimestampMethodsMixin):
     name = db.Column(db.Unicode(100), index=True)
     lastseen = db.Column(db.DateTime(), index=True, default=datetime.now(tz=tzutc()))
 
+    def __init__(self, node_id, name, last_seen=None):
+        self.id = node_id
+        self.name = convert_column_to_unicode(name)
+        self.lastseen = last_seen or datetime.now(tz=tzutc())
 
 class Admin(db.Model):
     """
     The administrators for managing the system.
     To manage the administrators use the command pi-manage.
 
-    In addition certain realms can be defined to be administrative realms.
+    In addition, certain realms can be defined to be administrative realms.
 
     :param username: The username of the admin
     :type username: basestring
