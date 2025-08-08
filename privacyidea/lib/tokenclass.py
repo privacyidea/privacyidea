@@ -1685,11 +1685,6 @@ class TokenClass(object):
         additional challenge ``reply_dict``, which are displayed in the JSON challenges response.
         """
         options = options or {}
-        """
-        message = get_action_values_from_options(SCOPE.AUTH,
-                                                 ACTION.CHALLENGETEXT,
-                                                 options) or _('please enter otp: ')
-        """
         message = options.get(PolicyAction.CHALLENGETEXT, _('please enter otp: ')).replace(r"\,", ",")
 
         data = None
