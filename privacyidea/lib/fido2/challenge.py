@@ -13,7 +13,7 @@ from privacyidea.models import Challenge
 from privacyidea.lib import fido2
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.policies.actions import PolicyAction
-from datetime import datetime
+from datetime import datetime, timezone
 
 log = logging.getLogger(__name__)
 
@@ -129,5 +129,5 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict)
         for db_challenge in db_challenges:
             db_challenge.delete()
         # Update the last_auth token info
-        token.add_tokeninfo(PolicyAction.LASTAUTH, datetime.now().isoformat(timespec="seconds"))
+        token.add_tokeninfo(PolicyAction.LASTAUTH, datetime.now(timezone.utc).isoformat(timespec="seconds"))
     return ret

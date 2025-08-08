@@ -658,7 +658,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
                 self.assertIn("Unknown HTTP Request header key 'User-Agent' referenced in condition of policy "
                               "'policy'!", result["result"]["error"]["message"])
                 # Make sure the missing key is described in the error log
-                lc.check_present(("privacyidea.lib.policies.policy_conditions", "ERROR",
+                lc.check_present(("privacyidea.lib.policies.conditions", "ERROR",
                                   "Unknown HTTP Request header key 'User-Agent' referenced in condition of policy "
                                   "'policy'."))
 
@@ -674,7 +674,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
                 self.assertIn("Unknown HTTP Request header key 'User-Agent' referenced in condition of policy '"
                               "policy'!", result["result"]["error"]["message"])
                 # Make sure the missing key is described in the error log
-                lc.check_present(("privacyidea.lib.policies.policy_conditions", "ERROR",
+                lc.check_present(("privacyidea.lib.policies.conditions", "ERROR",
                                   "Unknown HTTP Request header key 'User-Agent' "
                                   "referenced in condition of policy 'policy'."))
 
@@ -821,7 +821,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
                               "'cond1'!",
                               result["result"]["error"]["message"])
                 # Make sure the missing key is described in the error log
-                lc.check_present(("privacyidea.lib.policies.policy_conditions", "ERROR",
+                lc.check_present(("privacyidea.lib.policies.conditions", "ERROR",
                                   "Unknown HTTP Environment key 'NON_EXISTING' referenced in condition of policy "
                                   "'cond1'."))
 
@@ -966,11 +966,11 @@ class APIPolicyConditionTestCase(MyApiTestCase):
         get_template_obj("test").delete()
 
     def test_08_user_agent(self):
-        set_policy(name="policy-cp", scope=SCOPE.AUTH, action={PolicyAction.CHALLENGERESPONSE: "hotp"},
+        set_policy(name="policy-cp", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp",
                    user_agents=["privacyidea-cp", "PAM"])
-        set_policy(name="policy-keycloak", scope=SCOPE.AUTH, action={PolicyAction.CHALLENGERESPONSE: "totp push"},
+        set_policy(name="policy-keycloak", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=totp push",
                    user_agents=["privacyIDEA-Keycloak"])
-        set_policy(name="policy-no-agent", scope=SCOPE.AUTH, action={PolicyAction.CHALLENGERESPONSE: "daypassword"})
+        set_policy(name="policy-no-agent", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=daypassword")
 
         self.setUp_user_realms()
         user = User("selfservice", self.realm1)
