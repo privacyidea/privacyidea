@@ -2852,7 +2852,7 @@ class ValidateAPITestCase(MyApiTestCase):
 
         params = {"type": "spass",
                   "pin": "spass"}
-        init_token(params, User("alice", "tr"))
+        token = init_token(params, User("alice", "tr"))
 
         # Alice Cooper is in the LDAP directory, but Cooper is the secondary login name
         with self.app.test_request_context('/validate/check',
@@ -2880,6 +2880,7 @@ class ValidateAPITestCase(MyApiTestCase):
                 "logged in as Cooper." in json_response.get("result").get("value").get("auditdata")[0].get("info"),
                 json_response.get("result").get("value").get("auditdata"))
 
+        token.delete_token()
         self.assertTrue(delete_realm("tr"))
         self.assertTrue(delete_resolver("myLDAPres"))
 
