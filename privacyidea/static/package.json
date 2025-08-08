@@ -26,5 +26,8 @@
   },
   "keywords": [],
   "author": "Cornelius Kölbel <cornelius@privacyidea.org>",
-  "license": "AGPL-3.0-only"
+  "license": "AGPL-3.0-only",
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
 }

@@ -1,0 +1,14 @@
+@use "../../../../styles";
+
+.token-get-serial {
+  @include styles.table-container-styles;
+  overflow: auto;
+  width: 785px;
+}
+
+.token-get-serial-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 16px;
+}

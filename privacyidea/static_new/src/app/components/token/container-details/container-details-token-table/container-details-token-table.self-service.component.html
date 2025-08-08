@@ -1,0 +1,186 @@
+<div aria-label="Container Details Token Table"
+     class="container-details-token-table-layout">
+  <div class="flex-column">
+    <h3 class="margin-left-1">Token in Container</h3>
+    @if (dataSource.data.length > 1) {
+      <mat-form-field class="container-details-token-table-filter"
+                      subscriptSizing="dynamic">
+        <mat-label>Enter Filter</mat-label>
+        <input #filterInput
+               (keyup)="handleFilterInput($event)"
+               aria-label="Filter Input"
+               matInput
+               placeholder="Filter across all columns." />
+      </mat-form-field>
+    }
+    <mat-paginator [pageSizeOptions]="pageSizeOptions()"
+                   [pageSize]="pageSize"
+                   class="flex-just-start"
+                   showFirstLastButtons></mat-paginator>
+  </div>
+  <div [ngClass]="[
+      overflowService.isWidthOverflowing('body', 1580)
+        ? 'flex-column'
+        : 'flex-row',
+    ]">
+    <table [dataSource]="dataSource"
+           aria-label="Token of Container Data Table"
+           class="container-details-token-table"
+           mat-table
+           matSort>
+      @for (column of columnsKeyMap; track column) {
+        <ng-container [matColumnDef]="column.key">
+          <th *matHeaderCellDef
+              attr.aria-label="{{ column.label }} Header"
+              mat-header-cell
+              mat-sort-header>
+            {{ column.label }}
+          </th>
+          <td *matCellDef="let element"
+              attr.aria-label="{{ column.label }} Cell"
+              mat-cell
+              [ngClass]="{ 'width-18rem': column.key === 'description' }">
+            <ng-container>
+              <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+                @switch (column.key) {
+                  @case ("serial") {
+                    @if (element.username === authService.user()) {
+                      <a attr.aria-label="{{ column.label }} Link"
+                         (click)="contentService.tokenSelected(element.serial)"> {{ element[column.key] }} </a>
+                    } @else {
+                      <span> {{ element[column.key] }} </span>
+                    }
+                    <app-copy-button [copyText]="element.serial"></app-copy-button>
+                  }
+                  @case ("active") {
+                    <span (click)="toggleActive(element)"
+                          [matTooltip]="tableUtilsService.getTooltipForColumn(column.key,element)"
+                          [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
+                      {{
+                        tableUtilsService.getDisplayText(column.key, element)
+                      }}
+                    </span>
+                  }
+                  @case ("username") {
+                    <span>
+                      {{ element[column.key] }}
+                    </span>
+                  }
+                  @default {
+                    @if (tableUtilsService.isLink(column.key)) {
+                      <a attr.aria-label="{{ column.label }} Link"
+                         href="#"> {{ element[column.key] }} </a>
+                    } @else {
+                      <span> {{ element[column.key] }} </span>
+                    }
+                  }
+                }
+              </div>
+            </ng-container>
+          </td>
+        </ng-container>
+      }
+      <ng-container matColumnDef="remove">
+        <th *matHeaderCellDef
+            aria-label="Remove Column Header"
+            mat-header-cell>
+          Remove
+        </th>
+        <td *matCellDef="let element"
+            aria-label="Remove Button Cell"
+            mat-cell>
+          <div class="flex just-center">
+            @if (element.username === authService.user()) { <!-- TODO policy to allow user -->
+              <button (click)="removeTokenFromContainer(containerSerial(), element.serial)"
+                    mat-icon-button
+                    matTooltip="Remove Token from Container">
+              <mat-icon> highlight_remove</mat-icon>
+            </button>
+            }
+          </div>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="delete">
+        <th *matHeaderCellDef
+            aria-label="Delete Column Header"
+            mat-header-cell>
+          Delete
+        </th>
+        <td *matCellDef="let element"
+            aria-label="Delete Button Cell"
+            mat-cell>
+          <div class="flex just-center">
+            @if (element.username === authService.user()) {
+              <button (click)="deleteTokenFromContainer(element.serial)"
+                      mat-icon-button
+                      matTooltip="Delete Token">
+                <mat-icon> delete</mat-icon>
+              </button>
+            }
+          </div>
+        </td>
+      </ng-container>
+      <tr *matHeaderRowDef="displayedColumns"
+          aria-label="Header Row"
+          mat-header-row></tr>
+      <tr *matRowDef="let row; columns: displayedColumns"
+          aria-label="Data Row"
+          mat-row></tr>
+      <tr *matNoDataRow
+          aria-label="No Data Row">
+        <td [attr.colspan]="displayedColumns.length"
+            aria-label="No Data Cell">
+          No data matching the filter.
+        </td>
+      </tr>
+    </table>
+    <div [ngClass]="[
+        overflowService.isWidthOverflowing('body', 1580)
+          ? 'container-details-action-column'
+          : 'container-details-action-row',
+      ]">
+      <button (click)="assignToAllToken()"
+              [disabled]="!isAssignableToAllToken()"
+              [ngClass]="[
+          isAssignableToAllToken() ? 'card-button' : 'card-button-disabled',
+        ]"
+              mat-flat-button>
+        <mat-icon>playlist_add</mat-icon>
+        {{ "Assign to All Tokens" }}
+      </button>
+      <button (click)="unassignFromAllToken()"
+              [disabled]="!isUnassignableFromAllToken()"
+              [ngClass]="[
+          isUnassignableFromAllToken() ? 'card-button' : 'card-button-disabled',
+        ]"
+              mat-flat-button>
+        <mat-icon>playlist_remove</mat-icon>
+        {{ "Unassign from All Tokens" }}
+      </button>
+      <button (click)="toggleAll('activate')"
+              class="card-button-activate"
+              mat-flat-button>
+        <mat-icon>playlist_play</mat-icon>
+        {{ "Activate All Tokens" }}
+      </button>
+      <button (click)="toggleAll('deactivate')"
+              class="card-button-delete"
+              mat-flat-button>
+        <mat-icon class="mdi--list-lock" />
+        {{ "Deactivate All Tokens" }}
+      </button>
+      <button (click)="removeAll()"
+              class="card-button-delete"
+              mat-flat-button>
+        <mat-icon> playlist_remove</mat-icon>
+        {{ "Remove All Tokens" }}
+      </button>
+      <button (click)="deleteAllTokens()"
+              class="card-button-delete"
+              mat-flat-button>
+        <mat-icon> delete_sweep</mat-icon>
+        {{ "Delete All Tokens" }}
+      </button>
+    </div>
+  </div>
+</div>

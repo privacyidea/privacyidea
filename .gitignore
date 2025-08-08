@@ -14,7 +14,7 @@ build/
 DEBUILD/
 doc/_build/
 .idea/
-*.log
+*.log*
 *.old
 *.orig
 tests/testdata/ca2
@@ -34,4 +34,5 @@ __pycache__/
 /private.pem
 dist/
 *.swp
+/.vscode/
 /ca/

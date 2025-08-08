@@ -1,0 +1,18 @@
+@use "../../../../../styles";
+
+.token-type-paragraph {
+  text-align: justify;
+  padding: 16px;
+
+  p {
+    margin-top: 1px;
+  }
+}
+
+.dot {
+  margin-left: -4px;
+}
+
+.server-checkbox {
+  margin-bottom: 16px;
+}
