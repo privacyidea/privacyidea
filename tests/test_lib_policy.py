@@ -2349,15 +2349,15 @@ class PolicyTestCase(MyTestCase):
         self.setUp_user_realm3()
         NodeName(id="1234", name="localnode").save()
         NodeName(id="56789", name="testnode").save()
-        set_policy(name="basic", scope=SCOPE.WEBUI, action=ACTION.HIDE_WELCOME)
-        set_policy(name="user", scope=SCOPE.USER, action=ACTION.DELETE, active=False, realm=[self.realm1, self.realm3],
+        set_policy(name="basic", scope=SCOPE.WEBUI, action=PolicyAction.HIDE_WELCOME)
+        set_policy(name="user", scope=SCOPE.USER, action=PolicyAction.DELETE, active=False, realm=[self.realm1, self.realm3],
                    resolver=[self.resolvername1, self.resolvername3], pinode="localnode", user=["hans", "corny"],
                    client="1.2.3.4", time="Mon-Fri: 9-18", priority=10, user_agents="privacyidea-cp, PAM")
         set_policy(name="user_agent", scope=SCOPE.AUTH,
-                   action=[ACTION.CHANGE_PIN_VIA_VALIDATE, ACTION.CLIENT_MODE_PER_USER], realm=self.realm1,
+                   action=[PolicyAction.CHANGE_PIN_VIA_VALIDATE, PolicyAction.CLIENT_MODE_PER_USER], realm=self.realm1,
                    resolver=self.resolvername1, pinode="testnode", user="hans", client="1.2.3.5",
                    time="Mon-Fri: 20-22", priority=5, user_agents="PAM")
-        set_policy(name="admin", scope=SCOPE.ADMIN, action=ACTION.ENABLE, adminrealm="admins", adminuser="admin")
+        set_policy(name="admin", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, adminrealm="admins", adminuser="admin")
 
         # get all policies
         policies = get_policies()
@@ -2388,10 +2388,10 @@ class PolicyTestCase(MyTestCase):
         self.assertSetEqual({"user"}, {policy.get("name") for policy in policies})
 
         # Filter by action
-        policies = get_policies(action=ACTION.DELETE)
+        policies = get_policies(action=PolicyAction.DELETE)
         self.assertEqual(1, len(policies))
         self.assertSetEqual({"user"}, {policy.get("name") for policy in policies})
-        policies = get_policies(action=f"*{ACTION.CLIENT_MODE_PER_USER}*")
+        policies = get_policies(action=f"*{PolicyAction.CLIENT_MODE_PER_USER}*")
         self.assertEqual(1, len(policies))
         self.assertSetEqual({"user_agent"}, {policy.get("name") for policy in policies})
 
