@@ -979,15 +979,44 @@ class PasskeyAPITest(PasskeyAPITestBase):
         # By default, user_verification is preferred
         self.assertEqual("preferred", passkey_challenge["user_verification"])
 
-        token = get_tokens(serial=serial)[0]
-        # Add last_auth of 3 days ago to the token info
-        last_auth_date = datetime.now(timezone.utc) - timedelta(days=3)
-        token.add_tokeninfo(PolicyAction.LASTAUTH, last_auth_date.isoformat(timespec="seconds"))
         transaction_id = passkey_challenge["transaction_id"]
+        token = get_tokens(serial=serial)[0]
 
-        # Authentication will fail because the last_auth predates the policy time window
+        # Authentication success as the last_auth is not set yet
         data = self.authentication_response_no_uv
         data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self._assert_result_value_true(res.json)
+            self.assertIn("detail", res.json)
+            detail = res.json["detail"]
+            self.assertIn("message", detail)
+            self.assertTrue(detail["message"])
+            self.assertNotIn("auth_items", res.json)
+
+        # Trigger new challenge for auth
+        token.add_tokeninfo("sign_count", int(token.get_tokeninfo("sign_count")) - 1)
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
+        data["transaction_id"] = passkey_challenge["transaction_id"]
+        with self.app.test_request_context('/auth', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertIn("result", res.json)
+            self.assertIn("status", res.json["result"])
+            self.assertTrue(res.json["result"]["status"])
+
+        # Set last_auth of 3 days ago to the token info
+        last_auth_date = datetime.now(timezone.utc) - timedelta(days=3)
+        token.add_tokeninfo(PolicyAction.LASTAUTH, last_auth_date.isoformat(timespec="seconds"))
+
+        # Authentication will fail because the last_auth predates the policy time window
+        token.add_tokeninfo("sign_count", int(token.get_tokeninfo("sign_count")) - 1)
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
+        data["transaction_id"] = passkey_challenge["transaction_id"]
         with self.app.test_request_context('/validate/check', method='POST',
                                            data=data,
                                            headers={"Origin": self.expected_origin}):
@@ -1028,10 +1057,9 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertNotIn("auth_items", res.json)
 
         # Trigger new challenge for auth
-        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
-        data = self.authentication_response_uv
-        transaction_id = passkey_challenge["transaction_id"]
-        data["transaction_id"] = transaction_id
+        token.add_tokeninfo("sign_count", int(token.get_tokeninfo("sign_count")) - 1)
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
+        data["transaction_id"] = passkey_challenge["transaction_id"]
         with self.app.test_request_context('/auth', method='POST',
                                            data=data,
                                            headers={"Origin": self.expected_origin}):

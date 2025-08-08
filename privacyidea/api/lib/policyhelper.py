@@ -391,7 +391,7 @@ def check_last_auth_policy(g, token: TokenClass) -> bool:
     """
     Check if the last_auth policy is enabled and if the token's last_auth is within the allowed time frame.
     """
-    if not token:
+    if not token: # pragma: no cover
         log.error("No token provided to check last_auth policy.")
         return False
     last_auth_policy = (Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.LASTAUTH, user_object=None)
