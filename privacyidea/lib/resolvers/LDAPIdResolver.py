@@ -304,7 +304,7 @@ class IdResolver(UserIdResolver):
         # The number of seconds that ldap3 waits if no server is left in the pool, before
         # starting the next round
         pooling_loop_timeout = get_app_config_value("PI_LDAP_POOLING_LOOP_TIMEOUT", 10)
-        log.debug("Setting system wide POOLING_LOOP_TIMEOUT to {0!s}.".format(pooling_loop_timeout))
+        log.debug("Setting system-wide POOLING_LOOP_TIMEOUT to {0!s}.".format(pooling_loop_timeout))
         ldap3.set_config_parameter("POOLING_LOOP_TIMEOUT", pooling_loop_timeout)
 
     @log_with(log, hide_args=[2])
@@ -764,7 +764,7 @@ class IdResolver(UserIdResolver):
         if self.uidtype.lower() != "dn":
             attributes.append(str(self.uidtype))
 
-        unknown_search_keys = list(filter(lambda x: x not in self.userinfo.keys(), search_dict.keys()))
+        unknown_search_keys = [x for x in search_dict.keys() if x not in self.userinfo.keys()]
         if unknown_search_keys:
             log.error(f"Could not find search key ({unknown_search_keys}) in "
                       f"the attribute mapping keys ({list(self.userinfo.keys())}).")

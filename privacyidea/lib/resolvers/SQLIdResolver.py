@@ -389,7 +389,7 @@ class IdResolver (UserIdResolver):
         if search_dict is None:
             search_dict = {}
         # Check if all the search keys are available in the mapping
-        unknown_search_keys = list(filter(lambda x: x not in self.map.keys(), search_dict.keys()))
+        unknown_search_keys = [x for x in search_dict.keys() if x not in self.map.keys()]
         if unknown_search_keys:
             log.error(f"Could not find search key ({unknown_search_keys}) in "
                       f"the column mapping keys ({list(self.map.keys())}).")

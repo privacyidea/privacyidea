@@ -876,7 +876,6 @@ class LDAPResolverTestCase(MyTestCase):
         rtype = y.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
 
-        rdesc = y.getResolverClassDescriptor()
         rdesc = y.getResolverDescriptor()
         self.assertTrue("ldapresolver" in rdesc, rdesc)
         self.assertTrue("config" in rdesc.get("ldapresolver"), rdesc)
@@ -886,7 +885,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue(uinfo.get("username") == "bob", uinfo)
 
         ret = y.getUserList({"username": "bob"})
-        self.assertEqual(len(ret), 1, ret)
+        self.assertEqual(1, len(ret),ret)
 
         # Get user list with a wrong search parameter
         with LogCapture(level=logging.ERROR) as lc:

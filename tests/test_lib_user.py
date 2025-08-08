@@ -569,8 +569,8 @@ class UserTestCase(MyTestCase):
         self.assertTrue(rid > 0, rid)
 
         (added, failed) = set_realm(realm, [{'name': resolver}])
-        self.assertEqual(len(failed), 0)
-        self.assertEqual(len(added), 1)
+        self.assertEqual(0, len(failed))
+        self.assertEqual(1, len(added))
 
         # check non-ascii password of non-ascii user
         self.assertFalse(User(login="nönäscii",
@@ -594,7 +594,7 @@ class UserTestCase(MyTestCase):
             userlist = get_user_list({"realm": "sqlrealm",
                                       "unknown": "parameter",
                                       "resolver": "SQL1"})
-            self.assertEqual(len(userlist), 0, userlist)
+            self.assertEqual(0, len(userlist), userlist)
             lc.check_present(("privacyidea.lib.resolvers.SQLIdResolver", "ERROR",
                               "Could not find search key (['unknown']) in the "
                               "column mapping keys (['username', 'userid', "
