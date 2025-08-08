@@ -1,0 +1,11 @@
+{
+  "/proxy": {
+    "target": "https://pi.frank:5000",
+    "secure": false,
+    "changeOrigin": true,
+     "logLevel": "debug",
+    "pathRewrite": {
+      "^/proxy": ""
+    }
+  }
+}

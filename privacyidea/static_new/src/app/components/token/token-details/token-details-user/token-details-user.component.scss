@@ -1,0 +1,55 @@
+@use "../../../../../styles";
+
+$border-color: var(--mat-sys-outline-variant);
+$gap-small: 8px;
+$padding-horizontal: 16px;
+$min-width-editable: 20rem;
+
+.user-container {
+  display: flex;
+  gap: var(--global-padding);
+  padding: 0 0 0 var(--global-padding);
+
+  .user-details-table {
+    border-collapse: collapse;
+    display: flex;
+    width: auto;
+    max-width: fit-content;
+    justify-content: center;
+    border-bottom: 0;
+
+    th,
+    td {
+      border: 1px solid $border-color;
+    }
+  }
+
+  .user-detail-row {
+    display: flex;
+    align-items: center;
+  }
+
+  .user-editable-row {
+    min-width: $min-width-editable;
+  }
+
+  .user-pin-container-padding {
+    margin-top: auto;
+    padding: 0 16px;
+  }
+
+  ::ng-deep {
+    .mat-mdc-form-field-subscript-wrapper {
+      height: 0;
+    }
+
+    .mat-mdc-text-field-wrapper {
+      padding-right: 10px;
+    }
+
+    .mat-mdc-form-field-infix {
+      margin-bottom: -8px;
+      width: 17rem;
+    }
+  }
+}

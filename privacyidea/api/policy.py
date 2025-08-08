@@ -44,8 +44,7 @@ from ..lib.policy import (set_policy, rename_policy,
                           export_policies, import_policies,
                           delete_policy, get_static_policy_definitions,
                           enable_policy, get_policy_condition_sections,
-                          get_policy_condition_comparators, Match, validate_values)
-from ..lib.policies.actions import PolicyAction
+                          get_policy_condition_comparators, Match, validate_values, get_policies)
 from ..lib.token import get_dynamic_policy_definitions
 from ..lib.error import (ParameterError)
 from privacyidea.lib.utils import is_true
@@ -312,16 +311,15 @@ def get_policy(name=None, export=None):
     if active is not None:
         active = is_true(active)
 
-    P = g.policy_object
     if not export:
         log.debug("retrieving policy name: {0!s}, realm: {1!s}, scope: {2!s}".format(name, realm, scope))
 
-        pol = P.list_policies(name=name, realm=realm, scope=scope, active=active)
-        ret = send_result(pol)
+        policies = get_policies(name=name, realm=realm, scope=scope, active=active)
+        ret = send_result(policies)
     else:
         # We want to export all policies
-        pol = P.list_policies()
-        ret = send_file(export_policies(pol), export, content_type='text/plain')
+        policies = get_policies()
+        ret = send_file(export_policies(policies), export, content_type='text/plain')
 
     g.audit_object.log({"success": True,
                         'info': "name = {0!s}, realm = {1!s}, scope = {2!s}".format(name, realm, scope)})

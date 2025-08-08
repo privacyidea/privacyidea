@@ -1,0 +1,10 @@
+@use "../../../../styles";
+
+.filter-icon {
+  display: inline-flex;
+  vertical-align: bottom;
+  margin-right: -3px;
+  margin-bottom: -3px;
+  font-size: 22px !important;
+  transition: color 400ms;
+}

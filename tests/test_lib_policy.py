@@ -26,7 +26,7 @@ from privacyidea.lib.policy import (set_policy, delete_policy, delete_policies,
                                     delete_all_policies,
                                     get_action_values_from_options, Match, MatchingError,
                                     get_allowed_custom_attributes, convert_action_dict_to_python_dict,
-                                    set_policy_conditions, validate_actions)
+                                    set_policy_conditions, validate_actions, get_policies)
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.realm import (set_realm, delete_realm, get_realms)
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list,
@@ -2334,10 +2334,151 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual(2, len(policies), policies)
         self.assertSetEqual({"policy-keycloak", "policy-no-agent"}, {policy["name"] for policy in policies})
 
-        # no user agent filter: only get policies without user agent
+        # no user agent filter only returns policies without user agent
         policies = P.list_policies(scope=SCOPE.AUTH)
         self.assertEqual(1, len(policies), policies)
-        self.assertSetEqual({"policy-no-agent"}, {policy["name"] for policy in policies})
+        self.assertSetEqual({"policy-no-agent"},
+                            {policy["name"] for policy in policies})
+
+        delete_policy("policy-cp")
+        delete_policy("policy-keycloak")
+        delete_policy("policy-no-agent")
+
+    def test_57_get_policies_query(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        NodeName(id="1234", name="localnode").save()
+        NodeName(id="56789", name="testnode").save()
+        set_policy(name="basic", scope=SCOPE.WEBUI, action=ACTION.HIDE_WELCOME)
+        set_policy(name="user", scope=SCOPE.USER, action=ACTION.DELETE, active=False, realm=[self.realm1, self.realm3],
+                   resolver=[self.resolvername1, self.resolvername3], pinode="localnode", user=["hans", "corny"],
+                   client="1.2.3.4", time="Mon-Fri: 9-18", priority=10, user_agents="privacyidea-cp, PAM")
+        set_policy(name="user_agent", scope=SCOPE.AUTH,
+                   action=[ACTION.CHANGE_PIN_VIA_VALIDATE, ACTION.CLIENT_MODE_PER_USER], realm=self.realm1,
+                   resolver=self.resolvername1, pinode="testnode", user="hans", client="1.2.3.5",
+                   time="Mon-Fri: 20-22", priority=5, user_agents="PAM")
+        set_policy(name="admin", scope=SCOPE.ADMIN, action=ACTION.ENABLE, adminrealm="admins", adminuser="admin")
+
+        # get all policies
+        policies = get_policies()
+        self.assertEqual(4, len(policies))
+
+        # Filter by name
+        policies = get_policies(name="user")
+        self.assertEqual(1, len(policies))
+        self.assertSetEqual({"user"}, {policy.get("name") for policy in policies})
+        policies = get_policies(name="user*")
+        self.assertEqual(2, len(policies))
+        self.assertSetEqual({"user", "user_agent"}, {policy.get("name") for policy in policies})
+
+        # Filter by active
+        policies = get_policies(active=True)
+        self.assertEqual(3, len(policies))
+        self.assertSetEqual({"user_agent", "basic", "admin"}, {policy.get("name") for policy in policies})
+        policies = get_policies(active=False)
+        self.assertEqual(1, len(policies))
+        self.assertSetEqual({"user"}, {policy.get("name") for policy in policies})
+
+        # Filter by scope
+        policies = get_policies(scope=SCOPE.USER)
+        self.assertEqual(1, len(policies))
+        self.assertSetEqual({"user"}, {policy.get("name") for policy in policies})
+        policies = get_policies(scope="*us*")
+        self.assertEqual(1, len(policies))
+        self.assertSetEqual({"user"}, {policy.get("name") for policy in policies})
+
+        # Filter by action
+        policies = get_policies(action=ACTION.DELETE)
+        self.assertEqual(1, len(policies))
+        self.assertSetEqual({"user"}, {policy.get("name") for policy in policies})
+        policies = get_policies(action=f"*{ACTION.CLIENT_MODE_PER_USER}*")
+        self.assertEqual(1, len(policies))
+        self.assertSetEqual({"user_agent"}, {policy.get("name") for policy in policies})
+
+        # Filter by realm
+        policies = get_policies(realm=self.realm1)
+        self.assertEqual(1, len(policies))
+        self.assertSetEqual({"user_agent"}, {policy.get("name") for policy in policies})
+        policies = get_policies(realm=f"*{self.realm1}*")
+        self.assertEqual(2, len(policies))
+        self.assertSetEqual({"user", "user_agent"}, {policy.get("name") for policy in policies})
+
+        # Filter by admin realm
+        policies = get_policies(admin_realm="admins")
+        self.assertEqual(1, len(policies))
+        self.assertSetEqual({"admin"}, {policy.get("name") for policy in policies})
+        policies = get_policies(admin_realm="*admin*")
+        self.assertEqual(1, len(policies))
+        self.assertSetEqual({"admin"}, {policy.get("name") for policy in policies})
+
+        # Filter by admin user
+        policies = get_policies(admin_user="admin")
+        self.assertEqual(1, len(policies))
+        self.assertSetEqual({"admin"}, {policy.get("name") for policy in policies})
+        policies = get_policies(admin_user="a*")
+        self.assertEqual(1, len(policies))
+        self.assertSetEqual({"admin"}, {policy.get("name") for policy in policies})
+
+        # Filter by resolver
+        policies = get_policies(resolver=self.resolvername1)
+        self.assertEqual(1, len(policies))
+        self.assertSetEqual({"user_agent"}, {policy.get("name") for policy in policies})
+        policies = get_policies(resolver=f"*{self.resolvername1}*")
+        self.assertEqual(2, len(policies))
+        self.assertSetEqual({"user", "user_agent"}, {policy.get("name") for policy in policies})
+
+        # Filter by pi node
+        policies = get_policies(pi_node="localnode")
+        self.assertEqual(1, len(policies))
+        self.assertSetEqual({"user"}, {policy.get("name") for policy in policies})
+        policies = get_policies(pi_node="*node*")
+        self.assertEqual(2, len(policies))
+        self.assertSetEqual({"user", "user_agent"}, {policy.get("name") for policy in policies})
+
+        # Filter by user
+        policies = get_policies(user="hans")
+        self.assertEqual(1, len(policies))
+        self.assertSetEqual({"user_agent"}, {policy.get("name") for policy in policies})
+        policies = get_policies(user="*hans*")
+        self.assertEqual(2, len(policies))
+        self.assertSetEqual({"user", "user_agent"}, {policy.get("name") for policy in policies})
+
+        # Filter by client
+        policies = get_policies(client="1.2.3.4")
+        self.assertEqual(1, len(policies))
+        self.assertSetEqual({"user"}, {policy.get("name") for policy in policies})
+        policies = get_policies(client="1.2.3.*")
+        self.assertEqual(2, len(policies))
+        self.assertSetEqual({"user", "user_agent"}, {policy.get("name") for policy in policies})
+
+        # filter by time
+        policies = get_policies(time="Mon-Fri: 9-18")
+        self.assertEqual(1, len(policies))
+        self.assertSetEqual({"user"}, {policy.get("name") for policy in policies})
+        policies = get_policies(time="*Fri*")
+        self.assertEqual(2, len(policies))
+        self.assertSetEqual({"user", "user_agent"}, {policy.get("name") for policy in policies})
+
+        # Filter by priority
+        policies = get_policies(priority=10)
+        self.assertEqual(1, len(policies))
+        self.assertSetEqual({"user"}, {policy.get("name") for policy in policies})
+
+        # Filter by user agent
+        policies = get_policies(user_agent="PAM")
+        self.assertEqual(1, len(policies))
+        self.assertSetEqual({"user_agent"}, {policy.get("name") for policy in policies})
+        policies = get_policies(user_agent="*PAM*")
+        self.assertEqual(2, len(policies))
+        self.assertSetEqual({"user", "user_agent"}, {policy.get("name") for policy in policies})
+
+        delete_policy("basic")
+        delete_policy("user")
+        delete_policy("user_agent")
+        delete_policy("admin")
+
+        NodeName.query.filter_by(name="localnode").delete()
+        NodeName.query.filter_by(name="testnode").delete()
 
 
 class PolicyConditionClassTestCase(MyTestCase):

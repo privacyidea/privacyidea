@@ -183,7 +183,8 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
                     resolver: data.resolver || [],
                     adminrealm: data.adminrealm || [],
                     conditions: data.conditions || [],
-                    pinode: []
+                    pinode: [],
+                    user_agents: data.user_agents || []
                 });
             });
         };
@@ -480,11 +481,13 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
                     $scope.pinodes[key].ticked = true;
                 }
             });
-            angular.forEach($scope.userAgents, function (value, key) {
-                if (policy.user_agents.indexOf(value.identifier) > -1) {
-                    $scope.userAgents[key].ticked = true;
-                }
-            });
+            if (policy.user_agents) {
+                angular.forEach($scope.userAgents, function (value, key) {
+                    if (policy.user_agents.indexOf(value.identifier) > -1) {
+                        $scope.userAgents[key].ticked = true;
+                    }
+                });
+            }
             angular.forEach($scope.scopes, function (value, key) {
                 $scope.scopes[key].ticked = (policy.scope === value.name);
             });

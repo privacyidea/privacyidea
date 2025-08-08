@@ -174,7 +174,10 @@ def single_page_application():
     else:
         gdpr_link = ""
 
-    render_context = {
+    otp_pin_set_random_user = Match.action_only(g, scope=SCOPE.USER, action=ACTION.OTPPINSETRANDOM) \
+        .policies(write_to_audit_log=False)
+
+    render_context: dict = {
         'instance': instance,
         'backendUrl': backend_url,
         'browser_lang': browser_lang,
@@ -195,7 +198,8 @@ def single_page_application():
         'login_text': login_text,
         'gdpr_link': gdpr_link,
         'logo': logo,
-        'page_title': page_title
+        'page_title': page_title,
+        'otp_pin_set_random_user': otp_pin_set_random_user,
     }
 
     index_page = current_app.config.get("PI_INDEX_HTML") or "index.html"

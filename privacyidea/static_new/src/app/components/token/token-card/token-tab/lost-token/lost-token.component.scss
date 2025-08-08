@@ -1,0 +1,41 @@
+@use "../../../../../../styles";
+
+.dialog-div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.mat-mdc-button {
+  color: var(--mat-sys-primary);
+}
+
+.lost-content {
+  width: 36rem;
+}
+
+.lost-card {
+  background: var(--green-light);
+  color: white;
+  font-weight: bold;
+  border-radius: var(--border-radius);
+  border: unset;
+}
+
+.lost-card-content {
+  justify-content: center;
+  display: flex;
+  padding: 8px;
+}
+
+.lost-password {
+  font-weight: bold;
+  display: flex;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.question-icon {
+  margin-top: -3px;
+}
