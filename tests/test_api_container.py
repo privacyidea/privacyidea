@@ -20,7 +20,7 @@ from privacyidea.lib.machine import attach_token
 from privacyidea.lib.policies.policy_conditions import ConditionSection, ConditionHandleMissingData
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from privacyidea.lib.privacyideaserver import add_privacyideaserver
-from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
+from privacyidea.lib.realm import set_realm, set_default_realm
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.serviceid import set_serviceid
 from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
@@ -32,7 +32,6 @@ from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
 from privacyidea.lib.tokens.tantoken import TANACTION
 from privacyidea.lib.token import init_token, get_tokens_paginate, unassign_token
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import fetch_one_resource
 from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import Realm
 from tests.base import MyApiTestCase
@@ -2788,7 +2787,7 @@ class APIContainer(APIContainerTest):
         # ---- Invalid realm ---
         user = User("corny", self.realm3)
         container.add_user(user)
-        Realm.query.filter_by(name=self.realm3).delete()
+        Realm.query.filter_by(name=self.realm3).first().delete()
         # Success if providing everything (realm does not exist, hence realm_id is not set)
         payload = {"user": "corny", "realm": self.realm3, "user_id": user.uid, "resolver": user.resolver}
         result = self.request_assert_success(f'/container/{container_serial}/unassign', payload, self.at, 'POST')
@@ -2796,7 +2795,7 @@ class APIContainer(APIContainerTest):
         self.assertEqual(0, len(container.get_users()))
         self.setUp_user_realm3()
         container.add_user(user)
-        Realm.query.filter_by(name=self.realm3).delete()
+        Realm.query.filter_by(name=self.realm3).first().delete()
         # Also fails if not providing realm (sets default realm)
         payload = {"user": "corny", "user_id": user.uid, "resolver": user.resolver}
         result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
