@@ -44,8 +44,7 @@ from privacyidea.lib.resolver import (save_resolver,
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.models import ResolverConfig, Resolver
 from privacyidea.lib.utils import to_bytes, to_unicode
-from privacyidea.lib.error import ParameterError
-from requests import HTTPError
+from privacyidea.lib.error import ParameterError, ResolverError
 
 PWFILE = "tests/testdata/passwords"
 
@@ -242,7 +241,7 @@ class SQLResolverTestCase(MyTestCase):
                     "password" : "password"}'})
         y.loadConfig(params)
         with LogCapture(level=logging.ERROR) as lc:
-            self.assertRaises(ParameterError, y.getUserList, {"not_in_db": "parameter"})
+            self.assertRaises(ResolverError, y.getUserList, {"not_in_db": "parameter"})
             lc.check_present(("privacyidea.lib.resolvers.SQLIdResolver", "ERROR",
                               f"Mapped column ('not_a_column') is not available in the database "
                               f"table 'users' ({list(y.TABLE.columns.keys())})."))
@@ -887,7 +886,14 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue(uinfo.get("username") == "bob", uinfo)
 
         ret = y.getUserList({"username": "bob"})
-        self.assertTrue(len(ret) == 1, ret)
+        self.assertEqual(len(ret), 1, ret)
+
+        # Get user list with a wrong search parameter
+        with LogCapture(level=logging.ERROR) as lc:
+            self.assertRaises(ParameterError, y.getUserList, {"unknown": "parameter"})
+            lc.check_present(("privacyidea.lib.resolvers.LDAPIdResolver", "ERROR",
+                              f"Could not find search key (['unknown']) in the "
+                              f"attribute mapping keys ({list(y.userinfo.keys())})."))
 
         # user list with searchResRef entries
         # we are mocking the mock here
@@ -1953,7 +1959,7 @@ class LDAPResolverTestCase(MyTestCase):
         original_search = y.connection.extend.standard.paged_search
         with mock.patch.object(ldap3mock.Connection.Extend.Standard, 'paged_search') as mock_search:
             def _search_with_exception(*args, **kwargs):
-                results = original_search(*args, **kwargs)
+                original_search(*args, **kwargs)
                 raise LDAPOperationResult(result=RESULT_SIZE_LIMIT_EXCEEDED)
                 # This ``yield`` is needed to turn this function into a generator.
                 # If we omit this, the exception above would be raised immediately when ``paged_search`` is called.
@@ -2131,6 +2137,7 @@ class LDAPResolverTestCase(MyTestCase):
                         wraps=datetime.datetime) as mock_datetime:
             mock_datetime.now.return_value = now + datetime.timedelta(seconds=2 * (cache_timeout + 2))
             manager_id = y.getUserId('manager')
+            self.assertEqual(manager_id, objectGUIDs[1])
         self.assertEqual(list(CACHE[y.getResolverId()]['getUserId'].keys()), ['manager'])
 
     @ldap3mock.activate

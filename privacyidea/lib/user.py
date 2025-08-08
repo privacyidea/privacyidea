@@ -50,7 +50,7 @@ import hashlib
 import logging
 import traceback
 
-from .error import UserError
+from privacyidea.lib.error import ParameterError, ResolverError, UserError
 from ..api.lib.utils import (getParam,
                              optional)
 from .log import log_with
@@ -787,13 +787,11 @@ def get_user_list(param=None, user=None, custom_attributes=False):
             log.debug("Found this userlist: {0!r}".format(ulist))
             users.extend(ulist)
 
-        except KeyError as exx:  # pragma: no cover
-            log.error("{0!r}".format(exx))
-            log.debug("{0!s}".format(traceback.format_exc()))
-            raise exx
-
-        except Exception as ex:
-            log.error(f"Unable to get user list for resolver '{resolver_name}': {ex!r}")
+        except (ResolverError,  ParameterError) as ex:
+            # In case of wrong search parameters or broken resolver we continue
+            # All other errors will be passed down.
+            # TODO: Reflect the broken resolver/query in the result data
+            log.warning(f"Unable to get user list for resolver '{resolver_name}': {ex!r}")
             log.debug("{0!s}".format(traceback.format_exc()))
             continue
 
