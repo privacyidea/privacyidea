@@ -50,8 +50,9 @@ from dateutil.tz import tzlocal
 
 from privacyidea.lib.authcache import verify_in_cache, add_to_cache
 from privacyidea.lib.error import PolicyError
-from privacyidea.lib.policies.policy_helper import check_max_auth_fail, check_max_auth_success
-from privacyidea.lib.policy import ACTION, SCOPE, ACTIONVALUE, LOGINMODE
+from privacyidea.lib.policies.helper import check_max_auth_fail, check_max_auth_success
+from privacyidea.lib.policy import SCOPE, ACTIONVALUE, LOGINMODE
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import Match
 from privacyidea.lib.radiusserver import get_radius
 from privacyidea.lib.user import User
@@ -120,7 +121,7 @@ def challenge_response_allowed(func):
         token_type = args[0]
         user_object = kwds.get("user") or User()
         if g:
-            allowed_token_types = (Match.user(g, scope=SCOPE.AUTH, action=ACTION.CHALLENGERESPONSE,
+            allowed_token_types = (Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.CHALLENGERESPONSE,
                                               user_object=user_object)
                                    .action_values(unique=False, write_to_audit_log=False))
             log.debug(f"Found these allowed token types: {list(allowed_token_types)}")
@@ -158,7 +159,7 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
     auth_cache_policy = None
 
     if g:
-        auth_cache_policy = (Match.user(g, scope=SCOPE.AUTH, action=ACTION.AUTH_CACHE, user_object=user_object)
+        auth_cache_policy = (Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.AUTH_CACHE, user_object=user_object)
                              .action_values(unique=True, write_to_audit_log=False))
         if auth_cache_policy:
             auth_times = list(auth_cache_policy)[0].split("/")
@@ -215,7 +216,7 @@ def auth_user_has_no_token(wrapped_function, user_object, passw,
     options = options or {}
     g = options.get("g")
     if g:
-        pass_no_token = Match.user(g, scope=SCOPE.AUTH, action=ACTION.PASSNOTOKEN,
+        pass_no_token = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.PASSNOTOKEN,
                                    user_object=user_object).policies(write_to_audit_log=False)
         if pass_no_token:
             # Now we need to check, if the user really has no token.
@@ -245,7 +246,7 @@ def auth_user_does_not_exist(wrapped_function, user_object, passw, options=None)
     options = options or {}
     g = options.get("g")
     if g:
-        pass_no_user = Match.user(g, scope=SCOPE.AUTH, action=ACTION.PASSNOUSER,
+        pass_no_user = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.PASSNOUSER,
                                   user_object=user_object).policies(write_to_audit_log=False)
         if pass_no_user:
             # Check if user object exists
@@ -278,7 +279,7 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
     g = options.get("g")
     if g:
         policy_object = g.policy_object
-        pass_thru = Match.user(g, scope=SCOPE.AUTH, action=ACTION.PASSTHRU,
+        pass_thru = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU,
                                user_object=user_object).policies(write_to_audit_log=False)
         # We only go to passthru, if the user has no tokens!
         if pass_thru and get_tokens(user=user_object, count=True) == 0:
@@ -299,7 +300,7 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
                 r = radius.request(radius.config, user_object.login, passw)
                 if r:
                     # TODO: here we can check, if the token should be assigned.
-                    passthru_assign = Match.user(g, scope=SCOPE.AUTH, action=ACTION.PASSTHRU_ASSIGN,
+                    passthru_assign = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU_ASSIGN,
                                                  user_object=user_object).action_values(unique=True)
                     messages = []
                     if passthru_assign:
@@ -407,13 +408,13 @@ def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
                 # the token does not exist anymore. So we immediately return
                 return res, reply_dict
 
-            last_auth_dict = (Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.LASTAUTH, user_object=user_object)
+            last_auth_dict = (Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.LASTAUTH, user_object=user_object)
                               .action_values(unique=True, write_to_audit_log=False))
             if len(last_auth_dict) == 1:
                 res = token.check_last_auth_newer(list(last_auth_dict)[0])
                 if not res:
                     reply_dict["message"] = (f"The last successful authentication was "
-                                             f"{token.get_tokeninfo(ACTION.LASTAUTH)}. It is too long ago.")
+                                             f"{token.get_tokeninfo(PolicyAction.LASTAUTH)}. It is too long ago.")
 
                     g.audit_object.add_policy(next(iter(last_auth_dict.values())))
 
@@ -421,7 +422,7 @@ def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
             if res:
                 from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
                 last_auth = datetime.datetime.now(tzlocal())
-                token.add_tokeninfo(ACTION.LASTAUTH, last_auth.strftime(AUTH_DATE_FORMAT))
+                token.add_tokeninfo(PolicyAction.LASTAUTH, last_auth.strftime(AUTH_DATE_FORMAT))
 
     return res, reply_dict
 
@@ -446,7 +447,7 @@ def login_mode(wrapped_function, *args, **kwds):
         # We need the user, but we do not need the password
         user_object = args[0]
         # Get the policy
-        login_mode_dict = Match.user(g, scope=SCOPE.WEBUI, action=ACTION.LOGINMODE,
+        login_mode_dict = Match.user(g, scope=SCOPE.WEBUI, action=PolicyAction.LOGINMODE,
                                      user_object=user_object).action_values(unique=True)
         if login_mode_dict:
             # There is a login mode policy
@@ -498,7 +499,7 @@ def auth_otppin(wrapped_function, *args, **kwds):
             # If we still have no user and no tokenrealm, we create an empty user object.
             user_object = User("", realm="")
         # Get the policy for OTPPIN
-        otppin_dict = Match.user(g, scope=SCOPE.AUTH, action=ACTION.OTPPIN,
+        otppin_dict = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.OTPPIN,
                                  user_object=user_object).action_values(unique=True)
         if otppin_dict:
             if list(otppin_dict)[0] == ACTIONVALUE.NONE:
@@ -541,13 +542,13 @@ def config_lost_token(wrapped_function, *args, **kwds):
         if len(tokens) == 1:
             user_object = tokens[0].user or None
             # Get the policies
-            contents_dict = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.LOSTTOKENPWCONTENTS,
+            contents_dict = Match.user(g, scope=SCOPE.ENROLL, action=PolicyAction.LOSTTOKENPWCONTENTS,
                                        user_object=user_object).action_values(unique=True)
 
-            validity_dict = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.LOSTTOKENVALID,
+            validity_dict = Match.user(g, scope=SCOPE.ENROLL, action=PolicyAction.LOSTTOKENVALID,
                                        user_object=user_object).action_values(unique=True)
 
-            pw_len_dict = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.LOSTTOKENPWLEN,
+            pw_len_dict = Match.user(g, scope=SCOPE.ENROLL, action=PolicyAction.LOSTTOKENPWLEN,
                                      user_object=user_object).action_values(unique=True)
 
             if contents_dict:
@@ -583,7 +584,7 @@ def reset_all_user_tokens(wrapped_function, *args, **kwds):
     # A successful authentication was done
     if r[0] and g and allow_reset and available_tokens:
         token_owner = kwds.get('user') or available_tokens[0].user
-        reset_all = Match.user(g, scope=SCOPE.AUTH, action=ACTION.RESETALLTOKENS,
+        reset_all = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.RESETALLTOKENS,
                                user_object=token_owner if token_owner else None).policies()
         if reset_all:
             log.debug("Reset failcounter of all tokens of {0!s}".format(
@@ -601,9 +602,9 @@ def force_challenge_response(wrapped_function, user_object, passw, options=None)
     if options:
         g = options.get("g")
         if g:
-            if Match.user(g, scope=SCOPE.AUTH, action=ACTION.FORCE_CHALLENGE_RESPONSE,
+            if Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.FORCE_CHALLENGE_RESPONSE,
                           user_object=user_object).any(write_to_audit_log=False):
-                options[ACTION.FORCE_CHALLENGE_RESPONSE] = True
+                options[PolicyAction.FORCE_CHALLENGE_RESPONSE] = True
     else:
         log.warning("force_challenge_response can not work without options!")
     return wrapped_function(user_object, passw, options)

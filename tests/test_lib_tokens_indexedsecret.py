@@ -8,7 +8,8 @@ from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokens.indexedsecrettoken import IndexedSecretTokenClass, PIIXACTION
-from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, ACTION, PolicyClass
+from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyClass
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.models import Token
 from privacyidea.lib.token import init_token, remove_token, import_tokens, get_tokens
 

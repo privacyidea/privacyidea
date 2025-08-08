@@ -21,7 +21,8 @@ from datetime import timedelta
 
 from flask import g
 
-from privacyidea.lib.policy import Match, SCOPE, ACTION
+from privacyidea.lib.policy import Match, SCOPE
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import parse_timelimit, AUTH_RESPONSE
 
@@ -37,7 +38,7 @@ def check_max_auth_fail(user: User, user_search_dict: dict, check_validate_check
     """
     result = True
     reply_dict = {}
-    max_fail_dict = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.AUTHMAXFAIL,
+    max_fail_dict = Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.AUTHMAXFAIL,
                                user_object=user).action_values(unique=True, write_to_audit_log=False)
 
     if len(max_fail_dict) != 1:
@@ -75,7 +76,7 @@ def check_max_auth_success(user: User, user_search_dict: dict, check_validate_ch
     result = True
     reply_dict = {}
     # Get policies
-    max_success_dict = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.AUTHMAXSUCCESS,
+    max_success_dict = Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.AUTHMAXSUCCESS,
                                   user_object=user).action_values(unique=True, write_to_audit_log=False)
 
     if len(max_success_dict) != 1:
@@ -112,7 +113,7 @@ def get_jwt_validity(user: User) -> timedelta:
     :param user: The user for whom the JWT validity is checked.
     :return: A timedelta object representing the JWT validity period.
     """
-    validity_policy = (Match.user(g, scope=SCOPE.WEBUI, action=ACTION.JWTVALIDITY,
+    validity_policy = (Match.user(g, scope=SCOPE.WEBUI, action=PolicyAction.JWTVALIDITY,
                                   user_object=user).action_values(unique=True))
 
     validity_time = DEFAULT_JWT_VALIDITY

@@ -16,6 +16,7 @@
 # SPDX-FileCopyrightText: 2024 Nils Behlen <nils.behlen@netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
 from webauthn.helpers.structs import AttestationConveyancePreference
@@ -24,8 +25,9 @@ import privacyidea.lib.token
 from privacyidea.config import TestingConfig
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.framework import get_app_config_value
-from privacyidea.lib.policy import set_policy, SCOPE, delete_policy, ACTION
-from privacyidea.lib.token import remove_token, init_token, get_tokens
+from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
+from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.token import remove_token, init_token, get_tokens, get_one_token
 from privacyidea.lib.tokens.webauthn import CoseAlgorithm
 from privacyidea.lib.user import User
 from tests.base import MyApiTestCase, OverrideConfigTestCase
@@ -270,8 +272,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual(200, res.status_code)
             self._assert_result_value_true(res.json)
             detail = res.json["detail"]
-            self.assertNotIn(ACTION.ENROLL_VIA_MULTICHALLENGE, detail)
-            self.assertNotIn(ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL, detail)
+            self.assertNotIn(PolicyAction.ENROLL_VIA_MULTICHALLENGE, detail)
+            self.assertNotIn(PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL, detail)
 
         remove_token(serial)
         delete_policy("user_verification")
@@ -777,7 +779,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         """
         Verify that enroll_via_multichallenge works after a passkey authentication.
         """
-        set_policy("evm", scope=SCOPE.AUTH, action=f"{ACTION.ENROLL_VIA_MULTICHALLENGE}=hotp")
+        set_policy("evm", scope=SCOPE.AUTH, action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=hotp")
         serial = self._enroll_static_passkey()
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
         self.assertIn("user_verification", passkey_challenge)
@@ -800,8 +802,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
             detail = j["detail"]
             evm_serial = detail["serial"]
             self.assertTrue(evm_serial)
-            self.assertTrue(detail.get(ACTION.ENROLL_VIA_MULTICHALLENGE))
-            self.assertFalse(detail.get(ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
+            self.assertTrue(detail.get(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+            self.assertFalse(detail.get(PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
             self.assertIn("multi_challenge", detail)
             mc = detail["multi_challenge"]
             self.assertEqual(1, len(mc))
@@ -819,8 +821,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
         Verify that enroll_via_multichallenge_optional=true allows cancellation of the enrollment and is followed by
         a successful authentication.
         """
-        set_policy("evm", scope=SCOPE.AUTH, action=f"{ACTION.ENROLL_VIA_MULTICHALLENGE}=hotp")
-        set_policy("evm_optional", scope=SCOPE.AUTH, action=f"{ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL}=true")
+        set_policy("evm", scope=SCOPE.AUTH, action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=hotp")
+        set_policy("evm_optional", scope=SCOPE.AUTH, action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL}=true")
         serial = self._enroll_static_passkey()
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
         transaction_id = passkey_challenge["transaction_id"]
@@ -841,8 +843,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
             transaction_id = detail["transaction_id"]
             self.assertTrue(transaction_id)
 
-            self.assertTrue(detail.get(ACTION.ENROLL_VIA_MULTICHALLENGE))
-            self.assertTrue(detail.get(ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
+            self.assertTrue(detail.get(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+            self.assertTrue(detail.get(PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
             self.assertIn("multi_challenge", detail)
             mc = detail["multi_challenge"]
             self.assertEqual(1, len(mc))
@@ -869,10 +871,10 @@ class PasskeyAPITest(PasskeyAPITestBase):
         Verify that enroll_via_multichallenge_optional=true allows cancellation of the enrollment and is followed by
         a successful authentication.
         """
-        set_policy("evm", scope=SCOPE.AUTH, action=f"{ACTION.ENROLL_VIA_MULTICHALLENGE}=smartphone")
+        set_policy("evm", scope=SCOPE.AUTH, action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=smartphone")
         set_policy("container_enroll", scope=SCOPE.CONTAINER,
-                   action=f"{ACTION.CONTAINER_SERVER_URL}=https://doesntmatter.com")
-        set_policy("evm_optional", scope=SCOPE.AUTH, action=f"{ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL}=true")
+                   action=f"{PolicyAction.CONTAINER_SERVER_URL}=https://doesntmatter.com")
+        set_policy("evm_optional", scope=SCOPE.AUTH, action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL}=true")
         serial = self._enroll_static_passkey()
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
         transaction_id = passkey_challenge["transaction_id"]
@@ -893,8 +895,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
             transaction_id = detail["transaction_id"]
             self.assertTrue(transaction_id)
 
-            self.assertTrue(detail.get(ACTION.ENROLL_VIA_MULTICHALLENGE))
-            self.assertTrue(detail.get(ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
+            self.assertTrue(detail.get(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+            self.assertTrue(detail.get(PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
             self.assertIn("multi_challenge", detail)
             mc = detail["multi_challenge"]
             self.assertEqual(1, len(mc))
@@ -923,7 +925,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         Trying to cancel an enrollment via multichallenge that is not cancellable will result in a REJECT just like
         an authentication with a wrong OTP.
         """
-        set_policy("evm", scope=SCOPE.AUTH, action=f"{ACTION.ENROLL_VIA_MULTICHALLENGE}=hotp")
+        set_policy("evm", scope=SCOPE.AUTH, action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=hotp")
         serial = self._enroll_static_passkey()
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
         transaction_id = passkey_challenge["transaction_id"]
@@ -944,8 +946,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
             transaction_id = detail["transaction_id"]
             self.assertTrue(transaction_id)
 
-            self.assertTrue(detail.get(ACTION.ENROLL_VIA_MULTICHALLENGE))
-            self.assertFalse(detail.get(ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
+            self.assertTrue(detail.get(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+            self.assertFalse(detail.get(PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
             self.assertIn("multi_challenge", detail)
             mc = detail["multi_challenge"]
             self.assertEqual(1, len(mc))
@@ -968,6 +970,55 @@ class PasskeyAPITest(PasskeyAPITestBase):
         remove_token(serial)
         remove_token(evm_serial) # the token still exists because the enrollment was not cancelled
         delete_policy("evm")
+
+    def test_18_last_auth_policy(self):
+        serial = self._enroll_static_passkey()
+        set_policy("last_auth", scope=SCOPE.AUTHZ, action=f"{PolicyAction.LASTAUTH}=1d")
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
+        self.assertIn("user_verification", passkey_challenge)
+        # By default, user_verification is preferred
+        self.assertEqual("preferred", passkey_challenge["user_verification"])
+
+        token = get_tokens(serial=serial)[0]
+        # Add last_auth of 3 days ago to the token info
+        last_auth_date = datetime.now() - timedelta(days=3)
+        token.add_tokeninfo(PolicyAction.LASTAUTH, last_auth_date.isoformat(timespec="seconds"))
+        transaction_id = passkey_challenge["transaction_id"]
+
+        # Authentication will fail because the last_auth predates the policy time window
+        data = self.authentication_response_no_uv
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            j = res.json
+            result = j["result"]
+            self.assertTrue(result["status"])
+            self.assertFalse(result["value"])
+            self.assertEqual("REJECT", result["authentication"])
+            self.assertIn("detail", j)
+            detail = j["detail"]
+            self.assertIn("message", detail)
+            self.assertIn("Last authentication policy check failed", detail["message"])
+
+        # Change last_auth to 1 hour ago, authentication will succeed
+        last_auth_date = datetime.now() - timedelta(hours=1)
+        token.add_tokeninfo(PolicyAction.LASTAUTH, last_auth_date.isoformat(timespec="seconds"))
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self._assert_result_value_true(res.json)
+            self.assertIn("detail", res.json)
+            detail = res.json["detail"]
+            self.assertIn("message", detail)
+            self.assertTrue(detail["message"])
+            self.assertNotIn("auth_items", res.json)
+
+        delete_policy("last_auth")
+        remove_token(serial)
 
 
 class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):

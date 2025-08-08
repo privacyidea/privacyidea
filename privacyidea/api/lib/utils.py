@@ -22,24 +22,25 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import json
+import logging
+import re
 import string
+import threading
+import time
+from copy import copy
+from urllib.parse import unquote
 
-from ...lib.error import (ParameterError,
-                          AuthError, ERROR)
-from ...lib.log import log_with
+import jwt
+from flask import (jsonify,
+                   current_app, Response)
+
 from privacyidea.lib import _
 from privacyidea.lib.utils import (prepare_result, get_version, to_unicode,
                                    get_plugin_info_from_useragent)
-import time
-import logging
-import json
-import jwt
-import threading
-import re
-from copy import copy
-from urllib.parse import unquote
-from flask import (jsonify,
-                   current_app, Response)
+from ...lib.error import (ParameterError,
+                          AuthError, ERROR)
+from ...lib.log import log_with
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"

@@ -22,17 +22,21 @@ These are logical policy functions that are usually used in policy API decorator
 in some cases also used beside the API.
 Like policies, that are supposed to read and pass parameters during enrollment of a token.
 """
-from dataclasses import dataclass
 import logging
+from dataclasses import dataclass
+from datetime import timedelta, datetime
 from typing import Union
 
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial
-from privacyidea.lib.log import log_with
-from privacyidea.lib.policies.policy_conditions import ConditionSection
-from privacyidea.lib.policy import Match, SCOPE, ACTION
 from privacyidea.lib.error import PolicyError, ResourceNotFoundError
-from privacyidea.lib.token import get_tokens_from_serial_or_user, get_token_owner, get_realms_of_token
+from privacyidea.lib.log import log_with
+from privacyidea.lib.policies.conditions import ConditionSection
+from privacyidea.lib.policy import Match, SCOPE
+from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.token import get_tokens_from_serial_or_user, get_token_owner
+from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
+from privacyidea.lib.utils import parse_timedelta
 
 log = logging.getLogger(__name__)
 
@@ -52,7 +56,7 @@ class UserAttributes:
 @log_with(log)
 def get_init_tokenlabel_parameters(g, params=None, token_type="hotp", user_object=None):
     """
-    This helper function modifies the request parameters in regards
+    This helper function modifies the request parameters in regard
     to enrollment policies tokenlabel, tokenissuer, appimage, force_app_pin
 
     :param params: The request parameter
@@ -60,28 +64,28 @@ def get_init_tokenlabel_parameters(g, params=None, token_type="hotp", user_objec
     :return: modified request parameters
     """
     params = params or {}
-    label_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.TOKENLABEL,
+    label_pols = Match.user(g, scope=SCOPE.ENROLL, action=PolicyAction.TOKENLABEL,
                             user_object=user_object).action_values(unique=True, allow_white_space_in_action=True)
     if len(label_pols) == 1:
         # The policy was set, so we need to set the tokenlabel in the request.
-        params[ACTION.TOKENLABEL] = list(label_pols)[0]
+        params[PolicyAction.TOKENLABEL] = list(label_pols)[0]
 
-    issuer_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.TOKENISSUER,
+    issuer_pols = Match.user(g, scope=SCOPE.ENROLL, action=PolicyAction.TOKENISSUER,
                              user_object=user_object).action_values(unique=True, allow_white_space_in_action=True)
     if len(issuer_pols) == 1:
-        params[ACTION.TOKENISSUER] = list(issuer_pols)[0]
+        params[PolicyAction.TOKENISSUER] = list(issuer_pols)[0]
 
-    imageurl_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.APPIMAGEURL,
+    imageurl_pols = Match.user(g, scope=SCOPE.ENROLL, action=PolicyAction.APPIMAGEURL,
                                user_object=user_object).action_values(unique=True, allow_white_space_in_action=True)
     if len(imageurl_pols) == 1:
-        params[ACTION.APPIMAGEURL] = list(imageurl_pols)[0]
+        params[PolicyAction.APPIMAGEURL] = list(imageurl_pols)[0]
 
     # check the force_app_pin policy
     app_pin_pols = Match.user(g, scope=SCOPE.ENROLL,
-                              action='{0!s}_{1!s}'.format(token_type, ACTION.FORCE_APP_PIN),
+                              action='{0!s}_{1!s}'.format(token_type, PolicyAction.FORCE_APP_PIN),
                               user_object=user_object).any()
     if app_pin_pols:
-        params[ACTION.FORCE_APP_PIN] = True
+        params[PolicyAction.FORCE_APP_PIN] = True
 
     return params
 
@@ -215,7 +219,7 @@ def check_token_action_allowed(g, action: str, serial: str, user_attributes: Use
         token_owner_attributes = UserAttributes()
 
     if user_attributes.role == "admin":
-        if action == ACTION.ASSIGN:
+        if action == PolicyAction.ASSIGN:
             # Assigning a user to a token is only possible if the token has no owner yet.
             # To avoid helpdesk admins (for a specific resolver) lose access on their tokens while changing the owner
             # of a token, they are allowed to assign their users to tokens without owner.
@@ -232,7 +236,7 @@ def check_token_action_allowed(g, action: str, serial: str, user_attributes: Use
         user_attributes.additional_realms = token_owner_attributes.additional_realms or None
     elif user_attributes.role == "user" and serial:
         # for adding / removing tokens from a container, the user has to be the owner of the token
-        if action in [ACTION.CONTAINER_ADD_TOKEN, ACTION.CONTAINER_REMOVE_TOKEN]:
+        if action in [PolicyAction.CONTAINER_ADD_TOKEN, PolicyAction.CONTAINER_REMOVE_TOKEN]:
             if not user_is_owner(user_attributes.user, token_owner_attributes.user, allow_no_owner=False):
                 return False
 
@@ -261,7 +265,7 @@ def check_token_action_allowed(g, action: str, serial: str, user_attributes: Use
                                    serial=serial,
                                    extended_condition_check=condition_check).allowed()
 
-    if action_allowed and action == ACTION.CONTAINER_ADD_TOKEN:
+    if action_allowed and action == PolicyAction.CONTAINER_ADD_TOKEN:
         # Adding a token to a container will remove it from the old container: Check if the remove action is allowed
         try:
             old_container = find_container_for_token(serial)
@@ -269,7 +273,7 @@ def check_token_action_allowed(g, action: str, serial: str, user_attributes: Use
             old_container = None
 
         if old_container:
-            action_allowed = check_container_action_allowed(g, ACTION.CONTAINER_REMOVE_TOKEN, old_container.serial,
+            action_allowed = check_container_action_allowed(g, PolicyAction.CONTAINER_REMOVE_TOKEN, old_container.serial,
                                                             user_attributes)
             if not action_allowed:
                 log.info(f"Token {serial} is in container {old_container.serial}. The user is not allowed to remove the"
@@ -310,7 +314,7 @@ def check_container_action_allowed(g, action: str, container_serial: str, user_a
     condition_check.remove(ConditionSection.TOKENINFO)
 
     if user_attributes.role == "admin":
-        if action == ACTION.CONTAINER_ASSIGN_USER:
+        if action == PolicyAction.CONTAINER_ASSIGN_USER:
             # Assigning a user to a container is only possible if the container has no owner yet.
             # To avoid helpdesk admins (for a specific resolver) lose access on their containers while changing the
             # owner of a container, they are allowed to assign their users to containers without user.
@@ -321,7 +325,7 @@ def check_container_action_allowed(g, action: str, container_serial: str, user_a
             user_attributes.user = container_owner_attributes.user
             # user conditions are already evaluated in the check_user_params decorator
             condition_check.remove(ConditionSection.USERINFO)
-        elif action == ACTION.CONTAINER_CREATE:
+        elif action == PolicyAction.CONTAINER_CREATE:
             # If the container is created, it has no owner yet, instead check the user attributes from the parameters
             user_attributes.username = user_attributes.username or ""
             user_attributes.realm = user_attributes.realm or ""
@@ -335,10 +339,10 @@ def check_container_action_allowed(g, action: str, container_serial: str, user_a
         user_attributes.additional_realms = container_owner_attributes.additional_realms or None
     elif user_attributes.role == "user" and container_serial:
         # check if the user is the owner of the container
-        if action == ACTION.CONTAINER_CREATE:
+        if action == PolicyAction.CONTAINER_CREATE:
             # container has no owner yet, skip this check
             is_owner = True
-        elif action == ACTION.CONTAINER_ASSIGN_USER:
+        elif action == PolicyAction.CONTAINER_ASSIGN_USER:
             # users are allowed to assign containers without owner
             is_owner = user_is_owner(user_attributes.user, container_owner_attributes.user, allow_no_owner=True)
         else:
@@ -381,3 +385,24 @@ def user_is_owner(logged_in_user: User, owner: User, allow_no_owner: bool = Fals
     if not is_owner and allow_no_owner and not owner:
         is_owner = True
     return is_owner
+
+
+def check_last_auth_policy(g, token: TokenClass) -> bool:
+    """
+    Check if the last_auth policy is enabled and if the token's last_auth is within the allowed time frame.
+    """
+    if not token:
+        log.error("No token provided to check last_auth policy.")
+        return False
+    last_auth_policy = (Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.LASTAUTH, user_object=None)
+                      .action_values(unique=True, write_to_audit_log=False))
+    if len(last_auth_policy) == 1:
+        timeframe = list(last_auth_policy)[0]
+        time_delta: timedelta = parse_timedelta(timeframe)
+        last_auth_info = token.get_tokeninfo(PolicyAction.LASTAUTH)
+        if not last_auth_info:
+            log.debug("Token has not been used for authentication yet, unable to apply last_auth policy.")
+            return True
+        last_auth_token = datetime.fromisoformat(last_auth_info)
+        return last_auth_token <= datetime.now() <= last_auth_token + time_delta
+    return True

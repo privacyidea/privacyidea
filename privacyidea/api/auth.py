@@ -58,7 +58,7 @@ from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.fido2.challenge import verify_fido2_challenge
 from privacyidea.lib.fido2.util import get_fido2_token_by_credential_id
-from privacyidea.lib.policies.policy_helper import get_jwt_validity
+from privacyidea.lib.policies.helper import get_jwt_validity
 from privacyidea.lib.user import User, split_user, log_used_user
 from privacyidea.lib.policy import PolicyClass, REMOTE_USER
 from privacyidea.lib.realm import get_default_realm, realm_is_defined

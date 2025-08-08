@@ -29,7 +29,7 @@ from .lib.utils import (getParam,
                         required,
                         send_result)
 from ..lib.log import log_with
-from ..lib.policy import ACTION
+from ..lib.policies.actions import PolicyAction
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from flask import g
 import logging
@@ -43,7 +43,7 @@ radiusserver_blueprint = Blueprint('radiusserver_blueprint', __name__)
 
 
 @radiusserver_blueprint.route('/<identifier>', methods=['POST'])
-@prepolicy(check_base_action, request, ACTION.RADIUSSERVERWRITE)
+@prepolicy(check_base_action, request, PolicyAction.RADIUSSERVERWRITE)
 @log_with(log)
 def create(identifier=None):
     """
@@ -77,7 +77,7 @@ def create(identifier=None):
 
 @radiusserver_blueprint.route('/', methods=['GET'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.RADIUSSERVERREAD)
+@prepolicy(check_base_action, request, PolicyAction.RADIUSSERVERREAD)
 def list_radius():
     """
     This call gets the list of RADIUS server definitions
@@ -91,7 +91,7 @@ def list_radius():
 
 
 @radiusserver_blueprint.route('/<identifier>', methods=['DELETE'])
-@prepolicy(check_base_action, request, ACTION.RADIUSSERVERWRITE)
+@prepolicy(check_base_action, request, PolicyAction.RADIUSSERVERWRITE)
 @log_with(log)
 def delete_server(identifier=None):
     """
@@ -107,7 +107,7 @@ def delete_server(identifier=None):
 
 
 @radiusserver_blueprint.route('/test_request', methods=['POST'])
-@prepolicy(check_base_action, request, ACTION.RADIUSSERVERWRITE)
+@prepolicy(check_base_action, request, PolicyAction.RADIUSSERVERWRITE)
 @log_with(log)
 def test():
     """

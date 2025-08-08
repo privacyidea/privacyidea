@@ -33,7 +33,7 @@ from .lib.utils import (getParam,
                         send_result)
 from ..lib.log import log_with
 from ..lib.crypto import decryptPassword, FAILED_TO_DECRYPT_PASSWORD
-from ..lib.policy import ACTION
+from ..lib.policies.actions import PolicyAction
 from ..lib.utils import is_true
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from flask import g
@@ -48,7 +48,7 @@ smtpserver_blueprint = Blueprint('smtpserver_blueprint', __name__)
 
 
 @smtpserver_blueprint.route('/<identifier>', methods=['POST'])
-@prepolicy(check_base_action, request, ACTION.SMTPSERVERWRITE)
+@prepolicy(check_base_action, request, PolicyAction.SMTPSERVERWRITE)
 @log_with(log)
 def create(identifier=None):
     """
@@ -84,7 +84,7 @@ def create(identifier=None):
 
 @smtpserver_blueprint.route('/', methods=['GET'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.SMTPSERVERREAD)
+@prepolicy(check_base_action, request, PolicyAction.SMTPSERVERREAD)
 def list_smtpservers_api():
     """
     This call gets the list of SMTP server definitions
@@ -95,7 +95,7 @@ def list_smtpservers_api():
 
 
 @smtpserver_blueprint.route('/<identifier>', methods=['DELETE'])
-@prepolicy(check_base_action, request, ACTION.SMTPSERVERWRITE)
+@prepolicy(check_base_action, request, PolicyAction.SMTPSERVERWRITE)
 @log_with(log)
 def delete_server(identifier=None):
     """
@@ -111,7 +111,7 @@ def delete_server(identifier=None):
 
 
 @smtpserver_blueprint.route('/send_test_email', methods=['POST'])
-@prepolicy(check_base_action, request, ACTION.SMTPSERVERWRITE)
+@prepolicy(check_base_action, request, PolicyAction.SMTPSERVERWRITE)
 @log_with(log)
 def test():
     """

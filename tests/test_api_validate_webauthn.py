@@ -5,7 +5,8 @@ from webauthn.helpers import bytes_to_base64url
 
 from privacyidea.lib.fido2.util import hash_credential_id
 from privacyidea.lib.machine import attach_token, detach_token
-from privacyidea.lib.policy import SCOPE, ACTION, set_policy, delete_policy, delete_policies
+from privacyidea.lib.policy import SCOPE, set_policy, delete_policy, delete_policies
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    get_one_token)
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
@@ -215,7 +216,7 @@ class WebAuthn(MyApiTestCase):
 
         set_policy("wan1", scope=SCOPE.ENROLL, action="webauthn_relying_party_id=fritz.box")
         set_policy("wan2", scope=SCOPE.ENROLL, action="webauthn_relying_party_name=fritz.box")
-        set_policy("challenge_response", scope=SCOPE.AUTH, action=f"{ACTION.CHALLENGERESPONSE}=totp hotp")
+        set_policy("challenge_response", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=totp hotp")
 
         pin = "12"
         user = User("hans", self.realm1)
@@ -335,8 +336,8 @@ class WebAuthn(MyApiTestCase):
         remove_token(webauthn_serial)
 
     def test_20_authenticate_other_token(self):
-        set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollWEBAUTHN", "enrollHOTP", ACTION.ENROLLPIN,
-                                                        ACTION.TRIGGERCHALLENGE])
+        set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollWEBAUTHN", "enrollHOTP", PolicyAction.ENROLLPIN,
+                                                        PolicyAction.TRIGGERCHALLENGE])
         # Ensure that a not readily enrolled WebAuthn token does not disturb the usage
         # of an HOTP token with challenge response.
         # First enrollment step
@@ -377,7 +378,7 @@ class WebAuthn(MyApiTestCase):
             self.assertTrue(data.get("result").get("status"))
             self.assertTrue(data.get("result").get("value"))
         # We need a policy for HOTP trigger challenge
-        set_policy(name="trigpol", scope=SCOPE.AUTH, action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+        set_policy(name="trigpol", scope=SCOPE.AUTH, action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE))
         # Check if the challenge is triggered for the HOTP token
         with self.app.test_request_context('/validate/check',
                                            method='POST',

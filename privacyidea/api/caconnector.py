@@ -32,7 +32,7 @@ from privacyidea.lib.caconnector import (save_caconnector,
                                          get_caconnector_specific_options,
                                          get_caconnector_list)
 from ..api.lib.prepolicy import prepolicy, check_base_action
-from privacyidea.lib.policy import ACTION
+from ..lib.policies.actions import PolicyAction
 
 log = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ caconnector_blueprint = Blueprint('caconnector_blueprint', __name__)
 @caconnector_blueprint.route('/<name>', methods=['GET'])
 @caconnector_blueprint.route('/', methods=['GET'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.CACONNECTORREAD)
+@prepolicy(check_base_action, request, PolicyAction.CACONNECTORREAD)
 def get_caconnector_api(name=None):
     """
     returns a json list of the available CA connectors
@@ -57,7 +57,7 @@ def get_caconnector_api(name=None):
 
 @caconnector_blueprint.route('/specific/<catype>', methods=['GET'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.CACONNECTORREAD)
+@prepolicy(check_base_action, request, PolicyAction.CACONNECTORREAD)
 def get_caconnector_specific(catype):
     """
     It requires the configuration data of a CA connector in the GET parameters
@@ -72,7 +72,7 @@ def get_caconnector_specific(catype):
 
 @caconnector_blueprint.route('/<name>', methods=['POST'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.CACONNECTORWRITE)
+@prepolicy(check_base_action, request, PolicyAction.CACONNECTORWRITE)
 def save_caconnector_api(name=None):
     """
     Create a new CA connector
@@ -87,7 +87,7 @@ def save_caconnector_api(name=None):
 
 @caconnector_blueprint.route('/<name>', methods=['DELETE'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.CACONNECTORDELETE)
+@prepolicy(check_base_action, request, PolicyAction.CACONNECTORDELETE)
 def delete_caconnector_api(name=None):
     """
     Delete a specific CA connector

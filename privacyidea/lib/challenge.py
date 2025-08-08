@@ -28,7 +28,7 @@ import datetime
 import logging
 
 from .log import log_with
-from .policy import ACTION
+from .policies.actions import PolicyAction
 from .sqlutils import delete_matching_rows
 from ..models import Challenge, db
 
@@ -232,24 +232,24 @@ def cancel_enrollment_via_multichallenge(transaction_id: str) -> bool:
         log.warning("No data found in challenge %s for transaction_id %s", challenge.id, transaction_id)
         return False
 
-    if not ACTION.ENROLL_VIA_MULTICHALLENGE in data:
+    if not PolicyAction.ENROLL_VIA_MULTICHALLENGE in data:
         log.warning(
             "Challenge for transaction_id %s contains no information about ENROLL_VIA_MULTICHALLENGE",
             transaction_id
         )
         return False
 
-    if not ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL in data:
+    if not PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL in data:
         log.warning(
             "Challenge for transaction_id %s contains no information about ENROLL_VIA_MULTICHALLENGE_OPTIONAL",
             transaction_id
         )
         return False
 
-    if not data[ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL]:
+    if not data[PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL]:
         log.warning(
             "Challenge %s for transaction_id %s does not have the action %s set to True",
-            challenge.id, transaction_id, ACTION.ENROLL_VIA_MULTICHALLENGE_OPTIONAL
+            challenge.id, transaction_id, PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL
         )
         return False
 

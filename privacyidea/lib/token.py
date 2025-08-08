@@ -93,7 +93,7 @@ from privacyidea.lib.error import (TokenAdminError,
                                    privacyIDEAError, ResourceNotFoundError, PolicyError)
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import log_with
-from privacyidea.lib.policy import ACTION
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_user_does_not_exist,
                                               auth_user_has_no_token,
@@ -2480,9 +2480,9 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
             raise TokenAdminError(_("This action is not possible, since the token is locked"), id=1007)
 
     # Remove disabled token types from token_object_list
-    if ACTION.DISABLED_TOKEN_TYPES in options and options[ACTION.DISABLED_TOKEN_TYPES]:
+    if PolicyAction.DISABLED_TOKEN_TYPES in options and options[PolicyAction.DISABLED_TOKEN_TYPES]:
         token_object_list = [token for token in token_object_list if
-                             token.type not in options[ACTION.DISABLED_TOKEN_TYPES]]
+                             token.type not in options[PolicyAction.DISABLED_TOKEN_TYPES]]
 
     # Remove certain disabled tokens from token_object_list
     if len(token_object_list) > 0:
@@ -2505,7 +2505,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
             # This is a challenge request
             challenge_request_token_list.append(token_object)
         else:
-            if not (ACTION.FORCE_CHALLENGE_RESPONSE in options and is_true(options[ACTION.FORCE_CHALLENGE_RESPONSE])):
+            if not (PolicyAction.FORCE_CHALLENGE_RESPONSE in options and is_true(options[PolicyAction.FORCE_CHALLENGE_RESPONSE])):
                 # This is a normal authentication attempt
                 try:
                     # Pass the length of the valid_token_list to ``authenticate`` so that

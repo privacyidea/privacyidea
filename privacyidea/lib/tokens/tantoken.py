@@ -27,7 +27,8 @@ from privacyidea.lib.decorators import check_token_otp_length
 from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.papertoken import PaperTokenClass
-from privacyidea.lib.policy import SCOPE, ACTION, GROUP
+from privacyidea.lib.policy import SCOPE, GROUP
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib import _
 from privacyidea.lib.crypto import geturandom, hash
 
@@ -106,12 +107,12 @@ class TanTokenClass(PaperTokenClass):
                            "desc": _("The number of OTP values, which are "
                                      "printed on the paper.")
                        },
-                       ACTION.MAXTOKENUSER: {
+                       PolicyAction.MAXTOKENUSER: {
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of TAN tokens assigned."),
                            'group': GROUP.TOKEN
                        },
-                       ACTION.MAXACTIVETOKENUSER: {
+                       PolicyAction.MAXACTIVETOKENUSER: {
                            'type': 'int',
                            'desc': _(
                                "The user may only have this maximum number of active TAN tokens assigned."),

@@ -10,8 +10,9 @@ from privacyidea.lib.challenge import get_challenges
 from .base import MyApiTestCase, OverrideConfigTestCase
 import mock
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
-from privacyidea.lib.policy import (set_policy, SCOPE, ACTION, REMOTE_USER,
+from privacyidea.lib.policy import (set_policy, SCOPE, REMOTE_USER,
                                     delete_policy)
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.auth import create_db_admin
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.realm import (set_realm, set_default_realm, delete_realm,
@@ -455,7 +456,7 @@ class AuthApiTestCase(MyApiTestCase):
 
         # now check that with a disabled remote_user policy the login fails
         set_policy(name="remote", scope=SCOPE.WEBUI,
-                   action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.DISABLE))
+                   action="{0!s}={1!s}".format(PolicyAction.REMOTE_USER, REMOTE_USER.DISABLE))
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "cornelius"},
@@ -474,7 +475,7 @@ class AuthApiTestCase(MyApiTestCase):
 
         # And now check that with an enabled remote_user policy the login succeeds
         set_policy(name="remote", scope=SCOPE.WEBUI,
-                   action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.ACTIVE))
+                   action="{0!s}={1!s}".format(PolicyAction.REMOTE_USER, REMOTE_USER.ACTIVE))
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "cornelius"},
@@ -491,7 +492,7 @@ class AuthApiTestCase(MyApiTestCase):
 
         # check that a remote user with "@" works as well
         set_policy(name="remote", scope=SCOPE.WEBUI, realm=self.realm1,
-                   action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.ACTIVE))
+                   action="{0!s}={1!s}".format(PolicyAction.REMOTE_USER, REMOTE_USER.ACTIVE))
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "cornelius@realm1"},
@@ -509,7 +510,7 @@ class AuthApiTestCase(MyApiTestCase):
         # check that the policy remote_user=force passes the necessary hidden tag to the
         # login window
         set_policy(name="remote", scope=SCOPE.WEBUI, realm=self.realm1,
-                   action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.FORCE))
+                   action="{0!s}={1!s}".format(PolicyAction.REMOTE_USER, REMOTE_USER.FORCE))
         with self.app.test_request_context('/',
                                            method='GET',
                                            environ_base={"REMOTE_USER": "cornelius@realm1"}):
@@ -521,7 +522,7 @@ class AuthApiTestCase(MyApiTestCase):
 
         # bind the remote user policy to a different realm
         set_policy(name="remote", scope=SCOPE.WEBUI, realm=self.realm2,
-                   action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.ACTIVE))
+                   action="{0!s}={1!s}".format(PolicyAction.REMOTE_USER, REMOTE_USER.ACTIVE))
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "cornelius@realm1"},
@@ -537,7 +538,7 @@ class AuthApiTestCase(MyApiTestCase):
 
         # check split@sign is working correctly
         set_policy(name="remote", scope=SCOPE.WEBUI, realm=self.realm1,
-                   action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.ACTIVE))
+                   action="{0!s}={1!s}".format(PolicyAction.REMOTE_USER, REMOTE_USER.ACTIVE))
         set_privacyidea_config(SYSCONF.SPLITATSIGN, False)
         with self.app.test_request_context('/auth',
                                            method='POST',
@@ -702,7 +703,7 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertEqual("Authentication failure. Wrong credentials", error.get("message"))
 
         # set a policy to authenticate against privacyIDEA
-        set_policy("piLogin", scope=SCOPE.WEBUI, action="{0!s}=privacyIDEA".format(ACTION.LOGINMODE))
+        set_policy("piLogin", scope=SCOPE.WEBUI, action="{0!s}=privacyIDEA".format(PolicyAction.LOGINMODE))
 
         # user authenticates against privacyidea but user does not exist
         with self.app.test_request_context('/auth',
@@ -734,7 +735,7 @@ class AuthApiTestCase(MyApiTestCase):
                    user=User("cornelius", self.realm1))
 
         # Set the policy to use privacyIDEA for authentication
-        set_policy("piLogin", scope=SCOPE.WEBUI, action=f"{ACTION.LOGINMODE}=privacyIDEA")
+        set_policy("piLogin", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
 
         with self.app.test_request_context('/auth',
                                            method='POST',
@@ -749,7 +750,7 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertEqual(result.get("value").get('role'), 'user', result)
 
         # Disable the spass token for authentication
-        set_policy(name="disable_spass_token", scope=SCOPE.AUTH, action=f"{ACTION.DISABLED_TOKEN_TYPES}=spass")
+        set_policy(name="disable_spass_token", scope=SCOPE.AUTH, action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=spass")
 
         # The very same auth must now be rejected
         with self.app.test_request_context('/auth',
@@ -789,11 +790,11 @@ class AdminFromUserstore(OverrideConfigTestCase):
             self.assertIn('token', result.get('value'), result)
             self.assertEqual(result.get("value").get('role'), 'admin', result)
             # if no admin policy is set, the user should have all admin rights
-            self.assertIn(ACTION.DELETE, result.get('value').get('rights'), result)
+            self.assertIn(PolicyAction.DELETE, result.get('value').get('rights'), result)
 
         # Now test with a helpdesk policy for the admin realm
         set_policy(name='helpdesk', scope=SCOPE.ADMIN, adminrealm=self.realm1,
-                   action=ACTION.DISABLE)
+                   action=PolicyAction.DISABLE)
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "cornelius@Realm1",
@@ -805,8 +806,8 @@ class AdminFromUserstore(OverrideConfigTestCase):
             self.assertIn('token', result.get('value'), result)
             self.assertEqual(result.get("value").get('role'), 'admin', result)
             # check that the appropriate rights are set/unset
-            self.assertNotIn(ACTION.DELETE, result.get('value').get('rights'), result)
-            self.assertIn(ACTION.DISABLE, result.get('value').get('rights'), result)
+            self.assertNotIn(PolicyAction.DELETE, result.get('value').get('rights'), result)
+            self.assertIn(PolicyAction.DISABLE, result.get('value').get('rights'), result)
         delete_policy(name='helpdesk')
 
 
@@ -883,7 +884,7 @@ class DuplicateUserApiTestCase(MyApiTestCase):
         user with the same username in the defrealm
         """
         # Generic policy is applied to both
-        set_policy("max_fail", scope=SCOPE.AUTHZ, action=f"{ACTION.AUTHMAXFAIL}=2/1m")
+        set_policy("max_fail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=2/1m")
         self.app_context.g.audit_object.clear()
 
         # Admin
@@ -928,7 +929,7 @@ class DuplicateUserApiTestCase(MyApiTestCase):
             self.assertEqual(details.get("message"), "Only 2 failed authentications per 0:01:00 allowed.", details)
 
         # Realm policy is only applied to user
-        set_policy("max_fail", scope=SCOPE.AUTHZ, action=f"{ACTION.AUTHMAXFAIL}=2/1m", realm=self.realm1)
+        set_policy("max_fail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=2/1m", realm=self.realm1)
 
         # Failed authentications
         for i in range(2):
@@ -967,7 +968,7 @@ class DuplicateUserApiTestCase(MyApiTestCase):
         username in the defrealm
         """
         # Generic policy is applied to both
-        set_policy("max_success", scope=SCOPE.AUTHZ, action=f"{ACTION.AUTHMAXSUCCESS}=2/1m")
+        set_policy("max_success", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXSUCCESS}=2/1m")
         self.app_context.g.audit_object.clear()
 
         # Admin
@@ -1009,7 +1010,7 @@ class DuplicateUserApiTestCase(MyApiTestCase):
             self.assertEqual(200, res.status_code, res)
 
         # Realm policy is only applied to user
-        set_policy("max_success", scope=SCOPE.AUTHZ, action=f"{ACTION.AUTHMAXSUCCESS}=2/1m", realm=self.realm1)
+        set_policy("max_success", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXSUCCESS}=2/1m", realm=self.realm1)
 
         # Admin can log in successfully
         with self.app.test_request_context('/auth',
@@ -1040,10 +1041,10 @@ class DuplicateUserApiTestCase(MyApiTestCase):
         delete_policy("max_success")
 
     def test_04_increase_failcounter_on_challenge(self):
-        set_policy("pi_login", scope=SCOPE.WEBUI, action=f"{ACTION.LOGINMODE}=privacyIDEA")
+        set_policy("pi_login", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
         set_policy("challenge_response", scope=SCOPE.AUTH,
-                   action=f"{ACTION.CHALLENGERESPONSE}=hotp,{ACTION.OTPPIN}=userstore")
-        set_policy("failcounter_challenge", scope=SCOPE.AUTH, action=ACTION.INCREASE_FAILCOUNTER_ON_CHALLENGE,
+                   action=f"{PolicyAction.CHALLENGERESPONSE}=hotp,{PolicyAction.OTPPIN}=userstore")
+        set_policy("failcounter_challenge", scope=SCOPE.AUTH, action=PolicyAction.INCREASE_FAILCOUNTER_ON_CHALLENGE,
                    realm=self.realm1)
 
         user = User(self.testadmin, self.realm1)
@@ -1091,9 +1092,9 @@ class DuplicateUserApiTestCase(MyApiTestCase):
         delete_policy("failcounter_challenge")
 
     def test_05_disabled_token_types(self):
-        set_policy("pi_login", scope=SCOPE.WEBUI, action=f"{ACTION.LOGINMODE}=privacyIDEA")
-        set_policy("otp_pin", scope=SCOPE.AUTH, action=f"{ACTION.OTPPIN}=userstore")
-        set_policy("disabled_token_types", scope=SCOPE.AUTH, action=f"{ACTION.DISABLED_TOKEN_TYPES}=totp",
+        set_policy("pi_login", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
+        set_policy("otp_pin", scope=SCOPE.AUTH, action=f"{PolicyAction.OTPPIN}=userstore")
+        set_policy("disabled_token_types", scope=SCOPE.AUTH, action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=totp",
                    realm=self.realm1)
         user = User(self.testadmin, self.realm1)
         totp = init_token({"type": "totp"}, user=user)
@@ -1134,7 +1135,7 @@ class DuplicateUserApiTestCase(MyApiTestCase):
 
     def test_06_jwt_validity(self):
         # generic policy applies to both
-        set_policy("jwt_validity", scope=SCOPE.WEBUI, action=f"{ACTION.JWTVALIDITY}=1800")
+        set_policy("jwt_validity", scope=SCOPE.WEBUI, action=f"{PolicyAction.JWTVALIDITY}=1800")
 
         # Admin
         with self.app.test_request_context('/auth',
@@ -1163,7 +1164,7 @@ class DuplicateUserApiTestCase(MyApiTestCase):
             self.assertAlmostEqual(expected_expiration, expiration, delta=datetime.timedelta(seconds=5))
 
         # change to realm policy
-        set_policy("jwt_validity", scope=SCOPE.WEBUI, action=f"{ACTION.JWTVALIDITY}=7200", realm=self.realm1)
+        set_policy("jwt_validity", scope=SCOPE.WEBUI, action=f"{PolicyAction.JWTVALIDITY}=7200", realm=self.realm1)
 
         # Admin: Default time 3600 s
         with self.app.test_request_context('/auth',
@@ -1214,11 +1215,11 @@ class EventHandlerTest(MyApiTestCase):
         set_default_realm(self.realm1)
 
         # set a policy to authenticate against privacyIDEA
-        set_policy("piLogin", scope=SCOPE.WEBUI, action="{0!s}=privacyIDEA".format(ACTION.LOGINMODE))
+        set_policy("piLogin", scope=SCOPE.WEBUI, action="{0!s}=privacyIDEA".format(PolicyAction.LOGINMODE))
         # set a policy to for otppin=userstore
-        set_policy("otppin", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN))
+        set_policy("otppin", scope=SCOPE.AUTH, action="{0!s}=userstore".format(PolicyAction.OTPPIN))
         # Set a policy to do C/R with HOTP tokens
-        set_policy("crhotp", scope=SCOPE.AUTH, action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+        set_policy("crhotp", scope=SCOPE.AUTH, action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE))
 
         # Create an event handler, that creates HOTP token on /auth with default OTP key
         # TODO: this is probably a bad test case since enrolling an HOTP-Token

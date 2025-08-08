@@ -32,7 +32,7 @@ from ..lib.log import log_with
 from flask import g
 import logging
 from ..api.lib.prepolicy import prepolicy, check_base_action
-from ..lib.policy import ACTION
+from ..lib.policies.actions import PolicyAction
 from privacyidea.lib.smsprovider.SMSProvider import (SMS_PROVIDERS,
                                                      get_smsgateway,
                                                      set_smsgateway,
@@ -49,7 +49,7 @@ smsgateway_blueprint = Blueprint('smsgateway_blueprint', __name__)
 @smsgateway_blueprint.route('/', methods=['GET'])
 @smsgateway_blueprint.route('/<gwid>', methods=['GET'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.SMSGATEWAYREAD)
+@prepolicy(check_base_action, request, PolicyAction.SMSGATEWAYREAD)
 def get_gateway(gwid=None):
     """
     returns a json list of the gateway definitions
@@ -78,7 +78,7 @@ def get_gateway(gwid=None):
 
 @smsgateway_blueprint.route('', methods=['POST'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.SMSGATEWAYWRITE)
+@prepolicy(check_base_action, request, PolicyAction.SMSGATEWAYWRITE)
 def set_gateway():
     """
     This creates a new SMS gateway definition or updates an existing one.
@@ -112,7 +112,7 @@ def set_gateway():
 
 @smsgateway_blueprint.route('/<identifier>', methods=['DELETE'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.SMSGATEWAYWRITE)
+@prepolicy(check_base_action, request, PolicyAction.SMSGATEWAYWRITE)
 def delete_gateway(identifier=None):
     """
     this function deletes an existing smsgateway definition
@@ -129,7 +129,7 @@ def delete_gateway(identifier=None):
 
 @smsgateway_blueprint.route('/option/<gwid>/<key>', methods=['DELETE'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.SMSGATEWAYWRITE)
+@prepolicy(check_base_action, request, PolicyAction.SMSGATEWAYWRITE)
 def delete_gateway_option(gwid=None, key=None):
     """
     this function deletes an option of a gateway definition

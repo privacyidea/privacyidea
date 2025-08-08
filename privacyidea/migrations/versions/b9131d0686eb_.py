@@ -15,7 +15,8 @@ import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import orm
 from sqlalchemy.schema import Sequence
-from privacyidea.lib.policy import SCOPE, ACTION
+from privacyidea.lib.policy import SCOPE
+from privacyidea.lib.policies.actions import PolicyAction
 
 Base = declarative_base()
 
@@ -69,13 +70,13 @@ def upgrade():
         # add policy if it does not exist yet
         if session.query(Policy.id).filter_by(name=POLICYNAME).first() is None:
             tokenlist_pol = Policy(name=POLICYNAME, scope=u"{0!s}".format(SCOPE.ADMIN),
-                                   action=u"{0!s}".format(ACTION.TOKENLIST))
+                                   action=u"{0!s}".format(PolicyAction.TOKENLIST))
             session.add(tokenlist_pol)
-            print("Added '{0!s}' action for admin policies.".format(ACTION.TOKENLIST))
+            print("Added '{0!s}' action for admin policies.".format(PolicyAction.TOKENLIST))
         else:
             print("Policy {} already exists.".format(POLICYNAME))
     else:
-        print("No admin policy active. No need to create '{0!s}' action.".format(ACTION.TOKENLIST))
+        print("No admin policy active. No need to create '{0!s}' action.".format(PolicyAction.TOKENLIST))
 
     try:
         session.commit()

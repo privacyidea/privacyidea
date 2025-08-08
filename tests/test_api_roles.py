@@ -18,8 +18,9 @@ from privacyidea.lib.resolver import save_resolver
 from privacyidea.models import Token
 from privacyidea.lib.realm import (set_realm, delete_realm, set_default_realm)
 from privacyidea.api.lib.postpolicy import DEFAULT_POLICY_TEMPLATE_URL
-from privacyidea.lib.policy import (ACTION, SCOPE, set_policy, delete_policy,
+from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy,
                                     LOGINMODE, ACTIONVALUE)
+from privacyidea.lib.policies.actions import PolicyAction
 
 PWFILE = "tests/testdata/passwords"
 
@@ -74,7 +75,7 @@ class APIAuthTestCase(MyApiTestCase):
     def test_02_REMOTE_USER(self):
         # Allow remote user
         set_policy(name="remote", scope=SCOPE.WEBUI, action="{0!s}=allowed".format(
-            ACTION.REMOTE_USER))
+            PolicyAction.REMOTE_USER))
 
         # Admin remote user
         with self.app.test_request_context('/auth', method='POST',
@@ -143,7 +144,7 @@ class APIAuthTestCase(MyApiTestCase):
         self.setUp_user_realm3()
         # testadmin is only allowed to view users in realm2
         set_policy(name="realmadmin", scope=SCOPE.ADMIN,
-                   action=ACTION.USERLIST, realm=self.realm3, user="testadmin")
+                   action=PolicyAction.USERLIST, realm=self.realm3, user="testadmin")
 
         with self.app.test_request_context('/user/',
                                            method='GET',
@@ -161,7 +162,7 @@ class APIAuthTestCase(MyApiTestCase):
 
     def test_04_auth_timelimit_maxfail(self):
         # Test with local admin
-        set_policy(name="policy", scope=SCOPE.AUTHZ, action=f"{ACTION.AUTHMAXFAIL}=2/20s")
+        set_policy(name="policy", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=2/20s")
         self.app_context.g.audit_object.clear()
         for _ in range(2):
             with self.app.test_request_context('/auth',
@@ -211,7 +212,7 @@ class APIAuthTestCase(MyApiTestCase):
         delete_realm("adminrealm")
 
     def test_05_auth_timelimit_maxsuccess(self):
-        set_policy(name="policy", scope=SCOPE.AUTHZ, action=f"{ACTION.AUTHMAXSUCCESS}=2/20s")
+        set_policy(name="policy", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXSUCCESS}=2/20s")
         self.app_context.g.audit_object.clear()
         for _ in range(2):
             with self.app.test_request_context('/auth',
@@ -285,8 +286,8 @@ class APIAuthChallengeResponse(MyApiTestCase):
         Token("hotp1", "hotp", otpkey=self.otpkey, userid=1004, resolver=self.resolvername1,
               realm=self.realm1).save()
         # Define HOTP token to be challenge response
-        set_policy(name="pol_cr", scope=SCOPE.AUTH, action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
-        set_policy(name="webuilog", scope=SCOPE.WEBUI, action="{0!s}=privacyIDEA".format(ACTION.LOGINMODE))
+        set_policy(name="pol_cr", scope=SCOPE.AUTH, action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE))
+        set_policy(name="webuilog", scope=SCOPE.WEBUI, action="{0!s}=privacyIDEA".format(PolicyAction.LOGINMODE))
         from privacyidea.lib.token import set_pin
         set_pin("hotp1", "pin")
 
@@ -324,7 +325,7 @@ class APIAuthChallengeResponse(MyApiTestCase):
         Token("hotp2", "hotp", otpkey=self.otpkey, userid=1004,
               resolver=self.resolvername1, realm=self.realm1).save()
         set_policy(name="pol_otppin", scope=SCOPE.AUTH,
-                   action="{0!s}={1!s}".format(ACTION.OTPPIN, ACTIONVALUE.USERSTORE))
+                   action="{0!s}={1!s}".format(PolicyAction.OTPPIN, ACTIONVALUE.USERSTORE))
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "selfservice",
@@ -778,7 +779,7 @@ class APISelfserviceTestCase(MyApiTestCase):
 
         set_policy(name="pol_add_info",
                    scope=SCOPE.AUTHZ,
-                   action=[ACTION.ADDUSERINRESPONSE, ACTION.ADDRESOLVERINRESPONSE],
+                   action=[PolicyAction.ADDUSERINRESPONSE, PolicyAction.ADDRESOLVERINRESPONSE],
                    realm="realm1")
 
         # Userinfo + realm/resolver are added to the response
@@ -820,17 +821,17 @@ class APISelfserviceTestCase(MyApiTestCase):
         set_policy("pol_lastauth",
                    scope=SCOPE.AUTHZ,
                    action={
-                       ACTION.LASTAUTH: "10m",
+                       PolicyAction.LASTAUTH: "10m",
                    })
         set_policy("pol_loginmode",
                    scope=SCOPE.WEBUI,
                    action={
-                       ACTION.LOGINMODE: LOGINMODE.PRIVACYIDEA,
+                       PolicyAction.LOGINMODE: LOGINMODE.PRIVACYIDEA,
                    })
         selfservice_token = init_token({"type": "spass", "pin": "somepin"},
                                        user=User("selfservice", "realm1"))
         # Last authentication was too long ago.
-        selfservice_token.add_tokeninfo(ACTION.LASTAUTH, "2016-10-10 10:10:10.000")
+        selfservice_token.add_tokeninfo(PolicyAction.LASTAUTH, "2016-10-10 10:10:10.000")
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "selfservice@realm1",
@@ -842,7 +843,7 @@ class APISelfserviceTestCase(MyApiTestCase):
             self.assertFalse(result.get("status"), content)
             self.assertIn("long ago", content["detail"]["message"], content)
 
-        selfservice_token.add_tokeninfo(ACTION.LASTAUTH, datetime.datetime.now().strftime(AUTH_DATE_FORMAT))
+        selfservice_token.add_tokeninfo(PolicyAction.LASTAUTH, datetime.datetime.now().strftime(AUTH_DATE_FORMAT))
 
         # But now it works
         with self.app.test_request_context('/auth',
@@ -877,12 +878,12 @@ class APISelfserviceTestCase(MyApiTestCase):
         set_policy("pol_loginmode",
                    scope=SCOPE.WEBUI,
                    action={
-                       ACTION.LOGINMODE: LOGINMODE.PRIVACYIDEA,
+                       PolicyAction.LOGINMODE: LOGINMODE.PRIVACYIDEA,
                    })
         set_policy("pol_tokentype",
                    scope=SCOPE.AUTHZ,
                    action={
-                       ACTION.TOKENTYPE: "hotp",
+                       PolicyAction.TOKENTYPE: "hotp",
                    })
 
         # Cannot authenticate with SPASS token
@@ -901,7 +902,7 @@ class APISelfserviceTestCase(MyApiTestCase):
         set_policy("pol_tokentype",
                    scope=SCOPE.AUTHZ,
                    action={
-                       ACTION.TOKENTYPE: "hotp spass",
+                       PolicyAction.TOKENTYPE: "hotp spass",
                    })
         with self.app.test_request_context('/auth',
                                            method='POST',
@@ -935,12 +936,12 @@ class APISelfserviceTestCase(MyApiTestCase):
         set_policy("pol_loginmode",
                    scope=SCOPE.WEBUI,
                    action={
-                       ACTION.LOGINMODE: LOGINMODE.PRIVACYIDEA,
+                       PolicyAction.LOGINMODE: LOGINMODE.PRIVACYIDEA,
                    })
         set_policy("pol_tokeninfo",
                    scope=SCOPE.AUTHZ,
                    action={
-                       ACTION.TOKENINFO: "secure/yes/",
+                       PolicyAction.TOKENINFO: "secure/yes/",
                    })
 
         # Cannot authenticate with token that does not have a "secure" tokeninfo
@@ -989,12 +990,12 @@ class APISelfserviceTestCase(MyApiTestCase):
         set_policy("pol_loginmode",
                    scope=SCOPE.WEBUI,
                    action={
-                       ACTION.LOGINMODE: LOGINMODE.PRIVACYIDEA,
+                       PolicyAction.LOGINMODE: LOGINMODE.PRIVACYIDEA,
                    })
         set_policy("pol_serial",
                    scope=SCOPE.AUTHZ,
                    action={
-                       ACTION.SERIAL: "GOOD.*"
+                       PolicyAction.SERIAL: "GOOD.*"
                    })
 
         # Cannot authenticate with token that does not have a "GOOD..." serial
@@ -1046,7 +1047,7 @@ class APISelfserviceTestCase(MyApiTestCase):
         set_policy("pol_loginmode",
                    scope=SCOPE.WEBUI,
                    action={
-                       ACTION.LOGINMODE: LOGINMODE.PRIVACYIDEA,
+                       PolicyAction.LOGINMODE: LOGINMODE.PRIVACYIDEA,
                    })
 
         # Without the policy, there are details in the response
@@ -1064,7 +1065,7 @@ class APISelfserviceTestCase(MyApiTestCase):
         # With the policy, there aren't
         set_policy("pol_detail",
                    scope=SCOPE.AUTHZ,
-                   action=ACTION.NODETAILSUCCESS)
+                   action=PolicyAction.NODETAILSUCCESS)
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "selfservice@realm1",
@@ -1139,14 +1140,14 @@ class APISelfserviceTestCase(MyApiTestCase):
 
     def test_41_webui_settings(self):
         set_policy(name="webui1", scope=SCOPE.WEBUI, action="{0!s}={1!s}".format(
-            ACTION.TOKENPAGESIZE, 20))
+            PolicyAction.TOKENPAGESIZE, 20))
         set_policy(name="webui2", scope=SCOPE.WEBUI, action="{0!s}={1!s}".format(
-            ACTION.USERPAGESIZE, 20))
+            PolicyAction.USERPAGESIZE, 20))
         set_policy(name="webui3", scope=SCOPE.WEBUI, action="{0!s}={1!s}".format(
-            ACTION.LOGOUTTIME, 200))
+            PolicyAction.LOGOUTTIME, 200))
         set_policy(name="webui4", scope=SCOPE.WEBUI, action="{0!s}={1!s}".format(
-            ACTION.AUDITPAGESIZE, 20))
-        set_policy(name="webui5", scope=SCOPE.WEBUI, action=ACTION.DELETION_CONFIRMATION)
+            PolicyAction.AUDITPAGESIZE, 20))
+        set_policy(name="webui5", scope=SCOPE.WEBUI, action=PolicyAction.DELETION_CONFIRMATION)
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "selfservice@realm1",
@@ -1182,10 +1183,10 @@ class APISelfserviceTestCase(MyApiTestCase):
 
         set_policy(name="pol_time1",
                    scope=SCOPE.AUTHZ,
-                   action="{0!s}=2/20s".format(ACTION.AUTHMAXFAIL))
+                   action="{0!s}=2/20s".format(PolicyAction.AUTHMAXFAIL))
         set_policy(name="pol_loginmode",
                    scope=SCOPE.WEBUI,
-                   action="{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA))
+                   action="{}={}".format(PolicyAction.LOGINMODE, LOGINMODE.PRIVACYIDEA))
         for _ in range(2):
             with self.app.test_request_context('/auth',
                                                method='POST',
@@ -1232,10 +1233,10 @@ class APISelfserviceTestCase(MyApiTestCase):
 
         set_policy(name="pol_time1",
                    scope=SCOPE.AUTHZ,
-                   action="{0!s}=2/20s".format(ACTION.AUTHMAXSUCCESS))
+                   action="{0!s}=2/20s".format(PolicyAction.AUTHMAXSUCCESS))
         set_policy(name="pol_loginmode",
                    scope=SCOPE.WEBUI,
-                   action="{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA))
+                   action="{}={}".format(PolicyAction.LOGINMODE, LOGINMODE.PRIVACYIDEA))
         for _ in range(2):
             with self.app.test_request_context('/auth',
                                                method='POST',
@@ -1287,8 +1288,8 @@ class APISelfserviceTestCase(MyApiTestCase):
         pin = "spass"
         # create a token
         token = init_token({"type": "hotp", "genkey": True, "pin": pin}, user=user)
-        set_policy(name="policy", scope=SCOPE.AUTHZ, action=f"{ACTION.AUTHMAXFAIL}=2/20s")
-        set_policy(name="challenge_response", scope=SCOPE.AUTH, action=f"{ACTION.CHALLENGERESPONSE}=hotp")
+        set_policy(name="policy", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=2/20s")
+        set_policy(name="challenge_response", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
         self.app_context.g.audit_object.clear()
 
         # only triggering challenges should not count for the policy
@@ -1371,10 +1372,10 @@ class APISelfserviceTestCase(MyApiTestCase):
 
         set_policy(name="pol_time1",
                    scope=SCOPE.AUTHZ,
-                   action="{0!s}=2/20s".format(ACTION.AUTHMAXFAIL))
+                   action="{0!s}=2/20s".format(PolicyAction.AUTHMAXFAIL))
         set_policy(name="pol_loginmode",
                    scope=SCOPE.WEBUI,
-                   action="{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA))
+                   action="{}={}".format(PolicyAction.LOGINMODE, LOGINMODE.PRIVACYIDEA))
         for _ in range(2):
             with self.app.test_request_context('/auth',
                                                method='POST',
@@ -1416,7 +1417,7 @@ class APISelfserviceTestCase(MyApiTestCase):
 
         set_policy(name="pol_time",
                    scope=SCOPE.AUTHZ,
-                   action=f"{ACTION.AUTHMAXFAIL}=2/20s")
+                   action=f"{PolicyAction.AUTHMAXFAIL}=2/20s")
 
         # failed auth
         with self.app.test_request_context('/auth',
@@ -1494,7 +1495,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
 
         # disabled policy: by default, login is disabled
         with self.app.test_request_context('/policy/disabled',
-                                           json={'action': "{}={}".format(ACTION.LOGINMODE, LOGINMODE.DISABLE),
+                                           json={'action': "{}={}".format(PolicyAction.LOGINMODE, LOGINMODE.DISABLE),
                                                  'scope': SCOPE.WEBUI,
                                                  'realm': '',
                                                  'priority': 2,
@@ -1506,7 +1507,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
 
         # userstore policy: for admins, require the userstore password
         with self.app.test_request_context('/policy/userstore',
-                                           json={'action': "{}={}".format(ACTION.LOGINMODE, LOGINMODE.USERSTORE),
+                                           json={'action': "{}={}".format(PolicyAction.LOGINMODE, LOGINMODE.USERSTORE),
                                                  'scope': SCOPE.WEBUI,
                                                  'realm': '',
                                                  'priority': 1,
@@ -1521,7 +1522,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
 
         # privacyidea policy: for helpdesk users, require the token PIN
         with self.app.test_request_context('/policy/privacyidea',
-                                           json={'action': "{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA),
+                                           json={'action': "{}={}".format(PolicyAction.LOGINMODE, LOGINMODE.PRIVACYIDEA),
                                                  'scope': SCOPE.WEBUI,
                                                  'realm': '',
                                                  'priority': 1,
@@ -1595,7 +1596,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
         # if we now disable the condition on userstore and privacyidea, we get a conflicting policy error
         with self.app.test_request_context('/policy/privacyidea',
                                            json={'scope': SCOPE.WEBUI,
-                                                 'action': "{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA),
+                                                 'action': "{}={}".format(PolicyAction.LOGINMODE, LOGINMODE.PRIVACYIDEA),
                                                  'realm': '',
                                                  'active': True,
                                                  'conditions': [
@@ -1608,7 +1609,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
 
         with self.app.test_request_context('/policy/userstore',
                                            json={'scope': SCOPE.WEBUI,
-                                                 'action': "{}={}".format(ACTION.LOGINMODE, LOGINMODE.USERSTORE),
+                                                 'action': "{}={}".format(PolicyAction.LOGINMODE, LOGINMODE.USERSTORE),
                                                  'realm': '',
                                                  'active': True,
                                                  'conditions': [
