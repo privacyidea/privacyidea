@@ -16,7 +16,7 @@
 # SPDX-FileCopyrightText: 2024 Nils Behlen <nils.behlen@netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 from webauthn.helpers.structs import AttestationConveyancePreference
@@ -981,7 +981,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
 
         token = get_tokens(serial=serial)[0]
         # Add last_auth of 3 days ago to the token info
-        last_auth_date = datetime.now() - timedelta(days=3)
+        last_auth_date = datetime.now(timezone.utc) - timedelta(days=3)
         token.add_tokeninfo(PolicyAction.LASTAUTH, last_auth_date.isoformat(timespec="seconds"))
         transaction_id = passkey_challenge["transaction_id"]
 
@@ -1003,8 +1003,18 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertIn("message", detail)
             self.assertIn("Last authentication policy check failed", detail["message"])
 
+        with self.app.test_request_context('/auth', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code)
+            error = res.json["result"]["error"]
+            self.assertEqual(4306, error.get("code"))
+            self.assertEqual(f"Authentication failure. Last authentication policy check failed for token "
+                             f"{token.get_serial()}", error.get("message"))
+
         # Change last_auth to 1 hour ago, authentication will succeed
-        last_auth_date = datetime.now() - timedelta(hours=1)
+        last_auth_date = datetime.now(timezone.utc) - timedelta(hours=1)
         token.add_tokeninfo(PolicyAction.LASTAUTH, last_auth_date.isoformat(timespec="seconds"))
         with self.app.test_request_context('/validate/check', method='POST',
                                            data=data,
@@ -1016,6 +1026,20 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertIn("message", detail)
             self.assertTrue(detail["message"])
             self.assertNotIn("auth_items", res.json)
+
+        # Trigger new challenge for auth
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+        data = self.authentication_response_uv
+        transaction_id = passkey_challenge["transaction_id"]
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/auth', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertIn("result", res.json)
+            self.assertIn("status", res.json["result"])
+            self.assertTrue(res.json["result"]["status"])
 
         delete_policy("last_auth")
         remove_token(serial)

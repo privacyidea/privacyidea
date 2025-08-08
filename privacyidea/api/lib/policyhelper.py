@@ -24,7 +24,7 @@ Like policies, that are supposed to read and pass parameters during enrollment o
 """
 import logging
 from dataclasses import dataclass
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 from typing import Union
 
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial
@@ -404,5 +404,5 @@ def check_last_auth_policy(g, token: TokenClass) -> bool:
             log.debug("Token has not been used for authentication yet, unable to apply last_auth policy.")
             return True
         last_auth_token = datetime.fromisoformat(last_auth_info)
-        return last_auth_token <= datetime.now() <= last_auth_token + time_delta
+        return last_auth_token <= datetime.now(timezone.utc) <= last_auth_token + time_delta
     return True
