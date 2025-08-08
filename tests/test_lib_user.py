@@ -572,8 +572,8 @@ class UserTestCase(MyTestCase):
         self.assertTrue(rid > 0, rid)
 
         (added, failed) = set_realm(realm, [{'name': resolver}])
-        self.assertEqual(len(failed), 0)
-        self.assertEqual(len(added), 1)
+        self.assertEqual(0, len(failed))
+        self.assertEqual(1, len(added))
 
         # check non-ascii password of non-ascii user
         self.assertFalse(User(login="nönäscii",
@@ -593,15 +593,20 @@ class UserTestCase(MyTestCase):
                          user_repr, user_repr)
 
         # Test with not existing search filter
-        with LogCapture(level=logging.ERROR) as lc:
+        with LogCapture(level=logging.WARNING) as lc:
             userlist = get_user_list({"realm": "sqlrealm",
                                       "unknown": "parameter",
                                       "resolver": "SQL1"})
-            self.assertTrue(len(userlist) == 0, userlist)
-            lc.check_present(("privacyidea.lib.user", "ERROR",
+            self.assertEqual(0, len(userlist), userlist)
+            lc.check_present(("privacyidea.lib.resolvers.SQLIdResolver", "ERROR",
+                              "Could not find search key (['unknown']) in the "
+                              "column mapping keys (['username', 'userid', "
+                              "'email', 'surname', 'givenname', 'password', "
+                              "'phone', 'mobile'])."))
+            lc.check_present(("privacyidea.lib.user", "WARNING",
                               "Unable to get user list for resolver 'SQL1': "
                               "ParameterError(description=\"Search parameter "
-                              "([\'unknown\']) not available in mapping.\", id=905)"))
+                              "(['unknown']) not available in column mapping.\", id=905)"))
 
     @ldap3mock.activate
     def test_18_user_with_several_phones(self):
