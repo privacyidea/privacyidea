@@ -1445,7 +1445,7 @@ class PolicyTestCase(MyTestCase):
         self.assertSetEqual({"notverysecure"}, _names(P.match_policies(user_object=user3)))
 
         # an unforeseen error in the comparison function => policy error
-        with mock.patch("privacyidea.lib.policies.policy_conditions.compare_values") as mock_function:
+        with mock.patch("privacyidea.lib.policies.conditions.compare_values") as mock_function:
             mock_function.side_effect = ValueError
             with self.assertRaisesRegex(PolicyError, r".*Invalid comparison.*"):
                 P.match_policies(user_object=user1)
