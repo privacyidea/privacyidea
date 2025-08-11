@@ -68,11 +68,11 @@ myApp.controller("auditController", ["AuditFactory", "$scope", "$rootScope",
             $scope.params.duration = "*" + ($scope.filter.duration || "") + "*";
             $scope.params.container_serial = "*" + ($scope.filter.containerSerial || "") + "*";
             $scope.params.container_type = "*" + ($scope.filter.containerType || "") + "*";
-            for (const key in $scope.params) {
-                if ($scope.params.hasOwnProperty(key) && $scope.params[key] === "**") {
+            Object.keys($scope.params).forEach(function(key) {
+                if ($scope.params[key] === "**") {
                     delete $scope.params[key];
                 }
-            }
+            });
             //debug: console.log("Request Audit Trail with params");
             //debug: console.log($scope.params);
         };
