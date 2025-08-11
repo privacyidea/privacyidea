@@ -2,7 +2,6 @@
 This test file tests the lib.tokens.daypasswordtoken.py
 """
 import binascii
-import json
 import logging
 import time
 from testfixtures import LogCapture

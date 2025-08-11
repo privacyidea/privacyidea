@@ -2,8 +2,6 @@
 This test file tests the lib.tokens.tiqrtoken and lib.tokens.ocra
 This depends on lib.tokenclass
 """
-import json
-
 from tests import smtpmock
 from .base import MyTestCase, MyApiTestCase
 from privacyidea.lib.challenge import get_challenges

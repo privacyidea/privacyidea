@@ -2,8 +2,6 @@
 This test file tests the lib.tokens.passwordtoken
 This depends on lib.tokenclass
 """
-import json
-
 from privacyidea.lib.token import init_token, remove_token, import_tokens, get_tokens
 from .base import MyTestCase
 from privacyidea.lib.tokens.passwordtoken import PasswordTokenClass

@@ -2,8 +2,6 @@
 This test file tests the lib.tokens.u2ftoken
 This depends on lib.tokenclass
 """
-import json
-
 from .base import MyTestCase
 from privacyidea.lib.tokens.u2ftoken import U2fTokenClass
 from privacyidea.lib.tokens.u2f import (check_registration_data,

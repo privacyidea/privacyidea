@@ -2,7 +2,6 @@
 This test file tests the lib.tokens.spasstoken
 This depends on lib.tokenclass
 """
-import json
 import logging
 from testfixtures import LogCapture
 

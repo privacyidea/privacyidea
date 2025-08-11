@@ -2,8 +2,6 @@
 This test file tests the lib.tokens.sshkeytoken
 This depends on lib.tokenclass
 """
-import json
-
 from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.token import init_token, import_tokens, get_tokens
 from .base import MyTestCase

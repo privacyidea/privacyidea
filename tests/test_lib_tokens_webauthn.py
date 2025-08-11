@@ -54,7 +54,6 @@
 This file tests the lib.tokens.webauthntoken, along with lib.tokens.webauthn.
 This depends on lib.tokenclass
 """
-import json
 import os
 import struct
 import unittest

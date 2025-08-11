@@ -1,7 +1,6 @@
 """
 This test file tests the lib.tokens.smstoken
 """
-import json
 import logging
 
 from .base import MyTestCase, FakeFlaskG, FakeAudit

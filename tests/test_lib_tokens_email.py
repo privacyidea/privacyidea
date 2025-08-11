@@ -1,8 +1,6 @@
 """
 This test file tests the lib.tokens.smstoken
 """
-import json
-
 from testfixtures import log_capture
 
 from privacyidea.lib.token import init_token, remove_token, import_tokens, get_tokens

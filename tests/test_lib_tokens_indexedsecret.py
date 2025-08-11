@@ -1,8 +1,6 @@
 """
 This test file tests the lib.tokens.smstoken
 """
-import json
-
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)

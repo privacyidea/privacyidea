@@ -2,7 +2,6 @@
 This test file tests the lib.tokens.yubikeytoken
 
 """
-import json
 import logging
 
 from testfixtures import LogCapture

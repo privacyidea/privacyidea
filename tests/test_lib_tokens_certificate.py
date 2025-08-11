@@ -2,7 +2,6 @@
 This test file tests the lib.tokens.certificatetoken
 """
 import base64
-import json
 
 from cryptography import x509
 from cryptography.hazmat.primitives.serialization import pkcs12

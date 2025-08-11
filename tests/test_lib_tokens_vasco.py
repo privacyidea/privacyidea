@@ -3,7 +3,6 @@ This test file tests the lib.tokens.vascotoken
 This depends on lib.tokenclass
 """
 import functools
-import json
 from binascii import hexlify
 
 import mock

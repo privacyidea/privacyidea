@@ -7,7 +7,6 @@ from .base import MyTestCase
 from privacyidea.lib.tokens.yubicotoken import (YubicoTokenClass, YUBICO_URL)
 from privacyidea.models import Token
 import responses
-import json
 from privacyidea.lib.config import set_privacyidea_config
 
 
