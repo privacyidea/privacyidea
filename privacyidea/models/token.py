@@ -707,14 +707,14 @@ class TokenOwner(MethodsMixin, db.Model):
             realm = Realm.query.filter_by(name=realmname).first()
             if not realm:
                 raise ResourceNotFoundError(f"Realm '{realmname}' does not exist.")
-            self.realm_id = realm.id if realm else None
+            self.realm_id = realm.id
         if token_id is not None:
             self.token_id = token_id
         elif serial:
             token = Token.query.filter_by(serial=serial).first()
             if not token:
                 raise ResourceNotFoundError(f"Token with serial '{serial}' does not exist.")
-            self.token_id = token.id if token else None
+            self.token_id = token.id
         self.resolver = resolver
         self.user_id = user_id
 
