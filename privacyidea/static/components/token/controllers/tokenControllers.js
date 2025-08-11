@@ -72,6 +72,11 @@ myApp.controller("tokenController", ['TokenFactory', 'ConfigFactory', '$scope',
                 } else {
                     $scope.params.sortdir = "asc";
                 }
+                Object.keys($scope.params).forEach(function (key) {
+                    if ($scope.params[key] === "**") {
+                        delete $scope.params[key];
+                    }
+                });
                 TokenFactory.getTokens(function (data) {
                     if (data) {
                         $scope.tokendata = data.result.value;
