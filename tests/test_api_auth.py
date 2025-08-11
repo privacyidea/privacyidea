@@ -7,6 +7,7 @@ from testfixtures import log_capture
 
 from privacyidea.api.lib.utils import verify_auth_token
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.models import Realm
 from .base import MyApiTestCase, OverrideConfigTestCase
 import mock
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
@@ -769,6 +770,57 @@ class AuthApiTestCase(MyApiTestCase):
         remove_token(serial=serial)
         delete_policy("disable_spass_token")
         delete_policy("piLogin")
+
+    def test_10_auth_with_deleted_realm(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        set_default_realm(self.realm3)
+        # User exist in realm1 (default realm) and realm3
+        user = User("cornelius", self.realm1)
+        token = init_token({"type": "spass", "pin": "1234"}, user=user)
+        user_realm1 = User("hans", self.realm1)
+        token_realm1 = init_token({"type": "spass", "pin": "1234"}, user=user_realm1)
+
+        set_policy(name="pi-login", scope=SCOPE.WEBUI, action=f"{ACTION.LOGINMODE}=privacyIDEA")
+
+        # successful authentication
+        with self.app.test_request_context('/auth', method="POST",
+                                           data={"username": user.login, "realm": user.realm, "password": "1234"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+
+        # Delete realm of user
+        Realm.query.filter_by(name=self.realm1).first().delete()
+
+        with self.app.test_request_context('/auth', method="POST",
+                                           data={"username": user.login, "realm": user.realm, "password": "1234"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+            error = res.json.get("result").get("error")
+            self.assertEqual(4031, error.get("code"), error)
+            self.assertEqual(f"Authentication failure. Unknown realm: {user.realm}.", error.get("message"), error)
+
+        with self.app.test_request_context('/auth', method="POST",
+                                           data={"username": user.login, "realm": user.realm, "resolver": user.resolver,
+                                                 "password": "1234"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+            error = res.json.get("result").get("error")
+            self.assertEqual(4031, error.get("code"), error)
+            self.assertEqual(f"Authentication failure. Unknown realm: {user.realm}.", error.get("message"), error)
+
+        with self.app.test_request_context('/auth', method="POST",
+                                           data={"username": user.login, "resolver": user.resolver,
+                                                 "password": "1234"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+            error = res.json.get("result").get("error")
+            self.assertEqual(4031, error.get("code"), error)
+            self.assertEqual(f"Authentication failure. Wrong credentials", error.get("message"), error)
+
+        token.delete_token()
+        token_realm1.delete_token()
+        delete_policy("pi-login")
 
 
 class AdminFromUserstore(OverrideConfigTestCase):
