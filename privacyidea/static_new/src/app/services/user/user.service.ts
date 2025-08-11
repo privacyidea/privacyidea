@@ -171,13 +171,15 @@ export class UserService implements UserServiceInterface {
     if (
       selectedUserRealm === '' ||
       this.authService.role() === 'user' ||
-      ![
-        ROUTE_PATHS.USERS,
-        ROUTE_PATHS.TOKENS_DETAILS,
-        ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS,
-        ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
-        ROUTE_PATHS.TOKENS_ENROLLMENT,
-      ].includes(this.contentService.routeUrl())
+      (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS) &&
+        !this.contentService
+          .routeUrl()
+          .startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS) &&
+        ![
+          ROUTE_PATHS.USERS,
+          ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
+          ROUTE_PATHS.TOKENS_ENROLLMENT,
+        ].includes(this.contentService.routeUrl()))
     ) {
       return undefined;
     }

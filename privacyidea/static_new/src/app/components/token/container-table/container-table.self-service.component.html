@@ -6,7 +6,7 @@
                    [pageIndex]="pageIndex()"
                    [pageSizeOptions]="pageSizeOptions()"
                    [pageSize]="pageSize()"
-                   showFirstLastButtons></mat-paginator>
+                   showFirstLastButtons />
   </div>
   <table (matSortChange)="onSortEvent($event)"
          [dataSource]="containerDataSource()"
@@ -24,7 +24,7 @@
             <mat-checkbox (change)="$event ? toggleAllRows() : null"
                           [checked]="isAllSelected()"
                           [indeterminate]="containerSelection().length > 0 && !isAllSelected()"
-                          [disabled]="total() === 0"></mat-checkbox>
+                          [disabled]="total() === 0" />
           </th>
         } @else {
           <th *matHeaderCellDef
@@ -47,22 +47,24 @@
                 <mat-checkbox (change)="$event ? toggleRow(row) : null"
                               (click)="$event.stopPropagation()"
                               [checked]="containerSelection().includes(row)"
-                              [disabled]="total() === 0"></mat-checkbox>
+                              [disabled]="total() === 0" />
               }
               @case ("serial") {
                 <a attr.aria-label="{{ column.label }} Link"
                    (click)="contentService.containerSelected(element.serial)"> {{
                     element[column.key]
-                  }} </a>
+                  }}
+                </a>
                 @if (element.serial !== "") {
-                  <app-copy-button [copyText]="element.serial"></app-copy-button>
+                  <app-copy-button [copyText]="element.serial" />
                 }
               }
               @case ("realms") {
                 <div [ngClass]="(element[column.key]?.length || 0) > 1 ? 'realm-list' : 'realm'">
                   @for (realm of element[column.key]; track realm; let idx = $index) {
                     <a attr.aria-label="{{ column.label }} Link"
-                       href="#"> {{ realm }} </a><br style="margin-top: 3px" />
+                       href="#"> {{ realm }}
+                    </a><br style="margin-top: 3px" />
                   }
                 </div>
               }
@@ -81,7 +83,8 @@
               @default {
                 @if (tableUtilsService.isLink(column.key)) {
                   <a attr.aria-label="{{ column.label }} Link"
-                     href="#"> {{ element[column.key] }} </a>
+                     href="#"> {{ element[column.key] }}
+                  </a>
                 } @else {
                   {{ element[column.key] }}
                 }
@@ -100,9 +103,13 @@
           <div class="expanded-token-list-self-serivce">
             @for (token of element.tokens; track token) {
               <div class="token-item">
-                <a (click)="contentService.tokenSelected(token.serial)"> {{
-                    token.serial
-                  }} </a>
+                @if (containerService.containerBelongsToUser(token.container_serial)) {
+                  <a (click)="contentService.tokenSelected(token.serial)">
+                    {{ token.serial }}
+                  </a>
+                } @else {
+                  {{ token.serial }}
+                }
                 @if (token.tokentype) {
                   [{{ token.tokentype }}]
                 }
