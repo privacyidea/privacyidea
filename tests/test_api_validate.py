@@ -3400,6 +3400,16 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(f"ERR904: User <{user.login}.{user.resolver}@{user.realm}> does not exist.",
                              error.get("message"), error)
 
+        # Pass user and serial
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={"user": user.login, "realm": user.realm, "serial": token.get_serial(),
+                                                 "pass": "1234"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res)
+            error = res.json.get("result").get("error")
+            self.assertEqual(905, error.get("code"), error)
+            self.assertEqual("ERR905: Given serial does not belong to given user!", error.get("message"), error)
+
         # --- Resolver is not in realm ---
         with self.app.test_request_context('/validate/check', method="POST",
                                            data={"user": user.login, "realm": user.realm,

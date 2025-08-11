@@ -712,7 +712,8 @@ class TokenOwner(MethodsMixin, db.Model):
             self.token_id = token_id
         elif serial:
             token = Token.query.filter_by(serial=serial).first()
-            if not token:
+            if not token: # pragma: no cover
+                # usually this is already covered by the lib / token class functions
                 raise ResourceNotFoundError(f"Token with serial '{serial}' does not exist.")
             self.token_id = token.id
         self.resolver = resolver
