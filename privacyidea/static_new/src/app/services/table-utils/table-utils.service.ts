@@ -240,12 +240,11 @@ export class TableUtilsService implements TableUtilsServiceInterface {
 
   isLink(columnKey: string): boolean {
     return (
-      columnKey === 'username' ||
-      columnKey === 'container_serial' ||
-      columnKey === 'user_realm' ||
-      columnKey === 'users' ||
-      columnKey === 'user_realm' ||
-      columnKey === 'realms'
+      columnKey === 'container_serial' //||
+      //columnKey === 'username' ||
+      //columnKey === 'user_realm' ||
+      //columnKey === 'users' ||
+      //columnKey === 'realms'
     );
   }
 

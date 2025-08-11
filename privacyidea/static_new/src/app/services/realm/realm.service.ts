@@ -67,13 +67,15 @@ export class RealmService implements RealmServiceInterface {
   realmResource = httpResource<PiResponse<Realms>>(() => {
     if (
       this.authService.role() === 'user' ||
-      ![
-        ROUTE_PATHS.USERS,
-        ROUTE_PATHS.TOKENS_DETAILS,
-        ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS,
-        ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
-        ROUTE_PATHS.TOKENS_ENROLLMENT,
-      ].includes(this.contentService.routeUrl())
+      (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS) &&
+        !this.contentService
+          .routeUrl()
+          .startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS) &&
+        ![
+          ROUTE_PATHS.USERS,
+          ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
+          ROUTE_PATHS.TOKENS_ENROLLMENT,
+        ].includes(this.contentService.routeUrl()))
     ) {
       return undefined;
     }
@@ -91,13 +93,15 @@ export class RealmService implements RealmServiceInterface {
   defaultRealmResource = httpResource<PiResponse<Realms>>(() => {
     if (
       this.authService.role() === 'user' ||
-      ![
-        ROUTE_PATHS.USERS,
-        ROUTE_PATHS.TOKENS_DETAILS,
-        ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS,
-        ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
-        ROUTE_PATHS.TOKENS_ENROLLMENT,
-      ].includes(this.contentService.routeUrl())
+      (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS) &&
+        !this.contentService
+          .routeUrl()
+          .startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS) &&
+        ![
+          ROUTE_PATHS.USERS,
+          ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
+          ROUTE_PATHS.TOKENS_ENROLLMENT,
+        ].includes(this.contentService.routeUrl()))
     ) {
       return undefined;
     }
