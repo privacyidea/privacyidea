@@ -306,7 +306,7 @@ class User(object):
         :return: True or False
         """
         # TODO: really check if user exist (ask user store and maybe re-evaluate realm)
-        exist = self.uid is not None and self.realm_id is not None
+        exist = self.uid and self.realm_id
         return exist
 
     @property
