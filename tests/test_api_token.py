@@ -17,43 +17,45 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import codecs
+import datetime
+import json
+import unittest
+from urllib.parse import urlencode, quote
+
+import pytest
+import requests
+from dateutil.tz import tzlocal
+from mock import mock
+
+from privacyidea.lib import _
+from privacyidea.lib.caconnector import save_caconnector
+from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
+from privacyidea.lib.caconnectors.msca import ATTR as MS_ATTR
+from privacyidea.lib.caconnectors.msca import MSCAConnector
+from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
 from privacyidea.lib.container import (init_container, add_token_to_container,
                                        find_container_by_serial, find_container_for_token)
 from privacyidea.lib.error import ResourceNotFoundError
-from .base import MyApiTestCase, PWFILE2
-import json
-import datetime
-import codecs
-from mock import mock
-import pytest
-import requests
+from privacyidea.lib.event import set_event, delete_event, EventConfiguration
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, enable_policy,
                                     PolicyClass)
-from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.realm import set_realm
+from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.smsprovider.SMSProvider import (set_smsgateway,
+                                                     delete_smsgateway)
 from privacyidea.lib.token import (get_tokens, remove_token, get_one_token,
                                    get_tokens_from_serial_or_user, enable_token,
                                    check_serial_pass, unassign_token, init_token,
                                    assign_token, token_exist, add_tokeninfo)
-from privacyidea.lib.resolver import save_resolver
-from privacyidea.lib.realm import set_realm
-from privacyidea.lib.user import User
-from privacyidea.lib.event import set_event, delete_event, EventConfiguration
-from privacyidea.lib.caconnector import save_caconnector
-from urllib.parse import urlencode, quote
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
 from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE
 from privacyidea.lib.tokens.smstoken import SMSACTION
-from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
-from dateutil.tz import tzlocal
-from privacyidea.lib import _
-import unittest
-from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
-from privacyidea.lib.caconnectors.msca import MSCAConnector
+from privacyidea.lib.user import User
+from .base import MyApiTestCase, PWFILE2
 from .mscamock import CAServiceMock
-from privacyidea.lib.caconnectors.msca import ATTR as MS_ATTR
-from privacyidea.lib.smsprovider.SMSProvider import (set_smsgateway,
-                                                     delete_smsgateway)
 from .test_lib_tokens_certificate import REQUEST, CERTIFICATE
 
 # Mock for certificate from MSCA
@@ -532,6 +534,25 @@ class API000TokenAdminRealmList(MyApiTestCase):
 
         delete_policy("policy")
 
+    def test_06_unassign_batch(self):
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.UNASSIGN, realm=self.realm1)
+
+        # create tokens
+        token1 = init_token({"type": "hotp", "genkey": True, "realm": self.realm1},
+                            user=User("cornelius", self.realm1))
+        token2 = init_token({"type": "hotp", "genkey": True, "realm": self.realm2},
+                            user=User("hans", self.realm2))
+
+        token_serials = ",".join([token1.get_serial(), token2.get_serial()])
+
+        self.assertTrue(token1.user is not None)
+        self.assertTrue(token2.user is not None)
+        # Try to unassign all tokens will only unassign token1 from realm1
+        self.request_assert_200("/token/batchunassign", {"serial": token_serials}, self.at, "POST")
+        self.assertTrue(token1.user is None)
+        self.assertTrue(token2.user is not None)
+
+        delete_policy("policy")
 
 class APIAttestationTestCase(MyApiTestCase):
     @pytest.mark.usefixtures("setup_local_ca")

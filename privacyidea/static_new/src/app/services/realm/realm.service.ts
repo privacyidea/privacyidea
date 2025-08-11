@@ -72,6 +72,7 @@ export class RealmService implements RealmServiceInterface {
           .routeUrl()
           .startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS) &&
         ![
+          ROUTE_PATHS.TOKENS,
           ROUTE_PATHS.USERS,
           ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
           ROUTE_PATHS.TOKENS_ENROLLMENT,
@@ -98,6 +99,7 @@ export class RealmService implements RealmServiceInterface {
           .routeUrl()
           .startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS) &&
         ![
+          ROUTE_PATHS.TOKENS,
           ROUTE_PATHS.USERS,
           ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
           ROUTE_PATHS.TOKENS_ENROLLMENT,

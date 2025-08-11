@@ -574,6 +574,36 @@ def unassign_api():
     g.audit_object.log({"success": True})
     return send_result(res)
 
+@token_blueprint.route('/batchunassign', methods=['POST'])
+@prepolicy(check_token_list_action, request, action=PolicyAction.UNASSIGN)
+@event("token_unassign", request, g)
+@log_with(log)
+def batch_unassign_api():
+    """
+    Unassign all passed tokens, e.g. all tokens of a container
+    All errors during the unassignment of a token are fetched to be able to unassign the remaining tokens.
+
+    :jsonparam serial: A comma separated list of token serials to unassign
+    :return: Dictionary with the serials as keys and the success status of the unassignment as values
+    """
+    serial_list = getParam(request.all_data, "serial", required)
+    serial_list = serial_list.replace(" ", "").split(",")
+    g.audit_object.log({"serial": serial_list})
+    ret = {}
+    for serial in serial_list:
+        try:
+            success = unassign_token(serial)
+        except Exception as ex:
+            # We are catching the exception here to be able to unassign the remaining tokens
+            log.error(f"Error unassigning token {serial}: {ex}")
+            success = False
+        ret[serial] = success
+
+    not_authorized_serials = getParam(request.all_data, "not_authorized_serials", default=[])
+    res = add_not_authorized_tokens_result(ret, not_authorized_serials)
+
+    return send_result(res)
+
 
 @token_blueprint.route('/revoke', methods=['POST'])
 @token_blueprint.route('/revoke/<serial>', methods=['POST'])
@@ -686,7 +716,7 @@ def delete_api(serial):
 @prepolicy(check_token_list_action, request, action=PolicyAction.DELETE)
 @event("token_delete", request, g)
 @log_with(log)
-def batch_deletion():
+def batch_deletion_api():
     """
     Delete all passed tokens, e.g. all tokens of a container
     All errors during the deletion of a token are fetched to be able to delete the remaining tokens.

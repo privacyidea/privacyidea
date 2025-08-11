@@ -1,13 +1,11 @@
 <h2 mat-dialog-title>{{ data.title }}</h2>
 
 <mat-dialog-content>
-  @if (data.action === "remove" ||
-  data.action === "delete" ||
-  data.action === "revoke") {
+  @if (["remove", "delete", "revoke", "unassign"].includes(data.action)) {
     <p>
       Are you sure you want to {{ data.action }}
       @if ((data.serial_list?.length ?? 0) > 1 && data.type === "token") {
-        all ({{ data.serial_list?.length }}) {{ data.type }}s?
+        all selected ({{ data.serial_list?.length }}) {{ data.type }}s?
       } @else {
         this {{ data.type }}?
       }
