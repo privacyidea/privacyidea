@@ -102,7 +102,7 @@ from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     return_saml_attributes_on_fail,
                                     SYSCONF, ensure_no_config_object, get_privacyidea_node)
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial, check_container_challenge
-from privacyidea.lib.error import ParameterError, PolicyError
+from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError
 from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens
@@ -504,7 +504,11 @@ def check():
     elif serial:
         if user:
             # Check if the given token belongs to the user
-            if not get_tokens(user=user, serial=serial, count=True):
+            try:
+                tokens = get_tokens(user=user, serial=serial, count=True)
+            except ResourceNotFoundError:
+                tokens = []
+            if not tokens:
                 raise ParameterError("Given serial does not belong to given user!")
         if not otp_only:
             success, details = check_serial_pass(serial, password, options=options)

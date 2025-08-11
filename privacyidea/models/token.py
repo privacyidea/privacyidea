@@ -20,6 +20,7 @@ import binascii
 import logging
 from sqlalchemy import Sequence
 
+from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.models import db
 from privacyidea.models.realm import Realm
 from privacyidea.models.utils import MethodsMixin
@@ -273,7 +274,7 @@ class Token(MethodsMixin, db.Model):
         # add new TokenRealms
         # We must not set the same realm more than once...
         # uniquify: realms -> set(realms)
-        if self.first_owner:
+        if self.first_owner and self.first_owner.realm:
             if self.first_owner.realm.name not in realms:
                 realms.append(self.first_owner.realm.name)
                 log.info(f"The realm of an assigned user cannot be removed from "
@@ -703,13 +704,17 @@ class TokenOwner(MethodsMixin, db.Model):
         if realm_id is not None:
             self.realm_id = realm_id
         elif realmname:
-            r = Realm.query.filter_by(name=realmname).first()
-            self.realm_id = r.id
+            realm = Realm.query.filter_by(name=realmname).first()
+            if not realm:
+                raise ResourceNotFoundError(f"Realm '{realmname}' does not exist.")
+            self.realm_id = realm.id if realm else None
         if token_id is not None:
             self.token_id = token_id
         elif serial:
-            r = Token.query.filter_by(serial=serial).first()
-            self.token_id = r.id
+            token = Token.query.filter_by(serial=serial).first()
+            if not token:
+                raise ResourceNotFoundError(f"Token with serial '{serial}' does not exist.")
+            self.token_id = token.id if token else None
         self.resolver = resolver
         self.user_id = user_id
 
