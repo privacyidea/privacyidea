@@ -36,7 +36,8 @@ from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.passwordreset import is_password_reset
 from privacyidea.lib.error import HSMException
 from privacyidea.lib.realm import get_realms
-from privacyidea.lib.policy import PolicyClass, ACTION, SCOPE, Match, REMOTE_USER
+from privacyidea.lib.policy import PolicyClass, SCOPE, Match, REMOTE_USER
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.subscriptions import subscription_status
 from privacyidea.lib.utils import get_client_ip
 from privacyidea.lib.config import get_from_config, SYSCONF, get_privacyidea_node
@@ -114,13 +115,13 @@ def single_page_application():
         request.all_data = {}
     # Depending on displaying the realm dropdown, we fill realms or not.
     realms = ""
-    realm_dropdown = Match.action_only(g, scope=SCOPE.WEBUI, action=ACTION.REALMDROPDOWN) \
+    realm_dropdown = Match.action_only(g, scope=SCOPE.WEBUI, action=PolicyAction.REALMDROPDOWN) \
         .policies(write_to_audit_log=False)
     show_node = get_privacyidea_node() \
-        if Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_NODE).any(write_to_audit_log=False) else ""
+        if Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SHOW_NODE).any(write_to_audit_log=False) else ""
     if realm_dropdown:
         try:
-            realm_dropdown_values = Match.action_only(g, scope=SCOPE.WEBUI, action=ACTION.REALMDROPDOWN) \
+            realm_dropdown_values = Match.action_only(g, scope=SCOPE.WEBUI, action=PolicyAction.REALMDROPDOWN) \
                 .action_values(unique=False, write_to_audit_log=False)
             # Use the realms from the policy.
             realms = ",".join(realm_dropdown_values)
@@ -142,7 +143,7 @@ def single_page_application():
     # Use policies to determine the customization of menu
     # and baseline. get_action_values returns an array!
     sub_state = subscription_status()
-    customization_menu_file = Match.action_only(g, action=ACTION.CUSTOM_MENU,
+    customization_menu_file = Match.action_only(g, action=PolicyAction.CUSTOM_MENU,
                                                 scope=SCOPE.WEBUI) \
         .action_values(unique=True, allow_white_space_in_action=True, write_to_audit_log=False)
     if len(customization_menu_file) and list(customization_menu_file)[0] \
@@ -150,7 +151,7 @@ def single_page_application():
         customization_menu_file = list(customization_menu_file)[0]
     else:
         customization_menu_file = "templates/menu.html"
-    customization_baseline_file = Match.action_only(g, action=ACTION.CUSTOM_BASELINE,
+    customization_baseline_file = Match.action_only(g, action=PolicyAction.CUSTOM_BASELINE,
                                                     scope=SCOPE.WEBUI) \
         .action_values(unique=True, allow_white_space_in_action=True, write_to_audit_log=False)
     if len(customization_baseline_file) and list(customization_baseline_file)[0] \
@@ -159,21 +160,24 @@ def single_page_application():
     else:
         customization_baseline_file = "templates/baseline.html"
 
-    login_text = Match.action_only(g, action=ACTION.LOGIN_TEXT, scope=SCOPE.WEBUI) \
+    login_text = Match.action_only(g, action=PolicyAction.LOGIN_TEXT, scope=SCOPE.WEBUI) \
         .action_values(unique=True, allow_white_space_in_action=True, write_to_audit_log=False)
     if len(login_text) and list(login_text)[0] and sub_state not in [1, 2]:
         login_text = list(login_text)[0]
     else:
         login_text = ""
 
-    gdpr_link = Match.action_only(g, action=ACTION.GDPR_LINK, scope=SCOPE.WEBUI) \
+    gdpr_link = Match.action_only(g, action=PolicyAction.GDPR_LINK, scope=SCOPE.WEBUI) \
         .action_values(unique=True, allow_white_space_in_action=True, write_to_audit_log=False)
     if len(gdpr_link) and list(gdpr_link)[0] and sub_state not in [1, 2]:
         gdpr_link = list(gdpr_link)[0]
     else:
         gdpr_link = ""
 
-    render_context = {
+    otp_pin_set_random_user = Match.action_only(g, scope=SCOPE.USER, action=PolicyAction.OTPPINSETRANDOM).policies(
+        write_to_audit_log=False)
+
+    render_context: dict = {
         'instance': instance,
         'backendUrl': backend_url,
         'browser_lang': browser_lang,
@@ -194,7 +198,8 @@ def single_page_application():
         'login_text': login_text,
         'gdpr_link': gdpr_link,
         'logo': logo,
-        'page_title': page_title
+        'page_title': page_title,
+        'otp_pin_set_random_user': otp_pin_set_random_user,
     }
 
     index_page = current_app.config.get("PI_INDEX_HTML") or "index.html"

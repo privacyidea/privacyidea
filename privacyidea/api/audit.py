@@ -34,7 +34,7 @@ from .lib.utils import (send_result, send_file)
 from ..api.lib.prepolicy import (prepolicy, check_base_action, auditlog_age,
                                  allowed_audit_realm, hide_audit_columns)
 from ..api.auth import admin_required
-from ..lib.policy import ACTION
+from ..lib.policies.actions import PolicyAction
 from flask import g
 import logging
 from ..lib.audit import search, getAudit
@@ -46,8 +46,8 @@ audit_blueprint = Blueprint('audit_blueprint', __name__)
 
 
 @audit_blueprint.route('/', methods=['GET'])
-@prepolicy(check_base_action, request, ACTION.AUDIT)
-@prepolicy(allowed_audit_realm, request, ACTION.AUDIT)
+@prepolicy(check_base_action, request, PolicyAction.AUDIT)
+@prepolicy(allowed_audit_realm, request, PolicyAction.AUDIT)
 @prepolicy(auditlog_age, request)
 @prepolicy(hide_audit_columns, request)
 def search_audit():
@@ -96,7 +96,7 @@ def search_audit():
 
 
 @audit_blueprint.route('/<csvfile>', methods=['GET'])
-@prepolicy(check_base_action, request, ACTION.AUDIT_DOWNLOAD)
+@prepolicy(check_base_action, request, PolicyAction.AUDIT_DOWNLOAD)
 @prepolicy(auditlog_age, request)
 @admin_required
 def download_csv(csvfile=None):

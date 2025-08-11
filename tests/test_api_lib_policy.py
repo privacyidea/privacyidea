@@ -11,6 +11,7 @@ from werkzeug.datastructures.headers import Headers
 from privacyidea.lib.container import (init_container, find_container_by_serial, create_container_template,
                                        get_all_containers)
 from privacyidea.lib.containers.container_info import RegistrationState
+from privacyidea.lib.policies.helper import get_jwt_validity
 from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AuthenticatorAttachmentType,
                                              AttestationLevel, AttestationForm,
                                              UserVerificationLevel)
@@ -31,9 +32,10 @@ from .base import (MyApiTestCase)
 
 from privacyidea.lib.subscriptions import EXPIRE_MESSAGE
 from privacyidea.lib.policy import (set_policy, delete_policy, enable_policy,
-                                    PolicyClass, SCOPE, ACTION, REMOTE_USER,
+                                    PolicyClass, SCOPE, REMOTE_USER,
                                     AUTOASSIGNVALUE, AUTHORIZED,
                                     DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL)
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_base_action, check_token_init,
                                            check_max_token_user,
@@ -63,7 +65,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_token_action, check_token_list_action, check_user_params,
                                            check_client_container_action, container_registration_config,
                                            smartphone_config, check_client_container_disabled_action, rss_age,
-                                           hide_container_info, require_description_on_edit)
+                                           hide_container_info, require_description_on_edit, force_server_generate_key)
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.realm import delete_realm
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
@@ -162,7 +164,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req.User = User()
 
         # Set a policy, that does allow the action
-        set_policy(name="pol1", scope=SCOPE.ADMIN, action=ACTION.ENABLE, client="10.0.0.0/8")
+        set_policy(name="pol1", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, client="10.0.0.0/8")
         g.policy_object = PolicyClass()
 
         # Action enable is cool
@@ -179,7 +181,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                           check_base_action, req, "delete")
 
         # check action with a token realm
-        set_policy(name="pol1", scope=SCOPE.ADMIN, action=ACTION.ENABLE, client="10.0.0.0/8",
+        set_policy(name="pol1", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, client="10.0.0.0/8",
                    realm=self.realm1)
         set_policy(name="pol2", scope=SCOPE.ADMIN, action="*", client="10.0.0.0/8", realm=self.realm2)
         g.policy_object = PolicyClass()
@@ -309,7 +311,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Set a policy, that does allow the action
         set_policy(name="pol1",
                    scope=SCOPE.ADMIN,
-                   action="enrollTOTP, enrollHOTP, {0!s}".format(ACTION.IMPORT),
+                   action="enrollTOTP, enrollHOTP, {0!s}".format(PolicyAction.IMPORT),
                    client="10.0.0.0/8")
         g.policy_object = PolicyClass()
 
@@ -345,7 +347,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Set a policy, that allows one active token per user
         set_policy(name="pol1",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(ACTION.MAXACTIVETOKENUSER, 1))
+                   action="{0!s}={1!s}".format(PolicyAction.MAXACTIVETOKENUSER, 1))
         g.policy_object = PolicyClass()
         # The user has one token, everything is fine.
         init_token({"serial": "NEW001", "type": "hotp",
@@ -382,7 +384,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Set a policy to limit active HOTP tokens to 1
         set_policy(name="pol1",
                    scope=SCOPE.ENROLL,
-                   action="hotp_{0!s}={1!s}".format(ACTION.MAXACTIVETOKENUSER, 1))
+                   action="hotp_{0!s}={1!s}".format(PolicyAction.MAXACTIVETOKENUSER, 1))
         # we try to enroll a new HOTP token, this would fail.
         req.all_data = {"user": "cornelius",
                         "realm": self.realm1,
@@ -446,7 +448,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Set a policy, that allows two tokens per user
         set_policy(name="pol1",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(ACTION.MAXTOKENUSER, 2))
+                   action="{0!s}={1!s}".format(PolicyAction.MAXTOKENUSER, 2))
         g.policy_object = PolicyClass()
         # The user has one token, everything is fine.
         self.setUp_user_realms()
@@ -485,7 +487,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # are two policies matching for the user and the maximum is 12.
         set_policy(name="pol_max_12",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(ACTION.MAXTOKENUSER, 12))
+                   action="{0!s}={1!s}".format(PolicyAction.MAXTOKENUSER, 12))
         g.policy_object = PolicyClass()
         # new check_max_token_user should not raise an error!
         self.assertTrue(check_max_token_user(req))
@@ -507,7 +509,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Now we set a policy specifically for HOTP tokens:
         set_policy(name="pol2",
                    scope=SCOPE.ENROLL,
-                   action="hotp_{0!s}={1!s}".format(ACTION.MAXTOKENUSER, 2))
+                   action="hotp_{0!s}={1!s}".format(PolicyAction.MAXTOKENUSER, 2))
         g.policy_object = PolicyClass()
         # and fail to enroll a new token
         req.all_data = {"user": "cornelius",
@@ -608,7 +610,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Set a policy, that allows two tokens per realm
         set_policy(name="pol1",
                    scope=SCOPE.AUTHZ,
-                   action=f"{ACTION.SETREALM}={self.realm1}",
+                   action=f"{PolicyAction.SETREALM}={self.realm1}",
                    realm=self.realm2)
         g.policy_object = PolicyClass()
 
@@ -635,7 +637,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         #  we get an exception
         set_policy(name="pol2",
                    scope=SCOPE.AUTHZ,
-                   action=f"{ACTION.SETREALM}=ConflictRealm",
+                   action=f"{PolicyAction.SETREALM}=ConflictRealm",
                    realm=self.realm2)
         g.policy_object = PolicyClass()
         # This request will trigger two policies with different realms to set
@@ -663,10 +665,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Set a policy that defines the tokenlabel
         set_policy(name="pol1",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(ACTION.TOKENLABEL, "<u>@<r>"))
+                   action="{0!s}={1!s}".format(PolicyAction.TOKENLABEL, "<u>@<r>"))
         set_policy(name="pol2",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(ACTION.TOKENISSUER, "myPI"))
+                   action="{0!s}={1!s}".format(PolicyAction.TOKENISSUER, "myPI"))
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
@@ -675,16 +677,16 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         init_tokenlabel(req)
 
         # Check, if the tokenlabel was added
-        self.assertEqual(req.all_data.get(ACTION.TOKENLABEL), "<u>@<r>")
+        self.assertEqual(req.all_data.get(PolicyAction.TOKENLABEL), "<u>@<r>")
         # Check, if the tokenissuer was added
-        self.assertEqual(req.all_data.get(ACTION.TOKENISSUER), "myPI")
+        self.assertEqual(req.all_data.get(PolicyAction.TOKENISSUER), "myPI")
         # Check, if force_app_pin wasn't added (since there is no policy)
-        self.assertNotIn(ACTION.FORCE_APP_PIN, req.all_data, req.all_data)
+        self.assertNotIn(PolicyAction.FORCE_APP_PIN, req.all_data, req.all_data)
 
         # reset the request data and start again with force_app_pin policy
         set_policy(name="pol3",
                    scope=SCOPE.ENROLL,
-                   action="hotp_{0!s}=True".format(ACTION.FORCE_APP_PIN))
+                   action="hotp_{0!s}=True".format(PolicyAction.FORCE_APP_PIN))
         req.all_data = {"user": "cornelius",
                         "realm": "home"}
         init_tokenlabel(req)
@@ -697,7 +699,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                         "type": "TOTP"}
         init_tokenlabel(req)
         # Check, that force_app_pin wasn't added
-        self.assertNotIn(ACTION.FORCE_APP_PIN, req.all_data, req.all_data)
+        self.assertNotIn(PolicyAction.FORCE_APP_PIN, req.all_data, req.all_data)
 
         # finally delete policy
         delete_policy("pol1")
@@ -723,14 +725,14 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         size_policy = 12
         set_policy(name="pinsize",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(ACTION.OTPPINRANDOM, size_policy))
+                   action="{0!s}={1!s}".format(PolicyAction.OTPPINRANDOM, size_policy))
         set_policy(name="pincontent",
                    scope=SCOPE.ADMIN,
-                   action="{0!s}={1!s}".format(ACTION.OTPPINCONTENTS, contents_policy))
+                   action="{0!s}={1!s}".format(PolicyAction.OTPPINCONTENTS, contents_policy))
         set_policy(name="pinhandling",
                    scope=SCOPE.ENROLL,
                    action="{0!s}=privacyidea.lib.pinhandling.base.PinHandler".format(
-                       ACTION.PINHANDLING))
+                       PolicyAction.PINHANDLING))
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
@@ -773,10 +775,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         size_policy = 12
         set_policy(name="pinsize",
                    scope=SCOPE.ADMIN,
-                   action="{0!s}={1!s}".format(ACTION.OTPPINSETRANDOM, size_policy))
+                   action="{0!s}={1!s}".format(PolicyAction.OTPPINSETRANDOM, size_policy))
         set_policy(name="pincontent",
                    scope=SCOPE.ADMIN,
-                   action="{0!s}={1!s}".format(ACTION.OTPPINCONTENTS, contents_policy))
+                   action="{0!s}={1!s}".format(PolicyAction.OTPPINCONTENTS, contents_policy))
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
@@ -874,7 +876,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Set a policy that defines the PIN to be encrypted
         set_policy(name="pol1",
                    scope=SCOPE.ENROLL,
-                   action=ACTION.ENCRYPTPIN)
+                   action=PolicyAction.ENCRYPTPIN)
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
@@ -969,9 +971,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Set a policy that defines PIN policy
         set_policy(name="pol1",
                    scope=SCOPE.USER,
-                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(ACTION.OTPPINMAXLEN, "10",
-                                                                       ACTION.OTPPINMINLEN, "4",
-                                                                       ACTION.OTPPINCONTENTS, "cn"))
+                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(PolicyAction.OTPPINMAXLEN, "10",
+                                                                       PolicyAction.OTPPINMINLEN, "4",
+                                                                       PolicyAction.OTPPINCONTENTS, "cn"))
         g.policy_object = PolicyClass()
 
         req.all_data = {
@@ -1066,9 +1068,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Set a policy that defines PIN policy
         set_policy(name="pol1",
                    scope=SCOPE.ADMIN,
-                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(ACTION.OTPPINMAXLEN, "10",
-                                                                       ACTION.OTPPINMINLEN, "4",
-                                                                       ACTION.OTPPINCONTENTS, "cn"),
+                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(PolicyAction.OTPPINMAXLEN, "10",
+                                                                       PolicyAction.OTPPINMINLEN, "4",
+                                                                       PolicyAction.OTPPINCONTENTS, "cn"),
                    realm="home")
         g.policy_object = PolicyClass()
 
@@ -1158,9 +1160,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(name="pol1",
                    scope=SCOPE.ADMIN,
                    action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(
-                       ACTION.OTPPINMAXLEN, "10",
-                       ACTION.OTPPINMINLEN, "4",
-                       ACTION.OTPPINCONTENTS, "cn"),
+                       PolicyAction.OTPPINMAXLEN, "10",
+                       PolicyAction.OTPPINMINLEN, "4",
+                       PolicyAction.OTPPINCONTENTS, "cn"),
                    realm="home")
 
         # Set a policy that defines a SPASS PIN policy
@@ -1252,7 +1254,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Set a policy, that allows two tokens per realm
         set_policy(name="pol_api",
                    scope=SCOPE.AUTHZ,
-                   action=ACTION.APIKEY)
+                   action=PolicyAction.APIKEY)
         g.policy_object = PolicyClass()
 
         # A request with no API Key fails
@@ -1294,7 +1296,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # and only use the last 4 characters of the username
         set_policy(name="mangle1",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=user/.*(.{{4}}$)/\\1/".format(ACTION.MANGLE))
+                   action="{0!s}=user/.*(.{{4}}$)/\\1/".format(PolicyAction.MANGLE))
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
@@ -1308,7 +1310,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Set a mangle policy to remove blanks from realm name
         set_policy(name="mangle2",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=realm/\\s//".format(ACTION.MANGLE))
+                   action="{0!s}=realm/\\s//".format(PolicyAction.MANGLE))
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
@@ -1335,7 +1337,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # A user, for whom the login via REMOTE_USER is allowed.
         set_policy(name="ruser",
                    scope=SCOPE.WEBUI,
-                   action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.ACTIVE))
+                   action="{0!s}={1!s}".format(PolicyAction.REMOTE_USER, REMOTE_USER.ACTIVE))
 
         r = is_remote_user_allowed(req)
         self.assertEqual(REMOTE_USER.ACTIVE, r)
@@ -1344,7 +1346,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Only allowed for user "super", but REMOTE_USER=admin
         set_policy(name="ruser",
                    scope=SCOPE.WEBUI,
-                   action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.ACTIVE),
+                   action="{0!s}={1!s}".format(PolicyAction.REMOTE_USER, REMOTE_USER.ACTIVE),
                    user="super")
 
         r = is_remote_user_allowed(req)
@@ -1366,7 +1368,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Now set the remote force policy
         set_policy(name="ruser",
                    scope=SCOPE.WEBUI,
-                   action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.FORCE),
+                   action="{0!s}={1!s}".format(PolicyAction.REMOTE_USER, REMOTE_USER.FORCE),
                    user="super")
         self.assertEqual(REMOTE_USER.FORCE, is_remote_user_allowed(req))
 
@@ -1392,7 +1394,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # and only use the last 4 characters of the username
         set_policy(name="email1",
                    scope=SCOPE.REGISTER,
-                   action=r"{0!s}=/.*@mydomain\..*".format(ACTION.REQUIREDEMAIL))
+                   action=r"{0!s}=/.*@mydomain\..*".format(PolicyAction.REQUIREDEMAIL))
         g.policy_object = PolicyClass()
         # request, that matches the policy
         req.all_data = {"email": "user@mydomain.net"}
@@ -1427,20 +1429,20 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # and only use the last 4 characters of the username
         set_policy(name="recover",
                    scope=SCOPE.USER,
-                   action="{0!s}".format(ACTION.RESYNC))
+                   action="{0!s}".format(PolicyAction.RESYNC))
         g.policy_object = PolicyClass()
         req.all_data = {"user": "cornelius", "realm": self.realm1}
         # There is a user policy without password reset, so an exception is
         # raised
         self.assertRaises(PolicyError, check_anonymous_user, req,
-                          ACTION.PASSWORDRESET)
+                          PolicyAction.PASSWORDRESET)
 
         # The password reset is allowed
         set_policy(name="recover",
                    scope=SCOPE.USER,
-                   action="{0!s}".format(ACTION.PASSWORDRESET))
+                   action="{0!s}".format(PolicyAction.PASSWORDRESET))
         g.policy_object = PolicyClass()
-        r = check_anonymous_user(req, ACTION.PASSWORDRESET)
+        r = check_anonymous_user(req, PolicyAction.PASSWORDRESET)
         self.assertEqual(r, True)
 
     def test_16_check_two_admins(self):
@@ -1471,7 +1473,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                           "enrollHOTP, enrollQUESTION, enrollCERTIFICATE, "
                           "copytokenuser, configwrite, enrollTOTP, "
                           "enrollREGISTRATION, enrollYUBICO, resolverwrite, "
-                          "updateuser, enable, enrollU2F, "
+                          "updateuser, enable, "
                           "manage_machine_tokens, getrandom, userlist, "
                           "getserial, radiusserver_write, system_documentation,"
                           " caconnectordelete, caconnectorwrite, disable, "
@@ -1499,24 +1501,24 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.logged_in_user = {"username": "adminA",
                             "role": "admin",
                             "realm": ""}
-        r = check_base_action(req, action=ACTION.POLICYWRITE)
+        r = check_base_action(req, action=PolicyAction.POLICYWRITE)
         self.assertEqual(r, True)
         # Test AdminB
         g.logged_in_user = {"username": "adminB",
                             "role": "admin",
                             "realm": ""}
         # AdminB is allowed to add user
-        r = check_base_action(req, action=ACTION.ADDUSER)
+        r = check_base_action(req, action=PolicyAction.ADDUSER)
         self.assertEqual(r, True)
         # But admin b is not allowed to policywrite
         self.assertRaises(PolicyError, check_base_action, req,
-                          action=ACTION.POLICYWRITE)
+                          action=PolicyAction.POLICYWRITE)
         # Test AdminC: is not allowed to do anything
         g.logged_in_user = {"username": "adminC",
                             "role": "admin",
                             "realm": ""}
         self.assertRaises(PolicyError, check_base_action, req,
-                          action=ACTION.POLICYWRITE)
+                          action=PolicyAction.POLICYWRITE)
         delete_policy("polAdminA")
         delete_policy("polAdminB")
 
@@ -1541,7 +1543,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                             "role": "admin",
                             "realm": ""}
         # User can be added
-        r = check_base_action(req, action=ACTION.ADDUSER)
+        r = check_base_action(req, action=PolicyAction.ADDUSER)
         self.assertEqual(r, True)
 
         req.all_data = {"user": "new_user",
@@ -1549,7 +1551,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # User can not be added in a different resolver
         self.assertRaises(PolicyError, check_base_action, req,
-                          action=ACTION.ADDUSER)
+                          action=PolicyAction.ADDUSER)
         delete_policy("userAdd")
 
     def test_18_auditlog_age(self):
@@ -1568,7 +1570,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # and only use the last 4 characters of the username
         set_policy(name="a_age",
                    scope=SCOPE.ADMIN,
-                   action="{0!s}=1d".format(ACTION.AUDIT_AGE))
+                   action="{0!s}=1d".format(PolicyAction.AUDIT_AGE))
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
@@ -1591,7 +1593,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # set a policy to hide the "serial" and the "action" columns in the audit response
         set_policy(name="hide_audit_columns_admin",
                    scope=SCOPE.ADMIN,
-                   action="{0!s}=serial action".format(ACTION.HIDE_AUDIT_COLUMNS))
+                   action="{0!s}=serial action".format(PolicyAction.HIDE_AUDIT_COLUMNS))
         g.logged_in_user = {"username": "admin1",
                             "realm": "",
                             "role": "admin"}
@@ -1608,7 +1610,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # set a policy to hide the "number" and the "realm" columns in the audit response
         set_policy(name="hide_audit_columns_user",
                    scope=SCOPE.USER,
-                   action="{0!s}=number realm".format(ACTION.HIDE_AUDIT_COLUMNS))
+                   action="{0!s}=number realm".format(PolicyAction.HIDE_AUDIT_COLUMNS))
         g.logged_in_user = {"username": "user1",
                             "realm": "",
                             "role": "user"}
@@ -1632,7 +1634,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # set a policy to hide the "tokenkind" and the "unknown" tokeninfo values
         set_policy(name="hide_tokeninfo_admin",
                    scope=SCOPE.ADMIN,
-                   action="{0!s}=tokenkind unknown".format(ACTION.HIDE_TOKENINFO))
+                   action="{0!s}=tokenkind unknown".format(PolicyAction.HIDE_TOKENINFO))
         g.logged_in_user = {"username": "admin1",
                             "realm": "",
                             "role": "admin"}
@@ -1656,7 +1658,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # set a policy to hide the "tokenkind" and the "unknown" entries from the tokeninfo
         set_policy(name="hide_tokeninfo_user",
                    scope=SCOPE.USER,
-                   action="{0!s}=tokenkind unknown".format(ACTION.HIDE_TOKENINFO))
+                   action="{0!s}=tokenkind unknown".format(PolicyAction.HIDE_TOKENINFO))
         g.logged_in_user = {"username": "user1",
                             "realm": "",
                             "role": "user"}
@@ -1744,12 +1746,12 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         #
         set_policy(name="auditrealm1",
                    scope=SCOPE.ADMIN,
-                   action=ACTION.AUDIT,
+                   action=PolicyAction.AUDIT,
                    user="admin1",
                    realm="realm1")
         set_policy(name="auditrealm2",
                    scope=SCOPE.ADMIN,
-                   action=ACTION.AUDIT,
+                   action=PolicyAction.AUDIT,
                    user="admin1",
                    realm=["realm2", "realm3"])
         g.policy_object = PolicyClass()
@@ -1874,6 +1876,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
         g.client_ip = env["REMOTE_ADDR"]
+        g.policies = {}
         req = Request(env)
         req.User = User()
         req.all_data = {
@@ -1895,36 +1898,47 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                                             PUSH_ACTION.REGISTRATION_URL,
                                             PUSH_ACTION.TTL))
         g.policy_object = PolicyClass()
-        req.all_data = {
-            "type": "push"}
+        g.policies = {}
+        req.all_data = {"type": "push"}
         pushtoken_add_config(req, "init")
-        self.assertEqual(req.all_data.get(PUSH_ACTION.FIREBASE_CONFIG), "some-fb-config")
-        self.assertEqual(req.all_data.get(PUSH_ACTION.REGISTRATION_URL), "https://privacyidea.com/enroll")
-        self.assertEqual("10", req.all_data.get(PUSH_ACTION.TTL))
-        self.assertEqual("1", req.all_data.get(PUSH_ACTION.SSL_VERIFY))
+        policies = g.policies
+        self.assertEqual("some-fb-config", policies.get(PUSH_ACTION.FIREBASE_CONFIG))
+        self.assertEqual("https://privacyidea.com/enroll", policies.get(PUSH_ACTION.REGISTRATION_URL))
+        self.assertEqual("10", policies.get(PUSH_ACTION.TTL))
+        self.assertEqual("1", policies.get(PUSH_ACTION.SSL_VERIFY))
+        self.assertFalse(policies.get(PUSH_ACTION.USE_PIA_SCHEME))
 
         # the request tries to inject a rogue value, but we assure sslverify=1
         g.policy_object = PolicyClass()
+        g.policies = {}
         req.all_data = {
             "type": "push",
             "sslverify": "rogue"}
         pushtoken_add_config(req, "init")
-        self.assertEqual("1", req.all_data.get(PUSH_ACTION.SSL_VERIFY))
+        self.assertEqual("1", g.policies.get(PUSH_ACTION.SSL_VERIFY))
 
         # set sslverify="0"
         set_policy(name="push_pol2",
                    scope=SCOPE.ENROLL,
                    action="{0!s}=0".format(PUSH_ACTION.SSL_VERIFY))
         g.policy_object = PolicyClass()
-        req.all_data = {
-            "type": "push"}
+        g.policies = {}
+        req.all_data = {"type": "push"}
         pushtoken_add_config(req, "init")
-        self.assertEqual(req.all_data.get(PUSH_ACTION.FIREBASE_CONFIG), "some-fb-config")
-        self.assertEqual("0", req.all_data.get(PUSH_ACTION.SSL_VERIFY))
+        self.assertEqual("some-fb-config", g.policies.get(PUSH_ACTION.FIREBASE_CONFIG))
+        self.assertEqual("0", g.policies.get(PUSH_ACTION.SSL_VERIFY))
+
+        # Set policy to use pia scheme
+        set_policy("pia_scheme", scope=SCOPE.ENROLL, action=PUSH_ACTION.USE_PIA_SCHEME)
+        req.all_data = {"type": "push"}
+        g.policies = {}
+        pushtoken_add_config(req, "init")
+        self.assertTrue(g.policies.get(PUSH_ACTION.USE_PIA_SCHEME))
 
         # finally delete policy
         delete_policy("push_pol")
         delete_policy("push_pol2")
+        delete_policy("pia_scheme")
 
     def test_23_enroll_different_tokentypes_in_different_resolvers(self):
         # One realm has different resolvers.
@@ -2158,7 +2172,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         fido2_auth(request, None)
         self.assertEqual(set(request.all_data.get(FIDO2PolicyAction.ALLOWED_TRANSPORTS)),
                          set(DEFAULT_ALLOWED_TRANSPORTS.split()))
-        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
+        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + PolicyAction.CHALLENGETEXT),
                          DEFAULT_CHALLENGE_TEXT_AUTH)
 
         # Request via serial
@@ -2169,7 +2183,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         fido2_auth(request, None)
         self.assertEqual(set(request.all_data.get(FIDO2PolicyAction.ALLOWED_TRANSPORTS)),
                          set(DEFAULT_ALLOWED_TRANSPORTS.split()))
-        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
+        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + PolicyAction.CHALLENGETEXT),
                          DEFAULT_CHALLENGE_TEXT_AUTH)
 
         # Not a WebAuthn token, policies are loaded regardless
@@ -2181,7 +2195,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(set(DEFAULT_ALLOWED_TRANSPORTS.split()),
                          set(request.all_data.get(FIDO2PolicyAction.ALLOWED_TRANSPORTS)))
         self.assertEqual(DEFAULT_CHALLENGE_TEXT_AUTH,
-                         request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT))
+                         request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + PolicyAction.CHALLENGETEXT))
 
         # With policies
         allowed_transports = ALLOWED_TRANSPORTS
@@ -2190,7 +2204,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             name="WebAuthn",
             scope=SCOPE.AUTH,
             action=FIDO2PolicyAction.ALLOWED_TRANSPORTS + '=' + allowed_transports + ','
-                   + WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT + '=' + challengetext
+                   + WebAuthnTokenClass.get_class_type() + '_' + PolicyAction.CHALLENGETEXT + '=' + challengetext
         )
         request = RequestMock()
         request.all_data = {
@@ -2199,7 +2213,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         fido2_auth(request, None)
         self.assertEqual(set(request.all_data.get(FIDO2PolicyAction.ALLOWED_TRANSPORTS)),
                          set(allowed_transports.split()))
-        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
+        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + PolicyAction.CHALLENGETEXT),
                          challengetext)
 
         # Reset policies
@@ -2222,7 +2236,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         fido2_auth(request, None)
         self.assertEqual(set(request.all_data.get(FIDO2PolicyAction.ALLOWED_TRANSPORTS)),
                          set(DEFAULT_ALLOWED_TRANSPORTS.split()))
-        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
+        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + PolicyAction.CHALLENGETEXT),
                          DEFAULT_CHALLENGE_TEXT_AUTH)
 
         # Request via serial
@@ -2235,7 +2249,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         fido2_auth(request, None)
         self.assertEqual(set(request.all_data.get(FIDO2PolicyAction.ALLOWED_TRANSPORTS)),
                          set(DEFAULT_ALLOWED_TRANSPORTS.split()))
-        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
+        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + PolicyAction.CHALLENGETEXT),
                          DEFAULT_CHALLENGE_TEXT_AUTH)
 
         # Not a WebAuthn token, policies are loaded regardless
@@ -2249,7 +2263,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(set(DEFAULT_ALLOWED_TRANSPORTS.split()),
                          set(request.all_data.get(FIDO2PolicyAction.ALLOWED_TRANSPORTS)))
         self.assertEqual(DEFAULT_CHALLENGE_TEXT_AUTH,
-                         request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT))
+                         request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + PolicyAction.CHALLENGETEXT))
 
         # With policies
         allowed_transports = ALLOWED_TRANSPORTS
@@ -2258,7 +2272,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             name="WebAuthn",
             scope=SCOPE.AUTH,
             action=FIDO2PolicyAction.ALLOWED_TRANSPORTS + '=' + allowed_transports + ','
-                   + WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT + '=' + challengetext
+                   + WebAuthnTokenClass.get_class_type() + '_' + PolicyAction.CHALLENGETEXT + '=' + challengetext
         )
         request = RequestMock()
         request.all_data = {
@@ -2268,7 +2282,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         fido2_auth(request, None)
         self.assertEqual(set(request.all_data.get(FIDO2PolicyAction.ALLOWED_TRANSPORTS)),
                          set(allowed_transports.split()))
-        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
+        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + PolicyAction.CHALLENGETEXT),
                          challengetext)
 
         # Reset policies
@@ -2291,7 +2305,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         fido2_auth(request, None)
         self.assertEqual(set(request.all_data.get(FIDO2PolicyAction.ALLOWED_TRANSPORTS)),
                          set(DEFAULT_ALLOWED_TRANSPORTS.split()))
-        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
+        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + PolicyAction.CHALLENGETEXT),
                          DEFAULT_CHALLENGE_TEXT_AUTH)
 
         # With policies
@@ -2301,7 +2315,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             name="WebAuthn",
             scope=SCOPE.AUTH,
             action=FIDO2PolicyAction.ALLOWED_TRANSPORTS + '=' + allowed_transports + ','
-                   + WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT + '=' + challengetext
+                   + WebAuthnTokenClass.get_class_type() + '_' + PolicyAction.CHALLENGETEXT + '=' + challengetext
         )
         request = RequestMock()
         request.all_data = {
@@ -2311,7 +2325,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         fido2_auth(request, None)
         self.assertEqual(set(request.all_data.get(FIDO2PolicyAction.ALLOWED_TRANSPORTS)),
                          set(allowed_transports.split()))
-        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
+        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + PolicyAction.CHALLENGETEXT),
                          challengetext)
 
         # Reset policies
@@ -2502,7 +2516,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
                          request.all_data.get(FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_FORM))
         self.assertEqual(DEFAULT_CHALLENGE_TEXT_ENROLL,
-                         request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT))
+                         request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + PolicyAction.CHALLENGETEXT))
 
         # Not a WebAuthn token: policy values are not loaded
         request = RequestMock()
@@ -2517,7 +2531,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(None, request.all_data.get(FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL))
         self.assertEqual(None, request.all_data.get(FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_FORM))
         self.assertEqual(None,
-                         request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT))
+                         request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + PolicyAction.CHALLENGETEXT))
 
         # With policies
         authenticator_attachment = AuthenticatorAttachmentType.CROSS_PLATFORM
@@ -2533,7 +2547,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                    + public_key_credential_algorithm_preference + ','
                    + FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL + '=' + authenticator_attestation_level + ','
                    + FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_FORM + '=' + authenticator_attestation_form + ','
-                   + WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT + '=' + challengetext
+                   + WebAuthnTokenClass.get_class_type() + '_' + PolicyAction.CHALLENGETEXT + '=' + challengetext
         )
         request = RequestMock()
         request.all_data = {
@@ -2550,7 +2564,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                          authenticator_attestation_level)
         self.assertEqual(request.all_data.get(FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_FORM),
                          authenticator_attestation_form)
-        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
+        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + PolicyAction.CHALLENGETEXT),
                          challengetext)
 
         # Malformed policies
@@ -3092,7 +3106,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Set a policy, that the application is allowed to specify tokentype
         set_policy(name="pol1",
                    scope=SCOPE.AUTHZ,
-                   action=ACTION.APPLICATION_TOKENTYPE)
+                   action=PolicyAction.APPLICATION_TOKENTYPE)
         g.policy_object = PolicyClass()
 
         # check for
@@ -3155,10 +3169,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # now create a policy for the length of the registration code
         set_policy(name="reg_length",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(ACTION.REGISTRATIONCODE_LENGTH, 6))
+                   action="{0!s}={1!s}".format(PolicyAction.REGISTRATIONCODE_LENGTH, 6))
         set_policy(name="reg_contents",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(ACTION.REGISTRATIONCODE_CONTENTS, "+n"))
+                   action="{0!s}={1!s}".format(PolicyAction.REGISTRATIONCODE_CONTENTS, "+n"))
         # request, that matches the policy
         req.all_data = {"user": "cornelius", "realm": "home", "type": "registration"}
         init_token_length_contents(req)
@@ -3190,10 +3204,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # now create a policy for the length of the registration code
         set_policy(name="pw_length",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(ACTION.PASSWORD_LENGTH, 6))
+                   action="{0!s}={1!s}".format(PolicyAction.PASSWORD_LENGTH, 6))
         set_policy(name="pw_contents",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(ACTION.PASSWORD_CONTENTS, "+n"))
+                   action="{0!s}={1!s}".format(PolicyAction.PASSWORD_CONTENTS, "+n"))
         # request, that matches the policy
         req.all_data = {"user": "cornelius", "realm": "home", "type": "pw"}
         init_token_length_contents(req)
@@ -3229,7 +3243,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # set to allow deleting the department
         set_policy("set_custom_attr", scope=SCOPE.ADMIN,
-                   action="{0!s}=department sth".format(ACTION.DELETE_USER_ATTRIBUTES))
+                   action="{0!s}=department sth".format(PolicyAction.DELETE_USER_ATTRIBUTES))
         req.all_data = {"user": "cornelius", "realm": self.realm1, "attrkey": "department"}
         check_custom_user_attributes(req, "delete")
 
@@ -3239,13 +3253,13 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # Allow to delete diffkey
         set_policy("set_custom_attr2", scope=SCOPE.ADMIN,
-                   action="{0!s}=difkey".format(ACTION.DELETE_USER_ATTRIBUTES))
+                   action="{0!s}=difkey".format(PolicyAction.DELETE_USER_ATTRIBUTES))
         req.all_data = {"user": "cornelius", "realm": self.realm1, "attrkey": "difkey"}
         check_custom_user_attributes(req, "delete")
 
         # Now we set the policy to allow to delete any attribute
         set_policy("set_custom_attr2", scope=SCOPE.ADMIN,
-                   action="{0!s}=*".format(ACTION.DELETE_USER_ATTRIBUTES))
+                   action="{0!s}=*".format(PolicyAction.DELETE_USER_ATTRIBUTES))
         req.all_data = {"user": "cornelius", "realm": self.realm1, "attrkey": "department"}
         check_custom_user_attributes(req, "delete")
         req.all_data = {"user": "cornelius", "realm": self.realm1, "attrkey": "anykey"}
@@ -3259,7 +3273,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                         "key": "department", "value": "finance"}
         self.assertRaises(PolicyError, check_custom_user_attributes, req, "set")
         set_policy("set_custom_attr", scope=SCOPE.ADMIN,
-                   action="{0!s}=:department: finance devel :color: * :*: 1 2 ".format(ACTION.SET_USER_ATTRIBUTES))
+                   action="{0!s}=:department: finance devel :color: * :*: 1 2 ".format(PolicyAction.SET_USER_ATTRIBUTES))
         # Allow to set to finance
         check_custom_user_attributes(req, "set")
         req.all_data = {"user": "cornelius", "realm": self.realm1,
@@ -3291,7 +3305,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # Now you can set any key to any value
         set_policy("set_custom_attr2", scope=SCOPE.ADMIN,
-                   action="{0!s}=:*: *".format(ACTION.SET_USER_ATTRIBUTES))
+                   action="{0!s}=:*: *".format(PolicyAction.SET_USER_ATTRIBUTES))
         req.all_data = {"user": "cornelius", "realm": self.realm1,
                         "key": "size", "value": "3"}
         check_custom_user_attributes(req, "set")
@@ -3384,7 +3398,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Set policy
         set_policy(name="increase_failcounter_on_challenge",
                    scope=SCOPE.AUTH,
-                   action=ACTION.INCREASE_FAILCOUNTER_ON_CHALLENGE)
+                   action=PolicyAction.INCREASE_FAILCOUNTER_ON_CHALLENGE)
 
         # Check that value is True with set policy
         increase_failcounter_on_challenge(req)
@@ -3402,7 +3416,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Set policy
         set_policy(name="require_description",
                    scope=SCOPE.ENROLL,
-                   action=["{0!s}=hotp".format(ACTION.REQUIRE_DESCRIPTION)])
+                   action=["{0!s}=hotp".format(PolicyAction.REQUIRE_DESCRIPTION)])
         req = Request(env)
         req.User = User("cornelius")
 
@@ -3437,11 +3451,11 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Set policies
         set_policy(name="require_description_on_edit",
                    scope=SCOPE.TOKEN,
-                   action=[f"{ACTION.REQUIRE_DESCRIPTION_ON_EDIT}=hotp"])
+                   action=[f"{PolicyAction.REQUIRE_DESCRIPTION_ON_EDIT}=hotp"])
 
         set_policy(name="set_description",
                    scope=SCOPE.ADMIN,
-                   action=ACTION.SETDESCRIPTION)
+                   action=PolicyAction.SETDESCRIPTION)
 
         with self.app.test_request_context('token/description/' + serial,
                                            method='POST',
@@ -3468,35 +3482,27 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("set_description")
 
     def test_62_jwt_validity(self):
-        g.logged_in_user = {"username": "cornelius",
-                            "role": "user"}
-        builder = EnvironBuilder(method='POST',
-                                 headers={})
-        env = builder.get_environ()
+        user = User("cornelius", realm=self.realm1, resolver=self.resolvername1)
+
+        # Default validity.
+        validity = get_jwt_validity(user)
+        self.assertEqual(timedelta(hours=1), validity)
+
         # Set policy
-        set_policy(name="jwt_validity",
-                   scope=SCOPE.WEBUI,
-                   action=[f"{ACTION.JWTVALIDITY}=12"])
-        req = Request(env)
-        req.User = User("cornelius")
-        req.all_data = {}
+        set_policy(name="jwt_validity", scope=SCOPE.WEBUI, action=[f"{PolicyAction.JWTVALIDITY}=12"], realm=self.realm1)
 
         # The validity of the JWT is set.
-        r = jwt_validity(req, None)
-        self.assertTrue(r)
-        self.assertEqual(12, req.all_data.get("jwt_validity"))
+        validity = get_jwt_validity(user)
+        self.assertEqual(timedelta(seconds=12), validity)
+
+        # Passing an empty user returns the default validity.
+        validity = get_jwt_validity(User())
+        self.assertEqual(timedelta(hours=1), validity)
 
         # Now test a bogus policy
-        set_policy(name="jwt_validity",
-                   scope=SCOPE.WEBUI,
-                   action=[f"{ACTION.JWTVALIDITY}=oneMinute"])
-        req = Request(env)
-        req.User = User("cornelius")
-        req.all_data = {}
-        r = jwt_validity(req, None)
-        self.assertTrue(r)
-        # We receive the default of 1 hour
-        self.assertEqual(3600, req.all_data.get("jwt_validity"))
+        set_policy(name="jwt_validity", scope=SCOPE.WEBUI, action=[f"{PolicyAction.JWTVALIDITY}=oneMinute"])
+        validity = get_jwt_validity(user)
+        self.assertEqual(timedelta(hours=1), validity)
 
         delete_policy("jwt_validity")
 
@@ -3611,44 +3617,44 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req, token = self.mock_token_request("admin")
 
         # Generic policy
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN)
-        self.assertTrue(check_token_action(request=req, action=ACTION.CONTAINER_ADD_TOKEN))
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ADD_TOKEN)
+        self.assertTrue(check_token_action(request=req, action=PolicyAction.CONTAINER_ADD_TOKEN))
         # Request user is different from token owner: use token owner (can only happen in add/remove token)
         req.User = User("selfservice", self.realm1, self.resolvername1)
-        self.assertTrue(check_token_action(request=req, action=ACTION.CONTAINER_ADD_TOKEN))
+        self.assertTrue(check_token_action(request=req, action=PolicyAction.CONTAINER_ADD_TOKEN))
         delete_policy("policy")
 
         # Policy for resolver
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN, resolver=[self.resolvername3])
-        self.assertTrue(check_token_action(request=req, action=ACTION.CONTAINER_ADD_TOKEN))
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ADD_TOKEN, resolver=[self.resolvername3])
+        self.assertTrue(check_token_action(request=req, action=PolicyAction.CONTAINER_ADD_TOKEN))
         # Request user is different from token owner: use token owner (can only happen in add/remove token)
         req.User = User("selfservice", self.realm1, self.resolvername1)
-        self.assertTrue(check_token_action(request=req, action=ACTION.CONTAINER_ADD_TOKEN))
+        self.assertTrue(check_token_action(request=req, action=PolicyAction.CONTAINER_ADD_TOKEN))
         delete_policy("policy")
 
         # Policy for realm3 of the user
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN, realm=[self.realm3])
-        self.assertTrue(check_token_action(request=req, action=ACTION.CONTAINER_ADD_TOKEN))
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ADD_TOKEN, realm=[self.realm3])
+        self.assertTrue(check_token_action(request=req, action=PolicyAction.CONTAINER_ADD_TOKEN))
         # Request user is different from token owner: use token owner (can only happen in add/remove token)
         req.User = User("selfservice", self.realm1, self.resolvername1)
-        self.assertTrue(check_token_action(request=req, action=ACTION.CONTAINER_ADD_TOKEN))
+        self.assertTrue(check_token_action(request=req, action=PolicyAction.CONTAINER_ADD_TOKEN))
         delete_policy("policy")
 
         # Policy for additional token realm realm1
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN, realm=[self.realm1])
-        self.assertTrue(check_token_action(request=req, action=ACTION.CONTAINER_ADD_TOKEN))
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ADD_TOKEN, realm=[self.realm1])
+        self.assertTrue(check_token_action(request=req, action=PolicyAction.CONTAINER_ADD_TOKEN))
         # Request user is different from token owner: use token owner (can only happen in add/remove token)
         req.User = User("selfservice", self.realm1, self.resolvername1)
-        self.assertTrue(check_token_action(request=req, action=ACTION.CONTAINER_ADD_TOKEN))
+        self.assertTrue(check_token_action(request=req, action=PolicyAction.CONTAINER_ADD_TOKEN))
         delete_policy("policy")
 
         # Policy for user
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN, user="root",
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ADD_TOKEN, user="root",
                    realm=[self.realm3], resolver=[self.resolvername3])
-        self.assertTrue(check_token_action(request=req, action=ACTION.CONTAINER_ADD_TOKEN))
+        self.assertTrue(check_token_action(request=req, action=PolicyAction.CONTAINER_ADD_TOKEN))
         # Request user is different from token owner: use token owner (can only happen in add/remove token)
         req.User = User("selfservice", self.realm1, self.resolvername1)
-        self.assertTrue(check_token_action(request=req, action=ACTION.CONTAINER_ADD_TOKEN))
+        self.assertTrue(check_token_action(request=req, action=PolicyAction.CONTAINER_ADD_TOKEN))
         delete_policy("policy")
 
         token.delete_token()
@@ -3657,13 +3663,13 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req, token = self.mock_token_request_no_user("admin")
 
         # Generic policy
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.ENABLE)
-        self.assertTrue(check_token_action(request=req, action=ACTION.ENABLE))
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE)
+        self.assertTrue(check_token_action(request=req, action=PolicyAction.ENABLE))
         delete_policy("policy")
 
         # Policy for realm: only assign is allowed for token without user
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.ASSIGN, realm=[self.realm1])
-        self.assertTrue(check_token_action(request=req, action=ACTION.ASSIGN))
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.ASSIGN, realm=[self.realm1])
+        self.assertTrue(check_token_action(request=req, action=PolicyAction.ASSIGN))
         delete_policy("policy")
 
         token.delete_token()
@@ -3674,31 +3680,31 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req, token = self.mock_token_request("admin")
 
         # No enable policy
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.DISABLE)
-        self.assertRaises(PolicyError, check_token_action, request=req, action=ACTION.ENABLE)
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.DISABLE)
+        self.assertRaises(PolicyError, check_token_action, request=req, action=PolicyAction.ENABLE)
         delete_policy("policy")
 
         # Policy for another resolver
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN, resolver=[self.resolvername1])
-        self.assertRaises(PolicyError, check_token_action, request=req, action=ACTION.CONTAINER_ADD_TOKEN)
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ADD_TOKEN, resolver=[self.resolvername1])
+        self.assertRaises(PolicyError, check_token_action, request=req, action=PolicyAction.CONTAINER_ADD_TOKEN)
         # Request user would be allowed, but token owner not (can only happen in add/remove token)
         req.User = User("selfservice", self.realm1, self.resolvername1)
-        self.assertRaises(PolicyError, check_token_action, request=req, action=ACTION.CONTAINER_ADD_TOKEN)
+        self.assertRaises(PolicyError, check_token_action, request=req, action=PolicyAction.CONTAINER_ADD_TOKEN)
         delete_policy("policy")
 
         # Policy for another realm
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.ENABLE, realm=["realm2"])
-        self.assertRaises(PolicyError, check_token_action, request=req, action=ACTION.ENABLE)
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, realm=["realm2"])
+        self.assertRaises(PolicyError, check_token_action, request=req, action=PolicyAction.ENABLE)
         delete_policy("policy")
         # Assign not allowed if token is in another realm
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.ASSIGN, realm=["realm2"])
-        self.assertRaises(PolicyError, check_token_action, request=req, action=ACTION.ASSIGN)
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.ASSIGN, realm=["realm2"])
+        self.assertRaises(PolicyError, check_token_action, request=req, action=PolicyAction.ASSIGN)
         delete_policy("policy")
 
         # Policy for another user
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.ENABLE, user="hans", realm=[self.realm3],
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, user="hans", realm=[self.realm3],
                    resolver=[self.resolvername3])
-        self.assertRaises(PolicyError, check_token_action, request=req, action=ACTION.ENABLE)
+        self.assertRaises(PolicyError, check_token_action, request=req, action=PolicyAction.ENABLE)
         delete_policy("policy")
 
         token.delete_token()
@@ -3707,19 +3713,19 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req, token = self.mock_token_request_no_user("admin")
 
         # Policy for resolver
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.ENABLE, resolver=[self.resolvername3])
-        self.assertRaises(PolicyError, check_token_action, request=req, action=ACTION.ENABLE)
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, resolver=[self.resolvername3])
+        self.assertRaises(PolicyError, check_token_action, request=req, action=PolicyAction.ENABLE)
         delete_policy("policy")
 
         # Policy for realm
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.ENABLE, realm=[self.realm1])
-        self.assertRaises(PolicyError, check_token_action, request=req, action=ACTION.ENABLE)
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, realm=[self.realm1])
+        self.assertRaises(PolicyError, check_token_action, request=req, action=PolicyAction.ENABLE)
         delete_policy("policy")
 
         # Policy for user
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.ENABLE, user="root", realm=[self.realm3],
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, user="root", realm=[self.realm3],
                    resolver=[self.resolvername3])
-        self.assertRaises(PolicyError, check_token_action, request=req, action=ACTION.ENABLE)
+        self.assertRaises(PolicyError, check_token_action, request=req, action=PolicyAction.ENABLE)
         delete_policy("policy")
 
         token.delete_token()
@@ -3785,24 +3791,24 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req, container = self.mock_container_request("user")
 
         # Generic policy
-        set_policy(name="policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DESCRIPTION)
-        self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_DESCRIPTION))
+        set_policy(name="policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DESCRIPTION)
+        self.assertTrue(check_container_action(request=req, action=PolicyAction.CONTAINER_DESCRIPTION))
         delete_policy("policy")
 
         # Policy for resolver
-        set_policy(name="policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DESCRIPTION, resolver=[self.resolvername3])
-        self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_DESCRIPTION))
+        set_policy(name="policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DESCRIPTION, resolver=[self.resolvername3])
+        self.assertTrue(check_container_action(request=req, action=PolicyAction.CONTAINER_DESCRIPTION))
         delete_policy("policy")
 
         # Policy for realm
-        set_policy(name="policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DESCRIPTION, realm=[self.realm3])
-        self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_DESCRIPTION))
+        set_policy(name="policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DESCRIPTION, realm=[self.realm3])
+        self.assertTrue(check_container_action(request=req, action=PolicyAction.CONTAINER_DESCRIPTION))
         delete_policy("policy")
 
         # Policy for user
-        set_policy(name="policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DESCRIPTION, user="root",
+        set_policy(name="policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DESCRIPTION, user="root",
                    realm=[self.realm3], resolver=[self.resolvername3])
-        self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_DESCRIPTION))
+        self.assertTrue(check_container_action(request=req, action=PolicyAction.CONTAINER_DESCRIPTION))
         delete_policy("policy")
 
         container.delete()
@@ -3810,10 +3816,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Container has no owner: only allowed for assign and create
         req, container = self.mock_container_request_no_user("user")
         # Generic policy
-        set_policy(name="policy", scope=SCOPE.USER, action=[ACTION.CONTAINER_ASSIGN_USER, ACTION.CONTAINER_CREATE])
-        self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_ASSIGN_USER))
+        set_policy(name="policy", scope=SCOPE.USER, action=[PolicyAction.CONTAINER_ASSIGN_USER, PolicyAction.CONTAINER_CREATE])
+        self.assertTrue(check_container_action(request=req, action=PolicyAction.CONTAINER_ASSIGN_USER))
         container.delete()
-        self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_CREATE))
+        self.assertTrue(check_container_action(request=req, action=PolicyAction.CONTAINER_CREATE))
         delete_policy("policy")
 
     def test_68_check_container_action_user_denied(self):
@@ -3824,41 +3830,41 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req, container = self.mock_container_request("user")
 
         # No description policy
-        set_policy(name="policy", scope=SCOPE.USER, action=ACTION.CONTAINER_CREATE)
-        self.assertRaises(PolicyError, check_container_action, request=req, action=ACTION.CONTAINER_DESCRIPTION)
+        set_policy(name="policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_CREATE)
+        self.assertRaises(PolicyError, check_container_action, request=req, action=PolicyAction.CONTAINER_DESCRIPTION)
         delete_policy("policy")
 
         # Policy for another resolver
-        set_policy(name="policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DESCRIPTION, resolver=[self.resolvername1])
-        self.assertRaises(PolicyError, check_container_action, request=req, action=ACTION.CONTAINER_DESCRIPTION)
+        set_policy(name="policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DESCRIPTION, resolver=[self.resolvername1])
+        self.assertRaises(PolicyError, check_container_action, request=req, action=PolicyAction.CONTAINER_DESCRIPTION)
         delete_policy("policy")
 
         # Policy for another realm (realm of container, but not realm from user)
-        set_policy(name="policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DESCRIPTION, realm=[self.realm1])
-        self.assertRaises(PolicyError, check_container_action, request=req, action=ACTION.CONTAINER_DESCRIPTION)
+        set_policy(name="policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DESCRIPTION, realm=[self.realm1])
+        self.assertRaises(PolicyError, check_container_action, request=req, action=PolicyAction.CONTAINER_DESCRIPTION)
         delete_policy("policy")
 
         # Policy for another user of the same realm
-        set_policy(name="policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DESCRIPTION, user="hans",
+        set_policy(name="policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DESCRIPTION, user="hans",
                    realm=[self.realm3],
                    resolver=[self.resolvername3])
-        self.assertRaises(PolicyError, check_container_action, request=req, action=ACTION.CONTAINER_DESCRIPTION)
+        self.assertRaises(PolicyError, check_container_action, request=req, action=PolicyAction.CONTAINER_DESCRIPTION)
         delete_policy("policy")
 
         container.delete()
 
         # request user differs from container owner
-        set_policy(name="policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DESCRIPTION)
+        set_policy(name="policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DESCRIPTION)
         selfservice = User(login="selfservice", realm=self.realm1, resolver=self.resolvername1)
         req.User = selfservice
-        self.assertRaises(PolicyError, check_container_action, request=req, action=ACTION.CONTAINER_DESCRIPTION)
+        self.assertRaises(PolicyError, check_container_action, request=req, action=PolicyAction.CONTAINER_DESCRIPTION)
         delete_policy("policy")
 
         # Container has no owner: only allowed for assign and create
         req, container = self.mock_container_request_no_user("user")
         # Generic policy
-        set_policy(name="policy", scope=SCOPE.USER, action=[ACTION.CONTAINER_ASSIGN_USER, ACTION.CONTAINER_DESCRIPTION])
-        self.assertRaises(PolicyError, check_container_action, request=req, action=ACTION.CONTAINER_DESCRIPTION)
+        set_policy(name="policy", scope=SCOPE.USER, action=[PolicyAction.CONTAINER_ASSIGN_USER, PolicyAction.CONTAINER_DESCRIPTION])
+        self.assertRaises(PolicyError, check_container_action, request=req, action=PolicyAction.CONTAINER_DESCRIPTION)
         delete_policy("policy")
         container.delete()
 
@@ -3868,51 +3874,51 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req, container = self.mock_container_request("admin")
 
         # Generic policy
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION)
-        self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_DESCRIPTION))
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION)
+        self.assertTrue(check_container_action(request=req, action=PolicyAction.CONTAINER_DESCRIPTION))
         # request user differs from container owner: uses container owner (can only happen in token init)
         selfservice = User(login="selfservice", realm=self.realm1, resolver=self.resolvername1)
         req.User = selfservice
-        self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_DESCRIPTION))
+        self.assertTrue(check_container_action(request=req, action=PolicyAction.CONTAINER_DESCRIPTION))
         delete_policy("policy")
 
         # Policy for resolver
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, resolver=[self.resolvername3])
-        self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_DESCRIPTION))
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION, resolver=[self.resolvername3])
+        self.assertTrue(check_container_action(request=req, action=PolicyAction.CONTAINER_DESCRIPTION))
         # request user differs from container owner: uses container owner (can only happen in token init)
         selfservice = User(login="selfservice", realm=self.realm1, resolver=self.resolvername1)
         req.User = selfservice
-        self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_DESCRIPTION))
+        self.assertTrue(check_container_action(request=req, action=PolicyAction.CONTAINER_DESCRIPTION))
         delete_policy("policy")
 
         # Policy for realm3 of the user
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, realm=[self.realm3])
-        self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_DESCRIPTION))
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION, realm=[self.realm3])
+        self.assertTrue(check_container_action(request=req, action=PolicyAction.CONTAINER_DESCRIPTION))
         # request user differs from container owner: uses container owner (can only happen in token init)
         selfservice = User(login="selfservice", realm=self.realm1, resolver=self.resolvername1)
         req.User = selfservice
-        self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_DESCRIPTION))
+        self.assertTrue(check_container_action(request=req, action=PolicyAction.CONTAINER_DESCRIPTION))
         delete_policy("policy")
 
         # Policy for additional container realm1 and wrong realm 2
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION,
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION,
                    realm=[self.realm2, self.realm1])
-        self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_DESCRIPTION))
+        self.assertTrue(check_container_action(request=req, action=PolicyAction.CONTAINER_DESCRIPTION))
         # request user differs from container owner: uses container owner (can only happen in token init)
         selfservice = User(login="selfservice", realm=self.realm1, resolver=self.resolvername1)
         req.User = selfservice
-        self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_DESCRIPTION))
+        self.assertTrue(check_container_action(request=req, action=PolicyAction.CONTAINER_DESCRIPTION))
         delete_policy("policy")
 
         # Policy for user
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, user="root",
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION, user="root",
                    realm=[self.realm3],
                    resolver=[self.resolvername3])
-        self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_DESCRIPTION))
+        self.assertTrue(check_container_action(request=req, action=PolicyAction.CONTAINER_DESCRIPTION))
         # request user differs from container owner: uses container owner (can only happen in token init)
         selfservice = User(login="selfservice", realm=self.realm1, resolver=self.resolvername1)
         req.User = selfservice
-        self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_DESCRIPTION))
+        self.assertTrue(check_container_action(request=req, action=PolicyAction.CONTAINER_DESCRIPTION))
         delete_policy("policy")
 
         container.delete()
@@ -3921,13 +3927,13 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req, container = self.mock_container_request_no_user("admin")
 
         # Generic policy
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION)
-        self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_DESCRIPTION))
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION)
+        self.assertTrue(check_container_action(request=req, action=PolicyAction.CONTAINER_DESCRIPTION))
         delete_policy("policy")
 
         # Policy for realm: only assign is allowed
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER, realm=[self.realm1])
-        self.assertTrue(check_container_action(request=req, action=ACTION.CONTAINER_ASSIGN_USER))
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ASSIGN_USER, realm=[self.realm1])
+        self.assertTrue(check_container_action(request=req, action=PolicyAction.CONTAINER_ASSIGN_USER))
         delete_policy("policy")
 
         container.delete()
@@ -3938,32 +3944,32 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req, container = self.mock_container_request("admin")
 
         # No enable policy
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE)
-        self.assertRaises(PolicyError, check_container_action, request=req, action=ACTION.CONTAINER_DESCRIPTION)
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_CREATE)
+        self.assertRaises(PolicyError, check_container_action, request=req, action=PolicyAction.CONTAINER_DESCRIPTION)
         delete_policy("policy")
 
         # Policy for another resolver
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, resolver=[self.resolvername1])
-        self.assertRaises(PolicyError, check_container_action, request=req, action=ACTION.CONTAINER_DESCRIPTION)
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION, resolver=[self.resolvername1])
+        self.assertRaises(PolicyError, check_container_action, request=req, action=PolicyAction.CONTAINER_DESCRIPTION)
         # request user would be allowed, but not the container owner (only possible in token init)
         req.User = User(login="selfservice", realm=self.realm1, resolver=self.resolvername1)
-        self.assertRaises(PolicyError, check_container_action, request=req, action=ACTION.CONTAINER_DESCRIPTION)
+        self.assertRaises(PolicyError, check_container_action, request=req, action=PolicyAction.CONTAINER_DESCRIPTION)
         delete_policy("policy")
 
         # Policy for another realm
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, realm=["realm2"])
-        self.assertRaises(PolicyError, check_container_action, request=req, action=ACTION.CONTAINER_DESCRIPTION)
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION, realm=["realm2"])
+        self.assertRaises(PolicyError, check_container_action, request=req, action=PolicyAction.CONTAINER_DESCRIPTION)
         delete_policy("policy")
         # assign not allowed if container is in another realm
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER, realm=["realm2"])
-        self.assertRaises(PolicyError, check_container_action, request=req, action=ACTION.CONTAINER_DESCRIPTION)
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ASSIGN_USER, realm=["realm2"])
+        self.assertRaises(PolicyError, check_container_action, request=req, action=PolicyAction.CONTAINER_DESCRIPTION)
         delete_policy("policy")
 
         # Policy for another user of the same realm
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, user="hans",
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION, user="hans",
                    realm=[self.realm3],
                    resolver=[self.resolvername3])
-        self.assertRaises(PolicyError, check_container_action, request=req, action=ACTION.CONTAINER_DESCRIPTION)
+        self.assertRaises(PolicyError, check_container_action, request=req, action=PolicyAction.CONTAINER_DESCRIPTION)
         delete_policy("policy")
 
         container.delete()
@@ -3972,20 +3978,20 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req, container = self.mock_container_request_no_user("admin")
 
         # Policy for resolver
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, resolver=[self.resolvername3])
-        self.assertRaises(PolicyError, check_container_action, request=req, action=ACTION.CONTAINER_DESCRIPTION)
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION, resolver=[self.resolvername3])
+        self.assertRaises(PolicyError, check_container_action, request=req, action=PolicyAction.CONTAINER_DESCRIPTION)
         delete_policy("policy")
 
         # Policy for realm
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, realm=[self.realm1])
-        self.assertRaises(PolicyError, check_container_action, request=req, action=ACTION.CONTAINER_DESCRIPTION)
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION, realm=[self.realm1])
+        self.assertRaises(PolicyError, check_container_action, request=req, action=PolicyAction.CONTAINER_DESCRIPTION)
         delete_policy("policy")
 
         # Policy for a user
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, user="root",
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION, user="root",
                    realm=[self.realm3],
                    resolver=[self.resolvername3])
-        self.assertRaises(PolicyError, check_container_action, request=req, action=ACTION.CONTAINER_DESCRIPTION)
+        self.assertRaises(PolicyError, check_container_action, request=req, action=PolicyAction.CONTAINER_DESCRIPTION)
         delete_policy("policy")
 
         container.delete()
@@ -4074,17 +4080,17 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         return req
 
     def test_72_check_user_params_user_success(self):
-        set_policy(name="policy", scope=SCOPE.USER, action=ACTION.CONTAINER_ASSIGN_USER)
+        set_policy(name="policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_ASSIGN_USER)
         # Mock request object
         self.setUp_user_realm4_with_2_resolvers()
         req = self.mock_request_user_params("user")
 
         # User params are equal to logged-in user
-        self.assertTrue(check_user_params(request=req, action=ACTION.CONTAINER_ASSIGN_USER))
+        self.assertTrue(check_user_params(request=req, action=PolicyAction.CONTAINER_ASSIGN_USER))
 
         # Empty user params
         req.all_data = {}
-        self.assertTrue(check_user_params(request=req, action=ACTION.CONTAINER_ASSIGN_USER))
+        self.assertTrue(check_user_params(request=req, action=PolicyAction.CONTAINER_ASSIGN_USER))
 
         delete_policy("policy")
 
@@ -4096,19 +4102,19 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # Different realm
         req.all_data = {'user': 'cornelius', 'realm': self.realm2}
-        self.assertRaises(PolicyError, check_user_params, request=req, action=ACTION.CONTAINER_ASSIGN_USER)
+        self.assertRaises(PolicyError, check_user_params, request=req, action=PolicyAction.CONTAINER_ASSIGN_USER)
 
         # Different user
         req.all_data = {'user': 'selfservice', 'realm': self.realm4}
-        self.assertRaises(PolicyError, check_user_params, request=req, action=ACTION.CONTAINER_ASSIGN_USER)
+        self.assertRaises(PolicyError, check_user_params, request=req, action=PolicyAction.CONTAINER_ASSIGN_USER)
 
         # Different resolver
         req.all_data = {'user': 'cornelius', 'realm': self.realm4, 'resolver': self.resolvername3}
-        self.assertRaises(PolicyError, check_user_params, request=req, action=ACTION.CONTAINER_ASSIGN_USER)
+        self.assertRaises(PolicyError, check_user_params, request=req, action=PolicyAction.CONTAINER_ASSIGN_USER)
 
         # completely different user
         req.all_data = {'user': 'hans', 'realm': self.realm2}
-        self.assertRaises(PolicyError, check_user_params, request=req, action=ACTION.CONTAINER_ASSIGN_USER)
+        self.assertRaises(PolicyError, check_user_params, request=req, action=PolicyAction.CONTAINER_ASSIGN_USER)
 
     def test_74_check_user_params_admin_success(self):
         # Mock request object
@@ -4116,54 +4122,54 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req = self.mock_request_user_params("admin")
 
         # Generic policy
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER)
-        self.assertTrue(check_user_params(request=req, action=ACTION.CONTAINER_ASSIGN_USER))
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ASSIGN_USER)
+        self.assertTrue(check_user_params(request=req, action=PolicyAction.CONTAINER_ASSIGN_USER))
         delete_policy("policy")
 
         # Policy for the realm
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER, realm=self.realm4)
-        self.assertTrue(check_user_params(request=req, action=ACTION.CONTAINER_ASSIGN_USER))
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ASSIGN_USER, realm=self.realm4)
+        self.assertTrue(check_user_params(request=req, action=PolicyAction.CONTAINER_ASSIGN_USER))
         delete_policy("policy")
 
         # Policy for the resolver
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER, resolver=self.resolvername1)
-        self.assertTrue(check_user_params(request=req, action=ACTION.CONTAINER_ASSIGN_USER))
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ASSIGN_USER, resolver=self.resolvername1)
+        self.assertTrue(check_user_params(request=req, action=PolicyAction.CONTAINER_ASSIGN_USER))
         delete_policy("policy")
 
         # Policy for the user
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER, user="cornelius",
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ASSIGN_USER, user="cornelius",
                    realm=self.realm4, resolver=self.resolvername1)
-        self.assertTrue(check_user_params(request=req, action=ACTION.CONTAINER_ASSIGN_USER))
+        self.assertTrue(check_user_params(request=req, action=PolicyAction.CONTAINER_ASSIGN_USER))
         delete_policy("policy")
 
         # Empty user params
         req.all_data = {}
         req.User = User()
-        self.assertTrue(check_user_params(request=req, action=ACTION.CONTAINER_ASSIGN_USER))
+        self.assertTrue(check_user_params(request=req, action=PolicyAction.CONTAINER_ASSIGN_USER))
 
     def test_75_check_user_params_user_denied(self):
         # Mock request object
         self.setUp_user_realm2()
         self.setUp_user_realm4_with_2_resolvers()
         req = self.mock_request_user_params("user")
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER, user="cornelius",
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ASSIGN_USER, user="cornelius",
                    realm=self.realm4, resolver=self.resolvername1)
 
         # Different realm
         req.all_data = {'user': 'cornelius', 'realm': self.realm2}
-        self.assertRaises(PolicyError, check_user_params, request=req, action=ACTION.CONTAINER_ASSIGN_USER)
+        self.assertRaises(PolicyError, check_user_params, request=req, action=PolicyAction.CONTAINER_ASSIGN_USER)
 
         # Different user
         req.all_data = {'user': 'selfservice', 'realm': self.realm4}
-        self.assertRaises(PolicyError, check_user_params, request=req, action=ACTION.CONTAINER_ASSIGN_USER)
+        self.assertRaises(PolicyError, check_user_params, request=req, action=PolicyAction.CONTAINER_ASSIGN_USER)
 
         # Different resolver
         req.all_data = {'user': 'cornelius', 'realm': self.realm4, 'resolver': self.resolvername3}
-        self.assertRaises(PolicyError, check_user_params, request=req, action=ACTION.CONTAINER_ASSIGN_USER)
+        self.assertRaises(PolicyError, check_user_params, request=req, action=PolicyAction.CONTAINER_ASSIGN_USER)
 
         # completely different user
         req.all_data = {'user': 'hans', 'realm': self.realm2}
-        self.assertRaises(PolicyError, check_user_params, request=req, action=ACTION.CONTAINER_ASSIGN_USER)
+        self.assertRaises(PolicyError, check_user_params, request=req, action=PolicyAction.CONTAINER_ASSIGN_USER)
 
         delete_policy("policy")
 
@@ -4214,30 +4220,30 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req, container = self.mock_client_container_request()
 
         # Generic policy
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
-        self.assertTrue(check_client_container_action(request=req, action=ACTION.CONTAINER_CLIENT_ROLLOVER))
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER)
+        self.assertTrue(check_client_container_action(request=req, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER))
         delete_policy("policy")
 
         # Policy for resolver
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER,
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER,
                    resolver=[self.resolvername3])
-        self.assertTrue(check_client_container_action(request=req, action=ACTION.CONTAINER_CLIENT_ROLLOVER))
+        self.assertTrue(check_client_container_action(request=req, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER))
         delete_policy("policy")
 
         # Policy for user realm
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm3])
-        self.assertTrue(check_client_container_action(request=req, action=ACTION.CONTAINER_CLIENT_ROLLOVER))
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm3])
+        self.assertTrue(check_client_container_action(request=req, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER))
         delete_policy("policy")
 
         # Policy for additional realm
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm1])
-        self.assertTrue(check_client_container_action(request=req, action=ACTION.CONTAINER_CLIENT_ROLLOVER))
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm1])
+        self.assertTrue(check_client_container_action(request=req, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER))
         delete_policy("policy")
 
         # Policy for user
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER, user="root",
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER, user="root",
                    realm=[self.realm3], resolver=[self.resolvername3])
-        self.assertTrue(check_client_container_action(request=req, action=ACTION.CONTAINER_CLIENT_ROLLOVER))
+        self.assertTrue(check_client_container_action(request=req, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER))
         delete_policy("policy")
 
         container.delete()
@@ -4245,19 +4251,19 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # container without user
         req, container = self.mock_client_container_request_no_user()
         # Generic policy
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
-        self.assertTrue(check_client_container_action(request=req, action=ACTION.CONTAINER_CLIENT_ROLLOVER))
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER)
+        self.assertTrue(check_client_container_action(request=req, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER))
         delete_policy("policy")
 
         # container with realms
         container.set_realms([self.realm1, self.realm3], add=False)
         # Policy for realm1
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm1])
-        self.assertTrue(check_client_container_action(request=req, action=ACTION.CONTAINER_CLIENT_ROLLOVER))
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm1])
+        self.assertTrue(check_client_container_action(request=req, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER))
         delete_policy("policy")
         # Policy for realm3
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm3])
-        self.assertTrue(check_client_container_action(request=req, action=ACTION.CONTAINER_CLIENT_ROLLOVER))
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm3])
+        self.assertTrue(check_client_container_action(request=req, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER))
         delete_policy("policy")
         container.delete()
 
@@ -4270,30 +4276,30 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req, container = self.mock_client_container_request()
 
         # No rollover policy
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_TOKEN_DELETION)
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_TOKEN_DELETION)
         self.assertRaises(PolicyError, check_client_container_action, request=req,
-                          action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+                          action=PolicyAction.CONTAINER_CLIENT_ROLLOVER)
         delete_policy("policy")
 
         # Policy for another resolver
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER,
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER,
                    resolver=[self.resolvername1])
         self.assertRaises(PolicyError, check_client_container_action, request=req,
-                          action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+                          action=PolicyAction.CONTAINER_CLIENT_ROLLOVER)
         delete_policy("policy")
 
         # Policy for another realm
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm2])
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm2])
         self.assertRaises(PolicyError, check_client_container_action, request=req,
-                          action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+                          action=PolicyAction.CONTAINER_CLIENT_ROLLOVER)
         delete_policy("policy")
 
         # Policy for another user of the same realm
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER, user="hans",
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER, user="hans",
                    realm=[self.realm3],
                    resolver=[self.resolvername3])
         self.assertRaises(PolicyError, check_client_container_action, request=req,
-                          action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+                          action=PolicyAction.CONTAINER_CLIENT_ROLLOVER)
         delete_policy("policy")
 
         container.delete()
@@ -4301,45 +4307,45 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # container without user
         req, container = self.mock_client_container_request_no_user()
         # Policy for a realm
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER, realm=self.realm1)
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER, realm=self.realm1)
         self.assertRaises(PolicyError, check_client_container_action, request=req,
-                          action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+                          action=PolicyAction.CONTAINER_CLIENT_ROLLOVER)
         delete_policy("policy")
 
         # Policy for a resolver
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER,
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER,
                    resolver=self.resolvername1)
         self.assertRaises(PolicyError, check_client_container_action, request=req,
-                          action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+                          action=PolicyAction.CONTAINER_CLIENT_ROLLOVER)
         delete_policy("policy")
 
         # Policy for a user
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER, realm=self.realm1,
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER, realm=self.realm1,
                    user="hans")
         self.assertRaises(PolicyError, check_client_container_action, request=req,
-                          action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+                          action=PolicyAction.CONTAINER_CLIENT_ROLLOVER)
         delete_policy("policy")
 
         # Policy with all actions in the scope disabled action
         set_policy(name="policy", scope=SCOPE.CONTAINER, realm=self.realm1,
                    user="hans")
         self.assertRaises(PolicyError, check_client_container_action, request=req,
-                          action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+                          action=PolicyAction.CONTAINER_CLIENT_ROLLOVER)
         delete_policy("policy")
 
         # container with realms
         container.set_realms([self.realm1, self.realm3], add=False)
         # policy for another realm
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm2])
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm2])
         self.assertRaises(PolicyError, check_client_container_action, request=req,
-                          action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+                          action=PolicyAction.CONTAINER_CLIENT_ROLLOVER)
         delete_policy("policy")
 
         # policy for a user
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm1],
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm1],
                    user="hans")
         self.assertRaises(PolicyError, check_client_container_action, request=req,
-                          action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+                          action=PolicyAction.CONTAINER_CLIENT_ROLLOVER)
         delete_policy("policy")
 
         container.delete()
@@ -4350,15 +4356,15 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # Set a policy only valid for another realm
         set_policy("policy_realm2", SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://test.com",
-                           ACTION.CONTAINER_REGISTRATION_TTL: 60,
-                           ACTION.CONTAINER_CHALLENGE_TTL: 50,
-                           ACTION.CONTAINER_SSL_VERIFY: "False"},
+                   action={PolicyAction.CONTAINER_SERVER_URL: "https://test.com",
+                           PolicyAction.CONTAINER_REGISTRATION_TTL: 60,
+                           PolicyAction.CONTAINER_CHALLENGE_TTL: 50,
+                           PolicyAction.CONTAINER_SSL_VERIFY: "False"},
                    realm=self.realm2)
 
         # policy including server url + default values for ttl and ssl_verify
         req, container = self.mock_container_request("user")
-        set_policy("policy", SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.com"})
+        set_policy("policy", SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.com"})
         container_registration_config(req)
         self.assertEqual("https://pi.com", req.all_data["server_url"])
         self.assertEqual(10, req.all_data["registration_ttl"])
@@ -4370,10 +4376,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # specifying valid values in generic policy
         req, container = self.mock_container_request("user")
         set_policy("generic_policy", SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://pi.com",
-                           ACTION.CONTAINER_REGISTRATION_TTL: 20,
-                           ACTION.CONTAINER_CHALLENGE_TTL: 6,
-                           ACTION.CONTAINER_SSL_VERIFY: "False"},
+                   action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.com",
+                           PolicyAction.CONTAINER_REGISTRATION_TTL: 20,
+                           PolicyAction.CONTAINER_CHALLENGE_TTL: 6,
+                           PolicyAction.CONTAINER_SSL_VERIFY: "False"},
                    priority=3)
         container_registration_config(req)
         self.assertEqual("https://pi.com", req.all_data["server_url"])
@@ -4385,10 +4391,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # specifying valid values in policy for realm with higher priority than generic policy
         req, container = self.mock_container_request("user")
         set_policy("policy", SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://pi.com",
-                           ACTION.CONTAINER_REGISTRATION_TTL: 30,
-                           ACTION.CONTAINER_CHALLENGE_TTL: 8,
-                           ACTION.CONTAINER_SSL_VERIFY: "False"},
+                   action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.com",
+                           PolicyAction.CONTAINER_REGISTRATION_TTL: 30,
+                           PolicyAction.CONTAINER_CHALLENGE_TTL: 8,
+                           PolicyAction.CONTAINER_SSL_VERIFY: "False"},
                    realm=self.realm3,
                    priority=1)
         container_registration_config(req)
@@ -4402,10 +4408,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # specifying invalid values sets default values
         req, container = self.mock_container_request("user")
-        set_policy("policy", SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.com",
-                                                      ACTION.CONTAINER_REGISTRATION_TTL: -20,
-                                                      ACTION.CONTAINER_CHALLENGE_TTL: -6,
-                                                      ACTION.CONTAINER_SSL_VERIFY: "maybe"})
+        set_policy("policy", SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.com",
+                                                      PolicyAction.CONTAINER_REGISTRATION_TTL: -20,
+                                                      PolicyAction.CONTAINER_CHALLENGE_TTL: -6,
+                                                      PolicyAction.CONTAINER_SSL_VERIFY: "maybe"})
         container_registration_config(req)
         self.assertEqual("https://pi.com", req.all_data["server_url"])
         self.assertEqual(10, req.all_data["registration_ttl"])
@@ -4427,17 +4433,17 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # specifying valid values in policy for another realm
         req, container = self.mock_container_request("user")
-        set_policy("policy", SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.com",
-                                                      ACTION.CONTAINER_REGISTRATION_TTL: 20,
-                                                      ACTION.CONTAINER_CHALLENGE_TTL: 6,
-                                                      ACTION.CONTAINER_SSL_VERIFY: "False"}, realm=self.realm2)
+        set_policy("policy", SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.com",
+                                                      PolicyAction.CONTAINER_REGISTRATION_TTL: 20,
+                                                      PolicyAction.CONTAINER_CHALLENGE_TTL: 6,
+                                                      PolicyAction.CONTAINER_SSL_VERIFY: "False"}, realm=self.realm2)
         self.assertRaises(PolicyError, container_registration_config, req)
         delete_policy("policy")
 
         # conflicting policies for server url shall raise error
         req, container = self.mock_container_request("user")
-        set_policy("policy1", SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.com"})
-        set_policy("policy2", SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test.com"})
+        set_policy("policy1", SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.com"})
+        set_policy("policy2", SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://test.com"})
         self.assertRaises(PolicyError, container_registration_config, req)
         delete_policy("policy1")
         delete_policy("policy2")
@@ -4446,8 +4452,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # conflicting policies for registration ttl shall raise error
         req, container = self.mock_container_request("user")
         set_policy("policy1", SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://pi.com", ACTION.CONTAINER_REGISTRATION_TTL: 20})
-        set_policy("policy2", SCOPE.CONTAINER, action={ACTION.CONTAINER_REGISTRATION_TTL: 30})
+                   action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.com", PolicyAction.CONTAINER_REGISTRATION_TTL: 20})
+        set_policy("policy2", SCOPE.CONTAINER, action={PolicyAction.CONTAINER_REGISTRATION_TTL: 30})
         self.assertRaises(PolicyError, container_registration_config, req)
         delete_policy("policy1")
         delete_policy("policy2")
@@ -4456,8 +4462,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # conflicting policies for challenge ttl shall raise error
         req, container = self.mock_container_request("user")
         set_policy("policy1", SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://pi.com", ACTION.CONTAINER_CHALLENGE_TTL: 20})
-        set_policy("policy2", SCOPE.CONTAINER, action={ACTION.CONTAINER_CHALLENGE_TTL: 30})
+                   action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.com", PolicyAction.CONTAINER_CHALLENGE_TTL: 20})
+        set_policy("policy2", SCOPE.CONTAINER, action={PolicyAction.CONTAINER_CHALLENGE_TTL: 30})
         self.assertRaises(PolicyError, container_registration_config, req)
         delete_policy("policy1")
         delete_policy("policy2")
@@ -4466,8 +4472,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # conflicting policies for challenge ttl shall raise error
         req, container = self.mock_container_request("user")
         set_policy("policy1", SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://pi.com", ACTION.CONTAINER_SSL_VERIFY: "False"})
-        set_policy("policy2", SCOPE.CONTAINER, action={ACTION.CONTAINER_SSL_VERIFY: "True"})
+                   action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.com", PolicyAction.CONTAINER_SSL_VERIFY: "False"})
+        set_policy("policy2", SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SSL_VERIFY: "True"})
         self.assertRaises(PolicyError, container_registration_config, req)
         delete_policy("policy1")
         delete_policy("policy2")
@@ -4481,58 +4487,58 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req, container = self.mock_container_request("user", "smartphone")
         self.assertTrue(smartphone_config(req))
         policies = req.all_data["client_policies"]
-        self.assertFalse(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
-        self.assertFalse(policies[ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
-        self.assertFalse(policies[ACTION.DISABLE_CLIENT_TOKEN_DELETION])
-        self.assertFalse(policies[ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER])
+        self.assertFalse(policies[PolicyAction.CONTAINER_CLIENT_ROLLOVER])
+        self.assertFalse(policies[PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+        self.assertFalse(policies[PolicyAction.DISABLE_CLIENT_TOKEN_DELETION])
+        self.assertFalse(policies[PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER])
         container.delete()
 
         # Set a policy only valid for another realm
         set_policy("policy_realm2", SCOPE.CONTAINER,
-                   action=[ACTION.CONTAINER_CLIENT_ROLLOVER,
-                           ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
-                           ACTION.DISABLE_CLIENT_TOKEN_DELETION,
-                           ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER],
+                   action=[PolicyAction.CONTAINER_CLIENT_ROLLOVER,
+                           PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER,
+                           PolicyAction.DISABLE_CLIENT_TOKEN_DELETION,
+                           PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER],
                    realm=self.realm2)
 
         # No policy: use default values
         req, container = self.mock_container_request("user", "smartphone")
         self.assertTrue(smartphone_config(req))
         policies = req.all_data["client_policies"]
-        self.assertFalse(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
-        self.assertFalse(policies[ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
-        self.assertFalse(policies[ACTION.DISABLE_CLIENT_TOKEN_DELETION])
-        self.assertFalse(policies[ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER])
+        self.assertFalse(policies[PolicyAction.CONTAINER_CLIENT_ROLLOVER])
+        self.assertFalse(policies[PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+        self.assertFalse(policies[PolicyAction.DISABLE_CLIENT_TOKEN_DELETION])
+        self.assertFalse(policies[PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER])
         container.delete()
 
         # Generic policy defined
         set_policy("policy", SCOPE.CONTAINER,
-                   action=[ACTION.CONTAINER_CLIENT_ROLLOVER,
-                           ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
-                           ACTION.DISABLE_CLIENT_TOKEN_DELETION,
-                           ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER])
+                   action=[PolicyAction.CONTAINER_CLIENT_ROLLOVER,
+                           PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER,
+                           PolicyAction.DISABLE_CLIENT_TOKEN_DELETION,
+                           PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER])
         req, container = self.mock_container_request("user", "smartphone")
         self.assertTrue(smartphone_config(req))
         policies = req.all_data["client_policies"]
-        self.assertTrue(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
-        self.assertTrue(policies[ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
-        self.assertTrue(policies[ACTION.DISABLE_CLIENT_TOKEN_DELETION])
-        self.assertTrue(policies[ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER])
+        self.assertTrue(policies[PolicyAction.CONTAINER_CLIENT_ROLLOVER])
+        self.assertTrue(policies[PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+        self.assertTrue(policies[PolicyAction.DISABLE_CLIENT_TOKEN_DELETION])
+        self.assertTrue(policies[PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER])
         container.delete()
         delete_policy("policy")
 
         # Policy for realm defined
         set_policy("policy", SCOPE.CONTAINER,
-                   action=[ACTION.CONTAINER_CLIENT_ROLLOVER,
-                           ACTION.DISABLE_CLIENT_TOKEN_DELETION],
+                   action=[PolicyAction.CONTAINER_CLIENT_ROLLOVER,
+                           PolicyAction.DISABLE_CLIENT_TOKEN_DELETION],
                    realm=self.realm3)
         req, container = self.mock_container_request("user", "smartphone")
         self.assertTrue(smartphone_config(req))
         policies = req.all_data["client_policies"]
-        self.assertTrue(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
-        self.assertFalse(policies[ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
-        self.assertTrue(policies[ACTION.DISABLE_CLIENT_TOKEN_DELETION])
-        self.assertFalse(policies[ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER])
+        self.assertTrue(policies[PolicyAction.CONTAINER_CLIENT_ROLLOVER])
+        self.assertFalse(policies[PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+        self.assertTrue(policies[PolicyAction.DISABLE_CLIENT_TOKEN_DELETION])
+        self.assertFalse(policies[PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER])
         container.delete()
 
         # wrong container type
@@ -4564,37 +4570,37 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req, container = self.mock_client_container_request()
 
         # Generic policy
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER)
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER)
         self.assertRaises(PolicyError, check_client_container_disabled_action, request=req,
-                          action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER)
+                          action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER)
         delete_policy("policy")
 
         # Policy for resolver
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
                    resolver=[self.resolvername3])
         self.assertRaises(PolicyError, check_client_container_disabled_action, request=req,
-                          action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER)
+                          action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER)
         delete_policy("policy")
 
         # Policy for user realm
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
                    realm=[self.realm3])
         self.assertRaises(PolicyError, check_client_container_disabled_action, request=req,
-                          action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER)
+                          action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER)
         delete_policy("policy")
 
         # Policy for additional realm
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
                    realm=[self.realm1])
         self.assertRaises(PolicyError, check_client_container_disabled_action, request=req,
-                          action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER)
+                          action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER)
         delete_policy("policy")
 
         # Policy for user
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER, user="root",
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER, user="root",
                    realm=[self.realm3], resolver=[self.resolvername3])
         self.assertRaises(PolicyError, check_client_container_disabled_action, request=req,
-                          action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER)
+                          action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER)
         delete_policy("policy")
 
         container.delete()
@@ -4602,24 +4608,24 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # container without user
         req, container = self.mock_client_container_request_no_user()
         # Generic policy
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER)
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER)
         self.assertRaises(PolicyError, check_client_container_disabled_action, request=req,
-                          action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER)
+                          action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER)
         delete_policy("policy")
 
         # container with realms
         container.set_realms([self.realm1, self.realm3], add=False)
         # Policy for realm1
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
                    realm=[self.realm1])
         self.assertRaises(PolicyError, check_client_container_disabled_action, request=req,
-                          action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER)
+                          action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER)
         delete_policy("policy")
         # Policy for realm3
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
                    realm=[self.realm3])
         self.assertRaises(PolicyError, check_client_container_disabled_action, request=req,
-                          action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER)
+                          action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER)
         delete_policy("policy")
         container.delete()
 
@@ -4633,34 +4639,34 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # No policy in the container scope at all
         self.assertTrue(
-            check_client_container_disabled_action(request=req, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+            check_client_container_disabled_action(request=req, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
 
         # No unregister policy
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER)
         self.assertTrue(
-            check_client_container_disabled_action(request=req, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+            check_client_container_disabled_action(request=req, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
         delete_policy("policy")
 
         # Policy for another resolver
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
                    resolver=[self.resolvername1])
         self.assertTrue(
-            check_client_container_disabled_action(request=req, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+            check_client_container_disabled_action(request=req, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
         delete_policy("policy")
 
         # Policy for another realm
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
                    realm=[self.realm2])
         self.assertTrue(
-            check_client_container_disabled_action(request=req, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+            check_client_container_disabled_action(request=req, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
         delete_policy("policy")
 
         # Policy for another user of the same realm
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER, user="hans",
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER, user="hans",
                    realm=[self.realm3],
                    resolver=[self.resolvername3])
         self.assertTrue(
-            check_client_container_disabled_action(request=req, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+            check_client_container_disabled_action(request=req, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
         delete_policy("policy")
 
         container.delete()
@@ -4668,49 +4674,49 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # container without user
         req, container = self.mock_client_container_request_no_user()
         # Policy for a realm
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
                    realm=self.realm1)
         self.assertTrue(
-            check_client_container_disabled_action(request=req, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+            check_client_container_disabled_action(request=req, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
         delete_policy("policy")
 
         # Policy for a resolver
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
                    resolver=self.resolvername1)
         self.assertTrue(
-            check_client_container_disabled_action(request=req, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+            check_client_container_disabled_action(request=req, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
         delete_policy("policy")
 
         # Policy for a user
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
                    realm=self.realm1,
                    user="hans")
         self.assertTrue(
-            check_client_container_disabled_action(request=req, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+            check_client_container_disabled_action(request=req, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
         delete_policy("policy")
 
         # Policy with all actions in the scope disabled action
         set_policy(name="policy", scope=SCOPE.CONTAINER, realm=self.realm1,
                    user="hans")
         self.assertTrue(
-            check_client_container_disabled_action(request=req, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+            check_client_container_disabled_action(request=req, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
         delete_policy("policy")
 
         # container with realms
         container.set_realms([self.realm1, self.realm3], add=False)
         # policy for another realm
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
                    realm=[self.realm2])
         self.assertTrue(
-            check_client_container_disabled_action(request=req, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+            check_client_container_disabled_action(request=req, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
         delete_policy("policy")
 
         # policy for a user
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
                    realm=[self.realm1],
                    user="hans")
         self.assertTrue(
-            check_client_container_disabled_action(request=req, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+            check_client_container_disabled_action(request=req, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
         delete_policy("policy")
 
         container.delete()
@@ -4727,7 +4733,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req.all_data = {}
         r = rss_age(req, None)
         self.assertTrue(r)
-        self.assertEqual(180, req.all_data.get(f"{ACTION.RSS_AGE}"))
+        self.assertEqual(180, req.all_data.get(f"{PolicyAction.RSS_AGE}"))
 
     def test_84_rss_age_user(self):
         g.logged_in_user = {"username": "cornelius",
@@ -4741,30 +4747,30 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req.all_data = {}
         r = rss_age(req, None)
         self.assertTrue(r)
-        self.assertEqual(0, req.all_data.get(f"{ACTION.RSS_AGE}"))
+        self.assertEqual(0, req.all_data.get(f"{PolicyAction.RSS_AGE}"))
 
         # Set policy for user to 12 days.
         set_policy(name="rssage",
                    scope=SCOPE.WEBUI,
-                   action=f"{ACTION.RSS_AGE}=12")
+                   action=f"{PolicyAction.RSS_AGE}=12")
         req = Request(env)
         req.User = User("cornelius")
         req.all_data = {}
         r = rss_age(req, None)
         self.assertTrue(r)
-        self.assertEqual(12, req.all_data.get(f"{ACTION.RSS_AGE}"))
+        self.assertEqual(12, req.all_data.get(f"{PolicyAction.RSS_AGE}"))
 
         # Now test a bogus policy
         set_policy(name="rssage",
                    scope=SCOPE.WEBUI,
-                   action=[f"{ACTION.RSS_AGE}=blubb"])
+                   action=[f"{PolicyAction.RSS_AGE}=blubb"])
         req = Request(env)
         req.User = User("cornelius")
         req.all_data = {}
-        r = jwt_validity(req, None)
+        r = rss_age(req, None)
         self.assertTrue(r)
-        # We receive the default of None
-        self.assertEqual(None, req.all_data.get(f"{ACTION.RSS_AGE}"))
+        # We receive the default of 0
+        self.assertEqual(0, req.all_data.get(f"{PolicyAction.RSS_AGE}"))
 
         delete_policy("rssage")
 
@@ -4779,9 +4785,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # Set admin, helpdesk and user policies
         set_policy(name="admin", scope=SCOPE.ADMIN,
-                   action=f"{ACTION.HIDE_CONTAINER_INFO}=initially_synchronized device")
+                   action=f"{PolicyAction.HIDE_CONTAINER_INFO}=initially_synchronized device")
         set_policy(name="user", scope=SCOPE.USER,
-                   action=f"{ACTION.HIDE_CONTAINER_INFO}=initially_synchronized challenge_ttl encrypt_algorithm "
+                   action=f"{PolicyAction.HIDE_CONTAINER_INFO}=initially_synchronized challenge_ttl encrypt_algorithm "
                           f"encrypt_key_algorithm encrypt_mode hash_algorithm key_algorithm server_url")
 
         # admin
@@ -4790,7 +4796,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # ---- Helpdesk ----
         set_policy(name="admin", scope=SCOPE.ADMIN,
-                   action=f"{ACTION.HIDE_CONTAINER_INFO}=device", realm=self.realm1)
+                   action=f"{PolicyAction.HIDE_CONTAINER_INFO}=device", realm=self.realm1)
         # request including  user
         hide_container_info(req)
         self.assertSetEqual({"device"}, set(req.all_data["hide_container_info"]))
@@ -4810,6 +4816,138 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         delete_policy("admin")
         delete_policy("user")
+
+    def test_86_force_server_generate_key_user(self):
+        g.logged_in_user = {"username": "hans",
+                            "realm": self.realm1,
+                            "resolver": self.resolvername1,
+                            "role": "user"}
+        user = User("hans", self.realm1)
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+        env = builder.get_environ()
+        # Test default for users:
+        request = Request(env)
+        request.User = user
+        request.all_data = {"type": "hotp"}
+        set_policy("enroll", SCOPE.USER, action="enrollHOTP, enrollTOTP")
+
+        # Policy is not set
+        g.policies = {}
+        force_server_generate_key(request)
+        self.assertFalse(g.policies.get(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}"))
+
+        # Set policy for different token type
+        g.policies = {}
+        set_policy("totp_genkey", scope=SCOPE.USER, action=f"totp_{PolicyAction.FORCE_SERVER_GENERATE}")
+        force_server_generate_key(request)
+        self.assertFalse(g.policies.get(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}"))
+        self.assertNotIn(f"totp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
+
+        # Set policy for hotp
+        g.policies = {}
+        set_policy("hotp_genkey", scope=SCOPE.USER, action=f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}")
+        force_server_generate_key(request)
+        self.assertTrue(g.policies.get(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}"))
+        self.assertNotIn(f"totp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
+
+        # Test for TOTP
+        g.policies = {}
+        request.all_data = {"type": "totp"}
+        force_server_generate_key(request)
+        self.assertTrue(g.policies.get(f"totp_{PolicyAction.FORCE_SERVER_GENERATE}"))
+        self.assertNotIn(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
+
+        # Test for mOTP
+        set_policy("motp_genkey", scope=SCOPE.USER, action=f"motp_{PolicyAction.FORCE_SERVER_GENERATE}")
+        g.policies = {}
+        request.all_data = {"type": "motp", "motppin": "123"}
+        force_server_generate_key(request)
+        self.assertTrue(g.policies.get(f"motp_{PolicyAction.FORCE_SERVER_GENERATE}"))
+        self.assertNotIn(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
+        self.assertNotIn(f"totp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
+
+        # Test for applspec
+        set_policy("applspec_genkey", scope=SCOPE.USER, action=f"applspec_{PolicyAction.FORCE_SERVER_GENERATE}")
+        g.policies = {}
+        request.all_data = {"type": "applspec", "motppin": "123", "service_id": "123"}
+        force_server_generate_key(request)
+        self.assertTrue(g.policies.get(f"applspec_{PolicyAction.FORCE_SERVER_GENERATE}"))
+        self.assertNotIn(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
+        self.assertNotIn(f"totp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
+        self.assertNotIn(f"motp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
+
+        # Test for a token type not having this policy
+        g.policies = {}
+        request.all_data = {"type": "spass"}
+        force_server_generate_key(request)
+        self.assertFalse(g.policies.get(f"spass_{PolicyAction.FORCE_SERVER_GENERATE}"))
+        self.assertNotIn(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
+        self.assertNotIn(f"totp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
+        self.assertNotIn(f"motp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
+        self.assertNotIn(f"applspec_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
+
+        delete_policy("enroll")
+        delete_policy("totp_genkey")
+        delete_policy("hotp_genkey")
+        delete_policy("motp_genkey")
+        delete_policy("applspec_genkey")
+
+    def test_86_force_server_generate_key_admin(self):
+        g.logged_in_user = {"username": self.testadmin, "realm": "",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+        env = builder.get_environ()
+        # Test default for users:
+        request = Request(env)
+        request.User = User()
+        request.all_data = {"type": "hotp"}
+        set_policy("enroll", SCOPE.ADMIN, action="enrollHOTP, enrollTOTP")
+
+        # Policy is not set
+        g.policies = {}
+        force_server_generate_key(request)
+        self.assertFalse(g.policies.get(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}"))
+
+        # Set policy for hotp
+        g.policies = {}
+        set_policy("hotp_genkey", scope=SCOPE.ADMIN, action=f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}")
+        force_server_generate_key(request)
+        self.assertTrue(g.policies.get(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}"))
+
+        # Test for TOTP
+        set_policy("totp_genkey", scope=SCOPE.ADMIN, action=f"totp_{PolicyAction.FORCE_SERVER_GENERATE}")
+        g.policies = {}
+        request.all_data = {"type": "totp"}
+        force_server_generate_key(request)
+        self.assertTrue(g.policies.get(f"totp_{PolicyAction.FORCE_SERVER_GENERATE}"))
+        self.assertNotIn(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
+
+        # Test for mOTP
+        set_policy("motp_genkey", scope=SCOPE.ADMIN, action=f"motp_{PolicyAction.FORCE_SERVER_GENERATE}")
+        g.policies = {}
+        request.all_data = {"type": "motp", "motppin": "123"}
+        force_server_generate_key(request)
+        self.assertTrue(g.policies.get(f"motp_{PolicyAction.FORCE_SERVER_GENERATE}"))
+        self.assertNotIn(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
+        self.assertNotIn(f"totp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
+
+        # Test for applspec
+        set_policy("applspec_genkey", scope=SCOPE.ADMIN, action=f"applspec_{PolicyAction.FORCE_SERVER_GENERATE}")
+        g.policies = {}
+        request.all_data = {"type": "applspec", "motppin": "123", "service_id": "123"}
+        force_server_generate_key(request)
+        self.assertTrue(g.policies.get(f"applspec_{PolicyAction.FORCE_SERVER_GENERATE}"))
+        self.assertNotIn(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
+        self.assertNotIn(f"totp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
+        self.assertNotIn(f"motp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
+
+        delete_policy("enroll")
+        delete_policy("totp_genkey")
+        delete_policy("hotp_genkey")
+        delete_policy("motp_genkey")
+        delete_policy("applspec_genkey")
 
 
 class PostPolicyDecoratorTestCase(MyApiTestCase):
@@ -5115,7 +5253,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # Set a policy, that adds user info to detail
         set_policy(name="pol_add_user",
                    scope=SCOPE.AUTHZ,
-                   action=ACTION.ADDUSERINRESPONSE, client="10.0.0.0/8")
+                   action=PolicyAction.ADDUSERINRESPONSE, client="10.0.0.0/8")
         g.policy_object = PolicyClass()
 
         new_response = add_user_detail_to_response(req, resp)
@@ -5135,7 +5273,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         resp = jsonify(res)
         set_policy(name="pol_add_user",
                    scope=SCOPE.AUTHZ,
-                   action=ACTION.ADDUSERINRESPONSE, client="10.0.0.0/8", realm=self.realm2)
+                   action=PolicyAction.ADDUSERINRESPONSE, client="10.0.0.0/8", realm=self.realm2)
         g.policy_object = PolicyClass()
 
         new_response = add_user_detail_to_response(req, resp)
@@ -5145,7 +5283,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # set a policy that adds user resolver to detail
         set_policy(name="pol_add_resolver",
                    scope=SCOPE.AUTHZ,
-                   action=ACTION.ADDRESOLVERINRESPONSE, client="10.0.0.0/8")
+                   action=PolicyAction.ADDRESOLVERINRESPONSE, client="10.0.0.0/8")
         g.policy_object = PolicyClass()
 
         new_response = add_user_detail_to_response(req, resp)
@@ -5172,7 +5310,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         resp = jsonify(res)
         set_policy(name="pol_add_resolver",
                    scope=SCOPE.AUTHZ,
-                   action=ACTION.ADDRESOLVERINRESPONSE, client="10.0.0.0/8", realm=self.realm2)
+                   action=PolicyAction.ADDRESOLVERINRESPONSE, client="10.0.0.0/8", realm=self.realm2)
         g.policy_object = PolicyClass()
 
         new_response = add_user_detail_to_response(req, resp)
@@ -5215,7 +5353,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # to "any_pin"
         set_policy(name="pol2",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(ACTION.AUTOASSIGN, AUTOASSIGNVALUE.NONE),
+                   action="{0!s}={1!s}".format(PolicyAction.AUTOASSIGN, AUTOASSIGNVALUE.NONE),
                    client="10.0.0.0/8")
         g.policy_object = PolicyClass()
 
@@ -5271,7 +5409,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # to "userstore"
         set_policy(name="pol2",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(ACTION.AUTOASSIGN, AUTOASSIGNVALUE.USERSTORE),
+                   action="{0!s}={1!s}".format(PolicyAction.AUTOASSIGN, AUTOASSIGNVALUE.USERSTORE),
                    client="10.0.0.0/8")
         g.policy_object = PolicyClass()
 
@@ -5460,13 +5598,15 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         env["REMOTE_ADDR"] = "192.168.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
+        req.User = User("cornelius", self.realm1)
         req.all_data = {"user": "cornelius",
                         "pass": "offline287082"}
 
         res = {"jsonrpc": "2.0",
                "result": {"status": True,
                           "value": {"role": "user",
-                                    "username": "cornelius"}},
+                                    "username": "cornelius",
+                                    "realm": self.realm1}},
                "version": "privacyIDEA test",
                "detail": {"serial": None},
                "id": 1}
@@ -5482,7 +5622,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # Set a policy. User has not token, so "token_wizard" will be True
         set_policy(name="pol_wizard",
                    scope=SCOPE.WEBUI,
-                   action=ACTION.TOKENWIZARD)
+                   action=PolicyAction.TOKENWIZARD)
         g.policy_object = PolicyClass()
         new_response = get_webui_settings(req, resp)
         jresult = new_response.json
@@ -5505,19 +5645,19 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
             "dialog_no_token"), False)
 
         # Now set a policy and check again
-        set_policy(name="pol_dialog", scope=SCOPE.WEBUI, action=ACTION.DIALOG_NO_TOKEN)
+        set_policy(name="pol_dialog", scope=SCOPE.WEBUI, action=PolicyAction.DIALOG_NO_TOKEN)
         g.policy_object = PolicyClass()
         new_response = get_webui_settings(req, resp)
         jresult = new_response.json
         self.assertEqual(jresult.get("result").get("value").get(
-            ACTION.DIALOG_NO_TOKEN), True)
+            PolicyAction.DIALOG_NO_TOKEN), True)
         delete_policy("pol_dialog")
 
         # Set a policy for the QR codes
-        set_policy(name="pol_qr1", scope=SCOPE.WEBUI, action=ACTION.SHOW_ANDROID_AUTHENTICATOR)
-        set_policy(name="pol_qr2", scope=SCOPE.WEBUI, action=ACTION.SHOW_IOS_AUTHENTICATOR)
+        set_policy(name="pol_qr1", scope=SCOPE.WEBUI, action=PolicyAction.SHOW_ANDROID_AUTHENTICATOR)
+        set_policy(name="pol_qr2", scope=SCOPE.WEBUI, action=PolicyAction.SHOW_IOS_AUTHENTICATOR)
         set_policy(name="pol_qr3", scope=SCOPE.WEBUI,
-                   action="{0!s}=http://privacyidea.org".format(ACTION.SHOW_CUSTOM_AUTHENTICATOR))
+                   action="{0!s}=http://privacyidea.org".format(PolicyAction.SHOW_CUSTOM_AUTHENTICATOR))
 
         android_url_image = create_img(DEFAULT_ANDROID_APP_URL)
         ios_url_image = create_img(DEFAULT_IOS_APP_URL)
@@ -5562,7 +5702,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # Test if the logout_redirect URL is set
         redir_uri = 'https://redirect.to'
         set_policy(name="pol_logout_redirect", scope=SCOPE.WEBUI,
-                   action="{0!s}={1!s}".format(ACTION.LOGOUT_REDIRECT, redir_uri))
+                   action="{0!s}={1!s}".format(PolicyAction.LOGOUT_REDIRECT, redir_uri))
         g.policy_object = PolicyClass()
         new_response = get_webui_settings(req, resp)
         jresult = new_response.json
@@ -5575,7 +5715,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # policy not set: default is generic
         self.assertEqual("generic", new_response.json["result"]["value"]["default_container_type"])
         # Set smartphone as default
-        set_policy(name="default_container", scope=SCOPE.WEBUI, action={ACTION.DEFAULT_CONTAINER_TYPE: "smartphone"})
+        set_policy(name="default_container", scope=SCOPE.WEBUI, action={PolicyAction.DEFAULT_CONTAINER_TYPE: "smartphone"})
         g.policy_object = PolicyClass()
         new_response = get_webui_settings(req, resp)
         self.assertEqual("smartphone", new_response.json["result"]["value"]["default_container_type"])
@@ -5593,13 +5733,15 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         env["REMOTE_ADDR"] = "192.168.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
+        req.User = User("cornelius", self.realm1)
         req.all_data = {"user": "cornelius",
                         "pass": "offline287082"}
 
         res = {"jsonrpc": "2.0",
                "result": {"status": True,
                           "value": {"role": "user",
-                                    "username": "cornelius"}},
+                                    "username": "cornelius",
+                                    "realm": self.realm1}},
                "version": "privacyIDEA test",
                "id": 1}
         resp = jsonify(res)
@@ -5607,31 +5749,31 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         new_response = get_webui_settings(req, resp)
         jresult = new_response.json
         self.assertEqual(jresult.get("result").get("value").get(
-            ACTION.TOKENPAGESIZE), 15)
+            PolicyAction.TOKENPAGESIZE), 15)
 
         # Set a policy. User has not token, so "token_wizard" will be True
         set_policy(name="pol_pagesize",
                    scope=SCOPE.WEBUI,
                    realm=self.realm1,
-                   action="{0!s}=177".format(ACTION.TOKENPAGESIZE))
+                   action="{0!s}=177".format(PolicyAction.TOKENPAGESIZE))
         g.policy_object = PolicyClass()
         new_response = get_webui_settings(req, resp)
         jresult = new_response.json
         self.assertEqual(jresult.get("result").get("value").get(
-            ACTION.TOKENPAGESIZE), 177)
+            PolicyAction.TOKENPAGESIZE), 177)
 
         # Now we change the policy pol_pagesize this way, that it is only valid for the user "root"
         set_policy(name="pol_pagesize",
                    scope=SCOPE.WEBUI,
                    realm=self.realm1,
                    user="root",
-                   action="{0!s}=177".format(ACTION.TOKENPAGESIZE))
+                   action="{0!s}=177".format(PolicyAction.TOKENPAGESIZE))
         # This way the user "cornelius" gets the default pagesize again
         g.policy_object = PolicyClass()
         new_response = get_webui_settings(req, resp)
         jresult = new_response.json
         self.assertEqual(jresult.get("result").get("value").get(
-            ACTION.TOKENPAGESIZE), 15)
+            PolicyAction.TOKENPAGESIZE), 15)
 
         delete_policy("pol_pagesize")
 
@@ -5647,12 +5789,14 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         env["REMOTE_ADDR"] = "192.168.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
+        req.User = User()
         req.all_data = {}
 
         res = {"jsonrpc": "2.0",
                "result": {"status": True,
                           "value": {"role": "admin",
-                                    "username": "cornelius"}},
+                                    "username": "cornelius",
+                                    "realm": ""}},
                "version": "privacyIDEA test",
                "id": 1}
         resp = jsonify(res)
@@ -5665,11 +5809,11 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # Set a policy. Admin can see the dashboard
         set_policy(name="pol_dashboard",
                    scope=SCOPE.WEBUI,
-                   action=ACTION.ADMIN_DASHBOARD)
+                   action=PolicyAction.ADMIN_DASHBOARD)
         g.policy_object = PolicyClass()
         new_response = get_webui_settings(req, resp)
         jresult = new_response.json
-        self.assertTrue(jresult.get("result").get("value").get(ACTION.ADMIN_DASHBOARD))
+        self.assertTrue(jresult.get("result").get("value").get(PolicyAction.ADMIN_DASHBOARD))
 
         delete_policy("pol_dashboard")
 
@@ -5685,12 +5829,14 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         env["REMOTE_ADDR"] = "192.168.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
+        req.User = User()
         req.all_data = {}
 
         res = {"jsonrpc": "2.0",
                "result": {"status": True,
                           "value": {"role": "admin",
-                                    "username": "cornelius"}},
+                                    "username": "cornelius",
+                                    "realm": ""}},
                "version": "privacyIDEA test",
                "id": 1}
         resp = jsonify(res)
@@ -5725,18 +5871,21 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         builder = EnvironBuilder(method="POST", data={}, headers={})
         env = builder.get_environ()
         req = Request(env)
+        req.User = User("cornelius", self.realm1)
         req.all_data = {}
 
         user_response = {"jsonrpc": "2.0",
                          "result": {"status": True,
                                     "value": {"role": "user",
-                                              "username": "cornelius"}},
+                                              "username": "cornelius",
+                                              "realm": self.realm1}},
                          "version": "privacyIDEA test",
                          "id": 1}
         admin_response = {"jsonrpc": "2.0",
                           "result": {"status": True,
                                      "value": {"role": "admin",
-                                               "username": "cornelius"}},
+                                               "username": "cornelius",
+                                               "realm": ""}},
                           "version": "privacyIDEA test",
                           "id": 1}
 
@@ -5747,7 +5896,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # Set container wizard policy only for template, but not type
         set_policy(name="container_wizard", scope=SCOPE.WEBUI,
-                   action={ACTION.CONTAINER_WIZARD_TEMPLATE: "test(generic)"})
+                   action={PolicyAction.CONTAINER_WIZARD_TEMPLATE: "test(generic)"})
         # User without container, but container wizard type is missing
         resp = jsonify(user_response)
         new_response = get_webui_settings(req, resp)
@@ -5757,7 +5906,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # define correct policy
         set_policy(name="container_wizard", scope=SCOPE.WEBUI,
-                   action={ACTION.CONTAINER_WIZARD_TYPE: "generic", ACTION.CONTAINER_WIZARD_TEMPLATE: "test(generic)"})
+                   action={PolicyAction.CONTAINER_WIZARD_TYPE: "generic", PolicyAction.CONTAINER_WIZARD_TEMPLATE: "test(generic)"})
         # User without container
         resp = jsonify(user_response)
         new_response = get_webui_settings(req, resp)
@@ -5769,6 +5918,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # Admin without container: container wizard disabled
         resp = jsonify(admin_response)
+        req.User = User()
         new_response = get_webui_settings(req, resp)
         container_wizard = new_response.json["result"]["value"]["container_wizard"]
         self.assertFalse(container_wizard["enabled"])
@@ -5778,6 +5928,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         container_serial = init_container({"type": "generic", "user": "cornelius", "realm": self.realm1})[
             "container_serial"]
         resp = jsonify(user_response)
+        req.User = User("cornelius", self.realm1)
         new_response = get_webui_settings(req, resp)
         container_wizard = new_response.json["result"]["value"]["container_wizard"]
         self.assertFalse(container_wizard["enabled"])
@@ -5787,7 +5938,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # container wizard with registration
         set_policy(name="container_wizard", scope=SCOPE.WEBUI,
-                   action=f"{ACTION.CONTAINER_WIZARD_TYPE}=smartphone,{ACTION.CONTAINER_WIZARD_REGISTRATION}")
+                   action=f"{PolicyAction.CONTAINER_WIZARD_TYPE}=smartphone,{PolicyAction.CONTAINER_WIZARD_REGISTRATION}")
         # User without container
         resp = jsonify(user_response)
         new_response = get_webui_settings(req, resp)
@@ -5875,7 +6026,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # Set a policy that defines the default totp settings
         set_policy(name="pol1",
                    scope=SCOPE.ENROLL,
-                   action=ACTION.CHANGE_PIN_FIRST_USE)
+                   action=PolicyAction.CHANGE_PIN_FIRST_USE)
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
@@ -5942,7 +6093,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # change PIN every day. The next_pin_change will be
         set_policy(name="pol2", scope=SCOPE.ENROLL,
-                   action="{0!s}=1d".format(ACTION.CHANGE_PIN_EVERY))
+                   action="{0!s}=1d".format(PolicyAction.CHANGE_PIN_EVERY))
         g.policy_object = PolicyClass()
         save_pin_change(req, resp)
         ti = token.get_tokeninfo("next_pin_change")
@@ -5969,11 +6120,11 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # Set a policy for the header
         set_policy(name="pol_header",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=These are your options:<ul>".format(ACTION.CHALLENGETEXT_HEADER))
+                   action="{0!s}=These are your options:<ul>".format(PolicyAction.CHALLENGETEXT_HEADER))
         # Set a policy for the footer
         set_policy(name="pol_footer",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=Happy authenticating!".format(ACTION.CHALLENGETEXT_FOOTER))
+                   action="{0!s}=Happy authenticating!".format(PolicyAction.CHALLENGETEXT_FOOTER))
         g.policy_object = PolicyClass()
 
         req.all_data = {
@@ -6005,7 +6156,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # We do no html list
         set_policy(name="pol_header",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=These are your options:".format(ACTION.CHALLENGETEXT_HEADER))
+                   action="{0!s}=These are your options:".format(PolicyAction.CHALLENGETEXT_HEADER))
         g.policy_object = PolicyClass()
         resp = jsonify(res)
 
@@ -6049,7 +6200,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(resp, new_resp)
 
         # Define a generic policy, that denies the request
-        set_policy("auth01", scope=SCOPE.AUTHZ, action="{0!s}={1!s}".format(ACTION.AUTHORIZED, AUTHORIZED.DENY),
+        set_policy("auth01", scope=SCOPE.AUTHZ, action="{0!s}={1!s}".format(PolicyAction.AUTHORIZED, AUTHORIZED.DENY),
                    priority=2)
         g.policy_object = PolicyClass()
 
@@ -6057,7 +6208,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertRaises(ValidateError, is_authorized, req, resp)
 
         # Now we set a 2nd policy with a higher priority
-        set_policy("auth02", scope=SCOPE.AUTHZ, action="{0!s}={1!s}".format(ACTION.AUTHORIZED, AUTHORIZED.ALLOW),
+        set_policy("auth02", scope=SCOPE.AUTHZ, action="{0!s}={1!s}".format(PolicyAction.AUTHORIZED, AUTHORIZED.ALLOW),
                    priority=1, client="10.0.0.0/8")
         g.policy_object = PolicyClass()
 
@@ -6104,7 +6255,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(resp, new_resp)
 
         # Define a verify enrollment policy
-        set_policy("verify_toks", scope=SCOPE.ENROLL, action="{0!s}=hotp".format(ACTION.VERIFY_ENROLLMENT))
+        set_policy("verify_toks", scope=SCOPE.ENROLL, action="{0!s}=hotp".format(PolicyAction.VERIFY_ENROLLMENT))
         g.policy_object = PolicyClass()
 
         new_resp = check_verify_enrollment(req, resp)
@@ -6136,7 +6287,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
 
         # Allow to use preferred client mode per user
-        set_policy("user_client_mode", scope=SCOPE.AUTH, action=ACTION.CLIENT_MODE_PER_USER)
+        set_policy("user_client_mode", scope=SCOPE.AUTH, action=PolicyAction.CLIENT_MODE_PER_USER)
 
         # No custom user attribute available for the user and no policy: use default
         multi_challenge = [
@@ -6165,7 +6316,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # preferred client mode policy with webauthn first, but user prefers push
         set_policy("preferred_client_mode", scope=SCOPE.AUTH,
-                   action={ACTION.PREFERREDCLIENTMODE: "webauthn interactive poll u2f"})
+                   action={PolicyAction.PREFERREDCLIENTMODE: "webauthn interactive poll u2f"})
         response = jsonify(response_data)
 
         preferred_client_mode(request, response)
@@ -6225,7 +6376,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-cp", "push", INTERNAL_USAGE)
 
         # set any policy in scope AUTH
-        set_policy("challenge", scope=SCOPE.AUTH, action={ACTION.CHALLENGERESPONSE: "hotp"})
+        set_policy("challenge", scope=SCOPE.AUTH, action={PolicyAction.CHALLENGERESPONSE: "hotp"})
 
         # user_client_mode not allowed and also no preferred_client_mode policy: use default
         preferred_client_mode(request, response)
@@ -6234,7 +6385,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # user_client_mode not allowed: use preferred_client_mode policy: webauthn
         set_policy("preferred_client_mode", scope=SCOPE.AUTH,
-                   action={ACTION.PREFERREDCLIENTMODE: "webauthn interactive poll u2f"})
+                   action={PolicyAction.PREFERREDCLIENTMODE: "webauthn interactive poll u2f"})
         response = jsonify(response_data)
 
         preferred_client_mode(request, response)
@@ -6251,8 +6402,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         template_options = {"tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True}]}
         create_container_template(container_type="smartphone", template_name="test", options=template_options)
         set_policy("enroll_via_multichallenge", scope=SCOPE.AUTH,
-                   action={ACTION.ENROLL_VIA_MULTICHALLENGE: "smartphone", ACTION.PASSTHRU: True})
-        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"})
+                   action={PolicyAction.ENROLL_VIA_MULTICHALLENGE: "smartphone", PolicyAction.PASSTHRU: True})
+        set_policy("registration", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/"})
 
         self.setUp_user_realms()
         hans = User("hans", self.realm1)
@@ -6266,6 +6417,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         request.all_data = {}
         request.User = hans
         g.policy_object = PolicyClass()
+        g.policies = {}
 
         response_data = {"jsonrpc": "2.0",
                          "result": {"status": True, "value": True, "authentication": AUTH_RESPONSE.ACCEPT},
@@ -6308,6 +6460,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         response = jsonify(response_data)
 
         # User has token, but no container
+        g.policies = {}
         token = init_token({"type": "hotp", "genkey": True}, user=hans)
         response = multichallenge_enroll_via_validate(request, response)
         check_response(response)
@@ -6317,6 +6470,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         response = jsonify(response_data)
 
         # User has generic container, but not smartphone container
+        g.policies = {}
         init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
         response = multichallenge_enroll_via_validate(request, response)
         check_response(response)
@@ -6325,6 +6479,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         response = jsonify(response_data)
 
         # User has smartphone container, but it is not registered
+        g.policies = {}
         container_serial = init_container({"type": "smartphone", "user": "hans", "realm": self.realm1})[
             "container_serial"]
         response = multichallenge_enroll_via_validate(request, response)
@@ -6335,8 +6490,9 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         response = jsonify(response_data)
 
         # use template policy
+        g.policies = {}
         set_policy("enroll_via_multichallenge_template", scope=SCOPE.AUTH,
-                   action={ACTION.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: "test"})
+                   action={PolicyAction.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: "test"})
         response = multichallenge_enroll_via_validate(request, response)
         check_response(response)
         container = find_container_by_serial(response.json.get("detail").get("serial"))
@@ -6349,7 +6505,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         response = jsonify(response_data)
 
         # User max token reached, but container is created anyway
-        set_policy("max_token_user", scope=SCOPE.ENROLL, action={ACTION.MAXTOKENUSER: 1})
+        g.policies = {}
+        set_policy("max_token_user", scope=SCOPE.ENROLL, action={PolicyAction.MAXTOKENUSER: 1})
         token = init_token({"type": "hotp", "genkey": True}, user=hans)
         with LogCapture() as capture:
             logging.getLogger('privacyidea.lib.container').setLevel(logging.WARNING)
@@ -6378,8 +6535,9 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         response = jsonify(response_data)
 
         # use custom text
+        g.policies = {}
         set_policy("enroll_via_multichallenge_text", scope=SCOPE.AUTH,
-                   action={ACTION.ENROLL_VIA_MULTICHALLENGE_TEXT: "Test custom text!"})
+                   action={PolicyAction.ENROLL_VIA_MULTICHALLENGE_TEXT: "Test custom text!"})
         response = multichallenge_enroll_via_validate(request, response)
         check_response(response, message="Test custom text!")
         # clean up
@@ -6388,8 +6546,9 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         response = jsonify(response_data)
 
         # Invalid template name: container is created anyway
+        g.policies = {}
         set_policy("enroll_via_multichallenge_template", scope=SCOPE.AUTH,
-                   action={ACTION.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: "invalid"})
+                   action={PolicyAction.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: "invalid"})
         response = multichallenge_enroll_via_validate(request, response)
         check_response(response)
         container = find_container_by_serial(response.json.get("detail").get("serial"))
@@ -6410,10 +6569,10 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         """
         logging.getLogger('privacyidea.api.lib.postpolicy').setLevel(logging.DEBUG)
         set_policy("enroll_via_multichallenge", scope=SCOPE.AUTH,
-                   action={ACTION.ENROLL_VIA_MULTICHALLENGE: "smartphone", ACTION.PASSTHRU: True})
-        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"})
+                   action={PolicyAction.ENROLL_VIA_MULTICHALLENGE: "smartphone", PolicyAction.PASSTHRU: True})
+        set_policy("registration", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/"})
         set_policy("enroll_via_multichallenge_template", scope=SCOPE.AUTH,
-                   action={ACTION.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: "test"})
+                   action={PolicyAction.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: "test"})
 
         self.setUp_user_realms()
         hans = User("hans", self.realm1)
@@ -6427,6 +6586,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         request.all_data = {}
         request.User = hans
         g.policy_object = PolicyClass()
+        g.policies = {}
 
         response_data = {"jsonrpc": "2.0",
                          "result": {"status": True, "value": True, "authentication": AUTH_RESPONSE.ACCEPT},
@@ -6454,6 +6614,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # Missing registration policies
         delete_policy("registration")
+        g.policies = {}
         # create with template to check that also no tokens are created
         template_options = {"tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True}]}
         create_container_template(container_type="smartphone", template_name="test", options=template_options)
@@ -6463,7 +6624,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(0, len(container_of_hans))
         tokens_of_hans = get_tokens(user=hans)
         self.assertEqual(0, len(tokens_of_hans))
-        capture.check_present(("privacyidea.api.lib.postpolicy", "DEBUG",
+        capture.check_present(("privacyidea.api.lib.postpolicy", "WARNING",
                                "Missing container registration policy. Can not enroll container via multichallenge."))
 
         delete_policy("enroll_via_multichallenge")

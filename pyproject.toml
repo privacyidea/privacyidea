@@ -123,12 +123,46 @@ requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
+# The standalone script files which should be made available in the virtual env
+script-files = [
+    "tools/creategoogleauthenticator-file",
+    "tools/getgooglecodes",
+    "tools/privacyidea-authorizedkeys",
+    "tools/privacyidea-convert-base32.py",
+    "tools/privacyidea-convert-token",
+    "tools/privacyidea-convert-xml-to-csv",
+    "tools/privacyidea-create-ad-users",
+    "tools/privacyidea-create-certificate",
+    "tools/privacyidea-create-pwidresolver-user",
+    "tools/privacyidea-create-userdb",
+    "tools/privacyidea-diag",
+    "tools/privacyidea-export-linotp-counter.py",
+    "tools/privacyidea-export-privacyidea-counter.py",
+    "tools/privacyidea-fetchssh",
+    "tools/privacyidea-fix-access-rights",
+    "tools/privacyidea-migrate-linotp.py",
+    "tools/privacyidea-pip-update",
+    "tools/privacyidea-queue-huey",
+    "tools/privacyidea-schema-upgrade",
+    "tools/privacyidea-sync-owncloud.py",
+    "tools/privacyidea-update-counter.py",
+    "tools/privacyidea-update-linotp-counter.py",
+    "tools/privacyidea-user-action",
+    "tools/reset-privacyidea",
+    "tools/ssha.py",
+]
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["privacyidea*"]
 
+[tool.setuptools.data-files]
+# Add requirements file to binary distribution to have it available when installed
+"lib/privacyidea/" = ["requirements.txt"]
+
 [tool.setuptools_scm]
+# Avoid guessing the next tag, only the one in Git is relevant
+version_scheme = "only-version"
 
 [tool.pip-tools]
 generate_hashes = true

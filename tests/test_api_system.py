@@ -7,7 +7,8 @@ from urllib.parse import urlencode
 
 from .base import MyApiTestCase
 
-from privacyidea.lib.policy import PolicyClass, set_policy, delete_policy, ACTION, SCOPE
+from privacyidea.lib.policy import PolicyClass, set_policy, delete_policy, SCOPE
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.caconnector import save_caconnector, delete_caconnector
 from privacyidea.lib.caconnectors.localca import ATTR
 from privacyidea.lib.radiusserver import add_radius, delete_radius
@@ -119,7 +120,7 @@ class APIConfigTestCase(MyApiTestCase):
     def test_04_set_policy(self):
         self.setUp_user_realms()
         with self.app.test_request_context('/policy/pol1',
-                                           data={'action': ACTION.ENABLE,
+                                           data={'action': PolicyAction.ENABLE,
                                                  'scope': SCOPE.USER,
                                                  'realm': self.realm1,
                                                  'resolver': self.resolvername1,
@@ -137,7 +138,7 @@ class APIConfigTestCase(MyApiTestCase):
 
         # Update the policy with a more complicated client
         with self.app.test_request_context('/policy/pol1',
-                                           data={'action': ACTION.ENABLE,
+                                           data={'action': PolicyAction.ENABLE,
                                                  'scope': SCOPE.USER,
                                                  'realm': self.realm1,
                                                  'resolver': self.resolvername1,
@@ -156,7 +157,7 @@ class APIConfigTestCase(MyApiTestCase):
 
         # setting policy with invalid name fails
         with self.app.test_request_context('/policy/invalid policy name',
-                                           data={'action': ACTION.ENABLE,
+                                           data={'action': PolicyAction.ENABLE,
                                                  'scope': SCOPE.USER,
                                                  'client': "127.12.12.12",
                                                  'active': True},
@@ -164,9 +165,12 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             # An invalid policy name raises an exception
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 400, res)
+            self.assertEqual(400, res.status_code, res)
+            error = res.json.get("result").get("error")
+            self.assertEqual(905, error.get("code"))
+            self.assertIn("Policy name must not contain white spaces!", error.get("message"))
 
-        # setting policy with an empty name
+        # setting policy with a missing action
         with self.app.test_request_context('/policy/enroll',
                                            data={'scope': SCOPE.USER,
                                                  'client': "127.12.12.12",
@@ -176,6 +180,9 @@ class APIConfigTestCase(MyApiTestCase):
             # An invalid policy name raises an exception
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400, res)
+            error = res.json.get("result").get("error")
+            self.assertEqual(905, error.get("code"))
+            self.assertIn("Missing parameter: action", error.get("message"))
 
     def test_05_get_policy(self):
         with self.app.test_request_context('/policy/pol1',
@@ -201,7 +208,7 @@ class APIConfigTestCase(MyApiTestCase):
     def test_07_update_and_delete_policy(self):
         self.setUp_user_realms()
         with self.app.test_request_context('/policy/pol_update_del',
-                                           data={'action': ACTION.ENABLE,
+                                           data={'action': PolicyAction.ENABLE,
                                                  'scope': SCOPE.USER,
                                                  'realm': self.realm1,
                                                  'resolver': self.resolvername1,
@@ -220,7 +227,7 @@ class APIConfigTestCase(MyApiTestCase):
 
         # update policy
         with self.app.test_request_context('/policy/pol_update_del',
-                                           data={'action': ACTION.ENABLE,
+                                           data={'action': PolicyAction.ENABLE,
                                                  'scope': SCOPE.USER,
                                                  'realm': self.realm1,
                                                  'client': "1.1.1.1"},
@@ -687,7 +694,7 @@ class APIConfigTestCase(MyApiTestCase):
         with self.app.test_request_context('/policy/check',
                                            method='POST',
                                            data={"realm": "*",
-                                                 "action": f"{ACTION.ENABLE}, {ACTION.DISABLE}",
+                                                 "action": f"{PolicyAction.ENABLE}, {PolicyAction.DISABLE}",
                                                  "scope": SCOPE.USER,
                                                  "user": "*, -user1",
                                                  "client": "172.16.0.0/16, "
@@ -699,7 +706,7 @@ class APIConfigTestCase(MyApiTestCase):
         with self.app.test_request_context('/policy/pol1',
                                            method='POST',
                                            data={"realm": "*",
-                                                 "action": f"{ACTION.ENABLE}, {ACTION.DISABLE}",
+                                                 "action": f"{PolicyAction.ENABLE}, {PolicyAction.DISABLE}",
                                                  "scope": SCOPE.USER,
                                                  "user": "*, -user1",
                                                  "client": "172.16.0.0/16, "
@@ -714,8 +721,8 @@ class APIConfigTestCase(MyApiTestCase):
         with self.app.test_request_context('/policy/pol2',
                                            method='POST',
                                            data={"realm": "*",
-                                                 "action": f"{ACTION.HIDE_TOKENINFO}=hashlib, "
-                                                           f"{ACTION.DELETE}",
+                                                 "action": f"{PolicyAction.HIDE_TOKENINFO}=hashlib, "
+                                                           f"{PolicyAction.DELETE}",
                                                  "scope": SCOPE.USER,
                                                  "user": "admin, superuser",
                                                  "client": "172.16.1.1"},
@@ -730,7 +737,7 @@ class APIConfigTestCase(MyApiTestCase):
         with self.app.test_request_context('/policy/check',
                                            method='GET',
                                            query_string=urlencode({"realm": self.realm1,
-                                                                   "action": ACTION.ENABLE,
+                                                                   "action": PolicyAction.ENABLE,
                                                                    "scope": SCOPE.USER,
                                                                    "user": "superuser",
                                                                    "client": "172.16.1.1"}),
@@ -745,7 +752,7 @@ class APIConfigTestCase(MyApiTestCase):
         with self.app.test_request_context('/policy/check',
                                            method='GET',
                                            query_string=urlencode({"realm": self.realm2,
-                                                                   "action": ACTION.ENABLE,
+                                                                   "action": PolicyAction.ENABLE,
                                                                    "scope": SCOPE.USER,
                                                                    "user": "superuser",
                                                                    "client": "172.16.1.2"}),
@@ -760,7 +767,7 @@ class APIConfigTestCase(MyApiTestCase):
         with self.app.test_request_context('/policy/check',
                                            method='GET',
                                            query_string=urlencode({"realm": self.realm3,
-                                                                   "action": ACTION.HIDE_TOKENINFO,
+                                                                   "action": PolicyAction.HIDE_TOKENINFO,
                                                                    "scope": SCOPE.USER,
                                                                    "user": "superuser",
                                                                    "client": "172.16.1.2"}),
@@ -775,7 +782,7 @@ class APIConfigTestCase(MyApiTestCase):
         with self.app.test_request_context('/policy/check',
                                            method='GET',
                                            query_string=urlencode({"realm": self.realm1,
-                                                                   "action": ACTION.HIDE_TOKENINFO,
+                                                                   "action": PolicyAction.HIDE_TOKENINFO,
                                                                    "scope": SCOPE.USER,
                                                                    "user": "superuser",
                                                                    "client": "172.16.1.1"}),
@@ -831,7 +838,7 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertIn("description", conditions["comparators"]["contains"])
 
     def test_14_enable_disable_policy(self):
-        set_policy("pol2", scope=SCOPE.USER, action=ACTION.ENABLE)
+        set_policy("pol2", scope=SCOPE.USER, action=PolicyAction.ENABLE)
         with self.app.test_request_context('/policy/pol2',
                                            method='GET',
                                            headers={'Authorization': self.at}):
@@ -1020,7 +1027,7 @@ class APIConfigTestCase(MyApiTestCase):
 
         # Set a read policy
         set_policy(name="pol_read", scope=SCOPE.ADMIN,
-                   action=ACTION.RESOLVERREAD)
+                   action=PolicyAction.RESOLVERREAD)
 
         # Now writing a resolver will fail
         with self.app.test_request_context('/resolver/{0}'.format(resolvername),
@@ -1039,7 +1046,7 @@ class APIConfigTestCase(MyApiTestCase):
 
         # set a write policy
         set_policy(name="pol_write", scope=SCOPE.ADMIN,
-                   action=ACTION.RESOLVERWRITE)
+                   action=PolicyAction.RESOLVERWRITE)
 
         # Now writing a resolver will succeed
         with self.app.test_request_context('/resolver/{0}'.format(resolvername),
@@ -1093,7 +1100,7 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertEqual(set(result["value"]), {"local", "remote"})
 
         # if an admin policy is defined and enrollRADIUS is not allowed, admins cannot access the RADIUS servers
-        set_policy("admin", scope=SCOPE.ADMIN, action=ACTION.AUDIT)
+        set_policy("admin", scope=SCOPE.ADMIN, action=PolicyAction.AUDIT)
         with self.app.test_request_context("/system/names/radius",
                                            method="GET",
                                            headers={'Authorization': self.at}):
@@ -1103,7 +1110,7 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertIn("enrollRADIUS", result["error"]["message"])
 
         # with an enrollRADIUS action, admins can access the RADIUS servers
-        set_policy("admin", scope=SCOPE.ADMIN, action=[ACTION.AUDIT, "enrollRADIUS"])
+        set_policy("admin", scope=SCOPE.ADMIN, action=[PolicyAction.AUDIT, "enrollRADIUS"])
         with self.app.test_request_context("/system/names/radius",
                                            method="GET",
                                            headers={'Authorization': self.at}):
@@ -1125,7 +1132,7 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertEqual(set(result["value"]), {"local", "remote"})
 
         # if a user policy is defined and enrollRADIUS is not allowed, users cannot access the RADIUS servers
-        set_policy("user", scope=SCOPE.USER, action=ACTION.AUDIT)
+        set_policy("user", scope=SCOPE.USER, action=PolicyAction.AUDIT)
         with self.app.test_request_context("/system/names/radius",
                                            method="GET",
                                            headers={'Authorization': self.at_user}):
@@ -1185,7 +1192,7 @@ class APIConfigTestCase(MyApiTestCase):
             _check_caconnector_response(res)
 
         # if an admin policy is defined and enrollCERTIFICATE is not allowed, admins cannot access the CA connectors
-        set_policy("admin", scope=SCOPE.ADMIN, action=ACTION.AUDIT)
+        set_policy("admin", scope=SCOPE.ADMIN, action=PolicyAction.AUDIT)
         with self.app.test_request_context("/system/names/caconnector",
                                            method="GET",
                                            headers={'Authorization': self.at}):
@@ -1195,7 +1202,7 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertIn("enrollCERTIFICATE", result["error"]["message"])
 
         # with an enrollCERTIFICATE action, admins can access the CA connectors
-        set_policy("admin", scope=SCOPE.ADMIN, action=[ACTION.AUDIT, "enrollCERTIFICATE"])
+        set_policy("admin", scope=SCOPE.ADMIN, action=[PolicyAction.AUDIT, "enrollCERTIFICATE"])
         with self.app.test_request_context("/system/names/caconnector",
                                            method="GET",
                                            headers={'Authorization': self.at}):
@@ -1215,7 +1222,7 @@ class APIConfigTestCase(MyApiTestCase):
             _check_caconnector_response(res)
 
         # if a user policy is defined and enrollCERTIFICATE is not allowed, users cannot access the CA connectors
-        set_policy("user", scope=SCOPE.USER, action=ACTION.AUDIT)
+        set_policy("user", scope=SCOPE.USER, action=PolicyAction.AUDIT)
         with self.app.test_request_context("/system/names/caconnector",
                                            method="GET",
                                            headers={'Authorization': self.at_user}):

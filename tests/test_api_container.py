@@ -17,10 +17,11 @@ from privacyidea.lib.crypto import generate_keypair_ecc, decrypt_aes
 from privacyidea.lib.container import (init_container, find_container_by_serial, add_token_to_container, assign_user,
                                        add_container_realms, remove_token_from_container)
 from privacyidea.lib.machine import attach_token
-from privacyidea.lib.policies.policy_conditions import ConditionSection, ConditionHandleMissingData
-from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
+from privacyidea.lib.policies.conditions import ConditionSection, ConditionHandleMissingData
+from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.privacyideaserver import add_privacyideaserver
-from privacyidea.lib.realm import set_realm
+from privacyidea.lib.realm import set_realm, set_default_realm
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.serviceid import set_serviceid
 from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
@@ -131,7 +132,7 @@ class APIContainerAuthorization(APIContainerTest):
         return res.json
 
     def create_container_for_user(self, ctype="generic"):
-        set_policy("user_container_create", scope=SCOPE.USER, action=ACTION.CONTAINER_CREATE)
+        set_policy("user_container_create", scope=SCOPE.USER, action=PolicyAction.CONTAINER_CREATE)
         with self.app.test_request_context('/container/init',
                                            method='POST',
                                            data={"type": ctype},
@@ -157,26 +158,26 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
 
     def test_02_user_create_denied(self):
         # Set a random policy so that user actions are defined
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DESCRIPTION)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DESCRIPTION)
         self.request_denied_assert_403('/container/init', {"type": "Smartphone", "description": "test description!!"},
                                        self.at_user)
         delete_policy("policy")
 
     def test_03_user_delete_allowed(self):
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DELETE)
         container_serial = self.create_container_for_user()
         self.request_assert_success(f"/container/{container_serial}", {}, self.at_user, method='DELETE')
         delete_policy("policy")
 
     def test_04_user_delete_denied(self):
         # User does not have 'delete' rights
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_CREATE)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_CREATE)
         container_serial = self.create_container_for_user()
         self.request_denied_assert_403(f"/container/{container_serial}", {}, self.at_user, method='DELETE')
         delete_policy("policy")
 
         # User is not the owner of the container
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DELETE)
         # another owner
         container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
         self.request_denied_assert_403(f"/container/{container_serial}", {}, self.at_user, method='DELETE')
@@ -186,7 +187,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         delete_policy("policy")
 
     def test_05_user_description_allowed(self):
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DESCRIPTION)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DESCRIPTION)
         container_serial = self.create_container_for_user()
         self.request_assert_success(f"/container/{container_serial}/description", {"description": "test"}, self.at_user,
                                     method='POST')
@@ -194,7 +195,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
 
     def test_06_user_description_denied(self):
         # User does not have 'description' rights
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DELETE)
         container_serial = self.create_container_for_user()
         self.request_denied_assert_403(f"/container/{container_serial}/description", {"description": "test"},
                                        self.at_user,
@@ -202,7 +203,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         delete_policy("policy")
 
         # User is not the owner of the container
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DESCRIPTION)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DESCRIPTION)
         container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
         self.request_denied_assert_403(f"/container/{container_serial}/description", {"description": "test"},
                                        self.at_user, method='POST')
@@ -214,7 +215,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         delete_policy("policy")
 
     def test_07_user_state_allowed(self):
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_STATE)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_STATE)
         container_serial = self.create_container_for_user()
         self.request_assert_success(f"/container/{container_serial}/states", {"states": "active, damaged, lost"},
                                     self.at_user,
@@ -223,7 +224,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
 
     def test_08_user_state_denied(self):
         # User does not have 'state' rights
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DELETE)
         container_serial = self.create_container_for_user()
         self.request_denied_assert_403(f"/container/{container_serial}/states", {"states": "active, damaged, lost"},
                                        self.at_user,
@@ -231,7 +232,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         delete_policy("policy")
 
         # User is not the owner of the container
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_STATE)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_STATE)
         container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
         self.request_denied_assert_403(f"/container/{container_serial}/states", {"states": "active, damaged, lost"},
                                        self.at_user, method='POST')
@@ -243,7 +244,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         delete_policy("policy")
 
     def test_09_user_add_token_allowed(self):
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_ADD_TOKEN)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_ADD_TOKEN)
         container_serial = self.create_container_for_user()
         container = find_container_by_serial(container_serial)
         container_owner = container.get_users()[0]
@@ -275,7 +276,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         my_token_serial = my_token.get_serial()
 
         # User does not have 'add' rights
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DELETE)
         self.request_denied_assert_403(f"/container/{container_serial}/add", {"serial": my_token_serial}, self.at_user,
                                        method='POST')
         delete_policy("policy")
@@ -285,7 +286,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         token = init_token({"genkey": "1"}, user=user)
         token_serial = token.get_serial()
         set_policy("policy", scope=SCOPE.USER,
-                   action={ACTION.CONTAINER_ADD_TOKEN: True, ACTION.CONTAINER_REMOVE_TOKEN: True})
+                   action={PolicyAction.CONTAINER_ADD_TOKEN: True, PolicyAction.CONTAINER_REMOVE_TOKEN: True})
         self.request_denied_assert_403(f"/container/{container_serial}/add", {"serial": token_serial}, self.at_user,
                                        method='POST')
 
@@ -318,7 +319,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         delete_policy("policy")
 
     def test_11_user_remove_token_allowed(self):
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_REMOVE_TOKEN)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_REMOVE_TOKEN)
         container_serial = self.create_container_for_user()
         container = find_container_by_serial(container_serial)
 
@@ -351,13 +352,13 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         my_token = init_token({"genkey": "1"}, user=User("selfservice", self.realm1, self.resolvername1))
         my_token_serial = my_token.get_serial()
         add_token_to_container(container_serial, my_token_serial)
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DELETE)
         self.request_denied_assert_403(f"/container/{container_serial}/remove", {"serial": my_token_serial},
                                        self.at_user, method='POST')
         delete_policy("policy")
 
         # User has 'remove' rights but is not the owner of the token
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_REMOVE_TOKEN)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_REMOVE_TOKEN)
         user = User(login="hans", realm=self.realm1, resolver=self.resolvername1)
         token = init_token({"genkey": "1"}, user=user)
         token_serial = token.get_serial()
@@ -405,14 +406,14 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
     def test_13_user_assign_user_allowed(self):
         # Note: This will not set the user root but the user selfservice, because the user attribute is changed in
         # before_request()
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_ASSIGN_USER)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_ASSIGN_USER)
         container_serial = init_container({"type": "generic"})["container_serial"]
         self.request_assert_success(f"/container/{container_serial}/assign", {"realm": "realm1", "user": "root"},
                                     self.at_user)
         delete_policy("policy")
 
     def test_14_user_assign_user_denied(self):
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DELETE)
         container_serial = self.create_container_for_user()
         self.request_denied_assert_403(f"/container/{container_serial}/assign",
                                        {"realm": "realm1", "user": "selfservice"},
@@ -421,7 +422,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
 
     def test_15_user_remove_user_allowed(self):
         # User is allowed to unassign from its own container
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_UNASSIGN_USER)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_UNASSIGN_USER)
         container_serial = self.create_container_for_user()
         self.request_assert_success(f"/container/{container_serial}/unassign", {"realm": "realm1", "user": "root"},
                                     self.at_user)
@@ -429,14 +430,14 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
 
     def test_16_user_remove_user_denied(self):
         # User does not have 'unassign' rights
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DELETE)
         container_serial = self.create_container_for_user()
         self.request_denied_assert_403(f"/container/{container_serial}/unassign",
                                        {"realm": "realm1", "user": "selfservice"}, self.at_user)
         delete_policy("policy")
 
         # User is not allowed to unassign users from a container that is not his own
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_UNASSIGN_USER)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_UNASSIGN_USER)
         container_serial = init_container({"type": "generic"})["container_serial"]
         user = User(login="hans", realm=self.realm1, resolver=self.resolvername1)
         assign_user(container_serial, user)
@@ -448,7 +449,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         # Editing the container realms is an admin action and therefore only ever allowed for admins
         # But this returns a 401 from the @admin_required decorator
         container_serial = self.create_container_for_user()
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DELETE)
 
         with self.app.test_request_context(f"/container/{container_serial}/realms", method='POST',
                                            data={"realms": "realm1"}, headers={'Authorization': self.at_user}):
@@ -459,7 +460,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
     def test_18_user_container_list_allowed(self):
         # Arrange
         self.setUp_user_realms()
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_LIST)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_LIST)
 
         # container with token from another user: reduce token info
         container_serial = init_container({"type": "generic"})["container_serial"]
@@ -492,18 +493,18 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
 
     def test_19_user_container_list_denied(self):
         # User does not have CONTAINER_LIST rights
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_DELETE)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DELETE)
         self.request_denied_assert_403('/container/', {}, self.at_user, 'GET')
 
     def test_20_user_container_register_allowed(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
         container_serial = self.create_container_for_user("smartphone")
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_REGISTER)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_REGISTER)
         # set two policies, but only one applicable for the realm of the user
-        set_policy("another_container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://random"},
+        set_policy("another_container_policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://random"},
                    realm=self.realm2)
-        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"},
+        set_policy("container_policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://test"},
                    realm=self.realm1)
         data = {"container_serial": container_serial}
         self.request_assert_success('/container/register/initialize', data, self.at_user, 'POST')
@@ -514,9 +515,9 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
 
     def test_21_user_container_register_denied(self):
         container_serial = self.create_container_for_user("smartphone")
-        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
+        set_policy("container_policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://test"})
         # User does not have CONTAINER_REGISTER rights
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_CREATE)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_CREATE)
         data = {"container_serial": container_serial}
         self.request_denied_assert_403('/container/register/initialize', data, self.at_user, 'POST')
         delete_container_by_serial(container_serial)
@@ -526,7 +527,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         another_container_serial = init_container({"type": "smartphone",
                                                    "user": "hans",
                                                    "realm": self.realm1})["container_serial"]
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_REGISTER)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_REGISTER)
         data = {"container_serial": another_container_serial}
         self.request_denied_assert_403('/container/register/initialize', data, self.at_user, 'POST')
         delete_container_by_serial(another_container_serial)
@@ -536,14 +537,14 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
 
     def test_22_user_container_unregister_allowed(self):
         container_serial = self.test_20_user_container_register_allowed()
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_UNREGISTER)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_UNREGISTER)
         self.request_assert_success(f'/container/register/{container_serial}/terminate', {}, self.at_user, 'POST')
         delete_policy("policy")
 
     def test_23_user_container_unregister_denied(self):
         container_serial = self.test_20_user_container_register_allowed()
         # User does not have CONTAINER_UNREGISTER rights
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_CREATE)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_CREATE)
         self.request_denied_assert_403(f'/container/register/{container_serial}/terminate', {}, self.at_user, 'POST')
         delete_policy("policy")
 
@@ -551,11 +552,11 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         another_container_serial = init_container({"type": "smartphone",
                                                    "user": "hans",
                                                    "realm": self.realm1})["container_serial"]
-        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
+        set_policy("container_policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://test"})
         data = {"container_serial": container_serial}
         self.request_assert_success('/container/register/initialize', data, self.at, 'POST')
 
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_UNREGISTER)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_UNREGISTER)
         self.request_denied_assert_403(f'/container/register/{another_container_serial}/terminate', {}, self.at_user,
                                        'POST')
         delete_policy("policy")
@@ -568,8 +569,8 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
                                                                 value=RegistrationState.REGISTERED.value,
                                                                 info_type=PI_INTERNAL)])
         set_policy("policy", scope=SCOPE.USER,
-                   action={ACTION.CONTAINER_ROLLOVER: True})
-        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
+                   action={PolicyAction.CONTAINER_ROLLOVER: True})
+        set_policy("container_policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://test"})
         data = {"container_serial": container_serial, "rollover": True}
         self.request_assert_success('/container/register/initialize', data, self.at_user, 'POST')
 
@@ -583,16 +584,16 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         container.update_container_info([TokenContainerInfoData(key=RegistrationState.get_key(),
                                                                 value=RegistrationState.REGISTERED.value,
                                                                 info_type=PI_INTERNAL)])
-        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
+        set_policy("container_policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://test"})
         set_policy("policy", scope=SCOPE.USER,
-                   action={ACTION.CONTAINER_REGISTER: True})
+                   action={PolicyAction.CONTAINER_REGISTER: True})
         data = {"container_serial": container_serial, "rollover": True}
         self.request_denied_assert_403('/container/register/initialize', data, self.at_user, 'POST')
         delete_policy("policy")
         delete_policy("container_policy")
 
     def test_26_user_container_template_create_allowed(self):
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_TEMPLATE_CREATE)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_TEMPLATE_CREATE)
         data = {"template_options": {}}
         template_name = "test"
         self.request_assert_success(f'/container/generic/template/{template_name}', data, self.at_user, 'POST')
@@ -601,33 +602,33 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
 
     def test_27_user_container_template_create_denied(self):
         # User does not have CONTAINER_TEMPLATE_CREATE rights
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_CREATE)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_CREATE)
         data = {"template_options": {}}
         self.request_denied_assert_403('/container/generic/template/test', data, self.at_user, 'POST')
         delete_policy("policy")
 
     def test_28_user_container_template_delete_allowed(self):
         template_name = self.test_26_user_container_template_create_allowed()
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_TEMPLATE_DELETE)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_TEMPLATE_DELETE)
         self.request_assert_success(f'/container/template/{template_name}', {}, self.at_user, 'DELETE')
         delete_policy("policy")
 
     def test_29_user_container_template_delete_denied(self):
         template_name = self.test_26_user_container_template_create_allowed()
         # User does not have CONTAINER_TEMPLATE_DELETE rights
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_CREATE)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_CREATE)
         self.request_denied_assert_403(f'/container/template/{template_name}', {}, self.at_user, 'DELETE')
         get_template_obj(template_name).delete()
         delete_policy("policy")
 
     def test_30_user_template_list_allowed(self):
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_TEMPLATE_LIST)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_TEMPLATE_LIST)
         self.request_assert_success('/container/templates', {}, self.at_user, 'GET')
         delete_policy("policy")
 
     def test_31_user_template_list_denied(self):
         # User does not have CONTAINER_TEMPLATE_LIST rights
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_CREATE)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_CREATE)
         self.request_denied_assert_403('/container/templates', {}, self.at_user, 'GET')
         delete_policy("policy")
 
@@ -640,7 +641,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
                                   template_name=template_params["name"],
                                   options=template_params["template_options"])
         set_policy("policy", scope=SCOPE.USER,
-                   action={ACTION.CONTAINER_TEMPLATE_LIST: True, ACTION.CONTAINER_LIST: True})
+                   action={PolicyAction.CONTAINER_TEMPLATE_LIST: True, PolicyAction.CONTAINER_LIST: True})
         self.request_assert_success(f'/container/template/{template_name}/compare', {}, self.at_user, 'GET')
 
         # Test with containers the user might not be allowed to see
@@ -681,7 +682,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
     def test_33_user_compare_template_container_denied(self):
         template_name = self.test_26_user_container_template_create_allowed()
         # User does not have CONTAINER_TEMPLATE_LIST rights
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_CREATE)
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_CREATE)
         self.request_denied_assert_403(f'/container/template/{template_name}/compare', {}, self.at_user, 'GET')
         delete_policy("policy")
 
@@ -690,7 +691,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
 
     def test_34_create_container_with_template(self):
         # user is allowed to create container and enroll HOTP and TOTP tokens, but not spass tokens
-        set_policy("policy", scope=SCOPE.USER, action={ACTION.CONTAINER_CREATE: True, "enrollHOTP": True,
+        set_policy("policy", scope=SCOPE.USER, action={PolicyAction.CONTAINER_CREATE: True, "enrollHOTP": True,
                                                        "enrollTOTP": True})
 
         template_params = {"name": "test",
@@ -733,31 +734,31 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
     """
 
     def test_01_admin_create_allowed(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_CREATE)
         result = self.request_assert_success('/container/init', {"type": "generic"}, self.at)
         self.assertGreater(len(result["result"]["value"]["container_serial"]), 0)
         delete_policy("policy")
 
     def test_02_admin_create_denied(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION)
         self.request_denied_assert_403('/container/init', {"type": "Smartphone", "description": "test description!!"},
                                        self.at)
         delete_policy("policy")
 
     def test_03_admin_delete_allowed(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DELETE)
         container_serial = self.create_container_for_user()
         self.request_assert_success(f"/container/{container_serial}", {}, self.at, method='DELETE')
         delete_policy("policy")
 
     def test_04_admin_delete_denied(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_CREATE)
         container_serial = self.create_container_for_user()
         self.request_denied_assert_403(f"/container/{container_serial}", {}, self.at, method='DELETE')
         delete_policy("policy")
 
     def test_05_admin_description_allowed(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION)
         # container of a user
         container_serial = self.create_container_for_user()
         self.request_assert_success(f"/container/{container_serial}/description", {"description": "test"}, self.at,
@@ -769,14 +770,14 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         delete_policy("policy")
 
     def test_06_admin_description_denied(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DELETE)
         container_serial = self.create_container_for_user()
         self.request_denied_assert_403(f"/container/{container_serial}/description", {"description": "test"},
                                        self.at, method='POST')
         delete_policy("policy")
 
     def test_07_admin_state_allowed(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_STATE)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_STATE)
         # container of a user
         container_serial = self.create_container_for_user()
         self.request_assert_success(f"/container/{container_serial}/states", {"states": "active, damaged, lost"},
@@ -788,14 +789,14 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         delete_policy("policy")
 
     def test_08_admin_state_denied(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DELETE)
         container_serial = self.create_container_for_user()
         self.request_denied_assert_403(f"/container/{container_serial}/states", {"states": "active, damaged, lost"},
                                        self.at, method='POST')
         delete_policy("policy")
 
     def test_09_admin_add_token_allowed(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ADD_TOKEN)
         # container of a user
         container_serial = self.create_container_for_user()
         token = init_token({"genkey": "1"})
@@ -814,7 +815,7 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         delete_policy("policy")
 
     def test_10_admin_add_token_denied(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DELETE)
         container_serial = self.create_container_for_user()
         token = init_token({"genkey": "1"})
         token_serial = token.get_serial()
@@ -823,7 +824,7 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         delete_policy("policy")
 
     def test_11_admin_add_multiple_tokens_allowed(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ADD_TOKEN)
         container_serial = self.create_container_for_user()
         token = init_token({"genkey": "1"})
         token2 = init_token({"type": "hotp", "genkey": True})
@@ -837,7 +838,7 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         delete_policy("policy")
 
     def test_12_admin_add_multiple_tokens_denied(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DELETE)
         container_serial = self.create_container_for_user()
         token = init_token({"genkey": "1"})
         token2 = init_token({"type": "hotp", "genkey": True})
@@ -847,7 +848,7 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         delete_policy("policy")
 
     def test_13_admin_remove_token_allowed(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REMOVE_TOKEN)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_REMOVE_TOKEN)
         # container of a user
         container_serial = self.create_container_for_user()
         token = init_token({"genkey": "1"})
@@ -871,7 +872,7 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         delete_policy("policy")
 
     def test_14_admin_remove_token_denied(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DELETE)
         container_serial = self.create_container_for_user()
         token = init_token({"genkey": "1"})
         token_serial = token.get_serial()
@@ -883,35 +884,35 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
 
     def test_15_admin_assign_user_allowed(self):
         self.setUp_user_realms()
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ASSIGN_USER)
         container_serial = init_container({"type": "generic"})["container_serial"]
         self.request_assert_success(f"/container/{container_serial}/assign",
                                     {"realm": "realm1", "user": "hans", "resolver": self.resolvername1}, self.at)
         delete_policy("policy")
 
     def test_16_admin_assign_user_denied(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DELETE)
         container_serial = init_container({"type": "generic"})["container_serial"]
         self.request_denied_assert_403(f"/container/{container_serial}/assign",
                                        {"realm": "realm1", "user": "hans", "resolver": self.resolvername1}, self.at)
         delete_policy("policy")
 
     def test_17_admin_remove_user_allowed(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_UNASSIGN_USER)
-        container_serial = init_container({"type": "generic", "user": "root", "realm": self.realm1})["container_serial"]
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_UNASSIGN_USER)
+        container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
         self.request_assert_success(f"/container/{container_serial}/unassign",
-                                    {"realm": "realm1", "user": "root", "resolver": self.resolvername1}, self.at)
+                                    {"realm": "realm1", "user": "hans", "resolver": self.resolvername1}, self.at)
         delete_policy("policy")
 
     def test_18_admin_remove_user_denied(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE)
-        container_serial = init_container({"type": "generic", "user": "root", "realm": self.realm1})["container_serial"]
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DELETE)
+        container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
         self.request_denied_assert_403(f"/container/{container_serial}/unassign",
-                                       {"realm": "realm1", "user": "root", "resolver": self.resolvername1}, self.at)
+                                       {"realm": "realm1", "user": "hans", "resolver": self.resolvername1}, self.at)
         delete_policy("policy")
 
     def test_19_admin_container_realms_allowed(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REALMS)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_REALMS)
         # container of a user
         container_serial = self.create_container_for_user()
         self.request_assert_success(f"/container/{container_serial}/realms", {"realms": "realm2"}, self.at)
@@ -922,25 +923,25 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         delete_policy("policy")
 
     def test_20_admin_container_realms_denied(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DELETE)
         container_serial = self.create_container_for_user()
         self.request_denied_assert_403(f"/container/{container_serial}/realms", {"realms": "realm1"}, self.at)
         delete_policy("policy")
 
     def test_21_admin_container_list_allowed(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_LIST)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_LIST)
         self.request_assert_success('/container/', {}, self.at, 'GET')
         delete_policy("policy")
 
     def test_22_admin_container_list_denied(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DELETE)
         self.request_denied_assert_403('/container/', {}, self.at, 'GET')
         delete_policy("policy")
 
     def test_23_admin_container_register_allowed(self):
         container_serial = self.create_container_for_user("smartphone")
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REGISTER)
-        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_REGISTER)
+        set_policy("container_policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://test"})
         data = {"container_serial": container_serial}
         self.request_assert_success('/container/register/initialize', data, self.at, 'POST')
         delete_policy("policy")
@@ -950,8 +951,8 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
     def test_24_admin_container_register_denied(self):
         container_serial = self.create_container_for_user("smartphone")
         # Admin does not have CONTAINER_REGISTER rights
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE)
-        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_CREATE)
+        set_policy("container_policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://test"})
         data = {"container_serial": container_serial}
         self.request_denied_assert_403('/container/register/initialize', data, self.at, 'POST')
         delete_policy("policy")
@@ -959,14 +960,14 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
 
     def test_25_admin_container_unregister_allowed(self):
         container_serial = self.test_23_admin_container_register_allowed()
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_UNREGISTER)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_UNREGISTER)
         self.request_assert_success(f'/container/register/{container_serial}/terminate', {}, self.at, 'POST')
         delete_policy("policy")
 
     def test_26_admin_container_unregister_denied(self):
         container_serial = self.test_23_admin_container_register_allowed()
         # Admin does not have CONTAINER_UNREGISTER rights
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_CREATE)
         self.request_denied_assert_403(f'/container/register/{container_serial}/terminate', {}, self.at, 'POST')
         delete_policy("policy")
 
@@ -977,8 +978,8 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
                                                                 value=RegistrationState.REGISTERED.value,
                                                                 info_type=PI_INTERNAL)])
         set_policy("policy", scope=SCOPE.ADMIN,
-                   action={ACTION.CONTAINER_ROLLOVER: True})
-        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
+                   action={PolicyAction.CONTAINER_ROLLOVER: True})
+        set_policy("container_policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://test"})
         data = {"container_serial": container_serial, "rollover": True}
         self.request_assert_success('/container/register/initialize', data, self.at, 'POST')
 
@@ -992,16 +993,16 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         container.update_container_info([TokenContainerInfoData(RegistrationState.get_key(),
                                                                 RegistrationState.REGISTERED.value,
                                                                 info_type=PI_INTERNAL)])
-        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
+        set_policy("container_policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://test"})
         set_policy("policy", scope=SCOPE.ADMIN,
-                   action={ACTION.CONTAINER_REGISTER: True})
+                   action={PolicyAction.CONTAINER_REGISTER: True})
         data = {"container_serial": container_serial, "rollover": True}
         self.request_denied_assert_403('/container/register/initialize', data, self.at, 'POST')
         delete_policy("policy")
         delete_policy("container_policy")
 
     def test_29_admin_container_template_create_allowed(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_TEMPLATE_CREATE)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_TEMPLATE_CREATE)
         data = {"template_options": {}}
         template_name = "test"
         self.request_assert_success(f'/container/generic/template/{template_name}', data, self.at, 'POST')
@@ -1010,40 +1011,40 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
 
     def test_30_admin_container_template_create_denied(self):
         # Admin does not have CONTAINER_TEMPLATE_CREATE rights
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_CREATE)
         data = {"template_options": {}}
         self.request_denied_assert_403('/container/generic/template/test', data, self.at, 'POST')
         delete_policy("policy")
 
     def test_31_admin_container_template_delete_allowed(self):
         template_name = self.test_29_admin_container_template_create_allowed()
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_TEMPLATE_DELETE)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_TEMPLATE_DELETE)
         self.request_assert_success(f'/container/template/{template_name}', {}, self.at, 'DELETE')
         delete_policy("policy")
 
     def test_32_admin_container_template_delete_denied(self):
         template_name = self.test_29_admin_container_template_create_allowed()
         # Admin does not have CONTAINER_TEMPLATE_DELETE rights
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_CREATE)
         self.request_denied_assert_403(f'/container/template/{template_name}', {}, self.at, 'DELETE')
         delete_policy("policy")
         get_template_obj(template_name).delete()
 
     def test_33_admin_template_list_allowed(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_TEMPLATE_LIST)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_TEMPLATE_LIST)
         self.request_assert_success('/container/templates', {}, self.at, 'GET')
         delete_policy("policy")
 
     def test_34_admin_template_list_denied(self):
         # Admin does not have CONTAINER_TEMPLATE_LIST rights
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_CREATE)
         self.request_denied_assert_403('/container/templates', {}, self.at, 'GET')
         delete_policy("policy")
 
     def test_35_admin_compare_template_container_allowed(self):
         template_name = self.test_29_admin_container_template_create_allowed()
         set_policy("policy", scope=SCOPE.ADMIN,
-                   action={ACTION.CONTAINER_TEMPLATE_LIST: True, ACTION.CONTAINER_LIST: True})
+                   action={PolicyAction.CONTAINER_TEMPLATE_LIST: True, PolicyAction.CONTAINER_LIST: True})
         self.request_assert_success(f'/container/template/{template_name}/compare', {}, self.at, 'GET')
         delete_policy("policy")
         get_template_obj(template_name).delete()
@@ -1051,7 +1052,7 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
     def test_36_admin_compare_template_container_denied(self):
         template_name = self.test_29_admin_container_template_create_allowed()
         # Admin does not have CONTAINER_TEMPLATE_LIST rights
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_CREATE)
         self.request_denied_assert_403(f'/container/template/{template_name}/compare', {}, self.at, 'GET')
         delete_policy("policy")
         get_template_obj(template_name).delete()
@@ -1059,7 +1060,7 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
     def test_37_admin_create_container_with_template(self):
         # admin is allowed to create container and enroll HOTP, but not TOTP tokens
         set_policy("policy", scope=SCOPE.ADMIN,
-                   action={ACTION.CONTAINER_CREATE: True, "enrollHOTP": True})
+                   action={PolicyAction.CONTAINER_CREATE: True, "enrollHOTP": True})
 
         template_params = {"name": "test",
                            "container_type": "smartphone",
@@ -1089,21 +1090,21 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         delete_policy("policy")
 
     def test_38_admin_set_container_info_allowed(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_INFO)
         container_serial = self.create_container_for_user("smartphone")
         self.request_assert_success(f"/container/{container_serial}/info/test", {"value": "1234"}, self.at,
                                     method='POST')
         delete_policy("policy")
 
     def test_39_admin_set_container_info_denied(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DELETE)
         container_serial = self.create_container_for_user("smartphone")
         self.request_denied_assert_403(f"/container/{container_serial}/info/test", {"value": "1234"}, self.at,
                                        method='POST')
         delete_policy("policy")
 
         # Modify container info is allowed, but internal info can not be modified
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_INFO)
         container_serial = self.create_container_for_user("smartphone")
         container = find_container_by_serial(container_serial)
         container.update_container_info(
@@ -1113,7 +1114,7 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         delete_policy("policy")
 
     def test_40_admin_delete_container_info_allowed(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_INFO)
         container_serial = self.create_container_for_user("smartphone")
         container = find_container_by_serial(container_serial)
         container.update_container_info([TokenContainerInfoData(key="test", value="1234")])
@@ -1122,7 +1123,7 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         delete_policy("policy")
 
     def test_41_admin_delete_container_info_denied(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DELETE)
         container_serial = self.create_container_for_user("smartphone")
         container = find_container_by_serial(container_serial)
         container.update_container_info([TokenContainerInfoData(key="test", value="1234")])
@@ -1140,7 +1141,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
 
     def test_01_helpdesk_create_allowed(self):
         self.setUp_user_realms()
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE, realm=self.realm1)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_CREATE, realm=self.realm1)
         result = self.request_assert_success('/container/init', {"type": "generic", "realm": self.realm1}, self.at)
         self.assertGreater(len(result["result"]["value"]["container_serial"]), 0)
         delete_policy("policy")
@@ -1148,7 +1149,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
     def test_02_helpdesk_create_denied(self):
         self.setUp_user_realm2()
         # policy for a realm
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE, realm=self.realm1)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_CREATE, realm=self.realm1)
         self.request_denied_assert_403('/container/init', {"type": "Smartphone", "realm": self.realm2},
                                        self.at)
         # create container for no realm is denied
@@ -1159,7 +1160,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
 
         # policy for a resolver
         self.setUp_user_realm3()
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE, resolver=self.resolvername1)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_CREATE, resolver=self.resolvername1)
         self.request_denied_assert_403('/container/init',
                                        {"type": "Smartphone", "user": "corny", "realm": self.realm3},
                                        self.at)
@@ -1171,7 +1172,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
 
     def test_03_helpdesk_delete_allowed(self):
         self.setUp_user_realm2()
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE, realm=[self.realm2, self.realm1])
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DELETE, realm=[self.realm2, self.realm1])
         container_serial = self.create_container_for_user()
         self.request_assert_success(f"/container/{container_serial}", {}, self.at, method='DELETE')
         delete_policy("policy")
@@ -1182,7 +1183,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         c_serial_no_user = init_container({"type": "generic"})["container_serial"]
 
         # policy for a realm
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE, realm=self.realm3)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DELETE, realm=self.realm3)
         # container of a user
         self.request_denied_assert_403(f"/container/{c_serial_user}", {}, self.at, method='DELETE')
         # container without user
@@ -1190,7 +1191,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         delete_policy("policy")
 
         # policy for a resolver
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE, resolver=self.resolvername3)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DELETE, resolver=self.resolvername3)
         # container of a user
         self.request_denied_assert_403(f"/container/{c_serial_user}", {}, self.at, method='DELETE')
         # container without user
@@ -1201,18 +1202,18 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         self.setUp_user_realm2()
         # policy for realms
         container_serial = init_container({"type": "generic", "realm": self.realm1})["container_serial"]
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, realm=[self.realm1, self.realm2])
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION, realm=[self.realm1, self.realm2])
         self.request_assert_success(f"/container/{container_serial}/description", {"description": "test"}, self.at,
                                     method='POST')
         delete_policy("policy")
         # policy for resolver
         container_serial = self.create_container_for_user()
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, resolver=self.resolvername1)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION, resolver=self.resolvername1)
         self.request_assert_success(f"/container/{container_serial}/description", {"description": "test"}, self.at,
                                     method='POST')
         delete_policy("policy")
         # policy for user
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, user="selfservice",
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION, user="selfservice",
                    realm=self.realm1, resolver=self.resolvername1)
         self.request_assert_success(f"/container/{container_serial}/description", {"description": "test"}, self.at,
                                     method='POST')
@@ -1224,7 +1225,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         c_serial_no_user = init_container({"type": "generic"})["container_serial"]
 
         # policy for a realm
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, realm=self.realm3)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION, realm=self.realm3)
         self.request_denied_assert_403(f"/container/{c_serial_user}/description", {"description": "test"},
                                        self.at, method='POST')
         self.request_denied_assert_403(f"/container/{c_serial_no_user}/description", {"description": "test"},
@@ -1232,7 +1233,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         delete_policy("policy")
 
         # policy for a resolver
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, resolver=self.resolvername3)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION, resolver=self.resolvername3)
         self.request_denied_assert_403(f"/container/{c_serial_user}/description", {"description": "test"},
                                        self.at, method='POST')
         self.request_denied_assert_403(f"/container/{c_serial_no_user}/description", {"description": "test"},
@@ -1240,7 +1241,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         delete_policy("policy")
 
         # policy for a user
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DESCRIPTION, user="hans", realm=self.realm1,
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION, user="hans", realm=self.realm1,
                    resolver=self.resolvername1)
         self.request_denied_assert_403(f"/container/{c_serial_user}/description", {"description": "test"},
                                        self.at, method='POST')
@@ -1251,13 +1252,13 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
     def test_07_helpdesk_state_allowed(self):
         container_serial = self.create_container_for_user()
         # policy for realm
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_STATE, realm=self.realm1)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_STATE, realm=self.realm1)
         self.request_assert_success(f"/container/{container_serial}/states", {"states": "active, damaged, lost"},
                                     self.at, method='POST')
         delete_policy("policy")
 
         # policy for resolver
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_STATE, realm=self.realm1,
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_STATE, realm=self.realm1,
                    resolver=self.resolvername1)
         self.request_assert_success(f"/container/{container_serial}/states", {"states": "active, damaged, lost"},
                                     self.at, method='POST')
@@ -1269,7 +1270,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         c_serial_no_user = init_container({"type": "generic"})["container_serial"]
 
         # policy for realm
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_STATE, realm=self.realm3)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_STATE, realm=self.realm3)
         self.request_denied_assert_403(f"/container/{c_serial_user}/states", {"states": "active, damaged, lost"},
                                        self.at, method='POST')
         self.request_denied_assert_403(f"/container/{c_serial_no_user}/states", {"states": "active, damaged, lost"},
@@ -1277,7 +1278,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         delete_policy("policy")
 
         # policy for resolver
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_STATE, resolver=self.resolvername3)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_STATE, resolver=self.resolvername3)
         self.request_denied_assert_403(f"/container/{c_serial_user}/states", {"states": "active, damaged, lost"},
                                        self.at, method='POST')
         self.request_denied_assert_403(f"/container/{c_serial_no_user}/states", {"states": "active, damaged, lost"},
@@ -1287,8 +1288,8 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
     def test_09_helpdesk_add_token_allowed(self):
         self.setUp_user_realm3()
         set_policy("policy_realm", scope=SCOPE.ADMIN,
-                   action={ACTION.CONTAINER_ADD_TOKEN: True, ACTION.CONTAINER_REMOVE_TOKEN: True}, realm=self.realm1)
-        set_policy("policy_resolver", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN, resolver=self.resolvername3)
+                   action={PolicyAction.CONTAINER_ADD_TOKEN: True, PolicyAction.CONTAINER_REMOVE_TOKEN: True}, realm=self.realm1)
+        set_policy("policy_resolver", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ADD_TOKEN, resolver=self.resolvername3)
         container_serial = self.create_container_for_user()
 
         # Add single token
@@ -1318,7 +1319,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         delete_policy("policy_resolver")
 
         # Add token to container during enrollment allowed
-        set_policy("policy", scope=SCOPE.ADMIN, action=[ACTION.CONTAINER_ADD_TOKEN, "enrollHOTP"], realm=self.realm1)
+        set_policy("policy", scope=SCOPE.ADMIN, action=[PolicyAction.CONTAINER_ADD_TOKEN, "enrollHOTP"], realm=self.realm1)
         result = self.request_assert_success("/token/init", {"type": "hotp", "realm": self.realm1, "genkey": 1,
                                                              "container_serial": container_serial}, self.at,
                                              method='POST')
@@ -1333,8 +1334,8 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         c_serial_no_user = init_container({"type": "generic"})["container_serial"]
 
         # helpdesk of user realm realm3: container and token are both in realm1
-        set_policy("policy_realm", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN, realm=self.realm3)
-        set_policy("policy_resolver", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN, resolver=self.resolvername3)
+        set_policy("policy_realm", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ADD_TOKEN, realm=self.realm3)
+        set_policy("policy_resolver", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ADD_TOKEN, resolver=self.resolvername3)
         token = init_token({"genkey": "1", "realm": self.realm1})
         token_serial = token.get_serial()
         self.request_denied_assert_403(f"/container/{c_serial_user}/add", {"serial": token_serial}, self.at,
@@ -1349,8 +1350,8 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         delete_policy("policy_resolver")
 
         # helpdesk of user realm realm1: only token is in realm3
-        set_policy("policy_realm", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN, realm=self.realm1)
-        set_policy("policy_resolver", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN, resolver=self.resolvername3)
+        set_policy("policy_realm", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ADD_TOKEN, realm=self.realm1)
+        set_policy("policy_resolver", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ADD_TOKEN, resolver=self.resolvername3)
         token = init_token({"genkey": "1", "realm": self.realm3})
         token_serial = token.get_serial()
         self.request_denied_assert_403(f"/container/{c_serial_user}/add", {"serial": token_serial}, self.at,
@@ -1404,7 +1405,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         delete_policy("policy_resolver")
 
         # Add token to container during enrollment fails
-        set_policy("policy", scope=SCOPE.ADMIN, action=[ACTION.CONTAINER_ADD_TOKEN, "enrollHOTP"], realm=self.realm1)
+        set_policy("policy", scope=SCOPE.ADMIN, action=[PolicyAction.CONTAINER_ADD_TOKEN, "enrollHOTP"], realm=self.realm1)
         container_serial = init_container({"type": "generic", "realm": self.realm2})["container_serial"]
         result = self.request_assert_success("/token/init", {"type": "hotp", "realm": self.realm1, "genkey": 1,
                                                              "container_serial": container_serial}, self.at,
@@ -1415,8 +1416,8 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
 
     def test_11_helpdesk_remove_token_allowed(self):
         self.setUp_user_realm3()
-        set_policy("policy_realm", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REMOVE_TOKEN, realm=self.realm1)
-        set_policy("policy_resolver", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REMOVE_TOKEN,
+        set_policy("policy_realm", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_REMOVE_TOKEN, realm=self.realm1)
+        set_policy("policy_resolver", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_REMOVE_TOKEN,
                    resolver=self.resolvername3)
         container_serial = self.create_container_for_user()
         token = init_token({"genkey": "1", "realm": self.realm1})
@@ -1447,7 +1448,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         c_serial_no_user = init_container({"type": "generic"})["container_serial"]
 
         # helpdesk of user realm realm2
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REMOVE_TOKEN, realm=self.realm2)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_REMOVE_TOKEN, realm=self.realm2)
         # container and token are both in realm1
         token = init_token({"genkey": "1", "realm": self.realm1})
         token_serial = token.get_serial()
@@ -1473,7 +1474,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         delete_policy("policy")
 
         # helpdesk of userealm realm1: container in realm1 and token in realm 2
-        set_policy("policy_realm", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REMOVE_TOKEN, realm=self.realm1)
+        set_policy("policy_realm", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_REMOVE_TOKEN, realm=self.realm1)
         remove_token_from_container(c_serial_no_user, token_serial)
         add_token_to_container(c_serial_user, token_serial)
         self.request_denied_assert_403(f"/container/{c_serial_user}/remove", {"serial": token_serial}, self.at,
@@ -1481,7 +1482,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
 
         # multiple tokens
         self.setUp_user_realm3()
-        set_policy("policy_resolver", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REMOVE_TOKEN,
+        set_policy("policy_resolver", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_REMOVE_TOKEN,
                    resolver=self.resolvername3)
         token_no_user = init_token({"genkey": "1"})
         add_token_to_container(c_serial_user, token_no_user.get_serial())
@@ -1499,7 +1500,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
     def test_13_helpdesk_assign_user_allowed(self):
         # Allow to assign a user to a container in the helpdesk realm
         self.setUp_user_realms()
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER, realm=self.realm1)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ASSIGN_USER, realm=self.realm1)
         container_serial = init_container({"type": "generic", "realm": self.realm1})["container_serial"]
         self.request_assert_success(f"/container/{container_serial}/assign",
                                     {"realm": self.realm1, "user": "hans", "resolver": self.resolvername1}, self.at)
@@ -1507,7 +1508,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
 
         # Allow to assign a user to a container without user and realm
         self.setUp_user_realm4_with_2_resolvers()
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER, realm=self.realm4,
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ASSIGN_USER, realm=self.realm4,
                    resolver=self.resolvername1)
         container_serial = init_container({"type": "generic"})["container_serial"]
         self.request_assert_success(f"/container/{container_serial}/assign",
@@ -1519,7 +1520,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         self.setUp_user_realm3()
 
         # helpdesk of user realm realm3
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER, realm=self.realm3)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ASSIGN_USER, realm=self.realm3)
 
         # container in realm3, but new user from realm1
         container_serial = init_container({"type": "generic", "realm": self.realm3})["container_serial"]
@@ -1534,7 +1535,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
 
         # helpdesk for resolver1
         self.setUp_user_realm4_with_2_resolvers()
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER, realm=self.realm4,
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ASSIGN_USER, realm=self.realm4,
                    resolver=self.resolvername1)
         # container without user, new user from resolver3
         container_serial = init_container({"type": "generic"})["container_serial"]
@@ -1547,7 +1548,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         delete_policy("policy")
 
     def test_15_helpdesk_remove_user_allowed(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_UNASSIGN_USER, realm=self.realm1)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_UNASSIGN_USER, realm=self.realm1)
         container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
         self.request_assert_success(f"/container/{container_serial}/unassign",
                                     {"realm": "realm1", "user": "hans", "resolver": self.resolvername1}, self.at)
@@ -1555,7 +1556,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
 
         # Policy for realm and resolver
         self.setUp_user_realm4_with_2_resolvers()
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_UNASSIGN_USER, realm=self.realm4,
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_UNASSIGN_USER, realm=self.realm4,
                    resolver=self.resolvername3)
         container_serial = init_container({"type": "generic",
                                            "user": "corny",
@@ -1567,7 +1568,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
 
         # Helpdesk for resolver3
         self.setUp_user_realm4_with_2_resolvers()
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_UNASSIGN_USER, resolver=self.resolvername1)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_UNASSIGN_USER, resolver=self.resolvername1)
         # container is in realm1, user is from resolver1
         container_serial = init_container({"type": "generic",
                                            "user": "hans",
@@ -1581,7 +1582,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         self.setUp_user_realm2()
 
         # Helpdesk for realm2
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_UNASSIGN_USER, realm=self.realm2)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_UNASSIGN_USER, realm=self.realm2)
         # container in realm1, user from realm1
         container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
         self.request_denied_assert_403(f"/container/{container_serial}/unassign",
@@ -1594,7 +1595,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
 
         # Helpdesk for resolver3 in realm4
         self.setUp_user_realm4_with_2_resolvers()
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_UNASSIGN_USER, realm=self.realm4,
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_UNASSIGN_USER, realm=self.realm4,
                    resolver=self.resolvername3)
         # container and user in realm4, but user is from resolver1
         container_serial = init_container({"type": "generic",
@@ -1615,14 +1616,14 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
     def test_17_helpdesk_container_realms_allowed(self):
         self.setUp_user_realm2()
         # Helpdesk for realm1 and realm2
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REALMS, realm=[self.realm1, self.realm2])
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_REALMS, realm=[self.realm1, self.realm2])
         # container in realm1, add realm2
         container_serial = self.create_container_for_user()
         self.request_assert_success(f"/container/{container_serial}/realms", {"realms": "realm2"}, self.at)
         delete_policy("policy")
 
         # Helpdesk for resolver1 in realm1 and realm2
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REALMS, realm=[self.realm1, self.realm2],
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_REALMS, realm=[self.realm1, self.realm2],
                    resolver=self.resolvername1)
         # container in realm1 and resolver1, add realm2
         container_serial = self.create_container_for_user()
@@ -1630,7 +1631,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         delete_policy("policy")
 
         # Helpdesk for resolver1 (is allowed to set all realms)
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REALMS, resolver=self.resolvername1)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_REALMS, resolver=self.resolvername1)
         # container in realm1 and resolver1, add realm2
         container_serial = self.create_container_for_user()
         self.request_assert_success(f"/container/{container_serial}/realms", {"realms": [self.realm1, self.realm2]},
@@ -1638,7 +1639,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         delete_policy("policy")
 
         # Helpdesk for realm1
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REALMS, realm=[self.realm1])
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_REALMS, realm=[self.realm1])
         # container in realm1, add realm2
         container_serial = self.create_container_for_user()
         self.request_assert_success(f"/container/{container_serial}/realms", {"realms": [self.realm1, self.realm2]},
@@ -1651,7 +1652,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         self.setUp_user_realm3()
 
         # helpdesk of user realm realm2
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REALMS, realm=self.realm2)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_REALMS, realm=self.realm2)
 
         # container in realm1
         container_serial = self.create_container_for_user()
@@ -1662,7 +1663,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         delete_policy("policy")
 
         # Helpdesk for realm1
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REALMS, realm=self.realm1)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_REALMS, realm=self.realm1)
 
         # container in realm1, set realm2
         result = self.request_assert_success(f"/container/{container_serial}/realms", {"realms": "realm2"}, self.at)
@@ -1694,7 +1695,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
 
         # Helpdesk for realm1 and realm4 and resolver3
         self.setUp_user_realm4_with_2_resolvers()
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REALMS, realm=[self.realm4, self.realm1],
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_REALMS, realm=[self.realm4, self.realm1],
                    resolver=self.resolvername3)
         # container of realm4  with user from resolver1
         container_serial = init_container({"type": "generic",
@@ -1705,11 +1706,11 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         delete_policy("policy")
 
     def test_19_helpdesk_container_list_allowed(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_LIST, realm=self.realm1)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_LIST, realm=self.realm1)
         self.request_assert_success('/container/', {}, self.at, 'GET')
 
         # container with token from another realm: reduce token info
-        set_policy("policy2", scope=SCOPE.ADMIN, action=ACTION.TOKENLIST, realm=self.realm1)
+        set_policy("policy2", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST, realm=self.realm1)
         container_serial = init_container({"type": "generic", "realm": self.realm1})["container_serial"]
         token_1 = init_token({"genkey": 1, "realm": self.realm1})
         token_2 = init_token({"genkey": 1, "realm": self.realm2})
@@ -1731,8 +1732,8 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
 
     def test_20_helpdesk_container_register_allowed(self):
         container_serial = self.create_container_for_user("smartphone")
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REGISTER, realm=[self.realm2, self.realm1])
-        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_REGISTER, realm=[self.realm2, self.realm1])
+        set_policy("container_policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://test"})
         data = {"container_serial": container_serial}
         self.request_assert_success('/container/register/initialize', data, self.at, 'POST')
         delete_policy("policy")
@@ -1741,10 +1742,10 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
 
     def test_21_helpdesk_container_register_denied(self):
         container_serial = self.create_container_for_user("smartphone")
-        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
+        set_policy("container_policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://test"})
 
         # Helpdesk does not have CONTAINER_REGISTER rights for the realm of the container
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REGISTER, realm=self.realm2)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_REGISTER, realm=self.realm2)
         data = {"container_serial": container_serial}
         self.request_denied_assert_403('/container/register/initialize', data, self.at, 'POST')
         delete_policy("policy")
@@ -1752,14 +1753,14 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
 
     def test_22_helpdesk_container_unregister_allowed(self):
         container_serial = self.test_20_helpdesk_container_register_allowed()
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_UNREGISTER, realm=self.realm1)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_UNREGISTER, realm=self.realm1)
         self.request_assert_success(f'/container/register/{container_serial}/terminate', {}, self.at, 'POST')
         delete_policy("policy")
 
     def test_23_helpdesk_container_unregister_denied(self):
         container_serial = self.test_20_helpdesk_container_register_allowed()
         # Admin does not have CONTAINER_UNREGISTER rights for the realm of the container (realm 1)
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_UNREGISTER, realm=self.realm2)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_UNREGISTER, realm=self.realm2)
         self.request_denied_assert_403(f'/container/register/{container_serial}/terminate', {}, self.at, 'POST')
         delete_policy("policy")
 
@@ -1769,8 +1770,8 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         container.update_container_info([TokenContainerInfoData(key=RegistrationState.get_key(),
                                                                 value=RegistrationState.REGISTERED.value,
                                                                 info_type=PI_INTERNAL)])
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ROLLOVER, realm=self.realm1)
-        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ROLLOVER, realm=self.realm1)
+        set_policy("container_policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://test"})
         data = {"container_serial": container_serial, "rollover": True}
         self.request_assert_success('/container/register/initialize', data, self.at, 'POST')
 
@@ -1784,8 +1785,8 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         container.update_container_info([TokenContainerInfoData(key=RegistrationState.get_key(),
                                                                 value=RegistrationState.REGISTERED.value,
                                                                 info_type=PI_INTERNAL)])
-        set_policy("container_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://test"})
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REGISTER, realm=self.realm2)
+        set_policy("container_policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://test"})
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_REGISTER, realm=self.realm2)
         data = {"container_serial": container_serial, "rollover": True}
         self.request_denied_assert_403('/container/register/initialize', data, self.at, 'POST')
         delete_policy("policy")
@@ -1800,8 +1801,8 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
                                   template_name=template_params["name"],
                                   options=template_params["template_options"])
         set_policy("policy", scope=SCOPE.ADMIN,
-                   action={ACTION.CONTAINER_TEMPLATE_LIST: True, ACTION.CONTAINER_LIST: True}, realm=self.realm1)
-        set_policy("admin", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE)
+                   action={PolicyAction.CONTAINER_TEMPLATE_LIST: True, PolicyAction.CONTAINER_LIST: True}, realm=self.realm1)
+        set_policy("admin", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_CREATE)
 
         # Test with containers the user might not be allowed to see
         # Create containers with template
@@ -1839,7 +1840,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
 
         # Helpdesk has no container_list rights for the realm of the container
         set_policy("policy", scope=SCOPE.ADMIN,
-                   action={ACTION.CONTAINER_TEMPLATE_LIST: True, ACTION.CONTAINER_LIST: True}, realm=self.realm2)
+                   action={PolicyAction.CONTAINER_TEMPLATE_LIST: True, PolicyAction.CONTAINER_LIST: True}, realm=self.realm2)
         result = self.request_assert_success(f'/container/template/{template_name}/compare', {}, self.at, 'GET')
         containers = result["result"]["value"].keys()
         self.assertNotIn(container_serial_user, containers)
@@ -1851,7 +1852,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
     def test_28_helpdesk_create_container_with_template_with_user(self):
         # admin is allowed to create container and enroll HOTP and TOTP tokens for realm 1
         set_policy("policy", scope=SCOPE.ADMIN,
-                   action={ACTION.CONTAINER_CREATE: True, "enrollHOTP": True, "enrollTOTP": True},
+                   action={PolicyAction.CONTAINER_CREATE: True, "enrollHOTP": True, "enrollTOTP": True},
                    realm=self.realm1)
 
         template_params = {"name": "test",
@@ -1892,7 +1893,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
     def test_29_helpdesk_create_container_with_template_with_realm(self):
         # admin is allowed to create container and enroll HOTP and TOTP tokens for realm 1
         set_policy("policy", scope=SCOPE.ADMIN,
-                   action={ACTION.CONTAINER_CREATE: True, "enrollHOTP": True, "enrollTOTP": True},
+                   action={PolicyAction.CONTAINER_CREATE: True, "enrollHOTP": True, "enrollTOTP": True},
                    realm=self.realm1)
 
         template_params = {"name": "test",
@@ -1936,20 +1937,20 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         self.setUp_user_realm2()
         # policy for realms
         container_serial = init_container({"type": "generic", "realm": self.realm1})["container_serial"]
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO, realm=[self.realm1, self.realm2])
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_INFO, realm=[self.realm1, self.realm2])
         self.request_assert_success(f"/container/{container_serial}/info/test", {"value": "1234"}, self.at,
                                     method='POST')
         delete_policy("policy")
 
         # policy for resolver
         container_serial = self.create_container_for_user()
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO, resolver=self.resolvername1)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_INFO, resolver=self.resolvername1)
         self.request_assert_success(f"/container/{container_serial}/info/test", {"value": "1234"}, self.at,
                                     method='POST')
         delete_policy("policy")
 
         # policy for user
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO, user="selfservice",
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_INFO, user="selfservice",
                    realm=self.realm1, resolver=self.resolvername1)
         self.request_assert_success(f"/container/{container_serial}/info/test", {"value": "1234"}, self.at,
                                     method='POST')
@@ -1961,7 +1962,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         c_serial_no_user = init_container({"type": "generic"})["container_serial"]
 
         # policy for a realm
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO, realm=self.realm3)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_INFO, realm=self.realm3)
         self.request_denied_assert_403(f"/container/{c_serial_user}/info/test", {"value": "1234"}, self.at,
                                        method='POST')
         self.request_denied_assert_403(f"/container/{c_serial_no_user}/info/test", {"value": "1234"}, self.at,
@@ -1969,7 +1970,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         delete_policy("policy")
 
         # policy for a resolver
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO, resolver=self.resolvername3)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_INFO, resolver=self.resolvername3)
         self.request_denied_assert_403(f"/container/{c_serial_user}/info/test", {"value": "1234"}, self.at,
                                        method='POST')
         self.request_denied_assert_403(f"/container/{c_serial_no_user}/info/test", {"value": "1234"}, self.at,
@@ -1977,7 +1978,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         delete_policy("policy")
 
         # policy for a user
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO, user="hans", realm=self.realm1,
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_INFO, user="hans", realm=self.realm1,
                    resolver=self.resolvername1)
         self.request_denied_assert_403(f"/container/{c_serial_user}/info/test", {"value": "1234"}, self.at,
                                        method='POST')
@@ -1991,7 +1992,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         container_serial = init_container({"type": "generic", "realm": self.realm1})["container_serial"]
         container = find_container_by_serial(container_serial)
         container.update_container_info([TokenContainerInfoData(key="test", value="1234")])
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO, realm=[self.realm1, self.realm2])
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_INFO, realm=[self.realm1, self.realm2])
         self.request_assert_success(f"/container/{container_serial}/info/delete/test", {}, self.at,
                                     method="DELETE")
         delete_policy("policy")
@@ -2000,14 +2001,14 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         container_serial = self.create_container_for_user()
         container = find_container_by_serial(container_serial)
         container.update_container_info([TokenContainerInfoData(key="test", value="1234")])
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO, resolver=self.resolvername1)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_INFO, resolver=self.resolvername1)
         self.request_assert_success(f"/container/{container_serial}/info/delete/test", {}, self.at,
                                     method="DELETE")
         delete_policy("policy")
 
         # policy for user
         container.update_container_info([TokenContainerInfoData(key="test", value="1234")])
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO, user="selfservice",
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_INFO, user="selfservice",
                    realm=self.realm1, resolver=self.resolvername1)
         self.request_assert_success(f"/container/{container_serial}/info/delete/test", {}, self.at,
                                     method="DELETE")
@@ -2023,7 +2024,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         container_no_user.update_container_info([TokenContainerInfoData(key="test", value="1234")])
 
         # policy for a realm
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO, realm=self.realm3)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_INFO, realm=self.realm3)
         self.request_denied_assert_403(f"/container/{c_serial_user}/info/delete/test", {}, self.at,
                                        method="DELETE")
         self.request_denied_assert_403(f"/container/{c_serial_no_user}/info/delete/test", {}, self.at,
@@ -2031,7 +2032,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         delete_policy("policy")
 
         # policy for a resolver
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO, resolver=self.resolvername3)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_INFO, resolver=self.resolvername3)
         self.request_denied_assert_403(f"/container/{c_serial_user}/info/delete/test", {}, self.at,
                                        method="DELETE")
         self.request_denied_assert_403(f"/container/{c_serial_no_user}/info/delete/test", {}, self.at,
@@ -2039,7 +2040,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         delete_policy("policy")
 
         # policy for a user
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_INFO, user="hans", realm=self.realm1,
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_INFO, user="hans", realm=self.realm1,
                    resolver=self.resolvername1)
         self.request_denied_assert_403(f"/container/{c_serial_user}/info/delete/test", {}, self.at,
                                        method="DELETE")
@@ -2056,13 +2057,13 @@ class ContainerPolicyConditions(APIContainerAuthorization):
 
     def test_01_create(self):
         # condition on container fails as the container does not yet exist
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_CREATE,
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_CREATE,
                    conditions=[(ConditionSection.CONTAINER, "type", PrimaryComparators.EQUALS, "generic", True)])
         self.request_assert_error(403, '/container/init', {"type": "generic"}, self.at, 'POST')
         delete_policy("policy")
 
     def test_02_delete(self):
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_DELETE,
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DELETE,
                    conditions=[(ConditionSection.CONTAINER, "type", PrimaryComparators.IN, "generic,smartphone", True)])
 
         # Delete smartphone is allowed
@@ -2078,15 +2079,15 @@ class ContainerPolicyConditions(APIContainerAuthorization):
     def test_03_assign_unassign(self):
         self.setUp_user_realms()
         # Only allowed to assign users with a phone number to smartphone containers and all users to other containers
-        set_policy("assign", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER,
+        set_policy("assign", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ASSIGN_USER,
                    conditions=[(ConditionSection.CONTAINER, "type", PrimaryComparators.NOT_EQUALS, "smartphone", True)])
-        set_policy("assign_smph", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ASSIGN_USER,
+        set_policy("assign_smph", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ASSIGN_USER,
                    conditions=[(ConditionSection.USERINFO, "phone", PrimaryComparators.MATCHES, ".+", True,
                                 ConditionHandleMissingData.IS_FALSE.value),
                                (ConditionSection.CONTAINER, "type", PrimaryComparators.EQUALS, "smartphone", True)])
         # Unassignment only allowed for not registered containers
         set_policy("unassign", scope=SCOPE.ADMIN,
-                   action=ACTION.CONTAINER_UNASSIGN_USER,
+                   action=PolicyAction.CONTAINER_UNASSIGN_USER,
                    conditions=[(ConditionSection.CONTAINER_INFO, "registration_state", PrimaryComparators.NOT_EQUALS,
                                 "registered", True, ConditionHandleMissingData.IS_TRUE.value)])
 
@@ -2124,7 +2125,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
 
     def test_04_list_containers(self):
         # extended policy conditions do not work for list containers as most often this involves multiple containers
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_LIST,
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_LIST,
                    conditions=[(ConditionSection.CONTAINER, "type", PrimaryComparators.EQUALS, "generic", True)])
         container_serial = init_container({"type": "generic"})["container_serial"]
         self.request_assert_error(403, "/container/", {}, self.at, "GET")
@@ -2136,7 +2137,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
 
     def test_05_add_token(self):
         # only tokens of a specific type and hashlib can be added to smartphones
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_ADD_TOKEN,
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_ADD_TOKEN,
                    conditions=[(ConditionSection.CONTAINER, "type", PrimaryComparators.EQUALS, "smartphone", True),
                                (ConditionSection.TOKEN, "tokentype", PrimaryComparators.IN, "hotp,totp", True),
                                (ConditionSection.TOKENINFO, "hashlib", PrimaryComparators.EQUALS, "sha256", True,
@@ -2184,7 +2185,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
 
         # ---- user info condition ----
         # user condition is applied to the token and container owner
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ADD_TOKEN,
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ADD_TOKEN,
                    conditions=[(ConditionSection.USERINFO, "phone", PrimaryComparators.MATCHES, ".+", True)])
 
         cornelius = User("cornelius", self.realm1)
@@ -2212,7 +2213,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
 
     def test_06_set_realms(self):
         # Only allow to set the realms for disabled containers
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_REALMS,
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_REALMS,
                    conditions=[(ConditionSection.CONTAINER, "states", PrimaryComparators.CONTAINS,
                                 ContainerStates.DISABLED.value, True)])
         container_serial = init_container({"type": "generic"})["container_serial"]
@@ -2230,18 +2231,18 @@ class ContainerPolicyConditions(APIContainerAuthorization):
 
     def test_07_register(self):
         # only allow registration if state != lost/damaged
-        set_policy("policy", scope=SCOPE.USER, action=ACTION.CONTAINER_REGISTER,
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_REGISTER,
                    conditions=[(ConditionSection.CONTAINER, "states", PrimaryComparators.NOT_CONTAINS,
                                 ContainerStates.LOST.value, True),
                                (ConditionSection.CONTAINER, "states", PrimaryComparators.NOT_CONTAINS,
                                 ContainerStates.DAMAGED.value, True)
                                ])
         # users should register at different pi servers
-        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"},
+        set_policy("registration", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/"},
                    conditions=[(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES,
                                 ".*@localhost.localdomain", True, ConditionHandleMissingData.IS_FALSE.value)])
         set_policy("registration_external", scope=SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://pi-external.net/"},
+                   action={PolicyAction.CONTAINER_SERVER_URL: "https://pi-external.net/"},
                    conditions=[(ConditionSection.USERINFO, "email", PrimaryComparators.NOT_MATCHES,
                                 ".*@localhost.localdomain", True, ConditionHandleMissingData.IS_TRUE.value)])
         container_serial = init_container({"type": "smartphone", "user": "selfservice", "realm": self.realm1})[
@@ -2274,13 +2275,13 @@ class ContainerPolicyConditions(APIContainerAuthorization):
 
     def test_08_server_rollover(self):
         # only allow server rollover if state == lost and user has a phone number
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_ROLLOVER,
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ROLLOVER,
                    conditions=[
                        (ConditionSection.CONTAINER, "states", PrimaryComparators.CONTAINS, ContainerStates.LOST.value,
                         True),
                        (ConditionSection.USERINFO, "phone", PrimaryComparators.MATCHES, ".+", True,
                         ConditionHandleMissingData.IS_FALSE.value)])
-        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"})
+        set_policy("registration", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/"})
         container_serial = init_container({"type": "smartphone", "user": "selfservice", "realm": self.realm1})[
             "container_serial"]
         container = find_container_by_serial(container_serial)
@@ -2310,8 +2311,8 @@ class ContainerPolicyConditions(APIContainerAuthorization):
 
     def test_09_register_finalize(self):
         # initially add tokens only allowed if container was not created from a template
-        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"})
-        set_policy("initially_add_tokens", scope=SCOPE.CONTAINER, action=ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
+        set_policy("registration", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/"})
+        set_policy("initially_add_tokens", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER,
                    conditions=[(ConditionSection.CONTAINER, "template", PrimaryComparators.NOT_MATCHES, ".+", True)])
         container_serial = init_container({"type": "smartphone", "user": "selfservice", "realm": self.realm1})[
             "container_serial"]
@@ -2330,7 +2331,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         result = self.request_assert_success("container/register/finalize",
                                              params,
                                              None, 'POST')
-        self.assertTrue(result["result"]["value"]["policies"][ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+        self.assertTrue(result["result"]["value"]["policies"][PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER])
 
         # --- container with template: initially add tokens not allowed ---
         unregister(container)
@@ -2346,7 +2347,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         params = mock_smph.register_finalize(init_response_data["nonce"], init_response_data["time_stamp"],
                                              "https://pi.net/container/register/finalize", container_serial)
         result = self.request_assert_success("container/register/finalize", params, None, "POST")
-        self.assertFalse(result["result"]["value"]["policies"][ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+        self.assertFalse(result["result"]["value"]["policies"][PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER])
 
         delete_policy("registration")
         delete_policy("initially_add_tokens")
@@ -2354,8 +2355,8 @@ class ContainerPolicyConditions(APIContainerAuthorization):
 
     def test_10_synchronization(self):
         # initially add tokens only allowed for internal users (specific mail domain) + specific client
-        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"})
-        set_policy("initially_add_tokens", scope=SCOPE.CONTAINER, action=ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
+        set_policy("registration", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/"})
+        set_policy("initially_add_tokens", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER,
                    conditions=[(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES,
                                 ".+@localhost.localdomain", True, ConditionHandleMissingData.IS_FALSE.value)])
         container_serial = init_container({"type": "smartphone", "user": "selfservice", "realm": self.realm1})[
@@ -2379,7 +2380,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
                                              "POST")
         params = mock_smph.synchronize(result["result"]["value"], scope)
         result = self.request_assert_success("container/synchronize", params, None, "POST")
-        self.assertFalse(result["result"]["value"]["policies"][ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+        self.assertFalse(result["result"]["value"]["policies"][PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER])
 
         # Synchronize with internal user
         container.remove_user(User("selfservice", self.realm1))
@@ -2390,7 +2391,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
                                              "POST")
         params = mock_smph.synchronize(result["result"]["value"], scope)
         result = self.request_assert_success("container/synchronize", params, None, "POST")
-        self.assertTrue(result["result"]["value"]["policies"][ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+        self.assertTrue(result["result"]["value"]["policies"][PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER])
 
         delete_policy("registration")
         delete_policy("initially_add_tokens")
@@ -2398,8 +2399,8 @@ class ContainerPolicyConditions(APIContainerAuthorization):
 
     def test_11_client_rollover(self):
         # Only allowed if state != lost && userinfo
-        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"})
-        set_policy("rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER,
+        set_policy("registration", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/"})
+        set_policy("rollover", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER,
                    conditions=[(ConditionSection.CONTAINER, "states", PrimaryComparators.NOT_CONTAINS,
                                 ContainerStates.LOST.value, True),
                                (ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES,
@@ -2621,42 +2622,169 @@ class APIContainer(APIContainerTest):
 
         container.delete()
 
-    def test_07_unassign_fail(self):
+    def test_07a_unassign_success(self):
         # Arrange
-        container_serial = init_container({"type": "generic"})["container_serial"]
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        set_default_realm(self.realm1)
+        user = User("hans", self.realm1)
+        container_serial = init_container({"type": "generic", "user": user.login, "realm": user.realm})[
+            "container_serial"]
+        container = find_container_by_serial(container_serial)
 
-        # Unassign without realm
-        payload = {"user": "root"}
+        # Unassign only with username works if user is in default realm
+        payload = {"user": "hans"}
+        result = self.request_assert_success(f'/container/{container_serial}/unassign', payload, self.at, 'POST')
+        self.assertTrue(result["result"].get("value"))
+        self.assertEqual(0, len(container.get_users()))
+
+        # username + realm
+        container.add_user(user)
+        payload = {"user": user.login, "realm": user.realm}
+        result = self.request_assert_success(f'/container/{container_serial}/unassign', payload, self.at, 'POST')
+        self.assertTrue(result["result"].get("value"))
+        self.assertEqual(0, len(container.get_users()))
+
+        # username + resolver
+        container.add_user(user)
+        payload = {"user": user.login, "resolver": user.resolver}
+        result = self.request_assert_success(f'/container/{container_serial}/unassign', payload, self.at, 'POST')
+        self.assertTrue(result["result"].get("value"))
+        self.assertEqual(0, len(container.get_users()))
+
+        # uid
+        container.add_user(user)
+        payload = {"user_id": user.uid}
+        result = self.request_assert_success(f'/container/{container_serial}/unassign', payload, self.at, 'POST')
+        self.assertTrue(result["result"].get("value"))
+        self.assertEqual(0, len(container.get_users()))
+
+        # uid + realm + resolver
+        container.add_user(user)
+        payload = {"user_id": user.uid, "realm": user.realm, "resolver": user.resolver}
+        result = self.request_assert_success(f'/container/{container_serial}/unassign', payload, self.at, 'POST')
+        self.assertTrue(result["result"].get("value"))
+        self.assertEqual(0, len(container.get_users()))
+
+        container.delete()
+
+    def test_07b_unassign_fail(self):
+        # Arrange
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        set_default_realm(self.realm1)
+        user = User("corny", self.realm3)
+        container_serial = init_container({"type": "generic", "user": user.login, "realm": user.realm})[
+            "container_serial"]
+
+        # Missing input parameters
+        # No parameters
+        result = self.request_assert_error(400, f'/container/{container_serial}/unassign', {}, self.at, 'POST')
+        error = result["result"]["error"]
+        self.assertEqual(905, error["code"])
+        self.assertEqual("ERR905: Missing one of the following parameters: ['user', 'user_id']", error["message"])
+
+        # Only username, realm / resolver / uid missing (if user is not in defrealm)
+        payload = {"user": user.login}
         result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
                                            payload, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(904, error["code"])
         self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
-
-        # Unassign user with non-existing realm
-        payload = {"user": "hans", "realm": "non_existing"}
-        result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
-                                           payload, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(904, error["code"])
-        self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
-
-        # Unassign without user
-        self.setUp_user_realm2()
-        payload = {"realm": self.realm2}
+        # If no default realm exists, another error is raised
+        set_default_realm()
         result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
                                            payload, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(905, error["code"])
-        self.assertEqual("ERR905: Missing parameter: 'user'", error["message"])
+        self.assertEqual("ERR905: Missing parameter 'realm', 'resolver', and/or 'user_id'", error["message"])
+
+        # Only realm: user / user_id missing
+        payload = {"realm": self.realm3}
+        result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
+                                           payload, self.at, 'POST')
+        error = result["result"]["error"]
+        self.assertEqual(905, error["code"])
+        self.assertEqual("ERR905: Missing one of the following parameters: ['user', 'user_id']", error["message"])
+
+        # Unassign user with non-existing realm
+        payload = {"user": user.login, "realm": "non_existing"}
+        result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
+                                           payload, self.at, 'POST')
+        error = result["result"]["error"]
+        self.assertEqual(904, error["code"])
+        self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
 
         # Unassign not assigned user
-        payload = {"user": "cornelius", "realm": self.realm2}
+        payload = {"user": "hans", "realm": self.realm1}
         result = self.request_assert_success(f'/container/{container_serial}/unassign',
                                              payload, self.at, 'POST')
         self.assertFalse(result["result"]["value"])
 
         delete_container_by_serial(container_serial)
+
+    def test_07c_unassign_non_existing_user(self):
+        # Arrange
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        set_default_realm(self.realm1)
+        invalid_user = User("invalid", self.realm1, self.resolvername1, "123")
+        container_serial = init_container({"type": "generic"})["container_serial"]
+        container = find_container_by_serial(container_serial)
+        container.add_user(invalid_user)
+        self.assertEqual(1, len(container.get_users()))
+
+        # --- Fail ---
+        # Only with username and realm
+        payload = {"user": "invalid", "realm": self.realm1}
+        result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
+                                           payload, self.at, 'POST')
+        error = result["result"]["error"]
+        self.assertEqual(904, error["code"])
+        self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
+
+        # Remove non-existing not assigned user
+        payload = {"user": "another_invalid", "realm": self.realm1, "user_id": "987"}
+        result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
+                                           payload, self.at, 'POST')
+        error = result["result"]["error"]
+        self.assertEqual(904, error["code"])
+        self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
+
+        # --- Success ---
+        # Only with user_id should work as long as the container can only have one user
+        payload = {"user_id": invalid_user.uid}
+        result = self.request_assert_success(f'/container/{container_serial}/unassign',
+                                             payload, self.at, 'POST')
+        self.assertTrue(result["result"].get("value"))
+        self.assertEqual(0, len(container.get_users()))
+
+        # With user_id and resolver success
+        container.add_user(invalid_user)
+        payload = {"user_id": invalid_user.uid, "resolver": invalid_user.resolver}
+        result = self.request_assert_success(f'/container/{container_serial}/unassign',
+                                             payload, self.at, 'POST')
+        self.assertTrue(result["result"].get("value"))
+        self.assertEqual(0, len(container.get_users()))
+
+        # Provide realm and user_id should work
+        container.add_user(invalid_user)
+        payload = {"realm": invalid_user.realm, "user_id": invalid_user.uid}
+        result = self.request_assert_success(f'/container/{container_serial}/unassign',
+                                             payload, self.at, 'POST')
+        self.assertTrue(result["result"].get("value"))
+        self.assertEqual(0, len(container.get_users()))
+
+        # Provide everything
+        container.add_user(invalid_user)
+        payload = {"user": invalid_user.login, "realm": invalid_user.realm, "resolver": invalid_user.resolver,
+                   "user_id": invalid_user.uid}
+        result = self.request_assert_success(f'/container/{container_serial}/unassign',
+                                             payload, self.at, 'POST')
+        self.assertTrue(result["result"].get("value"))
+        self.assertEqual(0, len(container.get_users()))
+
+        container.delete()
 
     def test_08_set_realms_success(self):
         # Arrange
@@ -2976,7 +3104,7 @@ class APIContainer(APIContainerTest):
         self.assertEqual(1, result["result"]["value"]["count"])
 
         # filter for realm the admin is not allowed to manage
-        set_policy("policy", scope=SCOPE.ADMIN, action=ACTION.CONTAINER_LIST, realm=self.realm1)
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_LIST, realm=self.realm1)
         result = self.request_assert_success('/container/',
                                              {"container_realm": self.realm2, "pagesize": 15},
                                              self.at, 'GET')
@@ -2992,7 +3120,7 @@ class APIContainer(APIContainerTest):
 
         # Set hide_container_info_policy
         set_policy("hide_info", scope=SCOPE.ADMIN,
-                   action=f"{ACTION.HIDE_CONTAINER_INFO}=encrypt_algorithm device,{ACTION.CONTAINER_LIST}")
+                   action=f"{PolicyAction.HIDE_CONTAINER_INFO}=encrypt_algorithm device,{PolicyAction.CONTAINER_LIST}")
         container3 = find_container_by_serial(container_serials[3])
         container3.set_container_info({"encrypt_algorithm": "AES", "encrypt_mode": "GCM", "device": "ABC1234",
                                        RegistrationState.get_key(): RegistrationState.REGISTERED.value})
@@ -3126,10 +3254,10 @@ class APIContainerSynchronization(APIContainerTest):
         return smartphone
 
     def register_smartphone_success(self, smartphone_serial=None):
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
-                                                            ACTION.CONTAINER_REGISTRATION_TTL: 24,
-                                                            ACTION.CONTAINER_CHALLENGE_TTL: 1,
-                                                            ACTION.CONTAINER_SSL_VERIFY: "True"}, priority=2)
+        set_policy("policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/",
+                                                            PolicyAction.CONTAINER_REGISTRATION_TTL: 24,
+                                                            PolicyAction.CONTAINER_CHALLENGE_TTL: 1,
+                                                            PolicyAction.CONTAINER_SSL_VERIFY: "True"}, priority=2)
         if not smartphone_serial:
             smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
         data = {"container_serial": smartphone_serial,
@@ -3216,17 +3344,17 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertEqual(103, token.token.count)
 
     def test_01_register_smartphone_success(self):
-        set_policy("client_policy", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER, priority=1)
+        set_policy("client_policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER, priority=1)
 
         result = self.register_smartphone_success()
 
         # Check if the response contains the expected values
         self.assertIn("policies", result.response["result"]["value"])
         policies = result.response["result"]["value"]["policies"]
-        self.assertTrue(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
-        self.assertFalse(policies[ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
-        self.assertFalse(policies[ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER])
-        self.assertFalse(policies[ACTION.DISABLE_CLIENT_TOKEN_DELETION])
+        self.assertTrue(policies[PolicyAction.CONTAINER_CLIENT_ROLLOVER])
+        self.assertFalse(policies[PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+        self.assertFalse(policies[PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER])
+        self.assertFalse(policies[PolicyAction.DISABLE_CLIENT_TOKEN_DELETION])
 
         delete_policy("client_policy")
 
@@ -3234,13 +3362,13 @@ class APIContainerSynchronization(APIContainerTest):
         self.setUp_user_realms()
         self.setUp_user_realm2()
         set_policy("another_policy", scope=SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://another-pi.net/", ACTION.CONTAINER_REGISTRATION_TTL: 24},
+                   action={PolicyAction.CONTAINER_SERVER_URL: "https://another-pi.net/", PolicyAction.CONTAINER_REGISTRATION_TTL: 24},
                    realm=self.realm2)
         set_policy("low_prio_policy", scope=SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://pi-low_prio.net/", ACTION.CONTAINER_REGISTRATION_TTL: 24},
+                   action={PolicyAction.CONTAINER_SERVER_URL: "https://pi-low_prio.net/", PolicyAction.CONTAINER_REGISTRATION_TTL: 24},
                    realm=self.realm1, priority=2)
         set_policy("policy", scope=SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://pi.net/", ACTION.CONTAINER_REGISTRATION_TTL: 24},
+                   action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/", PolicyAction.CONTAINER_REGISTRATION_TTL: 24},
                    realm=self.realm1, priority=1)
         smartphone_serial = init_container({"type": "smartphone",
                                             "user": "hans",
@@ -3284,10 +3412,10 @@ class APIContainerSynchronization(APIContainerTest):
         self.setUp_user_realms()
         self.setUp_user_realm2()
         set_policy("another_policy", scope=SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://another-pi.net/", ACTION.CONTAINER_REGISTRATION_TTL: 24},
+                   action={PolicyAction.CONTAINER_SERVER_URL: "https://another-pi.net/", PolicyAction.CONTAINER_REGISTRATION_TTL: 24},
                    realm=self.realm2, priority=1)
         set_policy("policy", scope=SCOPE.CONTAINER,
-                   action={ACTION.PI_SERVER_URL: "https://pi.net/", ACTION.CONTAINER_REGISTRATION_TTL: 24},
+                   action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/", PolicyAction.CONTAINER_REGISTRATION_TTL: 24},
                    realm=self.realm1, priority=1)
         smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
         data = {"container_serial": smartphone_serial,
@@ -3334,8 +3462,8 @@ class APIContainerSynchronization(APIContainerTest):
 
     def test_05_register_finalize_invalid_challenge(self):
         # Invalid challenge
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
-                                                            ACTION.CONTAINER_REGISTRATION_TTL: 24})
+        set_policy("policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/",
+                                                            PolicyAction.CONTAINER_REGISTRATION_TTL: 24})
         smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
         data = {"container_serial": smartphone_serial,
                 "passphrase_prompt": "Enter your passphrase",
@@ -3357,8 +3485,8 @@ class APIContainerSynchronization(APIContainerTest):
 
     def test_06_register_twice_fails(self):
         # register container successfully
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
-                                                            ACTION.CONTAINER_REGISTRATION_TTL: 24})
+        set_policy("policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/",
+                                                            PolicyAction.CONTAINER_REGISTRATION_TTL: 24})
         smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
         data = {"container_serial": smartphone_serial,
                 "passphrase_prompt": "Enter your passphrase",
@@ -3406,7 +3534,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertEqual(601, error["code"])  # ResourceNotFound
 
     def test_09_challenge_success(self):
-        set_policy("challenge_ttl", scope="container", action={ACTION.CONTAINER_CHALLENGE_TTL: 3}, priority=1)
+        set_policy("challenge_ttl", scope="container", action={PolicyAction.CONTAINER_CHALLENGE_TTL: 3}, priority=1)
 
         # Registration
         registration = self.register_smartphone_success()
@@ -3482,7 +3610,7 @@ class APIContainerSynchronization(APIContainerTest):
     def test_11_register_terminate_client_no_user_success(self):
         # Policy for a specific realm
         self.setUp_user_realms()
-        set_policy("client_unregister", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+        set_policy("client_unregister", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
                    realm=self.realm1)
         self.register_terminate_client_success()
         delete_policy("client_unregister")
@@ -3503,14 +3631,14 @@ class APIContainerSynchronization(APIContainerTest):
         self.register_terminate_client_success(smartphone.serial)
 
         # Policy for another realm
-        set_policy("client_unregister", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+        set_policy("client_unregister", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
                    realm=[self.realm3])
         smartphone = self.create_smartphone_for_user_and_realm(user, [self.realm2])
         self.register_terminate_client_success(smartphone.serial)
         delete_policy("client_unregister")
 
         # Policy for another user in this realm
-        set_policy("client_unregister", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+        set_policy("client_unregister", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
                    realm=[self.realm2], user="hans")
         smartphone = self.create_smartphone_for_user_and_realm(user, [self.realm2])
         self.register_terminate_client_success(smartphone.serial)
@@ -3525,13 +3653,13 @@ class APIContainerSynchronization(APIContainerTest):
         self.register_terminate_client_success(smartphone.serial)
 
         # Policy for another realm
-        set_policy("client_unregister", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+        set_policy("client_unregister", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
                    realm=self.realm1)
         self.register_terminate_client_success(smartphone.serial)
         delete_policy("client_unregister")
 
         # Policy for a specific user in this realm
-        set_policy("client_unregister", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+        set_policy("client_unregister", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
                    user="hans", realm=self.realm2)
         self.register_terminate_client_success(smartphone.serial)
         delete_policy("client_unregister")
@@ -3558,7 +3686,7 @@ class APIContainerSynchronization(APIContainerTest):
 
     def test_14_register_terminate_client_no_user_denied(self):
         # Generic policy
-        set_policy("client_unregister", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER)
+        set_policy("client_unregister", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER)
         self.register_terminate_client_denied()
         delete_policy("client_unregister")
 
@@ -3568,27 +3696,27 @@ class APIContainerSynchronization(APIContainerTest):
         user = User("hans", self.realm1)
 
         # Generic policy
-        set_policy("client_unregister", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER)
+        set_policy("client_unregister", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER)
         smartphone = self.create_smartphone_for_user_and_realm(user, [self.realm2])
         self.register_terminate_client_denied(smartphone.serial)
         delete_policy("client_unregister")
 
         # Policy for the users realm
-        set_policy("client_unregister", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+        set_policy("client_unregister", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
                    realm=self.realm1)
         smartphone = self.create_smartphone_for_user_and_realm(user, [self.realm2])
         self.register_terminate_client_denied(smartphone.serial)
         delete_policy("client_unregister")
 
         # Policy for the other realm
-        set_policy("client_unregister", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+        set_policy("client_unregister", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
                    realm=self.realm2)
         smartphone = self.create_smartphone_for_user_and_realm(user, [self.realm2])
         self.register_terminate_client_denied(smartphone.serial)
         delete_policy("client_unregister")
 
         # Policy for the user
-        set_policy("client_unregister", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+        set_policy("client_unregister", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
                    realm=self.realm1, user="hans")
         smartphone = self.create_smartphone_for_user_and_realm(user, [self.realm2])
         self.register_terminate_client_denied(smartphone.serial)
@@ -3600,7 +3728,7 @@ class APIContainerSynchronization(APIContainerTest):
         mock_smph = registration.mock_smph
         result = registration.response
 
-        self.assertFalse(result["result"]["value"]["policies"][ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER])
+        self.assertFalse(result["result"]["value"]["policies"][PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER])
 
         # Challenge
         scope = "https://pi.net/container/register/terminate/client"
@@ -3678,8 +3806,8 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertEqual(3001, result["result"]["error"]["code"])
 
     def test_22_register_generic_fail(self):
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
-                                                            ACTION.CONTAINER_REGISTRATION_TTL: 24})
+        set_policy("policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/",
+                                                            PolicyAction.CONTAINER_REGISTRATION_TTL: 24})
         generic_serial = init_container({"type": "generic"})["container_serial"]
         data = {"container_serial": generic_serial,
                 "passphrase_prompt": "Enter your passphrase",
@@ -3703,8 +3831,8 @@ class APIContainerSynchronization(APIContainerTest):
         delete_policy('policy')
 
     def test_23_register_yubikey_fail(self):
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
-                                                            ACTION.CONTAINER_REGISTRATION_TTL: 24})
+        set_policy("policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/",
+                                                            PolicyAction.CONTAINER_REGISTRATION_TTL: 24})
         yubi_serial = init_container({"type": "yubikey"})["container_serial"]
         data = {"container_serial": yubi_serial,
                 "passphrase_prompt": "Enter your passphrase",
@@ -3728,17 +3856,17 @@ class APIContainerSynchronization(APIContainerTest):
     def test_24_synchronize_success(self):
         # client rollover and deletable tokens are implicitly set to False
         set_policy("smartphone_config", scope=SCOPE.CONTAINER,
-                   action={ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER: True,
-                           ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER: True})
+                   action={PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER: True,
+                           PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER: True})
         # Registration
         registration = self.register_smartphone_success()
         mock_smph = registration.mock_smph
         result = registration.response
         policies = result["result"]["value"]["policies"]
-        self.assertTrue(policies[ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER])
-        self.assertTrue(policies[ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
-        self.assertFalse(policies[ACTION.DISABLE_CLIENT_TOKEN_DELETION])
-        self.assertFalse(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
+        self.assertTrue(policies[PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER])
+        self.assertTrue(policies[PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+        self.assertFalse(policies[PolicyAction.DISABLE_CLIENT_TOKEN_DELETION])
+        self.assertFalse(policies[PolicyAction.CONTAINER_CLIENT_ROLLOVER])
 
         # Challenge
         scope = "https://pi.net/container/synchronize"
@@ -3760,10 +3888,10 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertIn("server_url", result_entries)
         self.assertIn("policies", result_entries)
         policies = result["result"]["value"]["policies"]
-        self.assertTrue(policies[ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER])
-        self.assertFalse(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
-        self.assertTrue(policies[ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
-        self.assertFalse(policies[ACTION.DISABLE_CLIENT_TOKEN_DELETION])
+        self.assertTrue(policies[PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER])
+        self.assertFalse(policies[PolicyAction.CONTAINER_CLIENT_ROLLOVER])
+        self.assertTrue(policies[PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+        self.assertFalse(policies[PolicyAction.DISABLE_CLIENT_TOKEN_DELETION])
 
         # check last synchronization timestamp
         smartphone = find_container_by_serial(mock_smph.container_serial)
@@ -4082,13 +4210,13 @@ class APIContainerSynchronization(APIContainerTest):
         self.setUp_user_realms()
         self.setUp_user_realm2()
         set_policy('token_enroll_realm2', scope=SCOPE.ENROLL,
-                   action={ACTION.TOKENLABEL: '{user}',
-                           ACTION.TOKENISSUER: '{realm}',
-                           'hotp_' + ACTION.FORCE_APP_PIN: True}, realm=self.realm2)
+                   action={PolicyAction.TOKENLABEL: '{user}',
+                           PolicyAction.TOKENISSUER: '{realm}',
+                           'hotp_' + PolicyAction.FORCE_APP_PIN: True}, realm=self.realm2)
         set_policy('token_enroll_realm1', scope=SCOPE.ENROLL,
-                   action={ACTION.TOKENLABEL: '{user}',
-                           ACTION.TOKENISSUER: '{realm}',
-                           'hotp_' + ACTION.FORCE_APP_PIN: True}, realm=self.realm1)
+                   action={PolicyAction.TOKENLABEL: '{user}',
+                           PolicyAction.TOKENISSUER: '{realm}',
+                           'hotp_' + PolicyAction.FORCE_APP_PIN: True}, realm=self.realm1)
 
         # Get initial enroll url
         hotp_params = {"type": "hotp",
@@ -4190,8 +4318,8 @@ class APIContainerSynchronization(APIContainerTest):
         return params
 
     def client_rollover_success(self, smartphone_serial=None):
-        set_policy("register_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
-                                                                     ACTION.CONTAINER_REGISTRATION_TTL: 24},
+        set_policy("register_policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/",
+                                                                     PolicyAction.CONTAINER_REGISTRATION_TTL: 24},
                    priority=3)
         # Register, create challenge for rollover and mock smartphone for rollover
         smartphone_params = self.setup_rollover(smartphone_serial)
@@ -4235,8 +4363,8 @@ class APIContainerSynchronization(APIContainerTest):
         delete_policy("register_policy")
 
     def client_rollover_denied(self, smartphone_serial=None):
-        set_policy("register_policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
-                                                                     ACTION.CONTAINER_REGISTRATION_TTL: 24}, priority=1)
+        set_policy("register_policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/",
+                                                                     PolicyAction.CONTAINER_REGISTRATION_TTL: 24}, priority=1)
         # Register, create challenge for rollover and mock smartphone for rollover
         smartphone_params = self.setup_rollover(smartphone_serial)
         smartphone_serial = smartphone_params['container_serial']
@@ -4250,19 +4378,19 @@ class APIContainerSynchronization(APIContainerTest):
 
     def test_37_rollover_client_no_user_success(self):
         # Rollover with generic policy
-        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER)
         self.client_rollover_success()
         delete_policy("policy_rollover")
 
     def test_38_rollover_client_no_user_denied(self):
         # No rollover right
-        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER)
+        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER)
         self.client_rollover_denied()
         delete_policy("policy_rollover")
 
         # Rollover with policy for a specific realm
         self.setUp_user_realms()
-        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER, realm=self.realm1)
+        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER, realm=self.realm1)
         self.client_rollover_denied()
         delete_policy("policy_rollover")
 
@@ -4271,13 +4399,13 @@ class APIContainerSynchronization(APIContainerTest):
 
         # Rollover with generic policy
         smartphone_serial = init_container({"type": "smartphone", "realm": self.realm1})["container_serial"]
-        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER)
         self.client_rollover_success(smartphone_serial)
         delete_policy("policy_rollover")
 
         # Rollover with policy for realm
         smartphone_serial = init_container({"type": "smartphone", "realm": self.realm1})["container_serial"]
-        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER,
+        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER,
                    realm=self.realm1)
         self.client_rollover_success(smartphone_serial)
         delete_policy("policy_rollover")
@@ -4288,21 +4416,21 @@ class APIContainerSynchronization(APIContainerTest):
 
         # Rollover with policy for a user
         smartphone_serial = init_container({"type": "smartphone", "realm": self.realm1})["container_serial"]
-        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER,
+        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER,
                    user="hans", realm=self.realm1)
         self.client_rollover_denied(smartphone_serial)
         delete_policy("policy_rollover")
 
         # Rollover with policy for another realm
         smartphone_serial = init_container({"type": "smartphone", "realm": self.realm1})["container_serial"]
-        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER,
+        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER,
                    realm=self.realm2)
         self.client_rollover_denied(smartphone_serial)
         delete_policy("policy_rollover")
 
         # Rollover action not allowed
         smartphone_serial = init_container({"type": "smartphone", "realm": self.realm1})["container_serial"]
-        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
                    realm=self.realm1)
         self.client_rollover_denied(smartphone_serial)
         delete_policy("policy_rollover")
@@ -4314,7 +4442,7 @@ class APIContainerSynchronization(APIContainerTest):
         smartphone_serial = init_container({"type": "smartphone",
                                             "user": "hans",
                                             "realm": self.realm1})["container_serial"]
-        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER)
         self.client_rollover_success(smartphone_serial)
         delete_policy("policy_rollover")
 
@@ -4322,7 +4450,7 @@ class APIContainerSynchronization(APIContainerTest):
         smartphone_serial = init_container({"type": "smartphone",
                                             "user": "hans",
                                             "realm": self.realm1})["container_serial"]
-        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER,
+        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER,
                    realm=self.realm1)
         self.client_rollover_success(smartphone_serial)
         delete_policy("policy_rollover")
@@ -4331,7 +4459,7 @@ class APIContainerSynchronization(APIContainerTest):
         smartphone_serial = init_container({"type": "smartphone",
                                             "user": "hans",
                                             "realm": self.realm1})["container_serial"]
-        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER,
+        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER,
                    realm=self.realm1, user="hans")
         self.client_rollover_success(smartphone_serial)
         delete_policy("policy_rollover")
@@ -4341,7 +4469,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.setUp_user_realm2()
 
         # Rollover with no rollover rights
-        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER)
+        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER)
         smartphone_serial = init_container({"type": "smartphone",
                                             "user": "hans",
                                             "realm": self.realm1})["container_serial"]
@@ -4352,7 +4480,7 @@ class APIContainerSynchronization(APIContainerTest):
         smartphone_serial = init_container({"type": "smartphone",
                                             "user": "hans",
                                             "realm": self.realm1})["container_serial"]
-        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER,
+        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER,
                    realm=self.realm2)
         self.client_rollover_denied(smartphone_serial)
         delete_policy("policy_rollover")
@@ -4361,7 +4489,7 @@ class APIContainerSynchronization(APIContainerTest):
         smartphone_serial = init_container({"type": "smartphone",
                                             "user": "hans",
                                             "realm": self.realm1})["container_serial"]
-        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER,
+        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER,
                    realm=self.realm2, user="root")
         self.client_rollover_denied(smartphone_serial)
         delete_policy("policy_rollover")
@@ -4373,21 +4501,21 @@ class APIContainerSynchronization(APIContainerTest):
 
         # Rollover with policy for the user realm
         smartphone = self.create_smartphone_for_user_and_realm(user, [self.realm2])
-        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER,
+        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER,
                    realm=self.realm1)
         self.client_rollover_success(smartphone.serial)
         delete_policy("policy_rollover")
 
         # Rollover with policy for the other realm
         smartphone = self.create_smartphone_for_user_and_realm(user, [self.realm2])
-        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER,
+        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER,
                    realm=self.realm2)
         self.client_rollover_success(smartphone.serial)
         delete_policy("policy_rollover")
 
         # Rollover with policy for the user
         smartphone = self.create_smartphone_for_user_and_realm(user, [self.realm2])
-        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER,
+        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER,
                    realm=self.realm1, user="hans")
         self.client_rollover_success(smartphone.serial)
         delete_policy("policy_rollover")
@@ -4400,28 +4528,28 @@ class APIContainerSynchronization(APIContainerTest):
 
         # Rollover with policy only for another realm
         smartphone = self.create_smartphone_for_user_and_realm(user, [self.realm2])
-        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER,
+        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER,
                    realm=self.realm3)
         self.client_rollover_denied(smartphone.serial)
         delete_policy("policy_rollover")
 
         # Rollover with policy only for another user
         smartphone = self.create_smartphone_for_user_and_realm(user, [self.realm2])
-        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER,
+        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER,
                    realm=self.realm2, user="hans")
         self.client_rollover_denied(smartphone.serial)
         delete_policy("policy_rollover")
 
     def test_45_rollover_client_container_not_registered(self):
-        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER)
         smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
         smartphone = find_container_by_serial(smartphone_serial)
         # tokens
         hotp = init_token({"genkey": "1", "type": "hotp"})
         smartphone.add_token(hotp)
 
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
-                                                            ACTION.CONTAINER_REGISTRATION_TTL: 36})
+        set_policy("policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/",
+                                                            PolicyAction.CONTAINER_REGISTRATION_TTL: 36})
 
         # Challenge for init rollover
         scope = "https://pi.net/container/rollover"
@@ -4440,23 +4568,23 @@ class APIContainerSynchronization(APIContainerTest):
 
     def test_46_rollover_client_init_invalid_challenge(self):
         # Registration
-        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER)
         registration = self.register_smartphone_success()
         mock_smph = registration.mock_smph
         result = registration.response
         policies = result["result"]["value"]["policies"]
-        self.assertFalse(policies[ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER])
-        self.assertFalse(policies[ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
-        self.assertFalse(policies[ACTION.DISABLE_CLIENT_TOKEN_DELETION])
-        self.assertTrue(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
+        self.assertFalse(policies[PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER])
+        self.assertFalse(policies[PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+        self.assertFalse(policies[PolicyAction.DISABLE_CLIENT_TOKEN_DELETION])
+        self.assertTrue(policies[PolicyAction.CONTAINER_CLIENT_ROLLOVER])
 
         smartphone = find_container_by_serial(mock_smph.container_serial)
         # tokens
         hotp = init_token({"genkey": "1", "type": "hotp"})
         smartphone.add_token(hotp)
 
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
-                                                            ACTION.CONTAINER_REGISTRATION_TTL: 36})
+        set_policy("policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/",
+                                                            PolicyAction.CONTAINER_REGISTRATION_TTL: 36})
 
         # Challenge for init rollover
         scope = "https://pi.net/container/rollover"
@@ -4481,23 +4609,23 @@ class APIContainerSynchronization(APIContainerTest):
 
     def test_47_rollover_client_finalize_invalid_challenge(self):
         # Registration
-        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER)
         registration = self.register_smartphone_success()
         mock_smph = registration.mock_smph
         result = registration.response
         policies = result["result"]["value"]["policies"]
-        self.assertFalse(policies[ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER])
-        self.assertFalse(policies[ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
-        self.assertFalse(policies[ACTION.DISABLE_CLIENT_TOKEN_DELETION])
-        self.assertTrue(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
+        self.assertFalse(policies[PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER])
+        self.assertFalse(policies[PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+        self.assertFalse(policies[PolicyAction.DISABLE_CLIENT_TOKEN_DELETION])
+        self.assertTrue(policies[PolicyAction.CONTAINER_CLIENT_ROLLOVER])
 
         smartphone = find_container_by_serial(mock_smph.container_serial)
         # tokens
         hotp = init_token({"genkey": "1", "type": "hotp"})
         smartphone.add_token(hotp)
 
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
-                                                            ACTION.CONTAINER_REGISTRATION_TTL: 36})
+        set_policy("policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/",
+                                                            PolicyAction.CONTAINER_REGISTRATION_TTL: 36})
 
         # Challenge for init rollover
         scope = "https://pi.net/container/rollover"
@@ -4556,9 +4684,9 @@ class APIContainerSynchronization(APIContainerTest):
         delete_policy("policy_rollover")
 
     def test_48_rollover_client_missing_serial(self):
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
-                                                            ACTION.CONTAINER_REGISTRATION_TTL: 36,
-                                                            ACTION.CONTAINER_CLIENT_ROLLOVER: True})
+        set_policy("policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/",
+                                                            PolicyAction.CONTAINER_REGISTRATION_TTL: 36,
+                                                            PolicyAction.CONTAINER_CLIENT_ROLLOVER: True})
 
         result = self.request_assert_error(400, "container/rollover", {}, None, 'POST')
         self.assertEqual(905, result["result"]["error"]["code"])
@@ -4582,8 +4710,8 @@ class APIContainerSynchronization(APIContainerTest):
         hotp = get_one_token(serial=result["detail"]["serial"])
         smartphone.add_token(hotp)
 
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://new-pi.net/",
-                                                            ACTION.CONTAINER_REGISTRATION_TTL: 36})
+        set_policy("policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://new-pi.net/",
+                                                            PolicyAction.CONTAINER_REGISTRATION_TTL: 36})
 
         # Challenge for init rollover
         scope = "https://pi.net/container/rollover"
@@ -4659,23 +4787,23 @@ class APIContainerSynchronization(APIContainerTest):
 
     def test_50_sync_with_rollover_challenge_fails(self):
         # Registration
-        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_CLIENT_ROLLOVER)
+        set_policy("policy_rollover", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER)
         registration = self.register_smartphone_success()
         mock_smph = registration.mock_smph
         result = registration.response
         policies = result["result"]["value"]["policies"]
-        self.assertFalse(policies[ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER])
-        self.assertFalse(policies[ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
-        self.assertFalse(policies[ACTION.DISABLE_CLIENT_TOKEN_DELETION])
-        self.assertTrue(policies[ACTION.CONTAINER_CLIENT_ROLLOVER])
+        self.assertFalse(policies[PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER])
+        self.assertFalse(policies[PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+        self.assertFalse(policies[PolicyAction.DISABLE_CLIENT_TOKEN_DELETION])
+        self.assertTrue(policies[PolicyAction.CONTAINER_CLIENT_ROLLOVER])
 
         smartphone = find_container_by_serial(mock_smph.container_serial)
         # tokens
         hotp = init_token({"genkey": "1", "type": "hotp"})
         smartphone.add_token(hotp)
 
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
-                                                            ACTION.CONTAINER_REGISTRATION_TTL: 36})
+        set_policy("policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/",
+                                                            PolicyAction.CONTAINER_REGISTRATION_TTL: 36})
 
         # Challenge for init rollover
         scope = "https://pi.net/container/rollover"
@@ -4733,8 +4861,8 @@ class APIContainerSynchronization(APIContainerTest):
         smartphone.add_token(offline_hotp)
         self.create_offline_token(offline_hotp.get_serial(), offline_hotp_otps)
 
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://new-pi.net/",
-                                                            ACTION.CONTAINER_REGISTRATION_TTL: 36})
+        set_policy("policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://new-pi.net/",
+                                                            PolicyAction.CONTAINER_REGISTRATION_TTL: 36})
         # Firebase config
         fb_config = {FirebaseConfig.REGISTRATION_URL: "http://test/ttype/push",
                      FirebaseConfig.JSON_CONFIG: self.FIREBASE_FILE,
@@ -4846,8 +4974,8 @@ class APIContainerSynchronization(APIContainerTest):
         hotp_secret = hotp.token.get_otpkey().getKey().decode("utf-8")
         smartphone.add_token(hotp)
 
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/",
-                                                            ACTION.CONTAINER_REGISTRATION_TTL: 36})
+        set_policy("policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/",
+                                                            PolicyAction.CONTAINER_REGISTRATION_TTL: 36})
 
         # Rollover init
         data = {"container_serial": mock_smph.container_serial, "rollover": True,
@@ -4907,7 +5035,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertIn("container_dict_server", result_entries)
         self.assertIn("server_url", result_entries)
         self.assertIn("policies", result_entries)
-        self.assertTrue(result["result"]["value"]["policies"][ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+        self.assertTrue(result["result"]["value"]["policies"][PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER])
 
         # check last synchronization timestamp
         smartphone = find_container_by_serial(smartphone_serial)
@@ -4986,7 +5114,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertIn("container_dict_server", result_entries)
         self.assertIn("server_url", result_entries)
         self.assertIn("policies", result_entries)
-        self.assertFalse(result["result"]["value"]["policies"][ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+        self.assertFalse(result["result"]["value"]["policies"][PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER])
 
         # check last synchronization timestamp
         smartphone = find_container_by_serial(smartphone_serial)
@@ -5000,7 +5128,7 @@ class APIContainerSynchronization(APIContainerTest):
 
     def test_53_synchronize_initial_token_transfer_no_user_success(self):
         # Generic policy
-        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER)
+        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER)
         self.sync_with_initial_token_transfer_allowed()
         delete_policy("transfer_policy")
 
@@ -5010,7 +5138,7 @@ class APIContainerSynchronization(APIContainerTest):
 
         # Policy for a specific realm
         self.setUp_user_realms()
-        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
+        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER,
                    realm=self.realm1)
         self.sync_with_initial_token_transfer_denied()
         delete_policy("transfer_policy")
@@ -5019,7 +5147,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.setUp_user_realms()
 
         # Generic policy
-        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER)
+        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER)
         smartphone_serial = init_container({"type": "smartphone",
                                             "user": "hans",
                                             "realm": self.realm1})["container_serial"]
@@ -5027,7 +5155,7 @@ class APIContainerSynchronization(APIContainerTest):
         delete_policy("transfer_policy")
 
         # Policy for the users realm
-        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
+        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER,
                    realm=self.realm1)
         smartphone_serial = init_container({"type": "smartphone",
                                             "user": "hans",
@@ -5036,7 +5164,7 @@ class APIContainerSynchronization(APIContainerTest):
         delete_policy("transfer_policy")
 
         # Policy for the user
-        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
+        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER,
                    realm=self.realm1, user="hans")
         smartphone_serial = init_container({"type": "smartphone",
                                             "user": "hans",
@@ -5045,7 +5173,7 @@ class APIContainerSynchronization(APIContainerTest):
         delete_policy("transfer_policy")
 
         # Policy for the resolver
-        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
+        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER,
                    resolver=self.resolvername1)
         smartphone_serial = init_container({"type": "smartphone",
                                             "user": "hans",
@@ -5067,7 +5195,7 @@ class APIContainerSynchronization(APIContainerTest):
         smartphone_serial = init_container({"type": "smartphone",
                                             "user": "hans",
                                             "realm": self.realm1})["container_serial"]
-        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
+        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER,
                    realm=self.realm2)
         self.sync_with_initial_token_transfer_denied(smartphone_serial)
         delete_policy("transfer_policy")
@@ -5076,7 +5204,7 @@ class APIContainerSynchronization(APIContainerTest):
         smartphone_serial = init_container({"type": "smartphone",
                                             "user": "hans",
                                             "realm": self.realm1})["container_serial"]
-        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
+        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER,
                    realm=self.realm1, user="root")
         self.sync_with_initial_token_transfer_denied(smartphone_serial)
         delete_policy("transfer_policy")
@@ -5087,21 +5215,21 @@ class APIContainerSynchronization(APIContainerTest):
         user = User("hans", self.realm1)
 
         # Policy for the users realm
-        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
+        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER,
                    realm=self.realm1)
         smartphone = self.create_smartphone_for_user_and_realm(user, [self.realm2])
         self.sync_with_initial_token_transfer_allowed(smartphone.serial)
         delete_policy("transfer_policy")
 
         # Policy for the other realm
-        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
+        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER,
                    realm=self.realm2)
         smartphone = self.create_smartphone_for_user_and_realm(user, [self.realm2])
         self.sync_with_initial_token_transfer_allowed(smartphone.serial)
         delete_policy("transfer_policy")
 
         # Policy for the user
-        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
+        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER,
                    realm=self.realm1, user="hans")
         smartphone = self.create_smartphone_for_user_and_realm(user, [self.realm2])
         self.sync_with_initial_token_transfer_allowed(smartphone.serial)
@@ -5115,21 +5243,21 @@ class APIContainerSynchronization(APIContainerTest):
 
         # Policy for another realm
         smartphone = self.create_smartphone_for_user_and_realm(user, self.realm2)
-        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
+        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER,
                    realm=self.realm3)
         self.sync_with_initial_token_transfer_denied(smartphone.serial)
         delete_policy("transfer_policy")
 
         # Policy for another user
         smartphone = self.create_smartphone_for_user_and_realm(user, self.realm2)
-        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
+        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER,
                    realm=self.realm2, user="root")
         self.sync_with_initial_token_transfer_denied(smartphone.serial)
         delete_policy("transfer_policy")
 
     def test_59_synchronize_smartphone_with_offline_tokens(self):
         # Registration
-        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER)
+        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER)
         registration = self.register_smartphone_success()
         mock_smph = registration.mock_smph
         smartphone = find_container_by_serial(mock_smph.container_serial)
@@ -5225,7 +5353,7 @@ class APIContainerSynchronization(APIContainerTest):
 
     def test_60_rollover_and_synchronize_with_offline_tokens(self):
         # Registration
-        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER)
+        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER)
         registration = self.register_smartphone_success()
         mock_smph = registration.mock_smph
         smartphone = find_container_by_serial(mock_smph.container_serial)
@@ -5502,9 +5630,9 @@ class APIContainerTemplate(APIContainerTest):
         # Policies
         set_policy("push", scope=SCOPE.ENROLL, action={PUSH_ACTION.FIREBASE_CONFIG: "poll only",
                                                        PUSH_ACTION.REGISTRATION_URL: "http://test/ttype/push",
-                                                       ACTION.TOKENISSUER: "{realm}",
-                                                       ACTION.TOKENLABEL: "serial_{serial}"})
-        set_policy("admin", SCOPE.ADMIN, action={ACTION.CONTAINER_CREATE: True,
+                                                       PolicyAction.TOKENISSUER: "{realm}",
+                                                       PolicyAction.TOKENLABEL: "serial_{serial}"})
+        set_policy("admin", SCOPE.ADMIN, action={PolicyAction.CONTAINER_CREATE: True,
                                                  "enrollHOTP": True, "enrollREMOTE": True, "enrollDAYPASSWORD": True,
                                                  "enrollSPASS": True, "enrollTOTP": True, "enroll4EYES": True,
                                                  "enrollPAPER": True, "enrollTAN": True, "enrollPUSH": True,
@@ -5513,7 +5641,7 @@ class APIContainerTemplate(APIContainerTest):
                                                  "enrollEMAIL": True, "enrollTIQR": True,
                                                  "indexedsecret_force_attribute": "username",
                                                  "hotp_hashlib": "sha256"})
-        set_policy("pw_length", scope=SCOPE.ENROLL, action={ACTION.REGISTRATIONCODE_LENGTH: 12})
+        set_policy("pw_length", scope=SCOPE.ENROLL, action={PolicyAction.REGISTRATIONCODE_LENGTH: 12})
 
         # privacyIDEA server for the remote token
         pi_server_id = add_privacyideaserver(identifier="myserver",
@@ -5609,7 +5737,7 @@ class APIContainerTemplate(APIContainerTest):
         # tokens that require policies fail: push
         # tokens that require user fail: tiqr
         # Policies
-        set_policy("admin", SCOPE.ADMIN, action={ACTION.CONTAINER_CREATE: True,
+        set_policy("admin", SCOPE.ADMIN, action={PolicyAction.CONTAINER_CREATE: True,
                                                  "enrollHOTP": True, "enrollREMOTE": True, "enrollDAYPASSWORD": True,
                                                  "enrollSPASS": True, "enrollTOTP": True, "enroll4EYES": True,
                                                  "enrollPAPER": True, "enrollTAN": True, "enrollPUSH": True,
@@ -5618,7 +5746,7 @@ class APIContainerTemplate(APIContainerTest):
                                                  "enrollEMAIL": True, "enrollTIQR": True,
                                                  "indexedsecret_force_attribute": "username",
                                                  "hotp_hashlib": "sha256"})
-        set_policy("pw_length", scope=SCOPE.ENROLL, action={ACTION.REGISTRATIONCODE_LENGTH: 12})
+        set_policy("pw_length", scope=SCOPE.ENROLL, action={PolicyAction.REGISTRATIONCODE_LENGTH: 12})
 
         # privacyIDEA server for the remote token
         pi_server_id = add_privacyideaserver(identifier="myserver",
@@ -5706,10 +5834,10 @@ class APIContainerTemplate(APIContainerTest):
 
     def test_11_create_container_with_template_max_token_policies(self):
         # Limit number of tokens per user and type
-        set_policy("max_token", scope=SCOPE.ENROLL, action={ACTION.MAXTOKENUSER: 6,
+        set_policy("max_token", scope=SCOPE.ENROLL, action={PolicyAction.MAXTOKENUSER: 6,
                                                             TANACTION.TANTOKEN_COUNT: 2,
                                                             PAPERACTION.PAPERTOKEN_COUNT: 2,
-                                                            ACTION.MAXTOKENREALM: 7})
+                                                            PolicyAction.MAXTOKENREALM: 7})
         self.setUp_user_realms()
         hans = User(login="hans", realm=self.realm1)
 
@@ -5776,13 +5904,13 @@ class APIContainerTemplate(APIContainerTest):
 
     def test_12_create_container_with_template_otp_pin(self):
         # Set otp pin policy
-        set_policy("otp_pin", scope=SCOPE.ADMIN, action={ACTION.OTPPINMAXLEN: 6, ACTION.OTPPINMINLEN: 2})
-        set_policy("encrypt", scope=SCOPE.ENROLL, action=ACTION.ENCRYPTPIN)
+        set_policy("otp_pin", scope=SCOPE.ADMIN, action={PolicyAction.OTPPINMAXLEN: 6, PolicyAction.OTPPINMINLEN: 2})
+        set_policy("encrypt", scope=SCOPE.ENROLL, action=PolicyAction.ENCRYPTPIN)
         # Set admin policies
         set_policy("admin", scope=SCOPE.ADMIN,
-                   action={ACTION.CONTAINER_CREATE: True, "enrollHOTP": True})
-        set_policy("enrollPIN", SCOPE.ADMIN, action=ACTION.ENROLLPIN)
-        set_policy("change_pin", SCOPE.ENROLL, action={ACTION.CHANGE_PIN_FIRST_USE: True})
+                   action={PolicyAction.CONTAINER_CREATE: True, "enrollHOTP": True})
+        set_policy("enrollPIN", SCOPE.ADMIN, action=PolicyAction.ENROLLPIN)
+        set_policy("change_pin", SCOPE.ENROLL, action={PolicyAction.CHANGE_PIN_FIRST_USE: True})
 
         # correct pin
         template_params = {"name": "test",
@@ -5834,7 +5962,7 @@ class APIContainerTemplate(APIContainerTest):
         self.assertEqual(-1, tokens[0].token.get_pin())
 
         # random pin
-        set_policy("random_pin", scope=SCOPE.ENROLL, action={ACTION.OTPPINRANDOM: 8})
+        set_policy("random_pin", scope=SCOPE.ENROLL, action={PolicyAction.OTPPINRANDOM: 8})
         template_params = {"name": "test",
                            "container_type": "smartphone",
                            "template_options": {"tokens": [{"type": "hotp", "genkey": True}]}}
@@ -5856,7 +5984,7 @@ class APIContainerTemplate(APIContainerTest):
     def test_13_create_container_with_template_verify_enrollment(self):
         # Policies
         set_policy("enrollment", scope=SCOPE.ENROLL,
-                   action={ACTION.VERIFY_ENROLLMENT: "hotp totp paper tan indexedsecret"})
+                   action={PolicyAction.VERIFY_ENROLLMENT: "hotp totp paper tan indexedsecret"})
 
         # tokens
         tokens_dict = [
@@ -5888,7 +6016,7 @@ class APIContainerTemplate(APIContainerTest):
     def test_14_create_container_with_template_2_step_enrollment(self):
         # Policies
         set_policy("enrollment", scope=SCOPE.ADMIN,
-                   action={"hotp_2step": "allow", ACTION.CONTAINER_CREATE: True, "enrollHOTP": True,
+                   action={"hotp_2step": "allow", PolicyAction.CONTAINER_CREATE: True, "enrollHOTP": True,
                            "enrollTOTP": True})
 
         # tokens

@@ -23,6 +23,9 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+# SPDX-FileCopyrightText: 2025 Paul Lettich <paul.lettich@netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 __doc__ = """The config module takes care about storing server configuration in
 the Config database table.
 
@@ -166,7 +169,6 @@ class SharedConfigClass(object):
                     if realm.default:
                         default_realm = realm.name
                     realmdef = {"id": realm.id,
-                                "option": realm.option,
                                 "default": realm.default,
                                 "resolver": []}
                     for x in realm.resolver_list:
@@ -489,6 +491,7 @@ def get_token_class(tokentype):
     """
     This takes a token type like "hotp" and returns a class
     like <class privacidea.lib.tokens.hotptoken.HotpTokenClass>
+
     :return: The tokenclass for the given type
     :rtype: tokenclass.TokenClass
     """
@@ -518,6 +521,26 @@ def get_token_types():
         this.config["pi_token_classes"] = t_classes
 
     return list(this.config["pi_token_types"].values())
+
+
+def get_enrollable_token_types() -> list[str]:
+    """
+    Returns a list of token types which can be enrolled.
+
+    This function removes deprecated token types from the complete token type list. In the pi.cfg file, deprecated
+    types can be re-enabled. These types will not be removed from the list.
+
+    :return: list of enrollable token types
+    """
+    token_types = get_token_types()
+    disabled_token_types = ['u2f']
+    enable_token_types = get_app_config_value("PI_ENABLE_TOKEN_TYPE_ENROLLMENT", [])
+    disabled_token_types = set(disabled_token_types) - set(enable_token_types)
+
+    # Remove the disabled token types
+    enrollable_token_types = list(set(token_types) - disabled_token_types)
+
+    return enrollable_token_types
 
 
 # @cache.cached(key_prefix="prefix")

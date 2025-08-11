@@ -1,0 +1,21 @@
+$tab-padding: 16px;
+$list-width: 240px;
+
+.tab-list {
+  .mdc-list {
+    padding-top: 0;
+    width: $list-width;
+    overflow: hidden;
+  }
+
+  .mat-mdc-list-item {
+    padding: 0;
+  }
+
+  ::ng-deep {
+    .mat-mdc-tab {
+      padding-left: $tab-padding;
+      padding-right: $tab-padding;
+    }
+  }
+}

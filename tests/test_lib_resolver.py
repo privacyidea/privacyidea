@@ -14,7 +14,7 @@ from privacyidea.lib.resolvers.EntraIDResolver import (CLIENT_ID, TENANT, CLIENT
                                                        CERTIFICATE_FINGERPRINT)
 from .base import MyTestCase
 from . import ldap3mock
-from ldap3.core.exceptions import LDAPOperationResult
+from ldap3.core.exceptions import LDAPOperationResult, LDAPAttributeError
 from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
 from testfixtures import LogCapture
 import mock
@@ -44,8 +44,7 @@ from privacyidea.lib.resolver import (save_resolver,
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.models import ResolverConfig, Resolver
 from privacyidea.lib.utils import to_bytes, to_unicode
-from privacyidea.lib.error import ParameterError
-from requests import HTTPError
+from privacyidea.lib.error import ParameterError, ResolverError
 
 PWFILE = "tests/testdata/passwords"
 
@@ -242,7 +241,7 @@ class SQLResolverTestCase(MyTestCase):
                     "password" : "password"}'})
         y.loadConfig(params)
         with LogCapture(level=logging.ERROR) as lc:
-            self.assertRaises(ParameterError, y.getUserList, {"not_in_db": "parameter"})
+            self.assertRaises(ResolverError, y.getUserList, {"not_in_db": "parameter"})
             lc.check_present(("privacyidea.lib.resolvers.SQLIdResolver", "ERROR",
                               f"Mapped column ('not_a_column') is not available in the database "
                               f"table 'users' ({list(y.TABLE.columns.keys())})."))
@@ -877,7 +876,6 @@ class LDAPResolverTestCase(MyTestCase):
         rtype = y.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
 
-        rdesc = y.getResolverClassDescriptor()
         rdesc = y.getResolverDescriptor()
         self.assertTrue("ldapresolver" in rdesc, rdesc)
         self.assertTrue("config" in rdesc.get("ldapresolver"), rdesc)
@@ -887,7 +885,14 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue(uinfo.get("username") == "bob", uinfo)
 
         ret = y.getUserList({"username": "bob"})
-        self.assertTrue(len(ret) == 1, ret)
+        self.assertEqual(1, len(ret),ret)
+
+        # Get user list with a wrong search parameter
+        with LogCapture(level=logging.ERROR) as lc:
+            self.assertRaises(ParameterError, y.getUserList, {"unknown": "parameter"})
+            lc.check_present(("privacyidea.lib.resolvers.LDAPIdResolver", "ERROR",
+                              f"Could not find search key (['unknown']) in the "
+                              f"attribute mapping keys ({list(y.userinfo.keys())})."))
 
         # user list with searchResRef entries
         # we are mocking the mock here
@@ -1658,11 +1663,11 @@ class LDAPResolverTestCase(MyTestCase):
                   'LOGINNAMEATTRIBUTE': 'cn',
                   'LDAPSEARCHFILTER': '(cn=*)',
                   'USERINFO': '{ "username": "cn",'
-                                '"phone" : "telephoneNumber", '
-                                '"mobile" : "mobile"'
-                                ', "email" : "mail", '
-                                '"surname" : "sn", '
-                                '"givenname" : "givenName" }',
+                              '"phone" : "telephoneNumber", '
+                              '"mobile" : "mobile"'
+                              ', "email" : "mail", '
+                              '"surname" : "sn", '
+                              '"givenname" : "givenName" }',
                   'UIDTYPE': 'unknownType',
                   'CACHE_TIMEOUT': 0,
                   'TLS_VERIFY': '1'
@@ -1733,11 +1738,11 @@ class LDAPResolverTestCase(MyTestCase):
                   'LOGINNAMEATTRIBUTE': 'cn',
                   'LDAPSEARCHFILTER': '(cn=*)',
                   'USERINFO': '{ "username": "cn",'
-                                '"phone" : "telephoneNumber", '
-                                '"mobile" : "mobile"'
-                                ', "email" : "mail", '
-                                '"surname" : "sn", '
-                                '"givenname" : "givenName" }',
+                              '"phone" : "telephoneNumber", '
+                              '"mobile" : "mobile"'
+                              ', "email" : "mail", '
+                              '"surname" : "sn", '
+                              '"givenname" : "givenName" }',
                   'UIDTYPE': 'unknownType',
                   'CACHE_TIMEOUT': 0,
                   'TLS_CA_FILE': '/unknown/path/to/ca_certs.crt',
@@ -1953,7 +1958,7 @@ class LDAPResolverTestCase(MyTestCase):
         original_search = y.connection.extend.standard.paged_search
         with mock.patch.object(ldap3mock.Connection.Extend.Standard, 'paged_search') as mock_search:
             def _search_with_exception(*args, **kwargs):
-                results = original_search(*args, **kwargs)
+                original_search(*args, **kwargs)
                 raise LDAPOperationResult(result=RESULT_SIZE_LIMIT_EXCEEDED)
                 # This ``yield`` is needed to turn this function into a generator.
                 # If we omit this, the exception above would be raised immediately when ``paged_search`` is called.
@@ -2131,6 +2136,7 @@ class LDAPResolverTestCase(MyTestCase):
                         wraps=datetime.datetime) as mock_datetime:
             mock_datetime.now.return_value = now + datetime.timedelta(seconds=2 * (cache_timeout + 2))
             manager_id = y.getUserId('manager')
+            self.assertEqual(manager_id, objectGUIDs[1])
         self.assertEqual(list(CACHE[y.getResolverId()]['getUserId'].keys()), ['manager'])
 
     @ldap3mock.activate
@@ -2282,6 +2288,100 @@ class LDAPResolverTestCase(MyTestCase):
         uid = LDAPResolver._get_uid(entry, "GUID")
         self.assertEqual(correct_uid, uid)
 
+    def test_38_recursive_group_search(self):
+        params = {'LDAPURI': 'ldap://localhost, ldap://127.0.0.1, ldap://127.0.1.1',
+                  'LDAPBASE': 'o=test',
+                  'BINDDN': 'cn=manager,ou=example,o=test',
+                  'BINDPW': 'ldaptest',
+                  'LOGINNAMEATTRIBUTE': 'cn',
+                  'LDAPSEARCHFILTER': '(cn=*)',
+                  'USERINFO': '{"surname" : "sn", "givenname": "givenName" }',
+                  'UIDTYPE': 'DN',
+                  'CACHE_TIMEOUT': '0',  # to disable the per-process cache
+                  'recursive_group_search': True,
+                  'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={username},{base_dn}))',
+                  'group_name_attribute': 'distinguishedName',
+                  'group_attribute_mapping_key': 'groups',
+                  'resolver': 'testpool',
+                  'type': 'ldapresolver'}
+        resolver = LDAPResolver()
+        resolver.loadConfig(params)
+
+        def mock_search(search_base, search_filter, attributes):
+            if "{username}" in search_filter or "{base_dn}" in search_filter or "{distinguishedName}" in search_filter:
+                raise Exception("Invalid filter!")
+            if None in attributes or "" in attributes:
+                raise LDAPAttributeError("Invalid attribute type")
+            if not search_base:
+                raise Exception("Invalid search base!")
+            return [{"attributes": {"distinguishedName": "cn=testgroup,ou=example,o=test"}},
+                    {"attributes": {"distinguishedName": "cn=subgroup,ou=example,o=test"}}]
+
+        user_info = {"username": "alice", "surname": "Alice", "givenname": "Cooper"}
+        ldap_attributes = {'cn': 'alice',
+                           "sn": "Cooper",
+                           "givenName": "Alice",
+                           'oid': "2",
+                           "homeDirectory": "/home/alice",
+                           "email": "alice@test.com",
+                           "accountExpires": 131024988000000000,
+                           "objectGUID": objectGUIDs[0],
+                           'mobile': ["1234", "45678"]}
+
+        # valid
+        with mock.patch("privacyidea.lib.resolvers.LDAPIdResolver.IdResolver._search", wraps=mock_search):
+            groups = resolver._get_user_groups_recursive(user_info)
+            self.assertSetEqual({"cn=testgroup,ou=example,o=test", "cn=subgroup,ou=example,o=test"}, set(groups))
+
+            user_info = resolver._ldap_attributes_to_user_object(ldap_attributes)
+            self.assertEqual(4, len(user_info), user_info)
+            self.assertEqual("alice", user_info["username"])
+            self.assertEqual("Alice", user_info["givenname"])
+            self.assertEqual("Cooper", user_info["surname"])
+            self.assertSetEqual({"cn=testgroup,ou=example,o=test", "cn=subgroup,ou=example,o=test"}, set(user_info["groups"]))
+
+        # tag not in user info
+        params['group_search_filter'] = ('(&(sAMAccountName=*)(objectCategory=group)'
+                                         '(member:1.2.840.113556.1.4.1941:=cn={distinguishedName}))')
+        resolver.loadConfig(params)
+        with mock.patch("privacyidea.lib.resolvers.LDAPIdResolver.IdResolver._search", wraps=mock_search):
+            groups = resolver._get_user_groups_recursive(user_info)
+            self.assertListEqual([], groups)
+
+            user_info = resolver._ldap_attributes_to_user_object(ldap_attributes)
+            self.assertEqual(4, len(user_info), user_info)
+            self.assertEqual("alice", user_info["username"])
+            self.assertEqual("Alice", user_info["givenname"])
+            self.assertEqual("Cooper", user_info["surname"])
+            self.assertListEqual([], user_info["groups"])
+
+        # Missing attributes
+        params['group_search_filter'] = ('(&(sAMAccountName=*)(objectCategory=group)'
+                                         '(member:1.2.840.113556.1.4.1941:=cn={username},{base_dn}))')
+        params['group_name_attribute'] = None
+        resolver.loadConfig(params)
+        with mock.patch("privacyidea.lib.resolvers.LDAPIdResolver.IdResolver._search", wraps=mock_search):
+            groups = resolver._get_user_groups_recursive(user_info)
+            self.assertListEqual([], groups)
+
+            user_info = resolver._ldap_attributes_to_user_object(ldap_attributes)
+            self.assertEqual(3, len(user_info), user_info)
+            self.assertEqual("alice", user_info["username"])
+            self.assertEqual("Alice", user_info["givenname"])
+            self.assertEqual("Cooper", user_info["surname"])
+            self.assertNotIn("groups", user_info)
+
+        # Everything set, but recursive search disabled
+        params['recursive_group_search'] = False
+        params['group_name_attribute'] = 'distinguishedName'
+        with mock.patch("privacyidea.lib.resolvers.LDAPIdResolver.IdResolver._search", wraps=mock_search):
+            user_info = resolver._ldap_attributes_to_user_object(ldap_attributes)
+            self.assertEqual(3, len(user_info), user_info)
+            self.assertEqual("alice", user_info["username"])
+            self.assertEqual("Alice", user_info["givenname"])
+            self.assertEqual("Cooper", user_info["surname"])
+            self.assertNotIn("groups", user_info)
+
 
 class BaseResolverTestCase(MyTestCase):
 
@@ -2316,13 +2416,15 @@ class ResolverTestCase(MyTestCase):
                              "desc.fileName": "The name of the file"})
         self.assertTrue(rid > 0, rid)
 
-        # Do not save empty values
+        # Do not save empty values, but bool False values
         rid = save_resolver({"resolver": self.resolvername1,
                              "type": "passwdresolver",
                              "test": "",
+                             "test_bool": False,
                              "description": "Test description"})
         self.assertTrue(rid > 0, rid)
         self.assertIsNone(ResolverConfig.query.filter_by(resolver_id=rid, Key="test").first())
+        self.assertEqual("False", ResolverConfig.query.filter_by(resolver_id=rid, Key="test_bool").first().Value)
         # But if the key already exists, delete it
         self.assertEqual("Test description",
                          ResolverConfig.query.filter_by(resolver_id=rid, Key="description").first().Value)

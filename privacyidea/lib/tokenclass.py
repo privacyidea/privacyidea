@@ -84,11 +84,12 @@ from datetime import datetime, timedelta, timezone
 
 from dateutil.parser import parse as parse_date_string, ParserError
 from dateutil.tz import tzlocal, tzutc
+from flask_babel import lazy_gettext
 
 from privacyidea.lib import _
-from privacyidea.lib.crypto import (encryptPassword, decryptPassword,
+from privacyidea.lib.crypto import (decryptPassword,
                                     generate_otpkey)
-from privacyidea.lib.policy import (get_action_values_from_options, SCOPE, ACTION)
+from .policies.actions import PolicyAction
 from privacyidea.lib.utils import (is_true, decode_base32check,
                                    to_unicode, create_img, parse_timedelta,
                                    parse_legacy_time, split_pin_pass)
@@ -165,6 +166,8 @@ class TokenClass(object):
     client_mode = CLIENTMODE.INTERACTIVE
     # If the token provides means that the user has to prove/verify that the token was successfully enrolled.
     can_verify_enrollment = False
+
+    desc_key_gen = lazy_gettext("Force the key to be generated on the server.")
 
     @log_with(log)
     def __init__(self, db_token):
@@ -600,7 +603,7 @@ class TokenClass(object):
             raise ParameterError('[ParameterError] You may either specify '
                                  'genkey or otpkey, but not both!', id=344)
 
-        if otpKey is None and genkey:
+        if otpKey is None and genkey and not verify:
             otpKey = self._genOtpKey_(key_size)
 
         # otpKey still None?? - raise the exception, if an otpkey is required, and we are not in verify state
@@ -1682,10 +1685,7 @@ class TokenClass(object):
         additional challenge ``reply_dict``, which are displayed in the JSON challenges response.
         """
         options = options or {}
-        message = get_action_values_from_options(SCOPE.AUTH,
-                                                 ACTION.CHALLENGETEXT,
-                                                 options) or _('please enter otp: ')
-        message = message.replace(r"\,", ",")
+        message = options.get(PolicyAction.CHALLENGETEXT, _('please enter otp: ')).replace(r"\,", ",")
 
         data = None
         reply_dict = {}
@@ -1818,7 +1818,7 @@ class TokenClass(object):
         tdelta = parse_timedelta(last_auth)
 
         # The last successful authentication of the token
-        date_s = self.get_tokeninfo(ACTION.LASTAUTH)
+        date_s = self.get_tokeninfo(PolicyAction.LASTAUTH)
         if date_s:
             log.debug("Compare the last successful authentication of "
                       "token %s with policy "

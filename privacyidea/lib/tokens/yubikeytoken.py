@@ -67,7 +67,8 @@ from hashlib import sha1
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.tokenclass import TOKENKIND
 from privacyidea.lib import _
-from privacyidea.lib.policy import SCOPE, ACTION, GROUP
+from privacyidea.lib.policy import SCOPE, GROUP
+from privacyidea.lib.policies.actions import PolicyAction
 
 optional = True
 required = False
@@ -134,7 +135,6 @@ class YubikeyTokenClass(TokenClass):
         self.set_type("yubikey")
         self.hKeyRequired = True
 
-
     @staticmethod
     def get_class_type():
         return "yubikey"
@@ -168,12 +168,12 @@ class YubikeyTokenClass(TokenClass):
                'ui_enroll': ["admin", "user"],
                'policy': {
                    SCOPE.ENROLL: {
-                       ACTION.MAXTOKENUSER: {
+                       PolicyAction.MAXTOKENUSER: {
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of Yubikey tokens assigned."),
                            'group': GROUP.TOKEN
                        },
-                       ACTION.MAXACTIVETOKENUSER: {
+                       PolicyAction.MAXACTIVETOKENUSER: {
                            'type': 'int',
                            'desc': _(
                                "The user may only have this maximum number of active Yubikey tokens assigned."),
@@ -215,7 +215,7 @@ class YubikeyTokenClass(TokenClass):
 
         return res
 
-    @log_with(log)
+    @log_with(log, hide_args=[1])
     @challenge_response_allowed
     def is_challenge_request(self, passw, user=None, options=None):
         """
@@ -233,7 +233,7 @@ class YubikeyTokenClass(TokenClass):
         trigger_challenge = False
         options = options or {}
         pin_match = self.check_pin(passw, user=user, options=options)
-        if pin_match is True:
+        if pin_match:
             trigger_challenge = True
         return trigger_challenge
 
@@ -259,7 +259,7 @@ class YubikeyTokenClass(TokenClass):
         :type window: int
 
         :param options: the dict, which could contain token specific info
-        :type options: dict
+        :type options: dict or None
 
         :return: the counter state or an error code (< 0):
         -1 if the OTP is old (counter < stored counter)
@@ -306,11 +306,11 @@ class YubikeyTokenClass(TokenClass):
         log.debug("prefix: {0!r}".format(yubi_prefix))
         # usage_counter can go from 1 – 0x7fff
         usage_counter = msg_hex[12:16]
-        timestamp = msg_hex[16:22]
+        _timestamp = msg_hex[16:22]
         # session counter can go from 00 to 0xff
         session_counter = msg_hex[22:24]
-        random = msg_hex[24:28]
-        crc = msg_hex[28:]
+        _random = msg_hex[24:28]
+        _crc = msg_hex[28:]
         log.debug("decrypted: usage_count: {0!r}, session_count: {1!r}".format(usage_counter, session_counter))
 
         # create the counter as integer

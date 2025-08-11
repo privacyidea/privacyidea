@@ -1,3 +1,9 @@
+# SPDX-FileCopyrightText: (C) 2015 NetKnights GmbH <https://netknights.it>
+# SPDX-FileCopyrightText: (C) 2015 Cornelius Kölbel, <info@privacyidea.org>
+# SPDX-FileCopyrightText: (C) 2025 Paul Lettich <paul.lettich@netknights.it>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 # 2014-11-15 Cornelius Kölbel, info@privacyidea.org
 #            Initial creation
 #
@@ -17,6 +23,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import atexit
 import datetime
 import os
 import os.path
@@ -26,7 +33,7 @@ import sys
 import uuid
 
 import yaml
-from flask import Flask
+from flask import Flask, render_template, jsonify, request
 from flask_babel import Babel
 from flask_migrate import Migrate
 from flaskext.versioned import Versioned
@@ -37,6 +44,7 @@ import sqlalchemy as sa
 import privacyidea.api.before_after  # noqa: F401
 from privacyidea.api.container import container_blueprint
 from privacyidea.api.healthcheck import healthz_blueprint
+from privacyidea.api.lib.utils import send_html
 from privacyidea.api.validate import validate_blueprint
 from privacyidea.api.token import token_blueprint
 from privacyidea.api.system import system_blueprint
@@ -175,6 +183,16 @@ def create_app(config_name="development",
     app = Flask(__name__, static_folder="static",
                 template_folder="static/templates")
     app.config["APP_READY"] = False
+
+    # Routed apps must fall back to index.html
+    @app.errorhandler(404)
+    def fallback(error):
+        if request.path.startswith("/app/v2/"):
+            return send_html(
+                render_template(
+                    "index.html"))
+        return jsonify(error="Not found"), 404
+
     app.config["VERBOSE"] = not silent
 
     # Overwrite default config with environment setting
@@ -291,5 +309,11 @@ def create_app(config_name="development",
     log.debug(f"Reading application from the static folder {app.static_folder} "
               f"and the template folder {app.template_folder}")
     app.config['APP_READY'] = True
+
+    def exit_func():
+        # Destroy the engine pool and close all open database connections on exit
+        with app.app_context():
+            db.engine.dispose()
+    atexit.register(exit_func)
 
     return app

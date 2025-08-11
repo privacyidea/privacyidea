@@ -16,6 +16,9 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+# SPDX-FileCopyrightText: 2025 Paul Lettich <paul.lettich@netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 import logging
 import sys
 import os
@@ -49,18 +52,20 @@ def get_machine_application_class_dict():
     """
     get a dictionary of the application classes with the type as the key.
 
-    :return: {'base':
-                <class
-                'privacyidea.lib.applications.base.MachineApplicationBase'>
-              'luks': <class
-              'privacyidea.lib.applications.base.MachineApplication'>
-              }
+    Example::
+
+        {
+          "base": <class 'privacyidea.lib.applications.base.MachineApplicationBase'>
+          "luks": <class 'privacyidea.lib.applications.base.MachineApplication'>
+        }
+
+    :return: Dictionary of application classes
+    :rtype: dict
     """
     ret = {}
     long_class_names = get_machine_application_class_list()
     for long_class_name in long_class_names:
         module_name = ".".join(long_class_name.split(".")[:-1])
-        class_name = long_class_name.split(".")[-1:]
 
         mod = import_module(module_name)
         # should be able to run as class or as object
@@ -148,12 +153,22 @@ def get_application_types():
     This function returns a dictionary of application types with the
     corresponding available attributes.
 
-    {"luks": {"options": {"totp": {"slot": {"type": "int"},
-                          "partition": {"type": "str"}}},
-     "ssh": {"options": {"sshkey": {"user": {"type": "str"}}}
-    }
+    Example::
+
+        {
+          "luks": {
+            "options": {
+              "totp": {
+                "slot": {"type": "int"},
+                "partition": {"type": "str"}}}},
+           "ssh": {
+             "options": {
+               "sshkey": {
+                 "user": {"type": "str"}}}}
+        }
 
     :return: dictionary describing the applications
+    :rtype: dict
     """
     ret = {}
     current_module = sys.modules[__name__]

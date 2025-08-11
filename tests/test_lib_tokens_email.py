@@ -1,9 +1,9 @@
 """
 This test file tests the lib.tokens.smstoken
 """
+import logging
 from testfixtures import log_capture
 
-from privacyidea.lib.token import init_token, remove_token, import_tokens, get_tokens
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
@@ -11,6 +11,8 @@ from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokens.emailtoken import EmailTokenClass, EMAILACTION
+from privacyidea.lib.tokens.emailtoken import log as email_log
+from privacyidea.lib.token import remove_token, get_tokens, import_tokens, init_token
 from privacyidea.models import Token, Config
 from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin,
                                     delete_privacyidea_config)
@@ -332,13 +334,18 @@ class EmailTokenTestCase(MyTestCase):
         self.assertTrue(token.check_pin("test"))
         self.assertFalse(token.check_pin("wrong pin"))
 
-    def test_17_challenge_token(self):
+    @log_capture(level=logging.DEBUG)
+    def test_17_challenge_token(self, capture):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = EmailTokenClass(db_token)
         token.set_pin(self.otppin)
 
+        email_log.setLevel(logging.DEBUG)
         r = token.is_challenge_request(self.otppin)
         self.assertTrue(r)
+        log_msg = str(capture)
+        self.assertNotIn(self.otppin, log_msg, log_msg)
+        email_log.setLevel(logging.INFO)
 
     @smtpmock.activate
     def test_18_challenge_request(self):
@@ -570,7 +577,8 @@ class EmailTokenTestCase(MyTestCase):
         }]
 
         # Import the token
-        import_tokens(token_data)
+        result = import_tokens(token_data)
+        self.assertIn("PIEM12345678", result.successful_tokens, result)
 
         # Retrieve the imported token
         emailtoken = get_tokens(serial=token_data[0]["serial"])[0]

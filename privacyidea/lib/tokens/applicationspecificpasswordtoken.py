@@ -23,7 +23,8 @@ import logging
 from privacyidea.lib.tokens.passwordtoken import PasswordTokenClass
 from privacyidea.lib.log import log_with
 from privacyidea.lib import _
-from privacyidea.lib.policy import SCOPE, ACTION, GROUP
+from privacyidea.lib.policy import SCOPE, GROUP
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.api.lib.utils import getParam
 
 
@@ -79,14 +80,22 @@ class ApplicationSpecificPasswordTokenClass(PasswordTokenClass):
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
                'policy': {
+                   SCOPE.ADMIN: {
+                       PolicyAction.FORCE_SERVER_GENERATE: {'type': 'bool',
+                                                      'desc': ApplicationSpecificPasswordTokenClass.desc_key_gen}
+                   },
+                   SCOPE.USER: {
+                       PolicyAction.FORCE_SERVER_GENERATE: {'type': 'bool',
+                                                      'desc': ApplicationSpecificPasswordTokenClass.desc_key_gen}
+                   },
                    SCOPE.ENROLL: {
-                       ACTION.MAXTOKENUSER: {
+                       PolicyAction.MAXTOKENUSER: {
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of application specific "
                                      "password tokens assigned."),
                            'group': GROUP.TOKEN
                        },
-                       ACTION.MAXACTIVETOKENUSER: {
+                       PolicyAction.MAXACTIVETOKENUSER: {
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of active application specific"
                                      " password tokens assigned."),

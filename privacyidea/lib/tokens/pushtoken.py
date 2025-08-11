@@ -29,13 +29,14 @@ import secrets
 from base64 import b32decode
 from binascii import Error as BinasciiError
 import string
+from typing import Optional, Union
 from urllib.parse import quote
 from datetime import datetime, timedelta
 from pytz import utc
 from dateutil.parser import isoparse
 import traceback
 
-from privacyidea.api.lib.utils import getParam
+from privacyidea.api.lib.utils import getParam, get_required
 from privacyidea.api.lib.policyhelper import get_pushtoken_add_config, get_init_tokenlabel_parameters
 from privacyidea.lib.token import get_one_token, init_token
 from privacyidea.lib.utils import prepare_result, to_bytes, is_true, create_tag_dict
@@ -43,8 +44,9 @@ from privacyidea.lib.error import (ResourceNotFoundError, ValidateError,
                                    privacyIDEAError, ConfigAdminError, PolicyError)
 
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.policy import (SCOPE, ACTION, GROUP, Match,
+from privacyidea.lib.policy import (SCOPE, GROUP, Match,
                                     get_action_values_from_options)
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.log import log_with
 from privacyidea.lib import _, lazy_gettext
 
@@ -103,6 +105,7 @@ class PUSH_ACTION(object):
     PRESENCE_OPTIONS = "push_presence_options"
     PRESENCE_CUSTOM_OPTIONS = "push_presence_custom_options"
     PRESENCE_NUM_OPTIONS = "push_presence_num_options"
+    USE_PIA_SCHEME = "push_use_pia_scheme"
 
 
 class PushAllowPolling(object):
@@ -129,8 +132,10 @@ def strip_key(key):
 
 
 @log_with(log)
-def create_push_token_url(url=None, ttl=10, issuer="privacyIDEA", serial="mylabel",
-                          tokenlabel="<s>", user_obj=None, extra_data=None, user=None, realm=None):
+def create_push_token_url(url: Optional[str] = None, ttl: Union[int, str] = 10, issuer: str = "privacyIDEA",
+                          serial: str = "mylabel", tokenlabel: str = "<s>", user_obj: Optional[User] = None,
+                          extra_data: Optional[dict] = None, user: Optional[str] = None, realm: Optional[str] = None,
+                          pia_scheme: bool = False) -> str:
     """
 
     :param url:
@@ -142,6 +147,7 @@ def create_push_token_url(url=None, ttl=10, issuer="privacyIDEA", serial="mylabe
     :param extra_data:
     :param user:
     :param realm:
+    :param pia_scheme: Use the privacyIDEA App URL scheme "pia"
     :return:
     """
     extra_data = extra_data or {}
@@ -170,11 +176,12 @@ def create_push_token_url(url=None, ttl=10, issuer="privacyIDEA", serial="mylabe
     url_issuer = quote(issuer.encode("utf-8"))
     url_url = quote(url.encode("utf-8"))
 
-    return ("otpauth://pipush/{label!s}?"
-            "url={url!s}&ttl={ttl!s}&"
-            "issuer={issuer!s}{extra}".format(label=url_label, issuer=url_issuer,
-                                              url=url_url, ttl=ttl,
-                                              extra=_construct_extra_parameters(extra_data)))
+    scheme = "pia" if pia_scheme else "otpauth"
+
+    token_url = (f"{scheme}://pipush/{url_label}?url={url_url}&ttl={ttl}&issuer={url_issuer}"
+                 f"{_construct_extra_parameters(extra_data)}")
+
+    return token_url
 
 
 def _get_presence_options(options):
@@ -402,20 +409,26 @@ class PushTokenClass(TokenClass):
                                'group': "PUSH",
                                'value': ["0", "1"]
                            },
-                           ACTION.MAXTOKENUSER: {
+                           PolicyAction.MAXTOKENUSER: {
                                'type': 'int',
                                'desc': _("The user may only have this maximum number of Push tokens assigned."),
                                'group': GROUP.TOKEN
                            },
-                           ACTION.MAXACTIVETOKENUSER: {
+                           PolicyAction.MAXACTIVETOKENUSER: {
                                'type': 'int',
                                'desc': _("The user may only have this maximum number of active Push tokens assigned."),
                                'group': GROUP.TOKEN
                            },
-                           'push_' + ACTION.FORCE_APP_PIN: {
+                           'push_' + PolicyAction.FORCE_APP_PIN: {
                                'type': 'bool',
                                'group': "PUSH",
                                'desc': _('Require to unlock the Smartphone before Push requests can be accepted')
+                           },
+                           PUSH_ACTION.USE_PIA_SCHEME: {
+                               'type': 'bool',
+                               'desc': _("Use the privacyIDEA app URL scheme 'pia' in the enroll URL for push tokens "
+                                         "to open the privacyIDEA app."),
+                               'group': "PUSH",
                            }
                        },
                        SCOPE.AUTH: {
@@ -571,10 +584,11 @@ class PushTokenClass(TokenClass):
         if "otpkey" in response_detail:
             del response_detail["otpkey"]
         params = params or {}
+        policy_params = params.get("policies", {})
         user = user or User()
         tokenlabel = params.get("tokenlabel", "<s>")
         tokenissuer = params.get("tokenissuer", "privacyIDEA")
-        sslverify = getParam(params, PUSH_ACTION.SSL_VERIFY, allowed_values=["0", "1"], default="1")
+        sslverify = getParam(policy_params, PUSH_ACTION.SSL_VERIFY, allowed_values=["0", "1"], default="1")
         # Add rollout state the response
         response_detail['rollout_state'] = self.token.rollout_state
 
@@ -584,10 +598,10 @@ class PushTokenClass(TokenClass):
             extra_data.update({"image": imageurl})
         if self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
             # Get enrollment values from the policy
-            registration_url = getParam(params, PUSH_ACTION.REGISTRATION_URL, optional=False)
-            ttl = getParam(params, PUSH_ACTION.TTL, default="10")
+            registration_url = get_required(policy_params, PUSH_ACTION.REGISTRATION_URL)
+            ttl = policy_params.get(PUSH_ACTION.TTL, "10")
             # Get the values from the configured PUSH config
-            fb_identifier = params.get(PUSH_ACTION.FIREBASE_CONFIG)
+            fb_identifier = policy_params.get(PUSH_ACTION.FIREBASE_CONFIG)
             if fb_identifier != POLL_ONLY:
                 # If do not do poll_only, then we load all the Firebase configuration
                 firebase_configs = get_smsgateway(identifier=fb_identifier, gwtype=GWTYPE)
@@ -600,8 +614,11 @@ class PushTokenClass(TokenClass):
             extra_data["poll_only"] = fb_identifier == POLL_ONLY
 
             # enforce App pin
-            if params.get(ACTION.FORCE_APP_PIN):
+            if params.get(PolicyAction.FORCE_APP_PIN):
                 extra_data.update({'pin': True})
+
+            # Get scheme to use
+            pia_scheme = policy_params.get(PUSH_ACTION.USE_PIA_SCHEME, False)
 
             # We display this during the first enrollment step!
             qr_url = create_push_token_url(url=registration_url,
@@ -612,7 +629,8 @@ class PushTokenClass(TokenClass):
                                            issuer=tokenissuer,
                                            user_obj=user,
                                            extra_data=extra_data,
-                                           ttl=ttl)
+                                           ttl=ttl,
+                                           pia_scheme=pia_scheme)
             response_detail["pushurl"] = {"description": _("URL for privacyIDEA Push Token"),
                                           "value": qr_url,
                                           "img": create_img(qr_url)
@@ -923,7 +941,7 @@ class PushTokenClass(TokenClass):
 
         return "json", prepare_result(result, details=details)
 
-    @log_with(log)
+    @log_with(log, hide_args=[1])
     def is_challenge_request(self, passw, user=None, options=None):
         """
         check, if the request would start a challenge
@@ -963,7 +981,7 @@ class PushTokenClass(TokenClass):
         """
         options = options or {}
         message = get_action_values_from_options(SCOPE.AUTH,
-                                                 ACTION.CHALLENGETEXT,
+                                                 PolicyAction.CHALLENGETEXT,
                                                  options) or str(DEFAULT_CHALLENGE_TEXT)
 
         message = message.replace(r'\,', ',')
@@ -1168,12 +1186,12 @@ class PushTokenClass(TokenClass):
         :return: None, the content is modified
         """
         # Get the firebase configuration from the policies
-        params = get_pushtoken_add_config(g, user_obj=user_obj)
+        push_params = get_pushtoken_add_config(g, user_obj=user_obj)
         token_obj = init_token({"type": cls.get_class_type(), "genkey": 1, "2stepinit": 1}, user=user_obj)
         # We are in step 1:
         token_obj.add_tokeninfo("enrollment_credential", geturandom(20, hex=True))
         # We also store the Firebase config, that was used during the enrollment.
-        token_obj.add_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG, params.get(PUSH_ACTION.FIREBASE_CONFIG))
+        token_obj.add_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG, push_params.get(PUSH_ACTION.FIREBASE_CONFIG))
         content.get("result")["value"] = False
         content.get("result")["authentication"] = "CHALLENGE"
 
@@ -1181,8 +1199,8 @@ class PushTokenClass(TokenClass):
         # Create a challenge!
         c = token_obj.create_challenge(options={"g": g, "user": user_obj, "session": CHALLENGE_SESSION.ENROLLMENT})
         # get details of token
-        enroll_params = get_init_tokenlabel_parameters(g, user_object=user_obj, token_type=cls.get_class_type())
-        params.update(enroll_params)
+        params = get_init_tokenlabel_parameters(g, user_object=user_obj, token_type=cls.get_class_type())
+        params["policies"] = push_params
         init_details = token_obj.get_init_detail(params=params, user=user_obj)
 
         detail["transaction_ids"] = [c[2]]

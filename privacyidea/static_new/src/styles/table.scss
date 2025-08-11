@@ -1,0 +1,364 @@
+@use "@angular/material" as mat;
+
+$td-max-width: 18rem;
+$filter-width: 54.5rem;
+$scrollable-height: calc(var(--mat-sys-body-medium-line-height) * 3);
+$scrollable-margin-right: -16px;
+$scrollable-padding-right: 16px;
+$realm-margin-top: 17px;
+$realm-list-margin-top: 7px;
+
+$table-bg: var(--table-color);
+$link-color: var(--mat-sys-primary);
+$paginator-bg: var(--table-color);
+$highlight-padding: 2px 6px;
+$border-radius: 4px;
+$icon-font-size: 22px;
+$fix-width: 20rem;
+
+$table-max-width: 20rem;
+$gap-small: 8px;
+$margin-left-small: 10px;
+$padding-top-small: 8px;
+$description-width: 18rem;
+
+@mixin table-container-styles {
+  padding: var(--global-padding);
+  border-radius: var(--border-radius);
+  @include mat.elevation(5);
+  background-color: var(--table-color);
+}
+
+@mixin base-table-structure(
+  $table-class: ".table",
+  $filter-class: ".table-filter",
+  $scroll-container: ".table-scroll-container"
+) {
+  #{$table-class} {
+    border-collapse: collapse;
+    width: 100%;
+
+    td,
+    th {
+      border: 1px solid var(--mat-sys-outline-variant);
+    }
+
+    td {
+      max-width: $td-max-width;
+    }
+
+    th.mat-sort-header {
+      padding-right: 5px;
+    }
+  }
+
+  #{$filter-class} {
+    width: $filter-width;
+  }
+
+  #{$scroll-container} {
+    overflow-y: auto;
+    overflow-wrap: anywhere;
+    height: $scrollable-height;
+    margin-right: $scrollable-margin-right;
+    padding-right: $scrollable-padding-right;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+  }
+
+  .realm-list {
+    margin-top: $realm-list-margin-top;
+  }
+  ::ng-deep {
+    .mdc-checkbox
+    .mdc-checkbox__native-control:not(.mdc-checkbox--selected):not(
+        [aria-checked="mixed"]
+      )
+    ~ .mdc-checkbox__background {
+      border: 2px solid #999;
+    }
+
+    .mat-mdc-paginator-page-size {
+      margin-right: 0;
+    }
+
+    .mat-mdc-paginator-page-size-label {
+      margin: 0;
+    }
+
+    .mat-mdc-paginator-range-label {
+      margin: 0 var(--global-padding);
+    }
+
+    .mat-mdc-paginator-container {
+      padding: 0 0 0 var(--global-padding);
+    }
+  }
+}
+
+table {
+  background-color: $table-bg;
+}
+
+a {
+  text-decoration: none;
+  color: $link-color;
+  cursor: pointer;
+}
+
+td:nth-child(even),
+th:nth-child(even) {
+  background: var(--mat-sys-surface-container-low);
+}
+
+.mat-mdc-form-field {
+  color: $link-color;
+}
+
+.mat-mdc-paginator {
+  background-color: $paginator-bg;
+}
+
+.filter-paginator-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.highlight-true,
+.highlight-warning,
+.highlight-false,
+.highlight-true-clickable,
+.highlight-warning-clickable,
+.highlight-false-clickable,
+.highlight-disabled {
+  border-radius: $border-radius;
+  padding: $highlight-padding;
+  color: white;
+  display: inline-block;
+
+  &.highlight-true,
+  &.highlight-true-clickable {
+    background-color: var(--green-light);
+  }
+
+  &.highlight-warning,
+  &.highlight-warning-clickable {
+    background-color: var(--yellow-light-active);
+  }
+
+  &.highlight-false,
+  &.highlight-false-clickable {
+    background-color: var(--red-light);
+  }
+
+  &.highlight-disabled {
+    background-color: #a0a0a0;
+  }
+
+  &.highlight-true-clickable,
+  &.highlight-warning-clickable,
+  &.highlight-false-clickable {
+    cursor: pointer;
+  }
+}
+
+.table-keyword-filter-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 10px 0;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.filter-keyword-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 10px 76px 10px 0;
+  width: fit-content;
+  flex-wrap: wrap;
+
+  .filter-keyword-title {
+    margin-top: -4px;
+    min-width: 89px;
+  }
+}
+
+.edit-button-container {
+  display: flex;
+  justify-content: center;
+}
+
+.edit-column-cell {
+  min-width: 86px;
+  padding: 0;
+}
+
+.mat-divider {
+  border-top-color: var(--mat-sys-color-on-surface);
+}
+
+.height-52 {
+  height: 52px;
+}
+
+.container-form-field {
+  height: 51px;
+}
+
+.height-104 {
+  height: 104px;
+}
+
+.height-78 {
+  height: 78px;
+}
+
+.scroll-margin-pad {
+  margin-right: -16px;
+  padding-right: 16px;
+}
+
+.fix-width-20-padr-0 {
+  width: $fix-width !important;
+  max-width: $fix-width;
+  min-width: $fix-width;
+  padding-right: 0;
+}
+
+.flex-row {
+  display: flex;
+  flex-direction: row;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.height-auto {
+  height: auto;
+}
+
+.mat-mdc-table {
+  min-width: 0;
+}
+
+.details-key-row {
+  min-width: 9rem;
+}
+
+.table-checkbox {
+  padding: 0;
+  width: 42px;
+}
+
+::ng-deep {
+  .cdk-overlay-pane {
+    position: absolute !important;
+    z-index: 1;
+  }
+}
+
+.details-container {
+  .details-table {
+    border-collapse: collapse;
+
+    th,
+    td {
+      max-width: $table-max-width;
+      margin-left: $margin-left-small;
+      border: 1px solid var(--mat-sys-outline-variant);
+    }
+  }
+
+  .details-table.border-bottom-none {
+    tr:last-child td,
+    tr:last-child th {
+      border-bottom: none !important;
+    }
+  }
+
+  .details-header {
+    display: flex;
+    align-items: center;
+    gap: $gap-small;
+    margin-left: 16px;
+  }
+
+  .details-flex-layout {
+    display: flex;
+    box-sizing: border-box;
+    background: var(--mat-sys-light);
+  }
+
+  .details-description-div {
+    display: flex;
+    overflow-wrap: anywhere;
+    padding-right: 16px;
+    align-items: center;
+    white-space: normal;
+    height: 96px;
+  }
+
+  .details-scrollable-container {
+    display: block;
+    overflow-y: auto;
+    overflow-wrap: anywhere;
+  }
+
+  .details-list {
+    height: 77px;
+  }
+
+  .details-description {
+    display: flex;
+    width: $description-width;
+  }
+
+  .details-table-item {
+    margin-left: 5px;
+  }
+
+  .details-value {
+    margin-top: 7px;
+  }
+
+  ::ng-deep {
+    .mat-mdc-form-field-subscript-wrapper {
+      height: 0;
+    }
+
+    .mat-mdc-text-field-wrapper {
+      padding-left: 5px;
+    }
+
+    .container-details-token-table-layout .mat-mdc-text-field-wrapper,
+    .add-token .mat-mdc-text-field-wrapper {
+      padding-left: 16px !important;
+    }
+
+    .details-table .mat-mdc-form-field-infix {
+      padding-bottom: 10px;
+      margin-bottom: -6px;
+    }
+
+    // .details-table .description .mat-mdc-form-field-infix {
+    //   padding-top: 0;
+    // }
+
+    .mat-mdc-row {
+      font-size: 14px;
+    }
+  }
+}
+
+.table-container {
+  overflow-y: auto;
+  max-width: 70.5rem;
+}

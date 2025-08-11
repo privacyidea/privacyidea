@@ -16,40 +16,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Final
-
 from privacyidea.models import db
-
-
-# Constants for string column lengths
-class ColumnLengths:
-    __slots__ = ()
-
-    class Audit:
-        __slots__ = ()
-        ACTION: Final[int] = 100
-        SIGNATURE: Final[int] = 620
-
-    class Realm:
-        __slots__ = ()
-        NAME: Final[int] = 255
-
-    class Resolver:
-        __slots__ = ()
-        NAME: Final[int] = 255
-        RTYPE: Final[int] = 255
-
-    class Token:
-        __slots__ = ()
-        TOKENTYPE: Final[int] = 30
-        DESCRIPTION: Final[int] = 80
-        SERIAL: Final[int] = 40
-
-    class TokenContainer:
-        __slots__ = ()
-        TYPE: Final[int] = 100
-        DESCRIPTION: Final[int] = 1024
-        SERIAL: Final[int] = 40
 
 
 class MethodsMixin(object):

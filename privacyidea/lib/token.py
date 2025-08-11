@@ -87,7 +87,8 @@ from privacyidea.lib.challengeresponsedecorators import (generic_challenge_respo
                                                          generic_challenge_response_resync)
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_token_types, get_from_config,
-                                    get_inc_fail_count_on_false_pin, SYSCONF)
+                                    get_inc_fail_count_on_false_pin, SYSCONF,
+                                    get_enrollable_token_types)
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.decorators import (check_user_or_serial,
                                         check_copy_serials)
@@ -96,7 +97,7 @@ from privacyidea.lib.error import (TokenAdminError,
                                    privacyIDEAError, ResourceNotFoundError, PolicyError)
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import log_with
-from privacyidea.lib.policy import ACTION
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_user_does_not_exist,
                                               auth_user_has_no_token,
@@ -108,15 +109,12 @@ from privacyidea.lib.policydecorators import (libpolicy,
                                               reset_all_user_tokens, force_challenge_response)
 from privacyidea.lib.realm import realm_is_defined, get_realms
 from privacyidea.lib.resolver import get_resolver_object
-from privacyidea.lib.tokenclass import DATE_FORMAT
-from privacyidea.lib.tokenclass import TOKENKIND
-from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenclass import DATE_FORMAT, TOKENKIND, TokenClass
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true, BASE58, hexlify_and_unicode, check_serial_valid, create_tag_dict
-from privacyidea.models import (Token, Realm, TokenRealm, Challenge,
+from privacyidea.models import (db, Token, Realm, TokenRealm, Challenge,
                                 TokenInfo, TokenOwner, TokenTokengroup, Tokengroup, TokenContainer,
                                 TokenContainerToken)
-from privacyidea.models import (db)
 
 log = logging.getLogger(__name__)
 
@@ -827,6 +825,7 @@ def check_serial(serial):
 
     return result, new_serial
 
+
 @log_with(log)
 def get_num_tokens_in_realm(realm, active=True):
     """
@@ -1248,7 +1247,7 @@ def import_token(serial, token_dict, tokenrealms=None):
     return token
 
 
-@log_with(log)
+@log_with(log, hide_args_keywords={'param': 'pin'})
 def init_token(param, user=None, tokenrealms=None, tokenkind=None):
     """
     Create a new token or update an existing token with the specified parameters.
@@ -1275,7 +1274,7 @@ def init_token(param, user=None, tokenrealms=None, tokenkind=None):
     """
     token_type = param.get("type") or "hotp"
     # Check for unsupported token type
-    token_types = get_token_types()
+    token_types = get_enrollable_token_types()
     if token_type.lower() not in token_types:
         log.error(f"type {token_type} not found in tokentypes: {token_types}")
         raise TokenAdminError(_("init token failed. Unknown token type:") + f" {token_type}", id=1610)
@@ -2210,8 +2209,7 @@ def lost_token(serial, new_serial=None, password=None,
 
 
 @log_with(log)
-def check_realm_pass(realm, passw, options=None,
-                     include_types=None, exclude_types=None):
+def check_realm_pass(realm, passw, options=None, include_types=None, exclude_types=None):
     """
     This function checks, if the given passw matches any token in the given
     realm. This can be used for the 4-eyes token.
@@ -2261,7 +2259,7 @@ def check_realm_pass(realm, passw, options=None,
                                 allow_reset_all_tokens=False)
 
 
-@log_with(log)
+@log_with(log, hide_args=[1])
 @libpolicy(auth_lastauth)
 def check_serial_pass(serial, passw, options=None):
     """
@@ -2486,8 +2484,9 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
             raise TokenAdminError(_("This action is not possible, since the token is locked"), id=1007)
 
     # Remove disabled token types from token_object_list
-    if ACTION.DISABLED_TOKEN_TYPES in options and options[ACTION.DISABLED_TOKEN_TYPES]:
-        token_object_list = [token for token in token_object_list if token.type not in options[ACTION.DISABLED_TOKEN_TYPES]]
+    if PolicyAction.DISABLED_TOKEN_TYPES in options and options[PolicyAction.DISABLED_TOKEN_TYPES]:
+        token_object_list = [token for token in token_object_list if
+                             token.type not in options[PolicyAction.DISABLED_TOKEN_TYPES]]
 
     # Remove certain disabled tokens from token_object_list
     if len(token_object_list) > 0:
@@ -2510,7 +2509,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
             # This is a challenge request
             challenge_request_token_list.append(token_object)
         else:
-            if not (ACTION.FORCE_CHALLENGE_RESPONSE in options and is_true(options[ACTION.FORCE_CHALLENGE_RESPONSE])):
+            if not (PolicyAction.FORCE_CHALLENGE_RESPONSE in options and is_true(options[PolicyAction.FORCE_CHALLENGE_RESPONSE])):
                 # This is a normal authentication attempt
                 try:
                     # Pass the length of the valid_token_list to ``authenticate`` so that
@@ -2741,20 +2740,25 @@ def get_dynamic_policy_definitions(scope: str = None) -> dict:
            SCOPE.ENROLL: {},
            SCOPE.WEBUI: {},
            SCOPE.AUTHZ: {}}
-    for ttype in get_token_types():
-        pol[SCOPE.ADMIN]["enroll{0!s}".format(ttype.upper())] \
-            = {'type': 'bool',
-               'desc': _("Admin is allowed to initialize {0!s} tokens.").format(ttype.upper()),
-               'mainmenu': [MAIN_MENU.TOKENS],
-               'group': GROUP.ENROLLMENT}
 
-        conf = get_tokenclass_info(ttype, section='user')
-        if 'enroll' in conf:
-            pol[SCOPE.USER]["enroll{0!s}".format(ttype.upper())] = {
+    enrollable_token_types = get_enrollable_token_types()
+    for ttype in get_token_types():
+        if ttype in enrollable_token_types:
+            pol[SCOPE.ADMIN][f"enroll{ttype.upper()}"] = {
                 'type': 'bool',
-                'desc': _("The user is allowed to enroll a {0!s} token.").format(ttype.upper()),
+                'desc': _("Admin is allowed to initialize {0!s} tokens.").format(ttype.upper()),
                 'mainmenu': [MAIN_MENU.TOKENS],
-                'group': GROUP.ENROLLMENT}
+                'group': GROUP.ENROLLMENT
+            }
+
+            conf = get_tokenclass_info(ttype, section='user')
+            if 'enroll' in conf:
+                pol[SCOPE.USER][f"enroll{ttype.upper()}"] = {
+                    'type': 'bool',
+                    'desc': _("The user is allowed to enroll a {0!s} token.").format(ttype.upper()),
+                    'mainmenu': [MAIN_MENU.TOKENS],
+                    'group': GROUP.ENROLLMENT
+                }
 
         # now merge the dynamic Token policy definition
         # into the global definitions
@@ -2780,26 +2784,22 @@ def get_dynamic_policy_definitions(scope: str = None) -> dict:
         # PIN policies
         pin_scopes = get_tokenclass_info(ttype, section='pin_scopes') or []
         for pin_scope in pin_scopes:
-            pol[pin_scope]['{0!s}_otp_pin_maxlength'.format(ttype.lower())] = {
+            pol[pin_scope][f'{ttype.lower()}_otp_pin_maxlength'] = {
                 'type': 'int',
                 'value': list(range(0, 32)),
-                "desc": _("Set the maximum allowed PIN length of the {0!s}"
-                          " token.").format(ttype.upper()),
+                "desc": _("Set the maximum allowed PIN length of the {0!s} token.").format(ttype.upper()),
                 'group': GROUP.PIN
             }
-            pol[pin_scope]['{0!s}_otp_pin_minlength'.format(ttype.lower())] = {
+            pol[pin_scope][f'{ttype.lower()}_otp_pin_minlength'] = {
                 'type': 'int',
                 'value': list(range(0, 32)),
-                "desc": _("Set the minimum required PIN length of the {0!s}"
-                          " token.").format(ttype.upper()),
+                "desc": _("Set the minimum required PIN length of the {0!s} token.").format(ttype.upper()),
                 'group': GROUP.PIN
             }
-            pol[pin_scope]['{0!s}_otp_pin_contents'.format(ttype.lower())] = {
+            pol[pin_scope][f'{ttype.lower()}_otp_pin_contents'] = {
                 'type': 'str',
-                "desc": _("Specifiy the required PIN contents of the "
-                          "{0!s} token. "
-                          "(c)haracters, (n)umeric, "
-                          "(s)pecial, (o)thers. [+/-]!").format(ttype.upper()),
+                "desc": _("Specify the required PIN contents of the {0!s} token. (c)haracters, (n)umeric, (s)pecial, "
+                          "(o)thers. [+/-]!").format(ttype.upper()),
                 'group': GROUP.PIN
             }
 
@@ -2962,6 +2962,7 @@ def regenerate_enroll_url(serial: str, request: Request, g) -> Union[str, None]:
 
     params = request.all_data
     params.update({"genkey": True, "rollover": True})
+    params["policies"] = g.policies
     token = init_token(params)
     enroll_url = token.get_enroll_url(token_owner, params)
 

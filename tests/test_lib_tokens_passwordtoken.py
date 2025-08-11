@@ -2,9 +2,12 @@
 This test file tests the lib.tokens.passwordtoken
 This depends on lib.tokenclass
 """
-from privacyidea.lib.token import init_token, remove_token, import_tokens, get_tokens
+import logging
+from testfixtures import log_capture
 from .base import MyTestCase
 from privacyidea.lib.tokens.passwordtoken import PasswordTokenClass
+from privacyidea.lib.tokens.passwordtoken import log as pwt_log
+from privacyidea.lib.token import init_token, remove_token, import_tokens, get_tokens
 from privacyidea.models import Token
 
 
@@ -16,8 +19,10 @@ class PasswordTokenTestCase(MyTestCase):
     serial1 = "ser1"
 
     # add_user, get_user, reset, set_user_identifiers
-    
-    def test_01_create_token(self):
+
+    @log_capture(level=logging.DEBUG)
+    def test_01_create_token(self, capture):
+        pwt_log.setLevel(logging.DEBUG)
         db_token = Token(self.serial1, tokentype="pw")
         db_token.save()
         token = PasswordTokenClass(db_token)
@@ -28,6 +33,9 @@ class PasswordTokenTestCase(MyTestCase):
         class_prefix = token.get_class_prefix()
         self.assertTrue(class_prefix == "PW", class_prefix)
         self.assertTrue(token.get_class_type() == "pw", token)
+        log_msg = str(capture)
+        self.assertNotIn(self.password, log_msg, log_msg)
+        pwt_log.setLevel(logging.INFO)
 
     def test_02_check_password(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()

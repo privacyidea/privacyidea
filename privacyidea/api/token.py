@@ -83,7 +83,7 @@ from privacyidea.lib.error import (ParameterError, TokenAdminError,
 from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
                                        parseYubicoCSV, parsePSKCdata, GPGImport)
 import logging
-from privacyidea.lib.policy import ACTION
+from ..lib.policies.actions import PolicyAction
 from privacyidea.lib.challenge import get_challenges_paginate, cleanup_expired_challenges
 from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_token_action,
                                            check_token_init, check_token_upload,
@@ -106,7 +106,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_t
                                            webauthntoken_request, required_piv_attestation,
                                            hide_tokeninfo, init_ca_connector, init_ca_template,
                                            init_subject_components, require_description_on_edit, require_description,
-                                           check_container_action, check_user_params, check_token_list_action)
+                                           check_container_action, check_user_params, check_token_list_action,
+                                           force_server_generate_key)
 from privacyidea.api.lib.postpolicy import (save_pin_change, check_verify_enrollment,
                                             postpolicy)
 from privacyidea.lib.event import event
@@ -159,6 +160,7 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(fido2_enroll, request)
 @prepolicy(required_piv_attestation, request)
 @prepolicy(verify_enrollment, request)
+@prepolicy(force_server_generate_key, request)
 @postpolicy(save_pin_change, request)
 @event("token_init", request, g)
 @postpolicy(check_verify_enrollment, request)
@@ -297,7 +299,8 @@ def init():
     authentication.
     """
     response_details = {}
-    param = request.all_data
+    param = request.all_data.copy()
+    param["policies"] = g.get("policies", {})
 
     user = request.User
     token = init_token(param, user)
@@ -325,7 +328,7 @@ def init():
         if container_serial:
             # Check if user is allowed to add tokens to containers
             try:
-                container_add_token_right = check_container_action(request, action=ACTION.CONTAINER_ADD_TOKEN)
+                container_add_token_right = check_container_action(request, action=PolicyAction.CONTAINER_ADD_TOKEN)
             except PolicyError:
                 container_add_token_right = False
                 log.info(f"User {user.login} is not allowed to add token {token.get_serial()} to container "
@@ -353,7 +356,7 @@ def init():
 @token_blueprint.route('/challenges/', methods=['GET'])
 @token_blueprint.route('/challenges/<serial>', methods=['GET'])
 @admin_required
-@prepolicy(check_base_action, request, action=ACTION.GETCHALLENGES)
+@prepolicy(check_base_action, request, action=PolicyAction.GETCHALLENGES)
 @event("token_getchallenges", request, g)
 @log_with(log)
 def get_challenges_api(serial=None):
@@ -411,13 +414,13 @@ def delete_expired_challenges_api():
           "version": "privacyIDEA unknown"
         }
     """
-    row_count = cleanup_expired_challenges(chunksize=None, age=None)
+    row_count = cleanup_expired_challenges(chunk_size=None, age=None)
     g.audit_object.log({"success": True, "info": f"Deleted {row_count} entries from challenges"})
     return send_result({"status": True, "deleted": row_count})
 
 
 @token_blueprint.route('/', methods=['GET'])
-@prepolicy(check_admin_tokenlist, request, ACTION.TOKENLIST)
+@prepolicy(check_admin_tokenlist, request, PolicyAction.TOKENLIST)
 @prepolicy(hide_tokeninfo, request)
 @event("token_list", request, g)
 @log_with(log)
@@ -517,8 +520,8 @@ def list_api():
 @token_blueprint.route('/assign', methods=['POST'])
 @prepolicy(check_max_token_realm, request)
 @prepolicy(check_max_token_user, request)
-@prepolicy(check_token_action, request, action=ACTION.ASSIGN)
-@prepolicy(check_user_params, request, action=ACTION.ASSIGN)
+@prepolicy(check_token_action, request, action=PolicyAction.ASSIGN)
+@prepolicy(check_user_params, request, action=PolicyAction.ASSIGN)
 @prepolicy(encrypt_pin, request)
 @prepolicy(check_otp_pin, request)
 @prepolicy(check_external, request, action="assign")
@@ -551,7 +554,7 @@ def assign_api():
 
 
 @token_blueprint.route('/unassign', methods=['POST'])
-@prepolicy(check_token_action, request, action=ACTION.UNASSIGN)
+@prepolicy(check_token_action, request, action=PolicyAction.UNASSIGN)
 @event("token_unassign", request, g)
 @log_with(log)
 def unassign_api():
@@ -574,7 +577,7 @@ def unassign_api():
 
 @token_blueprint.route('/revoke', methods=['POST'])
 @token_blueprint.route('/revoke/<serial>', methods=['POST'])
-@prepolicy(check_token_action, request, action=ACTION.REVOKE)
+@prepolicy(check_token_action, request, action=PolicyAction.REVOKE)
 @event("token_revoke", request, g)
 @log_with(log)
 def revoke_api(serial=None):
@@ -606,7 +609,7 @@ def revoke_api(serial=None):
 @token_blueprint.route('/enable', methods=['POST'])
 @token_blueprint.route('/enable/<serial>', methods=['POST'])
 @prepolicy(check_max_token_user, request)
-@prepolicy(check_token_action, request, action=ACTION.ENABLE)
+@prepolicy(check_token_action, request, action=PolicyAction.ENABLE)
 @event("token_enable", request, g)
 @log_with(log)
 def enable_api(serial=None):
@@ -631,7 +634,7 @@ def enable_api(serial=None):
 
 @token_blueprint.route('/disable', methods=['POST'])
 @token_blueprint.route('/disable/<serial>', methods=['POST'])
-@prepolicy(check_token_action, request, action=ACTION.DISABLE)
+@prepolicy(check_token_action, request, action=PolicyAction.DISABLE)
 @event("token_disable", request, g)
 @log_with(log)
 def disable_api(serial=None):
@@ -658,7 +661,7 @@ def disable_api(serial=None):
 
 
 @token_blueprint.route('/<serial>', methods=['DELETE'])
-@prepolicy(check_token_action, request, action=ACTION.DELETE)
+@prepolicy(check_token_action, request, action=PolicyAction.DELETE)
 @event("token_delete", request, g)
 @log_with(log)
 def delete_api(serial):
@@ -680,7 +683,7 @@ def delete_api(serial):
 
 
 @token_blueprint.route('/batchdeletion', methods=['POST'])
-@prepolicy(check_token_list_action, request, action=ACTION.DELETE)
+@prepolicy(check_token_list_action, request, action=PolicyAction.DELETE)
 @event("token_delete", request, g)
 @log_with(log)
 def batch_deletion():
@@ -712,7 +715,7 @@ def batch_deletion():
 
 @token_blueprint.route('/reset', methods=['POST'])
 @token_blueprint.route('/reset/<serial>', methods=['POST'])
-@prepolicy(check_token_action, request, action=ACTION.RESET)
+@prepolicy(check_token_action, request, action=PolicyAction.RESET)
 @event("token_reset", request, g)
 @log_with(log)
 def reset_api(serial=None):
@@ -737,7 +740,7 @@ def reset_api(serial=None):
 
 @token_blueprint.route('/resync', methods=['POST'])
 @token_blueprint.route('/resync/<serial>', methods=['POST'])
-@prepolicy(check_token_action, request, action=ACTION.RESYNC)
+@prepolicy(check_token_action, request, action=PolicyAction.RESYNC)
 @event("token_resync", request, g)
 @log_with(log)
 def resync_api(serial=None):
@@ -764,9 +767,9 @@ def resync_api(serial=None):
 
 @token_blueprint.route('/setpin', methods=['POST'])
 @token_blueprint.route('/setpin/<serial>', methods=['POST'])
-@prepolicy(check_token_action, request, action=ACTION.SETPIN)
+@prepolicy(check_token_action, request, action=PolicyAction.SETPIN)
 @prepolicy(encrypt_pin, request)
-@prepolicy(check_otp_pin, request, action=ACTION.SETPIN)
+@prepolicy(check_otp_pin, request, action=PolicyAction.SETPIN)
 @postpolicy(save_pin_change, request)
 @event("token_setpin", request, g)
 @log_with(log)
@@ -814,7 +817,7 @@ def setpin_api(serial=None):
 
 @token_blueprint.route('/setrandompin', methods=['POST'])
 @token_blueprint.route('/setrandompin/<serial>', methods=['POST'])
-@prepolicy(check_token_action, request, action=ACTION.SETRANDOMPIN)
+@prepolicy(check_token_action, request, action=PolicyAction.SETRANDOMPIN)
 @prepolicy(set_random_pin, request)
 @prepolicy(encrypt_pin, request)
 @postpolicy(save_pin_change, request)
@@ -849,7 +852,7 @@ def setrandompin_api(serial=None):
 
 @token_blueprint.route('/description', methods=['POST'])
 @token_blueprint.route('/description/<serial>', methods=['POST'])
-@prepolicy(check_token_action, request, action=ACTION.SETDESCRIPTION)
+@prepolicy(check_token_action, request, action=PolicyAction.SETDESCRIPTION)
 @event("token_set", request, g)
 @log_with(log)
 def set_description_api(serial=None):
@@ -878,7 +881,7 @@ def set_description_api(serial=None):
 @token_blueprint.route('/set', methods=['POST'])
 @token_blueprint.route('/set/<serial>', methods=['POST'])
 @admin_required
-@prepolicy(check_token_action, request, action=ACTION.SET)
+@prepolicy(check_token_action, request, action=PolicyAction.SET)
 @event("token_set", request, g)
 @log_with(log)
 def set_api(serial=None):
@@ -982,8 +985,8 @@ def set_api(serial=None):
 @admin_required
 @log_with(log)
 @prepolicy(check_max_token_realm, request)
-@prepolicy(check_admin_tokenlist, request, action=ACTION.TOKENREALMS)
-@prepolicy(check_token_action, request, action=ACTION.TOKENREALMS)
+@prepolicy(check_admin_tokenlist, request, action=PolicyAction.TOKENREALMS)
+@prepolicy(check_token_action, request, action=PolicyAction.TOKENREALMS)
 @event("token_realm", request, g)
 def tokenrealm_api(serial=None):
     """
@@ -1119,7 +1122,7 @@ def loadtokens_api(filename=None):
 @token_blueprint.route('/copypin', methods=['POST'])
 @admin_required
 @log_with(log)
-@prepolicy(check_base_action, request, action=ACTION.COPYTOKENPIN)
+@prepolicy(check_base_action, request, action=PolicyAction.COPYTOKENPIN)
 @event("token_copypin", request, g)
 def copypin_api():
     """
@@ -1141,7 +1144,7 @@ def copypin_api():
 
 @token_blueprint.route('/copyuser', methods=['POST'])
 @admin_required
-@prepolicy(check_base_action, request, action=ACTION.COPYTOKENUSER)
+@prepolicy(check_base_action, request, action=PolicyAction.COPYTOKENUSER)
 @event("token_copyuser", request, g)
 @log_with(log)
 def copyuser_api():
@@ -1163,7 +1166,7 @@ def copyuser_api():
 
 
 @token_blueprint.route('/lost/<serial>', methods=['POST'])
-@prepolicy(check_token_action, request, action=ACTION.LOSTTOKEN)
+@prepolicy(check_token_action, request, action=PolicyAction.LOSTTOKEN)
 @event("token_lost", request, g)
 @log_with(log)
 def lost_api(serial=None):
@@ -1200,7 +1203,7 @@ def lost_api(serial=None):
 
 @token_blueprint.route('/getserial/<otp>', methods=['GET'])
 @admin_required
-@prepolicy(check_base_action, request, action=ACTION.GETSERIAL)
+@prepolicy(check_base_action, request, action=PolicyAction.GETSERIAL)
 @event("token_getserial", request, g)
 @log_with(log)
 def get_serial_by_otp_api(otp=None):
@@ -1254,7 +1257,7 @@ def get_serial_by_otp_api(otp=None):
 
 @token_blueprint.route('/info/<serial>/<key>', methods=['POST'])
 @admin_required
-@prepolicy(check_token_action, request, action=ACTION.SETTOKENINFO)
+@prepolicy(check_token_action, request, action=PolicyAction.SETTOKENINFO)
 @event("token_info", request, g)
 @log_with(log)
 def set_tokeninfo_api(serial, key):
@@ -1278,7 +1281,7 @@ def set_tokeninfo_api(serial, key):
 
 @token_blueprint.route('/info/<serial>/<key>', methods=['DELETE'])
 @admin_required
-@prepolicy(check_token_action, request, action=ACTION.SETTOKENINFO)
+@prepolicy(check_token_action, request, action=PolicyAction.SETTOKENINFO)
 @event("token_info", request, g)
 @log_with(log)
 def delete_tokeninfo_api(serial, key):
@@ -1301,7 +1304,7 @@ def delete_tokeninfo_api(serial, key):
 @token_blueprint.route('/group/<serial>/<groupname>', methods=['POST'])
 @token_blueprint.route('/group/<serial>', methods=['POST'])
 @admin_required
-@prepolicy(check_token_action, request, ACTION.TOKENGROUPS)
+@prepolicy(check_token_action, request, PolicyAction.TOKENGROUPS)
 @event("token_assign_group", request, g)
 @log_with(log)
 def assign_tokengroup_api(serial, groupname=None):
@@ -1336,7 +1339,7 @@ def assign_tokengroup_api(serial, groupname=None):
 
 @token_blueprint.route('/group/<serial>/<groupname>', methods=['DELETE'])
 @admin_required
-@prepolicy(check_token_action, request, ACTION.TOKENGROUPS)
+@prepolicy(check_token_action, request, PolicyAction.TOKENGROUPS)
 @event("token_unassign_group", request, g)
 @log_with(log)
 def unassign_tokengroup_api(serial, groupname):

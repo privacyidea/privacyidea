@@ -27,7 +27,8 @@ Currently the decorator is only tested in tests/test_lib_token.py
 import logging
 
 from privacyidea.lib.policy import Match
-from privacyidea.lib.policy import ACTION, SCOPE, check_pin, SCOPE
+from privacyidea.lib.policy import SCOPE, check_pin, SCOPE
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import pass_hash, verify_pass_hash, get_rand_digit_str
 from privacyidea.models import Challenge
@@ -115,7 +116,7 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
                         token_obj.challenge_janitor()
                         # Success, set new PIN and return success
                         token_obj.set_pin(args[1])
-                        pinpol = Match.token(g, scope=SCOPE.ENROLL, action=ACTION.CHANGE_PIN_EVERY,
+                        pinpol = Match.token(g, scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_EVERY,
                                              token_obj=token_obj).action_values(unique=True)
                         # Set a new next_pin_change
                         if pinpol:
@@ -159,7 +160,7 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
         serial = reply_dict.get("serial")
         # The tokenlist can contain more than one token. So we get the matching token object
         token_obj = next(t for t in args[0] if t.token.serial == serial)
-        if g and Match.token(g, scope=SCOPE.AUTH, action=ACTION.CHANGE_PIN_VIA_VALIDATE, token_obj=token_obj).any():
+        if g and Match.token(g, scope=SCOPE.AUTH, action=PolicyAction.CHANGE_PIN_VIA_VALIDATE, token_obj=token_obj).any():
             reply_dict = _create_challenge(token_obj, CHALLENGE_TYPE.PIN_RESET, _("Please enter a new PIN"))
             return False, reply_dict
 
@@ -173,7 +174,7 @@ def generic_challenge_response_resync(wrapped_function, *args, **kwds):
     Conditions: To do so we check for "otp1c" in the tokeninfo data.
 
     Policies: A policy defines that the token resync should be allowed this way.
-    Note: The general config "autoresync" needs to be set anyways.
+    Note: The general config "autoresync" needs to be set anyway.
 
     args are:
     :param tokenobject_list: The list of all the tokens of the user, that will be checked
@@ -195,7 +196,7 @@ def generic_challenge_response_resync(wrapped_function, *args, **kwds):
         token_obj = next(t for t in args[0] if t.token.serial == serial)
         if token_obj and token_obj.get_tokeninfo("otp1c"):
             # We have an entry for resync
-            if g and Match.token(g, scope=SCOPE.AUTH, action=ACTION.RESYNC_VIA_MULTICHALLENGE,
+            if g and Match.token(g, scope=SCOPE.AUTH, action=PolicyAction.RESYNC_VIA_MULTICHALLENGE,
                                  token_obj=token_obj).any():
                 reply_dict = _create_challenge(token_obj, CHALLENGE_TYPE.RESYNC,
                                                _("To resync your token, please enter the next OTP value"))

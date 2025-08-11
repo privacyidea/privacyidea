@@ -25,6 +25,7 @@ import os
 from datetime import timezone, datetime
 from typing import Union
 
+from flask import g
 from sqlalchemy import func
 from sqlalchemy.orm import Query
 
@@ -603,6 +604,7 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
 
     init_result = {}
     request_all_data_original = copy.deepcopy(request.all_data)
+    policies = copy.deepcopy(g.policies)
 
     # Get policies for the token
     from privacyidea.api.lib.prepolicy import (check_max_token_realm, sms_identifiers,
@@ -612,7 +614,7 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
                                                init_random_pin, twostep_enrollment_parameters,
                                                twostep_enrollment_activation, enroll_pin,
                                                init_tokenlabel, check_token_init, check_max_token_user,
-                                               require_description)
+                                               require_description, force_server_generate_key)
     from privacyidea.api.lib.postpolicy import check_verify_enrollment, save_pin_change
 
     # Create each token defined in the template. The template contains the enroll information for each token.
@@ -646,6 +648,7 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
         # information for the current token.
         request.all_data = {}
         request.all_data.update(token_info)
+        g.policies = {}
 
         # Pre-policy checks
         # TODO: Refactor including original uses of these functions (decorators on token init endpoint)
@@ -669,11 +672,13 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
             tantoken_count(request, None)
             pushtoken_add_config(request, None)
             indexedsecret_force_attribute(request, None)
+            force_server_generate_key(request, None)
         except Exception as ex:
             log.warning(f"Error checking pre-policies for token {token_info} created from template: {ex}")
             continue
 
         init_params = request.all_data
+        init_params["policies"] = g.policies
         try:
             token = init_token(init_params, user)
             init_result[token.get_serial()] = {"type": token.get_type()}
@@ -701,6 +706,7 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
         init_result[token.get_serial()]["init_params"] = init_params
 
     request.all_data = request_all_data_original
+    g.policies = policies
     return init_result
 
 
@@ -1635,7 +1641,7 @@ def get_offline_token_serials(container: TokenContainerClass) -> list[str]:
     return offline_serials
 
 
-def check_container_challenge(transaction_id: str):
+def check_container_challenge(transaction_id: str) -> dict:
     """
     Check if the challenge for the given transaction_id belongs to a container.
     If this is the case it checks if the challenge is valid and was already answered. Then it deletes the challenge

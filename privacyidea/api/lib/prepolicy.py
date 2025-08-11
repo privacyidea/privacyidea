@@ -74,8 +74,9 @@ from privacyidea.lib.error import (PolicyError, RegistrationError,
                                    TokenAdminError, ResourceNotFoundError, AuthError)
 from flask import g, current_app, Request
 
-from privacyidea.lib.policies.policy_helper import check_max_auth_fail, check_max_auth_success
-from privacyidea.lib.policy import SCOPE, ACTION, REMOTE_USER
+from privacyidea.lib.policies.helper import check_max_auth_fail, check_max_auth_success, DEFAULT_JWT_VALIDITY
+from privacyidea.lib.policy import SCOPE, REMOTE_USER
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import Match, check_pin
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
@@ -128,8 +129,6 @@ log = logging.getLogger(__name__)
 
 optional = True
 required = False
-
-DEFAULT_JWT_VALIDITY = 3600
 
 
 class prepolicy(object):
@@ -206,7 +205,7 @@ def set_random_pin(request=None, action=None):
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     # get the length of the random PIN from the policies
-    pin_pols = Match.generic(g, action=ACTION.OTPPINSETRANDOM,
+    pin_pols = Match.generic(g, action=PolicyAction.OTPPINSETRANDOM,
                              scope=role,
                              adminrealm=adminrealm,
                              adminuser=adminuser,
@@ -217,14 +216,14 @@ def set_random_pin(request=None, action=None):
     if len(pin_pols) == 0:
         # We do this to avoid that an admin sets a random PIN manually!
         raise TokenAdminError("You need to specify a policy '{0!s}' in scope "
-                              "{1!s}.".format(ACTION.OTPPINSETRANDOM, role))
+                              "{1!s}.".format(PolicyAction.OTPPINSETRANDOM, role))
     elif len(pin_pols) == 1:
         # check pin contents policy per token type, otherwise fall back
         tokentype = get_token_type(request.all_data.get("serial"))
-        pol_contents = Match.admin_or_user(g, action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINCONTENTS),
+        pol_contents = Match.admin_or_user(g, action="{0!s}_{1!s}".format(tokentype, PolicyAction.OTPPINCONTENTS),
                                            user_obj=request.User).action_values(unique=True)
         if not pol_contents:
-            pol_contents = Match.admin_or_user(g, action=ACTION.OTPPINCONTENTS,
+            pol_contents = Match.admin_or_user(g, action=PolicyAction.OTPPINCONTENTS,
                                                user_obj=request.User).action_values(unique=True)
 
         if len(pol_contents) == 1:
@@ -252,15 +251,15 @@ def init_random_pin(request=None, action=None):
     params = request.all_data
     user_object = get_user_from_param(params)
     # get the length of the random PIN from the policies
-    pin_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.OTPPINRANDOM,
+    pin_pols = Match.user(g, scope=SCOPE.ENROLL, action=PolicyAction.OTPPINRANDOM,
                           user_object=user_object).action_values(unique=True)
     if len(pin_pols) == 1:
         # check pin contents policy per token type, otherwise fall back
         tokentype = request.all_data.get("type", "hotp")
-        pol_contents = Match.admin_or_user(g, action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINCONTENTS),
+        pol_contents = Match.admin_or_user(g, action="{0!s}_{1!s}".format(tokentype, PolicyAction.OTPPINCONTENTS),
                                            user_obj=request.User).action_values(unique=True)
         if not pol_contents:
-            pol_contents = Match.admin_or_user(g, action=ACTION.OTPPINCONTENTS,
+            pol_contents = Match.admin_or_user(g, action=PolicyAction.OTPPINCONTENTS,
                                                user_obj=request.User).action_values(unique=True)
 
         if len(pol_contents) == 1:
@@ -274,7 +273,7 @@ def init_random_pin(request=None, action=None):
             request.all_data["pin"] = generate_password(size=int(list(pin_pols)[0]))
 
         # handle the PIN
-        handle_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.PINHANDLING,
+        handle_pols = Match.user(g, scope=SCOPE.ENROLL, action=PolicyAction.PINHANDLING,
                                  user_object=user_object).action_values(unique=False)
         # We can have more than one pin handler policy. So we can process the
         #  PIN in several ways!
@@ -342,7 +341,7 @@ def check_otp_pin(request=None, action=None):
     if rollover or verify:
         log.debug(f"Disable PIN checking due to rollover ({rollover}) or verify ({verify})")
         return True
-    if not serial and action == ACTION.SETPIN:
+    if not serial and action == PolicyAction.SETPIN:
         path_elems = request.path.split("/")
         serial = path_elems[-1]
         # Also set it for later use
@@ -379,7 +378,7 @@ def check_application_tokentype(request=None, action=None):
     :returns: Always true. Modified the parameter request
     """
     application_allowed = Match.generic(g, scope=SCOPE.AUTHZ,
-                                        action=ACTION.APPLICATION_TOKENTYPE,
+                                        action=PolicyAction.APPLICATION_TOKENTYPE,
                                         user_object=request.User,
                                         active=True).any()
 
@@ -475,7 +474,7 @@ def encrypt_pin(request=None, action=None):
     params = request.all_data
     user_object = get_user_from_param(params)
     # get the length of the random PIN from the policies
-    pin_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.ENCRYPTPIN,
+    pin_pols = Match.user(g, scope=SCOPE.ENROLL, action=PolicyAction.ENCRYPTPIN,
                           user_object=user_object).policies()
     if pin_pols:
         request.all_data["encryptpin"] = "True"
@@ -496,7 +495,7 @@ def enroll_pin(request=None, action=None):
     (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user,
                                                                                         request.all_data)
     allowed_action = Match.generic(g, scope=role,
-                                   action=ACTION.ENROLLPIN,
+                                   action=PolicyAction.ENROLLPIN,
                                    user_object=request.User,
                                    user=username,
                                    resolver=resolver,
@@ -549,12 +548,12 @@ def init_token_length_contents(request=None, action=None):
 
     if tokentype == 'registration':
         from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
-        length_action = ACTION.REGISTRATIONCODE_LENGTH
-        contents_action = ACTION.REGISTRATIONCODE_CONTENTS
+        length_action = PolicyAction.REGISTRATIONCODE_LENGTH
+        contents_action = PolicyAction.REGISTRATIONCODE_CONTENTS
     elif tokentype == 'pw':
         from privacyidea.lib.tokens.passwordtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
-        length_action = ACTION.PASSWORD_LENGTH
-        contents_action = ACTION.PASSWORD_CONTENTS
+        length_action = PolicyAction.PASSWORD_LENGTH
+        contents_action = PolicyAction.PASSWORD_CONTENTS
     else:
         return True
 
@@ -824,7 +823,7 @@ def check_max_token_user(request=None, action=None):
 
         # check maximum number of type specific tokens of user
         limit_list = Match.user(g, scope=SCOPE.ENROLL,
-                                action="{0!s}_{1!s}".format(tokentype.lower(), ACTION.MAXTOKENUSER),
+                                action="{0!s}_{1!s}".format(tokentype.lower(), PolicyAction.MAXTOKENUSER),
                                 user_object=user_object).action_values(unique=False, write_to_audit_log=False)
         if limit_list:
             # we need to check how many tokens of this specific type the user already has assigned!
@@ -841,7 +840,7 @@ def check_max_token_user(request=None, action=None):
                     raise PolicyError(error_msg_type.format(tokentype))
 
         # check maximum tokens of user
-        limit_list = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.MAXTOKENUSER,
+        limit_list = Match.user(g, scope=SCOPE.ENROLL, action=PolicyAction.MAXTOKENUSER,
                                 user_object=user_object).action_values(unique=False, write_to_audit_log=False)
         if limit_list:
             # we need to check how many tokens the user already has assigned!
@@ -859,7 +858,7 @@ def check_max_token_user(request=None, action=None):
 
         # check maximum active tokens of user
         limit_list = Match.user(g, scope=SCOPE.ENROLL,
-                                action="{0!s}_{1!s}".format(tokentype, ACTION.MAXACTIVETOKENUSER),
+                                action="{0!s}_{1!s}".format(tokentype, PolicyAction.MAXACTIVETOKENUSER),
                                 user_object=user_object).action_values(unique=False, write_to_audit_log=False)
         if limit_list:
             # we need to check how many active tokens the user already has assigned!
@@ -876,7 +875,7 @@ def check_max_token_user(request=None, action=None):
                     raise PolicyError(error_msg_type_limit.format(tokentype))
 
         # check maximum active tokens of user
-        limit_list = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.MAXACTIVETOKENUSER,
+        limit_list = Match.user(g, scope=SCOPE.ENROLL, action=PolicyAction.MAXACTIVETOKENUSER,
                                 user_object=user_object).action_values(unique=False, write_to_audit_log=False)
         if limit_list:
             # we need to check how many active tokens the user already has assigned!
@@ -922,7 +921,7 @@ def check_max_token_realm(request=None, action=None):
         realm = params.get("realm")
 
     if realm:
-        limit_list = Match.realm(g, scope=SCOPE.ENROLL, action=ACTION.MAXTOKENREALM,
+        limit_list = Match.realm(g, scope=SCOPE.ENROLL, action=PolicyAction.MAXTOKENREALM,
                                  realm=realm).action_values(unique=False, write_to_audit_log=False)
         if limit_list:
             # we need to check how many tokens the realm already has assigned!
@@ -960,7 +959,7 @@ def set_realm(request=None, action=None):
     if request.User and request.User.login:
         user_object = request.User
         username = user_object.login
-        policy_match = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.SETREALM,
+        policy_match = Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.SETREALM,
                                   user_object=user_object)
         new_realm = policy_match.action_values(unique=False)
         if len(new_realm) > 1:
@@ -991,7 +990,7 @@ def required_email(request=None, action=None):
     """
     email = getParam(request.all_data, "email")
     email_found = False
-    email_pols = Match.action_only(g, scope=SCOPE.REGISTER, action=ACTION.REQUIREDEMAIL).action_values(unique=False)
+    email_pols = Match.action_only(g, scope=SCOPE.REGISTER, action=PolicyAction.REQUIREDEMAIL).action_values(unique=False)
     if email and email_pols:
         for email_pol in email_pols:
             # The policy is only "/regularexpr/".
@@ -1021,7 +1020,7 @@ def check_custom_user_attributes(request=None, action=None):
     ERROR = "You are not allowed to {0!s} the custom user attribute {1!s}!"
     is_allowed = False
     if action == "delete":
-        attr_pol_dict = Match.admin_or_user(g, action=ACTION.DELETE_USER_ATTRIBUTES,
+        attr_pol_dict = Match.admin_or_user(g, action=PolicyAction.DELETE_USER_ATTRIBUTES,
                                             user_obj=request.User).action_values(unique=False,
                                                                                  allow_white_space_in_action=True)
         attr_key = request.all_data.get("attrkey")
@@ -1035,7 +1034,7 @@ def check_custom_user_attributes(request=None, action=None):
         else:
             raise PolicyError(ERROR.format(action, attr_key))
     elif action == "set":
-        attr_pol_dict = Match.admin_or_user(g, action=ACTION.SET_USER_ATTRIBUTES,
+        attr_pol_dict = Match.admin_or_user(g, action=PolicyAction.SET_USER_ATTRIBUTES,
                                             user_obj=request.User).action_values(unique=False,
                                                                                  allow_white_space_in_action=True)
         attr_key = request.all_data.get("key")
@@ -1079,7 +1078,7 @@ def auditlog_age(request=None, action=None):
     :type action: basestring
     :returns: Always true. Modified the parameter request
     """
-    audit_age = Match.admin_or_user(g, action=ACTION.AUDIT_AGE, user_obj=request.User).action_values(unique=True)
+    audit_age = Match.admin_or_user(g, action=PolicyAction.AUDIT_AGE, user_obj=request.User).action_values(unique=True)
     timelimit = None
     timelimit_s = None
     for aa in audit_age:
@@ -1114,7 +1113,7 @@ def hide_audit_columns(request=None, action=None):
     :type action: basestring
     :returns: Always true. Modified the parameter request
     """
-    hidden_columns = Match.admin_or_user(g, action=ACTION.HIDE_AUDIT_COLUMNS,
+    hidden_columns = Match.admin_or_user(g, action=PolicyAction.HIDE_AUDIT_COLUMNS,
                                          user_obj=request.User).action_values(unique=False)
     request.all_data["hidden_columns"] = list(hidden_columns)
 
@@ -1141,7 +1140,7 @@ def mangle(request=None, action=None):
     """
     user_object = request.User
 
-    mangle_pols = Match.user(g, scope=SCOPE.AUTH, action=ACTION.MANGLE,
+    mangle_pols = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.MANGLE,
                              user_object=user_object).action_values(unique=False, write_to_audit_log=False)
     # We can have several mangle policies! One for user, one for realm and
     # one for pass. So we do no checking here.
@@ -1184,7 +1183,7 @@ def check_anonymous_user(request=None, action=None):
     return True
 
 
-def check_admin_tokenlist(request=None, action=ACTION.TOKENLIST):
+def check_admin_tokenlist(request=None, action=PolicyAction.TOKENLIST):
     """
     Depending on the policy scope=admin, action=tokenlist, the
     allowed_realms parameter is set to define, the token of which
@@ -1223,7 +1222,7 @@ def check_admin_tokenlist(request=None, action=ACTION.TOKENLIST):
         if wildcard:
             allowed_realms = None
 
-    if action == ACTION.CONTAINER_LIST:
+    if action == PolicyAction.CONTAINER_LIST:
         request.pi_allowed_container_realms = allowed_realms
     else:
         request.pi_allowed_realms = allowed_realms
@@ -1246,12 +1245,12 @@ def check_base_action(request=None, action=None, anonymous=False):
              "admin": "Admin actions are defined, but the action %s is not "
                       "allowed!" % action}
     params = request.all_data
-    user_object = request.User
-    resolver = user_object.resolver if user_object else None
+    user = request.User
+    resolver = user.resolver if user else None
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     # In certain cases we can not resolve the user by the serial!
-    if action is ACTION.AUDIT:
+    if action is PolicyAction.AUDIT:
         # In case of audit requests, the parameters "realm" and "user" are used for
         # filtering the audit log. So these values must not be taken from the request parameters,
         # but rather be NONE. The restriction for the allowed realms in the audit log is determined
@@ -1456,6 +1455,7 @@ def check_client_container_disabled_action(request=None, action=None):
     match = Match.generic(g,
                           scope=SCOPE.CONTAINER,
                           action=action,
+                          user_object=user_attributes.user,
                           user=user_attributes.username,
                           resolver=user_attributes.resolver,
                           realm=user_attributes.realm,
@@ -1542,9 +1542,9 @@ def check_container_register_rollover(request=None, action=None):
     params = request.all_data
     container_rollover = getParam(params, "rollover", optional)
     if container_rollover:
-        return check_container_action(request, ACTION.CONTAINER_ROLLOVER)
+        return check_container_action(request, PolicyAction.CONTAINER_ROLLOVER)
     else:
-        return check_container_action(request, ACTION.CONTAINER_REGISTER)
+        return check_container_action(request, PolicyAction.CONTAINER_REGISTER)
 
 
 def check_token_upload(request=None, action=None):
@@ -1560,12 +1560,12 @@ def check_token_upload(request=None, action=None):
     upload_allowed = True
     if tokenrealms:
         for trealm in tokenrealms.split(","):
-            if not Match.generic(g, scope=SCOPE.ADMIN, action=ACTION.IMPORT,
+            if not Match.generic(g, scope=SCOPE.ADMIN, action=PolicyAction.IMPORT,
                                  adminuser=g.logged_in_user.get("username"),
                                  adminrealm=g.logged_in_user.get("realm"), realm=trealm).allowed():
                 upload_allowed = False
     else:
-        upload_allowed = Match.generic(g, scope=SCOPE.ADMIN, action=ACTION.IMPORT,
+        upload_allowed = Match.generic(g, scope=SCOPE.ADMIN, action=PolicyAction.IMPORT,
                                        adminuser=g.logged_in_user.get("username"),
                                        adminrealm=g.logged_in_user.get("realm")).allowed()
     if not upload_allowed:
@@ -1602,6 +1602,23 @@ def check_token_init(request=None, action=None):
                                  user_object=request.User).allowed()
     if not init_allowed:
         raise PolicyError(ERROR.get(role))
+    return True
+
+
+def force_server_generate_key(request: Request, action=None):
+    """
+    Checks if for the given token type a policy to force the server to generate the key is set.
+
+    :param request:
+    :param action:
+    :return: True
+    """
+    params = request.all_data
+    tokentype = params.get("type", "HOTP")
+    action = f"{tokentype.lower()}_{PolicyAction.FORCE_SERVER_GENERATE}"
+    force_genkey = Match.admin_or_user(g, action=action, user_obj=request.User).allowed()
+    g.policies[action] = force_genkey
+
     return True
 
 
@@ -1644,7 +1661,7 @@ def api_key_required(request=None, action=None):
     user_object = request.User
 
     # Get the policies
-    action = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.APIKEY, user_object=user_object).policies()
+    action = Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.APIKEY, user_object=user_object).policies()
     # Do we have a policy?
     if action:
         # check if we were passed a correct JWT
@@ -1703,7 +1720,7 @@ def is_remote_user_allowed(req, write_to_audit_log=True):
         loginname, realm = split_user(req.remote_user)
         realm = realm or get_default_realm()
         ruser_active = Match.generic(g, scope=SCOPE.WEBUI,
-                                     action=ACTION.REMOTE_USER,
+                                     action=PolicyAction.REMOTE_USER,
                                      user=loginname,
                                      realm=realm).action_values(unique=False,
                                                                 write_to_audit_log=write_to_audit_log)
@@ -1779,7 +1796,8 @@ def pushtoken_add_config(request, action):
     """
     ttype = request.all_data.get("type")
     if ttype and ttype.lower() == "push":
-        request.all_data = get_pushtoken_add_config(g, request.all_data, request.User)
+        push_config = get_pushtoken_add_config(g, request.all_data, request.User)
+        g.policies.update(push_config)
 
 
 def u2ftoken_verify_cert(request, action):
@@ -1873,7 +1891,7 @@ def allowed_audit_realm(request=None, action=None):
     # for admins, as users are only allowed to view their own realm anyway (this
     # is ensured by the fixed "realm" parameter)
     if g.logged_in_user["role"] == ROLE.ADMIN:
-        pols = Match.admin(g, action=ACTION.AUDIT).policies()
+        pols = Match.admin(g, action=PolicyAction.AUDIT).policies()
         if pols:
             # get all values in realm:
             allowed_audit_realms = []
@@ -2090,7 +2108,7 @@ def fido2_auth(request, action):
     )
     # Challenge texts
     for t in [WebAuthnTokenClass, PasskeyTokenClass]:
-        action = f"{t.get_class_type().lower()}_{ACTION.CHALLENGETEXT}"
+        action = f"{t.get_class_type().lower()}_{PolicyAction.CHALLENGETEXT}"
         challenge_text = get_first_policy_value(action, t.get_default_challenge_text_auth(), scope=SCOPE.AUTH)
         request.all_data[action] = challenge_text
 
@@ -2109,7 +2127,7 @@ def fido2_auth(request, action):
     return True
 
 
-def get_first_policy_value(policy_action: str, default: str, scope: SCOPE, user: Union[User, None] = None,
+def get_first_policy_value(policy_action: str, default: str, scope: str, user: Union[User, None] = None,
                            allowed_values: Union[list, None] = None) -> str:
     """
     Get the first policy value for the given policy action and scope, using Match.user. If the policy does not exist,
@@ -2231,7 +2249,7 @@ def fido2_enroll(request, action):
 
     # Challenge texts
     for t in [PasskeyTokenClass, WebAuthnTokenClass]:
-        action = f"{t.get_class_type().lower()}_{ACTION.CHALLENGETEXT}"
+        action = f"{t.get_class_type().lower()}_{PolicyAction.CHALLENGETEXT}"
         challenge_text = get_first_policy_value(action, t.get_default_challenge_text_register(), SCOPE.ENROLL)
         request.all_data[action] = challenge_text
 
@@ -2430,7 +2448,7 @@ def hide_tokeninfo(request=None, action=None):
     :return: Always true. Modifies the parameter `request`
     :rtype: bool
     """
-    hidden_fields = Match.admin_or_user(g, action=ACTION.HIDE_TOKENINFO,
+    hidden_fields = Match.admin_or_user(g, action=PolicyAction.HIDE_TOKENINFO,
                                         user_obj=request.User).action_values(unique=False)
 
     request.all_data['hidden_tokeninfo'] = list(hidden_fields)
@@ -2459,7 +2477,7 @@ def hide_container_info(request=None, action=None):
         container_realms = get_container_realms(container_serial) if container_serial else None
     except ResourceNotFoundError:
         container_realms = None
-    hidden_fields = Match.admin_or_user(g=g, action=ACTION.HIDE_CONTAINER_INFO, user_obj=request.User,
+    hidden_fields = Match.admin_or_user(g=g, action=PolicyAction.HIDE_CONTAINER_INFO, user_obj=request.User,
                                         additional_realms=container_realms,
                                         container_serial=container_serial).action_values(unique=False)
 
@@ -2472,7 +2490,7 @@ def increase_failcounter_on_challenge(request=None, action=None):
     This is a decorator for /validate/check, validate/triggerchallenge and auth
     which sets the parameter increase_failcounter_on_challenge
     """
-    inc_fail_counter = Match.user(g, scope=SCOPE.AUTH, action=ACTION.INCREASE_FAILCOUNTER_ON_CHALLENGE,
+    inc_fail_counter = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.INCREASE_FAILCOUNTER_ON_CHALLENGE,
                                   user_object=request.User if hasattr(request, 'User') else None).any()
     request.all_data["increase_failcounter_on_challenge"] = inc_fail_counter
 
@@ -2495,7 +2513,7 @@ def require_description(request=None, action=None):
     user_object = request.User
     (role, username, realm, admin_user, admin_realm) = determine_logged_in_userparams(g.logged_in_user, params)
 
-    action_values = Match.generic(g, action=ACTION.REQUIRE_DESCRIPTION,
+    action_values = Match.generic(g, action=PolicyAction.REQUIRE_DESCRIPTION,
                                   scope=SCOPE.ENROLL,
                                   adminrealm=admin_realm,
                                   adminuser=admin_user,
@@ -2534,7 +2552,7 @@ def require_description_on_edit(request=None, action=None):
     user_object = request.User
     (role, username, realm, admin_user, admin_realm) = determine_logged_in_userparams(g.logged_in_user, params)
 
-    action_values = Match.generic(g, action=ACTION.REQUIRE_DESCRIPTION_ON_EDIT,
+    action_values = Match.generic(g, action=PolicyAction.REQUIRE_DESCRIPTION_ON_EDIT,
                                   scope=SCOPE.TOKEN,
                                   adminrealm=admin_realm,
                                   adminuser=admin_user,
@@ -2558,7 +2576,7 @@ def jwt_validity(request, action):
     :param action:
     :return:
     """
-    validity_time_pol = (Match.user(g, scope=SCOPE.WEBUI, action=ACTION.JWTVALIDITY,
+    validity_time_pol = (Match.user(g, scope=SCOPE.WEBUI, action=PolicyAction.JWTVALIDITY,
                                     user_object=request.User if hasattr(request, 'User') else None)
                          .action_values(unique=True))
 
@@ -2568,7 +2586,7 @@ def jwt_validity(request, action):
             validity_time = int(list(validity_time_pol)[0])
         except ValueError:
             log.warning(f"Invalid JWT validity period: {validity_time}. Using the default of 1 hour.")
-    request.all_data[ACTION.JWTVALIDITY] = validity_time
+    request.all_data[PolicyAction.JWTVALIDITY] = validity_time
     return True
 
 
@@ -2593,16 +2611,16 @@ def container_registration_config(request, action=None):
         log.error(f"Could not find container with serial {container_serial}.")
 
     # Get server url the client can contact
-    server_url_config = list(Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.PI_SERVER_URL,
+    server_url_config = list(Match.generic(g, scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_SERVER_URL,
                                            user_object=user, additional_realms=container_realms,
                                            container_serial=container_serial).action_values(unique=True))
     if len(server_url_config) == 0:
-        raise PolicyError(f"Missing enrollment policy {ACTION.PI_SERVER_URL}. Cannot register container.")
+        raise PolicyError(f"Missing enrollment policy {PolicyAction.CONTAINER_SERVER_URL}. Cannot register container.")
     request.all_data[SERVER_URL] = server_url_config[0]
 
     # Get validity time for the registration
     registration_ttl_config = list(Match.generic(g, scope=SCOPE.CONTAINER,
-                                                 action=ACTION.CONTAINER_REGISTRATION_TTL,
+                                                 action=PolicyAction.CONTAINER_REGISTRATION_TTL,
                                                  user_object=user, additional_realms=container_realms,
                                                  container_serial=container_serial).action_values(unique=True))
     if len(registration_ttl_config) > 0:
@@ -2615,7 +2633,7 @@ def container_registration_config(request, action=None):
 
     # Get validity time for further challenges
     challenge_ttl_config = list(Match.generic(g, scope=SCOPE.CONTAINER,
-                                              action=ACTION.CONTAINER_CHALLENGE_TTL,
+                                              action=PolicyAction.CONTAINER_CHALLENGE_TTL,
                                               user_object=user, additional_realms=container_realms,
                                               container_serial=container_serial).action_values(unique=True))
     if len(challenge_ttl_config) > 0:
@@ -2627,14 +2645,14 @@ def container_registration_config(request, action=None):
         request.all_data[CHALLENGE_TTL] = 2
 
     # Get ssl verify
-    ssl_verify_config = list(Match.generic(g, scope=SCOPE.CONTAINER, action=ACTION.CONTAINER_SSL_VERIFY,
+    ssl_verify_config = list(Match.generic(g, scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_SSL_VERIFY,
                                            user_object=user, additional_realms=container_realms,
                                            container_serial=container_serial).action_values(unique=True))
     if len(ssl_verify_config) > 0:
         request.all_data["ssl_verify"] = ssl_verify_config[0]
         if request.all_data["ssl_verify"] not in ["True", "False"]:
             log.debug(
-                f"Invalid value for {ACTION.CONTAINER_SSL_VERIFY}: {request.all_data['ssl_verify']}. Using 'True'.")
+                f"Invalid value for {PolicyAction.CONTAINER_SSL_VERIFY}: {request.all_data['ssl_verify']}. Using 'True'.")
             request.all_data["ssl_verify"] = 'True'
     else:
         request.all_data["ssl_verify"] = 'True'
@@ -2673,10 +2691,10 @@ def smartphone_config(request, action=None):
         container_realms = [realm.name for realm in container.realms]
 
         policies = {}
-        actions = [ACTION.CONTAINER_CLIENT_ROLLOVER,
-                   ACTION.INITIALLY_ADD_TOKENS_TO_CONTAINER,
-                   ACTION.DISABLE_CLIENT_TOKEN_DELETION,
-                   ACTION.DISABLE_CLIENT_CONTAINER_UNREGISTER]
+        actions = [PolicyAction.CONTAINER_CLIENT_ROLLOVER,
+                   PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER,
+                   PolicyAction.DISABLE_CLIENT_TOKEN_DELETION,
+                   PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER]
 
         for action in actions:
             # Check if action is allowed for the client
@@ -2703,7 +2721,7 @@ def rss_age(request, action):
     :param action: action value is not used in this decorator
     :return: True
     """
-    age_list = (Match.user(g, scope=SCOPE.WEBUI, action=ACTION.RSS_AGE,
+    age_list = (Match.user(g, scope=SCOPE.WEBUI, action=PolicyAction.RSS_AGE,
                            user_object=request.User if hasattr(request, 'User') else None).action_values(unique=True))
     # The default age for normal users is 0
     age = 0
@@ -2715,7 +2733,7 @@ def rss_age(request, action):
             age = int(list(age_list)[0])
         except ValueError:
             log.warning(f"Invalid RSS_AGE: {age_list}. Using the default.")
-    request.all_data[ACTION.RSS_AGE] = age
+    request.all_data[PolicyAction.RSS_AGE] = age
     return True
 
 
@@ -2728,13 +2746,13 @@ def disabled_token_types(request, action):
     :param action: The action parameter is not used in this decorator
     :return: True
     """
-    disabled = Match.user(g, scope=SCOPE.AUTH, action=ACTION.DISABLED_TOKEN_TYPES,
+    disabled = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.DISABLED_TOKEN_TYPES,
                           user_object=request.User if hasattr(request, 'User') else None).action_values(unique=False)
 
     if disabled:
-        request.all_data[ACTION.DISABLED_TOKEN_TYPES] = list(disabled)
+        request.all_data[PolicyAction.DISABLED_TOKEN_TYPES] = list(disabled)
     else:
-        request.all_data[ACTION.DISABLED_TOKEN_TYPES] = []
+        request.all_data[PolicyAction.DISABLED_TOKEN_TYPES] = []
 
     return True
 
@@ -2754,11 +2772,15 @@ def auth_timelimit(request, action):
     user = request.User
     # check if the user is an admin
     admin_realms = [x.lower() for x in current_app.config.get("SUPERUSER_REALM", [])]
-    local_admin = get_db_admin(user.login)
+    local_admin = g.get("resolved_user", {}).get("is_local_admin", False)
     if local_admin:
         # local admin
-        user = User(login=local_admin.username)
-        user_search_dict = {"user": user.login}
+        if get_default_realm() in admin_realms:
+            # for external admins the username is always written to the "administrator" column, which is also done for
+            # local admins if the default realm is an admin realm
+            user_search_dict = {"administrator": user.login}
+        else:
+            user_search_dict = {"user": user.login}
     elif user.realm and user.realm.lower() in admin_realms:
         # external admin
         user_search_dict = {"administrator": user.login, "realm": user.realm}
@@ -2770,10 +2792,11 @@ def auth_timelimit(request, action):
     result, reply_dict = check_max_auth_fail(user, user_search_dict, check_validate_check=not local_admin)
     if result:
         if local_admin:
-            user_search_dict = {"administrator": local_admin.username}
+            user_search_dict = {"administrator": user.login}
         result, reply_dict = check_max_auth_success(user, user_search_dict, check_validate_check=not local_admin)
 
     if not result:
-        raise AuthError(_("Authentication failure. The account has exceeded the authentication time limit!"), details=reply_dict)
+        raise AuthError(_("Authentication failure. The account has exceeded the authentication time limit!"),
+                        details=reply_dict)
 
     return True

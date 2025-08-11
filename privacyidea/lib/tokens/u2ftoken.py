@@ -40,8 +40,9 @@ from privacyidea.lib.tokens.u2f import (check_registration_data, url_decode,
                                         parse_response_data, check_response,
                                         x509name_to_string)
 from privacyidea.lib.error import ValidateError, PolicyError, ParameterError
-from privacyidea.lib.policy import (SCOPE, GROUP, ACTION, comma_escape_text,
+from privacyidea.lib.policy import (SCOPE, GROUP, comma_escape_text,
                                     get_action_values_from_options, Match)
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.utils import is_true, hexlify_and_unicode, to_unicode, convert_imagefile_to_dataimage
 import binascii
@@ -257,7 +258,7 @@ class U2fTokenClass(TokenClass):
                            'type': 'str',
                            'desc': _("This is a list of FQDN hostnames "
                                      "trusting the registered U2F tokens.")},
-                       ACTION.CHALLENGETEXT: {
+                       PolicyAction.CHALLENGETEXT: {
                            'type': 'str',
                            'desc': _('Use an alternative challenge text for telling the '
                                      'user to confirm with his U2F device. You can also '
@@ -285,12 +286,12 @@ class U2fTokenClass(TokenClass):
                            'desc': _("Do not verify the U2F attestation certificate."),
                            'group': GROUP.TOKEN
                        },
-                       ACTION.MAXTOKENUSER: {
+                       PolicyAction.MAXTOKENUSER: {
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of U2F tokens assigned."),
                            'group': GROUP.TOKEN
                        },
-                       ACTION.MAXACTIVETOKENUSER: {
+                       PolicyAction.MAXACTIVETOKENUSER: {
                            'type': 'int',
                            'desc': _(
                                "The user may only have this maximum number of active U2F tokens assigned."),
@@ -440,7 +441,7 @@ class U2fTokenClass(TokenClass):
         options = options or {}
         message = get_action_values_from_options(SCOPE.AUTH,
                                                  "{0!s}_{1!s}".format(self.get_class_type(),
-                                                                      ACTION.CHALLENGETEXT),
+                                                                      PolicyAction.CHALLENGETEXT),
                                                  options) or _('Please confirm with your U2F token ({0!s})').format(
             self.token.description)
 

@@ -1,0 +1,22 @@
+<div [@componentFade]
+     class="navigation-self-service-column">
+  <app-navigation-self-service-button key="{{this.ROUTE_PATHS.TOKENS}}"
+                                      matIconName="shield"
+                                      title="Token Overview" />
+  <app-navigation-self-service-button key="{{this.ROUTE_PATHS.TOKENS_ENROLLMENT}}"
+                                      matIconName="add_moderator"
+                                      title="Token Enrollment" />
+  <app-navigation-self-service-button key="{{this.ROUTE_PATHS.TOKENS_ASSIGN_TOKEN}}"
+                                      matIconName="admin_panel_settings"
+                                      matIconSize="tile-icon-large"
+                                      title="Assign Token" />
+  <app-navigation-self-service-button key="{{this.ROUTE_PATHS.TOKENS_CONTAINERS}}"
+                                      matIconClass="mdi--folder-search"
+                                      title="Container Overview" />
+  <app-navigation-self-service-button key="{{this.ROUTE_PATHS.TOKENS_CONTAINERS_CREATE}}"
+                                      matIconName="create_new_folder"
+                                      title="Create Container" />
+  <app-navigation-self-service-button key="{{this.ROUTE_PATHS.AUDIT}}"
+                                      matIconName="manage_search"
+                                      title="Audit Log" />
+</div>

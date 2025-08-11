@@ -3,10 +3,10 @@ This test file tests the lib.tokens.4eyestoken
 This depends on lib.tokenclass
 """
 import logging
-from testfixtures import LogCapture
-
+from testfixtures import log_capture
 from .base import MyTestCase
 from privacyidea.lib.tokens.foureyestoken import FourEyesTokenClass
+from privacyidea.lib.tokens.foureyestoken import log as foureyes_log
 from privacyidea.lib.token import init_token, check_serial_pass, remove_token, import_tokens, get_tokens
 from privacyidea.lib.user import User
 
@@ -38,7 +38,8 @@ class FourEyesTokenTestCase(MyTestCase):
 
         self.assertEqual(r._get_separator(), "|")
 
-    def test_03_authenticate(self):
+    @log_capture(level=logging.DEBUG)
+    def test_03_authenticate(self, capture):
         self.setUp_user_realms()
 
         init_token({"type": "pw",
@@ -64,13 +65,12 @@ class FourEyesTokenTestCase(MyTestCase):
                           "4eyes": "{0!s}:2".format(self.realm1),
                           "separator": " "})
 
-        logging.getLogger('privacyidea.lib.tokens.foureyestoken').setLevel(logging.DEBUG)
-        with LogCapture(level=logging.DEBUG) as lc:
-            r = check_serial_pass("eye1", "pin1password1 pin2password2")
-            self.assertTrue(r[0])
-            for log_record in lc.actual():
-                self.assertFalse(any(x in log_record[2] for x in ["password1", "pin1", "password2", "pin2"]),
-                                 log_record)
+        foureyes_log.setLevel(logging.DEBUG)
+        r = check_serial_pass("eye1", "pin1password1 pin2password2")
+        self.assertTrue(r[0], r)
+        log_msg = str(capture)
+        self.assertNotIn('pin1password1', log_msg, log_msg)
+        self.assertNotIn('pin2password2', log_msg, log_msg)
 
         # This triggers the challenge for the next token
         r = check_serial_pass("eye1", "pin1password1")
@@ -147,7 +147,9 @@ class FourEyesTokenTestCase(MyTestCase):
         }]
 
         # Import the token
-        import_tokens(token_data)
+
+        result = import_tokens(token_data)
+        self.assertIn("FOUR12345678", result.successful_tokens, result)
 
         # Retrieve the imported token
         foureyetoken = get_tokens(serial=token_data[0]["serial"])[0]
@@ -185,7 +187,8 @@ class FourEyesTokenTestCase(MyTestCase):
         r = check_serial_pass("FOUR12345678", "pin2password2")
         self.assertEqual(r[0], False)
         self.assertTrue("transaction_id" in r[1])
-        self.assertEqual(r[1].get("message"), 'Please authenticate with another token from either realm: realm1.')
+        self.assertEqual(r[1].get("message"),
+                         'Please authenticate with another token from either realm: realm1.')
 
         # Clean up
         remove_token(foureyetoken.token.serial)

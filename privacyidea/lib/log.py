@@ -22,11 +22,14 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+# SPDX-FileCopyrightText: 2025 Paul Lettich <paul.lettich@netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 from logging import Formatter
-import string
 import logging
 import functools
 from copy import deepcopy
+
 log = logging.getLogger(__name__)
 
 
@@ -91,21 +94,17 @@ DOCKER_LOGGING_CONFIG = {
 class SecureFormatter(Formatter):
 
     def format(self, record):
+        if 's_line' in record.__dict__ and '_called' not in record.__dict__:
+            # rotating file handler calls "format" to check for its length before
+            # emitting the actual line
+            record.msg += f" (called from {record.filename}:{record.lineno})"
+            record.lineno = record.__dict__["s_line"]
+            record._called = True
         message = super(SecureFormatter, self).format(record)
-        secured = False
-
-        s = ""
-        for c in message:
-            if c in string.printable:
-                s += c
-            else:
-                s += '.'
-                secured = True
-
-        if secured:
-            s = "!!!Log Entry Secured by SecureFormatter!!! " + s
-
-        return s
+        if not message.isprintable():
+            message = ''.join(map(lambda x: x if x.isprintable() else '.', message))
+            message = "!!Log Entry Secured by SecureFormatter!! " + message
+        return message
 
 
 class log_with(object):
@@ -175,8 +174,7 @@ class log_with(object):
 
             log_args = args
             log_kwds = kwds
-            if self.hide_args or self.hide_kwargs or \
-                    self.hide_args_keywords:
+            if self.hide_args or self.hide_kwargs or self.hide_args_keywords:
                 try:
                     level = self.logger.getEffectiveLevel()
                     # Check if we should not do the password logging.
@@ -200,12 +198,16 @@ class log_with(object):
                     log_args = ()
                     log_kwds = {}
             try:
+                import inspect
+                lno = inspect.getsourcelines(func)[1] + 1
                 if self.log_entry:
                     self.logger.debug(self.ENTRY_MESSAGE.format(
-                        func.__name__, log_args, log_kwds))
+                        func.__name__, log_args, log_kwds),
+                        stacklevel=2, extra={'s_line': lno})
                 else:
                     self.logger.debug(self.ENTRY_MESSAGE.format(
-                        func.__name__, "HIDDEN", "HIDDEN"))
+                        func.__name__, "HIDDEN", "HIDDEN"),
+                        stacklevel=2, extra={'s_line': lno})
             except Exception as exx:
                 self.logger.error(exx)
                 self.logger.error("Error during logging of function {0}! {1}".format(func.__name__, exx))
@@ -213,10 +215,16 @@ class log_with(object):
             f_result = func(*args, **kwds)
 
             try:
+                import inspect
+                lno = inspect.getsourcelines(func)[1] + 1
                 if self.log_exit:
-                    self.logger.debug(self.EXIT_MESSAGE.format(func.__name__, f_result))
+                    self.logger.debug(self.EXIT_MESSAGE.format(
+                        func.__name__, f_result),
+                        stacklevel=2, extra={'s_line': lno})
                 else:
-                    self.logger.debug(self.EXIT_MESSAGE.format(func.__name__, "HIDDEN"))
+                    self.logger.debug(self.EXIT_MESSAGE.format(
+                        func.__name__, "HIDDEN"),
+                        stacklevel=2, extra={'s_line': lno})
             except Exception as exx:
                 self.logger.error("Error during logging of function {0}! {1}".format(func.__name__, exx))
             return f_result

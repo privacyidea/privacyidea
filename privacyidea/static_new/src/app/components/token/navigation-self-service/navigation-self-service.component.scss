@@ -1,0 +1,15 @@
+@use "../../../../styles/styles";
+
+.navigation-self-service-column {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: var(--global-padding);
+  padding: calc(2 * var(--global-padding));
+  max-height: calc(var(--main-height) - var(--global-padding) * 2);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  height: 100vh;
+  background: var(--mat-sys-surface-container-high);
+}

@@ -134,6 +134,7 @@ def before_create_user_request():
     audit_username = get_optional(request.all_data, "user")
 
     ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
+    g.user_agent = ua_name
     g.audit_object.log({"success": False,
                         "user": audit_username,
                         "realm": audit_realm,
@@ -270,6 +271,7 @@ def before_container_request():
         audit_username = get_optional(request.all_data, "user")
 
     ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
+    g.user_agent = ua_name
     g.audit_object.log({"success": False,
                         "user": audit_username,
                         "realm": audit_realm,
@@ -325,6 +327,7 @@ def get_before_request_config():
     g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
     # Save the HTTP header in the localproxy object
     g.request_headers = request.headers
+    g.policies = {}
 
 
 def before_request():
@@ -402,6 +405,7 @@ def before_request():
         audit_username = get_optional(request.all_data, "user")
 
     ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
+    g.user_agent = ua_name
     g.audit_object.log({"success": False,
                         "serial": serial,
                         "user": audit_username,
@@ -487,6 +491,7 @@ def after_request(response):
 @serviceid_blueprint.app_errorhandler(AuthError)
 @container_blueprint.app_errorhandler(AuthError)
 @info_blueprint.app_errorhandler(AuthError)
+@jwtauth.app_errorhandler(AuthError)
 def auth_error(error):
     if "audit_object" in g:
         message = ''

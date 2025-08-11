@@ -1,0 +1,81 @@
+<mat-card [ngClass]="{
+    'card-margin-pad':
+      !overflowService.isWidthOverflowing(
+        'body',
+        overflowService.getOverflowThreshold()
+      )
+  }"
+          appearance="outlined">
+  <mat-card-content>
+    <div class="tab-list">
+      <mat-list class="padding-18">
+        <mat-list-item>
+          <button [ngClass]="
+              contentService.routeUrl() === ROUTE_PATHS.USERS
+                ? 'card-button-active'
+                : 'card-button'"
+                  [routerLink]=ROUTE_PATHS.USERS
+                  mat-flat-button>
+            <mat-icon>person</mat-icon>
+            Overview
+          </button>
+        </mat-list-item>
+
+        <mat-list-item>
+          <button [ngClass]="
+              contentService.routeUrl() === '#'
+                ? 'card-button-active'
+                : 'card-button-disabled'"
+                  [routerLink]="['#']"
+                  disabled
+                  mat-flat-button>
+            <mat-icon>person_add</mat-icon>
+            Add User
+          </button>
+        </mat-list-item>
+
+        <mat-list-item>
+          <button [ngClass]="
+              contentService.routeUrl() === '#'
+                ? 'card-button-active'
+                : 'card-button-disabled'"
+                  [routerLink]="['#']"
+                  disabled
+                  mat-flat-button>
+            <mat-icon>edit</mat-icon>
+            Edit Realms
+          </button>
+        </mat-list-item>
+
+        <br />
+        <mat-divider />
+        <br />
+
+        <mat-list-item>
+          <button (click)="versioningService.openDocumentation(contentService.routeUrl())"
+                  class="card-button"
+                  mat-flat-button>
+            <mat-icon>info_outline</mat-icon>
+            Help
+          </button>
+        </mat-list-item>
+
+        <br />
+        <mat-divider />
+        <br />
+
+        <mat-list-item class="height-auto">
+          <mat-form-field class="width-100">
+            <mat-label>Select Realm of User</mat-label>
+            <mat-select [(ngModel)]="userService.selectedUserRealm">
+              @for (option of realmService.realmOptions(); track option) {
+                <mat-option [value]="option">{{ option }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </mat-list-item>
+
+      </mat-list>
+    </div>
+  </mat-card-content>
+</mat-card>

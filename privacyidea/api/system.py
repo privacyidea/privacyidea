@@ -68,13 +68,13 @@ import re
 import socket
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.realm import get_realms
-from privacyidea.lib.policy import PolicyClass, ACTION
+from privacyidea.lib.policy import PolicyClass
+from ..lib.policies.actions import PolicyAction
 from privacyidea.lib.auth import get_db_admins
 from privacyidea.lib.crypto import geturandom, set_hsm_password, get_hsm
 from privacyidea.lib.importotp import GPGImport
 from privacyidea.lib.utils import hexlify_and_unicode, b64encode_and_unicode
 from privacyidea.lib.usercache import delete_user_cache
-from privacyidea.lib.challenge import cleanup_expired_challenges
 
 log = logging.getLogger(__name__)
 
@@ -84,7 +84,7 @@ system_blueprint = Blueprint('system_blueprint', __name__)
 
 @system_blueprint.route('/documentation', methods=['GET'])
 @admin_required
-@prepolicy(check_base_action, request, ACTION.CONFIGDOCUMENTATION)
+@prepolicy(check_base_action, request, PolicyAction.CONFIGDOCUMENTATION)
 def get_config_documentation():
     """
     returns an restructured text document, that describes the complete
@@ -211,7 +211,7 @@ def get_config(key=None):
 
 @system_blueprint.route('/setConfig', methods=['POST'])
 @admin_required
-@prepolicy(check_base_action, request, ACTION.SYSTEMWRITE)
+@prepolicy(check_base_action, request, PolicyAction.SYSTEMWRITE)
 def set_config():
     """
     set a configuration key or a set of configuration entries
@@ -281,7 +281,7 @@ def set_config():
 
 @system_blueprint.route('/setDefault', methods=['POST'])
 @admin_required
-@prepolicy(check_base_action, request, ACTION.SYSTEMWRITE)
+@prepolicy(check_base_action, request, PolicyAction.SYSTEMWRITE)
 def set_default():
     """
     define default settings for tokens. These default settings
@@ -328,7 +328,7 @@ def set_default():
 
 @system_blueprint.route('/<key>', methods=['DELETE'])
 @admin_required
-@prepolicy(check_base_action, request, ACTION.SYSTEMDELETE)
+@prepolicy(check_base_action, request, PolicyAction.SYSTEMDELETE)
 @log_with(log)
 def delete_config(key=None):
     """
@@ -348,7 +348,7 @@ def delete_config(key=None):
 
 @system_blueprint.route('/hsm', methods=['POST'])
 @admin_required
-@prepolicy(check_base_action, request, ACTION.SETHSM)
+@prepolicy(check_base_action, request, PolicyAction.SETHSM)
 @log_with(log)
 def set_security_module():
     """
@@ -377,7 +377,7 @@ def get_security_module():
 
 @system_blueprint.route('/random', methods=['GET'])
 @admin_required
-@prepolicy(check_base_action, request, action=ACTION.GETRANDOM)
+@prepolicy(check_base_action, request, action=PolicyAction.GETRANDOM)
 @log_with(log)
 def rand():
     """
@@ -408,7 +408,7 @@ def rand():
 
 @system_blueprint.route('/test/<tokentype>', methods=['POST'])
 @admin_required
-@prepolicy(check_base_action, request, action=ACTION.SYSTEMWRITE)
+@prepolicy(check_base_action, request, action=PolicyAction.SYSTEMWRITE)
 @log_with(log)
 def test(tokentype=None):
     """

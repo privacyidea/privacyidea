@@ -45,7 +45,7 @@ class Policy(TimestampMethodsMixin, db.Model):
     name = db.Column(db.Unicode(64), unique=True, nullable=False)
     user_case_insensitive = db.Column(db.Boolean, default=False)
     scope = db.Column(db.Unicode(32), nullable=False)
-    action = db.Column(db.Unicode(2000), default="")
+    action = db.Column(db.Text, default="")
     realm = db.Column(db.Unicode(256), default="")
     adminrealm = db.Column(db.Unicode(256), default="")
     adminuser = db.Column(db.Unicode(256), default="")
@@ -54,6 +54,7 @@ class Policy(TimestampMethodsMixin, db.Model):
     user = db.Column(db.Unicode(256), default="")
     client = db.Column(db.Unicode(256), default="")
     time = db.Column(db.Unicode(64), default="")
+    user_agents = db.Column(db.Unicode(256), default="")
     # If there are multiple matching policies, choose the one
     # with the lowest priority number. We choose 1 to be the default priority.
     priority = db.Column(db.Integer, default=1, nullable=False)
@@ -72,7 +73,7 @@ class Policy(TimestampMethodsMixin, db.Model):
     def __init__(self, name,
                  active=True, scope="", action="", realm="", adminrealm="", adminuser="",
                  resolver="", user="", client="", time="", pinode="", priority=1,
-                 check_all_resolvers=False, conditions=None, user_case_insensitive=False):
+                 check_all_resolvers=False, conditions=None, user_case_insensitive=False, user_agents=None):
         if isinstance(active, str):
             active = is_true(active.lower())
         self.name = name
@@ -91,6 +92,7 @@ class Policy(TimestampMethodsMixin, db.Model):
         self.time = time
         self.priority = priority
         self.check_all_resolvers = check_all_resolvers
+        self.user_agents = user_agents
         self.conditions = []
 
     def get_conditions_tuples(self):
@@ -148,7 +150,8 @@ class Policy(TimestampMethodsMixin, db.Model):
              "time": self.time,
              "conditions": self.get_conditions_tuples(),
              "priority": self.priority,
-             "description": self.get_policy_description()}
+             "description": self.get_policy_description(),
+             "user_agents": self._split_string(self.user_agents)}
         action_list = [x.strip().split("=", 1) for x in re.split(r'(?<!\\),', self.action or "")]
         action_dict = {}
         for a in action_list:

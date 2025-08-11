@@ -1,12 +1,10 @@
 """v3.12: Add column 'handle_missing_data' to the policycondition table
 
-
 Revision ID: 5f40baab76ca
 Revises: 903a6ed6f6c4
 Create Date: 2025-04-04 09:57:56.313709
 
 """
-
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.exc import OperationalError, ProgrammingError

@@ -16,14 +16,15 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import logging
 import functools
+import logging
 
-from privacyidea.api.lib.utils import get_optional_one_of
-from privacyidea.lib.error import TokenAdminError
-from privacyidea.lib.error import ParameterError
+from privacyidea.api.lib.utils import get_optional_one_of, get_optional
 from privacyidea.lib import _
+from privacyidea.lib.error import ParameterError
+from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.utils import check_serial_valid
+
 log = logging.getLogger(__name__)
 
 
@@ -100,6 +101,7 @@ class check_user_serial_or_cred_id_in_request(object):
     Decorator to check user and serial in a request.
     If the request does not contain a serial number (serial) or a user
     (user) it will throw a ParameterError.
+    # todo this is becoming pointless
     """
     def __init__(self, request):
         self.request = request
@@ -110,7 +112,8 @@ class check_user_serial_or_cred_id_in_request(object):
             user = self.request.all_data.get("user", "").strip()
             serial = self.request.all_data.get("serial", "").strip()
             credential_id = get_optional_one_of(self.request.all_data, ["credential_id", "credentialid"])
-            if not serial and not user and not credential_id:
+            cancel_enrollment = get_optional(self.request.all_data, "cancel_enrollment")
+            if not serial and not user and not credential_id and not cancel_enrollment:
                 raise ParameterError(_("You need to specify a serial, user or credential_id."))
             if "*" in serial:
                 raise ParameterError(_("Invalid serial number."))

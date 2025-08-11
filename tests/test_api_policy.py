@@ -3,10 +3,11 @@ from testfixtures import LogCapture
 
 from privacyidea.lib.container import create_container_template, get_template_obj
 from privacyidea.lib.error import ParameterError
-from privacyidea.lib.policies.policy_conditions import ConditionSection, ConditionHandleMissingData
+from privacyidea.lib.policies.conditions import ConditionSection, ConditionHandleMissingData
 from privacyidea.lib.utils.compare import PrimaryComparators
 from .base import MyApiTestCase
-from privacyidea.lib.policy import (set_policy, SCOPE, ACTION, delete_policy, rename_policy)
+from privacyidea.lib.policy import (set_policy, SCOPE, delete_policy, rename_policy)
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
 from privacyidea.models import db, NodeName
@@ -33,7 +34,7 @@ class APIPolicyTestCase(MyApiTestCase):
             self.assertEqual(res.content_length, 0, res)
 
         # test export with a given policy
-        set_policy("hide_welcome", scope=SCOPE.WEBUI, action=ACTION.HIDE_WELCOME, client="10.1.2.3")
+        set_policy("hide_welcome", scope=SCOPE.WEBUI, action=PolicyAction.HIDE_WELCOME, client="10.1.2.3")
         with self.app.test_request_context('/policy/export/pols.txt',
                                            method='GET',
                                            headers={'Authorization': self.at}):
@@ -48,7 +49,7 @@ class APIPolicyTestCase(MyApiTestCase):
         self.setUp_user_realms()
         with self.app.test_request_context('/policy/pol1',
                                            method='POST',
-                                           data={"action": ACTION.NODETAILFAIL,
+                                           data={"action": PolicyAction.NODETAILFAIL,
                                                  "client": "10.1.2.3",
                                                  "scope": SCOPE.AUTHZ,
                                                  "check_all_resolvers": "true",
@@ -93,7 +94,7 @@ class APIPolicyTestCase(MyApiTestCase):
         with self.app.test_request_context('/policy/pol1',
                                            method='POST',
                                            data={
-                                               "action": ACTION.NODETAILFAIL,
+                                               "action": PolicyAction.NODETAILFAIL,
                                                "client": "10.1.2.3",
                                                "scope": SCOPE.AUTHZ,
                                                "check_all_resolvers": "false",
@@ -127,7 +128,7 @@ class APIPolicyTestCase(MyApiTestCase):
         db.session.add(NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a8", name="Node1"))
         with self.app.test_request_context('/policy/polpinode',
                                            method='POST',
-                                           data={"action": ACTION.NODETAILFAIL,
+                                           data={"action": PolicyAction.NODETAILFAIL,
                                                  "client": "10.1.2.3",
                                                  "scope": SCOPE.AUTHZ,
                                                  "pinode": "Node1",
@@ -174,7 +175,7 @@ class APIPolicyTestCase(MyApiTestCase):
                        True, ConditionHandleMissingData.IS_TRUE.value]]
         with self.app.test_request_context('/policy/cond1',
                                            method='POST',
-                                           json={"action": ACTION.NODETAILFAIL,
+                                           json={"action": PolicyAction.NODETAILFAIL,
                                                  "client": "10.1.2.3",
                                                  "scope": SCOPE.AUTHZ,
                                                  "realm": self.realm1,
@@ -202,7 +203,7 @@ class APIPolicyTestCase(MyApiTestCase):
         # update the policy, but not its conditions
         with self.app.test_request_context('/policy/cond1',
                                            method='POST',
-                                           json={"action": ACTION.NODETAILFAIL,
+                                           json={"action": PolicyAction.NODETAILFAIL,
                                                  "client": "10.1.2.3",
                                                  "scope": SCOPE.AUTHZ,
                                                  "realm": self.realm2},
@@ -229,7 +230,7 @@ class APIPolicyTestCase(MyApiTestCase):
         # update the policy conditions
         with self.app.test_request_context('/policy/cond1',
                                            method='POST',
-                                           json={"action": ACTION.NODETAILFAIL,
+                                           json={"action": PolicyAction.NODETAILFAIL,
                                                  "client": "10.1.2.3",
                                                  "scope": SCOPE.AUTHZ,
                                                  "conditions": [[ConditionSection.USERINFO, "type",
@@ -259,7 +260,7 @@ class APIPolicyTestCase(MyApiTestCase):
         # no 5-/6-tuples
         with self.app.test_request_context('/policy/cond1',
                                            method='POST',
-                                           json={"action": ACTION.NODETAILFAIL,
+                                           json={"action": PolicyAction.NODETAILFAIL,
                                                  "client": "10.1.2.3",
                                                  "scope": SCOPE.AUTHZ,
                                                  "conditions": [[ConditionSection.USERINFO, "type",
@@ -271,7 +272,7 @@ class APIPolicyTestCase(MyApiTestCase):
 
         with self.app.test_request_context('/policy/cond1',
                                            method='POST',
-                                           json={"action": ACTION.NODETAILFAIL,
+                                           json={"action": PolicyAction.NODETAILFAIL,
                                                  "client": "10.1.2.3",
                                                  "scope": SCOPE.AUTHZ,
                                                  "conditions": [[ConditionSection.USERINFO, "type",
@@ -286,7 +287,7 @@ class APIPolicyTestCase(MyApiTestCase):
         # wrong types
         with self.app.test_request_context('/policy/cond1',
                                            method='POST',
-                                           json={"action": ACTION.NODETAILFAIL,
+                                           json={"action": PolicyAction.NODETAILFAIL,
                                                  "client": "10.1.2.3",
                                                  "scope": SCOPE.AUTHZ,
                                                  "conditions": [[ConditionSection.USERINFO, "type",
@@ -298,7 +299,7 @@ class APIPolicyTestCase(MyApiTestCase):
 
         with self.app.test_request_context('/policy/cond1',
                                            method='POST',
-                                           json={"action": ACTION.NODETAILFAIL,
+                                           json={"action": PolicyAction.NODETAILFAIL,
                                                  "client": "10.1.2.3",
                                                  "scope": SCOPE.AUTHZ,
                                                  "conditions": [[ConditionSection.USERINFO, "type",
@@ -311,7 +312,7 @@ class APIPolicyTestCase(MyApiTestCase):
         # reset conditions
         with self.app.test_request_context('/policy/cond1',
                                            method='POST',
-                                           json={"action": ACTION.NODETAILFAIL,
+                                           json={"action": PolicyAction.NODETAILFAIL,
                                                  "client": "10.1.2.3",
                                                  "scope": SCOPE.AUTHZ,
                                                  "conditions": [],
@@ -343,7 +344,7 @@ class APIPolicyTestCase(MyApiTestCase):
         self.setUp_user_realms()
         # Set an invalid admin realm throws ParameterError
         with self.app.test_request_context("/policy/pol1adminuser", method="POST",
-                                           data={"action": f"{ACTION.POLICYDELETE}, {ACTION.POLICYREAD}",
+                                           data={"action": f"{PolicyAction.POLICYDELETE}, {PolicyAction.POLICYREAD}",
                                                  "scope": SCOPE.ADMIN,
                                                  "realm": "",
                                                  "adminrealm": "test",
@@ -355,7 +356,7 @@ class APIPolicyTestCase(MyApiTestCase):
 
         # Set a user realm as admin realm fails
         with self.app.test_request_context("/policy/pol1adminuser", method="POST",
-                                           data={"action": f"{ACTION.POLICYDELETE}, {ACTION.POLICYREAD}",
+                                           data={"action": f"{PolicyAction.POLICYDELETE}, {PolicyAction.POLICYREAD}",
                                                  "scope": SCOPE.ADMIN,
                                                  "realm": "",
                                                  "adminrealm": self.realm1,
@@ -368,7 +369,7 @@ class APIPolicyTestCase(MyApiTestCase):
         # Set a correct admin realm
         with self.app.test_request_context('/policy/pol1adminuser',
                                            method='POST',
-                                           data={"action": f"{ACTION.POLICYDELETE}, {ACTION.POLICYREAD}",
+                                           data={"action": f"{PolicyAction.POLICYDELETE}, {PolicyAction.POLICYREAD}",
                                                  "scope": SCOPE.ADMIN,
                                                  "realm": "",
                                                  "adminrealm": "adminrealm",
@@ -381,7 +382,7 @@ class APIPolicyTestCase(MyApiTestCase):
         # Set a policy for the user testadmin
         with self.app.test_request_context('/policy/pol1adminuser',
                                            method='POST',
-                                           data={"action": f"{ACTION.POLICYDELETE}, {ACTION.POLICYREAD}",
+                                           data={"action": f"{PolicyAction.POLICYDELETE}, {PolicyAction.POLICYREAD}",
                                                  "scope": SCOPE.ADMIN,
                                                  "realm": "",
                                                  "adminuser": "testadmin",
@@ -471,7 +472,7 @@ class APIPolicyTestCase(MyApiTestCase):
                                            method='POST',
                                            json={
                                                "client": "10.1.2.3.4",
-                                               "action": ACTION.NODETAILSUCCESS,
+                                               "action": PolicyAction.NODETAILSUCCESS,
                                                "realm": "realm1",
                                                "conditions": [[ConditionSection.HTTP_REQUEST_HEADER, "User-Agent",
                                                                "broken", "SpecialApp", True]],
@@ -489,7 +490,7 @@ class APIPolicyTestCase(MyApiTestCase):
                 '/policy/pol_old',
                 method='POST',
                 json={
-                    "action": ACTION.NODETAILFAIL,
+                    "action": PolicyAction.NODETAILFAIL,
                     "client": "10.1.2.3",
                     "scope": SCOPE.AUTHZ,
                     "realm": "realm1"},
@@ -558,7 +559,7 @@ class APIPolicyTestCase(MyApiTestCase):
                 "/policy/pol_a",
                 method="POST",
                 json={
-                    "action": ACTION.NODETAILFAIL,
+                    "action": PolicyAction.NODETAILFAIL,
                     "client": "10.1.2.3",
                     "scope": SCOPE.AUTHZ,
                     "realm": "realm1"},
@@ -569,7 +570,7 @@ class APIPolicyTestCase(MyApiTestCase):
                 "/policy/pol_b",
                 method="POST",
                 json={
-                    "action": ACTION.NODETAILFAIL,
+                    "action": PolicyAction.NODETAILFAIL,
                     "client": "10.1.2.3",
                     "scope": SCOPE.AUTHZ,
                     "realm": "realm1"},
@@ -608,7 +609,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
     def test_01_check_httpheader_condition_success(self):
         # set a policy with conditions
         # Request from a certain user agent will not see the detail
-        set_policy("policy", scope=SCOPE.AUTHZ, action=ACTION.NODETAILSUCCESS, client="10.1.2.3",
+        set_policy("policy", scope=SCOPE.AUTHZ, action=PolicyAction.NODETAILSUCCESS, client="10.1.2.3",
                    realm=self.realm1, conditions=[(ConditionSection.HTTP_REQUEST_HEADER, "User-Agent",
                                                    PrimaryComparators.EQUALS, "SpecialApp", True,
                                                    ConditionHandleMissingData.RAISE_ERROR.value)])
@@ -640,7 +641,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
 
     def test_02_check_httpheader_condition_missing_data(self):
         # ---- Raises error for missing data ----
-        set_policy("policy", scope=SCOPE.AUTHZ, action=ACTION.NODETAILSUCCESS, client="10.1.2.3",
+        set_policy("policy", scope=SCOPE.AUTHZ, action=PolicyAction.NODETAILSUCCESS, client="10.1.2.3",
                    realm=self.realm1, conditions=[(ConditionSection.HTTP_REQUEST_HEADER, "User-Agent",
                                                    PrimaryComparators.EQUALS, "SpecialApp", True,
                                                    ConditionHandleMissingData.RAISE_ERROR.value)])
@@ -657,7 +658,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
                 self.assertIn("Unknown HTTP Request header key 'User-Agent' referenced in condition of policy "
                               "'policy'!", result["result"]["error"]["message"])
                 # Make sure the missing key is described in the error log
-                lc.check_present(("privacyidea.lib.policies.policy_conditions", "ERROR",
+                lc.check_present(("privacyidea.lib.policies.conditions", "ERROR",
                                   "Unknown HTTP Request header key 'User-Agent' referenced in condition of policy "
                                   "'policy'."))
 
@@ -673,13 +674,13 @@ class APIPolicyConditionTestCase(MyApiTestCase):
                 self.assertIn("Unknown HTTP Request header key 'User-Agent' referenced in condition of policy '"
                               "policy'!", result["result"]["error"]["message"])
                 # Make sure the missing key is described in the error log
-                lc.check_present(("privacyidea.lib.policies.policy_conditions", "ERROR",
+                lc.check_present(("privacyidea.lib.policies.conditions", "ERROR",
                                   "Unknown HTTP Request header key 'User-Agent' "
                                   "referenced in condition of policy 'policy'."))
 
         # ---- Policy match for missing data ----
         # Define policy shall match if header or key is not present
-        set_policy("policy", scope=SCOPE.AUTHZ, action=ACTION.NODETAILSUCCESS, client="10.1.2.3",
+        set_policy("policy", scope=SCOPE.AUTHZ, action=PolicyAction.NODETAILSUCCESS, client="10.1.2.3",
                    realm=self.realm1, conditions=[(ConditionSection.HTTP_REQUEST_HEADER, "User-Agent", "equals",
                                                    "SpecialApp", True, ConditionHandleMissingData.IS_TRUE.value)])
 
@@ -706,7 +707,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
 
         # ---- Policy not match for missing data ----
         # Define policy shall not match if header or key is not present
-        set_policy("policy", scope=SCOPE.AUTHZ, action=ACTION.NODETAILSUCCESS, client="10.1.2.3",
+        set_policy("policy", scope=SCOPE.AUTHZ, action=PolicyAction.NODETAILSUCCESS, client="10.1.2.3",
                    realm=self.realm1, conditions=[(ConditionSection.HTTP_REQUEST_HEADER, "User-Agent", "equals",
                                                    "SpecialApp", True, ConditionHandleMissingData.IS_FALSE.value)])
 
@@ -737,7 +738,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
 
     def test_03_check_httpheader_condition_invalid(self):
         # Error for invalid comparator
-        set_policy("policy", scope=SCOPE.AUTHZ, action=ACTION.NODETAILSUCCESS, client="10.1.2.3",
+        set_policy("policy", scope=SCOPE.AUTHZ, action=PolicyAction.NODETAILSUCCESS, client="10.1.2.3",
                    realm=self.realm1, conditions=[(ConditionSection.HTTP_REQUEST_HEADER, "User-Agent",
                                                    PrimaryComparators.CONTAINS, "SpecialApp", True,
                                                    ConditionHandleMissingData.RAISE_ERROR.value)])
@@ -768,7 +769,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
             self.assertEqual(result.get("detail").get("message"), "matching 1 tokens")
 
         # set a policy with conditions
-        set_policy("policy", scope=SCOPE.AUTHZ, action=ACTION.NODETAILSUCCESS, realm=self.realm1,
+        set_policy("policy", scope=SCOPE.AUTHZ, action=PolicyAction.NODETAILSUCCESS, realm=self.realm1,
                    client="10.1.2.3", conditions=[(ConditionSection.HTTP_ENVIRONMENT, "REQUEST_METHOD",
                                                    PrimaryComparators.EQUALS, "POST", True)])
 
@@ -798,7 +799,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
         # Now we run a test with a non-existing environment key
         with self.app.test_request_context('/policy/cond1',
                                            method='POST',
-                                           json={"action": ACTION.NODETAILSUCCESS,
+                                           json={"action": PolicyAction.NODETAILSUCCESS,
                                                  "realm": "realm1",
                                                  "client": "10.1.2.3",
                                                  "conditions": [[ConditionSection.HTTP_ENVIRONMENT, "NON_EXISTING",
@@ -820,7 +821,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
                               "'cond1'!",
                               result["result"]["error"]["message"])
                 # Make sure the missing key is described in the error log
-                lc.check_present(("privacyidea.lib.policies.policy_conditions", "ERROR",
+                lc.check_present(("privacyidea.lib.policies.conditions", "ERROR",
                                   "Unknown HTTP Environment key 'NON_EXISTING' referenced in condition of policy "
                                   "'cond1'."))
 
@@ -828,7 +829,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
 
     def test_05_check_http_environment_condition_missing_data(self):
         # Raise Error
-        set_policy("policy", scope=SCOPE.AUTHZ, action=ACTION.NODETAILSUCCESS, realm=self.realm1,
+        set_policy("policy", scope=SCOPE.AUTHZ, action=PolicyAction.NODETAILSUCCESS, realm=self.realm1,
                    client="10.1.2.3", conditions=[(ConditionSection.HTTP_ENVIRONMENT, "NON_EXISTING",
                                                    PrimaryComparators.EQUALS, "POST", True,
                                                    ConditionHandleMissingData.RAISE_ERROR.value)])
@@ -844,7 +845,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
                              result["result"]["error"]["message"])
 
         # Policy matches (condition is true)
-        set_policy("policy", scope=SCOPE.AUTHZ, action=ACTION.NODETAILSUCCESS, realm=self.realm1,
+        set_policy("policy", scope=SCOPE.AUTHZ, action=PolicyAction.NODETAILSUCCESS, realm=self.realm1,
                    client="10.1.2.3", conditions=[(ConditionSection.HTTP_ENVIRONMENT, "NON_EXISTING",
                                                    PrimaryComparators.EQUALS, "POST", True,
                                                    ConditionHandleMissingData.IS_TRUE.value)])
@@ -859,7 +860,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
             self.assertFalse("detail" in result)
 
         # Policy not matches (condition is false)
-        set_policy("policy", scope=SCOPE.AUTHZ, action=ACTION.NODETAILSUCCESS, realm=self.realm1,
+        set_policy("policy", scope=SCOPE.AUTHZ, action=PolicyAction.NODETAILSUCCESS, realm=self.realm1,
                    client="10.1.2.3", conditions=[(ConditionSection.HTTP_ENVIRONMENT, "NON_EXISTING",
                                                    PrimaryComparators.EQUALS, "POST", True,
                                                    ConditionHandleMissingData.IS_FALSE.value)])
@@ -877,10 +878,10 @@ class APIPolicyConditionTestCase(MyApiTestCase):
         delete_policy("policy")
 
     def test_06_check_request_data_condition_success(self):
-        set_policy("policy_hotp", scope=SCOPE.ENROLL, action={ACTION.TOKENLABEL: "pi_offline"},
+        set_policy("policy_hotp", scope=SCOPE.ENROLL, action={PolicyAction.TOKENLABEL: "pi_offline"},
                    conditions=[(ConditionSection.REQUEST_DATA, "type", PrimaryComparators.EQUALS, "hotp", True,
-                                                   ConditionHandleMissingData.IS_FALSE.value)])
-        set_policy("policy_totp", scope=SCOPE.ENROLL, action={ACTION.TOKENLABEL: "pi_online"},
+                                ConditionHandleMissingData.IS_FALSE.value)])
+        set_policy("policy_totp", scope=SCOPE.ENROLL, action={PolicyAction.TOKENLABEL: "pi_online"},
                    conditions=[(ConditionSection.REQUEST_DATA, "type", PrimaryComparators.EQUALS, "totp", True,
                                 ConditionHandleMissingData.IS_FALSE.value)])
 
@@ -924,7 +925,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
 
     def test_07_check_request_data_condition_missing_data(self):
         # only allow to create container from template
-        set_policy("policy", scope=SCOPE.ADMIN, action=[ACTION.CONTAINER_CREATE],
+        set_policy("policy", scope=SCOPE.ADMIN, action=[PolicyAction.CONTAINER_CREATE],
                    conditions=[(ConditionSection.REQUEST_DATA, "template_name", PrimaryComparators.MATCHES, ".+", True,
                                 ConditionHandleMissingData.IS_FALSE.value)])
         set_policy("policy_token", scope=SCOPE.ADMIN, action="enrollTOTP")
@@ -934,7 +935,8 @@ class APIPolicyConditionTestCase(MyApiTestCase):
         # Creation with template is allowed
         with self.app.test_request_context("/container/init",
                                            method="POST",
-                                           json={"type": "smartphone", "container_serial": "SMPH001", "template_name": "test"},
+                                           json={"type": "smartphone", "container_serial": "SMPH001",
+                                                 "template_name": "test"},
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
@@ -962,3 +964,79 @@ class APIPolicyConditionTestCase(MyApiTestCase):
         delete_policy("policy")
         delete_policy("policy_token")
         get_template_obj("test").delete()
+
+    def test_08_user_agent(self):
+        set_policy(name="policy-cp", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp",
+                   user_agents=["privacyidea-cp", "PAM"])
+        set_policy(name="policy-keycloak", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=totp push",
+                   user_agents=["privacyIDEA-Keycloak"])
+        set_policy(name="policy-no-agent", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=daypassword")
+
+        self.setUp_user_realms()
+        user = User("selfservice", self.realm1)
+        hotp = init_token({"type": "hotp", "genkey": True, "pin": "1234"}, user=user)
+        totp = init_token({"type": "totp", "genkey": True, "pin": "1234"}, user=user)
+        daypassword = init_token({"type": "daypassword", "genkey": True, "pin": "1234"}, user=user)
+
+        # validate/check with CP triggers challenges for HOTP and daypassword
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": user.login, "pass": "1234"},
+                                           headers={"User-Agent": "privacyidea-cp"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertFalse(result.get("value"))
+            self.assertEqual(result.get("authentication"), "CHALLENGE")
+            challenges = res.json.get("detail").get("multi_challenge")
+            self.assertEqual(2, len(challenges))
+            challenge_serials = {c.get("serial") for c in challenges}
+            self.assertSetEqual({hotp.get_serial(), daypassword.get_serial()}, challenge_serials, challenge_serials)
+
+        # validate/check with Keycloak
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": user.login, "pass": "1234"},
+                                           headers={"User-Agent": "privacyidea-Keycloak"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertFalse(result.get("value"))
+            self.assertEqual(result.get("authentication"), "CHALLENGE")
+            challenges = res.json.get("detail").get("multi_challenge")
+            self.assertEqual(2, len(challenges))
+            challenge_serials = {c.get("serial") for c in challenges}
+            self.assertSetEqual({totp.get_serial(), daypassword.get_serial()}, challenge_serials, challenge_serials)
+
+        # validate/check with Mozilla
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": user.login, "pass": "1234"},
+                                           headers={"User-Agent": "Mozilla"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertFalse(result.get("value"))
+            self.assertEqual(result.get("authentication"), "CHALLENGE")
+            challenges = res.json.get("detail").get("multi_challenge")
+            self.assertEqual(1, len(challenges))
+            challenge_serials = {c.get("serial") for c in challenges}
+            self.assertSetEqual({daypassword.get_serial()}, challenge_serials, challenge_serials)
+
+        # validate/check without user agent
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": user.login, "pass": "1234"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertFalse(result.get("value"))
+            self.assertEqual(result.get("authentication"), "CHALLENGE")
+            challenges = res.json.get("detail").get("multi_challenge")
+            self.assertEqual(1, len(challenges))
+            challenge_serials = {c.get("serial") for c in challenges}
+            self.assertSetEqual({daypassword.get_serial()}, challenge_serials, challenge_serials)

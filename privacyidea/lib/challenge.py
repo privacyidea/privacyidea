@@ -26,7 +26,9 @@ The method is tested in test_lib_challenges
 """
 import datetime
 import logging
+
 from .log import log_with
+from .policies.actions import PolicyAction
 from .sqlutils import delete_matching_rows
 from ..models import Challenge, db
 
@@ -82,8 +84,7 @@ def get_challenges_paginate(serial=None, transaction_id=None,
     :return: dict with challenges, prev, next and count
     :rtype: dict
     """
-    sql_query = _create_challenge_query(serial=serial,
-                                        transaction_id=transaction_id)
+    sql_query = _create_challenge_query(serial=serial, transaction_id=transaction_id)
 
     if isinstance(sortby, str):
         # convert the string to a Challenge column
@@ -194,13 +195,70 @@ def _build_challenge_criterion(age: int = None) -> 'sqlalchemy.sql.expression.Bi
     return Challenge.expiration < utc_now
 
 
-def cleanup_expired_challenges(chunksize: int = None, age: int = None) -> int:
+def cleanup_expired_challenges(chunk_size: int = None, age: int = None) -> int:
     """
     Delete only expired challenges from the challenge table, or delete expired challenges older than the given age.
 
-    :param chunksize: Delete entries in chunks of the given size to avoid deadlocks
+    :param chunk_size: Delete entries in chunks of the given size to avoid deadlocks
     :param age: Instead of deleting expired challenges, delete challenge entries older than these number of minutes.
     :return: number of deleted entries
     """
     criterion = _build_challenge_criterion(age)
-    return delete_matching_rows(db.session, Challenge.__table__, criterion, chunksize)
+    return delete_matching_rows(db.session, Challenge.__table__, criterion, chunk_size)
+
+
+def cancel_enrollment_via_multichallenge(transaction_id: str) -> bool:
+    """
+    Cancel the enrollment via multichallenge for a given transaction_id by removing the challenge and the token or
+    container. If the challenge does not exist or does not contain the required data
+    (enroll_via_multichallenge_optional=true), it returns False.
+    """
+    challenges = get_challenges(transaction_id=transaction_id)
+
+    if not challenges:
+        log.warning("No challenges found for transaction_id %s", transaction_id)
+        return False
+    if len(challenges) > 1:
+        log.warning(
+            "Multiple challenges found for transaction_id %s, which should not be possible",
+            transaction_id
+        )
+        return False
+
+    challenge = challenges[0]
+    data = challenge.get_data()
+
+    if not data or not isinstance(data, dict):
+        log.warning("No data found in challenge %s for transaction_id %s", challenge.id, transaction_id)
+        return False
+
+    if not PolicyAction.ENROLL_VIA_MULTICHALLENGE in data:
+        log.warning(
+            "Challenge for transaction_id %s contains no information about ENROLL_VIA_MULTICHALLENGE",
+            transaction_id
+        )
+        return False
+
+    if not PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL in data:
+        log.warning(
+            "Challenge for transaction_id %s contains no information about ENROLL_VIA_MULTICHALLENGE_OPTIONAL",
+            transaction_id
+        )
+        return False
+
+    if not data[PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL]:
+        log.warning(
+            "Challenge %s for transaction_id %s does not have the action %s set to True",
+            challenge.id, transaction_id, PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL
+        )
+        return False
+
+    # If we reach this point, we can cancel the enrollment, depending on the type
+    if "type" in data and data["type"] == "container":
+        from .container import delete_container_by_serial
+        delete_container_by_serial(challenge.serial)
+    else:
+        from .token import remove_token
+        remove_token(challenge.serial)
+    challenge.delete()
+    return True

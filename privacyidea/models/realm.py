@@ -41,7 +41,6 @@ class Realm(TimestampMethodsMixin, db.Model):
     name = db.Column(db.Unicode(255), default='',
                      unique=True, nullable=False)
     default = db.Column(db.Boolean(), default=False)
-    option = db.Column(db.Unicode(40), default='')
     resolver_list = db.relationship('ResolverRealm',
                                     lazy='select',
                                     back_populates='realm')

@@ -9,7 +9,8 @@ from privacyidea.lib.tokens.u2f import (check_registration_data,
                                         check_response, parse_response_data)
 from privacyidea.lib.token import init_token, remove_token, check_user_pass, get_tokens, import_tokens
 from privacyidea.lib.user import User
-from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
+from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.utils import hexlify_and_unicode, to_bytes
@@ -126,6 +127,14 @@ class U2FTokenTestCase(MyTestCase):
 
     def test_01_create_token(self):
         pin = "test"
+
+        # By default init is disabled
+        self.assertRaises(TokenAdminError, init_token, {"type": "u2f", "pin": pin})
+
+        # Enable u2f enrollment in config
+        with self.app_context:
+            self.app.config['PI_ENABLE_TOKEN_TYPE_ENROLLMENT'] = ['u2f']
+
         # Init step1
         token = init_token({"type": "u2f",
                             "pin": pin})
@@ -332,6 +341,8 @@ class MultipleU2FTokenTestCase(MyTestCase):
         self.user = User(login='cornelius', resolver=self.resolvername1,
                          realm=self.realm1)
         set_privacyidea_config("u2f.appId", self.app_id)
+        with self.app_context:
+            self.app.config['PI_ENABLE_TOKEN_TYPE_ENROLLMENT'] = ['u2f']
         # init step 1
         self.token1 = init_token({'type': 'u2f'})
         self.serial1 = self.token1.token.serial
@@ -362,7 +373,7 @@ class MultipleU2FTokenTestCase(MyTestCase):
 
     # TODO: also test challenge-response with different tokens (u2f + totp)
     def test_01_multiple_token(self):
-        set_policy("otppin", scope=SCOPE.AUTH, action="{0!s}=none".format(ACTION.OTPPIN))
+        set_policy("otppin", scope=SCOPE.AUTH, action="{0!s}=none".format(PolicyAction.OTPPIN))
         res, reply = check_user_pass(self.user, '')
         self.assertFalse(res)
         self.assertIn('transaction_id', reply, reply)

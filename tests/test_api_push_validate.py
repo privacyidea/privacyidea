@@ -10,7 +10,7 @@ from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from cryptography.hazmat.backends import default_backend
 from privacyidea.lib.utils import to_bytes, to_unicode
 from cryptography.hazmat.primitives.asymmetric import rsa
-from privacyidea.lib.policy import ACTION
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.token import enable_token
 from privacyidea.lib.realm import set_realm, set_default_realm
 from privacyidea.lib.resolver import save_resolver
@@ -186,7 +186,7 @@ class PushAPITestCase(MyApiTestCase):
                    action="{0!s}={1!s},{2!s}={3!s}".format(
                        PUSH_ACTION.FIREBASE_CONFIG, self.firebase_config_name,
                        PUSH_ACTION.REGISTRATION_URL, REGISTRATION_URL))
-        set_policy("chalresp", action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE), scope=SCOPE.AUTH)
+        set_policy("chalresp", action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE), scope=SCOPE.AUTH)
         # Create push config
         r = set_smsgateway(self.firebase_config_name,
                            'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
@@ -378,9 +378,9 @@ class PushAPITestCase(MyApiTestCase):
         set_default_realm("ldaprealm")
 
         # 1. set policies.
-        set_policy("pol_passthru", scope=SCOPE.AUTH, action=ACTION.PASSTHRU)
+        set_policy("pol_passthru", scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU)
 
-        set_policy("pol_tokenlabel", scope=SCOPE.ENROLL, action="{0!s}=Pushy".format(ACTION.TOKENLABEL))
+        set_policy("pol_tokenlabel", scope=SCOPE.ENROLL, action="{0!s}=Pushy".format(PolicyAction.TOKENLABEL))
 
         # 2. authenticate user via passthru
         with self.app.test_request_context('/validate/check',
@@ -396,7 +396,7 @@ class PushAPITestCase(MyApiTestCase):
 
         # Set Policy scope:auth, action:enroll_via_multichallenge=push
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
-                   action="{0!s}=push".format(ACTION.ENROLL_VIA_MULTICHALLENGE))
+                   action="{0!s}=push".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
         # Set Policy scope:enrollment, action:push_config
         set_policy("pol_push2", scope=SCOPE.ENROLL,
                    action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s},{6!s}={7!s}".format(
@@ -423,6 +423,8 @@ class PushAPITestCase(MyApiTestCase):
             detail = res.json.get("detail")
             transaction_id = detail.get("transaction_id")
             self.assertTrue("Please scan the QR code!" in detail.get("message"), detail.get("message"))
+            self.assertTrue(detail.get(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+            self.assertFalse(detail.get(PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
             # Get image and client_mode
             self.assertEqual(CLIENTMODE.POLL, detail.get("client_mode"))
             # Check, that multi_challenge is also contained.

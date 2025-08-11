@@ -1,0 +1,114 @@
+@use "../../../../styles";
+@use "@angular/material" as mat;
+
+.token-enrollment-container {
+  @include styles.table-container-styles;
+  width: 49.5rem;
+  max-height: calc(var(--main-height) - var(--global-padding) * 5);
+  overflow: auto;
+}
+
+.token-type-option {
+  @include mat.elevation(3);
+  border-radius: var(--border-radius);
+  margin: 0 0 var(--third-global-padding) 0;
+}
+
+.token-type-hint {
+  width: 473px;
+  margin-top: 8px;
+  font-size: 1rem;
+}
+
+.assign-user-container {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.h4-container {
+  display: flex;
+  flex-direction: row;
+}
+
+.date-picker {
+  width: 40%;
+  margin: 0 0 16px 16px;
+}
+
+.time-picker {
+  width: 20%;
+  margin: 0 0 16px 16px;
+}
+
+.zone-picker {
+  width: 30%;
+  margin: 0 0 16px 32px;
+}
+
+h5 {
+  margin: 0 0 0 16px;
+}
+
+.width-47 {
+  width: 47%;
+}
+
+.wizard-top-div {
+  margin-top: 16px;
+}
+
+.description-form {
+  width: 100%;
+  margin-top: 16px;
+}
+
+::ng-deep {
+  .multi-column-panel.mat-mdc-select-panel {
+    column-count: 3;
+    max-height: unset;
+    column-gap: var(--third-global-padding);
+    padding: var(--three-quarters-global-padding);
+    padding-bottom: var(--global-padding);
+  }
+}
+
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: var(--mat-sys-surface-container-lowest);
+  padding: 16px;
+  transition: box-shadow 0.3s ease-in-out;
+}
+
+.sticky-header.is-sticky {
+  box-shadow: var(--box-shadow);
+}
+
+.sticky-controls {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--global-padding) / 2);
+}
+
+.sticky-controls .mat-mdc-form-field {
+  flex-grow: 1;
+  width: 100%;
+}
+
+.select-token-type-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0 var(--global-padding);
+  margin-bottom: 16px;
+}
+
+.select-token-type-container-self-service {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 16px;
+}

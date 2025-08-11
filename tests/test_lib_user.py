@@ -10,7 +10,7 @@ from testfixtures import log_capture, LogCapture
 
 from privacyidea.lib.resolvers.EntraIDResolver import (CLIENT_ID, CLIENT_CREDENTIAL_TYPE, ClientCredentialType,
                                                        CLIENT_SECRET, TENANT)
-from .base import MyTestCase
+from .base import MyTestCase, OverrideConfigTestCase
 from privacyidea.lib.resolver import (save_resolver, delete_resolver)
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.realm import (set_realm, delete_realm)
@@ -23,6 +23,7 @@ from privacyidea.lib.user import (User, create_user,
 from privacyidea.lib.framework import get_app_config
 from privacyidea.lib.user import log as user_log
 from privacyidea.models import NodeName
+from privacyidea.config import TestingConfig
 from . import ldap3mock
 from .test_lib_resolver import LDAPDirectory_small
 from .test_lib_resolver_httpresolver import ConfidentialClientApplicationMock
@@ -249,17 +250,19 @@ class UserTestCase(MyTestCase):
         self.assertEqual(user.login, "cornelius//realm1", user)
         self.assertEqual(user.realm, "realm2", user)
 
-        # check debug log for passwords
         user_log.setLevel(logging.DEBUG)
-        _user = get_user_from_param({
+        # check hiding passwords in debug log
+        get_user_from_param({
             'user': 'cornelius',
-            'realm': self.realm2,
-            'pass': 'barracuda',
-            'password': 'swordfish'})
+            'realm': self.realm1,
+            'pass': 'testing123',
+            'password': 'barracuda'})
+        # merge the log messages
         log_msg = str(capture)
+        self.assertIn("'pass': 'HIDDEN'", log_msg, log_msg)
+        self.assertIn("'password': 'HIDDEN'", log_msg, log_msg)
         self.assertNotIn('barracuda', log_msg, log_msg)
-        self.assertNotIn('swordfish', log_msg, log_msg)
-        self.assertIn('HIDDEN', log_msg, log_msg)
+        self.assertNotIn('testing123', log_msg, log_msg)
         user_log.setLevel(logging.INFO)
 
         # reset splitAtSign setting
@@ -569,8 +572,8 @@ class UserTestCase(MyTestCase):
         self.assertTrue(rid > 0, rid)
 
         (added, failed) = set_realm(realm, [{'name': resolver}])
-        self.assertEqual(len(failed), 0)
-        self.assertEqual(len(added), 1)
+        self.assertEqual(0, len(failed))
+        self.assertEqual(1, len(added))
 
         # check non-ascii password of non-ascii user
         self.assertFalse(User(login="nönäscii",
@@ -590,15 +593,20 @@ class UserTestCase(MyTestCase):
                          user_repr, user_repr)
 
         # Test with not existing search filter
-        with LogCapture(level=logging.ERROR) as lc:
+        with LogCapture(level=logging.WARNING) as lc:
             userlist = get_user_list({"realm": "sqlrealm",
                                       "unknown": "parameter",
                                       "resolver": "SQL1"})
-            self.assertTrue(len(userlist) == 0, userlist)
-            lc.check_present(("privacyidea.lib.user", "ERROR",
+            self.assertEqual(0, len(userlist), userlist)
+            lc.check_present(("privacyidea.lib.resolvers.SQLIdResolver", "ERROR",
+                              "Could not find search key (['unknown']) in the "
+                              "column mapping keys (['username', 'userid', "
+                              "'email', 'surname', 'givenname', 'password', "
+                              "'phone', 'mobile'])."))
+            lc.check_present(("privacyidea.lib.user", "WARNING",
                               "Unable to get user list for resolver 'SQL1': "
                               "ParameterError(description=\"Search parameter "
-                              "([\'unknown\']) not available in mapping.\", id=905)"))
+                              "(['unknown']) not available in column mapping.\", id=905)"))
 
     @ldap3mock.activate
     def test_18_user_with_several_phones(self):
@@ -714,6 +722,27 @@ class UserTestCase(MyTestCase):
         self.assertEqual(attrs.get("hans"), None)
         self.assertEqual(attrs.get("hugen"), None)
         self.assertEqual(attrs.get("key"), None)
-
+        # Cleanup
         delete_realm(self.realm1)
         delete_resolver(self.resolvername1)
+
+
+class HidePasswordInDebugLogTestCase(OverrideConfigTestCase):
+    class Config(TestingConfig):
+        # Set custom parameter for hash algorithms in pi.cfg.
+        PI_LOGLEVEL = logging.DEBUG
+
+    def test_01_check_for_hidden_passwords(self):
+        self.setUp_user_realms()
+        # Check hiding passwords in debug log
+        with LogCapture(level=logging.DEBUG) as lc:
+            get_user_from_param({
+                'user': 'cornelius',
+                'realm': self.realm1,
+                'pass': 'testing123',
+                'password': 'barracuda'
+            })
+            self.assertIn("Entering get_user_from_param with arguments [{'user': "
+                          "'cornelius', 'realm': 'realm1', 'pass': 'HIDDEN', "
+                          "'password': 'HIDDEN'}] and keywords {} (called from test_lib_user.py:",
+                          str(lc), lc)

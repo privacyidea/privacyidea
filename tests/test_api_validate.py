@@ -27,7 +27,8 @@ from privacyidea.lib.config import (set_privacyidea_config,
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    reset_token, enable_token, revoke_token,
                                    set_pin, get_one_token)
-from privacyidea.lib.policy import SCOPE, ACTION, set_policy, delete_policy, AUTHORIZED
+from privacyidea.lib.policy import SCOPE, set_policy, delete_policy, AUTHORIZED
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.event import set_event
 from privacyidea.lib.event import delete_event
 from privacyidea.lib.error import ERROR
@@ -300,7 +301,7 @@ class AuthorizationPolicyTestCase(MyApiTestCase):
 
         set_policy(name="pol_setrealm_01",
                    scope=SCOPE.AUTHZ,
-                   action="{0!s}={1!s}".format(ACTION.SETREALM, self.realm1))
+                   action="{0!s}={1!s}".format(PolicyAction.SETREALM, self.realm1))
 
         # Successfully test the token
         with self.app.test_request_context('/validate/check',
@@ -319,9 +320,9 @@ class AuthorizationPolicyTestCase(MyApiTestCase):
 
     def test_05_is_authorized(self):
         set_policy(name="auth01", scope=SCOPE.AUTHZ, priority=2,
-                   action="{0!s}={1!s}".format(ACTION.AUTHORIZED, AUTHORIZED.DENY))
+                   action="{0!s}={1!s}".format(PolicyAction.AUTHORIZED, AUTHORIZED.DENY))
         set_policy(name="auth02", scope=SCOPE.AUTHZ, user="frank", priority=1,
-                   action="{0!s}={1!s}".format(ACTION.AUTHORIZED, AUTHORIZED.ALLOW))
+                   action="{0!s}={1!s}".format(PolicyAction.AUTHORIZED, AUTHORIZED.ALLOW))
 
         # The user frank actually has a spass token and is authorized to authenticate by policy auth02
         with self.app.test_request_context('/validate/check',
@@ -1094,7 +1095,7 @@ class ValidateAPITestCase(MyApiTestCase):
                     'otpkey': self.otpkey,
                     'pin': "1234"},
                    user=User("cornelius", self.realm1))
-        set_policy(name="add_user_detail", scope=SCOPE.AUTHZ, action=ACTION.ADDUSERINRESPONSE)
+        set_policy(name="add_user_detail", scope=SCOPE.AUTHZ, action=PolicyAction.ADDUSERINRESPONSE)
         # First check with pi only fails without challenge-response policy
         with self.app.test_request_context('/validate/samlcheck',
                                            method='POST',
@@ -1111,7 +1112,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertNotIn("user", detail, detail)
 
         # Add the challenge response policy and try again
-        set_policy(name="hotp_chal_resp", scope=SCOPE.AUTH, action=f"{ACTION.CHALLENGERESPONSE}=hotp")
+        set_policy(name="hotp_chal_resp", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
         with self.app.test_request_context('/validate/samlcheck',
                                            method='POST',
                                            data={"user": "cornelius",
@@ -1732,7 +1733,7 @@ class ValidateAPITestCase(MyApiTestCase):
                             "otpkey": self.otpkey,
                             "pin": "async"}, User("cornelius", self.realm2))
         set_privacyidea_config("AutoResync", True)
-        set_policy(name="mcr_resync", scope=SCOPE.AUTH, action=ACTION.RESYNC_VIA_MULTICHALLENGE)
+        set_policy(name="mcr_resync", scope=SCOPE.AUTH, action=PolicyAction.RESYNC_VIA_MULTICHALLENGE)
         token.set_sync_window(10)
         token.set_count_window(5)
         # counter = 8, is out of sync
@@ -1787,7 +1788,7 @@ class ValidateAPITestCase(MyApiTestCase):
         # set policy for timelimit
         set_policy(name="pol_time1",
                    scope=SCOPE.AUTHZ,
-                   action="{0!s}=2/20s".format(ACTION.AUTHMAXSUCCESS))
+                   action="{0!s}=2/20s".format(PolicyAction.AUTHMAXSUCCESS))
 
         for i in [1, 2]:
             with self.app.test_request_context('/validate/check',
@@ -1822,7 +1823,7 @@ class ValidateAPITestCase(MyApiTestCase):
         # set policy for timelimit
         set_policy(name="pol_time1",
                    scope=SCOPE.AUTHZ,
-                   action="{0!s}=2/20s".format(ACTION.AUTHMAXFAIL))
+                   action="{0!s}=2/20s".format(PolicyAction.AUTHMAXFAIL))
 
         for i in [1, 2]:
             with self.app.test_request_context('/validate/check',
@@ -1855,7 +1856,7 @@ class ValidateAPITestCase(MyApiTestCase):
 
     def test_19_validate_passthru(self):
         # user passthru, realm: self.realm2, passwd: pthru
-        set_policy(name="pthru", scope=SCOPE.AUTH, action=ACTION.PASSTHRU)
+        set_policy(name="pthru", scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU)
 
         # Passthru with GET request
         with self.app.test_request_context(
@@ -1881,7 +1882,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), True)
 
         # Test if the policies "reset_all_tokens" and "passthru" work out fine at the same time
-        set_policy(name="reset_all_tokens", scope=SCOPE.AUTH, action=ACTION.RESETALLTOKENS)
+        set_policy(name="reset_all_tokens", scope=SCOPE.AUTH, action=PolicyAction.RESETALLTOKENS)
         # Passthru with POST Request
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -1962,7 +1963,7 @@ class ValidateAPITestCase(MyApiTestCase):
         # user disableduser, realm: self.realm2, passwd: superSecret
         set_policy(name="disabled",
                    scope=SCOPE.AUTH,
-                   action="{0!s}={1!s}".format(ACTION.OTPPIN, "userstore"))
+                   action="{0!s}={1!s}".format(PolicyAction.OTPPIN, "userstore"))
         # enroll two tokens
         r = init_token({"type": "spass", "serial": "spass1d"},
                        user=User("disableduser", self.realm2))
@@ -2008,7 +2009,7 @@ class ValidateAPITestCase(MyApiTestCase):
         user = "lockeduser"
         set_policy(name="locked",
                    scope=SCOPE.AUTH,
-                   action="{0!s}={1!s}".format(ACTION.OTPPIN, "tokenpin"))
+                   action="{0!s}={1!s}".format(PolicyAction.OTPPIN, "tokenpin"))
         r = init_token({"type": "spass", "serial": "spass1l",
                         "pin": "locked"},
                        user=User(user, self.realm2))
@@ -2041,8 +2042,8 @@ class ValidateAPITestCase(MyApiTestCase):
         serial = "t23"
         set_policy(name="pass_no",
                    scope=SCOPE.AUTH,
-                   action="{0!s},{1!s}".format(ACTION.PASSNOTOKEN,
-                                               ACTION.PASSNOUSER))
+                   action="{0!s},{1!s}".format(PolicyAction.PASSNOTOKEN,
+                                               PolicyAction.PASSNOUSER))
 
         r = init_token({"type": "spass", "serial": serial,
                         "pin": pin}, user=User(user, self.realm2))
@@ -2153,10 +2154,10 @@ class ValidateAPITestCase(MyApiTestCase):
         set_policy(name="pol1",
                    scope=SCOPE.AUTH,
                    action="{0}, {1}, {2}, {3}=none".format(
-                       ACTION.RESETALLTOKENS,
-                       ACTION.PASSNOUSER,
-                       ACTION.PASSNOTOKEN,
-                       ACTION.OTPPIN
+                       PolicyAction.RESETALLTOKENS,
+                       PolicyAction.PASSNOUSER,
+                       PolicyAction.PASSNOTOKEN,
+                       PolicyAction.OTPPIN
                    ),
                    realm=self.realm1)
         # Check that the non existing user MisterX is allowed to authenticate
@@ -2306,7 +2307,7 @@ class ValidateAPITestCase(MyApiTestCase):
                     "otpkey": self.otpkey,
                     "pin": pin}, user)
         set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=hotp".format(
-            ACTION.CHALLENGERESPONSE))
+            PolicyAction.CHALLENGERESPONSE))
         # both tokens will be a valid challenge response token!
 
         transaction_id = None
@@ -2384,7 +2385,7 @@ class ValidateAPITestCase(MyApiTestCase):
                     "otpkey": self.otpkey,
                     "pin": pinB}, user)
         set_policy("test48", scope=SCOPE.AUTH, action="{0!s}=hotp".format(
-            ACTION.CHALLENGERESPONSE))
+            PolicyAction.CHALLENGERESPONSE))
         # both tokens will be a valid challenge response token!
 
         transaction_id = None
@@ -2489,7 +2490,7 @@ class ValidateAPITestCase(MyApiTestCase):
                     "otpkey": self.otpkey,
                     "pin": pin}, user)
         set_policy("test48", scope=SCOPE.AUTH, action="{0!s}=hotp".format(
-            ACTION.CHALLENGERESPONSE))
+            PolicyAction.CHALLENGERESPONSE))
         # both tokens will be a valid challenge response token!
 
         # One token is locked
@@ -2600,7 +2601,7 @@ class ValidateAPITestCase(MyApiTestCase):
 
         # policy only allows HOTP.
         set_policy("onlyHOTP", scope=SCOPE.AUTHZ,
-                   action="{0!s}=hotp".format(ACTION.TOKENTYPE))
+                   action="{0!s}=hotp".format(PolicyAction.TOKENTYPE))
 
         # He can not authenticate with the spass token!
         with self.app.test_request_context('/validate/check',
@@ -2617,7 +2618,7 @@ class ValidateAPITestCase(MyApiTestCase):
 
         # Define a passthru policy
         set_policy("passthru", scope=SCOPE.AUTH,
-                   action="{0!s}=userstore".format(ACTION.PASSTHRU))
+                   action="{0!s}=userstore".format(PolicyAction.PASSTHRU))
 
         # A user with a passthru policy can authenticate, since he has not tokentype
         with self.app.test_request_context('/validate/check',
@@ -2660,8 +2661,8 @@ class ValidateAPITestCase(MyApiTestCase):
                     "email": "hallo@example.com",
                     "pin": "email"}, user)
 
-        set_policy("chalsms", SCOPE.AUTH, "sms_{0!s}=check your sms".format(ACTION.CHALLENGETEXT))
-        set_policy("chalemail", SCOPE.AUTH, "email_{0!s}=check your email".format(ACTION.CHALLENGETEXT))
+        set_policy("chalsms", SCOPE.AUTH, "sms_{0!s}=check your sms".format(PolicyAction.CHALLENGETEXT))
+        set_policy("chalemail", SCOPE.AUTH, "email_{0!s}=check your email".format(PolicyAction.CHALLENGETEXT))
 
         # Challenge Response with email
         with self.app.test_request_context('/validate/check',
@@ -2886,7 +2887,7 @@ class ValidateAPITestCase(MyApiTestCase):
     def test_33_auth_cache(self):
         init_token({"otpkey": self.otpkey},
                    user=User("cornelius", self.realm1))
-        set_policy(name="authcache", action="{0!s}=4m".format(ACTION.AUTH_CACHE), scope=SCOPE.AUTH)
+        set_policy(name="authcache", action="{0!s}=4m".format(PolicyAction.AUTH_CACHE), scope=SCOPE.AUTH)
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "cornelius",
@@ -3017,7 +3018,7 @@ class ValidateAPITestCase(MyApiTestCase):
                    user=User("cornelius", self.realm1))
         # Hotp and totp are allowed for trigger challenge
         set_policy(name="pol_chalresp", scope=SCOPE.AUTH,
-                   action="{0!s}=hot totp".format(ACTION.CHALLENGERESPONSE))
+                   action="{0!s}=hot totp".format(PolicyAction.CHALLENGERESPONSE))
 
         # trigger a challenge for both tokens
         with self.app.test_request_context('/validate/triggerchallenge',
@@ -3040,7 +3041,7 @@ class ValidateAPITestCase(MyApiTestCase):
         # Set a policy, that the application is allowed to specify tokentype
         set_policy(name="pol_application_tokentype",
                    scope=SCOPE.AUTHZ,
-                   action=ACTION.APPLICATION_TOKENTYPE)
+                   action=PolicyAction.APPLICATION_TOKENTYPE)
 
         # Trigger another challenge for HOTP
         with self.app.test_request_context('/validate/triggerchallenge',
@@ -3067,10 +3068,10 @@ class ValidateAPITestCase(MyApiTestCase):
                    tokenkind="software", user=User("cornelius", self.realm1))
         init_token({"type": "spass", "serial": "hardwareToken", "pin": "hardware1"},
                    tokenkind="hardware", user=User("cornelius", self.realm1))
-        set_policy(name="always_deny_access", action="{0!s}=deny_access".format(ACTION.AUTHORIZED),
+        set_policy(name="always_deny_access", action="{0!s}=deny_access".format(PolicyAction.AUTHORIZED),
                    scope=SCOPE.AUTHZ, priority=100)
         # policy to allow tokens, condition is deactivated. All tokens will be authorized
-        set_policy(name="allow_hardware_tokens", action="{0!s}=grant_access".format(ACTION.AUTHORIZED),
+        set_policy(name="allow_hardware_tokens", action="{0!s}=grant_access".format(PolicyAction.AUTHORIZED),
                    scope=SCOPE.AUTHZ, priority=1,
                    conditions=[("tokeninfo", "tokenkind", "equals", "hardware", False)])
 
@@ -3192,7 +3193,7 @@ class ValidateAPITestCase(MyApiTestCase):
         token.set_failcount(5)
 
         # set a chalresp policy for HOTP
-        set_policy("policy", scope=SCOPE.AUTH, action={ACTION.CHALLENGERESPONSE: 'hotp'})
+        set_policy("policy", scope=SCOPE.AUTH, action={PolicyAction.CHALLENGERESPONSE: 'hotp'})
 
         # create the challenge by authenticating with the OTP PIN
         with self.app.test_request_context('/validate/check',
@@ -3260,7 +3261,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(result["authentication"], "ACCEPT")
 
         # Set a policy to trigger challenge response for HOTP
-        set_policy(name="challenge_response", scope=SCOPE.AUTH, action=f"{ACTION.CHALLENGERESPONSE}=hotp")
+        set_policy(name="challenge_response", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
 
         with self.app.test_request_context(
                 "/validate/check",
@@ -3272,7 +3273,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(result["authentication"], "CHALLENGE")
 
         # Disable the spass and hotp token for authentication
-        set_policy(name="disable_some_token", scope=SCOPE.AUTH, action=f"{ACTION.DISABLED_TOKEN_TYPES}=spass hotp")
+        set_policy(name="disable_some_token", scope=SCOPE.AUTH, action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=spass hotp")
 
         # The very same auth attempt must now be rejected
         with self.app.test_request_context(
@@ -3422,18 +3423,17 @@ class RegistrationAndPasswordToken(MyApiTestCase):
             self.assertEqual("REJECT", data.get("result").get("authentication"), data)
 
     def test_01_password_tokens(self):
-        # The password token requires either an otpkey or genkey
+        set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollPW", PolicyAction.ENROLLPIN])
+        # always generate a key if non is given
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={'user': 'cornelius',
                                                  'type': 'pw'},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(400, res.status_code)
-            data = res.json
-            error = data.get("result").get("error")
-            self.assertEqual(905, error.get("code"))
-            self.assertEqual("ERR905: Missing parameter: 'otpkey'", error.get("message"), data)
+            self.assertEqual(200, res.status_code)
+            serial = res.json.get("detail").get("serial")
+            remove_token(serial)
 
         # Try setting an explicit password
         with self.app.test_request_context('/token/init',
@@ -3492,20 +3492,21 @@ class RegistrationAndPasswordToken(MyApiTestCase):
             self.assertEqual("ACCEPT", data.get("result").get("authentication"), (data, password))
         # delete token
         remove_token(serial)
+        delete_policy("enroll")
 
     def test_02_application_specific_password_token(self):
-        # The appl spec password token requires either an otpkey or genkey
+        set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollAPPLSPEC", PolicyAction.ENROLLPIN])
+        # always generate a key if non is give
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={'user': 'cornelius',
-                                                 'type': 'applspec'},
+                                                 'type': 'applspec',
+                                                 'service_id': 'thunderbird'},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(400, res.status_code)
-            data = res.json
-            error = data.get("result").get("error")
-            self.assertEqual(905, error.get("code"))
-            self.assertEqual("ERR905: Missing parameter: 'otpkey'", error.get("message"), data)
+            self.assertEqual(200, res.status_code, res.json.get("result"))
+            serial = res.json.get("detail").get("serial")
+            remove_token(serial)
 
         with self.app.test_request_context('/token/init',
                                            method='POST',
@@ -3619,9 +3620,10 @@ class MultiChallenge(MyApiTestCase):
     def test_00_pin_change_via_validate_chalresp(self):
         # Test PIN change after challenge response authentication
         # Create policy change pin on first use
-        set_policy("first_use", scope=SCOPE.ENROLL, action=ACTION.CHANGE_PIN_FIRST_USE)
-        set_policy("via_validate", scope=SCOPE.AUTH, action=ACTION.CHANGE_PIN_VIA_VALIDATE)
-        set_policy("hotp_chalresp", scope=SCOPE.AUTH, action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+        set_policy("first_use", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_FIRST_USE)
+        set_policy("via_validate", scope=SCOPE.AUTH, action=PolicyAction.CHANGE_PIN_VIA_VALIDATE)
+        set_policy("hotp_chalresp", scope=SCOPE.AUTH, action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE))
+        set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollHOTP", PolicyAction.ENROLLPIN])
 
         with self.app.test_request_context('/token/init', method='POST',
                                            data={"user": "cornelius", "pin": "test",
@@ -3692,13 +3694,15 @@ class MultiChallenge(MyApiTestCase):
         delete_policy("first_use")
         delete_policy("via_validate")
         delete_policy("hotp_chalresp")
+        delete_policy("enroll")
 
     def test_01_pin_change_via_validate_single_shot(self):
         # Test PIN change after authentication with a single shot authentication
         # Create policy change pin on first use
-        set_policy("first_use", scope=SCOPE.ENROLL, action=ACTION.CHANGE_PIN_FIRST_USE)
-        set_policy("via_validate", scope=SCOPE.AUTH, action=ACTION.CHANGE_PIN_VIA_VALIDATE)
-        set_policy("hotp_chalresp", scope=SCOPE.AUTH, action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+        set_policy("first_use", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_FIRST_USE)
+        set_policy("via_validate", scope=SCOPE.AUTH, action=PolicyAction.CHANGE_PIN_VIA_VALIDATE)
+        set_policy("hotp_chalresp", scope=SCOPE.AUTH, action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE))
+        set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollHOTP", PolicyAction.ENROLLPIN])
 
         with self.app.test_request_context('/token/init', method='POST',
                                            data={"user": "cornelius", "pin": "test",
@@ -3758,16 +3762,18 @@ class MultiChallenge(MyApiTestCase):
         delete_policy("first_use")
         delete_policy("via_validate")
         delete_policy("hotp_chalresp")
+        delete_policy("enroll")
 
     def test_02_challenge_text_header(self):
         # Test PIN change after authentication with a single shot authentication
         # Create policy change pin on first use
-        set_policy("first_use", scope=SCOPE.ENROLL, action=ACTION.CHANGE_PIN_FIRST_USE)
-        set_policy("via_validate", scope=SCOPE.AUTH, action=ACTION.CHANGE_PIN_VIA_VALIDATE)
-        set_policy("hotp_chalresp", scope=SCOPE.AUTH, action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+        set_policy("first_use", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_FIRST_USE)
+        set_policy("via_validate", scope=SCOPE.AUTH, action=PolicyAction.CHANGE_PIN_VIA_VALIDATE)
+        set_policy("hotp_chalresp", scope=SCOPE.AUTH, action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE))
         challenge_header = "Choose one: <ul>"
         set_policy("challenge_header", scope=SCOPE.AUTH,
-                   action="{0!s}={1!s}".format(ACTION.CHALLENGETEXT_HEADER, challenge_header))
+                   action="{0!s}={1!s}".format(PolicyAction.CHALLENGETEXT_HEADER, challenge_header))
+        set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollHOTP", PolicyAction.ENROLLPIN])
 
         with self.app.test_request_context('/token/init', method='POST',
                                            data={"user": "cornelius", "pin": "test",
@@ -3796,6 +3802,7 @@ class MultiChallenge(MyApiTestCase):
         delete_policy("via_validate")
         delete_policy("hotp_chalresp")
         delete_policy("challenge_header")
+        delete_policy("enroll")
 
     def test_03_preferred_client_mode(self):
         REGISTRATION_URL = "http://test/ttype/push"
@@ -3844,7 +3851,7 @@ class MultiChallenge(MyApiTestCase):
                     "pin": pin}, user=User("selfservice", self.realm1))
         set_policy("test49", scope=SCOPE.AUTH,
                    action="{0!s}=hotp totp, {1!s}=  poll   u2f   webauthn ".format(
-                       ACTION.CHALLENGERESPONSE, ACTION.PREFERREDCLIENTMODE))
+                       PolicyAction.CHALLENGERESPONSE, PolicyAction.PREFERREDCLIENTMODE))
 
         # authenticate with PIN to trigger challenge-response
         with self.app.test_request_context('/validate/check',
@@ -3875,7 +3882,7 @@ class MultiChallenge(MyApiTestCase):
                     "otpkey": self.otpkey,
                     "pin": pin}, user)
         set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=hotp".format(
-            ACTION.CHALLENGERESPONSE))
+            PolicyAction.CHALLENGERESPONSE))
 
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -3906,9 +3913,9 @@ class MultiChallenge(MyApiTestCase):
                     "type": "hotp",
                     "otpkey": self.otpkey,
                     "pin": pin}, user)
-        set_policy("test49", scope=SCOPE.AUTH, action=f"{ACTION.CHALLENGERESPONSE}=hotp")
+        set_policy("test49", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
         # both tokens will be a valid challenge response token!
-        set_policy("test", scope=SCOPE.AUTH, action=f"{ACTION.PREFERREDCLIENTMODE}=wrong falsch Chigau sbagliato")
+        set_policy("test", scope=SCOPE.AUTH, action=f"{PolicyAction.PREFERREDCLIENTMODE}=wrong falsch Chigau sbagliato")
 
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -3966,7 +3973,7 @@ class MultiChallenge(MyApiTestCase):
 
         # set policy for challenge response and client mode per user
         set_policy("auth", scope=SCOPE.AUTH,
-                   action=f"{ACTION.CHALLENGERESPONSE}=hotp totp, {ACTION.CLIENT_MODE_PER_USER}")
+                   action=f"{PolicyAction.CHALLENGERESPONSE}=hotp totp, {PolicyAction.CLIENT_MODE_PER_USER}")
 
         # ---- auth with PUSH ----
         # authenticate with PIN to trigger challenge-response: first auth, custom user attribute not set
@@ -4212,7 +4219,7 @@ class AChallengeResponse(MyApiTestCase):
         Token("hotp1", "hotp", otpkey=self.otpkey, userid=1004, resolver=self.resolvername1,
               realm=self.realm1).save()
         # Define HOTP token to be challenge response
-        set_policy(name="pol_cr", scope=SCOPE.AUTH, action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+        set_policy(name="pol_cr", scope=SCOPE.AUTH, action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE))
         set_pin(self.serial, "pin")
 
         with self.app.test_request_context('/validate/check',
@@ -4676,15 +4683,15 @@ class AChallengeResponse(MyApiTestCase):
         # challenge response request with both tokens.
         set_policy(name="pol_header",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=These are your options:<ul>".format(ACTION.CHALLENGETEXT_HEADER))
+                   action="{0!s}=These are your options:<ul>".format(PolicyAction.CHALLENGETEXT_HEADER))
         # Set a policy for the footer
         set_policy(name="pol_footer",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=</ul>.<b>Authenticate Now!</b>".format(ACTION.CHALLENGETEXT_FOOTER))
+                   action="{0!s}=</ul>.<b>Authenticate Now!</b>".format(PolicyAction.CHALLENGETEXT_FOOTER))
         # make HOTP a challenge response token
         set_policy(name="pol_hotp",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+                   action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE))
 
         init_token({"serial": "tok1",
                     "otpkey": self.otpkey,
@@ -4717,7 +4724,7 @@ class AChallengeResponse(MyApiTestCase):
         # make HOTP a challenge response token
         set_policy(name="pol_hotp",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+                   action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE))
         init_token({"serial": "tok1",
                     "otpkey": self.otpkey,
                     "pin": "pin"}, user=User("cornelius", self.realm1))
@@ -4801,7 +4808,7 @@ class AChallengeResponse(MyApiTestCase):
                        user=User("cornelius", self.realm1))
         self.assertTrue(r)
 
-        set_policy("chalresp", scope=SCOPE.ADMIN, action=f"{ACTION.TRIGGERCHALLENGE}=hotp")
+        set_policy("chalresp", scope=SCOPE.ADMIN, action=f"{PolicyAction.TRIGGERCHALLENGE}=hotp")
 
         with self.app.test_request_context('/validate/triggerchallenge',
                                            method='POST',
@@ -5461,7 +5468,7 @@ class AChallengeResponse(MyApiTestCase):
         # Set the increase_failcounter_on_challenge policy
         set_policy(name="increase_failcounter_on_challenge",
                    scope=SCOPE.AUTH,
-                   action=ACTION.INCREASE_FAILCOUNTER_ON_CHALLENGE)
+                   action=PolicyAction.INCREASE_FAILCOUNTER_ON_CHALLENGE)
 
         # Now we create the challenges via validate/check
         with self.app.test_request_context('/validate/check',
@@ -5503,8 +5510,8 @@ class TriggeredPoliciesTestCase(MyApiTestCase):
         self.setUp_user_realms()
 
     def test_00_two_policies(self):
-        set_policy("otppin", scope=SCOPE.AUTH, action="{0!s}=none".format(ACTION.OTPPIN))
-        set_policy("lastauth", scope=SCOPE.AUTHZ, action="{0!s}=1s".format(ACTION.LASTAUTH))
+        set_policy("otppin", scope=SCOPE.AUTH, action="{0!s}=none".format(PolicyAction.OTPPIN))
+        set_policy("lastauth", scope=SCOPE.AUTHZ, action="{0!s}=1s".format(PolicyAction.LASTAUTH))
 
         # Create a Spass token
         init_token({"serial": "triggtoken", "type": "spass"})
@@ -5566,7 +5573,9 @@ class TriggeredPoliciesTestCase(MyApiTestCase):
 
 class MultiChallengeEnrollTest(MyApiTestCase):
 
-    # Note: Testing the enrollment of the push token is done in test_api_push_validate.py
+    # Note: Testing the enrollment of the push token is done in test_api_push_validate.py,
+    # passkey in test_api_passkey_validate.py
+    # container in the container tests
 
     def setUp(self):
         super(MultiChallengeEnrollTest, self).setUp()
@@ -5603,7 +5612,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
 
         # 1. set policies.
         # Policy scope:auth, action:enroll_via_multichallenge=hotp
-        set_policy("pol_passthru", scope=SCOPE.AUTH, action=ACTION.PASSTHRU)
+        set_policy("pol_passthru", scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU)
 
         # 2. authenticate user via passthru
         with self.app.test_request_context('/validate/check',
@@ -5619,11 +5628,11 @@ class MultiChallengeEnrollTest(MyApiTestCase):
 
         # Set enroll policy
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
-                   action="{0!s}=hotp".format(ACTION.ENROLL_VIA_MULTICHALLENGE))
+                   action="{0!s}=hotp".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
 
         # Set force_app_pin
         set_policy("pol_forcepin", scope=SCOPE.ENROLL,
-                   action="hotp_{0!s}=True".format(ACTION.FORCE_APP_PIN))
+                   action="hotp_{0!s}=True".format(PolicyAction.FORCE_APP_PIN))
         # Set token default
         set_privacyidea_config("hotp.hashlib", "sha256")
         # Now we should get an authentication Challenge
@@ -5641,6 +5650,8 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             transaction_id = detail.get("transaction_id")
             self.assertTrue("Please scan the QR code and enter the OTP value!" in detail.get("message"),
                             detail.get("message"))
+            self.assertTrue(detail.get(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+            self.assertFalse(detail.get(PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
             # Get image and client_mode
             self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("client_mode"), detail)
             # Check, that multi_challenge is also contained.
@@ -5710,7 +5721,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
 
         # 1. set policies.
         # Policy scope:auth, action:enroll_via_multichallenge=totp
-        set_policy("pol_passthru", scope=SCOPE.AUTH, action=ACTION.PASSTHRU)
+        set_policy("pol_passthru", scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU)
 
         # 2. authenticate user via passthru
         with self.app.test_request_context('/validate/check',
@@ -5726,7 +5737,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
 
         # Set enroll policy
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
-                   action="{0!s}=totp".format(ACTION.ENROLL_VIA_MULTICHALLENGE))
+                   action="{0!s}=totp".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
 
         # Set totp_hashlib=sha256 user policy
         set_policy("pol_sha256", scope=SCOPE.USER,
@@ -5812,7 +5823,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         set_default_realm("ldaprealm")
 
         # 1. set policies.
-        set_policy("pol_passthru", scope=SCOPE.AUTH, action=ACTION.PASSTHRU)
+        set_policy("pol_passthru", scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU)
 
         # 2. authenticate user via passthru
         with self.app.test_request_context('/validate/check',
@@ -5828,12 +5839,12 @@ class MultiChallengeEnrollTest(MyApiTestCase):
 
         # Set Policy scope:auth, action:enroll_via_multichallenge=email
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
-                   action="{0!s}=email".format(ACTION.ENROLL_VIA_MULTICHALLENGE))
+                   action="{0!s}=email".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
         # Challenge header and footer should not disturb the enrollment text
         set_policy("pol_challengetext_head", scope=SCOPE.AUTH,
-                   action="{0!s}=challenge-head".format(ACTION.CHALLENGETEXT_HEADER))
+                   action="{0!s}=challenge-head".format(PolicyAction.CHALLENGETEXT_HEADER))
         set_policy("pol_challengetext_foot", scope=SCOPE.AUTH,
-                   action="{0!s}=challenge-foot".format(ACTION.CHALLENGETEXT_FOOTER))
+                   action="{0!s}=challenge-foot".format(PolicyAction.CHALLENGETEXT_FOOTER))
         # Now we should get an authentication Challenge
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -5904,7 +5915,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         set_default_realm("ldaprealm")
 
         # 1. set policies.
-        set_policy("pol_passthru", scope=SCOPE.AUTH, action=ACTION.PASSTHRU)
+        set_policy("pol_passthru", scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU)
 
         # 2. authenticate user via passthru
         with self.app.test_request_context('/validate/check',
@@ -5920,7 +5931,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
 
         # Set Policy scope:auth, action:enroll_via_multichallenge=email
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
-                   action="{0!s}=email".format(ACTION.ENROLL_VIA_MULTICHALLENGE))
+                   action="{0!s}=email".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
         # Now we should get an authentication Challenge
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -5975,7 +5986,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         set_default_realm("ldaprealm")
 
         # 1. set policies.
-        set_policy("pol_passthru", scope=SCOPE.AUTH, action=ACTION.PASSTHRU)
+        set_policy("pol_passthru", scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU)
 
         # 2. authenticate user via passthru
         with self.app.test_request_context('/validate/check',
@@ -5991,10 +6002,10 @@ class MultiChallengeEnrollTest(MyApiTestCase):
 
         # Set Policy scope:auth, action:enroll_via_multichallenge=email
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
-                   action="{0!s}=sms".format(ACTION.ENROLL_VIA_MULTICHALLENGE))
+                   action="{0!s}=sms".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
         # Set an individual text
         set_policy("pol_multienroll_text", scope=SCOPE.AUTH,
-                   action="{0!s}='Phone number enter you must!'".format(ACTION.ENROLL_VIA_MULTICHALLENGE_TEXT))
+                   action="{0!s}='Phone number enter you must!'".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE_TEXT))
         # Now we should get an authentication Challenge
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -6066,9 +6077,9 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         set_default_realm("ldaprealm")
 
         # 1. set policies.
-        set_policy("pol_passthru", scope=SCOPE.AUTH, action=ACTION.PASSTHRU)
+        set_policy("pol_passthru", scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU)
         set_policy("pol_validator", scope=SCOPE.ENROLL,
-                   action="{0!s}=tests.testdata.gmailvalidator".format(ACTION.EMAILVALIDATION))
+                   action="{0!s}=tests.testdata.gmailvalidator".format(PolicyAction.EMAILVALIDATION))
 
         # 2. authenticate user via passthru
         with self.app.test_request_context('/validate/check',
@@ -6084,7 +6095,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
 
         # Set Policy scope:auth, action:enroll_via_multichallenge=email
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
-                   action="{0!s}=email".format(ACTION.ENROLL_VIA_MULTICHALLENGE))
+                   action="{0!s}=email".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
         # Now we should get an authentication Challenge
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -6146,7 +6157,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         token1 = init_token({"type": "spass", "pin": spass}, user)
         self.assertTrue(token1.get_serial().startswith("PISP"))
         # Check that we do not have a failed audit entry if the policy is set
-        set_policy("max_token_per_user", scope=SCOPE.ENROLL, action=f"{ACTION.MAXTOKENUSER}=1")
+        set_policy("max_token_per_user", scope=SCOPE.ENROLL, action=f"{PolicyAction.MAXTOKENUSER}=1")
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": user.login, "realm": user.realm, "pass": spass}):
@@ -6166,21 +6177,21 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         delete_policy("max_token_per_user")
 
         set_policy("enroll_via_multichallenge", scope=SCOPE.AUTH,
-                   action=f"{ACTION.ENROLL_VIA_MULTICHALLENGE}=hotp")
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=hotp")
 
-        set_policy("max_token_per_user", scope=SCOPE.ENROLL, action=f"{ACTION.MAXTOKENUSER}=1")
+        set_policy("max_token_per_user", scope=SCOPE.ENROLL, action=f"{PolicyAction.MAXTOKENUSER}=1")
         self._authenticate_no_token_enrolled(user, spass)
         delete_policy("max_token_per_user")
 
-        set_policy("max_active_token_per_user", scope=SCOPE.ENROLL, action=f"{ACTION.MAXACTIVETOKENUSER}=1")
+        set_policy("max_active_token_per_user", scope=SCOPE.ENROLL, action=f"{PolicyAction.MAXACTIVETOKENUSER}=1")
         self._authenticate_no_token_enrolled(user, spass)
         delete_policy("max_active_token_per_user")
 
-        set_policy("hotp_max_token_per_user", scope=SCOPE.ENROLL, action=f"{ACTION.MAXTOKENUSER}=0")
+        set_policy("hotp_max_token_per_user", scope=SCOPE.ENROLL, action=f"{PolicyAction.MAXTOKENUSER}=0")
         self._authenticate_no_token_enrolled(user, spass)
         delete_policy("hotp_max_token_per_user")
 
-        set_policy("max_token_per_realm", scope=SCOPE.ENROLL, action=f"{ACTION.MAXTOKENREALM}=1")
+        set_policy("max_token_per_realm", scope=SCOPE.ENROLL, action=f"{PolicyAction.MAXTOKENREALM}=1")
         self._authenticate_no_token_enrolled(user, spass)
         delete_policy("max_token_per_realm")
 
@@ -6218,7 +6229,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
 
         # set policies: passthru and enroll_via_multichallenge
         set_policy("policy", scope=SCOPE.AUTH,
-                   action=f"{ACTION.PASSTHRU}=userstore,{ACTION.ENROLL_VIA_MULTICHALLENGE}=totp")
+                   action=f"{PolicyAction.PASSTHRU}=userstore,{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=totp")
 
         def check_token_init(hashlib, time_step):
             # authenticate user via passthru triggers enrollment
@@ -6311,10 +6322,10 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         template_options = {"tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True}]}
         create_container_template(container_type="smartphone", template_name="test", options=template_options)
         set_policy("enroll_via_multichallenge", scope=SCOPE.AUTH,
-                   action={ACTION.ENROLL_VIA_MULTICHALLENGE: "smartphone",
-                           ACTION.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: "test",
-                           ACTION.PASSTHRU: True})
-        set_policy("registration", scope=SCOPE.CONTAINER, action={ACTION.PI_SERVER_URL: "https://pi.net/"})
+                   action={PolicyAction.ENROLL_VIA_MULTICHALLENGE: "smartphone",
+                           PolicyAction.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: "test",
+                           PolicyAction.PASSTHRU: True})
+        set_policy("registration", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/"})
 
         # Init LDAP
         ldap3mock.setLDAPDirectory(LDAPDirectory)

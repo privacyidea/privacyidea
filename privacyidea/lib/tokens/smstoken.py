@@ -58,8 +58,9 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import safe_compare
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.log import log_with
-from privacyidea.lib.policy import (SCOPE, ACTION, GROUP, comma_escape_text,
+from privacyidea.lib.policy import (SCOPE, GROUP, comma_escape_text,
                                     Match, get_action_values_from_options)
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.smsprovider.SMSProvider import (get_sms_provider_class,
                                                      create_sms_instance,
                                                      get_smsgateway)
@@ -213,7 +214,7 @@ class SmsTokenClass(HotpTokenClass):
                            'desc': _('If set, a new SMS OTP will be sent '
                                      'after successful authentication with '
                                      'one SMS OTP.')},
-                       ACTION.CHALLENGETEXT: {
+                       PolicyAction.CHALLENGETEXT: {
                            'type': 'str',
                            'desc': _('Use an alternative challenge text for telling the '
                                      'user to enter the code from the SMS. You can also '
@@ -239,12 +240,12 @@ class SmsTokenClass(HotpTokenClass):
                        }
                    },
                    SCOPE.ENROLL: {
-                       ACTION.MAXTOKENUSER: {
+                       PolicyAction.MAXTOKENUSER: {
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of SMS tokens assigned."),
                            'group': GROUP.TOKEN
                        },
-                       ACTION.MAXACTIVETOKENUSER: {
+                       PolicyAction.MAXACTIVETOKENUSER: {
                            'type': 'int',
                            'desc': _(
                                "The user may only have this maximum number of active SMS tokens assigned."),
@@ -322,7 +323,7 @@ class SmsTokenClass(HotpTokenClass):
         options = options or {}
         return_message = get_action_values_from_options(SCOPE.AUTH,
                                                         "{0!s}_{1!s}".format(self.get_class_type(),
-                                                                             ACTION.CHALLENGETEXT),
+                                                                             PolicyAction.CHALLENGETEXT),
                                                         options) or _("Enter the OTP from the SMS:")
 
         return_message = return_message.replace(r'\,', ',')

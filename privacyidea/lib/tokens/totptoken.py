@@ -40,7 +40,8 @@ from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.decorators import check_token_locked, check_token_otp_length
 from privacyidea.lib.log import log_with
-from privacyidea.lib.policy import ACTION, SCOPE, GROUP, Match
+from privacyidea.lib.policy import SCOPE, GROUP, Match
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.HMAC import HmacOtp
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
@@ -120,7 +121,7 @@ class TotpTokenClass(HotpTokenClass):
                        'totp_otplen': {'type': 'int',
                                        'value': [6, 8],
                                        'desc': TotpTokenClass.desc_otp_len},
-                       'totp_force_server_generate': {'type': 'bool',
+                       PolicyAction.FORCE_SERVER_GENERATE: {'type': 'bool',
                                                       'desc': TotpTokenClass.desc_key_gen},
                        '2step': {'type': 'str',
                                  'value': ['allow', 'force'],
@@ -138,6 +139,8 @@ class TotpTokenClass(HotpTokenClass):
                        'totp_otplen': {'type': 'int',
                                        'value': [6, 8],
                                        'desc': TotpTokenClass.desc_otp_len},
+                       PolicyAction.FORCE_SERVER_GENERATE: {'type': 'bool',
+                                                      'desc': TotpTokenClass.desc_key_gen},
                        '2step': {'type': 'str',
                                  'value': ['allow', 'force'],
                                  'desc': TotpTokenClass.desc_two_step_admin}
@@ -153,17 +156,17 @@ class TotpTokenClass(HotpTokenClass):
                                             'desc': _("The difficulty factor used for the "
                                                       "OTP seed generation ""(should be at least "
                                                       "10000)")},
-                       'totp_' + ACTION.FORCE_APP_PIN: {
+                       'totp_' + PolicyAction.FORCE_APP_PIN: {
                            'type': 'bool',
                            'desc': _('Enforce setting an app pin for the privacyIDEA '
                                      'Authenticator App')
                        },
-                       ACTION.MAXTOKENUSER: {
+                       PolicyAction.MAXTOKENUSER: {
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of remote tokens assigned."),
                            'group': GROUP.TOKEN
                        },
-                       ACTION.MAXACTIVETOKENUSER: {
+                       PolicyAction.MAXACTIVETOKENUSER: {
                            'type': 'int',
                            'desc': _(
                                "The user may only have this maximum number of active remote tokens assigned."),

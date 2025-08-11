@@ -61,7 +61,8 @@ from privacyidea.lib.apps import create_oathtoken_url as cr_oath
 from privacyidea.lib.utils import (create_img, is_true, b32encode_and_unicode,
                                    hexlify_and_unicode, determine_logged_in_userparams)
 from privacyidea.lib.decorators import check_token_locked, check_token_otp_length
-from privacyidea.lib.policy import SCOPE, ACTION, GROUP, Match
+from privacyidea.lib.policy import SCOPE, GROUP, Match
+from ..policies.actions import PolicyAction
 from privacyidea.lib.token import init_token
 from privacyidea.lib.tokenclass import CLIENTMODE
 from privacyidea.lib import _, lazy_gettext
@@ -97,7 +98,6 @@ class HotpTokenClass(TokenClass):
     desc_hash_func = lazy_gettext('Specify the hashing function to be used. '
                                   'Can be SHA1, SHA256 or SHA512.')
     desc_otp_len = lazy_gettext('Specify the OTP length to be used. Can be 6 or 8 digits.')
-    desc_key_gen = lazy_gettext("Force the key to be generated on the server.")
     desc_two_step_user = lazy_gettext('Specify whether users are allowed or forced to use '
                                       'two-step enrollment.')
     desc_two_step_admin = lazy_gettext('Specify whether admins are allowed or forced to '
@@ -143,12 +143,12 @@ class HotpTokenClass(TokenClass):
                'ui_enroll': ["admin", "user"],
                'policy': {
                    SCOPE.ENROLL: {
-                       ACTION.MAXTOKENUSER: {
+                       PolicyAction.MAXTOKENUSER: {
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of HOTP tokens assigned."),
                            'group': GROUP.TOKEN
                        },
-                       ACTION.MAXACTIVETOKENUSER: {
+                       PolicyAction.MAXACTIVETOKENUSER: {
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of active HOTP tokens assigned."),
                            'group': GROUP.TOKEN
@@ -168,7 +168,7 @@ class HotpTokenClass(TokenClass):
                            'desc': _("The difficulty factor used for the OTP "
                                      "seed generation (should be at least 10000)")
                        },
-                       'hotp_' + ACTION.FORCE_APP_PIN: {
+                       'hotp_' + PolicyAction.FORCE_APP_PIN: {
                            'type': 'bool',
                            'desc': _('Enforce setting an app pin for the privacyIDEA '
                                      'Authenticator App')
@@ -183,7 +183,7 @@ class HotpTokenClass(TokenClass):
                        'hotp_otplen': {'type': 'int',
                                        'value': [6, 8],
                                        'desc': HotpTokenClass.desc_otp_len},
-                       'hotp_force_server_generate': {
+                       PolicyAction.FORCE_SERVER_GENERATE: {
                            'type': 'bool',
                            'desc': HotpTokenClass.desc_key_gen},
                        'hotp_2step': {'type': 'str',
@@ -201,7 +201,9 @@ class HotpTokenClass(TokenClass):
                                        'desc': HotpTokenClass.desc_otp_len},
                        'hotp_2step': {'type': 'str',
                                       'value': ['allow', 'force'],
-                                      'desc': HotpTokenClass.desc_two_step_admin}
+                                      'desc': HotpTokenClass.desc_two_step_admin},
+                       PolicyAction.FORCE_SERVER_GENERATE: {'type': 'bool',
+                                                      'desc': HotpTokenClass.desc_key_gen}
                    }
                }
                }
@@ -252,7 +254,7 @@ class HotpTokenClass(TokenClass):
         imageurl = params.get("appimageurl")
         if imageurl:
             extra_data.update({"image": imageurl})
-        force_app_pin = params.get(ACTION.FORCE_APP_PIN)
+        force_app_pin = params.get(PolicyAction.FORCE_APP_PIN)
         if force_app_pin:
             extra_data.update({'pin': True})
         if otpkey:
@@ -351,14 +353,16 @@ class HotpTokenClass(TokenClass):
 
         # check if the key_size is provided
         # if not, we could derive it from the hashlib
-        key_size = getParam(upd_param, 'key_size', optional) \
-                   or getParam(upd_param, 'keysize', optional)
+        key_size = upd_param.get('keysize')
         if key_size is None:
             upd_param['keysize'] = keylen.get(hashlibStr)
 
-        otpKey = getParam(upd_param, "otpkey", optional)
-        genkey = is_true(getParam(upd_param, "genkey", optional))
-        if genkey and otpKey:
+        otp_key = upd_param.get("otpkey")
+        force_genkey = param.get("policies", {}).get(f"{self.get_tokentype()}_{PolicyAction.FORCE_SERVER_GENERATE}", False)
+        if force_genkey or not otp_key:
+            upd_param["genkey"] = True
+        genkey = is_true(upd_param.get("genkey"))
+        if genkey and otp_key is not None:
             # The Base TokenClass does not allow otpkey and genkey at the
             # same time
             del upd_param['otpkey']

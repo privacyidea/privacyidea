@@ -31,7 +31,8 @@ from privacyidea.api.lib.prepolicy import prepolicy, check_base_action, realmadm
 from privacyidea.api.lib.utils import getParam, send_result
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.event import event
-from privacyidea.lib.policy import ACTION, get_allowed_custom_attributes
+from privacyidea.lib.policy import get_allowed_custom_attributes
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.user import get_user_list, create_user, User, is_attribute_at_all
 from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes
 
@@ -41,8 +42,8 @@ user_blueprint = Blueprint('user_blueprint', __name__)
 
 
 @user_blueprint.route('/', methods=['GET'])
-@prepolicy(realmadmin, request, ACTION.USERLIST)
-@prepolicy(check_base_action, request, ACTION.USERLIST)
+@prepolicy(realmadmin, request, PolicyAction.USERLIST)
+@prepolicy(check_base_action, request, PolicyAction.USERLIST)
 @user_required
 @event("user_list", request, g)
 def get_users():
@@ -220,7 +221,7 @@ def delete_user_attribute(attrkey, username, realm=None):
 
 @user_blueprint.route('/<resolvername>/<username>', methods=['DELETE'])
 @admin_required
-@prepolicy(check_base_action, request, ACTION.DELETEUSER)
+@prepolicy(check_base_action, request, PolicyAction.DELETEUSER)
 @event("user_delete", request, g)
 def delete_user(resolvername=None, username=None):
     """
@@ -251,7 +252,7 @@ def delete_user(resolvername=None, username=None):
 @user_blueprint.route('', methods=['POST'])
 @user_blueprint.route('/', methods=['POST'])
 @admin_required
-@prepolicy(check_base_action, request, ACTION.ADDUSER)
+@prepolicy(check_base_action, request, PolicyAction.ADDUSER)
 @event("user_add", request, g)
 def create_user_api():
     """
@@ -294,7 +295,7 @@ def create_user_api():
 
 @user_blueprint.route('', methods=['PUT'])
 @user_blueprint.route('/', methods=['PUT'])
-@prepolicy(check_base_action, request, ACTION.UPDATEUSER)
+@prepolicy(check_base_action, request, PolicyAction.UPDATEUSER)
 @event("user_update", request, g)
 def update_user():
     """
