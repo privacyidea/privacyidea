@@ -9,7 +9,7 @@
                      [pageIndex]="pageIndex()"
                      [pageSize]="pageSize()"
                      hidePageSize
-                     showFirstLastButtons></mat-paginator>
+                     showFirstLastButtons />
     </div>
     <div class="table-container">
       <table (matSortChange)="onSortEvent($event)"
@@ -30,21 +30,18 @@
             <td *matCellDef="let element; let row"
                 attr.aria-label="{{ column.label }} Cell"
                 mat-cell
-                [ngClass]="{
-                'width-18rem': column.key === 'description',
-              }">
+                [ngClass]="{'width-18rem': column.key === 'description'}">
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)"
                    appScrollAdjuster>
-                <div [ngClass]="
-                    tableUtilsService.getChildClassForColumnKey(column.key)
-                  ">
+                <div [ngClass]="tableUtilsService.getChildClassForColumnKey(column.key)">
                   @switch (column.key) {
                     @case ("serial") {
                       <div class="flex-row ali-center">
                         <a attr.aria-label="{{ column.label }} Link"
                            (click)="contentService.tokenSelected(element.serial)">
-                          {{ element[column.key] }} </a>
-                        <app-copy-button [copyText]="element.serial"></app-copy-button>
+                          {{ element[column.key] }}
+                        </a>
+                        <app-copy-button [copyText]="element.serial" />
                       </div>
                     }
                     @case ("container_serial") {
@@ -52,48 +49,33 @@
                         @if (containerService.containerBelongsToUser(element.container_serial)) {
                           <a attr.aria-label="{{ column.label }} Link"
                              (click)="contentService.containerSelected(element.container_serial)">
-                            {{ element[column.key] }} </a>
+                            {{ element[column.key] }}
+                          </a>
                         } @else {
                           {{ element[column.key] }}
                         }
                         @if (element.container_serial !== "") {
-                          <app-copy-button [copyText]="
-                            element.container_serial
-                          "></app-copy-button>
+                          <app-copy-button [copyText]="element.container_serial" />
                         }
                       </div>
                     }
                     @case ("active") {
-                      <span [ngClass]="
-                          tableUtilsService.getClassForColumn(
-                            column.key,
-                            element
-                          )
-                        "
+                      <span [ngClass]="tableUtilsService.getClassForColumn(column.key,element)"
                             (click)="toggleActive(element)">
-                        {{
-                          tableUtilsService.getDisplayText(column.key, element)
-                        }}
+                        {{ tableUtilsService.getDisplayText(column.key, element) }}
                       </span>
                     }
                     @case ("failcount") {
-                      <span [ngClass]="
-                          tableUtilsService.getClassForColumn(
-                            column.key,
-                            element
-                          )
-                        "
+                      <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
                             (click)="resetFailCount(element)">
-                        {{
-                          tableUtilsService.getDisplayText(column.key, element)
-                        }}
+                        {{ tableUtilsService.getDisplayText(column.key, element) }}
                       </span>
                     }
                     @case ("revoke") {
                       @if (!element.revoked) {
                         <button (click)="revokeToken(element.serial)"
                                 mat-icon-button>
-                          <mat-icon>undo</mat-icon>
+                          <mat-icon> undo</mat-icon>
                         </button>
                       }
                     }
@@ -106,7 +88,8 @@
                     @default {
                       @if (tableUtilsService.isLink(column.key)) {
                         <a attr.aria-label="{{ column.label }} Link"
-                           href="#"> {{ element[column.key] }} </a>
+                           href="#"> {{ element[column.key] }}
+                        </a>
                       } @else {
                         <span>
                           {{ element[column.key] }}

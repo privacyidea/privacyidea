@@ -52,7 +52,7 @@
 .progress-bar {
   position: fixed;
   top: calc(100% - max(var(--mdc-linear-progress-track-height, 4px),
-                       var(--mdc-linear-progress-active-indicator-height, 4px)));
+  var(--mdc-linear-progress-active-indicator-height, 4px)));
   left: 0;
   width: 100%;
   z-index: 1000;

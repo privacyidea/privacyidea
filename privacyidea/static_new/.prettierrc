@@ -1,4 +1,5 @@
 {
   "bracketSameLine": true,
-  "htmlWhitespaceSensitivity": "strict"
+  "htmlWhitespaceSensitivity": "strict",
+  "maxLineLength": 100
 }

@@ -44,7 +44,8 @@
                     </mat-form-field>
                   } @else {
                     <a attr.aria-label="{{ element.keyMap.label }} Link"
-                       (click)="contentService.containerSelected(element.value)"> {{ element.value }} </a>
+                       (click)="contentService.containerSelected(element.value)"> {{ element.value }}
+                    </a>
                     @if (element.value !== "") {
                       <app-copy-button [copyText]="element.value"></app-copy-button>
                     }

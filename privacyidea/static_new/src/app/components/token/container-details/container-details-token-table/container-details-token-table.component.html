@@ -47,7 +47,8 @@
                     @if (element.username === authService.user() ||
                     authService.role() === "admin") {
                       <a attr.aria-label="{{ column.label }} Link"
-                         (click)="contentService.tokenSelected(element.serial)"> {{ element[column.key] }} </a>
+                         (click)="contentService.tokenSelected(element.serial)"> {{ element[column.key] }}
+                      </a>
                     } @else {
                       <span> {{ element[column.key] }} </span>
                     }
@@ -72,7 +73,8 @@
                   @default {
                     @if (tableUtilsService.isLink(column.key)) {
                       <a attr.aria-label="{{ column.label }} Link"
-                         href="#"> {{ element[column.key] }} </a>
+                         href="#"> {{ element[column.key] }}
+                      </a>
                     } @else {
                       <span> {{ element[column.key] }} </span>
                     }

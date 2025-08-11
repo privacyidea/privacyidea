@@ -1,11 +1,9 @@
 <h1 mat-dialog-title>Assign Selected Token to User</h1>
 <mat-dialog-content>
   @if (selectionContainsAssignedToken()) {
-  <p class="inline-warning">
-    Some token are already assigned to a user.
-    <br />
-    Assigning a token to a user will remove the previous assignment.
-  </p>
+    <p class="inline-warning">
+      Some token are already assigned to a user. <br /> Assigning a token to a user will remove the
+      previous assignment. </p>
   }
   <div class="selected-user-assign-container">
     <mat-form-field class="width-50 input-height">

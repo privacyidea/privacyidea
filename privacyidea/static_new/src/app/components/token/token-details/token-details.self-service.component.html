@@ -47,7 +47,8 @@
                       @if (containerService.containerBelongsToUser(element.value)) {
                         <a attr.aria-label="{{ element.keyMap.label }} Link"
                            (click)="contentService.containerSelected(element.value)">
-                          {{ element.value }} </a>
+                          {{ element.value }}
+                        </a>
                       } @else {
                         {{ element.value }}
                       }

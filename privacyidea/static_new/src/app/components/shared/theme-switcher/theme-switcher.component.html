@@ -1,9 +1,8 @@
 <div class="theme-picker">
-  <button
-    mat-icon-button
-    class="theme-toggle-button"
-    [disableRipple]="true"
-    (click)="toggleTheme()">
+  <button (click)="toggleTheme()"
+          [disableRipple]="true"
+          class="theme-toggle-button"
+          mat-icon-button>
     <mat-icon>{{ icon() }}</mat-icon>
   </button>
 </div>

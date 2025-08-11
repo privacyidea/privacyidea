@@ -77,22 +77,22 @@
           }
         </mat-select>
       </mat-form-field>
-        <mat-form-field class="width-32 input-height">
-          <mat-label>Enter User</mat-label>
-          <input [(ngModel)]="userService.userFilter"
-                 [disabled]="onlyAddToRealm()"
-                 [matAutocomplete]="userAuto"
-                 matInput />
-          <mat-error>User is <strong>required</strong></mat-error>
-          <mat-autocomplete #userAuto="matAutocomplete">
-            @for (option of userService.filteredUsernames(); track option) {
-              <mat-option [value]="option">{{ option }}</mat-option>
-            }
-          </mat-autocomplete>
-        </mat-form-field>
-        <mat-checkbox [(ngModel)]="onlyAddToRealm">
-          Only add to the realm <br /> (no user assignment)
-        </mat-checkbox>
+      <mat-form-field class="width-32 input-height">
+        <mat-label>Enter User</mat-label>
+        <input [(ngModel)]="userService.userFilter"
+               [disabled]="onlyAddToRealm()"
+               [matAutocomplete]="userAuto"
+               matInput />
+        <mat-error>User is <strong>required</strong></mat-error>
+        <mat-autocomplete #userAuto="matAutocomplete">
+          @for (option of userService.filteredUsernames(); track option) {
+            <mat-option [value]="option">{{ option }}</mat-option>
+          }
+        </mat-autocomplete>
+      </mat-form-field>
+      <mat-checkbox [(ngModel)]="onlyAddToRealm">
+        Only add to the realm <br /> (no user assignment)
+      </mat-checkbox>
     </div>
   </div>
 

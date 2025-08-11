@@ -51,13 +51,15 @@
             @switch (column.key) {
               @case ("serial") {
                 <a attr.aria-label="{{ column.label }} Link"
-                   (click)="contentService.tokenSelected(element.serial)"> {{ element[column.key] }} </a>
+                   (click)="contentService.tokenSelected(element.serial)"> {{ element[column.key] }}
+                </a>
                 <app-copy-button [copyText]="element.serial"></app-copy-button>
               }
               @default {
                 @if (tableUtilsService.isLink(column.key)) {
                   <a attr.aria-label="{{ column.label }} Link"
-                     href="#"> {{ element[column.key] }} </a>
+                     href="#"> {{ element[column.key] }}
+                  </a>
                 } @else {
                   <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
                     {{ tableUtilsService.getDisplayText(column.key, element) }}

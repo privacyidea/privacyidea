@@ -67,7 +67,8 @@
                 <a attr.aria-label="{{ column.label }} Link"
                    (click)="contentService.containerSelected(element.serial)"> {{
                     element[column.key]
-                  }} </a>
+                  }}
+                </a>
                 @if (element.serial !== "") {
                   <app-copy-button [copyText]="element.serial"></app-copy-button>
                 }
@@ -76,7 +77,8 @@
                 <div [ngClass]="(element[column.key]?.length || 0) > 1 ? 'realm-list' : 'realm'">
                   @for (realm of element[column.key]; track realm; let idx = $index) {
                     <a attr.aria-label="{{ column.label }} Link"
-                       href="#"> {{ realm }} </a><br style="margin-top: 3px" />
+                       href="#"> {{ realm }}
+                    </a><br style="margin-top: 3px" />
                   }
                 </div>
               }
@@ -89,7 +91,8 @@
               @default {
                 @if (tableUtilsService.isLink(column.key)) {
                   <a attr.aria-label="{{ column.label }} Link"
-                     href="#"> {{ element[column.key] }} </a>
+                     href="#"> {{ element[column.key] }}
+                  </a>
                 } @else {
                   {{ element[column.key] }}
                 }
@@ -110,7 +113,9 @@
               <div class="token-item">
                 <a (click)="contentService.tokenSelected(token.serial)"> {{
                     token.serial
-                  }} </a> [{{ token.tokentype }}]
+                  }}
+                </a>
+                [{{ token.tokentype }}]
               </div>
             }
             @if (element.tokens?.length === 0) {

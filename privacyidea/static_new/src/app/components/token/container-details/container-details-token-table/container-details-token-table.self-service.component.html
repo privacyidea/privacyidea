@@ -46,7 +46,8 @@
                   @case ("serial") {
                     @if (element.username === authService.user()) {
                       <a attr.aria-label="{{ column.label }} Link"
-                         (click)="contentService.tokenSelected(element.serial)"> {{ element[column.key] }} </a>
+                         (click)="contentService.tokenSelected(element.serial)"> {{ element[column.key] }}
+                      </a>
                     } @else {
                       <span> {{ element[column.key] }} </span>
                     }
@@ -69,7 +70,8 @@
                   @default {
                     @if (tableUtilsService.isLink(column.key)) {
                       <a attr.aria-label="{{ column.label }} Link"
-                         href="#"> {{ element[column.key] }} </a>
+                         href="#"> {{ element[column.key] }}
+                      </a>
                     } @else {
                       <span> {{ element[column.key] }} </span>
                     }
@@ -90,12 +92,13 @@
             aria-label="Remove Button Cell"
             mat-cell>
           <div class="flex just-center">
-            @if (element.username === authService.user()) { <!-- TODO policy to allow user -->
+            @if (element.username === authService.user()) {
+              <!-- TODO policy to allow user -->
               <button (click)="removeTokenFromContainer(containerSerial(), element.serial)"
-                    mat-icon-button
-                    matTooltip="Remove Token from Container">
-              <mat-icon> highlight_remove</mat-icon>
-            </button>
+                      mat-icon-button
+                      matTooltip="Remove Token from Container">
+                <mat-icon> highlight_remove</mat-icon>
+              </button>
             }
           </div>
         </td>

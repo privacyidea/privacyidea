@@ -67,9 +67,9 @@ export class UserCardComponent {
     inject(VersioningService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly userService: UserServiceInterface = inject(UserService);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
   selectedUserRealmControl = new FormControl<string>(
     this.userService.selectedUserRealm(),
     { nonNullable: true },
   );
-  protected readonly ROUTE_PATHS = ROUTE_PATHS;
 }

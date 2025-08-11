@@ -58,7 +58,8 @@
                   <div class="flex-row ali-center">
                     <a attr.aria-label="{{ column.label }} Link"
                        (click)="contentService.tokenSelected(element.serial)"
-                       routerLink="/token"> {{ element[column.key] }} </a>
+                       routerLink="/token"> {{ element[column.key] }}
+                    </a>
                     @if (element.serial && element.serial !== "") {
                       <app-copy-button [copyText]="element.serial"></app-copy-button>
                     }
@@ -78,12 +79,9 @@
                 @case ("container_serial") {
                   <div class="flex-row ali-center">
                     <a attr.aria-label="{{ column.label }} Link"
-                       (click)="
-                          contentService.containerSelected(
-                            element.container_serial
-                          )
-                        "
-                       routerLink="/token"> {{ element[column.key] }} </a>
+                       (click)="contentService.containerSelected(element.container_serial)"
+                       routerLink="/token"> {{ element[column.key] }}
+                    </a>
                     @if (element.container_serial &&
                     element.container_serial !== "") {
                       <app-copy-button [copyText]="
