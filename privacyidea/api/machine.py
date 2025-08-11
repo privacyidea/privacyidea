@@ -27,7 +27,7 @@ from flask import (Blueprint,
                    request, g)
 from .lib.utils import (getParam, send_result)
 from ..api.lib.prepolicy import prepolicy, check_base_action, mangle
-from ..lib.policy import ACTION
+from ..lib.policies.actions import PolicyAction
 
 from ..lib.machine import (get_machines, attach_token, detach_token,
                            add_option, delete_option,
@@ -43,7 +43,7 @@ machine_blueprint = Blueprint('machine_blueprint', __name__)
 
 
 @machine_blueprint.route('/', methods=['GET'])
-@prepolicy(check_base_action, request, ACTION.MACHINELIST)
+@prepolicy(check_base_action, request, PolicyAction.MACHINELIST)
 def list_machines_api():
     """
     List all machines that can be found in the machine resolvers.
@@ -120,7 +120,7 @@ def list_machines_api():
 
 
 @machine_blueprint.route('/token', methods=['POST'])
-@prepolicy(check_base_action, request, ACTION.MACHINETOKENS)
+@prepolicy(check_base_action, request, PolicyAction.MACHINETOKENS)
 def attach_token_api():
     """
     Attach an existing token to a machine with a certain application.
@@ -178,7 +178,7 @@ def attach_token_api():
 @machine_blueprint.route('/token/<serial>/<machineid>/<resolver>/<application>',
                          methods=['DELETE'])
 @machine_blueprint.route('/token/<serial>/<application>/<mtid>', methods=['DELETE'])
-@prepolicy(check_base_action, request, ACTION.MACHINETOKENS)
+@prepolicy(check_base_action, request, PolicyAction.MACHINETOKENS)
 def detach_token_api(serial, machineid=None, resolver=None, application=None, mtid=None):
     """
     Detach a token from a machine with a certain application.
@@ -216,7 +216,7 @@ def detach_token_api(serial, machineid=None, resolver=None, application=None, mt
 
 
 @machine_blueprint.route('/token', methods=['GET'])
-@prepolicy(check_base_action, request, ACTION.MACHINETOKENS)
+@prepolicy(check_base_action, request, PolicyAction.MACHINETOKENS)
 def list_machinetokens_api():
     """
     Return a list of MachineTokens either for a given machine or for a given
@@ -287,7 +287,7 @@ def list_machinetokens_api():
 
 
 @machine_blueprint.route('/tokenoption', methods=['POST'])
-@prepolicy(check_base_action, request, ACTION.MACHINETOKENS)
+@prepolicy(check_base_action, request, PolicyAction.MACHINETOKENS)
 def set_option_api():
     """
     This sets a Machine Token option or deletes it, if the value is empty.
@@ -349,7 +349,7 @@ def set_option_api():
 @machine_blueprint.route('/authitem', methods=['GET'])
 @machine_blueprint.route('/authitem/<application>', methods=['GET'])
 @prepolicy(mangle, request=request)
-@prepolicy(check_base_action, request, ACTION.AUTHITEMS)
+@prepolicy(check_base_action, request, PolicyAction.AUTHITEMS)
 def get_auth_items_api(application=None):
     """
     This fetches the authentication items for a given application and the

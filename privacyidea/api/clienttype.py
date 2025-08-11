@@ -25,7 +25,7 @@ privacyIDDEA authentication clients, which used privacyIDEA to authenticate.
 from flask import (Blueprint, request)
 from .lib.utils import send_result
 from ..api.lib.prepolicy import prepolicy, check_base_action
-from ..lib.policy import ACTION
+from ..lib.policies.actions import PolicyAction
 from flask import g
 import logging
 from ..lib.clientapplication import get_clientapplication
@@ -36,7 +36,7 @@ client_blueprint = Blueprint('client_blueprint', __name__)
 
 
 @client_blueprint.route('/', methods=['GET'])
-@prepolicy(check_base_action, request, ACTION.CLIENTTYPE)
+@prepolicy(check_base_action, request, PolicyAction.CLIENTTYPE)
 def get_clients():
     """
     return a list of authenticated clients grouped (dictionary) by the

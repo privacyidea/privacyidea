@@ -72,8 +72,9 @@ from privacyidea.lib.tokenclass import CHALLENGE_SESSION, AUTHENTICATIONMODE
 from privacyidea.lib.config import get_from_config, get_email_validators
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.utils import is_true, create_tag_dict
-from privacyidea.lib.policy import (SCOPE, ACTION, GROUP, comma_escape_text,
+from privacyidea.lib.policy import (SCOPE, GROUP, comma_escape_text,
                                     get_action_values_from_options)
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import Match
 from privacyidea.lib.error import ValidateError
 from privacyidea.lib.log import log_with
@@ -180,7 +181,7 @@ class EmailTokenClass(HotpTokenClass):
                        'desc': _('If set, a new EMail OTP will be sent '
                                  'after successful authentication with '
                                  'one EMail OTP.')},
-                   ACTION.CHALLENGETEXT: {
+                   PolicyAction.CHALLENGETEXT: {
                        'type': 'str',
                        'desc': _('Use an alternative challenge text for telling the '
                                  'user to enter the code from the e-mail. You can also '
@@ -190,12 +191,12 @@ class EmailTokenClass(HotpTokenClass):
                    },
                },
                    SCOPE.ENROLL: {
-                       ACTION.MAXTOKENUSER: {
+                       PolicyAction.MAXTOKENUSER: {
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of email tokens assigned."),
                            'group': GROUP.TOKEN
                        },
-                       ACTION.MAXACTIVETOKENUSER: {
+                       PolicyAction.MAXACTIVETOKENUSER: {
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of active email tokens assigned."),
                            'group': GROUP.TOKEN
@@ -241,7 +242,7 @@ class EmailTokenClass(HotpTokenClass):
         HotpTokenClass.update(self, param, reset_failcount)
         return
 
-    @log_with(log)
+    @log_with(log, hide_args=[1])
     def is_challenge_request(self, passw, user=None, options=None):
         """
         check, if the request would start a challenge
@@ -278,7 +279,7 @@ class EmailTokenClass(HotpTokenClass):
         options = options or {}
         return_message = get_action_values_from_options(SCOPE.AUTH,
                                                         "{0!s}_{1!s}".format(self.get_class_type(),
-                                                                             ACTION.CHALLENGETEXT),
+                                                                             PolicyAction.CHALLENGETEXT),
                                                         options) or _("Enter the OTP from the Email")
 
         return_message = return_message.replace(r'\,', ',')
@@ -582,7 +583,7 @@ class EmailTokenClass(HotpTokenClass):
         if "g" in options:
             g = options.get("g")
             validate_modules = Match.user(g, scope=SCOPE.ENROLL,
-                                          action=ACTION.EMAILVALIDATION,
+                                          action=PolicyAction.EMAILVALIDATION,
                                           user_object=options.get("user") if "user" in options else None).action_values(
                 unique=True)
             # check passw to be a valid email address

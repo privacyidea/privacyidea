@@ -12,10 +12,17 @@ getTokens4UserOrSerial
 gettokensoftype
 getToken....
 """
+import binascii
+import datetime
+from dateutil import parser
+from dateutil.tz import tzlocal
+import hashlib
 import json
 import logging
-from testfixtures import LogCapture
-from privacyidea.lib.container import init_container, add_token_to_container, find_container_by_serial
+import mock
+from testfixtures import log_capture, LogCapture
+import warnings
+
 from .base import MyTestCase, FakeAudit, FakeFlaskG
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import (TokenClass, TOKENKIND,
@@ -23,19 +30,16 @@ from privacyidea.lib.tokenclass import (TokenClass, TOKENKIND,
                                         FAILCOUNTER_CLEAR_TIMEOUT)
 from privacyidea.lib.token import weigh_token_type, import_tokens, export_tokens
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
+from privacyidea.lib.container import (init_container, add_token_to_container,
+                                       find_container_by_serial)
 from privacyidea.models import (db, Token, Challenge, TokenRealm)
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
                                     delete_privacyidea_config, SYSCONF)
-from privacyidea.lib.policy import (set_policy, SCOPE, ACTION, PolicyClass,
+from privacyidea.lib.policy import (set_policy, SCOPE, PolicyClass,
                                     delete_policy)
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.utils import b32encode_and_unicode, hexlify_and_unicode
 from privacyidea.lib.error import PolicyError
-import datetime
-from dateutil import parser
-import hashlib
-import binascii
-import warnings
-import mock
 from privacyidea.lib.token import (create_tokenclass_object,
                                    get_tokens, list_tokengroups,
                                    get_token_type, check_serial,
@@ -45,7 +49,7 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    get_tokenclass_info,
                                    get_tokens_in_resolver, get_otp,
                                    get_token_by_otp, get_serial_by_otp,
-                                   gen_serial, init_token, remove_token,
+                                   gen_serial, init_token,
                                    set_realms, set_defaults, assign_token,
                                    unassign_token, resync_token,
                                    reset_token, set_pin, set_pin_user,
@@ -62,17 +66,15 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    get_dynamic_policy_definitions,
                                    get_tokens_paginate,
                                    set_validity_period_end,
-                                   set_validity_period_start, delete_tokeninfo,
-                                   import_token, get_one_token,
-                                   get_tokens_from_serial_or_user,
-                                   get_tokens_paginated_generator,
-                                   assign_tokengroup, unassign_tokengroup)
+                                   set_validity_period_start, remove_token, delete_tokeninfo,
+                                   import_token, get_one_token, get_tokens_from_serial_or_user,
+                                   get_tokens_paginated_generator, assign_tokengroup, unassign_tokengroup)
+from privacyidea.lib.token import log as token_log
 from privacyidea.lib.tokengroup import set_tokengroup, delete_tokengroup
 from privacyidea.lib.error import (TokenAdminError, ParameterError,
                                    privacyIDEAError, ResourceNotFoundError)
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.framework import get_app_config
-from dateutil.tz import tzlocal
 
 PWFILE = "tests/testdata/passwords"
 OTPKEY = "3132333435363738393031323334353637383930"
@@ -737,7 +739,8 @@ class TokenTestCase(MyTestCase):
         remove_token("losttoken")
         remove_token("lostlosttoken")
 
-    def test_34_check_token_list(self):
+    @log_capture(level=logging.DEBUG)
+    def test_34_check_token_list(self, capture):
         # We can not authenticate with an unknown type
         # Such a token will not be returned by get_tokens...
         db_token = Token("serial72", tokentype="unknown")
@@ -753,11 +756,16 @@ class TokenTestCase(MyTestCase):
         hotp_tokenobject.set_pin("hotppin")
         hotp_tokenobject.save()
         old_failcount = hotp_tokenobject.token.failcount
+        token_log.setLevel(logging.DEBUG)
         res, reply = check_token_list(tokenobject_list, "hotppin40123456")
         self.assertFalse(res)
         failcount = hotp_tokenobject.token.failcount
         self.assertEqual(failcount, old_failcount + 1, (old_failcount,
                                                         failcount))
+        log_msg = str(capture)
+        self.assertIn('HIDDEN', log_msg, log_msg)
+        self.assertNotIn("hotppin40123456", log_msg, log_msg)
+        token_log.setLevel(logging.INFO)
 
         # if there is no token with at least a correct pin, we increase all
         # failcounters
@@ -826,7 +834,7 @@ class TokenTestCase(MyTestCase):
 
         # Set HOTP as challenge response
         set_policy("check_token_list_CR", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
-            ACTION.CHALLENGERESPONSE))
+            PolicyAction.CHALLENGERESPONSE))
 
         hotp_tokenobject.add_tokeninfo("next_pin_change", "{0!s}".format(datetime.datetime(2019, 1, 7, 0, 0)))
         hotp_tokenobject.add_tokeninfo("next_password_change", "{0!s}".format(datetime.datetime(2019, 1, 7, 0, 0)))
@@ -864,7 +872,8 @@ class TokenTestCase(MyTestCase):
         hotp_tokenobject.save()
         delete_policy("check_token_list_CR")
 
-    def test_35_check_serial_pass(self):
+    @log_capture(level=logging.DEBUG)
+    def test_35_check_serial_pass(self, capture):
         hotp_tokenobject = get_tokens(serial="hotptoken")[0]
         hotp_tokenobject.set_pin("hotppin")
         hotp_tokenobject.token.count = 10
@@ -873,11 +882,16 @@ class TokenTestCase(MyTestCase):
         with self.assertRaises(ResourceNotFoundError):
             check_serial_pass("XXXXXXXXX", "password")
 
+        token_log.setLevel(logging.DEBUG)
         r, reply = check_serial_pass("hotptoken", "hotppin481090")
         self.assertTrue(r)
         # the same OTP value  must not match!
         r, reply = check_serial_pass("hotptoken", "hotppin481090")
         self.assertFalse(r)
+        log_msg = str(capture)
+        self.assertIn('HIDDEN', log_msg, log_msg)
+        self.assertNotIn('hotppin481090', log_msg, log_msg)
+        token_log.setLevel(logging.INFO)
 
     def test_36_check_user_pass(self):
         user = User("shadow", realm=self.realm1)
@@ -1319,7 +1333,7 @@ class TokenTestCase(MyTestCase):
         enable_token("CR2B", False)
         # Allow HOTP for chalresp
         set_policy("test48", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
-            ACTION.CHALLENGERESPONSE))
+            PolicyAction.CHALLENGERESPONSE))
         r, r_dict = check_token_list([token_a, token_b], pin, user)
         self.assertFalse(r)
         self.assertTrue("message" in r_dict)
@@ -1365,7 +1379,7 @@ class TokenTestCase(MyTestCase):
                               "otpkey": self.otpkey,
                               "pin": pin}, user)
         set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
-            ACTION.CHALLENGERESPONSE))
+            PolicyAction.CHALLENGERESPONSE))
         # both tokens will be a valid challenge response token!
         r, r_dict = check_token_list([token_a, token_b], pin, user)
         multi_challenge = r_dict.get("multi_challenge")
@@ -1759,7 +1773,9 @@ class TokenTestCase(MyTestCase):
             {"serial": "12345678901234567890123456789012", "type": "totp", "otplen": "8"},
             {"serial": "987654321", "type": "hotp", "otplen": "6", "otpkey": "12345"}
         ]
-        a = import_tokens(json.dumps(tokens))
+        result = import_tokens(json.dumps(tokens))
+        self.assertEqual(set(["12345678901234567890", "12345678901234567890123456789012", "987654321"]),
+                         set(result.successful_tokens), result)
         imported_tokens = get_tokens()
         for token in tokens:
             serial = token["serial"]
@@ -1983,7 +1999,7 @@ class TokenFailCounterTestCase(MyTestCase):
 
     def test_04_reset_all_failcounters(self):
         set_policy("reset_all", scope=SCOPE.AUTH,
-                   action=ACTION.RESETALLTOKENS)
+                   action=PolicyAction.RESETALLTOKENS)
 
         user = User(login="cornelius", realm=self.realm1)
         pin1 = "pin1"
@@ -2126,11 +2142,11 @@ class PINChangeTestCase(MyTestCase):
     def test_00_create_realms(self):
         self.setUp_user_realms()
         # Set a policy to change the pin every 10d
-        set_policy("every10d", scope=SCOPE.ENROLL, action="{0!s}=10d".format(ACTION.CHANGE_PIN_EVERY))
+        set_policy("every10d", scope=SCOPE.ENROLL, action="{0!s}=10d".format(PolicyAction.CHANGE_PIN_EVERY))
         # set policy for chalresp
-        set_policy("chalresp", scope=SCOPE.AUTH, action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+        set_policy("chalresp", scope=SCOPE.AUTH, action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE))
         # Change PIN via validate
-        set_policy("viaValidate", scope=SCOPE.AUTH, action=ACTION.CHANGE_PIN_VIA_VALIDATE)
+        set_policy("viaValidate", scope=SCOPE.AUTH, action=PolicyAction.CHANGE_PIN_VIA_VALIDATE)
 
     def test_01_successfully_change_pin(self):
         """
@@ -2267,7 +2283,7 @@ class PINChangeTestCase(MyTestCase):
         # Check it
         self.assertTrue(tok.is_pin_change())
         # Require minimum length of 5
-        set_policy("minpin", scope=SCOPE.USER, action="{0!s}=5".format(ACTION.OTPPINMINLEN))
+        set_policy("minpin", scope=SCOPE.USER, action="{0!s}=5".format(PolicyAction.OTPPINMINLEN))
 
         # successfully authenticate, but thus trigger a PIN change
         r, reply_dict = check_token_list([tok, tok2], "test{0!s}".format(self.valid_otp_values[1]),
@@ -2407,7 +2423,7 @@ class TestMultipleUserToken(MyTestCase):
         init_token({"serial": "s2", "otpkey": OTPKE2, "type": "HOTP"},
                    user=user)
         # To test whether the password caching works, we need to set the otppin policy to userstore
-        set_policy("otppin", scope=SCOPE.AUTH, action=f"{ACTION.OTPPIN}=userstore")
+        set_policy("otppin", scope=SCOPE.AUTH, action=f"{PolicyAction.OTPPIN}=userstore")
 
         self.set_default_g_variables()
         self.app_context.g.policy_object = PolicyClass()
@@ -2464,7 +2480,7 @@ class TestMultipleUserToken(MyTestCase):
             self.assertEqual(1, len(resolver_logs), resolver_logs)
 
         # Now we enable the challenge-response policy for HOTP token
-        set_policy("chalresp", scope=SCOPE.AUTH, action=f"{ACTION.CHALLENGERESPONSE}=hotp")
+        set_policy("chalresp", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
 
         # First we try again with a wrong password
         with LogCapture(level=logging.DEBUG) as lc:
@@ -2590,7 +2606,7 @@ class TestMultipleUserToken(MyTestCase):
 
         # Now set the force_challenge_response policy and try again.
         # We should only have on password check
-        set_policy("force_chalresp", scope=SCOPE.AUTH, action=f"{ACTION.FORCE_CHALLENGE_RESPONSE}")
+        set_policy("force_chalresp", scope=SCOPE.AUTH, action=f"{PolicyAction.FORCE_CHALLENGE_RESPONSE}")
 
         with LogCapture(level=logging.DEBUG) as lc:
             res, res_data = check_user_pass(user, "test376074", options=options)

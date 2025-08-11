@@ -1,0 +1,74 @@
+@use "../../../styles";
+
+.layout {
+  --total-layout-height: 100vh;
+  --header-height: calc(1rem + 4px + var(--global-padding) * 2);
+  --main-height: calc(100vh - var(--header-height));
+  --footer-height: calc(2.25rem + var(--global-padding));
+
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: var(--total-layout-height);
+
+  header {
+    height: var(--header-height);
+  }
+
+  main {
+    height: var(--main-height);
+  }
+
+  footer {
+    height: var(--footer-height);
+  }
+}
+
+.layout-self-service {
+  --total-layout-height: 100vh;
+
+  --header-height: calc(
+    var(--mat-sys-label-large-line-height) + var(--global-padding) * 1.75
+  );
+  --main-height: calc(
+    var(--total-layout-height) - var(--header-height) - var(--footer-height)
+  );
+  --footer-height: 0vh;
+
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: var(--total-layout-height);
+
+  header {
+    height: var(--header-height);
+  }
+
+  main {
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: var(--main-height);
+  }
+}
+
+.progress-bar {
+  position: fixed;
+  top: calc(100% - max(var(--mdc-linear-progress-track-height, 4px),
+                       var(--mdc-linear-progress-active-indicator-height, 4px)));
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+}
+
+.loading-urls-container {
+  position: fixed;
+  bottom: 1vh;
+  right: 0;
+  z-index: 9999;
+}
+
+.loading-url {
+  margin-left: auto;
+  margin-right: 16px;
+  margin-bottom: 2px;
+  color: var(--mat-sys-primary);
+  opacity: 0.33;
+}

@@ -27,9 +27,9 @@ import codecs
 from mock import mock
 import pytest
 import requests
-from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, ACTION,
-                                    enable_policy,
+from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, enable_policy,
                                     PolicyClass)
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.token import (get_tokens, remove_token, get_one_token,
                                    get_tokens_from_serial_or_user, enable_token,
                                    check_serial_pass, unassign_token, init_token,
@@ -128,12 +128,12 @@ class API000TokenAdminRealmList(MyApiTestCase):
         # admin is allowed to see realm1
         set_policy(name="pol-realm1",
                    scope=SCOPE.ADMIN,
-                   action=ACTION.TOKENLIST, adminuser=self.testadmin, realm=self.realm1)
+                   action=PolicyAction.TOKENLIST, adminuser=self.testadmin, realm=self.realm1)
 
         # admin is allowed to list all realms
         set_policy(name="pol-all-realms",
                    scope=SCOPE.ADMIN,
-                   action=ACTION.TOKENLIST, adminuser=self.testadmin)
+                   action=PolicyAction.TOKENLIST, adminuser=self.testadmin)
 
         # admin is allowed to only init, not list
         set_policy(name="pol-only-init",
@@ -192,8 +192,8 @@ class API000TokenAdminRealmList(MyApiTestCase):
         # create token delete policy for "testadmin" on resolver1
         set_policy(name="pol-reso1",
                    scope=SCOPE.ADMIN,
-                   action=','.join([ACTION.DELETE, ACTION.ASSIGN, ACTION.UNASSIGN,
-                                    ACTION.DISABLE, ACTION.ENABLE, ACTION.AUDIT]),
+                   action=','.join([PolicyAction.DELETE, PolicyAction.ASSIGN, PolicyAction.UNASSIGN,
+                                    PolicyAction.DISABLE, PolicyAction.ENABLE, PolicyAction.AUDIT]),
                    adminuser=self.testadmin,
                    realm=self.realm1,
                    resolver=self.resolvername1)
@@ -398,8 +398,8 @@ class API000TokenAdminRealmList(MyApiTestCase):
         # create token policy for "testadmin" on realm1 and realm3
         set_policy(name="pol-reso1",
                    scope=SCOPE.ADMIN,
-                   action=','.join([ACTION.DELETE, ACTION.ASSIGN, ACTION.UNASSIGN,
-                                    ACTION.DISABLE, ACTION.ENABLE, ACTION.TOKENREALMS]),
+                   action=','.join([PolicyAction.DELETE, PolicyAction.ASSIGN, PolicyAction.UNASSIGN,
+                                    PolicyAction.DISABLE, PolicyAction.ENABLE, PolicyAction.TOKENREALMS]),
                    adminuser=self.testadmin,
                    realm=[self.realm1, self.realm3])
 
@@ -512,7 +512,7 @@ class API000TokenAdminRealmList(MyApiTestCase):
 
     def test_05_helpdesk_delete_batch(self):
         # helpdesk is allowed to manage realm1
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=ACTION.DELETE, realm=self.realm1)
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.DELETE, realm=self.realm1)
 
         # create tokens
         token1 = init_token({"type": "hotp", "genkey": True, "realm": self.realm1})
@@ -1208,8 +1208,8 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(result.get("value") == 1, result)
 
     def test_07_resync(self):
-        set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollHOTP", ACTION.RESYNC, ACTION.AUDIT, ACTION.TOKENLIST,
-                                                        ACTION.ASSIGN])
+        set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollHOTP", PolicyAction.RESYNC, PolicyAction.AUDIT, PolicyAction.TOKENLIST,
+                                                        PolicyAction.ASSIGN])
 
         with self.app.test_request_context('/token/init', method="POST",
                                            data={"serial": "Resync01",
@@ -1487,7 +1487,7 @@ class APITokenTestCase(MyApiTestCase):
 
     def test_11_load_tokens(self):
         # Set dummy policy to check if token upload still works (see #2209)
-        set_policy("dumm01", scope=SCOPE.USER, action=ACTION.DISABLE)
+        set_policy("dumm01", scope=SCOPE.USER, action=PolicyAction.DISABLE)
         # Load OATH CSV
         with self.app.test_request_context('/token/load/import.oath',
                                            method="POST",
@@ -1661,7 +1661,7 @@ class APITokenTestCase(MyApiTestCase):
         self.assertIn(self.realm1, r)
 
         # Now set a policy, that allows the admin to upload the tokens into this realm
-        set_policy(name="tokupload", scope=SCOPE.ADMIN, action=ACTION.IMPORT, realm=self.realm1,
+        set_policy(name="tokupload", scope=SCOPE.ADMIN, action=PolicyAction.IMPORT, realm=self.realm1,
                    adminuser="testadmin")
         _clean_up_tokens()
         with self.app.test_request_context('/token/load/import.oath',
@@ -1681,7 +1681,7 @@ class APITokenTestCase(MyApiTestCase):
         self.assertIn(self.realm1, r)
 
         # Now define a policy, that allows the user to upload tokens to some other realm
-        set_policy(name="tokupload", scope=SCOPE.ADMIN, action=ACTION.IMPORT, realm=self.realm2,
+        set_policy(name="tokupload", scope=SCOPE.ADMIN, action=PolicyAction.IMPORT, realm=self.realm2,
                    adminuser="testadmin")
         _clean_up_tokens()
         with self.app.test_request_context('/token/load/import.oath',
@@ -2019,7 +2019,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 400, res)
 
     def test_19_get_challenges(self):
-        set_policy("chalresp", scope=SCOPE.AUTH, action=f"{ACTION.CHALLENGERESPONSE}=hotp")
+        set_policy("chalresp", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
         token = init_token({"genkey": 1, "serial": "CHAL1", "pin": "pin"})
         serial = token.token.serial
         r = check_serial_pass(serial, "pin")
@@ -2172,7 +2172,7 @@ class APITokenTestCase(MyApiTestCase):
         # Check if a realm admin can not delete a token in another realm
         # Admin is only allowed to delete tokens in "testrealm"
         set_policy("deleteToken", scope=SCOPE.ADMIN,
-                   action=ACTION.DELETE,
+                   action=PolicyAction.DELETE,
                    user="testadmin",
                    realm=self.realm1)
         init_token({"type": "SPASS", "serial": "SP001"},
@@ -2192,7 +2192,7 @@ class APITokenTestCase(MyApiTestCase):
     def test_23_change_pin_on_first_use(self):
 
         set_policy("firstuse", scope=SCOPE.ENROLL,
-                   action=ACTION.CHANGE_PIN_FIRST_USE)
+                   action=PolicyAction.CHANGE_PIN_FIRST_USE)
 
         current_time = datetime.datetime.now(tzlocal())
         with mock.patch('privacyidea.lib.tokenclass.datetime') as mock_dt:
@@ -2476,7 +2476,7 @@ class APITokenTestCase(MyApiTestCase):
 
     def test_28_enroll_app_with_image_url(self):
         set_policy("imgurl", scope=SCOPE.ENROLL,
-                   action="{0!s}=https://example.com/img.png".format(ACTION.APPIMAGEURL))
+                   action="{0!s}=https://example.com/img.png".format(PolicyAction.APPIMAGEURL))
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"user": "cornelius",
@@ -2512,7 +2512,7 @@ class APITokenTestCase(MyApiTestCase):
 
         # policy: allow user to set description
         set_policy(name="SETDESCPOL", scope=SCOPE.USER,
-                   action=ACTION.SETDESCRIPTION)
+                   action=PolicyAction.SETDESCRIPTION)
 
         # successful set description on own token
         with self.app.test_request_context('/token/description/SETDESC01',
@@ -2557,8 +2557,8 @@ class APITokenTestCase(MyApiTestCase):
 
     def test_30_force_app_pin(self):
         set_policy("app_pin", scope=SCOPE.ENROLL,
-                   action={"hotp_" + ACTION.FORCE_APP_PIN: True,
-                           "totp_" + ACTION.FORCE_APP_PIN: True})
+                   action={"hotp_" + PolicyAction.FORCE_APP_PIN: True,
+                           "totp_" + PolicyAction.FORCE_APP_PIN: True})
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"user": "cornelius",
@@ -2608,9 +2608,9 @@ class APITokenTestCase(MyApiTestCase):
                           result.get("error").get("message"))
 
         # Admin policy: admin is allowed to set random pin
-        set_policy("allowed_to_set_pin", scope=SCOPE.ADMIN, action="{0!s}".format(ACTION.SETRANDOMPIN))
+        set_policy("allowed_to_set_pin", scope=SCOPE.ADMIN, action="{0!s}".format(PolicyAction.SETRANDOMPIN))
         # at least we need a otppinrandom policy (but not with length 0
-        set_policy("pinpolrandom", scope=SCOPE.ADMIN, action="{0!s}=0".format(ACTION.OTPPINSETRANDOM))
+        set_policy("pinpolrandom", scope=SCOPE.ADMIN, action="{0!s}=0".format(PolicyAction.OTPPINSETRANDOM))
 
         with self.app.test_request_context('/token/setrandompin',
                                            method='POST',
@@ -2623,7 +2623,7 @@ class APITokenTestCase(MyApiTestCase):
                           result.get("error").get("message"))
 
         # at least we need a otppinrandom policy
-        set_policy("pinpolrandom", scope=SCOPE.ADMIN, action="{0!s}=10".format(ACTION.OTPPINSETRANDOM))
+        set_policy("pinpolrandom", scope=SCOPE.ADMIN, action="{0!s}=10".format(PolicyAction.OTPPINSETRANDOM))
 
         with self.app.test_request_context('/token/setrandompin',
                                            method='POST',
@@ -2635,7 +2635,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertEqual(10, len(detail.get("pin")))
 
         # What happens, if we have two contradicting policies:
-        set_policy("pinpolrandom2", scope=SCOPE.ADMIN, action="{0!s}=9".format(ACTION.OTPPINSETRANDOM))
+        set_policy("pinpolrandom2", scope=SCOPE.ADMIN, action="{0!s}=9".format(PolicyAction.OTPPINSETRANDOM))
 
         with self.app.test_request_context('/token/setrandompin',
                                            method='POST',
@@ -2648,8 +2648,8 @@ class APITokenTestCase(MyApiTestCase):
             self.assertEqual(303, result.get("error").get("code"))
 
         # Now we adapt the priority of the policies:
-        set_policy("pinpolrandom2", scope=SCOPE.ADMIN, action="{0!s}=9".format(ACTION.OTPPINSETRANDOM), priority=1)
-        set_policy("pinpolrandom", scope=SCOPE.ADMIN, action="{0!s}=10".format(ACTION.OTPPINSETRANDOM), priority=2)
+        set_policy("pinpolrandom2", scope=SCOPE.ADMIN, action="{0!s}=9".format(PolicyAction.OTPPINSETRANDOM), priority=1)
+        set_policy("pinpolrandom", scope=SCOPE.ADMIN, action="{0!s}=10".format(PolicyAction.OTPPINSETRANDOM), priority=2)
 
         with self.app.test_request_context('/token/setrandompin',
                                            method='POST',
@@ -2667,7 +2667,7 @@ class APITokenTestCase(MyApiTestCase):
     def test_33_hide_tokeninfo_user(self):
         set_policy(name="hide_tokeninfo_user",
                    scope=SCOPE.USER,
-                   action="{0!s}=tokenkind unknown".format(ACTION.HIDE_TOKENINFO))
+                   action="{0!s}=tokenkind unknown".format(PolicyAction.HIDE_TOKENINFO))
         t = init_token({"genkey": 1}, tokenkind='testing',
                        user=User('cornelius', realm=self.realm1))
         add_tokeninfo(t.token.serial, 'blabla', value='SomeValue')
@@ -2718,8 +2718,8 @@ class APITokenTestCase(MyApiTestCase):
     def test_34_hide_tokeninfo_admin(self):
         set_policy(name="hide_tokeninfo_admin",
                    scope=SCOPE.ADMIN,
-                   action="{0!s}=tokenkind unknown, {1!s}".format(ACTION.HIDE_TOKENINFO,
-                                                                  ACTION.TOKENLIST))
+                   action="{0!s}=tokenkind unknown, {1!s}".format(PolicyAction.HIDE_TOKENINFO,
+                                                                  PolicyAction.TOKENLIST))
         t = init_token({"genkey": 1}, tokenkind='testing')
         add_tokeninfo(t.token.serial, 'blabla', value='SomeValue')
         for i in ['blabla', 'tokenkind']:
@@ -2775,9 +2775,9 @@ class APITokenTestCase(MyApiTestCase):
             f"challenge-cache contains {remaining} rows")
 
     def test_40_init_verify_hotp_token(self):
-        set_policy("verify_toks1", scope=SCOPE.ENROLL, action="{0!s}=hotp top".format(ACTION.VERIFY_ENROLLMENT))
-        set_policy("verify_toks2", scope=SCOPE.ENROLL, action="{0!s}=HOTP email".format(ACTION.VERIFY_ENROLLMENT))
-        set_policy("require_description", scope=SCOPE.ENROLL, action="{0!s}=hotp".format(ACTION.REQUIRE_DESCRIPTION))
+        set_policy("verify_toks1", scope=SCOPE.ENROLL, action="{0!s}=hotp top".format(PolicyAction.VERIFY_ENROLLMENT))
+        set_policy("verify_toks2", scope=SCOPE.ENROLL, action="{0!s}=HOTP email".format(PolicyAction.VERIFY_ENROLLMENT))
+        set_policy("require_description", scope=SCOPE.ENROLL, action="{0!s}=hotp".format(PolicyAction.REQUIRE_DESCRIPTION))
         set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollHOTP"])
         # Enroll an HOTP token
         with self.app.test_request_context('/token/init',
@@ -2859,9 +2859,9 @@ class APITokenTestCase(MyApiTestCase):
         smtp_inst = smtp_mock.return_value
         smtp_inst.sendmail.return_value = {"user@example.com": (200, 'OK')}
 
-        set_policy("verify_toks1", scope=SCOPE.ENROLL, action="{0!s}=email".format(ACTION.VERIFY_ENROLLMENT))
+        set_policy("verify_toks1", scope=SCOPE.ENROLL, action="{0!s}=email".format(PolicyAction.VERIFY_ENROLLMENT))
         set_policy("email_challenge_text", scope=SCOPE.AUTH,
-                   action=f"email_{ACTION.CHALLENGETEXT}=ENTER EMAIL TOKEN")
+                   action=f"email_{PolicyAction.CHALLENGETEXT}=ENTER EMAIL TOKEN")
         set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollEMAIL"])
         # Enroll an email token
         # TODO: Check mock mailserver for correct email subject and text
@@ -2924,7 +2924,7 @@ class APITokenTestCase(MyApiTestCase):
 
         set_privacyidea_config("sms.identifier", smsgw_id)
         set_policy("verify_toks1", scope=SCOPE.ENROLL,
-                   action="{0!s}=sms".format(ACTION.VERIFY_ENROLLMENT))
+                   action="{0!s}=sms".format(PolicyAction.VERIFY_ENROLLMENT))
         sms_text = "YOUR SMS TOKEN: {otp}"
         set_policy(name="smstext", scope=SCOPE.AUTH,
                    action=f"{SMSACTION.SMSTEXT}={sms_text}")
@@ -2977,7 +2977,7 @@ class APITokenTestCase(MyApiTestCase):
         delete_policy("enroll")
 
     def test_43_init_verify_index_token(self):
-        set_policy("verify_toks1", scope=SCOPE.ENROLL, action="{0!s}=indexedsecret".format(ACTION.VERIFY_ENROLLMENT))
+        set_policy("verify_toks1", scope=SCOPE.ENROLL, action="{0!s}=indexedsecret".format(PolicyAction.VERIFY_ENROLLMENT))
         # Enroll an indexed secret token
         SECRET = "ABCDEFGHIJHK"
         with self.app.test_request_context('/token/init',
@@ -3030,7 +3030,7 @@ class APITokenTestCase(MyApiTestCase):
 
     def test_44_init_verify_paper_token(self):
         set_policy("verify_paper_toks", scope=SCOPE.ENROLL,
-                   action="{0!s}=paper".format(ACTION.VERIFY_ENROLLMENT))
+                   action="{0!s}=paper".format(PolicyAction.VERIFY_ENROLLMENT))
         # Enroll a PAPER token
         with self.app.test_request_context('/token/init',
                                            method='POST',
@@ -3099,7 +3099,7 @@ class APITokenTestCase(MyApiTestCase):
 
     def test_45_init_verify_tan_token(self):
         set_policy("verify_tan_toks", scope=SCOPE.ENROLL,
-                   action="{0!s}=tan".format(ACTION.VERIFY_ENROLLMENT))
+                   action="{0!s}=tan".format(PolicyAction.VERIFY_ENROLLMENT))
         # Enroll a PAPER token
         with self.app.test_request_context('/token/init',
                                            method='POST',
@@ -3172,7 +3172,7 @@ class APITokenTestCase(MyApiTestCase):
         # set require_description policy with value = 'hotp'
         set_policy(name="require_description",
                    scope=SCOPE.ENROLL,
-                   action=["{0!s}=hotp".format(ACTION.REQUIRE_DESCRIPTION)])
+                   action=["{0!s}=hotp".format(PolicyAction.REQUIRE_DESCRIPTION)])
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={
@@ -3248,7 +3248,7 @@ class APITokenTestCase(MyApiTestCase):
         token.set_realms([self.realm1, self.realm2])
 
         # set policy for helpdesk admin
-        set_policy("helpdesk", scope=SCOPE.ADMIN, action=ACTION.TOKENLIST, realm=self.realm1)
+        set_policy("helpdesk", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST, realm=self.realm1)
 
         # List tokens for serial (before request will also add user as parameter)
         with self.app.test_request_context("/token/",
@@ -3278,7 +3278,7 @@ class APITokenTestCase(MyApiTestCase):
             remove_token(serial)
 
         # Set policy to enforce genkey
-        set_policy("hotp_genkey", scope=SCOPE.ADMIN, action=f"hotp_{ACTION.FORCE_SERVER_GENERATE}")
+        set_policy("hotp_genkey", scope=SCOPE.ADMIN, action=f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}")
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"type": "hotp"},
@@ -3304,7 +3304,7 @@ class APITokenTestCase(MyApiTestCase):
         delete_policy("hotp_genkey")
 
         # TOTP
-        set_policy("totp_genkey", scope=SCOPE.ADMIN, action=f"totp_{ACTION.FORCE_SERVER_GENERATE}")
+        set_policy("totp_genkey", scope=SCOPE.ADMIN, action=f"totp_{PolicyAction.FORCE_SERVER_GENERATE}")
         otpkey = "3132333435363738393031323334353637383930"
         with self.app.test_request_context('/token/init',
                                            method='POST',
@@ -3320,7 +3320,7 @@ class APITokenTestCase(MyApiTestCase):
         delete_policy("totp_genkey")
 
         # MOTP
-        set_policy("motp_genkey", scope=SCOPE.ADMIN, action=f"motp_{ACTION.FORCE_SERVER_GENERATE}")
+        set_policy("motp_genkey", scope=SCOPE.ADMIN, action=f"motp_{PolicyAction.FORCE_SERVER_GENERATE}")
         otpkey = "3132333435363738393031323334353637383930"
         with self.app.test_request_context('/token/init',
                                            method='POST',
@@ -3336,7 +3336,7 @@ class APITokenTestCase(MyApiTestCase):
         delete_policy("motp_genkey")
 
         # applspec
-        set_policy("applspec_genkey", scope=SCOPE.ADMIN, action=f"applspec_{ACTION.FORCE_SERVER_GENERATE}")
+        set_policy("applspec_genkey", scope=SCOPE.ADMIN, action=f"applspec_{PolicyAction.FORCE_SERVER_GENERATE}")
         otpkey = "3132333435363738393031323334353637383930"
         with self.app.test_request_context('/token/init',
                                            method='POST',
@@ -3666,7 +3666,7 @@ class APIDetermineUserFromSerialForPolicies(MyApiTestCase):
 
         enable_token(serial)
         # create a policy for realm1, the admin is allowed to disable the token
-        set_policy(polname, scope=SCOPE.ADMIN, action=ACTION.DISABLE, realm=self.realm1, adminuser="testadmin")
+        set_policy(polname, scope=SCOPE.ADMIN, action=PolicyAction.DISABLE, realm=self.realm1, adminuser="testadmin")
 
         with self.app.test_request_context('/token/disable',
                                            method='POST',
@@ -3680,7 +3680,7 @@ class APIDetermineUserFromSerialForPolicies(MyApiTestCase):
 
         enable_token(serial)
         # change the policy for realm2, the admin is NOT allowed to disable the token
-        set_policy(polname, scope=SCOPE.ADMIN, action=ACTION.DISABLE, realm=self.realm2, adminuser="testadmin")
+        set_policy(polname, scope=SCOPE.ADMIN, action=PolicyAction.DISABLE, realm=self.realm2, adminuser="testadmin")
 
         with self.app.test_request_context('/token/disable',
                                            method='POST',

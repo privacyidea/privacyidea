@@ -7,7 +7,8 @@ from privacyidea.api.lib.utils import (getParam,
                                        check_policy_name,
                                        verify_auth_token, is_fqdn, attestation_certificate_allowed,
                                        get_priority_from_param)
-from privacyidea.lib.policy import ACTION, SCOPE, set_policy, delete_policy
+from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.user import User
 from privacyidea.lib.error import ParameterError
 import jwt
@@ -317,7 +318,7 @@ class UtilsTestCase(MyApiTestCase):
         # now check the /validate/check endpoint
         set_policy(name="otppin",
                    scope=SCOPE.AUTH,
-                   action="{0!s}={1!s}".format(ACTION.OTPPIN, "userstore"))
+                   action="{0!s}={1!s}".format(PolicyAction.OTPPIN, "userstore"))
         init_token({"type": "spass", "serial": "spass1d"},
                    user=User("pwpercent", self.realm1))
         # fist the request fails due to a wrong otp pin

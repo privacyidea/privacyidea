@@ -23,6 +23,9 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+# SPDX-FileCopyrightText: 2025 Paul Lettich <paul.lettich@netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 __doc__ = """The config module takes care about storing server configuration in
 the Config database table.
 
@@ -488,6 +491,7 @@ def get_token_class(tokentype):
     """
     This takes a token type like "hotp" and returns a class
     like <class privacidea.lib.tokens.hotptoken.HotpTokenClass>
+
     :return: The tokenclass for the given type
     :rtype: tokenclass.TokenClass
     """

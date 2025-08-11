@@ -13,7 +13,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.event import event
 from privacyidea.lib.token import get_tokens
 from privacyidea.api.lib.prepolicy import check_base_action, prepolicy
-from privacyidea.lib.policy import ACTION
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.subscriptions import (get_subscription,
                                            get_users_with_active_tokens,
                                            delete_subscription,
@@ -30,7 +30,7 @@ subscriptions_blueprint = Blueprint('subscriptions_blueprint', __name__)
 
 @subscriptions_blueprint.route('/', methods=['GET'])
 @subscriptions_blueprint.route('/<application>', methods=['GET'])
-@prepolicy(check_base_action, request, action=ACTION.MANAGESUBSCRIPTION)
+@prepolicy(check_base_action, request, action=PolicyAction.MANAGESUBSCRIPTION)
 @event("subscription_get", request, g)
 @log_with(log)
 def api_get(application=None):
@@ -50,7 +50,7 @@ def api_get(application=None):
 
 
 @subscriptions_blueprint.route('/', methods=['POST'])
-@prepolicy(check_base_action, request, action=ACTION.MANAGESUBSCRIPTION)
+@prepolicy(check_base_action, request, action=PolicyAction.MANAGESUBSCRIPTION)
 @event("subscription_save", request, g)
 @log_with(log)
 def api_set():
@@ -66,7 +66,7 @@ def api_set():
 
 
 @subscriptions_blueprint.route('/<application>', methods=['DELETE'])
-@prepolicy(check_base_action, request, action=ACTION.MANAGESUBSCRIPTION)
+@prepolicy(check_base_action, request, action=PolicyAction.MANAGESUBSCRIPTION)
 @event("subscription_delete", request, g)
 @log_with(log)
 def api_delete(application=None):

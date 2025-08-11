@@ -44,8 +44,9 @@ from privacyidea.lib.error import (ResourceNotFoundError, ValidateError,
                                    privacyIDEAError, ConfigAdminError, PolicyError)
 
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.policy import (SCOPE, ACTION, GROUP, Match,
+from privacyidea.lib.policy import (SCOPE, GROUP, Match,
                                     get_action_values_from_options)
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.log import log_with
 from privacyidea.lib import _, lazy_gettext
 
@@ -408,17 +409,17 @@ class PushTokenClass(TokenClass):
                                'group': "PUSH",
                                'value': ["0", "1"]
                            },
-                           ACTION.MAXTOKENUSER: {
+                           PolicyAction.MAXTOKENUSER: {
                                'type': 'int',
                                'desc': _("The user may only have this maximum number of Push tokens assigned."),
                                'group': GROUP.TOKEN
                            },
-                           ACTION.MAXACTIVETOKENUSER: {
+                           PolicyAction.MAXACTIVETOKENUSER: {
                                'type': 'int',
                                'desc': _("The user may only have this maximum number of active Push tokens assigned."),
                                'group': GROUP.TOKEN
                            },
-                           'push_' + ACTION.FORCE_APP_PIN: {
+                           'push_' + PolicyAction.FORCE_APP_PIN: {
                                'type': 'bool',
                                'group': "PUSH",
                                'desc': _('Require to unlock the Smartphone before Push requests can be accepted')
@@ -613,7 +614,7 @@ class PushTokenClass(TokenClass):
             extra_data["poll_only"] = fb_identifier == POLL_ONLY
 
             # enforce App pin
-            if params.get(ACTION.FORCE_APP_PIN):
+            if params.get(PolicyAction.FORCE_APP_PIN):
                 extra_data.update({'pin': True})
 
             # Get scheme to use
@@ -940,7 +941,7 @@ class PushTokenClass(TokenClass):
 
         return "json", prepare_result(result, details=details)
 
-    @log_with(log)
+    @log_with(log, hide_args=[1])
     def is_challenge_request(self, passw, user=None, options=None):
         """
         check, if the request would start a challenge
@@ -980,7 +981,7 @@ class PushTokenClass(TokenClass):
         """
         options = options or {}
         message = get_action_values_from_options(SCOPE.AUTH,
-                                                 ACTION.CHALLENGETEXT,
+                                                 PolicyAction.CHALLENGETEXT,
                                                  options) or str(DEFAULT_CHALLENGE_TEXT)
 
         message = message.replace(r'\,', ',')

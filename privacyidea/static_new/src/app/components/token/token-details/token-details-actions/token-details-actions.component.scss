@@ -1,0 +1,28 @@
+@use "../../../../../styles";
+
+$gap-small: 8px;
+$padding-horizontal: 16px;
+
+.actions-otp-container {
+  display: flex;
+  flex-direction: column;
+  gap: $gap-small;
+  padding: 0 $padding-horizontal;
+
+  .actions-pin-input,
+  .actions-otp-pin-input {
+    display: flex;
+    gap: $gap-small;
+  }
+
+  .actions-pin-input-button,
+  .actions-visibility-button {
+    display: flex;
+  }
+
+  .actions-pin-button {
+    display: flex;
+    gap: $gap-small;
+    flex-direction: column;
+  }
+}

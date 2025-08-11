@@ -33,7 +33,7 @@ import sys
 import uuid
 
 import yaml
-from flask import Flask
+from flask import Flask, render_template, jsonify, request
 from flask_babel import Babel
 from flask_migrate import Migrate
 from flaskext.versioned import Versioned
@@ -44,6 +44,7 @@ import sqlalchemy as sa
 import privacyidea.api.before_after  # noqa: F401
 from privacyidea.api.container import container_blueprint
 from privacyidea.api.healthcheck import healthz_blueprint
+from privacyidea.api.lib.utils import send_html
 from privacyidea.api.validate import validate_blueprint
 from privacyidea.api.token import token_blueprint
 from privacyidea.api.system import system_blueprint
@@ -182,6 +183,16 @@ def create_app(config_name="development",
     app = Flask(__name__, static_folder="static",
                 template_folder="static/templates")
     app.config["APP_READY"] = False
+
+    # Routed apps must fall back to index.html
+    @app.errorhandler(404)
+    def fallback(error):
+        if request.path.startswith("/app/v2/"):
+            return send_html(
+                render_template(
+                    "index.html"))
+        return jsonify(error="Not found"), 404
+
     app.config["VERBOSE"] = not silent
 
     # Overwrite default config with environment setting

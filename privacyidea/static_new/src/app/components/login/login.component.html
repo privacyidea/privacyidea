@@ -1,0 +1,64 @@
+<div aria-label="Login Container"
+     class="login-container">
+  <div class="login-scroll">
+    <img alt="logo"
+         aria-label="Logo"
+         class="logo"
+         height="307"
+         ngSrc="assets/privacyIDEA1.png"
+         ngSrcset="1x"
+         sizes="(max-width: 307px) 100vw, 307px"
+         width="307" />
+
+    <img alt="logo-text"
+         aria-label="Logo Text"
+         class="logo-text"
+         height="109"
+         ngSrc="assets/logo-text.png"
+         ngSrcset="1x"
+         sizes="(max-width: 575px) 100vw, 575px"
+         width="575" />
+
+    <form (ngSubmit)="onSubmit()"
+          aria-label="Login Form"
+          class="login-form">
+      <mat-form-field appearance="outline">
+        <mat-label>Username</mat-label>
+        <input [(ngModel)]="username"
+               id="username"
+               matInput
+               name="username"
+               required
+               type="text" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Password</mat-label>
+        <input [(ngModel)]="password"
+               id="password"
+               matInput
+               name="password"
+               required
+               type="password" />
+      </mat-form-field>
+
+      <button aria-label="Login Button"
+              class="login-btn"
+              extended
+              mat-fab
+              type="submit">Log In
+        <mat-icon iconPositionEnd>login</mat-icon>
+      </button>
+    </form>
+    <div class="passkey-form">
+      <button (click)="loginPasskey()"
+              aria-label="Passkey Button"
+              class="passkey-btn margin-top-1"
+              extended
+              mat-fab
+              type="submit">Log In With Passkey
+        <mat-icon iconPositionEnd>key</mat-icon>
+      </button>
+    </div>
+  </div>
+</div>

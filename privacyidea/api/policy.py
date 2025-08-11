@@ -39,12 +39,13 @@ from .lib.utils import (getParam,
                         send_result,
                         check_policy_name, send_file, get_required)
 from ..lib.log import log_with
-from ..lib.policies.policy_conditions import ConditionHandleMissingData
-from ..lib.policy import (set_policy, ACTION, rename_policy,
+from ..lib.policies.actions import PolicyAction
+from ..lib.policies.conditions import ConditionHandleMissingData
+from ..lib.policy import (set_policy, rename_policy,
                           export_policies, import_policies,
                           delete_policy, get_static_policy_definitions,
                           enable_policy, get_policy_condition_sections,
-                          get_policy_condition_comparators, Match, validate_values)
+                          get_policy_condition_comparators, Match, validate_values, get_policies)
 from ..lib.token import get_dynamic_policy_definitions
 from ..lib.error import (ParameterError)
 from privacyidea.lib.utils import is_true
@@ -70,7 +71,7 @@ policy_blueprint = Blueprint('policy_blueprint', __name__)
 
 @policy_blueprint.route('/enable/<name>', methods=['POST'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.POLICYWRITE)
+@prepolicy(check_base_action, request, PolicyAction.POLICYWRITE)
 def enable_policy_api(name):
     """
     Enable a given policy by its name.
@@ -85,7 +86,7 @@ def enable_policy_api(name):
 
 @policy_blueprint.route('/disable/<name>', methods=['POST'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.POLICYWRITE)
+@prepolicy(check_base_action, request, PolicyAction.POLICYWRITE)
 def disable_policy_api(name):
     """
     Disable a given policy by its name.
@@ -99,7 +100,7 @@ def disable_policy_api(name):
 
 @policy_blueprint.route('/<old_name>', methods=['PATCH'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.POLICYWRITE)
+@prepolicy(check_base_action, request, PolicyAction.POLICYWRITE)
 def patch_policy_name_api(old_name):
     """
     Rename an existing policy.
@@ -117,7 +118,7 @@ def patch_policy_name_api(old_name):
 
 @policy_blueprint.route('/<name>', methods=['POST'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.POLICYWRITE)
+@prepolicy(check_base_action, request, PolicyAction.POLICYWRITE)
 def set_policy_api(name=None):
     """
     Creates a new policy that defines access or behaviour of different
@@ -243,7 +244,7 @@ def set_policy_api(name=None):
 @policy_blueprint.route('/<name>', methods=['GET'])
 @policy_blueprint.route('/export/<export>', methods=['GET'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.POLICYREAD)
+@prepolicy(check_base_action, request, PolicyAction.POLICYREAD)
 def get_policy(name=None, export=None):
     """
     this function is used to retrieve the policies that you
@@ -311,16 +312,15 @@ def get_policy(name=None, export=None):
     if active is not None:
         active = is_true(active)
 
-    P = g.policy_object
     if not export:
         log.debug("retrieving policy name: {0!s}, realm: {1!s}, scope: {2!s}".format(name, realm, scope))
 
-        pol = P.list_policies(name=name, realm=realm, scope=scope, active=active)
-        ret = send_result(pol)
+        policies = get_policies(name=name, realm=realm, scope=scope, active=active)
+        ret = send_result(policies)
     else:
         # We want to export all policies
-        pol = P.list_policies()
-        ret = send_file(export_policies(pol), export, content_type='text/plain')
+        policies = get_policies()
+        ret = send_file(export_policies(policies), export, content_type='text/plain')
 
     g.audit_object.log({"success": True,
                         'info': "name = {0!s}, realm = {1!s}, scope = {2!s}".format(name, realm, scope)})
@@ -329,7 +329,7 @@ def get_policy(name=None, export=None):
 
 @policy_blueprint.route('/<name>', methods=['DELETE'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.POLICYDELETE)
+@prepolicy(check_base_action, request, PolicyAction.POLICYDELETE)
 def delete_policy_api(name=None):
     """
     This deletes the policy of the given name.
@@ -376,7 +376,7 @@ def delete_policy_api(name=None):
 
 @policy_blueprint.route('/import/<filename>', methods=['POST'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.POLICYWRITE)
+@prepolicy(check_base_action, request, PolicyAction.POLICYWRITE)
 def import_policy_api(filename=None):
     """
     This function is used to import policies from a file.

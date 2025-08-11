@@ -454,6 +454,12 @@ myApp.controller("containerListController", ['$scope', '$http', '$q', 'Container
             }
             $scope.params.pagesize = $scope.token_page_size;
 
+            Object.keys($scope.params).forEach(function (key) {
+                if ($scope.params[key] === "**") {
+                    delete $scope.params[key];
+                }
+            });
+
             ContainerFactory.getContainers($scope.params,
                 function (data) {
                     $scope.containerdata = data.result.value;

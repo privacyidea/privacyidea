@@ -4,12 +4,14 @@ This test file tests the lib.tokens.yubikeytoken
 """
 import json
 import logging
+from testfixtures import log_capture
 
 from testfixtures import LogCapture
 from .base import MyTestCase
 from privacyidea.lib.tokens.yubikeytoken import (YubikeyTokenClass,
                                                  yubico_api_signature,
                                                  yubico_check_api_signature)
+from privacyidea.lib.tokens.yubikeytoken import log as yklog
 from privacyidea.lib.token import init_token, remove_token, import_tokens, get_tokens
 from privacyidea.lib.error import EnrollmentError
 from privacyidea.models import Token
@@ -90,12 +92,18 @@ class YubikeyTokenTestCase(MyTestCase):
         ci = token.get_class_info()
         self.assertTrue(ci.get("title") == "Yubikey in AES mode", ci)
 
-    def test_03_is_challenge_request(self):
+    @log_capture(level=logging.DEBUG)
+    def test_03_is_challenge_request(self, capture):
+        yklog.setLevel(logging.DEBUG)
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         token = YubikeyTokenClass(db_token)
 
         r = token.is_challenge_request(self.pin)
         self.assertTrue(r)
+        log_msg = str(capture)
+        self.assertIn('HIDDEN', log_msg, log_msg)
+        self.assertNotIn(self.pin, log_msg, log_msg)
+        yklog.setLevel(logging.INFO)
 
     def test_04_check_yubikey_pass(self):
         # Check_yubikey_pass only works without pin!
@@ -177,7 +185,6 @@ class YubikeyTokenTestCase(MyTestCase):
     def test_10_api_endpoint(self):
         fixed = "ebedeeefegeheiej"
         otpkey = "cc17a4d77eaed96e9d14b5c87a02e718"
-        uid = "000000000000"
         otps = ["ebedeeefegeheiejtjtrutblehenfjljrirgdihrfuetljtt",
                 "ebedeeefegeheiejlekvlrlkrcluvctenlnnjfknrhgtjned",
                 "ebedeeefegeheiejktudedbktcnbuntrhdueikggtrugckij",
@@ -185,11 +192,11 @@ class YubikeyTokenTestCase(MyTestCase):
                 "ebedeeefegeheiejdruibhvlvktcgfjiruhltketifnitbuk"
                 ]
 
-        token = init_token({"type": "yubikey",
-                            "otpkey": otpkey,
-                            "otplen": len(otps[0]),
-                            "yubikey.prefix": fixed,
-                            "serial": "UBAM12345678_1"})
+        init_token({"type": "yubikey",
+                    "otpkey": otpkey,
+                    "otplen": len(otps[0]),
+                    "yubikey.prefix": fixed,
+                    "serial": "UBAM12345678_1"})
 
         builder = EnvironBuilder(method='GET',
                                  headers={})
@@ -214,7 +221,6 @@ class YubikeyTokenTestCase(MyTestCase):
         fixed = "ebedeeefegeheiej"
         # The backend automatically strips whitespace from the OTP key
         otpkey = "cc 17 a4 d7 7e ae d9 6e 9d 14 b5 c8 7a 02 e7 18"
-        uid = "000000000000"
         otps = ["ebedeeefegeheiejtjtrutblehenfjljrirgdihrfuetljtt",
                 "ebedeeefegeheiejlekvlrlkrcluvctenlnnjfknrhgtjned",
                 "ebedeeefegeheiejktudedbktcnbuntrhdueikggtrugckij",
@@ -222,11 +228,11 @@ class YubikeyTokenTestCase(MyTestCase):
                 "ebedeeefegeheiejdruibhvlvktcgfjiruhltketifnitbuk"
                 ]
 
-        token = init_token({"type": "yubikey",
-                            "otpkey": otpkey,
-                            "otplen": len(otps[0]),
-                            "yubikey.prefix": fixed,
-                            "serial": "UBAM12345678_1"})
+        init_token({"type": "yubikey",
+                    "otpkey": otpkey,
+                    "otplen": len(otps[0]),
+                    "yubikey.prefix": fixed,
+                    "serial": "UBAM12345678_1"})
 
         builder = EnvironBuilder(method='GET',
                                  headers={})
@@ -317,7 +323,8 @@ class YubikeyTokenTestCase(MyTestCase):
         }]
 
         # Import the token
-        import_tokens(json.dumps(token_data))
+        result = import_tokens(json.dumps(token_data))
+        self.assertIn(self.serial2, result.successful_tokens, result)
 
         # Retrieve the imported token
         token = get_tokens(serial=token_data[0]["serial"])[0]

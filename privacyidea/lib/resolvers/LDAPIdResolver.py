@@ -53,7 +53,7 @@ from privacyidea.lib import _
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import (is_true, to_bytes, to_unicode,
                                    convert_column_to_unicode)
-from privacyidea.lib.error import privacyIDEAError, ResolverError
+from privacyidea.lib.error import privacyIDEAError, ResolverError, ParameterError
 import uuid
 from ldap3.utils.conv import escape_bytes
 from operator import itemgetter
@@ -304,7 +304,7 @@ class IdResolver(UserIdResolver):
         # The number of seconds that ldap3 waits if no server is left in the pool, before
         # starting the next round
         pooling_loop_timeout = get_app_config_value("PI_LDAP_POOLING_LOOP_TIMEOUT", 10)
-        log.debug("Setting system wide POOLING_LOOP_TIMEOUT to {0!s}.".format(pooling_loop_timeout))
+        log.debug("Setting system-wide POOLING_LOOP_TIMEOUT to {0!s}.".format(pooling_loop_timeout))
         ldap3.set_config_parameter("POOLING_LOOP_TIMEOUT", pooling_loop_timeout)
 
     @log_with(log, hide_args=[2])
@@ -764,6 +764,12 @@ class IdResolver(UserIdResolver):
         if self.uidtype.lower() != "dn":
             attributes.append(str(self.uidtype))
 
+        unknown_search_keys = [x for x in search_dict.keys() if x not in self.userinfo.keys()]
+        if unknown_search_keys:
+            log.error(f"Could not find search key ({unknown_search_keys}) in "
+                      f"the attribute mapping keys ({list(self.userinfo.keys())}).")
+            raise ParameterError(f"Search parameter ({unknown_search_keys}) not "
+                                 f"available in attribute mapping.")
         # do the filter depending on the searchDict
         search_filter = "(&" + self.searchfilter
         for search_key in search_dict.keys():
@@ -1189,6 +1195,7 @@ class IdResolver(UserIdResolver):
                 if entry.get('type') == 'searchResRef':
                     continue
                 try:
+                    # TODO: Also check if the returned attributes are defined in the mapping
                     userid = cls._get_uid(entry, uidtype)
                     count += 1
                     if userid:
@@ -1281,6 +1288,7 @@ class IdResolver(UserIdResolver):
     def _attributes_to_ldap_attributes(self, attributes):
         """
         takes the attributes and maps them to the LDAP attributes
+
         :param attributes: Attributes to be updated
         :type attributes: dict
         :return: dict with attribute name as keys and values

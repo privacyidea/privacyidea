@@ -2,7 +2,8 @@ from privacyidea.lib.container import init_container, add_token_to_container, fi
 from privacyidea.lib.event import set_event, delete_event
 from privacyidea.lib.eventhandler.containerhandler import (ContainerEventHandler, ACTION_TYPE as C_ACTION_TYPE)
 from privacyidea.lib.eventhandler.customuserattributeshandler import ACTION_TYPE, USER_TYPE
-from privacyidea.lib.policy import SCOPE, set_policy, delete_policy, ACTION
+from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
 from .base import MyApiTestCase, FakeFlaskG
@@ -943,7 +944,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
                                position="post")
 
         # Init rollover
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/"}, priority=2)
+        set_policy("policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/"}, priority=2)
         result = self.request_assert_success(f'container/register/initialize',
                                              {"container_serial": container.serial, "rollover": True},
                                              self.at, 'POST')
@@ -1025,7 +1026,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
         # create container with tokens
         container, hotp, totp = self.setup_container_with_tokens()
         # policy for registration
-        set_policy("policy", scope=SCOPE.CONTAINER, action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/"})
+        set_policy("policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/"})
 
         self.setUp_user_realms()
         r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
@@ -1170,7 +1171,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
         # Register container
         mock_smph = ContainerEventTestCase.register_smartphone(container)
         set_policy("policy", scope=SCOPE.CONTAINER,
-                   action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/", ACTION.CONTAINER_CLIENT_ROLLOVER: True})
+                   action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/", PolicyAction.CONTAINER_CLIENT_ROLLOVER: True})
         # Create Challenge for rollover
         scope = "https://pi.net/container/rollover"
         challenge_data = container.create_challenge(scope)
@@ -1239,7 +1240,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
                          support_tls=False)
 
         set_policy("policy", scope=SCOPE.CONTAINER,
-                   action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/", ACTION.CONTAINER_CLIENT_ROLLOVER: True})
+                   action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/", PolicyAction.CONTAINER_CLIENT_ROLLOVER: True})
 
         # Register container
         ContainerEventTestCase.register_smartphone(container)
@@ -1288,7 +1289,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
                          support_tls=False)
 
         set_policy("policy", scope=SCOPE.CONTAINER,
-                   action={ACTION.CONTAINER_SERVER_URL: "https://pi.net/", ACTION.CONTAINER_CLIENT_ROLLOVER: True})
+                   action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/", PolicyAction.CONTAINER_CLIENT_ROLLOVER: True})
 
         with mock.patch("logging.Logger.warning") as mock_log:
             self.request_assert_success(f'/container/register/initialize',

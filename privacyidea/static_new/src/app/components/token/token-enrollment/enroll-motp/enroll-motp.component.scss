@@ -1,0 +1,22 @@
+@use "../../../../../styles";
+
+.motp-pin-input {
+  display: flex;
+  gap: 16px;
+  margin: 16px 0 16px 0;
+}
+
+.motp-input {
+  display: flex;
+  width: 31%;
+  border-radius: 3px;
+  outline: none;
+
+  &:focus {
+    outline: styles.$focus-outline;
+  }
+}
+
+.motp-description-form {
+  width: 66%;
+}

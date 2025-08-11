@@ -34,8 +34,9 @@ returns -1.
 import logging
 import datetime
 from privacyidea.lib.tokenclass import TokenClass, AUTHENTICATIONMODE
-from privacyidea.lib.policy import (SCOPE, ACTION, GROUP, comma_escape_text,
+from privacyidea.lib.policy import (SCOPE, GROUP, comma_escape_text,
                                     get_action_values_from_options)
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.crypto import urandom, safe_compare
 from privacyidea.lib.log import log_with
 from privacyidea.lib import _, lazy_gettext
@@ -103,7 +104,7 @@ class IndexedSecretTokenClass(TokenClass):
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
                'policy': {SCOPE.AUTH: {
-                   ACTION.CHALLENGETEXT: {
+                   PolicyAction.CHALLENGETEXT: {
                        'type': 'str',
                        'group': "Indexed Secret Token",
                        'desc': _('Use an alternative challenge text for telling the '
@@ -140,12 +141,12 @@ class IndexedSecretTokenClass(TokenClass):
                        }
                    },
                    SCOPE.ENROLL: {
-                       ACTION.MAXTOKENUSER: {
+                       PolicyAction.MAXTOKENUSER: {
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of indexed secret tokens assigned."),
                            'group': GROUP.TOKEN
                        },
-                       ACTION.MAXACTIVETOKENUSER: {
+                       PolicyAction.MAXACTIVETOKENUSER: {
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of active indexed secret"
                                      " tokens assigned."),
@@ -199,7 +200,7 @@ class IndexedSecretTokenClass(TokenClass):
         options = options or {}
         return_message = get_action_values_from_options(SCOPE.AUTH,
                                                         "{0!s}_{1!s}".format(self.get_class_type(),
-                                                                             ACTION.CHALLENGETEXT),
+                                                                             PolicyAction.CHALLENGETEXT),
                                                         options) or DEFAULT_CHALLENGE_TEXT
 
         return_message = return_message.replace(r'\,', ',')

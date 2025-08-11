@@ -26,7 +26,8 @@ from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib import _
-from privacyidea.lib.policy import SCOPE, ACTION, GROUP
+from privacyidea.lib.policy import SCOPE, GROUP
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.api.lib.prepolicy import _generate_pin_from_policy
 from privacyidea.lib.utils import is_true
 
@@ -121,12 +122,12 @@ class PasswordTokenClass(TokenClass):
                'ui_enroll': [],
                'policy': {
                    SCOPE.ENROLL: {
-                       ACTION.MAXTOKENUSER: {
+                       PolicyAction.MAXTOKENUSER: {
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of password tokens assigned."),
                            'group': GROUP.TOKEN
                        },
-                       ACTION.MAXACTIVETOKENUSER: {
+                       PolicyAction.MAXACTIVETOKENUSER: {
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of active password tokens assigned."),
                            'group': GROUP.TOKEN
@@ -152,7 +153,7 @@ class PasswordTokenClass(TokenClass):
         :return: None
         """
         otp_key = param.get("otpkey")
-        force_genkey = param.get("policies", {}).get(f"{self.get_tokentype()}_{ACTION.FORCE_SERVER_GENERATE}", False)
+        force_genkey = param.get("policies", {}).get(f"{self.get_tokentype()}_{PolicyAction.FORCE_SERVER_GENERATE}", False)
         if force_genkey or not otp_key:
             param["genkey"] = True
         genkey = is_true(param.get("genkey"))

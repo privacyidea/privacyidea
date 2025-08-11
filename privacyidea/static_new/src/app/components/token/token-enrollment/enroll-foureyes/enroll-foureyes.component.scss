@@ -1,0 +1,32 @@
+@use "../../../../../styles";
+
+.separator-input-form {
+  width: 105px;
+}
+
+.separator-input {
+  margin-left: 36.5px;
+  width: 50%;
+}
+
+.required-realms-hint {
+  margin-bottom: 16px;
+}
+
+.required-realms-option {
+  width: 100%;
+  border-radius: var(--border-radius);
+}
+
+.required-realms-input {
+  width: 40px;
+  height: 24px;
+  margin-right: 8px;
+}
+
+.required-realms-div {
+  flex-direction: row;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

@@ -47,7 +47,8 @@ from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
 from privacyidea.lib.fido2.util import hash_credential_id, save_credential_id_hash
 from privacyidea.lib.log import log_with
-from privacyidea.lib.policy import ACTION, SCOPE
+from privacyidea.lib.policy import SCOPE
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE, CLIENTMODE, AUTHENTICATIONMODE
 from privacyidea.models import Challenge
 
@@ -97,7 +98,7 @@ class PasskeyTokenClass(TokenClass):
             'ui_enroll': ["admin", "user"],
             'policy': {
                 SCOPE.AUTH: {
-                    ACTION.CHALLENGETEXT: {
+                    PolicyAction.CHALLENGETEXT: {
                         'type': 'str',
                         'desc': _("Alternative challenge message to use when authenticating with a passkey."
                                   "You can also use tags for replacement, "
@@ -410,10 +411,10 @@ class PasskeyTokenClass(TokenClass):
         """
         if options and PasskeyAction.EnableTriggerByPIN in options and options[PasskeyAction.EnableTriggerByPIN]:
             rp_id = get_required(options, FIDO2PolicyAction.RELYING_PARTY_ID)
-            user_verification = get_optional(options, "user_verification", "preferred")
+            user_verification = get_optional(options, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT, "preferred")
             challenge = fido2.challenge.create_fido2_challenge(rp_id, user_verification=user_verification,
                                                                transaction_id=transactionid, serial=self.token.serial)
-            message = challenge["message"]
+            message = options.get("passkey_challenge_text", challenge["message"])
             transaction_id = challenge["transaction_id"]
             challenge_details = {"challenge": challenge["challenge"], "rpId": rp_id,
                                  "userVerification": user_verification}

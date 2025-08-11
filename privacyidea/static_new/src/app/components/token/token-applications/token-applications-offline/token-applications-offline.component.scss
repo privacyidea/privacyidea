@@ -1,0 +1,31 @@
+@use "../../../../../styles";
+
+.application-table-container {
+  @include styles.table-container-styles;
+  @include styles.base-table-structure(
+      ".token-table",
+      ".token-table-filter",
+      ".table-scroll-container"
+  );
+  padding: unset;
+  box-shadow: unset;
+
+  .application-table-filter {
+    width: 32.7rem;
+  }
+}
+
+.token-applications-offline {
+  h4 {
+    margin: 0 0 16px 8px;
+  }
+
+  .application-p-div {
+    margin-left: 16px;
+    max-width: 59rem;
+  }
+
+  p {
+    margin-top: 0;
+  }
+}

@@ -23,8 +23,8 @@ from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.error import ConfigAdminError
 from privacyidea.lib.error import ParameterError, privacyIDEAError, PolicyError
 from privacyidea.lib.framework import get_app_local_store
-from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy, ACTION,
-                                    LOGINMODE, PolicyClass)
+from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy, LOGINMODE, PolicyClass)
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, delete_smsgateway
 from privacyidea.lib.token import get_tokens, remove_token, init_token, import_tokens
@@ -202,7 +202,7 @@ class PushTokenTestCase(MyTestCase):
         token = init_token(param=token_param)
         detail = token.get_init_detail(params={"policies": {PUSH_ACTION.FIREBASE_CONFIG: POLL_ONLY,
                                                PUSH_ACTION.REGISTRATION_URL: "https://privacyidea.com/enroll"},
-                                               ACTION.FORCE_APP_PIN: True})
+                                               PolicyAction.FORCE_APP_PIN: True})
         self.assertIn("pin=True", detail["pushurl"]["value"])
         remove_token(token.get_serial())
 
@@ -882,7 +882,7 @@ class PushTokenTestCase(MyTestCase):
 
         # Set a loginmode policy
         set_policy("webui", scope=SCOPE.WEBUI,
-                   action="{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA))
+                   action="{}={}".format(PolicyAction.LOGINMODE, LOGINMODE.PRIVACYIDEA))
         # Set a PUSH_WAIT action which will be ignored by privacyIDEA
         set_policy("push1", scope=SCOPE.AUTH, action="{0!s}=20".format(PUSH_ACTION.WAIT))
         with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account.Credentials'
@@ -998,9 +998,9 @@ class PushTokenTestCase(MyTestCase):
         totp_token.add_user(user)
 
         # Set policies
-        set_policy("webui", scope=SCOPE.WEBUI, action=f"{ACTION.LOGINMODE}={LOGINMODE.PRIVACYIDEA}")
+        set_policy("webui", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}={LOGINMODE.PRIVACYIDEA}")
         set_policy("push_require_presence", scope=SCOPE.AUTH, action=f"{PUSH_ACTION.REQUIRE_PRESENCE}=1")
-        set_policy("totp_challenge_response", scope=SCOPE.AUTH, action=f"{ACTION.CHALLENGERESPONSE}=totp")
+        set_policy("totp_challenge_response", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=totp")
 
         with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account.Credentials'
                         '.from_service_account_file') as fb_service_account:
@@ -1119,7 +1119,7 @@ class PushTokenTestCase(MyTestCase):
 
         # Set a loginmode policy
         set_policy("webui", scope=SCOPE.WEBUI,
-                   action=f"{ACTION.LOGINMODE}={LOGINMODE.PRIVACYIDEA}")
+                   action=f"{PolicyAction.LOGINMODE}={LOGINMODE.PRIVACYIDEA}")
         # Set a policy to require presence
         set_policy("push_require_presence", scope=SCOPE.AUTH, action=f"{PUSH_ACTION.REQUIRE_PRESENCE}=1")
         with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account.Credentials'
@@ -1233,7 +1233,7 @@ class PushTokenTestCase(MyTestCase):
 
         # Set a loginmode policy
         set_policy("webui", scope=SCOPE.WEBUI,
-                   action=f"{ACTION.LOGINMODE}={LOGINMODE.PRIVACYIDEA}")
+                   action=f"{PolicyAction.LOGINMODE}={LOGINMODE.PRIVACYIDEA}")
         # Set a policy to require presence
         set_policy("push_require_presence", scope=SCOPE.AUTH, action=f"{PUSH_ACTION.REQUIRE_PRESENCE}=1")
         with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account.Credentials'
@@ -1324,7 +1324,7 @@ class PushTokenTestCase(MyTestCase):
 
     def test_06e_require_presence_text_replace(self):
         # Set a loginmode policy
-        set_policy("webui", scope=SCOPE.WEBUI, action=f"{ACTION.LOGINMODE}={LOGINMODE.PRIVACYIDEA}")
+        set_policy("webui", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}={LOGINMODE.PRIVACYIDEA}")
         # Set a policy to require presence
         set_policy("push_require_presence", scope=SCOPE.AUTH, action=f"{PUSH_ACTION.REQUIRE_PRESENCE}=1")
         set_policy("text", scope=SCOPE.AUTH, action="challenge_text=the answer is {presence_answer}")

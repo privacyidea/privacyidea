@@ -64,7 +64,8 @@ from pyrad.client import Client, Timeout
 from pyrad.dictionary import Dictionary
 from pyrad.packet import AccessChallenge, AccessAccept, AccessReject
 from privacyidea.lib import _
-from privacyidea.lib.policy import SCOPE, ACTION, GROUP
+from privacyidea.lib.policy import SCOPE, GROUP
+from privacyidea.lib.policies.actions import PolicyAction
 
 optional = True
 required = False
@@ -110,12 +111,12 @@ class RadiusTokenClass(RemoteTokenClass):
                'ui_enroll': ["admin", "user"],
                'policy': {
                    SCOPE.ENROLL: {
-                       ACTION.MAXTOKENUSER: {
+                       PolicyAction.MAXTOKENUSER: {
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of RADIUS tokens assigned."),
                            'group': GROUP.TOKEN
                        },
-                       ACTION.MAXACTIVETOKENUSER: {
+                       PolicyAction.MAXACTIVETOKENUSER: {
                            'type': 'int',
                            'desc': _(
                                "The user may only have this maximum number of active RADIUS tokens assigned."),
@@ -133,7 +134,7 @@ class RadiusTokenClass(RemoteTokenClass):
 
         return ret
 
-    @log_with(log)
+    @log_with(log, hide_args_keywords={'param': 'pin'})
     def update(self, param):
         # New value
         radius_identifier = getParam(param, "radius.identifier")
@@ -162,7 +163,7 @@ class RadiusTokenClass(RemoteTokenClass):
         self.add_tokeninfo("radius.user", val)
         self.add_tokeninfo("tokenkind", TOKENKIND.VIRTUAL)
 
-    @log_with(log)
+    @log_with(log, hide_args=[1])
     @challenge_response_allowed
     def is_challenge_request(self, passw, user=None, options=None):
         """
@@ -282,14 +283,14 @@ class RadiusTokenClass(RemoteTokenClass):
 
         return challenge_response
 
-    @log_with(log)
+    @log_with(log, hide_kwargs=['passw'])
     @check_token_locked
     def check_challenge_response(self, user=None, passw=None, options=None):
         """
         This method verifies if there is a matching question for the given
         passw and also verifies if the answer is correct.
 
-        It then returns the the otp_counter = 1
+        It then returns the otp_counter = 1
 
         :param user: the requesting user
         :type user: User object
@@ -354,6 +355,7 @@ class RadiusTokenClass(RemoteTokenClass):
 
         return local_check
 
+    @log_with(log, hide_args=[1], log_exit=False)
     def split_pin_pass(self, passw, user=None, options=None):
         """
         Split the PIN and the OTP value.
@@ -438,7 +440,7 @@ class RadiusTokenClass(RemoteTokenClass):
         else:
             return -1
 
-    @log_with(log)
+    @log_with(log, hide_args=[1])
     @check_token_locked
     def _check_radius(self, otpval, options=None, radius_state=None):
         """
