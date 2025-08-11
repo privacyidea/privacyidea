@@ -1,7 +1,8 @@
 from .base import MyApiTestCase
 from privacyidea.lib.user import (User)
 from privacyidea.lib.token import init_token
-from privacyidea.lib.policy import SCOPE, ACTION, set_policy
+from privacyidea.lib.policy import SCOPE, set_policy
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.machine import attach_token
 
 
@@ -28,7 +29,7 @@ class OfflinePassNoTokenTestCase(MyApiTestCase):
         attach_token("tokA", "offline")
         attach_token("tokB", "offline")
         # set passonnotoken
-        set_policy(name="pol1", scope=SCOPE.AUTH, action=ACTION.PASSNOTOKEN)
+        set_policy(name="pol1", scope=SCOPE.AUTH, action=PolicyAction.PASSNOTOKEN)
 
         # Validate userB
         with self.app.test_request_context('/validate/check',

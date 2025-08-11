@@ -8,7 +8,8 @@ from privacyidea.lib.user import User
 from .base import MyApiTestCase
 from privacyidea.lib.token import init_token, get_tokens, remove_token
 from privacyidea.lib.machine import attach_token, detach_token, ANY_MACHINE, NO_RESOLVER
-from privacyidea.lib.policy import (set_policy, delete_policy, ACTION, SCOPE)
+from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE)
+from privacyidea.lib.policies.actions import PolicyAction
 
 HOSTSFILE = "tests/testdata/hosts"
 
@@ -372,7 +373,7 @@ class APIMachinesTestCase(MyApiTestCase):
         # Remove everything that sounds like "SOMETHING\" in front of
         # the username
         set_policy(name="mangle1", scope=SCOPE.AUTH,
-                   action="{0!s}=user/.*\\\\(.*)/\\1/".format(ACTION.MANGLE))
+                   action="{0!s}=user/.*\\\\(.*)/\\1/".format(PolicyAction.MANGLE))
         with self.app.test_request_context(
                 '/machine/authitem/ssh?hostname=gandalf&user=DOMAIN\\testuser',
                 method='GET',
@@ -472,7 +473,7 @@ class APIMachinesTestCase(MyApiTestCase):
         # Remove everything that sounds like "SOMETHING\" in front of
         # the username
         set_policy(name="mangle1", scope=SCOPE.AUTH,
-                   action="{0!s}=user/.*\\\\(.*)/\\1/".format(ACTION.MANGLE))
+                   action="{0!s}=user/.*\\\\(.*)/\\1/".format(PolicyAction.MANGLE))
         with self.app.test_request_context(
                 '/machine/authitem/ssh?hostname=gandalf&service_id=webserver&user=DOMAIN\\testuser',
                 method='GET',

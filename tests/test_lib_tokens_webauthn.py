@@ -67,7 +67,8 @@ from privacyidea.lib.error import PolicyError, ParameterError, EnrollmentError
 from privacyidea.lib.fido2.config import FIDO2ConfigOptions
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
-from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
+from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.token import init_token, check_user_pass, remove_token, import_tokens, get_tokens
 from privacyidea.lib.tokens.webauthn import (CoseAlgorithm, RegistrationRejectedException,
                                              WebAuthnMakeCredentialOptions, AuthenticationRejectedException,
@@ -979,7 +980,7 @@ class MultipleWebAuthnTokenTestCase(MyTestCase):
 
     # TODO: also test challenge-response with different tokens (webauthn + totp)
     def test_01_multiple_webauthntoken_auth(self):
-        set_policy("otppin", scope=SCOPE.AUTH, action="{0!s}=none".format(ACTION.OTPPIN))
+        set_policy("otppin", scope=SCOPE.AUTH, action="{0!s}=none".format(PolicyAction.OTPPIN))
         res, reply = check_user_pass(self.user, '', options=self.auth_options)
         self.assertFalse(res)
         self.assertIn('transaction_id', reply, reply)

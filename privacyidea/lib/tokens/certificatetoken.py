@@ -55,7 +55,8 @@ from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.utils import determine_logged_in_userparams
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib import _
-from privacyidea.lib.policy import SCOPE, ACTION as BASE_ACTION, GROUP, Match
+from privacyidea.lib.policy import SCOPE, GROUP, Match
+from privacyidea.lib.policies.actions import PolicyAction as BASE_ACTION
 from privacyidea.lib.error import privacyIDEAError, CSRError, CSRPending, CAError
 
 optional = True

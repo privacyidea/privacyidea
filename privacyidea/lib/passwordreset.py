@@ -26,7 +26,8 @@ from privacyidea.lib.error import UserError, privacyIDEAError, ConfigAdminError
 from privacyidea.lib.smtpserver import send_email_identifier
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.resolver import get_resolver_list
-from privacyidea.lib.policy import ACTION, SCOPE, Match
+from privacyidea.lib.policy import SCOPE, Match
+from privacyidea.lib.policies.actions import PolicyAction
 from sqlalchemy import and_
 from datetime import datetime
 
@@ -142,6 +143,6 @@ def is_password_reset(g):
     rlist = get_resolver_list(editable=True)
     log.debug("Number of editable resolvers: {0!s}".format(len(rlist)))
     pwreset = Match.generic(g, scope=SCOPE.USER,
-                            action=ACTION.PASSWORDRESET).allowed(write_to_audit_log=False)
+                            action=PolicyAction.PASSWORDRESET).allowed(write_to_audit_log=False)
     log.debug("Password reset allowed via policies: {0!s}".format(pwreset))
     return bool(rlist and pwreset)

@@ -27,7 +27,8 @@ from webauthn.helpers.structs import AttestationConveyancePreference
 
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.error import EnrollmentError, ParameterError, ResourceNotFoundError
-from privacyidea.lib.policy import SCOPE, ACTION
+from privacyidea.lib.policy import SCOPE
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.token import (init_token, remove_token, unassign_token, import_tokens, get_tokens)
 from privacyidea.lib.fido2.util import get_credential_ids_for_user, get_fido2_token_by_credential_id, hash_credential_id
 from privacyidea.lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
@@ -123,7 +124,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         policy = class_info["policy"]
         self.assertIn(SCOPE.AUTH, policy)
         policy_auth = policy[SCOPE.AUTH]
-        self.assertIn(ACTION.CHALLENGETEXT, policy_auth)
+        self.assertIn(PolicyAction.CHALLENGETEXT, policy_auth)
         self.assertIn(SCOPE.ENROLL, policy)
         policy_enroll = policy[SCOPE.ENROLL]
         self.assertIn(PasskeyAction.AttestationConveyancePreference, policy_enroll)

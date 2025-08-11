@@ -3,7 +3,8 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta
 
 from .base import MyApiTestCase
-from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
+from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.models import Audit
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
@@ -159,7 +160,7 @@ class APIAuditTestCase(MyApiTestCase):
                 "count"), 3)
 
         # set policy for audit realms
-        set_policy("audit01", scope=SCOPE.ADMIN, action=ACTION.AUDIT,
+        set_policy("audit01", scope=SCOPE.ADMIN, action=PolicyAction.AUDIT,
                    realm=self.realm1a)
 
         # check, that we only see allowed audit realms
@@ -215,10 +216,10 @@ class APIAuditTestCase(MyApiTestCase):
 
         # set policy: helpdesk users in adminrealm are only allowed to
         # view "realm1A".
-        set_policy("audit01", scope=SCOPE.ADMIN, action=ACTION.AUDIT,
+        set_policy("audit01", scope=SCOPE.ADMIN, action=PolicyAction.AUDIT,
                    adminrealm="adminrealm", realm=self.realm1a)
         # Test admin is allowed to view unrestricted logs!
-        set_policy("audit02", scope=SCOPE.ADMIN, action=ACTION.AUDIT,
+        set_policy("audit02", scope=SCOPE.ADMIN, action=PolicyAction.AUDIT,
                    user="testadmin")
 
         rid = save_resolver({"resolver": self.resolvername1,
@@ -311,7 +312,7 @@ class APIAuditTestCase(MyApiTestCase):
               resolver="resolver1", realm=self.realm2b).save()
 
         # set policy: normal users in realm1a are allowed to view audit log
-        set_policy("audit01", scope=SCOPE.USER, action=ACTION.AUDIT, realm=self.realm1a)
+        set_policy("audit01", scope=SCOPE.USER, action=PolicyAction.AUDIT, realm=self.realm1a)
 
         with self.app.test_request_context('/auth',
                                            method='POST',

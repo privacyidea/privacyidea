@@ -23,7 +23,8 @@ import logging
 from .lib.utils import send_result, getParam
 from ..lib.log import log_with
 from privacyidea.api.lib.prepolicy import prepolicy, rss_age
-from privacyidea.lib.policy import Match, SCOPE, ACTION, convert_action_dict_to_python_dict
+from privacyidea.lib.policy import Match, SCOPE, convert_action_dict_to_python_dict
+from ..lib.policies.actions import PolicyAction
 
 info_blueprint = Blueprint('info_blueprint', __name__)
 log = logging.getLogger(__name__)
@@ -55,10 +56,10 @@ def rss():
     """
     feeds = None
     param = request.all_data
-    age = int(getParam(param, ACTION.RSS_AGE, default=FETCH_DAYS))
+    age = int(getParam(param, PolicyAction.RSS_AGE, default=FETCH_DAYS))
     channel = getParam(param, "channel")
     user = request.User if hasattr(request, 'User') else None
-    feeds_pol = (Match.user(g, scope=SCOPE.WEBUI, action=ACTION.RSS_FEEDS, user_object=user).action_values(
+    feeds_pol = (Match.user(g, scope=SCOPE.WEBUI, action=PolicyAction.RSS_FEEDS, user_object=user).action_values(
         allow_white_space_in_action=True, unique=True))
 
     if len(feeds_pol) == 1:

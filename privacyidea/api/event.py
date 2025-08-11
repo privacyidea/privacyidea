@@ -32,7 +32,7 @@ from ..lib.event import set_event, delete_event, enable_event
 from flask import g
 import logging
 from ..api.lib.prepolicy import prepolicy, check_base_action
-from ..lib.policy import ACTION
+from ..lib.policies.actions import PolicyAction
 from privacyidea.lib.event import AVAILABLE_EVENTS, get_handler_object
 from privacyidea.lib.utils import is_true
 import json
@@ -47,7 +47,7 @@ eventhandling_blueprint = Blueprint('eventhandling_blueprint', __name__)
 @eventhandling_blueprint.route('/', methods=['GET'])
 @eventhandling_blueprint.route('/<eventid>', methods=['GET'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.EVENTHANDLINGREAD)
+@prepolicy(check_base_action, request, PolicyAction.EVENTHANDLINGREAD)
 def get_eventhandling(eventid=None):
     """
     returns a json list of the event handling configuration
@@ -128,7 +128,7 @@ def get_module_conditions(handlermodule=None):
 
 @eventhandling_blueprint.route('', methods=['POST'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.EVENTHANDLINGWRITE)
+@prepolicy(check_base_action, request, PolicyAction.EVENTHANDLINGWRITE)
 def set_eventhandling():
     """
     This creates a new event handling definition
@@ -174,7 +174,7 @@ def set_eventhandling():
 
 @eventhandling_blueprint.route('/enable/<eventid>', methods=['POST'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.EVENTHANDLINGWRITE)
+@prepolicy(check_base_action, request, PolicyAction.EVENTHANDLINGWRITE)
 def enable_event_api(eventid):
     """
     Enable a given event by its id.
@@ -189,7 +189,7 @@ def enable_event_api(eventid):
 
 @eventhandling_blueprint.route('/disable/<eventid>', methods=['POST'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.EVENTHANDLINGWRITE)
+@prepolicy(check_base_action, request, PolicyAction.EVENTHANDLINGWRITE)
 def disable_event_api(eventid):
     """
     Disable a given policy by its name.
@@ -204,7 +204,7 @@ def disable_event_api(eventid):
 
 @eventhandling_blueprint.route('/<eid>', methods=['DELETE'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.EVENTHANDLINGWRITE)
+@prepolicy(check_base_action, request, PolicyAction.EVENTHANDLINGWRITE)
 def delete_eventid(eid=None):
     """
     this function deletes an existing event handling configuration

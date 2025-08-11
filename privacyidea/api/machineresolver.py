@@ -36,8 +36,7 @@ from ..lib.machineresolver import (get_resolver_list, save_resolver, delete_reso
 from flask import g
 import logging
 from ..api.lib.prepolicy import prepolicy, check_base_action
-from ..lib.policy import ACTION
-
+from ..lib.policies.actions import PolicyAction
 
 log = logging.getLogger(__name__)
 
@@ -47,7 +46,7 @@ machineresolver_blueprint = Blueprint('machineresolver_blueprint', __name__)
 
 @machineresolver_blueprint.route('/', methods=['GET'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.MACHINERESOLVERREAD)
+@prepolicy(check_base_action, request, PolicyAction.MACHINERESOLVERREAD)
 def get_resolvers():
     """
     returns a json list of all machine resolver.
@@ -62,7 +61,7 @@ def get_resolvers():
 
 @machineresolver_blueprint.route('/<resolver>', methods=['POST'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.MACHINERESOLVERWRITE)
+@prepolicy(check_base_action, request, PolicyAction.MACHINERESOLVERWRITE)
 def set_resolver(resolver=None):
     """
     This creates a new machine resolver or updates an existing one.
@@ -95,7 +94,7 @@ def set_resolver(resolver=None):
 
 @machineresolver_blueprint.route('/<resolver>', methods=['DELETE'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.MACHINERESOLVERDELETE)
+@prepolicy(check_base_action, request, PolicyAction.MACHINERESOLVERDELETE)
 def delete_resolver_api(resolver=None):
     """
     this function deletes an existing machine resolver
@@ -112,7 +111,7 @@ def delete_resolver_api(resolver=None):
 
 @machineresolver_blueprint.route('/<resolver>', methods=['GET'])
 @log_with(log)
-@prepolicy(check_base_action, request, ACTION.MACHINERESOLVERREAD)
+@prepolicy(check_base_action, request, PolicyAction.MACHINERESOLVERREAD)
 def get_resolver(resolver=None):
     """
     This function retrieves the definition of a single machine resolver.
