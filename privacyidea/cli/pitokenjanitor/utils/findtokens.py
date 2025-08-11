@@ -594,7 +594,7 @@ def export(ctx, export_format, b32, file):
                     sys.stderr.write(f"\nFailed to export token {tokenobj.get_serial()} ({e}).\n")
         file.write(yaml_safe_dump(token_list))
 
-    else:
+    elif export_format == "pi":
         key = Fernet.generate_key().decode()
         exported_tokens_chunks = []
         for tlist in ctx.obj['tokens']:

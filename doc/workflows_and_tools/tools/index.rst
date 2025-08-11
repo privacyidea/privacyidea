@@ -584,7 +584,7 @@ Example::
     pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' export
 
 ``--format``
-    The export format of the token list. The format can be 'stdout', 'csv', 'yaml' or 'pskc'.
+    The export format of the token list. The format can be 'pi', 'csv', 'yaml' or 'pskc'.
 
     Example::
 
@@ -698,12 +698,12 @@ Imports token data from a privacyIDEA created with pi-tokenjanitor export_for_pr
 
         pi-tokenjanitor import privacyidea /path/to/privacyidea.txt
 
-``key``
+``--key``
     Specify the encryption key for the privacyIDEA file.
 
     Example::
 
-        pi-tokenjanitor import privacyidea /path/to/privacyidea.txt myencryptionkey
+        pi-tokenjanitor import privacyidea /path/to/privacyidea.txt --key myencryptionkey
 
 Update
 ~~~~~~
