@@ -782,7 +782,7 @@ class AuthApiTestCase(MyApiTestCase):
         user_realm1 = User("hans", self.realm1)
         token_realm1 = init_token({"type": "spass", "pin": "1234"}, user=user_realm1)
 
-        set_policy(name="pi-login", scope=SCOPE.WEBUI, action=f"{ACTION.LOGINMODE}=privacyIDEA")
+        set_policy(name="pi-login", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
 
         # successful authentication
         with self.app.test_request_context('/auth', method="POST",
