@@ -572,7 +572,7 @@ class EmailTokenTestCase(MyTestCase):
         }]
 
         # Import the token
-        import_tokens(json.dumps(token_data))
+        import_tokens(token_data)
 
         # Retrieve the imported token
         emailtoken = get_tokens(serial=token_data[0]["serial"])[0]

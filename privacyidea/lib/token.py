@@ -2978,33 +2978,27 @@ def regenerate_enroll_url(serial: str, request: Request, g) -> Union[str, None]:
     return enroll_url
 
 
-def export_tokens(tokens: list[TokenClass]) -> str:
+def export_tokens(tokens: list[TokenClass]) -> list[dict]:
     """
-    Takes a list of tokens and returns an exportable JSON string.
+    Takes a list of tokens and returns an dict with all infos.
 
     :param tokens: list of token objects
-    :return: JSON string representing a list of token dictionaries
+    :return: list of dict with token information
     """
     exported_tokens = [token.export_token() for token in tokens]
-
-    json_export = json.dumps(exported_tokens, default=repr, indent=2)
-    return json_export
+    return exported_tokens
 
 
-def import_tokens(tokens: str, update_existing_tokens: bool = True) -> TokenImportResult:
+def import_tokens(tokens: list[dict], update_existing_tokens: bool = True) -> TokenImportResult:
     """
     Import a list of token dictionaries.
 
-    :param tokens: JSON string representing a list of token dictionaries
+    :param tokens: list of dict with token information
     :return: list of token objects
     """
     successful_tokens = []
     updated_tokens = []
     failed_tokens = []
-    try:
-        tokens = json.loads(tokens)
-    except Exception as ex:
-        raise TokenAdminError(f"Could not parse the token import data from JSON: {ex}")
 
     for token_info_dict in tokens:
         serial = token_info_dict.get("serial")

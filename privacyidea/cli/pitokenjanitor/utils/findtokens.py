@@ -32,7 +32,7 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
-
+import json
 import re
 import sys
 from collections import defaultdict
@@ -598,8 +598,8 @@ def export(ctx, export_format, b32, file):
         key = Fernet.generate_key().decode()
         exported_tokens_chunks = []
         for tlist in ctx.obj['tokens']:
-            exported_tokens_chunks.append(export_tokens(tlist))
-        list_of_exported_tokens = ''.join(exported_tokens_chunks)
+            exported_tokens_chunks.extend(export_tokens(tlist))
+        list_of_exported_tokens = json.dumps(exported_tokens_chunks, default=repr, indent=2)
         f = Fernet(key)
         file.write(f.encrypt(list_of_exported_tokens.encode()).decode())
         click.secho(f'\nThe key to import the tokens is:\n\n\t{key}\n\n', fg='red', err=True)

@@ -47,6 +47,7 @@
 # INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE
+import json
 
 import click
 from cryptography.fernet import Fernet
@@ -133,6 +134,12 @@ def import_token_from_privacyidea(ctx, file, key):
         token_list = decrypted_data.decode("utf-8")
     except UnicodeDecodeError as e:
         click.echo(f"Error decoding token data: {e}")
+        ctx.exit(1)
+
+    try:
+        token_list = json.loads(token_list)
+    except Exception as ex:
+        click.echo(f"Could not parse the token import data from JSON: {ex}")
         ctx.exit(1)
 
     try:

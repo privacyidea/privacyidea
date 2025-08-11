@@ -301,6 +301,6 @@ class VascoTokenTest(MyTestCase):
             "issuer": "privacyIDEA",
         }]
         before_import = get_tokens()
-        import_tokens(json.dumps(token_data))
+        import_tokens(token_data)
         after_import = get_tokens()
         self.assertEqual(len(before_import), len(after_import))
