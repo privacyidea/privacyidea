@@ -205,8 +205,9 @@ class PolicyTestCase(MyTestCase):
         set_policy("pol1", user_agents="privacyidea-cp")
         set_policy("pol2", user_agents="PAM")
         policies = P.match_policies(user_agent="privacyidea-cp")
-        self.assertEqual(5, len(policies))
-        self.assertSetEqual({"pol1", "pol2a", "pol3", "pol4", "pol5"}, {policy["name"] for policy in policies})
+        expected_policy_names = {"pol1", "pol2a", "pol3", "pol4", "pol5"}
+        self.assertEqual(len(expected_policy_names), len(policies))
+        self.assertSetEqual(expected_policy_names, {policy["name"] for policy in policies})
         set_policy("pol1", user_agents="")
         set_policy("pol2", user_agents="")
 
