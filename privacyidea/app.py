@@ -33,7 +33,7 @@ import sys
 import uuid
 
 import yaml
-from flask import Flask, Response, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request
 from flask_babel import Babel
 from flask_migrate import Migrate
 from flaskext.versioned import Versioned
@@ -157,23 +157,6 @@ def _setup_logging(app, logging_config=DEFAULT_LOGGING_CONFIG):
         logging.config.dictConfig(logging_config)
 
 
-class PiResponseClass(Response):
-    """Custom Response class overwriting the flask.Response.
-    To avoid caching problems with the json property in the Response class,
-    the property is overwritten using a non-caching approach.
-    """
-    @property
-    def json(self):
-        """This will contain the parsed JSON data if the mimetype indicates
-        JSON (:mimetype:`application/json`, see :meth:`is_json`), otherwise it
-        will be ``None``.
-        Caching of the json data is disabled.
-        """
-        return self.get_json(cache=False)
-
-    default_mimetype = 'application/json'
-
-
 def create_app(config_name="development",
                config_file='/etc/privacyidea/pi.cfg',
                silent=False, initialize_hsm=False) -> Flask:
@@ -204,7 +187,7 @@ def create_app(config_name="development",
     # Routed apps must fall back to index.html
     @app.errorhandler(404)
     def fallback(error):
-        if request.path.startswith("/ui/"):
+        if request.path.startswith("/app/v2/"):
             return send_html(
                 render_template(
                     "index.html"))
