@@ -4,12 +4,12 @@ import { MatButton } from '@angular/material/button';
 import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
+import { Router } from '@angular/router';
+import { ROUTE_PATHS } from '../../../app.routes';
 import {
   TokenService,
   TokenServiceInterface,
 } from '../../../services/token/token.service';
-import { Router } from '@angular/router';
-import { ROUTE_PATHS } from '../../../app.routes';
 
 @Component({
   selector: 'app-assign-token-self-service',

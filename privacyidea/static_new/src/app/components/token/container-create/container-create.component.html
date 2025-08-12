@@ -79,10 +79,13 @@
       </mat-form-field>
         <mat-form-field class="width-32 input-height">
           <mat-label>Enter User</mat-label>
-          <input [(ngModel)]="userService.userFilter"
-                 [disabled]="onlyAddToRealm()"
-                 [matAutocomplete]="userAuto"
-                 matInput />
+          <app-clearable-input (onClick)="userService.userFilter.set('')"
+            [showClearButton]="userService.userFilter() !== ''">
+            <input [(ngModel)]="userService.userFilter"
+                   [disabled]="onlyAddToRealm()"
+                   [matAutocomplete]="userAuto"
+                   matInput />
+          </app-clearable-input>
           <mat-error>User is <strong>required</strong></mat-error>
           <mat-autocomplete #userAuto="matAutocomplete">
             @for (option of userService.filteredUsernames(); track option) {

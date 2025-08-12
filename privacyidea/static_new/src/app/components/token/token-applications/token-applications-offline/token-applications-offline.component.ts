@@ -24,6 +24,7 @@ import {
   TokenService,
   TokenServiceInterface,
 } from '../../../../services/token/token.service';
+import { ClearableInputComponent } from '../../../shared/clearable-input/clearable-input.component';
 import { CopyButtonComponent } from '../../../shared/copy-button/copy-button.component';
 import { KeywordFilterComponent } from '../../../shared/keyword-filter/keyword-filter.component';
 
@@ -48,6 +49,7 @@ const _offlineColumnsKeyMap = [
     NgClass,
     CopyButtonComponent,
     FormsModule,
+    ClearableInputComponent,
   ],
   templateUrl: './token-applications-offline.component.html',
   styleUrls: ['./token-applications-offline.component.scss'],

@@ -131,10 +131,14 @@
                 @case ("user_name") {
                   @if (isEditingUser() && userService.selectedUserRealm() !== "") {
                     <mat-form-field class="width-18rem">
+                      
                       <mat-label>Enter User</mat-label>
-                      <input matInput
-                             [(ngModel)]="userService.userFilter"
-                             [matAutocomplete]="userAuto" />
+                      <app-clearable-input (onClick)="userService.userFilter.set('')"
+                        [showClearButton]="userService.userFilter() !== ''">
+                        <input matInput
+                               [(ngModel)]="userService.userFilter"
+                               [matAutocomplete]="userAuto" />
+                      </app-clearable-input>
                       <mat-autocomplete #userAuto="matAutocomplete"
                                         class="user-selection-autocomplete">
                         @for (option of userService.filteredUsernames();

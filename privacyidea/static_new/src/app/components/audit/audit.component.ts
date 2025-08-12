@@ -44,6 +44,7 @@ import {
   TableUtilsService,
   TableUtilsServiceInterface,
 } from '../../services/table-utils/table-utils.service';
+import { ClearableInputComponent } from '../shared/clearable-input/clearable-input.component';
 import { CopyButtonComponent } from '../shared/copy-button/copy-button.component';
 import { KeywordFilterComponent } from '../shared/keyword-filter/keyword-filter.component';
 
@@ -101,6 +102,7 @@ const columnKeysMap = [
     MatLabel,
     CopyButtonComponent,
     RouterLink,
+    ClearableInputComponent,
   ],
   templateUrl: './audit.component.html',
   styleUrl: './audit.component.scss',

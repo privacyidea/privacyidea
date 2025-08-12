@@ -30,6 +30,8 @@ import {
   MatTableDataSource,
   MatTableModule,
 } from '@angular/material/table';
+import { Router } from '@angular/router';
+import { ROUTE_PATHS } from '../../../app.routes';
 import {
   AuthService,
   AuthServiceInterface,
@@ -65,6 +67,7 @@ import {
   UserService,
   UserServiceInterface,
 } from '../../../services/user/user.service';
+import { ClearableInputComponent } from '../../shared/clearable-input/clearable-input.component';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 import {
   EditableElement,
@@ -73,8 +76,6 @@ import {
 import { infoDetailsKeyMap } from '../token-details/token-details.component';
 import { ContainerDetailsInfoComponent } from './container-details-info/container-details-info.component';
 import { ContainerDetailsTokenTableComponent } from './container-details-token-table/container-details-token-table.component';
-import { Router } from '@angular/router';
-import { ROUTE_PATHS } from '../../../app.routes';
 
 export const containerDetailsKeyMap = [
   { key: 'type', label: 'Type' },
@@ -131,6 +132,7 @@ interface TokenOption {
     MatDivider,
     MatCheckbox,
     CopyButtonComponent,
+    ClearableInputComponent,
   ],
   templateUrl: './container-details.component.html',
   styleUrls: ['./container-details.component.scss'],

@@ -19,10 +19,13 @@
     </mat-form-field>
     <mat-form-field class="width-50 input-height">
       <mat-label>Enter User</mat-label>
-      <input [formControl]="userFilterControl"
-             [matAutocomplete]="userAuto"
-             matInput
-             required />
+      <app-clearable-input (onClick)="userService.userFilter.set('')"
+        [showClearButton]="userService.userFilter() !== ''">
+        <input [formControl]="userFilterControl"
+               [matAutocomplete]="userAuto"
+               matInput
+               required />
+      </app-clearable-input>
       <mat-autocomplete #userAuto="matAutocomplete"
                         [displayWith]="userService.displayUser">
         @for (user of userService.filteredUsers(); track user) {

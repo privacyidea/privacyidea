@@ -11,11 +11,14 @@
     <mat-form-field class="application-table-filter"
                     subscriptSizing="dynamic">
       <mat-label>Enter Filter</mat-label>
-      <input #filterInput
+        <app-clearable-input (onClick)="machineService.filterValueString.set('')"
+          [showClearButton]="machineService.filterValueString.length > 0">
+          <input #filterInput
              [(ngModel)]="machineService.filterValueString"
              aria-label="Filter Input"
              matInput
              placeholder="Example query: 'service_id: myService'" />
+        </app-clearable-input>
     </mat-form-field>
     <mat-paginator (page)="machineService.onPageEvent($event)"
                    [length]="length()"

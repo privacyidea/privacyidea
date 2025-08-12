@@ -1,3 +1,4 @@
+import { NgClass } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {
@@ -31,9 +32,9 @@ import {
   UserService,
   UserServiceInterface,
 } from '../../../../services/user/user.service';
+import { ClearableInputComponent } from '../../../shared/clearable-input/clearable-input.component';
 import { EditButtonsComponent } from '../../../shared/edit-buttons/edit-buttons.component';
 import { TokenDetailsUserComponent } from './token-details-user.component';
-import { NgClass } from '@angular/common';
 
 @Component({
   selector: 'app-token-details-user-self-service',
@@ -55,6 +56,7 @@ import { NgClass } from '@angular/common';
     MatIcon,
     EditButtonsComponent,
     NgClass,
+    ClearableInputComponent,
   ],
   templateUrl: './token-details-user.self-service.component.html',
   styleUrl: './token-details-user.component.scss',

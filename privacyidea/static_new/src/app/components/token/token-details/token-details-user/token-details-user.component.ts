@@ -1,3 +1,4 @@
+import { NgClass } from '@angular/common';
 import {
   Component,
   computed,
@@ -39,11 +40,11 @@ import {
   UserService,
   UserServiceInterface,
 } from '../../../../services/user/user.service';
+import { ClearableInputComponent } from '../../../shared/clearable-input/clearable-input.component';
 import {
   EditableElement,
   EditButtonsComponent,
 } from '../../../shared/edit-buttons/edit-buttons.component';
-import { NgClass } from '@angular/common';
 
 @Component({
   selector: 'app-token-details-user',
@@ -65,6 +66,7 @@ import { NgClass } from '@angular/common';
     MatIcon,
     EditButtonsComponent,
     NgClass,
+    ClearableInputComponent,
   ],
   templateUrl: './token-details-user.component.html',
   styleUrl: './token-details-user.component.scss',
