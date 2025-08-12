@@ -538,19 +538,19 @@ class API000TokenAdminRealmList(MyApiTestCase):
         set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.UNASSIGN, realm=self.realm1)
 
         # create tokens
-        token1 = init_token({"type": "hotp", "genkey": True, "realm": self.realm1},
+        token1 = init_token({"type": "hotp"},
                             user=User("cornelius", self.realm1))
-        token2 = init_token({"type": "hotp", "genkey": True, "realm": self.realm2},
+        token2 = init_token({"type": "hotp"},
                             user=User("hans", self.realm2))
 
         token_serials = ",".join([token1.get_serial(), token2.get_serial()])
 
-        self.assertTrue(token1.user is not None)
-        self.assertTrue(token2.user is not None)
+        self.assertIsNotNone(token1.user is not None)
+        self.assertIsNotNone(token2.user is not None)
         # Try to unassign all tokens will only unassign token1 from realm1
         self.request_assert_200("/token/batchunassign", {"serial": token_serials}, self.at, "POST")
-        self.assertTrue(token1.user is None)
-        self.assertTrue(token2.user is not None)
+        self.assertIsNone(token1.user)
+        self.assertIsNotNone(token2.user)
 
         delete_policy("policy")
 

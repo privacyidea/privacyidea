@@ -58,7 +58,7 @@ from flask import (Blueprint, request, g, current_app)
 
 from ..lib.container import find_container_by_serial, add_token_to_container, add_not_authorized_tokens_result
 from ..lib.log import log_with
-from .lib.utils import optional, send_result, send_csv_result, required, getParam
+from .lib.utils import optional, send_result, send_csv_result, required, getParam, get_required
 from ..lib.tokenclass import ROLLOUTSTATE
 from ..lib.tokens.passkeytoken import PasskeyTokenClass
 from ..lib.tokens.webauthntoken import WebAuthnTokenClass
@@ -586,7 +586,7 @@ def batch_unassign_api():
     :jsonparam serial: A comma separated list of token serials to unassign
     :return: Dictionary with the serials as keys and the success status of the unassignment as values
     """
-    serial_list = getParam(request.all_data, "serial", required)
+    serial_list = get_required(request.all_data, "serial")
     serial_list = serial_list.replace(" ", "").split(",")
     g.audit_object.log({"serial": serial_list})
     ret = {}
@@ -724,7 +724,7 @@ def batch_deletion_api():
     :jsonparam serial: A comma separated list of token serials to delete
     :return: Dictionary with the serials as keys and the success status of the deletion as values
     """
-    serial_list = getParam(request.all_data, "serial", required)
+    serial_list = get_required(request.all_data, "serial")
     serial_list = serial_list.replace(" ", "").split(",")
     g.audit_object.log({"serial": serial_list})
     ret = {}
