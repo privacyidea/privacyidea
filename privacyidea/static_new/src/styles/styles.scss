@@ -238,6 +238,10 @@ body {
   justify-content: center;
 }
 
+.flex-size-none {
+  flex: none;
+}
+
 .flex-size-1 {
   flex: 1;
 }
@@ -329,6 +333,10 @@ body {
 
 .width-100 {
   width: 100%;
+}
+
+.height-auto {
+  height: auto;
 }
 
 .gap-1 {

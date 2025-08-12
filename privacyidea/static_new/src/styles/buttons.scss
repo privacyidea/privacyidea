@@ -303,6 +303,7 @@ $button-low-contrast-variant: linear-gradient(
   flex-direction: row;
   justify-content: left;
   gap: calc(var(--global-padding) / 2);
+  flex: 1
 }
 
 .enroll-button-spacer {

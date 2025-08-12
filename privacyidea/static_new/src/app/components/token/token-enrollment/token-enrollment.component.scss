@@ -103,12 +103,5 @@ h5 {
   flex-direction: row;
   align-items: center;
   padding: 0 var(--global-padding);
-  margin-bottom: 16px;
-}
-
-.select-token-type-container-self-service {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  margin-bottom: 16px;
+  flex: 2;
 }
