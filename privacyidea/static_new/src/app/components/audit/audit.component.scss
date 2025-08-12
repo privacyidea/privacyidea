@@ -11,3 +11,12 @@
   overflow: auto;
   max-height: calc(var(--main-height) - var(--global-padding) * 5);
 }
+
+.margin-left-0 {
+  margin-left: 0 !important;
+}
+
+.audit-keyword-button {
+  padding: 0 !important;
+  background-color: transparent
+}
