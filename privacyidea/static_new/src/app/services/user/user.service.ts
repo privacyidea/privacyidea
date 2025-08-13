@@ -122,7 +122,6 @@ export class UserService implements UserServiceInterface {
       if (source.authRole === 'user') {
         return source.authRealm;
       }
-      console.log('Selected user realm:', source.defaultRealm);
       return source.defaultRealm;
     },
   });

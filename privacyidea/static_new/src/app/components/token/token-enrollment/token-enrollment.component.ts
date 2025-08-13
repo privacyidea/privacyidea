@@ -391,10 +391,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.selectedUserRealmControl.setValue(
-      this.userService.selectedUserRealm(),
-    );
-
     this.selectedContainerControl.valueChanges.subscribe((value) =>
       this.containerService.selectedContainer.set(value ?? ''),
     );
