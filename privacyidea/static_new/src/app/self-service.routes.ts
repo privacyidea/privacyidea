@@ -9,6 +9,7 @@ import { ContainerCreateSelfServiceComponent } from './components/token/containe
 import { ContainerDetailsSelfServiceComponent } from './components/token/container-details/container-details.self-service.component';
 import { UserSelfServiceComponent } from './components/user/user.self-service.component';
 import { AssignTokenSelfServiceComponent } from './components/token/assign-token-self-service/assign-token-self-service.component';
+import {TokenEnrollmentWizardComponent} from './components/token/token-enrollment/token-enrollment.wizard.component';
 
 export const routes: Routes = [
   {
@@ -22,6 +23,7 @@ export const routes: Routes = [
       },
       { path: 'enrollment', component: TokenEnrollmentSelfServiceComponent },
       { path: 'assign-token', component: AssignTokenSelfServiceComponent },
+      { path: 'wizard', component: TokenEnrollmentWizardComponent },
       {
         path: 'containers',
         children: [

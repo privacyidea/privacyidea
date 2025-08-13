@@ -68,6 +68,7 @@ export interface AuthServiceInterface {
   realm: () => string;
   role: () => AuthRole;
   menus: () => string[];
+  authData: () => AuthData;
   isSelfServiceUser: () => boolean;
   authenticate: (params: any) => Observable<AuthResponse>;
   isAuthenticatedUser: () => boolean;
@@ -91,6 +92,7 @@ export class AuthService implements AuthServiceInterface {
   realm = signal('');
   role = signal<AuthRole>('');
   menus = signal<string[]>([]);
+  authData = signal<AuthData>({} as AuthData);
 
   isSelfServiceUser = computed(() => {
     return this.role() === 'user';
@@ -115,6 +117,7 @@ export class AuthService implements AuthServiceInterface {
             this.realm.set(value.realm);
             this.role.set(value.role);
             this.menus.set(value.menus);
+            this.authData.set(value);
           }
         }),
         catchError((error) => {

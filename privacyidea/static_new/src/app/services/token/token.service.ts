@@ -15,7 +15,7 @@ import {
   signal,
   WritableSignal,
 } from '@angular/core';
-import { Sort } from '@angular/material/sort';
+import {Sort} from '@angular/material/sort';
 import {
   forkJoin,
   Observable,
@@ -24,9 +24,9 @@ import {
   throwError,
   timer,
 } from 'rxjs';
-import { catchError, shareReplay, takeUntil, takeWhile } from 'rxjs/operators';
-import { environment } from '../../../environments/environment';
-import { PiResponse } from '../../app.component';
+import {catchError, shareReplay, takeUntil, takeWhile} from 'rxjs/operators';
+import {environment} from '../../../environments/environment';
+import {PiResponse} from '../../app.component';
 import {
   TokenComponent,
   TokenTypeOption as TokenTypeKey,
@@ -40,12 +40,13 @@ import {
   ContentService,
   ContentServiceInterface,
 } from '../content/content.service';
-import { LocalService, LocalServiceInterface } from '../local/local.service';
+import {LocalService, LocalServiceInterface} from '../local/local.service';
 import {
   NotificationService,
   NotificationServiceInterface,
 } from '../notification/notification.service';
-import { ROUTE_PATHS } from '../../app.routes';
+import {ROUTE_PATHS} from '../../app.routes';
+import {AuthService, AuthServiceInterface} from '../auth/auth.service';
 
 const apiFilter = [
   'serial',
@@ -277,6 +278,7 @@ export class TokenService implements TokenServiceInterface {
     inject(NotificationService);
   private readonly contentService: ContentServiceInterface =
     inject(ContentService);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
 
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
@@ -303,9 +305,9 @@ export class TokenService implements TokenServiceInterface {
     computation: (source, previous) => {
       if (source.routeUrl.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
         if (!previous || source.routeUrl !== previous.source.routeUrl) {
-          return { container_serial: '' };
+          return {container_serial: ''};
         } else {
-          const current = { ...previous.value };
+          const current = {...previous.value};
           if (source.showOnlyTokenNotInContainer) {
             current['container_serial'] = '';
           } else {
@@ -328,18 +330,18 @@ export class TokenService implements TokenServiceInterface {
       url: this.tokenBaseUrl,
       method: 'GET',
       headers: this.localService.getHeaders(),
-      params: { serial: this.tokenSerial() },
+      params: {serial: this.tokenSerial()},
     };
   });
   tokenTypesResource = httpResource<PiResponse<{}>>(() => {
-    if (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_ENROLLMENT) {
-      return undefined;
+    if ([ROUTE_PATHS.TOKENS_ENROLLMENT, ROUTE_PATHS.TOKENS_WIZARD].includes(this.contentService.routeUrl())) {
+      return {
+        url: environment.proxyUrl + '/auth/rights',
+        method: 'GET',
+        headers: this.localService.getHeaders()
+      };
     }
-    return {
-      url: environment.proxyUrl + '/auth/rights',
-      method: 'GET',
-      headers: this.localService.getHeaders(),
-    };
+    return undefined;
   });
   tokenTypeOptions = computed<TokenType[]>(() => {
     const obj = this.tokenTypesResource?.value()?.result?.value;
@@ -357,9 +359,9 @@ export class TokenService implements TokenServiceInterface {
       routeUrl: this.contentService.routeUrl(),
     }),
     computation: (source) =>
-      source.tokenTypeOptions.find((type) => type.key === 'hotp') ||
+      source.tokenTypeOptions.find((type) => type.key === this.authService.authData().default_tokentype) ||
       source.tokenTypeOptions[0] ||
-      ({ key: 'hotp', info: '', text: '' } as TokenType),
+      ({key: this.authService.authData().default_tokentype || 'hotp', info: '', text: ''} as TokenType),
   });
   pageSize = linkedSignal<Record<string, string>, number>({
     source: this.filterValue,
@@ -377,7 +379,7 @@ export class TokenService implements TokenServiceInterface {
       return previousValue;
     },
   });
-  sort = signal({ active: 'serial', direction: 'asc' } as Sort);
+  sort = signal({active: 'serial', direction: 'asc'} as Sort);
   pageIndex = linkedSignal({
     source: () => ({
       filterValue: this.filterValue(),
@@ -395,10 +397,10 @@ export class TokenService implements TokenServiceInterface {
     ];
     const filterPairs = Object.entries(this.filterValue())
       .filter(([key]) => allowedFilters.includes(key))
-      .map(([key, value]) => ({ key, value }));
+      .map(([key, value]) => ({key, value}));
 
     return filterPairs.reduce(
-      (acc, { key, value }) => ({
+      (acc, {key, value}) => ({
         ...acc,
         [key]: [
           'user',
@@ -476,7 +478,7 @@ export class TokenService implements TokenServiceInterface {
     return this.http
       .post<
         PiResponse<boolean>
-      >(`${this.tokenBaseUrl}${action}`, { serial: tokenSerial }, { headers })
+      >(`${this.tokenBaseUrl}${action}`, {serial: tokenSerial}, {headers})
       .pipe(
         catchError((error) => {
           console.error('Failed to toggle active.', error);
@@ -494,7 +496,7 @@ export class TokenService implements TokenServiceInterface {
     return this.http
       .post<
         PiResponse<boolean>
-      >(this.tokenBaseUrl + 'reset', { serial: tokenSerial }, { headers })
+      >(this.tokenBaseUrl + 'reset', {serial: tokenSerial}, {headers})
       .pipe(
         catchError((error) => {
           console.error('Failed to reset fail count.', error);
@@ -517,11 +519,11 @@ export class TokenService implements TokenServiceInterface {
 
     const params =
       key === 'maxfail'
-        ? { serial: tokenSerial, max_failcount: value }
-        : { serial: tokenSerial, [key]: value };
+        ? {serial: tokenSerial, max_failcount: value}
+        : {serial: tokenSerial, [key]: value};
 
     return this.http
-      .post<PiResponse<boolean>>(set_url, params, { headers })
+      .post<PiResponse<boolean>>(set_url, params, {headers})
       .pipe(
         catchError((error) => {
           console.error('Failed to set token detail.', error);
@@ -543,7 +545,7 @@ export class TokenService implements TokenServiceInterface {
     const info_url = `${this.tokenBaseUrl}info`;
 
     const postRequest = (url: string, body: any) => {
-      return this.http.post<PiResponse<boolean>>(url, body, { headers }).pipe(
+      return this.http.post<PiResponse<boolean>>(url, body, {headers}).pipe(
         catchError((error) => {
           console.error('Failed to set token info.', error);
           const message = error.error?.result?.error?.message || '';
@@ -579,7 +581,7 @@ export class TokenService implements TokenServiceInterface {
 
   deleteToken(tokenSerial: string): Observable<Object> {
     const headers = this.localService.getHeaders();
-    return this.http.delete(this.tokenBaseUrl + tokenSerial, { headers });
+    return this.http.delete(this.tokenBaseUrl + tokenSerial, {headers});
   }
 
   deleteTokens(tokenSerials: string[]): Observable<Object[]> {
@@ -592,7 +594,7 @@ export class TokenService implements TokenServiceInterface {
   revokeToken(tokenSerial: string): Observable<any> {
     const headers = this.localService.getHeaders();
     return this.http
-      .post(`${this.tokenBaseUrl}revoke`, { serial: tokenSerial }, { headers })
+      .post(`${this.tokenBaseUrl}revoke`, {serial: tokenSerial}, {headers})
       .pipe(
         catchError((error) => {
           console.error('Failed to revoke token.', error);
@@ -652,7 +654,7 @@ export class TokenService implements TokenServiceInterface {
     return this.http
       .post<
         PiResponse<boolean>
-      >(`${this.tokenBaseUrl}unassign`, { serial: tokenSerial }, { headers })
+      >(`${this.tokenBaseUrl}unassign`, {serial: tokenSerial}, {headers})
       .pipe(
         catchError((error) => {
           console.error('Failed to unassign user.', error);
@@ -671,7 +673,7 @@ export class TokenService implements TokenServiceInterface {
     realm: string;
     pin?: string;
   }): Observable<PiResponse<boolean>[]> {
-    const { tokenSerials, username, realm, pin } = args;
+    const {tokenSerials, username, realm, pin} = args;
     const observables = tokenSerials.map((tokenSerial) =>
       this.assignUser({
         tokenSerial: tokenSerial,
@@ -698,7 +700,7 @@ export class TokenService implements TokenServiceInterface {
     realm: string;
     pin?: string;
   }): Observable<PiResponse<boolean>> {
-    const { tokenSerial, username, realm, pin } = args;
+    const {tokenSerial, username, realm, pin} = args;
     const headers = this.localService.getHeaders();
     return this.http
       .post<PiResponse<boolean>>(
@@ -709,7 +711,7 @@ export class TokenService implements TokenServiceInterface {
           realm: realm !== '' ? realm : null,
           pin: pin || '',
         },
-        { headers },
+        {headers},
       )
       .pipe(
         catchError((error) => {
@@ -732,7 +734,7 @@ export class TokenService implements TokenServiceInterface {
           serial: tokenSerial,
           otppin: userPin,
         },
-        { headers },
+        {headers},
       )
       .pipe(
         catchError((error) => {
@@ -754,7 +756,7 @@ export class TokenService implements TokenServiceInterface {
         {
           serial: tokenSerial,
         },
-        { headers },
+        {headers},
       )
       .pipe(
         catchError((error) => {
@@ -782,7 +784,7 @@ export class TokenService implements TokenServiceInterface {
           otp1: fristOTPValue,
           otp2: secondOTPValue,
         },
-        { headers },
+        {headers},
       )
       .pipe(
         catchError((error) => {
@@ -807,7 +809,7 @@ export class TokenService implements TokenServiceInterface {
         {
           realms: value,
         },
-        { headers },
+        {headers},
       )
       .pipe(
         catchError((error) => {
@@ -837,7 +839,7 @@ export class TokenService implements TokenServiceInterface {
         {
           groups: valueArray,
         },
-        { headers },
+        {headers},
       )
       .pipe(
         catchError((error) => {
@@ -857,7 +859,7 @@ export class TokenService implements TokenServiceInterface {
       .post<LostTokenResponse>(
         `${this.tokenBaseUrl}lost/` + tokenSerial,
         {},
-        { headers },
+        {headers},
       )
       .pipe(
         catchError((error) => {
@@ -875,7 +877,7 @@ export class TokenService implements TokenServiceInterface {
     T extends TokenEnrollmentData,
     R extends EnrollmentResponse,
   >(args: { data: T; mapper: TokenApiPayloadMapper<T> }): Observable<R> {
-    const { data, mapper } = args;
+    const {data, mapper} = args;
     const headers = this.localService.getHeaders();
     const params = mapper.toApiPayload(data);
 
@@ -909,7 +911,7 @@ export class TokenService implements TokenServiceInterface {
     return this.http
       .get<
         PiResponse<TokenGroups>
-      >(environment.proxyUrl + `/tokengroup/`, { headers })
+      >(environment.proxyUrl + `/tokengroup/`, {headers})
       .pipe(
         catchError((error) => {
           console.error('Failed to get token groups.', error);
@@ -953,7 +955,7 @@ export class TokenService implements TokenServiceInterface {
     tokenSerial: string;
     initDelay: number;
   }): Observable<PiResponse<Tokens>> {
-    const { tokenSerial, initDelay } = args;
+    const {tokenSerial, initDelay} = args;
     this.tokenSerial.set(tokenSerial);
     return timer(initDelay, 2000).pipe(
       takeUntil(this.stopPolling$),
@@ -973,7 +975,7 @@ export class TokenService implements TokenServiceInterface {
         );
         return throwError(() => error);
       }),
-      shareReplay({ bufferSize: 1, refCount: true }),
+      shareReplay({bufferSize: 1, refCount: true}),
     );
   }
 
