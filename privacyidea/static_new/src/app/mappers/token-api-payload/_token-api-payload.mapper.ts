@@ -1,6 +1,4 @@
-export interface EnrollmentResponse<
-  D extends EnrollmentResponseDetail = EnrollmentResponseDetail,
-> {
+export interface EnrollmentResponse<D extends EnrollmentResponseDetail = EnrollmentResponseDetail> {
   detail: D;
 
   [key: string]: any;

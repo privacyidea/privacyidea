@@ -1,76 +1,85 @@
 <div class="header-container">
   <div class="brand">
-    <img alt="logo"
-         aria-label="Logo"
-         class="logo"
-         height="307"
-         ngSrc="assets/privacyIDEA1.png"
-         ngSrcset="1x"
-         sizes="(max-width: 307px) 100vw, 307px"
-         width="307" />
+    <img
+      alt="logo"
+      aria-label="Logo"
+      class="logo"
+      height="307"
+      ngSrc="assets/privacyIDEA1.png"
+      ngSrcset="1x"
+      sizes="(max-width: 307px) 100vw, 307px"
+      width="307"/>
   </div>
   <div class="nav-div">
     <nav class="nav-menu">
       @if (authService.role() === "admin") {
-        <a [ngClass]="{ active: isActive(ROUTE_PATHS.TOKENS) }"
-           extended
-           mat-fab
-           routerLink="{{this.ROUTE_PATHS.TOKENS}}">
+        <a
+          [ngClass]="{ active: isActive(ROUTE_PATHS.TOKENS) }"
+          extended
+          mat-fab
+          routerLink="{{this.ROUTE_PATHS.TOKENS}}">
           <mat-icon>shield</mat-icon>
           <h4>Tokens</h4></a>
 
-        <a [ngClass]="{ active: isActive(ROUTE_PATHS.USERS) }"
-           extended
-           mat-fab
-           routerLink="{{this.ROUTE_PATHS.USERS}}">
+        <a
+          [ngClass]="{ active: isActive(ROUTE_PATHS.USERS) }"
+          extended
+          mat-fab
+          routerLink="{{this.ROUTE_PATHS.USERS}}">
           <mat-icon>supervised_user_circle</mat-icon>
           <h4>{{ authService.role() === "admin" ? "Users" : "User" }}</h4></a>
 
-        <a extended
-           href="#"
-           mat-fab
-           disabled>
+        <a
+          extended
+          href="#"
+          mat-fab
+          disabled>
           <mat-icon>dns</mat-icon>
           <h4>Machines</h4></a>
 
-        <a extended
-           href="#"
-           mat-fab
-           disabled>
+        <a
+          extended
+          href="#"
+          mat-fab
+          disabled>
           <mat-icon>miscellaneous_services</mat-icon>
           <h4>Configuration</h4></a>
 
-        <a [ngClass]="{ active: isActive(ROUTE_PATHS.AUDIT) }"
-           extended
-           mat-fab
-           routerLink="{{ ROUTE_PATHS.AUDIT }}">
+        <a
+          [ngClass]="{ active: isActive(ROUTE_PATHS.AUDIT) }"
+          extended
+          mat-fab
+          routerLink="{{ ROUTE_PATHS.AUDIT }}">
           <mat-icon>manage_search</mat-icon>
           <h4>Audit</h4></a>
 
-        <a extended
-           href="#"
-           mat-fab
-           disabled>
+        <a
+          extended
+          href="#"
+          mat-fab
+          disabled>
           <mat-icon>grid_view</mat-icon>
           <h4>Components</h4></a>
       }
-      <button (click)="refreshPage()"
-              class="refresh-btn"
-              mat-fab>
+      <button
+        (click)="refreshPage()"
+        class="refresh-btn"
+        mat-fab>
         <mat-icon>refresh</mat-icon>
       </button>
     </nav>
     <h4 class="preview"> Preview</h4>
     <div class="profile-div">
-      <app-theme-switcher />
-      <div [ngClass]="[
+      <app-theme-switcher/>
+      <div
+        [ngClass]="[
           sessionTimerService.remainingTime() < 31000
             ? 'red-light'
             : sessionTimerService.remainingTime() < 60000
               ? 'yellow-light'
               : 'surface-highest',
         ]"
-           class="session-timer">
+        class="session-timer">
         @if (sessionTimerService.remainingTime() < 60000) {
           {{ sessionTimerService.remainingTime() | date: "mm:ss" }}
         } @else if (sessionTimerService.remainingTime() >= 60000 &&
@@ -81,27 +90,30 @@
         }
       </div>
       <div class="profile-logout-div flex-row">
-        <a aria-label="Support"
-           class="support-btn"
-           extended
-           href="https://netknights.it/support_link_admin"
-           mat-fab
-           target="_blank">
+        <a
+          aria-label="Support"
+          class="support-btn"
+          extended
+          href="https://netknights.it/support_link_admin"
+          mat-fab
+          target="_blank">
           <mat-icon>support_agent</mat-icon>
           <h4>Support</h4>
         </a>
-        <button class="profile-btn"
-                disabled
-                extended
-                href="#"
-                mat-fab>
+        <button
+          class="profile-btn"
+          disabled
+          extended
+          href="#"
+          mat-fab>
           <mat-icon>account_box</mat-icon>
           <h4>{{ profileText }}</h4>
         </button>
-        <button (click)="logout()"
-                aria-label="Logout"
-                class="logout-btn"
-                mat-icon-button>
+        <button
+          (click)="logout()"
+          aria-label="Logout"
+          class="logout-btn"
+          mat-icon-button>
           <mat-icon>logout</mat-icon>
         </button>
       </div>

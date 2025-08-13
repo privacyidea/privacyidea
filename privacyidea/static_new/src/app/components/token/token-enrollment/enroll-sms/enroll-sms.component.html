@@ -14,9 +14,10 @@
     @if (!readNumberDynamicallyControl.value) {
       <mat-form-field class="width-33 input-height">
         <mat-label>Phone number</mat-label>
-        <input [formControl]="phoneNumberControl"
-               matInput
-               required />
+        <input
+          [formControl]="phoneNumberControl"
+          matInput
+          required/>
         <mat-error>Phone number is <strong>required</strong></mat-error>
       </mat-form-field>
     } @else {

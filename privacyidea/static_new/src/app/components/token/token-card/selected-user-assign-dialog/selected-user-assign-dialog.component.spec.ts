@@ -1,14 +1,14 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { SelectedUserAssignDialogComponent } from './selected-user-assign-dialog.component';
+import { SelectedUserAssignDialogComponent } from "./selected-user-assign-dialog.component";
 
-describe('SelectedUserAssignDialogComponent', () => {
+describe("SelectedUserAssignDialogComponent", () => {
   let component: SelectedUserAssignDialogComponent;
   let fixture: ComponentFixture<SelectedUserAssignDialogComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SelectedUserAssignDialogComponent],
+      imports: [SelectedUserAssignDialogComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(SelectedUserAssignDialogComponent);
@@ -16,7 +16,7 @@ describe('SelectedUserAssignDialogComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

@@ -1,71 +1,83 @@
-<div aria-label="Container Table"
-     class="container-table-container">
+<div
+  aria-label="Container Table"
+  class="container-table-container">
   <div class="filter-paginator-container">
-    <mat-form-field class="container-table-filter"
-                    subscriptSizing="dynamic">
+    <mat-form-field
+      class="container-table-filter"
+      subscriptSizing="dynamic">
       <mat-label>Enter Filter</mat-label>
-      <input #filterHTMLInputElement
-             [(ngModel)]="filterValueString"
-             aria-label="Filter Input"
-             matInput
-             placeholder="Example query: 'type: generic user: admin'" />
+      <input
+        #filterHTMLInputElement
+        [(ngModel)]="filterValueString"
+        aria-label="Filter Input"
+        matInput
+        placeholder="Example query: 'type: generic user: admin'"/>
     </mat-form-field>
-    <mat-paginator (page)="onPageEvent($event)"
-                   [length]="total()"
-                   [pageIndex]="pageIndex()"
-                   [pageSizeOptions]="pageSizeOptions()"
-                   [pageSize]="pageSize()"
-                   showFirstLastButtons></mat-paginator>
+    <mat-paginator
+      (page)="onPageEvent($event)"
+      [length]="total()"
+      [pageIndex]="pageIndex()"
+      [pageSizeOptions]="pageSizeOptions()"
+      [pageSize]="pageSize()"
+      showFirstLastButtons></mat-paginator>
   </div>
-  <app-keyword-filter [advancedApiFilter]="advancedApiFilter"
-                      [apiFilter]="apiFilter"
-                      [filterHTMLInputElement]="filterHTMLInputElement"
-                      [filterValue]="filterValue"></app-keyword-filter>
-  <table (matSortChange)="onSortEvent($event)"
-         [dataSource]="containerDataSource()"
-         [matSortDisableClear]="false"
-         aria-label="Container Data Table"
-         class="container-table"
-         mat-table
-         matSort
-         multiTemplateDataRows>
+  <app-keyword-filter
+    [advancedApiFilter]="advancedApiFilter"
+    [apiFilter]="apiFilter"
+    [filterHTMLInputElement]="filterHTMLInputElement"
+    [filterValue]="filterValue"></app-keyword-filter>
+  <table
+    (matSortChange)="onSortEvent($event)"
+    [dataSource]="containerDataSource()"
+    [matSortDisableClear]="false"
+    aria-label="Container Data Table"
+    class="container-table"
+    mat-table
+    matSort
+    multiTemplateDataRows>
     @for (column of columnsKeyMap; track column) {
       <ng-container [matColumnDef]="column.key">
         @if (column.key === 'select') {
-          <th *matHeaderCellDef
-              mat-header-cell
-              class="table-checkbox">
-            <mat-checkbox (change)="$event ? toggleAllRows() : null"
-                          [checked]="isAllSelected()"
-                          [indeterminate]="containerSelection().length > 0 && !isAllSelected()"
-                          [disabled]="total() === 0"></mat-checkbox>
+          <th
+            *matHeaderCellDef
+            mat-header-cell
+            class="table-checkbox">
+            <mat-checkbox
+              (change)="$event ? toggleAllRows() : null"
+              [checked]="isAllSelected()"
+              [indeterminate]="containerSelection().length > 0 && !isAllSelected()"
+              [disabled]="total() === 0"></mat-checkbox>
           </th>
         } @else {
-          <th *matHeaderCellDef
-              attr.aria-label="{{ column.label }} Header"
-              mat-header-cell
-              mat-sort-header>
+          <th
+            *matHeaderCellDef
+            attr.aria-label="{{ column.label }} Header"
+            mat-header-cell
+            mat-sort-header>
             {{ column.label }}
           </th>
         }
-        <td *matCellDef="let element; let row"
-            attr.aria-label="{{ column.label }} Cell"
-            mat-cell
-            [ngClass]="{
+        <td
+          *matCellDef="let element; let row"
+          attr.aria-label="{{ column.label }} Cell"
+          mat-cell
+          [ngClass]="{
               'width-18rem': column.key === 'description',
               'table-checkbox': column.key === 'select'
             }">
           <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
             @switch (column.key) {
               @case ('select') {
-                <mat-checkbox (change)="$event ? toggleRow(row) : null"
-                              (click)="$event.stopPropagation()"
-                              [checked]="containerSelection().includes(row)"
-                              [disabled]="total() === 0"></mat-checkbox>
+                <mat-checkbox
+                  (change)="$event ? toggleRow(row) : null"
+                  (click)="$event.stopPropagation()"
+                  [checked]="containerSelection().includes(row)"
+                  [disabled]="total() === 0"></mat-checkbox>
               }
               @case ("serial") {
-                <a attr.aria-label="{{ column.label }} Link"
-                   (click)="contentService.containerSelected(element.serial)"> {{
+                <a
+                  attr.aria-label="{{ column.label }} Link"
+                  (click)="contentService.containerSelected(element.serial)"> {{
                     element[column.key]
                   }}
                 </a>
@@ -76,22 +88,25 @@
               @case ("realms") {
                 <div [ngClass]="(element[column.key]?.length || 0) > 1 ? 'realm-list' : 'realm'">
                   @for (realm of element[column.key]; track realm; let idx = $index) {
-                    <a attr.aria-label="{{ column.label }} Link"
-                       href="#"> {{ realm }}
-                    </a><br style="margin-top: 3px" />
+                    <a
+                      attr.aria-label="{{ column.label }} Link"
+                      href="#"> {{ realm }}
+                    </a><br style="margin-top: 3px"/>
                   }
                 </div>
               }
               @case ("states") {
-                <span (click)="handleStateClick(element)"
-                      [ngClass]="tableUtilsService.getSpanClassForState(element[column.key][0], true)">
+                <span
+                  (click)="handleStateClick(element)"
+                  [ngClass]="tableUtilsService.getSpanClassForState(element[column.key][0], true)">
                   {{ tableUtilsService.getDisplayTextForState(element[column.key][0]) }}
                 </span>
               }
               @default {
                 @if (tableUtilsService.isLink(column.key)) {
-                  <a attr.aria-label="{{ column.label }} Link"
-                     href="#"> {{ element[column.key] }}
+                  <a
+                    attr.aria-label="{{ column.label }} Link"
+                    href="#"> {{ element[column.key] }}
                   </a>
                 } @else {
                   {{ element[column.key] }}
@@ -103,11 +118,13 @@
       </ng-container>
     }
     <ng-container matColumnDef="expandedDetail">
-      <td *matCellDef="let element"
-          [attr.colspan]="columnKeys.length"
-          mat-cell>
-        <div [@detailExpand]="expandedElement === element ? 'expanded' : 'collapsed'"
-             class="expanded-detail">
+      <td
+        *matCellDef="let element"
+        [attr.colspan]="columnKeys.length"
+        mat-cell>
+        <div
+          [@detailExpand]="expandedElement === element ? 'expanded' : 'collapsed'"
+          class="expanded-detail">
           <div class="expanded-token-list">
             @for (token of element.tokens; track token) {
               <div class="token-item">
@@ -128,18 +145,21 @@
       </td>
     </ng-container>
 
-    <tr *matHeaderRowDef="columnKeys"
-        mat-header-row></tr>
+    <tr
+      *matHeaderRowDef="columnKeys"
+      mat-header-row></tr>
 
-    <tr (click)="expandedElement = expandedElement === row ? null : row"
-        *matRowDef="let row; columns: columnKeys"
-        [class.example-expanded-row]="expandedElement === row"
-        class="example-element-row"
-        mat-row></tr>
+    <tr
+      (click)="expandedElement = expandedElement === row ? null : row"
+      *matRowDef="let row; columns: columnKeys"
+      [class.example-expanded-row]="expandedElement === row"
+      class="example-element-row"
+      mat-row></tr>
 
-    <tr *matRowDef="let row; columns: ['expandedDetail']"
-        class="example-detail-row"
-        mat-row></tr>
+    <tr
+      *matRowDef="let row; columns: ['expandedDetail']"
+      class="example-detail-row"
+      mat-row></tr>
 
     <tr *matNoDataRow>
       <td [attr.colspan]="columnKeys.length">

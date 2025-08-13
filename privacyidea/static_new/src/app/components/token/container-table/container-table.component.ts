@@ -1,59 +1,40 @@
-import {
-  animate,
-  state,
-  style,
-  transition,
-  trigger,
-} from '@angular/animations';
-import { NgClass } from '@angular/common';
-import {
-  Component,
-  effect,
-  inject,
-  linkedSignal,
-  ViewChild,
-  WritableSignal,
-} from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatSortModule, Sort } from '@angular/material/sort';
-import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { animate, state, style, transition, trigger } from "@angular/animations";
+import { NgClass } from "@angular/common";
+import { Component, effect, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
+import { FormsModule } from "@angular/forms";
+import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatInputModule } from "@angular/material/input";
+import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
+import { MatSortModule, Sort } from "@angular/material/sort";
+import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import {
   ContainerDetailData,
   ContainerService,
-  ContainerServiceInterface,
-} from '../../../services/container/container.service';
-import {
-  ContentService,
-  ContentServiceInterface,
-} from '../../../services/content/content.service';
+  ContainerServiceInterface
+} from "../../../services/container/container.service";
+import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import {
   TableUtilsService,
-  TableUtilsServiceInterface,
-} from '../../../services/table-utils/table-utils.service';
-import {
-  TokenService,
-  TokenServiceInterface,
-} from '../../../services/token/token.service';
-import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
-import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
+  TableUtilsServiceInterface
+} from "../../../services/table-utils/table-utils.service";
+import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
+import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";
 
 const columnsKeyMap = [
-  { key: 'select', label: '' },
-  { key: 'serial', label: 'Serial' },
-  { key: 'type', label: 'Type' },
-  { key: 'states', label: 'Status' },
-  { key: 'description', label: 'Description' },
-  { key: 'user_name', label: 'User' },
-  { key: 'user_realm', label: 'Realm' },
-  { key: 'realms', label: 'Container Realms' },
+  { key: "select", label: "" },
+  { key: "serial", label: "Serial" },
+  { key: "type", label: "Type" },
+  { key: "states", label: "Status" },
+  { key: "description", label: "Description" },
+  { key: "user_name", label: "User" },
+  { key: "user_realm", label: "Realm" },
+  { key: "realms", label: "Container Realms" }
 ];
 
 @Component({
-  selector: 'app-container-table',
+  selector: "app-container-table",
   standalone: true,
   imports: [
     MatTableModule,
@@ -65,20 +46,20 @@ const columnsKeyMap = [
     KeywordFilterComponent,
     CopyButtonComponent,
     MatCheckboxModule,
-    FormsModule,
+    FormsModule
   ],
-  templateUrl: './container-table.component.html',
-  styleUrl: './container-table.component.scss',
+  templateUrl: "./container-table.component.html",
+  styleUrl: "./container-table.component.scss",
   animations: [
-    trigger('detailExpand', [
-      state('collapsed', style({ height: '0px', minHeight: '0' })),
-      state('expanded', style({ height: '*' })),
+    trigger("detailExpand", [
+      state("collapsed", style({ height: "0px", minHeight: "0" })),
+      state("expanded", style({ height: "*" })),
       transition(
-        'expanded <=> collapsed',
-        animate('225ms cubic-bezier(0.4, 0.0, 0.2, 1)'),
-      ),
-    ]),
-  ],
+        "expanded <=> collapsed",
+        animate("225ms cubic-bezier(0.4, 0.0, 0.2, 1)")
+      )
+    ])
+  ]
 })
 export class ContainerTableComponent {
   protected readonly containerService: ContainerServiceInterface =
@@ -98,7 +79,7 @@ export class ContainerTableComponent {
   filterValueString: WritableSignal<string> = linkedSignal(() =>
     Object.entries(this.filterValue())
       .map(([key, value]) => `${key}: ${value}`)
-      .join(' '),
+      .join(" ")
   );
   pageSize = this.containerService.pageSize;
   pageIndex = this.containerService.pageIndex;
@@ -110,20 +91,20 @@ export class ContainerTableComponent {
     computation: (pageSize: number) =>
       Array.from({ length: pageSize }, () => {
         return {
-          serial: '',
-          type: '',
+          serial: "",
+          type: "",
           states: [],
-          description: '',
+          description: "",
           users: [],
-          user_realm: '',
+          user_realm: "",
           realms: [],
           tokens: [],
           info: {},
           internal_info_keys: [],
           last_authentication: null,
-          last_synchronization: null,
+          last_synchronization: null
         } as ContainerDetailData;
-      }),
+      })
   });
 
   containerDataSource: WritableSignal<MatTableDataSource<ContainerDetailData>> =
@@ -137,16 +118,16 @@ export class ContainerTableComponent {
               user_name:
                 item.users && item.users.length > 0
                   ? item.users[0].user_name
-                  : '',
+                  : "",
               user_realm:
                 item.users && item.users.length > 0
                   ? item.users[0].user_realm
-                  : '',
+                  : ""
             })) ?? [];
           return new MatTableDataSource<ContainerDetailData>(processedData);
         }
         return previous?.value ?? new MatTableDataSource(this.emptyResource());
-      },
+      }
     });
 
   total: WritableSignal<number> = linkedSignal({
@@ -156,12 +137,12 @@ export class ContainerTableComponent {
         return containerResource.result?.value?.count ?? 0;
       }
       return previous?.value ?? 0;
-    },
+    }
   });
 
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
-  @ViewChild('filterHTMLInputElement', { static: true })
+  @ViewChild("filterHTMLInputElement", { static: true })
   filterInput!: HTMLInputElement;
   expandedElement: ContainerDetailData | null = null;
 
@@ -214,8 +195,8 @@ export class ContainerTableComponent {
           this.containerResource.reload();
         },
         error: (error) => {
-          console.error('Failed to toggle active.', error);
-        },
+          console.error("Failed to toggle active.", error);
+        }
       });
   }
 

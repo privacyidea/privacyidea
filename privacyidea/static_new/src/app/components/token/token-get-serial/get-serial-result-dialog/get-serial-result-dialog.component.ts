@@ -1,13 +1,13 @@
-import { Component, inject } from '@angular/core';
-import { MatButton } from '@angular/material/button';
+import { Component, inject } from "@angular/core";
+import { MatButton } from "@angular/material/button";
 import {
   MAT_DIALOG_DATA,
   MatDialogActions,
   MatDialogClose,
   MatDialogContent,
   MatDialogRef,
-  MatDialogTitle,
-} from '@angular/material/dialog';
+  MatDialogTitle
+} from "@angular/material/dialog";
 
 export type GetSerialResultDialogData = {
   foundSerial: string;
@@ -17,17 +17,17 @@ export type GetSerialResultDialogData = {
 };
 
 @Component({
-  selector: 'app-get-serial-result-dialog',
+  selector: "app-get-serial-result-dialog",
   imports: [
     MatDialogContent,
     MatDialogTitle,
     MatDialogActions,
     MatButton,
-    MatDialogClose,
+    MatDialogClose
   ],
-  templateUrl: './get-serial-result-dialog.component.html',
-  styleUrl: './get-serial-result-dialog.component.scss',
-  standalone: true,
+  templateUrl: "./get-serial-result-dialog.component.html",
+  styleUrl: "./get-serial-result-dialog.component.scss",
+  standalone: true
 })
 export class GetSerialResultDialogComponent {
   public readonly dialogRef: MatDialogRef<GetSerialResultDialogComponent> =

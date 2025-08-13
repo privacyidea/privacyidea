@@ -1,5 +1,6 @@
-<div [ngClass]="!this.authService.isSelfServiceUser() ? 'layout' : 'layout-self-service'"
-     aria-label="Layout">
+<div
+  [ngClass]="!this.authService.isSelfServiceUser() ? 'layout' : 'layout-self-service'"
+  aria-label="Layout">
   <header aria-label="Header">
     @if (!this.authService.isSelfServiceUser()) {
       <app-header></app-header>
@@ -12,11 +13,12 @@
     @if (showProgressBar()) {
       <div class="loading-urls-container">
         @for (l of loadingUrls(); track l.key) {
-          <span class="loading-url"> {{ l.url.slice(1) }} </span><br />
+          <span class="loading-url"> {{ l.url.slice(1) }} </span><br/>
         }
       </div>
-      <mat-progress-bar class="progress-bar"
-                        mode="indeterminate" />
+      <mat-progress-bar
+        class="progress-bar"
+        mode="indeterminate"/>
     }
   </main>
 </div>

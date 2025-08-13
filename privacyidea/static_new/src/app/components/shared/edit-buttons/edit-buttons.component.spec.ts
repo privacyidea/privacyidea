@@ -1,22 +1,22 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { EditButtonsComponent } from './edit-buttons.component';
-import { signal } from '@angular/core';
+import { EditButtonsComponent } from "./edit-buttons.component";
+import { signal } from "@angular/core";
 
-describe('EditButtonsComponent', () => {
+describe("EditButtonsComponent", () => {
   let component: EditButtonsComponent<any>;
   let fixture: ComponentFixture<EditButtonsComponent<any>>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EditButtonsComponent],
+      imports: [EditButtonsComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EditButtonsComponent);
     component = fixture.componentInstance;
     component.element = {
-      keyMap: { key: 'value', label: 'label' },
-      isEditing: signal(false),
+      keyMap: { key: "value", label: "label" },
+      isEditing: signal(false)
     };
     component.isEditingUser = signal(false);
     component.isEditingInfo = signal(false);
@@ -24,7 +24,7 @@ describe('EditButtonsComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

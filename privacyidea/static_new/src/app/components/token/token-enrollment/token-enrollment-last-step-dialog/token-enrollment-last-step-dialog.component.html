@@ -4,40 +4,44 @@
     <a (click)="tokenSelected(data.response.detail.serial)">
       {{ data.response.detail.serial }} </a>.</span>
   @if (data.response.detail["container_serial"]) {
-    <br /><span>It has been enrolled in the container
+    <br/><span>It has been enrolled in the container
       <a (click)="containerSelected(data.response.detail['container_serial'])">
         {{ data.response.detail["container_serial"] }} </a>.</span>
   }
   @if (data.user?.username && data.userRealm != "" && !data.onlyAddToRealm) {
-    <br /><span>The user <a href="#">{{ data.user!.username }}</a> in the realm
+    <br/><span>The user <a href="#">{{ data.user!.username }}</a> in the realm
       <a href="#">{{ data.userRealm }}</a> was assigned to the token.
     </span>
   }
   <div class="flex-row gap-1">
     @if (data.response.detail.googleurl?.img) {
-      <img alt="QR Code"
-           class="qr-code"
-           height="300px"
-           src="{{ data.response.detail.googleurl?.img }}"
-           width="300px" />
+      <img
+        alt="QR Code"
+        class="qr-code"
+        height="300px"
+        src="{{ data.response.detail.googleurl?.img }}"
+        width="300px"/>
     } @else if (data.response.detail.motpurl?.img) {
-      <img alt="QR Code"
-           class="qr-code"
-           height="300px"
-           src="{{ data.response.detail.motpurl?.img }}"
-           width="300px" />
+      <img
+        alt="QR Code"
+        class="qr-code"
+        height="300px"
+        src="{{ data.response.detail.motpurl?.img }}"
+        width="300px"/>
     } @else if (data.response.detail.otpkey?.img) {
-      <img alt="QR Code"
-           class="qr-code"
-           height="300px"
-           src="{{ data.response.detail.otpkey?.img }}"
-           width="300px" />
+      <img
+        alt="QR Code"
+        class="qr-code"
+        height="300px"
+        src="{{ data.response.detail.otpkey?.img }}"
+        width="300px"/>
     } @else if (data.response.detail.tiqrenroll?.img) {
-      <img alt="QR Code"
-           class="qr-code"
-           height="300px"
-           src="{{ data.response.detail.tiqrenroll?.img }}"
-           width="300px" />
+      <img
+        alt="QR Code"
+        class="qr-code"
+        height="300px"
+        src="{{ data.response.detail.tiqrenroll?.img }}"
+        width="300px"/>
     }
     <div class="flex-column gap-1">
       @let url =
@@ -69,9 +73,10 @@
                                                                                               watching. </strong>
         </p>
 
-        <button (click)="regenerateQRCode()"
-                class="card-button"
-                mat-flat-button>
+        <button
+          (click)="regenerateQRCode()"
+          class="card-button"
+          mat-flat-button>
           <mat-icon>autorenew</mat-icon>
           Regenerate QR Code
         </button>
@@ -103,9 +108,10 @@
               <mat-panel-title>
                 The OTP values
                 @if (data.response.detail["otps"]) {
-                  <button (click)="printOtps()"
-                          mat-icon-button
-                          class="margin-left-1">
+                  <button
+                    (click)="printOtps()"
+                    mat-icon-button
+                    class="margin-left-1">
                     <mat-icon>print</mat-icon>
                   </button>
                 }
@@ -127,7 +133,8 @@
 </mat-dialog-content>
 
 <mat-dialog-actions>
-  <button mat-button
-          mat-dialog-close>Close
+  <button
+    mat-button
+    mat-dialog-close>Close
   </button>
 </mat-dialog-actions>

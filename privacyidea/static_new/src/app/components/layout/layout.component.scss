@@ -27,10 +27,10 @@
   --total-layout-height: 100vh;
 
   --header-height: calc(
-    var(--mat-sys-label-large-line-height) + var(--global-padding) * 1.75
+          var(--mat-sys-label-large-line-height) + var(--global-padding) * 1.75
   );
   --main-height: calc(
-    var(--total-layout-height) - var(--header-height) - var(--footer-height)
+          var(--total-layout-height) - var(--header-height) - var(--footer-height)
   );
   --footer-height: 0vh;
 

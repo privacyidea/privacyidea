@@ -1,18 +1,18 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { ContainerDetailsInfoComponent } from './container-details-info.component';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { signal } from '@angular/core';
+import { ContainerDetailsInfoComponent } from "./container-details-info.component";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { signal } from "@angular/core";
 
-describe('ContainerDetailsInfoComponent', () => {
+describe("ContainerDetailsInfoComponent", () => {
   let component: ContainerDetailsInfoComponent;
   let fixture: ComponentFixture<ContainerDetailsInfoComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ContainerDetailsInfoComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting()]
     }).compileComponents();
 
     fixture = TestBed.createComponent(ContainerDetailsInfoComponent);
@@ -21,7 +21,7 @@ describe('ContainerDetailsInfoComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

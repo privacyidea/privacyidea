@@ -1,8 +1,8 @@
-import { httpResource, HttpResourceRef } from '@angular/common/http';
-import { Injectable, linkedSignal, WritableSignal } from '@angular/core';
-import { environment } from '../../../environments/environment';
-import { PiResponse } from '../../app.component';
-import { LocalService } from '../local/local.service';
+import { httpResource, HttpResourceRef } from "@angular/common/http";
+import { Injectable, linkedSignal, WritableSignal } from "@angular/core";
+import { environment } from "../../../environments/environment";
+import { PiResponse } from "../../app.component";
+import { LocalService } from "../local/local.service";
 
 type ServiceIds = {
   [key: string]: _ServiceId;
@@ -25,13 +25,13 @@ export interface ServiceIdServiceInterface {
 }
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: "root"
 })
 export class ServiceIdService implements ServiceIdServiceInterface {
   serviceIdResource = httpResource<PiResponse<ServiceIds>>(() => ({
-    url: environment.proxyUrl + '/serviceid/',
-    method: 'GET',
-    headers: this.localService.getHeaders(),
+    url: environment.proxyUrl + "/serviceid/",
+    method: "GET",
+    headers: this.localService.getHeaders()
   }));
   serviceIds: WritableSignal<ServiceId[]> = linkedSignal({
     source: this.serviceIdResource.value,
@@ -44,12 +44,13 @@ export class ServiceIdService implements ServiceIdServiceInterface {
         ([name, { description, id }]) => ({
           name,
           description,
-          id,
-        }),
+          id
+        })
       );
       return array;
-    },
+    }
   });
 
-  constructor(private localService: LocalService) {}
+  constructor(private localService: LocalService) {
+  }
 }
