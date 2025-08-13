@@ -534,26 +534,6 @@ class API000TokenAdminRealmList(MyApiTestCase):
 
         delete_policy("policy")
 
-    def test_06_unassign_batch(self):
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.UNASSIGN, realm=self.realm1)
-
-        # create tokens
-        token1 = init_token({"type": "hotp"},
-                            user=User("cornelius", self.realm1))
-        token2 = init_token({"type": "hotp"},
-                            user=User("hans", self.realm2))
-
-        token_serials = ",".join([token1.get_serial(), token2.get_serial()])
-
-        self.assertIsNotNone(token1.user is not None)
-        self.assertIsNotNone(token2.user is not None)
-        # Try to unassign all tokens will only unassign token1 from realm1
-        self.request_assert_200("/token/batchunassign", {"serial": token_serials}, self.at, "POST")
-        self.assertIsNone(token1.user)
-        self.assertIsNotNone(token2.user)
-
-        delete_policy("policy")
-
 class APIAttestationTestCase(MyApiTestCase):
     @pytest.mark.usefixtures("setup_local_ca")
     def test_01_enroll_certificate(self):
@@ -3372,6 +3352,32 @@ class APITokenTestCase(MyApiTestCase):
             remove_token(serial)
         delete_policy("applspec_genkey")
         delete_policy("enroll")
+
+
+    def test_63_unassign_batch(self):
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.UNASSIGN, realm=self.realm1)
+
+        # create tokens
+        token1 = init_token({"type": "hotp"},
+                            user=User("cornelius", self.realm1))
+        token2 = init_token({"type": "hotp"},
+                            user=User("hans", self.realm2))
+
+        token_serials = ",".join([token1.get_serial(), token2.get_serial()])
+
+        self.assertIsNotNone(token1.user is not None)
+        self.assertIsNotNone(token2.user is not None)
+        # Try to unassign all tokens will only unassign token1 from realm1
+        with self.app.test_request_context('/token/batchunassign',
+                                           method='POST',
+                                           data={"serial": token_serials},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+        self.assertIsNone(token1.user)
+        self.assertIsNotNone(token2.user)
+
+        delete_policy("policy")
 
 
 class API00TokenPerformance(MyApiTestCase):
