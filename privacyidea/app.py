@@ -248,11 +248,15 @@ def create_app(config_name="development",
 
     # TODO: This is not necessary except for pi-manage
     # Try to get the path of the migration directory from the module
+    # Assume we are in the source folder
+    migration_dir = "privacyidea/migrations"
     try:
-        migration_dir = (resources.files('privacyidea.migrations') / "env.py").parent
+        pi_resource = resources.files("privacyidea").joinpath("migrations")
+        if pi_resource.is_dir():
+            with resources.as_file(pi_resource) as mdir:
+                migration_dir = mdir.as_posix()
     except ModuleNotFoundError:
-        # Assume we are in the source folder
-        migration_dir = "privacyidea/migrations"
+        pass
     migrate.init_app(app, db, directory=migration_dir)
 
     Versioned(app, format='%(path)s?v=%(version)s')
