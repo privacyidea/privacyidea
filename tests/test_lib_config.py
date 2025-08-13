@@ -275,7 +275,7 @@ class ConfigTestCase(MyTestCase):
 
     def test_10_enrollable_tokentypes(self):
         # Execute the function twice to ensure the cache works
-        for i in range (2):
+        for i in range(2):
             ttypes = get_multichallenge_enrollable_types()
             self.assertIn("hotp", ttypes)
             self.assertIn("totp", ttypes)
@@ -296,7 +296,6 @@ class ConfigTestCase(MyTestCase):
         validate_email = get_email_validators().get("privacyidea.lib.utils.emailvalidation")
         self.assertTrue(validate_email("valid@email.com"))
         self.assertFalse(validate_email("invalid@email.k"))
-
 
     def test_12_enrollable_token_types(self):
         enrollable_types = get_enrollable_token_types()
