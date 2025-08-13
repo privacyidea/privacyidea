@@ -17,7 +17,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import pytest
+import sqlalchemy as sa
 from sqlalchemy.orm.session import close_all_sessions
+from flask_migrate import stamp as fm_stamp
 
 from privacyidea.app import create_app
 from privacyidea.models import db, Challenge
@@ -169,6 +171,7 @@ def app():
     app = create_app(config_name="testing", config_file="", silent=True)
     with app.app_context():
         db.create_all()
+        fm_stamp()
 
     yield app
 
@@ -177,6 +180,31 @@ def app():
         close_all_sessions()
         db.drop_all()
         db.engine.dispose()
+
+
+class TestPIManageSetupClass:
+    def test_01_pimanage_setup_help(self, app):
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["setup"])
+        assert "Commands to set up the privacyIDEA server for production" in result.output
+        assert "create_audit_keys  Create the RSA signing keys for the audit log." in result.output
+        assert "create_enckey      Create a key for encrypting the sensitive database..." in result.output
+        assert "create_pgp_keys    Generate PGP keys to allow encrypted token import." in result.output
+        assert "create_tables      Initially create the tables in the database." in result.output
+        assert "drop_tables        This drops all the privacyIDEA database tables." in result.output
+        assert "encrypt_enckey     Additionally encrypt the encryption key" in result.output
+
+    def test_02_pimanage_setup_drop_tables(self, app):
+        with app.app_context():
+            # First check that the database is empty
+            inspector = sa.inspect(db.get_engine())
+            assert "alembic_version" in inspector.get_table_names()
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["setup", "drop_tables", "-d" , "yes"])
+        assert "Dropping all database tables!" in result.output
+        with app.app_context():
+            inspector = sa.inspect(db.get_engine())
+            assert inspector.get_table_names() == []
 
 
 class TestPIManageConfigExport:
