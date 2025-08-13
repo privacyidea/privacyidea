@@ -40,6 +40,9 @@ html {
 
     --mat-sys-outline: light-dark(hsl(0, 0%, 87%), hsl(0, 0%, 30%));
 
+    --inline-hint-bg:  light-dark(hsl(200, 65%, 91%), hsl(200, 65%, 20%));
+    --inline-warning-bg:  light-dark(hsl(0, 83%, 95%), hsl(0, 83%, 18%));
+
     color-scheme: light dark;
   }
 
@@ -92,6 +95,9 @@ html {
     --mat-sys-shadow: #cccccc;
 
     --mat-sys-outline: hsl(0, 0%, 87%);
+
+    --inline-hint-bg: hsl(200, 65%, 91%);
+    --inline-warning-bg: hsl(0, 83%, 95%);
   }
 
   &.dark {
@@ -142,6 +148,9 @@ html {
     --mat-sys-shadow: #000000;
 
     --mat-sys-outline: hsl(0, 0%, 30%);
+
+    --inline-hint-bg: hsl(200, 65%, 20%);
+    --inline-warning-bg: hsl(0, 83%, 18%);
   }
 
   @include mat.theme(
