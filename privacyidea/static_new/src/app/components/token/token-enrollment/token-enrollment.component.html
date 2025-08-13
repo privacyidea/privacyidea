@@ -20,14 +20,6 @@
                             [matTooltip]="type.info.split(':')[1]">{{ type.info.split(":")[0] }}
                 </mat-option>
               }
-              <button (click)="versioningService.openDocumentation('tokentypes')"
-                      class="card-button height-auto width-100"
-                      mat-flat-button>
-                <mat-icon class="flex-size-none">info_outline</mat-icon>
-                <p class="flex-size-1">
-                  Help About Token Types
-                </p>
-              </button>
             </mat-select>
           </mat-form-field>
         </div>
