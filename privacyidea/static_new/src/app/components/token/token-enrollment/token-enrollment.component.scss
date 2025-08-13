@@ -66,7 +66,7 @@ h5 {
 
 ::ng-deep {
   .multi-column-panel.mat-mdc-select-panel {
-    column-count: 3;
+    column-count: 2;
     max-height: unset;
     column-gap: var(--third-global-padding);
     padding: var(--three-quarters-global-padding);
@@ -84,7 +84,7 @@ h5 {
 }
 
 .sticky-header.is-sticky {
-  box-shadow: var(--box-shadow);
+   @include mat.elevation(3)
 }
 
 .sticky-controls {
