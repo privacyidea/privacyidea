@@ -8,8 +8,10 @@ import {
   Signal,
   WritableSignal,
 } from '@angular/core';
+import { Sort } from '@angular/material/sort';
 import { environment } from '../../../environments/environment';
 import { PiResponse } from '../../app.component';
+import { ROUTE_PATHS } from '../../app.routes';
 import { AuthService, AuthServiceInterface } from '../auth/auth.service';
 import {
   ContentService,
@@ -18,8 +20,6 @@ import {
 import { LocalService, LocalServiceInterface } from '../local/local.service';
 import { RealmService, RealmServiceInterface } from '../realm/realm.service';
 import { TokenService, TokenServiceInterface } from '../token/token.service';
-import { Sort } from '@angular/material/sort';
-import { ROUTE_PATHS } from '../../app.routes';
 
 const apiFilter = [
   'description',
@@ -122,6 +122,7 @@ export class UserService implements UserServiceInterface {
       if (source.authRole === 'user') {
         return source.authRealm;
       }
+      console.log('Selected user realm:', source.defaultRealm);
       return source.defaultRealm;
     },
   });

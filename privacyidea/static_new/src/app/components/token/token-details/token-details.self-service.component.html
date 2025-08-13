@@ -62,6 +62,7 @@
                     <mat-form-field class="width-18rem">
                       <mat-label>Select Realms</mat-label>
                       <mat-select [(ngModel)]="realmService.selectedRealms"
+                                  [value]="realmService.selectedRealms()"
                                   multiple>
                         @for (option of realmService.realmOptions();
                           track option) {
@@ -92,6 +93,7 @@
                     <mat-form-field class="width-18rem">
                       <mat-label>Select Token Group</mat-label>
                       <mat-select [(ngModel)]="selectedTokengroup"
+                                  [value]="selectedTokengroup()"
                                   multiple>
                         @for (option of tokengroupOptions(); track option) {
                           @if (option === userRealm) {

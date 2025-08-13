@@ -19,6 +19,7 @@
       <mat-label>Service ID</mat-label>
       <mat-select [errorStateMatcher]="applspecErrorStateMatcher"
                   [formControl]="serviceIdControl"
+                  [value]="serviceIdControl.value"
                   required>
         @for (option of serviceIdOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
