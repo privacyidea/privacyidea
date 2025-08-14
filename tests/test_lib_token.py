@@ -1773,7 +1773,7 @@ class TokenTestCase(MyTestCase):
             {"serial": "12345678901234567890123456789012", "type": "totp", "otplen": "8"},
             {"serial": "987654321", "type": "hotp", "otplen": "6", "otpkey": "12345"}
         ]
-        result = import_tokens(json.dumps(tokens))
+        result = import_tokens(tokens)
         self.assertEqual(set(["12345678901234567890", "12345678901234567890123456789012", "987654321"]),
                          set(result.successful_tokens), result)
         imported_tokens = get_tokens()
@@ -1800,10 +1800,11 @@ class TokenTestCase(MyTestCase):
 
         # Export the tokens
         exported_tokens = export_tokens([hotptoken, totptoken])
-        self.assertIn('"type": "hotp"', exported_tokens)
-        self.assertIn('"serial": "OATH12345678"', exported_tokens)
-        self.assertIn('"type": "totp"', exported_tokens)
-        self.assertIn('"serial": "TOTP12345678"', exported_tokens)
+        exported_tokens_str = json.dumps(exported_tokens)
+        self.assertIn('"type": "hotp"', exported_tokens_str)
+        self.assertIn('"serial": "OATH12345678"', exported_tokens_str)
+        self.assertIn('"type": "totp"', exported_tokens_str)
+        self.assertIn('"serial": "TOTP12345678"', exported_tokens_str)
 
         # Remove the tokens
         hotptoken.delete_token()
@@ -1848,9 +1849,6 @@ class TokenTestCase(MyTestCase):
         # Remove the tokens
         hotptoken.delete_token()
         totptoken.delete_token()
-
-        # Import format not supported
-        self.assertRaises(TokenAdminError, import_tokens, "This is not a valid JSON string")
 
 class TokenOutOfBandTestCase(MyTestCase):
 

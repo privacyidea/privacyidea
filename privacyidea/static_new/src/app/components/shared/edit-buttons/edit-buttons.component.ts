@@ -1,6 +1,6 @@
-import { Component, Input, Signal, WritableSignal } from '@angular/core';
-import { MatIconButton } from '@angular/material/button';
-import { MatIcon } from '@angular/material/icon';
+import { Component, Input, Signal, WritableSignal } from "@angular/core";
+import { MatIconButton } from "@angular/material/button";
+import { MatIcon } from "@angular/material/icon";
 
 export interface EditableElement<V = unknown> {
   keyMap: { key: string };
@@ -9,10 +9,10 @@ export interface EditableElement<V = unknown> {
 }
 
 @Component({
-  selector: 'app-edit-buttons',
+  selector: "app-edit-buttons",
   imports: [MatIconButton, MatIcon],
-  templateUrl: './edit-buttons.component.html',
-  styleUrl: './edit-buttons.component.scss',
+  templateUrl: "./edit-buttons.component.html",
+  styleUrl: "./edit-buttons.component.scss"
 })
 export class EditButtonsComponent<T extends EditableElement> {
   @Input() toggleEdit!: (element: T) => void;

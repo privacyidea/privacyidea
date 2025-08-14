@@ -1,12 +1,12 @@
 import {
   TokenApiPayloadMapper,
   TokenEnrollmentData,
-  TokenEnrollmentPayload,
-} from './_token-api-payload.mapper';
-import { Injectable } from '@angular/core';
+  TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
+import { Injectable } from "@angular/core";
 
 export interface MotpEnrollmentData extends TokenEnrollmentData {
-  type: 'motp';
+  type: "motp";
   generateOnServer?: boolean;
   otpKey?: string;
   motpPin?: string;
@@ -18,10 +18,8 @@ export interface MotpEnrollmentPayload extends TokenEnrollmentPayload {
   motppin?: string;
 }
 
-@Injectable({ providedIn: 'root' })
-export class MotpApiPayloadMapper
-  implements TokenApiPayloadMapper<MotpEnrollmentData>
-{
+@Injectable({ providedIn: "root" })
+export class MotpApiPayloadMapper implements TokenApiPayloadMapper<MotpEnrollmentData> {
   toApiPayload(data: MotpEnrollmentData): MotpEnrollmentPayload {
     const payload: MotpEnrollmentPayload = {
       type: data.type,
@@ -33,7 +31,7 @@ export class MotpApiPayloadMapper
       pin: data.pin,
       otpkey: data.generateOnServer ? null : (data.otpKey ?? null),
       genkey: data.generateOnServer ? 1 : 0,
-      motppin: data.motpPin,
+      motppin: data.motpPin
     };
 
     if (payload.motppin === undefined) {

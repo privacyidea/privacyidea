@@ -102,7 +102,7 @@ class SpassTokenTestCase(MyTestCase):
         }]
 
         # Import the token
-        result = import_tokens(json.dumps(token_data))
+        result = import_tokens(token_data)
         self.assertIn("SPASS12345678", result.successful_tokens, result)
 
         # Retrieve the imported token

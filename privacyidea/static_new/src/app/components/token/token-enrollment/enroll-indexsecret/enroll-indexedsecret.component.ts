@@ -1,32 +1,29 @@
-import { Component, EventEmitter, inject, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, inject, OnInit, Output } from "@angular/core";
 import {
   FormControl,
   FormGroup,
   FormsModule,
   ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
-import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
-import {
-  TokenService,
-  TokenServiceInterface,
-} from '../../../../services/token/token.service';
+  Validators
+} from "@angular/forms";
+import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatInput } from "@angular/material/input";
+import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
-import { Observable, of } from 'rxjs';
+import { Observable, of } from "rxjs";
 import {
   EnrollmentResponse,
-  TokenEnrollmentData,
-} from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
-import { IndexedSecretApiPayloadMapper } from '../../../../mappers/token-api-payload/indexedsecret-token-api-payload.mapper';
+  TokenEnrollmentData
+} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+import { IndexedSecretApiPayloadMapper } from "../../../../mappers/token-api-payload/indexedsecret-token-api-payload.mapper";
 
 export interface IndexedSecretEnrollmentOptions extends TokenEnrollmentData {
-  type: 'indexedsecret';
+  type: "indexedsecret";
   otpKey: string;
 }
 
 @Component({
-  selector: 'app-enroll-indexedsecret',
+  selector: "app-enroll-indexedsecret",
   standalone: true,
   imports: [
     MatFormField,
@@ -34,20 +31,20 @@ export interface IndexedSecretEnrollmentOptions extends TokenEnrollmentData {
     MatLabel,
     ReactiveFormsModule,
     FormsModule,
-    MatError,
+    MatError
   ],
-  templateUrl: './enroll-indexedsecret.component.html',
-  styleUrl: './enroll-indexedsecret.component.scss',
+  templateUrl: "./enroll-indexedsecret.component.html",
+  styleUrl: "./enroll-indexedsecret.component.scss"
 })
 export class EnrollIndexedsecretComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly enrollmentMapper: IndexedSecretApiPayloadMapper = inject(
-    IndexedSecretApiPayloadMapper,
+    IndexedSecretApiPayloadMapper
   );
 
   text = this.tokenService
     .tokenTypeOptions()
-    .find((type) => type.key === 'indexedsecret')?.text;
+    .find((type) => type.key === "indexedsecret")?.text;
 
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
@@ -56,24 +53,24 @@ export class EnrollIndexedsecretComponent implements OnInit {
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
-  otpKeyControl = new FormControl<string>('', [
+  otpKeyControl = new FormControl<string>("", [
     Validators.required,
-    Validators.minLength(16),
+    Validators.minLength(16)
   ]);
 
   indexedSecretForm = new FormGroup({
-    otpKey: this.otpKeyControl,
+    otpKey: this.otpKeyControl
   });
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({
-      otpKey: this.otpKeyControl,
+      otpKey: this.otpKeyControl
     });
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
   onClickEnroll = (
-    basicOptions: TokenEnrollmentData,
+    basicOptions: TokenEnrollmentData
   ): Observable<EnrollmentResponse | null> => {
     if (this.indexedSecretForm.invalid) {
       this.indexedSecretForm.markAllAsTouched();
@@ -81,12 +78,12 @@ export class EnrollIndexedsecretComponent implements OnInit {
     }
     const enrollmentData: IndexedSecretEnrollmentOptions = {
       ...basicOptions,
-      type: 'indexedsecret',
-      otpKey: this.otpKeyControl.value ?? '',
+      type: "indexedsecret",
+      otpKey: this.otpKeyControl.value ?? ""
     };
     return this.tokenService.enrollToken({
       data: enrollmentData,
-      mapper: this.enrollmentMapper,
+      mapper: this.enrollmentMapper
     });
   };
 }

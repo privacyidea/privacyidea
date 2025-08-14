@@ -23,7 +23,10 @@ from privacyidea.cli.pitokenjanitor.utils.findtokens import findtokens
 from privacyidea.cli.pitokenjanitor.utils.importtokens import importtokens_cli
 from privacyidea.cli.pitokenjanitor.utils.updatetokens import updatetokens
 
-CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
+CONTEXT_SETTINGS = dict(
+    help_option_names=['-h', '--help'],
+    show_default=True,
+)
 
 
 @click.group(cls=NoPluginsFlaskGroup, create_app=create_silent_app, context_settings=CONTEXT_SETTINGS,

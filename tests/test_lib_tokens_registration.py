@@ -2,8 +2,6 @@
 This test file tests the lib.tokens.passwordtoken
 This depends on lib.tokenclass
 """
-import json
-
 from .base import MyTestCase
 from privacyidea.lib.tokens.registrationtoken import RegistrationTokenClass
 from privacyidea.lib.token import init_token, import_tokens, get_tokens
@@ -113,7 +111,7 @@ class RegistrationTokenTestCase(MyTestCase):
                        }]
 
         # Import the token
-        import_tokens(json.dumps(token_data))
+        import_tokens(token_data)
 
         # Retrieve the imported token
         token = get_tokens(serial=token_data[0]["serial"])[0]

@@ -1,44 +1,31 @@
-import {
-  Component,
-  computed,
-  EventEmitter,
-  inject,
-  OnInit,
-  Output,
-} from '@angular/core';
+import { Component, computed, EventEmitter, inject, OnInit, Output } from "@angular/core";
 import {
   FormControl,
   FormGroup,
   FormsModule,
   ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
-import { MatCheckbox } from '@angular/material/checkbox';
-import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
-import { Observable, of } from 'rxjs';
+  Validators
+} from "@angular/forms";
+import { MatCheckbox } from "@angular/material/checkbox";
+import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatInput } from "@angular/material/input";
+import { Observable, of } from "rxjs";
 import {
   EnrollmentResponse,
-  TokenEnrollmentData,
-} from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
-import { EmailApiPayloadMapper } from '../../../../mappers/token-api-payload/email-token-api-payload.mapper';
-import {
-  SystemService,
-  SystemServiceInterface,
-} from '../../../../services/system/system.service';
-import {
-  TokenService,
-  TokenServiceInterface,
-} from '../../../../services/token/token.service';
+  TokenEnrollmentData
+} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+import { EmailApiPayloadMapper } from "../../../../mappers/token-api-payload/email-token-api-payload.mapper";
+import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
+import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
 export interface EmailEnrollmentOptions extends TokenEnrollmentData {
-  type: 'email';
+  type: "email";
   emailAddress?: string;
   readEmailDynamically: boolean;
 }
 
 @Component({
-  selector: 'app-enroll-email',
+  selector: "app-enroll-email",
   standalone: true,
   imports: [
     MatCheckbox,
@@ -47,22 +34,22 @@ export interface EmailEnrollmentOptions extends TokenEnrollmentData {
     MatLabel,
     ReactiveFormsModule,
     FormsModule,
-    MatError,
+    MatError
   ],
-  templateUrl: './enroll-email.component.html',
-  styleUrl: './enroll-email.component.scss',
+  templateUrl: "./enroll-email.component.html",
+  styleUrl: "./enroll-email.component.scss"
 })
 export class EnrollEmailComponent implements OnInit {
   protected readonly systemService: SystemServiceInterface =
     inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly enrollmentMapper: EmailApiPayloadMapper = inject(
-    EmailApiPayloadMapper,
+    EmailApiPayloadMapper
   );
 
   text = this.tokenService
     .tokenTypeOptions()
-    .find((type) => type.key === 'email')?.text;
+    .find((type) => type.key === "email")?.text;
 
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
@@ -71,25 +58,25 @@ export class EnrollEmailComponent implements OnInit {
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
-  emailAddressControl = new FormControl<string>('', [Validators.email]);
+  emailAddressControl = new FormControl<string>("", [Validators.email]);
   readEmailDynamicallyControl = new FormControl<boolean>(false, [
-    Validators.required,
+    Validators.required
   ]);
 
   emailForm = new FormGroup({
     emailAddress: this.emailAddressControl,
-    readEmailDynamically: this.readEmailDynamicallyControl,
+    readEmailDynamically: this.readEmailDynamicallyControl
   });
 
   defaultSMTPisSet = computed(() => {
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
-    return !!cfg?.['email.identifier'];
+    return !!cfg?.["email.identifier"];
   });
 
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({
       emailAddress: this.emailAddressControl,
-      readEmailDynamically: this.readEmailDynamicallyControl,
+      readEmailDynamically: this.readEmailDynamicallyControl
     });
     this.clickEnrollChange.emit(this.onClickEnroll);
 
@@ -99,7 +86,7 @@ export class EnrollEmailComponent implements OnInit {
   }
 
   onClickEnroll = (
-    basicOptions: TokenEnrollmentData,
+    basicOptions: TokenEnrollmentData
   ): Observable<EnrollmentResponse | null> => {
     if (this.emailForm.invalid) {
       this.emailForm.markAllAsTouched();
@@ -107,15 +94,15 @@ export class EnrollEmailComponent implements OnInit {
     }
     const enrollmentData: EmailEnrollmentOptions = {
       ...basicOptions,
-      type: 'email',
-      readEmailDynamically: !!this.readEmailDynamicallyControl.value,
+      type: "email",
+      readEmailDynamically: !!this.readEmailDynamicallyControl.value
     };
     if (!enrollmentData.readEmailDynamically) {
-      enrollmentData.emailAddress = this.emailAddressControl.value ?? '';
+      enrollmentData.emailAddress = this.emailAddressControl.value ?? "";
     }
     return this.tokenService.enrollToken({
       data: enrollmentData,
-      mapper: this.enrollmentMapper,
+      mapper: this.enrollmentMapper
     });
   };
 }

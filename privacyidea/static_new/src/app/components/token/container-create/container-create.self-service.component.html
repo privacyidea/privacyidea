@@ -53,18 +53,21 @@
 
   <mat-form-field class="width-66 margin-top-1">
     <mat-label>Description</mat-label>
-    <textarea [(ngModel)]="description"
-              [maxlength]="80"
-              matInput
-              placeholder="Enter description"
-              rows="3"></textarea>
+    <textarea
+      [(ngModel)]="description"
+      [maxlength]="80"
+      matInput
+      placeholder="Enter description"
+      rows="3"></textarea>
   </mat-form-field>
 
   <div class="flex-column width-66">
     <h4 class="enroll-h4"> Use a Template</h4>
     <mat-form-field class="width-100 input-height">
       <mat-label>Template</mat-label>
-      <mat-select [(ngModel)]="selectedTemplate" disabled>
+      <mat-select
+        [(ngModel)]="selectedTemplate"
+        disabled>
         @for (option of templateOptions(); track option) {
           <mat-option [value]="option">{{ option.name }}</mat-option>
         }
@@ -84,10 +87,11 @@
         </mat-expansion-panel-header>
         <mat-form-field class="width-100">
           <mat-label>Passphrase Prompt</mat-label>
-          <textarea [(ngModel)]="passphrasePrompt"
-                    matInput
-                    placeholder="This prompt will be displayed to the user."
-                    rows="2"></textarea>
+          <textarea
+            [(ngModel)]="passphrasePrompt"
+            matInput
+            placeholder="This prompt will be displayed to the user."
+            rows="2"></textarea>
           <mat-hint class="font-14">
             Enter a passphrase prompt that will be displayed to the user. This should indicate which
             passphrase the user should enter.
@@ -95,10 +99,11 @@
         </mat-form-field>
         <mat-form-field class="width-100 margin-top-2 margin-bottom-1">
           <mat-label> Passphrase Response</mat-label>
-          <textarea [(ngModel)]="passphraseResponse"
-                    matInput
-                    placeholder="Passphrase the use has to enter to successfully register the container."
-                    rows="2"></textarea>
+          <textarea
+            [(ngModel)]="passphraseResponse"
+            matInput
+            placeholder="Passphrase the use has to enter to successfully register the container."
+            rows="2"></textarea>
           <mat-hint class="font-14">
             This is the correct answer to the passphrase prompt the user has to enter to
             successfully register the container.

@@ -14,9 +14,10 @@
     @if (!readEmailDynamicallyControl.value) {
       <mat-form-field class="input-height width-33">
         <mat-label>Email Address</mat-label>
-        <input [formControl]="emailAddressControl"
-               matInput
-               required />
+        <input
+          [formControl]="emailAddressControl"
+          matInput
+          required/>
         <mat-error>Email Address is <strong>required</strong></mat-error>
       </mat-form-field>
     } @else {

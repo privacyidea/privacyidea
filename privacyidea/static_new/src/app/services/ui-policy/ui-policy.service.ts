@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable } from "@angular/core";
 
 export interface AppConfig {
   remoteUser: string;
@@ -20,32 +20,32 @@ export interface AppConfig {
 }
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: "root"
 })
 export class UiPolicyService {
   private readonly config: AppConfig;
 
   constructor() {
-    if (typeof window !== 'undefined' && (window as any).appConfig) {
+    if (typeof window !== "undefined" && (window as any).appConfig) {
       this.config = (window as any).appConfig;
     } else {
-      console.warn('App configuration not found. Using default values.');
+      console.warn("App configuration not found. Using default values.");
       this.config = {
-        remoteUser: '',
-        forceRemoteUser: '',
+        remoteUser: "",
+        forceRemoteUser: "",
         passwordReset: false,
         hsmReady: false,
-        customization: '',
-        realms: '',
-        logo: '',
-        showNode: '',
+        customization: "",
+        realms: "",
+        logo: "",
+        showNode: "",
         externalLinks: false,
-        hasJobQueue: 'false',
-        loginText: '',
-        logoutRedirectUrl: '',
-        gdprLink: '',
-        privacyideaVersionNumber: '',
-        translationWarning: false,
+        hasJobQueue: "false",
+        loginText: "",
+        logoutRedirectUrl: "",
+        gdprLink: "",
+        privacyideaVersionNumber: "",
+        translationWarning: false
       };
     }
   }

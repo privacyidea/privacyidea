@@ -1,17 +1,17 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { TokenGetSerialComponent } from './token-get-serial.component';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { TokenGetSerialComponent } from "./token-get-serial.component";
 
-describe('TokenGetSerial', () => {
+describe("TokenGetSerial", () => {
   let component: TokenGetSerialComponent;
   let fixture: ComponentFixture<TokenGetSerialComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TokenGetSerialComponent, BrowserAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting()]
     }).compileComponents();
 
     fixture = TestBed.createComponent(TokenGetSerialComponent);
@@ -19,7 +19,7 @@ describe('TokenGetSerial', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

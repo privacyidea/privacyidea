@@ -1,18 +1,18 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { EnrollPaperComponent } from './enroll-paper.component';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { EnrollPaperComponent } from "./enroll-paper.component";
+import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
 
-describe('EnrollPaperComponent', () => {
+describe("EnrollPaperComponent", () => {
   let component: EnrollPaperComponent;
   let fixture: ComponentFixture<EnrollPaperComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollPaperComponent, BrowserAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting()]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollPaperComponent);
@@ -20,7 +20,7 @@ describe('EnrollPaperComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

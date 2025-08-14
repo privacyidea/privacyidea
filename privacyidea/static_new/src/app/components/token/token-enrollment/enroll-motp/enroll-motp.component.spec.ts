@@ -1,18 +1,18 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { EnrollMotpComponent } from './enroll-motp.component';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { EnrollMotpComponent } from "./enroll-motp.component";
+import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
 
-describe('EnrollMotpComponent', () => {
+describe("EnrollMotpComponent", () => {
   let component: EnrollMotpComponent;
   let fixture: ComponentFixture<EnrollMotpComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollMotpComponent, BrowserAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting()]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollMotpComponent);
@@ -20,7 +20,7 @@ describe('EnrollMotpComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });
