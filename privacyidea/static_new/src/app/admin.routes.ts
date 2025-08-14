@@ -12,6 +12,7 @@ import { ContainerDetailsComponent } from './components/token/container-details/
 import { UserComponent } from './components/user/user.component';
 import { UserTableComponent } from './components/user/user-table/user-table.component';
 import { UserDetailsComponent } from './components/user/user-details/user-details.component';
+import { AuditComponent } from './components/audit/audit.component';
 
 export const routes: Routes = [
   {
@@ -42,4 +43,8 @@ export const routes: Routes = [
       { path: 'details/:username', component: UserDetailsComponent },
     ],
   },
+  {
+    path: 'audit',
+    component: AuditComponent
+  }
 ];

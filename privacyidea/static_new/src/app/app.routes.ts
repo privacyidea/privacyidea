@@ -40,7 +40,6 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./self-service.routes').then((m) => m.routes),
       },
-      { path: 'audit', component: AuditComponent },
     ],
   },
   { path: '**', redirectTo: 'login' },

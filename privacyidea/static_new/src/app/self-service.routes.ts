@@ -9,6 +9,9 @@ import { ContainerCreateSelfServiceComponent } from './components/token/containe
 import { ContainerDetailsSelfServiceComponent } from './components/token/container-details/container-details.self-service.component';
 import { UserSelfServiceComponent } from './components/user/user.self-service.component';
 import { AssignTokenSelfServiceComponent } from './components/token/assign-token-self-service/assign-token-self-service.component';
+import {
+  AuditComponentSelfServiceComponent
+} from './components/audit/audit.self-service.component';
 
 export const routes: Routes = [
   {
@@ -40,4 +43,8 @@ export const routes: Routes = [
     path: 'users',
     component: UserSelfServiceComponent,
   },
+  {
+    path: 'audit',
+    component: AuditComponentSelfServiceComponent
+  }
 ];
