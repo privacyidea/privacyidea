@@ -5,7 +5,8 @@
   <h3 class="margin-left-1">Token Enrollment</h3>
   <mat-form-field class="width-100">
     <mat-select [(ngModel)]="selectedTokenType"
-                [panelClass]="'multi-column-panel'">
+                [panelClass]="'multi-column-panel'"
+                [value]="selectedTokenType()">
       @for (type of tokenService.tokenTypeOptions(); track type) {
         <mat-option class="token-type-option type-option"
                     [value]="type">{{ type.info.split(":")[0] }}

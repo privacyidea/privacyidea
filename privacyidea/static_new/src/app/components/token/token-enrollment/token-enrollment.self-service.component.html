@@ -10,7 +10,8 @@
                       subscriptSizing="dynamic">
         <mat-select [(ngModel)]="tokenService.selectedTokenType"
                     [ngModelOptions]="{ standalone: true }"
-                    [panelClass]="'multi-column-panel'">
+                    [panelClass]="'multi-column-panel'"
+                    [value]="tokenService.selectedTokenType()">
           @for (type of tokenService.tokenTypeOptions(); track type) {
             <mat-option class="token-type-option type-option"
                         [value]="type"

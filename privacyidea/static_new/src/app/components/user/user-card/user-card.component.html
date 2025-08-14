@@ -67,7 +67,8 @@
         <mat-list-item class="height-auto">
           <mat-form-field class="width-100">
             <mat-label>Select Realm of User</mat-label>
-            <mat-select [(ngModel)]="userService.selectedUserRealm">
+            <mat-select [(ngModel)]="userService.selectedUserRealm"
+                        [value]="userService.selectedUserRealm()">
               @for (option of realmService.realmOptions(); track option) {
                 <mat-option [value]="option">{{ option }}</mat-option>
               }

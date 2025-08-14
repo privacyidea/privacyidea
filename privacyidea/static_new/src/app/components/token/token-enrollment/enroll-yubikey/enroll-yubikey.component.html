@@ -12,7 +12,8 @@
     </mat-form-field>
     <mat-form-field class="input-height width-33">
       <mat-label>OTP length</mat-label>
-      <mat-select [formControl]="otpLengthControl">
+      <mat-select [formControl]="otpLengthControl"
+                  [value]="otpLengthControl.value">
         <mat-option [value]="44">44</mat-option>
       </mat-select>
     </mat-form-field>

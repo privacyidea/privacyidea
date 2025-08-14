@@ -11,6 +11,7 @@
       <mat-label>Remote Server</mat-label>
       <mat-select [errorStateMatcher]="remoteErrorStateMatcher"
                   [formControl]="remoteServerControl"
+                  [value]="remoteServerControl.value"
                   required>
         @for (option of remoteServerOptions(); track option) {
           <mat-option [value]="option">{{ option.url }}</mat-option><!-- Assuming option is the RemoteServer object -->
