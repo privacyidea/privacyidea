@@ -198,7 +198,7 @@ class TestPIManageSetupClass:
             inspector = sa.inspect(db.get_engine())
             assert "token" in inspector.get_table_names()
         runner = app.test_cli_runner()
-        result = runner.invoke(pi_manage, ["setup", "drop_tables", "-d" , "yes"])
+        result = runner.invoke(pi_manage, ["setup", "drop_tables", "-d", "yes"])
         assert "Dropping all database tables!" in result.output
         with app.app_context():
             inspector = sa.inspect(db.get_engine())
