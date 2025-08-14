@@ -66,11 +66,13 @@ h5 {
 
 ::ng-deep {
   .multi-column-panel.mat-mdc-select-panel {
-    column-count: 2;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     max-height: unset;
     column-gap: var(--third-global-padding);
     padding: var(--three-quarters-global-padding);
     padding-bottom: var(--global-padding);
+    overflow-y: auto;
   }
 }
 
@@ -84,13 +86,13 @@ h5 {
 }
 
 .sticky-header.is-sticky {
-   @include mat.elevation(3)
+  @include mat.elevation(3)
 }
 
 .sticky-controls {
   display: flex;
   align-items: center;
-  gap: calc(var(--global-padding) / 2);
+  gap: var(--global-gap);
 }
 
 .sticky-controls .mat-mdc-form-field {
@@ -102,6 +104,5 @@ h5 {
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 0 var(--global-padding);
   flex: 2;
 }

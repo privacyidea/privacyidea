@@ -47,6 +47,8 @@ body {
   --quarter-global-padding: calc(var(--global-padding) / 4);
   --eighth-global-padding: calc(var(--global-padding) / 8);
 
+  --global-gap: 16px;
+
   --light: #f3f3f3;
 
   --green-brand-base: hsl(72, 100%, 32%);
@@ -398,4 +400,8 @@ body {
 
 .content-layout {
   max-width: 81vw;
+}
+
+.hidden {
+  visibility: hidden;
 }

@@ -26,15 +26,15 @@
         <div class="enroll-button-container">
           <button [disabled]="formGroupSignal().invalid || !tokenService.selectedTokenType()"
                   [ngClass]="{'card-button-disabled': formGroupSignal().invalid || !tokenService.selectedTokenType(),
-                              'card-button': true, 'width-100': true}"
+                              'card-button': true}"
                   mat-flat-button
                   type="submit">
             <mat-icon>add</mat-icon>
             Enroll
           </button>
           <button (click)="reopenEnrollmentDialog()"
-                  [hidden]="!canReopenEnrollmentDialog()"
                   [matTooltip]="'Reopen enrollment dialog'"
+                  [ngClass]="{'hidden': !canReopenEnrollmentDialog()}"
                   mat-icon-button
                   type="button">
             <mat-icon>open_in_new</mat-icon>
