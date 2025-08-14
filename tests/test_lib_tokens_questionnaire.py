@@ -196,8 +196,6 @@ class QuestionnaireTokenTestCase(MyTestCase):
         self.assertEqual(token.token.serial, token_data[0]["serial"])
         self.assertEqual(token.type, token_data[0]["type"])
         self.assertEqual(token.token.description, token_data[0]["description"])
-        a=token.get_tokeninfo("frage1")
-        b=token_data[0]["tokeninfo"]["frage1"]
         self.assertEqual(token.get_tokeninfo("frage1"), 'antwort1')
         self.assertEqual(token.get_tokeninfo("frage2"), 'antwort2')
 
