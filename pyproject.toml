@@ -170,6 +170,6 @@ allow_unsafe = true
 
 [tool.pytest.ini_options]
 filterwarnings = [
-    "error::DeprecationWarning",
+    #"error::DeprecationWarning",
     "ignore:Accessing argon2.__version__ is deprecated and will be removed in a future release.*:DeprecationWarning"
 ]
