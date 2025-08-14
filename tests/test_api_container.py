@@ -1288,7 +1288,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
     def test_09_helpdesk_add_token_allowed(self):
         self.setUp_user_realm3()
         set_policy("policy_realm", scope=SCOPE.ADMIN,
-                   action={PolicyAction.CONTAINER_ADD_TOKEN: True, PolicyAction.CONTAINER_REMOVE_TOKEN: True}, realm=self.realm1)
+                   action=f"{PolicyAction.CONTAINER_ADD_TOKEN}=true, {PolicyAction.CONTAINER_REMOVE_TOKEN}=true", realm=self.realm1)
         set_policy("policy_resolver", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ADD_TOKEN, resolver=self.resolvername3)
         container_serial = self.create_container_for_user()
 
@@ -1325,6 +1325,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
                                              method='POST')
         token_serial = result["detail"]["serial"]
         tokens = get_tokens_paginate(serial=token_serial)
+        t = tokens["tokens"][0]
         self.assertEqual(container_serial, tokens["tokens"][0]["container_serial"])
         delete_policy("policy")
 

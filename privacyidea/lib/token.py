@@ -72,10 +72,13 @@ from typing import Union
 
 from dateutil.tz import tzlocal
 from flask import Request
+from flask_sqlalchemy.session import Session
 from sqlalchemy import (and_, func)
 from sqlalchemy import or_, select
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.sql.expression import FunctionElement
+from sqlalchemy.sql import Select
+from sqlalchemy.orm import aliased
+from sqlalchemy.sql.expression import FunctionElement, delete
 
 from privacyidea.api.lib.utils import send_result
 from privacyidea.lib import _
@@ -184,218 +187,247 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
                         serial_exact=None, serial_wildcard=None, serial_list=None, active=None, resolver=None,
                         rollout_state=None, description=None, revoked=None,
                         locked=None, userid=None, tokeninfo=None, maxfail=None, allowed_realms=None,
-                        container_serial=None, all_nodes=False):
+                        container_serial=None, all_nodes=False) -> Select:
     """
-    This function create the sql query for getting tokens. It is used by
-    get_tokens and get_tokens_paginate.
-
-    :param: assigned: Whether the token is assigned to a user
-    :type assigned: bool or None
-    :return: An SQLAlchemy sql query
+    This function create the sql query for getting tokens.
     """
-    sql_query = Token.query
+    stmt = select(Token)
     if tokentype is not None and tokentype.strip("*"):
-        # filter for type
         if "*" in tokentype:
-            # match with "like"
-            sql_query = sql_query.filter(Token.tokentype.like(
-                tokentype.lower().replace("*", "%")))
+            stmt = stmt.where(Token.tokentype.like(tokentype.lower().replace("*", "%")))
         else:
-            # exact match
-            sql_query = sql_query.filter(func.lower(Token.tokentype) == tokentype.lower())
+            stmt = stmt.where(func.lower(Token.tokentype) == tokentype.lower())
 
-    if token_type_list is not None and len(token_type_list) > 0:
-        # filter for all token types in the list
-        sql_query = sql_query.filter(Token.tokentype.in_([t.lower() for t in token_type_list]))
+    if token_type_list:
+        stmt = stmt.where(Token.tokentype.in_([t.lower() for t in token_type_list]))
 
     if description is not None and description.strip("*"):
-        # filter for Description
         if "*" in description:
-            # match with "like"
-            sql_query = sql_query.filter(func.lower(Token.description).like(
-                description.lower().replace("*", "%")))
+            stmt = stmt.where(func.lower(Token.description).like(description.lower().replace("*", "%")))
         else:
-            # exact match
-            sql_query = sql_query.filter(func.lower(Token.description) == description.lower())
+            stmt = stmt.where(func.lower(Token.description) == description.lower())
+
+    realm3 = aliased(Realm)
+    stmt = stmt.outerjoin(TokenRealm, TokenRealm.token_id == Token.id)
+    stmt = stmt.outerjoin(realm3, TokenRealm.realm_id == realm3.id)
 
     stripped_realm = None if realm is None else realm.strip("*")
-    if stripped_realm or allowed_realms:
-        sql_query = sql_query.outerjoin(TokenRealm, TokenRealm.token_id == Token.id)
     if stripped_realm:
-        # filter for the realm
         if "*" in realm:
-            sql_query = sql_query.filter(
+            stmt = stmt.where(
                 TokenRealm.realm_id.in_(
-                    select(Realm.id).where(func.lower(Realm.name).like(realm.replace('*', '%').lower()))))
+                    select(realm3.id).where(func.lower(realm3.name).like(realm.replace("*", "%").lower()))
+                )
+            )
         else:
-            # exact matching
-            sql_query = sql_query.filter(
-                TokenRealm.realm_id == (select(Realm.id).where(Realm.name == realm).scalar_subquery()))
+            stmt = stmt.where(
+                TokenRealm.realm_id == select(realm3.id).where(
+                    func.lower(realm3.name) == realm.lower()).scalar_subquery()
+            )
 
-    if allowed_realms is not None:
-        sql_query = sql_query.filter(
-            TokenRealm.realm_id.in_(select(Realm.id).where(func.lower(Realm.name).in_(allowed_realms))))
+    if allowed_realms:
+        stmt = stmt.where(
+            TokenRealm.realm_id.in_(
+                select(realm3.id).where(func.lower(realm3.name).in_([r.lower() for r in allowed_realms]))
+            )
+        )
 
     stripped_resolver = None if resolver is None else resolver.strip("*")
     stripped_userid = None if userid is None else userid.strip("*")
 
     if stripped_userid or stripped_resolver or user is not None or assigned is not None or not all_nodes:
-        # Join the search with the token owner
-        sql_query = sql_query.outerjoin(TokenOwner, Token.id == TokenOwner.token_id)
+        stmt = stmt.outerjoin(TokenOwner, Token.id == TokenOwner.token_id)
 
     if assigned is not None:
-        # filter if assigned or not
         if assigned:
-            sql_query = sql_query.where(TokenOwner.id.is_not(None))
+            stmt = stmt.where(TokenOwner.id.is_not(None))
         else:
-            sql_query = sql_query.where(TokenOwner.id.is_(None))
+            stmt = stmt.where(TokenOwner.id.is_(None))
 
     if stripped_resolver:
-        # filter for given resolver
         if "*" in resolver:
-            # match with "like"
-            sql_query = sql_query.filter(TokenOwner.resolver.like(resolver.replace(
-                "*", "%")))
+            stmt = stmt.where(TokenOwner.resolver.like(resolver.replace("*", "%")))
         else:
-            sql_query = sql_query.filter(TokenOwner.resolver == resolver)
+            stmt = stmt.where(TokenOwner.resolver == resolver)
 
     if stripped_userid:
-        # filter for given userid
         if "*" in userid:
-            # match with "like"
-            sql_query = sql_query.filter(TokenOwner.user_id.like(userid.replace(
-                "*", "%")))
+            stmt = stmt.where(TokenOwner.user_id.like(userid.replace("*", "%")))
         else:
-            sql_query = sql_query.filter(TokenOwner.user_id == userid)
+            stmt = stmt.where(TokenOwner.user_id == userid)
 
     if serial_wildcard is not None and serial_wildcard.strip("*"):
-        # filter for serial
-        # match with "like"
-        sql_query = sql_query.filter(Token.serial.like(serial_wildcard.replace(
-            "*", "%")))
+        stmt = stmt.where(Token.serial.like(serial_wildcard.replace("*", "%")))
 
     if serial_exact is not None:
-        # exact match for serial
-        sql_query = sql_query.filter(Token.serial == serial_exact)
+        stmt = stmt.where(Token.serial == serial_exact)
 
-    if serial_list is not None and len(serial_list) > 0:
-        # filter for all serials in the list
-        sql_query = sql_query.filter(Token.serial.in_(serial_list))
+    if serial_list:
+        stmt = stmt.where(Token.serial.in_(serial_list))
+        if user is not None and not user.is_empty():
+            if user.realm:
+                realm_db = select(realm3.id).where(func.lower(realm3.name) == user.realm.lower()).scalar_subquery()
+                stmt = stmt.where(TokenOwner.realm_id == realm_db)
+            if user.resolver:
+                stmt = stmt.where(TokenOwner.resolver == user.resolver)
+            (uid, _rtype, _resolver) = user.get_user_identifiers()
+            if uid:
+                if isinstance(uid, int):
+                    uid = str(uid)
+                stmt = stmt.where(TokenOwner.user_id == uid)
 
+        if active is not None:
+            stmt = stmt.where(Token.active.is_(True) if active else Token.active.is_(False))
+
+        if revoked is not None:
+            stmt = stmt.where(Token.revoked.is_(True) if revoked else Token.revoked.is_(False))
+
+        if locked is not None:
+            stmt = stmt.where(Token.locked.is_(True) if locked else Token.locked.is_(False))
+
+        if maxfail is not None:
+            if maxfail is True:
+                stmt = stmt.where(Token.maxfail <= Token.failcount)
+            else:
+                stmt = stmt.where(Token.maxfail > Token.failcount)
+
+        if rollout_state is not None and rollout_state.strip("*"):
+            if "*" in rollout_state:
+                stmt = stmt.where(func.lower(Token.rollout_state).like(rollout_state.lower().replace("*", "%")))
+            else:
+                stmt = stmt.where(func.lower(Token.rollout_state) == rollout_state.lower())
+
+        if tokeninfo is not None:
+            if len(tokeninfo) != 1:
+                raise privacyIDEAError(_("I can only create SQL filters from tokeninfo of length 1."))
+            key = list(tokeninfo)[0]
+            value = list(tokeninfo.values())[0]
+            stmt = stmt.outerjoin(TokenInfo, TokenInfo.token_id == Token.id)
+            stmt = stmt.where(TokenInfo.Key == key)
+            stmt = stmt.where(clob_to_varchar(TokenInfo.Value) == value)
+
+        if container_serial is not None:
+            stmt = stmt.outerjoin(TokenContainerToken, TokenContainerToken.token_id == Token.id)
+            if container_serial == "":
+                stmt = stmt.where(TokenContainerToken.container_id.is_(None))
+            else:
+                container_id_subq = select(TokenContainer.id).where(
+                    func.upper(TokenContainer.serial) == container_serial.upper()
+                ).scalar_subquery()
+                stmt = stmt.where(TokenContainerToken.container_id == container_id_subq)
+
+        if not all_nodes:
+            local_node_uuid = get_app_config_value("PI_NODE_UUID")
+            realms = get_realms()
+            resolvers = []
+            realms_to_filter = []
+            for realm_name, realm in realms.items():
+                added = False
+                for res in realm.get("resolver"):
+                    if res.get("name"):
+                        if not res.get("node") or res["node"] == local_node_uuid:
+                            resolvers.append(res.get("name"))
+                            added = True
+                if not added:
+                    realms_to_filter.append(realm_name)
+
+            stmt = stmt.where(or_(TokenOwner.id.is_(None), TokenOwner.resolver.in_(resolvers)))
+            realm1 = aliased(Realm)
+            stmt = stmt.outerjoin(realm1, TokenOwner.realm_id == realm1.id)
+            tokenowner_realm_joined = True
+            stmt = stmt.where(or_(
+                TokenOwner.realm_id.is_(None),
+                and_(
+                    func.lower(realm1.name).not_in([r.lower() for r in realms_to_filter]),
+                    TokenOwner.realm_id == realm1.id,
+                    TokenOwner.token_id == Token.id
+                )
+            ))
     if user is not None and not user.is_empty():
         if user.realm:
-            realm_db = Realm.query.filter(func.lower(Realm.name) == user.realm.lower()).first()
-            if realm_db:
-                sql_query = sql_query.filter(TokenOwner.realm_id == realm_db.id)
-            else:
-                log.warning(f"The users realm {user.realm} does not exist. Ignoring it as filter parameter.")
+            realm_db = select(realm3.id).where(func.lower(realm3.name) == user.realm.lower()).scalar_subquery()
+            stmt = stmt.where(TokenOwner.realm_id == realm_db)
         if user.resolver:
-            sql_query = sql_query.filter(TokenOwner.resolver == user.resolver)
+            stmt = stmt.where(TokenOwner.resolver == user.resolver)
         (uid, _rtype, _resolver) = user.get_user_identifiers()
         if uid:
             if isinstance(uid, int):
                 uid = str(uid)
-            sql_query = sql_query.filter(TokenOwner.user_id == uid)
+            stmt = stmt.where(TokenOwner.user_id == uid)
 
     if active is not None:
-        # Filter active or inactive tokens
-        if active is True:
-            sql_query = sql_query.where(Token.active == True)
-        else:
-            sql_query = sql_query.where(Token.active == False)
+        stmt = stmt.where(Token.active.is_(True) if active else Token.active.is_(False))
 
     if revoked is not None:
-        # Filter revoked or not revoked tokens
-        if revoked is True:
-            sql_query = sql_query.where(Token.revoked == True)
-        else:
-            sql_query = sql_query.where(Token.revoked == False)
+        stmt = stmt.where(Token.revoked.is_(True) if revoked else Token.revoked.is_(False))
 
     if locked is not None:
-        # Filter revoked or not revoked tokens
-        if locked is True:
-            sql_query = sql_query.where(Token.locked == True)
-        else:
-            sql_query = sql_query.where(Token.locked == False)
+        stmt = stmt.where(Token.locked.is_(True) if locked else Token.locked.is_(False))
 
     if maxfail is not None:
-        # Filter tokens, that reached maxfail
         if maxfail is True:
-            sql_query = sql_query.filter(Token.maxfail <= Token.failcount)
+            stmt = stmt.where(Token.maxfail <= Token.failcount)
         else:
-            sql_query = sql_query.filter(Token.maxfail > Token.failcount)
+            stmt = stmt.where(Token.maxfail > Token.failcount)
 
     if rollout_state is not None and rollout_state.strip("*"):
-        # Filter for tokens with the given rollout state
         if "*" in rollout_state:
-            # match with "like"
-            sql_query = sql_query.filter(func.lower(Token.rollout_state).like(
-                rollout_state.lower().replace("*", "%")))
+            stmt = stmt.where(func.lower(Token.rollout_state).like(rollout_state.lower().replace("*", "%")))
         else:
-            # exact match
-            sql_query = sql_query.filter(func.lower(Token.rollout_state) == rollout_state.lower())
+            stmt = stmt.where(func.lower(Token.rollout_state) == rollout_state.lower())
 
     if tokeninfo is not None:
-        # Filter for tokens with token.info.<key> and token.info.<value>
         if len(tokeninfo) != 1:
-            raise privacyIDEAError(_("I can only create SQL filters from "
-                                     "tokeninfo of length 1."))
-        sql_query = sql_query.filter(TokenInfo.Key == list(tokeninfo)[0])
-        sql_query = sql_query.filter(clob_to_varchar(TokenInfo.Value) == list(tokeninfo.values())[0])
-        sql_query = sql_query.filter(TokenInfo.token_id == Token.id)
+            raise privacyIDEAError(_("I can only create SQL filters from tokeninfo of length 1."))
+        key = list(tokeninfo)[0]
+        value = list(tokeninfo.values())[0]
+        stmt = stmt.outerjoin(TokenInfo, TokenInfo.token_id == Token.id)
+        stmt = stmt.where(TokenInfo.Key == key)
+        stmt = stmt.where(clob_to_varchar(TokenInfo.Value) == value)
 
     if container_serial is not None:
+        stmt = stmt.outerjoin(TokenContainerToken, TokenContainerToken.token_id == Token.id)
         if container_serial == "":
-            sql_query = (sql_query.outerjoin(TokenContainerToken)
-                         .filter(TokenContainerToken.container_id.is_(None)))
+            stmt = stmt.where(TokenContainerToken.container_id.is_(None))
         else:
-            container = TokenContainer.query.filter(
-                func.upper(TokenContainer.serial) == container_serial.upper()).first()
-            if container is None:
-                raise privacyIDEAError(_("No container with the serial {container_serial} "
-                                         "exists.").format(container_serial=container_serial))
-            token_container_token = TokenContainerToken.query.filter(
-                TokenContainerToken.container_id == container.id).all()
-            token_ids = [token_id.token_id for token_id in token_container_token]
-            sql_query = sql_query.filter(Token.id.in_(token_ids))
+            container_id_subq = select(TokenContainer.id).where(
+                func.upper(TokenContainer.serial) == container_serial.upper()
+            ).scalar_subquery()
+            stmt = stmt.where(TokenContainerToken.container_id == container_id_subq)
 
-    # Node specific resolver configuration.
     if not all_nodes:
         local_node_uuid = get_app_config_value("PI_NODE_UUID")
         realms = get_realms()
         resolvers = []
         realms_to_filter = []
-        # Gather all resolvers which are available on this node and all realms
-        # which don't have resolvers on this node
         for realm_name, realm in realms.items():
             added = False
             for res in realm.get("resolver"):
                 if res.get("name"):
                     if not res.get("node") or res["node"] == local_node_uuid:
-                        # Add the resolver to the list if there is either no node
-                        # specified or the node matches the local node
                         resolvers.append(res.get("name"))
                         added = True
             if not added:
-                # If no resolvers from this realm were added, this realm should be
-                # ignored as well
                 realms_to_filter.append(realm_name)
 
-        # Filter out resolvers that are not available on this specific node
-        sql_query = sql_query.filter(or_(TokenOwner.id.is_(None),
-                                         TokenOwner.resolver.in_(resolvers)))
-
-        # Filter out realms that have no active resolvers on this specific node
-        # We need to check if either no TokenOwner.realm_id is given or if it
-        # matches the realm IDs of the realms in `realms_to_filter`
-        sql_query = sql_query.outerjoin(Realm, TokenOwner.realm_id == Realm.id)
-        sql_query = sql_query.filter(or_(
+        stmt = stmt.where(or_(TokenOwner.id.is_(None), TokenOwner.resolver.in_(resolvers)))
+        #if not tokenowner_realm_joined:
+        realm2 = aliased(Realm)
+        stmt = stmt.outerjoin(realm2, TokenOwner.realm_id == realm2.id)
+        stmt = stmt.where(or_(
             TokenOwner.realm_id.is_(None),
-            and_(func.lower(Realm.name).not_in([r.lower() for r in realms_to_filter]),
-                 TokenOwner.realm_id == Realm.id,
-                 TokenOwner.token_id == Token.id)))
+            and_(
+                func.lower(realm2.name).not_in([r.lower() for r in realms_to_filter]),
+                TokenOwner.realm_id == realm2.id,
+                TokenOwner.token_id == Token.id
+            )
+        ))
 
-    return sql_query
+    #print("----------------------------- CREATE TOKEN QUERY -----------------------------")
+    #from sqlalchemy.dialects import postgresql
+    #print(stmt.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))
+    #print("-------------------------------------------------------------------------------")
+    return stmt
 
 
 def get_tokens_paginated_generator(tokentype=None, realm=None, assigned=None, user=None,
@@ -413,6 +445,7 @@ def get_tokens_paginated_generator(tokentype=None, realm=None, assigned=None, us
     :param assigned: Whether the token is assigned to a user
     :type assigned: bool or None
     :return: This is a generator that generates non-empty lists of token objects.
+    """
     """
     main_sql_query = _create_token_query(tokentype=tokentype, realm=realm,
                                          assigned=assigned, user=user,
@@ -439,7 +472,34 @@ def get_tokens_paginated_generator(tokentype=None, realm=None, assigned=None, us
             sql_query = main_sql_query.filter(Token.id > token.id).limit(psize)
         else:
             break
+    """
+    session = db.session
+    main_sql_query = _create_token_query(
+        tokentype=tokentype, realm=realm, assigned=assigned, user=user,
+        serial_wildcard=serial_wildcard, active=active, resolver=resolver,
+        rollout_state=rollout_state, revoked=revoked, locked=locked,
+        tokeninfo=tokeninfo, maxfail=maxfail
+    ).order_by(Token.id)
 
+    last_id = None
+    while True:
+        sql_query = main_sql_query
+        if last_id is not None:
+            sql_query = sql_query.where(Token.id > last_id)
+        sql_query = sql_query.limit(psize)
+        tokens = session.execute(sql_query).scalars().all()
+        if tokens:
+            token_objects = []
+            for token in tokens:
+                token_obj = create_tokenclass_object(token)
+                if isinstance(token_obj, TokenClass):
+                    token_objects.append(token_obj)
+            yield token_objects
+            if len(tokens) < psize:
+                break
+            last_id = tokens[-1].id
+        else:
+            break
 
 def convert_token_objects_to_dicts(tokens, user, user_role="user", allowed_realms=None, hidden_token_info=None):
     """
@@ -564,7 +624,6 @@ def get_tokens(tokentype=None, token_type_list=None, realm=None, assigned=None, 
     :return: A list of lib.tokenclass objects.
     :rtype: list or int
     """
-    token_list = []
     serial_list = None
     if serial and "*" not in serial and "," in serial:
         serial_list = serial.replace(" ", "").split(",")
@@ -583,7 +642,7 @@ def get_tokens(tokentype=None, token_type_list=None, realm=None, assigned=None, 
     # Warning for unintentional wildcard serial matches
     if serial_wildcard is not None and "*" not in serial_wildcard:
         log.info("Wildcard match on serial without a wildcard: {!r}".format(serial_wildcard))
-
+    """
     # Decide, what we are supposed to return
     if count is True:
         ret = sql_query.count()
@@ -598,7 +657,22 @@ def get_tokens(tokentype=None, token_type_list=None, realm=None, assigned=None, 
                 # add None to our list
                 token_list.append(tokenobject)
         ret = token_list
+    """
 
+    session: Session = db.session  # or however your session is accessed
+
+    if count:
+        ret = session.execute(
+            select(func.count()).select_from(sql_query.subquery())
+        ).scalar_one()
+    else:
+        tokens = session.execute(sql_query).scalars().all()
+        token_list = []
+        for token in tokens:
+            token = create_tokenclass_object(token)
+            if isinstance(token, TokenClass):
+                token_list.append(token)
+        ret = token_list
     return ret
 
 
@@ -656,14 +730,14 @@ def get_tokens_paginate(tokentype=None, token_type_list=None, realm=None, assign
     if serial and "*" not in serial and "," in serial:
         serial_list = serial.replace(" ", "").split(",")
         serial = None
-    sql_query = _create_token_query(tokentype=tokentype, token_type_list=token_type_list, realm=realm,
+    sql_query: Select = _create_token_query(tokentype=tokentype, token_type_list=token_type_list, realm=realm,
                                     assigned=assigned, user=user,
                                     serial_wildcard=serial, serial_list=serial_list, active=active,
                                     resolver=resolver, tokeninfo=tokeninfo,
                                     rollout_state=rollout_state,
                                     description=description, userid=userid,
                                     allowed_realms=allowed_realms, container_serial=container_serial)
-
+    """
     if isinstance(sortby, str):
         # check that the sort column exists and convert it to a Token column
         cols = Token.__table__.columns
@@ -729,7 +803,78 @@ def get_tokens_paginate(tokentype=None, token_type_list=None, realm=None, assign
            "current": page,
            "count": pagination.total}
     return ret
+    """
+    if isinstance(sortby, str):
+        cols = Token.__table__.columns
+        if sortby in cols:
+            sortby = cols.get(sortby)
+        else:
+            log.warning(f'Unknown sort column "{sortby}". Using "serial" instead.')
+            sortby = Token.serial
 
+    if sortdir == "desc":
+        sql_query = sql_query.order_by(sortby.desc())
+    else:
+        sql_query = sql_query.order_by(sortby.asc())
+
+    offset = (page - 1) * psize
+    sql_query = sql_query.limit(psize).offset(offset)
+
+    session: Session = db.session
+
+    tokens = session.execute(sql_query).scalars().all()
+    token_list = []
+    for token in tokens:
+        # TODO first creating the object and then converting it to a dict, probably not efficient
+        token = create_tokenclass_object(token)
+        if isinstance(token, TokenClass):
+            token_dict = token.get_as_dict()
+            # add user information
+            # In certain cases the LDAP or SQL server might not be reachable.
+            # Then an exception is raised
+            token_dict["username"] = ""
+            token_dict["user_realm"] = ""
+            try:
+                user = token.user
+                if user:
+                    token_dict["username"] = user.login
+                    token_dict["user_realm"] = user.realm
+                    token_dict["user_editable"] = get_resolver_object(
+                        user.resolver).editable
+            except Exception as ex:
+                log.error(f"User information can not be retrieved: {ex!r}")
+                log.debug(traceback.format_exc())
+                token_dict["username"] = "**resolver error**"
+
+            if hidden_tokeninfo:
+                for key in list(token_dict['info']):
+                    if key in hidden_tokeninfo:
+                        token_dict['info'].pop(key)
+
+            # check if token is in a container
+            token_dict["container_serial"] = ""
+            from privacyidea.lib.container import find_container_for_token
+            container = find_container_for_token(token.get_serial())
+            if container:
+                token_dict["container_serial"] = container.serial
+
+            token_list.append(token_dict)
+
+    # Get total count for pagination
+    total_count = session.execute(
+        select(func.count()).select_from(sql_query.with_only_columns(Token.id).order_by(None).subquery())
+    ).scalar_one()
+
+    previous_page = page - 1 if page > 1 else None
+    next_page = page + 1 if offset + psize < total_count else None
+
+    ret = {
+        "tokens": token_list,
+        "prev": previous_page,
+        "next": next_page,
+        "count": total_count
+    }
+    return ret
 
 def get_one_token(*args, silent_fail=False, **kwargs):
     """
@@ -1179,14 +1324,21 @@ def gen_serial(tokentype: str, prefix: str = None) -> str:
             return "{0!s}{1!s}{2!s}".format(prefix, num_str, h_serial)
 
     # now search the number of tokens of tokenytype in the token database
-    tokennum = Token.query.filter(Token.tokentype == tokentype).count()
+    #tokennum = Token.query.filter(Token.tokentype == tokentype).count()
+    session = db.session
+    tokennum = session.execute(
+        select(func.count()).select_from(Token).where(Token.tokentype == tokentype)
+    ).scalar_one()
 
     # Now create the serial
     serial = _gen_serial(tokennum)
 
     # now test if serial already exists
     while True:
-        numtokens = Token.query.filter(Token.serial == serial).count()
+        #numtokens = Token.query.filter(Token.serial == serial).count()
+        numtokens = session.execute(
+            select(func.count()).select_from(Token).where(Token.serial == serial)
+        ).scalar_one()
         if numtokens == 0:
             # ok, there is no such token, so we're done
             break
@@ -1514,8 +1666,12 @@ def unassign_token(serial, user=None):
 
         try:
             # Delete the tokenowner entry
-            TokenOwner.query.filter(TokenOwner.token_id == token.token.id).delete()
-            token.save()
+            #TokenOwner.query.filter(TokenOwner.token_id == token.token.id).delete()
+            #token.save()
+            session = db.session
+            stmt = delete(TokenOwner).where(TokenOwner.token_id == token.token.id)
+            session.execute(stmt)
+            session.commit()
         except Exception as e:  # pragma: no cover
             log.error('update token DB failed')
             raise TokenAdminError(_("Token unassign failed for") + f" {serial!r}/{user!r}: {e!r}", id=1105)
@@ -2647,7 +2803,11 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
 
                     # Clean up all challenges with this transaction_id
                     transaction_id = options.get("transaction_id") or options.get("state")
-                    Challenge.query.filter(Challenge.transaction_id == '' + transaction_id).delete()
+                    #Challenge.query.filter(Challenge.transaction_id == '' + transaction_id).delete()
+                    session = db.session
+                    stmt = delete(Challenge).where(Challenge.transaction_id == str(transaction_id))
+                    session.execute(stmt)
+                    session.commit()
                     # Authentication is successful, stop here
                     break
 
@@ -2866,13 +3026,25 @@ def list_tokengroups(tokengroup=None):
     :return:
     """
     tg = None
+    """
     if tokengroup:
         tg = Tokengroup.query.filter_by(name=tokengroup).first()
     if tg:
         tgs = TokenTokengroup.query.filter_by(tokengroup_id=tg.id).all()
     else:
         tgs = TokenTokengroup.query.all()
+    """
+    session = db.session
+    if tokengroup:
+        stmt = select(Tokengroup).where(Tokengroup.name == tokengroup)
+        tg = session.execute(stmt).scalar_one_or_none()
 
+    if tg:
+        stmt = select(TokenTokengroup).where(TokenTokengroup.tokengroup_id == tg.id)
+        tgs = session.execute(stmt).scalars().all()
+    else:
+        stmt = select(TokenTokengroup)
+        tgs = session.execute(stmt).scalars().all()
     return tgs
 
 
@@ -2925,11 +3097,6 @@ def regenerate_enroll_url(serial: str, request: Request, g) -> Union[str, None]:
     Returns the enroll URL for a token with the given serial number that is already enrolled.
     Loads the configurations from the policies.
     If the rollout state of a token is 'enrolled' None is returned.
-
-    :param serial: The serial number of the token
-    :param request: The request object
-    :param g: The g object
-    :return: The enroll URL or None
     """
     token = get_one_token(serial=serial)
     token_owner = token.user or User()
@@ -2963,8 +3130,7 @@ def regenerate_enroll_url(serial: str, request: Request, g) -> Union[str, None]:
     enroll_url = token.get_enroll_url(token_owner, params)
 
     # Check post policies
-    init_result = {}
-    init_result[token.get_serial()] = {"type": token.get_type()}
+    init_result = {token.get_serial(): {"type": token.get_type()}}
     init_result[token.get_serial()].update(token.get_init_detail(params, token_owner))
     try:
         response = send_result(True, details=init_result[token.get_serial()])
@@ -2978,8 +3144,6 @@ def regenerate_enroll_url(serial: str, request: Request, g) -> Union[str, None]:
 def export_tokens(tokens: list[TokenClass]) -> str:
     """
     Takes a list of tokens and returns an exportable JSON string.
-    :param tokens: list of token objects
-    :return: JSON string representing a list of token dictionaries
     """
     exported_tokens = [token.export_token() for token in tokens]
 
@@ -2990,8 +3154,6 @@ def export_tokens(tokens: list[TokenClass]) -> str:
 def import_tokens(tokens: str, update_existing_tokens: bool = True) -> TokenImportResult:
     """
     Import a list of token dictionaries.
-    :param tokens: JSON string representing a list of token dictionaries
-    :return: list of token objects
     """
     successful_tokens = []
     updated_tokens = []

@@ -255,7 +255,10 @@ class Audit(AuditBase):
             conditions.append(LogEntry.date >= datetime.datetime.now() -
                               timelimit)
         # Combine them with or to a BooleanClauseList
-        filter_condition = and_(*conditions)
+        if conditions:
+            filter_condition = and_(*conditions)
+        else:
+            filter_condition = and_(True, *conditions)
         return filter_condition
 
     def get_total(self, param, AND=True, display_error=True, timelimit=None):
@@ -474,7 +477,10 @@ class Audit(AuditBase):
             conditions.append(LogEntry.date >= datetime.datetime.now() -
                               timedelta)
 
-        filter_condition = and_(*conditions)
+        if conditions:
+            filter_condition = and_(*conditions)
+        else:
+            filter_condition = and_(True, *conditions)
         log_count = self.session.query(LogEntry).filter(filter_condition).count()
 
         return log_count
