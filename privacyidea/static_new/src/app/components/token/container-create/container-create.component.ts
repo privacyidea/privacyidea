@@ -1,4 +1,13 @@
-import {Component, effect, ElementRef, inject, Renderer2, signal, untracked, ViewChild} from "@angular/core";
+import {
+  Component,
+  effect,
+  ElementRef,
+  inject,
+  Renderer2,
+  signal,
+  untracked,
+  ViewChild
+} from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatButton, MatIconButton } from "@angular/material/button";
@@ -38,7 +47,7 @@ import { ContainerRegistrationDialogComponent } from "./container-registration-d
 import { Router } from "@angular/router";
 import { MatTooltip } from "@angular/material/tooltip";
 import { ROUTE_PATHS } from "../../../app.routes";
-import {NgClass} from '@angular/common';
+import { NgClass } from "@angular/common";
 
 export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
 
@@ -96,9 +105,9 @@ export class ContainerCreateComponent {
   registerResponse = signal<PiResponse<ContainerRegisterData> | null>(null);
   pollResponse = signal<any>(null);
 
-  @ViewChild('scrollContainer') scrollContainer!: ElementRef<HTMLElement>;
-  @ViewChild('stickyHeader') stickyHeader!: ElementRef<HTMLElement>;
-  @ViewChild('stickySentinel') stickySentinel!: ElementRef<HTMLElement>;
+  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
+  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
+  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
 
   constructor(protected registrationDialog: MatDialog) {
     effect(() => {
@@ -126,7 +135,7 @@ export class ContainerCreateComponent {
 
     const options = {
       root: this.scrollContainer.nativeElement,
-      threshold: [0, 1],
+      threshold: [0, 1]
     };
 
     this.observer = new IntersectionObserver(([entry]) => {
@@ -135,9 +144,9 @@ export class ContainerCreateComponent {
       const isSticky = entry.boundingClientRect.top < entry.rootBounds.top;
 
       if (isSticky) {
-        this.renderer.addClass(this.stickyHeader.nativeElement, 'is-sticky');
+        this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
       } else {
-        this.renderer.removeClass(this.stickyHeader.nativeElement, 'is-sticky');
+        this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
       }
     }, options);
 

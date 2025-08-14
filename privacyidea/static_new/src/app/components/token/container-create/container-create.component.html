@@ -1,54 +1,61 @@
-<div #scrollContainer
-     aria-label="Create Container"
-     class="container-create-container">
+<div
+  #scrollContainer
+  aria-label="Create Container"
+  class="container-create-container">
   <h3 class="margin-left-1">Create a New Container</h3>
-    <div #stickySentinel></div>
-    <div #stickyHeader
-         class="sticky-header">
-      <div class="sticky-controls ali-center">
-        <div class="select-container-type">
-          <mat-form-field class="width-100"
-                          subscriptSizing="dynamic">
-            <mat-select [(ngModel)]="containerService.selectedContainerType"
-                        [ngModelOptions]="{ standalone: true }"
-                        [panelClass]="'single-column-panel'">
-              @for (type of containerService.containerTypeOptions(); track type) {
-                <mat-option class="select-option type-option"
-                            [value]="type">{{ type.description }}
-                </mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-        </div>
-        <div class="enroll-button-container">
-          <button (click)="createContainer()"
-                  class="card-button"
-                  mat-flat-button>
-            <mat-icon>add</mat-icon>
-            Create
-          </button>
-          <button (click)="reopenEnrollmentDialog()"
-                  [matTooltip]="'Reopen enrollment dialog'"
-                  [ngClass]="{'hidden': !registerResponse()}"
-                  mat-icon-button
-                  type="button">
-            <mat-icon>open_in_new</mat-icon>
-          </button>
-        </div>
+  <div #stickySentinel></div>
+  <div
+    #stickyHeader
+    class="sticky-header">
+    <div class="sticky-controls ali-center">
+      <div class="select-container-type">
+        <mat-form-field
+          class="width-100"
+          subscriptSizing="dynamic">
+          <mat-select
+            [(ngModel)]="containerService.selectedContainerType"
+            [ngModelOptions]="{ standalone: true }"
+            [panelClass]="'single-column-panel'">
+            @for (type of containerService.containerTypeOptions(); track type) {
+              <mat-option
+                class="select-option type-option"
+                [value]="type">{{ type.description }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="enroll-button-container">
+        <button
+          (click)="createContainer()"
+          class="card-button"
+          mat-flat-button>
+          <mat-icon>add</mat-icon>
+          Create
+        </button>
+        <button
+          (click)="reopenEnrollmentDialog()"
+          [matTooltip]="'Reopen enrollment dialog'"
+          [ngClass]="{'hidden': !registerResponse()}"
+          mat-icon-button
+          type="button">
+          <mat-icon>open_in_new</mat-icon>
+        </button>
       </div>
     </div>
+  </div>
 
-    <div class="container-type-hint">
-      Supported Token Types:
-      @if (containerService.selectedContainerType().token_types.length >=
-      tokenService.tokenTypeOptions().length) {
-        All
-      } @else if (containerService.selectedContainerType().token_types.length > 1) {
-        {{ containerService.selectedContainerType().token_types.join(", ") }}
-      } @else {
-        {{ containerService.selectedContainerType().token_types[0] }}
-      }
-    </div>
+  <div class="container-type-hint">
+    Supported Token Types:
+    @if (containerService.selectedContainerType().token_types.length >=
+    tokenService.tokenTypeOptions().length) {
+      All
+    } @else if (containerService.selectedContainerType().token_types.length > 1) {
+      {{ containerService.selectedContainerType().token_types.join(", ") }}
+    } @else {
+      {{ containerService.selectedContainerType().token_types[0] }}
+    }
+  </div>
 
   <mat-form-field class="width-66 margin-top-1">
     <mat-label>Description</mat-label>

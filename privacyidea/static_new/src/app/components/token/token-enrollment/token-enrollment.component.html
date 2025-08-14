@@ -1,23 +1,29 @@
-<div #scrollContainer
-     aria-label="Token Enrollment"
-     class="token-enrollment-container">
+<div
+  #scrollContainer
+  aria-label="Token Enrollment"
+  class="token-enrollment-container">
   <h3 class="margin-left-1"> Enroll a New Token </h3>
-  <form (ngSubmit)="enrollToken()"
-        [formGroup]="formGroupSignal()">
+  <form
+    (ngSubmit)="enrollToken()"
+    [formGroup]="formGroupSignal()">
     <div #stickySentinel></div>
-    <div #stickyHeader
-         class="sticky-header">
+    <div
+      #stickyHeader
+      class="sticky-header">
       <div class="sticky-controls ali-center">
         <div class="select-token-type-container">
-          <mat-form-field class="width-100"
-                          subscriptSizing="dynamic">
-            <mat-select [(ngModel)]="tokenService.selectedTokenType"
-                        [ngModelOptions]="{ standalone: true }"
-                        [panelClass]="'multi-column-panel'">
+          <mat-form-field
+            class="width-100"
+            subscriptSizing="dynamic">
+            <mat-select
+              [(ngModel)]="tokenService.selectedTokenType"
+              [ngModelOptions]="{ standalone: true }"
+              [panelClass]="'multi-column-panel'">
               @for (type of tokenService.tokenTypeOptions(); track type) {
-                <mat-option class="select-option type-option"
-                            [value]="type"
-                            [matTooltip]="type.info.split(':')[1]">{{ type.info.split(":")[0] }}
+                <mat-option
+                  class="select-option type-option"
+                  [value]="type"
+                  [matTooltip]="type.info.split(':')[1]">{{ type.info.split(":")[0] }}
                 </mat-option>
               }
             </mat-select>
@@ -36,11 +42,12 @@
             <mat-icon>add</mat-icon>
             Enroll
           </button>
-          <button (click)="reopenEnrollmentDialog()"
-                  [matTooltip]="'Reopen enrollment dialog'"
-                  [ngClass]="{'hidden': !canReopenEnrollmentDialog()}"
-                  mat-icon-button
-                  type="button">
+          <button
+            (click)="reopenEnrollmentDialog()"
+            [matTooltip]="'Reopen enrollment dialog'"
+            [ngClass]="{'hidden': !canReopenEnrollmentDialog()}"
+            mat-icon-button
+            type="button">
             <mat-icon>open_in_new</mat-icon>
           </button>
         </div>

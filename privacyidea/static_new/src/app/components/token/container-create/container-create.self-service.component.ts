@@ -15,7 +15,7 @@ import { MatInput } from "@angular/material/input";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { ContainerCreateComponent } from "./container-create.component";
 import { MatTooltip } from "@angular/material/tooltip";
-import {NgClass} from '@angular/common';
+import { NgClass } from "@angular/common";
 
 @Component({
   selector: "app-container-create-self-service",
