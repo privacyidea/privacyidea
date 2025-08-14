@@ -1,0 +1,27 @@
+.input-container {
+  position: relative;
+}
+.input-container button {
+  background-color: transparent;
+  border-radius: 50%;
+  aspect-ratio: 1;
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0px solid transparent;
+  background-color: var(--grey-light);
+  color: var(--mat-sys-primary-container);
+}
+
+.input-container button mat-icon {
+  font-size: 0.9rem;
+  font-weight: 800;
+  height: 0.8rem;
+  width: 0.9rem;
+}
+
+.input-container button:hover {
+  background-color: var(--grey-light-active);
+  cursor: pointer;
+}

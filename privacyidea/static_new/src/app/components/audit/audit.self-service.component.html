@@ -3,13 +3,16 @@
   <div class="audit-table-container">
     <div class="filter-paginator-container">
       <mat-form-field class="token-table-filter"
-                      subscriptSizing="dynamic">
+        subscriptSizing="dynamic">
         <mat-label>Enter Filter</mat-label>
-        <input #filterHTMLInputElement
-               [(ngModel)]="filterValueString"
-               aria-label="Filter Input"
-               matInput
-               placeholder="Example query: 'type: hotp userid: 1000'" />
+          <app-clearable-input (onClick)="filterValueString.set('')"
+            [showClearButton]="filterValueString().length > 0">
+            <input #filterHTMLInputElement
+                   [(ngModel)]="filterValueString"
+                   aria-label="Filter Input"
+                   matInput
+                   placeholder="Example query: 'type: hotp userid: 1000'" />
+          </app-clearable-input>
       </mat-form-field>
       <mat-paginator (page)="onPageEvent($event)"
                      [length]="totalLength()"

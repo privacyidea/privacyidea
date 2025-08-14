@@ -123,6 +123,7 @@ import {
   DialogService,
   DialogServiceInterface,
 } from '../../../services/dialog/dialog.service';
+import { ClearableInputComponent } from '../../shared/clearable-input/clearable-input.component';
 import { TokenEnrollmentLastStepDialogData } from './token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component';
 
 export type ClickEnrollFn = (
@@ -238,6 +239,7 @@ export class CustomDateAdapter extends NativeDateAdapter {
     MatError,
     EnrollPasskeyComponent,
     MatTooltipModule,
+    ClearableInputComponent,
   ],
   providers: [
     provideNativeDateAdapter(),

@@ -4,11 +4,14 @@
     <mat-form-field class="container-table-filter"
                     subscriptSizing="dynamic">
       <mat-label>Enter Filter</mat-label>
-      <input #filterHTMLInputElement
+        <app-clearable-input (onClick)="filterValueString.set('')"
+          [showClearButton]="filterValueString().length > 0">
+          <input #filterHTMLInputElement
              [(ngModel)]="filterValueString"
              aria-label="Filter Input"
              matInput
              placeholder="Example query: 'type: generic user: admin'" />
+        </app-clearable-input>
     </mat-form-field>
     <mat-paginator (page)="onPageEvent($event)"
                    [length]="total()"

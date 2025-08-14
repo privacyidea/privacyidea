@@ -21,9 +21,12 @@
             @if (isEditingUser() && userService.selectedUserRealm() !== "") {
               <mat-form-field>
                 <mat-label>Enter User</mat-label>
-                <input matInput
+                <app-clearable-input (onClick)="userService.userFilter.set('')"
+                  [showClearButton]="userService.userFilter() !== ''">
+                  <input matInput
                        [(ngModel)]="userService.userFilter"
                        [matAutocomplete]="userAuto" />
+                </app-clearable-input>
                 <mat-autocomplete #userAuto="matAutocomplete">
                   @for (option of userService.filteredUsernames();
                     track option) {

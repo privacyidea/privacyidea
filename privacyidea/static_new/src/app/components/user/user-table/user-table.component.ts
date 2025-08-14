@@ -1,3 +1,4 @@
+import { NgClass } from '@angular/common';
 import {
   Component,
   effect,
@@ -7,7 +8,10 @@ import {
   WritableSignal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
+import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatInput } from '@angular/material/input';
+import { MatPaginator } from '@angular/material/paginator';
+import { MatSort, MatSortModule } from '@angular/material/sort';
 import {
   MatCell,
   MatCellDef,
@@ -22,25 +26,22 @@ import {
   MatTable,
   MatTableDataSource,
 } from '@angular/material/table';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import {
-  TableUtilsService,
-  TableUtilsServiceInterface,
-} from '../../../services/table-utils/table-utils.service';
-import { MatPaginator } from '@angular/material/paginator';
-import { MatSort, MatSortModule } from '@angular/material/sort';
+import { RouterLink } from '@angular/router';
 import {
   ContentService,
   ContentServiceInterface,
 } from '../../../services/content/content.service';
 import {
+  TableUtilsService,
+  TableUtilsServiceInterface,
+} from '../../../services/table-utils/table-utils.service';
+import {
   UserData,
   UserService,
   UserServiceInterface,
 } from '../../../services/user/user.service';
-import { MatInput } from '@angular/material/input';
-import { NgClass } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ClearableInputComponent } from '../../shared/clearable-input/clearable-input.component';
+import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
 
 const columnKeysMap = [
   { key: 'username', label: 'Username' },
@@ -77,6 +78,7 @@ const columnKeysMap = [
     MatNoDataRow,
     MatHeaderCellDef,
     RouterLink,
+    ClearableInputComponent,
   ],
   templateUrl: './user-table.component.html',
   styleUrl: './user-table.component.scss',

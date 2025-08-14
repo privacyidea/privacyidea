@@ -38,6 +38,7 @@ import {
   TokenService,
   TokenServiceInterface,
 } from '../../../services/token/token.service';
+import { ClearableInputComponent } from '../../shared/clearable-input/clearable-input.component';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
 
@@ -66,6 +67,7 @@ const columnsKeyMap = [
     CopyButtonComponent,
     MatCheckboxModule,
     FormsModule,
+    ClearableInputComponent,
   ],
   templateUrl: './container-table.component.html',
   styleUrl: './container-table.component.scss',

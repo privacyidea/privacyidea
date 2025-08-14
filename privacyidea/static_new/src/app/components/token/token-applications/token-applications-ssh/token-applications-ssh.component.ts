@@ -1,5 +1,5 @@
 import { NgClass } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatFormField, MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -29,6 +29,7 @@ import {
   TokenService,
   TokenServiceInterface,
 } from '../../../../services/token/token.service';
+import { ClearableInputComponent } from '../../../shared/clearable-input/clearable-input.component';
 import { CopyButtonComponent } from '../../../shared/copy-button/copy-button.component';
 import { KeywordFilterComponent } from '../../../shared/keyword-filter/keyword-filter.component';
 
@@ -55,6 +56,7 @@ const _sshColumnsKeyMap = [
     NgClass,
     CopyButtonComponent,
     FormsModule,
+    ClearableInputComponent,
   ],
   templateUrl: './token-applications-ssh.component.html',
   styleUrls: ['./token-applications-ssh.component.scss'],

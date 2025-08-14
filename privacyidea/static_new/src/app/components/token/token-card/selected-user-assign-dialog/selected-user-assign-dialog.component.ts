@@ -6,12 +6,6 @@ import {
   WritableSignal,
 } from '@angular/core';
 import {
-  MatDialogActions,
-  MatDialogContent,
-  MatDialogRef,
-  MatDialogTitle,
-} from '@angular/material/dialog';
-import {
   FormControl,
   FormsModule,
   ReactiveFormsModule,
@@ -22,24 +16,31 @@ import {
   MatAutocompleteTrigger,
   MatOption,
 } from '@angular/material/autocomplete';
+import { MatButtonModule } from '@angular/material/button';
+import {
+  MatDialogActions,
+  MatDialogContent,
+  MatDialogRef,
+  MatDialogTitle,
+} from '@angular/material/dialog';
 import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatIcon } from '@angular/material/icon';
+import { MatInput } from '@angular/material/input';
 import { MatSelect } from '@angular/material/select';
 import {
-  UserData,
-  UserService,
-  UserServiceInterface,
-} from '../../../../services/user/user.service';
+  RealmService,
+  RealmServiceInterface,
+} from '../../../../services/realm/realm.service';
 import {
   TokenService,
   TokenServiceInterface,
 } from '../../../../services/token/token.service';
 import {
-  RealmService,
-  RealmServiceInterface,
-} from '../../../../services/realm/realm.service';
-import { MatInput } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIcon } from '@angular/material/icon';
+  UserData,
+  UserService,
+  UserServiceInterface,
+} from '../../../../services/user/user.service';
+import { ClearableInputComponent } from '../../../shared/clearable-input/clearable-input.component';
 
 export interface SelectedUserAssignResult {
   username: string;
@@ -65,6 +66,7 @@ export interface SelectedUserAssignResult {
     MatButtonModule,
     MatDialogTitle,
     MatDialogContent,
+    ClearableInputComponent,
   ],
   templateUrl: './selected-user-assign-dialog.component.html',
   styleUrl: './selected-user-assign-dialog.component.scss',

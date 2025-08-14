@@ -5,10 +5,13 @@
                     class="challenges-table-filter"
                     subscriptSizing="dynamic">
       <mat-label>Enter Filter</mat-label>
-      <input #filterInput
-             (keyup)="onFilterChange(filterInput.value)"
-             matInput
-             placeholder="Example query: 'transaction_id: 00000000000000000001'" />
+        <app-clearable-input (onClick)="filterInput.value = ''"
+          [showClearButton]="filterInput.value.length > 0">
+          <input #filterInput
+                 (keyup)="onFilterChange(filterInput.value)"
+                 matInput
+                 placeholder="Example query: 'transaction_id: 00000000000000000001'" />
+        </app-clearable-input>
     </mat-form-field>
     <mat-paginator (page)="onPageEvent($event)"
                    [length]="length()"

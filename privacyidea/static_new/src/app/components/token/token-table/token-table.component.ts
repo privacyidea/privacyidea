@@ -1,7 +1,6 @@
 import { NgClass } from '@angular/common';
 import {
   Component,
-  computed,
   effect,
   inject,
   linkedSignal,
@@ -33,6 +32,7 @@ import {
   TokenService,
   TokenServiceInterface,
 } from '../../../services/token/token.service';
+import { ClearableInputComponent } from '../../shared/clearable-input/clearable-input.component';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
 
@@ -65,6 +65,7 @@ const columnKeysMap = [
     MatCheckboxModule,
     FormsModule,
     MatIconModule,
+    ClearableInputComponent,
   ],
   templateUrl: './token-table.component.html',
   styleUrl: './token-table.component.scss',

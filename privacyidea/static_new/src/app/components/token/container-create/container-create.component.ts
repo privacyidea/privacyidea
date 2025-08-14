@@ -23,7 +23,10 @@ import {
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatSelect } from '@angular/material/select';
+import { MatTooltip } from '@angular/material/tooltip';
+import { Router } from '@angular/router';
 import { PiResponse } from '../../../app.component';
+import { ROUTE_PATHS } from '../../../app.routes';
 import {
   ContainerRegisterData,
   ContainerService,
@@ -53,11 +56,9 @@ import {
   VersioningService,
   VersioningServiceInterface,
 } from '../../../services/version/version.service';
+import { ClearableInputComponent } from '../../shared/clearable-input/clearable-input.component';
 import { TokenComponent } from '../token.component';
 import { ContainerRegistrationDialogComponent } from './container-registration-dialog/container-registration-dialog.component';
-import { Router } from '@angular/router';
-import { MatTooltip } from '@angular/material/tooltip';
-import { ROUTE_PATHS } from '../../../app.routes';
 
 export type ContainerTypeOption = 'generic' | 'smartphone' | 'yubikey';
 
@@ -83,6 +84,7 @@ export type ContainerTypeOption = 'generic' | 'smartphone' | 'yubikey';
     MatExpansionPanelTitle,
     MatExpansionPanelHeader,
     MatTooltip,
+    ClearableInputComponent,
   ],
   templateUrl: './container-create.component.html',
   styleUrl: './container-create.component.scss',
