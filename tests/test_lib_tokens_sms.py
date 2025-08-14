@@ -1,7 +1,6 @@
 """
 This test file tests the lib.tokens.smstoken
 """
-import json
 import logging
 
 from .base import MyTestCase, FakeFlaskG, FakeAudit
@@ -545,7 +544,7 @@ class SMSTokenTestCase(MyTestCase):
         }]
 
         # Import the token
-        import_tokens(json.dumps(token_data))
+        import_tokens(token_data)
 
         # Retrieve the imported token
         smstoken = get_tokens(serial=token_data[0]["serial"])[0]

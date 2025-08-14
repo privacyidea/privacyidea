@@ -187,7 +187,7 @@ class QuestionnaireTokenTestCase(MyTestCase):
                        }]
 
         # Import the token
-        import_tokens(json.dumps(token_data))
+        import_tokens(token_data)
 
         # Retrieve the imported token
         token = get_tokens(serial=token_data[0]["serial"])[0]
@@ -196,8 +196,8 @@ class QuestionnaireTokenTestCase(MyTestCase):
         self.assertEqual(token.token.serial, token_data[0]["serial"])
         self.assertEqual(token.type, token_data[0]["type"])
         self.assertEqual(token.token.description, token_data[0]["description"])
-        self.assertEqual(token.get_tokeninfo("frage1"), token_data[0]["tokeninfo"]["frage1"])
-        self.assertEqual(token.get_tokeninfo("frage2"), token_data[0]["tokeninfo"]["frage2"])
+        self.assertEqual(token.get_tokeninfo("frage1"), 'antwort1')
+        self.assertEqual(token.get_tokeninfo("frage2"), 'antwort2')
 
         # cheak that the token can be used
         r = token.create_challenge()

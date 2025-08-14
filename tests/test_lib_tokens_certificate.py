@@ -2,7 +2,6 @@
 This test file tests the lib.tokens.certificatetoken
 """
 import base64
-import json
 
 from cryptography import x509
 from cryptography.hazmat.primitives.serialization import pkcs12
@@ -615,7 +614,7 @@ class CertificateTokenTestCase(MyTestCase):
         }]
 
         # Import the token
-        import_tokens(json.dumps(token_data))
+        import_tokens(token_data)
 
         # Retrieve the imported token
         token = get_tokens(serial=token_data[0]["serial"])[0]

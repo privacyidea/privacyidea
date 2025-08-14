@@ -1,4 +1,3 @@
-import json
 from .base import MyApiTestCase
 
 SUB_FILE = "tests/testdata/test.sub"

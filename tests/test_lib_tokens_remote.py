@@ -277,6 +277,7 @@ class RemoteTokenTestCase(MyTestCase):
             "otpkey": self.otpkey,
             "issuer": "privacyIDEA",
         }]
-        result = import_tokens(json.dumps(token_data))
+
+        result = import_tokens(token_data)
         # Import not yet implemented for Remote token
         self.assertIn("123456", result.failed_tokens, result)
