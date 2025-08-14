@@ -46,6 +46,8 @@ import {
 } from '../../services/table-utils/table-utils.service';
 import { CopyButtonComponent } from '../shared/copy-button/copy-button.component';
 import { KeywordFilterComponent } from '../shared/keyword-filter/keyword-filter.component';
+import { MatIcon } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 
 const columnKeysMap = [
   { key: 'number', label: 'Number' },
@@ -101,6 +103,8 @@ const columnKeysMap = [
     MatLabel,
     CopyButtonComponent,
     RouterLink,
+    MatIcon,
+    MatButtonModule,
   ],
   templateUrl: './audit.component.html',
   styleUrl: './audit.component.scss',

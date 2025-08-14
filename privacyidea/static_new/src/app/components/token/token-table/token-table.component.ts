@@ -1,7 +1,6 @@
 import { NgClass } from '@angular/common';
 import {
   Component,
-  computed,
   effect,
   inject,
   linkedSignal,
@@ -35,6 +34,7 @@ import {
 } from '../../../services/token/token.service';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
+import { MatButtonModule } from '@angular/material/button';
 
 const columnKeysMap = [
   { key: 'select', label: '' },
@@ -65,6 +65,7 @@ const columnKeysMap = [
     MatCheckboxModule,
     FormsModule,
     MatIconModule,
+    MatButtonModule,
   ],
   templateUrl: './token-table.component.html',
   styleUrl: './token-table.component.scss',
