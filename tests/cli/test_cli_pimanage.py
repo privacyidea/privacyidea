@@ -19,7 +19,6 @@
 import pytest
 import sqlalchemy as sa
 from sqlalchemy.orm.session import close_all_sessions
-from flask_migrate import stamp as fm_stamp
 
 from privacyidea.app import create_app
 from privacyidea.models import db, Challenge
@@ -171,7 +170,6 @@ def app():
     app = create_app(config_name="testing", config_file="", silent=True)
     with app.app_context():
         db.create_all()
-        fm_stamp()
 
     yield app
 
@@ -198,7 +196,7 @@ class TestPIManageSetupClass:
         with app.app_context():
             # First check that the database is empty
             inspector = sa.inspect(db.get_engine())
-            assert "alembic_version" in inspector.get_table_names()
+            assert "token" in inspector.get_table_names()
         runner = app.test_cli_runner()
         result = runner.invoke(pi_manage, ["setup", "drop_tables", "-d" , "yes"])
         assert "Dropping all database tables!" in result.output
