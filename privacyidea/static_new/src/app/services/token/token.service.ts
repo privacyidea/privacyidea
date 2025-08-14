@@ -265,6 +265,10 @@ export interface TokenServiceInterface {
     tokenSerial: string,
     value: string | string[],
   ): Observable<Object>;
+
+  batchDeleteTokens(selectedTokens: TokenDetails[]): Observable<Object>;
+
+  batchUnassignTokens(tokenDetails: TokenDetails[]): Observable<Object>;
 }
 
 @Injectable({
@@ -465,6 +469,49 @@ export class TokenService implements TokenServiceInterface {
         this.notificationService.openSnackBar(tokenTypesResourceError.message);
       }
     });
+  }
+  batchUnassignTokens(tokenDetails: TokenDetails[]): Observable<Object> {
+    const headers = this.localService.getHeaders();
+    return this.http
+      .post<Object>(
+        this.tokenBaseUrl + 'batchunassign',
+        {
+          serial: tokenDetails.map((token) => token.serial).join(','),
+        },
+        { headers },
+      )
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to unassign tokens.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to unassign tokens. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
+  }
+
+  batchDeleteTokens(selectedTokens: TokenDetails[]): Observable<Object> {
+    const headers = this.localService.getHeaders();
+    return this.http
+      .post<Object>(
+        this.tokenBaseUrl + 'batchdeletion',
+        {
+          serial: selectedTokens.map((token) => token.serial).join(','),
+        },
+        { headers },
+      )
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to delete tokens.', error);
+          const message = error.error?.result?.error?.message || '';
+          this.notificationService.openSnackBar(
+            'Failed to delete tokens. ' + message,
+          );
+          return throwError(() => error);
+        }),
+      );
   }
 
   toggleActive(

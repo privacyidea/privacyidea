@@ -10,7 +10,6 @@ import {
   concatMap,
   EMPTY,
   filter,
-  forkJoin,
   from,
   reduce,
   switchMap,
@@ -160,11 +159,7 @@ export class TokenTabComponent {
       .subscribe({
         next: (result) => {
           if (result) {
-            forkJoin(
-              selectedTokens.map((token) =>
-                this.tokenService.deleteToken(token.serial),
-              ),
-            ).subscribe({
+            this.tokenService.batchDeleteTokens(selectedTokens).subscribe({
               next: () => {
                 this.tokenService.tokenResource.reload();
               },
@@ -207,9 +202,6 @@ export class TokenTabComponent {
                 : assign$;
             }),
             reduce(() => null, null),
-            switchMap(() =>
-              this.tokenService.getTokenDetails(this.tokenSerial()),
-            ),
           ),
         ),
         tap(() => this.tokenService.tokenResource.reload()),
@@ -219,5 +211,34 @@ export class TokenTabComponent {
         }),
       )
       .subscribe();
+  }
+
+  unassignSelectedTokens() {
+    const selectedTokens = this.tokenSelection();
+    this.dialog
+      .open(ConfirmationDialogComponent, {
+        data: {
+          serial_list: selectedTokens.map((token) => token.serial),
+          title: 'Unassign Tokens',
+          type: 'token',
+          action: 'unassign',
+          numberOfTokens: selectedTokens.length,
+        },
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            this.tokenService.batchUnassignTokens(selectedTokens).subscribe({
+              next: () => {
+                this.tokenService.tokenResource.reload();
+              },
+              error: (err) => {
+                console.error('Error unassigning tokens:', err);
+              },
+            });
+          }
+        },
+      });
   }
 }

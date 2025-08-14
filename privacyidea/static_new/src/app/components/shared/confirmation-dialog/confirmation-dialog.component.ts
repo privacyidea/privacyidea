@@ -31,5 +31,5 @@ export type ConfirmationDialogData = {
   type: 'token' | string;
   serial_list?: string[];
   title: string;
-  action: 'remove' | 'delete' | 'revoke' | 'search';
+  action: 'remove' | 'delete' | 'revoke' | 'search' | 'unassign';
 };
