@@ -581,7 +581,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     };
 
     const enrollResponse = this.clickEnroll(basicOptions);
-    var enrollPromise: Promise<EnrollmentResponse | null>;
+    let enrollPromise: Promise<EnrollmentResponse | null>;
     if (enrollResponse instanceof Promise) {
       enrollPromise = enrollResponse;
     } else if (enrollResponse instanceof Observable) {

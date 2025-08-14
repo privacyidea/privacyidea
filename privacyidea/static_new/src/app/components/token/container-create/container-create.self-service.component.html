@@ -1,48 +1,54 @@
-<div aria-label="Create Container"
+<div #scrollContainer
+     aria-label="Create Container"
      class="container-create-container">
   <h3 class="margin-left-1">Create Container</h3>
-  <mat-form-field class="width-100 margin-bottom-1">
-    <mat-select [(ngModel)]="containerService.selectedContainerType">
-      @for (type of containerService.containerTypeOptions(); track type) {
-        <mat-option class="type-option"
-                    [value]="type">{{ type.description }}
-        </mat-option>
-      }
-      <div class="width-100 flex just-center">
-        <button (click)="versioningService.openDocumentation('containertypes')"
+
+  <div #stickySentinel></div>
+  <div #stickyHeader
+       class="sticky-header">
+    <div class="sticky-controls ali-center">
+      <div class="select-container-type">
+        <mat-form-field class="width-100"
+                        subscriptSizing="dynamic">
+          <mat-select [(ngModel)]="containerService.selectedContainerType"
+                      [ngModelOptions]="{ standalone: true }"
+                      [panelClass]="'single-column-panel'">
+            @for (type of containerService.containerTypeOptions(); track type) {
+              <mat-option class="select-option type-option"
+                          [value]="type">{{ type.description }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="enroll-button-container">
+        <button (click)="createContainer()"
                 class="card-button"
                 mat-flat-button>
-          <mat-icon>info_outline</mat-icon>
-          Help About Containertypes
+          <mat-icon>add</mat-icon>
+          Create
+        </button>
+        <button (click)="reopenEnrollmentDialog()"
+                [matTooltip]="'Reopen enrollment dialog'"
+                [ngClass]="{'hidden': !registerResponse()}"
+                mat-icon-button
+                type="button">
+          <mat-icon>open_in_new</mat-icon>
         </button>
       </div>
-    </mat-select>
-    <mat-hint class="container-type-hint">
-      Supported Token Types:
-      @if (containerService.selectedContainerType().token_types.length >=
-      tokenService.tokenTypeOptions().length) {
-        All
-      } @else if (containerService.selectedContainerType().token_types.length > 1) {
-        {{ containerService.selectedContainerType().token_types.join(", ") }}
-      } @else {
-        {{ containerService.selectedContainerType().token_types[0] }}
-      }
-    </mat-hint>
-  </mat-form-field>
+    </div>
+  </div>
 
-  <div class="enroll-button-container">
-    <button (click)="createContainer()"
-            class="card-button"
-            mat-flat-button>
-      <mat-icon>add</mat-icon>
-      Create Container
-    </button>
-    <button (click)="reopenEnrollmentDialog()"
-            [disabled]="registerResponse() === null"
-            mat-icon-button
-            matTooltip="Reopen enrollment dialog">
-      <mat-icon>open_in_new</mat-icon>
-    </button>
+  <div class="container-type-hint">
+    Supported Token Types:
+    @if (containerService.selectedContainerType().token_types.length >=
+    tokenService.tokenTypeOptions().length) {
+      All
+    } @else if (containerService.selectedContainerType().token_types.length > 1) {
+      {{ containerService.selectedContainerType().token_types.join(", ") }}
+    } @else {
+      {{ containerService.selectedContainerType().token_types[0] }}
+    }
   </div>
 
   <mat-form-field class="width-66 margin-top-1">
