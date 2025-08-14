@@ -250,7 +250,6 @@ def auth_user_does_not_exist(wrapped_function, user_object, passw, options=None)
                                   user_object=user_object).policies(write_to_audit_log=False)
         if not user_object.exist():
             if pass_no_user:
-                # Check if user object exists
                 g.audit_object.add_policy([p.get("name") for p in pass_no_user])
                 return True, {"message": f"user does not exist, accepted due to '{pass_no_user[0].get('name')}'"}
             else:
