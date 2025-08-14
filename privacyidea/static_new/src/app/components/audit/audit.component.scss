@@ -11,3 +11,21 @@
   overflow: auto;
   max-height: calc(var(--main-height) - var(--global-padding) * 5);
 }
+
+.selfservice-margin {
+  margin: calc(var(--global-padding) * 2) calc(var(--global-padding) * 2) 100vh 6rem;
+}
+
+.drawer-button-div {
+  display: flex;
+  margin-top: 284px;
+  margin-left: var(--global-padding);
+  height: 100%;
+  position: fixed;
+}
+
+.drawer-content-div {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+}
