@@ -1,5 +1,5 @@
-import { Injectable, signal, WritableSignal } from '@angular/core';
-import { ROUTE_PATHS } from '../../app.routes';
+import { Injectable, signal, WritableSignal } from "@angular/core";
+import { ROUTE_PATHS } from "../../app.routes";
 
 export interface VersioningServiceInterface {
   version: WritableSignal<string>;
@@ -10,53 +10,53 @@ export interface VersioningServiceInterface {
 }
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: "root"
 })
 export class VersioningService implements VersioningServiceInterface {
-  version = signal('');
+  version = signal("");
 
   getVersion(): string {
     return this.version();
   }
 
   openDocumentation(page: string) {
-    const baseUrl = 'https://privacyidea.readthedocs.io/en/'; //TODO translation
+    const baseUrl = "https://privacyidea.readthedocs.io/en/"; //TODO translation
     let page_url;
     if (page.startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
-      page_url = 'webui/token_details.html';
+      page_url = "webui/token_details.html";
     } else if (page.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
-      page_url = 'webui/container_view.html#container-details';
+      page_url = "webui/container_view.html#container-details";
     } else {
       switch (page) {
         case ROUTE_PATHS.TOKENS_ENROLLMENT:
-          page_url = 'webui/token_details.html#enroll-token';
+          page_url = "webui/token_details.html#enroll-token";
           break;
         case ROUTE_PATHS.TOKENS:
-          page_url = 'webui/index.html#tokens';
+          page_url = "webui/index.html#tokens";
           break;
         case ROUTE_PATHS.TOKENS_CONTAINERS:
-          page_url = 'webui/index.html#containers';
+          page_url = "webui/index.html#containers";
           break;
-        case 'tokentypes':
-          page_url = 'tokens/tokentypes.html';
+        case "tokentypes":
+          page_url = "tokens/tokentypes.html";
           break;
         case ROUTE_PATHS.TOKENS_GET_SERIAL:
-          page_url = 'webui/token_details.html#get-serial';
+          page_url = "webui/token_details.html#get-serial";
           break;
         case ROUTE_PATHS.TOKENS_APPLICATIONS:
-          page_url = 'machines/index.html';
+          page_url = "machines/index.html";
           break;
         case ROUTE_PATHS.TOKENS_CHALLENGES:
-          page_url = 'tokens/authentication_modes.html#challenge-mode';
+          page_url = "tokens/authentication_modes.html#challenge-mode";
           break;
-        case 'containertypes':
-          page_url = 'container/container_types.html';
+        case "containertypes":
+          page_url = "container/container_types.html";
           break;
         case ROUTE_PATHS.TOKENS_CONTAINERS_CREATE:
-          page_url = 'webui/container_view.html#container-create';
+          page_url = "webui/container_view.html#container-create";
           break;
         default:
-          page_url = 'webui/index.html';
+          page_url = "webui/index.html";
           break;
       }
     }
@@ -68,25 +68,25 @@ export class VersioningService implements VersioningServiceInterface {
         const response = await fetch(url);
         const html = await response.text();
         const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
+        const doc = parser.parseFromString(html, "text/html");
         return !doc.querySelector(
-          'div.document div.documentwrapper div.bodywrapper div.body h1#notfound',
+          "div.document div.documentwrapper div.bodywrapper div.body h1#notfound"
         );
       } catch (error) {
-        console.error('Error checking the page:', error);
+        console.error("Error checking the page:", error);
         return false;
       }
     }
 
     checkPage(versionUrl).then((found) => {
       if (found) {
-        window.open(versionUrl, '_blank');
+        window.open(versionUrl, "_blank");
       } else {
         checkPage(fallbackUrl).then((foundFallback) => {
           if (foundFallback) {
-            window.open(fallbackUrl, '_blank');
+            window.open(fallbackUrl, "_blank");
           } else {
-            alert('The documentation page is currently not available.');
+            alert("The documentation page is currently not available.");
           }
         });
       }

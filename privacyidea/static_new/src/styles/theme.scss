@@ -7,13 +7,13 @@ html {
     --mat-sys-primary-dark: light-dark(hsl(198, 66%, 25%), hsl(198, 66%, 60%));
     --mat-sys-primary-base: light-dark(hsl(198, 66%, 30%), hsl(198, 66%, 55%));
     --mat-sys-primary-base-active: light-dark(
-        hsl(198, 66%, 32.5%),
-        hsl(198, 66%, 52.5%)
+                    hsl(198, 66%, 32.5%),
+                    hsl(198, 66%, 52.5%)
     );
     --mat-sys-primary-light: light-dark(hsl(198, 66%, 35%), hsl(198, 66%, 50%));
     --mat-sys-primary-light-active: light-dark(
-        hsl(198, 66%, 37.5%),
-        hsl(198, 66%, 47.5%)
+                    hsl(198, 66%, 37.5%),
+                    hsl(198, 66%, 47.5%)
     );
 
     --green-dark: light-dark(hsl(120, 39%, 39%), hsl(120, 39%, 69%));
@@ -139,25 +139,25 @@ html {
   }
 
   @include mat.theme(
-      (
-        color: mat.$blue-palette,
-      ),
-    $overrides: (
-      "corner-large": 16px,
-      "primary": var(--mat-sys-primary-base),
-      "on-primary": var(--mat-sys-on-primary),
-      "primary-container": var(--mat-sys-primary-container),
-      "surface-container-lowest": var(--mat-sys-surface-container-lowest),
-      "surface-container-low": var(--mat-sys-surface-container-low),
-      "surface-container": var(--mat-sys-surface-container),
-      "surface-container-high": var(--mat-sys-surface-container-high),
-      "surface-container-highest": var(--mat-sys-surface-container-highest),
-      "surface-variant": var(--mat-sys-surface-variant),
-      "background": var(--mat-sys-background),
-      "on-surface": var(--mat-sys-on-surface),
-      "on-surface-variant": var(--mat-sys-on-surface-variant),
-      "on-primary-container": var(--mat-sys-on-primary-container),
-      "shadow": var(--mat-sys-shadow)
-    )
+                  (
+                          color: mat.$blue-palette,
+                  ),
+          $overrides: (
+                  "corner-large": 16px,
+                  "primary": var(--mat-sys-primary-base),
+                  "on-primary": var(--mat-sys-on-primary),
+                  "primary-container": var(--mat-sys-primary-container),
+                  "surface-container-lowest": var(--mat-sys-surface-container-lowest),
+                  "surface-container-low": var(--mat-sys-surface-container-low),
+                  "surface-container": var(--mat-sys-surface-container),
+                  "surface-container-high": var(--mat-sys-surface-container-high),
+                  "surface-container-highest": var(--mat-sys-surface-container-highest),
+                  "surface-variant": var(--mat-sys-surface-variant),
+                  "background": var(--mat-sys-background),
+                  "on-surface": var(--mat-sys-on-surface),
+                  "on-surface-variant": var(--mat-sys-on-surface-variant),
+                  "on-primary-container": var(--mat-sys-on-primary-container),
+                  "shadow": var(--mat-sys-shadow)
+          )
   );
 }

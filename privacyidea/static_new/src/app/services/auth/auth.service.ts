@@ -1,17 +1,14 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { computed, inject, Injectable, signal } from '@angular/core';
-import { Observable, throwError } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
-import { environment } from '../../../environments/environment';
-import { PiResponse } from '../../app.component';
+import { HttpClient, HttpHeaders } from "@angular/common/http";
+import { computed, inject, Injectable, signal } from "@angular/core";
+import { Observable, throwError } from "rxjs";
+import { catchError, tap } from "rxjs/operators";
+import { environment } from "../../../environments/environment";
+import { PiResponse } from "../../app.component";
 import {
   NotificationService,
-  NotificationServiceInterface,
-} from '../notification/notification.service';
-import {
-  VersioningService,
-  VersioningServiceInterface,
-} from '../version/version.service';
+  NotificationServiceInterface
+} from "../notification/notification.service";
+import { VersioningService, VersioningServiceInterface } from "../version/version.service";
 
 export type AuthResponse = PiResponse<AuthData, AuthDetail>;
 
@@ -56,7 +53,7 @@ export interface AuthData {
   };
 }
 
-export type AuthRole = 'admin' | 'user' | '';
+export type AuthRole = "admin" | "user" | "";
 
 export interface AuthDetail {
   username: string;
@@ -76,34 +73,32 @@ export interface AuthServiceInterface {
 }
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: "root"
 })
 export class AuthService implements AuthServiceInterface {
   private readonly http: HttpClient = inject(HttpClient);
-  private readonly notificationService: NotificationServiceInterface =
-    inject(NotificationService);
-  private readonly versioningService: VersioningServiceInterface =
-    inject(VersioningService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
 
-  readonly authUrl = environment.proxyUrl + '/auth';
+  readonly authUrl = environment.proxyUrl + "/auth";
   isAuthenticated = signal(false);
-  user = signal('');
-  realm = signal('');
-  role = signal<AuthRole>('');
+  user = signal("");
+  realm = signal("");
+  role = signal<AuthRole>("");
   menus = signal<string[]>([]);
 
   isSelfServiceUser = computed(() => {
-    return this.role() === 'user';
+    return this.role() === "user";
   });
 
   authenticate(params: any): Observable<AuthResponse> {
     return this.http
       .post<AuthResponse>(this.authUrl, JSON.stringify(params), {
         headers: new HttpHeaders({
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
+          "Content-Type": "application/json",
+          Accept: "application/json"
         }),
-        withCredentials: true,
+        withCredentials: true
       })
       .pipe(
         tap((response) => {
@@ -118,11 +113,11 @@ export class AuthService implements AuthServiceInterface {
           }
         }),
         catchError((error) => {
-          console.error('Login failed.', error);
-          const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar('Login failed. ' + message);
+          console.error("Login failed.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.openSnackBar("Login failed. " + message);
           return throwError(() => error);
-        }),
+        })
       );
   }
 

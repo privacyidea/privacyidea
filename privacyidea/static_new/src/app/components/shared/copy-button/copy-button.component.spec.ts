@@ -1,14 +1,14 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { CopyButtonComponent } from './copy-button.component';
+import { CopyButtonComponent } from "./copy-button.component";
 
-describe('CopyButtonComponent', () => {
+describe("CopyButtonComponent", () => {
   let component: CopyButtonComponent;
   let fixture: ComponentFixture<CopyButtonComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [CopyButtonComponent],
+      imports: [CopyButtonComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(CopyButtonComponent);
@@ -16,7 +16,7 @@ describe('CopyButtonComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

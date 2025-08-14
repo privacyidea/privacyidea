@@ -1,32 +1,23 @@
-import { NgClass } from '@angular/common';
-import { Component } from '@angular/core';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import {
-  MatAutocomplete,
-  MatAutocompleteTrigger,
-} from '@angular/material/autocomplete';
-import { MatIconButton } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIcon } from '@angular/material/icon';
-import { MatInput } from '@angular/material/input';
-import { MatListItem } from '@angular/material/list';
-import { MatSelectModule } from '@angular/material/select';
-import {
-  MatCell,
-  MatColumnDef,
-  MatRow,
-  MatTable,
-  MatTableModule,
-} from '@angular/material/table';
-import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
-import { EditButtonsComponent } from '../../shared/edit-buttons/edit-buttons.component';
-import { TokenDetailsActionsComponent } from './token-details-actions/token-details-actions.component';
-import { TokenDetailsInfoComponent } from './token-details-info/token-details-info.component';
-import { TokenDetailsUserSelfServiceComponent } from './token-details-user/token-details-user.self-service.component';
-import { TokenDetailsComponent } from './token-details.component';
+import { NgClass } from "@angular/common";
+import { Component } from "@angular/core";
+import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
+import { MatIconButton } from "@angular/material/button";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIcon } from "@angular/material/icon";
+import { MatInput } from "@angular/material/input";
+import { MatListItem } from "@angular/material/list";
+import { MatSelectModule } from "@angular/material/select";
+import { MatCell, MatColumnDef, MatRow, MatTable, MatTableModule } from "@angular/material/table";
+import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { EditButtonsComponent } from "../../shared/edit-buttons/edit-buttons.component";
+import { TokenDetailsActionsComponent } from "./token-details-actions/token-details-actions.component";
+import { TokenDetailsInfoComponent } from "./token-details-info/token-details-info.component";
+import { TokenDetailsUserSelfServiceComponent } from "./token-details-user/token-details-user.self-service.component";
+import { TokenDetailsComponent } from "./token-details.component";
 
 @Component({
-  selector: 'app-token-details-self-service',
+  selector: "app-token-details-self-service",
   standalone: true,
   imports: [
     MatCell,
@@ -49,10 +40,10 @@ import { TokenDetailsComponent } from './token-details.component';
     TokenDetailsInfoComponent,
     TokenDetailsActionsComponent,
     EditButtonsComponent,
-    CopyButtonComponent,
+    CopyButtonComponent
   ],
-  templateUrl: './token-details.self-service.component.html',
-  styleUrls: ['./token-details.component.scss'],
+  templateUrl: "./token-details.self-service.component.html",
+  styleUrls: ["./token-details.component.scss"]
 })
 export class TokenDetailsSelfServiceComponent extends TokenDetailsComponent {
   toggleActive(active: boolean): void {

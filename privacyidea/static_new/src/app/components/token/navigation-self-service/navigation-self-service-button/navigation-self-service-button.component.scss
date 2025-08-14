@@ -69,8 +69,8 @@
 
   font-weight: bold;
   font-size: min(
-    calc(var(--tile-height) / 7.5),
-    calc(var(--tile-max-width) / 4)
+          calc(var(--tile-height) / 7.5),
+          calc(var(--tile-max-width) / 4)
   );
   text-align: center;
 }

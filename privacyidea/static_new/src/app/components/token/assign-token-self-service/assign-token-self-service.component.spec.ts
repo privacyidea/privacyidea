@@ -1,16 +1,16 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { AssignTokenSelfServiceComponent } from './assign-token-self-service.component';
-import { provideHttpClient } from '@angular/common/http';
+import { AssignTokenSelfServiceComponent } from "./assign-token-self-service.component";
+import { provideHttpClient } from "@angular/common/http";
 
-describe('AssignTokenSelfServiceComponent', () => {
+describe("AssignTokenSelfServiceComponent", () => {
   let component: AssignTokenSelfServiceComponent;
   let fixture: ComponentFixture<AssignTokenSelfServiceComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       providers: [provideHttpClient()],
-      imports: [AssignTokenSelfServiceComponent],
+      imports: [AssignTokenSelfServiceComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(AssignTokenSelfServiceComponent);
@@ -18,7 +18,7 @@ describe('AssignTokenSelfServiceComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

@@ -1,12 +1,12 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { LayoutComponent } from './layout.component';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { ActivatedRoute } from '@angular/router';
-import { of } from 'rxjs';
+import { LayoutComponent } from "./layout.component";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { ActivatedRoute } from "@angular/router";
+import { of } from "rxjs";
 
-describe('LayoutComponent', () => {
+describe("LayoutComponent", () => {
   let component: LayoutComponent;
   let fixture: ComponentFixture<LayoutComponent>;
 
@@ -21,34 +21,34 @@ describe('LayoutComponent', () => {
           {
             provide: ActivatedRoute,
             useValue: {
-              params: of({ id: '123' }),
-            },
-          },
-        ],
-      ],
+              params: of({ id: "123" })
+            }
+          }
+        ]
+      ]
     }).compileComponents();
     fixture = TestBed.createComponent(LayoutComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 
-  it('should render the header and router-outlet in the DOM', () => {
+  it("should render the header and router-outlet in the DOM", () => {
     fixture.detectChanges();
 
-    const layoutElement = fixture.nativeElement.querySelector('.layout');
+    const layoutElement = fixture.nativeElement.querySelector(".layout");
     expect(layoutElement).toBeTruthy();
 
     const header = fixture.nativeElement.querySelector(
-      'header[aria-label="Header"]',
+      "header[aria-label=\"Header\"]"
     );
     expect(header).toBeTruthy();
 
     const main = fixture.nativeElement.querySelector(
-      'main[aria-label="Main Router Outlet"]',
+      "main[aria-label=\"Main Router Outlet\"]"
     );
     expect(main).toBeTruthy();
   });
