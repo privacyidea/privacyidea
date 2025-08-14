@@ -27,6 +27,9 @@ The method is tested in test_lib_challenges
 import datetime
 import logging
 
+from sqlalchemy import select
+from sqlalchemy.sql import Select
+
 from .log import log_with
 from .policies.actions import PolicyAction
 from .sqlutils import delete_matching_rows
@@ -36,7 +39,7 @@ log = logging.getLogger(__name__)
 
 
 @log_with(log)
-def get_challenges(serial=None, transaction_id=None, challenge=None):
+def get_challenges(serial: str = None, transaction_id: str = None, challenge=None) -> list[Challenge]:
     """
     This returns a list of database challenge objects.
 
@@ -44,6 +47,7 @@ def get_challenges(serial=None, transaction_id=None, challenge=None):
     :param transaction_id: challenges with this very transaction id
     :param challenge: The challenge to be found
     :return: list of objects
+    """
     """
     sql_query = Challenge.query
 
@@ -57,6 +61,17 @@ def get_challenges(serial=None, transaction_id=None, challenge=None):
         sql_query = sql_query.filter(Challenge.challenge == challenge)
 
     challenges = sql_query.all()
+    return challenges
+    """
+    stmt = select(Challenge)
+    if serial is not None:
+        stmt = stmt.where(Challenge.serial == serial)
+    if transaction_id is not None:
+        stmt = stmt.where(Challenge.transaction_id == transaction_id)
+    if challenge is not None:
+        stmt = stmt.where(Challenge.challenge == challenge)
+
+    challenges = db.session.execute(stmt).scalars().all()
     return challenges
 
 
@@ -83,6 +98,7 @@ def get_challenges_paginate(serial=None, transaction_id=None,
     :type page: int
     :return: dict with challenges, prev, next and count
     :rtype: dict
+    """
     """
     sql_query = _create_challenge_query(serial=serial, transaction_id=transaction_id)
 
@@ -115,13 +131,37 @@ def get_challenges_paginate(serial=None, transaction_id=None,
            "current": page,
            "count": pagination.total}
     return ret
+    """
+    stmt = _create_challenge_query(serial=serial, transaction_id=transaction_id)
+
+    if isinstance(sortby, str):
+        cols = Challenge.__table__.columns
+        sortby = cols.get(sortby)
+
+    if sortdir == "desc":
+        stmt = stmt.order_by(sortby.desc())
+    else:
+        stmt = stmt.order_by(sortby.asc())
+
+    pagination = db.paginate(stmt, page=page, per_page=psize, error_out=False)
+    challenge_list = [challenge.get() for challenge in pagination.items]
+
+    ret = {
+        "challenges": challenge_list,
+        "prev": page - 1 if pagination.has_prev else None,
+        "next": page + 1 if pagination.has_next else None,
+        "current": page,
+        "count": pagination.total
+    }
+    return ret
 
 
-def _create_challenge_query(serial=None, transaction_id=None):
+def _create_challenge_query(serial: str = None, transaction_id: str = None) -> Select:
     """
     This function create the sql query for fetching transaction_ids. It is
     used by get_challenge_paginate.
     :return: An SQLAlchemy sql query
+    """
     """
     sql_query = Challenge.query
     if serial is not None and serial.strip("*"):
@@ -146,6 +186,19 @@ def _create_challenge_query(serial=None, transaction_id=None):
             sql_query = sql_query.filter(Challenge.transaction_id == transaction_id)
 
     return sql_query
+    """
+    stmt = select(Challenge)
+    if serial is not None and serial.strip("*"):
+        if "*" in serial:
+            stmt = stmt.where(Challenge.serial.like(serial.replace("*", "%")))
+        else:
+            stmt = stmt.where(Challenge.serial == serial)
+    if transaction_id is not None and transaction_id.strip("*"):
+        if "*" in transaction_id:
+            stmt = stmt.where(Challenge.transaction_id.like(transaction_id.replace("*", "%")))
+        else:
+            stmt = stmt.where(Challenge.transaction_id == transaction_id)
+    return stmt
 
 
 def extract_answered_challenges(challenges):
