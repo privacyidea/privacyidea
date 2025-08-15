@@ -122,7 +122,7 @@ export class ContainerCreateComponent {
   createContainer() {
     this.pollResponse.set(null);
     this.registerResponse.set(null);
-    let createData = {
+    const createData = {
         container_type:
         this.containerService.selectedContainerType().containerType,
         description: this.description(),
