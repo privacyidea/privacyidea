@@ -9,7 +9,7 @@ from testfixtures import log_capture, LogCapture
 from werkzeug.datastructures.headers import Headers
 
 from privacyidea.lib.container import (init_container, find_container_by_serial, create_container_template,
-                                       get_all_containers)
+                                       get_all_containers, delete_container_template)
 from privacyidea.lib.containers.container_info import RegistrationState
 from privacyidea.lib.policies.helper import get_jwt_validity
 from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AuthenticatorAttachmentType,
@@ -6615,6 +6615,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # Missing registration policies
         delete_policy("registration")
         g.policies = {}
+        delete_container_template("test")
         # create with template to check that also no tokens are created
         template_options = {"tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True}]}
         create_container_template(container_type="smartphone", template_name="test", options=template_options)
@@ -6629,3 +6630,4 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         delete_policy("enroll_via_multichallenge")
         delete_policy("enroll_via_multichallenge_template")
+        delete_container_template("test")

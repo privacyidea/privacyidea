@@ -249,7 +249,8 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
             ).scalar_subquery()
             sql_query = sql_query.where(TokenRealm.realm_id == subquery)
 
-    if allowed_realms:
+    # Allowed realms could be empty list
+    if allowed_realms is not None:
         subquery = select(Realm.id).where(
             func.lower(Realm.name).in_(allowed_realms)
         )
@@ -337,7 +338,7 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
             )
 
     # Filtering by tokeninfo
-    if tokeninfo:
+    if tokeninfo is not None:
         if len(tokeninfo) != 1:
             raise ValueError("I can only create SQL filters from tokeninfo of length 1.")
         key, value = list(tokeninfo.items())[0]
@@ -396,10 +397,10 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
             )
         )
 
-    #print("----------------------------- CREATE TOKEN QUERY -----------------------------")
-    #from sqlalchemy.dialects import postgresql
-    #print(sql_query.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))
-    #print("-------------------------------------------------------------------------------")
+    print("----------------------------- CREATE TOKEN QUERY -----------------------------")
+    from sqlalchemy.dialects import postgresql
+    print(sql_query.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))
+    print("-------------------------------------------------------------------------------")
     return sql_query
 
 

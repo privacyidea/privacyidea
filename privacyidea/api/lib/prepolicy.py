@@ -167,8 +167,7 @@ class prepolicy(object):
 
         @functools.wraps(wrapped_function)
         def policy_wrapper(*args, **kwds):
-            self.function(request=self.request,
-                          action=self.action)
+            self.function(request=self.request, action=self.action)
             return wrapped_function(*args, **kwds)
 
         return policy_wrapper

@@ -126,18 +126,14 @@ class API000TokenAdminRealmList(MyApiTestCase):
             self.assertEqual(2, result.get("value").get("count"))
 
         # admin is allowed to see realm1
-        set_policy(name="pol-realm1",
-                   scope=SCOPE.ADMIN,
-                   action=PolicyAction.TOKENLIST, adminuser=self.testadmin, realm=self.realm1)
+        set_policy(name="pol-realm1", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST, adminuser=self.testadmin,
+                   realm=self.realm1)
 
         # admin is allowed to list all realms
-        set_policy(name="pol-all-realms",
-                   scope=SCOPE.ADMIN,
-                   action=PolicyAction.TOKENLIST, adminuser=self.testadmin)
+        set_policy(name="pol-all-realms", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST, adminuser=self.testadmin)
 
         # admin is allowed to only init, not list
-        set_policy(name="pol-only-init",
-                   scope=SCOPE.ADMIN)
+        set_policy(name="pol-only-init", scope=SCOPE.ADMIN)
 
         with self.app.test_request_context('/token/',
                                            method='GET',
@@ -172,7 +168,7 @@ class API000TokenAdminRealmList(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            # we have two tokens
+            # we have no tokens
             self.assertEqual(0, result.get("value").get("count"))
 
     def test_02_two_resolver_in_realm_policy_condition(self):

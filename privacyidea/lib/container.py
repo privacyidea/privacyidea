@@ -1483,6 +1483,17 @@ def get_container_template_classes() -> dict[str, type[ContainerTemplateBase]]:
 
     return ret
 
+def delete_container_template(template_name: str) -> bool:
+    """
+    Delete a container template by its name.
+    """
+    try:
+        template = get_template_obj(template_name)
+        template.delete()
+        return True
+    except ResourceNotFoundError:
+        log.warning(f"Template with name '{template_name}' does not exist.")
+        return False
 
 def create_container_template(container_type: str, template_name: str, options: dict, default: bool = False) -> int:
     """
@@ -1505,6 +1516,13 @@ def create_container_template(container_type: str, template_name: str, options: 
     # Check container type
     if container_type.lower() not in get_container_classes().keys():
         raise EnrollmentError(f"Type '{container_type}' is not a valid type!")
+
+    # Check if the template name already exists
+    try:
+        if get_template_obj(template_name):
+            raise EnrollmentError(f"Template with name '{template_name}' already exists!")
+    except ResourceNotFoundError:
+        pass
 
     TokenContainerTemplate(name=template_name, container_type=container_type).save()
     template = get_template_obj(template_name)
@@ -1570,35 +1588,6 @@ def get_templates_by_query(name: str = None, container_type: str = None, default
     :return: a dictionary with a list of templates at the key 'templates' and optionally pagination entries ('prev',
              'next', 'current', 'count')
     """
-    """
-    sql_query = TokenContainerTemplate.query
-    if name:
-        sql_query = sql_query.filter(TokenContainerTemplate.name == name)
-    if container_type:
-        sql_query = sql_query.filter(TokenContainerTemplate.container_type == container_type)
-    if default is not None:
-        sql_query = sql_query.filter(TokenContainerTemplate.default == default)
-
-    if isinstance(sortby, str):
-        # Check that the sort column exists and convert it to a template column
-        cols = TokenContainerTemplate.__table__.columns
-        if sortby in cols:
-            sortby = cols.get(sortby)
-        else:
-            log.info(f'Unknown sort column "{sortby}". Using "name" instead.')
-            sortby = TokenContainerTemplate.name
-
-    if sortdir == "desc":
-        sql_query = sql_query.order_by(sortby.desc())
-    else:
-        sql_query = sql_query.order_by(sortby.asc())
-
-    # paginate if requested
-    if page > 0 or pagesize > 0:
-        ret = create_pagination(page, pagesize, sql_query, "templates")
-    else:
-        ret = {"templates": sql_query.all()}
-    """
     session = db.session
     stmt = select(TokenContainerTemplate)
 
@@ -1656,6 +1645,10 @@ def get_template_obj(template_name: str) -> ContainerTemplateBase:
     # db_template = TokenContainerTemplate.query.filter(TokenContainerTemplate.name == template_name).first()
     session = db.session
     stmt = select(TokenContainerTemplate).where(TokenContainerTemplate.name == template_name)
+    print("----------------------------- CREATE TOKEN QUERY -----------------------------")
+    from sqlalchemy.dialects import postgresql
+    print(stmt.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))
+    print("-------------------------------------------------------------------------------")
     db_template = session.execute(stmt).scalar_one_or_none()
     if not db_template:
         raise ResourceNotFoundError(f"Template {template_name} does not exist.")
