@@ -20,8 +20,6 @@ The token is also enrolled by scanning a QR code.
 
    *Choose a user for the TiQR token*
 
-You can only enroll a TiQR token, when a user is selected.
-
 .. note:: You can not enroll a TiQR token without assign the token to a user.
 
 .. figure:: images/enroll_tiqr_2.png

@@ -34,6 +34,7 @@ export type TokenEnrollmentData = {
   validityPeriodEnd: string;
   user: string;
   pin: string;
+  serial: string | null;
   [key: string]: any; // TODO: remove this when all types are defined
 };
 
