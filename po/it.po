@@ -3,12 +3,13 @@
 # Paul Lettich <paul.lettich@netknights.it>, 2024, 2025.
 # Federico Cucinella <fede.cuci@gmail.com>, 2024.
 # Davide Secco <d.secco2000@gmail.com>, 2025.
+# albanobattistella <albano_battistella@hotmail.com>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
-"PO-Revision-Date: 2025-08-08 21:02+0000\n"
-"Last-Translator: Davide Secco <d.secco2000@gmail.com>\n"
+"PO-Revision-Date: 2025-08-15 14:01+0000\n"
+"Last-Translator: albanobattistella <albano_battistella@hotmail.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/it/>\n"
 "Language: it\n"
@@ -16,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.13-dev\n"
+"X-Generator: Weblate 5.13\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -280,7 +281,7 @@ msgstr "Una descrizione per questa policy"
 #: privacyidea/static/components/token/views/token.containertemplates.create.html:29
 msgid ""
 "A template with this name already exists. Please choose a different name."
-msgstr ""
+msgstr "Esiste già un modello con questo nome. Scegli un nome diverso."
 
 #: privacyidea/static/components/token/views/token.enroll.sms.html:36
 msgid "A token specific SMS gateway"
@@ -288,7 +289,7 @@ msgstr "Un gateway SMS specifico per token"
 
 #: privacyidea/static/components/token/views/token.containertemplates.create.html:24
 msgid "A unique name for this template"
-msgstr ""
+msgstr "Un nome univoco per questo modello"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:25
 #: privacyidea/static/components/config/views/config.token.yubico.html:29
@@ -355,16 +356,12 @@ msgstr "Aggiungi"
 
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:61
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:88
-#, fuzzy
-#| msgid "Tokens"
 msgid "Add Token"
-msgstr "Token"
+msgstr "Aggiungi Token"
 
 #: privacyidea/static/components/user/views/user.details.html:289
-#, fuzzy
-#| msgid "Tokens"
 msgid "Add Tokens"
-msgstr "Token"
+msgstr "Aggiungi Token"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:580
 #: privacyidea/static/components/user/views/user.details.html:281
@@ -388,10 +385,8 @@ msgid "Add new question"
 msgstr "Aggiungi una nuova domanda"
 
 #: privacyidea/static/components/token/views/token.details.html:630
-#, fuzzy
-#| msgid "Add a condition"
 msgid "Add to Container"
-msgstr "Aggiungi una condizione"
+msgstr "Aggiungi al Container"
 
 #: privacyidea/static/components/user/views/user.html:40
 msgid "Add user"
