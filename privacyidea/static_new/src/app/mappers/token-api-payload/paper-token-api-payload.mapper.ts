@@ -26,10 +26,16 @@ export class PaperApiPayloadMapper implements TokenApiPayloadMapper<PaperEnrollm
       validity_period_start: data.validityPeriodStart,
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
+      realm: data.user? data.realm : null,
       pin: data.pin,
       otplen: data.otpLength,
       otpcount: data.otpCount
     };
+
+    if (data.onlyAddToRealm) {
+      payload.realm = data.realm;
+      payload.user = null;
+    }
     if (payload.otplen === undefined) delete payload.otplen;
     if (payload.otpcount === undefined) delete payload.otpcount;
     return payload;

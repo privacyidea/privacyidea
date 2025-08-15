@@ -26,10 +26,15 @@ export class SshkeyApiPayloadMapper implements TokenApiPayloadMapper<SshkeyEnrol
       validity_period_start: data.validityPeriodStart,
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
+      realm: data.user? data.realm : null,
       pin: data.pin,
       sshkey: data.sshPublicKey
     };
 
+    if (data.onlyAddToRealm) {
+      payload.realm = data.realm;
+      payload.user = null;
+    }
     if (payload.sshkey === undefined) delete payload.sshkey;
     return payload;
   }

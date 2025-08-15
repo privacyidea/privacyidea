@@ -28,12 +28,17 @@ export class MotpApiPayloadMapper implements TokenApiPayloadMapper<MotpEnrollmen
       validity_period_start: data.validityPeriodStart,
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
+      realm: data.user? data.realm : null,
       pin: data.pin,
       otpkey: data.generateOnServer ? null : (data.otpKey ?? null),
       genkey: data.generateOnServer ? 1 : 0,
       motppin: data.motpPin
     };
 
+    if (data.onlyAddToRealm) {
+      payload.realm = data.realm;
+      payload.user = null;
+    }
     if (payload.motppin === undefined) {
       delete payload.motppin;
     }

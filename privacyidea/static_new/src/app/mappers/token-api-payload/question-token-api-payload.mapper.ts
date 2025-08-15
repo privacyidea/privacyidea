@@ -25,10 +25,15 @@ export class QuestionApiPayloadMapper implements TokenApiPayloadMapper<QuestionE
       validity_period_start: data.validityPeriodStart,
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
+      realm: data.user? data.realm : null,
       pin: data.pin,
       questions: data.answers
     };
 
+    if (data.onlyAddToRealm) {
+      payload.realm = data.realm;
+      payload.user = null;
+    }
     if (payload.questions === undefined) {
       delete payload.questions;
     }

@@ -29,11 +29,17 @@ export class ApplspecApiPayloadMapper implements TokenApiPayloadMapper<ApplspecE
       validity_period_start: data.validityPeriodStart,
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
+      realm: data.user? data.realm : null,
       pin: data.pin,
       otpkey: data.generateOnServer ? null : (data.otpKey ?? null),
       genkey: data.generateOnServer ? 1 : 0,
       service_id: data.serviceId
     };
+
+    if (data.onlyAddToRealm) {
+      payload.realm = data.realm;
+      payload.user = null;
+    }
 
     if (payload.service_id === undefined) {
       delete payload.service_id;

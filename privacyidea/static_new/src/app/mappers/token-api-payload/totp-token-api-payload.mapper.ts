@@ -32,6 +32,7 @@ export class TotpApiPayloadMapper implements TokenApiPayloadMapper<TotpEnrollmen
       validity_period_start: data.validityPeriodStart,
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
+      realm: data.user? data.realm : null,
       pin: data.pin,
       otpkey: data.generateOnServer ? null : (data.otpKey ?? null),
       genkey: data.generateOnServer ? 1 : 0,
@@ -40,6 +41,10 @@ export class TotpApiPayloadMapper implements TokenApiPayloadMapper<TotpEnrollmen
       timeStep: data.timeStep !== undefined ? Number(data.timeStep) : undefined
     };
 
+    if (data.onlyAddToRealm) {
+      payload.realm = data.realm;
+      payload.user = null;
+    }
     if (payload.otplen === undefined) delete payload.otplen;
     if (payload.hashlib === undefined) delete payload.hashlib;
     if (payload.timeStep === undefined) delete payload.timeStep;

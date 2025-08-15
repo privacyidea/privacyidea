@@ -49,8 +49,14 @@ export class WebAuthnApiPayloadMapper implements TokenApiPayloadMapper<WebAuthnE
       validity_period_start: data.validityPeriodStart,
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
+      realm: data.user? data.realm : null,
       pin: data.pin
     };
+
+    if (data.onlyAddToRealm) {
+      payload.realm = data.realm;
+      payload.user = null;
+    }
 
     if (data.credential_id) {
       // Switch logic copies all of `data` if credential_id is present.

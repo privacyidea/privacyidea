@@ -33,6 +33,8 @@ export type TokenEnrollmentData = {
   validityPeriodStart: string;
   validityPeriodEnd: string;
   user: string;
+  realm: string;
+  onlyAddToRealm?: boolean;
   pin: string;
   [key: string]: any; // TODO: remove this when all types are defined
 };
@@ -44,6 +46,7 @@ export interface TokenEnrollmentPayload {
   validity_period_start: string;
   validity_period_end: string;
   user: string | null;
+  realm: string | null;
   pin: string;
 }
 

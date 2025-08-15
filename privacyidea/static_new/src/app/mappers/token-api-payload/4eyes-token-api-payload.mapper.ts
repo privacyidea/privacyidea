@@ -12,14 +12,11 @@ export interface FourEyesEnrollmentData extends TokenEnrollmentData {
     realm: string;
     tokens: number;
   }[];
-  onlyAddToRealm: boolean;
-  userRealm?: string;
 }
 
 export interface FourEyesEnrollmentPayload extends TokenEnrollmentPayload {
   separator: string;
   "4eyes": { [key: string]: { count: number; selected: boolean } };
-  realm?: string;
 }
 
 @Injectable({ providedIn: "root" })
@@ -33,6 +30,7 @@ export class FourEyesApiPayloadMapper implements TokenApiPayloadMapper<FourEyesE
       validity_period_end: data.validityPeriodEnd,
       pin: data.pin,
       user: data.user,
+      realm: data.user? data.realm : null,
       separator: data.separator,
       "4eyes": (data.requiredTokenOfRealms ?? []).reduce(
         (acc: { [key: string]: { count: number; selected: boolean } }, curr) => {
@@ -44,7 +42,7 @@ export class FourEyesApiPayloadMapper implements TokenApiPayloadMapper<FourEyesE
     };
 
     if (data.onlyAddToRealm) {
-      payload.realm = data.userRealm;
+      payload.realm = data.realm;
       payload.user = null;
     }
     return payload;

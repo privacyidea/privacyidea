@@ -32,13 +32,17 @@ export class CertificateApiPayloadMapper
       validity_period_start: data.validityPeriodStart,
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
+      realm: data.user? data.realm : null,
       pin: data.pin,
       genkey: 1, // As per switch statement
       ca: data.caConnector,
       template: data.certTemplate,
       pem: data.pem
     };
-
+    if (data.onlyAddToRealm) {
+      payload.realm = data.realm;
+      payload.user = null;
+    }
     if (payload.ca === undefined) delete payload.ca;
     if (payload.template === undefined) delete payload.template;
     if (payload.pem === undefined) delete payload.pem;

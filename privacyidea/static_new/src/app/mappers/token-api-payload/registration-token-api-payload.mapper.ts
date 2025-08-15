@@ -18,15 +18,23 @@ export class RegistrationApiPayloadMapper
   implements TokenApiPayloadMapper<RegistrationEnrollmentData> {
   toApiPayload(data: RegistrationEnrollmentData): RegistrationEnrollmentPayload {
     // No type-specific fields in switch statement for 'registration'
-    return {
+    const payload: RegistrationEnrollmentPayload = {
       type: data.type,
       description: data.description,
       container_serial: data.containerSerial,
       validity_period_start: data.validityPeriodStart,
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
+      realm: data.user? data.realm : null,
       pin: data.pin
     };
+
+    if (data.onlyAddToRealm) {
+      payload.realm = data.realm;
+      payload.user = null;
+    }
+
+    return payload;
   }
 
   fromApiPayload(payload: any): RegistrationEnrollmentData {

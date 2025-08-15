@@ -552,11 +552,12 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
         this.selectedTimezoneOffsetControl.value ?? "+00:00"
       ),
       user: user?.username ?? "",
+      realm: this.selectedUserRealmControl.value ?? "",
       pin: this.setPinControl.value ?? ""
     };
 
     const enrollResponse = this.clickEnroll(basicOptions);
-    var enrollPromise: Promise<EnrollmentResponse | null>;
+    let enrollPromise: Promise<EnrollmentResponse | null>;
     if (enrollResponse instanceof Promise) {
       enrollPromise = enrollResponse;
     } else if (enrollResponse instanceof Observable) {
