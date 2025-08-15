@@ -82,8 +82,7 @@ export class EnrollFoureyesComponent implements OnInit {
 
   foureyesForm = new FormGroup({
     separator: this.separatorControl,
-    requiredTokensOfRealms: this.requiredTokensOfRealmsControl,
-    onlyAddToRealm: this.onlyAddToRealmControl
+    requiredTokensOfRealms: this.requiredTokensOfRealmsControl
   });
 
   realmOptions = this.realmService.realmOptions;
@@ -152,7 +151,7 @@ export class EnrollFoureyesComponent implements OnInit {
   onClickEnroll = (
     basicOptions: TokenEnrollmentData
   ): Observable<EnrollmentResponse | null> => {
-    if (this.foureyesForm.invalid) {
+    if (this.separatorControl.invalid || this.requiredTokensOfRealmsControl.invalid) {
       this.foureyesForm.markAllAsTouched();
       return of(null);
     }

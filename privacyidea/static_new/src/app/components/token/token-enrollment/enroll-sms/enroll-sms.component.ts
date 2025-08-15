@@ -124,7 +124,8 @@ export class EnrollSmsComponent implements OnInit {
   onClickEnroll = (
     basicOptions: TokenEnrollmentData
   ): Observable<EnrollmentResponse | null> => {
-    if (this.smsForm.invalid) {
+    if (this.smsGatewayControl.invalid ||
+      (!this.readNumberDynamicallyControl.value && this.phoneNumberControl.invalid)) {
       this.smsForm.markAllAsTouched();
       return of(null);
     }

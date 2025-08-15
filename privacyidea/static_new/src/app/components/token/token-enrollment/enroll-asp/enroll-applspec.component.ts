@@ -111,10 +111,13 @@ export class EnrollApplspecComponent implements OnInit {
   onClickEnroll = (
     basicOptions: TokenEnrollmentData
   ): Observable<EnrollmentResponse | null> => {
-    if (this.applspecForm.invalid) {
+    if ((!this.generateOnServerControl.value && this.otpKeyControl.invalid) ||
+      this.generateOnServerControl.invalid ||
+      this.serviceIdControl.invalid) {
       this.applspecForm.markAllAsTouched();
       return of(null);
     }
+
     const enrollmentData: ApplspecEnrollmentOptions = {
       ...basicOptions,
       type: "applspec",

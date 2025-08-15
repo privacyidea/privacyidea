@@ -72,7 +72,7 @@ export class EnrollIndexedsecretComponent implements OnInit {
   onClickEnroll = (
     basicOptions: TokenEnrollmentData
   ): Observable<EnrollmentResponse | null> => {
-    if (this.indexedSecretForm.invalid) {
+    if (this.otpKeyControl.invalid) {
       this.indexedSecretForm.markAllAsTouched();
       return of(null);
     }

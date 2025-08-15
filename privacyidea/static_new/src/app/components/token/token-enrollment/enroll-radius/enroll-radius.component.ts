@@ -121,7 +121,8 @@ export class EnrollRadiusComponent implements OnInit {
   onClickEnroll = (
     basicOptions: TokenEnrollmentData
   ): Observable<EnrollmentResponse | null> => {
-    if (this.radiusForm.invalid) {
+    if (this.radiusUserControl.invalid || this.radiusServerConfigurationControl.invalid ||
+      this.checkPinLocallyControl.invalid) {
       this.radiusForm.markAllAsTouched();
       return of(null);
     }
