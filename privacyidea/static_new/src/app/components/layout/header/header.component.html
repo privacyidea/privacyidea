@@ -73,17 +73,17 @@
       <app-theme-switcher/>
       <div
         [ngClass]="[
-          sessionTimerService.remainingTime() < 31000
+          sessionTimerService.remainingTime()! < 31000
             ? 'red-light'
-            : sessionTimerService.remainingTime() < 60000
+            : sessionTimerService.remainingTime()! < 60000
               ? 'yellow-light'
               : 'surface-highest',
         ]"
         class="session-timer">
-        @if (sessionTimerService.remainingTime() < 60000) {
-          {{ sessionTimerService.remainingTime() | date: "mm:ss" }}
-        } @else if (sessionTimerService.remainingTime() >= 60000 &&
-        sessionTimerService.remainingTime() < 600000) {
+        @if (sessionTimerService.remainingTime()! < 599500) {
+          {{ sessionTimerService.remainingTime() | date: "m:ss" }}
+        } @else if (sessionTimerService.remainingTime()! >= 599500 &&
+        sessionTimerService.remainingTime()! < 6000000) {
           {{ sessionTimerService.remainingTime() | date: "m" }}min
         } @else {
           {{ sessionTimerService.remainingTime() | date: "mm" }}min

@@ -52,7 +52,7 @@
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("serial") {
-                    @if (element.username === authService.user()) {
+                    @if (element.username === authService.username()) {
                       <a
                         attr.aria-label="{{ column.label }} Link"
                         (click)="contentService.tokenSelected(element.serial)"> {{ element[column.key] }}
@@ -105,7 +105,7 @@
           aria-label="Remove Button Cell"
           mat-cell>
           <div class="flex just-center">
-            @if (element.username === authService.user()) {
+            @if (element.username === authService.username()) {
               <!-- TODO policy to allow user -->
               <button
                 (click)="removeTokenFromContainer(containerSerial(), element.serial)"
@@ -129,7 +129,7 @@
           aria-label="Delete Button Cell"
           mat-cell>
           <div class="flex just-center">
-            @if (element.username === authService.user()) {
+            @if (element.username === authService.username()) {
               <button
                 (click)="deleteTokenFromContainer(element.serial)"
                 mat-icon-button
