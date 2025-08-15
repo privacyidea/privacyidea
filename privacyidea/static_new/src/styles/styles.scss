@@ -47,6 +47,8 @@ body {
   --quarter-global-padding: calc(var(--global-padding) / 4);
   --eighth-global-padding: calc(var(--global-padding) / 8);
 
+  --global-gap: 16px;
+
   --light: #f3f3f3;
 
   --green-brand-base: hsl(72, 100%, 32%);
@@ -238,6 +240,10 @@ body {
   justify-content: center;
 }
 
+.flex-size-none {
+  flex: none;
+}
+
 .flex-size-1 {
   flex: 1;
 }
@@ -331,6 +337,10 @@ body {
   width: 100%;
 }
 
+.height-auto {
+  height: auto;
+}
+
 .gap-1 {
   gap: 16px;
 }
@@ -390,4 +400,58 @@ body {
 
 .content-layout {
   max-width: 81vw;
+}
+
+.hidden {
+  visibility: hidden;
+}
+
+::ng-deep {
+  .multi-column-panel.mat-mdc-select-panel {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    max-height: unset;
+    column-gap: var(--third-global-padding);
+    padding: var(--three-quarters-global-padding);
+    padding-bottom: var(--global-padding);
+    overflow-y: auto;
+  }
+}
+
+.single-column-panel.mat-mdc-select-panel {
+  max-height: unset;
+  padding: var(--three-quarters-global-padding);
+  padding-bottom: var(--global-padding);
+  overflow-y: auto;
+}
+
+.select-option {
+  @include mat.elevation(3);
+  border-radius: var(--border-radius);
+  margin: 0 0 var(--third-global-padding) 0;
+}
+
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: var(--mat-sys-surface-container-lowest);
+  padding: 16px;
+  transition: box-shadow 0.3s ease-in-out;
+}
+
+
+.sticky-header.is-sticky {
+  @include mat.elevation(3);
+}
+
+.sticky-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--global-gap);
+}
+
+.sticky-controls .mat-mdc-form-field {
+  flex-grow: 1;
+  width: 100%;
 }
