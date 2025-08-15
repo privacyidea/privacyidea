@@ -326,9 +326,6 @@ export class MockAuthService implements AuthServiceInterface {
   containerWizard: WritableSignal<{ enabled: boolean }> = signal(
     MockAuthService.MOCK_AUTH_DATA.container_wizard,
   );
-  isAuthenticatedUser: Signal<boolean> = computed(() => {
-    return this.isAuthenticated() && this.role() === "user";
-  });
 
   isSelfServiceUser: Signal<boolean> = signal(
     this.role() === "user" && this.menus().includes("token_self-service_menu"),
