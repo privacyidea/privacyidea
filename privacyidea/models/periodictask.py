@@ -49,16 +49,16 @@ class PeriodicTask(MethodsMixin, db.Model):
     def __init__(self, name, active, interval, node_list, taskmodule, ordering, options=None, id=None,
                  retry_if_failed=True):
         """
-        :param name: Unique name of the periodic task as unicode
+        :param name: Unique name of the periodic task as Unicode
         :param active: a boolean
-        :param retry_if_failed: a boalean
-        :param interval: a unicode specifying the periodicity of the task
+        :param retry_if_failed:
+        :param interval: a Unicode specifying the periodicity of the task
         :param node_list: a list of unicodes, denoting the node names that should execute that task.
                           If we update an existing PeriodicTask entry, PeriodicTaskLastRun entries
-                          referring to nodes that are not present in ``node_list`` any more will be deleted.
-        :param taskmodule: a unicode
+                          referring to nodes that are not present in ``node_list`` anymore will be deleted.
+        :param taskmodule: a Unicode
         :param ordering: an integer. Lower tasks are executed first.
-        :param options: a dictionary of options, mapping unicode keys to values. Values will be converted to unicode.
+        :param options: a dictionary of options, mapping Unicode keys to values. Values will be converted to Unicode.
                         If we update an existing PeriodicTask entry, all options that have been set previously
                         but are not present in ``options`` will be deleted.
         :param id: the ID of an existing entry, if any

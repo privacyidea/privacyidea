@@ -21,8 +21,7 @@ from privacyidea.models import db
 
 class MethodsMixin:
     """
-    This class mixes in some common Class table functions like
-    delete and save
+    This class mixes in some common Class table functions like delete and save
     """
 
     def save(self):

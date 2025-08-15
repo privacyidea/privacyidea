@@ -15,9 +15,12 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 import logging
-from sqlalchemy import Sequence
+from typing import List, Optional
+
+from sqlalchemy import Unicode, Integer, UniqueConstraint, select, update, delete
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from privacyidea.models import db
 from privacyidea.models.config import (TimestampMethodsMixin,
@@ -34,37 +37,39 @@ class Tokengroup(TimestampMethodsMixin, db.Model):
     A token can then be assigned to several of these tokengroups.
     """
     __tablename__ = 'tokengroup'
-    id = db.Column(db.Integer, Sequence("tokengroup_seq"), primary_key=True,
-                   nullable=False)
-    name = db.Column(db.Unicode(255), default='',
-                     unique=True, nullable=False)
-    Description = db.Column(db.Unicode(2000), default='')
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=False)
+    name: Mapped[str] = mapped_column(Unicode(255), default='', unique=True, nullable=False)
+    Description: Mapped[str] = mapped_column(Unicode(2000), default='')
+
+    # Define relationship back to TokenTokengroup for deletion cascade
+    tokens: Mapped[List['TokenTokengroup']] = relationship(back_populates='tokengroup', cascade="all, delete-orphan")
 
     @log_with(log)
-    def __init__(self, groupname, description=None):
+    def __init__(self, groupname: str, description: Optional[str] = None):
         self.name = groupname
         self.Description = description
 
     def delete(self):
         ret = self.id
-        # delete all TokenTokenGroup
-        db.session.query(TokenTokengroup) \
-            .filter(TokenTokengroup.tokengroup_id == ret) \
-            .delete()
-        # delete the tokengroup
+        # SQLAlchemy's cascade="all, delete-orphan" handles the deletion of TokenTokengroup entries.
         db.session.delete(self)
         save_config_timestamp()
         db.session.commit()
         return ret
 
     def save(self):
-        ti_func = Tokengroup.query.filter_by(name=self.name).first
-        ti = ti_func()
+        stmt = select(Tokengroup).filter_by(name=self.name)
+        ti = db.session.execute(stmt).scalar_one_or_none()
         if ti is None:
             return TimestampMethodsMixin.save(self)
         else:
             # update
-            Tokengroup.query.filter_by(id=ti.id).update({'Description': self.Description})
+            update_stmt = (
+                update(Tokengroup)
+                .where(Tokengroup.id == ti.id)
+                .values(Description=self.Description)
+            )
+            db.session.execute(update_stmt)
             ret = ti.id
             db.session.commit()
         return ret
@@ -76,24 +81,17 @@ class TokenTokengroup(TimestampMethodsMixin, db.Model):
     A token can be assigned to several different token groups.
     """
     __tablename__ = 'tokentokengroup'
-    __table_args__ = (db.UniqueConstraint('token_id',
-                                          'tokengroup_id',
-                                          name='ttgix_2'),)
-    id = db.Column(db.Integer(), Sequence("tokentokengroup_seq"), primary_key=True)
-    token_id = db.Column(db.Integer(),
-                         db.ForeignKey('token.id'))
-    tokengroup_id = db.Column(db.Integer(),
-                              db.ForeignKey('tokengroup.id'))
-    # This creates an attribute "tokengroup_list" in the Token object
-    token = db.relationship('Token',
-                            lazy='joined',
-                            backref='tokengroup_list')
-    # This creates an attribute "token_list" in the Tokengroup object
-    tokengroup = db.relationship('Tokengroup',
-                                 lazy='joined',
-                                 backref='token_list')
+    __table_args__ = (UniqueConstraint('token_id', 'tokengroup_id', name='ttgix_2'),)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    token_id: Mapped[int] = mapped_column(Integer, db.ForeignKey('token.id'))
+    tokengroup_id: Mapped[int] = mapped_column(Integer, db.ForeignKey('tokengroup.id'))
 
-    def __init__(self, tokengroup_id=0, token_id=0, tokengroupname=None):
+    # Define relationships with modern syntax
+    token: Mapped['Token'] = relationship(lazy='joined', backref='tokengroup_list')
+    tokengroup: Mapped['Tokengroup'] = relationship(back_populates='tokens', lazy='joined',
+                                                  single_parent=True)
+
+    def __init__(self, tokengroup_id: int = 0, token_id: int = 0, tokengroupname: Optional[str] = None):
         """
         Create a new TokenTokengroup assignment
         :param tokengroup_id: The id of the token group
@@ -101,11 +99,12 @@ class TokenTokengroup(TimestampMethodsMixin, db.Model):
         :param token_id: The id of the token
         """
         if tokengroupname:
-            r = Tokengroup.query.filter_by(name=tokengroupname).first()
+            stmt = select(Tokengroup).filter_by(name=tokengroupname)
+            r = db.session.execute(stmt).scalar_one_or_none()
             if not r:
                 raise Exception("tokengroup does not exist")
             self.tokengroup_id = r.id
-        if tokengroup_id:
+        elif tokengroup_id:
             self.tokengroup_id = tokengroup_id
         self.token_id = token_id
 
@@ -113,16 +112,15 @@ class TokenTokengroup(TimestampMethodsMixin, db.Model):
         """
         We only save this, if it does not exist, yet.
         """
-        tr_func = TokenTokengroup.query.filter_by(tokengroup_id=self.tokengroup_id,
-                                                  token_id=self.token_id).first
-        tr = tr_func()
+        stmt = select(TokenTokengroup).filter_by(tokengroup_id=self.tokengroup_id, token_id=self.token_id)
+        tr = db.session.execute(stmt).scalar_one_or_none()
         if tr is None:
             # create a new one
             db.session.add(self)
             db.session.commit()
             if get_app_config_value(SAFE_STORE, False):
-                tr = tr_func()
-                ret = tr.id
+                tr = db.session.execute(stmt).scalar_one_or_none()
+                ret = tr.id if tr else self.id
             else:
                 ret = self.id
         else:

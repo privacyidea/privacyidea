@@ -15,12 +15,15 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-from sqlalchemy import Sequence
+import logging
+from sqlalchemy import Sequence, Unicode, Integer, ForeignKey, UniqueConstraint, and_, select, update, delete
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from privacyidea.models import db
 from privacyidea.models.utils import MethodsMixin
 from privacyidea.lib.utils import convert_column_to_unicode
+
+log = logging.getLogger(__name__)
 
 
 class SMSGateway(MethodsMixin, db.Model):
@@ -37,26 +40,32 @@ class SMSGateway(MethodsMixin, db.Model):
     All options and parameters are saved in other tables.
     """
     __tablename__ = 'smsgateway'
-    id = db.Column(db.Integer, Sequence("smsgateway_seq"), primary_key=True)
-    identifier = db.Column(db.Unicode(255), nullable=False, unique=True)
-    description = db.Column(db.Unicode(1024), default="")
-    providermodule = db.Column(db.Unicode(1024), nullable=False)
-    options = db.relationship('SMSGatewayOption',
-                              lazy='dynamic',
-                              backref='smsgw')
+    id: Mapped[int] = mapped_column(Integer, Sequence("smsgateway_seq"), primary_key=True)
+    identifier: Mapped[str] = mapped_column(Unicode(255), nullable=False, unique=True)
+    description: Mapped[str] = mapped_column(Unicode(1024), default="")
+    providermodule: Mapped[str] = mapped_column(Unicode(1024), nullable=False)
+    options: Mapped[list["SMSGatewayOption"]] = relationship(
+        'SMSGatewayOption',
+        lazy='dynamic',
+        back_populates='smsgw'
+    )
 
     def __init__(self, identifier, providermodule, description=None,
                  options=None, headers=None):
 
         options = options or {}
         headers = headers or {}
-        sql = SMSGateway.query.filter_by(identifier=identifier).first()
+
+        stmt = select(SMSGateway).filter_by(identifier=identifier)
+        sql = db.session.execute(stmt).scalar_one_or_none()
+
         if sql:
             self.id = sql.id
         self.identifier = identifier
         self.providermodule = providermodule
         self.description = description
         self.save()
+
         # delete non-existing options in case of update
         opts = {"option": options, "header": headers}
         if sql:
@@ -66,8 +75,14 @@ class SMSGateway(MethodsMixin, db.Model):
                     # iterate through all existing options/headers
                     if key not in vals:
                         # if the option is not contained anymore
-                        SMSGatewayOption.query.filter_by(gateway_id=self.id,
-                                                         Key=key, Type=typ).delete()
+                        delete_stmt = delete(SMSGatewayOption).where(
+                            and_(
+                                SMSGatewayOption.gateway_id == self.id,
+                                SMSGatewayOption.Key == key,
+                                SMSGatewayOption.Type == typ
+                            )
+                        )
+                        db.session.execute(delete_stmt)
         # add the options and headers to the SMS Gateway
         for typ, vals in opts.items():
             for k, v in vals.items():
@@ -80,24 +95,26 @@ class SMSGateway(MethodsMixin, db.Model):
             db.session.commit()
         else:
             # update
-            SMSGateway.query.filter_by(id=self.id).update({
-                "identifier": self.identifier,
-                "providermodule": self.providermodule,
-                "description": self.description
-            })
+            update_stmt = (
+                update(SMSGateway)
+                .where(SMSGateway.id == self.id)
+                .values(
+                    identifier=self.identifier,
+                    providermodule=self.providermodule,
+                    description=self.description
+                )
+            )
+            db.session.execute(update_stmt)
             db.session.commit()
         return self.id
 
     def delete(self):
         """
         When deleting an SMS Gateway we also delete all the options.
-        :return:
         """
         ret = self.id
-        # delete all SMSGatewayOptions
-        db.session.query(SMSGatewayOption) \
-            .filter(SMSGatewayOption.gateway_id == ret) \
-            .delete()
+        delete_stmt = delete(SMSGatewayOption).where(SMSGatewayOption.gateway_id == ret)
+        db.session.execute(delete_stmt)
         # delete the SMSGateway itself
         db.session.delete(self)
         db.session.commit()
@@ -105,11 +122,6 @@ class SMSGateway(MethodsMixin, db.Model):
 
     @property
     def option_dict(self):
-        """
-        Return all connected options as a dictionary
-
-        :return: dict
-        """
         res = {}
         for option in self.options:
             if option.Type == "option" or not option.Type:
@@ -118,11 +130,6 @@ class SMSGateway(MethodsMixin, db.Model):
 
     @property
     def header_dict(self):
-        """
-        Return all connected headers as a dictionary
-
-        :return: dict
-        """
         res = {}
         for option in self.options:
             if option.Type == "header":
@@ -130,12 +137,6 @@ class SMSGateway(MethodsMixin, db.Model):
         return res
 
     def as_dict(self):
-        """
-        Return the object as a dictionary
-
-        :return: complete dict
-        :rytpe: dict
-        """
         d = {"id": self.id,
              "name": self.identifier,
              "providermodule": self.providermodule,
@@ -151,18 +152,19 @@ class SMSGatewayOption(MethodsMixin, db.Model):
     This table stores the options, parameters and headers for an SMS Gateway definition.
     """
     __tablename__ = 'smsgatewayoption'
-    id = db.Column(db.Integer, Sequence("smsgwoption_seq"), primary_key=True)
-    Key = db.Column(db.Unicode(255), nullable=False)
-    Value = db.Column(db.UnicodeText(), default='')
-    Type = db.Column(db.Unicode(100), default='option')
-    gateway_id = db.Column(db.Integer(),
-                           db.ForeignKey('smsgateway.id'), index=True)
-    __table_args__ = (db.UniqueConstraint('gateway_id',
-                                          'Key', 'Type',
-                                          name='sgix_1'),)
+    id: Mapped[int] = mapped_column(Integer, Sequence("smsgwoption_seq"), primary_key=True)
+    Key: Mapped[str] = mapped_column(Unicode(255), nullable=False)
+    Value: Mapped[str] = mapped_column(Unicode(2000), default='')
+    Type: Mapped[str] = mapped_column(Unicode(100), default='option')
+    gateway_id: Mapped[int] = mapped_column(Integer, ForeignKey('smsgateway.id'), index=True)
+
+    smsgw = relationship("SMSGateway", back_populates="options")
+
+    __table_args__ = (UniqueConstraint('gateway_id',
+                                       'Key', 'Type',
+                                       name='sgix_1'),)
 
     def __init__(self, gateway_id, Key, Value, Type=None):
-
         """
         Create a new gateway_option for the gateway_id
         """
@@ -175,8 +177,15 @@ class SMSGatewayOption(MethodsMixin, db.Model):
     def save(self):
         # See, if there is this option or header for this gateway
         # The first match takes precedence
-        go = SMSGatewayOption.query.filter_by(gateway_id=self.gateway_id,
-                                              Key=self.Key, Type=self.Type).first()
+        stmt = select(SMSGatewayOption).filter(
+            and_(
+                SMSGatewayOption.gateway_id == self.gateway_id,
+                SMSGatewayOption.Key == self.Key,
+                SMSGatewayOption.Type == self.Type
+            )
+        )
+        go = db.session.execute(stmt).scalar_one_or_none()
+
         if go is None:
             # create a new one
             db.session.add(self)
@@ -184,10 +193,18 @@ class SMSGatewayOption(MethodsMixin, db.Model):
             ret = self.id
         else:
             # update
-            SMSGatewayOption.query.filter_by(gateway_id=self.gateway_id,
-                                             Key=self.Key, Type=self.Type
-                                             ).update({'Value': self.Value,
-                                                       'Type': self.Type})
+            update_stmt = (
+                update(SMSGatewayOption)
+                .where(
+                    and_(
+                        SMSGatewayOption.gateway_id == self.gateway_id,
+                        SMSGatewayOption.Key == self.Key,
+                        SMSGatewayOption.Type == self.Type
+                    )
+                )
+                .values(Value=self.Value, Type=self.Type)
+            )
+            db.session.execute(update_stmt)
             ret = go.id
         db.session.commit()
         return ret

@@ -15,8 +15,14 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from sqlalchemy import (
+    Sequence,
+    Unicode,
+    Integer,
+    UniqueConstraint,
+)
+from sqlalchemy.orm import Mapped, mapped_column
 
-from sqlalchemy import Sequence
 from privacyidea.models import db
 
 
@@ -33,13 +39,11 @@ class EventCounter(db.Model):
     if all nodes write to the same table row.
     """
     __tablename__ = 'eventcounter'
-    id = db.Column(db.Integer, Sequence("eventcounter_seq"), primary_key=True)
-    counter_name = db.Column(db.Unicode(80), nullable=False)
-    counter_value = db.Column(db.Integer, default=0)
-    node = db.Column(db.Unicode(255), nullable=False)
-    __table_args__ = (db.UniqueConstraint('counter_name',
-                                          'node',
-                                          name='evctr_1'),)
+    id: Mapped[int] = mapped_column(Integer, Sequence("eventcounter_seq"), primary_key=True)
+    counter_name: Mapped[str] = mapped_column(Unicode(80), nullable=False)
+    counter_value: Mapped[int] = mapped_column(Integer, default=0)
+    node: Mapped[str] = mapped_column(Unicode(255), nullable=False)
+    __table_args__ = (UniqueConstraint('counter_name', 'node', name='evctr_1'),)
 
     def __init__(self, name, value=0, node=""):
         self.counter_value = value
@@ -58,17 +62,9 @@ class EventCounter(db.Model):
         return ret
 
     def increase(self):
-        """
-        Increase the value of a counter
-        :return:
-        """
         self.counter_value = self.counter_value + 1
         self.save()
 
     def decrease(self):
-        """
-        Decrease the value of a counter.
-        :return:
-        """
         self.counter_value = self.counter_value - 1
         self.save()

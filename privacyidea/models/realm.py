@@ -15,9 +15,11 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 import logging
-from sqlalchemy import Sequence
+from typing import List
+
+from sqlalchemy import Sequence, Unicode, Integer, Boolean, ForeignKey, UniqueConstraint, delete, select, and_
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from privacyidea.models import db
 from privacyidea.models.resolver import Resolver
@@ -25,6 +27,7 @@ from privacyidea.models.config import (TimestampMethodsMixin,
                                        save_config_timestamp, NodeName)
 from privacyidea.lib.error import DatabaseError
 from privacyidea.lib.log import log_with
+
 
 log = logging.getLogger(__name__)
 
@@ -36,15 +39,25 @@ class Realm(TimestampMethodsMixin, db.Model):
     the realms. The linking to resolvers is stored in the table "resolverrealm".
     """
     __tablename__ = 'realm'
-    id = db.Column(db.Integer, Sequence("realm_seq"), primary_key=True,
-                   nullable=False)
-    name = db.Column(db.Unicode(255), default='',
-                     unique=True, nullable=False)
-    default = db.Column(db.Boolean(), default=False)
-    resolver_list = db.relationship('ResolverRealm',
+    id: Mapped[int] = mapped_column(Integer, Sequence("realm_seq"), primary_key=True,
+                                    nullable=False)
+    name: Mapped[str] = mapped_column(Unicode(255), default='',
+                                      unique=True, nullable=False)
+    default: Mapped[bool] = mapped_column(Boolean(), default=False)
+    resolver_list = relationship('ResolverRealm',
                                     lazy='select',
                                     back_populates='realm')
-    container = db.relationship('TokenContainer', secondary='tokencontainerrealm', back_populates='realms')
+    container = relationship('TokenContainer', secondary='tokencontainerrealm', back_populates='realms')
+
+    tokenowners: Mapped[List['TokenOwner']] = relationship(
+        'TokenOwner',
+        back_populates='realm'
+    )
+
+    token_list: Mapped[List['TokenRealm']] = relationship(
+        'TokenRealm',
+        back_populates='realm'
+    )
 
     @log_with(log)
     def __init__(self, realm):
@@ -53,14 +66,12 @@ class Realm(TimestampMethodsMixin, db.Model):
     def delete(self):
         from .token import TokenRealm
         ret = self.id
-        # delete all TokenRealm
-        db.session.query(TokenRealm) \
-            .filter(TokenRealm.realm_id == ret) \
-            .delete()
-        # delete all ResolverRealms
-        db.session.query(ResolverRealm) \
-            .filter(ResolverRealm.realm_id == ret) \
-            .delete()
+        # Use modern delete statement for TokenRealm
+        stmt = delete(TokenRealm).where(TokenRealm.realm_id == ret)
+        db.session.execute(stmt)
+        # Use modern delete statement for ResolverRealm
+        stmt = delete(ResolverRealm).where(ResolverRealm.realm_id == ret)
+        db.session.execute(stmt)
         # delete the realm
         db.session.delete(self)
         save_config_timestamp()
@@ -74,21 +85,21 @@ class ResolverRealm(TimestampMethodsMixin, db.Model):
     This is a N:M relation
     """
     __tablename__ = 'resolverrealm'
-    id = db.Column(db.Integer, Sequence("resolverrealm_seq"), primary_key=True)
-    resolver_id = db.Column(db.Integer, db.ForeignKey("resolver.id"))
-    realm_id = db.Column(db.Integer, db.ForeignKey("realm.id"))
+    id: Mapped[int] = mapped_column(Integer, Sequence("resolverrealm_seq"), primary_key=True)
+    resolver_id: Mapped[int] = mapped_column(Integer, ForeignKey("resolver.id"))
+    realm_id: Mapped[int] = mapped_column(Integer, ForeignKey("realm.id"))
     # If there are several resolvers in a realm, the priority is used the
     # find a user first in a resolver with a higher priority (i.e. lower number)
-    priority = db.Column(db.Integer)
+    priority: Mapped[int] = mapped_column(Integer)
     # TODO: with SQLAlchemy 2.0 db.UUID will be generally available
-    node_uuid = db.Column(db.Unicode(36), default='')
-    resolver = db.relationship(Resolver,
+    node_uuid: Mapped[str] = mapped_column(Unicode(36), default='')
+    resolver = relationship(Resolver,
                                lazy="joined",
                                back_populates="realm_list")
-    realm = db.relationship(Realm,
+    realm = relationship(Realm,
                             lazy="joined",
                             back_populates="resolver_list")
-    __table_args__ = (db.UniqueConstraint('resolver_id',
+    __table_args__ = (UniqueConstraint('resolver_id',
                                           'realm_id',
                                           'node_uuid',
                                           name='rrix_2'),)
@@ -106,17 +117,16 @@ class ResolverRealm(TimestampMethodsMixin, db.Model):
         if resolver_id:
             self.resolver_id = resolver_id
         elif resolver_name:
-            self.resolver_id = Resolver.query \
-                .filter_by(name=resolver_name) \
-                .first().id
+            stmt = select(Resolver.id).filter_by(name=resolver_name)
+            self.resolver_id = db.session.execute(stmt).scalar_one_or_none()
         if realm_id:
             self.realm_id = realm_id
         elif realm_name:
-            self.realm_id = Realm.query \
-                .filter_by(name=realm_name) \
-                .first().id
+            stmt = select(Realm.id).filter_by(name=realm_name)
+            self.realm_id = db.session.execute(stmt).scalar_one_or_none()
         if node_uuid:
             # Check if the node is already defined in the NodeName table
+            # This is already a modern SQLAlchemy statement
             if db.session.scalar(db.select(db.func.count(NodeName.id)).filter(NodeName.id == node_uuid)) > 0:
                 self.node_uuid = node_uuid
             else:
@@ -127,5 +137,5 @@ class ResolverRealm(TimestampMethodsMixin, db.Model):
                     raise DatabaseError(f"No NodeName entry found for UUID {node_uuid}")
 
         elif node_name:
-            # Get the UUID for the corresponding node name
-            self.node_uuid = db.session.scalar(db.select(NodeName).filter(NodeName.name == node_name)).id
+            stmt = select(NodeName.id).filter_by(name=node_name)
+            self.node_uuid = db.session.execute(stmt).scalar_one_or_none()

@@ -15,11 +15,15 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import logging
 
-from sqlalchemy import Sequence
+from sqlalchemy import Sequence, Unicode, Integer, Boolean, select, update
+from sqlalchemy.orm import Mapped, mapped_column
 
 from privacyidea.models import db
 from privacyidea.models.utils import MethodsMixin
+
+log = logging.getLogger(__name__)
 
 
 class PrivacyIDEAServer(MethodsMixin, db.Model):
@@ -27,18 +31,20 @@ class PrivacyIDEAServer(MethodsMixin, db.Model):
     This table can store remote privacyIDEA server definitions
     """
     __tablename__ = 'privacyideaserver'
-    id = db.Column(db.Integer, Sequence("privacyideaserver_seq"),
-                   primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, Sequence("privacyideaserver_seq"),
+                                    primary_key=True)
     # This is a name to refer to
-    identifier = db.Column(db.Unicode(255), nullable=False, unique=True)
+    identifier: Mapped[str] = mapped_column(Unicode(255), nullable=False, unique=True)
     # This is the FQDN or the IP address
-    url = db.Column(db.Unicode(255), nullable=False)
-    tls = db.Column(db.Boolean, default=False)
-    description = db.Column(db.Unicode(2000), default='')
+    url: Mapped[str] = mapped_column(Unicode(255), nullable=False)
+    tls: Mapped[bool] = mapped_column(Boolean, default=False)
+    description: Mapped[str] = mapped_column(Unicode(2000), default='')
 
     def save(self):
-        pi = PrivacyIDEAServer.query.filter(PrivacyIDEAServer.identifier ==
-                                            self.identifier).first()
+        stmt = select(PrivacyIDEAServer).filter(
+            PrivacyIDEAServer.identifier == self.identifier
+        )
+        pi = db.session.execute(stmt).scalar_one_or_none()
         if pi is None:
             # create a new one
             db.session.add(self)
@@ -51,8 +57,13 @@ class PrivacyIDEAServer(MethodsMixin, db.Model):
                 values["tls"] = self.tls
             if self.description is not None:
                 values["description"] = self.description
-            PrivacyIDEAServer.query.filter(PrivacyIDEAServer.identifier ==
-                                           self.identifier).update(values)
+            # Use modern update statement
+            update_stmt = (
+                update(PrivacyIDEAServer)
+                .where(PrivacyIDEAServer.identifier == self.identifier)
+                .values(**values)
+            )
+            db.session.execute(update_stmt)
             ret = pi.id
         db.session.commit()
         return ret
@@ -72,30 +83,30 @@ class RADIUSServer(MethodsMixin, db.Model):
     * timeout in seconds (default 5)
     * retries (default 3)
 
-    These RADIUS server definition can be used in RADIUS tokens or in a
-    radius passthru policy.
+    These RADIUS server definition can be used in RADIUS tokens or in a radius passthru policy.
     """
     __tablename__ = 'radiusserver'
-    id = db.Column(db.Integer, Sequence("radiusserver_seq"), primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, Sequence("radiusserver_seq"), primary_key=True)
     # This is a name to refer to
-    identifier = db.Column(db.Unicode(255), nullable=False, unique=True)
+    identifier: Mapped[str] = mapped_column(Unicode(255), nullable=False, unique=True)
     # This is the FQDN or the IP address
-    server = db.Column(db.Unicode(255), nullable=False)
-    port = db.Column(db.Integer, default=25)
-    secret = db.Column(db.Unicode(255), default="")
-    dictionary = db.Column(db.Unicode(255),
-                           default="/etc/privacyidea/dictionary")
-    description = db.Column(db.Unicode(2000), default='')
-    timeout = db.Column(db.Integer, default=5)
-    retries = db.Column(db.Integer, default=3)
+    server: Mapped[str] = mapped_column(Unicode(255), nullable=False)
+    port: Mapped[int] = mapped_column(Integer, default=25)
+    secret: Mapped[str] = mapped_column(Unicode(255), default="")
+    dictionary: Mapped[str] = mapped_column(Unicode(255),
+                                            default="/etc/privacyidea/dictionary")
+    description: Mapped[str] = mapped_column(Unicode(2000), default='')
+    timeout: Mapped[int] = mapped_column(Integer, default=5)
+    retries: Mapped[int] = mapped_column(Integer, default=3)
 
     def save(self):
         """
-        If a RADIUS server with a given name is save, then the existing
-        RADIUS server is updated.
+        If a RADIUS server with a given name is saved, then the existing RADIUS server is updated.
         """
-        radius = RADIUSServer.query.filter(RADIUSServer.identifier ==
-                                           self.identifier).first()
+        stmt = select(RADIUSServer).filter(
+            RADIUSServer.identifier == self.identifier
+        )
+        radius = db.session.execute(stmt).scalar_one_or_none()
         if radius is None:
             # create a new one
             db.session.add(self)
@@ -116,8 +127,12 @@ class RADIUSServer(MethodsMixin, db.Model):
                 values["timeout"] = int(self.timeout)
             if self.retries is not None:
                 values["retries"] = int(self.retries)
-            RADIUSServer.query.filter(RADIUSServer.identifier ==
-                                      self.identifier).update(values)
+            update_stmt = (
+                update(RADIUSServer)
+                .where(RADIUSServer.identifier == self.identifier)
+                .values(**values)
+            )
+            db.session.execute(update_stmt)
             ret = radius.id
         db.session.commit()
         return ret
@@ -133,19 +148,19 @@ class SMTPServer(MethodsMixin, db.Model):
     The config entries are referenced by the id of the machine resolver
     """
     __tablename__ = 'smtpserver'
-    id = db.Column(db.Integer, Sequence("smtpserver_seq"), primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, Sequence("smtpserver_seq"), primary_key=True)
     # This is a name to refer to
-    identifier = db.Column(db.Unicode(255), nullable=False)
+    identifier: Mapped[str] = mapped_column(Unicode(255), nullable=False)
     # This is the FQDN or the IP address
-    server = db.Column(db.Unicode(255), nullable=False)
-    port = db.Column(db.Integer, default=25)
-    username = db.Column(db.Unicode(255), default="")
-    password = db.Column(db.Unicode(255), default="")
-    sender = db.Column(db.Unicode(255), default="")
-    tls = db.Column(db.Boolean, default=False)
-    description = db.Column(db.Unicode(2000), default='')
-    timeout = db.Column(db.Integer, default=10)
-    enqueue_job = db.Column(db.Boolean, nullable=False, default=False)
+    server: Mapped[str] = mapped_column(Unicode(255), nullable=False)
+    port: Mapped[int] = mapped_column(Integer, default=25)
+    username: Mapped[str] = mapped_column(Unicode(255), default="")
+    password: Mapped[str] = mapped_column(Unicode(255), default="")
+    sender: Mapped[str] = mapped_column(Unicode(255), default="")
+    tls: Mapped[bool] = mapped_column(Boolean, default=False)
+    description: Mapped[str] = mapped_column(Unicode(2000), default='')
+    timeout: Mapped[int] = mapped_column(Integer, default=10)
+    enqueue_job: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     def get(self):
         """
@@ -166,8 +181,10 @@ class SMTPServer(MethodsMixin, db.Model):
         }
 
     def save(self):
-        smtp = SMTPServer.query.filter(SMTPServer.identifier ==
-                                       self.identifier).first()
+        stmt = select(SMTPServer).filter(
+            SMTPServer.identifier == self.identifier
+        )
+        smtp = db.session.execute(stmt).scalar_one_or_none()
         if smtp is None:
             # create a new one
             db.session.add(self)
@@ -192,8 +209,12 @@ class SMTPServer(MethodsMixin, db.Model):
                 values["timeout"] = self.timeout
             if self.enqueue_job is not None:
                 values["enqueue_job"] = self.enqueue_job
-            SMTPServer.query.filter(SMTPServer.identifier ==
-                                    self.identifier).update(values)
+            update_stmt = (
+                update(SMTPServer)
+                .where(SMTPServer.identifier == self.identifier)
+                .values(**values)
+            )
+            db.session.execute(update_stmt)
             ret = smtp.id
         db.session.commit()
         return ret
