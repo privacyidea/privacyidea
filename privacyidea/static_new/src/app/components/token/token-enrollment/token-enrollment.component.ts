@@ -123,6 +123,7 @@ import {
   DialogService,
   DialogServiceInterface,
 } from '../../../services/dialog/dialog.service';
+import { ScrollToTopDirective } from '../../shared/directives/app-scroll-to-top.directive';
 import { TokenEnrollmentLastStepDialogData } from './token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component';
 
 export type ClickEnrollFn = (
@@ -238,6 +239,7 @@ export class CustomDateAdapter extends NativeDateAdapter {
     MatError,
     EnrollPasskeyComponent,
     MatTooltipModule,
+    ScrollToTopDirective,
   ],
   providers: [
     provideNativeDateAdapter(),

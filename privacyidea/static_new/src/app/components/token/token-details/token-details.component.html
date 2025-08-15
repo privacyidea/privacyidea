@@ -1,11 +1,11 @@
 <div aria-label="Details"
-     class="details-container">
+     class="details-container" appScrollToTop>
   <div class="details-flex-layout flex-column">
     <div class="details-header">
       <h3>Details for Token: </h3>
       <h3 style="color: var(--mat-sys-primary)"> {{ tokenSerial() }} </h3>
       <app-copy-button [copyText]="tokenSerial()"></app-copy-button>
-    </div>
+    </div>  
     <div [ngClass]="[
         overflowService.isWidthOverflowing('body', 1310)
           ? 'flex-column'

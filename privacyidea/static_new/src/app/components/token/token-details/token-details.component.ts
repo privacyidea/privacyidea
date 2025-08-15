@@ -27,6 +27,8 @@ import {
   MatTable,
   MatTableModule,
 } from '@angular/material/table';
+import { Router } from '@angular/router';
+import { ROUTE_PATHS } from '../../../app.routes';
 import {
   AuthService,
   AuthServiceInterface,
@@ -57,6 +59,7 @@ import {
   TokenServiceInterface,
 } from '../../../services/token/token.service';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
+import { ScrollToTopDirective } from '../../shared/directives/app-scroll-to-top.directive';
 import {
   EditableElement,
   EditButtonsComponent,
@@ -65,8 +68,6 @@ import { TokenDetailsActionsComponent } from './token-details-actions/token-deta
 import { TokenDetailsInfoComponent } from './token-details-info/token-details-info.component';
 import { TokenDetailsUserComponent } from './token-details-user/token-details-user.component';
 import { TokenSshMachineAssignDialogComponent } from './token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog';
-import { Router } from '@angular/router';
-import { ROUTE_PATHS } from '../../../app.routes';
 
 export const tokenDetailsKeyMap = [
   { key: 'tokentype', label: 'Type' },
@@ -118,6 +119,7 @@ export const infoDetailsKeyMap = [{ key: 'info', label: 'Information' }];
     TokenDetailsActionsComponent,
     EditButtonsComponent,
     CopyButtonComponent,
+    ScrollToTopDirective,
   ],
   templateUrl: './token-details.component.html',
   styleUrls: ['./token-details.component.scss'],

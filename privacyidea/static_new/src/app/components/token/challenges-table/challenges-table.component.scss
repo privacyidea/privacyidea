@@ -3,9 +3,11 @@
 .challenges-table-container {
   @include styles.table-container-styles;
   @include styles.base-table-structure(
-      ".challenges-table",
-      ".challenges-table-filter",
-      ".table-scroll-container"
+    ".challenges-table",
+    ".challenges-table-filter",
+    ".table-scroll-container"
   );
+  max-height: calc(var(--main-height) - var(--global-padding) * 5);
   overflow: auto;
+  display: grid;
 }

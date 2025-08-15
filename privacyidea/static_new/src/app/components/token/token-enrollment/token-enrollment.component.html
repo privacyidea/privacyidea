@@ -1,6 +1,6 @@
 <div #scrollContainer
      aria-label="Token Enrollment"
-     class="token-enrollment-container">
+     class="token-enrollment-container" appScrollToTop>
   <h3 class="margin-left-1"> Enroll a new Token </h3>
   <form (ngSubmit)="enrollToken()"
         [formGroup]="formGroupSignal()">

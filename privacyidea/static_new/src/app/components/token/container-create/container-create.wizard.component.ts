@@ -46,6 +46,7 @@ import {
   VersioningService,
   VersioningServiceInterface,
 } from '../../../services/version/version.service';
+import { ScrollToTopDirective } from '../../shared/directives/app-scroll-to-top.directive';
 import { ContainerCreateComponent } from './container-create.component';
 
 @Component({
@@ -67,6 +68,7 @@ import { ContainerCreateComponent } from './container-create.component';
     MatExpansionPanelTitle,
     MatExpansionPanelHeader,
     AsyncPipe,
+    ScrollToTopDirective,
   ],
   templateUrl: './container-create.wizard.component.html',
   styleUrl: './container-create.component.scss',

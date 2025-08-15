@@ -1,7 +1,7 @@
 <div [ngClass]="{
     'pad-0': overflowService.isWidthOverflowing('body', 1310),
   }"
-     class="user-container">
+     class="user-container" appScrollToTop>
   <table [dataSource]="userData()"
          aria-label="User Detail Data Table"
          class="user-details-table"

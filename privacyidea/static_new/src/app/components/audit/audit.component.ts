@@ -45,6 +45,7 @@ import {
   TableUtilsServiceInterface,
 } from '../../services/table-utils/table-utils.service';
 import { CopyButtonComponent } from '../shared/copy-button/copy-button.component';
+import { ScrollToTopDirective } from '../shared/directives/app-scroll-to-top.directive';
 import { KeywordFilterComponent } from '../shared/keyword-filter/keyword-filter.component';
 
 const columnKeysMap = [
@@ -101,6 +102,7 @@ const columnKeysMap = [
     MatLabel,
     CopyButtonComponent,
     RouterLink,
+    ScrollToTopDirective,
   ],
   templateUrl: './audit.component.html',
   styleUrl: './audit.component.scss',

@@ -1,7 +1,6 @@
 import { NgClass } from '@angular/common';
 import {
   Component,
-  computed,
   effect,
   inject,
   linkedSignal,
@@ -34,6 +33,7 @@ import {
   TokenServiceInterface,
 } from '../../../services/token/token.service';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
+import { ScrollToTopDirective } from '../../shared/directives/app-scroll-to-top.directive';
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
 
 const columnKeysMap = [
@@ -65,6 +65,7 @@ const columnKeysMap = [
     MatCheckboxModule,
     FormsModule,
     MatIconModule,
+    ScrollToTopDirective,
   ],
   templateUrl: './token-table.component.html',
   styleUrl: './token-table.component.scss',

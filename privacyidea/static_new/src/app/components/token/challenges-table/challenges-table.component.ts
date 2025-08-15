@@ -34,6 +34,7 @@ import {
   TokenServiceInterface,
 } from '../../../services/token/token.service';
 import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
+import { ScrollToTopDirective } from '../../shared/directives/app-scroll-to-top.directive';
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
 
 const columnKeysMap = [
@@ -57,6 +58,7 @@ const columnKeysMap = [
     KeywordFilterComponent,
     NgClass,
     CopyButtonComponent,
+    ScrollToTopDirective,
   ],
   templateUrl: './challenges-table.component.html',
   styleUrls: ['./challenges-table.component.scss'],

@@ -53,6 +53,7 @@ import {
   VersioningService,
   VersioningServiceInterface,
 } from '../../../services/version/version.service';
+import { ScrollToTopDirective } from '../../shared/directives/app-scroll-to-top.directive';
 import { EnrollApplspecComponent } from './enroll-asp/enroll-applspec.component';
 import { EnrollCertificateComponent } from './enroll-certificate/enroll-certificate.component';
 import { EnrollDaypasswordComponent } from './enroll-daypassword/enroll-daypassword.component';
@@ -132,6 +133,7 @@ import {
     EnrollPasskeyComponent,
     MatError,
     MatTooltip,
+    ScrollToTopDirective,
   ],
   templateUrl: './token-enrollment.self-service.component.html',
   styleUrl: './token-enrollment.component.scss',
