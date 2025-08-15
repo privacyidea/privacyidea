@@ -122,17 +122,19 @@ export class ContainerCreateComponent {
   createContainer() {
     this.pollResponse.set(null);
     this.registerResponse.set(null);
-    this.containerService
-      .createContainer({
+    let createData = {
         container_type:
         this.containerService.selectedContainerType().containerType,
         description: this.description(),
         template: this.selectedTemplate(),
         user: this.userService.userNameFilter(),
-        realm: this.onlyAddToRealm()
-          ? this.userService.selectedUserRealm()
-          : ""
-      })
+        realm: ""
+      };
+    if (createData.user || this.onlyAddToRealm()){
+      createData.realm = this.userService.selectedUserRealm();
+    }
+    this.containerService
+      .createContainer(createData)
       .subscribe({
         next: (response) => {
           const containerSerial = response.result?.value?.container_serial;
