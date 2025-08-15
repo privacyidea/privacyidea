@@ -6,21 +6,21 @@ import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "../../app.routes";
 import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
 import { LocalService, LocalServiceInterface } from "../../services/local/local.service";
 import {
   NotificationService,
-  NotificationServiceInterface
+  NotificationServiceInterface,
 } from "../../services/notification/notification.service";
 import {
   SessionTimerService,
-  SessionTimerServiceInterface
+  SessionTimerServiceInterface,
 } from "../../services/session-timer/session-timer.service";
 import {
   ValidateService,
-  ValidateServiceInterface
+  ValidateServiceInterface,
 } from "../../services/validate/validate.service";
-import { ROUTE_PATHS } from "../../app.routes";
 
 @Component({
   selector: "app-login",
@@ -33,26 +33,23 @@ import { ROUTE_PATHS } from "../../app.routes";
     MatLabel,
     NgOptimizedImage,
     MatIconModule,
-    MatFabButton
+    MatFabButton,
   ],
-  styleUrl: "./login.component.scss"
+  styleUrl: "./login.component.scss",
 })
 export class LoginComponent {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly router: Router = inject(Router);
   private readonly localService: LocalServiceInterface = inject(LocalService);
-  private readonly notificationService: NotificationServiceInterface =
-    inject(NotificationService);
-  private readonly sessionTimerService: SessionTimerServiceInterface =
-    inject(SessionTimerService);
-  private readonly validateService: ValidateServiceInterface =
-    inject(ValidateService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  private readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
+  private readonly validateService: ValidateServiceInterface = inject(ValidateService);
 
   username = signal<string>("");
   password = signal<string>("");
 
   constructor() {
-    if (this.authService.isAuthenticatedUser()) {
+    if (this.authService.isAuthenticated()) {
       console.warn("User is already logged in.");
       this.notificationService.openSnackBar("User is already logged in.");
     }
@@ -68,11 +65,11 @@ export class LoginComponent {
           response.result &&
           response.result?.value &&
           response.result?.value.token &&
-          this.authService.isAuthenticatedUser()
+          this.authService.isAuthenticated()
         ) {
           this.localService.saveData(
             this.localService.bearerTokenKey,
-            response.result?.value.token
+            response.result?.value.token,
           );
           this.sessionTimerService.startRefreshingRemainingTime();
           this.sessionTimerService.startTimer();
@@ -80,11 +77,9 @@ export class LoginComponent {
           this.notificationService.openSnackBar("Login successful.");
         } else {
           console.error("Login failed. Challenge response required.");
-          this.notificationService.openSnackBar(
-            "Login failed. Challenge response required."
-          );
+          this.notificationService.openSnackBar("Login failed. Challenge response required.");
         }
-      }
+      },
     });
   }
 
@@ -103,11 +98,11 @@ export class LoginComponent {
           response.result &&
           response.result.value &&
           response.result.value.token &&
-          this.authService.isAuthenticatedUser()
+          this.authService.isAuthenticated()
         ) {
           this.localService.saveData(
             this.localService.bearerTokenKey,
-            response.result?.value.token
+            response.result?.value.token,
           );
           this.sessionTimerService.startRefreshingRemainingTime();
           this.sessionTimerService.startTimer();
@@ -119,10 +114,8 @@ export class LoginComponent {
       },
       error: (err: any) => {
         console.error("Error during Passkey login", err);
-        this.notificationService.openSnackBar(
-          err?.message || "Error during Passkey login"
-        );
-      }
+        this.notificationService.openSnackBar(err?.message || "Error during Passkey login");
+      },
     });
   }
 }

@@ -3,7 +3,7 @@ import { CanActivate, CanActivateChild, CanMatchFn, Router } from "@angular/rout
 import { AuthService, AuthServiceInterface } from "../services/auth/auth.service";
 import {
   NotificationService,
-  NotificationServiceInterface
+  NotificationServiceInterface,
 } from "../services/notification/notification.service";
 
 export const adminMatch: CanMatchFn = () => inject(AuthService).role() === "admin";
@@ -11,7 +11,7 @@ export const adminMatch: CanMatchFn = () => inject(AuthService).role() === "admi
 export const selfServiceMatch: CanMatchFn = () => inject(AuthService).role() === "user";
 
 @Injectable({
-  providedIn: "root"
+  providedIn: "root",
 })
 export class AuthGuard implements CanActivate, CanActivateChild {
   private readonly router: Router = inject(Router);
@@ -27,7 +27,7 @@ export class AuthGuard implements CanActivate, CanActivateChild {
   }
 
   private checkAuth(): boolean {
-    if (this.authService.isAuthenticatedUser()) {
+    if (this.authService.isAuthenticated()) {
       return true;
     } else {
       this.router.navigate(["/login"]).then((r) => {
