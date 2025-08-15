@@ -127,7 +127,6 @@ export class ContainerCreateComponent {
         container_type:
         this.containerService.selectedContainerType().containerType,
         description: this.description(),
-        user_realm: this.userService.selectedUserRealm(),
         template: this.selectedTemplate(),
         user: this.userService.userNameFilter(),
         realm: this.onlyAddToRealm()
@@ -201,7 +200,7 @@ export class ContainerCreateComponent {
           ) {
             this.registrationDialog.closeAll();
             this.router.navigateByUrl(
-              ROUTE_PATHS.TOKENS_CONTAINERS + containerSerial
+              ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial
             );
             this.notificationService.openSnackBar(
               `Container ${this.containerSerial()} enrolled successfully.`
