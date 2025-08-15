@@ -14,6 +14,7 @@ export interface TanEnrollmentData extends TokenEnrollmentData {
 export interface TanEnrollmentPayload extends TokenEnrollmentPayload {
   tancount?: number;
   tanlength?: number;
+  serial?: string | null;
 }
 
 @Injectable({ providedIn: "root" })
@@ -28,10 +29,12 @@ export class TanApiPayloadMapper implements TokenApiPayloadMapper<TanEnrollmentD
       user: data.user,
       pin: data.pin,
       tancount: data.tanCount,
-      tanlength: data.tanLength
+      tanlength: data.tanLength,
+      serial: data.serial ?? null
     };
     if (payload.tancount === undefined) delete payload.tancount;
     if (payload.tanlength === undefined) delete payload.tanlength;
+    if (payload.serial === null) delete payload.serial;
     return payload;
   }
 
