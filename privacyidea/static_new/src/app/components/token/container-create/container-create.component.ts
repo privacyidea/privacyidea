@@ -153,6 +153,12 @@ export class ContainerCreateComponent {
     this.observer.observe(this.stickySentinel.nativeElement);
   }
 
+  ngOnDestroy(): void {
+    if (this.observer) {
+      this.observer.disconnect();
+    }
+  }
+
   reopenEnrollmentDialog() {
     const currentResponse = this.registerResponse();
     if (currentResponse) {

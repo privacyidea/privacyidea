@@ -442,7 +442,7 @@ body {
 
 
 .sticky-header.is-sticky {
-  @include mat.elevation(3)
+  @include mat.elevation(3);
 }
 
 .sticky-controls {
