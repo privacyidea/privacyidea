@@ -15,15 +15,19 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+import logging
 import re
 from datetime import datetime
-from sqlalchemy import Sequence
 
+from sqlalchemy import Sequence, Unicode, Integer, Boolean, Text, ForeignKey, DateTime
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from privacyidea.lib.utils import is_true
 from privacyidea.models import db
 from privacyidea.models.config import TimestampMethodsMixin
 from privacyidea.models.utils import MethodsMixin
-from privacyidea.lib.utils import is_true
+
+log = logging.getLogger(__name__)
 
 
 class Policy(TimestampMethodsMixin, db.Model):
@@ -39,26 +43,26 @@ class Policy(TimestampMethodsMixin, db.Model):
      * webui
     """
     __tablename__ = "policy"
-    id = db.Column(db.Integer, Sequence("policy_seq"), primary_key=True)
-    active = db.Column(db.Boolean, default=True)
-    check_all_resolvers = db.Column(db.Boolean, default=False)
-    name = db.Column(db.Unicode(64), unique=True, nullable=False)
-    user_case_insensitive = db.Column(db.Boolean, default=False)
-    scope = db.Column(db.Unicode(32), nullable=False)
-    action = db.Column(db.Text, default="")
-    realm = db.Column(db.Unicode(256), default="")
-    adminrealm = db.Column(db.Unicode(256), default="")
-    adminuser = db.Column(db.Unicode(256), default="")
-    resolver = db.Column(db.Unicode(256), default="")
-    pinode = db.Column(db.Unicode(256), default="")
-    user = db.Column(db.Unicode(256), default="")
-    client = db.Column(db.Unicode(256), default="")
-    time = db.Column(db.Unicode(64), default="")
-    user_agents = db.Column(db.Unicode(256), default="")
+    id: Mapped[int] = mapped_column(Integer, Sequence("policy_seq"), primary_key=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    check_all_resolvers: Mapped[bool] = mapped_column(Boolean, default=False)
+    name: Mapped[str] = mapped_column(Unicode(64), unique=True, nullable=False)
+    user_case_insensitive: Mapped[bool] = mapped_column(Boolean, default=False)
+    scope: Mapped[str] = mapped_column(Unicode(32), nullable=False)
+    action: Mapped[str] = mapped_column(Text, default="")
+    realm: Mapped[str] = mapped_column(Unicode(256), default="")
+    adminrealm: Mapped[str] = mapped_column(Unicode(256), default="")
+    adminuser: Mapped[str] = mapped_column(Unicode(256), default="")
+    resolver: Mapped[str] = mapped_column(Unicode(256), default="")
+    pinode: Mapped[str] = mapped_column(Unicode(256), default="")
+    user: Mapped[str] = mapped_column(Unicode(256), default="")
+    client: Mapped[str] = mapped_column(Unicode(256), default="")
+    time: Mapped[str] = mapped_column(Unicode(64), default="")
+    user_agents: Mapped[str] = mapped_column(Unicode(256), default="")
     # If there are multiple matching policies, choose the one
     # with the lowest priority number. We choose 1 to be the default priority.
-    priority = db.Column(db.Integer, default=1, nullable=False)
-    conditions = db.relationship("PolicyCondition",
+    priority: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    conditions = relationship("PolicyCondition",
                                  lazy="joined",
                                  backref="policy",
                                  order_by="PolicyCondition.id",
@@ -67,7 +71,7 @@ class Policy(TimestampMethodsMixin, db.Model):
                                  # Likewise, whenever a Policy object is deleted, its conditions are also
                                  # deleted (delete). Conditions without a policy are deleted (delete-orphan).
                                  cascade="save-update, merge, delete, delete-orphan")
-    description = db.relationship('PolicyDescription', backref='policy',
+    description = relationship('PolicyDescription', backref='policy',
                                   cascade="save-update, merge, delete, delete-orphan")
 
     def __init__(self, name,
@@ -170,16 +174,16 @@ class Policy(TimestampMethodsMixin, db.Model):
 class PolicyCondition(MethodsMixin, db.Model):
     __tablename__ = "policycondition"
 
-    id = db.Column(db.Integer, Sequence("policycondition_seq"), primary_key=True)
-    policy_id = db.Column(db.Integer, db.ForeignKey('policy.id'), nullable=False)
-    section = db.Column(db.Unicode(255), nullable=False)
+    id: Mapped[int] = mapped_column(Integer, Sequence("policycondition_seq"), primary_key=True)
+    policy_id: Mapped[int] = mapped_column(Integer, ForeignKey('policy.id'), nullable=False)
+    section: Mapped[str] = mapped_column(Unicode(255), nullable=False)
     # We use upper-case "Key" and "Value" to prevent conflicts with databases
     # that do not support "key" or "value" as column names
-    Key = db.Column(db.Unicode(255), nullable=False)
-    comparator = db.Column(db.Unicode(255), nullable=False, default='equals')
-    Value = db.Column(db.Unicode(2000), nullable=False, default='')
-    active = db.Column(db.Boolean, nullable=False, default=True)
-    handle_missing_data = db.Column(db.Unicode(255), nullable=True)
+    Key: Mapped[str] = mapped_column(Unicode(255), nullable=False)
+    comparator: Mapped[str] = mapped_column(Unicode(255), nullable=False, default='equals')
+    Value: Mapped[str] = mapped_column(Unicode(2000), nullable=False, default='')
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    handle_missing_data: Mapped[str] = mapped_column(Unicode(255), nullable=True)
 
     def __init__(self, section, Key, comparator, Value, active=True, handle_missing_data=None):
         self.section = section
@@ -201,11 +205,11 @@ class PolicyDescription(TimestampMethodsMixin, db.Model):
     The description table is used to store the description of policy
     """
     __tablename__ = 'description'
-    id = db.Column(db.Integer, Sequence("description_seq"), primary_key=True)
-    object_id = db.Column(db.Integer, db.ForeignKey('policy.id'), nullable=False)
-    object_type = db.Column(db.Unicode(64), unique=False, nullable=False)
-    last_update = db.Column(db.DateTime, default=datetime.utcnow)
-    description = db.Column(db.UnicodeText())
+    id: Mapped[int] = mapped_column(Integer, Sequence("description_seq"), primary_key=True)
+    object_id: Mapped[int] = mapped_column(Integer, ForeignKey('policy.id'), nullable=False)
+    object_type: Mapped[str] = mapped_column(Unicode(64), unique=False, nullable=False)
+    last_update: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    description: Mapped[str] = mapped_column(Unicode(255))
 
     def __init__(self, object_id, name="", object_type="", description=""):
         self.name = name

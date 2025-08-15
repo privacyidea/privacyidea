@@ -396,10 +396,10 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
             )
         )
 
-    #print("----------------------------- CREATE TOKEN QUERY -----------------------------")
-    #from sqlalchemy.dialects import postgresql
-    #print(sql_query.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))
-    #print("-------------------------------------------------------------------------------")
+    print("----------------------------- CREATE TOKEN QUERY -----------------------------")
+    from sqlalchemy.dialects import postgresql
+    print(sql_query.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))
+    print("-------------------------------------------------------------------------------")
     return sql_query
 
 
@@ -780,7 +780,7 @@ def get_tokens_paginate(tokentype=None, token_type_list=None, realm=None, assign
 
     session: Session = db.session
 
-    tokens = session.execute(sql_query).scalars().all()
+    tokens = session.execute(sql_query).unique().scalars().all()
     token_list = []
     for token in tokens:
         # TODO first creating the object and then converting it to a dict, probably not efficient

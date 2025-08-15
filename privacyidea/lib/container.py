@@ -491,7 +491,7 @@ def create_pagination(page: int, pagesize: int, sql_query: Select,
     }
 
 
-def find_container_for_token(serial: str) -> TokenContainerClass:
+def find_container_for_token(serial: str) -> Union[TokenContainerClass, None]:
     """
     Returns a TokenContainerClass object for the given token or raises a ResourceNotFoundError
     if the token does not exist.
@@ -514,7 +514,7 @@ def find_container_for_token(serial: str) -> TokenContainerClass:
     session = db.session
     db_token = session.execute(
         select(Token).where(Token.serial == serial)
-    ).scalar_one_or_none()
+    ).unique().scalar_one_or_none()
     if not db_token:
         raise ResourceNotFoundError(f"Unable to find token with serial {serial}.")
     token_id = db_token.id
