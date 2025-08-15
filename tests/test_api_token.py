@@ -3366,7 +3366,7 @@ class API00TokenPerformance(MyApiTestCase):
         self.setUp_user_realms()
 
     def test_01_number_of_tokens(self):
-        # The GET /token returns a wildcard 100 tokens
+        # The GET /token returns a wildcard 21 tokens
         with self.app.test_request_context('/token/',
                                            method='GET',
                                            query_string={"serial": "perf*"},

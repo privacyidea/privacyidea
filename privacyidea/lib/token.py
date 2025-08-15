@@ -192,7 +192,7 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
     sql_query = select(Token)
 
     # --- Conditional Joins at the top to avoid re-joining ---
-    should_join_token_realm = bool(realm and realm.strip("*")) or bool(allowed_realms)
+    should_join_token_realm = bool(realm and realm.strip("*")) or allowed_realms is not None
     should_join_token_owner = (bool(userid and userid.strip("*")) or
                                bool(resolver and resolver.strip("*")) or
                                bool(user) or
@@ -343,8 +343,8 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
             raise ValueError("I can only create SQL filters from tokeninfo of length 1.")
         key, value = list(tokeninfo.items())[0]
         sql_query = sql_query.join(TokenInfo, TokenInfo.token_id == Token.id)
-        sql_query = sql_query.where(TokenInfo.key == key)
-        sql_query = sql_query.where(func.cast(TokenInfo.value, String) == value)
+        sql_query = sql_query.where(TokenInfo.Key == key)
+        sql_query = sql_query.where(func.cast(TokenInfo.Value, String) == value)
 
     # Filtering by container_serial
     if container_serial is not None:
@@ -370,7 +370,7 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
         resolvers = []
         realms_to_filter = []
 
-        for realm_name, realm_data in realms.items():  # Renamed 'realm' to 'realm_data' to avoid conflict
+        for realm_name, realm_data in realms.items():
             added = False
             for res in realm_data.get("resolver", []):
                 if res.get("name"):
@@ -387,7 +387,7 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
                 TokenOwner.resolver.in_(resolvers)
             )
         )
-
+        print("---------- resolvers: {}".format(resolvers))
         # Join Realm if not already joined via TokenOwner, or if you need a specific alias for this part
         # Given that TokenOwner is already joined, we can join Realm from TokenOwner directly.
         sql_query = sql_query.outerjoin(Realm, TokenOwner.realm_id == Realm.id).where(
@@ -397,7 +397,7 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
             )
         )
 
-    print("----------------------------- CREATE TOKEN QUERY -----------------------------")
+    print(f"----------------------------- CREATE TOKEN QUERY -----------------------------")
     from sqlalchemy.dialects import postgresql
     print(sql_query.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))
     print("-------------------------------------------------------------------------------")
