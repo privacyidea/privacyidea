@@ -1,12 +1,12 @@
 import {
   TokenApiPayloadMapper,
   TokenEnrollmentData,
-  TokenEnrollmentPayload,
-} from './_token-api-payload.mapper';
-import { Injectable } from '@angular/core';
+  TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
+import { Injectable } from "@angular/core";
 
 export interface TanEnrollmentData extends TokenEnrollmentData {
-  type: 'tan';
+  type: "tan";
   tanCount?: number;
   tanLength?: number;
 }
@@ -16,10 +16,8 @@ export interface TanEnrollmentPayload extends TokenEnrollmentPayload {
   tanlength?: number;
 }
 
-@Injectable({ providedIn: 'root' })
-export class TanApiPayloadMapper
-  implements TokenApiPayloadMapper<TanEnrollmentData>
-{
+@Injectable({ providedIn: "root" })
+export class TanApiPayloadMapper implements TokenApiPayloadMapper<TanEnrollmentData> {
   toApiPayload(data: TanEnrollmentData): TanEnrollmentPayload {
     const payload: TanEnrollmentPayload = {
       type: data.type,
@@ -30,7 +28,7 @@ export class TanApiPayloadMapper
       user: data.user,
       pin: data.pin,
       tancount: data.tanCount,
-      tanlength: data.tanLength,
+      tanlength: data.tanLength
     };
     if (payload.tancount === undefined) delete payload.tancount;
     if (payload.tanlength === undefined) delete payload.tanlength;
@@ -41,7 +39,7 @@ export class TanApiPayloadMapper
     return {
       ...payload,
       tanCount: payload.tancount,
-      tanLength: payload.tanlength,
+      tanLength: payload.tanlength
     } as TanEnrollmentData;
   }
 }

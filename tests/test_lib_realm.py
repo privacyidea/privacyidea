@@ -5,6 +5,10 @@ The lib.resolvers.py only depends on the database model.
 """
 import uuid
 
+from privacyidea.lib.container import init_container, unassign_user, delete_container_by_serial
+from privacyidea.lib.error import UserError
+from privacyidea.lib.token import init_token, unassign_token
+from privacyidea.lib.user import User
 from privacyidea.models import NodeName
 from .base import MyTestCase
 
@@ -99,7 +103,19 @@ class ResolverTestCase(MyTestCase):
         self.assertTrue(realm is None, realm)
 
     def test_10_delete_realm(self):
+        # user of the realm is still assigned to a token
+        token = init_token({"type": "hotp"}, User("root", self.realm1))
+        self.assertRaises(UserError, delete_realm, self.realm1)
+        unassign_token(token.get_serial())
+        # user of the realm is still assigned to a container
+        container_serial = init_container({"type": "generic", "user": "root", "realm": self.realm1})["container_serial"]
+        self.assertRaises(UserError, delete_realm, self.realm1)
+        unassign_user(container_serial, User("root", self.realm1))
+        # Now no user is assigned anymore, deletion is allowed
         delete_realm(self.realm1)
+        token.delete_token()
+        delete_container_by_serial(container_serial)
+
         delete_realm("realm2")
         delete_resolver(self.resolvername1)
         delete_resolver(self.resolvername2)

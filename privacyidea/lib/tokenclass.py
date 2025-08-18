@@ -274,8 +274,9 @@ class TokenClass(object):
         """
         user_objects = []
         for tokenowner in self.token.all_owners:
+            realm_name = tokenowner.realm.name if tokenowner.realm else None
             user_object = User(resolver=tokenowner.resolver,
-                               realm=tokenowner.realm.name,
+                               realm=realm_name,
                                uid=tokenowner.user_id)
             user_objects.append(user_object)
         return user_objects
@@ -292,8 +293,9 @@ class TokenClass(object):
         user_object = None
         tokenowner = self.token.first_owner
         if tokenowner:
+            realm_name = tokenowner.realm.name if tokenowner.realm else None
             user_object = User(resolver=tokenowner.resolver,
-                               realm=tokenowner.realm.name,
+                               realm=realm_name,
                                uid=tokenowner.user_id)
         return user_object
 
@@ -310,7 +312,7 @@ class TokenClass(object):
         orphaned = False
         if self.token.first_owner:
             try:
-                if not self.user or not self.user.login:
+                if not self.user or not self.user.login or not self.user.realm:
                     # The token is assigned, but the username does not resolve
                     orphaned = True
             except Exception:

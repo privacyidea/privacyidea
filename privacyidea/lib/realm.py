@@ -35,7 +35,6 @@ database. It depends on the lib.resolver.
 It is independent of any user or token libraries and can be tested standalone
 in tests/test_lib_realm.py
 """
-
 from ..models import (Realm,
                       ResolverRealm,
                       Resolver, db, save_config_timestamp)
@@ -44,7 +43,7 @@ from privacyidea.lib.config import get_config_object
 import logging
 from privacyidea.lib.utils import sanity_name_check, fetch_one_resource, is_true
 from privacyidea.lib.utils.export import (register_import, register_export)
-from privacyidea.lib.error import DatabaseError
+from privacyidea.lib.error import DatabaseError, UserError
 
 log = logging.getLogger(__name__)
 
@@ -157,7 +156,7 @@ def set_default_realm(default_realm=None):
 
 
 @log_with(log)
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_default_realm():
     """
     return the default realm
@@ -170,20 +169,34 @@ def get_default_realm():
 
 
 @log_with(log)
-def delete_realm(realmname):
+def delete_realm(realm_name: str):
     """
-    delete the realm from the Database Table with the given name
-    If, after deleting this realm, there is only one realm left,
-    the remaining realm is set the default realm.
+    Delete the realm from the database table with the given name.
+    If a user from this realm is assigned to a token or container a UserError is raised.
+    If, after deleting this realm, there is only one realm left, the remaining realm is set the default realm.
 
-    :param realmname: the to be deleted realm
-    :type  realmname: string
+    :param realm_name: the to be deleted realm
     """
+    # Check if there are still users assigned to tokens or containers
+    from .container import get_all_containers
+    from .token import get_tokens
+    tokens = get_tokens(realm=realm_name)
+    for token in tokens:
+        if token.user and token.user.realm == realm_name:
+            raise UserError("Realm can not be deleted, because a user of this realm is still assigned to a token.")
+    containers = get_all_containers(realm=realm_name)['containers']
+    for container in containers:
+        owners = container.get_users()
+        for owner in owners:
+            if owner.realm == realm_name:
+                raise UserError(
+                    "Realm can not be deleted, because a user of this realm is still assigned to a container.")
+
     # Check if there is a default realm
     def_realm = get_default_realm()
     had_def_realm_before = (def_realm != "")
 
-    ret = fetch_one_resource(Realm, name=realmname).delete()
+    ret = fetch_one_resource(Realm, name=realm_name).delete()
 
     # If there was a default realm before
     # and if there is only one realm left, we set the

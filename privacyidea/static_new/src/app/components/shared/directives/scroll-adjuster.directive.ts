@@ -1,41 +1,35 @@
 // src/app/shared/directives/scroll-adjuster.directive.ts
-import {
-  AfterViewInit,
-  Directive,
-  ElementRef,
-  Input,
-  NgZone,
-  OnDestroy,
-} from '@angular/core';
-import { Subject } from 'rxjs'; // fromEvent and debounceTime are not directly used in the directive, but for context if you add back window resize listener.
+import { AfterViewInit, Directive, ElementRef, Input, NgZone, OnDestroy } from "@angular/core";
+import { Subject } from "rxjs"; // fromEvent and debounceTime are not directly used in the directive, but for context if you add back window resize listener.
 // For current implementation, they are not needed here if ResizeObserver handles container resize.
 
 @Directive({
-  selector: '[appScrollAdjuster]',
-  standalone: true,
+  selector: "[appScrollAdjuster]",
+  standalone: true
 })
 export class ScrollAdjusterDirective implements AfterViewInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private resizeObserver!: ResizeObserver;
   private mutationObserver!: MutationObserver;
-  @Input() scrollItemSelector: string = '.scroll-item'; // Default selector, can be overridden
+  @Input() scrollItemSelector: string = ".scroll-item"; // Default selector, can be overridden
 
   constructor(
     private el: ElementRef<HTMLElement>,
-    private ngZone: NgZone,
-  ) {}
+    private ngZone: NgZone
+  ) {
+  }
 
   ngAfterViewInit(): void {
     const container = this.el.nativeElement;
 
     const computedStyle = getComputedStyle(container);
     if (
-      computedStyle.overflowY !== 'scroll' &&
-      computedStyle.overflowY !== 'auto'
+      computedStyle.overflowY !== "scroll" &&
+      computedStyle.overflowY !== "auto"
     ) {
       console.warn(
-        'ScrollAdjusterDirective: Element must have overflow-y: scroll or auto.',
-        container,
+        "ScrollAdjusterDirective: Element must have overflow-y: scroll or auto.",
+        container
       );
     }
 
@@ -53,7 +47,7 @@ export class ScrollAdjusterDirective implements AfterViewInit, OnDestroy {
     });
     this.mutationObserver.observe(container, {
       childList: true,
-      subtree: true,
+      subtree: true
     });
 
     this.ngZone.runOutsideAngular(() => {
@@ -76,8 +70,8 @@ export class ScrollAdjusterDirective implements AfterViewInit, OnDestroy {
     const container = this.el.nativeElement;
     const items = container.querySelectorAll(this.scrollItemSelector);
     if (!items || items.length === 0) {
-      container.style.paddingTop = '0px';
-      container.style.paddingBottom = '0px';
+      container.style.paddingTop = "0px";
+      container.style.paddingBottom = "0px";
       return;
     }
 
@@ -89,13 +83,13 @@ export class ScrollAdjusterDirective implements AfterViewInit, OnDestroy {
     const itemHeight = firstItem.clientHeight - paddingTop - paddingBottom;
 
     if (containerHeight === 0 || itemHeight === 0) {
-      container.style.paddingTop = '0px';
-      container.style.paddingBottom = '0px';
+      container.style.paddingTop = "0px";
+      container.style.paddingBottom = "0px";
       return;
     }
 
     const effectivePadding = Math.max(0, itemHeight - containerHeight);
     firstItem.style.paddingTop = `${effectivePadding}px`;
-    firstItem.style.paddingBottom = '0px';
+    firstItem.style.paddingBottom = "0px";
   }
 }

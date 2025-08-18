@@ -1,18 +1,18 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { EnrollDaypasswordComponent } from './enroll-daypassword.component';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { EnrollDaypasswordComponent } from "./enroll-daypassword.component";
+import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
 
-describe('EnrollDaypasswordComponent', () => {
+describe("EnrollDaypasswordComponent", () => {
   let component: EnrollDaypasswordComponent;
   let fixture: ComponentFixture<EnrollDaypasswordComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollDaypasswordComponent, BrowserAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting()]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollDaypasswordComponent);
@@ -20,7 +20,7 @@ describe('EnrollDaypasswordComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

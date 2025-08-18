@@ -25,6 +25,7 @@
 #
 import atexit
 import datetime
+from importlib import resources
 import os
 import os.path
 import logging
@@ -244,8 +245,19 @@ def create_app(config_name="development",
 
     # Set up Plug-Ins
     db.init_app(app)
+
     # TODO: This is not necessary except for pi-manage
-    migrate.init_app(app, db, directory="privacyidea/migrations")
+    # Try to get the path of the migration directory from the module
+    # Assume we are in the source folder
+    migration_dir = "privacyidea/migrations"
+    try:
+        pi_resource = resources.files("privacyidea").joinpath("migrations")
+        if pi_resource.is_dir():
+            with resources.as_file(pi_resource) as mdir:
+                migration_dir = mdir.as_posix()
+    except ModuleNotFoundError:
+        pass
+    migrate.init_app(app, db, directory=migration_dir)
 
     Versioned(app, format='%(path)s?v=%(version)s')
 

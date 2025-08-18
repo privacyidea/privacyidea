@@ -1,15 +1,15 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { EnrollYubikeyComponent } from './enroll-yubikey.component';
-import { provideHttpClient } from '@angular/common/http';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { EnrollYubikeyComponent } from "./enroll-yubikey.component";
+import { provideHttpClient } from "@angular/common/http";
 
-describe('EnrollYubikeyComponent', () => {
+describe("EnrollYubikeyComponent", () => {
   let component: EnrollYubikeyComponent;
   let fixture: ComponentFixture<EnrollYubikeyComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       providers: [provideHttpClient()],
-      imports: [EnrollYubikeyComponent],
+      imports: [EnrollYubikeyComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollYubikeyComponent);
@@ -17,7 +17,7 @@ describe('EnrollYubikeyComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

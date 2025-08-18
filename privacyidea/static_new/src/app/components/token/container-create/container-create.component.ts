@@ -1,68 +1,48 @@
-import { Component, effect, inject, signal, untracked } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import {
-  MatAutocomplete,
-  MatAutocompleteTrigger,
-} from '@angular/material/autocomplete';
-import { MatButton, MatIconButton } from '@angular/material/button';
-import { MatCheckbox } from '@angular/material/checkbox';
-import { MatOption } from '@angular/material/core';
-import { MatDialog } from '@angular/material/dialog';
+import { Component, effect, inject, signal, untracked } from "@angular/core";
+import { FormsModule } from "@angular/forms";
+import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
+import { MatButton, MatIconButton } from "@angular/material/button";
+import { MatCheckbox } from "@angular/material/checkbox";
+import { MatOption } from "@angular/material/core";
+import { MatDialog } from "@angular/material/dialog";
 import {
   MatAccordion,
   MatExpansionPanel,
   MatExpansionPanelHeader,
-  MatExpansionPanelTitle,
-} from '@angular/material/expansion';
-import {
-  MatError,
-  MatFormField,
-  MatHint,
-  MatLabel,
-} from '@angular/material/form-field';
-import { MatIcon } from '@angular/material/icon';
-import { MatInput } from '@angular/material/input';
-import { MatSelect } from '@angular/material/select';
-import { PiResponse } from '../../../app.component';
+  MatExpansionPanelTitle
+} from "@angular/material/expansion";
+import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatIcon } from "@angular/material/icon";
+import { MatInput } from "@angular/material/input";
+import { MatSelect } from "@angular/material/select";
+import { PiResponse } from "../../../app.component";
 import {
   ContainerRegisterData,
   ContainerService,
-  ContainerServiceInterface,
-} from '../../../services/container/container.service';
-import {
-  ContentService,
-  ContentServiceInterface,
-} from '../../../services/content/content.service';
+  ContainerServiceInterface
+} from "../../../services/container/container.service";
+import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import {
   NotificationService,
-  NotificationServiceInterface,
-} from '../../../services/notification/notification.service';
-import {
-  RealmService,
-  RealmServiceInterface,
-} from '../../../services/realm/realm.service';
-import {
-  TokenService,
-  TokenServiceInterface,
-} from '../../../services/token/token.service';
-import {
-  UserService,
-  UserServiceInterface,
-} from '../../../services/user/user.service';
+  NotificationServiceInterface
+} from "../../../services/notification/notification.service";
+import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
+import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
+import { UserService, UserServiceInterface } from "../../../services/user/user.service";
 import {
   VersioningService,
-  VersioningServiceInterface,
-} from '../../../services/version/version.service';
-import { TokenComponent } from '../token.component';
-import { ContainerRegistrationDialogComponent } from './container-registration-dialog/container-registration-dialog.component';
-import { Router } from '@angular/router';
-import { MatTooltip } from '@angular/material/tooltip';
-import { ROUTE_PATHS } from '../../../app.routes';
+  VersioningServiceInterface
+} from "../../../services/version/version.service";
+import { TokenComponent } from "../token.component";
+import { ContainerRegistrationDialogComponent } from "./container-registration-dialog/container-registration-dialog.component";
+import { Router } from "@angular/router";
+import { MatTooltip } from "@angular/material/tooltip";
+import { ROUTE_PATHS } from "../../../app.routes";
 
-export type ContainerTypeOption = 'generic' | 'smartphone' | 'yubikey';
+export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
 
 @Component({
-  selector: 'app-container-create',
+  selector: "app-container-create",
   imports: [
     MatButton,
     MatFormField,
@@ -82,10 +62,10 @@ export type ContainerTypeOption = 'generic' | 'smartphone' | 'yubikey';
     MatExpansionPanel,
     MatExpansionPanelTitle,
     MatExpansionPanelHeader,
-    MatTooltip,
+    MatTooltip
   ],
-  templateUrl: './container-create.component.html',
-  styleUrl: './container-create.component.scss',
+  templateUrl: "./container-create.component.html",
+  styleUrl: "./container-create.component.scss"
 })
 export class ContainerCreateComponent {
   protected readonly versioningService: VersioningServiceInterface =
@@ -102,13 +82,13 @@ export class ContainerCreateComponent {
   protected readonly TokenComponent = TokenComponent;
   private router = inject(Router);
   containerSerial = this.containerService.containerSerial;
-  description = signal('');
-  selectedTemplate = signal('');
+  description = signal("");
+  selectedTemplate = signal("");
   templateOptions = this.containerService.templates;
   onlyAddToRealm = signal(false);
   generateQRCode = signal(false);
-  passphrasePrompt = signal('');
-  passphraseResponse = signal('');
+  passphrasePrompt = signal("");
+  passphraseResponse = signal("");
   registerResponse = signal<PiResponse<ContainerRegisterData> | null>(null);
   pollResponse = signal<any>(null);
 
@@ -116,7 +96,7 @@ export class ContainerCreateComponent {
     effect(() => {
       if (
         this.containerService.selectedContainerType().containerType ===
-        'smartphone'
+        "smartphone"
       ) {
         this.generateQRCode.set(true);
       } else {
@@ -145,21 +125,21 @@ export class ContainerCreateComponent {
     this.containerService
       .createContainer({
         container_type:
-          this.containerService.selectedContainerType().containerType,
+        this.containerService.selectedContainerType().containerType,
         description: this.description(),
         user_realm: this.userService.selectedUserRealm(),
         template: this.selectedTemplate(),
         user: this.userService.userNameFilter(),
         realm: this.onlyAddToRealm()
           ? this.userService.selectedUserRealm()
-          : '',
+          : ""
       })
       .subscribe({
         next: (response) => {
           const containerSerial = response.result?.value?.container_serial;
           if (!containerSerial) {
             this.notificationService.openSnackBar(
-              'Container creation failed. No container serial returned.',
+              "Container creation failed. No container serial returned."
             );
             return;
           }
@@ -168,7 +148,7 @@ export class ContainerCreateComponent {
               .registerContainer({
                 container_serial: containerSerial,
                 passphrase_response: this.passphraseResponse(),
-                passphrase_prompt: this.passphrasePrompt(),
+                passphrase_prompt: this.passphrasePrompt()
               })
               .subscribe((registerResponse) => {
                 this.registerResponse.set(registerResponse);
@@ -177,38 +157,38 @@ export class ContainerCreateComponent {
               });
           } else {
             this.notificationService.openSnackBar(
-              `Container ${containerSerial} enrolled successfully.`,
+              `Container ${containerSerial} enrolled successfully.`
             );
             this.router.navigateByUrl(
-              ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial,
+              ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial
             );
             this.containerSerial.set(containerSerial);
           }
-        },
+        }
       });
   }
 
   private resetCreateOptions = () => {
     this.registerResponse.set(null);
     this.pollResponse.set(null);
-    this.passphrasePrompt.set('');
-    this.passphraseResponse.set('');
-    this.description.set('');
-    this.selectedTemplate.set('');
+    this.passphrasePrompt.set("");
+    this.passphraseResponse.set("");
+    this.description.set("");
+    this.selectedTemplate.set("");
   };
 
   private openRegistrationDialog(response: PiResponse<ContainerRegisterData>) {
     this.registrationDialog.open(ContainerRegistrationDialogComponent, {
       data: {
         response: response,
-        containerSerial: this.containerSerial,
-      },
+        containerSerial: this.containerSerial
+      }
     });
   }
 
   private pollContainerRolloutState(
     containerSerial: string,
-    startTime: number,
+    startTime: number
   ) {
     return this.containerService
       .pollContainerRolloutState(containerSerial, startTime)
@@ -217,17 +197,17 @@ export class ContainerCreateComponent {
           this.pollResponse.set(pollResponse);
           if (
             pollResponse.result?.value?.containers[0].info
-              .registration_state !== 'client_wait'
+              .registration_state !== "client_wait"
           ) {
             this.registrationDialog.closeAll();
             this.router.navigateByUrl(
-              ROUTE_PATHS.TOKENS_CONTAINERS + containerSerial,
+              ROUTE_PATHS.TOKENS_CONTAINERS + containerSerial
             );
             this.notificationService.openSnackBar(
-              `Container ${this.containerSerial()} enrolled successfully.`,
+              `Container ${this.containerSerial()} enrolled successfully.`
             );
           }
-        },
+        }
       });
   }
 }

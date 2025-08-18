@@ -1,6 +1,6 @@
-import { HttpEvent } from '@angular/common/http';
-import { Injectable } from '@angular/core';
-import { Observable, Subscription } from 'rxjs';
+import { HttpEvent } from "@angular/common/http";
+import { Injectable } from "@angular/core";
+import { Observable, Subscription } from "rxjs";
 
 export interface LoadingServiceInterface {
   addListener(id: string, listener: (isLoading: boolean) => void): void;
@@ -25,7 +25,7 @@ export interface LoadingServiceInterface {
 }
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: "root"
 })
 export class LoadingService implements LoadingServiceInterface {
   listeners: { [key: string]: (isLoading: boolean) => void } = {};
@@ -54,7 +54,7 @@ export class LoadingService implements LoadingServiceInterface {
       },
       error: (_) => {
         this.removeLoading(loading.key);
-      },
+      }
     });
     this.loadings.push({ key: loading.key, subscription, url: loading.url });
     this.notifyListeners();

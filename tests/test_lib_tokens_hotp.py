@@ -3,7 +3,6 @@ This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
-import json
 import warnings
 from testfixtures import log_capture
 
@@ -902,7 +901,7 @@ class HOTPTokenTestCase(MyTestCase):
         }]
 
         # Import the token
-        import_tokens(json.dumps(token_data))
+        import_tokens(token_data)
 
         # Retrieve the imported token
         hotptoken = get_tokens(serial=token_data[0]["serial"])[0]
