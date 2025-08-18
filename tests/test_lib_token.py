@@ -1850,9 +1850,6 @@ class TokenTestCase(MyTestCase):
         hotptoken.delete_token()
         totptoken.delete_token()
 
-        # Import format not supported
-        self.assertRaises(TokenAdminError, import_tokens, "This is not a valid JSON string")
-
     def test_63_token_export_with_user(self):
         # Set up a user and a token
         self.setUp_user_realm2()
@@ -1871,8 +1868,7 @@ class TokenTestCase(MyTestCase):
         assign_token(user=user, serial="TOTP12345678")
 
         exported_tokens = export_tokens([hotptoken, totptoken], export_user=True)
-
-        self.assertIn('"login": "cornelius"', exported_tokens)
+        self.assertIn('"login": "cornelius"', json.dumps(exported_tokens))
 
         # Remove the tokens
         unassign_token(user=user, serial="OATH12345678")
@@ -1892,7 +1888,7 @@ class TokenTestCase(MyTestCase):
         user.set_attribute("custom_attr", "custom_value")
         exported_tokens = export_tokens([hotptoken, totptoken], export_user=True)
 
-        self.assertIn('"custom_attr": "custom_value"', exported_tokens)
+        self.assertIn('"custom_attr": "custom_value"', json.dumps(exported_tokens))
 
         # Remove user attributes
         user.delete_attribute("custom_attr")
