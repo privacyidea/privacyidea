@@ -2027,7 +2027,7 @@ class TokenClass(object):
             "tokeninfo": self.get_tokeninfo(decrypted=True)
         }
         if export_user and self.token.first_owner:
-            token_dict["user"] = self.owners[0].user_export_dict()
+            token_dict["user"] = self.user.user_export_dict()
 
         return token_dict
 

@@ -1877,7 +1877,7 @@ class TokenTestCase(MyTestCase):
         totptoken.delete_token()
 
         # import the tokens with user assignment
-        updated_tokens = import_tokens(exported_tokens , update_existing_tokens=True, assign_to_user=True)
+        updated_tokens = import_tokens(exported_tokens, update_existing_tokens=True, assign_to_user=True)
         hotptoken = get_tokens(serial="OATH12345678")[0]
         totptoken = get_tokens(serial="TOTP12345678")[0]
 
@@ -1920,11 +1920,9 @@ class TokenTestCase(MyTestCase):
         self.assertEqual(totptoken.token.first_owner, None)
 
         # check token will not be assigned to the user on no update
-        updated_tokens = import_tokens(exported_tokens , update_existing_tokens=False, assign_to_user=True)
+        updated_tokens = import_tokens(exported_tokens, update_existing_tokens=False, assign_to_user=True)
         self.assertEqual(hotptoken.token.first_owner, None)
         self.assertEqual(totptoken.token.first_owner, None)
-
-
 
 class TokenOutOfBandTestCase(MyTestCase):
 
