@@ -2048,7 +2048,8 @@ class TokenClass(object):
         Assign a user to the token during import.
         This is called from the import_token method.
         """
-        self.remove_user()
+        if self.user is not None:
+            self.remove_user()
         owner = User(login=user.get("login"),
                      resolver=user.get("resolver"),
                      realm=user.get("realm"),

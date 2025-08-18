@@ -1895,12 +1895,12 @@ class TokenTestCase(MyTestCase):
 
         # check that the user attributes are empty after import
         self.assertEqual(user.attributes, {})
-        updated_tokens = import_tokens(exported_tokens , update_existing_tokens=True, assign_to_user=True)
+        updated_tokens = import_tokens(exported_tokens, update_existing_tokens=True, assign_to_user=True)
 
         # check that the user attributes are empty after import
         self.assertEqual(user.attributes, {"custom_attr": "custom_value"})
 
-        #unassign the tokens
+        # unassign the tokens
         unassign_token(user=user, serial="OATH12345678")
         unassign_token(user=user, serial="TOTP12345678")
 
@@ -1908,7 +1908,7 @@ class TokenTestCase(MyTestCase):
         self.assertEqual(totptoken.token.first_owner, None)
 
         # check token will be assigned to the user on update
-        updated_tokens = import_tokens(exported_tokens , update_existing_tokens=True, assign_to_user=True)
+        updated_tokens = import_tokens(exported_tokens, update_existing_tokens=True, assign_to_user=True)
         self.assertEqual(hotptoken.owners[0].login, "cornelius")
         self.assertEqual(totptoken.owners[0].login, "cornelius")
 
