@@ -247,14 +247,14 @@ def create_app(config_name="development",
     # Set up Plug-Ins
     db.init_app(app)
 
-    # TODO: This is not necessary except for pi-manage
+    # TODO: This is not necessary except for the pi-manage command line util
     # Try to get the path of the migration directory from the installed package
     # TODO: This still does not work with an editable installation if it is not called from the source folder
     # By default, we assume we are in the source folder
     migration_dir = "privacyidea/migrations"
     try:
-        migration_dir = [f for f in metadata.files("privacyidea") if f.match("migrations/env.py")][0]
-        migration_dir = migration_dir.locate().parent.resolve()
+        migration_path = [f for f in metadata.files("privacyidea") if f.match("migrations/env.py")][0]
+        migration_dir = str(migration_path.locate().parent.resolve())
     except (PackageNotFoundError, IndexError):
         pass
     migrate.init_app(app, db, directory=migration_dir)
