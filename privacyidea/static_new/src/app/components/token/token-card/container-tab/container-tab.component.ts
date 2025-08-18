@@ -86,7 +86,7 @@ export class ContainerTabComponent {
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: [this.containerSerial()],
+          serialList: [this.containerSerial()],
           title: 'Delete Container',
           type: 'container',
           action: 'delete',
@@ -117,7 +117,7 @@ export class ContainerTabComponent {
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: selectedContainers.map((container) => container.serial),
+          serialList: selectedContainers.map((container) => container.serial),
           title: 'Delete All Containers',
           type: 'container',
           action: 'delete',

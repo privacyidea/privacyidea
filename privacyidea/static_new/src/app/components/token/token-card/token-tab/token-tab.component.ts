@@ -89,7 +89,7 @@ export class TokenTabComponent {
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: [this.tokenSerial()],
+          serialList: [this.tokenSerial()],
           title: 'Revoke Token',
           type: 'token',
           action: 'revoke',
@@ -121,7 +121,7 @@ export class TokenTabComponent {
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: [this.tokenSerial()],
+          serialList: [this.tokenSerial()],
           title: 'Delete Token',
           type: 'token',
           action: 'delete',
@@ -148,7 +148,7 @@ export class TokenTabComponent {
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: selectedTokens.map((token) => token.serial),
+          serialList: selectedTokens.map((token) => token.serial),
           title: 'Delete All Tokens',
           type: 'token',
           action: 'delete',
@@ -218,7 +218,7 @@ export class TokenTabComponent {
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: selectedTokens.map((token) => token.serial),
+          serialList: selectedTokens.map((token) => token.serial),
           title: 'Unassign Tokens',
           type: 'token',
           action: 'unassign',

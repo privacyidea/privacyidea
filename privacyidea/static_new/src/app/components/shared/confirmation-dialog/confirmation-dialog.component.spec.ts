@@ -14,7 +14,7 @@ describe('ConfirmationDialogComponent', () => {
         {
           provide: MAT_DIALOG_DATA,
           useValue: {
-            serial_list: ['Mock serial'],
+            serialList: ['Mock serial'],
             title: 'Mock title',
             action: 'Mock action',
             type: 'Mock type',

@@ -3399,6 +3399,9 @@ class APITokenTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
+            self.assertTrue(res.json.get("result").get("value")[token1.get_serial()])
+            self.assertFalse(res.json.get("result").get("value")[token2.get_serial()])
+            self.assertFalse(res.json.get("result").get("value")["INVALID_SERIAL"])
         self.assertIsNone(token1.user)
         self.assertIsNone(token2.user)
 

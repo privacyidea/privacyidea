@@ -145,7 +145,7 @@ describe('ContainerDetailsTokenTableComponent', () => {
         ConfirmationDialogComponent,
         {
           data: {
-            serial_list: ['Mock serial', 'Another serial'],
+            serialList: ['Mock serial', 'Another serial'],
             title: 'Delete All Tokens',
             type: 'token',
             action: 'delete',

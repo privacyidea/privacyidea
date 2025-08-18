@@ -571,14 +571,11 @@ def assign_api():
 def unassign_api():
     """
     Unassign token(s) from a user.
-    You can either provide serial as an argument to unassign this very
-    token, a comma-separated list of serials as an argument to unassign multiple tokens,
-    or you can provide user and realm, to unassign all tokens of a user.
 
-    :jsonparam basestring serial: the serial number of the single token to unassign
-    :jsonparam list serials: a list of serial numbers of tokens to unassign
-    :jsonparam not_authorized_serials: A list of serial numbers of tokens
-        which the user is not authorized to manage.
+    :jsonparam serial: The serial number of a single token, or comma-separated list of serials.
+    :jsonparam serials: A list of serial numbers of multiple tokens.
+    :jsonparam not_authorized_serials: A list of serial numbers of tokens which the user is not
+    authorized to manage.
 
     :return: In case of success it returns the number of unassigned tokens in "value".
     :rtype: JSON object
@@ -593,32 +590,32 @@ def unassign_api():
         g.audit_object.log({"serial": None, "success": True})
         return send_result(res)
 
-    serials = []
-    if isinstance(single, str) and single.strip():
-        serials.append(single.strip())
+    serial_list = []
+    if isinstance(single, str):
+        serial_list.append(single)
     if many is not None:
         if not isinstance(many, list):
             raise ParameterError("Parameter 'serials' must be a JSON array of strings.")
-        serials.extend([str(s).strip() for s in many if str(s).strip()])
+        serial_list.extend(many)
 
-    if not serials:
+    if not serial_list:
         raise ParameterError("Provide a non-empty 'serial' or 'serials'.")
 
-    g.audit_object.log({"serial": serials if len(serials) != 1 else serials[0]})
+    g.audit_object.log({"serial": serial_list if len(serial_list) != 1 else serial_list[0]})
 
-    if len(serials) == 1 and many is None:
-        res = unassign_token(serials[0], user=user)
+    if len(serial_list) == 1 and many is None:
+        res = unassign_token(serial_list[0], user=user)
         g.audit_object.log({"success": True})
         return send_result(res)
 
     ret = {}
-    for s in serials:
+    for serial in serial_list:
         try:
-            success = unassign_token(s, user=user)
+            success = unassign_token(serial, user=user)
         except Exception as ex:
-            log.error(f"Error unassigning token {s}: {ex}")
+            log.error(f"Error unassigning token {serial}: {ex}")
             success = False
-        ret[s] = success
+        ret[serial] = success
 
     res = add_not_authorized_tokens_result(ret, not_authorized_serials)
     g.audit_object.log({"success": True})
@@ -720,7 +717,8 @@ def delete_api(serial=None):
 
     :jsonparam serial: The serial number of a single token, or comma-separated list of serials.
     :jsonparam serials: A list of serial numbers of multiple tokens.
-    :jsonparam not_authorized_serials: A list of serial numbers of tokens which the user is not authorized to manage.
+    :jsonparam not_authorized_serials: A list of serial numbers of tokens which the user is not
+    authorized to manage.
 
     :return: In case of success it returns the number of deleted tokens in "value"
     :rtype: json object
@@ -730,36 +728,36 @@ def delete_api(serial=None):
     many = get_optional(request.all_data, "serials")
     not_authorized_serials = get_optional(request.all_data, "not_authorized_serials") or []
 
-    serials = []
+    serial_list = []
     if serial:
-        serials.append(serial)
-    if single_body and single_body not in serials:
-        serials.append(single_body)
+        serial_list.append(serial)
+    if single_body and single_body not in serial_list:
+        serial_list.append(single_body)
 
     if many is not None:
         if not isinstance(many, list):
             raise ParameterError("Parameter 'serials' must be a JSON array of strings.")
-        for s in many:
-            if s not in serials:
-                serials.append(s)
+        for serial in many:
+            if serial not in serial_list:
+                serial_list.append(serial)
 
-    if not serials:
+    if not serial_list:
         raise ParameterError("Provide 'serial' (path/body) or 'serials' (JSON array).")
 
-    g.audit_object.log({"serial": serials[0] if len(serials) == 1 else serials})
+    g.audit_object.log({"serial": serial_list[0] if len(serial_list) == 1 else serial_list})
 
-    if len(serials) == 1:
-        res = remove_token(serials[0], user=user)
+    if len(serial_list) == 1:
+        res = remove_token(serial_list[0], user=user)
         g.audit_object.log({"success": True})
         return send_result(res)
 
     ret = {}
-    for s in serials:
+    for serial in serial_list:
         try:
-            ret[s] = remove_token(s, user=user)
+            ret[serial] = remove_token(serial, user=user)
         except Exception as ex:
-            log.exception(f"Error deleting token {s}: {ex}")
-            ret[s] = False
+            log.exception(f"Error deleting token {serial}: {ex}")
+            ret[serial] = False
 
     res = add_not_authorized_tokens_result(ret, not_authorized_serials)
     g.audit_object.log({"success": True})

@@ -70,7 +70,7 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: [serial],
+          serialList: [serial],
           title: 'Revoke Token',
           type: 'token',
           action: 'revoke',
@@ -95,7 +95,7 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: [serial],
+          serialList: [serial],
           title: 'Delete Token',
           type: 'token',
           action: 'delete',

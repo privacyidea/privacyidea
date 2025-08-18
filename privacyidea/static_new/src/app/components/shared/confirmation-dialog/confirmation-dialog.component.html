@@ -4,14 +4,14 @@
   @if (["remove", "delete", "revoke", "unassign"].includes(data.action)) {
     <p>
       Are you sure you want to {{ data.action }}
-      @if ((data.serial_list?.length ?? 0) > 1 && data.type === "token") {
-        all selected ({{ data.serial_list?.length }}) {{ data.type }}s?
+      @if ((data.serialList?.length ?? 0) > 1 && data.type === "token") {
+        all selected ({{ data.serialList?.length }}) {{ data.type }}s?
       } @else {
         this {{ data.type }}?
       }
     </p>
     <ul>
-      @for (serial of data.serial_list; track serial) {
+      @for (serial of data.serialList; track serial) {
         <li>{{ serial }}</li>
       }
     </ul>

@@ -20,7 +20,7 @@ describe('GetSerialResultDialogComponent', () => {
         {
           provide: MAT_DIALOG_DATA,
           useValue: {
-            serial_list: ['Mock serial'],
+            serialList: ['Mock serial'],
           } as unknown as GetSerialResultDialogData,
         },
         {
