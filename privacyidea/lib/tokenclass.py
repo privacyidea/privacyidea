@@ -297,6 +297,20 @@ class TokenClass(object):
                                uid=tokenowner.user_id)
         return user_object
 
+    def remove_user(self):
+        """
+        Remove the user (owner) of a token.
+        If the token has no owner assigned, we return None
+
+        :return: The owner of the token
+        :rtype: User object or None
+        """
+        user_object = self.user
+        if user_object:
+            self.token.first_owner.delete()
+            self.token.save()
+        return user_object
+
     def is_orphaned(self, orphaned_on_error=True):
         """
         Return True if the token is orphaned.
@@ -2034,6 +2048,7 @@ class TokenClass(object):
         Assign a user to the token during import.
         This is called from the import_token method.
         """
+        self.remove_user()
         owner = User(login=user.get("login"),
                      resolver=user.get("resolver"),
                      realm=user.get("realm"),

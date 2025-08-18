@@ -111,10 +111,6 @@ from privacyidea.lib.realm import realm_is_defined, get_realms
 from privacyidea.lib.resolver import get_resolver_object
 from privacyidea.lib.tokenclass import DATE_FORMAT, TOKENKIND, TokenClass
 from privacyidea.lib.user import User
-from privacyidea.lib.tokenclass import DATE_FORMAT
-from privacyidea.lib.tokenclass import TOKENKIND
-from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true, BASE58, hexlify_and_unicode, check_serial_valid, create_tag_dict
 from privacyidea.models import (db, Token, Realm, TokenRealm, Challenge,
                                 TokenInfo, TokenOwner, TokenTokengroup, Tokengroup, TokenContainer,
@@ -2987,23 +2983,20 @@ def export_tokens(tokens: list[TokenClass], export_user: bool = True) -> list[di
     Takes a list of tokens and returns an dict with all infos.
 
     :param tokens: list of token objects
-    :return: list of dict with token information
     :param export_user: bool
-    :return: JSON string representing a list of token dictionaries
+    :return: list of dict with token information
     """
     exported_tokens = [token.export_token(export_user=export_user) for token in tokens]
     return exported_tokens
 
 
-
 def import_tokens(tokens: list[dict], update_existing_tokens: bool = True, assign_to_user: bool = True) -> TokenImportResult:
     """
     Import a list of token dictionaries.
-    :param tokens: JSON string representing a list of token dictionaries
-    :param update_existing_tokens: If True, existing tokens will be updated with the new data.
-    :param assign_to_user: If True, the user from the token data will be assigned to the token.
 
     :param tokens: list of dict with token information
+    :param update_existing_tokens: If True, existing tokens will be updated with the new data.
+    :param assign_to_user: If True, the user from the token data will be assigned to the token.
     :return: list of token objects
     """
     successful_tokens = []
@@ -3024,9 +3017,9 @@ def import_tokens(tokens: list[dict], update_existing_tokens: bool = True, assig
                     token.assign_user_during_token_import(token_info_dict.get("user"))
             elif update_existing_tokens:
                 existing_token.import_token(token_info_dict)
-                updated_tokens.append(serial)
                 if assign_to_user and token_info_dict.get("user"):
                     existing_token.assign_user_during_token_import(token_info_dict.get("user"))
+                updated_tokens.append(serial)
             else:
                 log.info(f"Token with serial {serial} already exists. "
                          f"Set update_existing=True to update the token.")
