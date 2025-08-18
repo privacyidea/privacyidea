@@ -474,9 +474,9 @@ export class TokenService implements TokenServiceInterface {
     const headers = this.localService.getHeaders();
     return this.http
       .post<Object>(
-        this.tokenBaseUrl + 'batchunassign',
+        this.tokenBaseUrl + 'unassign',
         {
-          serial: tokenDetails.map((token) => token.serial).join(','),
+          serials: tokenDetails.map((token) => token.serial)
         },
         { headers },
       )
@@ -494,23 +494,17 @@ export class TokenService implements TokenServiceInterface {
 
   batchDeleteTokens(selectedTokens: TokenDetails[]): Observable<Object> {
     const headers = this.localService.getHeaders();
+    const body = { serials: selectedTokens.map(t => t.serial) };
+
     return this.http
-      .post<Object>(
-        this.tokenBaseUrl + 'batchdeletion',
-        {
-          serial: selectedTokens.map((token) => token.serial).join(','),
-        },
-        { headers },
-      )
+      .delete<Object>(this.tokenBaseUrl, { headers, body })
       .pipe(
         catchError((error) => {
           console.error('Failed to delete tokens.', error);
           const message = error.error?.result?.error?.message || '';
-          this.notificationService.openSnackBar(
-            'Failed to delete tokens. ' + message,
-          );
+          this.notificationService.openSnackBar('Failed to delete tokens. ' + message);
           return throwError(() => error);
-        }),
+        })
       );
   }
 

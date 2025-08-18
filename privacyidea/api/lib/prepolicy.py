@@ -1308,9 +1308,47 @@ def check_token_action(request: Request = None, action: str = None):
     user_attributes = UserAttributes(role, username, realm, resolver, adminuser, adminrealm)
     user_attributes.user = user if user else None
     serial = params.get("serial")
+    serials = params.get("serials")
 
-    action_allowed = check_token_action_allowed(g, action, serial, user_attributes)
-    if not action_allowed:
+    # Old API calls might provide the serials as a comma-separated list in the serial parameter
+    if serial is not None and ',' in serial:
+        serials = [s.strip() for s in serial.split(',') if s.strip()]
+        serial = None
+
+    if serials is not None:
+        if serial is not None and serial not in serials:
+            serials = serials + [serial]
+
+        new_serials = []
+        not_authorized_serials = []
+        for s in serials:
+            try:
+                allowed = check_token_action_allowed(g, action, s, replace(user_attributes))
+            except ResourceNotFoundError:
+                allowed = False
+                log.info(
+                    f"Token {s} not found. It is removed from the token list and will not be further processed."
+                )
+            except Exception as ex:
+                allowed = False
+                log.error(f"Error while checking action '{action}' on token {s}: {ex}")
+
+            if allowed:
+                new_serials.append(s)
+            else:
+                not_authorized_serials.append(s)
+                log.info(
+                    f"User {g.logged_in_user} is not allowed to manage token {s}. "
+                    f"It is removed from the token list and will not further be processed in the request."
+                )
+
+        request.all_data["serials"] = new_serials
+        request.all_data["serial"] = ",".join(new_serials)
+        request.all_data["not_authorized_serials"] = not_authorized_serials
+        return True
+
+    allowed = check_token_action_allowed(g, action, serial, user_attributes)
+    if not allowed:
         raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed!")
     return True
 

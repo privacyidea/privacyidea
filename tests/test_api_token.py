@@ -520,11 +520,12 @@ class API000TokenAdminRealmList(MyApiTestCase):
         token1 = init_token({"type": "hotp", "genkey": True, "realm": self.realm1})
         token2 = init_token({"type": "hotp", "genkey": True, "realm": self.realm2})
         token3 = init_token({"type": "hotp", "genkey": True, "realm": self.realm1})
-        token_serials = ",".join([token1.get_serial(), token2.get_serial(), token3.get_serial()])
+        token_serials = [token1.get_serial(), token2.get_serial(), token3.get_serial()]
 
-        # Try to delete all tokens will only delete token1 and token3 from realm1
-        result = self.request_assert_200("/token/batchdeletion", {"serial": token_serials}, self.at, "POST")
+        csv_serials = ",".join(token_serials)
+        result = self.request_assert_200(f"/token/?serial={csv_serials}", {}, self.at, "DELETE")
         result = result.get("result").get("value")
+
         self.assertTrue(result.get(token1.get_serial()))
         self.assertFalse(result.get(token2.get_serial()))
         self.assertTrue(result.get(token3.get_serial()))
@@ -533,6 +534,31 @@ class API000TokenAdminRealmList(MyApiTestCase):
         self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, token3.get_serial(), None)
 
         delete_policy("policy")
+
+    def test_06_helpdesk_unassign_batch(self):
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.UNASSIGN, realm=self.realm1)
+
+        token1 = init_token({"type": "hotp"}, user=User("cornelius", self.realm1))
+        token2 = init_token({"type": "hotp"}, user=User("hans", self.realm2))
+        token_serials = [token1.get_serial(), token2.get_serial()]
+
+        self.assertIsNotNone(token1.user)
+        self.assertIsNotNone(token2.user)
+        with self.app.test_request_context('/token/unassign',
+                                           method='POST',
+                                           data=json.dumps({"serials": token_serials}),
+                                           headers={'Authorization': self.at,
+                                                    'Content-Type': 'application/json'}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            result = res.json.get("result").get("value")
+            self.assertTrue(result.get(token1.get_serial()))
+            self.assertFalse(result.get(token2.get_serial()))
+        self.assertIsNone(token1.user)
+        self.assertIsNotNone(token2.user)
+
+        delete_policy("policy")
+
 
 class APIAttestationTestCase(MyApiTestCase):
     @pytest.mark.usefixtures("setup_local_ca")
@@ -1069,10 +1095,10 @@ class APITokenTestCase(MyApiTestCase):
     def test_05b_batch_deletion(self):
         self._create_temp_token("Token1")
         self._create_temp_token("Token2")
-        serial_list = "Token1,Token2"
-        with self.app.test_request_context(f"/token/batchdeletion",
-                                           method="POST",
-                                           data={"serial": serial_list},
+        serial_comma_list = "Token1,Token2"
+        with self.app.test_request_context(f"/token/",
+                                           method="DELETE",
+                                           data={"serial": serial_comma_list},
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -1085,10 +1111,10 @@ class APITokenTestCase(MyApiTestCase):
         # Try to remove token, that does not exist fails silently
         self._create_temp_token("Token1")
         self._create_temp_token("Token2")
-        serial_list = "Token1,Token1234,Token2"
-        with self.app.test_request_context(f"/token/batchdeletion",
-                                           method="POST",
-                                           data={"serial": serial_list},
+        serial_list = ["Token1","Token1234","Token2"]
+        with self.app.test_request_context(f"/token/",
+                                           method="DELETE",
+                                           json={"serials": serial_list},
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -3360,22 +3386,21 @@ class APITokenTestCase(MyApiTestCase):
         # create tokens
         token1 = init_token({"type": "hotp"},
                             user=User("cornelius", self.realm1))
-        token2 = init_token({"type": "hotp"},
-                            user=User("hans", self.realm2))
+        token2 = init_token({"type": "hotp"})
 
-        token_serials = ",".join([token1.get_serial(), token2.get_serial()])
+        token_serials = [token1.get_serial(), token2.get_serial(), 'INVALID_SERIAL']
 
-        self.assertIsNotNone(token1.user is not None)
-        self.assertIsNotNone(token2.user is not None)
+        self.assertIsNotNone(token1.user)
+        self.assertIsNone(token2.user)
         # Try to unassign all tokens will only unassign token1 from realm1
-        with self.app.test_request_context('/token/batchunassign',
+        with self.app.test_request_context('/token/unassign',
                                            method='POST',
-                                           data={"serial": token_serials},
+                                           json={"serials": token_serials},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
         self.assertIsNone(token1.user)
-        self.assertIsNotNone(token2.user)
+        self.assertIsNone(token2.user)
 
         delete_policy("policy")
 
