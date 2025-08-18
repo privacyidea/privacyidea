@@ -605,7 +605,7 @@ Example::
         pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' export --file /path/to/export
 
 ''--user/--no-user``
-    If set, the user will be exported as well. If not set, only the tokens will be exported. Default is ''--user``.
+    If set, the user will be exported as well. If not set, only the tokens will be exported. Default: ''--user``.
 
     Example::
 
