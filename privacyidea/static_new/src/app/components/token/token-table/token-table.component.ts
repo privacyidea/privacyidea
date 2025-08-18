@@ -10,15 +10,8 @@ import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
-import {
-  TableUtilsService,
-  TableUtilsServiceInterface
-} from "../../../services/table-utils/table-utils.service";
-import {
-  TokenDetails,
-  TokenService,
-  TokenServiceInterface
-} from "../../../services/token/token.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
+import { TokenDetails, TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";
 

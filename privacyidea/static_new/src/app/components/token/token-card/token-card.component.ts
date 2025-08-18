@@ -4,16 +4,10 @@ import { MatCard, MatCardContent } from "@angular/material/card";
 import { MatTabChangeEvent, MatTabsModule } from "@angular/material/tabs";
 import { MatIcon } from "@angular/material/icon";
 
-import {
-  OverflowService,
-  OverflowServiceInterface
-} from "../../../services/overflow/overflow.service";
+import { OverflowService, OverflowServiceInterface } from "../../../services/overflow/overflow.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
-import {
-  ContainerService,
-  ContainerServiceInterface
-} from "../../../services/container/container.service";
+import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
 
 import { TokenTabComponent } from "./token-tab/token-tab.component";
 import { ContainerTabComponent } from "./container-tab/container-tab.component";

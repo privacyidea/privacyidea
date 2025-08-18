@@ -20,10 +20,7 @@ import { MatIcon } from "@angular/material/icon";
 import { DomSanitizer } from "@angular/platform-browser";
 import { map } from "rxjs";
 import { EnrollmentResponse } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import {
-  ContentService,
-  ContentServiceInterface
-} from "../../../../services/content/content.service";
+import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { UserData } from "../../../../services/user/user.service";
 import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog.component";

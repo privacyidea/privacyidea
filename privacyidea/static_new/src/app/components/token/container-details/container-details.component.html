@@ -249,8 +249,7 @@
               [ngClass]="{ 'pad-top-10': showOnlyTokenNotInContainer() }">
               <span> Only display tokens not in a container </span>
               @if (!showOnlyTokenNotInContainer()) {
-                <br/><span> Note: Adding a token removes it from</span><br/>
-                <span style="margin-left: 39px"> its previous container. </span>
+                <br/><span> Note: Adding a token removes it from</span><br/><span style="margin-left: 39px"> its previous container. </span>
               }
             </mat-checkbox>
           </section>
@@ -275,8 +274,7 @@
               <mat-option
                 class="token-option"
                 (click)="addTokenToContainer(option)">
-                <span class="token-option-span"> {{ option["serial"] }} </span>
-                <span class="token-option-span">
+                <span class="token-option-span"> {{ option["serial"] }} </span> <span class="token-option-span">
                   {{ option["tokentype"] }}
                 </span> <span
                 class="token-option-span"

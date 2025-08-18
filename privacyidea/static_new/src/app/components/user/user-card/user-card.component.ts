@@ -8,15 +8,9 @@ import { MatIcon } from "@angular/material/icon";
 import { MatButton } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
 
-import {
-  OverflowService,
-  OverflowServiceInterface
-} from "../../../services/overflow/overflow.service";
+import { OverflowService, OverflowServiceInterface } from "../../../services/overflow/overflow.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import {
-  VersioningService,
-  VersioningServiceInterface
-} from "../../../services/version/version.service";
+import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
 import { FormControl, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatSelect } from "@angular/material/select";
 import { MatFormField, MatLabel } from "@angular/material/form-field";

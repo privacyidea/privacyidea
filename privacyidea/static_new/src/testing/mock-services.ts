@@ -1,19 +1,5 @@
-import {
-  HttpClient,
-  HttpHeaders,
-  HttpParams,
-  HttpProgressEvent,
-  HttpResourceRef
-} from "@angular/common/http";
-import {
-  computed,
-  linkedSignal,
-  Resource,
-  ResourceStatus,
-  Signal,
-  signal,
-  WritableSignal
-} from "@angular/core";
+import { HttpClient, HttpHeaders, HttpParams, HttpProgressEvent, HttpResourceRef } from "@angular/common/http";
+import { computed, linkedSignal, Resource, ResourceStatus, Signal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import { MatTableDataSource } from "@angular/material/table";
 import { Router } from "@angular/router";
@@ -25,13 +11,7 @@ import {
   TokenEnrollmentData
 } from "../app/mappers/token-api-payload/_token-api-payload.mapper";
 import { Audit, AuditServiceInterface } from "../app/services/audit/audit.service";
-import {
-  AuthData,
-  AuthDetail,
-  AuthResponse,
-  AuthRole,
-  AuthServiceInterface
-} from "../app/services/auth/auth.service";
+import { AuthData, AuthDetail, AuthResponse, AuthRole, AuthServiceInterface } from "../app/services/auth/auth.service";
 import {
   ContainerDetailData,
   ContainerDetails,
@@ -43,11 +23,7 @@ import {
 } from "../app/services/container/container.service";
 import { ContentServiceInterface } from "../app/services/content/content.service";
 import { LocalService, LocalServiceInterface } from "../app/services/local/local.service";
-import {
-  Machines,
-  MachineServiceInterface,
-  TokenApplication
-} from "../app/services/machine/machine.service";
+import { Machines, MachineServiceInterface, TokenApplication } from "../app/services/machine/machine.service";
 import { NotificationServiceInterface } from "../app/services/notification/notification.service";
 import { OverflowServiceInterface } from "../app/services/overflow/overflow.service";
 import { Realm, Realms, RealmServiceInterface } from "../app/services/realm/realm.service";
@@ -61,10 +37,7 @@ import {
   TokenType
 } from "../app/services/token/token.service";
 import { UserData, UserServiceInterface } from "../app/services/user/user.service";
-import {
-  ValidateCheckResponse,
-  ValidateServiceInterface
-} from "../app/services/validate/validate.service";
+import { ValidateCheckResponse, ValidateServiceInterface } from "../app/services/validate/validate.service";
 import { VersioningService } from "../app/services/version/version.service";
 
 export function makeResource<T>(initial: T) {

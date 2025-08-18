@@ -1,10 +1,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 
-import {
-  GetSerialResultDialogComponent,
-  GetSerialResultDialogData
-} from "./get-serial-result-dialog.component";
+import { GetSerialResultDialogComponent, GetSerialResultDialogData } from "./get-serial-result-dialog.component";
 
 describe("GetSerialResultDialogComponent", () => {
   let component: GetSerialResultDialogComponent;

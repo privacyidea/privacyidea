@@ -13,11 +13,7 @@ import {
   NotificationService,
   NotificationServiceInterface
 } from "../../../../../services/notification/notification.service";
-import {
-  LostTokenData,
-  TokenService,
-  TokenServiceInterface
-} from "../../../../../services/token/token.service";
+import { LostTokenData, TokenService, TokenServiceInterface } from "../../../../../services/token/token.service";
 import { DatePipe } from "@angular/common";
 
 @Component({

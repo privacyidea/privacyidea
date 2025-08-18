@@ -1,19 +1,10 @@
 import { Component, computed, inject, signal, WritableSignal } from "@angular/core";
-import {
-  MatDialogActions,
-  MatDialogContent,
-  MatDialogRef,
-  MatDialogTitle
-} from "@angular/material/dialog";
+import { MatDialogActions, MatDialogContent, MatDialogRef, MatDialogTitle } from "@angular/material/dialog";
 import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatSelect } from "@angular/material/select";
-import {
-  UserData,
-  UserService,
-  UserServiceInterface
-} from "../../../../services/user/user.service";
+import { UserData, UserService, UserServiceInterface } from "../../../../services/user/user.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { RealmService, RealmServiceInterface } from "../../../../services/realm/realm.service";
 import { MatInput } from "@angular/material/input";
