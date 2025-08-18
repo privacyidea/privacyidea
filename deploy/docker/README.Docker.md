@@ -50,16 +50,6 @@ Commands can be run inside the container with:
 ```
 docker exec -i <container name> pi-manage ...
 ```
----
-**Note**
-
-Currently, the `pi-manage` command does not recognize the docker environment
-automatically. As a work around it can be called like this:
-```
-docker exec -i <container name> pi-manage -A privacyidea.app:create_docker_app ...
-```
-
----
 
 To set up a running container use:
 ```
@@ -73,9 +63,9 @@ cat <policy template yaml> | docker exec -i <container name> pi-manage config im
 
 TODO:
 -----
-
-* Use the `_FILE` suffix for secrets mounted into the container
-* Compose the `SQLALCHEMY_DATABASE_URI` from secrets passed through the environment or files
+* Add a reverse proxy service (https://github.com/docker/awesome-compose/blob/master/nginx-flask-mysql/compose.yaml)
+* Add an example for a `configs` element to the `compose.yaml` (https://docs.docker.com/reference/compose-file/services/#configs)
 * Add an example on how to manually mount the secret file into the container using `docker run`
 * Add dependencies in the container (PyKCS11, gssapi)
+* Extra build step for the new WebUI
 * Add recurring tasks runner (cron? via docker? via redis?)

@@ -81,22 +81,19 @@ from privacyidea.api.serviceid import serviceid_blueprint
 from privacyidea.api.info import info_blueprint
 from privacyidea.lib import queue
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
-from privacyidea.config import config, DockerConfig, ConfigKey
+from privacyidea.config import config, DockerConfig, ConfigKey, DefaultConfigValues
 from privacyidea.models import db, NodeName
 from privacyidea.lib.crypto import init_hsm
 
 ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
 
-DEFAULT_UUID_FILE = "/etc/privacyidea/uuid.txt"
-DEFAULT_NODE_NAME = "localnode"
-
-DEFAULT_STATIC_FOLDER = "static/"
-DEFAULT_TEMPLATE_FOLDER = "static/templates/"
-
-PI_CFG_PATH = "/etc/privacyidea/pi.cfg"
-
 migrate = Migrate()
 babel = Babel()
+
+# We need to define the logging here to use it in the helper functions.
+# But since the logging system is not configured properly, the message might not
+# end up in the place as defined in the logging configuration
+log = logging.getLogger(__name__)
 
 
 def _register_blueprints(app):
@@ -144,7 +141,7 @@ def _setup_logging(app, logging_config=DEFAULT_LOGGING_CONFIG):
     }
     have_config = False
     log_exception = None
-    log_config_file = app.config.get(ConfigKey.LOGCONFIG, "/etc/privacyidea/logging.cfg")
+    log_config_file = app.config.get(ConfigKey.LOGCONFIG, DefaultConfigValues.LOGGING_CFG)
     if os.path.isfile(log_config_file):
         for cnf_type in ['cfg', 'yaml']:
             if app.config[ConfigKey.VERBOSE]:
@@ -179,8 +176,10 @@ def _check_config(app: Flask):
                          f"configuration! Generating a random key.\n")
         app.config[ConfigKey.SECRET_KEY] = secrets.token_hex()
     if not all([x in app.config for x in [ConfigKey.AUDIT_KEY_PUBLIC, ConfigKey.AUDIT_KEY_PRIVATE]]):
-        sys.stderr.write("No keypair for audit signing defined. Disabling audit signing!\n")
+        sys.stderr.write("No keypair for audit signing defined. Disabling audit signing "
+                         "and response signing!\n")
         app.config[ConfigKey.AUDIT_NO_SIGN] = True
+        app.config[ConfigKey.NO_RESPONSE_SIGN] = True
 
 
 def _setup_node_configuration(app: Flask):
@@ -193,7 +192,7 @@ def _setup_node_configuration(app: Flask):
         except (ValueError, TypeError) as e:
             log.debug(f"Could not determine UUID from config: {e}")
             # check if we can get the UUID from an external file
-            pi_uuid_file = app.config.get(ConfigKey.UUID_FILE, DEFAULT_UUID_FILE)
+            pi_uuid_file = app.config.get(ConfigKey.UUID_FILE, DefaultConfigValues.UUID_FILE)
             try:
                 with open(pi_uuid_file) as f:
                     pi_uuid = uuid.UUID(f.read().strip())
@@ -223,13 +222,13 @@ def _setup_node_configuration(app: Flask):
             log.debug(f"Current UUID: '{pi_uuid}'")
 
         pi_node_name = app.config.get(ConfigKey.NODE) or app.config.get(ConfigKey.AUDIT_SERVERNAME,
-                                                                        DEFAULT_NODE_NAME)
+                                                                        DefaultConfigValues.NODE_NAME)
 
         inspect = sa.inspect(db.get_engine())
         if inspect.has_table(NodeName.__tablename__):
-            db.session.merge(NodeName(node_id=str(pi_uuid),
+            db.session.merge(NodeName(id=str(pi_uuid),
                                       name=pi_node_name,
-                                      last_seen=datetime.datetime.now(datetime.timezone.utc)))
+                                      lastseen=datetime.datetime.now(datetime.timezone.utc)))
             db.session.commit()
         else:
             log.warning(f"Could not update node names in db. "
@@ -238,7 +237,7 @@ def _setup_node_configuration(app: Flask):
 
 
 def create_app(config_name="development",
-               config_file='/etc/privacyidea/pi.cfg',
+               config_file=DefaultConfigValues.CFG_PATH,
                silent=False, initialize_hsm=False) -> Flask:
     """
     First the configuration from the config.py is loaded depending on the
@@ -260,7 +259,8 @@ def create_app(config_name="development",
     :return: The flask application
     :rtype: App object
     """
-    app = Flask(__name__, static_folder=DEFAULT_STATIC_FOLDER, template_folder=DEFAULT_TEMPLATE_FOLDER)
+    app = Flask(__name__, static_folder=DefaultConfigValues.STATIC_FOLDER,
+                template_folder=DefaultConfigValues.TEMPLATE_FOLDER)
     app.config[ConfigKey.APP_READY] = False
     app.config[ConfigKey.VERBOSE] = not silent
 
@@ -311,11 +311,9 @@ def create_app(config_name="development",
             DEFAULT_LOGGING_CONFIG["handlers"]["file"]["filename"] = app.config.get(ConfigKey.LOGFILE)
         _setup_logging(app, DEFAULT_LOGGING_CONFIG)
 
-    log = logging.getLogger(__name__)
-
     # We allow to set different static folders
-    app.static_folder = app.config.get(ConfigKey.STATIC_FOLDER, DEFAULT_STATIC_FOLDER)
-    app.template_folder = app.config.get(ConfigKey.TEMPLATE_FOLDER, DEFAULT_TEMPLATE_FOLDER)
+    app.static_folder = app.config.get(ConfigKey.STATIC_FOLDER, DefaultConfigValues.STATIC_FOLDER)
+    app.template_folder = app.config.get(ConfigKey.TEMPLATE_FOLDER, DefaultConfigValues.TEMPLATE_FOLDER)
 
     _register_blueprints(app)
 
@@ -367,7 +365,7 @@ def create_docker_app():
     The app is configured exclusively through environment variables and secret
     files via docker-compose.
     """
-    app = Flask(__name__, static_folder=DEFAULT_STATIC_FOLDER, template_folder=DEFAULT_TEMPLATE_FOLDER)
+    app = Flask(__name__)
     app.config[ConfigKey.APP_READY] = False
     app.config[ConfigKey.VERBOSE] = bool(app.debug)
 
@@ -379,15 +377,16 @@ def create_docker_app():
     # Then we check if a config file is present in /etc/privacyidea/pi.cfg
     # (either mounted or built into the container image)
     try:
-        app.config.from_pyfile(PI_CFG_PATH, silent=False)
+        app.config.from_pyfile(DefaultConfigValues.CFG_PATH, silent=False)
         if app.debug:
-            sys.stderr.write(f"Read configuration from file: '{PI_CFG_PATH}'\n")
+            sys.stderr.write(f"Read configuration from file: '{DefaultConfigValues.CFG_PATH}'\n")
     except IOError as _e:
         pass
     # Then we update the configuration with stuff from the environment
     if app.debug:
         sys.stderr.write("Reading configuration from environment with prefix 'PRIVACYIDEA'\n")
     app.config.from_prefixed_env("PRIVACYIDEA")
+
     # And then we check if we have a minimal viable config
     _check_config(app)
 
@@ -398,8 +397,8 @@ def create_docker_app():
     _setup_logging(app, DOCKER_LOGGING_CONFIG)
 
     # We allow to set different static folders
-    app.static_folder = app.config.get(ConfigKey.STATIC_FOLDER, DEFAULT_STATIC_FOLDER)
-    app.template_folder = app.config.get(ConfigKey.TEMPLATE_FOLDER, DEFAULT_TEMPLATE_FOLDER)
+    app.static_folder = app.config.get(ConfigKey.STATIC_FOLDER, DefaultConfigValues.STATIC_FOLDER)
+    app.template_folder = app.config.get(ConfigKey.TEMPLATE_FOLDER, DefaultConfigValues.TEMPLATE_FOLDER)
 
     _register_blueprints(app)
 
@@ -419,6 +418,7 @@ def create_docker_app():
     # Check database connection
     with app.app_context():
         try:
+            log.debug("Test Database using URL '%s'", app.config[ConfigKey.SQLALCHEMY_DATABASE_URI])
             db.session.execute(sa.text('SELECT 1'))
             log.debug("Database Connection successful!")
         except Exception as e:

@@ -114,7 +114,7 @@ class Config(TimestampMethodsMixin, db.Model):
         return ret
 
 
-class NodeName(db.Model, TimestampMethodsMixin):
+class NodeName(db.Model):
     __tablename__ = "nodename"
     # TODO: we can use the UUID type here when switching to SQLAlchemy 2.0
     #  <https://docs.sqlalchemy.org/en/20/core/custom_types.html#backend-agnostic-guid-type>
@@ -122,10 +122,6 @@ class NodeName(db.Model, TimestampMethodsMixin):
     name = db.Column(db.Unicode(100), index=True)
     lastseen = db.Column(db.DateTime(), index=True, default=datetime.now(tz=tzutc()))
 
-    def __init__(self, node_id, name, last_seen=None):
-        self.id = node_id
-        self.name = convert_column_to_unicode(name)
-        self.lastseen = last_seen or datetime.now(tz=tzutc())
 
 class Admin(db.Model):
     """

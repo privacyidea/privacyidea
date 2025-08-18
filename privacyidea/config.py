@@ -14,8 +14,11 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from __future__ import annotations
 
+import functools
 import os
+import sys
 import logging
 from pathlib import Path
 import secrets
@@ -55,16 +58,30 @@ class ConfigKey:
     ENCFILE = "PI_ENCFILE"
 
     SQLALCHEMY_DATABASE_URI = "SQLALCHEMY_DATABASE_URI"
+    SQLALCHEMY_ENGINE_OPTIONS = "SQLALCHEMY_ENGINE_OPTIONS"
     DEV_DATABASE_URL = "DEV_DATABASE_URL"
     TEST_DATABASE_URL = "TEST_DATABASE_URL"
-    DB_EXTRA_PARAMS = "DB_EXTRA_PARAMS"
+    DB_DRIVER = "PI_DB_DRIVER"
+    DB_USER = "PI_DB_USER"
+    DB_PASSWORD = "PI_DB_PASSWORD"
+    DB_HOST = "PI_DB_HOST"
+    DB_PORT = "PI_DB_PORT"
+    DB_NAME = "PI_DB_NAME"
+    DB_EXTRA_PARAMS = "PI_DB_EXTRA_PARAMS"
 
+    AUDIT_SQL_URI = "PI_AUDIT_SQL_URI"
+    AUDIT_SQL_OPTIONS = "PI_AUDIT_SQL_OPTIONS"
+    AUDIT_POOL_SIZE = "PI_AUDIT_POOL_SIZE"
+    AUDIT_POOL_RECYCLE = "PI_AUDIT_POOL_RECYCLE"
     AUDIT_KEY_PRIVATE = "PI_AUDIT_KEY_PRIVATE"
     AUDIT_KEY_PUBLIC = "PI_AUDIT_KEY_PUBLIC"
     AUDIT_MODULE = "PI_AUDIT_MODULE"
     AUDIT_SERVERNAME = "PI_AUDIT_SERVERNAME"
     AUDIT_SQL_TRUNCATE = "PI_AUDIT_SQL_TRUNCATE"
     AUDIT_NO_SIGN = "PI_AUDIT_NO_SIGN"
+    AUDIT_NO_PRIVATE_KEY_CHECK = "PI_AUDIT_NO_PRIVATE_KEY_CHECK"
+    AUDIT_SQL_COLUMN_LENGTH = "PI_AUDIT_SQL_COLUMN_LENGTH"
+    CHECK_OLD_SIGNATURES = "PI_CHECK_OLD_SIGNATURES"
 
     LOGLEVEL = "PI_LOGLEVEL"
     LOGCONFIG = "PI_LOGCONFIG"
@@ -81,6 +98,20 @@ class ConfigKey:
     CONFIG_NAME = "PI_CONFIG_NAME"
     STATIC_FOLDER = "PI_STATIC_FOLDER"
     TEMPLATE_FOLDER = "PI_TEMPLATE_FOLDER"
+    NO_RESPONSE_SIGN = "PI_NO_RESPONSE_SIGN"
+    RESPONSE_NO_PRIVATE_KEY_CHECK = "PI_RESPONSE_NO_PRIVATE_KEY_CHECK"
+
+
+class DefaultConfigValues:
+    UUID_FILE = "/etc/privacyidea/uuid.txt"
+    NODE_NAME = "localnode"
+
+    STATIC_FOLDER = "static/"
+    TEMPLATE_FOLDER = "static/templates/"
+
+    CFG_PATH = "/etc/privacyidea/pi.cfg"
+    LOGFILE_PATH = "/etc/privacyidea/privacyidea.log"
+    LOGGING_CFG = "/etc/privacyidea/logging.cfg"
 
 
 def _random_password(size):
@@ -187,39 +218,56 @@ class ProductionConfig(Config):
     SUPERUSER_REALM = ['superuser']
 
 
+@functools.lru_cache
+def _get_secrets_from_environment(name: str) -> str | None:
+    if f"{name}_FILE" in os.environ:
+        file_name = os.environ[f"{name}_FILE"]
+        try:
+            with open(file_name) as f:
+                return f.read().strip()
+        except IOError as _e:
+            sys.stderr.write(f"Could not read secret from file '{file_name}' "
+                             f"defined in variable '{name}_FILE'")
+    return os.getenv(name, None)
+
+
 class DockerConfig:
     secrets_dir = Path("/run/secrets/")
-    # Try to set the database uri from the environment variables
-    if ConfigKey.SQLALCHEMY_DATABASE_URI in os.environ:
-        SQLALCHEMY_DATABASE_URI = os.getenv(ConfigKey.SQLALCHEMY_DATABASE_URI)
-    elif all(x in os.environ for x in ["DB_API", "DB_USER", "DB_PASSWORD", "DB_HOST", "DB_PORT", "DB_NAME"]):
-        SQLALCHEMY_DATABASE_URI = ("{DB_API}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:"
-                                   "{DB_PORT}/{DB_NAME}").format(**os.environ)
-        if ConfigKey.DB_EXTRA_PARAMS in os.environ:
-            SQLALCHEMY_DATABASE_URI += f"?{os.getenv(ConfigKey.DB_EXTRA_PARAMS)}"
+
+    # Try to set the database url from the environment variables
+    # First we try if the URL component was set individually
+    if _get_secrets_from_environment(ConfigKey.DB_PASSWORD):
+        PI_DB_PASSWORD = _get_secrets_from_environment(ConfigKey.DB_PASSWORD)
+
+        if all(x in os.environ for x in [ConfigKey.DB_USER, ConfigKey.DB_HOST]) and PI_DB_PASSWORD:
+            SQLALCHEMY_DATABASE_URI = "{0}://{1}:{2}@{3}{4}/{5}{6}".format(
+                os.getenv(ConfigKey.DB_DRIVER, 'mysql+pymysql'),
+                os.getenv(ConfigKey.DB_USER),
+                PI_DB_PASSWORD,
+                os.getenv(ConfigKey.DB_HOST),
+                f":{os.getenv(ConfigKey.DB_PORT)}" if ConfigKey.DB_PORT in os.environ else "",
+                os.getenv(ConfigKey.DB_NAME, ""),
+                f"?{os.getenv(ConfigKey.DB_EXTRA_PARAMS)}" if ConfigKey.DB_EXTRA_PARAMS in os.environ else ""
+            )
+    # If the complete SQLALCHEMY_DATABASE_URI is given in the environment (secret)
+    # it overwrites the one combined from components
+    if _get_secrets_from_environment(ConfigKey.SQLALCHEMY_DATABASE_URI):
+        SQLALCHEMY_DATABASE_URI = _get_secrets_from_environment(ConfigKey.SQLALCHEMY_DATABASE_URI)
 
     PI_AUDIT_MODULE = "privacyidea.lib.auditmodules.sqlaudit"
     PI_AUDIT_SQL_TRUNCATE = True
 
     if (secrets_dir / "enckey").is_file():
         PI_ENCFILE = str(secrets_dir / "enckey")
-    if (secrets_dir / "pi_audit_key_public").is_file():
-        PI_AUDIT_KEY_PUBLIC = str(secrets_dir / "pi_audit_key_public")
-    if (secrets_dir / "pi_audit_key_private").is_file():
-        PI_AUDIT_KEY_PRIVATE = str(secrets_dir / "pi_audit_key_private")
 
-    try:
-        with open(secrets_dir / "secret_key", "r") as f:
-            SECRET_KEY = f.read().strip()
-    except IOError as _e:
-        if ConfigKey.SECRET_KEY in os.environ:
-            SECRET_KEY = os.getenv(ConfigKey.SECRET_KEY)
-    try:
-        with open(secrets_dir / "pi_pepper", "r") as f:
-            PI_PEPPER = f.read().strip()
-    except IOError as _e:
-        if ConfigKey.PEPPER in os.environ:
-            PI_PEPPER = os.getenv(ConfigKey.PEPPER)
+    if _get_secrets_from_environment(ConfigKey.PEPPER):
+        PI_PEPPER = _get_secrets_from_environment(ConfigKey.PEPPER)
+    if _get_secrets_from_environment(ConfigKey.SECRET_KEY):
+        SECRET_KEY = _get_secrets_from_environment(ConfigKey.SECRET_KEY)
+    if _get_secrets_from_environment(ConfigKey.AUDIT_KEY_PUBLIC):
+        PI_AUDIT_KEY_PUBLIC = _get_secrets_from_environment(ConfigKey.AUDIT_KEY_PUBLIC)
+    if _get_secrets_from_environment(ConfigKey.AUDIT_KEY_PRIVATE):
+        PI_AUDIT_KEY_PRIVATE = _get_secrets_from_environment(ConfigKey.AUDIT_KEY_PRIVATE)
 
 
 config = {

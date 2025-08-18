@@ -5,13 +5,16 @@ services:
     image: mariadb:10.6
     environment:
       MARIADB_USER: pi
-      MARIADB_PASSWORD: test123
+      MARIADB_PASSWORD_FILE: /run/secrets/mariadb_password
       MARIADB_DATABASE: pi
       MARIADB_RANDOM_ROOT_PASSWORD: true
+    secrets:
+      - mariadb_password
     healthcheck:
-      # The mysqladmin command needs a username/password to avoid spamming the
-      # logs with failed authentication messages (it works nevertheless)
-      test: mysqladmin ping -h localhost -u $$MARIADB_USER --password=$$MARIADB_PASSWORD
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      retries: 5
+      start_period: 30s
 
   pi:
     depends_on:
@@ -29,12 +32,30 @@ services:
       - enckey
       - secret_key
       - pi_pepper
+      - mariadb_password
     environment:
-      SQLALCHEMY_DATABASE_URI: mysql+pymysql://pi:test123@db:3306/pi
+      # Construct the database uri from variables/secrets
+      PI_DB_PASSWORD_FILE: /run/secrets/mariadb_password
+      PI_DB_USER: pi
+      PI_DB_HOST: db
+      PI_DB_NAME: pi
+      # Alternatively use SQLALCHEMY_DATABASE_URI or SQLALCHEMY_DATABASE_URI_FILE
+#      SQLALCHEMY_DATABASE_URI: mysql+pymysql://pi:test123@db:3306/pi
+      SECRET_KEY_FILE: /run/secrets/secret_key
+      PI_PEPPER_FILE: /run/secrets/pi_pepper
+      PI_ENCFILE: /run/secrets/enckey
+      # Additional secrets that can be given as files:
+#      PI_AUDIT_KEY_PUBLIC_FILE
+#      PI_AUDIT_KEY_PRIVATE_FILE
+#      SQLALCHEMY_DATABASE_URI_FILE
+      # To test the setup of the container, set FLASK_DEBUG to "true".
+      # Note: This also sets the log-level of privacyIDEA to "DEBUG"
       FLASK_DEBUG: true
     env_file:
+      # Additional environment variables can be loaded from an .env file
       - ./example.env
 
+# Example secrets definition. The environment secrets must be made available when executing "docker-compose up"
 secrets:
   enckey:
     # Create a random encryption key with "head -c 96 /dev/urandom > encKey"
@@ -45,3 +66,6 @@ secrets:
   pi_pepper:
     # Create a suitable pepper with "PI_PEPPER=$(python -c 'import secrets;print(secrets.token_urlsafe())')"
     environment: PI_PEPPER
+  mariadb_password:
+    # Create a random password i.e. with "pwgen 20 1 > db_password.txt"
+    file: ./db_password.txt
