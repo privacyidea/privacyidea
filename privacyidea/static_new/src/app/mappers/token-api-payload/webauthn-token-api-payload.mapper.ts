@@ -39,6 +39,17 @@ export interface WebAuthnEnrollmentPayload extends TokenEnrollmentPayload {
   credential_id?: string; // If present, all fields from WebAuthnEnrollmentData are part of payload
 }
 
+export interface WebAuthnFinalizePayload extends TokenEnrollmentPayload {
+  credential_id: string;
+  regdata: string;
+  clientdata: string;
+  transaction_id: string;
+  serial: string;
+  rawId: string;
+  authenticatorAttachment: string | null;
+  credProps?: any;
+}
+
 @Injectable({ providedIn: "root" })
 export class WebAuthnApiPayloadMapper implements TokenApiPayloadMapper<WebAuthnEnrollmentData> {
   toApiPayload(data: WebAuthnEnrollmentData): WebAuthnEnrollmentPayload {
@@ -49,7 +60,7 @@ export class WebAuthnApiPayloadMapper implements TokenApiPayloadMapper<WebAuthnE
       validity_period_start: data.validityPeriodStart,
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
-      realm: data.user? data.realm : null,
+      realm: data.user ? data.realm : null,
       pin: data.pin
     };
 
@@ -71,5 +82,30 @@ export class WebAuthnApiPayloadMapper implements TokenApiPayloadMapper<WebAuthnE
   fromApiPayload(payload: any): WebAuthnEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as WebAuthnEnrollmentData;
+  }
+}
+
+@Injectable({ providedIn: "root" })
+export class WebAuthnFinalizeApiPayloadMapper implements TokenApiPayloadMapper<WebauthnFinalizeData> {
+  toApiPayload(data: WebauthnFinalizeData): WebAuthnFinalizePayload {
+    const payload: WebAuthnFinalizePayload = {
+      type: data.type,
+      serial: data.serial,
+      credential_id: data.credential_id,
+      regdata: data.regdata,
+      clientdata: data.clientdata,
+      transaction_id: data.transaction_id,
+      rawId: data.rawId,
+      authenticatorAttachment: data.authenticatorAttachment || null
+    };
+
+    if (data.credProps) payload.credProps = data.credProps;
+
+    return payload;
+  }
+
+  fromApiPayload(payload: any): WebauthnFinalizeData {
+    // Placeholder: Implement transformation from API payload. We will replace this later.
+    return payload as WebauthnFinalizeData;
   }
 }

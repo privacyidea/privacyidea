@@ -5,9 +5,9 @@ export interface EnrollmentResponse<D extends EnrollmentResponseDetail = Enrollm
 }
 
 export interface EnrollmentResponseDetail {
-  rollout_state: string;
   serial: string;
-  threadid?: number; // TODO: always, or only in Webauthn??
+  rollout_state?: string;
+  threadid?: number;
   passkey_registration?: any;
   u2fRegisterRequest?: any;
   pushurl?: EnrollmentUrl;
@@ -41,13 +41,13 @@ export type TokenEnrollmentData = {
 
 export interface TokenEnrollmentPayload {
   type: string;
-  description: string;
-  container_serial: string;
-  validity_period_start: string;
-  validity_period_end: string;
-  user: string | null;
-  realm: string | null;
-  pin: string;
+  description?: string;
+  container_serial?: string;
+  validity_period_start?: string;
+  validity_period_end?: string;
+  user?: string | null;
+  realm?: string | null;
+  pin?: string;
 }
 
 export interface TokenApiPayloadMapper<T> {

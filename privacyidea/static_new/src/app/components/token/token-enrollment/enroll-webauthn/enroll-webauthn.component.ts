@@ -8,7 +8,7 @@ import {
 import {
   WebAuthnApiPayloadMapper,
   WebAuthnEnrollmentData,
-  WebauthnEnrollmentResponse,
+  WebauthnEnrollmentResponse, WebAuthnFinalizeApiPayloadMapper,
   WebauthnFinalizeData
 } from "../../../../mappers/token-api-payload/webauthn-token-api-payload.mapper";
 import { Base64Service, Base64ServiceInterface } from "../../../../services/base64/base64.service";
@@ -30,6 +30,9 @@ import { ReopenDialogFn } from "../token-enrollment.component";
 export class EnrollWebauthnComponent implements OnInit {
   protected readonly enrollmentMapper: WebAuthnApiPayloadMapper = inject(
     WebAuthnApiPayloadMapper
+  );
+  protected readonly finalizeMapper: WebAuthnFinalizeApiPayloadMapper = inject(
+    WebAuthnFinalizeApiPayloadMapper
   );
   protected readonly notificationService: NotificationServiceInterface =
     inject(NotificationService);
@@ -261,12 +264,14 @@ export class EnrollWebauthnComponent implements OnInit {
     }
 
     try {
-      return await firstValueFrom(
+      const response: EnrollmentResponse = await firstValueFrom(
         this.tokenService.enrollToken({
           data: params,
-          mapper: this.enrollmentMapper
+          mapper: this.finalizeMapper
         })
       );
+      response.detail.serial = detail.serial;
+      return response;
     } catch (error: any) {
       const errMsg = `WebAuthn finalization failed: ${error.message || error}`;
       this.notificationService.openSnackBar(errMsg);
