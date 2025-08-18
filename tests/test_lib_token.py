@@ -1880,7 +1880,7 @@ class TokenTestCase(MyTestCase):
         hotptoken.delete_token()
         totptoken.delete_token()
 
-        #import the tokens with user assignment
+        # import the tokens with user assignment
         updated_tokens = import_tokens(exported_tokens , update_existing_tokens=True, assign_to_user=True)
         hotptoken = get_tokens(serial="OATH12345678")[0]
         totptoken = get_tokens(serial="TOTP12345678")[0]
@@ -1888,7 +1888,7 @@ class TokenTestCase(MyTestCase):
         self.assertEqual(hotptoken.owners[0].login, "cornelius")
         self.assertEqual(totptoken.owners[0].login, "cornelius")
 
-        #cheak custom user attributes are exported and imported correctly
+        # cheak custom user attributes are exported and imported correctly
         user.set_attribute("custom_attr", "custom_value")
         exported_tokens = export_tokens([hotptoken, totptoken], export_user=True)
 
@@ -1897,11 +1897,11 @@ class TokenTestCase(MyTestCase):
         # Remove user attributes
         user.delete_attribute("custom_attr")
 
-        #cheak that the user attributes are empty after import
+        # cheak that the user attributes are empty after import
         self.assertEqual(user.attributes, {})
         updated_tokens = import_tokens(exported_tokens , update_existing_tokens=True, assign_to_user=True)
 
-        #cheak that the user attributes are imported correctly
+        # cheak that the user attributes are imported correctly
         self.assertEqual(user.attributes, {"custom_attr": "custom_value"})
 
         #unassign the tokens
@@ -1911,19 +1911,19 @@ class TokenTestCase(MyTestCase):
         self.assertEqual(hotptoken.token.first_owner, None)
         self.assertEqual(totptoken.token.first_owner, None)
 
-        #cheak token will be assigned to the user on update
+        # cheak token will be assigned to the user on update
         updated_tokens = import_tokens(exported_tokens , update_existing_tokens=True, assign_to_user=True)
         self.assertEqual(hotptoken.owners[0].login, "cornelius")
         self.assertEqual(totptoken.owners[0].login, "cornelius")
 
-        #unassign the tokens
+        # unassign the tokens
         unassign_token(user=user, serial="OATH12345678")
         unassign_token(user=user, serial="TOTP12345678")
 
         self.assertEqual(hotptoken.token.first_owner, None)
         self.assertEqual(totptoken.token.first_owner, None)
 
-        #cheak token will not be assigned to the user on no update
+        # cheak token will not be assigned to the user on no update
         updated_tokens = import_tokens(exported_tokens , update_existing_tokens=False, assign_to_user=True)
         self.assertEqual(hotptoken.token.first_owner, None)
         self.assertEqual(totptoken.token.first_owner, None)
