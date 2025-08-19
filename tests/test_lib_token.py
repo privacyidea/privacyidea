@@ -1828,6 +1828,7 @@ class TokenTestCase(MyTestCase):
         totptoken.set_description("this will be replaced by the import")
         self.assertEqual(hotptoken.token.description, "this will be replaced by the import")
         self.assertEqual(totptoken.token.description, "this will be replaced by the import")
+        db.session.commit()
 
         updated_tokens = import_tokens(exported_tokens, update_existing_tokens=True)
         self.assertEqual(hotptoken.token.description, "Hotp Token")
@@ -1839,6 +1840,7 @@ class TokenTestCase(MyTestCase):
         totptoken.set_description("this will not be replaced by the import")
         self.assertEqual(hotptoken.token.description, "this will not be replaced by the import")
         self.assertEqual(totptoken.token.description, "this will not be replaced by the import")
+        db.session.commit()
 
         updated_tokens = import_tokens(exported_tokens, update_existing_tokens=False)
         self.assertEqual(hotptoken.token.description, "this will not be replaced by the import")
