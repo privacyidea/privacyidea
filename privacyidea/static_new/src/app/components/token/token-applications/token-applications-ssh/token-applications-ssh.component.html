@@ -1,12 +1,13 @@
 <div
+  i18n-aria-label
   aria-label="Token Applications SSH"
   class="token-applications-ssh">
   <div class="details-flex-layout flex-column">
     <div class="application-p-div">
-      <p>SSH Tokens can be attached to a service ID with a user. The user is the user on the SSH
+      <p i18n>SSH Tokens can be attached to a service ID with a user. The user is the user on the SSH
          server and may differ from the token owner. To attach the token to a service ID go to the
          token details. </p>
-      <p>To define service IDs go to
+      <p i18n>To define service IDs go to
         <a ui-sref="config.serviceid">Service ID config</a>
          .
       </p>
@@ -17,12 +18,14 @@
       <mat-form-field
         class="application-table-filter"
         subscriptSizing="dynamic">
-        <mat-label>Enter Filter</mat-label>
+        <mat-label i18n>Enter Filter</mat-label>
         <input
           #filterInput
           [(ngModel)]="machineService.filterValueString"
+          i18n-aria-label
           aria-label="Filter Input"
           matInput
+          i18n-placeholder
           placeholder="Example query: 'service_id: myService'"/>
       </mat-form-field>
       <mat-paginator
@@ -42,6 +45,7 @@
       (matSortChange)="machineService.onSortEvent($event)"
       [dataSource]="dataSource()"
       [matSortDisableClear]="false"
+      i18n-aria-label
       aria-label="Token Applications Table"
       class="token-table"
       mat-table
@@ -93,21 +97,27 @@
       }
       <tr
         *matHeaderRowDef="displayedColumns"
+        i18n-aria-label
         aria-label="Header Row"
         mat-header-row></tr>
       <tr
         *matRowDef="let row; columns: displayedColumns"
+        i18n-aria-label
         aria-label="Data Row"
         mat-row></tr>
       <tr
         *matNoDataRow
+        i18n-aria-label
         aria-label="No Data Row">
         <td
           [attr.colspan]="displayedColumns.length"
-          aria-label="No Data Cell">
+          i18n-aria-label
+          aria-label="No Data Cell"
+          i18n>
           No data matching the filter.
         </td>
       </tr>
     </table>
   </div>
 </div>
+

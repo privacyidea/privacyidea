@@ -5,6 +5,7 @@
   class="user-container">
   <table
     [dataSource]="userData()"
+    i18n-aria-label
     aria-label="User Detail Data Table"
     class="user-details-table"
     mat-table>
@@ -24,7 +25,7 @@
           @case ("username") {
             @if (isEditingUser() && userService.selectedUserRealm() !== "") {
               <mat-form-field>
-                <mat-label>Enter User</mat-label>
+                <mat-label i18n>Enter User</mat-label>
                 <input
                   matInput
                   [(ngModel)]="userService.userFilter"
@@ -43,7 +44,7 @@
           @case ("user_realm") {
             @if (isEditingUser()) {
               <mat-form-field>
-                <mat-label>Select Realm of User</mat-label>
+                <mat-label i18n>Select Realm of User</mat-label>
                 <mat-select [(ngModel)]="userService.selectedUserRealm">
                   @for (option of realmService.realmOptions(); track option) {
                     <mat-option value="{{ option }}">{{ option }}</mat-option>
@@ -97,3 +98,4 @@
       mat-row></tr>
   </table>
 </div>
+

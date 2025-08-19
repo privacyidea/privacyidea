@@ -1,10 +1,11 @@
 <div
+  i18n-aria-label
   aria-label="Token Enrollment"
   class="token-enrollment-container">
   <div
     [innerHTML]="preTopHtml$ | async"
     class="margin-top-1"></div>
-  <h3 class="margin-left-1">Token Enrollment</h3>
+  <h3 i18n class="margin-left-1">Token Enrollment</h3>
   <mat-form-field class="width-100">
     <mat-select
       [(ngModel)]="selectedTokenType"
@@ -12,19 +13,22 @@
       @for (type of tokenService.tokenTypeOptions(); track type) {
         <mat-option
           class="token-type-option type-option"
-          [value]="type">{{ type.info.split(":")[0] }}
+          [value]="type"
+          i18n-matTooltip
+          matTooltip="{{ type.info.split(':')[1] }}">{{ type.info.split(":")[0] }}
         </mat-option>
       }
 
       <button
         (click)="versioningService.openDocumentation('tokentypes')"
         class="card-button width-100"
-        mat-flat-button>
+        mat-flat-button
+        i18n>
         <mat-icon>info_outline</mat-icon>
         Help About Tokentypes
       </button>
     </mat-select>
-    <mat-hint class="token-type-hint">
+    <mat-hint i18n class="token-type-hint">
       @if (selectedTokenType().info) {
         {{ selectedTokenType().info.split(":")[1] }}
       }
@@ -35,6 +39,7 @@
       <button
         (click)="reopenEnrollmentDialog()"
         [disabled]="!canReopenEnrollmentDialog()"
+        i18n-matTooltip
         [matTooltip]="'Reopen enrollment dialog'"
         mat-icon-button
         type="button">
@@ -46,7 +51,8 @@
           'card-button-disabled': formGroup.invalid,
           'card-button': true,
         }"
-        mat-flat-button>
+        mat-flat-button
+        i18n>
         <mat-icon>add</mat-icon>
         Enroll {{ selectedTokenType().key }} Token
       </button>
@@ -184,11 +190,12 @@
       }
     }
     <mat-form-field class="description-form">
-      <mat-label>Description</mat-label>
+      <mat-label i18n>Description</mat-label>
       <textarea
         [formControl]="descriptionControl"
         [maxlength]="80"
         matInput
+        i18n-placeholder
         placeholder="Enter description"
         rows="3"></textarea>
     </mat-form-field>
@@ -199,9 +206,9 @@
           type="text"/> <input
         style="display: none"
         type="password"/>
-        <h4 class="enroll-h4">Assign Token to a Container</h4>
+        <h4 i18n class="enroll-h4">Assign Token to a Container</h4>
         <mat-form-field class="width-50 input-height">
-          <mat-label>Enter Container</mat-label>
+          <mat-label i18n>Enter Container</mat-label>
           <input
             [formControl]="selectedContainerControl"
             [matAutocomplete]="containerAuto"
@@ -216,22 +223,24 @@
       </div>
       @if (selectedTokenType().key !== "passkey") {
         <div class="flex-column user-pin-container">
-          <h4 class="enroll-h4">Set PIN</h4>
+          <h4 i18n class="enroll-h4">Set PIN</h4>
           <div class="user-pin-input">
             <input
               [formControl]="setPinControl"
               [type]="'password'"
               class="input"
+              i18n-placeholder
               placeholder="PIN"/> <input
             [formControl]="repeatPinControl"
             [type]="'password'"
             class="input"
+            i18n-placeholder
             placeholder="Repeat PIN"/>
           </div>
           @if (formGroup.hasError("pinMismatch") &&
           (formGroup.get("setPin")?.touched ||
             formGroup.get("repeatPin")?.touched)) {
-            <mat-error class="pin-error">PINs do not match.</mat-error>
+            <mat-error i18n class="pin-error">PINs do not match.</mat-error>
           }
         </div>
       } @else {

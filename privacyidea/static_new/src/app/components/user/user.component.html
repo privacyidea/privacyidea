@@ -5,6 +5,7 @@
 </ng-template>
 
 <div
+  i18n-aria-label
   aria-label="User Layout"
   class="user-layout">
   @if (!overflowService.isWidthOverflowing(
@@ -43,8 +44,10 @@
           <div class="drawer-button-div">
             <button
               mat-fab
+              (click)="drawer.toggle()"
               class="drawer-button"
-              (click)="drawer.toggle()">
+              i18n-aria-label
+              aria-label="Toggle Drawer">
               <mat-icon>keyboard_arrow_right</mat-icon>
             </button>
           </div>
@@ -64,3 +67,4 @@
     </mat-drawer-content>
   </mat-drawer-container>
 </div>
+

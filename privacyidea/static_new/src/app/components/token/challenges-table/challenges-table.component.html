@@ -1,15 +1,16 @@
 <div class="challenges-table-container">
-  <h3 class="margin-left-1">Challenges</h3>
+  <h3 i18n class="margin-left-1">Challenges</h3>
   <div class="filter-paginator-container">
     <mat-form-field
       appearance="fill"
       class="challenges-table-filter"
       subscriptSizing="dynamic">
-      <mat-label>Enter Filter</mat-label>
+      <mat-label i18n>Enter Filter</mat-label>
       <input
         #filterInput
         (keyup)="onFilterChange(filterInput.value)"
         matInput
+        i18n-placeholder
         placeholder="Example query: 'transaction_id: 00000000000000000001'"/>
     </mat-form-field>
     <mat-paginator
@@ -29,6 +30,7 @@
     (matSortChange)="onSortEvent($event)"
     [dataSource]="challengesDataSource()"
     [matSortDisableClear]="false"
+    i18n-aria-label
     aria-label="Token Challenges Table"
     class="challenges-table"
     mat-table
@@ -75,21 +77,24 @@
     }
     <tr
       *matHeaderRowDef="displayedColumns"
+      i18n-aria-label
       aria-label="Header Row"
       mat-header-row></tr>
     <tr
       *matRowDef="let row; columns: displayedColumns"
+      i18n-aria-label
       aria-label="Data Row"
       mat-row></tr>
     <tr
       *matNoDataRow
+      i18n-aria-label
       aria-label="No Data Row">
-      <td
+      <td i18n
         [attr.colspan]="displayedColumns.length"
+        i18n-aria-label
         aria-label="No Data Cell">
         No data matching the filter.
       </td>
     </tr>
   </table>
 </div>
-

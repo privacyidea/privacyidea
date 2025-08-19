@@ -21,12 +21,14 @@
           [(ngModel)]="setPinValue"
           [type]="'password'"
           class="input"
+          i18n-placeholder
           placeholder="Token PIN"/>
 
         <input
           [(ngModel)]="repeatPinValue"
           [type]="'password'"
           class="input"
+          i18n-placeholder
           placeholder="Repeat PIN"/>
       </div>
       <div class="user-pin-button">
@@ -34,7 +36,8 @@
           (click)="setPin()"
           class="detail-button"
           extended
-          mat-fab>
+          mat-fab
+          i18n>
           <mat-icon class="detail-button-icon">password</mat-icon>
           Set PIN
         </button>
@@ -43,7 +46,8 @@
             (click)="setRandomPin()"
             class="detail-button"
             extended
-            mat-fab>
+            mat-fab
+            i18n>
             <mat-icon class="detail-button-icon">casino</mat-icon>
             Random PIN
           </button>
@@ -58,11 +62,13 @@
     <input
       [(ngModel)]="fristOTPValue"
       class="input"
+      i18n-placeholder
       placeholder="First OTP"/>
 
     <input
       [(ngModel)]="secondOTPValue"
       class="input"
+      i18n-placeholder
       placeholder="Second OTP"/>
   </div>
   <div class="actions-pin-input-button">
@@ -70,7 +76,8 @@
       (click)="resyncOTPToken()"
       class="detail-button"
       extended
-      mat-fab>
+      mat-fab
+      i18n>
       <mat-icon class="detail-button-icon">sync</mat-icon>
       Resync Token
     </button>
@@ -89,7 +96,7 @@
         type="password"/>
 
       <mat-form-field class="width-100">
-        <mat-label>OTP or Pin</mat-label>
+        <mat-label i18n>OTP or Pin</mat-label>
 
         <input
           matInput
@@ -102,6 +109,7 @@
           matSuffix
           type="button"
           (click)="hide = !hide"
+          i18n-aria-label
           [attr.aria-label]="hide ? 'Show value' : 'Hide value'">
           <mat-icon>{{ hide ? 'visibility_off' : 'visibility' }}</mat-icon>
         </button>
@@ -112,7 +120,8 @@
         (click)="testToken()"
         class="detail-button"
         extended
-        mat-fab>
+        mat-fab
+        i18n>
         <mat-icon class="detail-button-icon">help_outline</mat-icon>
         Test Token
       </button>
@@ -120,7 +129,8 @@
         (click)="verifyOTPValue()"
         class="detail-button"
         extended
-        mat-fab>
+        mat-fab
+        i18n>
         <mat-icon class="detail-button-icon">help_outline</mat-icon>
         Verify OTP Value
       </button>
@@ -129,7 +139,8 @@
           (click)="assignSSHMachineDialog()"
           class="detail-button"
           extended
-          mat-fab>
+          mat-fab
+          i18n>
           <mat-icon class="detail-button-icon">computer</mat-icon>
           Assign SSH Machine
         </button>
@@ -140,9 +151,11 @@
       (click)="testPasskey()"
       class="detail-button"
       extended
-      mat-fab>
+      mat-fab
+      i18n>
       <mat-icon class="detail-button-icon">key</mat-icon>
       Test Passkey
     </button>
   }
 </div>
+

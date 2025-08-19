@@ -1,8 +1,8 @@
-<h2 mat-dialog-title>Search for Token</h2>
+<h2 i18n mat-dialog-title>Search for Token</h2>
 <mat-dialog-content>
   @if (data.foundSerial) {
     <div class="alert alert-success">
-      <span translate>
+      <span i18n>
         The Serial number for the OTP value {{ data.otpValue }} is
         <a
           class="link"
@@ -14,7 +14,7 @@
     </div>
   } @else {
     <div class="alert alert-warning">
-      <span translate>
+      <span i18n>
         No Serial number could be found for OTP value {{ data.otpValue }}.
       </span>
     </div>
@@ -27,7 +27,9 @@
     (click)="data.reset()"
     [mat-dialog-close]="true"
     class="dialog-button"
-    mat-button>
+    mat-button
+    i18n>
     OK
   </button>
 </mat-dialog-actions>
+

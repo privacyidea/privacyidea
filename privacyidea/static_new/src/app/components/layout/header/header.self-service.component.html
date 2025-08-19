@@ -1,7 +1,9 @@
 <div class="header-container">
   <div class="brand">
     <img
+      i18n-alt
       alt="logo"
+      i18n-aria-label
       aria-label="Logo"
       class="logo"
       height="307"
@@ -39,9 +41,10 @@
       <mat-icon>refresh</mat-icon>
     </button>
     <div class="profile-div">
-      <h4 class="preview"> Preview</h4>
+      <h4 class="preview" i18n> Preview</h4>
       <div class="profile-logout-div flex-row">
         <a
+          i18n-aria-label
           aria-label="Support"
           class="support-btn"
           extended
@@ -49,7 +52,7 @@
           mat-fab
           target="_blank">
           <mat-icon>support_agent</mat-icon>
-          <h4>Support</h4>
+          <h4 i18n>Support</h4>
         </a>
         <button
           #trigger="matMenuTrigger"
@@ -66,6 +69,7 @@
         </button>
         <button
           (click)="logout()"
+          i18n-aria-label
           aria-label="Logout"
           class="logout-btn"
           mat-icon-button>

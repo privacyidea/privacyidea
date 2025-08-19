@@ -1,9 +1,12 @@
 <div
+  i18n-aria-label
   aria-label="Login Container"
   class="login-container">
   <div class="login-scroll">
     <img
+      i18n-alt
       alt="logo"
+      i18n-aria-label
       aria-label="Logo"
       class="logo"
       height="307"
@@ -13,7 +16,9 @@
       width="307"/>
 
     <img
+      i18n-alt
       alt="logo-text"
+      i18n-aria-label
       aria-label="Logo Text"
       class="logo-text"
       height="109"
@@ -24,10 +29,11 @@
 
     <form
       (ngSubmit)="onSubmit()"
+      i18n-aria-label
       aria-label="Login Form"
       class="login-form">
       <mat-form-field appearance="outline">
-        <mat-label>Username</mat-label>
+        <mat-label i18n>Username</mat-label>
         <input
           [(ngModel)]="username"
           id="username"
@@ -38,7 +44,7 @@
       </mat-form-field>
 
       <mat-form-field appearance="outline">
-        <mat-label>Password</mat-label>
+        <mat-label i18n>Password</mat-label>
         <input
           [(ngModel)]="password"
           id="password"
@@ -49,6 +55,8 @@
       </mat-form-field>
 
       <button
+        i18n
+        i18n-aria-label
         aria-label="Login Button"
         class="login-btn"
         extended
@@ -59,7 +67,9 @@
     </form>
     <div class="passkey-form">
       <button
+        i18n
         (click)="loginPasskey()"
+        i18n-aria-label
         aria-label="Passkey Button"
         class="passkey-btn margin-top-1"
         extended

@@ -4,7 +4,7 @@
   @if (data.action === "remove" ||
   data.action === "delete" ||
   data.action === "revoke") {
-    <p>
+    <p i18n>
       Are you sure you want to {{ data.action }}
       @if ((data.serial_list?.length ?? 0) > 1 && data.type === "token") {
         all ({{ data.serial_list?.length }}) {{ data.type }}s?
@@ -18,7 +18,7 @@
       }
     </ul>
   } @else if (data.action === "search") {
-    <p>
+    <p i18n>
       This search request will check {{ data.numberOfTokens }} tokens in the system for the given
       OTP value. <br/>This could take a lot of time and could even time out. </p>
   }
@@ -28,7 +28,7 @@
   <button
     [mat-dialog-close]="false"
     mat-button
-    mat-dialog-close>Cancel
+    mat-dialog-close i18n>Cancel
   </button>
   <button
     [mat-dialog-close]="true"

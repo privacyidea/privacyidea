@@ -1,4 +1,5 @@
 <div
+  i18n-aria-label
   aria-label="Footer Container"
   class="footer-container">
   @if (showProgressBar()) {
@@ -12,14 +13,16 @@
     </div>
   }
   <div class="footer-bottom">
-    <span> privacyIDEA {{ version }} </span>
+    <span i18n> privacyIDEA {{ version }} </span>
     <div class="footer-right">
-      <a
+      <a i18n
+        i18n-aria-label
         aria-label="Online Documentation"
         href="https://privacyidea.readthedocs.io"
         target="_blank">Online Documentation
       </a>
-      <a
+      <a i18n
+        i18n-aria-label
         aria-label="privacyIDEA Forum"
         href="https://community.privacyidea.org/"
         target="_blank">privacyIDEA Forum

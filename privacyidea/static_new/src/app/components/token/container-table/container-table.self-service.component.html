@@ -1,4 +1,5 @@
 <div
+  i18n-aria-label
   aria-label="Container Table"
   class="container-table-container">
   <div class="filter-paginator-container-selfservice">
@@ -13,6 +14,7 @@
   <table
     (matSortChange)="onSortEvent($event)"
     [dataSource]="containerDataSource()"
+    i18n-aria-label
     aria-label="Container Data Table"
     class="container-table"
     mat-table
@@ -131,7 +133,7 @@
               </div>
             }
             @if (element.tokens?.length === 0) {
-              <div class="flex ali-center">
+              <div i18n class="flex ali-center">
                 Container has no tokens.
               </div>
             }
@@ -157,9 +159,10 @@
       mat-row></tr>
 
     <tr *matNoDataRow>
-      <td [attr.colspan]="columnKeysSelfService.length">
+      <td i18n [attr.colspan]="columnKeysSelfService.length">
         No data matching the filter.
       </td>
     </tr>
   </table>
 </div>
+

@@ -1,9 +1,10 @@
 <div
+  i18n-aria-label
   aria-label="Token Applications Offline"
   class="token-applications-offline">
   <div class="details-flex-layout flex-column">
     <div class="application-p-div">
-      <p>HOTP tokens can be attached with offline to e.g. notebooks.</p>
+      <p i18n>HOTP tokens can be attached with offline to e.g. notebooks.</p>
     </div>
   </div>
 </div>
@@ -12,12 +13,14 @@
     <mat-form-field
       class="application-table-filter"
       subscriptSizing="dynamic">
-      <mat-label>Enter Filter</mat-label>
+      <mat-label i18n>Enter Filter</mat-label>
       <input
         #filterInput
         [(ngModel)]="machineService.filterValueString"
+        i18n-aria-label
         aria-label="Filter Input"
         matInput
+        i18n-placeholder
         placeholder="Example query: 'service_id: myService'"/>
     </mat-form-field>
     <mat-paginator
@@ -37,6 +40,7 @@
     (matSortChange)="machineService.onSortEvent($event)"
     [dataSource]="dataSource()"
     [matSortDisableClear]="false"
+    i18n-aria-label
     aria-label="Token Applications Table"
     class="token-table"
     mat-table
@@ -83,20 +87,26 @@
     }
     <tr
       *matHeaderRowDef="displayedColumns"
+      i18n-aria-label
       aria-label="Header Row"
       mat-header-row></tr>
     <tr
       *matRowDef="let row; columns: displayedColumns"
+      i18n-aria-label
       aria-label="Data Row"
       mat-row></tr>
     <tr
       *matNoDataRow
+      i18n-aria-label
       aria-label="No Data Row">
       <td
         [attr.colspan]="displayedColumns.length"
-        aria-label="No Data Cell">
+        i18n-aria-label
+        aria-label="No Data Cell"
+        i18n>
         No data matching the filter.
       </td>
     </tr>
   </table>
 </div>
+

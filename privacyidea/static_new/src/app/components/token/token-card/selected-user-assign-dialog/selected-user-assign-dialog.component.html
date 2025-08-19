@@ -1,13 +1,13 @@
-<h1 mat-dialog-title>Assign Selected Token to User</h1>
+<h1 i18n mat-dialog-title>Assign Selected Token to User</h1>
 <mat-dialog-content>
   @if (selectionContainsAssignedToken()) {
-    <p class="inline-warning">
+    <p i18n class="inline-warning">
       Some token are already assigned to a user. <br/> Assigning a token to a user will remove the
       previous assignment. </p>
   }
   <div class="selected-user-assign-container">
     <mat-form-field class="width-50 input-height">
-      <mat-label>Select Realm of User</mat-label>
+      <mat-label i18n>Select Realm of User</mat-label>
       <mat-select
         [formControl]="selectedUserRealmControl"
         required>
@@ -17,7 +17,7 @@
       </mat-select>
     </mat-form-field>
     <mat-form-field class="width-50 input-height">
-      <mat-label>Enter User</mat-label>
+      <mat-label i18n>Enter User</mat-label>
       <input
         [formControl]="userFilterControl"
         [matAutocomplete]="userAuto"
@@ -31,16 +31,16 @@
         }
       </mat-autocomplete>
       @if (selectedUserRealmControl.hasError("required")) {
-        <mat-error>User Realm is <strong>required</strong></mat-error>
+        <mat-error i18n>User Realm is <strong>required</strong></mat-error>
       }
       @if (userFilterControl.hasError("required")) {
-        <mat-error>User is <strong>required</strong></mat-error>
+        <mat-error i18n>User is <strong>required</strong></mat-error>
       }
       @if (userFilterControl.hasError("userNotInOptions")) {
-        <mat-error>User must be selected from the list.</mat-error>
+        <mat-error i18n>User must be selected from the list.</mat-error>
       }
       @if (userFilterControl.hasError("userNotInRealm")) {
-        <mat-error>
+        <mat-error i18n>
           User does not exist in the selected realm.
         </mat-error>
       }
@@ -58,7 +58,7 @@
       <input
         style="display: none"
         type="password"/>
-      <mat-label>PIN (optional)</mat-label>
+      <mat-label i18n>PIN (optional)</mat-label>
       <input
         (ngModelChange)="pin.set($event)"
         [ngModel]="pin()"
@@ -78,7 +78,7 @@
     <mat-form-field
       appearance="fill"
       class="pin-field">
-      <mat-label>PIN (repeat)</mat-label>
+      <mat-label i18n>PIN (repeat)</mat-label>
       <input
         (ngModelChange)="pinRepeat.set($event)"
         [ngModel]="pinRepeat()"
@@ -95,7 +95,7 @@
         <mat-icon>{{ hidePin() ? "visibility_off" : "visibility" }}</mat-icon>
       </button>
       @if (pinRepeat() && !pinsMatch()) {
-        <mat-error>PINs do not match</mat-error>
+        <mat-error i18n>PINs do not match</mat-error>
       }
     </mat-form-field>
   </div>
@@ -104,12 +104,15 @@
 <mat-dialog-actions>
   <button
     (click)="onCancel()"
-    mat-button>Cancel
+    mat-button
+    i18n>Cancel
   </button>
   <button
     (click)="onConfirm()"
     [disabled]="!pinsMatch() || selectedUserRealmControl.invalid || userFilterControl.invalid"
     color="primary"
-    mat-button>Assign to Selected Token
+    mat-button
+    i18n>Assign to Selected Token
   </button>
 </mat-dialog-actions>
+

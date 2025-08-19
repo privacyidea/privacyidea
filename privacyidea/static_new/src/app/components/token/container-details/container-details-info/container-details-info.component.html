@@ -1,7 +1,8 @@
 <div class="info-container">
-  <span class="info-title details-key-row">Information</span>
+  <span i18n class="info-title details-key-row">Information</span>
   <table
     [dataSource]="infoData()"
+    i18n-aria-label
     aria-label="Container Details Data Table"
     class="info-table"
     mat-table>
@@ -51,6 +52,7 @@
                   <input
                     matInput
                     [(ngModel)]="newInfo().key"
+                    i18n-placeholder
                     placeholder="Add new key"/>
                 </mat-form-field>
                 :
@@ -60,6 +62,7 @@
                     rows="1"
                     [(ngModel)]="newInfo().value"
                     style="width: 105%"
+                    i18n-placeholder
                     placeholder="Add new info"></textarea>
                 </mat-form-field>
               </mat-list-item>
@@ -89,3 +92,4 @@
       mat-row></tr>
   </table>
 </div>
+

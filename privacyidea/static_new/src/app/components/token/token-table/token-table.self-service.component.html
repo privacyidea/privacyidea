@@ -1,11 +1,13 @@
 <div
+  i18n-aria-label
   aria-label="Content Layout"
   class="content-layout">
   <div
+    i18n-aria-label
     aria-label="Token Table"
     class="token-table-layout">
     <div class="selfservice-paginator-container">
-      <h3 class="selfservice-paginator-label"> Your Tokens </h3>
+      <h3 i18n class="selfservice-paginator-label"> Your Tokens </h3>
       <mat-paginator
         (page)="onPageEvent($event)"
         [length]="totalLength()"
@@ -19,6 +21,7 @@
         (matSortChange)="onSortEvent($event)"
         [dataSource]="tokenDataSource()"
         [matSortDisableClear]="false"
+        i18n-aria-label
         aria-label="Token Data Table"
         class="token-table"
         mat-table
@@ -86,7 +89,9 @@
                       @if (!element.revoked) {
                         <button
                           (click)="revokeToken(element.serial)"
-                          mat-icon-button>
+                          mat-icon-button
+                          i18n-matTooltip
+                          matTooltip="Revoke Token">
                           <mat-icon> undo</mat-icon>
                         </button>
                       }
@@ -94,7 +99,9 @@
                     @case ("delete") {
                       <button
                         (click)="deleteToken(element.serial)"
-                        mat-icon-button>
+                        mat-icon-button
+                        i18n-matTooltip
+                        matTooltip="Delete Token">
                         <mat-icon> delete</mat-icon>
                       </button>
                     }
@@ -118,18 +125,23 @@
         }
         <tr
           *matHeaderRowDef="columnKeysSelfService"
+          i18n-aria-label
           aria-label="Header Row"
           mat-header-row></tr>
         <tr
           *matRowDef="let row; columns: columnKeysSelfService"
+          i18n-aria-label
           aria-label="Data Row"
           mat-row></tr>
         <tr
           *matNoDataRow
+          i18n-aria-label
           aria-label="No Data Row">
           <td
             [attr.colspan]="columnKeysSelfService.length"
-            aria-label="No Data Cell">
+            i18n-aria-label
+            aria-label="No Data Cell"
+            i18n>
             No data matching the filter.
           </td>
         </tr>
@@ -137,3 +149,4 @@
     </div>
   </div>
 </div>
+

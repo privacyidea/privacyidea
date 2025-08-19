@@ -1,4 +1,5 @@
 <div
+  i18n-aria-label
   aria-label="Content Layout"
   class="max-width-96 padding-32">
   <div class="audit-table-container">
@@ -6,12 +7,14 @@
       <mat-form-field
         class="token-table-filter"
         subscriptSizing="dynamic">
-        <mat-label>Enter Filter</mat-label>
+        <mat-label i18n>Enter Filter</mat-label>
         <input
           #filterHTMLInputElement
           [(ngModel)]="filterValueString"
+          i18n-aria-label
           aria-label="Filter Input"
           matInput
+          i18n-placeholder
           placeholder="Example query: 'type: hotp userid: 1000'"/>
       </mat-form-field>
       <mat-paginator
@@ -29,6 +32,7 @@
       [filterValue]="auditService.filterValue"></app-keyword-filter>
     <table
       [dataSource]="auditDataSource()"
+      i18n-aria-label
       aria-label="Audit Data Table"
       class="token-table"
       mat-table>
@@ -133,17 +137,21 @@
       }
       <tr
         *matHeaderRowDef="columnKeys"
+        i18n-aria-label
         aria-label="Header Row"
         mat-header-row></tr>
       <tr
         *matRowDef="let row; columns: columnKeys"
+        i18n-aria-label
         aria-label="Data Row"
         mat-row></tr>
       <tr
         *matNoDataRow
+        i18n-aria-label
         aria-label="No Data Row">
-        <td
+        <td i18n
           [attr.colspan]="columnKeys.length"
+          i18n-aria-label
           aria-label="No Data Cell">
           No data matching the filter.
         </td>

@@ -1,9 +1,10 @@
 <div
+  i18n-aria-label
   aria-label="Details"
   class="details-container">
   <div class="details-flex-layout flex-column">
     <div class="details-header">
-      <h3>Details for Token: </h3>
+      <h3 i18n>Details for Token: </h3>
       <h3 style="color: var(--mat-sys-primary)"> {{ tokenSerial() }} </h3>
       <app-copy-button [copyText]="tokenSerial()"></app-copy-button>
     </div>
@@ -17,6 +18,7 @@
       <div>
         <table
           [dataSource]="tokenDetailData()"
+          i18n-aria-label
           aria-label="Token Details Data Table"
           class="details-table"
           mat-table>
@@ -36,7 +38,7 @@
                 @case ("container_serial") {
                   @if (element.isEditing()) {
                     <mat-form-field class="width-18rem container-form-field">
-                      <mat-label>Enter Container</mat-label>
+                      <mat-label i18n>Enter Container</mat-label>
                       <input
                         matInput
                         [(ngModel)]="containerService.selectedContainer"
@@ -61,7 +63,7 @@
                 @case ("realms") {
                   @if (element.isEditing()) {
                     <mat-form-field class="width-18rem">
-                      <mat-label>Select Realms</mat-label>
+                      <mat-label i18n>Select Realms</mat-label>
                       <mat-select
                         [(ngModel)]="realmService.selectedRealms"
                         multiple>
@@ -94,7 +96,7 @@
                 @case ("tokengroup") {
                   @if (element.isEditing()) {
                     <mat-form-field class="width-18rem">
-                      <mat-label>Select Token Group</mat-label>
+                      <mat-label i18n>Select Token Group</mat-label>
                       <mat-select
                         [(ngModel)]="selectedTokengroup"
                         multiple>
@@ -133,6 +135,7 @@
                         rows="4"
                         [maxlength]="80"
                         [(ngModel)]="element.value"
+                        i18n-placeholder
                         placeholder="Enter description"></textarea>
                     </mat-form-field>
                   } @else {
@@ -258,3 +261,4 @@
     </div>
   </div>
 </div>
+

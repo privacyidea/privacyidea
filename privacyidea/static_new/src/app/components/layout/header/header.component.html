@@ -1,7 +1,9 @@
 <div class="header-container">
   <div class="brand">
     <img
+      i18n-alt
       alt="logo"
+      i18n-aria-label
       aria-label="Logo"
       class="logo"
       height="307"
@@ -19,7 +21,7 @@
           mat-fab
           routerLink="{{this.ROUTE_PATHS.TOKENS}}">
           <mat-icon>shield</mat-icon>
-          <h4>Tokens</h4></a>
+          <h4 i18n>Tokens</h4></a>
 
         <a
           [ngClass]="{ active: isActive(ROUTE_PATHS.USERS) }"
@@ -35,7 +37,7 @@
           mat-fab
           disabled>
           <mat-icon>dns</mat-icon>
-          <h4>Machines</h4></a>
+          <h4 i18n>Machines</h4></a>
 
         <a
           extended
@@ -43,7 +45,7 @@
           mat-fab
           disabled>
           <mat-icon>miscellaneous_services</mat-icon>
-          <h4>Configuration</h4></a>
+          <h4 i18n>Configuration</h4></a>
 
         <a
           [ngClass]="{ active: isActive(ROUTE_PATHS.AUDIT) }"
@@ -51,7 +53,7 @@
           mat-fab
           routerLink="{{ ROUTE_PATHS.AUDIT }}">
           <mat-icon>manage_search</mat-icon>
-          <h4>Audit</h4></a>
+          <h4 i18n>Audit</h4></a>
 
         <a
           extended
@@ -59,7 +61,7 @@
           mat-fab
           disabled>
           <mat-icon>grid_view</mat-icon>
-          <h4>Components</h4></a>
+          <h4 i18n>Components</h4></a>
       }
       <button
         (click)="refreshPage()"
@@ -68,7 +70,7 @@
         <mat-icon>refresh</mat-icon>
       </button>
     </nav>
-    <h4 class="preview"> Preview</h4>
+    <h4 i18n class="preview"> Preview</h4>
     <div class="profile-div">
       <app-theme-switcher/>
       <div
@@ -91,6 +93,7 @@
       </div>
       <div class="profile-logout-div flex-row">
         <a
+          i18n-aria-label
           aria-label="Support"
           class="support-btn"
           extended
@@ -98,7 +101,7 @@
           mat-fab
           target="_blank">
           <mat-icon>support_agent</mat-icon>
-          <h4>Support</h4>
+          <h4 i18n>Support</h4>
         </a>
         <button
           class="profile-btn"
@@ -111,6 +114,7 @@
         </button>
         <button
           (click)="logout()"
+          i18n-aria-label
           aria-label="Logout"
           class="logout-btn"
           mat-icon-button>

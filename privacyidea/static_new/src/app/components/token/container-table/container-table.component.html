@@ -1,16 +1,19 @@
 <div
+  i18n-aria-label
   aria-label="Container Table"
   class="container-table-container">
   <div class="filter-paginator-container">
     <mat-form-field
       class="container-table-filter"
       subscriptSizing="dynamic">
-      <mat-label>Enter Filter</mat-label>
+      <mat-label i18n>Enter Filter</mat-label>
       <input
         #filterHTMLInputElement
         [(ngModel)]="filterValueString"
+        i18n-aria-label
         aria-label="Filter Input"
         matInput
+        i18n-placeholder
         placeholder="Example query: 'type: generic user: admin'"/>
     </mat-form-field>
     <mat-paginator
@@ -30,6 +33,7 @@
     (matSortChange)="onSortEvent($event)"
     [dataSource]="containerDataSource()"
     [matSortDisableClear]="false"
+    i18n-aria-label
     aria-label="Container Data Table"
     class="container-table"
     mat-table
@@ -136,7 +140,7 @@
               </div>
             }
             @if (element.tokens?.length === 0) {
-              <div class="flex ali-center">
+              <div i18n class="flex ali-center">
                 Container has no tokens.
               </div>
             }
@@ -162,9 +166,10 @@
       mat-row></tr>
 
     <tr *matNoDataRow>
-      <td [attr.colspan]="columnKeys.length">
+      <td i18n [attr.colspan]="columnKeys.length">
         No data matching the filter.
       </td>
     </tr>
   </table>
 </div>
+

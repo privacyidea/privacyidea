@@ -1,9 +1,9 @@
-<h1 mat-dialog-title>User Assignment</h1>
+<h1 i18n mat-dialog-title>User Assignment</h1>
 <mat-dialog-content>
   <mat-form-field
     appearance="fill"
     class="pin-field">
-    <mat-label>PIN (optional)</mat-label>
+    <mat-label i18n>PIN (optional)</mat-label>
     <input
       [(ngModel)]="pin"
       [type]="hidePin() ? 'password' : 'text'"
@@ -22,7 +22,7 @@
   <mat-form-field
     appearance="fill"
     class="pin-field">
-    <mat-label>PIN (repeat)</mat-label>
+    <mat-label i18n>PIN (repeat)</mat-label>
     <input
       [(ngModel)]="pinRepeat"
       [type]="hidePin() ? 'password' : 'text'"
@@ -38,19 +38,22 @@
       <mat-icon>{{ hidePin() ? "visibility_off" : "visibility" }}</mat-icon>
     </button>
     @if (pinRepeat() && !pinsMatch()) {
-      <mat-error>PINs do not match</mat-error>
+      <mat-error i18n>PINs do not match</mat-error>
     }
   </mat-form-field>
 </mat-dialog-content>
 <mat-dialog-actions>
   <button
     (click)="onCancel()"
-    mat-button>Cancel
+    mat-button
+    i18n>Cancel
   </button>
   <button
     (click)="onConfirm()"
     [disabled]="!pinsMatch()"
     color="primary"
-    mat-button>Assign to all Tokens
+    mat-button
+    i18n>Assign to all Tokens
   </button>
 </mat-dialog-actions>
+

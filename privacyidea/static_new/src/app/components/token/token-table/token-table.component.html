@@ -1,16 +1,19 @@
 <div
+  i18n-aria-label
   aria-label="Token Table"
   class="token-table-layout">
   <div class="filter-paginator-container">
     <mat-form-field
       class="token-table-filter"
       subscriptSizing="dynamic">
-      <mat-label>Enter Filter</mat-label>
+      <mat-label i18n>Enter Filter</mat-label>
       <input
         #filterHTMLInputElement
         [(ngModel)]="filterValueString"
+        i18n-aria-label
         aria-label="Filter Input"
         matInput
+        i18n-placeholder
         placeholder="Example query: 'type: hotp userid: 1000'"/>
     </mat-form-field>
     <mat-paginator
@@ -31,6 +34,7 @@
   <table
     (matSortChange)="onSortEvent($event)"
     [dataSource]="tokenDataSource()"
+    i18n-aria-label
     aria-label="Token Data Table"
     class="token-table"
     mat-table
@@ -141,20 +145,25 @@
     }
     <tr
       *matHeaderRowDef="columnKeys"
+      i18n-aria-label
       aria-label="Header Row"
       mat-header-row></tr>
 
     <tr
       *matRowDef="let row; columns: columnKeys"
+      i18n-aria-label
       aria-label="Data Row"
       mat-row></tr>
 
     <tr
       *matNoDataRow
+      i18n-aria-label
       aria-label="No Data Row">
       <td
         [attr.colspan]="columnKeys.length"
-        aria-label="No Data Cell">
+        i18n-aria-label
+        aria-label="No Data Cell"
+        i18n>
         No data matching the filter.
       </td>
     </tr>
