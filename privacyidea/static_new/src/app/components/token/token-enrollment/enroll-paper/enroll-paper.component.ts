@@ -26,10 +26,6 @@ export class EnrollPaperComponent implements OnInit {
     PaperApiPayloadMapper
   );
 
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "paper")?.text;
-
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();

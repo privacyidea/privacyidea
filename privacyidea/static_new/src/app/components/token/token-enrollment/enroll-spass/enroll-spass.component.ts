@@ -26,10 +26,6 @@ export class EnrollSpassComponent implements OnInit {
   );
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "spass")?.text;
-
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();

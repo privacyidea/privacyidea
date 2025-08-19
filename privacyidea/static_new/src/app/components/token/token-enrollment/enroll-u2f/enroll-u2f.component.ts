@@ -25,9 +25,6 @@ export class EnrollU2fComponent implements OnInit {
   protected readonly enrollmentMapper: U2fApiPayloadMapper =
     inject(U2fApiPayloadMapper);
 
-  text = this.tokenService.tokenTypeOptions().find((type) => type.key === "u2f")
-    ?.text;
-
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();

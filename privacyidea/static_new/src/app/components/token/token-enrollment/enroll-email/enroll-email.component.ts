@@ -47,10 +47,6 @@ export class EnrollEmailComponent implements OnInit {
     EmailApiPayloadMapper
   );
 
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "email")?.text;
-
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();

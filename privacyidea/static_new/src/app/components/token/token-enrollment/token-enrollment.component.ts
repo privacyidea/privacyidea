@@ -250,6 +250,12 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     source: this.tokenService.selectedTokenType,
     computation: () => null
   });
+  tokenTypeDescription: WritableSignal<any> = linkedSignal({
+    source: this.tokenService.tokenTypeOptions,
+    computation: (tokenTypes) => {
+      return tokenTypes.find((type) => type.key === this.tokenService.selectedTokenType().key)?.text;
+    }
+  });
   @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
   @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
   @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;

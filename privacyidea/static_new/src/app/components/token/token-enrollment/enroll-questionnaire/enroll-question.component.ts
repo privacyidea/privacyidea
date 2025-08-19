@@ -61,9 +61,7 @@ export class EnrollQuestionComponent implements OnInit {
       ? parseInt(cfg["question.num_answers"], 10)
       : 0;
   });
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "question")?.text;
+
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();

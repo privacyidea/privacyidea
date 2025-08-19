@@ -46,10 +46,6 @@ export class EnrollMotpComponent implements OnInit {
   protected readonly enrollmentMapper: MotpApiPayloadMapper =
     inject(MotpApiPayloadMapper);
 
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "motp")?.text;
-
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();

@@ -38,10 +38,6 @@ export class EnrollPushComponent implements OnInit {
 
   pollResponse = signal<PiResponse<Tokens> | undefined>(undefined);
 
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "push")?.text;
-
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();

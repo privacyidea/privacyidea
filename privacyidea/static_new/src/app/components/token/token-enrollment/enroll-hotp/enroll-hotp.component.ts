@@ -57,9 +57,6 @@ export class EnrollHotpComponent implements OnInit {
     { value: "sha256", viewValue: "SHA256" },
     { value: "sha512", viewValue: "SHA512" }
   ];
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "hotp")?.text;
   @Output() clickEnrollChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();

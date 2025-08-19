@@ -57,9 +57,6 @@ export class EnrollDaypasswordComponent implements OnInit {
     { value: "sha256", viewValue: "SHA256" },
     { value: "sha512", viewValue: "SHA512" }
   ];
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "daypassword")?.text;
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();

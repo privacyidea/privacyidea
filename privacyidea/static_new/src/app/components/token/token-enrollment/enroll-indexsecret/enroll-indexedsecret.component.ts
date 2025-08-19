@@ -42,10 +42,6 @@ export class EnrollIndexedsecretComponent implements OnInit {
     IndexedSecretApiPayloadMapper
   );
 
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "indexedsecret")?.text;
-
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();

@@ -28,10 +28,6 @@ export class EnrollTiqrComponent implements OnInit {
     inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "tiqr")?.text;
-
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();

@@ -56,9 +56,6 @@ export class EnrollYubicoComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
   yubicoErrorStatematcher = new YubicoErrorStateMatcher();
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "yubico")?.text;
 
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;

@@ -59,10 +59,6 @@ export class EnrollFoureyesComponent implements OnInit {
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "4eyes")?.text;
-
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();

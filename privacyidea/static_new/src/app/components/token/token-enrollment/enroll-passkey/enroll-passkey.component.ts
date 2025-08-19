@@ -69,10 +69,6 @@ export class EnrollPasskeyComponent implements OnInit {
   protected readonly dialogService: DialogServiceInterface =
     inject(DialogService);
 
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "passkey")?.text;
-
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();

@@ -58,10 +58,6 @@ export class EnrollYubikeyComponent implements OnInit {
     otpLength: this.otpLengthControl
   });
 
-  text =
-    this.tokenService.tokenTypeOptions().find((type) => type.key === "yubikey")
-      ?.text || "The Yubikey token can be used in AES encryption mode...";
-
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({
       testYubiKey: this.testYubiKeyControl,

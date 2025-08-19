@@ -42,10 +42,6 @@ export class EnrollWebauthnComponent implements OnInit {
   protected readonly dialogService: DialogServiceInterface =
     inject(DialogService);
 
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "webauthn")?.text;
-
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();

@@ -41,10 +41,6 @@ export class EnrollSshkeyComponent {
   );
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "sshkey")?.text;
-
   sshPublicKeyFormControl = new FormControl<string>("", [
     Validators.required,
     EnrollSshkeyComponent.sshKeyValidator

@@ -25,9 +25,6 @@ export class EnrollTanComponent implements OnInit {
     inject(TanApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  text = this.tokenService.tokenTypeOptions().find((type) => type.key === "tan")
-    ?.text;
-
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();

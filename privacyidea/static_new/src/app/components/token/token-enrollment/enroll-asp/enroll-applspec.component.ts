@@ -63,10 +63,6 @@ export class EnrollApplspecComponent implements OnInit {
     inject(ServiceIdService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "applspec")?.text;
-
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
