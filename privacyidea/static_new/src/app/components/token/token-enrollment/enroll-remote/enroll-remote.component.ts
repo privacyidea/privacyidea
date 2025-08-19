@@ -115,7 +115,6 @@ export class EnrollRemoteComponent implements OnInit {
       this.remoteRealmControl.invalid ||
       this.remoteResolverControl.invalid ||
       this.checkPinLocallyControl.invalid) {
-      console.log("Remote form is invalid");
       this.remoteForm.markAllAsTouched();
       return of(null);
     }

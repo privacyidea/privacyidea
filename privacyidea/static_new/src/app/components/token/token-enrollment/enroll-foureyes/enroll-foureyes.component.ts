@@ -25,7 +25,6 @@ export interface FourEyesEnrollmentOptions extends TokenEnrollmentData {
   type: "4eyes";
   separator: string;
   requiredTokenOfRealms: { realm: string; tokens: number }[];
-  onlyAddToRealm: boolean;
   userRealm?: string;
 }
 
@@ -48,7 +47,6 @@ export class RequiredRealmsErrorStateMatcher implements ErrorStateMatcher {
     FormsModule,
     MatOption,
     MatSelect,
-    MatCheckbox,
     MatError
   ],
   templateUrl: "./enroll-foureyes.component.html",
@@ -76,9 +74,6 @@ export class EnrollFoureyesComponent implements OnInit {
   requiredTokensOfRealmsControl = new FormControl<
     { realm: string; tokens: number }[]
   >([], [Validators.required, Validators.minLength(1)]);
-  onlyAddToRealmControl = new FormControl<boolean>(false, [
-    Validators.required
-  ]);
 
   foureyesForm = new FormGroup({
     separator: this.separatorControl,
@@ -104,8 +99,7 @@ export class EnrollFoureyesComponent implements OnInit {
   ngOnInit(): void {
     this.aditionalFormFieldsChange.emit({
       separator: this.separatorControl,
-      requiredTokensOfRealms: this.requiredTokensOfRealmsControl,
-      onlyAddToRealm: this.onlyAddToRealmControl
+      requiredTokensOfRealms: this.requiredTokensOfRealmsControl
     });
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
@@ -159,8 +153,7 @@ export class EnrollFoureyesComponent implements OnInit {
       ...basicOptions,
       type: "4eyes",
       separator: this.separatorControl.value ?? ":",
-      requiredTokenOfRealms: this.requiredTokensOfRealmsControl.value ?? [],
-      onlyAddToRealm: !!this.onlyAddToRealmControl.value
+      requiredTokenOfRealms: this.requiredTokensOfRealmsControl.value ?? []
     };
     return this.tokenService.enrollToken({
       data: enrollmentData,

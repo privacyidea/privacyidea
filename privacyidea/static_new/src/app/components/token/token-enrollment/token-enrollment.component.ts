@@ -99,6 +99,7 @@ import {
 } from "../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
+import { MatCheckbox } from "@angular/material/checkbox";
 
 export type ClickEnrollFn = (
   enrollementOptions: TokenEnrollmentData
@@ -212,7 +213,8 @@ export class CustomDateAdapter extends NativeDateAdapter {
     EnrollWebauthnComponent,
     MatError,
     EnrollPasskeyComponent,
-    MatTooltipModule
+    MatTooltipModule,
+    MatCheckbox
   ],
   providers: [
     provideNativeDateAdapter(),
@@ -259,16 +261,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   additionalFormFields: WritableSignal<{
     [key: string]: FormControl<any>;
   }> = signal({});
-  onlyAddToRealm = computed(() => {
-    if (this.tokenService.selectedTokenType()?.key === "4eyes") {
-      const foureyesControls = this.additionalFormFields();
-      const control = foureyesControls[
-        "onlyAddToRealm"
-        ] as FormControl<boolean>;
-      return !!control?.value;
-    }
-    return false;
-  });
   descriptionControl = new FormControl<string>("", {
     nonNullable: true,
     validators: [Validators.maxLength(80)]
@@ -281,6 +273,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     this.userService.userFilter(),
     { nonNullable: true }
   );
+  onlyAddToRealmControl = new FormControl<boolean>(false, { nonNullable: true });
   setPinControl = new FormControl<string>("", { nonNullable: true });
   repeatPinControl = new FormControl<string>("", { nonNullable: true });
   selectedContainerControl = new FormControl(
@@ -371,6 +364,12 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     );
     this.userFilterControl.valueChanges.subscribe((value) => {
       this.userService.userFilter.set(value ?? "");
+      if (value) {
+        this.onlyAddToRealmControl.setValue(false, {});
+        this.onlyAddToRealmControl.disable({ emitEvent: false });
+      } else {
+        this.onlyAddToRealmControl.enable({ emitEvent: false });
+      }
     });
     this.selectedUserRealmControl.valueChanges.subscribe((value) => {
       this.userFilterControl.reset("", { emitEvent: false });
@@ -382,6 +381,13 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
 
       if (value !== this.userService.selectedUserRealm()) {
         this.userService.selectedUserRealm.set(value ?? "");
+      }
+    });
+    this.onlyAddToRealmControl.valueChanges.subscribe((value) => {
+      if (value) {
+        this.userFilterControl.disable({ emitEvent: false });
+      } else {
+        this.userFilterControl.enable({ emitEvent: false });
       }
     });
   }
@@ -491,6 +497,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
           description: this.descriptionControl,
           selectedUserRealm: this.selectedUserRealmControl,
           userFilter: this.userFilterControl,
+          onlyAddToRealm: this.onlyAddToRealmControl,
           setPin: this.setPinControl,
           repeatPin: this.repeatPinControl,
           selectedContainer: this.selectedContainerControl,
@@ -508,7 +515,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
 
   protected async enrollToken(): Promise<void> {
     const currentTokenType = this.tokenService.selectedTokenType();
-    var everythingIsValid = true;
+    let everythingIsValid = true;
     if (!currentTokenType) {
       this.notificationService.openSnackBar("Please select a token type.");
       return;
@@ -537,6 +544,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       );
       return;
     }
+
     const basicOptions: TokenEnrollmentData = {
       type: currentTokenType.key,
       description: this.descriptionControl.value.trim(),
@@ -553,6 +561,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       ),
       user: user?.username ?? "",
       realm: this.selectedUserRealmControl.value ?? "",
+      onlyAddToRealm: this.onlyAddToRealmControl.value ?? false,
       pin: this.setPinControl.value ?? ""
     };
 
@@ -602,7 +611,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       enrollToken: this.enrollToken.bind(this),
       user: user,
       userRealm: this.userService.selectedUserRealm(),
-      onlyAddToRealm: this.onlyAddToRealm()
+      onlyAddToRealm: this.onlyAddToRealmControl.value
     };
     this._lastTokenEnrollmentLastStepDialogData.set(dialogData);
     this.dialogService.openTokenEnrollmentLastStepDialog({

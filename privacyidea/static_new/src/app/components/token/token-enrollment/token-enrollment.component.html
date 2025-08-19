@@ -234,7 +234,7 @@
               <mat-error>User Realm is <strong>required</strong></mat-error>
             }
             @if (!selectedUserRealmControl.value &&
-            !onlyAddToRealm() &&
+            !onlyAddToRealmControl.value &&
             tokenService.selectedTokenType()) {
               <mat-hint>
                 Select a realm first to enable user selection.
@@ -253,6 +253,16 @@
             }
           </mat-form-field>
         </div>
+<!--    TODO: We should avoid these token type ifs. Instead create components and include
+          them only in the desired token type enrollment components -->
+        @if (!['passkey', 'webauthn', 'tiqr', 'push'].includes(tokenService.selectedTokenType().key)) {
+          <div class="margin-bottom-1">
+            <mat-checkbox
+              [formControl]="onlyAddToRealmControl">
+              Only add to the realm (no user assignment)
+            </mat-checkbox>
+          </div>
+        }
       </div>
       @if (tokenService.selectedTokenType().key !== "passkey") {
         <div class="flex-column user-pin-container">
