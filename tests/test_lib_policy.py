@@ -2355,7 +2355,7 @@ class PolicyTestCase(MyTestCase):
         self.setUp_user_realm3()
         node1 = NodeName(id="1234", name="localnode")
         node2 = NodeName(id="56789", name="testnode")
-        db.sesson.add_all([node1, node2])
+        db.session.add_all([node1, node2])
         set_policy(name="basic", scope=SCOPE.WEBUI, action=PolicyAction.HIDE_WELCOME)
         set_policy(name="user", scope=SCOPE.USER, action=PolicyAction.DELETE, active=False, realm=[self.realm1, self.realm3],
                    resolver=[self.resolvername1, self.resolvername3], pinode="localnode", user=["hans", "corny"],

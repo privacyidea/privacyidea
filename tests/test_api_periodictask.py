@@ -302,5 +302,5 @@ class APIPeriodicTasksTestCase(MyApiTestCase):
         self.assertEqual(status_code, 200)
         self.assertTrue(data['result']['status'])
         self.assertEqual({'Node2', 'Node1'}, set(data['result']['value']), data)
-        db.sesion.delete(node1)
-        db.sesion.delete(node2)
+        db.session.delete(node1)
+        db.session.delete(node2)
