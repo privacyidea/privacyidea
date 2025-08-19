@@ -535,6 +535,29 @@ class API000TokenAdminRealmList(MyApiTestCase):
 
         delete_policy("policy")
 
+
+    def test_05_helpdesk_delete_batch_old_api(self):
+        # helpdesk is allowed to manage realm1
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.DELETE, realm=self.realm1)
+
+        # create tokens
+        token1 = init_token({"type": "hotp", "genkey": True, "realm": self.realm1})
+        token2 = init_token({"type": "hotp", "genkey": True, "realm": self.realm2})
+        token3 = init_token({"type": "hotp", "genkey": True, "realm": self.realm1})
+        token_serials = ",".join([token1.get_serial(), token2.get_serial(), token3.get_serial()])
+
+        # Try to delete all tokens will only delete token1 and token3 from realm1
+        result = self.request_assert_200("/token/batchdeletion", {"serial": token_serials}, self.at, "POST")
+        result = result.get("result").get("value")
+        self.assertTrue(result.get(token1.get_serial()))
+        self.assertFalse(result.get(token2.get_serial()))
+        self.assertTrue(result.get(token3.get_serial()))
+        self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, token1.get_serial(), None)
+        self.assertEqual(1, len(get_tokens_from_serial_or_user(token2.get_serial(), None)))
+        self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, token3.get_serial(), None)
+
+        delete_policy("policy")
+
     def test_06_helpdesk_unassign_batch(self):
         set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.UNASSIGN, realm=self.realm1)
 
