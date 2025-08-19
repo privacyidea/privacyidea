@@ -58,6 +58,9 @@
         </button>
       </div>
     </div>
+    <div class="token-type-paragraph">
+      <p>{{ tokenTypeDescription() }}</p>
+    </div>
     @switch (tokenService.selectedTokenType().key) {
       @case ("hotp") {
         <app-enroll-hotp
