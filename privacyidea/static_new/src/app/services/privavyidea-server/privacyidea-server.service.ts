@@ -9,6 +9,7 @@ export type RemoteServerOptions = RemoteServer[];
 export interface RemoteServer {
   url: string;
   id: string;
+  name: string;
 }
 
 export interface PrivacyideaServerServiceInterface {
@@ -30,10 +31,20 @@ export class PrivacyideaServerService
   }));
   remoteServerOptions: WritableSignal<RemoteServerOptions> = linkedSignal({
     source: this.remoteServerResource.value,
-    computation: (source, previous) =>
-      Array.isArray(source?.result?.value)
-        ? source.result?.value
-        : (previous?.value ?? [])
+    computation: (source, previous) => {
+      let servers = previous?.value ?? [];
+      if (source?.result?.value) {
+        let response = source.result.value;
+        servers = Object.entries(response).map(([server, options]) => {
+          return {
+            name: server,
+            url: options.url,
+            id: options.id
+          };
+        });
+      }
+      return servers;
+    }
   });
 
   constructor(private localService: LocalService) {

@@ -77,10 +77,10 @@ export class EnrollRemoteComponent implements OnInit {
   remoteServerControl = new FormControl<RemoteServer | null>(null, [
     Validators.required
   ]);
-  remoteSerialControl = new FormControl<string>("", [Validators.required]);
+  remoteSerialControl = new FormControl<string>("");
   remoteUserControl = new FormControl<string>("");
   remoteRealmControl = new FormControl<string>("");
-  remoteResolverControl = new FormControl<string>("", [Validators.required]);
+  remoteResolverControl = new FormControl<string>("");
 
   remoteForm = new FormGroup({
     checkPinLocally: this.checkPinLocallyControl,
@@ -109,7 +109,13 @@ export class EnrollRemoteComponent implements OnInit {
   onClickEnroll = (
     basicOptions: TokenEnrollmentData
   ): Observable<EnrollmentResponse | null> => {
-    if (this.remoteForm.invalid) {
+    if (this.remoteServerControl.invalid ||
+      this.remoteSerialControl.invalid ||
+      this.remoteUserControl.invalid ||
+      this.remoteRealmControl.invalid ||
+      this.remoteResolverControl.invalid ||
+      this.checkPinLocallyControl.invalid) {
+      console.log("Remote form is invalid");
       this.remoteForm.markAllAsTouched();
       return of(null);
     }
