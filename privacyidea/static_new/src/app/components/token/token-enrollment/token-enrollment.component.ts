@@ -286,21 +286,13 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     this.containerService.selectedContainer(),
     { nonNullable: true }
   );
-  selectedStartDateControl = new FormControl<Date | null>(new Date(), {
-    nonNullable: true
-  });
-  selectedStartTimeControl = new FormControl<string>("00:00", {
-    nonNullable: true
-  });
+  selectedStartDateControl = new FormControl<Date | null>(null, {});
+  selectedStartTimeControl = new FormControl<string>("00:00", { });
   selectedTimezoneOffsetControl = new FormControl<string>("+00:00", {
     nonNullable: true
   });
-  selectedEndDateControl = new FormControl<Date | null>(new Date(), {
-    nonNullable: true
-  });
-  selectedEndTimeControl = new FormControl<string>("23:59", {
-    nonNullable: true
-  });
+  selectedEndDateControl = new FormControl<Date | null>(null, {});
+  selectedEndTimeControl = new FormControl<string>("23:59", {});
   _lastTokenEnrollmentLastStepDialogData: WritableSignal<TokenEnrollmentLastStepDialogData | null> =
     linkedSignal({
       source: this.tokenService.selectedTokenType,
@@ -551,20 +543,29 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
+    let validityPeriodStart = "";
+    if (this.selectedStartDateControl.value) {
+      validityPeriodStart = this.formatDateTimeOffset(
+        this.selectedStartDateControl.value,
+        this.selectedStartTimeControl.value ?? "00:00",
+        this.selectedTimezoneOffsetControl.value ?? "+00:00"
+      );
+    }
+    let validityPeriodEnd = "";
+    if (this.selectedEndDateControl.value) {
+      validityPeriodEnd = this.formatDateTimeOffset(
+        this.selectedEndDateControl.value,
+        this.selectedEndTimeControl.value ?? "23:59",
+        this.selectedTimezoneOffsetControl.value ?? "+00:00"
+      );
+    }
+
     const basicOptions: TokenEnrollmentData = {
       type: currentTokenType.key,
       description: this.descriptionControl.value.trim(),
       containerSerial: this.selectedContainerControl.value?.trim() ?? "",
-      validityPeriodStart: this.formatDateTimeOffset(
-        this.selectedStartDateControl.value ?? new Date(),
-        this.selectedStartTimeControl.value ?? "00:00",
-        this.selectedTimezoneOffsetControl.value ?? "+00:00"
-      ),
-      validityPeriodEnd: this.formatDateTimeOffset(
-        this.selectedEndDateControl.value ?? new Date(),
-        this.selectedEndTimeControl.value ?? "23:59",
-        this.selectedTimezoneOffsetControl.value ?? "+00:00"
-      ),
+      validityPeriodStart: validityPeriodStart,
+      validityPeriodEnd: validityPeriodEnd,
       user: user?.username ?? "",
       realm: this.selectedUserRealmControl.value ?? "",
       onlyAddToRealm: this.onlyAddToRealmControl.value ?? false,
