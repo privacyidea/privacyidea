@@ -226,8 +226,7 @@ def _get_secrets_from_environment(name: str) -> str | None:
             with open(file_name) as f:
                 return f.read().strip()
         except IOError as _e:
-            sys.stderr.write(f"Could not read secret from file '{file_name}' "
-                             f"defined in variable '{name}_FILE'")
+            sys.stderr.write(f"Could not read secret from file defined in variable '{name}_FILE'")
     return os.getenv(name, None)
 
 
