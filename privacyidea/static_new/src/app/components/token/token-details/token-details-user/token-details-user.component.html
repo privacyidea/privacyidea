@@ -38,7 +38,7 @@
                 </mat-autocomplete>
               </mat-form-field>
             } @else {
-              <a href="#">{{ element.value }}</a>
+              <a href="#" i18n-aria-label="{{ element.keyMap.label }} Link">{{ element.value }}</a>
             }
           }
           @case ("user_realm") {
@@ -52,7 +52,7 @@
                 </mat-select>
               </mat-form-field>
             } @else {
-              <a href="#">{{ element.value }}</a>
+              <a href="#" i18n-aria-label="{{ element.keyMap.label }} Link">{{ element.value }}</a>
             }
           }
           @default {
@@ -74,7 +74,8 @@
                   <button
                     mat-icon-button
                     class="yellow"
-                    (click)="unassignUser()">
+                    (click)="unassignUser()"
+                    i18n-aria-label="Unassign User">
                     <mat-icon>person_remove</mat-icon>
                   </button>
                 </div>

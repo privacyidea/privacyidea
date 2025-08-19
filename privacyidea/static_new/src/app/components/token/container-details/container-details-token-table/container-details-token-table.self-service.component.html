@@ -115,11 +115,11 @@
             @if (element.username === authService.user()) {
               <!-- TODO policy to allow user -->
               <button
-                (click)="removeTokenFromContainer(containerSerial(), element.serial)"
-                mat-icon-button
-                i18n-matTooltip
-                matTooltip="Remove Token from Container">
-                <mat-icon> highlight_remove</mat-icon>
+                  (click)="removeTokenFromContainer(containerSerial(), element.serial)"
+                  mat-icon-button
+                  i18n-matTooltip
+                  matTooltip="Remove Token from Container">
+              <mat-icon> highlight_remove</mat-icon>
               </button>
             }
           </div>
@@ -190,7 +190,7 @@
         mat-flat-button
         i18n>
         <mat-icon>playlist_add</mat-icon>
-        {{ "Assign to All Tokens" }}
+        "Assign to All Tokens"
       </button>
       <button
         (click)="unassignFromAllToken()"
@@ -198,42 +198,37 @@
         [ngClass]="[
           isUnassignableFromAllToken() ? 'card-button' : 'card-button-disabled',
         ]"
-        mat-flat-button
-        i18n>
+        mat-flat-button>
         <mat-icon>playlist_remove</mat-icon>
-        {{ "Unassign from All Tokens" }}
+        <span i18n>Unassign from All Tokens</span>
       </button>
       <button
         (click)="toggleAll('activate')"
         class="card-button-activate"
-        mat-flat-button
-        i18n>
+        mat-flat-button>
         <mat-icon>playlist_play</mat-icon>
-        {{ "Activate All Tokens" }}
+       <span i18n>Activate All Tokens</span>
       </button>
       <button
         (click)="toggleAll('deactivate')"
         class="card-button-delete"
-        mat-flat-button
-        i18n>
+        mat-flat-button>
         <mat-icon class="mdi--list-lock"/>
-        {{ "Deactivate All Tokens" }}
+       <span i18n>Deactivate All Tokens</span>
       </button>
       <button
         (click)="removeAll()"
         class="card-button-delete"
-        mat-flat-button
-        i18n>
+        mat-flat-button>
         <mat-icon> playlist_remove</mat-icon>
-        {{ "Remove All Tokens" }}
+    <span i18n>Remove All Tokens</span>
       </button>
       <button
         (click)="deleteAllTokens()"
         class="card-button-delete"
-        mat-flat-button
-        i18n>
+        mat-flat-button>
         <mat-icon> delete_sweep</mat-icon>
-        {{ "Delete All Tokens" }}
+       <span i18n>Delete All Tokens</span>
       </button>
     </div>
   </div>

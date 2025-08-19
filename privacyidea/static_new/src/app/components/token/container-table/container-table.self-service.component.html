@@ -90,7 +90,8 @@
               @case ("delete") {
                 <button
                   (click)="deleteContainer(element.serial)"
-                  mat-icon-button>
+                  mat-icon-button
+                  i18n-aria-label="Delete Container">
                   <mat-icon> delete</mat-icon>
                 </button>
               }
@@ -128,7 +129,7 @@
                   {{ token.serial }}
                 }
                 @if (token.tokentype) {
-                  [{{ token.tokentype }}]
+                  [<span i18n>{{ token.tokentype }}</span>]
                 }
               </div>
             }

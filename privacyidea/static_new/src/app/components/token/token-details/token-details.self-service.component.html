@@ -205,7 +205,8 @@
                   <div class="edit-button-container">
                     <button
                       mat-icon-button
-                      (click)="toggleActive(element.value)">
+                      (click)="toggleActive(element.value)"
+                      i18n-aria-label="Toggle Token Active State">
                       <mat-icon>{{ tokenIsActive() ? "lock" : "play_circle" }}</mat-icon>
                     </button>
                   </div>

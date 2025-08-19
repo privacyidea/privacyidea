@@ -54,7 +54,7 @@
         mat-flat-button
         i18n>
         <mat-icon>add</mat-icon>
-        Enroll {{ selectedTokenType().key }} Token
+        <span i18n>Enroll</span> {{ selectedTokenType().key }} <span i18n>Token</span>
       </button>
     </div>
     @switch (selectedTokenType().key) {

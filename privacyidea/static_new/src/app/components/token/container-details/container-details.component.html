@@ -202,10 +202,11 @@
               !(isAnyEditing() && !isEditingUser())) {
                 @if (element.value) {
                   <div class="edit-button-container">
-                    <button
+                     <button
                       mat-icon-button
                       class="yellow"
-                      (click)="unassignUser()">
+                      (click)="unassignUser()"
+                      i18n-aria-label="Unassign User">
                       <mat-icon>person_remove</mat-icon>
                     </button>
                   </div>
@@ -284,6 +285,7 @@
                 <span class="token-option-span">
                   {{ option["tokentype"] }}
                 </span> <span
+                i18n
                 class="token-option-span"
                 [ngClass]="
                     option['active'] ? 'highlight-true' : 'highlight-false'
