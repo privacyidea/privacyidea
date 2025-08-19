@@ -2137,6 +2137,8 @@ class ContainerPolicyConditions(APIContainerAuthorization):
 
     def test_05_add_token(self):
         # only tokens of a specific type and hashlib can be added to smartphones
+        # TODO Why do I have to fix this?
+        set_policy("remove_policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_REMOVE_TOKEN)
         set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_ADD_TOKEN,
                    conditions=[(ConditionSection.CONTAINER, "type", PrimaryComparators.EQUALS, "smartphone", True),
                                (ConditionSection.TOKEN, "tokentype", PrimaryComparators.IN, "hotp,totp", True),
@@ -2204,6 +2206,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
                                     self.at, "POST")
 
         delete_policy("policy")
+        delete_policy("remove_policy")
         hotp_sha1.delete_token()
         hotp_sha256.delete_token()
         totp_sha1.delete_token()

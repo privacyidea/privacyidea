@@ -740,6 +740,7 @@ def delete_api(serial=None):
 @log_with(log)
 def batch_deletion():
     """
+    Not maintained anymore, marked for removal. Functionality is now in DELETE /.
     Delete all passed tokens, e.g. all tokens of a container
     All errors during the deletion of a token are fetched to be able to delete the remaining tokens.
 
