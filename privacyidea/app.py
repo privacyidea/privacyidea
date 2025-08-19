@@ -297,7 +297,7 @@ def create_app(config_name="development",
 
         pi_node_name = app.config.get("PI_NODE") or app.config.get("PI_AUDIT_SERVERNAME", "localnode")
 
-        insp = sa.inspect(db.get_engine())
+        insp = sa.inspect(db.engine)
         if insp.has_table(NodeName.__tablename__):
             db.session.merge(NodeName(id=str(pi_uuid), name=pi_node_name,
                                       lastseen=datetime.datetime.utcnow()))

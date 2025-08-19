@@ -3,6 +3,7 @@ import json
 from datetime import datetime, timezone, timedelta
 
 import mock
+from sqlalchemy import select
 
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import set_privacyidea_config
@@ -36,7 +37,7 @@ from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, Enroll
                                    TokenAdminError, ContainerInvalidChallenge, ContainerNotRegistered, PolicyError)
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
-from privacyidea.models import TokenContainer, Token, TokenContainerTemplate
+from privacyidea.models import TokenContainer, Token, TokenContainerTemplate, db
 from .base import MyTestCase
 
 
@@ -172,8 +173,8 @@ class TokenContainerManagementTestCase(MyTestCase):
         res = add_token_to_container(self.smartphone_serial, self.hotp_serial_gen)
         self.assertTrue(res)
         # Check containers: Token is only in smartphone container
-        db_result = TokenContainer.query.join(Token.container).filter(Token.serial == self.hotp_serial_gen)
-        container_serials = [row.serial for row in db_result]
+        stmt = select(TokenContainer).join(Token.container).where(Token.serial == self.hotp_serial_gen)
+        container_serials = [row.serial for row in db.session.scalars(stmt)]
         self.assertEqual(1, len(container_serials))
         self.assertEqual(self.smartphone_serial, container_serials[0])
 
@@ -680,7 +681,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
     def test_28_get_all_containers_paginate(self):
         # Removes all previously initialized containers
-        old_test_containers = TokenContainer.query.all()
+        old_test_containers = db.session.scalars(select(TokenContainer)).all()
         for container in old_test_containers:
             container.delete()
 

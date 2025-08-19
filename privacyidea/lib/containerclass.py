@@ -43,6 +43,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true
 from privacyidea.models import (TokenContainerOwner, Realm, Token, db, TokenContainerStates,
                                 TokenContainerInfo, TokenContainerRealm, TokenContainerTemplate)
+from sqlalchemy import select, delete, func, and_
 
 log = logging.getLogger(__name__)
 
@@ -194,7 +195,7 @@ class TokenContainerClass:
     def realms(self) -> list[Realm]:
         return self._db_container.realms
 
-    def set_realms(self, realms, add=False) -> dict[str, bool]:
+    def set_realms(self, realms: List[str], add=False) -> dict[str, bool]:
         """
         Set the realms of the container. If `add` is True, the realms will be added to the existing realms, otherwise
         the existing realms will be removed.
@@ -211,7 +212,8 @@ class TokenContainerClass:
 
         # delete all container realms
         if not add:
-            TokenContainerRealm.query.filter_by(container_id=self._db_container.id).delete()
+            stmt = delete(TokenContainerRealm).where(TokenContainerRealm.container_id == self._db_container.id)
+            db.session.execute(stmt)
             result["deleted"] = True
             self._db_container.save()
 
@@ -228,15 +230,16 @@ class TokenContainerClass:
 
         for realm in realms:
             if realm:
-                realm_db = Realm.query.filter_by(name=realm).first()
+                stmt = select(Realm).filter_by(name=realm)
+                realm_db = db.session.execute(stmt).scalar_one_or_none()
                 if not realm_db:
                     result[realm] = False
                     log.warning(f"Realm {realm} does not exist.")
                 else:
                     realm_id = realm_db.id
                     # Check if realm is already assigned to the container
-                    if not TokenContainerRealm.query.filter_by(container_id=self._db_container.id,
-                                                               realm_id=realm_id).first():
+                    stmt = select(TokenContainerRealm).filter_by(container_id=self._db_container.id, realm_id=realm_id)
+                    if not db.session.execute(stmt).scalar_one_or_none():
                         self._db_container.realms.append(realm_db)
                         result[realm] = True
                     else:
@@ -272,7 +275,8 @@ class TokenContainerClass:
         :param serial: Serial of the token
         :return: True if the token was successfully removed, False if the token was not found in the container
         """
-        token = Token.query.filter(Token.serial == serial).first()
+        stmt = select(Token).filter(Token.serial == serial)
+        token = db.session.execute(stmt).scalar_one_or_none()
         if not token:
             raise ResourceNotFoundError(f"Token with serial {serial} does not exist.")
         if token not in self._db_container.tokens:
@@ -331,15 +335,19 @@ class TokenContainerClass:
         :return: True if the user was assigned
         """
         (user_id, resolver_type, resolver_name) = user.get_user_identifiers()
+        # The relationship on the TokenContainer object returns a dynamic query, which is already a modern feature
+        # So we can use .first() here
         if not self._db_container.owners.first():
             TokenContainerOwner(container_id=self._db_container.id,
                                 user_id=user_id,
                                 resolver=resolver_name,
                                 realm_id=user.realm_id).save()
             # Add user realm to container realms
-            realm_db = Realm.query.filter_by(name=user.realm).first()
-            self._db_container.realms.append(realm_db)
-            self._db_container.save()
+            #stmt = select(Realm).filter_by(name=user.realm)
+            self.set_realms([user.realm], add=True)
+            #realm_db = db.session.execute(stmt).scalar_one_or_none()
+            #self._db_container.realms.append(realm_db)
+            #self._db_container.save()
             return True
         log.info(f"Container {self.serial} already has an owner.")
         raise TokenAdminError("This container is already assigned to another user.")
@@ -356,12 +364,15 @@ class TokenContainerClass:
         resolver = user.resolver if user.resolver else None
         realm_id = user.realm_id if user.realm_id else None
 
-        query = TokenContainerOwner.query.filter_by(container_id=self._db_container.id, user_id=user_id)
+        stmt = delete(TokenContainerOwner).where(TokenContainerOwner.container_id == self._db_container.id)
+        if user_id:
+            stmt = stmt.where(TokenContainerOwner.user_id == user_id)
         if resolver:
-            query = query.filter_by(resolver=resolver)
+            stmt = stmt.where(TokenContainerOwner.resolver == resolver)
         if realm_id:
-            query = query.filter_by(realm_id=realm_id)
-        count = query.delete()
+            stmt = stmt.where(TokenContainerOwner.realm_id == realm_id)
+
+        count = db.session.execute(stmt).rowcount
         db.session.commit()
 
         if count <= 0:
@@ -374,12 +385,13 @@ class TokenContainerClass:
         """
         Returns a list of users that are assigned to the container.
         """
-        db_container_owners: List[TokenContainerOwner] = TokenContainerOwner.query.filter_by(
-            container_id=self._db_container.id).all()
+        stmt = select(TokenContainerOwner).filter_by(container_id=self._db_container.id)
+        db_container_owners: List[TokenContainerOwner] = db.session.execute(stmt).scalars().all()
 
         users: list[User] = []
         for owner in db_container_owners:
-            realm = Realm.query.filter_by(id=owner.realm_id).first()
+            stmt = select(Realm).filter_by(id=owner.realm_id)
+            realm = db.session.execute(stmt).scalar_one_or_none()
             try:
                 user = User(uid=owner.user_id, realm=realm.name, resolver=owner.resolver)
             except Exception as ex:
@@ -427,7 +439,8 @@ class TokenContainerClass:
             raise ParameterError(f"The state list {state_list} contains exclusive states!")
 
         # Remove old state entries
-        TokenContainerStates.query.filter_by(container_id=self._db_container.id).delete()
+        stmt = delete(TokenContainerStates).where(TokenContainerStates.container_id == self._db_container.id)
+        db.session.execute(stmt)
 
         # Set new states
         for state in enum_states:
@@ -468,8 +481,13 @@ class TokenContainerClass:
         for state in enum_states:
             # Remove old states that are excluded from the new state
             for excluded_state in exclusive_states[state]:
-                TokenContainerStates.query.filter_by(container_id=self._db_container.id,
-                                                     state=excluded_state.value).delete()
+                stmt = delete(TokenContainerStates).where(
+                    and_(
+                        TokenContainerStates.container_id == self._db_container.id,
+                        TokenContainerStates.state == excluded_state.value
+                    )
+                )
+                db.session.execute(stmt)
                 log.debug(f"Removed state {excluded_state.value} from container {self.serial} because it is excluded "
                           f"by the new state {state.value}.")
             TokenContainerStates(container_id=self._db_container.id, state=state.value).save()
@@ -549,13 +567,21 @@ class TokenContainerClass:
         """
         res = {}
         if key:
-            container_infos = TokenContainerInfo.query.filter_by(container_id=self._db_container.id, key=key)
-        else:
-            container_infos = TokenContainerInfo.query.filter_by(container_id=self._db_container.id)
+            stmt = select(func.count()).filter_by(container_id=self._db_container.id, key=key)
+            if db.session.execute(stmt).scalar_one() == 0:
+                res[key] = False
+                log.debug(f"Container {self.serial} has no info with key {key} or no info at all.")
 
-        if container_infos.count() == 0:
-            res[key] = False
-            log.debug(f"Container {self.serial} has no info with key {key} or no info at all.")
+            stmt = select(TokenContainerInfo).filter_by(container_id=self._db_container.id, key=key)
+            container_infos = db.session.execute(stmt).scalars()
+        else:
+            stmt = select(func.count()).filter_by(container_id=self._db_container.id)
+            if db.session.execute(stmt).scalar_one() == 0:
+                res[key] = False
+                log.debug(f"Container {self.serial} has no info with key {key} or no info at all.")
+
+            stmt = select(TokenContainerInfo).filter_by(container_id=self._db_container.id)
+            container_infos = db.session.execute(stmt).scalars()
 
         for ci in container_infos:
             if not keep_internal or ci.type != PI_INTERNAL:
@@ -595,7 +621,8 @@ class TokenContainerClass:
         """
         Set the template the container is based on.
         """
-        db_template = TokenContainerTemplate.query.filter_by(name=template_name).first()
+        stmt = select(TokenContainerTemplate).filter_by(name=template_name)
+        db_template = db.session.execute(stmt).scalar_one_or_none()
         if db_template:
             if db_template.container_type == self.type:
                 self._db_container.template = db_template

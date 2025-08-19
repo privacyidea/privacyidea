@@ -374,7 +374,7 @@ class Token(MethodsMixin, db.Model):
         Set the OTP pin in a hashed way
         """
         real_pin = pin or ""
-        if hashed is True:
+        if hashed:
             self.set_hashed_pin(real_pin)
             log.debug(f"set_pin hash: {self.pin_hash!r}")
         else:

@@ -189,10 +189,13 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
                         locked=None, userid=None, tokeninfo=None, maxfail=None, allowed_realms=None,
                         container_serial=None, all_nodes=False) -> Select:
     session = db.session
+    session.expire_all()
+
     sql_query = select(Token)
 
-    # --- Conditional Joins at the top to avoid re-joining ---
-    should_join_token_realm = bool(realm and realm.strip("*")) or allowed_realms is not None
+    # Conditional Joins at the top to avoid re-joining
+    should_join_token_realm = (bool(realm and realm.strip("*")) or
+                               allowed_realms is not None)
     should_join_token_owner = (bool(userid and userid.strip("*")) or
                                bool(resolver and resolver.strip("*")) or
                                bool(user) or
@@ -204,6 +207,56 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
 
     if should_join_token_owner:
         sql_query = sql_query.outerjoin(TokenOwner, Token.id == TokenOwner.token_id)
+
+        # Filtering by realm and allowed_realms with exclusion logic
+        if realm and realm.strip("*") and allowed_realms is not None:
+            # Step 1: Find all realms that should be excluded (the intersection)
+            # This subquery finds all token_ids that are in both the specified realm
+            # and one of the allowed_realms.
+            realm_id_subquery = select(Realm.id).where(
+                func.lower(Realm.name) == realm.lower()
+            )
+            allowed_realms_ids = select(Realm.id).where(
+                func.lower(Realm.name).in_([r.lower() for r in allowed_realms])
+            )
+
+            excluded_token_ids = (
+                select(TokenRealm.token_id)
+                .where(TokenRealm.realm_id.in_(realm_id_subquery))
+                .intersect(
+                    select(TokenRealm.token_id)
+                    .where(TokenRealm.realm_id.in_(allowed_realms_ids))
+                )
+            ).subquery()
+
+            # Step 2: Apply the filters, excluding the intersection
+            sql_query = sql_query.where(
+                and_(
+                    TokenRealm.realm_id.in_(realm_id_subquery),
+                    TokenRealm.realm_id.in_(allowed_realms_ids),
+                    Token.id.notin_(excluded_token_ids)
+                )
+            )
+        else:
+            # Fallback to existing logic if the specific condition is not met
+            if realm and realm.strip("*"):
+                if "*" in realm:
+                    sql_query = sql_query.where(
+                        TokenRealm.realm_id.in_(
+                            select(Realm.id).where(func.lower(Realm.name).like(realm.lower().replace("*", "%")))
+                        )
+                    )
+                else:
+                    sql_query = sql_query.where(
+                        TokenRealm.realm_id == select(Realm.id).where(
+                            func.lower(Realm.name) == realm.lower()).scalar_subquery())
+
+            if allowed_realms is not None:
+                sql_query = sql_query.where(
+                    TokenRealm.realm_id.in_(
+                        select(Realm.id).where(func.lower(Realm.name).in_(allowed_realms))
+                    )
+                )
 
     # Filtering by tokentype
     if tokentype and tokentype.strip("*"):
@@ -235,52 +288,12 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
                 func.lower(Token.description) == description.lower()
             )
 
-    # Filtering by realm
-    stripped_realm = realm.strip("*") if realm else None
-    if stripped_realm:
-        if "*" in realm:
-            subquery = select(Realm.id).where(
-                func.lower(Realm.name).like(realm.replace("*", "%").lower())
-            )
-            sql_query = sql_query.where(TokenRealm.realm_id.in_(subquery))
-        else:
-            subquery = select(Realm.id).where(
-                Realm.name == realm
-            ).scalar_subquery()
-            sql_query = sql_query.where(TokenRealm.realm_id == subquery)
-
-    # Allowed realms could be empty list
-    if allowed_realms is not None:
-        subquery = select(Realm.id).where(
-            func.lower(Realm.name).in_(allowed_realms)
-        )
-        sql_query = sql_query.where(TokenRealm.realm_id.in_(subquery))
-
-    # Filtering by user, resolver, or assigned status (TokenOwner is already joined if needed)
-    stripped_resolver = resolver.strip("*") if resolver else None
-    stripped_userid = userid.strip("*") if userid else None
-
+    # Filtering by assigned status
     if assigned is not None:
         if assigned:
             sql_query = sql_query.where(TokenOwner.id.is_not(None))
         else:
             sql_query = sql_query.where(TokenOwner.id.is_(None))
-
-    if stripped_resolver:
-        if "*" in resolver:
-            sql_query = sql_query.where(
-                TokenOwner.resolver.like(resolver.replace("*", "%"))
-            )
-        else:
-            sql_query = sql_query.where(TokenOwner.resolver == resolver)
-
-    if stripped_userid:
-        if "*" in userid:
-            sql_query = sql_query.where(
-                TokenOwner.user_id.like(userid.replace("*", "%"))
-            )
-        else:
-            sql_query = sql_query.where(TokenOwner.user_id == userid)
 
     # Filtering by serial
     if serial_wildcard and serial_wildcard.strip("*"):
@@ -340,7 +353,7 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
     # Filtering by tokeninfo
     if tokeninfo is not None:
         if len(tokeninfo) != 1:
-            raise ValueError("I can only create SQL filters from tokeninfo of length 1.")
+            raise privacyIDEAError(_("I can only create SQL filters from tokeninfo of length 1."))
         key, value = list(tokeninfo.items())[0]
         sql_query = sql_query.join(TokenInfo, TokenInfo.token_id == Token.id)
         sql_query = sql_query.where(TokenInfo.Key == key)
@@ -362,8 +375,7 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
             )
             sql_query = sql_query.where(Token.id.in_(subquery))
 
-    # Node-specific resolver configuration.
-    # This section needs to be careful about not re-joining TokenOwner or Realm if already joined.
+    # Node-specific resolver and realm configuration.
     if not all_nodes:
         local_node_uuid = get_app_config_value("PI_NODE_UUID")
         realms = get_realms()
@@ -380,22 +392,26 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
             if not added:
                 realms_to_filter.append(realm_name)
 
-        # Apply resolver filter to the already joined TokenOwner
-        sql_query = sql_query.where(
-            or_(
-                TokenOwner.id.is_(None),  # Handle cases where there's no TokenOwner
-                TokenOwner.resolver.in_(resolvers)
+        # Build the resolver filter condition
+        resolver_filter = or_(
+            TokenOwner.id.is_(None),
+            TokenOwner.resolver.in_(resolvers),
+        )
+
+        # Re-join realm and explicitly include the join conditions in the filter to handle unassigned tokens
+        # The realm join is now correctly placed within the `if not all_nodes` block.
+        sql_query = sql_query.outerjoin(Realm, TokenOwner.realm_id == Realm.id)
+        realm_filter = or_(
+            TokenOwner.realm_id.is_(None),
+            and_(
+                func.lower(Realm.name).not_in([r.lower() for r in realms_to_filter]),
+                TokenOwner.realm_id == Realm.id,
+                TokenOwner.token_id == Token.id,
             )
         )
-        print("---------- resolvers: {}".format(resolvers))
-        # Join Realm if not already joined via TokenOwner, or if you need a specific alias for this part
-        # Given that TokenOwner is already joined, we can join Realm from TokenOwner directly.
-        sql_query = sql_query.outerjoin(Realm, TokenOwner.realm_id == Realm.id).where(
-            or_(
-                TokenOwner.realm_id.is_(None),  # Handle cases where TokenOwner has no realm assigned
-                func.lower(Realm.name).not_in([r.lower() for r in realms_to_filter])
-            )
-        )
+
+        # Combine all filters with the existing query using and_()
+        sql_query = sql_query.where(and_(resolver_filter, realm_filter))
 
     print(f"----------------------------- CREATE TOKEN QUERY -----------------------------")
     from sqlalchemy.dialects import postgresql
@@ -689,6 +705,8 @@ def get_tokens_paginate(tokentype=None, token_type_list=None, realm=None, assign
     if serial and "*" not in serial and "," in serial:
         serial_list = serial.replace(" ", "").split(",")
         serial = None
+    session: Session = db.session
+    session.commit()
     sql_query: Select = _create_token_query(tokentype=tokentype, token_type_list=token_type_list, realm=realm,
                                             assigned=assigned, user=user,
                                             serial_wildcard=serial, serial_list=serial_list, active=active,
@@ -763,6 +781,7 @@ def get_tokens_paginate(tokentype=None, token_type_list=None, realm=None, assign
            "count": pagination.total}
     return ret
     """
+
     if isinstance(sortby, str):
         cols = Token.__table__.columns
         if sortby in cols:
@@ -776,12 +795,17 @@ def get_tokens_paginate(tokentype=None, token_type_list=None, realm=None, assign
     else:
         sql_query = sql_query.order_by(sortby.asc())
 
-    offset = (page - 1) * psize
-    sql_query = sql_query.limit(psize).offset(offset)
-
     session: Session = db.session
 
-    tokens = session.execute(sql_query).scalars().all()
+    # Get the total count from a query without limit/offset
+    total_count = session.execute(
+        select(func.count()).select_from(sql_query.subquery())
+    ).scalar_one()
+
+    # Now apply the limit and offset for the current page
+    offset = (page - 1) * psize
+    tokens = session.execute(sql_query.limit(psize).offset(offset)).scalars().all()
+
     token_list = []
     for token in tokens:
         # TODO first creating the object and then converting it to a dict, probably not efficient
@@ -818,11 +842,6 @@ def get_tokens_paginate(tokentype=None, token_type_list=None, realm=None, assign
                 token_dict["container_serial"] = container.serial
 
             token_list.append(token_dict)
-
-    # Get total count for pagination
-    total_count = session.execute(
-        select(func.count()).select_from(sql_query.with_only_columns(Token.id).order_by(None).subquery())
-    ).scalar_one()
 
     previous_page = page - 1 if page > 1 else None
     next_page = page + 1 if offset + psize < total_count else None

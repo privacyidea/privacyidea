@@ -3374,11 +3374,11 @@ class API00TokenPerformance(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertEqual(result.get("value").get("count"), self.token_count)
+            self.assertEqual(self.token_count, result.get("value").get("count"))
 
         init_token({"genkey": 1, "serial": "realmtoken"}, tokenrealms=[self.realm1])
         toks = get_tokens(realm="*realm1*")
-        self.assertEqual(len(toks), 1)
+        self.assertEqual(1, len(toks))
 
         # Request tokens in tokenrealm
         with self.app.test_request_context('/token/',
@@ -3389,7 +3389,7 @@ class API00TokenPerformance(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             # Even if we fetch tokenrealm=** we also get all the tokens without a tokenrealm
-            self.assertEqual(result.get("value").get("count"), self.token_count + 10 + 1)
+            self.assertEqual(self.token_count + 10 + 1, result.get("value").get("count"))
 
         with self.app.test_request_context('/token/',
                                            method='GET',
@@ -3398,7 +3398,7 @@ class API00TokenPerformance(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertEqual(result.get("value").get("count"), 1)
+            self.assertEqual(1, result.get("value").get("count"))
 
         remove_token(serial="realmtoken")
 
@@ -3411,7 +3411,7 @@ class API00TokenPerformance(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertEqual(result.get("value").get("count"), 0)
+            self.assertEqual(0, result.get("value").get("count"))
 
         # Run POST assign with a wildcard. This shall not assign.
         with self.app.test_request_context('/token/assign',
