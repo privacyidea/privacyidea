@@ -567,21 +567,14 @@ class TokenContainerClass:
         """
         res = {}
         if key:
-            stmt = select(func.count()).filter_by(container_id=self._db_container.id, key=key)
-            if db.session.execute(stmt).scalar_one() == 0:
-                res[key] = False
-                log.debug(f"Container {self.serial} has no info with key {key} or no info at all.")
-
             stmt = select(TokenContainerInfo).filter_by(container_id=self._db_container.id, key=key)
-            container_infos = db.session.execute(stmt).scalars()
         else:
-            stmt = select(func.count()).filter_by(container_id=self._db_container.id)
-            if db.session.execute(stmt).scalar_one() == 0:
-                res[key] = False
-                log.debug(f"Container {self.serial} has no info with key {key} or no info at all.")
-
             stmt = select(TokenContainerInfo).filter_by(container_id=self._db_container.id)
-            container_infos = db.session.execute(stmt).scalars()
+        container_infos = db.session.execute(stmt).scalars().all()
+
+        if not container_infos:
+            res[key] = False
+            log.debug(f"Container {self.serial} has no info with key {key} or no info at all.")
 
         for ci in container_infos:
             if not keep_internal or ci.type != PI_INTERNAL:

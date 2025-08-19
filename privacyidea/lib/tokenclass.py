@@ -670,7 +670,6 @@ class TokenClass(object):
         :type description: string
         """
         self.token.set_description('' + description)
-        self.token.save()
         return
 
     @check_token_locked

@@ -20,6 +20,7 @@
 from privacyidea.lib.container import (init_container, add_token_to_container,
                                        find_container_by_serial, find_container_for_token)
 from privacyidea.lib.error import ResourceNotFoundError
+from privacyidea.models import db
 from .base import MyApiTestCase, PWFILE2
 import json
 import datetime

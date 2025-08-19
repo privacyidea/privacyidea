@@ -26,7 +26,7 @@ from datetime import timezone, datetime
 from typing import Union, Any
 
 from flask import g
-from sqlalchemy import func, select
+from sqlalchemy import func, select, and_
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import Select
 
@@ -183,16 +183,6 @@ def find_container_by_serial(serial: str) -> TokenContainerClass:
     """
     Returns the TokenContainerClass object for the given container serial or raises a ResourceNotFoundError.
     """
-    """
-    if serial:
-        db_container = TokenContainer.query.filter(func.upper(TokenContainer.serial) == serial.upper()).first()
-    else:
-        db_container = None
-    if not db_container:
-        raise ResourceNotFoundError(f"Unable to find container with serial {serial}.")
-
-    return create_container_from_db_object(db_container)
-    """
     if not serial:
         db_container = None
     else:
@@ -272,14 +262,15 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
             )
 
     if realm and realm.strip("*"):
+        # Correctly join with the aliased Realm table
+        stmt = stmt.join(TokenContainer.realms.of_type(realm1), isouter=True)
+
         if "*" in realm:
-            stmt = stmt.join(TokenContainer.realms, isouter=True).where(
-                realm1.name.ilike(realm1.replace("*", "%"))
-            )
+            # Use the input parameter 'realm' for the wildcard filter
+            stmt = stmt.where(realm1.name.ilike(realm.replace("*", "%")))
         else:
-            stmt = stmt.join(TokenContainer.realms, isouter=True).where(
-                func.lower(realm1.name) == realm.lower()
-            )
+            # Use the input parameter 'realm' for the exact match filter
+            stmt = stmt.where(func.lower(realm1.name) == realm.lower())
 
     if allowed_realms:
         allowed_realms = [r.lower() for r in allowed_realms]
@@ -321,14 +312,21 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
     if info:
         if len(info) == 1:
             key, value = list(info.items())[0]
+
+            # Start with a list to hold all the filter conditions
+            conditions = []
+
             if key and key.strip("*"):
-                stmt = stmt.where(TokenContainer.info.any(
-                    TokenContainerInfo.key.ilike(key.replace("*", "%"))
-                ))
+                conditions.append(TokenContainerInfo.key.ilike(key.replace("*", "%")))
+
             if value and value.strip("*"):
-                stmt = stmt.where(TokenContainer.info.any(
-                    func.lower(TokenContainerInfo.value).ilike(value.replace("*", "%").lower())
-                ))
+                conditions.append(func.lower(TokenContainerInfo.value).ilike(value.replace("*", "%").lower()))
+
+            # If there are conditions, apply them with `and_`
+            if conditions:
+                stmt = stmt.where(
+                    TokenContainer.info_list.any(and_(*conditions))
+                )
 
     if last_auth_delta:
         time_delta = parse_timedelta(last_auth_delta)

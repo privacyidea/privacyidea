@@ -777,6 +777,7 @@ def verify_enrollment(request=None, action=None):
                     # TODO: we need to add the tokentype here or the second init_token() call fails
                     request.all_data.update(type=tokenobj.get_tokentype())
                     tokenobj.token.rollout_state = ROLLOUTSTATE.ENROLLED
+                    tokenobj.token.save() # todo evaluate
                 else:
                     from privacyidea.lib.error import ParameterError
                     raise ParameterError("Verification of the new token failed.")

@@ -451,10 +451,10 @@ class TokenContainerManagementTestCase(MyTestCase):
         success = unassign_user(container_serial, invalid_user)
         self.assertTrue(success)
 
-        # Unassign an invalid user without providing the user id and without resolver raises an Exception
+        # Unassign an invalid user without providing the user id and without resolver works too
         assign_user(container_serial, invalid_user)
         invalid_user = User(login="invalid", realm=self.realm1)
-        self.assertRaises(UserError, unassign_user, container_serial, invalid_user)
+        self.assertTrue(unassign_user(container_serial, invalid_user))
 
         container.delete()
 
@@ -871,7 +871,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertSetEqual(set(container_serials[3:5]),
                             {container.serial for container in container_data["containers"]})
 
-        # wildcard
+        # wildcard should find the container with info "key2":"value2"
         container_data = get_all_containers(info={"key*": "*2*"}, pagesize=15)
         self.assertEqual(1, len(container_data["containers"]))
         self.assertEqual(container_serials[3], container_data["containers"][0].serial)

@@ -1929,6 +1929,7 @@ class TokenFailCounterTestCase(MyTestCase):
         self.assertTrue(res)
         # Set the failcounter to maximum failcount
         token.set_failcount(10)
+        db.session.commit()
         # Authentication must fail, since the failcounter is reached
         res, reply = check_user_pass(user, "test47359152")
         self.assertFalse(res)
@@ -1959,6 +1960,7 @@ class TokenFailCounterTestCase(MyTestCase):
         self.assertTrue(res)
         # Set the failcounter to maximum failcount
         token.set_failcount(10)
+        db.session.commit()
         # Authentication must fail, since the failcounter is reached
         res, reply = check_user_pass(user, pin + "032819",
                                      options={"initTime": 47251648 * 30})
