@@ -56,8 +56,7 @@
 
 from flask import (Blueprint, request, g, current_app)
 
-from ..lib.container import find_container_by_serial, add_token_to_container, \
-    add_not_authorized_tokens_result
+from ..lib.container import find_container_by_serial, add_token_to_container, add_not_authorized_tokens_result
 from ..lib.log import log_with
 from .lib.utils import optional, send_result, send_csv_result, required, getParam, get_optional, get_required
 from ..lib.tokenclass import ROLLOUTSTATE
@@ -103,12 +102,10 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_t
                                            sms_identifiers, pushtoken_add_config,
                                            verify_enrollment,
                                            indexedsecret_force_attribute,
-                                           check_admin_tokenlist, fido2_enroll,
-                                           webauthntoken_allowed,
+                                           check_admin_tokenlist, fido2_enroll, webauthntoken_allowed,
                                            webauthntoken_request, required_piv_attestation,
                                            hide_tokeninfo, init_ca_connector, init_ca_template,
-                                           init_subject_components, require_description_on_edit,
-                                           require_description,
+                                           init_subject_components, require_description_on_edit, require_description,
                                            check_container_action, check_user_params,
                                            force_server_generate_key)
 from privacyidea.api.lib.postpolicy import (save_pin_change, check_verify_enrollment,
@@ -730,6 +727,7 @@ def delete_api(serial=None):
     res = add_not_authorized_tokens_result(ret, not_authorized_serials)
     g.audit_object.log({"success": True})
     return send_result(res)
+
 
 @token_blueprint.route('/batchdeletion', methods=['POST'])
 @prepolicy(check_token_action, request, action=PolicyAction.DELETE)
