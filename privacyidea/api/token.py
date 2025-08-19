@@ -313,8 +313,7 @@ def init():
 
         # If the token is a fido2 token, find all enrolled fido2 token for the user
         # to avoid registering the same authenticator multiple times
-        if (token.get_type().lower() in [PasskeyTokenClass.get_class_type(),
-                                         WebAuthnTokenClass.get_class_type()]
+        if (token.get_type().lower() in [PasskeyTokenClass.get_class_type(), WebAuthnTokenClass.get_class_type()]
                 and token.rollout_state == ROLLOUTSTATE.CLIENTWAIT):
             param["registered_credential_ids"] = get_credential_ids_for_user(user)
 
@@ -332,13 +331,11 @@ def init():
         if container_serial:
             # Check if user is allowed to add tokens to containers
             try:
-                container_add_token_right = check_container_action(request,
-                                                                   action=PolicyAction.CONTAINER_ADD_TOKEN)
+                container_add_token_right = check_container_action(request, action=PolicyAction.CONTAINER_ADD_TOKEN)
             except PolicyError:
                 container_add_token_right = False
-                log.info(
-                    f"User {user.login} is not allowed to add token {token.get_serial()} to container "
-                    f"{container_serial}.")
+                log.info(f"User {user.login} is not allowed to add token {token.get_serial()} to container "
+                         f"{container_serial}.")
             if container_add_token_right:
                 # The enrollment will not be blocked if there is problem adding the new token to a container
                 # there will just be a warning in the log
@@ -346,12 +343,10 @@ def init():
                     add_token_to_container(container_serial, token.get_serial())
                     response_details.update({"container_serial": container_serial})
                     container = find_container_by_serial(container_serial)
-                    g.audit_object.log(
-                        {"container_serial": container_serial, "container_type": container.type})
+                    g.audit_object.log({"container_serial": container_serial, "container_type": container.type})
                 except ResourceNotFoundError:
-                    log.warning(
-                        f"Container with serial {container_serial} not found while enrolling token "
-                        f"{token.get_serial()}.")
+                    log.warning(f"Container with serial {container_serial} not found while enrolling token "
+                                f"{token.get_serial()}.")
 
     g.audit_object.log({"user": user.login,
                         "realm": user.realm,
@@ -571,6 +566,8 @@ def assign_api():
 def unassign_api():
     """
     Unassign token(s) from a user.
+    You can either provide "serial" or "serials" as an argument to unassign token(s), or you can provide user and
+    realm, to unassign all tokens of a user. (old API behavior, TODO this should be split)
 
     :jsonparam serial: The serial number of a single token, or comma-separated list of serials.
     :jsonparam serials: A list of serial numbers of multiple tokens.
@@ -581,29 +578,18 @@ def unassign_api():
     :rtype: JSON object
     """
     user = request.User
-    single = get_optional(request.all_data, "serial")
-    many = get_optional(request.all_data, "serials")
+    serial_list = get_optional(request.all_data, "serials")
     not_authorized_serials = get_optional(request.all_data, "not_authorized_serials") or []
 
-    if single is None and many is None:
+    if not serial_list:
         res = unassign_token(serial=None, user=user)
         g.audit_object.log({"serial": None, "success": True})
         return send_result(res)
 
-    serial_list = []
-    if isinstance(single, str):
-        serial_list.append(single)
-    if many is not None:
-        if not isinstance(many, list):
-            raise ParameterError("Parameter 'serials' must be a JSON array of strings.")
-        serial_list.extend(many)
-
-    if not serial_list:
-        raise ParameterError("Provide a non-empty 'serial' or 'serials'.")
-
     g.audit_object.log({"serial": serial_list if len(serial_list) != 1 else serial_list[0]})
 
-    if len(serial_list) == 1 and many is None:
+    # If only one serial is given, the value in the send result is expected to be a boolean (old API behavior).
+    if len(serial_list) == 1 and not not_authorized_serials:
         res = unassign_token(serial_list[0], user=user)
         g.audit_object.log({"success": True})
         return send_result(res)
@@ -724,29 +710,13 @@ def delete_api(serial=None):
     :rtype: json object
     """
     user = request.User
-    single_body = get_optional(request.all_data, "serial")
-    many = get_optional(request.all_data, "serials")
+    serial_list = get_optional(request.all_data, "serials")
     not_authorized_serials = get_optional(request.all_data, "not_authorized_serials") or []
-
-    serial_list = []
-    if serial:
-        serial_list.append(serial)
-    if single_body and single_body not in serial_list:
-        serial_list.append(single_body)
-
-    if many is not None:
-        if not isinstance(many, list):
-            raise ParameterError("Parameter 'serials' must be a JSON array of strings.")
-        for serial in many:
-            if serial not in serial_list:
-                serial_list.append(serial)
-
-    if not serial_list:
-        raise ParameterError("Provide 'serial' (path/body) or 'serials' (JSON array).")
 
     g.audit_object.log({"serial": serial_list[0] if len(serial_list) == 1 else serial_list})
 
-    if len(serial_list) == 1:
+    # If only one serial is given, the value in the send result is expected to be a boolean (old API behavior).
+    if len(serial_list) == 1 and not not_authorized_serials:
         res = remove_token(serial_list[0], user=user)
         g.audit_object.log({"success": True})
         return send_result(res)

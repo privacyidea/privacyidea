@@ -1307,17 +1307,17 @@ def check_token_action(request: Request = None, action: str = None):
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
     user_attributes = UserAttributes(role, username, realm, resolver, adminuser, adminrealm)
     user_attributes.user = user if user else None
-    serial = params.get("serial")
+    serial_or_csv = params.get("serial")
     serial_list = params.get("serials")
 
     # Old API calls might provide the serials as a comma-separated list in the serial parameter
-    if serial is not None and ',' in serial:
-        serial_list = [s.strip() for s in serial.split(',') if s.strip()]
-        serial = None
+    if serial_or_csv and ',' in serial_or_csv:
+        serial_list = serial_or_csv.split(',')
+        serial_or_csv = None
 
-    if serial_list is not None:
-        if serial is not None and serial not in serial_list:
-            serial_list = serial_list + [serial]
+    if serial_list:
+        if serial_or_csv and serial_or_csv not in serial_list:
+            serial_list.append(serial_or_csv)
 
         new_serials = []
         not_authorized_serials = []
@@ -1341,11 +1341,12 @@ def check_token_action(request: Request = None, action: str = None):
                          f" the request.")
 
         request.all_data["serials"] = new_serials
-        request.all_data["serial"] = ",".join(new_serials)
         request.all_data["not_authorized_serials"] = not_authorized_serials
         return True
 
-    action_allowed = check_token_action_allowed(g, action, serial, user_attributes)
+    action_allowed = check_token_action_allowed(g, action, serial_or_csv, user_attributes)
+    if serial_or_csv:
+        request.all_data["serials"] = [serial_or_csv]
     if not action_allowed:
         raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed!")
     return True
