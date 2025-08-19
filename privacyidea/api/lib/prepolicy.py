@@ -1283,7 +1283,10 @@ def check_base_action(request=None, action=None, anonymous=False):
 def check_token_action(request: Request = None, action: str = None):
     """
     This decorator function takes the request and verifies the given action for the SCOPE ADMIN or USER. This decorator
-    is used for api calls that perform actions on a single token.
+    is used for api calls that perform actions on a single token or a list of tokens in the request. The action is
+    verified for each token in the list. In case of a list of tokens it does not throw an exception if the action is
+    not allowed for a token, but removes the token from the list and writes it to the log. Additionally, a list of the
+    not authorized serials is added to the request with the key 'not_authorized_serials'.
 
     If a serial is passed in the request and the logged-in user is an admin, the user attributes (username, realm,
     resolver) are determined from the token. Otherwise, they are determined from the request parameters.
