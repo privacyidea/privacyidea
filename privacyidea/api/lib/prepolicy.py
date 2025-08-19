@@ -1334,6 +1334,8 @@ def check_token_action(request: Request = None, action: str = None):
 
             if allowed:
                 new_serials.append(serial)
+            elif len(serial_list) == 1:
+                raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed!")
             else:
                 not_authorized_serials.append(serial)
                 log.info(f"User {g.logged_in_user} is not allowed to manage token {serial}. "

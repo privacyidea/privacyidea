@@ -563,13 +563,15 @@ def unassign_api():
     Unassign token(s) from a user.
     You can either provide "serial" or "serials" as an argument to unassign token(s), or you can provide user and
     realm, to unassign all tokens of a user. (old API behavior, TODO this should be split)
+    All errors during the unassignment of multiple tokens are fetched to be able to unassign the remaining tokens.
 
     :jsonparam serial: The serial number of a single token, or comma-separated list of serials.
     :jsonparam serials: A list of serial numbers of multiple tokens.
     :jsonparam not_authorized_serials: A list of serial numbers of tokens which the user is not
     authorized to manage.
 
-    :return: In case of success it returns the number of unassigned tokens in "value".
+    :return: In case of success it returns 1 if only one serial is given, or a dictionary with the serials as keys and
+     the success status of the deletion as values.
     :rtype: JSON object
     """
     user = request.User
@@ -694,14 +696,17 @@ def disable_api(serial=None):
 @event("token_delete", request, g)
 @log_with(log)
 def delete_api(serial=None):
-    """ Delete token(s) by their serial number.
+    """
+    Delete token(s) by their serial number.
+    All errors during the deletion of multiple tokens are fetched to be able to delete the remaining tokens.
 
     :jsonparam serial: The serial number of a single token, or comma-separated list of serials.
     :jsonparam serials: A list of serial numbers of multiple tokens.
     :jsonparam not_authorized_serials: A list of serial numbers of tokens which the user is not
     authorized to manage.
 
-    :return: In case of success it returns the number of deleted tokens in "value"
+    :return: In case of success it returns 1 if only one serial is given, or a dictionary with the serials as keys and
+     the success status of the deletion as values.
     :rtype: json object
     """
     user = request.User
