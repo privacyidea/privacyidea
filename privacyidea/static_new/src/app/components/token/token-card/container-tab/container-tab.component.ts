@@ -5,18 +5,9 @@ import { MatDivider } from "@angular/material/divider";
 import { MatDialog } from "@angular/material/dialog";
 import { forkJoin } from "rxjs";
 import { tabToggleState } from "../../../../../styles/animations/animations";
-import {
-  ContainerService,
-  ContainerServiceInterface
-} from "../../../../services/container/container.service";
-import {
-  ContentService,
-  ContentServiceInterface
-} from "../../../../services/content/content.service";
-import {
-  VersioningService,
-  VersioningServiceInterface
-} from "../../../../services/version/version.service";
+import { ContainerService, ContainerServiceInterface } from "../../../../services/container/container.service";
+import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
+import { VersioningService, VersioningServiceInterface } from "../../../../services/version/version.service";
 import { NgClass } from "@angular/common";
 import { Component, computed, inject } from "@angular/core";
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";

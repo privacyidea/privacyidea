@@ -1,10 +1,7 @@
 import { CommonModule } from "@angular/common";
 import { Component, effect, inject, signal, ViewChild } from "@angular/core";
 import { MatDrawer, MatSidenavModule } from "@angular/material/sidenav";
-import {
-  OverflowService,
-  OverflowServiceInterface
-} from "../../services/overflow/overflow.service";
+import { OverflowService, OverflowServiceInterface } from "../../services/overflow/overflow.service";
 import { ContentService, ContentServiceInterface } from "../../services/content/content.service";
 import { UserDetailsComponent } from "./user-details/user-details.component";
 import { UserTableComponent } from "./user-table/user-table.component";

@@ -6,10 +6,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { Router, RouterLink } from "@angular/router";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { LocalService, LocalServiceInterface } from "../../../services/local/local.service";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../../../services/notification/notification.service";
+import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import {
   SessionTimerService,
   SessionTimerServiceInterface
@@ -17,14 +14,8 @@ import {
 import { ThemeSwitcherComponent } from "../../shared/theme-switcher/theme-switcher.component";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
-import {
-  ContainerService,
-  ContainerServiceInterface
-} from "../../../services/container/container.service";
-import {
-  ChallengesService,
-  ChallengesServiceInterface
-} from "../../../services/token/challenges/challenges.service";
+import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
+import { ChallengesService, ChallengesServiceInterface } from "../../../services/token/challenges/challenges.service";
 import { MachineService, MachineServiceInterface } from "../../../services/machine/machine.service";
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";

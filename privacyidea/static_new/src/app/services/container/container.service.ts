@@ -1,20 +1,5 @@
-import {
-  HttpClient,
-  HttpErrorResponse,
-  HttpParams,
-  httpResource,
-  HttpResourceRef
-} from "@angular/common/http";
-import {
-  computed,
-  effect,
-  inject,
-  Injectable,
-  linkedSignal,
-  Signal,
-  signal,
-  WritableSignal
-} from "@angular/core";
+import { HttpClient, HttpErrorResponse, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
+import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import {
   catchError,
@@ -34,10 +19,7 @@ import { ContainerTypeOption } from "../../components/token/container-create/con
 import { EnrollmentUrl } from "../../mappers/token-api-payload/_token-api-payload.mapper";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { LocalService, LocalServiceInterface } from "../local/local.service";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../notification/notification.service";
+import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import { TokenService, TokenServiceInterface } from "../token/token.service";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ROUTE_PATHS } from "../../app.routes";
