@@ -15,10 +15,7 @@ import { CopyButtonComponent } from "../../shared/copy-button/copy-button.compon
 import { ScrollAdjusterDirective } from "../../shared/directives/scroll-adjuster.directive";
 import { TokenTableComponent } from "./token-table.component";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
-import {
-  ContainerService,
-  ContainerServiceInterface
-} from "../../../services/container/container.service";
+import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
 
 @Component({
   selector: "app-token-table-self-service",

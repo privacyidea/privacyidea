@@ -1,29 +1,11 @@
-import {
-  HttpClient,
-  HttpErrorResponse,
-  HttpParams,
-  httpResource,
-  HttpResourceRef
-} from "@angular/common/http";
-import {
-  computed,
-  effect,
-  inject,
-  Injectable,
-  linkedSignal,
-  Signal,
-  signal,
-  WritableSignal
-} from "@angular/core";
+import { HttpClient, HttpErrorResponse, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
+import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import { forkJoin, Observable, Subject, switchMap, throwError, timer } from "rxjs";
 import { catchError, shareReplay, takeUntil, takeWhile } from "rxjs/operators";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import {
-  TokenComponent,
-  TokenTypeOption as TokenTypeKey
-} from "../../components/token/token.component";
+import { TokenComponent, TokenTypeOption as TokenTypeKey } from "../../components/token/token.component";
 import {
   EnrollmentResponse,
   TokenApiPayloadMapper,
@@ -31,10 +13,7 @@ import {
 } from "../../mappers/token-api-payload/_token-api-payload.mapper";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { LocalService, LocalServiceInterface } from "../local/local.service";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../notification/notification.service";
+import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import { ROUTE_PATHS } from "../../app.routes";
 
 const apiFilter = [

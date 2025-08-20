@@ -1,10 +1,6 @@
 import { Component, EventEmitter, inject, OnInit, Output, signal } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms";
-import {
-  Tokens,
-  TokenService,
-  TokenServiceInterface
-} from "../../../../services/token/token.service";
+import { Tokens, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
 import { MatDialogRef } from "@angular/material/dialog";
 import { lastValueFrom } from "rxjs";

@@ -44,22 +44,13 @@ import { MatError, MatFormField, MatHint, MatLabel, MatSuffix } from "@angular/m
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
-import {
-  ContainerService,
-  ContainerServiceInterface
-} from "../../../services/container/container.service";
+import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../../../services/notification/notification.service";
+import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { UserData, UserService, UserServiceInterface } from "../../../services/user/user.service";
-import {
-  VersioningService,
-  VersioningServiceInterface
-} from "../../../services/version/version.service";
+import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
 import { EnrollApplspecComponent } from "./enroll-asp/enroll-applspec.component";
 import { EnrollCertificateComponent } from "./enroll-certificate/enroll-certificate.component";
 import { EnrollDaypasswordComponent } from "./enroll-daypassword/enroll-daypassword.component";
@@ -87,16 +78,9 @@ import { EnrollWebauthnComponent } from "./enroll-webauthn/enroll-webauthn.compo
 import { EnrollYubicoComponent } from "./enroll-yubico/enroll-yubico.component";
 import { EnrollYubikeyComponent } from "./enroll-yubikey/enroll-yubikey.component";
 
-import {
-  MAT_TOOLTIP_DEFAULT_OPTIONS,
-  MatTooltipDefaultOptions,
-  MatTooltipModule
-} from "@angular/material/tooltip";
+import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipDefaultOptions, MatTooltipModule } from "@angular/material/tooltip";
 import { lastValueFrom, Observable } from "rxjs";
-import {
-  EnrollmentResponse,
-  TokenEnrollmentData
-} from "../../../mappers/token-api-payload/_token-api-payload.mapper";
+import { EnrollmentResponse, TokenEnrollmentData } from "../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 

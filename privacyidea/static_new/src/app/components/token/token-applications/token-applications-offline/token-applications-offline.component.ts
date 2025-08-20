@@ -7,19 +7,13 @@ import { MatPaginatorModule } from "@angular/material/paginator";
 import { MatSortModule } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTabsModule } from "@angular/material/tabs";
-import {
-  ContentService,
-  ContentServiceInterface
-} from "../../../../services/content/content.service";
+import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import {
   MachineService,
   MachineServiceInterface,
   TokenApplication
 } from "../../../../services/machine/machine.service";
-import {
-  TableUtilsService,
-  TableUtilsServiceInterface
-} from "../../../../services/table-utils/table-utils.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
 import { KeywordFilterComponent } from "../../../shared/keyword-filter/keyword-filter.component";

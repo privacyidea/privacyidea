@@ -4,10 +4,7 @@ import { ContainerTabComponent } from "./container-tab.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
-import {
-  BrowserAnimationsModule,
-  provideNoopAnimations
-} from "@angular/platform-browser/animations";
+import { BrowserAnimationsModule, provideNoopAnimations } from "@angular/platform-browser/animations";
 import { ActivatedRoute } from "@angular/router";
 import { of } from "rxjs";
 
