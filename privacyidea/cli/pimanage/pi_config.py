@@ -627,11 +627,10 @@ importer_cmd.name = "importer"
 importer_cmd.epilog = "This command is deprecated. Please use 'pi-manage config import' instead."
 config_cli.add_command(importer_cmd)
 
-
 exp_fmt_dict = {
-    'python': str,
     'json': partial(json.dumps, indent=2),
-    'yaml': yaml.safe_dump}
+    'yaml': yaml.safe_dump
+}
 
 
 @config_cli.command("export")
