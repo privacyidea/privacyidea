@@ -162,7 +162,11 @@ class LibPolicyTestCase(MyTestCase):
     def test_04_user_does_not_exist(self):
         user = User("MisterX", realm="NoRealm")
         passw = "wrongPW"
-        options = {}
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
+        options = {"g": g}
+
         # A non-existing user will fail to authenticate without a policy
         self.assertRaises(UserError, auth_user_does_not_exist,
                           check_user_pass, user, passw, options)
@@ -171,10 +175,6 @@ class LibPolicyTestCase(MyTestCase):
         set_policy(name="pol1",
                    scope=SCOPE.AUTH,
                    action=PolicyAction.PASSNOUSER)
-        g = FakeFlaskG()
-        g.policy_object = PolicyClass()
-        g.audit_object = FakeAudit()
-        options = {"g": g}
         rv = auth_user_does_not_exist(check_user_pass, user, passw,
                                       options=options)
         self.assertTrue(rv[0])

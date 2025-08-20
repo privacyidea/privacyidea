@@ -702,10 +702,9 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         };
 
         $scope.unassignUser = function () {
+            // only pass user id and resolver is enough and avoids errors if the user or realm does not exist anymore
             let params = {
                 container_serial: $scope.containerSerial,
-                user: fixUser($scope.containerOwner.user_name),
-                realm: $scope.containerOwner.user_realm,
                 user_id: $scope.containerOwner.user_id,
                 resolver: $scope.containerOwner.user_resolver
             }

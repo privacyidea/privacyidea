@@ -1,13 +1,9 @@
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData,
-  TokenEnrollmentPayload,
-} from './_token-api-payload.mapper';
-import { Injectable } from '@angular/core';
+import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import { Injectable } from "@angular/core";
 
 // Interface for DayPassword-specific enrollment data
 export interface DaypasswordEnrollmentData extends TokenEnrollmentData {
-  type: 'daypassword';
+  type: "daypassword";
   otpKey?: string;
   otpLength?: number;
   hashAlgorithm?: string;
@@ -22,10 +18,9 @@ export interface DaypasswordEnrollmentPayload extends TokenEnrollmentPayload {
   timeStep?: number;
 }
 
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: "root" })
 export class DaypasswordApiPayloadMapper
-  implements TokenApiPayloadMapper<DaypasswordEnrollmentData>
-{
+  implements TokenApiPayloadMapper<DaypasswordEnrollmentData> {
   toApiPayload(data: DaypasswordEnrollmentData): DaypasswordEnrollmentPayload {
     const payload: DaypasswordEnrollmentPayload = {
       type: data.type,
@@ -41,7 +36,7 @@ export class DaypasswordApiPayloadMapper
       otpkey: data.otpKey,
       otplen: data.otpLength !== undefined ? Number(data.otpLength) : undefined,
       hashlib: data.hashAlgorithm,
-      timeStep: data.timeStep !== undefined ? Number(data.timeStep) : undefined,
+      timeStep: data.timeStep !== undefined ? Number(data.timeStep) : undefined
     };
 
     if (payload.otpkey === undefined) delete payload.otpkey;

@@ -1,13 +1,9 @@
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData,
-  TokenEnrollmentPayload,
-} from './_token-api-payload.mapper';
-import { Injectable } from '@angular/core';
+import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import { Injectable } from "@angular/core";
 
 // Interface for Indexed Secret-specific enrollment data
 export interface IndexedSecretEnrollmentData extends TokenEnrollmentData {
-  type: 'indexedsecret';
+  type: "indexedsecret";
   otpKey?: string;
 }
 
@@ -15,13 +11,10 @@ export interface IndexedSecretEnrollmentPayload extends TokenEnrollmentPayload {
   otpkey?: string;
 }
 
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: "root" })
 export class IndexedSecretApiPayloadMapper
-  implements TokenApiPayloadMapper<IndexedSecretEnrollmentData>
-{
-  toApiPayload(
-    data: IndexedSecretEnrollmentData,
-  ): IndexedSecretEnrollmentPayload {
+  implements TokenApiPayloadMapper<IndexedSecretEnrollmentData> {
+  toApiPayload(data: IndexedSecretEnrollmentData): IndexedSecretEnrollmentPayload {
     const payload: IndexedSecretEnrollmentPayload = {
       type: data.type,
       description: data.description,
@@ -30,7 +23,7 @@ export class IndexedSecretApiPayloadMapper
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
       pin: data.pin,
-      otpkey: data.otpKey,
+      otpkey: data.otpKey
     };
 
     if (payload.otpkey === undefined) {

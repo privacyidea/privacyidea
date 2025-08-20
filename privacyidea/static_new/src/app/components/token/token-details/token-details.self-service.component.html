@@ -1,40 +1,46 @@
-<div aria-label="Details"
-     class="details-container" appScrollToTop>
+<div
+  aria-label="Details"
+  class="details-container" appScrollToTop>
   <div class="details-flex-layout flex-column">
     <div class="details-header">
       <h3>Details for Token: </h3>
       <h3 style="color: var(--mat-sys-primary)"> {{ tokenSerial() }} </h3>
       <app-copy-button [copyText]="tokenSerial()"></app-copy-button>
     </div>
-    <div [ngClass]="[
+    <div
+      [ngClass]="[
         overflowService.isWidthOverflowing('body', 1310)
           ? 'flex-column'
           : 'flex-row',
       ]"
-         class="details-flex-layout">
+      class="details-flex-layout">
       <div>
-        <table [dataSource]="tokenDetailData()"
-               aria-label="Token Details Data Table"
-               class="details-table"
-               mat-table>
+        <table
+          [dataSource]="tokenDetailData()"
+          aria-label="Token Details Data Table"
+          class="details-table"
+          mat-table>
           <ng-container matColumnDef="key">
-            <td *matCellDef="let element"
-                class="details-key-row"
-                mat-cell>{{ element.keyMap.label }}
+            <td
+              *matCellDef="let element"
+              class="details-key-row"
+              mat-cell>{{ element.keyMap.label }}
             </td>
           </ng-container>
           <ng-container matColumnDef="value">
-            <td *matCellDef="let element"
-                [ngClass]="tableUtilsService.getTdClassForKey(element.keyMap.key)"
-                mat-cell>
+            <td
+              *matCellDef="let element"
+              [ngClass]="tableUtilsService.getTdClassForKey(element.keyMap.key)"
+              mat-cell>
               @switch (element.keyMap.key) {
                 @case ("container_serial") {
                   @if (element.isEditing()) {
                     <mat-form-field class="width-288px container-form-field">
                       <mat-label>Enter Container</mat-label>
-                      <input matInput
-                             [(ngModel)]="containerService.selectedContainer"
-                             [matAutocomplete]="containerAuto" />
+                      <input
+                        matInput
+                        [(ngModel)]="containerService.selectedContainer"
+                        [matAutocomplete]="containerAuto"/>
                       <mat-autocomplete #containerAuto="matAutocomplete">
                         @for (option of containerService.filteredContainerOptions();
                           track option) {
@@ -45,9 +51,11 @@
                   } @else {
                     <div class="flex ali-center">
                       @if (containerService.containerBelongsToUser(element.value)) {
-                        <a attr.aria-label="{{ element.keyMap.label }} Link"
-                           (click)="contentService.containerSelected(element.value)">
-                          {{ element.value }} </a>
+                        <a
+                          attr.aria-label="{{ element.keyMap.label }} Link"
+                          (click)="contentService.containerSelected(element.value)">
+                          {{ element.value }}
+                        </a>
                       } @else {
                         {{ element.value }}
                       }
@@ -61,13 +69,15 @@
                   @if (element.isEditing()) {
                     <mat-form-field class="width-18rem">
                       <mat-label>Select Realms</mat-label>
-                      <mat-select [(ngModel)]="realmService.selectedRealms"
-                                  multiple>
+                      <mat-select
+                        [(ngModel)]="realmService.selectedRealms"
+                        multiple>
                         @for (option of realmService.realmOptions();
                           track option) {
                           @if (option === userRealm) {
-                            <mat-option value="{{ option }}"
-                                        disabled>{{ option }}
+                            <mat-option
+                              value="{{ option }}"
+                              disabled>{{ option }}
                             </mat-option>
                           } @else {
                             <mat-option value="{{ option }}">{{ option }}
@@ -77,8 +87,9 @@
                       </mat-select>
                     </mat-form-field>
                   } @else {
-                    <div class="details-scrollable-container"
-                         [ngClass]="{ 'details-list': element.value.length > 2 }">
+                    <div
+                      class="details-scrollable-container"
+                      [ngClass]="{ 'details-list': element.value.length > 2 }">
                       @for (realm of element.value; track realm) {
                         <mat-list-item class="height-auto">
                           <span class="font-14">• {{ realm }}</span>
@@ -91,12 +102,14 @@
                   @if (element.isEditing()) {
                     <mat-form-field class="width-18rem">
                       <mat-label>Select Token Group</mat-label>
-                      <mat-select [(ngModel)]="selectedTokengroup"
-                                  multiple>
+                      <mat-select
+                        [(ngModel)]="selectedTokengroup"
+                        multiple>
                         @for (option of tokengroupOptions(); track option) {
                           @if (option === userRealm) {
-                            <mat-option value="{{ option }}"
-                                        disabled>{{ option }}
+                            <mat-option
+                              value="{{ option }}"
+                              disabled>{{ option }}
                             </mat-option>
                           } @else {
                             <mat-option value="{{ option }}">{{ option }}
@@ -106,7 +119,8 @@
                       </mat-select>
                     </mat-form-field>
                   } @else {
-                    <div [ngClass]="{
+                    <div
+                      [ngClass]="{
                         'details-scrollable-container': true,
                         'details-list': element.value.length > 2,
                       }">
@@ -121,11 +135,12 @@
                 @case ("description") {
                   @if (element.isEditing()) {
                     <mat-form-field class="width-288px description">
-                      <textarea matInput
-                                rows="4"
-                                [maxlength]="80"
-                                [(ngModel)]="element.value"
-                                placeholder="Enter description"></textarea>
+                      <textarea
+                        matInput
+                        rows="4"
+                        [maxlength]="80"
+                        [(ngModel)]="element.value"
+                        placeholder="Enter description"></textarea>
                     </mat-form-field>
                   } @else {
                     <div class="details-description-div">
@@ -138,21 +153,25 @@
                 @default {
                   @if (element.isEditing() && isNumberElement(element.keyMap.key)) {
                     <mat-form-field class="width-18rem">
-                      <input type="number"
-                             matInput
-                             [(ngModel)]="element.value" />
+                      <input
+                        type="number"
+                        matInput
+                        [(ngModel)]="element.value"/>
                     </mat-form-field>
                   } @else if (element.isEditing()) {
                     <mat-form-field class="width-18rem">
-                      <textarea matInput
-                                rows="1"
-                                [(ngModel)]="element.value"></textarea>
+                      <textarea
+                        matInput
+                        rows="1"
+                        [(ngModel)]="element.value"></textarea>
                     </mat-form-field>
                   } @else {
-                    <div [ngClass]="[
+                    <div
+                      [ngClass]="[
                         tableUtilsService.getDivClassForKey(element.keyMap.key),
                       ]">
-                      <span [ngClass]="[
+                      <span
+                        [ngClass]="[
                           tableUtilsService.getSpanClassForKey({
                             key: element.keyMap.key,
                             value: element.value,
@@ -174,21 +193,24 @@
             </td>
           </ng-container>
           <ng-container matColumnDef="edit">
-            <td *matCellDef="let element"
-                class="edit-column-cell"
-                mat-cell>
+            <td
+              *matCellDef="let element"
+              class="edit-column-cell"
+              mat-cell>
               <div class="ali-center">
                 @if (element.keyMap.key === "active" && !isAnyEditingOrRevoked()) {
                   <div class="edit-button-container">
-                    <button mat-icon-button
-                            (click)="toggleActive(element.value)">
+                    <button
+                      mat-icon-button
+                      (click)="toggleActive(element.value)">
                       <mat-icon>{{ tokenIsActive() ? "lock" : "play_circle" }}</mat-icon>
                     </button>
                   </div>
                 } @else if (element.keyMap.key === "failcount" && !isAnyEditingOrRevoked()) {
                   <div class="edit-button-container">
-                    <button mat-icon-button
-                            (click)="resetFailCount()">
+                    <button
+                      mat-icon-button
+                      (click)="resetFailCount()">
                       <mat-icon> lock_reset</mat-icon>
                     </button>
                   </div>
@@ -196,50 +218,57 @@
                 !isAnyEditingOrRevoked() &&
                 element.value !== '') {
                   <div class="edit-button-container">
-                    <button mat-icon-button
-                            class="red"
-                            (click)="deleteContainer()">
+                    <button
+                      mat-icon-button
+                      class="red"
+                      (click)="deleteContainer()">
                       <mat-icon>folder_delete</mat-icon>
                     </button>
                   </div>
                 } @else if (isEditableElement(element.keyMap.key)) {
-                  <app-edit-buttons [toggleEdit]="toggleTokenEdit.bind(this)"
-                                    [saveEdit]="saveTokenEdit.bind(this)"
-                                    [cancelEdit]="cancelTokenEdit.bind(this)"
-                                    [shouldHideEdit]="isAnyEditingOrRevoked"
-                                    [isEditingUser]="isEditingUser"
-                                    [isEditingInfo]="isEditingInfo"
-                                    [element]="element"></app-edit-buttons>
+                  <app-edit-buttons
+                    [toggleEdit]="toggleTokenEdit.bind(this)"
+                    [saveEdit]="saveTokenEdit.bind(this)"
+                    [cancelEdit]="cancelTokenEdit.bind(this)"
+                    [shouldHideEdit]="isAnyEditingOrRevoked"
+                    [isEditingUser]="isEditingUser"
+                    [isEditingInfo]="isEditingInfo"
+                    [element]="element"></app-edit-buttons>
                 }
               </div>
             </td>
           </ng-container>
-          <tr *matRowDef="let row; columns: ['key', 'value', 'edit']"
-              class="height-52"
-              mat-row></tr>
+          <tr
+            *matRowDef="let row; columns: ['key', 'value', 'edit']"
+            class="height-52"
+            mat-row></tr>
         </table>
       </div>
-      <div [ngClass]="[
+      <div
+        [ngClass]="[
             overflowService.isWidthOverflowing('.token-layout', 1580)
               ? 'flex-column'
               : 'flex-row',
           ]">
         <div class="flex-column">
-          <app-token-details-user-self-service [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
-                                               [isEditingInfo]="isEditingInfo"
-                                               [isEditingUser]="isEditingUser"
-                                               [tokenSerial]="tokenSerial"
-                                               [userData]="userData"
-                                               class="flex"></app-token-details-user-self-service>
-          <app-token-details-info [detailData]="tokenDetailData"
-                                  [infoData]="infoData"
-                                  [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
-                                  [isEditingInfo]="isEditingInfo"
-                                  [isEditingUser]="isEditingUser"></app-token-details-info>
+          <app-token-details-user-self-service
+            [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
+            [isEditingInfo]="isEditingInfo"
+            [isEditingUser]="isEditingUser"
+            [tokenSerial]="tokenSerial"
+            [userData]="userData"
+            class="flex"></app-token-details-user-self-service>
+          <app-token-details-info
+            [detailData]="tokenDetailData"
+            [infoData]="infoData"
+            [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
+            [isEditingInfo]="isEditingInfo"
+            [isEditingUser]="isEditingUser"></app-token-details-info>
         </div>
-        <app-token-details-actions [repeatPinValue]="repeatPinValue"
-                                   [setPinValue]="setPinValue"
-                                   [tokenType]="tokenType"></app-token-details-actions>
+        <app-token-details-actions
+          [repeatPinValue]="repeatPinValue"
+          [setPinValue]="setPinValue"
+          [tokenType]="tokenType"></app-token-details-actions>
       </div>
     </div>
   </div>

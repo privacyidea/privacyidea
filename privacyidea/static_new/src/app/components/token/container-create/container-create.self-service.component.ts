@@ -1,3 +1,4 @@
+import { NgClass } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButton, MatIconButton } from '@angular/material/button';
@@ -18,7 +19,7 @@ import { ScrollToTopDirective } from '../../shared/directives/app-scroll-to-top.
 import { ContainerCreateComponent } from './container-create.component';
 
 @Component({
-  selector: 'app-container-create-self-service',
+  selector: "app-container-create-self-service",
   imports: [
     MatButton,
     MatFormField,
@@ -37,8 +38,10 @@ import { ContainerCreateComponent } from './container-create.component';
     MatExpansionPanelHeader,
     MatTooltip,
     ScrollToTopDirective,
+    NgClass
   ],
-  templateUrl: './container-create.self-service.component.html',
-  styleUrl: './container-create.component.scss',
+  templateUrl: "./container-create.self-service.component.html",
+  styleUrl: "./container-create.component.scss"
 })
-export class ContainerCreateSelfServiceComponent extends ContainerCreateComponent {}
+export class ContainerCreateSelfServiceComponent extends ContainerCreateComponent {
+}

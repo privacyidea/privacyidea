@@ -70,32 +70,32 @@ import { TokenDetailsUserComponent } from './token-details-user/token-details-us
 import { TokenSshMachineAssignDialogComponent } from './token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog';
 
 export const tokenDetailsKeyMap = [
-  { key: 'tokentype', label: 'Type' },
-  { key: 'active', label: 'Status' },
-  { key: 'maxfail', label: 'Max Count' },
-  { key: 'failcount', label: 'Fail Count' },
-  { key: 'rollout_state', label: 'Rollout State' },
-  { key: 'otplen', label: 'OTP Length' },
-  { key: 'count_window', label: 'Count Window' },
-  { key: 'sync_window', label: 'Sync Window' },
-  { key: 'count', label: 'Count' },
-  { key: 'description', label: 'Description' },
-  { key: 'realms', label: 'Token Realms' },
-  { key: 'tokengroup', label: 'Token Groups' },
-  { key: 'container_serial', label: 'Container Serial' },
+  { key: "tokentype", label: "Type" },
+  { key: "active", label: "Status" },
+  { key: "maxfail", label: "Max Count" },
+  { key: "failcount", label: "Fail Count" },
+  { key: "rollout_state", label: "Rollout State" },
+  { key: "otplen", label: "OTP Length" },
+  { key: "count_window", label: "Count Window" },
+  { key: "sync_window", label: "Sync Window" },
+  { key: "count", label: "Count" },
+  { key: "description", label: "Description" },
+  { key: "realms", label: "Token Realms" },
+  { key: "tokengroup", label: "Token Groups" },
+  { key: "container_serial", label: "Container Serial" }
 ];
 
 export const userDetailsKeyMap = [
-  { key: 'user_realm', label: 'User Realm' },
-  { key: 'username', label: 'User' },
-  { key: 'resolver', label: 'Resolver' },
-  { key: 'user_id', label: 'User ID' },
+  { key: "user_realm", label: "User Realm" },
+  { key: "username", label: "User" },
+  { key: "resolver", label: "Resolver" },
+  { key: "user_id", label: "User ID" }
 ];
 
-export const infoDetailsKeyMap = [{ key: 'info', label: 'Information' }];
+export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
 
 @Component({
-  selector: 'app-token-details',
+  selector: "app-token-details",
   standalone: true,
   imports: [
     MatCell,
@@ -121,8 +121,8 @@ export const infoDetailsKeyMap = [{ key: 'info', label: 'Information' }];
     CopyButtonComponent,
     ScrollToTopDirective,
   ],
-  templateUrl: './token-details.component.html',
-  styleUrls: ['./token-details.component.scss'],
+  templateUrl: "./token-details.component.html",
+  styleUrls: ["./token-details.component.scss"]
 })
 export class TokenDetailsComponent {
   protected readonly matDialog: MatDialog = inject(MatDialog);
@@ -145,8 +145,8 @@ export class TokenDetailsComponent {
   tokenSerial = this.tokenService.tokenSerial;
   isEditingUser = signal(false);
   isEditingInfo = signal(false);
-  setPinValue = signal('');
-  repeatPinValue = signal('');
+  setPinValue = signal("");
+  repeatPinValue = signal("");
 
   tokenDetailResource = this.tokenService.tokenDetailResource;
   tokenDetails: WritableSignal<TokenDetails> = linkedSignal({
@@ -155,30 +155,30 @@ export class TokenDetailsComponent {
       return res && res.result?.value?.tokens[0]
         ? (res.result?.value.tokens[0] as TokenDetails)
         : {
-            active: false,
-            container_serial: '',
-            count: 0,
-            count_window: 0,
-            description: '',
-            failcount: 0,
-            id: 0,
-            info: {},
-            locked: false,
-            maxfail: 0,
-            otplen: 0,
-            realms: [],
-            resolver: '',
-            revoked: false,
-            rollout_state: '',
-            serial: '',
-            sync_window: 0,
-            tokengroup: [],
-            tokentype: 'hotp',
-            user_id: '',
-            user_realm: '',
-            username: '',
-          };
-    },
+          active: false,
+          container_serial: "",
+          count: 0,
+          count_window: 0,
+          description: "",
+          failcount: 0,
+          id: 0,
+          info: {},
+          locked: false,
+          maxfail: 0,
+          otplen: 0,
+          realms: [],
+          resolver: "",
+          revoked: false,
+          rollout_state: "",
+          serial: "",
+          sync_window: 0,
+          tokengroup: [],
+          tokentype: "hotp",
+          user_id: "",
+          user_realm: "",
+          username: ""
+        };
+    }
   });
   tokenDetailData = linkedSignal({
     source: this.tokenDetails,
@@ -186,18 +186,18 @@ export class TokenDetailsComponent {
       if (!details) {
         return tokenDetailsKeyMap.map((detail) => ({
           keyMap: detail,
-          value: '',
-          isEditing: signal(false),
+          value: "",
+          isEditing: signal(false)
         }));
       }
       return tokenDetailsKeyMap
         .map((detail) => ({
           keyMap: detail,
           value: details[detail.key as keyof TokenDetails],
-          isEditing: signal(false),
+          isEditing: signal(false)
         }))
         .filter((detail) => detail.value !== undefined);
-    },
+    }
   });
   infoData = linkedSignal({
     source: this.tokenDetails,
@@ -205,18 +205,18 @@ export class TokenDetailsComponent {
       if (!details) {
         return infoDetailsKeyMap.map((detail) => ({
           keyMap: detail,
-          value: '',
-          isEditing: signal(false),
+          value: "",
+          isEditing: signal(false)
         }));
       }
       return infoDetailsKeyMap
         .map((detail) => ({
           keyMap: detail,
           value: details[detail.key as keyof TokenDetails],
-          isEditing: signal(false),
+          isEditing: signal(false)
         }))
         .filter((detail) => detail.value !== undefined);
-    },
+    }
   });
   userData = linkedSignal({
     source: this.tokenDetails,
@@ -224,26 +224,26 @@ export class TokenDetailsComponent {
       if (!details) {
         return userDetailsKeyMap.map((detail) => ({
           keyMap: detail,
-          value: '',
-          isEditing: signal(false),
+          value: "",
+          isEditing: signal(false)
         }));
       }
       return userDetailsKeyMap
         .map((detail) => ({
           keyMap: detail,
           value: details[detail.key as keyof TokenDetails],
-          isEditing: signal(false),
+          isEditing: signal(false)
         }))
         .filter((detail) => detail.value !== undefined);
-    },
+    }
   });
   tokengroupOptions = signal<string[]>([]);
   selectedTokengroup = signal<string[]>([]);
   tokenType = linkedSignal({
     source: this.tokenDetails,
-    computation: () => this.tokenDetails()?.tokentype ?? '',
+    computation: () => this.tokenDetails()?.tokentype ?? ""
   });
-  userRealm = '';
+  userRealm = "";
   maxfail = 0;
   isAnyEditingOrRevoked = computed(() => {
     return (
@@ -261,12 +261,12 @@ export class TokenDetailsComponent {
       this.tokenIsRevoked.set(this.tokenDetails().revoked);
       this.maxfail = this.tokenDetails().maxfail;
       this.containerService.selectedContainer.set(
-        this.tokenDetails().container_serial,
+        this.tokenDetails().container_serial
       );
       this.realmService.selectedRealms.set(this.tokenDetails().realms);
       this.userRealm =
-        this.userData().find((detail) => detail.keyMap.key === 'user_realm')
-          ?.value || '';
+        this.userData().find((detail) => detail.keyMap.key === "user_realm")
+          ?.value || "";
     });
   }
 
@@ -274,7 +274,7 @@ export class TokenDetailsComponent {
     this.tokenService.resetFailCount(this.tokenSerial()).subscribe({
       next: () => {
         this.tokenDetailResource.reload();
-      },
+      }
     });
   }
 
@@ -285,16 +285,16 @@ export class TokenDetailsComponent {
 
   saveTokenEdit(element: EditableElement<string>) {
     switch (element.keyMap.key) {
-      case 'container_serial':
+      case "container_serial":
         this.containerService.selectedContainer.set(
-          this.containerService.selectedContainer().trim() ?? null,
+          this.containerService.selectedContainer().trim() ?? null
         );
         this.saveContainer();
         break;
-      case 'tokengroup':
+      case "tokengroup":
         this.saveTokengroup(this.selectedTokengroup());
         break;
-      case 'realms':
+      case "realms":
         this.saveRealms();
         break;
       default:
@@ -306,7 +306,7 @@ export class TokenDetailsComponent {
 
   toggleTokenEdit(element: EditableElement): void {
     switch (element.keyMap.key) {
-      case 'tokengroup':
+      case "tokengroup":
         if (this.tokengroupOptions().length === 0) {
           this.tokenService.getTokengroups().subscribe({
             next: (response) => {
@@ -314,10 +314,10 @@ export class TokenDetailsComponent {
               this.tokengroupOptions.set(Object.keys(tokengroups));
               this.selectedTokengroup.set(
                 this.tokenDetailData().find(
-                  (detail) => detail.keyMap.key === 'tokengroup',
-                )?.value,
+                  (detail) => detail.keyMap.key === "tokengroup"
+                )?.value
               );
-            },
+            }
           });
         }
         break;
@@ -331,7 +331,7 @@ export class TokenDetailsComponent {
       .subscribe({
         next: () => {
           this.tokenDetailResource.reload();
-        },
+        }
       });
   }
 
@@ -339,12 +339,12 @@ export class TokenDetailsComponent {
     this.containerService
       .assignContainer(
         this.tokenSerial(),
-        this.containerService.selectedContainer(),
+        this.containerService.selectedContainer()
       )
       .subscribe({
         next: () => {
           this.tokenDetailResource.reload();
-        },
+        }
       });
   }
 
@@ -352,41 +352,41 @@ export class TokenDetailsComponent {
     this.containerService
       .unassignContainer(
         this.tokenSerial(),
-        this.containerService.selectedContainer(),
+        this.containerService.selectedContainer()
       )
       .subscribe({
         next: () => {
           this.tokenDetailResource.reload();
-        },
+        }
       });
   }
 
   isEditableElement(key: string) {
     const role = this.authService.role();
-    if (role === 'admin') {
+    if (role === "admin") {
       return (
-        key === 'maxfail' ||
-        key === 'count_window' ||
-        key === 'sync_window' ||
-        key === 'description' ||
-        key === 'info' ||
-        key === 'realms' ||
-        key === 'tokengroup' ||
-        key === 'container_serial'
+        key === "maxfail" ||
+        key === "count_window" ||
+        key === "sync_window" ||
+        key === "description" ||
+        key === "info" ||
+        key === "realms" ||
+        key === "tokengroup" ||
+        key === "container_serial"
       );
     } else {
-      return key === 'description' || key === 'container_serial';
+      return key === "description" || key === "container_serial";
     }
   }
 
   isNumberElement(key: string) {
-    return key === 'maxfail' || key === 'count_window' || key === 'sync_window';
+    return key === "maxfail" || key === "count_window" || key === "sync_window";
   }
 
   containerSelected(containerSerial: string) {
     this.isProgrammaticTabChange.set(true);
     this.router.navigateByUrl(
-      ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial,
+      ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial
     );
     this.containerSerial.set(containerSerial);
   }
@@ -397,28 +397,28 @@ export class TokenDetailsComponent {
         tokenSerial: this.tokenSerial(),
         tokenDetails: this.tokenDetails(),
         containerSerial: this.containerSerial(),
-        tokenType: this.tokenType(),
-      },
+        tokenType: this.tokenType()
+      }
     });
   }
 
   private resetEdit(type: string): void {
     switch (type) {
-      case 'container_serial':
-        this.containerService.selectedContainer.set('');
+      case "container_serial":
+        this.containerService.selectedContainer.set("");
         break;
-      case 'tokengroup':
+      case "tokengroup":
         this.selectedTokengroup.set(
           this.tokenDetailData().find(
-            (detail) => detail.keyMap.key === 'tokengroup',
-          )?.value,
+            (detail) => detail.keyMap.key === "tokengroup"
+          )?.value
         );
         break;
-      case 'realms':
+      case "realms":
         this.realmService.selectedRealms.set(
           this.tokenDetailData().find(
-            (detail) => detail.keyMap.key === 'realms',
-          )?.value,
+            (detail) => detail.keyMap.key === "realms"
+          )?.value
         );
         break;
       default:
@@ -433,7 +433,7 @@ export class TokenDetailsComponent {
       .subscribe({
         next: () => {
           this.tokenDetailResource.reload();
-        },
+        }
       });
   }
 
@@ -441,7 +441,7 @@ export class TokenDetailsComponent {
     this.tokenService.setTokengroup(this.tokenSerial(), value).subscribe({
       next: () => {
         this.tokenDetailResource.reload();
-      },
+      }
     });
   }
 }

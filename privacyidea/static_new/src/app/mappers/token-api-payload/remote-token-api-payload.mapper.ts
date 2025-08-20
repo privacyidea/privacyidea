@@ -1,13 +1,9 @@
-import { RemoteServer } from '../../services/privavyidea-server/privacyidea-server.service';
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData,
-  TokenEnrollmentPayload,
-} from './_token-api-payload.mapper';
-import { Injectable } from '@angular/core';
+import { RemoteServer } from "../../services/privavyidea-server/privacyidea-server.service";
+import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import { Injectable } from "@angular/core";
 
 export interface RemoteEnrollmentData extends TokenEnrollmentData {
-  type: 'remote';
+  type: "remote";
   remoteServer: RemoteServer | null;
   remoteSerial: string;
   remoteUser: string;
@@ -17,18 +13,16 @@ export interface RemoteEnrollmentData extends TokenEnrollmentData {
 }
 
 export interface RemoteEnrollmentPayload extends TokenEnrollmentPayload {
-  'remote.server_id': string | null;
-  'remote.serial': string;
-  'remote.user': string;
-  'remote.realm': string;
-  'remote.resolver': string;
-  'remote.local_checkpin': boolean;
+  "remote.server_id": string | null;
+  "remote.serial": string;
+  "remote.user": string;
+  "remote.realm": string;
+  "remote.resolver": string;
+  "remote.local_checkpin": boolean;
 }
 
-@Injectable({ providedIn: 'root' })
-export class RemoteApiPayloadMapper
-  implements TokenApiPayloadMapper<RemoteEnrollmentData>
-{
+@Injectable({ providedIn: "root" })
+export class RemoteApiPayloadMapper implements TokenApiPayloadMapper<RemoteEnrollmentData> {
   toApiPayload(data: RemoteEnrollmentData): RemoteEnrollmentPayload {
     return {
       type: data.type,
@@ -38,12 +32,12 @@ export class RemoteApiPayloadMapper
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
       pin: data.pin,
-      'remote.server_id': data.remoteServer?.id ?? null,
-      'remote.serial': data.remoteSerial,
-      'remote.user': data.remoteUser,
-      'remote.realm': data.remoteRealm,
-      'remote.resolver': data.remoteResolver,
-      'remote.local_checkpin': data.checkPinLocally,
+      "remote.server_id": data.remoteServer?.id ?? null,
+      "remote.serial": data.remoteSerial,
+      "remote.user": data.remoteUser,
+      "remote.realm": data.remoteRealm,
+      "remote.resolver": data.remoteResolver,
+      "remote.local_checkpin": data.checkPinLocally
     };
   }
 

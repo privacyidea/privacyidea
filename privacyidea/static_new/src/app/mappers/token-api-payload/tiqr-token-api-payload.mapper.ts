@@ -1,20 +1,15 @@
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData,
-  TokenEnrollmentPayload,
-} from './_token-api-payload.mapper';
-import { Injectable } from '@angular/core';
+import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import { Injectable } from "@angular/core";
 
 export interface TiqrEnrollmentData extends TokenEnrollmentData {
-  type: 'tiqr';
+  type: "tiqr";
 }
 
-export interface TiqrEnrollmentPayload extends TokenEnrollmentPayload {}
+export interface TiqrEnrollmentPayload extends TokenEnrollmentPayload {
+}
 
-@Injectable({ providedIn: 'root' })
-export class TiqrApiPayloadMapper
-  implements TokenApiPayloadMapper<TiqrEnrollmentData>
-{
+@Injectable({ providedIn: "root" })
+export class TiqrApiPayloadMapper implements TokenApiPayloadMapper<TiqrEnrollmentData> {
   toApiPayload(data: TiqrEnrollmentData): TiqrEnrollmentPayload {
     return {
       type: data.type,
@@ -23,7 +18,7 @@ export class TiqrApiPayloadMapper
       validity_period_start: data.validityPeriodStart,
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
-      pin: data.pin,
+      pin: data.pin
     };
   }
 

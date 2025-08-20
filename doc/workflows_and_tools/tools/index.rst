@@ -584,7 +584,7 @@ Example::
     pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' export
 
 ``--format``
-    The export format of the token list. The format can be 'csv', 'yaml' or 'pskc'.
+    The export format of the token list. The format can be 'pi', 'csv', 'yaml' or 'pskc'.
 
     Example::
 
@@ -596,6 +596,14 @@ Example::
     Example::
 
         pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' export --format CSV --b32
+
+``--file``
+    The file to export the tokens to. If not specified, the output will be printed to stdout.
+
+    Example::
+
+        pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' export --file /path/to/export
+
 
 set_tokenrealms
 ***************
@@ -679,6 +687,24 @@ Example::
     - ``'check_fail_soft'``:  skip tokens with invalid HMAC
     - ``'check_fail_hard'``: only import tokens if all HMAC are valid.
 
+privacyidea
+***********
+Imports token data from a privacyIDEA created with pi-tokenjanitor export_for_privacyidea.
+
+``file``
+    The path to the privacyIDEA file to import.
+
+    Example::
+
+        pi-tokenjanitor import privacyidea /path/to/privacyidea.txt
+
+``--key``
+    Specify the encryption key for the privacyIDEA file.
+
+    Example::
+
+        pi-tokenjanitor import privacyidea /path/to/privacyidea.txt --key myencryptionkey
+
 Update
 ~~~~~~
 This command can be used to update already existing token data with a given YAML file.
@@ -686,3 +712,4 @@ This command can be used to update already existing token data with a given YAML
 Example::
 
     pi-tokenjanitor update /path/to/yamlfile.yaml
+

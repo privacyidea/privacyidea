@@ -18,7 +18,7 @@ export class ScrollToTopDirective {
   @HostListener('scroll')
   onScroll() {
     const scrollContainer = this.el.nativeElement as HTMLElement;
-    const isScrolled = scrollContainer.scrollTop > 20;
+    const isScrolled = scrollContainer.scrollTop > 200;
 
     if (isScrolled && !this.isButtonVisible) {
       this.showButton();

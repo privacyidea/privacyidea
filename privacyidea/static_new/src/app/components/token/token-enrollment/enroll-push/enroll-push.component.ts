@@ -1,48 +1,29 @@
-import {
-  Component,
-  EventEmitter,
-  inject,
-  OnInit,
-  Output,
-  signal,
-} from '@angular/core';
-import {
-  FormControl,
-  FormGroup,
-  FormsModule,
-  ReactiveFormsModule,
-} from '@angular/forms';
-import {
-  Tokens,
-  TokenService,
-  TokenServiceInterface,
-} from '../../../../services/token/token.service';
+import { Component, EventEmitter, inject, OnInit, Output, signal } from "@angular/core";
+import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { Tokens, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
-import { MatDialogRef } from '@angular/material/dialog';
-import { lastValueFrom } from 'rxjs';
-import { PiResponse } from '../../../../app.component';
+import { MatDialogRef } from "@angular/material/dialog";
+import { lastValueFrom } from "rxjs";
+import { PiResponse } from "../../../../app.component";
 import {
   EnrollmentResponse,
-  TokenEnrollmentData,
-} from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
-import { PushApiPayloadMapper } from '../../../../mappers/token-api-payload/push-token-api-payload.mapper';
-import {
-  DialogService,
-  DialogServiceInterface,
-} from '../../../../services/dialog/dialog.service';
-import { TokenEnrollmentFirstStepDialogComponent } from '../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component';
-import { ReopenDialogFn } from '../token-enrollment.component';
+  TokenEnrollmentData
+} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+import { PushApiPayloadMapper } from "../../../../mappers/token-api-payload/push-token-api-payload.mapper";
+import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
+import { TokenEnrollmentFirstStepDialogComponent } from "../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
+import { ReopenDialogFn } from "../token-enrollment.component";
 
 export interface PushEnrollmentOptions extends TokenEnrollmentData {
-  type: 'push';
+  type: "push";
 }
 
 @Component({
-  selector: 'app-enroll-push',
+  selector: "app-enroll-push",
   standalone: true,
   imports: [ReactiveFormsModule, FormsModule],
-  templateUrl: './enroll-push.component.html',
-  styleUrl: './enroll-push.component.scss',
+  templateUrl: "./enroll-push.component.html",
+  styleUrl: "./enroll-push.component.scss"
 })
 export class EnrollPushComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -55,7 +36,7 @@ export class EnrollPushComponent implements OnInit {
 
   text = this.tokenService
     .tokenTypeOptions()
-    .find((type) => type.key === 'push')?.text;
+    .find((type) => type.key === "push")?.text;
 
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
@@ -73,17 +54,17 @@ export class EnrollPushComponent implements OnInit {
   }
 
   onClickEnroll = async (
-    basicOptions: TokenEnrollmentData,
+    basicOptions: TokenEnrollmentData
   ): Promise<EnrollmentResponse | null> => {
     const enrollmentData: PushEnrollmentOptions = {
       ...basicOptions,
-      type: 'push',
+      type: "push"
     };
     const initResponse = await lastValueFrom(
       this.tokenService.enrollToken({
         data: enrollmentData,
-        mapper: this.enrollmentMapper,
-      }),
+        mapper: this.enrollmentMapper
+      })
     ).catch(() => {
       return null;
     });
@@ -92,7 +73,7 @@ export class EnrollPushComponent implements OnInit {
     }
     const pollResponse = await this.pollTokenRolloutState(
       initResponse,
-      5000,
+      5000
     ).catch(() => {
       return null;
     });
@@ -105,7 +86,7 @@ export class EnrollPushComponent implements OnInit {
 
   private pollTokenRolloutState = (
     initResponse: EnrollmentResponse,
-    initDelay: number,
+    initDelay: number
   ): Promise<PiResponse<Tokens>> => {
     this._openStepOneDialog(initResponse)
       .afterClosed()
@@ -115,23 +96,23 @@ export class EnrollPushComponent implements OnInit {
       });
     const observable = this.tokenService.pollTokenRolloutState({
       tokenSerial: initResponse.detail.serial,
-      initDelay,
+      initDelay
     });
     observable.subscribe({
       next: (pollResponse) => {
         this.pollResponse.set(pollResponse);
         if (
-          pollResponse.result?.value?.tokens[0].rollout_state !== 'clientwait'
+          pollResponse.result?.value?.tokens[0].rollout_state !== "clientwait"
         ) {
           this.dialogService.closeTokenEnrollmentFirstStepDialog();
         }
-      },
+      }
     });
     return lastValueFrom(observable);
   };
 
   private _openStepOneDialog(
-    enrollmentResponse: EnrollmentResponse,
+    enrollmentResponse: EnrollmentResponse
   ): MatDialogRef<TokenEnrollmentFirstStepDialogComponent, any> {
     this.reopenDialogChange.emit(async () => {
       if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen) {
@@ -142,7 +123,7 @@ export class EnrollPushComponent implements OnInit {
     });
 
     return this.dialogService.openTokenEnrollmentFirstStepDialog({
-      data: { enrollmentResponse },
+      data: { enrollmentResponse }
     });
   }
 

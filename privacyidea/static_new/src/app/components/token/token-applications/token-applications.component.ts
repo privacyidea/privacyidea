@@ -9,7 +9,7 @@ import { TokenApplicationsOfflineComponent } from './token-applications-offline/
 import { TokenApplicationsSshComponent } from './token-applications-ssh/token-applications-ssh.component';
 
 @Component({
-  selector: 'app-token-applications',
+  selector: "app-token-applications",
   standalone: true,
   imports: [
     TokenApplicationsSshComponent,
@@ -17,8 +17,8 @@ import { TokenApplicationsSshComponent } from './token-applications-ssh/token-ap
     MatSelectModule,
     ScrollToTopDirective,
   ],
-  templateUrl: './token-applications.component.html',
-  styleUrls: ['./token-applications.component.scss'],
+  templateUrl: "./token-applications.component.html",
+  styleUrls: ["./token-applications.component.scss"]
 })
 export class TokenApplicationsComponent {
   private readonly machineService: MachineServiceInterface =

@@ -1,29 +1,13 @@
-import { NgClass } from '@angular/common';
-import {
-  Component,
-  inject,
-  linkedSignal,
-  ViewChild,
-  WritableSignal,
-} from '@angular/core';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import {
-  MatPaginator,
-  MatPaginatorModule,
-  PageEvent,
-} from '@angular/material/paginator';
-import { MatSort, MatSortModule, Sort } from '@angular/material/sort';
-import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import {
-  ContentService,
-  ContentServiceInterface,
-} from '../../../services/content/content.service';
-import {
-  TableUtilsService,
-  TableUtilsServiceInterface,
-} from '../../../services/table-utils/table-utils.service';
+import { NgClass } from "@angular/common";
+import { Component, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
+import { MatInputModule } from "@angular/material/input";
+import { MatPaginator, MatPaginatorModule, PageEvent } from "@angular/material/paginator";
+import { MatSort, MatSortModule, Sort } from "@angular/material/sort";
+import { MatTableDataSource, MatTableModule } from "@angular/material/table";
+import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import {
   Challenge,
   ChallengesService,
@@ -38,15 +22,15 @@ import { ScrollToTopDirective } from '../../shared/directives/app-scroll-to-top.
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
 
 const columnKeysMap = [
-  { key: 'timestamp', label: 'Timestamp' },
-  { key: 'serial', label: 'Serial' },
-  { key: 'transaction_id', label: 'Transaction ID' },
-  { key: 'expiration', label: 'Expiration' },
-  { key: 'otp_received', label: 'Received' },
+  { key: "timestamp", label: "Timestamp" },
+  { key: "serial", label: "Serial" },
+  { key: "transaction_id", label: "Transaction ID" },
+  { key: "expiration", label: "Expiration" },
+  { key: "otp_received", label: "Received" }
 ];
 
 @Component({
-  selector: 'app-challenges-table',
+  selector: "app-challenges-table",
   standalone: true,
   imports: [
     MatTableModule,
@@ -60,8 +44,8 @@ const columnKeysMap = [
     CopyButtonComponent,
     ScrollToTopDirective,
   ],
-  templateUrl: './challenges-table.component.html',
-  styleUrls: ['./challenges-table.component.scss'],
+  templateUrl: "./challenges-table.component.html",
+  styleUrls: ["./challenges-table.component.scss"]
 })
 export class ChallengesTableComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -89,7 +73,7 @@ export class ChallengesTableComponent {
         return res.result?.value?.count;
       }
       return prev?.value ?? 0;
-    },
+    }
   });
   challengesDataSource: WritableSignal<MatTableDataSource<Challenge>> =
     linkedSignal({
@@ -97,16 +81,16 @@ export class ChallengesTableComponent {
       computation: (challengesResource, previous) => {
         if (challengesResource) {
           return new MatTableDataSource(
-            challengesResource.result?.value?.challenges,
+            challengesResource.result?.value?.challenges
           );
         }
         return previous?.value ?? new MatTableDataSource<Challenge>([]);
-      },
+      }
     });
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
-  @ViewChild('filterInput', { static: true }) filterInput!: HTMLInputElement;
+  @ViewChild("filterInput", { static: true }) filterInput!: HTMLInputElement;
 
   onFilterChange(newFilter: string) {
     const recordsFromText = this.tableUtilsService.recordsFromText(newFilter);
@@ -124,7 +108,7 @@ export class ChallengesTableComponent {
   }
 
   serialClicked(element: { data: { type: string }; serial: string }): void {
-    if (element.data && element.data.type === 'container') {
+    if (element.data && element.data.type === "container") {
       this.contentService.containerSelected(element.serial);
     } else {
       this.contentService.tokenSelected(element.serial);

@@ -1,11 +1,11 @@
-import { AsyncPipe } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
-import { Component, inject } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { MatButton, MatIconButton } from '@angular/material/button';
-import { MatCheckbox } from '@angular/material/checkbox';
-import { MatOption } from '@angular/material/core';
-import { MatDialog } from '@angular/material/dialog';
+import { AsyncPipe } from "@angular/common";
+import { HttpClient } from "@angular/common/http";
+import { Component, inject } from "@angular/core";
+import { FormsModule } from "@angular/forms";
+import { MatButton, MatIconButton } from "@angular/material/button";
+import { MatCheckbox } from "@angular/material/checkbox";
+import { MatOption } from "@angular/material/core";
+import { MatDialog } from "@angular/material/dialog";
 import {
   MatAccordion,
   MatExpansionPanel,
@@ -50,7 +50,7 @@ import { ScrollToTopDirective } from '../../shared/directives/app-scroll-to-top.
 import { ContainerCreateComponent } from './container-create.component';
 
 @Component({
-  selector: 'app-container-create-wizard',
+  selector: "app-container-create-wizard",
   imports: [
     MatButton,
     MatFormField,
@@ -70,8 +70,8 @@ import { ContainerCreateComponent } from './container-create.component';
     AsyncPipe,
     ScrollToTopDirective,
   ],
-  templateUrl: './container-create.wizard.component.html',
-  styleUrl: './container-create.component.scss',
+  templateUrl: "./container-create.wizard.component.html",
+  styleUrl: "./container-create.component.scss"
 })
 export class ContainerCreateWizardComponent extends ContainerCreateComponent {
   protected override readonly versioningService: VersioningServiceInterface =
@@ -90,21 +90,21 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     inject(ContentService);
 
   readonly preTopHtml$ = this.http
-    .get('/customize/container-create.wizard.pre.top.html', {
-      responseType: 'text',
+    .get("/customize/container-create.wizard.pre.top.html", {
+      responseType: "text"
     })
     .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)));
 
   readonly preBottomHtml$ = this.http
-    .get('/customize/container-create.wizard.pre.bottom.html', {
-      responseType: 'text',
+    .get("/customize/container-create.wizard.pre.bottom.html", {
+      responseType: "text"
     })
     .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)));
 
   constructor(
     private http: HttpClient,
     private sanitizer: DomSanitizer,
-    registrationDialog: MatDialog,
+    registrationDialog: MatDialog
   ) {
     super(registrationDialog);
   }

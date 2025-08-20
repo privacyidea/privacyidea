@@ -1,13 +1,20 @@
-import { Component, effect, inject, signal, untracked } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { NgClass } from "@angular/common";
 import {
-  MatAutocomplete,
-  MatAutocompleteTrigger,
-} from '@angular/material/autocomplete';
-import { MatButton, MatIconButton } from '@angular/material/button';
-import { MatCheckbox } from '@angular/material/checkbox';
-import { MatOption } from '@angular/material/core';
-import { MatDialog } from '@angular/material/dialog';
+  Component,
+  effect,
+  ElementRef,
+  inject,
+  Renderer2,
+  signal,
+  untracked,
+  ViewChild
+} from "@angular/core";
+import { FormsModule } from "@angular/forms";
+import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
+import { MatButton, MatIconButton } from "@angular/material/button";
+import { MatCheckbox } from "@angular/material/checkbox";
+import { MatOption } from "@angular/material/core";
+import { MatDialog } from "@angular/material/dialog";
 import {
   MatAccordion,
   MatExpansionPanel,
@@ -58,12 +65,12 @@ import {
 } from '../../../services/version/version.service';
 import { ScrollToTopDirective } from '../../shared/directives/app-scroll-to-top.directive';
 import { TokenComponent } from '../token.component';
-import { ContainerRegistrationDialogComponent } from './container-registration-dialog/container-registration-dialog.component';
+import { ContainerRegistrationDialogComponent } from "./container-registration-dialog/container-registration-dialog.component";
 
-export type ContainerTypeOption = 'generic' | 'smartphone' | 'yubikey';
+export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
 
 @Component({
-  selector: 'app-container-create',
+  selector: "app-container-create",
   imports: [
     MatButton,
     MatFormField,
@@ -85,9 +92,10 @@ export type ContainerTypeOption = 'generic' | 'smartphone' | 'yubikey';
     MatExpansionPanelHeader,
     MatTooltip,
     ScrollToTopDirective,
+    NgClass
   ],
-  templateUrl: './container-create.component.html',
-  styleUrl: './container-create.component.scss',
+  templateUrl: "./container-create.component.html",
+  styleUrl: "./container-create.component.scss"
 })
 export class ContainerCreateComponent {
   protected readonly versioningService: VersioningServiceInterface =
@@ -103,22 +111,28 @@ export class ContainerCreateComponent {
     inject(ContentService);
   protected readonly TokenComponent = TokenComponent;
   private router = inject(Router);
+  private observer!: IntersectionObserver;
+  protected readonly renderer: Renderer2 = inject(Renderer2);
   containerSerial = this.containerService.containerSerial;
-  description = signal('');
-  selectedTemplate = signal('');
+  description = signal("");
+  selectedTemplate = signal("");
   templateOptions = this.containerService.templates;
   onlyAddToRealm = signal(false);
   generateQRCode = signal(false);
-  passphrasePrompt = signal('');
-  passphraseResponse = signal('');
+  passphrasePrompt = signal("");
+  passphraseResponse = signal("");
   registerResponse = signal<PiResponse<ContainerRegisterData> | null>(null);
   pollResponse = signal<any>(null);
+
+  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
+  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
+  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
 
   constructor(protected registrationDialog: MatDialog) {
     effect(() => {
       if (
         this.containerService.selectedContainerType().containerType ===
-        'smartphone'
+        "smartphone"
       ) {
         this.generateQRCode.set(true);
       } else {
@@ -133,6 +147,37 @@ export class ContainerCreateComponent {
     });
   }
 
+  ngAfterViewInit(): void {
+    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) {
+      return;
+    }
+
+    const options = {
+      root: this.scrollContainer.nativeElement,
+      threshold: [0, 1]
+    };
+
+    this.observer = new IntersectionObserver(([entry]) => {
+      if (!entry.rootBounds) return;
+
+      const isSticky = entry.boundingClientRect.top < entry.rootBounds.top;
+
+      if (isSticky) {
+        this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
+      } else {
+        this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
+      }
+    }, options);
+
+    this.observer.observe(this.stickySentinel.nativeElement);
+  }
+
+  ngOnDestroy(): void {
+    if (this.observer) {
+      this.observer.disconnect();
+    }
+  }
+
   reopenEnrollmentDialog() {
     const currentResponse = this.registerResponse();
     if (currentResponse) {
@@ -144,24 +189,25 @@ export class ContainerCreateComponent {
   createContainer() {
     this.pollResponse.set(null);
     this.registerResponse.set(null);
+    const createData = {
+      container_type:
+      this.containerService.selectedContainerType().containerType,
+      description: this.description(),
+      template: this.selectedTemplate(),
+      user: this.userService.userNameFilter(),
+      realm: ""
+    };
+    if (createData.user || this.onlyAddToRealm()) {
+      createData.realm = this.userService.selectedUserRealm();
+    }
     this.containerService
-      .createContainer({
-        container_type:
-          this.containerService.selectedContainerType().containerType,
-        description: this.description(),
-        user_realm: this.userService.selectedUserRealm(),
-        template: this.selectedTemplate(),
-        user: this.userService.userNameFilter(),
-        realm: this.onlyAddToRealm()
-          ? this.userService.selectedUserRealm()
-          : '',
-      })
+      .createContainer(createData)
       .subscribe({
         next: (response) => {
           const containerSerial = response.result?.value?.container_serial;
           if (!containerSerial) {
             this.notificationService.openSnackBar(
-              'Container creation failed. No container serial returned.',
+              "Container creation failed. No container serial returned."
             );
             return;
           }
@@ -170,7 +216,7 @@ export class ContainerCreateComponent {
               .registerContainer({
                 container_serial: containerSerial,
                 passphrase_response: this.passphraseResponse(),
-                passphrase_prompt: this.passphrasePrompt(),
+                passphrase_prompt: this.passphrasePrompt()
               })
               .subscribe((registerResponse) => {
                 this.registerResponse.set(registerResponse);
@@ -179,38 +225,38 @@ export class ContainerCreateComponent {
               });
           } else {
             this.notificationService.openSnackBar(
-              `Container ${containerSerial} enrolled successfully.`,
+              `Container ${containerSerial} enrolled successfully.`
             );
             this.router.navigateByUrl(
-              ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial,
+              ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial
             );
             this.containerSerial.set(containerSerial);
           }
-        },
+        }
       });
   }
 
   private resetCreateOptions = () => {
     this.registerResponse.set(null);
     this.pollResponse.set(null);
-    this.passphrasePrompt.set('');
-    this.passphraseResponse.set('');
-    this.description.set('');
-    this.selectedTemplate.set('');
+    this.passphrasePrompt.set("");
+    this.passphraseResponse.set("");
+    this.description.set("");
+    this.selectedTemplate.set("");
   };
 
   private openRegistrationDialog(response: PiResponse<ContainerRegisterData>) {
     this.registrationDialog.open(ContainerRegistrationDialogComponent, {
       data: {
         response: response,
-        containerSerial: this.containerSerial,
-      },
+        containerSerial: this.containerSerial
+      }
     });
   }
 
   private pollContainerRolloutState(
     containerSerial: string,
-    startTime: number,
+    startTime: number
   ) {
     return this.containerService
       .pollContainerRolloutState(containerSerial, startTime)
@@ -219,17 +265,17 @@ export class ContainerCreateComponent {
           this.pollResponse.set(pollResponse);
           if (
             pollResponse.result?.value?.containers[0].info
-              .registration_state !== 'client_wait'
+              .registration_state !== "client_wait"
           ) {
             this.registrationDialog.closeAll();
             this.router.navigateByUrl(
-              ROUTE_PATHS.TOKENS_CONTAINERS + containerSerial,
+              ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial
             );
             this.notificationService.openSnackBar(
-              `Container ${this.containerSerial()} enrolled successfully.`,
+              `Container ${this.containerSerial()} enrolled successfully.`
             );
           }
-        },
+        }
       });
   }
 }

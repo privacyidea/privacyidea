@@ -25,7 +25,7 @@ import { KeywordFilterComponent } from '../shared/keyword-filter/keyword-filter.
 import { AuditComponent } from './audit.component';
 
 @Component({
-  selector: 'app-audit-self-service',
+  selector: "app-audit-self-service",
   imports: [
     MatCardModule,
     KeywordFilterComponent,
@@ -50,7 +50,8 @@ import { AuditComponent } from './audit.component';
     RouterLink,
     ScrollToTopDirective,
   ],
-  templateUrl: './audit.self-service.component.html',
-  styleUrl: './audit.component.scss',
+  templateUrl: "./audit.self-service.component.html",
+  styleUrl: "./audit.component.scss"
 })
-export class AuditComponentSelfServiceComponent extends AuditComponent {}
+export class AuditComponentSelfServiceComponent extends AuditComponent {
+}

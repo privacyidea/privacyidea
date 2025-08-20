@@ -1,5 +1,5 @@
 import { NgClass } from '@angular/common';
-import { Component, inject, Renderer2 } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {
   MatAutocomplete,
@@ -84,11 +84,11 @@ import {
   CUSTOM_DATE_FORMATS,
   CUSTOM_TOOLTIP_OPTIONS,
   CustomDateAdapter,
-  TokenEnrollmentComponent,
-} from './token-enrollment.component';
+  TokenEnrollmentComponent
+} from "./token-enrollment.component";
 
 @Component({
-  selector: 'app-token-enrollment-self-service',
+  selector: "app-token-enrollment-self-service",
   imports: [
     MatFormField,
     MatSelect,
@@ -135,14 +135,14 @@ import {
     MatTooltip,
     ScrollToTopDirective,
   ],
-  templateUrl: './token-enrollment.self-service.component.html',
-  styleUrl: './token-enrollment.component.scss',
+  templateUrl: "./token-enrollment.self-service.component.html",
+  styleUrl: "./token-enrollment.component.scss",
   providers: [
     provideNativeDateAdapter(),
-    { provide: DateAdapter, useFactory: () => new CustomDateAdapter('+00:00') },
+    { provide: DateAdapter, useFactory: () => new CustomDateAdapter("+00:00") },
     { provide: MAT_DATE_FORMATS, useValue: CUSTOM_DATE_FORMATS },
-    { provide: MAT_TOOLTIP_DEFAULT_OPTIONS, useValue: CUSTOM_TOOLTIP_OPTIONS },
-  ],
+    { provide: MAT_TOOLTIP_DEFAULT_OPTIONS, useValue: CUSTOM_TOOLTIP_OPTIONS }
+  ]
 })
 export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponent {
   protected override containerService: ContainerServiceInterface =
@@ -159,7 +159,7 @@ export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponen
   protected override dialogService: DialogServiceInterface =
     inject(DialogService);
 
-  constructor(renderer: Renderer2) {
-    super(renderer);
+  constructor() {
+    super();
   }
 }

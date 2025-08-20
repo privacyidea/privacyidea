@@ -3,12 +3,14 @@
     <p>{{ text }}</p>
   </div>
   <h4 class="enroll-h4">Token Configuration</h4>
-  <mat-checkbox [formControl]="generateOnServerControl"
-                class="server-checkbox">
+  <mat-checkbox
+    [formControl]="generateOnServerControl"
+    class="server-checkbox">
     Generate OTP key on the server
     @if (generateOnServerControl.value) {
-      <span class="dot">.</span><span>
-        <br />
+      <span class="dot">.</span>
+      <span>
+        <br/>
         The server will create the OTP key and a QR Code will be displayed to
         you to be scanned.
       </span>
@@ -18,10 +20,11 @@
     @if (!generateOnServerControl.value) {
       <mat-form-field class="width-33 input-height">
         <mat-label>OTP Key</mat-label>
-        <input matInput
-               [formControl]="otpKeyControl"
-               placeholder="Enter OTP key"
-               required />
+        <input
+          matInput
+          [formControl]="otpKeyControl"
+          placeholder="Enter OTP key"
+          required/>
         <mat-error>OTP key is <strong>required</strong></mat-error>
       </mat-form-field>
     } @else {
@@ -30,18 +33,21 @@
   </div>
 </div>
 <div class="flex-column">
-  <input style="display: none"
-         type="text" /> <input style="display: none"
-                               type="password" />
+  <input
+    style="display: none"
+    type="text"/> <input
+  style="display: none"
+  type="password"/>
   <h4 class="enroll-h4">mOTP PIN</h4>
   <span>The mOTP PIN is the PIN that needs to be entered on the mobile
     device.</span>
   <div class="motp-pin-input">
     <mat-form-field class="motp-input">
       <mat-label>Enter Password</mat-label>
-      <input [formControl]="motpPinControl"
-             [type]="'password'"
-             matInput />
+      <input
+        [formControl]="motpPinControl"
+        [type]="'password'"
+        matInput/>
       @if (motpPinControl.hasError("required") &&
       (motpPinControl.touched || motpPinControl.dirty)) {
         <mat-error>Password is <strong>required</strong></mat-error>
@@ -53,10 +59,11 @@
     </mat-form-field>
     <mat-form-field class="motp-input">
       <mat-label>Repeat Password</mat-label>
-      <input [formControl]="repeatMotpPinControl"
-             [type]="'password'"
-             matInput
-             placeholder="Repeat Password" />
+      <input
+        [formControl]="repeatMotpPinControl"
+        [type]="'password'"
+        matInput
+        placeholder="Repeat Password"/>
       @if (repeatMotpPinControl.hasError("motpPinMismatch") &&
       (repeatMotpPinControl.touched || repeatMotpPinControl.dirty)) {
         <mat-error>mOTP PINs do not match.</mat-error>

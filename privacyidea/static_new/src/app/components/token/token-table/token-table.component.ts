@@ -37,21 +37,21 @@ import { ScrollToTopDirective } from '../../shared/directives/app-scroll-to-top.
 import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
 
 const columnKeysMap = [
-  { key: 'select', label: '' },
-  { key: 'serial', label: 'Serial' },
-  { key: 'tokentype', label: 'Type' },
-  { key: 'active', label: 'Active' },
-  { key: 'description', label: 'Description' },
-  { key: 'failcount', label: 'Fail Counter' },
-  { key: 'rollout_state', label: 'Rollout State' },
-  { key: 'username', label: 'User' },
-  { key: 'user_realm', label: 'User Realm' },
-  { key: 'realms', label: 'Token Realm' },
-  { key: 'container_serial', label: 'Container' },
+  { key: "select", label: "" },
+  { key: "serial", label: "Serial" },
+  { key: "tokentype", label: "Type" },
+  { key: "active", label: "Active" },
+  { key: "description", label: "Description" },
+  { key: "failcount", label: "Fail Counter" },
+  { key: "rollout_state", label: "Rollout State" },
+  { key: "username", label: "User" },
+  { key: "user_realm", label: "User Realm" },
+  { key: "realms", label: "Token Realm" },
+  { key: "container_serial", label: "Container" }
 ];
 
 @Component({
-  selector: 'app-token-table',
+  selector: "app-token-table",
   standalone: true,
   imports: [
     MatTableModule,
@@ -67,8 +67,8 @@ const columnKeysMap = [
     MatIconModule,
     ScrollToTopDirective,
   ],
-  templateUrl: './token-table.component.html',
-  styleUrl: './token-table.component.scss',
+  templateUrl: "./token-table.component.html",
+  styleUrl: "./token-table.component.scss"
 })
 export class TokenTableComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -93,7 +93,7 @@ export class TokenTableComponent {
     const filterMap = this.filterValue();
     return Object.entries(filterMap)
       .map(([key, value]) => `${key}: ${value}`)
-      .join(' ');
+      .join(" ");
   });
 
   pageSize = this.tokenService.pageSize;
@@ -106,10 +106,10 @@ export class TokenTableComponent {
       Array.from({ length: pageSize }, () => {
         const emptyRow: any = {};
         columnKeysMap.forEach((column) => {
-          emptyRow[column.key] = '';
+          emptyRow[column.key] = "";
         });
         return emptyRow;
-      }),
+      })
   });
 
   tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> =
@@ -120,7 +120,7 @@ export class TokenTableComponent {
           return new MatTableDataSource(tokenResource.result?.value.tokens);
         }
         return previous?.value ?? new MatTableDataSource(this.emptyResource());
-      },
+      }
     });
 
   totalLength: WritableSignal<number> = linkedSignal({
@@ -130,12 +130,12 @@ export class TokenTableComponent {
         return tokenResource.result?.value.count;
       }
       return previous?.value ?? 0;
-    },
+    }
   });
 
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
-  @ViewChild('filterHTMLInputElement', { static: true })
+  @ViewChild("filterHTMLInputElement", { static: true })
   filterInput!: HTMLInputElement;
 
   constructor() {
@@ -183,7 +183,7 @@ export class TokenTableComponent {
         .subscribe({
           next: () => {
             this.tokenResource.reload();
-          },
+          }
         });
     }
   }
@@ -193,7 +193,7 @@ export class TokenTableComponent {
       this.tokenService.resetFailCount(tokenDetails.serial).subscribe({
         next: () => {
           this.tokenResource.reload();
-        },
+        }
       });
     }
   }
@@ -205,8 +205,8 @@ export class TokenTableComponent {
   }
 
   onSortEvent($event: Sort) {
-    if ($event.direction === '') {
-      this.sort.set({ active: 'serial', direction: 'asc' });
+    if ($event.direction === "") {
+      this.sort.set({ active: "serial", direction: "asc" });
       return;
     }
     this.sort.set($event);

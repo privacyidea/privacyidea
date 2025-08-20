@@ -32,7 +32,7 @@ import { ScrollToTopDirective } from '../../shared/directives/app-scroll-to-top.
 import { ContainerTableComponent } from './container-table.component';
 
 @Component({
-  selector: 'app-container-table-self-service',
+  selector: "app-container-table-self-service",
   standalone: true,
   imports: [
     MatTableModule,
@@ -48,8 +48,8 @@ import { ContainerTableComponent } from './container-table.component';
     MatIconButton,
     ScrollToTopDirective,
   ],
-  templateUrl: './container-table.self-service.component.html',
-  styleUrl: './container-table.component.scss',
+  templateUrl: "./container-table.self-service.component.html",
+  styleUrl: "./container-table.component.scss"
 })
 export class ContainerTableSelfServiceComponent extends ContainerTableComponent {
   private readonly dialog = inject(MatDialog);
@@ -63,14 +63,14 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
     inject(ContentService);
 
   readonly columnKeysMapSelfService = [
-    { key: 'serial', label: 'Serial' },
-    { key: 'type', label: 'Type' },
-    { key: 'states', label: 'Status' },
-    { key: 'description', label: 'Description' },
-    { key: 'delete', label: 'Delete' },
+    { key: "serial", label: "Serial" },
+    { key: "type", label: "Type" },
+    { key: "states", label: "Status" },
+    { key: "description", label: "Description" },
+    { key: "delete", label: "Delete" }
   ];
   readonly columnKeysSelfService: string[] = this.columnKeysMapSelfService.map(
-    (column: { key: string; label: string }) => column.key,
+    (column: { key: string; label: string }) => column.key
   );
 
   constructor() {
@@ -82,11 +82,11 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
       .open(ConfirmationDialogComponent, {
         data: {
           serial_list: [serial],
-          title: 'Delete Container',
-          type: 'container',
-          action: 'delete',
-          numberOfTokens: 1,
-        },
+          title: "Delete Container",
+          type: "container",
+          action: "delete",
+          numberOfTokens: 1
+        }
       })
       .afterClosed()
       .subscribe({
@@ -95,10 +95,10 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
             this.containerService.deleteContainer(serial).subscribe({
               next: () => {
                 this.containerService.containerResource.reload();
-              },
+              }
             });
           }
-        },
+        }
       });
   }
 }
