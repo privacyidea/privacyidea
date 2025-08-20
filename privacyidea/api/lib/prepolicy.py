@@ -1346,6 +1346,8 @@ def check_token_action(request: Request = None, action: str = None):
                          f" the request.")
 
         request.all_data["serials"] = new_serials
+        # Add authorized serials to serial parameter too (Old API behavior)
+        request.all_data["serial"] = ",".join(new_serials)
         request.all_data["not_authorized_serials"] = not_authorized_serials
         return True
 
