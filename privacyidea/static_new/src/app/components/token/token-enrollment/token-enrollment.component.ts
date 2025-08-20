@@ -493,7 +493,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
 
   protected async enrollToken(): Promise<void> {
     const currentTokenType = this.tokenService.selectedTokenType();
-    var everythingIsValid = true;
+    let everythingIsValid = true;
     if (!currentTokenType) {
       this.notificationService.openSnackBar("Please select a token type.");
       return;
@@ -522,6 +522,10 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       );
       return;
     }
+    let serial = null;
+    if (this.enrollResponse()) {
+      serial = this.enrollResponse()?.detail?.serial ?? null;
+    }
     const basicOptions: TokenEnrollmentData = {
       type: currentTokenType.key,
       description: this.descriptionControl.value.trim(),
@@ -537,7 +541,8 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
         this.selectedTimezoneOffsetControl.value ?? "+00:00"
       ),
       user: user?.username ?? "",
-      pin: this.setPinControl.value ?? ""
+      pin: this.setPinControl.value ?? "",
+      serial: serial
     };
 
     const enrollResponse = this.clickEnroll(basicOptions);

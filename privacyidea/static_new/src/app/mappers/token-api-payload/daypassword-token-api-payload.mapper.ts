@@ -16,6 +16,7 @@ export interface DaypasswordEnrollmentPayload extends TokenEnrollmentPayload {
   otplen?: number;
   hashlib?: string;
   timeStep?: number;
+  serial?: string | null;
 }
 
 @Injectable({ providedIn: "root" })
@@ -36,13 +37,15 @@ export class DaypasswordApiPayloadMapper
       otpkey: data.otpKey,
       otplen: data.otpLength !== undefined ? Number(data.otpLength) : undefined,
       hashlib: data.hashAlgorithm,
-      timeStep: data.timeStep !== undefined ? Number(data.timeStep) : undefined
+      timeStep: data.timeStep !== undefined ? Number(data.timeStep) : undefined,
+      serial: data.serial ?? null
     };
 
     if (payload.otpkey === undefined) delete payload.otpkey;
     if (payload.otplen === undefined) delete payload.otplen;
     if (payload.hashlib === undefined) delete payload.hashlib;
     if (payload.timeStep === undefined) delete payload.timeStep;
+    if (payload.serial === null) delete payload.serial;
     return payload;
   }
 
