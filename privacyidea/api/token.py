@@ -567,7 +567,6 @@ def unassign_api():
 
     :jsonparam serial: The serial number of a single token, or comma-separated list of serials.
     :jsonparam serials: A list of serial numbers of multiple tokens.
-    :jsonparam not_authorized_serials: A list of serial numbers of tokens which the user is not
     authorized to manage.
 
     :return: In case of success it returns 1 if only one serial is given, or a dictionary with the serials as keys and
@@ -702,7 +701,6 @@ def delete_api(serial=None):
 
     :jsonparam serial: The serial number of a single token, or comma-separated list of serials.
     :jsonparam serials: A list of serial numbers of multiple tokens.
-    :jsonparam not_authorized_serials: A list of serial numbers of tokens which the user is not
     authorized to manage.
 
     :return: In case of success it returns 1 if only one serial is given, or a dictionary with the serials as keys and
@@ -731,37 +729,6 @@ def delete_api(serial=None):
 
     res = add_not_authorized_tokens_result(ret, not_authorized_serials)
     g.audit_object.log({"success": True})
-    return send_result(res)
-
-
-@token_blueprint.route('/batchdeletion', methods=['POST'])
-@prepolicy(check_token_action, request, action=PolicyAction.DELETE)
-@event("token_delete", request, g)
-@log_with(log)
-def batch_deletion():
-    """
-    Not maintained anymore, marked for removal. Functionality is now in DELETE /.
-    Delete all passed tokens, e.g. all tokens of a container
-    All errors during the deletion of a token are fetched to be able to delete the remaining tokens.
-
-    :jsonparam serial: A comma separated list of token serials to delete
-    :return: Dictionary with the serials as keys and the success status of the deletion as values
-    """
-    serial_list = get_required(request.all_data, "serials")
-    g.audit_object.log({"serial": serial_list})
-    ret = {}
-    for serial in serial_list:
-        try:
-            success = remove_token(serial)
-        except Exception as ex:
-            # We are catching the exception here to be able to delete the remaining tokens
-            log.error(f"Error deleting token {serial}: {ex}")
-            success = False
-        ret[serial] = success
-
-    not_authorized_serials = getParam(request.all_data, "not_authorized_serials", optional=True)
-    res = add_not_authorized_tokens_result(ret, not_authorized_serials)
-
     return send_result(res)
 
 
