@@ -2,26 +2,29 @@
   position: relative;
 }
 .input-container button {
-  background-color: transparent;
   border-radius: 50%;
   aspect-ratio: 1;
   position: absolute;
   right: 2px;
-  top: 50%;
-  transform: translateY(-50%);
-  border: 0px solid transparent;
-  background-color: var(--grey-light);
+  top: -20%;
+  border: 0 solid transparent;
+  background-color: var(--grey-light-active);
   color: var(--mat-sys-primary-container);
+  width: 18px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .input-container button mat-icon {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 800;
-  height: 0.8rem;
-  width: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .input-container button:hover {
-  background-color: var(--grey-light-active);
+  background-color: var(--grey-light);
   cursor: pointer;
 }
