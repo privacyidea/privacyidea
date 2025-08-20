@@ -1,12 +1,8 @@
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData,
-  TokenEnrollmentPayload,
-} from './_token-api-payload.mapper';
-import { Injectable } from '@angular/core';
+import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import { Injectable } from "@angular/core";
 
 export interface FourEyesEnrollmentData extends TokenEnrollmentData {
-  type: '4eyes';
+  type: "4eyes";
   separator: string;
   requiredTokenOfRealms: {
     realm: string;
@@ -18,14 +14,12 @@ export interface FourEyesEnrollmentData extends TokenEnrollmentData {
 
 export interface FourEyesEnrollmentPayload extends TokenEnrollmentPayload {
   separator: string;
-  '4eyes': { [key: string]: { count: number; selected: boolean } };
+  "4eyes": { [key: string]: { count: number; selected: boolean } };
   realm?: string;
 }
 
-@Injectable({ providedIn: 'root' })
-export class FourEyesApiPayloadMapper
-  implements TokenApiPayloadMapper<FourEyesEnrollmentData>
-{
+@Injectable({ providedIn: "root" })
+export class FourEyesApiPayloadMapper implements TokenApiPayloadMapper<FourEyesEnrollmentData> {
   toApiPayload(data: FourEyesEnrollmentData): FourEyesEnrollmentPayload {
     const payload: FourEyesEnrollmentPayload = {
       type: data.type,
@@ -36,16 +30,13 @@ export class FourEyesApiPayloadMapper
       pin: data.pin,
       user: data.user,
       separator: data.separator,
-      '4eyes': (data.requiredTokenOfRealms ?? []).reduce(
-        (
-          acc: { [key: string]: { count: number; selected: boolean } },
-          curr,
-        ) => {
+      "4eyes": (data.requiredTokenOfRealms ?? []).reduce(
+        (acc: { [key: string]: { count: number; selected: boolean } }, curr) => {
           acc[curr.realm] = { count: curr.tokens, selected: true };
           return acc;
         },
-        {},
-      ),
+        {}
+      )
     };
 
     if (data.onlyAddToRealm) {

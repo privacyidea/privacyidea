@@ -1,25 +1,19 @@
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData,
-  TokenEnrollmentPayload,
-} from './_token-api-payload.mapper';
-import { Injectable } from '@angular/core';
+import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import { Injectable } from "@angular/core";
 
 export interface RadiusEnrollmentData extends TokenEnrollmentData {
-  type: 'radius';
+  type: "radius";
   radiusServerConfiguration?: string;
   radiusUser?: string;
 }
 
 export interface RadiusEnrollmentPayload extends TokenEnrollmentPayload {
-  'radius.identifier'?: string;
-  'radius.user'?: string;
+  "radius.identifier"?: string;
+  "radius.user"?: string;
 }
 
-@Injectable({ providedIn: 'root' })
-export class RadiusApiPayloadMapper
-  implements TokenApiPayloadMapper<RadiusEnrollmentData>
-{
+@Injectable({ providedIn: "root" })
+export class RadiusApiPayloadMapper implements TokenApiPayloadMapper<RadiusEnrollmentData> {
   toApiPayload(data: RadiusEnrollmentData): RadiusEnrollmentPayload {
     const payload: RadiusEnrollmentPayload = {
       type: data.type,
@@ -29,15 +23,15 @@ export class RadiusApiPayloadMapper
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
       pin: data.pin,
-      'radius.identifier': data.radiusServerConfiguration,
-      'radius.user': data.radiusUser,
+      "radius.identifier": data.radiusServerConfiguration,
+      "radius.user": data.radiusUser
     };
 
-    if (payload['radius.identifier'] === undefined) {
-      delete payload['radius.identifier'];
+    if (payload["radius.identifier"] === undefined) {
+      delete payload["radius.identifier"];
     }
-    if (payload['radius.user'] === undefined) {
-      delete payload['radius.user'];
+    if (payload["radius.user"] === undefined) {
+      delete payload["radius.user"];
     }
     return payload;
   }

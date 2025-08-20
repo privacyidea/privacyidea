@@ -1,15 +1,15 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { EnrollWebauthnComponent } from './enroll-webauthn.component';
-import { provideHttpClient } from '@angular/common/http';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { EnrollWebauthnComponent } from "./enroll-webauthn.component";
+import { provideHttpClient } from "@angular/common/http";
 
-describe('EnrollWebauthnComponent', () => {
+describe("EnrollWebauthnComponent", () => {
   let component: EnrollWebauthnComponent;
   let fixture: ComponentFixture<EnrollWebauthnComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       providers: [provideHttpClient()],
-      imports: [EnrollWebauthnComponent],
+      imports: [EnrollWebauthnComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollWebauthnComponent);
@@ -17,7 +17,7 @@ describe('EnrollWebauthnComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

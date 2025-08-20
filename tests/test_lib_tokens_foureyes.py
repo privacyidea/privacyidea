@@ -2,7 +2,6 @@
 This test file tests the lib.tokens.4eyestoken
 This depends on lib.tokenclass
 """
-import json
 import logging
 from testfixtures import log_capture
 from .base import MyTestCase
@@ -148,7 +147,8 @@ class FourEyesTokenTestCase(MyTestCase):
         }]
 
         # Import the token
-        result = import_tokens(json.dumps(token_data))
+
+        result = import_tokens(token_data)
         self.assertIn("FOUR12345678", result.successful_tokens, result)
 
         # Retrieve the imported token

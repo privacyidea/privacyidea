@@ -1,13 +1,6 @@
-import {
-  Component,
-  effect,
-  inject,
-  linkedSignal,
-  ViewChild,
-  WritableSignal,
-} from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
+import { Component, effect, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
+import { FormsModule } from "@angular/forms";
+import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";
 import {
   MatCell,
   MatCellDef,
@@ -20,42 +13,32 @@ import {
   MatRow,
   MatRowDef,
   MatTable,
-  MatTableDataSource,
-} from '@angular/material/table';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import {
-  TableUtilsService,
-  TableUtilsServiceInterface,
-} from '../../../services/table-utils/table-utils.service';
-import { MatPaginator } from '@angular/material/paginator';
-import { MatSort, MatSortModule } from '@angular/material/sort';
-import {
-  ContentService,
-  ContentServiceInterface,
-} from '../../../services/content/content.service';
-import {
-  UserData,
-  UserService,
-  UserServiceInterface,
-} from '../../../services/user/user.service';
-import { MatInput } from '@angular/material/input';
-import { NgClass } from '@angular/common';
-import { RouterLink } from '@angular/router';
+  MatTableDataSource
+} from "@angular/material/table";
+import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
+import { MatPaginator } from "@angular/material/paginator";
+import { MatSort, MatSortModule } from "@angular/material/sort";
+import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
+import { UserData, UserService, UserServiceInterface } from "../../../services/user/user.service";
+import { MatInput } from "@angular/material/input";
+import { NgClass } from "@angular/common";
+import { RouterLink } from "@angular/router";
 
 const columnKeysMap = [
-  { key: 'username', label: 'Username' },
-  { key: 'userid', label: 'User ID' },
-  { key: 'givenname', label: 'Given Name' },
-  { key: 'surname', label: 'Surname' },
-  { key: 'email', label: 'Email' },
-  { key: 'phone', label: 'Phone' },
-  { key: 'mobile', label: 'Mobile' },
-  { key: 'description', label: 'Description' },
-  { key: 'resolver', label: 'Resolver' },
+  { key: "username", label: "Username" },
+  { key: "userid", label: "User ID" },
+  { key: "givenname", label: "Given Name" },
+  { key: "surname", label: "Surname" },
+  { key: "email", label: "Email" },
+  { key: "phone", label: "Phone" },
+  { key: "mobile", label: "Mobile" },
+  { key: "description", label: "Description" },
+  { key: "resolver", label: "Resolver" }
 ];
 
 @Component({
-  selector: 'app-user-table',
+  selector: "app-user-table",
   imports: [
     FormsModule,
     KeywordFilterComponent,
@@ -76,15 +59,15 @@ const columnKeysMap = [
     MatRow,
     MatNoDataRow,
     MatHeaderCellDef,
-    RouterLink,
+    RouterLink
   ],
-  templateUrl: './user-table.component.html',
-  styleUrl: './user-table.component.scss',
+  templateUrl: "./user-table.component.html",
+  styleUrl: "./user-table.component.scss"
 })
 export class UserTableComponent {
   protected readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = this.columnKeysMap.map(
-    (column) => column.key,
+    (column) => column.key
   );
   private readonly tableUtilsService: TableUtilsServiceInterface =
     inject(TableUtilsService);
@@ -97,7 +80,7 @@ export class UserTableComponent {
   filterValueString: WritableSignal<string> = linkedSignal(() =>
     Object.entries(this.userService.filterValue())
       .map(([key, value]) => `${key}: ${value}`)
-      .join(' '),
+      .join(" ")
   );
   totalLength: WritableSignal<number> = linkedSignal({
     source: this.userService.usersResource.value,
@@ -106,16 +89,16 @@ export class UserTableComponent {
         return userResource.result?.value?.length ?? 0;
       }
       return previous?.value ?? 0;
-    },
+    }
   });
   emptyResource: WritableSignal<UserData[]> = linkedSignal({
     source: this.userService.pageSize,
     computation: (pageSize: number) =>
       Array.from({ length: pageSize }, () =>
         Object.fromEntries(
-          this.columnKeysMap.map((c) => [{ key: c.key, username: '' }]),
-        ),
-      ),
+          this.columnKeysMap.map((c) => [{ key: c.key, username: "" }])
+        )
+      )
   });
   usersDataSource: WritableSignal<MatTableDataSource<UserData>> = linkedSignal({
     source: this.userService.usersResource.value,
@@ -127,13 +110,13 @@ export class UserTableComponent {
         return dataSource;
       }
       return previous?.value ?? new MatTableDataSource(this.emptyResource());
-    },
+    }
   });
 
   constructor() {
     effect(() => {
       const recordsFromText = this.tableUtilsService.recordsFromText(
-        this.filterValueString(),
+        this.filterValueString()
       );
       this.userService.filterValue.set(recordsFromText);
       this.userService.pageIndex.set(0);

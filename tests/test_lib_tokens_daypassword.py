@@ -2,7 +2,6 @@
 This test file tests the lib.tokens.daypasswordtoken.py
 """
 import binascii
-import json
 import logging
 import time
 from testfixtures import LogCapture
@@ -712,7 +711,7 @@ class DayPasswordTokenTestCase(MyTestCase):
         }]
 
         # Import the token
-        import_tokens(json.dumps(token_data))
+        import_tokens(token_data)
 
         # Retrieve the imported token
         daypasswordtoken = get_tokens(serial=token_data[0]["serial"])[0]

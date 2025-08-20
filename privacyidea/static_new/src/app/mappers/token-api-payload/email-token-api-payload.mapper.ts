@@ -1,12 +1,8 @@
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData,
-  TokenEnrollmentPayload,
-} from './_token-api-payload.mapper';
-import { Injectable } from '@angular/core';
+import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import { Injectable } from "@angular/core";
 
 export interface EmailEnrollmentData extends TokenEnrollmentData {
-  type: 'email';
+  type: "email";
   emailAddress?: string;
   readEmailDynamically?: boolean;
 }
@@ -16,10 +12,8 @@ export interface EmailEnrollmentPayload extends TokenEnrollmentPayload {
   dynamic_email: boolean;
 }
 
-@Injectable({ providedIn: 'root' })
-export class EmailApiPayloadMapper
-  implements TokenApiPayloadMapper<EmailEnrollmentData>
-{
+@Injectable({ providedIn: "root" })
+export class EmailApiPayloadMapper implements TokenApiPayloadMapper<EmailEnrollmentData> {
   toApiPayload(data: EmailEnrollmentData): EmailEnrollmentPayload {
     const payload: EmailEnrollmentPayload = {
       type: data.type,
@@ -30,7 +24,7 @@ export class EmailApiPayloadMapper
       user: data.user,
       pin: data.pin,
       email: data.emailAddress,
-      dynamic_email: !!data.readEmailDynamically,
+      dynamic_email: !!data.readEmailDynamically
     };
 
     if (payload.email === undefined) {

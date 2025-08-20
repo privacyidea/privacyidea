@@ -1,34 +1,16 @@
-import {
-  Component,
-  inject,
-  Input,
-  linkedSignal,
-  Signal,
-  WritableSignal,
-} from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { MatIconButton } from '@angular/material/button';
-import { MatDivider } from '@angular/material/divider';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatIcon } from '@angular/material/icon';
-import { MatInput } from '@angular/material/input';
-import { MatList, MatListItem } from '@angular/material/list';
-import {
-  MatCell,
-  MatColumnDef,
-  MatRow,
-  MatTableModule,
-} from '@angular/material/table';
-import { forkJoin, Observable, switchMap } from 'rxjs';
-import {
-  ContainerService,
-  ContainerServiceInterface,
-} from '../../../../services/container/container.service';
-import {
-  OverflowService,
-  OverflowServiceInterface,
-} from '../../../../services/overflow/overflow.service';
-import { EditButtonsComponent } from '../../../shared/edit-buttons/edit-buttons.component';
+import { Component, inject, Input, linkedSignal, Signal, WritableSignal } from "@angular/core";
+import { FormsModule } from "@angular/forms";
+import { MatIconButton } from "@angular/material/button";
+import { MatDivider } from "@angular/material/divider";
+import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatIcon } from "@angular/material/icon";
+import { MatInput } from "@angular/material/input";
+import { MatList, MatListItem } from "@angular/material/list";
+import { MatCell, MatColumnDef, MatRow, MatTableModule } from "@angular/material/table";
+import { forkJoin, Observable, switchMap } from "rxjs";
+import { ContainerService, ContainerServiceInterface } from "../../../../services/container/container.service";
+import { OverflowService, OverflowServiceInterface } from "../../../../services/overflow/overflow.service";
+import { EditButtonsComponent } from "../../../shared/edit-buttons/edit-buttons.component";
 
 export interface ContainerInfoDetail<T = any> {
   value: T;
@@ -37,7 +19,7 @@ export interface ContainerInfoDetail<T = any> {
 }
 
 @Component({
-  selector: 'app-container-details-info',
+  selector: "app-container-details-info",
   standalone: true,
   imports: [
     MatTableModule,
@@ -53,10 +35,10 @@ export interface ContainerInfoDetail<T = any> {
     MatIcon,
     MatDivider,
     MatRow,
-    EditButtonsComponent,
+    EditButtonsComponent
   ],
-  templateUrl: './container-details-info.component.html',
-  styleUrl: './container-details-info.component.scss',
+  templateUrl: "./container-details-info.component.html",
+  styleUrl: "./container-details-info.component.scss"
 })
 export class ContainerDetailsInfoComponent {
   private readonly containerService: ContainerServiceInterface =
@@ -74,31 +56,31 @@ export class ContainerDetailsInfoComponent {
   newInfo: WritableSignal<{ key: string; value: string }> = linkedSignal({
     source: this.isEditingInfo,
     computation: () => {
-      return { key: '', value: '' };
-    },
+      return { key: "", value: "" };
+    }
   });
 
   toggleInfoEdit(): void {
     this.isEditingInfo.update((b) => !b);
-    this.newInfo.set({ key: '', value: '' });
+    this.newInfo.set({ key: "", value: "" });
   }
 
   saveInfo(element: ContainerInfoDetail): void {
     if (
-      this.newInfo().key.trim() !== '' &&
-      this.newInfo().value.trim() !== ''
+      this.newInfo().key.trim() !== "" &&
+      this.newInfo().value.trim() !== ""
     ) {
       element.value[this.newInfo().key] = this.newInfo().value;
     }
     const requests = this.containerService.setContainerInfos(
       this.containerSerial(),
-      element.value,
+      element.value
     );
     forkJoin(requests).subscribe({
       next: () => {
-        this.newInfo.set({ key: '', value: '' });
+        this.newInfo.set({ key: "", value: "" });
         this.containerService.containerDetailResource.reload();
-      },
+      }
     });
     this.isEditingInfo.set(false);
   }
@@ -109,7 +91,7 @@ export class ContainerDetailsInfoComponent {
       .pipe(
         switchMap(() => {
           const info = this.detailData().find(
-            (detail) => detail.keyMap.key === 'info',
+            (detail) => detail.keyMap.key === "info"
           );
           if (info) {
             this.isEditingInfo.set(true);
@@ -118,12 +100,12 @@ export class ContainerDetailsInfoComponent {
             observer.next();
             observer.complete();
           });
-        }),
+        })
       )
       .subscribe({
         next: () => {
           this.containerService.containerDetailResource.reload();
-        },
+        }
       });
   }
 }

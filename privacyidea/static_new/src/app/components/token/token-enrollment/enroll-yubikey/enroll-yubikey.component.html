@@ -6,9 +6,10 @@
   <div class="otp-inputs-container">
     <mat-form-field class="input-height width-33">
       <mat-label>Test Yubikey</mat-label>
-      <input [formControl]="testYubiKeyControl"
-             matInput
-             placeholder="Push Yubikey button here" />
+      <input
+        [formControl]="testYubiKeyControl"
+        matInput
+        placeholder="Push Yubikey button here"/>
     </mat-form-field>
     <mat-form-field class="input-height width-33">
       <mat-label>OTP length</mat-label>
@@ -19,10 +20,11 @@
     </mat-form-field>
     <mat-form-field class="input-height width-33">
       <mat-label>OTP Key</mat-label>
-      <input [formControl]="otpKeyControl"
-             matInput
-             placeholder="Enter OTP key"
-             required />
+      <input
+        [formControl]="otpKeyControl"
+        matInput
+        placeholder="Enter OTP key"
+        required/>
       <mat-error>OTP key is <strong>required</strong></mat-error>
       @if (otpKeyControl.value && otpKeyControl.value.length !== 32) {
         <mat-hint>OTP key must be 32 characters long for yubikey token in AES mode

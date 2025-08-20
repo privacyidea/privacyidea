@@ -7,7 +7,6 @@ from .base import MyTestCase
 from privacyidea.lib.tokens.yubicotoken import (YubicoTokenClass, YUBICO_URL)
 from privacyidea.models import Token
 import responses
-import json
 from privacyidea.lib.config import set_privacyidea_config
 
 
@@ -132,6 +131,6 @@ status=REPLAYED_OTP"""
             "issuer": "privacyIDEA",
         }]
         before_import = get_tokens()
-        import_tokens(json.dumps(token_data))
+        import_tokens(token_data)
         after_import = get_tokens()
         self.assertEqual(len(before_import), len(after_import))

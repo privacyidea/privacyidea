@@ -6,15 +6,9 @@ html {
 
     --mat-sys-primary-dark: light-dark(hsl(198, 66%, 25%), hsl(198, 66%, 60%));
     --mat-sys-primary-base: light-dark(hsl(198, 66%, 30%), hsl(198, 66%, 55%));
-    --mat-sys-primary-base-active: light-dark(
-        hsl(198, 66%, 32.5%),
-        hsl(198, 66%, 52.5%)
-    );
+    --mat-sys-primary-base-active: light-dark(hsl(198, 66%, 32.5%), hsl(198, 66%, 52.5%));
     --mat-sys-primary-light: light-dark(hsl(198, 66%, 35%), hsl(198, 66%, 50%));
-    --mat-sys-primary-light-active: light-dark(
-        hsl(198, 66%, 37.5%),
-        hsl(198, 66%, 47.5%)
-    );
+    --mat-sys-primary-light-active: light-dark(hsl(198, 66%, 37.5%), hsl(198, 66%, 47.5%));
 
     --green-dark: light-dark(hsl(120, 39%, 39%), hsl(120, 39%, 69%));
     --green-base: light-dark(hsl(120, 39%, 44%), hsl(120, 39%, 64%));
@@ -37,6 +31,11 @@ html {
     --grey-light-active: light-dark(hsl(0, 0%, 60%), hsl(0, 0%, 55%));
 
     --mat-sys-shadow-color-high: light-dark(#ababab, #050505);
+
+    --mat-sys-outline: light-dark(hsl(246, 4%, 48%), hsl(0, 0%, 25%));
+
+    --inline-hint-bg: light-dark(hsl(200, 65%, 91%), hsl(200, 65%, 20%));
+    --inline-warning-bg: light-dark(hsl(0, 83%, 95%), hsl(0, 83%, 18%));
 
     color-scheme: light dark;
   }
@@ -88,6 +87,11 @@ html {
     --mat-sys-on-surface-variant: hsl(0, 0%, 30%);
     --mat-sys-on-primary-container: hsl(198, 66%, 10%);
     --mat-sys-shadow: #cccccc;
+
+    --mat-sys-outline: hsl(246, 4%, 48%);
+
+    --inline-hint-bg: hsl(200, 65%, 91%);
+    --inline-warning-bg: hsl(0, 83%, 95%);
   }
 
   &.dark {
@@ -136,12 +140,17 @@ html {
     --mat-sys-on-surface-variant: hsl(0, 0%, 80%);
     --mat-sys-on-primary-container: hsl(198, 66%, 80%);
     --mat-sys-shadow: #000000;
+
+    --mat-sys-outline: hsl(0, 0%, 25%);
+
+    --inline-hint-bg: hsl(200, 65%, 20%);
+    --inline-warning-bg: hsl(0, 83%, 18%);
   }
 
   @include mat.theme(
-      (
-        color: mat.$blue-palette,
-      ),
+    (
+      color: mat.$blue-palette,
+    ),
     $overrides: (
       "corner-large": 16px,
       "primary": var(--mat-sys-primary-base),

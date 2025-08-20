@@ -173,7 +173,7 @@ the token will be assigned.
 From version 3.11, you can also assign the token only to a realm.
 
 When enrolling a token, you can select the token type and according to the
-token type other necessary information.
+token type other necessary information. For more information on the different token types, see :ref:`tokentypes`.
 
 .. figure:: images/token_enroll.png
    :width: 500

@@ -1,6 +1,4 @@
-export interface EnrollmentResponse<
-  D extends EnrollmentResponseDetail = EnrollmentResponseDetail,
-> {
+export interface EnrollmentResponse<D extends EnrollmentResponseDetail = EnrollmentResponseDetail> {
   detail: D;
 
   [key: string]: any;
@@ -36,6 +34,7 @@ export type TokenEnrollmentData = {
   validityPeriodEnd: string;
   user: string;
   pin: string;
+  serial: string | null;
   [key: string]: any; // TODO: remove this when all types are defined
 };
 

@@ -1,36 +1,33 @@
-import { Component, EventEmitter, inject, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, inject, OnInit, Output } from "@angular/core";
 import {
   AbstractControl,
   FormControl,
   FormsModule,
   ReactiveFormsModule,
   ValidationErrors,
-  Validators,
-} from '@angular/forms';
-import { MatCheckbox } from '@angular/material/checkbox';
-import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
-import {
-  TokenService,
-  TokenServiceInterface,
-} from '../../../../services/token/token.service';
+  Validators
+} from "@angular/forms";
+import { MatCheckbox } from "@angular/material/checkbox";
+import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatInput } from "@angular/material/input";
+import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
-import { Observable } from 'rxjs';
+import { Observable } from "rxjs";
 import {
   EnrollmentResponse,
-  TokenEnrollmentData,
-} from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
-import { MotpApiPayloadMapper } from '../../../../mappers/token-api-payload/motp-token-api-payload.mapper';
+  TokenEnrollmentData
+} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+import { MotpApiPayloadMapper } from "../../../../mappers/token-api-payload/motp-token-api-payload.mapper";
 
 export interface MotpEnrollmentOptions extends TokenEnrollmentData {
-  type: 'motp';
+  type: "motp";
   generateOnServer: boolean;
   otpKey?: string;
   motpPin: string;
 }
 
 @Component({
-  selector: 'app-enroll-motp',
+  selector: "app-enroll-motp",
   standalone: true,
   imports: [
     FormsModule,
@@ -39,10 +36,10 @@ export interface MotpEnrollmentOptions extends TokenEnrollmentData {
     MatInput,
     MatLabel,
     MatCheckbox,
-    MatError,
+    MatError
   ],
-  templateUrl: './enroll-motp.component.html',
-  styleUrl: './enroll-motp.component.scss',
+  templateUrl: "./enroll-motp.component.html",
+  styleUrl: "./enroll-motp.component.scss"
 })
 export class EnrollMotpComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -51,7 +48,7 @@ export class EnrollMotpComponent implements OnInit {
 
   text = this.tokenService
     .tokenTypeOptions()
-    .find((type) => type.key === 'motp')?.text;
+    .find((type) => type.key === "motp")?.text;
 
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
@@ -61,25 +58,25 @@ export class EnrollMotpComponent implements OnInit {
   >();
 
   generateOnServerControl = new FormControl<boolean>(true, [
-    Validators.required,
+    Validators.required
   ]);
-  otpKeyControl = new FormControl<string>('');
-  motpPinControl = new FormControl<string>('', [
+  otpKeyControl = new FormControl<string>("");
+  motpPinControl = new FormControl<string>("", [
     Validators.required,
-    Validators.minLength(4),
+    Validators.minLength(4)
   ]);
-  repeatMotpPinControl = new FormControl<string>('', [
+  repeatMotpPinControl = new FormControl<string>("", [
     Validators.required,
     (control: AbstractControl) =>
       EnrollMotpComponent.motpPinMismatchValidator(
         this.motpPinControl,
-        control,
-      ),
+        control
+      )
   ]);
 
   static motpPinMismatchValidator(
     motpPin: AbstractControl,
-    repeatMotpPin: AbstractControl,
+    repeatMotpPin: AbstractControl
   ): ValidationErrors | null {
     if (motpPin && repeatMotpPin && motpPin.value !== repeatMotpPin.value) {
       return { motpPinMismatch: true };
@@ -92,7 +89,7 @@ export class EnrollMotpComponent implements OnInit {
       generateOnServer: this.generateOnServerControl,
       otpKey: this.otpKeyControl,
       motpPin: this.motpPinControl,
-      repeatMotpPin: this.repeatMotpPinControl,
+      repeatMotpPin: this.repeatMotpPinControl
     });
     this.clickEnrollChange.emit(this.onClickEnroll);
 
@@ -111,20 +108,20 @@ export class EnrollMotpComponent implements OnInit {
   }
 
   onClickEnroll = (
-    basicOptions: TokenEnrollmentData,
+    basicOptions: TokenEnrollmentData
   ): Observable<EnrollmentResponse | null> => {
     const enrollmentData: MotpEnrollmentOptions = {
       ...basicOptions,
-      type: 'motp',
+      type: "motp",
       generateOnServer: !!this.generateOnServerControl.value,
-      motpPin: this.motpPinControl.value ?? '',
+      motpPin: this.motpPinControl.value ?? ""
     };
     if (!enrollmentData.generateOnServer) {
-      enrollmentData.otpKey = this.otpKeyControl.value ?? '';
+      enrollmentData.otpKey = this.otpKeyControl.value ?? "";
     }
     return this.tokenService.enrollToken({
       data: enrollmentData,
-      mapper: this.enrollmentMapper,
+      mapper: this.enrollmentMapper
     });
   };
 }

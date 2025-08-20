@@ -1,26 +1,21 @@
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData,
-  TokenEnrollmentPayload,
-} from './_token-api-payload.mapper';
-import { Injectable } from '@angular/core';
+import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import { Injectable } from "@angular/core";
 
 // Interface for Registration Token-specific enrollment data
 export interface RegistrationEnrollmentData extends TokenEnrollmentData {
-  type: 'registration';
+  type: "registration";
 }
 
-export interface RegistrationEnrollmentPayload extends TokenEnrollmentPayload {}
+export interface RegistrationEnrollmentPayload extends TokenEnrollmentPayload {
+  serial?: string | null;
+}
 
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: "root" })
 export class RegistrationApiPayloadMapper
-  implements TokenApiPayloadMapper<RegistrationEnrollmentData>
-{
-  toApiPayload(
-    data: RegistrationEnrollmentData,
-  ): RegistrationEnrollmentPayload {
+  implements TokenApiPayloadMapper<RegistrationEnrollmentData> {
+  toApiPayload(data: RegistrationEnrollmentData): RegistrationEnrollmentPayload {
     // No type-specific fields in switch statement for 'registration'
-    return {
+    const payload: RegistrationEnrollmentPayload = {
       type: data.type,
       description: data.description,
       container_serial: data.containerSerial,
@@ -28,7 +23,12 @@ export class RegistrationApiPayloadMapper
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
       pin: data.pin,
+      serial: data.serial ?? null
     };
+
+    if (payload.serial === null) delete payload.serial;
+
+    return payload;
   }
 
   fromApiPayload(payload: any): RegistrationEnrollmentData {

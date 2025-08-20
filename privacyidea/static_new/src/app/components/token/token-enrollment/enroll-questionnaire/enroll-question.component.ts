@@ -1,45 +1,24 @@
-import {
-  Component,
-  computed,
-  EventEmitter,
-  inject,
-  OnInit,
-  Output,
-  Signal,
-} from '@angular/core';
-import {
-  AbstractControl,
-  FormControl,
-  FormGroup,
-  FormsModule,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
-import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
-import {
-  SystemService,
-  SystemServiceInterface,
-} from '../../../../services/system/system.service';
-import {
-  TokenService,
-  TokenServiceInterface,
-} from '../../../../services/token/token.service';
+import { Component, computed, EventEmitter, inject, OnInit, Output, Signal } from "@angular/core";
+import { AbstractControl, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatInput } from "@angular/material/input";
+import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
+import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
-import { Observable, of } from 'rxjs';
+import { Observable, of } from "rxjs";
 import {
   EnrollmentResponse,
-  TokenEnrollmentData,
-} from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
-import { QuestionApiPayloadMapper } from '../../../../mappers/token-api-payload/question-token-api-payload.mapper';
+  TokenEnrollmentData
+} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+import { QuestionApiPayloadMapper } from "../../../../mappers/token-api-payload/question-token-api-payload.mapper";
 
 export interface QuestionEnrollmentOptions extends TokenEnrollmentData {
-  type: 'question';
+  type: "question";
   answers: Record<string, string>;
 }
 
 @Component({
-  selector: 'app-enroll-question',
+  selector: "app-enroll-question",
   standalone: true,
   imports: [
     MatFormField,
@@ -47,14 +26,14 @@ export interface QuestionEnrollmentOptions extends TokenEnrollmentData {
     MatLabel,
     ReactiveFormsModule,
     FormsModule,
-    MatError,
+    MatError
   ],
-  templateUrl: './enroll-question.component.html',
-  styleUrl: './enroll-question.component.scss',
+  templateUrl: "./enroll-question.component.html",
+  styleUrl: "./enroll-question.component.scss"
 })
 export class EnrollQuestionComponent implements OnInit {
   protected readonly enrollmentMapper: QuestionApiPayloadMapper = inject(
-    QuestionApiPayloadMapper,
+    QuestionApiPayloadMapper
   );
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly systemService: SystemServiceInterface =
@@ -63,21 +42,21 @@ export class EnrollQuestionComponent implements OnInit {
     const cfg =
       this.systemService.systemConfigResource.value()?.result?.value || {};
     return Object.entries(cfg)
-      .filter(([k]) => k.startsWith('question.question.'))
+      .filter(([k]) => k.startsWith("question.question."))
       .map(([k, v]) => ({
-        question: k.replace('question.question.', ''),
-        text: v,
+        question: k.replace("question.question.", ""),
+        text: v
       }));
   });
   readonly configMinNumberOfAnswers: Signal<number> = computed(() => {
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
-    return cfg && cfg['question.num_answers']
-      ? parseInt(cfg['question.num_answers'], 10)
+    return cfg && cfg["question.num_answers"]
+      ? parseInt(cfg["question.num_answers"], 10)
       : 0;
   });
   text = this.tokenService
     .tokenTypeOptions()
-    .find((type) => type.key === 'question')?.text;
+    .find((type) => type.key === "question")?.text;
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
@@ -93,7 +72,7 @@ export class EnrollQuestionComponent implements OnInit {
   }
 
   onClickEnroll = (
-    basicOptions: TokenEnrollmentData,
+    basicOptions: TokenEnrollmentData
   ): Observable<EnrollmentResponse | null> => {
     if (this.questionForm.invalid) {
       this.questionForm.markAllAsTouched();
@@ -102,24 +81,24 @@ export class EnrollQuestionComponent implements OnInit {
 
     const answers: Record<string, string> = {};
     this.configQuestions().forEach((q) => {
-      const controlName = `answer_${q.question.replace(/\s+/g, '_')}`;
-      answers[q.question] = this.questionForm.get(controlName)?.value ?? '';
+      const controlName = `answer_${q.question.replace(/\s+/g, "_")}`;
+      answers[q.question] = this.questionForm.get(controlName)?.value ?? "";
     });
 
     const enrollmentData: QuestionEnrollmentOptions = {
       ...basicOptions,
-      type: 'question',
-      answers: answers,
+      type: "question",
+      answers: answers
     };
     return this.tokenService.enrollToken({
       data: enrollmentData,
-      mapper: this.enrollmentMapper,
+      mapper: this.enrollmentMapper
     });
   };
 
   private answeredCount(): number {
     return Object.values(this.questionForm.controls).filter(
-      (control) => control?.value && control.value.trim() !== '',
+      (control) => control?.value && control.value.trim() !== ""
     ).length;
   }
 
@@ -131,9 +110,9 @@ export class EnrollQuestionComponent implements OnInit {
 
     const newControls: { [key: string]: FormControl<string | null> } = {};
     this.configQuestions().forEach((q) => {
-      const controlName = `answer_${q.question.replace(/\s+/g, '_')}`;
+      const controlName = `answer_${q.question.replace(/\s+/g, "_")}`;
       this.questionControlNames.push(controlName);
-      const control = new FormControl<string | null>('', [Validators.required]);
+      const control = new FormControl<string | null>("", [Validators.required]);
       this.questionForm.addControl(controlName, control);
       newControls[controlName] = control;
     });

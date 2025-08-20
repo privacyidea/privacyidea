@@ -2,8 +2,6 @@
 This test file tests the lib.tokens.tiqrtoken and lib.tokens.ocra
 This depends on lib.tokenclass
 """
-import json
-
 from tests import smtpmock
 from .base import MyTestCase, MyApiTestCase
 from privacyidea.lib.challenge import get_challenges
@@ -781,7 +779,7 @@ class TiQRTokenTestCase(MyApiTestCase):
         }]
 
         # Import the token
-        import_tokens(json.dumps(token_data))
+        import_tokens(token_data)
 
         # Retrieve the imported token
         token = get_tokens(serial=token_data[0]["serial"])[0]

@@ -18,14 +18,14 @@
 
 .inline-hint {
   margin-bottom: 16px;
-  background: #d9edf7;
+  background: var(--inline-hint-bg);
   padding: 8px;
   border-radius: var(--border-radius);
 }
 
 .inline-warning {
   margin-bottom: 16px;
-  background: #f2dede;
+  background: var(--inline-warning-bg);
   padding: 8px;
   border-radius: var(--border-radius);
 }

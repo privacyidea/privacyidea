@@ -1,18 +1,17 @@
 <h1 mat-dialog-title>Assign Selected Token to User</h1>
 <mat-dialog-content>
   @if (selectionContainsAssignedToken()) {
-  <p class="inline-warning">
-    Some token are already assigned to a user.
-    <br />
-    Assigning a token to a user will remove the previous assignment.
-  </p>
+    <p class="inline-warning">
+      Some token are already assigned to a user. <br/> Assigning a token to a user will remove the previous assignment.
+    </p>
   }
   <div class="selected-user-assign-container">
     <mat-form-field class="width-50 input-height">
       <mat-label>Select Realm of User</mat-label>
-      <mat-select [formControl]="selectedUserRealmControl"
-                  [value]="selectedUserRealmControl.value"
-                  required>
+      <mat-select
+        [formControl]="selectedUserRealmControl"
+        [value]="selectedUserRealmControl.value"
+        required>
         @for (option of realmService.realmOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
         }
@@ -20,12 +19,14 @@
     </mat-form-field>
     <mat-form-field class="width-50 input-height">
       <mat-label>Enter User</mat-label>
-      <input [formControl]="userFilterControl"
-             [matAutocomplete]="userAuto"
-             matInput
-             required />
-      <mat-autocomplete #userAuto="matAutocomplete"
-                        [displayWith]="userService.displayUser">
+      <input
+        [formControl]="userFilterControl"
+        [matAutocomplete]="userAuto"
+        matInput
+        required/>
+      <mat-autocomplete
+        #userAuto="matAutocomplete"
+        [displayWith]="userService.displayUser">
         @for (user of userService.filteredUsers(); track user) {
           <mat-option [value]="user">{{ user.username }}</mat-option>
         }
@@ -48,42 +49,50 @@
   </div>
 
   <div class="selected-user-assign-container">
-    <mat-form-field appearance="fill"
-                    class="pin-field">
-      <input style="display: none"
-             type="text" />
+    <mat-form-field
+      appearance="fill"
+      class="pin-field">
+      <input
+        style="display: none"
+        type="text"/>
 
-      <input style="display: none"
-             type="password" />
+      <input
+        style="display: none"
+        type="password"/>
       <mat-label>PIN (optional)</mat-label>
-      <input (ngModelChange)="pin.set($event)"
-             [ngModel]="pin()"
-             [type]="hidePin() ? 'password' : 'text'"
-             autocomplete="new-password"
-             matInput />
-      <button (click)="togglePinVisibility()"
-              [attr.aria-label]="'Show PIN'"
-              [attr.aria-pressed]="!hidePin()"
-              mat-icon-button
-              matSuffix
-              type="button">
+      <input
+        (ngModelChange)="pin.set($event)"
+        [ngModel]="pin()"
+        [type]="hidePin() ? 'password' : 'text'"
+        autocomplete="new-password"
+        matInput/>
+      <button
+        (click)="togglePinVisibility()"
+        [attr.aria-label]="'Show PIN'"
+        [attr.aria-pressed]="!hidePin()"
+        mat-icon-button
+        matSuffix
+        type="button">
         <mat-icon>{{ hidePin() ? "visibility_off" : "visibility" }}</mat-icon>
       </button>
     </mat-form-field>
-    <mat-form-field appearance="fill"
-                    class="pin-field">
+    <mat-form-field
+      appearance="fill"
+      class="pin-field">
       <mat-label>PIN (repeat)</mat-label>
-      <input (ngModelChange)="pinRepeat.set($event)"
-             [ngModel]="pinRepeat()"
-             [type]="hidePin() ? 'password' : 'text'"
-             autocomplete="new-password"
-             matInput />
-      <button (click)="togglePinVisibility()"
-              [attr.aria-label]="'Show PIN Repeat'"
-              [attr.aria-pressed]="!hidePin()"
-              mat-icon-button
-              matSuffix
-              type="button">
+      <input
+        (ngModelChange)="pinRepeat.set($event)"
+        [ngModel]="pinRepeat()"
+        [type]="hidePin() ? 'password' : 'text'"
+        autocomplete="new-password"
+        matInput/>
+      <button
+        (click)="togglePinVisibility()"
+        [attr.aria-label]="'Show PIN Repeat'"
+        [attr.aria-pressed]="!hidePin()"
+        mat-icon-button
+        matSuffix
+        type="button">
         <mat-icon>{{ hidePin() ? "visibility_off" : "visibility" }}</mat-icon>
       </button>
       @if (pinRepeat() && !pinsMatch()) {
@@ -94,12 +103,14 @@
 </mat-dialog-content>
 
 <mat-dialog-actions>
-  <button (click)="onCancel()"
-          mat-button>Cancel
+  <button
+    (click)="onCancel()"
+    mat-button>Cancel
   </button>
-  <button (click)="onConfirm()"
-          [disabled]="!pinsMatch() || selectedUserRealmControl.invalid || userFilterControl.invalid"
-          color="primary"
-          mat-button>Assign to Selected Token
+  <button
+    (click)="onConfirm()"
+    [disabled]="!pinsMatch() || selectedUserRealmControl.invalid || userFilterControl.invalid"
+    color="primary"
+    mat-button>Assign to Selected Token
   </button>
 </mat-dialog-actions>

@@ -1,8 +1,8 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed } from "@angular/core/testing";
 
-import { NotificationService } from './notification.service';
+import { NotificationService } from "./notification.service";
 
-describe('NotificationService', () => {
+describe("NotificationService", () => {
   let notificationService: NotificationService;
 
   beforeEach(() => {
@@ -10,7 +10,7 @@ describe('NotificationService', () => {
     notificationService = TestBed.inject(NotificationService);
   });
 
-  it('should be created', () => {
+  it("should be created", () => {
     expect(notificationService).toBeTruthy();
   });
 });

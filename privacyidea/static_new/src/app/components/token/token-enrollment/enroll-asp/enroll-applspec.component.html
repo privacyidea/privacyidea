@@ -3,12 +3,14 @@
     <p>{{ text }}</p>
   </div>
   <h4 class="enroll-h4">Token Configuration</h4>
-  <mat-checkbox [formControl]="generateOnServerControl"
-                class="server-checkbox">
+  <mat-checkbox
+    [formControl]="generateOnServerControl"
+    class="server-checkbox">
     Generate the static password on the Server
     @if (generateOnServerControl.value) {
-      <span class="dot">.</span><span>
-        <br />
+      <span class="dot">.</span>
+      <span>
+        <br/>
         The server will create the static password.
       </span>
     }
@@ -17,10 +19,11 @@
   <div class="flex-row gap-1">
     <mat-form-field class="width-64 input-height">
       <mat-label>Service ID</mat-label>
-      <mat-select [errorStateMatcher]="applspecErrorStateMatcher"
-                  [formControl]="serviceIdControl"
-                  [value]="serviceIdControl.value"
-                  required>
+      <mat-select
+        [errorStateMatcher]="applspecErrorStateMatcher"
+        [formControl]="serviceIdControl"
+        [value]="serviceIdControl.value"
+        required>
         @for (option of serviceIdOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
         }
@@ -31,9 +34,10 @@
     @if (!generateOnServerControl.value) {
       <mat-form-field class="serviceid-input-form input-height">
         <mat-label>Application Specific Password</mat-label>
-        <input matInput
-               [formControl]="otpKeyControl"
-               placeholder="Enter static password" />
+        <input
+          matInput
+          [formControl]="otpKeyControl"
+          placeholder="Enter static password"/>
       </mat-form-field>
     }
   </div>
