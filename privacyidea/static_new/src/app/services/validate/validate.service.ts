@@ -7,10 +7,7 @@ import { PiResponse } from "../../app.component";
 import { AuthResponse, AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { Base64Service, Base64ServiceInterface } from "../base64/base64.service";
 import { LocalService, LocalServiceInterface } from "../local/local.service";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../notification/notification.service";
+import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 
 export interface ValidateCheckDetail {
   attributes?: {

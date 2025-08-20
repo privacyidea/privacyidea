@@ -16,10 +16,7 @@ import {
   MatTableDataSource
 } from "@angular/material/table";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
-import {
-  TableUtilsService,
-  TableUtilsServiceInterface
-} from "../../../services/table-utils/table-utils.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";

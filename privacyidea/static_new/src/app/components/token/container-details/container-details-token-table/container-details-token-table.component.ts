@@ -1,14 +1,5 @@
 import { NgClass } from "@angular/common";
-import {
-  Component,
-  computed,
-  effect,
-  inject,
-  Input,
-  linkedSignal,
-  ViewChild,
-  WritableSignal
-} from "@angular/core";
+import { Component, computed, effect, inject, Input, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
@@ -33,18 +24,9 @@ import {
   ContainerService,
   ContainerServiceInterface
 } from "../../../../services/container/container.service";
-import {
-  ContentService,
-  ContentServiceInterface
-} from "../../../../services/content/content.service";
-import {
-  OverflowService,
-  OverflowServiceInterface
-} from "../../../../services/overflow/overflow.service";
-import {
-  TableUtilsService,
-  TableUtilsServiceInterface
-} from "../../../../services/table-utils/table-utils.service";
+import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
+import { OverflowService, OverflowServiceInterface } from "../../../../services/overflow/overflow.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";

@@ -8,11 +8,7 @@ import { LocalService } from "../local/local.service";
 import { TableUtilsService } from "../table-utils/table-utils.service";
 import { ContentService } from "../content/content.service";
 import { environment } from "../../../environments/environment";
-import {
-  MockContentService,
-  MockLocalService,
-  MockTableUtilsService
-} from "../../../testing/mock-services";
+import { MockContentService, MockLocalService, MockTableUtilsService } from "../../../testing/mock-services";
 
 environment.proxyUrl = "/api";
 

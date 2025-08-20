@@ -11,17 +11,11 @@ import {
   NotificationService,
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
-import {
-  OverflowService,
-  OverflowServiceInterface
-} from "../../../../services/overflow/overflow.service";
+import { OverflowService, OverflowServiceInterface } from "../../../../services/overflow/overflow.service";
 import { RealmService, RealmServiceInterface } from "../../../../services/realm/realm.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { UserService, UserServiceInterface } from "../../../../services/user/user.service";
-import {
-  EditableElement,
-  EditButtonsComponent
-} from "../../../shared/edit-buttons/edit-buttons.component";
+import { EditableElement, EditButtonsComponent } from "../../../shared/edit-buttons/edit-buttons.component";
 import { NgClass } from "@angular/common";
 
 @Component({

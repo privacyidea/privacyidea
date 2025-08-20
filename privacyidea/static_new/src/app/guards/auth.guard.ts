@@ -1,10 +1,7 @@
 import { inject, Injectable } from "@angular/core";
 import { CanActivate, CanActivateChild, CanMatchFn, Router } from "@angular/router";
 import { AuthService, AuthServiceInterface } from "../services/auth/auth.service";
-import {
-  NotificationService,
-  NotificationServiceInterface,
-} from "../services/notification/notification.service";
+import { NotificationService, NotificationServiceInterface } from "../services/notification/notification.service";
 
 export const adminMatch: CanMatchFn = () => inject(AuthService).role() === "admin";
 

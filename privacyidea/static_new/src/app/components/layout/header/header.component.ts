@@ -14,18 +14,12 @@ import {
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { LocalService, LocalServiceInterface } from "../../../services/local/local.service";
 import { MachineService, MachineServiceInterface } from "../../../services/machine/machine.service";
-import {
-  NotificationService,
-  NotificationServiceInterface,
-} from "../../../services/notification/notification.service";
+import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import {
   SessionTimerService,
   SessionTimerServiceInterface,
 } from "../../../services/session-timer/session-timer.service";
-import {
-  ChallengesService,
-  ChallengesServiceInterface,
-} from "../../../services/token/challenges/challenges.service";
+import { ChallengesService, ChallengesServiceInterface } from "../../../services/token/challenges/challenges.service";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { ThemeSwitcherComponent } from "../../shared/theme-switcher/theme-switcher.component";

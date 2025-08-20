@@ -7,12 +7,19 @@ graft authmodules
 include requirements.txt pyproject.toml
 
 # We need to exclude files at the end otherwise they get included again
+exclude .git* .codespell* .readthedocs.yaml .dockerignore .pep8speaks.yml \
+  Gruntfile.js coveragerc pi-manage .travis* Procfile
+
+global-exclude *.pyc
+
 prune venv*
-prune privacyidea/static/node_modules
+
+# When the new WebUI is built, some .py files remain in the node_modules directory
+# which can not be excluded: https://github.com/pypa/setuptools/issues/511#issuecomment-570177072
+# We should move the WebUI sources out of the privacyidea module directory
+prune **/node_modules
+prune **/.angular
 
 prune doc
 prune .circleci
 prune .github
-
-global-exclude *.pyc
-exclude .git* .codespell* .readthedocs.yaml .dockerignore .pep8speaks.yml Gruntfile.js coveragerc pi-manage .travis* Procfile

@@ -16,10 +16,7 @@ import {
 } from "@angular/material/expansion";
 import { MatIcon } from "@angular/material/icon";
 import { EnrollmentResponse } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import {
-  ContentService,
-  ContentServiceInterface
-} from "../../../../services/content/content.service";
+import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { UserData } from "../../../../services/user/user.service";
 
@@ -52,11 +49,9 @@ export type TokenEnrollmentLastStepDialogData = {
 export class TokenEnrollmentLastStepDialogComponent {
   protected readonly dialogRef: MatDialogRef<TokenEnrollmentLastStepDialogComponent> =
     inject(MatDialogRef);
-  public readonly data: TokenEnrollmentLastStepDialogData =
-    inject(MAT_DIALOG_DATA);
+  public readonly data: TokenEnrollmentLastStepDialogData = inject(MAT_DIALOG_DATA);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly contentService: ContentServiceInterface =
-    inject(ContentService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
 
   protected readonly Object = Object;
 

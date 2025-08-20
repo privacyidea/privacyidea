@@ -9,18 +9,9 @@ import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "../../app.routes";
 import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
 import { LocalService, LocalServiceInterface } from "../../services/local/local.service";
-import {
-  NotificationService,
-  NotificationServiceInterface,
-} from "../../services/notification/notification.service";
-import {
-  SessionTimerService,
-  SessionTimerServiceInterface,
-} from "../../services/session-timer/session-timer.service";
-import {
-  ValidateService,
-  ValidateServiceInterface,
-} from "../../services/validate/validate.service";
+import { NotificationService, NotificationServiceInterface } from "../../services/notification/notification.service";
+import { SessionTimerService, SessionTimerServiceInterface } from "../../services/session-timer/session-timer.service";
+import { ValidateService, ValidateServiceInterface } from "../../services/validate/validate.service";
 
 @Component({
   selector: "app-login",

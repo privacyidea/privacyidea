@@ -3,10 +3,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatProgressBar } from "@angular/material/progress-bar";
 import { LoadingService, LoadingServiceInterface } from "../../../services/loading/loading-service";
-import {
-  VersioningService,
-  VersioningServiceInterface
-} from "../../../services/version/version.service";
+import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
 
 @Component({
   selector: "app-footer",

@@ -2,14 +2,8 @@ import { Component, HostListener, inject, OnInit } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { RouterOutlet } from "@angular/router";
 import { AuthService, AuthServiceInterface } from "./services/auth/auth.service";
-import {
-  NotificationService,
-  NotificationServiceInterface,
-} from "./services/notification/notification.service";
-import {
-  SessionTimerService,
-  SessionTimerServiceInterface,
-} from "./services/session-timer/session-timer.service";
+import { NotificationService, NotificationServiceInterface } from "./services/notification/notification.service";
+import { SessionTimerService, SessionTimerServiceInterface } from "./services/session-timer/session-timer.service";
 import { ThemeService } from "./services/theme/theme.service";
 
 export interface PiResponse<Value, Detail = unknown> {

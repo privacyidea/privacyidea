@@ -4,12 +4,14 @@
     <a (click)="tokenSelected(data.response.detail.serial)">
       {{ data.response.detail.serial }} </a>.</span>
   @if (data.response.detail["container_serial"]) {
-    <br/><span>It has been enrolled in the container
+    <br/>
+    <span>It has been enrolled in the container
       <a (click)="containerSelected(data.response.detail['container_serial'])">
         {{ data.response.detail["container_serial"] }} </a>.</span>
   }
   @if (data.user?.username && data.userRealm != "" && !data.onlyAddToRealm) {
-    <br/><span>The user {{ data.user!.username }}in the realm {{ data.userRealm }} was
+    <br/>
+    <span>The user {{ data.user!.username }} in the realm {{ data.userRealm }} was
       assigned to the token.
     </span>
   }
@@ -53,24 +55,10 @@
         <p class="width-36">
           Click
           <a href="{{ url }}">here</a>
-          or scan the QR Code, if you want to add the Token to your smartphone authenticator app.
-          The QR Code contains the secret key of your token. You need to protect it. <strong> If you
-                                                                                              are in
-                                                                                              doubt,
-                                                                                              that
-                                                                                              someone
-                                                                                              else
-                                                                                              saw
-                                                                                              it,
-                                                                                              please
-                                                                                              regenerate
-                                                                                              the QR
-                                                                                              Code,
-                                                                                              when
-                                                                                              no one
-                                                                                              else
-                                                                                              is
-                                                                                              watching. </strong>
+          or scan the QR Code, if you want to add the Token to your smartphone authenticator app. The QR Code contains
+          the secret key of your token. You need to protect it. <strong> If you are in doubt, that someone else saw it,
+                                                                         please regenerate the QR Code, when no one else
+                                                                         is watching. </strong>
         </p>
 
         <button
@@ -119,8 +107,7 @@
             </mat-expansion-panel-header>
             <div id="otp-values">
               <div class="otp-values">
-                @for (otp of Object.entries(data.response.detail["otps"]);
-                  track otp) {
+                @for (otp of Object.entries(data.response.detail["otps"]); track otp[0]) {
                   <span class="otp-value"> #{{ otp[0] }}: {{ otp[1] }}</span>
                 }
               </div>
