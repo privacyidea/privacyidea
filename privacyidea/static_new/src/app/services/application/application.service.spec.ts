@@ -1,19 +1,19 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed } from "@angular/core/testing";
 
-import { provideHttpClient } from '@angular/common/http';
-import { ApplicationService } from './application.service';
+import { provideHttpClient } from "@angular/common/http";
+import { ApplicationService } from "./application.service";
 
-describe('ApplicationService', () => {
+describe("ApplicationService", () => {
   let applicationService: ApplicationService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient()],
+      providers: [provideHttpClient()]
     });
     applicationService = TestBed.inject(ApplicationService);
   });
 
-  it('should be created', () => {
+  it("should be created", () => {
     expect(applicationService).toBeTruthy();
   });
 });

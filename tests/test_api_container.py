@@ -34,6 +34,7 @@ from privacyidea.lib.tokens.tantoken import TANACTION
 from privacyidea.lib.token import init_token, get_tokens_paginate, unassign_token
 from privacyidea.lib.user import User
 from privacyidea.lib.utils.compare import PrimaryComparators
+from privacyidea.models import Realm
 from tests.base import MyApiTestCase
 from tests.test_lib_tokencontainer import MockSmartphone
 
@@ -2781,6 +2782,32 @@ class APIContainer(APIContainerTest):
                    "user_id": invalid_user.uid}
         result = self.request_assert_success(f'/container/{container_serial}/unassign',
                                              payload, self.at, 'POST')
+        self.assertTrue(result["result"].get("value"))
+        self.assertEqual(0, len(container.get_users()))
+
+        # ---- Invalid realm ---
+        user = User("corny", self.realm3)
+        container.add_user(user)
+        Realm.query.filter_by(name=self.realm3).first().delete()
+        # Success if providing everything (realm does not exist, hence realm_id is not set)
+        payload = {"user": "corny", "realm": self.realm3, "user_id": user.uid, "resolver": user.resolver}
+        result = self.request_assert_success(f'/container/{container_serial}/unassign', payload, self.at, 'POST')
+        self.assertTrue(result["result"].get("value"))
+        self.assertEqual(0, len(container.get_users()))
+        self.setUp_user_realm3()
+        user = User("corny", self.realm3)
+        container.add_user(user)
+        Realm.query.filter_by(name=self.realm3).first().delete()
+        # Also fails if not providing realm (sets default realm)
+        payload = {"user": "corny", "user_id": user.uid, "resolver": user.resolver}
+        result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
+                                           payload, self.at, 'POST')
+        error = result["result"]["error"]
+        self.assertEqual(904, error["code"])
+        self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
+        # Success when providing only user_id and resolver, even if realm does not exist
+        payload = {"user_id": user.uid, "resolver": user.resolver}
+        result = self.request_assert_success(f'/container/{container_serial}/unassign', payload, self.at, 'POST')
         self.assertTrue(result["result"].get("value"))
         self.assertEqual(0, len(container.get_users()))
 

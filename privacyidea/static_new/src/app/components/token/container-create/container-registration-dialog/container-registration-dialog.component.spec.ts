@@ -1,12 +1,12 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ContainerRegistrationDialogComponent } from './container-registration-dialog.component';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { of } from 'rxjs';
-import { signal } from '@angular/core';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { ContainerRegistrationDialogComponent } from "./container-registration-dialog.component";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { of } from "rxjs";
+import { signal } from "@angular/core";
 
-describe('ContainerRegistrationDialogComponent', () => {
+describe("ContainerRegistrationDialogComponent", () => {
   let component: ContainerRegistrationDialogComponent;
   let fixture: ComponentFixture<ContainerRegistrationDialogComponent>;
 
@@ -22,13 +22,13 @@ describe('ContainerRegistrationDialogComponent', () => {
           useValue: {
             response: {
               result: {
-                value: { container_url: { img: '' } },
-              },
+                value: { container_url: { img: "" } }
+              }
             },
-            containerSerial: signal(''),
-          },
-        },
-      ],
+            containerSerial: signal("")
+          }
+        }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(ContainerRegistrationDialogComponent);
@@ -36,7 +36,7 @@ describe('ContainerRegistrationDialogComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

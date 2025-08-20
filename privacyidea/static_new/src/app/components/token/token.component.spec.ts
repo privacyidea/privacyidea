@@ -1,14 +1,14 @@
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { TokenComponent } from './token.component';
-import { OverflowService } from '../../services/overflow/overflow.service';
-import { MockOverflowService } from '../../../testing/mock-services';
-import { ActivatedRoute } from '@angular/router';
-import { of } from 'rxjs';
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { TokenComponent } from "./token.component";
+import { OverflowService } from "../../services/overflow/overflow.service";
+import { MockOverflowService } from "../../../testing/mock-services";
+import { ActivatedRoute } from "@angular/router";
+import { of } from "rxjs";
 
-describe('TokenComponent', () => {
+describe("TokenComponent", () => {
   let component: TokenComponent;
   let fixture: ComponentFixture<TokenComponent>;
   let mockOverflowService: MockOverflowService;
@@ -23,12 +23,12 @@ describe('TokenComponent', () => {
         {
           provide: ActivatedRoute,
           useValue: {
-            params: of({ id: '123' }),
-          },
+            params: of({ id: "123" })
+          }
         },
         provideHttpClient(),
-        provideHttpClientTesting(),
-      ],
+        provideHttpClientTesting()
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(TokenComponent);
@@ -36,24 +36,24 @@ describe('TokenComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 
-  it('should show token card outside the drawer if overflowService returns false', () => {
+  it("should show token card outside the drawer if overflowService returns false", () => {
     mockOverflowService.setWidthOverflow(false);
     fixture.detectChanges();
 
     const cardOutsideDrawer = fixture.nativeElement.querySelector(
-      'app-token-card.margin-right-1',
+      "app-token-card.margin-right-1"
     );
-    const drawer = fixture.nativeElement.querySelector('mat-drawer');
+    const drawer = fixture.nativeElement.querySelector("mat-drawer");
 
     expect(cardOutsideDrawer).toBeTruthy();
     expect(drawer).toBeNull();
   });
 
-  it('should show token card in drawer if overflowService returns true', async () => {
+  it("should show token card in drawer if overflowService returns true", async () => {
     mockOverflowService.setWidthOverflow(true);
 
     component.updateOverflowState();
@@ -63,10 +63,10 @@ describe('TokenComponent', () => {
     fixture.detectChanges();
 
     const drawer: HTMLElement | null =
-      fixture.nativeElement.querySelector('mat-drawer');
-    const cardInsideDrawer = drawer?.querySelector('app-token-card');
+      fixture.nativeElement.querySelector("mat-drawer");
+    const cardInsideDrawer = drawer?.querySelector("app-token-card");
     const cardOutsideDrawer = fixture.nativeElement.querySelector(
-      'app-token-card.margin-right-1',
+      "app-token-card.margin-right-1"
     );
 
     expect(drawer).toBeTruthy();

@@ -1,30 +1,30 @@
-import { MatIcon } from '@angular/material/icon';
-import { MatList, MatListItem } from '@angular/material/list';
-import { MatButton } from '@angular/material/button';
-import { MatDivider } from '@angular/material/divider';
-import { MatDialog } from '@angular/material/dialog';
-import { forkJoin } from 'rxjs';
-import { tabToggleState } from '../../../../../styles/animations/animations';
+import { MatIcon } from "@angular/material/icon";
+import { MatList, MatListItem } from "@angular/material/list";
+import { MatButton } from "@angular/material/button";
+import { MatDivider } from "@angular/material/divider";
+import { MatDialog } from "@angular/material/dialog";
+import { forkJoin } from "rxjs";
+import { tabToggleState } from "../../../../../styles/animations/animations";
 import {
   ContainerService,
-  ContainerServiceInterface,
-} from '../../../../services/container/container.service';
+  ContainerServiceInterface
+} from "../../../../services/container/container.service";
 import {
   ContentService,
-  ContentServiceInterface,
-} from '../../../../services/content/content.service';
+  ContentServiceInterface
+} from "../../../../services/content/content.service";
 import {
   VersioningService,
-  VersioningServiceInterface,
-} from '../../../../services/version/version.service';
-import { NgClass } from '@angular/common';
-import { Component, computed, inject } from '@angular/core';
-import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
-import { Router, RouterLink } from '@angular/router';
-import { ROUTE_PATHS } from '../../../../app.routes';
+  VersioningServiceInterface
+} from "../../../../services/version/version.service";
+import { NgClass } from "@angular/common";
+import { Component, computed, inject } from "@angular/core";
+import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import { Router, RouterLink } from "@angular/router";
+import { ROUTE_PATHS } from "../../../../app.routes";
 
 @Component({
-  selector: 'app-container-tab',
+  selector: "app-container-tab",
   standalone: true,
   imports: [
     MatIcon,
@@ -33,11 +33,11 @@ import { ROUTE_PATHS } from '../../../../app.routes';
     MatButton,
     NgClass,
     MatDivider,
-    RouterLink,
+    RouterLink
   ],
-  templateUrl: './container-tab.component.html',
-  styleUrl: './container-tab.component.scss',
-  animations: [tabToggleState],
+  templateUrl: "./container-tab.component.html",
+  styleUrl: "./container-tab.component.scss",
+  animations: [tabToggleState]
 })
 export class ContainerTabComponent {
   private readonly dialog: MatDialog = inject(MatDialog);
@@ -52,7 +52,7 @@ export class ContainerTabComponent {
   containerSelection = this.containerService.containerSelection;
   containerSerial = this.containerService.containerSerial;
   selectedContainer = this.containerService.selectedContainer;
-  containerIsSelected = computed(() => this.containerSerial() !== '');
+  containerIsSelected = computed(() => this.containerSerial() !== "");
   states = computed(() => {
     const containerDetail =
       this.containerService.containerDetailResource.value();
@@ -87,11 +87,11 @@ export class ContainerTabComponent {
       .open(ConfirmationDialogComponent, {
         data: {
           serial_list: [this.containerSerial()],
-          title: 'Delete Container',
-          type: 'container',
-          action: 'delete',
-          numberOfTokens: 1,
-        },
+          title: "Delete Container",
+          type: "container",
+          action: "delete",
+          numberOfTokens: 1
+        }
       })
       .afterClosed()
       .subscribe((result) => {
@@ -118,11 +118,11 @@ export class ContainerTabComponent {
       .open(ConfirmationDialogComponent, {
         data: {
           serial_list: selectedContainers.map((container) => container.serial),
-          title: 'Delete All Containers',
-          type: 'container',
-          action: 'delete',
-          numberOfContainers: selectedContainers.length,
-        },
+          title: "Delete All Containers",
+          type: "container",
+          action: "delete",
+          numberOfContainers: selectedContainers.length
+        }
       })
       .afterClosed()
       .subscribe({
@@ -130,19 +130,19 @@ export class ContainerTabComponent {
           if (result) {
             forkJoin(
               selectedContainers.map((container) =>
-                this.containerService.deleteContainer(container.serial),
-              ),
+                this.containerService.deleteContainer(container.serial)
+              )
             ).subscribe({
               next: () => {
                 this.containerSelection.set([]);
                 this.containerService.containerResource.reload();
               },
               error: (err) => {
-                console.error('Error deleting containers:', err);
-              },
+                console.error("Error deleting containers:", err);
+              }
             });
           }
-        },
+        }
       });
   }
 

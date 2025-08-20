@@ -1,12 +1,12 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { NavigationSelfServiceComponent } from './navigation-self-service.component';
-import { provideHttpClient } from '@angular/common/http';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
-import { ActivatedRoute } from '@angular/router';
-import { of } from 'rxjs';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { NavigationSelfServiceComponent } from "./navigation-self-service.component";
+import { provideHttpClient } from "@angular/common/http";
+import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+import { provideAnimationsAsync } from "@angular/platform-browser/animations/async";
+import { ActivatedRoute } from "@angular/router";
+import { of } from "rxjs";
 
-describe('NavigationSelfServiceComponent', () => {
+describe("NavigationSelfServiceComponent", () => {
   let component: NavigationSelfServiceComponent;
   let fixture: ComponentFixture<NavigationSelfServiceComponent>;
 
@@ -18,11 +18,11 @@ describe('NavigationSelfServiceComponent', () => {
         {
           provide: ActivatedRoute,
           useValue: {
-            params: of({ id: '123' }),
-          },
-        },
+            params: of({ id: "123" })
+          }
+        }
       ],
-      imports: [NavigationSelfServiceComponent, BrowserAnimationsModule],
+      imports: [NavigationSelfServiceComponent, BrowserAnimationsModule]
     }).compileComponents();
 
     fixture = TestBed.createComponent(NavigationSelfServiceComponent);
@@ -30,7 +30,7 @@ describe('NavigationSelfServiceComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

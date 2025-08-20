@@ -6,20 +6,23 @@
         element.keyMap.key === "user_name")) ||
     (isEditingInfo() && element.keyMap.key === "info");
   @if (!shouldHideEdit()) {
-    <button mat-icon-button
-            class="flex"
-            (click)="toggleEdit(element)">
+    <button
+      mat-icon-button
+      class="flex"
+      (click)="toggleEdit(element)">
       <mat-icon> edit</mat-icon>
     </button>
   } @else if (elementIsEditing) {
-    <button mat-icon-button
-            class="flex"
-            (click)="saveEdit(element)">
+    <button
+      mat-icon-button
+      class="flex"
+      (click)="saveEdit(element)">
       <mat-icon>save_as</mat-icon>
     </button>
-    <button mat-icon-button
-            class="red flex"
-            (click)="cancelEdit(element)">
+    <button
+      mat-icon-button
+      class="red flex"
+      (click)="cancelEdit(element)">
       <mat-icon>cancel</mat-icon>
     </button>
   }

@@ -1,46 +1,28 @@
-import {
-  Component,
-  computed,
-  EventEmitter,
-  inject,
-  OnInit,
-  Output,
-  Signal,
-} from '@angular/core';
+import { Component, computed, EventEmitter, inject, OnInit, Output, Signal } from "@angular/core";
 import {
   FormControl,
   FormGroup,
   FormsModule,
   ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
-import { MatCheckbox } from '@angular/material/checkbox';
-import {
-  ErrorStateMatcher,
-  MatOption,
-  MatOptionSelectionChange,
-} from '@angular/material/core';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
-import { MatError, MatSelect } from '@angular/material/select';
-import {
-  RealmService,
-  RealmServiceInterface,
-} from '../../../../services/realm/realm.service';
-import {
-  TokenService,
-  TokenServiceInterface,
-} from '../../../../services/token/token.service';
+  Validators
+} from "@angular/forms";
+import { MatCheckbox } from "@angular/material/checkbox";
+import { ErrorStateMatcher, MatOption, MatOptionSelectionChange } from "@angular/material/core";
+import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatInput } from "@angular/material/input";
+import { MatError, MatSelect } from "@angular/material/select";
+import { RealmService, RealmServiceInterface } from "../../../../services/realm/realm.service";
+import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
-import { Observable, of } from 'rxjs';
-import { FourEyesApiPayloadMapper } from '../../../../mappers/token-api-payload/4eyes-token-api-payload.mapper';
+import { Observable, of } from "rxjs";
+import { FourEyesApiPayloadMapper } from "../../../../mappers/token-api-payload/4eyes-token-api-payload.mapper";
 import {
   EnrollmentResponse,
-  TokenEnrollmentData,
-} from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+  TokenEnrollmentData
+} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 
 export interface FourEyesEnrollmentOptions extends TokenEnrollmentData {
-  type: '4eyes';
+  type: "4eyes";
   separator: string;
   requiredTokenOfRealms: { realm: string; tokens: number }[];
   onlyAddToRealm: boolean;
@@ -56,7 +38,7 @@ export class RequiredRealmsErrorStateMatcher implements ErrorStateMatcher {
 }
 
 @Component({
-  selector: 'app-enroll-foureyes',
+  selector: "app-enroll-foureyes",
   standalone: true,
   imports: [
     MatFormField,
@@ -67,21 +49,21 @@ export class RequiredRealmsErrorStateMatcher implements ErrorStateMatcher {
     MatOption,
     MatSelect,
     MatCheckbox,
-    MatError,
+    MatError
   ],
-  templateUrl: './enroll-foureyes.component.html',
-  styleUrl: './enroll-foureyes.component.scss',
+  templateUrl: "./enroll-foureyes.component.html",
+  styleUrl: "./enroll-foureyes.component.scss"
 })
 export class EnrollFoureyesComponent implements OnInit {
   protected readonly enrollmentMapper: FourEyesApiPayloadMapper = inject(
-    FourEyesApiPayloadMapper,
+    FourEyesApiPayloadMapper
   );
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
   text = this.tokenService
     .tokenTypeOptions()
-    .find((type) => type.key === '4eyes')?.text;
+    .find((type) => type.key === "4eyes")?.text;
 
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
@@ -90,18 +72,18 @@ export class EnrollFoureyesComponent implements OnInit {
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
-  separatorControl = new FormControl<string>(':', [Validators.required]);
+  separatorControl = new FormControl<string>(":", [Validators.required]);
   requiredTokensOfRealmsControl = new FormControl<
     { realm: string; tokens: number }[]
   >([], [Validators.required, Validators.minLength(1)]);
   onlyAddToRealmControl = new FormControl<boolean>(false, [
-    Validators.required,
+    Validators.required
   ]);
 
   foureyesForm = new FormGroup({
     separator: this.separatorControl,
     requiredTokensOfRealms: this.requiredTokensOfRealmsControl,
-    onlyAddToRealm: this.onlyAddToRealmControl,
+    onlyAddToRealm: this.onlyAddToRealmControl
   });
 
   realmOptions = this.realmService.realmOptions;
@@ -115,7 +97,7 @@ export class EnrollFoureyesComponent implements OnInit {
         acc[curr.realm] = curr.tokens;
         return acc;
       },
-      {} as Record<string, number>,
+      {} as Record<string, number>
     );
   });
   requiredRealmsErrorStateMatcher = new RequiredRealmsErrorStateMatcher();
@@ -124,7 +106,7 @@ export class EnrollFoureyesComponent implements OnInit {
     this.aditionalFormFieldsChange.emit({
       separator: this.separatorControl,
       requiredTokensOfRealms: this.requiredTokensOfRealmsControl,
-      onlyAddToRealm: this.onlyAddToRealmControl,
+      onlyAddToRealm: this.onlyAddToRealmControl
     });
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
@@ -168,7 +150,7 @@ export class EnrollFoureyesComponent implements OnInit {
   }
 
   onClickEnroll = (
-    basicOptions: TokenEnrollmentData,
+    basicOptions: TokenEnrollmentData
   ): Observable<EnrollmentResponse | null> => {
     if (this.foureyesForm.invalid) {
       this.foureyesForm.markAllAsTouched();
@@ -176,20 +158,20 @@ export class EnrollFoureyesComponent implements OnInit {
     }
     const enrollmentData: FourEyesEnrollmentOptions = {
       ...basicOptions,
-      type: '4eyes',
-      separator: this.separatorControl.value ?? ':',
+      type: "4eyes",
+      separator: this.separatorControl.value ?? ":",
       requiredTokenOfRealms: this.requiredTokensOfRealmsControl.value ?? [],
-      onlyAddToRealm: !!this.onlyAddToRealmControl.value,
+      onlyAddToRealm: !!this.onlyAddToRealmControl.value
     };
     return this.tokenService.enrollToken({
       data: enrollmentData,
-      mapper: this.enrollmentMapper,
+      mapper: this.enrollmentMapper
     });
   };
 
   private removeRealmFromSelection(
     tokensArray: { realm: string; tokens: number }[],
-    index: number,
+    index: number
   ): void {
     tokensArray.splice(index, 1);
   }
@@ -197,7 +179,7 @@ export class EnrollFoureyesComponent implements OnInit {
   private addRealmToSelection(
     tokensArray: { realm: string; tokens: number }[],
     realm: string,
-    tokens: number,
+    tokens: number
   ): void {
     tokensArray.push({ realm, tokens });
   }

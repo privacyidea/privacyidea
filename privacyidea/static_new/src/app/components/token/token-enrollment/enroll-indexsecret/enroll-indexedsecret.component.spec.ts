@@ -1,18 +1,18 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { EnrollIndexedsecretComponent } from './enroll-indexedsecret.component';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { EnrollIndexedsecretComponent } from "./enroll-indexedsecret.component";
+import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
 
-describe('EnrollIndexsecretComponent', () => {
+describe("EnrollIndexsecretComponent", () => {
   let component: EnrollIndexedsecretComponent;
   let fixture: ComponentFixture<EnrollIndexedsecretComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollIndexedsecretComponent, BrowserAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting()]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollIndexedsecretComponent);
@@ -20,7 +20,7 @@ describe('EnrollIndexsecretComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

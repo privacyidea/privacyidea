@@ -1,20 +1,19 @@
 import {
   TokenApiPayloadMapper,
   TokenEnrollmentData,
-  TokenEnrollmentPayload,
-} from './_token-api-payload.mapper';
-import { Injectable } from '@angular/core';
+  TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
+import { Injectable } from "@angular/core";
 
 export interface U2fEnrollmentData extends TokenEnrollmentData {
-  type: 'u2f';
+  type: "u2f";
 }
 
-export interface U2fEnrollmentPayload extends TokenEnrollmentPayload {}
+export interface U2fEnrollmentPayload extends TokenEnrollmentPayload {
+}
 
-@Injectable({ providedIn: 'root' })
-export class U2fApiPayloadMapper
-  implements TokenApiPayloadMapper<U2fEnrollmentData>
-{
+@Injectable({ providedIn: "root" })
+export class U2fApiPayloadMapper implements TokenApiPayloadMapper<U2fEnrollmentData> {
   toApiPayload(data: U2fEnrollmentData): U2fEnrollmentPayload {
     return {
       type: data.type,
@@ -23,7 +22,7 @@ export class U2fApiPayloadMapper
       validity_period_start: data.validityPeriodStart,
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
-      pin: data.pin,
+      pin: data.pin
     };
   }
 

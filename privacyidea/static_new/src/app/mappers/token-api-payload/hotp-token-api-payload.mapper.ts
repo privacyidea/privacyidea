@@ -1,12 +1,12 @@
 import {
   TokenApiPayloadMapper,
   TokenEnrollmentData,
-  TokenEnrollmentPayload,
-} from './_token-api-payload.mapper';
-import { Injectable } from '@angular/core';
+  TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
+import { Injectable } from "@angular/core";
 
 export interface HotpEnrollmentData extends TokenEnrollmentData {
-  type: 'hotp';
+  type: "hotp";
   generateOnServer?: boolean;
   otpKey?: string;
   otpLength?: number;
@@ -20,10 +20,8 @@ export interface HotpEnrollmentPayload extends TokenEnrollmentPayload {
   hashlib?: string;
 }
 
-@Injectable({ providedIn: 'root' })
-export class HotpApiPayloadMapper
-  implements TokenApiPayloadMapper<HotpEnrollmentData>
-{
+@Injectable({ providedIn: "root" })
+export class HotpApiPayloadMapper implements TokenApiPayloadMapper<HotpEnrollmentData> {
   toApiPayload(data: HotpEnrollmentData): HotpEnrollmentPayload {
     const payload: HotpEnrollmentPayload = {
       type: data.type,
@@ -36,7 +34,7 @@ export class HotpApiPayloadMapper
       otpkey: data.generateOnServer ? null : (data.otpKey ?? null),
       genkey: data.generateOnServer ? 1 : 0,
       otplen: data.otpLength !== undefined ? Number(data.otpLength) : undefined,
-      hashlib: data.hashAlgorithm,
+      hashlib: data.hashAlgorithm
     };
 
     if (payload.otplen === undefined) delete payload.otplen;

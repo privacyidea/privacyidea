@@ -1,4 +1,4 @@
 export const environment = {
-  secretAESKey: 'SuperSecretAESKey',
-  proxyUrl: '',
+  secretAESKey: "SuperSecretAESKey",
+  proxyUrl: ""
 };

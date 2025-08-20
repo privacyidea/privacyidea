@@ -1,7 +1,6 @@
 """
 This test file tests the lib.tokens.smstoken
 """
-import json
 import logging
 from testfixtures import log_capture
 
@@ -578,7 +577,7 @@ class EmailTokenTestCase(MyTestCase):
         }]
 
         # Import the token
-        result = import_tokens(json.dumps(token_data))
+        result = import_tokens(token_data)
         self.assertIn("PIEM12345678", result.successful_tokens, result)
 
         # Retrieve the imported token

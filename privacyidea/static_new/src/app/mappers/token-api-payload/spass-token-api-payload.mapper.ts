@@ -1,20 +1,19 @@
 import {
   TokenApiPayloadMapper,
   TokenEnrollmentData,
-  TokenEnrollmentPayload,
-} from './_token-api-payload.mapper';
-import { Injectable } from '@angular/core';
+  TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
+import { Injectable } from "@angular/core";
 
 export interface SpassEnrollmentData extends TokenEnrollmentData {
-  type: 'spass';
+  type: "spass";
 }
 
-export interface SpassEnrollmentPayload extends TokenEnrollmentPayload {}
+export interface SpassEnrollmentPayload extends TokenEnrollmentPayload {
+}
 
-@Injectable({ providedIn: 'root' })
-export class SpassApiPayloadMapper
-  implements TokenApiPayloadMapper<SpassEnrollmentData>
-{
+@Injectable({ providedIn: "root" })
+export class SpassApiPayloadMapper implements TokenApiPayloadMapper<SpassEnrollmentData> {
   toApiPayload(data: SpassEnrollmentData): SpassEnrollmentPayload {
     return {
       type: data.type,
@@ -23,7 +22,7 @@ export class SpassApiPayloadMapper
       validity_period_start: data.validityPeriodStart,
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
-      pin: data.pin,
+      pin: data.pin
     };
   }
 
