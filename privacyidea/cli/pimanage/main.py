@@ -54,7 +54,6 @@ import click
 import copy
 from flask.cli import FlaskGroup, run_command
 from privacyidea.cli import create_silent_app, get_version
-from privacyidea.lib.utils import get_version_number
 from .admin import admin_cli
 from .audit import audit_cli, rotate_audit as audit_rotate_audit
 from .backup import backup_cli
@@ -92,14 +91,7 @@ def cli():
 /_/                       /___/
 
   Management script for the privacyIDEA application."""
-    click.echo(r"""
-             _                    _______  _______
-   ___  ____(_)  _____ _______ __/  _/ _ \/ __/ _ |
-  / _ \/ __/ / |/ / _ `/ __/ // // // // / _// __ |
- / .__/_/ /_/|___/\_,_/\__/\_, /___/____/___/_/ |_|
-/_/                       /___/
-{0!s:>51}
-    """.format('v{0!s}'.format(get_version_number())), err=True)
+    pass
 
 
 deprecated_commands = [
