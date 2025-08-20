@@ -19,8 +19,10 @@ import { EnrollmentResponse } from "../../../../mappers/token-api-payload/_token
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { UserData } from "../../../../services/user/user.service";
+import { TokenType } from "../../../../services/token/token.service";
 
 export type TokenEnrollmentLastStepDialogData = {
+  tokentype: TokenType;
   response: EnrollmentResponse;
   enrollToken: () => void;
   user: UserData | null;

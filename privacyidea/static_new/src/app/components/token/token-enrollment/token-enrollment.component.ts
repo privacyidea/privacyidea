@@ -222,8 +222,8 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     inject(ContentService);
   protected readonly dialogService: DialogServiceInterface =
     inject(DialogService);
-  private observer!: IntersectionObserver;
   protected readonly renderer: Renderer2 = inject(Renderer2);
+  private observer!: IntersectionObserver;
   timezoneOptions = TIMEZONE_OFFSETS;
   pollResponse: WritableSignal<any> = linkedSignal({
     source: this.tokenService.selectedTokenType,
@@ -587,6 +587,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
 
     const dialogData: TokenEnrollmentLastStepDialogData = {
+      tokentype: this.tokenService.selectedTokenType(),
       response: response,
       enrollToken: this.enrollToken.bind(this),
       user: user,
