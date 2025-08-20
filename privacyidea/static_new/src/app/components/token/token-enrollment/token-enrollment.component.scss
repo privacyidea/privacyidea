@@ -8,12 +8,6 @@
   overflow: auto;
 }
 
-.token-type-option {
-  @include mat.elevation(3);
-  border-radius: var(--border-radius);
-  margin: 0 0 var(--third-global-padding) 0;
-}
-
 .token-type-hint {
   width: 473px;
   margin-top: 8px;
@@ -65,51 +59,9 @@ h5 {
   margin-top: 16px;
 }
 
-::ng-deep {
-  .multi-column-panel.mat-mdc-select-panel {
-    column-count: 3;
-    max-height: unset;
-    column-gap: var(--third-global-padding);
-    padding: var(--three-quarters-global-padding);
-    padding-bottom: var(--global-padding);
-  }
-}
-
-.sticky-header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background-color: var(--mat-sys-surface-container-lowest);
-  padding: 16px;
-  transition: box-shadow 0.3s ease-in-out;
-}
-
-.sticky-header.is-sticky {
-  box-shadow: var(--box-shadow);
-}
-
-.sticky-controls {
-  display: flex;
-  align-items: center;
-  gap: calc(var(--global-padding) / 2);
-}
-
-.sticky-controls .mat-mdc-form-field {
-  flex-grow: 1;
-  width: 100%;
-}
-
 .select-token-type-container {
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 0 var(--global-padding);
-  margin-bottom: 16px;
-}
-
-.select-token-type-container-self-service {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  margin-bottom: 16px;
+  flex: 2;
 }

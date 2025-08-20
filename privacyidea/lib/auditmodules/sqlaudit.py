@@ -1,3 +1,5 @@
+# (c) NetKnights GmbH 2025,  https://netknights.it
+#
 #  2016-04-08 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Avoid consecutive if statements
 #
@@ -18,17 +20,20 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+# SPDX-FileCopyrightText: 2025 Paul Lettich <paul.lettich@netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
 #
-__doc__ = """The SQL Audit Module is used to write audit entries to an SQL
+"""The SQL Audit Module is used to write audit entries to an SQL
 database.
-The SQL Audit Module is configured like this:
+The SQL Audit Module is configured like this::
 
     PI_AUDIT_MODULE = "privacyidea.lib.auditmodules.sqlaudit"
     PI_AUDIT_KEY_PRIVATE = "tests/testdata/private.pem"
     PI_AUDIT_KEY_PUBLIC = "tests/testdata/public.pem"
     PI_AUDIT_SERVERNAME = "your choice"
 
-    Optional:
+Optional::
+
     PI_AUDIT_SQL_URI = "sqlite://"
     PI_AUDIT_SQL_TRUNCATE = True | False
     PI_AUDIT_SQL_COLUMN_LENGTH = {"user": 60, "info": 10 ...}
@@ -39,6 +44,7 @@ token database.
 
 import logging
 from collections import OrderedDict
+from privacyidea.config import ConfigKey
 from privacyidea.lib.auditmodules.base import Audit as AuditBase, Paginate
 from privacyidea.lib.crypto import Sign
 from privacyidea.lib.pooling import get_engine
@@ -124,18 +130,18 @@ class Audit(AuditBase):
     def __init__(self, config=None, startdate=None):
         super(Audit, self).__init__(config, startdate)
         self.name = "sqlaudit"
-        self.sign_data = not self.config.get("PI_AUDIT_NO_SIGN")
+        self.sign_data = not self.config.get(ConfigKey.AUDIT_NO_SIGN)
         self.sign_object = None
-        self.verify_old_sig = self.config.get('PI_CHECK_OLD_SIGNATURES')
+        self.verify_old_sig = self.config.get(ConfigKey.CHECK_OLD_SIGNATURES)
         # Disable the costly checking of private RSA keys when loading them.
-        self.check_private_key = not self.config.get("PI_AUDIT_NO_PRIVATE_KEY_CHECK", False)
+        self.check_private_key = not self.config.get(ConfigKey.AUDIT_NO_PRIVATE_KEY_CHECK, False)
         if self.sign_data:
-            self.read_keys(self.config.get("PI_AUDIT_KEY_PUBLIC"),
-                           self.config.get("PI_AUDIT_KEY_PRIVATE"))
+            self.read_keys(self.config.get(ConfigKey.AUDIT_KEY_PUBLIC),
+                           self.config.get(ConfigKey.AUDIT_KEY_PRIVATE))
             self.sign_object = Sign(self.private, self.public,
                                     check_private_key=self.check_private_key)
         # Read column_length from the config file
-        config_column_length = self.config.get("PI_AUDIT_SQL_COLUMN_LENGTH", {})
+        config_column_length = self.config.get(ConfigKey.AUDIT_SQL_COLUMN_LENGTH, {})
         # fill the missing parts with the default from the models
         self.custom_column_length = {k: (v if k not in config_column_length else config_column_length[k])
                                      for k, v in column_length.items()}
@@ -159,20 +165,20 @@ class Audit(AuditBase):
         """
         # an Engine, which the Session will use for connection
         # resources
-        connect_string = self.config.get("PI_AUDIT_SQL_URI", self.config.get(
-            "SQLALCHEMY_DATABASE_URI"))
+        connect_string = self.config.get(ConfigKey.AUDIT_SQL_URI, self.config.get(
+            ConfigKey.SQLALCHEMY_DATABASE_URI))
         log.debug("using the connect string {0!s}".format(censor_connect_string(connect_string)))
         # if no specific audit engine options are given, use the default from
         # SQLALCHEMY_ENGINE_OPTIONS or none
-        sqa_options = self.config.get("PI_AUDIT_SQL_OPTIONS",
-                                      self.config.get('SQLALCHEMY_ENGINE_OPTIONS', {}))
+        sqa_options = self.config.get(ConfigKey.AUDIT_SQL_OPTIONS,
+                                      self.config.get(ConfigKey.SQLALCHEMY_ENGINE_OPTIONS, {}))
         log.debug("Using Audit SQLAlchemy engine options: {0!s}".format(sqa_options))
         try:
-            pool_size = self.config.get("PI_AUDIT_POOL_SIZE", 20)
+            pool_size = self.config.get(ConfigKey.AUDIT_POOL_SIZE, 20)
             engine = create_engine(
                 connect_string,
                 pool_size=pool_size,
-                pool_recycle=self.config.get("PI_AUDIT_POOL_RECYCLE", 600),
+                pool_recycle=self.config.get(ConfigKey.AUDIT_POOL_RECYCLE, 600),
                 **sqa_options)
             log.debug("Using SQL pool size of {}".format(pool_size))
         except TypeError:
@@ -285,7 +291,7 @@ class Audit(AuditBase):
             for entry, value in self.audit_data.items():
                 if isinstance(value, list):
                     self.audit_data[entry] = ",".join(value)
-            if self.config.get("PI_AUDIT_SQL_TRUNCATE"):
+            if self.config.get(ConfigKey.AUDIT_SQL_TRUNCATE):
                 self._truncate_data()
             if "tokentype" in self.audit_data:
                 log.warning("We have a wrong 'tokentype' key. This should not happen. Fix it!. "

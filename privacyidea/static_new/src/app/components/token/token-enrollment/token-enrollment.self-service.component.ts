@@ -136,7 +136,7 @@ export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponen
   protected override dialogService: DialogServiceInterface =
     inject(DialogService);
 
-  constructor(renderer: Renderer2) {
-    super(renderer);
+  constructor() {
+    super();
   }
 }
