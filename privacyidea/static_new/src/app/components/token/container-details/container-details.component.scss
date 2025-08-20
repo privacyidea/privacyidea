@@ -54,14 +54,14 @@ $gap-small: 8px;
 }
 
 .token-option {
-  border: 1px solid #dedcdf;
-  background: #efedf0;
+  border: 1px solid var(--mat-sys-outline);
+  background: var(--mat-sys-surface-container-low);
   margin: 0 1px;
   border-radius: var(--border-radius);
 }
 
 .token-option-span {
-  background: #fff;
+  background: var(--mat-sys-surface-container-lowest);
   padding: 6px;
   border-radius: var(--border-radius);
   margin-right: 8px;
@@ -87,7 +87,7 @@ $gap-small: 8px;
     height: 28px;
     display: flex;
     align-items: center;
-    border-left: 2px solid #dedcdf;
+    border-left: 2px solid var(--mat-sys-outline);
     padding: 10px;
   }
 }

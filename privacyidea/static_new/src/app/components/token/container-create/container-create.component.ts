@@ -25,6 +25,7 @@ import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/for
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
+
 import { MatTooltip } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { PiResponse } from "../../../app.component";
@@ -48,7 +49,10 @@ import {
 } from "../../../services/version/version.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { TokenComponent } from "../token.component";
-import { ContainerRegistrationDialogComponent } from "./container-registration-dialog/container-registration-dialog.component";
+import {
+  ContainerCreationDialogData,
+  ContainerRegistrationDialogComponent
+} from "./container-registration-dialog/container-registration-dialog.component";
 
 export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
 
@@ -189,17 +193,7 @@ export class ContainerCreateComponent {
             return;
           }
           if (this.generateQRCode()) {
-            this.containerService
-              .registerContainer({
-                container_serial: containerSerial,
-                passphrase_response: this.passphraseResponse(),
-                passphrase_prompt: this.passphrasePrompt(),
-              })
-              .subscribe((registerResponse) => {
-                this.registerResponse.set(registerResponse);
-                this.openRegistrationDialog(registerResponse);
-                this.pollContainerRolloutState(containerSerial, 5000);
-              });
+            this.registerContainer(containerSerial);
           } else {
             this.notificationService.openSnackBar(
               `Container ${containerSerial} enrolled successfully.`,
@@ -208,6 +202,20 @@ export class ContainerCreateComponent {
             this.containerSerial.set(containerSerial);
           }
         },
+      });
+  }
+
+  registerContainer(serial: string) {
+    this.containerService
+      .registerContainer({
+        container_serial: serial,
+        passphrase_response: this.passphraseResponse(),
+        passphrase_prompt: this.passphrasePrompt()
+      })
+      .subscribe((registerResponse) => {
+        this.registerResponse.set(registerResponse);
+        this.openRegistrationDialog(registerResponse);
+        this.pollContainerRolloutState(serial, 5000);
       });
   }
 
@@ -221,11 +229,13 @@ export class ContainerCreateComponent {
   };
 
   private openRegistrationDialog(response: PiResponse<ContainerRegisterData>) {
+    const dialogData: ContainerCreationDialogData = {
+      response: response,
+      containerSerial: this.containerSerial,
+      registerContainer: this.registerContainer.bind(this)
+    };
     this.registrationDialog.open(ContainerRegistrationDialogComponent, {
-      data: {
-        response: response,
-        containerSerial: this.containerSerial,
-      },
+      data: dialogData
     });
   }
 
