@@ -1,8 +1,8 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { ResyncTokenActionComponent } from './resync-token-action.component';
+import { ResyncTokenActionComponent } from "./resync-token-action.component";
 
-describe('ResyncTokenActionComponent', () => {
+describe("ResyncTokenActionComponent", () => {
   let component: ResyncTokenActionComponent;
   let fixture: ComponentFixture<ResyncTokenActionComponent>;
 
@@ -10,14 +10,14 @@ describe('ResyncTokenActionComponent', () => {
     await TestBed.configureTestingModule({
       imports: [ResyncTokenActionComponent]
     })
-    .compileComponents();
+      .compileComponents();
 
     fixture = TestBed.createComponent(ResyncTokenActionComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

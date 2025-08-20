@@ -1,8 +1,8 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { TestOtpPinActionComponent } from './test-otp-pin-action.component';
+import { TestOtpPinActionComponent } from "./test-otp-pin-action.component";
 
-describe('TestOtpPinActionComponent', () => {
+describe("TestOtpPinActionComponent", () => {
   let component: TestOtpPinActionComponent;
   let fixture: ComponentFixture<TestOtpPinActionComponent>;
 
@@ -10,14 +10,14 @@ describe('TestOtpPinActionComponent', () => {
     await TestBed.configureTestingModule({
       imports: [TestOtpPinActionComponent]
     })
-    .compileComponents();
+      .compileComponents();
 
     fixture = TestBed.createComponent(TestOtpPinActionComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

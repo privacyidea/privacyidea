@@ -1,24 +1,18 @@
-import { Component, inject } from '@angular/core';
-import { MatInput, MatSuffix } from '@angular/material/input';
-import { FormsModule } from '@angular/forms';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIcon } from '@angular/material/icon';
-import {
-  ValidateService,
-  ValidateServiceInterface,
-} from '../../../../../services/validate/validate.service';
-import {
-  TokenService,
-  TokenServiceInterface,
-} from '../../../../../services/token/token.service';
+import { Component, inject } from "@angular/core";
+import { MatInput, MatSuffix } from "@angular/material/input";
+import { FormsModule } from "@angular/forms";
+import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatButtonModule } from "@angular/material/button";
+import { MatIcon } from "@angular/material/icon";
+import { ValidateService, ValidateServiceInterface } from "../../../../../services/validate/validate.service";
+import { TokenService, TokenServiceInterface } from "../../../../../services/token/token.service";
 import {
   NotificationService,
-  NotificationServiceInterface,
-} from '../../../../../services/notification/notification.service';
+  NotificationServiceInterface
+} from "../../../../../services/notification/notification.service";
 
 @Component({
-  selector: 'app-test-otp-pin-action',
+  selector: "app-test-otp-pin-action",
   imports: [
     MatFormField,
     MatLabel,
@@ -26,10 +20,10 @@ import {
     FormsModule,
     MatSuffix,
     MatButtonModule,
-    MatIcon,
+    MatIcon
   ],
-  templateUrl: './test-otp-pin-action.component.html',
-  styleUrl: './test-otp-pin-action.component.scss',
+  templateUrl: "./test-otp-pin-action.component.html",
+  styleUrl: "./test-otp-pin-action.component.scss"
 })
 export class TestOtpPinActionComponent {
   private readonly validateService: ValidateServiceInterface =
@@ -38,34 +32,34 @@ export class TestOtpPinActionComponent {
   private readonly notificationService: NotificationServiceInterface =
     inject(NotificationService);
   hide: boolean = true;
-  otpOrPinToTest: string = '';
+  otpOrPinToTest: string = "";
 
   testToken() {
     this.validateService
       .testToken(this.tokenService.tokenSerial(), this.otpOrPinToTest)
       .subscribe({
         next: (response) => {
-          if (response.result?.authentication === 'ACCEPT') {
+          if (response.result?.authentication === "ACCEPT") {
             this.notificationService.openSnackBar(
-              'OTP or Pin tested with token was accepted.',
+              "OTP or Pin tested with token was accepted."
             );
           } else {
             this.notificationService.openSnackBar(
-              'OTP or Pin tested with token was rejected.',
+              "OTP or Pin tested with token was rejected."
             );
           }
           this.tokenService.tokenDetailResource.reload();
-        },
+        }
       });
   }
 
   verifyOTPValue() {
     this.validateService
-      .testToken(this.tokenService.tokenSerial(), this.otpOrPinToTest, '1')
+      .testToken(this.tokenService.tokenSerial(), this.otpOrPinToTest, "1")
       .subscribe({
         next: () => {
           this.tokenService.tokenDetailResource.reload();
-        },
+        }
       });
   }
 }

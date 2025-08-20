@@ -1,32 +1,24 @@
-import { Component, inject, Input, WritableSignal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { MatFabButton } from '@angular/material/button';
-import { MatDialog } from '@angular/material/dialog';
-import { MatDivider } from '@angular/material/divider';
-import { MatIcon } from '@angular/material/icon';
+import { Component, inject, Input, WritableSignal } from "@angular/core";
+import { FormsModule } from "@angular/forms";
+import { MatFabButton } from "@angular/material/button";
+import { MatDialog } from "@angular/material/dialog";
+import { MatDivider } from "@angular/material/divider";
+import { MatIcon } from "@angular/material/icon";
 import {
   NotificationService,
   NotificationServiceInterface
-} from '../../../../services/notification/notification.service';
-import {
-  OverflowService,
-  OverflowServiceInterface
-} from '../../../../services/overflow/overflow.service';
-import { TokenService, TokenServiceInterface } from '../../../../services/token/token.service';
-import {
-  ValidateService,
-  ValidateServiceInterface
-} from '../../../../services/validate/validate.service';
-import {
-  TokenSshMachineAssignDialogComponent
-} from '../token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog';
-import { NgClass } from '@angular/common';
-import { SetPinActionComponent } from './set-pin-action/set-pin-action.component';
-import { ResyncTokenActionComponent } from './resync-token-action/resync-token-action.component';
-import { TestOtpPinActionComponent } from './test-otp-pin-action/test-otp-pin-action.component';
+} from "../../../../services/notification/notification.service";
+import { OverflowService, OverflowServiceInterface } from "../../../../services/overflow/overflow.service";
+import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { ValidateService, ValidateServiceInterface } from "../../../../services/validate/validate.service";
+import { TokenSshMachineAssignDialogComponent } from "../token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog";
+import { NgClass } from "@angular/common";
+import { SetPinActionComponent } from "./set-pin-action/set-pin-action.component";
+import { ResyncTokenActionComponent } from "./resync-token-action/resync-token-action.component";
+import { TestOtpPinActionComponent } from "./test-otp-pin-action/test-otp-pin-action.component";
 
 @Component({
-  selector: 'app-token-details-actions',
+  selector: "app-token-details-actions",
   standalone: true,
   imports: [
     FormsModule,
@@ -36,10 +28,10 @@ import { TestOtpPinActionComponent } from './test-otp-pin-action/test-otp-pin-ac
     NgClass,
     SetPinActionComponent,
     ResyncTokenActionComponent,
-    TestOtpPinActionComponent,
+    TestOtpPinActionComponent
   ],
-  templateUrl: './token-details-actions.component.html',
-  styleUrl: './token-details-actions.component.scss',
+  templateUrl: "./token-details-actions.component.html",
+  styleUrl: "./token-details-actions.component.scss"
 })
 export class TokenDetailsActionsComponent {
   private readonly matDialog: MatDialog = inject(MatDialog);
@@ -60,26 +52,26 @@ export class TokenDetailsActionsComponent {
       next: (checkResponse) => {
         if (checkResponse.result?.value) {
           this.notificationService.openSnackBar(
-            'Test successful. You would have been logged in as: ' +
-              (checkResponse.detail?.username ?? 'Unknown User'),
+            "Test successful. You would have been logged in as: " +
+            (checkResponse.detail?.username ?? "Unknown User")
           );
         } else {
-          this.notificationService.openSnackBar('No user found.');
+          this.notificationService.openSnackBar("No user found.");
         }
-      },
+      }
     });
   }
 
   assignSSHMachineDialog() {
     this.matDialog.open(TokenSshMachineAssignDialogComponent, {
-      width: '600px',
+      width: "600px",
       data: {
         tokenSerial: this.tokenSerial(),
         tokenDetails: this.tokenService.getTokenDetails(this.tokenSerial()),
-        tokenType: this.tokenType(),
+        tokenType: this.tokenType()
       },
       autoFocus: false,
-      restoreFocus: false,
+      restoreFocus: false
     });
   }
 }
