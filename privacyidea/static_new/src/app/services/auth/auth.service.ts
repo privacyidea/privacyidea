@@ -4,6 +4,7 @@ import { Observable, throwError } from "rxjs";
 import { catchError, tap } from "rxjs/operators";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
+import { LocalService, LocalServiceInterface } from "../local/local.service";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import { VersioningService, VersioningServiceInterface } from "../version/version.service";
 
@@ -110,11 +111,15 @@ export interface AuthServiceInterface {
   providedIn: "root",
 })
 export class AuthService implements AuthServiceInterface {
+  readonly authUrl = environment.proxyUrl + "/auth";
+
   private readonly http: HttpClient = inject(HttpClient);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
+  private readonly localService: LocalServiceInterface = inject(LocalService);
 
-  readonly authUrl = environment.proxyUrl + "/auth";
+  readonly TOKEN_KEY = "bearer_token";
+
   authData = signal<AuthData | null>(null);
   authenticationAccepted = signal<boolean>(false);
 
@@ -125,7 +130,7 @@ export class AuthService implements AuthServiceInterface {
   realm = computed(() => this.authData()?.realm || "");
   rights = computed(() => this.authData()?.rights || []);
   role = computed(() => this.authData()?.role || "");
-  token = computed(() => this.authData()?.token || "");
+  token = computed(() => this.localService.getData(this.localService.bearerTokenKey));
   username = computed(() => this.authData()?.username || "");
   logoutTimeSeconds = computed(() => this.authData()?.logout_time);
   auditPageSize = computed(() => this.authData()?.audit_page_size || 10);
@@ -177,6 +182,7 @@ export class AuthService implements AuthServiceInterface {
           if (response?.result?.status && value) {
             this.acceptAuthentication();
             this.authData.set(value);
+            this.localService.saveData(this.TOKEN_KEY, value.token);
           }
         }),
         catchError((error) => {
@@ -194,6 +200,7 @@ export class AuthService implements AuthServiceInterface {
 
   deauthenticate(): void {
     this.authData.set(null);
+    this.localService.removeData(this.TOKEN_KEY);
     this.authenticationAccepted.set(false);
   }
 }

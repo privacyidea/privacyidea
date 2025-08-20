@@ -17,15 +17,7 @@ import { ValidateService, ValidateServiceInterface } from "../../services/valida
   selector: "app-login",
   templateUrl: "./login.component.html",
   standalone: true,
-  imports: [
-    FormsModule,
-    MatFormField,
-    MatInput,
-    MatLabel,
-    NgOptimizedImage,
-    MatIconModule,
-    MatFabButton,
-  ],
+  imports: [FormsModule, MatFormField, MatInput, MatLabel, NgOptimizedImage, MatIconModule, MatFabButton],
   styleUrl: "./login.component.scss",
 })
 export class LoginComponent {
@@ -58,10 +50,6 @@ export class LoginComponent {
           response.result?.value.token &&
           this.authService.isAuthenticated()
         ) {
-          this.localService.saveData(
-            this.localService.bearerTokenKey,
-            response.result?.value.token,
-          );
           this.sessionTimerService.startRefreshingRemainingTime();
           this.sessionTimerService.startTimer();
           this.router.navigateByUrl(ROUTE_PATHS.TOKENS);
@@ -77,9 +65,7 @@ export class LoginComponent {
   logout(): void {
     this.localService.removeData(this.localService.bearerTokenKey);
     this.authService.deauthenticate();
-    this.router
-      .navigate(["login"])
-      .then(() => this.notificationService.openSnackBar("Logout successful."));
+    this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar("Logout successful."));
   }
 
   loginPasskey(): void {
@@ -91,10 +77,7 @@ export class LoginComponent {
           response.result.value.token &&
           this.authService.isAuthenticated()
         ) {
-          this.localService.saveData(
-            this.localService.bearerTokenKey,
-            response.result?.value.token,
-          );
+          this.localService.saveData(this.localService.bearerTokenKey, response.result?.value.token);
           this.sessionTimerService.startRefreshingRemainingTime();
           this.sessionTimerService.startTimer();
           this.router.navigate(["tokens"]).then();
