@@ -1,39 +1,45 @@
-<div aria-label="Token Get Serial"
-     class="token-get-serial">
+<div
+  aria-label="Token Get Serial"
+  class="token-get-serial">
   <h3 class="margin-left-1">Get Serial Number</h3>
-  <p class="margin-left-1"
-     translate>
-    By entering an OTP value you can get the serial number of the token. You can also enter
-    additional optional parameters, to narrow down the search for the token. So you can only search
-    within certain token types or in assigned or unassigned tokens. </p>
+  <p
+    class="margin-left-1"
+    translate>
+    By entering an OTP value you can get the serial number of the token. You can also enter additional optional
+    parameters, to narrow down the search for the token. So you can only search within certain token types or in
+    assigned or unassigned tokens. </p>
   <div class="flex-row gap-1">
     <mat-form-field class="width-66">
       <mat-label>OTP Value</mat-label>
-      <input #otpValueInput
-             [(ngModel)]="otpValue"
-             [disabled]="currentStep() !== 'init'"
-             id="otpValue"
-             matInput
-             name="otpValue"
-             placeholder="Enter some OTP value"
-             required />
+      <input
+        #otpValueInput
+        [(ngModel)]="otpValue"
+        [disabled]="currentStep() !== 'init'"
+        id="otpValue"
+        matInput
+        name="otpValue"
+        placeholder="Enter some OTP value"
+        required/>
       <mat-error>OTP value is <strong>required</strong></mat-error>
     </mat-form-field>
-    <button (click)="onClickRunSearch()"
-            [disabled]="otpValue() === ''"
-            [ngClass]="{ 'card-button-disabled': otpValue() === '' }"
-            class="card-button"
-            mat-flat-button>
+    <button
+      (click)="onClickRunSearch()"
+      [disabled]="otpValue() === ''"
+      [ngClass]="{ 'card-button-disabled': otpValue() === '' }"
+      class="card-button"
+      mat-flat-button>
       <mat-icon>{{ currentStep() !== 'searching' ? "play_arrow" : "stop" }}</mat-icon>
       {{ currentStep() !== 'searching' ? "Run" : "Stop" }} Search
     </button>
   </div>
-  <h4 class="enroll-h4"
-      translate>Search Configuration</h4>
+  <h4
+    class="enroll-h4"
+    translate>Search Configuration</h4>
   <mat-form-field class="width-66">
     <mat-label>Token Type</mat-label>
-    <mat-select [(ngModel)]="tokenType"
-                placeholder="Select token type">
+    <mat-select
+      [(ngModel)]="tokenType"
+      placeholder="Select token type">
       @for (type of tokenTypesWithOTP; track type) {
         <mat-option [value]="type['key']">{{ type["info"] }}</mat-option>
       }
@@ -41,11 +47,13 @@
   </mat-form-field>
   <mat-form-field class="width-66">
     <mat-label>Assignment State</mat-label>
-    <mat-select [(ngModel)]="assignmentState"
-                placeholder="Specify assignment state">
+    <mat-select
+      [(ngModel)]="assignmentState"
+      placeholder="Specify assignment state">
       @for (assignment of assignmentStates; track assignment) {
-        <mat-option [value]="assignment.key"
-                    translate>{{ assignment.info }}
+        <mat-option
+          [value]="assignment.key"
+          translate>{{ assignment.info }}
         </mat-option>
       }
     </mat-select>
@@ -54,22 +62,24 @@
     <div class="flex-column width-66">
       <mat-form-field>
         <mat-label>Serial Substring</mat-label>
-        <input [(ngModel)]="serialSubstring"
-               id="serialSubstring"
-               matInput
-               name="serialSubstring"
-               placeholder="Enter optional serial substring" />
+        <input
+          [(ngModel)]="serialSubstring"
+          id="serialSubstring"
+          matInput
+          name="serialSubstring"
+          placeholder="Enter optional serial substring"/>
       </mat-form-field>
     </div>
     <div class="flex-column width-32 margin-bottom-1">
       <mat-form-field>
         <mat-label>Count Window</mat-label>
-        <input [(ngModel)]="countWindow"
-               id="countWindow"
-               matInput
-               name="countWindow"
-               placeholder="Lookahead OTP values"
-               type="number" />
+        <input
+          [(ngModel)]="countWindow"
+          id="countWindow"
+          matInput
+          name="countWindow"
+          placeholder="Lookahead OTP values"
+          type="number"/>
         <mat-hint>Set number of lookahead OTP values (default 10).</mat-hint>
       </mat-form-field>
     </div>

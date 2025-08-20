@@ -1,33 +1,21 @@
-import { NgClass } from '@angular/common';
-import { Component, inject, linkedSignal } from '@angular/core';
-import { MatCard, MatCardContent } from '@angular/material/card';
-import { MatTabChangeEvent, MatTabsModule } from '@angular/material/tabs';
-import { MatIcon } from '@angular/material/icon';
+import { NgClass } from "@angular/common";
+import { Component, inject, linkedSignal } from "@angular/core";
+import { MatCard, MatCardContent } from "@angular/material/card";
+import { MatTabChangeEvent, MatTabsModule } from "@angular/material/tabs";
+import { MatIcon } from "@angular/material/icon";
 
-import {
-  OverflowService,
-  OverflowServiceInterface,
-} from '../../../services/overflow/overflow.service';
-import {
-  ContentService,
-  ContentServiceInterface,
-} from '../../../services/content/content.service';
-import {
-  TokenService,
-  TokenServiceInterface,
-} from '../../../services/token/token.service';
-import {
-  ContainerService,
-  ContainerServiceInterface,
-} from '../../../services/container/container.service';
+import { OverflowService, OverflowServiceInterface } from "../../../services/overflow/overflow.service";
+import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
+import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
+import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
 
-import { TokenTabComponent } from './token-tab/token-tab.component';
-import { ContainerTabComponent } from './container-tab/container-tab.component';
-import { Router } from '@angular/router';
-import { ROUTE_PATHS } from '../../../app.routes';
+import { TokenTabComponent } from "./token-tab/token-tab.component";
+import { ContainerTabComponent } from "./container-tab/container-tab.component";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "../../../app.routes";
 
 @Component({
-  selector: 'app-token-card',
+  selector: "app-token-card",
   standalone: true,
   imports: [
     MatCardContent,
@@ -36,10 +24,10 @@ import { ROUTE_PATHS } from '../../../app.routes';
     MatIcon,
     TokenTabComponent,
     ContainerTabComponent,
-    NgClass,
+    NgClass
   ],
-  templateUrl: './token-card.component.html',
-  styleUrls: ['./token-card.component.scss'],
+  templateUrl: "./token-card.component.html",
+  styleUrls: ["./token-card.component.scss"]
 })
 export class TokenCardComponent {
   protected readonly overflowService: OverflowServiceInterface =
@@ -53,7 +41,7 @@ export class TokenCardComponent {
   selectedTabIndex = linkedSignal({
     source: this.contentService.routeUrl,
     computation: (routeUrl) =>
-      routeUrl.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS) ? 1 : 0,
+      routeUrl.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS) ? 1 : 0
   });
   tokenSerial = this.tokenService.tokenSerial;
   containerSerial = this.containerService.containerSerial;

@@ -1,38 +1,24 @@
-import { Component, EventEmitter, inject, OnInit, Output } from '@angular/core';
-import {
-  FormControl,
-  FormGroup,
-  FormsModule,
-  ReactiveFormsModule,
-} from '@angular/forms';
-import { MatDialogRef } from '@angular/material/dialog';
-import { lastValueFrom } from 'rxjs';
+import { Component, EventEmitter, inject, OnInit, Output } from "@angular/core";
+import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { MatDialogRef } from "@angular/material/dialog";
+import { lastValueFrom } from "rxjs";
 import {
   EnrollmentResponse,
-  TokenEnrollmentData,
-} from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
-import { PasskeyApiPayloadMapper } from '../../../../mappers/token-api-payload/passkey-token-api-payload.mapper';
-import {
-  Base64Service,
-  Base64ServiceInterface,
-} from '../../../../services/base64/base64.service';
-import {
-  DialogService,
-  DialogServiceInterface,
-} from '../../../../services/dialog/dialog.service';
+  TokenEnrollmentData
+} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+import { PasskeyApiPayloadMapper } from "../../../../mappers/token-api-payload/passkey-token-api-payload.mapper";
+import { Base64Service, Base64ServiceInterface } from "../../../../services/base64/base64.service";
+import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 import {
   NotificationService,
-  NotificationServiceInterface,
-} from '../../../../services/notification/notification.service';
-import {
-  TokenService,
-  TokenServiceInterface,
-} from '../../../../services/token/token.service';
-import { TokenEnrollmentFirstStepDialogComponent } from '../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component';
-import { ReopenDialogFn } from '../token-enrollment.component';
+  NotificationServiceInterface
+} from "../../../../services/notification/notification.service";
+import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { TokenEnrollmentFirstStepDialogComponent } from "../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
+import { ReopenDialogFn } from "../token-enrollment.component";
 
 export interface PasskeyEnrollmentData extends TokenEnrollmentData {
-  type: 'passkey';
+  type: "passkey";
 }
 
 export interface PasskeyFinalizeData extends PasskeyEnrollmentData {
@@ -47,7 +33,7 @@ export interface PasskeyFinalizeData extends PasskeyEnrollmentData {
 }
 
 export interface PasskeyRegistrationParams {
-  type: 'passkey';
+  type: "passkey";
   transaction_id: string;
   serial: string;
   credential_id: string;
@@ -59,15 +45,15 @@ export interface PasskeyRegistrationParams {
 }
 
 @Component({
-  selector: 'app-enroll-passkey',
+  selector: "app-enroll-passkey",
   standalone: true,
   imports: [FormsModule, ReactiveFormsModule],
-  templateUrl: './enroll-passkey.component.html',
-  styleUrl: './enroll-passkey.component.scss',
+  templateUrl: "./enroll-passkey.component.html",
+  styleUrl: "./enroll-passkey.component.scss"
 })
 export class EnrollPasskeyComponent implements OnInit {
   protected readonly enrollmentMapper: PasskeyApiPayloadMapper = inject(
-    PasskeyApiPayloadMapper,
+    PasskeyApiPayloadMapper
   );
   protected readonly notificationService: NotificationServiceInterface =
     inject(NotificationService);
@@ -79,7 +65,7 @@ export class EnrollPasskeyComponent implements OnInit {
 
   text = this.tokenService
     .tokenTypeOptions()
-    .find((type) => type.key === 'passkey')?.text;
+    .find((type) => type.key === "passkey")?.text;
 
   @Output() aditionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
@@ -97,24 +83,24 @@ export class EnrollPasskeyComponent implements OnInit {
   }
 
   onClickEnroll = async (
-    basicEnrollmentData: TokenEnrollmentData,
+    basicEnrollmentData: TokenEnrollmentData
   ): Promise<EnrollmentResponse | null> => {
     if (!navigator.credentials?.create) {
-      const errorMsg = 'Passkey/WebAuthn is not supported by this browser.';
+      const errorMsg = "Passkey/WebAuthn is not supported by this browser.";
       this.notificationService.openSnackBar(errorMsg);
       throw new Error(errorMsg);
     }
 
     const enrollmentInitData: PasskeyEnrollmentData = {
       ...basicEnrollmentData,
-      type: 'passkey',
+      type: "passkey"
     };
 
     const enrollmentResponse = await lastValueFrom(
       this.tokenService.enrollToken({
         data: enrollmentInitData,
-        mapper: this.enrollmentMapper,
-      }),
+        mapper: this.enrollmentMapper
+      })
     ).catch((error: any) => {
       const errMsg = `Passkey registration process failed: ${error.message || error}`;
       this.notificationService.openSnackBar(errMsg);
@@ -125,9 +111,9 @@ export class EnrollPasskeyComponent implements OnInit {
     const passkeyRegOptions = detail?.passkey_registration;
     if (!passkeyRegOptions) {
       this.notificationService.openSnackBar(
-        'Failed to initiate Passkey registration: Invalid server response.',
+        "Failed to initiate Passkey registration: Invalid server response."
       );
-      throw new Error('Invalid server response for Passkey initiation.');
+      throw new Error("Invalid server response for Passkey initiation.");
     }
     this.openStepOneDialog({ enrollmentInitData, enrollmentResponse });
     const publicKeyCred = await this.readPublicKeyCred(enrollmentResponse);
@@ -137,7 +123,7 @@ export class EnrollPasskeyComponent implements OnInit {
     const resposeLastStep = await this.finalizeEnrollment({
       enrollmentInitData,
       enrollmentResponse,
-      publicKeyCred,
+      publicKeyCred
     });
     return resposeLastStep;
   };
@@ -151,13 +137,13 @@ export class EnrollPasskeyComponent implements OnInit {
       if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen) {
         this.dialogService.openTokenEnrollmentFirstStepDialog({
           data: { enrollmentResponse },
-          disableClose: true,
+          disableClose: true
         });
         const publicKeyCred = await this.readPublicKeyCred(enrollmentResponse);
         const resposeLastStep = await this.finalizeEnrollment({
           enrollmentInitData,
           enrollmentResponse,
-          publicKeyCred,
+          publicKeyCred
         });
         return resposeLastStep;
       }
@@ -166,7 +152,7 @@ export class EnrollPasskeyComponent implements OnInit {
 
     return this.dialogService.openTokenEnrollmentFirstStepDialog({
       data: { enrollmentResponse },
-      disableClose: true,
+      disableClose: true
     });
   }
 
@@ -175,21 +161,21 @@ export class EnrollPasskeyComponent implements OnInit {
   }
 
   private async readPublicKeyCred(
-    responseStepOne: EnrollmentResponse,
+    responseStepOne: EnrollmentResponse
   ): Promise<any | null> {
     const detail = responseStepOne.detail;
     const passkeyRegOptions = detail?.passkey_registration;
     if (!passkeyRegOptions) {
       this.notificationService.openSnackBar(
-        'Failed to initiate Passkey registration: Invalid server response.',
+        "Failed to initiate Passkey registration: Invalid server response."
       );
       return null;
     }
     const excludedCredentials = passkeyRegOptions.excludeCredentials.map(
       (cred: any) => ({
         id: this.base64Service.base64URLToBytes(cred.id),
-        type: cred.type,
-      }),
+        type: cred.type
+      })
     );
 
     const publicKeyOptions: PublicKeyCredentialCreationOptions = {
@@ -197,23 +183,23 @@ export class EnrollPasskeyComponent implements OnInit {
       user: {
         id: this.base64Service.base64URLToBytes(passkeyRegOptions.user.id),
         name: passkeyRegOptions.user.name,
-        displayName: passkeyRegOptions.user.displayName,
+        displayName: passkeyRegOptions.user.displayName
       },
       challenge: this.base64Service.base64URLToBytes(
-        passkeyRegOptions.challenge,
+        passkeyRegOptions.challenge
       ),
       pubKeyCredParams: passkeyRegOptions.pubKeyCredParams,
       excludeCredentials: excludedCredentials,
       authenticatorSelection: passkeyRegOptions.authenticatorSelection,
       timeout: passkeyRegOptions.timeout,
       extensions: { credProps: true, ...passkeyRegOptions.extensions },
-      attestation: passkeyRegOptions.attestation,
+      attestation: passkeyRegOptions.attestation
     };
     const publicKeyCred = await navigator.credentials
       .create({ publicKey: publicKeyOptions })
       .catch((browserOrCredentialError) => {
         this.notificationService.openSnackBar(
-          `Passkey credential creation failed: ${browserOrCredentialError.message}`,
+          `Passkey credential creation failed: ${browserOrCredentialError.message}`
         );
         return null;
       })
@@ -232,19 +218,19 @@ export class EnrollPasskeyComponent implements OnInit {
     const detail = enrollmentResponse.detail;
     const passkeyFinalizeData: PasskeyFinalizeData = {
       ...enrollmentInitData,
-      transaction_id: detail['transaction_id']!,
+      transaction_id: detail["transaction_id"]!,
       serial: detail.serial,
       credential_id: publicKeyCred.id,
       rawId: this.base64Service.bytesToBase64(
-        new Uint8Array(publicKeyCred.rawId),
+        new Uint8Array(publicKeyCred.rawId)
       ),
       authenticatorAttachment: publicKeyCred.authenticatorAttachment,
       attestationObject: this.base64Service.bytesToBase64(
-        new Uint8Array(publicKeyCred.response.attestationObject),
+        new Uint8Array(publicKeyCred.response.attestationObject)
       ),
       clientDataJSON: this.base64Service.bytesToBase64(
-        new Uint8Array(publicKeyCred.response.clientDataJSON),
-      ),
+        new Uint8Array(publicKeyCred.response.clientDataJSON)
+      )
     };
 
     const extResults = publicKeyCred.getClientExtensionResults();
@@ -254,23 +240,23 @@ export class EnrollPasskeyComponent implements OnInit {
     return lastValueFrom(
       this.tokenService.enrollToken({
         data: passkeyFinalizeData,
-        mapper: this.enrollmentMapper,
-      }),
+        mapper: this.enrollmentMapper
+      })
     )
       .catch(async (errorStep3) => {
         this.notificationService.openSnackBar(
-          'Error during final Passkey registration step. Attempting to clean up token.',
+          "Error during final Passkey registration step. Attempting to clean up token."
         );
         await lastValueFrom(this.tokenService.deleteToken(detail.serial)).catch(
           () => {
             this.notificationService.openSnackBar(
-              `Failed to delete token ${detail.serial} after registration error. Please check manually.`,
+              `Failed to delete token ${detail.serial} after registration error. Please check manually.`
             );
             throw new Error(errorStep3);
-          },
+          }
         ),
           this.notificationService.openSnackBar(
-            `Token ${detail.serial} deleted due to registration error.`,
+            `Token ${detail.serial} deleted due to registration error.`
           );
         throw Error(errorStep3);
       })

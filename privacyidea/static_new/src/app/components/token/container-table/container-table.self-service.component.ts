@@ -1,37 +1,25 @@
-import { NgClass } from '@angular/common';
-import { Component, inject } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { MatIconButton } from '@angular/material/button';
-import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatDialog } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIcon } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatPaginatorModule } from '@angular/material/paginator';
-import { MatSortModule } from '@angular/material/sort';
-import { MatTableModule } from '@angular/material/table';
-import {
-  ContainerService,
-  ContainerServiceInterface,
-} from '../../../services/container/container.service';
-import {
-  ContentService,
-  ContentServiceInterface,
-} from '../../../services/content/content.service';
-import {
-  TableUtilsService,
-  TableUtilsServiceInterface,
-} from '../../../services/table-utils/table-utils.service';
-import {
-  TokenService,
-  TokenServiceInterface,
-} from '../../../services/token/token.service';
-import { ConfirmationDialogComponent } from '../../shared/confirmation-dialog/confirmation-dialog.component';
-import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
-import { ContainerTableComponent } from './container-table.component';
+import { NgClass } from "@angular/common";
+import { Component, inject } from "@angular/core";
+import { FormsModule } from "@angular/forms";
+import { MatIconButton } from "@angular/material/button";
+import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatDialog } from "@angular/material/dialog";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIcon } from "@angular/material/icon";
+import { MatInputModule } from "@angular/material/input";
+import { MatPaginatorModule } from "@angular/material/paginator";
+import { MatSortModule } from "@angular/material/sort";
+import { MatTableModule } from "@angular/material/table";
+import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
+import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
+import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
+import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
+import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { ContainerTableComponent } from "./container-table.component";
 
 @Component({
-  selector: 'app-container-table-self-service',
+  selector: "app-container-table-self-service",
   standalone: true,
   imports: [
     MatTableModule,
@@ -44,10 +32,10 @@ import { ContainerTableComponent } from './container-table.component';
     MatCheckboxModule,
     FormsModule,
     MatIcon,
-    MatIconButton,
+    MatIconButton
   ],
-  templateUrl: './container-table.self-service.component.html',
-  styleUrl: './container-table.component.scss',
+  templateUrl: "./container-table.self-service.component.html",
+  styleUrl: "./container-table.component.scss"
 })
 export class ContainerTableSelfServiceComponent extends ContainerTableComponent {
   private readonly dialog = inject(MatDialog);
@@ -61,14 +49,14 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
     inject(ContentService);
 
   readonly columnKeysMapSelfService = [
-    { key: 'serial', label: 'Serial' },
-    { key: 'type', label: 'Type' },
-    { key: 'states', label: 'Status' },
-    { key: 'description', label: 'Description' },
-    { key: 'delete', label: 'Delete' },
+    { key: "serial", label: "Serial" },
+    { key: "type", label: "Type" },
+    { key: "states", label: "Status" },
+    { key: "description", label: "Description" },
+    { key: "delete", label: "Delete" }
   ];
   readonly columnKeysSelfService: string[] = this.columnKeysMapSelfService.map(
-    (column: { key: string; label: string }) => column.key,
+    (column: { key: string; label: string }) => column.key
   );
 
   constructor() {
@@ -80,11 +68,11 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
       .open(ConfirmationDialogComponent, {
         data: {
           serial_list: [serial],
-          title: 'Delete Container',
-          type: 'container',
-          action: 'delete',
-          numberOfTokens: 1,
-        },
+          title: "Delete Container",
+          type: "container",
+          action: "delete",
+          numberOfTokens: 1
+        }
       })
       .afterClosed()
       .subscribe({
@@ -93,10 +81,10 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
             this.containerService.deleteContainer(serial).subscribe({
               next: () => {
                 this.containerService.containerResource.reload();
-              },
+              }
             });
           }
-        },
+        }
       });
   }
 }

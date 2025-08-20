@@ -1,62 +1,28 @@
-import { DatePipe, NgClass, NgOptimizedImage } from '@angular/common';
-import { Component, inject } from '@angular/core';
-import {
-  MatFabAnchor,
-  MatFabButton,
-  MatIconButton,
-} from '@angular/material/button';
+import { DatePipe, NgClass, NgOptimizedImage } from "@angular/common";
+import { Component, inject } from "@angular/core";
+import { MatFabAnchor, MatFabButton, MatIconButton } from "@angular/material/button";
 
-import { MatIconModule } from '@angular/material/icon';
-import { Router, RouterLink } from '@angular/router';
-import {
-  AuthService,
-  AuthServiceInterface,
-} from '../../../services/auth/auth.service';
-import {
-  LocalService,
-  LocalServiceInterface,
-} from '../../../services/local/local.service';
-import {
-  NotificationService,
-  NotificationServiceInterface,
-} from '../../../services/notification/notification.service';
+import { MatIconModule } from "@angular/material/icon";
+import { Router, RouterLink } from "@angular/router";
+import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { LocalService, LocalServiceInterface } from "../../../services/local/local.service";
+import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import {
   SessionTimerService,
-  SessionTimerServiceInterface,
-} from '../../../services/session-timer/session-timer.service';
-import { ThemeSwitcherComponent } from '../../shared/theme-switcher/theme-switcher.component';
-import {
-  ContentService,
-  ContentServiceInterface,
-} from '../../../services/content/content.service';
-import {
-  TokenService,
-  TokenServiceInterface,
-} from '../../../services/token/token.service';
-import {
-  ContainerService,
-  ContainerServiceInterface,
-} from '../../../services/container/container.service';
-import {
-  ChallengesService,
-  ChallengesServiceInterface,
-} from '../../../services/token/challenges/challenges.service';
-import {
-  MachineService,
-  MachineServiceInterface,
-} from '../../../services/machine/machine.service';
-import {
-  UserService,
-  UserServiceInterface,
-} from '../../../services/user/user.service';
-import {
-  AuditService,
-  AuditServiceInterface,
-} from '../../../services/audit/audit.service';
-import { ROUTE_PATHS } from '../../../app.routes';
+  SessionTimerServiceInterface
+} from "../../../services/session-timer/session-timer.service";
+import { ThemeSwitcherComponent } from "../../shared/theme-switcher/theme-switcher.component";
+import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
+import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
+import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
+import { ChallengesService, ChallengesServiceInterface } from "../../../services/token/challenges/challenges.service";
+import { MachineService, MachineServiceInterface } from "../../../services/machine/machine.service";
+import { UserService, UserServiceInterface } from "../../../services/user/user.service";
+import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
+import { ROUTE_PATHS } from "../../../app.routes";
 
 @Component({
-  selector: 'app-header',
+  selector: "app-header",
   standalone: true,
   imports: [
     NgOptimizedImage,
@@ -67,10 +33,10 @@ import { ROUTE_PATHS } from '../../../app.routes';
     DatePipe,
     NgClass,
     MatIconButton,
-    ThemeSwitcherComponent,
+    ThemeSwitcherComponent
   ],
-  templateUrl: './header.component.html',
-  styleUrl: './header.component.scss',
+  templateUrl: "./header.component.html",
+  styleUrl: "./header.component.scss"
 })
 export class HeaderComponent {
   protected readonly sessionTimerService: SessionTimerServiceInterface =
@@ -95,11 +61,11 @@ export class HeaderComponent {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   profileText =
     this.authService.user() +
-    ' @' +
+    " @" +
     this.authService.realm() +
-    ' (' +
+    " (" +
     this.authService.role() +
-    ')';
+    ")";
 
   isActive(link: string) {
     return this.router.url.includes(link);
@@ -151,7 +117,7 @@ export class HeaderComponent {
     this.localService.removeData(this.localService.bearerTokenKey);
     this.authService.deauthenticate();
     this.router
-      .navigate(['login'])
-      .then(() => this.notificationService.openSnackBar('Logout successful.'));
+      .navigate(["login"])
+      .then(() => this.notificationService.openSnackBar("Logout successful."));
   }
 }

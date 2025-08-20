@@ -1,22 +1,13 @@
-import { NgClass } from '@angular/common';
-import {
-  Component,
-  computed,
-  effect,
-  inject,
-  Input,
-  linkedSignal,
-  ViewChild,
-  WritableSignal,
-} from '@angular/core';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MatButton, MatIconButton } from '@angular/material/button';
-import { MatDialog } from '@angular/material/dialog';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatIcon } from '@angular/material/icon';
-import { MatInput } from '@angular/material/input';
-import { MatPaginator } from '@angular/material/paginator';
-import { MatSort, MatSortHeader, MatSortModule } from '@angular/material/sort';
+import { NgClass } from "@angular/common";
+import { Component, computed, effect, inject, Input, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
+import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { MatButton, MatIconButton } from "@angular/material/button";
+import { MatDialog } from "@angular/material/dialog";
+import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatIcon } from "@angular/material/icon";
+import { MatInput } from "@angular/material/input";
+import { MatPaginator } from "@angular/material/paginator";
+import { MatSort, MatSortHeader, MatSortModule } from "@angular/material/sort";
 import {
   MatCell,
   MatHeaderCell,
@@ -24,47 +15,32 @@ import {
   MatRow,
   MatTable,
   MatTableDataSource,
-  MatTableModule,
-} from '@angular/material/table';
-import { MatTooltip } from '@angular/material/tooltip';
-import {
-  AuthService,
-  AuthServiceInterface,
-} from '../../../../services/auth/auth.service';
+  MatTableModule
+} from "@angular/material/table";
+import { MatTooltip } from "@angular/material/tooltip";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 import {
   ContainerDetailToken,
   ContainerService,
-  ContainerServiceInterface,
-} from '../../../../services/container/container.service';
-import {
-  ContentService,
-  ContentServiceInterface,
-} from '../../../../services/content/content.service';
-import {
-  OverflowService,
-  OverflowServiceInterface,
-} from '../../../../services/overflow/overflow.service';
-import {
-  TableUtilsService,
-  TableUtilsServiceInterface,
-} from '../../../../services/table-utils/table-utils.service';
-import {
-  TokenService,
-  TokenServiceInterface,
-} from '../../../../services/token/token.service';
-import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
-import { CopyButtonComponent } from '../../../shared/copy-button/copy-button.component';
-import { UserAssignmentDialogComponent } from '../user-assignment-dialog/user-assignment-dialog.component';
+  ContainerServiceInterface
+} from "../../../../services/container/container.service";
+import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
+import { OverflowService, OverflowServiceInterface } from "../../../../services/overflow/overflow.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
+import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
+import { UserAssignmentDialogComponent } from "../user-assignment-dialog/user-assignment-dialog.component";
 
 const columnsKeyMap = [
-  { key: 'serial', label: 'Serial' },
-  { key: 'tokentype', label: 'Type' },
-  { key: 'active', label: 'Active' },
-  { key: 'username', label: 'User' },
+  { key: "serial", label: "Serial" },
+  { key: "tokentype", label: "Type" },
+  { key: "active", label: "Active" },
+  { key: "username", label: "User" }
 ];
 
 @Component({
-  selector: 'app-container-details-token-table',
+  selector: "app-container-details-token-table",
   imports: [
     MatCell,
     MatFormField,
@@ -86,10 +62,10 @@ const columnsKeyMap = [
     CopyButtonComponent,
     ReactiveFormsModule,
     FormsModule,
-    MatTooltip,
+    MatTooltip
   ],
-  templateUrl: './container-details-token-table.component.html',
-  styleUrl: './container-details-token-table.component.scss',
+  templateUrl: "./container-details-token-table.component.html",
+  styleUrl: "./container-details-token-table.component.scss"
 })
 export class ContainerDetailsTokenTableComponent {
   protected readonly dialog: MatDialog = inject(MatDialog);
@@ -107,12 +83,12 @@ export class ContainerDetailsTokenTableComponent {
   protected readonly columnsKeyMap = columnsKeyMap;
   displayedColumns: string[] = [
     ...columnsKeyMap.map((column) => column.key),
-    'remove',
-    'delete',
+    "remove",
+    "delete"
   ];
   pageSize = 10;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
-  filterValue = '';
+  filterValue = "";
   @Input() containerTokenData!: WritableSignal<
     MatTableDataSource<ContainerDetailToken, MatPaginator>
   >;
@@ -128,11 +104,11 @@ export class ContainerDetailsTokenTableComponent {
     computation: (source, previous) =>
       source.containers[0]?.users[0] ??
       previous?.value ?? {
-        user_realm: '',
-        user_name: '',
-        user_resolver: '',
-        user_id: '',
-      },
+        user_realm: "",
+        user_name: "",
+        user_resolver: "",
+        user_id: ""
+      }
   });
   tokenSerial = this.tokenService.tokenSerial;
   isProgrammaticTabChange = this.contentService.isProgrammaticTabChange;
@@ -141,16 +117,16 @@ export class ContainerDetailsTokenTableComponent {
 
   isAssignableToAllToken = computed<boolean>(() => {
     const assignedUser = this.assignedUser();
-    if (assignedUser.user_name === '') {
+    if (assignedUser.user_name === "") {
       return false;
     }
     const tokens = this.containerTokenData().data;
-    return tokens.some((token) => token.username === '');
+    return tokens.some((token) => token.username === "");
   });
 
   isUnassignableFromAllToken = computed<boolean>(() => {
     const tokens = this.containerTokenData().data;
-    return tokens.some((token) => token.username !== '');
+    return tokens.some((token) => token.username !== "");
   });
 
   constructor() {
@@ -188,11 +164,11 @@ export class ContainerDetailsTokenTableComponent {
       .open(ConfirmationDialogComponent, {
         data: {
           serial_list: [tokenSerial],
-          title: 'Remove Token',
-          type: 'token',
-          action: 'remove',
-          numberOfTokens: [tokenSerial].length,
-        },
+          title: "Remove Token",
+          type: "token",
+          action: "remove",
+          numberOfTokens: [tokenSerial].length
+        }
       })
       .afterClosed()
       .subscribe({
@@ -203,22 +179,22 @@ export class ContainerDetailsTokenTableComponent {
               .subscribe({
                 next: () => {
                   this.containerService.containerDetailResource.reload();
-                },
+                }
               });
           }
-        },
+        }
       });
   }
 
   handleColumnClick(columnKey: string, token: ContainerDetailToken) {
-    if (columnKey === 'active') {
+    if (columnKey === "active") {
       this.toggleActive(token);
     }
   }
 
   unassignFromAllToken() {
     const tokenToUnassign = this.containerTokenData().data.filter(
-      (token) => token.username !== '',
+      (token) => token.username !== ""
     );
     if (tokenToUnassign.length === 0) {
       return;
@@ -227,12 +203,12 @@ export class ContainerDetailsTokenTableComponent {
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          type: 'token',
+          type: "token",
           serial_list: tokenSerials,
-          title: 'Unassign User from All Tokens',
-          action: 'unassign',
-          numberOfTokens: tokenSerials.length,
-        },
+          title: "Unassign User from All Tokens",
+          action: "unassign",
+          numberOfTokens: tokenSerials.length
+        }
       })
       .afterClosed()
       .subscribe({
@@ -243,23 +219,23 @@ export class ContainerDetailsTokenTableComponent {
                 this.containerService.containerDetailResource.reload();
               },
               error: (error) => {
-                console.error('Error unassigning user from token:', error);
-              },
+                console.error("Error unassigning user from token:", error);
+              }
             });
           }
-        },
+        }
       });
   }
 
   assignToAllToken() {
     var username = this.assignedUser().user_name;
     var realm = this.assignedUser().user_realm;
-    if (username === '' || realm === '') {
+    if (username === "" || realm === "") {
       this.dialog.open(ConfirmationDialogComponent, {
         data: {
-          title: 'No User Assigned',
-          message: 'Please assign a user to the container first.',
-        },
+          title: "No User Assigned",
+          message: "Please assign a user to the container first."
+        }
       });
       return;
     }
@@ -271,7 +247,7 @@ export class ContainerDetailsTokenTableComponent {
       return;
     }
     var tokensAssignedToOtherUser = tokensToAssign.filter(
-      (token) => token.username !== '',
+      (token) => token.username !== ""
     );
 
     this.dialog
@@ -279,34 +255,34 @@ export class ContainerDetailsTokenTableComponent {
       .afterClosed()
       .subscribe((pin: string) => {
         const tokenSerialsAssignedToOtherUser = tokensAssignedToOtherUser.map(
-          (token) => token.serial,
+          (token) => token.serial
         );
         this.tokenService
           .unassignUserFromAll(tokenSerialsAssignedToOtherUser)
           .subscribe({
             next: () => {
               const tokenSerialsToAssign = tokensToAssign.map(
-                (token) => token.serial,
+                (token) => token.serial
               );
               this.tokenService
                 .assignUserToAll({
                   tokenSerials: tokenSerialsToAssign,
                   username: username,
                   realm: realm,
-                  pin: pin,
+                  pin: pin
                 })
                 .subscribe({
                   next: () => {
                     this.containerService.containerDetailResource.reload();
                   },
                   error: (error) => {
-                    console.error('Error assigning user to all tokens:', error);
-                  },
+                    console.error("Error assigning user to all tokens:", error);
+                  }
                 });
             },
             error: (error) => {
-              console.error('Error unassigning user from all tokens:', error);
-            },
+              console.error("Error unassigning user from all tokens:", error);
+            }
           });
       });
   }
@@ -315,31 +291,31 @@ export class ContainerDetailsTokenTableComponent {
     this.tokenService.toggleActive(token.serial, token.active).subscribe({
       next: () => {
         this.containerService.containerDetailResource.reload();
-      },
+      }
     });
   }
 
-  toggleAll(action: 'activate' | 'deactivate') {
+  toggleAll(action: "activate" | "deactivate") {
     this.containerService.toggleAll(action).subscribe({
       next: () => {
         this.containerService.containerDetailResource.reload();
-      },
+      }
     });
   }
 
   removeAll() {
     const serial_list = this.containerTokenData()
       .data.map((token) => token.serial)
-      .join(',');
+      .join(",");
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: serial_list.split(','),
-          title: 'Remove Token',
-          type: 'token',
-          action: 'remove',
-          numberOfTokens: serial_list.split(',').length,
-        },
+          serial_list: serial_list.split(","),
+          title: "Remove Token",
+          type: "token",
+          action: "remove",
+          numberOfTokens: serial_list.split(",").length
+        }
       })
       .afterClosed()
       .subscribe({
@@ -348,26 +324,26 @@ export class ContainerDetailsTokenTableComponent {
             this.containerService.removeAll(this.containerSerial()).subscribe({
               next: () => {
                 this.containerService.containerDetailResource.reload();
-              },
+              }
             });
           }
-        },
+        }
       });
   }
 
   deleteAllTokens() {
     const serialList = this.containerTokenData()
       .data.map((token) => token.serial)
-      .join(',');
+      .join(",");
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: serialList.split(','),
-          title: 'Delete All Tokens',
-          type: 'token',
-          action: 'delete',
-          numberOfTokens: serialList.split(',').length,
-        },
+          serial_list: serialList.split(","),
+          title: "Delete All Tokens",
+          type: "token",
+          action: "delete",
+          numberOfTokens: serialList.split(",").length
+        }
       })
       .afterClosed()
       .subscribe({
@@ -376,15 +352,15 @@ export class ContainerDetailsTokenTableComponent {
             this.containerService
               .deleteAllTokens({
                 containerSerial: this.containerSerial(),
-                serialList: serialList,
+                serialList: serialList
               })
               .subscribe({
                 next: () => {
                   this.containerService.containerDetailResource.reload();
-                },
+                }
               });
           }
-        },
+        }
       });
   }
 
@@ -393,11 +369,11 @@ export class ContainerDetailsTokenTableComponent {
       .open(ConfirmationDialogComponent, {
         data: {
           serial_list: [tokenSerial],
-          title: 'Delete Token',
-          type: 'token',
-          action: 'delete',
-          numberOfTokens: [tokenSerial].length,
-        },
+          title: "Delete Token",
+          type: "token",
+          action: "delete",
+          numberOfTokens: [tokenSerial].length
+        }
       })
       .afterClosed()
       .subscribe({
@@ -406,10 +382,10 @@ export class ContainerDetailsTokenTableComponent {
             this.tokenService.deleteToken(tokenSerial).subscribe({
               next: () => {
                 this.containerService.containerDetailResource.reload();
-              },
+              }
             });
           }
-        },
+        }
       });
   }
 }

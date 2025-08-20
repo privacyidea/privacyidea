@@ -39,7 +39,7 @@ from privacyidea.lib.policy import (set_policy, SCOPE, PolicyClass,
                                     delete_policy)
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.utils import b32encode_and_unicode, hexlify_and_unicode
-from privacyidea.lib.error import PolicyError
+from privacyidea.lib.error import PolicyError, UserError
 from privacyidea.lib.token import (create_tokenclass_object,
                                    get_tokens, list_tokengroups,
                                    get_token_type, check_serial,
@@ -207,6 +207,10 @@ class TokenTestCase(MyTestCase):
         self.assertRaises(privacyIDEAError, get_tokens,
                           tokeninfo={"key1": "value1",
                                      "key2": "value2"})
+
+        # get tokens for a user with an invalid realm
+        user = User("test", realm="deleted")
+        self.assertRaises(ResourceNotFoundError, get_tokens, user=user)
 
         # wildcard matches do not work for the ``serial`` parameter
         tokenobject_list = get_tokens(serial="hotptoke*")
@@ -490,6 +494,11 @@ class TokenTestCase(MyTestCase):
         r = unassign_token(serial)
         self.assertTrue(r)
         self.assertEqual(token.token.first_owner, None)
+
+        # assign invalid user
+        self.assertRaises(UserError, assign_token, serial, User("invalid", realm=self.realm2))
+        self.assertRaises(ResourceNotFoundError, assign_token, serial,
+                          User("hans", realm="invalid", resolver=self.resolvername1))
 
         remove_token(serial)
         # assign or unassign a token, that does not exist
@@ -1773,7 +1782,7 @@ class TokenTestCase(MyTestCase):
             {"serial": "12345678901234567890123456789012", "type": "totp", "otplen": "8"},
             {"serial": "987654321", "type": "hotp", "otplen": "6", "otpkey": "12345"}
         ]
-        result = import_tokens(json.dumps(tokens))
+        result = import_tokens(tokens)
         self.assertEqual(set(["12345678901234567890", "12345678901234567890123456789012", "987654321"]),
                          set(result.successful_tokens), result)
         imported_tokens = get_tokens()
@@ -1800,10 +1809,11 @@ class TokenTestCase(MyTestCase):
 
         # Export the tokens
         exported_tokens = export_tokens([hotptoken, totptoken])
-        self.assertIn('"type": "hotp"', exported_tokens)
-        self.assertIn('"serial": "OATH12345678"', exported_tokens)
-        self.assertIn('"type": "totp"', exported_tokens)
-        self.assertIn('"serial": "TOTP12345678"', exported_tokens)
+        exported_tokens_str = json.dumps(exported_tokens)
+        self.assertIn('"type": "hotp"', exported_tokens_str)
+        self.assertIn('"serial": "OATH12345678"', exported_tokens_str)
+        self.assertIn('"type": "totp"', exported_tokens_str)
+        self.assertIn('"serial": "TOTP12345678"', exported_tokens_str)
 
         # Remove the tokens
         hotptoken.delete_token()
@@ -1848,9 +1858,6 @@ class TokenTestCase(MyTestCase):
         # Remove the tokens
         hotptoken.delete_token()
         totptoken.delete_token()
-
-        # Import format not supported
-        self.assertRaises(TokenAdminError, import_tokens, "This is not a valid JSON string")
 
 class TokenOutOfBandTestCase(MyTestCase):
 

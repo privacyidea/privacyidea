@@ -1,13 +1,9 @@
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData,
-  TokenEnrollmentPayload,
-} from './_token-api-payload.mapper';
-import { Injectable } from '@angular/core';
+import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import { Injectable } from "@angular/core";
 
 // Interface for Passkey-specific enrollment data
 export interface PasskeyEnrollmentData extends TokenEnrollmentData {
-  type: 'passkey';
+  type: "passkey";
   credential_id?: string;
 }
 
@@ -15,10 +11,8 @@ export interface PasskeyEnrollmentPayload extends TokenEnrollmentPayload {
   credential_id?: string; // If present, all fields from PasskeyEnrollmentData are part of payload
 }
 
-@Injectable({ providedIn: 'root' })
-export class PasskeyApiPayloadMapper
-  implements TokenApiPayloadMapper<PasskeyEnrollmentData>
-{
+@Injectable({ providedIn: "root" })
+export class PasskeyApiPayloadMapper implements TokenApiPayloadMapper<PasskeyEnrollmentData> {
   toApiPayload(data: PasskeyEnrollmentData): PasskeyEnrollmentPayload {
     const payload: PasskeyEnrollmentPayload = {
       type: data.type,
@@ -27,7 +21,7 @@ export class PasskeyApiPayloadMapper
       validity_period_start: data.validityPeriodStart,
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
-      pin: data.pin,
+      pin: data.pin
     };
 
     if (data.credential_id) {
