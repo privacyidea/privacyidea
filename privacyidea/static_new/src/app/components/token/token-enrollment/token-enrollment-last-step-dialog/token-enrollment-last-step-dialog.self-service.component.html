@@ -11,7 +11,7 @@
   }
   @if (data.user?.username && data.userRealm != "" && !data.onlyAddToRealm) {
     <br/>
-    <span>The user {{ data.user!.username }}in the realm {{ data.userRealm }} was
+    <span>The user {{ data.user!.username }} in the realm {{ data.userRealm }} was
       assigned to the token.
     </span>
   }
@@ -107,8 +107,8 @@
             </mat-expansion-panel-header>
             <div id="otp-values">
               <div class="otp-values">
-                @for (otp of Object.entries(data.response.detail["otps"]);
-                  track otp) {
+                @for (otp of Object.entries(data.response.detail["otps"]); track otp[0]
+                 ) {
                   <span class="otp-value"> #{{ otp[0] }}: {{ otp[1] }}</span>
                 }
               </div>

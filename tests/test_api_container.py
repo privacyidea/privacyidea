@@ -2795,6 +2795,7 @@ class APIContainer(APIContainerTest):
         self.assertTrue(result["result"].get("value"))
         self.assertEqual(0, len(container.get_users()))
         self.setUp_user_realm3()
+        user = User("corny", self.realm3)
         container.add_user(user)
         Realm.query.filter_by(name=self.realm3).first().delete()
         # Also fails if not providing realm (sets default realm)

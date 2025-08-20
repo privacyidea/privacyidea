@@ -227,7 +227,6 @@ export interface ContainerServiceInterface {
   createContainer(param: {
     container_type: string;
     description?: string;
-    user_realm?: string;
     template?: string;
     user?: string;
     realm?: string;
@@ -873,7 +872,6 @@ export class ContainerService implements ContainerServiceInterface {
   createContainer(param: {
     container_type: string;
     description?: string;
-    user_realm?: string;
     template?: string;
     user?: string;
     realm?: string;
@@ -887,7 +885,7 @@ export class ContainerService implements ContainerServiceInterface {
           type: param.container_type,
           description: param.description,
           user: param.user,
-          realm: param.user_realm,
+          realm: param.realm,
           template: param.template,
           options: param.options
         },
