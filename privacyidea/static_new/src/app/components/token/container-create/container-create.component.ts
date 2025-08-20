@@ -170,18 +170,19 @@ export class ContainerCreateComponent {
   createContainer() {
     this.pollResponse.set(null);
     this.registerResponse.set(null);
-    this.containerService
-      .createContainer({
+    const createData = {
         container_type:
         this.containerService.selectedContainerType().containerType,
         description: this.description(),
-        user_realm: this.userService.selectedUserRealm(),
         template: this.selectedTemplate(),
         user: this.userService.userNameFilter(),
-        realm: this.onlyAddToRealm()
-          ? this.userService.selectedUserRealm()
-          : ""
-      })
+        realm: ""
+      };
+    if (createData.user || this.onlyAddToRealm()){
+      createData.realm = this.userService.selectedUserRealm();
+    }
+    this.containerService
+      .createContainer(createData)
       .subscribe({
         next: (response) => {
           const containerSerial = response.result?.value?.container_serial;
@@ -249,7 +250,7 @@ export class ContainerCreateComponent {
           ) {
             this.registrationDialog.closeAll();
             this.router.navigateByUrl(
-              ROUTE_PATHS.TOKENS_CONTAINERS + containerSerial
+              ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial
             );
             this.notificationService.openSnackBar(
               `Container ${this.containerSerial()} enrolled successfully.`
