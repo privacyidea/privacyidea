@@ -14,10 +14,7 @@ import {
   ContainerServiceInterface
 } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import {
-  TableUtilsService,
-  TableUtilsServiceInterface
-} from "../../../services/table-utils/table-utils.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";

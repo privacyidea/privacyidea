@@ -23,10 +23,7 @@ import { RouterLink } from "@angular/router";
 import { AuditData, AuditService, AuditServiceInterface } from "../../services/audit/audit.service";
 import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../../services/content/content.service";
-import {
-  TableUtilsService,
-  TableUtilsServiceInterface
-} from "../../services/table-utils/table-utils.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../services/table-utils/table-utils.service";
 import { CopyButtonComponent } from "../shared/copy-button/copy-button.component";
 import { KeywordFilterComponent } from "../shared/keyword-filter/keyword-filter.component";
 

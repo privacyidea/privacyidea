@@ -2,14 +2,7 @@ import { Component, EventEmitter, inject, OnInit, Output } from "@angular/core";
 import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatInput } from "@angular/material/input";
-import {
-  MatError,
-  MatFormField,
-  MatHint,
-  MatLabel,
-  MatOption,
-  MatSelect
-} from "@angular/material/select";
+import { MatError, MatFormField, MatHint, MatLabel, MatOption, MatSelect } from "@angular/material/select";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
 import { NgClass } from "@angular/common";

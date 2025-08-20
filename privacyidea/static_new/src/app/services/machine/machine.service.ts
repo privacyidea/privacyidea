@@ -1,13 +1,5 @@
 import { HttpClient, HttpParams, httpResource } from "@angular/common/http";
-import {
-  computed,
-  effect,
-  inject,
-  Injectable,
-  linkedSignal,
-  signal,
-  WritableSignal
-} from "@angular/core";
+import { computed, effect, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import { environment } from "../../../environments/environment";
 import { LocalService, LocalServiceInterface } from "../local/local.service";

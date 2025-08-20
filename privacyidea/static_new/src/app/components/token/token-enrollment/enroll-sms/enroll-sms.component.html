@@ -22,8 +22,8 @@
     }
     <mat-form-field class="width-66 input-height">
       <mat-label> A token specific SMS gateway</mat-label>
-      <mat-hint>If this token should not use the system wide SMS gateway but an individual SMS
-                gateway, you can select the gateway here.
+      <mat-hint>If this token should not use the system wide SMS gateway but an individual SMS gateway, you can select
+                the gateway here.
       </mat-hint>
       <mat-select [formControl]="smsGatewayControl">
         @for (option of smsGatewayOptions(); track option) {

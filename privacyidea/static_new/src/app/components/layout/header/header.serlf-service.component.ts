@@ -6,10 +6,7 @@ import { MatMenu, MatMenuTrigger } from "@angular/material/menu";
 import { Router } from "@angular/router";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { LocalService, LocalServiceInterface } from "../../../services/local/local.service";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../../../services/notification/notification.service";
+import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import {
   SessionTimerService,
   SessionTimerServiceInterface

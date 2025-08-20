@@ -4,10 +4,7 @@ import { RouterLink, RouterLinkActive } from "@angular/router";
 import { MatFabAnchor } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 
-import {
-  ContentService,
-  ContentServiceInterface
-} from "../../../../services/content/content.service";
+import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 
 @Component({
   selector: "app-navigation-self-service-button",

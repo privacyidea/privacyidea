@@ -1,20 +1,11 @@
 import { Component, computed, EventEmitter, inject, OnInit, Output } from "@angular/core";
-import {
-  FormControl,
-  FormGroup,
-  FormsModule,
-  ReactiveFormsModule,
-  Validators
-} from "@angular/forms";
+import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { ErrorStateMatcher, MatOption } from "@angular/material/core";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatError, MatSelect } from "@angular/material/select";
-import {
-  ServiceIdService,
-  ServiceIdServiceInterface
-} from "../../../../services/service-id/service-id.service";
+import { ServiceIdService, ServiceIdServiceInterface } from "../../../../services/service-id/service-id.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
 import { Observable, of } from "rxjs";

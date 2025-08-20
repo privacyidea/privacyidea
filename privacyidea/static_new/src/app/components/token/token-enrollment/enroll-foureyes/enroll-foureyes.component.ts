@@ -1,11 +1,5 @@
 import { Component, computed, EventEmitter, inject, OnInit, Output, Signal } from "@angular/core";
-import {
-  FormControl,
-  FormGroup,
-  FormsModule,
-  ReactiveFormsModule,
-  Validators
-} from "@angular/forms";
+import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { ErrorStateMatcher, MatOption, MatOptionSelectionChange } from "@angular/material/core";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
