@@ -1,13 +1,4 @@
-import {
-  Component,
-  effect,
-  ElementRef,
-  inject,
-  Renderer2,
-  signal,
-  untracked,
-  ViewChild
-} from "@angular/core";
+import { Component, effect, ElementRef, inject, Renderer2, signal, untracked, ViewChild } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatButton, MatIconButton } from "@angular/material/button";
@@ -85,9 +76,9 @@ export class ContainerCreateComponent {
   protected readonly contentService: ContentServiceInterface =
     inject(ContentService);
   protected readonly TokenComponent = TokenComponent;
+  protected readonly renderer: Renderer2 = inject(Renderer2);
   private router = inject(Router);
   private observer!: IntersectionObserver;
-  protected readonly renderer: Renderer2 = inject(Renderer2);
   containerSerial = this.containerService.containerSerial;
   description = signal("");
   selectedTemplate = signal("");

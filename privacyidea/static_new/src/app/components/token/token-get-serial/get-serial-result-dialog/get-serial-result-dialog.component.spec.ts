@@ -1,12 +1,9 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 
-import {
-  GetSerialResultDialogComponent,
-  GetSerialResultDialogData,
-} from './get-serial-result-dialog.component';
+import { GetSerialResultDialogComponent, GetSerialResultDialogData } from "./get-serial-result-dialog.component";
 
-describe('GetSerialResultDialogComponent', () => {
+describe("GetSerialResultDialogComponent", () => {
   let component: GetSerialResultDialogComponent;
   let fixture: ComponentFixture<GetSerialResultDialogComponent>;
 
@@ -20,14 +17,14 @@ describe('GetSerialResultDialogComponent', () => {
         {
           provide: MAT_DIALOG_DATA,
           useValue: {
-            serialList: ['Mock serial'],
-          } as unknown as GetSerialResultDialogData,
+            serialList: ["Mock serial"]
+          } as unknown as GetSerialResultDialogData
         },
         {
           provide: MatDialogRef,
-          useValue: mockDialogRef,
-        },
-      ],
+          useValue: mockDialogRef
+        }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(GetSerialResultDialogComponent);
@@ -35,12 +32,12 @@ describe('GetSerialResultDialogComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 
-  it('should call dialogRef.close() when you invoke close()', () => {
-    component.dialogRef.close('some value');
-    expect(mockDialogRef.close).toHaveBeenCalledWith('some value');
+  it("should call dialogRef.close() when you invoke close()", () => {
+    component.dialogRef.close("some value");
+    expect(mockDialogRef.close).toHaveBeenCalledWith("some value");
   });
 });

@@ -1,45 +1,25 @@
-import { Component, inject, signal } from '@angular/core';
-import { NgClass } from '@angular/common';
-import { MatIcon } from '@angular/material/icon';
-import { MatList, MatListItem } from '@angular/material/list';
-import { MatButton } from '@angular/material/button';
-import { MatDivider } from '@angular/material/divider';
-import { MatDialog } from '@angular/material/dialog';
-import {
-  catchError,
-  concatMap,
-  EMPTY,
-  filter,
-  from,
-  reduce,
-  switchMap,
-} from 'rxjs';
-import { tabToggleState } from '../../../../../styles/animations/animations';
-import {
-  ContentService,
-  ContentServiceInterface,
-} from '../../../../services/content/content.service';
-import {
-  TokenService,
-  TokenServiceInterface,
-} from '../../../../services/token/token.service';
-import {
-  VersioningService,
-  VersioningServiceInterface,
-} from '../../../../services/version/version.service';
-import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
-import { LostTokenComponent } from './lost-token/lost-token.component';
-import { Router, RouterLink } from '@angular/router';
-import {
-  AuditService,
-  AuditServiceInterface,
-} from '../../../../services/audit/audit.service';
-import { SelectedUserAssignDialogComponent } from '../selected-user-assign-dialog/selected-user-assign-dialog.component';
-import { tap } from 'rxjs/operators';
-import { ROUTE_PATHS } from '../../../../app.routes';
+import { Component, inject, signal } from "@angular/core";
+import { NgClass } from "@angular/common";
+import { MatIcon } from "@angular/material/icon";
+import { MatList, MatListItem } from "@angular/material/list";
+import { MatButton } from "@angular/material/button";
+import { MatDivider } from "@angular/material/divider";
+import { MatDialog } from "@angular/material/dialog";
+import { catchError, concatMap, EMPTY, filter, from, reduce, switchMap } from "rxjs";
+import { tabToggleState } from "../../../../../styles/animations/animations";
+import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
+import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { VersioningService, VersioningServiceInterface } from "../../../../services/version/version.service";
+import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import { LostTokenComponent } from "./lost-token/lost-token.component";
+import { Router, RouterLink } from "@angular/router";
+import { AuditService, AuditServiceInterface } from "../../../../services/audit/audit.service";
+import { SelectedUserAssignDialogComponent } from "../selected-user-assign-dialog/selected-user-assign-dialog.component";
+import { tap } from "rxjs/operators";
+import { ROUTE_PATHS } from "../../../../app.routes";
 
 @Component({
-  selector: 'app-token-tab',
+  selector: "app-token-tab",
   standalone: true,
   imports: [
     MatIcon,
@@ -48,11 +28,11 @@ import { ROUTE_PATHS } from '../../../../app.routes';
     MatButton,
     MatDivider,
     NgClass,
-    RouterLink,
+    RouterLink
   ],
-  templateUrl: './token-tab.component.html',
-  styleUrl: './token-tab.component.scss',
-  animations: [tabToggleState],
+  templateUrl: "./token-tab.component.html",
+  styleUrl: "./token-tab.component.scss",
+  animations: [tabToggleState]
 })
 export class TokenTabComponent {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -81,7 +61,7 @@ export class TokenTabComponent {
       .subscribe({
         next: () => {
           this.tokenService.tokenDetailResource.reload();
-        },
+        }
       });
   }
 
@@ -90,11 +70,11 @@ export class TokenTabComponent {
       .open(ConfirmationDialogComponent, {
         data: {
           serialList: [this.tokenSerial()],
-          title: 'Revoke Token',
-          type: 'token',
-          action: 'revoke',
-          numberOfTokens: 1,
-        },
+          title: "Revoke Token",
+          type: "token",
+          action: "revoke",
+          numberOfTokens: 1
+        }
       })
       .afterClosed()
       .subscribe({
@@ -104,16 +84,16 @@ export class TokenTabComponent {
               .revokeToken(this.tokenSerial())
               .pipe(
                 switchMap(() =>
-                  this.tokenService.getTokenDetails(this.tokenSerial()),
-                ),
+                  this.tokenService.getTokenDetails(this.tokenSerial())
+                )
               )
               .subscribe({
                 next: () => {
                   this.tokenService.tokenDetailResource.reload();
-                },
+                }
               });
           }
-        },
+        }
       });
   }
 
@@ -122,11 +102,11 @@ export class TokenTabComponent {
       .open(ConfirmationDialogComponent, {
         data: {
           serialList: [this.tokenSerial()],
-          title: 'Delete Token',
-          type: 'token',
-          action: 'delete',
-          numberOfTokens: 1,
-        },
+          title: "Delete Token",
+          type: "token",
+          action: "delete",
+          numberOfTokens: 1
+        }
       })
       .afterClosed()
       .subscribe({
@@ -135,11 +115,11 @@ export class TokenTabComponent {
             this.tokenService.deleteToken(this.tokenSerial()).subscribe({
               next: () => {
                 this.router.navigateByUrl(ROUTE_PATHS.TOKENS);
-                this.tokenSerial.set('');
-              },
+                this.tokenSerial.set("");
+              }
             });
           }
-        },
+        }
       });
   }
 
@@ -149,11 +129,11 @@ export class TokenTabComponent {
       .open(ConfirmationDialogComponent, {
         data: {
           serialList: selectedTokens.map((token) => token.serial),
-          title: 'Delete All Tokens',
-          type: 'token',
-          action: 'delete',
-          numberOfTokens: selectedTokens.length,
-        },
+          title: "Delete All Tokens",
+          type: "token",
+          action: "delete",
+          numberOfTokens: selectedTokens.length
+        }
       })
       .afterClosed()
       .subscribe({
@@ -164,11 +144,11 @@ export class TokenTabComponent {
                 this.tokenService.tokenResource.reload();
               },
               error: (err) => {
-                console.error('Error deleting tokens:', err);
-              },
+                console.error("Error deleting tokens:", err);
+              }
             });
           }
-        },
+        }
       });
   }
 
@@ -176,8 +156,8 @@ export class TokenTabComponent {
     this.dialog.open(LostTokenComponent, {
       data: {
         isLost: this.isLost,
-        tokenSerial: this.tokenSerial,
-      },
+        tokenSerial: this.tokenSerial
+      }
     });
   }
 
@@ -193,22 +173,22 @@ export class TokenTabComponent {
               const assign$ = this.tokenService.assignUser({
                 tokenSerial: token.serial,
                 username: result.username,
-                realm: result.realm,
+                realm: result.realm
               });
               return token.username
                 ? this.tokenService
-                    .unassignUser(token.serial)
-                    .pipe(switchMap(() => assign$))
+                  .unassignUser(token.serial)
+                  .pipe(switchMap(() => assign$))
                 : assign$;
             }),
-            reduce(() => null, null),
-          ),
+            reduce(() => null, null)
+          )
         ),
         tap(() => this.tokenService.tokenResource.reload()),
         catchError((err) => {
-          console.error('Error assigning tokens:', err);
+          console.error("Error assigning tokens:", err);
           return EMPTY;
-        }),
+        })
       )
       .subscribe();
   }
@@ -219,11 +199,11 @@ export class TokenTabComponent {
       .open(ConfirmationDialogComponent, {
         data: {
           serialList: selectedTokens.map((token) => token.serial),
-          title: 'Unassign Tokens',
-          type: 'token',
-          action: 'unassign',
-          numberOfTokens: selectedTokens.length,
-        },
+          title: "Unassign Tokens",
+          type: "token",
+          action: "unassign",
+          numberOfTokens: selectedTokens.length
+        }
       })
       .afterClosed()
       .subscribe({
@@ -234,11 +214,11 @@ export class TokenTabComponent {
                 this.tokenService.tokenResource.reload();
               },
               error: (err) => {
-                console.error('Error unassigning tokens:', err);
-              },
+                console.error("Error unassigning tokens:", err);
+              }
             });
           }
-        },
+        }
       });
   }
 }

@@ -94,11 +94,12 @@
             </button>
           </mat-list-item>
           <mat-list-item>
-            <button [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' :
+            <button
+              [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' :
             'card-button']"
-                    (click)="unassignSelectedTokens()"
-                    [disabled]="tokenSelection().length === 0"
-                    mat-flat-button>
+              (click)="unassignSelectedTokens()"
+              [disabled]="tokenSelection().length === 0"
+              mat-flat-button>
               <mat-icon> person_remove</mat-icon>
               Unassign Selected
             </button>
