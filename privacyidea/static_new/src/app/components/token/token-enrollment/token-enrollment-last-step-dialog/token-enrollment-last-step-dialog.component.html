@@ -4,12 +4,14 @@
     <a (click)="tokenSelected(data.response.detail.serial)">
       {{ data.response.detail.serial }} </a>.</span>
   @if (data.response.detail["container_serial"]) {
-    <br/><span>It has been enrolled in the container
+    <br/>
+    <span>It has been enrolled in the container
       <a (click)="containerSelected(data.response.detail['container_serial'])">
         {{ data.response.detail["container_serial"] }} </a>.</span>
   }
   @if (data.user?.username && data.userRealm != "" && !data.onlyAddToRealm) {
-    <br/><span>The user <a href="#">{{ data.user!.username }}</a> in the realm
+    <br/>
+    <span>The user <a href="#">{{ data.user!.username }}</a> in the realm
       <a href="#">{{ data.userRealm }}</a> was assigned to the token.
     </span>
   }
