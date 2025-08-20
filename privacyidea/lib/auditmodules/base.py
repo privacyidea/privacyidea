@@ -1,3 +1,5 @@
+# (c) NetKnights GmbH 2025,  https://netknights.it
+#
 #  privacyIDEA is a fork of LinOTP
 #  May 08, 2014 Cornelius Kölbel
 #  License:  AGPLv3
@@ -25,20 +27,23 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__="""This is the BaseClass for audit trails
+# SPDX-FileCopyrightText: 2025 Paul Lettich <paul.lettich@netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+"""This is the BaseClass for audit trails
 
 The audit is supposed to work like this. First we need to create an audit
-object. E.g. this can be done in the before_request:
+object. E.g. this can be done in the before_request::
 
     g.audit_object = getAudit(file_config)
 
-During the request, the g.audit_object can be used to add audit information:
+During the request, the g.audit_object can be used to add audit information::
 
     g.audit_object.log({"client": "123.2.3.4", "action": "validate/check"})
 
-Thus at many different places in the code, audit information can be added to
+Thus, at many different places in the code, audit information can be added to
 the audit object.
-Finally the audit_object needs to be stored to the audit storage. So we call:
+Finally, the audit_object needs to be stored to the audit storage. So we call::
 
     g.audit_object.finalize_log()
 
@@ -90,8 +95,8 @@ class Audit(object):  # pragma: no cover
         self.name = "AuditBase"
         self.audit_data = {'startdate': startdate or datetime.datetime.now()}
         self.config = config or {}
-        self.private = ""
-        self.public = ""
+        self.private = b""
+        self.public = b""
 
     def log_token_num(self, count):
         """

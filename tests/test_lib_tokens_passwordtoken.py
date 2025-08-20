@@ -2,7 +2,6 @@
 This test file tests the lib.tokens.passwordtoken
 This depends on lib.tokenclass
 """
-import json
 import logging
 from testfixtures import log_capture
 from .base import MyTestCase
@@ -102,7 +101,7 @@ class PasswordTokenTestCase(MyTestCase):
         }]
 
         # Import the token
-        import_tokens(json.dumps(token_data))
+        import_tokens(token_data)
 
         # Retrieve the imported token
         passwordtoken = get_tokens(serial=token_data[0]["serial"])[0]

@@ -1,12 +1,8 @@
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData,
-  TokenEnrollmentPayload,
-} from './_token-api-payload.mapper';
-import { Injectable } from '@angular/core';
+import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import { Injectable } from "@angular/core";
 
 export interface PaperEnrollmentData extends TokenEnrollmentData {
-  type: 'paper';
+  type: "paper";
   otpLength?: number;
   otpCount?: number;
 }
@@ -16,10 +12,8 @@ export interface PaperEnrollmentPayload extends TokenEnrollmentPayload {
   otpcount?: number;
 }
 
-@Injectable({ providedIn: 'root' })
-export class PaperApiPayloadMapper
-  implements TokenApiPayloadMapper<PaperEnrollmentData>
-{
+@Injectable({ providedIn: "root" })
+export class PaperApiPayloadMapper implements TokenApiPayloadMapper<PaperEnrollmentData> {
   toApiPayload(data: PaperEnrollmentData): PaperEnrollmentPayload {
     const payload: PaperEnrollmentPayload = {
       type: data.type,
@@ -30,7 +24,7 @@ export class PaperApiPayloadMapper
       user: data.user,
       pin: data.pin,
       otplen: data.otpLength,
-      otpcount: data.otpCount,
+      otpcount: data.otpCount
     };
     if (payload.otplen === undefined) delete payload.otplen;
     if (payload.otpcount === undefined) delete payload.otpcount;
@@ -41,7 +35,7 @@ export class PaperApiPayloadMapper
     return {
       ...payload,
       otpLength: payload.otplen,
-      otpCount: payload.otpcount,
+      otpCount: payload.otpcount
     } as PaperEnrollmentData;
   }
 }

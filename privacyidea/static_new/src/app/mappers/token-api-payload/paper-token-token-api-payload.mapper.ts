@@ -1,13 +1,9 @@
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData,
-  TokenEnrollmentPayload,
-} from './_token-api-payload.mapper';
-import { Injectable } from '@angular/core';
+import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import { Injectable } from "@angular/core";
 
 // Interface for Papertoken-specific enrollment data
 export interface PaperTokenEnrollmentData extends TokenEnrollmentData {
-  type: 'papertoken';
+  type: "papertoken";
   otpLength?: number;
   otpCount?: number; // Number of OTPs to generate for the paper token
 }
@@ -17,10 +13,8 @@ export interface PaperTokenEnrollmentPayload extends TokenEnrollmentPayload {
   otpcount?: number; // Assuming API field name if different from otpCount
 }
 
-@Injectable({ providedIn: 'root' })
-export class PaperTokenApiPayloadMapper
-  implements TokenApiPayloadMapper<PaperTokenEnrollmentData>
-{
+@Injectable({ providedIn: "root" })
+export class PaperTokenApiPayloadMapper implements TokenApiPayloadMapper<PaperTokenEnrollmentData> {
   toApiPayload(data: PaperTokenEnrollmentData): PaperTokenEnrollmentPayload {
     // 'papertoken' type is not in the main switch statement.
     // Mapping based on defined interfaces.
@@ -33,7 +27,7 @@ export class PaperTokenApiPayloadMapper
       user: data.user,
       pin: data.pin,
       otplen: data.otpLength,
-      otpcount: data.otpCount,
+      otpcount: data.otpCount
     };
     if (payload.otplen === undefined) delete payload.otplen;
     if (payload.otpcount === undefined) delete payload.otpcount;

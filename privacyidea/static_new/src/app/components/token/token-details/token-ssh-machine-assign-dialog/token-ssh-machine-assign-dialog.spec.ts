@@ -1,15 +1,11 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { TokenSshMachineAssignDialogComponent } from './token-ssh-machine-assign-dialog';
-import {
-  MAT_DIALOG_DATA,
-  MatDialogModule,
-  MatDialogRef,
-} from '@angular/material/dialog';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { TokenSshMachineAssignDialogComponent } from "./token-ssh-machine-assign-dialog";
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 
-describe('TokenSshMachineAssignDialogComponent', () => {
+describe("TokenSshMachineAssignDialogComponent", () => {
   let component: TokenSshMachineAssignDialogComponent;
   let fixture: ComponentFixture<TokenSshMachineAssignDialogComponent>;
 
@@ -18,7 +14,7 @@ describe('TokenSshMachineAssignDialogComponent', () => {
       imports: [
         TokenSshMachineAssignDialogComponent,
         BrowserAnimationsModule,
-        MatDialogModule,
+        MatDialogModule
       ],
       providers: [
         provideHttpClient(),
@@ -27,10 +23,11 @@ describe('TokenSshMachineAssignDialogComponent', () => {
         {
           provide: MatDialogRef,
           useValue: {
-            close: () => {},
-          },
-        },
-      ],
+            close: () => {
+            }
+          }
+        }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(TokenSshMachineAssignDialogComponent);
@@ -38,7 +35,7 @@ describe('TokenSshMachineAssignDialogComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

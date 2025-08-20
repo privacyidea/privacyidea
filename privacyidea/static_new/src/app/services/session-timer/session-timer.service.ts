@@ -1,18 +1,8 @@
-import {
-  computed,
-  effect,
-  inject,
-  Injectable,
-  Signal,
-  signal,
-} from '@angular/core';
-import { Router } from '@angular/router';
-import { AuthService, AuthServiceInterface } from '../auth/auth.service';
-import { LocalService, LocalServiceInterface } from '../local/local.service';
-import {
-  NotificationService,
-  NotificationServiceInterface,
-} from '../notification/notification.service';
+import { computed, effect, inject, Injectable, Signal, signal } from "@angular/core";
+import { Router } from "@angular/router";
+import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { LocalService, LocalServiceInterface } from "../local/local.service";
+import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 
 export interface SessionTimerServiceInterface {
   remainingTime: Signal<number>;
@@ -25,7 +15,7 @@ export interface SessionTimerServiceInterface {
 }
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: "root"
 })
 export class SessionTimerService implements SessionTimerServiceInterface {
   private readonly router: Router = inject(Router);
@@ -40,14 +30,14 @@ export class SessionTimerService implements SessionTimerServiceInterface {
   private startTime = signal(Date.now());
   private currentTime = signal(Date.now());
   remainingTime = computed(
-    () => this.sessionTimeout - (this.currentTime() - this.startTime()),
+    () => this.sessionTimeout - (this.currentTime() - this.startTime())
   );
 
   constructor() {
     effect(() => {
       if (this.remainingTime() > 30_000 && this.remainingTime() < 31_000) {
         this.notificationService.openSnackBar(
-          'Session will expire in 30 seconds.',
+          "Session will expire in 30 seconds."
         );
       }
     });
@@ -77,9 +67,9 @@ export class SessionTimerService implements SessionTimerServiceInterface {
     this.localService.removeData(this.localService.bearerTokenKey);
     this.authService.deauthenticate();
     this.notificationService.openSnackBar(
-      'Session expired. Redirecting to login page.',
+      "Session expired. Redirecting to login page."
     );
-    this.router.navigate(['login']);
+    this.router.navigate(["login"]);
     this.clearRefreshInterval();
   }
 

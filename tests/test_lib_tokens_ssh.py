@@ -2,8 +2,6 @@
 This test file tests the lib.tokens.sshkeytoken
 This depends on lib.tokenclass
 """
-import json
-
 from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.token import init_token, import_tokens, get_tokens
 from .base import MyTestCase
@@ -177,7 +175,7 @@ class SSHTokenTestCase(MyTestCase):
                        }]
 
         # Import the token
-        import_tokens(json.dumps(token_data))
+        import_tokens(token_data)
 
         # Retrieve the imported token
         token = get_tokens(serial=token_data[0]["serial"])[0]
@@ -187,7 +185,7 @@ class SSHTokenTestCase(MyTestCase):
         self.assertEqual(token.type, token_data[0]["type"])
         self.assertEqual(token.token.description, token_data[0]["description"])
         self.assertEqual(token.get_tokeninfo("tokenkind"), "software")
-        self.assertEqual(token.get_tokeninfo("ssh_key"), token_data[0]["tokeninfo"]["ssh_key"])
+        self.assertEqual(token.get_tokeninfo("ssh_key"), self.sshkey[8:-28])
         self.assertEqual(token.get_tokeninfo("ssh_type"), "ssh-rsa")
 
         # Clean up

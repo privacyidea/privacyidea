@@ -19,7 +19,7 @@ from privacyidea.lib.tokens.totptoken import HotpTokenClass
 from privacyidea.lib.tokens.yubikeytoken import YubikeyTokenClass
 from privacyidea.lib.tokens.registrationtoken import RegistrationTokenClass
 from privacyidea.lib.tokenclass import DATE_FORMAT
-from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner)
+from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm)
 from privacyidea.lib.authcache import _hash_password
 from privacyidea.lib.config import (set_privacyidea_config,
                                     get_inc_fail_count_on_false_pin,
@@ -2853,7 +2853,7 @@ class ValidateAPITestCase(MyApiTestCase):
 
         params = {"type": "spass",
                   "pin": "spass"}
-        init_token(params, User("alice", "tr"))
+        token = init_token(params, User("alice", "tr"))
 
         # Alice Cooper is in the LDAP directory, but Cooper is the secondary login name
         with self.app.test_request_context('/validate/check',
@@ -2881,6 +2881,7 @@ class ValidateAPITestCase(MyApiTestCase):
                 "logged in as Cooper." in json_response.get("result").get("value").get("auditdata")[0].get("info"),
                 json_response.get("result").get("value").get("auditdata"))
 
+        token.delete_token()
         self.assertTrue(delete_realm("tr"))
         self.assertTrue(delete_resolver("myLDAPres"))
 
@@ -3299,6 +3300,129 @@ class ValidateAPITestCase(MyApiTestCase):
         remove_token(serial=serial_2)
         delete_policy("challenge_response")
         delete_policy("disable_some_token")
+
+    def test_39_invalid_user(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        set_default_realm(self.realm3)
+        # User exist in realm1 (default realm) and realm3
+        user = User("cornelius", self.realm1)
+        token = init_token({"type": "spass", "pin": "1234"}, user=user)
+        user_realm1 = User("hans", self.realm1)
+        token_realm1 = init_token({"type": "spass", "pin": "1234"}, user=user_realm1)
+
+        # successful authentication
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={"user": user.login, "realm": user.realm, "pass": "1234"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+
+        # --- User does not exist in realm ---
+        # only pass username uses default realm (username does not exist in default realm)
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={"user": "eve", "pass": "1234"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res)
+            error = res.json.get("result").get("error")
+            self.assertEqual(904, error.get("code"), error)
+            self.assertEqual(f"ERR904: User <eve@{self.realm3}> does not exist.", error.get("message"),
+                             error)
+
+        # Pass username and realm
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={"user": "eve", "realm": self.realm1, "pass": "1234"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res)
+            error = res.json.get("result").get("error")
+            self.assertEqual(904, error.get("code"), error)
+            self.assertEqual(f"ERR904: User <eve@{self.realm1}> does not exist.", error.get("message"),
+                             error)
+
+        # Pass username and resolver (sets default realm)
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={"user": "eve", "resolver": self.resolvername1, "pass": "1234"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res)
+            error = res.json.get("result").get("error")
+            self.assertEqual(904, error.get("code"), error)
+            self.assertEqual(f"ERR904: User <eve.{self.resolvername1}@{self.realm3}> does not exist.", error.get("message"),
+                             error)
+
+        # Pass username, realm, and resolver
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={"user": "eve", "realm": self.realm1, "resolver": self.resolvername1,
+                                                 "pass": "1234"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res)
+            error = res.json.get("result").get("error")
+            self.assertEqual(904, error.get("code"), error)
+            self.assertEqual(f"ERR904: User <eve.{self.resolvername1}@{self.realm1}> does not exist.", error.get("message"),
+                             error)
+
+        # --- Realm of user was deleted ---
+        Realm.query.filter_by(name=self.realm1).first().delete()
+
+        # only pass username uses default realm: same username exist in defrealm
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={"user": user.login, "pass": "1234"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json["detail"]
+            self.assertEqual("The user has no tokens assigned", result["message"], result)
+
+        # only pass username uses default realm: username does not exist in defrealm
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={"user": user_realm1.login, "pass": "1234"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res)
+            error = res.json.get("result").get("error")
+            self.assertEqual(904, error.get("code"), error)
+            self.assertEqual(f"ERR904: User <{user_realm1.login}@{self.realm3}> does not exist.", error.get("message"),
+                             error)
+
+        # pass username and realm
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={"user": user.login, "realm": user.realm, "pass": "1234"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res)
+            error = res.json.get("result").get("error")
+            self.assertEqual(904, error.get("code"), error)
+            self.assertEqual(f"ERR904: User <{user.login}@{user.realm}> does not exist.", error.get("message"), error)
+
+        # pass username, realm, and resolver
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={"user": user.login, "realm": user.realm, "resolver": user.resolver,
+                                                 "pass": "1234"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res)
+            error = res.json.get("result").get("error")
+            self.assertEqual(904, error.get("code"), error)
+            self.assertEqual(f"ERR904: User <{user.login}.{user.resolver}@{user.realm}> does not exist.",
+                             error.get("message"), error)
+
+        # Pass user and serial
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={"user": user.login, "realm": user.realm, "serial": token.get_serial(),
+                                                 "pass": "1234"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res)
+            error = res.json.get("result").get("error")
+            self.assertEqual(905, error.get("code"), error)
+            self.assertEqual("ERR905: Given serial does not belong to given user!", error.get("message"), error)
+
+        # --- Resolver is not in realm ---
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={"user": user.login, "realm": user.realm,
+                                                 "resolver": self.resolvername3, "pass": "1234"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res)
+            error = res.json.get("result").get("error")
+            self.assertEqual(904, error.get("code"), error)
+            self.assertEqual(f"ERR904: User <{user.login}.{self.resolvername3}@{user.realm}> does not exist.",
+                             error.get("message"), error)
+
+        token.delete_token()
+        token_realm1.delete_token()
 
 
 class RegistrationValidity(MyApiTestCase):

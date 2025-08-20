@@ -1,29 +1,15 @@
-import { HttpClient, HttpParams, httpResource } from '@angular/common/http';
-import {
-  computed,
-  effect,
-  inject,
-  Injectable,
-  linkedSignal,
-  signal,
-  WritableSignal,
-} from '@angular/core';
-import { Sort } from '@angular/material/sort';
-import { environment } from '../../../environments/environment';
-import { LocalService, LocalServiceInterface } from '../local/local.service';
-import {
-  TableUtilsService,
-  TableUtilsServiceInterface,
-} from '../table-utils/table-utils.service';
+import { HttpClient, HttpParams, httpResource } from "@angular/common/http";
+import { computed, effect, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { Sort } from "@angular/material/sort";
+import { environment } from "../../../environments/environment";
+import { LocalService, LocalServiceInterface } from "../local/local.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "../table-utils/table-utils.service";
 
-import { PageEvent } from '@angular/material/paginator';
-import { Observable } from 'rxjs';
-import { PiResponse } from '../../app.component';
-import {
-  ContentService,
-  ContentServiceInterface,
-} from '../content/content.service';
-import { ROUTE_PATHS } from '../../app.routes';
+import { PageEvent } from "@angular/material/paginator";
+import { Observable } from "rxjs";
+import { PiResponse } from "../../app.component";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { ROUTE_PATHS } from "../../app.routes";
 
 type TokenApplications = TokenApplication[];
 
@@ -56,7 +42,7 @@ export interface MachineServiceInterface {
   offlineAdvancedApiFilter: string[];
   machines: WritableSignal<Machines | undefined>;
   tokenApplications: WritableSignal<TokenApplications | undefined>;
-  selectedApplicationType: WritableSignal<'ssh' | 'offline'>;
+  selectedApplicationType: WritableSignal<"ssh" | "offline">;
   pageSize: WritableSignal<number>;
   filterValue: WritableSignal<Record<string, string>>;
   filterValueString: WritableSignal<string>;
@@ -81,21 +67,17 @@ export interface MachineServiceInterface {
     resolver: string,
     serial: string,
     application: string,
-    mtid: string,
+    mtid: string
   ): Observable<any>;
 
-  getAuthItem(
-    challenge: string,
-    hostname: string,
-    application?: string,
-  ): Observable<any>;
+  getAuthItem(challenge: string, hostname: string, application?: string): Observable<any>;
 
   postToken(
     hostname: string,
     machineid: string,
     resolver: string,
     serial: string,
-    application: string,
+    application: string
   ): Observable<any>;
 
   getMachine(args: {
@@ -110,14 +92,10 @@ export interface MachineServiceInterface {
     serial: string,
     machineid: string,
     resolver: string,
-    application: string,
+    application: string
   ): Observable<any>;
 
-  deleteTokenMtid(
-    serial: string,
-    application: string,
-    mtid: string,
-  ): Observable<any>;
+  deleteTokenMtid(serial: string, application: string, mtid: string): Observable<any>;
 
   onPageEvent(event: PageEvent): void;
 
@@ -125,63 +103,58 @@ export interface MachineServiceInterface {
 }
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: "root"
 })
 export class MachineService implements MachineServiceInterface {
   private readonly http: HttpClient = inject(HttpClient);
   protected readonly localService: LocalServiceInterface = inject(LocalService);
-  protected readonly tableUtilsService: TableUtilsServiceInterface =
-    inject(TableUtilsService);
-  protected readonly contentService: ContentServiceInterface =
-    inject(ContentService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
 
-  private baseUrl = environment.proxyUrl + '/machine/';
-  sshApiFilter = ['serial', 'service_id'];
-  sshAdvancedApiFilter = ['hostname', 'machineid & resolver'];
-  offlineApiFilter = ['serial', 'count', 'rounds'];
-  offlineAdvancedApiFilter = ['hostname', 'machineid & resolver'];
-  selectedApplicationType = signal<'ssh' | 'offline'>('ssh');
+  private baseUrl = environment.proxyUrl + "/machine/";
+  sshApiFilter = ["serial", "service_id"];
+  sshAdvancedApiFilter = ["hostname", "machineid & resolver"];
+  offlineApiFilter = ["serial", "count", "rounds"];
+  offlineAdvancedApiFilter = ["hostname", "machineid & resolver"];
+  selectedApplicationType = signal<"ssh" | "offline">("ssh");
   pageSize = linkedSignal({
     source: this.selectedApplicationType,
-    computation: () => 10,
+    computation: () => 10
   });
 
   machinesResource = httpResource<PiResponse<Machines>>(() => {
-    if (
-      !this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_APPLICATIONS)
-    ) {
+    if (!this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_APPLICATIONS)) {
       return undefined;
     }
     return {
       url: `${this.baseUrl}`,
-      method: 'GET',
+      method: "GET",
       headers: this.localService.getHeaders(),
       params: {
-        any: '',
-      },
+        any: ""
+      }
     };
   });
 
   machines: WritableSignal<Machines | undefined> = linkedSignal({
     source: this.machinesResource.value,
-    computation: (machinesResource, previous) =>
-      machinesResource?.result?.value ?? previous?.value,
+    computation: (machinesResource, previous) => machinesResource?.result?.value ?? previous?.value
   });
   filterValue: WritableSignal<Record<string, string>> = linkedSignal({
     source: this.selectedApplicationType,
     // This gets also updated by the effect in the constructor, when filterValueString changes.
-    computation: () => ({}),
+    computation: () => ({})
   });
   filterValueString: WritableSignal<string> = linkedSignal({
     source: this.filterValue,
     computation: () =>
       Object.entries(this.filterValue())
         .map(([key, value]) => `${key}: ${value}`)
-        .join(' '),
+        .join(" ")
   });
   filterParams = computed<Record<string, string>>(() => {
     let allowedKeywords =
-      this.selectedApplicationType() === 'ssh'
+      this.selectedApplicationType() === "ssh"
         ? [...this.sshApiFilter, ...this.sshAdvancedApiFilter]
         : [...this.offlineApiFilter, ...this.offlineAdvancedApiFilter];
 
@@ -193,22 +166,16 @@ export class MachineService implements MachineServiceInterface {
     }
     let params: any = {};
     filterPairs.forEach(({ key, value }) => {
-      if (['serial'].includes(key)) {
+      if (["serial"].includes(key)) {
         params[key] = `*${value}*`;
       }
-      if (['hostname', 'machineid', 'resolver'].includes(key)) {
+      if (["hostname", "machineid", "resolver"].includes(key)) {
         params[key] = value;
       }
-      if (
-        this.selectedApplicationType() === 'ssh' &&
-        ['service_id'].includes(key)
-      ) {
+      if (this.selectedApplicationType() === "ssh" && ["service_id"].includes(key)) {
         params[key] = `*${value}*`;
       }
-      if (
-        this.selectedApplicationType() === 'offline' &&
-        ['count', 'rounds'].includes(key)
-      ) {
+      if (this.selectedApplicationType() === "offline" && ["count", "rounds"].includes(key)) {
         params[key] = value;
       }
     });
@@ -216,49 +183,44 @@ export class MachineService implements MachineServiceInterface {
   });
   sort = linkedSignal({
     source: this.selectedApplicationType,
-    computation: () => ({ active: 'serial', direction: 'asc' }) as Sort,
+    computation: () => ({ active: "serial", direction: "asc" }) as Sort
   });
   pageIndex = linkedSignal({
     source: () => ({
       application: this.selectedApplicationType(),
       filter: this.filterValue(),
-      sort: this.sort(),
+      sort: this.sort()
     }),
-    computation: () => 0,
+    computation: () => 0
   });
   tokenApplicationResource = httpResource<PiResponse<TokenApplications>>(() => {
-    if (
-      !this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_APPLICATIONS)
-    ) {
+    if (!this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_APPLICATIONS)) {
       return undefined;
     }
     const params = {
       application: this.selectedApplicationType(),
       page: this.pageIndex() + 1,
       pagesize: this.pageSize(),
-      sortby: this.sort()?.active || 'serial',
-      sortdir: this.sort()?.direction || 'asc',
-      ...this.filterParams(),
+      sortby: this.sort()?.active || "serial",
+      sortdir: this.sort()?.direction || "asc",
+      ...this.filterParams()
     };
     return {
-      url: this.baseUrl + 'token',
-      method: 'GET',
+      url: this.baseUrl + "token",
+      method: "GET",
       headers: this.localService.getHeaders(),
-      params: params,
+      params: params
     };
   });
-  tokenApplications: WritableSignal<TokenApplications | undefined> =
-    linkedSignal({
-      source: this.tokenApplicationResource.value,
-      computation: (tokenApplicationResource, previous) =>
-        tokenApplicationResource?.result?.value ?? previous?.value,
-    });
+  tokenApplications: WritableSignal<TokenApplications | undefined> = linkedSignal({
+    source: this.tokenApplicationResource.value,
+    computation: (tokenApplicationResource, previous) =>
+      tokenApplicationResource?.result?.value ?? previous?.value
+  });
 
   constructor() {
     effect(() => {
-      const recordsFromText = this.tableUtilsService.recordsFromText(
-        this.filterValueString(),
-      );
+      const recordsFromText = this.tableUtilsService.recordsFromText(this.filterValueString());
       this.filterValue.set(recordsFromText);
     });
   }
@@ -281,33 +243,25 @@ export class MachineService implements MachineServiceInterface {
     resolver: string,
     serial: string,
     application: string,
-    mtid: string,
+    mtid: string
   ): Observable<any> {
     const headers = this.localService.getHeaders();
     return this.http.post(
       `${this.baseUrl}tokenoption`,
       { hostname, machineid, resolver, serial, application, mtid },
-      { headers },
+      { headers }
     );
   }
 
-  getAuthItem(
-    challenge: string,
-    hostname: string,
-    application?: string,
-  ): Observable<any> {
+  getAuthItem(challenge: string, hostname: string, application?: string): Observable<any> {
     const headers = this.localService.getHeaders();
-    let params = new HttpParams()
-      .set('challenge', challenge)
-      .set('hostname', hostname);
+    let params = new HttpParams().set("challenge", challenge).set("hostname", hostname);
     return this.http.get(
-      application
-        ? `${this.baseUrl}authitem/${application}`
-        : `${this.baseUrl}authitem`,
+      application ? `${this.baseUrl}authitem/${application}` : `${this.baseUrl}authitem`,
       {
         headers,
-        params,
-      },
+        params
+      }
     );
   }
 
@@ -316,13 +270,13 @@ export class MachineService implements MachineServiceInterface {
     machineid: string,
     resolver: string,
     serial: string,
-    application: string,
+    application: string
   ): Observable<any> {
     const headers = this.localService.getHeaders();
     return this.http.post(
       `${this.baseUrl}token`,
       { hostname, machineid, resolver, serial, application },
-      { headers },
+      { headers }
     );
   }
 
@@ -336,14 +290,14 @@ export class MachineService implements MachineServiceInterface {
     const { hostname, ip, id, resolver, any } = args;
     const headers = this.localService.getHeaders();
     let params = new HttpParams();
-    if (hostname !== undefined) params = params.set('hostname', hostname);
-    if (ip !== undefined) params = params.set('ip', ip);
-    if (id !== undefined) params = params.set('id', id);
-    if (resolver !== undefined) params = params.set('resolver', resolver);
-    if (any !== undefined) params = params.set('any', any);
+    if (hostname !== undefined) params = params.set("hostname", hostname);
+    if (ip !== undefined) params = params.set("ip", ip);
+    if (id !== undefined) params = params.set("id", id);
+    if (resolver !== undefined) params = params.set("resolver", resolver);
+    if (any !== undefined) params = params.set("any", any);
     return this.http.get<PiResponse<Machines>>(`${this.baseUrl}`, {
       headers,
-      params,
+      params
     });
   }
 
@@ -351,25 +305,18 @@ export class MachineService implements MachineServiceInterface {
     serial: string,
     machineid: string,
     resolver: string,
-    application: string,
+    application: string
   ): Observable<any> {
     const headers = this.localService.getHeaders();
     return this.http.delete(
       `${this.baseUrl}token/${serial}/${machineid}/${resolver}/${application}`,
-      { headers },
+      { headers }
     );
   }
 
-  deleteTokenMtid(
-    serial: string,
-    application: string,
-    mtid: string,
-  ): Observable<any> {
+  deleteTokenMtid(serial: string, application: string, mtid: string): Observable<any> {
     const headers = this.localService.getHeaders();
-    return this.http.delete(
-      `${this.baseUrl}token/${serial}/${application}/${mtid}`,
-      { headers },
-    );
+    return this.http.delete(`${this.baseUrl}token/${serial}/${application}/${mtid}`, { headers });
   }
 
   onPageEvent(event: PageEvent): void {

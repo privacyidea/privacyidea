@@ -6,6 +6,9 @@ ARG GUNICORN=23.0.0
 # TODO: we should probably create a different container image for use with postgres
 ARG PSYCOPG2=2.9.10
 
+# TODO: Add build steps for gssapi and PyKCS11
+# TODO: Add build step for new WebUI
+
 # Set environment variables to optimize Python for docker
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
@@ -27,7 +30,7 @@ COPY requirements.txt .
 
 RUN /opt/privacyidea/bin/pip install --no-cache-dir -r requirements.txt
 
-COPY README.rst MANIFEST.in setup.py pyproject.toml ./
+COPY README.rst MANIFEST.in pyproject.toml ./
 COPY ./.git ./.git
 COPY ./deploy/ ./deploy
 COPY ./tools/ ./tools

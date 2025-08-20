@@ -1,16 +1,13 @@
-import { TokenEnrollmentComponent } from './token-enrollment.component';
-import {
-  BrowserAnimationsModule,
-  NoopAnimationsModule,
-} from '@angular/platform-browser/animations';
-import { provideHttpClient } from '@angular/common/http';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { EnrollYubikeyComponent } from './enroll-yubikey/enroll-yubikey.component';
-import { MatAutocompleteModule } from '@angular/material/autocomplete';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
+import { TokenEnrollmentComponent } from "./token-enrollment.component";
+import { BrowserAnimationsModule, NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { provideHttpClient } from "@angular/common/http";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { EnrollYubikeyComponent } from "./enroll-yubikey/enroll-yubikey.component";
+import { MatAutocompleteModule } from "@angular/material/autocomplete";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatInputModule } from "@angular/material/input";
 
-describe('TokenEnrollmentComponent', () => {
+describe("TokenEnrollmentComponent", () => {
   let component: any;
   let fixture: ComponentFixture<any>;
 
@@ -21,9 +18,9 @@ describe('TokenEnrollmentComponent', () => {
         BrowserAnimationsModule,
         MatAutocompleteModule,
         MatFormFieldModule,
-        MatInputModule,
+        MatInputModule
       ],
-      providers: [provideHttpClient(), NoopAnimationsModule],
+      providers: [provideHttpClient(), NoopAnimationsModule]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollYubikeyComponent);
@@ -31,7 +28,7 @@ describe('TokenEnrollmentComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });
