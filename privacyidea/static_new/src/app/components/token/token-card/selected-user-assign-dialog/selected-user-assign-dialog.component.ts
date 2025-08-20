@@ -1,19 +1,10 @@
 import { Component, computed, inject, signal, WritableSignal } from "@angular/core";
-import {
-  MatDialogActions,
-  MatDialogContent,
-  MatDialogRef,
-  MatDialogTitle
-} from "@angular/material/dialog";
+import { MatDialogActions, MatDialogContent, MatDialogRef, MatDialogTitle } from "@angular/material/dialog";
 import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatSelect } from "@angular/material/select";
-import {
-  UserData,
-  UserService,
-  UserServiceInterface
-} from "../../../../services/user/user.service";
+import { UserData, UserService, UserServiceInterface } from "../../../../services/user/user.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { RealmService, RealmServiceInterface } from "../../../../services/realm/realm.service";
 import { MatInput } from "@angular/material/input";
@@ -52,6 +43,10 @@ export class SelectedUserAssignDialogComponent {
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
+  protected readonly dialogRef: MatDialogRef<
+    SelectedUserAssignDialogComponent,
+    SelectedUserAssignResult | null
+  > = inject(MatDialogRef);
   pin: WritableSignal<string> = signal("");
   pinRepeat: WritableSignal<string> = signal("");
   hidePin: WritableSignal<boolean> = signal(true);
@@ -70,12 +65,12 @@ export class SelectedUserAssignDialogComponent {
       .some((token) => token.username && token.username !== "")
   );
 
-  constructor(
-    public dialogRef: MatDialogRef<
-      SelectedUserAssignDialogComponent,
-      SelectedUserAssignResult | null
-    >
-  ) {
+  ngOnInit(): void {
+    this.selectedUserRealmControl.valueChanges.subscribe((value) => {
+      if (value !== this.userService.selectedUserRealm()) {
+        this.userService.selectedUserRealm.set(value ?? "");
+      }
+    });
   }
 
   togglePinVisibility(): void {

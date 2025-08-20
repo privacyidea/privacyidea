@@ -1,21 +1,10 @@
 import { HttpErrorResponse, httpResource, HttpResourceRef } from "@angular/common/http";
-import {
-  computed,
-  effect,
-  inject,
-  Injectable,
-  Signal,
-  signal,
-  WritableSignal
-} from "@angular/core";
+import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { LocalService, LocalServiceInterface } from "../local/local.service";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../notification/notification.service";
+import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { ROUTE_PATHS } from "../../app.routes";
 
@@ -61,6 +50,7 @@ export class RealmService implements RealmServiceInterface {
       (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS) &&
         !this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS) &&
         ![
+          ROUTE_PATHS.TOKENS,
           ROUTE_PATHS.USERS,
           ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
           ROUTE_PATHS.TOKENS_ENROLLMENT
@@ -85,6 +75,7 @@ export class RealmService implements RealmServiceInterface {
       (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS) &&
         !this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS) &&
         ![
+          ROUTE_PATHS.TOKENS,
           ROUTE_PATHS.USERS,
           ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
           ROUTE_PATHS.TOKENS_ENROLLMENT

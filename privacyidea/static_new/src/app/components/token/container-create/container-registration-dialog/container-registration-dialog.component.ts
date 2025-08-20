@@ -1,10 +1,5 @@
 import { Component, inject, WritableSignal } from "@angular/core";
-import {
-  MAT_DIALOG_DATA,
-  MatDialogContent,
-  MatDialogRef,
-  MatDialogTitle
-} from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialogContent, MatDialogRef, MatDialogTitle } from "@angular/material/dialog";
 import { PiResponse } from "../../../../app.component";
 import {
   ContainerRegisterData,

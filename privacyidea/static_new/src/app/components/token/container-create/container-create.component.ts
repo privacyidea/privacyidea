@@ -1,4 +1,13 @@
-import { Component, effect, inject, signal, untracked } from "@angular/core";
+import {
+  Component,
+  effect,
+  ElementRef,
+  inject,
+  Renderer2,
+  signal,
+  untracked,
+  ViewChild
+} from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatButton, MatIconButton } from "@angular/material/button";
@@ -22,17 +31,11 @@ import {
   ContainerServiceInterface
 } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../../../services/notification/notification.service";
+import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
-import {
-  VersioningService,
-  VersioningServiceInterface
-} from "../../../services/version/version.service";
+import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
 import { TokenComponent } from "../token.component";
 import {
   ContainerCreationDialogData,
@@ -41,6 +44,7 @@ import {
 import { Router } from "@angular/router";
 import { MatTooltip } from "@angular/material/tooltip";
 import { ROUTE_PATHS } from "../../../app.routes";
+import { NgClass } from "@angular/common";
 
 export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
 
@@ -65,7 +69,8 @@ export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
     MatExpansionPanel,
     MatExpansionPanelTitle,
     MatExpansionPanelHeader,
-    MatTooltip
+    MatTooltip,
+    NgClass
   ],
   templateUrl: "./container-create.component.html",
   styleUrl: "./container-create.component.scss"
@@ -84,6 +89,8 @@ export class ContainerCreateComponent {
     inject(ContentService);
   protected readonly TokenComponent = TokenComponent;
   private router = inject(Router);
+  private observer!: IntersectionObserver;
+  protected readonly renderer: Renderer2 = inject(Renderer2);
   containerSerial = this.containerService.containerSerial;
   description = signal("");
   selectedTemplate = signal("");
@@ -94,6 +101,10 @@ export class ContainerCreateComponent {
   passphraseResponse = signal("");
   registerResponse = signal<PiResponse<ContainerRegisterData> | null>(null);
   pollResponse = signal<any>(null);
+
+  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
+  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
+  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
 
   constructor(protected registrationDialog: MatDialog) {
     effect(() => {
@@ -114,6 +125,37 @@ export class ContainerCreateComponent {
     });
   }
 
+  ngAfterViewInit(): void {
+    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) {
+      return;
+    }
+
+    const options = {
+      root: this.scrollContainer.nativeElement,
+      threshold: [0, 1]
+    };
+
+    this.observer = new IntersectionObserver(([entry]) => {
+      if (!entry.rootBounds) return;
+
+      const isSticky = entry.boundingClientRect.top < entry.rootBounds.top;
+
+      if (isSticky) {
+        this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
+      } else {
+        this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
+      }
+    }, options);
+
+    this.observer.observe(this.stickySentinel.nativeElement);
+  }
+
+  ngOnDestroy(): void {
+    if (this.observer) {
+      this.observer.disconnect();
+    }
+  }
+
   reopenEnrollmentDialog() {
     const currentResponse = this.registerResponse();
     if (currentResponse) {
@@ -125,18 +167,19 @@ export class ContainerCreateComponent {
   createContainer() {
     this.pollResponse.set(null);
     this.registerResponse.set(null);
+    const createData = {
+      container_type:
+      this.containerService.selectedContainerType().containerType,
+      description: this.description(),
+      template: this.selectedTemplate(),
+      user: this.userService.userNameFilter(),
+      realm: ""
+    };
+    if (createData.user || this.onlyAddToRealm()) {
+      createData.realm = this.userService.selectedUserRealm();
+    }
     this.containerService
-      .createContainer({
-        container_type:
-        this.containerService.selectedContainerType().containerType,
-        description: this.description(),
-        user_realm: this.userService.selectedUserRealm(),
-        template: this.selectedTemplate(),
-        user: this.userService.userNameFilter(),
-        realm: this.onlyAddToRealm()
-          ? this.userService.selectedUserRealm()
-          : ""
-      })
+      .createContainer(createData)
       .subscribe({
         next: (response) => {
           const containerSerial = response.result?.value?.container_serial;
@@ -210,7 +253,7 @@ export class ContainerCreateComponent {
           ) {
             this.registrationDialog.closeAll();
             this.router.navigateByUrl(
-              ROUTE_PATHS.TOKENS_CONTAINERS + containerSerial
+              ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial
             );
             this.notificationService.openSnackBar(
               `Container ${this.containerSerial()} enrolled successfully.`

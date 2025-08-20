@@ -9,15 +9,9 @@ import {
   NotificationService,
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
-import {
-  OverflowService,
-  OverflowServiceInterface
-} from "../../../../services/overflow/overflow.service";
+import { OverflowService, OverflowServiceInterface } from "../../../../services/overflow/overflow.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import {
-  ValidateService,
-  ValidateServiceInterface
-} from "../../../../services/validate/validate.service";
+import { ValidateService, ValidateServiceInterface } from "../../../../services/validate/validate.service";
 import { TokenSshMachineAssignDialogComponent } from "../token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog";
 import { NgClass } from "@angular/common";
 import { MatInput } from "@angular/material/input";

@@ -11,10 +11,7 @@ import { MatProgressBarModule } from "@angular/material/progress-bar";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { Subscription } from "rxjs";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../../../services/notification/notification.service";
+import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
 import { GetSerialResultDialogComponent } from "./get-serial-result-dialog/get-serial-result-dialog.component";

@@ -3,35 +3,21 @@ import { Component, inject, Renderer2 } from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatButton, MatIconButton } from "@angular/material/button";
-import {
-  DateAdapter,
-  MAT_DATE_FORMATS,
-  MatNativeDateModule,
-  provideNativeDateAdapter
-} from "@angular/material/core";
+import { DateAdapter, MAT_DATE_FORMATS, MatNativeDateModule, provideNativeDateAdapter } from "@angular/material/core";
 import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltip } from "@angular/material/tooltip";
-import {
-  ContainerService,
-  ContainerServiceInterface
-} from "../../../services/container/container.service";
+import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../../../services/notification/notification.service";
+import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
-import {
-  VersioningService,
-  VersioningServiceInterface
-} from "../../../services/version/version.service";
+import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
 import { EnrollApplspecComponent } from "./enroll-asp/enroll-applspec.component";
 import { EnrollCertificateComponent } from "./enroll-certificate/enroll-certificate.component";
 import { EnrollDaypasswordComponent } from "./enroll-daypassword/enroll-daypassword.component";
@@ -136,7 +122,7 @@ export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponen
   protected override dialogService: DialogServiceInterface =
     inject(DialogService);
 
-  constructor(renderer: Renderer2) {
-    super(renderer);
+  constructor() {
+    super();
   }
 }
