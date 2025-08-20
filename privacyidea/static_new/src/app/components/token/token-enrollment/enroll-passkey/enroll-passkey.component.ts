@@ -265,7 +265,7 @@ export class EnrollPasskeyComponent implements OnInit {
         if (finalResponse.detail) {
           finalResponse.detail.serial = detail.serial;
         } else {
-          finalResponse.detail = {"serial": detail.serial} as EnrollmentResponseDetail;
+          finalResponse.detail = { "serial": detail.serial } as EnrollmentResponseDetail;
         }
         return finalResponse;
       });

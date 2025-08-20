@@ -24,7 +24,7 @@ export class SmsApiPayloadMapper implements TokenApiPayloadMapper<SmsEnrollmentD
       validity_period_start: data.validityPeriodStart,
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
-      realm: data.user? data.realm : null,
+      realm: data.user ? data.realm : null,
       pin: data.pin,
       "sms.identifier": data.smsGateway,
       phone: data.readNumberDynamically ? null : (data.phoneNumber ?? null),

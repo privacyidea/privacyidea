@@ -272,7 +272,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     { nonNullable: true }
   );
   selectedStartDateControl = new FormControl<Date | null>(null, {});
-  selectedStartTimeControl = new FormControl<string>("00:00", { });
+  selectedStartTimeControl = new FormControl<string>("00:00", {});
   selectedTimezoneOffsetControl = new FormControl<string>("+00:00", {
     nonNullable: true
   });

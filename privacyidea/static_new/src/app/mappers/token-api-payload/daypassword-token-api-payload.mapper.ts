@@ -29,7 +29,7 @@ export class DaypasswordApiPayloadMapper
       validity_period_start: data.validityPeriodStart,
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
-      realm: data.user? data.realm : null,
+      realm: data.user ? data.realm : null,
       pin: data.pin,
       // otpKey is set based on component logic:
       // if generateOnServer is true, data.otpKey is undefined.

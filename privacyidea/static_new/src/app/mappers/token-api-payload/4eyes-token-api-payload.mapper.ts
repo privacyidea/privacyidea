@@ -26,7 +26,7 @@ export class FourEyesApiPayloadMapper implements TokenApiPayloadMapper<FourEyesE
       validity_period_end: data.validityPeriodEnd,
       pin: data.pin,
       user: data.user,
-      realm: data.user? data.realm : null,
+      realm: data.user ? data.realm : null,
       separator: data.separator,
       "4eyes": (data.requiredTokenOfRealms ?? []).reduce(
         (acc: { [key: string]: { count: number; selected: boolean } }, curr) => {

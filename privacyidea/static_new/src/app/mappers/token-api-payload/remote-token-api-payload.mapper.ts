@@ -31,7 +31,7 @@ export class RemoteApiPayloadMapper implements TokenApiPayloadMapper<RemoteEnrol
       validity_period_start: data.validityPeriodStart,
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
-      realm: data.user? data.realm : null,
+      realm: data.user ? data.realm : null,
       pin: data.pin,
       "remote.server_id": data.remoteServer?.id ?? null,
       "remote.serial": data.remoteSerial,
