@@ -65,7 +65,7 @@ import {
 } from '../../../services/version/version.service';
 import { ScrollToTopDirective } from '../../shared/directives/app-scroll-to-top.directive';
 import { TokenComponent } from '../token.component';
-import { ContainerRegistrationDialogComponent } from "./container-registration-dialog/container-registration-dialog.component";
+import { ContainerCreationDialogData, ContainerRegistrationDialogComponent } from "./container-registration-dialog/container-registration-dialog.component";
 
 export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
 
@@ -212,17 +212,7 @@ export class ContainerCreateComponent {
             return;
           }
           if (this.generateQRCode()) {
-            this.containerService
-              .registerContainer({
-                container_serial: containerSerial,
-                passphrase_response: this.passphraseResponse(),
-                passphrase_prompt: this.passphrasePrompt()
-              })
-              .subscribe((registerResponse) => {
-                this.registerResponse.set(registerResponse);
-                this.openRegistrationDialog(registerResponse);
-                this.pollContainerRolloutState(containerSerial, 5000);
-              });
+            this.registerContainer(containerSerial);
           } else {
             this.notificationService.openSnackBar(
               `Container ${containerSerial} enrolled successfully.`
@@ -236,6 +226,20 @@ export class ContainerCreateComponent {
       });
   }
 
+  registerContainer(serial: string) {
+    this.containerService
+      .registerContainer({
+        container_serial: serial,
+        passphrase_response: this.passphraseResponse(),
+        passphrase_prompt: this.passphrasePrompt()
+      })
+      .subscribe((registerResponse) => {
+        this.registerResponse.set(registerResponse);
+        this.openRegistrationDialog(registerResponse);
+        this.pollContainerRolloutState(serial, 5000);
+      });
+  }
+
   private resetCreateOptions = () => {
     this.registerResponse.set(null);
     this.pollResponse.set(null);
@@ -246,11 +250,13 @@ export class ContainerCreateComponent {
   };
 
   private openRegistrationDialog(response: PiResponse<ContainerRegisterData>) {
+    const dialogData: ContainerCreationDialogData = {
+      response: response,
+      containerSerial: this.containerSerial,
+      registerContainer: this.registerContainer.bind(this)
+    };
     this.registrationDialog.open(ContainerRegistrationDialogComponent, {
-      data: {
-        response: response,
-        containerSerial: this.containerSerial
-      }
+      data: dialogData
     });
   }
 
