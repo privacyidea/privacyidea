@@ -1,24 +1,24 @@
-import { WebAuthnRegisterRequest } from '../../services/token/token.service';
+import { WebAuthnRegisterRequest } from "../../services/token/token.service";
 import {
   EnrollmentResponse,
   EnrollmentResponseDetail,
   TokenApiPayloadMapper,
   TokenEnrollmentData,
-  TokenEnrollmentPayload,
-} from './_token-api-payload.mapper';
-import { Injectable } from '@angular/core';
+  TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
+import { Injectable } from "@angular/core";
 
 export interface WebauthnEnrollmentResponse
-  extends EnrollmentResponse<WebauthnEnrollmentResponseDetail> {}
+  extends EnrollmentResponse<WebauthnEnrollmentResponseDetail> {
+}
 
-export interface WebauthnEnrollmentResponseDetail
-  extends EnrollmentResponseDetail {
+export interface WebauthnEnrollmentResponseDetail extends EnrollmentResponseDetail {
   webAuthnRegisterRequest: WebAuthnRegisterRequest;
 }
 
 // Interface for the initialization options of the WebAuthn token (init step)
 export interface WebAuthnEnrollmentData extends TokenEnrollmentData {
-  type: 'webauthn';
+  type: "webauthn";
   credential_id?: string;
 }
 
@@ -39,10 +39,8 @@ export interface WebAuthnEnrollmentPayload extends TokenEnrollmentPayload {
   credential_id?: string; // If present, all fields from WebAuthnEnrollmentData are part of payload
 }
 
-@Injectable({ providedIn: 'root' })
-export class WebAuthnApiPayloadMapper
-  implements TokenApiPayloadMapper<WebAuthnEnrollmentData>
-{
+@Injectable({ providedIn: "root" })
+export class WebAuthnApiPayloadMapper implements TokenApiPayloadMapper<WebAuthnEnrollmentData> {
   toApiPayload(data: WebAuthnEnrollmentData): WebAuthnEnrollmentPayload {
     const payload: WebAuthnEnrollmentPayload = {
       type: data.type,
@@ -51,7 +49,7 @@ export class WebAuthnApiPayloadMapper
       validity_period_start: data.validityPeriodStart,
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
-      pin: data.pin,
+      pin: data.pin
     };
 
     if (data.credential_id) {

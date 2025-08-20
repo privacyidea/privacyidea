@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: (C) 2014 NetKnights GmbH <https://netknights.it>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 #  privacyIDEA is a fork of LinOTP
 #
 #  2018-12-10 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -288,7 +292,7 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
             if realm_db:
                 sql_query = sql_query.filter(TokenOwner.realm_id == realm_db.id)
             else:
-                log.warning(f"The users realm {user.realm} does not exist. Ignoring it as filter parameter.")
+                raise ResourceNotFoundError(f"Realm '{user.realm}' does not exist.")
         if user.resolver:
             sql_query = sql_query.filter(TokenOwner.resolver == user.resolver)
         (uid, _rtype, _resolver) = user.get_user_identifiers()
@@ -569,6 +573,7 @@ def get_tokens(tokentype=None, token_type_list=None, realm=None, assigned=None, 
     if serial and "*" not in serial and "," in serial:
         serial_list = serial.replace(" ", "").split(",")
         serial = None
+
     sql_query = _create_token_query(tokentype=tokentype, token_type_list=token_type_list, realm=realm,
                                     assigned=assigned, user=user,
                                     serial_exact=serial, serial_wildcard=serial_wildcard, serial_list=serial_list,
@@ -2975,31 +2980,27 @@ def regenerate_enroll_url(serial: str, request: Request, g) -> Union[str, None]:
     return enroll_url
 
 
-def export_tokens(tokens: list[TokenClass]) -> str:
+def export_tokens(tokens: list[TokenClass]) -> list[dict]:
     """
-    Takes a list of tokens and returns an exportable JSON string.
+    Takes a list of tokens and returns an dict with all infos.
+
     :param tokens: list of token objects
-    :return: JSON string representing a list of token dictionaries
+    :return: list of dict with token information
     """
     exported_tokens = [token.export_token() for token in tokens]
-
-    json_export = json.dumps(exported_tokens, default=repr, indent=2)
-    return json_export
+    return exported_tokens
 
 
-def import_tokens(tokens: str, update_existing_tokens: bool = True) -> TokenImportResult:
+def import_tokens(tokens: list[dict], update_existing_tokens: bool = True) -> TokenImportResult:
     """
     Import a list of token dictionaries.
-    :param tokens: JSON string representing a list of token dictionaries
+
+    :param tokens: list of dict with token information
     :return: list of token objects
     """
     successful_tokens = []
     updated_tokens = []
     failed_tokens = []
-    try:
-        tokens = json.loads(tokens)
-    except Exception as ex:
-        raise TokenAdminError(f"Could not parse the token import data from JSON: {ex}")
 
     for token_info_dict in tokens:
         serial = token_info_dict.get("serial")

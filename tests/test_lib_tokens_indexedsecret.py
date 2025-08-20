@@ -1,8 +1,6 @@
 """
 This test file tests the lib.tokens.smstoken
 """
-import json
-
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
@@ -181,7 +179,7 @@ class IndexedSecretTokenTestCase(MyTestCase):
         }]
 
         # Import the token
-        import_tokens(json.dumps(token_data))
+        import_tokens(token_data)
 
         # Retrieve the imported token
         token = get_tokens(serial=token_data[0]["serial"])[0]

@@ -1,12 +1,12 @@
 import {
   TokenApiPayloadMapper,
   TokenEnrollmentData,
-  TokenEnrollmentPayload,
-} from './_token-api-payload.mapper';
-import { Injectable } from '@angular/core';
+  TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
+import { Injectable } from "@angular/core";
 
 export interface VascoEnrollmentData extends TokenEnrollmentData {
-  type: 'vasco';
+  type: "vasco";
   useVascoSerial?: boolean;
   vascoSerial?: string;
   otpKey?: string;
@@ -18,10 +18,8 @@ export interface VascoEnrollmentPayload extends TokenEnrollmentPayload {
   genkey: 0;
 }
 
-@Injectable({ providedIn: 'root' })
-export class VascoApiPayloadMapper
-  implements TokenApiPayloadMapper<VascoEnrollmentData>
-{
+@Injectable({ providedIn: "root" })
+export class VascoApiPayloadMapper implements TokenApiPayloadMapper<VascoEnrollmentData> {
   toApiPayload(data: VascoEnrollmentData): VascoEnrollmentPayload {
     const payload: VascoEnrollmentPayload = {
       type: data.type,
@@ -32,7 +30,7 @@ export class VascoApiPayloadMapper
       user: data.user,
       pin: data.pin,
       genkey: 0,
-      otpkey: data.otpKey,
+      otpkey: data.otpKey
     };
 
     if (data.useVascoSerial) {

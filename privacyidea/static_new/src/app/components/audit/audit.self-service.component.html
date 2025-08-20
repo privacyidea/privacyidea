@@ -1,46 +1,54 @@
-<div aria-label="Audit Layout"
-     class="content-layout">
+<div
+  aria-label="Audit Layout"
+  class="content-layout">
   <div class="audit-table-container">
     <div class="filter-paginator-container">
-      <mat-form-field class="token-table-filter"
+      <mat-form-field
+        class="token-table-filter"
         subscriptSizing="dynamic">
         <mat-label>Enter Filter</mat-label>
-          <app-clearable-input (onClick)="filterValueString.set('')"
-            [showClearButton]="filterValueString().length > 0">
-            <input #filterHTMLInputElement
-                   [(ngModel)]="filterValueString"
-                   aria-label="Filter Input"
-                   matInput
-                   placeholder="Example query: 'type: hotp userid: 1000'" />
-          </app-clearable-input>
+        <app-clearable-input (onClick)="filterValueString.set('')"
+          [showClearButton]="filterValueString().length > 0">
+          <input
+            #filterHTMLInputElement
+            [(ngModel)]="filterValueString"
+            aria-label="Filter Input"
+            matInput
+            placeholder="Example query: 'type: hotp userid: 1000'"/>
+        </app-clearable-input>
       </mat-form-field>
-      <mat-paginator (page)="onPageEvent($event)"
-                     [length]="totalLength()"
-                     [pageIndex]="auditService.pageIndex()"
-                     [pageSizeOptions]="pageSizeOptions()"
-                     [pageSize]="auditService.pageSize()"
-                     showFirstLastButtons></mat-paginator>
+      <mat-paginator
+        (page)="onPageEvent($event)"
+        [length]="totalLength()"
+        [pageIndex]="auditService.pageIndex()"
+        [pageSizeOptions]="pageSizeOptions()"
+        [pageSize]="auditService.pageSize()"
+        showFirstLastButtons></mat-paginator>
     </div>
-    <app-keyword-filter [advancedApiFilter]="auditService.advancedApiFilter"
-                        [apiFilter]="auditService.apiFilter"
-                        [filterHTMLInputElement]="filterHTMLInputElement"
-                        [filterValue]="auditService.filterValue"></app-keyword-filter>
+    <app-keyword-filter
+      [advancedApiFilter]="auditService.advancedApiFilter"
+      [apiFilter]="auditService.apiFilter"
+      [filterHTMLInputElement]="filterHTMLInputElement"
+      [filterValue]="auditService.filterValue"></app-keyword-filter>
     <div class="audit-table-overflow">
-      <table [dataSource]="auditDataSource()"
-             aria-label="Audit Data Table"
-             class="token-table"
-             mat-table>
+      <table
+        [dataSource]="auditDataSource()"
+        aria-label="Audit Data Table"
+        class="token-table"
+        mat-table>
         @for (column of columnKeysMap; track column) {
           <ng-container [matColumnDef]="column.key">
-            <th *matHeaderCellDef
-                attr.aria-label="{{ column.label }} Header"
-                mat-header-cell>
+            <th
+              *matHeaderCellDef
+              attr.aria-label="{{ column.label }} Header"
+              mat-header-cell>
               {{ column.label }}
             </th>
-            <td *matCellDef="let element; let row"
-                attr.aria-label="{{ column.label }} Cell"
-                mat-cell
-                [ngClass]="{
+            <td
+              *matCellDef="let element; let row"
+              attr.aria-label="{{ column.label }} Cell"
+              mat-cell
+              [ngClass]="{
                 'width-18rem': column.key === 'description',
                 'table-checkbox': column.key === 'select',
               }">
@@ -48,7 +56,8 @@
                 @switch (column.key) {
                   @case ("success") {
                     <div class="flex just-center">
-                      <span [ngClass]="
+                      <span
+                        [ngClass]="
                           tableUtilsService.getSpanClassForKey({
                             key: column.key,
                             value: element[column.key],
@@ -60,9 +69,11 @@
                   }
                   @case ("serial") {
                     <div class="flex-row ali-center">
-                      <a attr.aria-label="{{ column.label }} Link"
-                         (click)="contentService.tokenSelected(element.serial)"
-                         routerLink="/token"> {{ element[column.key] }} </a>
+                      <a
+                        attr.aria-label="{{ column.label }} Link"
+                        (click)="contentService.tokenSelected(element.serial)"
+                        routerLink="/token"> {{ element[column.key] }}
+                      </a>
                       @if (element.serial && element.serial !== "") {
                         <app-copy-button [copyText]="element.serial"></app-copy-button>
                       }
@@ -71,7 +82,8 @@
                   @case (column.key === "sig_check" || column.key === "missing_line"
                     ? column.key
                     : "") {
-                    <span [ngClass]="[
+                    <span
+                      [ngClass]="[
                         element[column.key] === 'OK'
                           ? 'highlight-true'
                           : 'highlight-false',
@@ -81,16 +93,19 @@
                   }
                   @case ("container_serial") {
                     <div class="flex-row ali-center">
-                      <a attr.aria-label="{{ column.label }} Link"
-                         (click)="
+                      <a
+                        attr.aria-label="{{ column.label }} Link"
+                        (click)="
                           contentService.containerSelected(
                             element.container_serial
                           )
                         "
-                         routerLink="/token"> {{ element[column.key] }} </a>
+                        routerLink="/token"> {{ element[column.key] }}
+                      </a>
                       @if (element.container_serial &&
                       element.container_serial !== "") {
-                        <app-copy-button [copyText]="
+                        <app-copy-button
+                          [copyText]="
                             element.container_serial
                           "></app-copy-button>
                       }
@@ -124,16 +139,20 @@
             </td>
           </ng-container>
         }
-        <tr *matHeaderRowDef="columnKeys"
-            aria-label="Header Row"
-            mat-header-row></tr>
-        <tr *matRowDef="let row; columns: columnKeys"
-            aria-label="Data Row"
-            mat-row></tr>
-        <tr *matNoDataRow
-            aria-label="No Data Row">
-          <td [attr.colspan]="columnKeys.length"
-              aria-label="No Data Cell">
+        <tr
+          *matHeaderRowDef="columnKeys"
+          aria-label="Header Row"
+          mat-header-row></tr>
+        <tr
+          *matRowDef="let row; columns: columnKeys"
+          aria-label="Data Row"
+          mat-row></tr>
+        <tr
+          *matNoDataRow
+          aria-label="No Data Row">
+          <td
+            [attr.colspan]="columnKeys.length"
+            aria-label="No Data Cell">
             No data matching the filter.
           </td>
         </tr>

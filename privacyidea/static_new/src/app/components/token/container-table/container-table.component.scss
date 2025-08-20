@@ -3,9 +3,9 @@
 .container-table-container {
   @include styles.table-container-styles;
   @include styles.base-table-structure(
-      ".container-table",
-      ".container-table-filter",
-      ".table-scroll-container"
+                  ".container-table",
+                  ".container-table-filter",
+                  ".table-scroll-container"
   );
   overflow-y: auto;
   overflow-x: hidden;

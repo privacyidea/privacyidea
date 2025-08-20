@@ -7,7 +7,7 @@ import flask
 import inspect
 import logging
 import mock
-from testfixtures import Comparison, compare
+from testfixtures import Comparison, compare, OutputCapture
 from privacyidea.app import create_app
 from privacyidea.config import config, TestingConfig
 
@@ -35,6 +35,7 @@ class AppTestCase(unittest.TestCase):
         self.assertEqual(app.import_name, 'privacyidea.app', app)
         self.assertEqual(app.name, 'privacyidea.app', app)
 #        self.assertTrue(app.response_class == PiResponseClass, app)
+        # TODO: additional blueprints will not be checked here
         blueprints = ['validate_blueprint', 'token_blueprint', 'system_blueprint',
                       'resolver_blueprint', 'realm_blueprint', 'defaultrealm_blueprint',
                       'policy_blueprint', 'login_blueprint', 'jwtauth', 'user_blueprint',
@@ -151,7 +152,10 @@ class AppTestCase(unittest.TestCase):
         class Config(TestingConfig):
             PI_LOGCONFIG = "tests/testdata/logging_broken.yaml"
         with mock.patch.dict("privacyidea.config.config", {"testing": Config}):
-            create_app(config_name='testing')
+            with OutputCapture() as output:
+                create_app(config_name='testing')
+            self.assertIn("Could not use PI_LOGCONFIG: Unable to configure handler 'file'",
+                          output.captured, output.captured)
             # check the correct initialization of the logging with the default
             # values since the yaml file is broken
             logger = logging.getLogger('privacyidea')

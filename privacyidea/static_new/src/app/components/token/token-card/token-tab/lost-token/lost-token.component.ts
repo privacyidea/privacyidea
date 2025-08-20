@@ -1,27 +1,27 @@
-import { Component, effect, inject, WritableSignal } from '@angular/core';
-import { MatButton } from '@angular/material/button';
-import { MatCard, MatCardContent } from '@angular/material/card';
+import { Component, effect, inject, WritableSignal } from "@angular/core";
+import { MatButton } from "@angular/material/button";
+import { MatCard, MatCardContent } from "@angular/material/card";
 import {
   MAT_DIALOG_DATA,
   MatDialogClose,
   MatDialogContent,
   MatDialogRef,
-  MatDialogTitle,
-} from '@angular/material/dialog';
-import { MatIcon } from '@angular/material/icon';
+  MatDialogTitle
+} from "@angular/material/dialog";
+import { MatIcon } from "@angular/material/icon";
 import {
   NotificationService,
-  NotificationServiceInterface,
-} from '../../../../../services/notification/notification.service';
+  NotificationServiceInterface
+} from "../../../../../services/notification/notification.service";
 import {
   LostTokenData,
   TokenService,
-  TokenServiceInterface,
-} from '../../../../../services/token/token.service';
-import { DatePipe } from '@angular/common';
+  TokenServiceInterface
+} from "../../../../../services/token/token.service";
+import { DatePipe } from "@angular/common";
 
 @Component({
-  selector: 'app-lost-token',
+  selector: "app-lost-token",
   standalone: true,
   imports: [
     MatDialogTitle,
@@ -31,10 +31,10 @@ import { DatePipe } from '@angular/common';
     MatIcon,
     MatCard,
     MatCardContent,
-    DatePipe,
+    DatePipe
   ],
-  templateUrl: './lost-token.component.html',
-  styleUrl: './lost-token.component.scss',
+  templateUrl: "./lost-token.component.html",
+  styleUrl: "./lost-token.component.scss"
 })
 export class LostTokenComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -63,16 +63,16 @@ export class LostTokenComponent {
         this.data.isLost.set(true);
         this.lostTokenData = response?.result?.value;
         this.notificationService.openSnackBar(
-          'Token marked as lost: ' + this.data.tokenSerial(),
+          "Token marked as lost: " + this.data.tokenSerial()
         );
-      },
+      }
     });
   }
 
   tokenSelected(tokenSerial?: string) {
     if (!tokenSerial) {
       this.notificationService.openSnackBar(
-        'No token selected, please select a token.',
+        "No token selected, please select a token."
       );
       return;
     }

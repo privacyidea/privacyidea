@@ -1,57 +1,44 @@
-import { NgClass } from '@angular/common';
-import {
-  Component,
-  effect,
-  inject,
-  linkedSignal,
-  ViewChild,
-  WritableSignal,
-} from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatSortModule, Sort } from '@angular/material/sort';
-import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import {
-  ContentService,
-  ContentServiceInterface,
-} from '../../../services/content/content.service';
-import {
-  DialogService,
-  DialogServiceInterface,
-} from '../../../services/dialog/dialog.service';
+import { NgClass } from "@angular/common";
+import { Component, effect, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
+import { FormsModule } from "@angular/forms";
+import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
+import { MatInputModule } from "@angular/material/input";
+import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
+import { MatSortModule, Sort } from "@angular/material/sort";
+import { MatTableDataSource, MatTableModule } from "@angular/material/table";
+import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
+import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import {
   TableUtilsService,
   TableUtilsServiceInterface,
-} from '../../../services/table-utils/table-utils.service';
+} from "../../../services/table-utils/table-utils.service";
 import {
   TokenDetails,
   TokenService,
   TokenServiceInterface,
-} from '../../../services/token/token.service';
-import { ClearableInputComponent } from '../../shared/clearable-input/clearable-input.component';
-import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
-import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
+} from "../../../services/token/token.service";
+import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
+import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";
 
 const columnKeysMap = [
-  { key: 'select', label: '' },
-  { key: 'serial', label: 'Serial' },
-  { key: 'tokentype', label: 'Type' },
-  { key: 'active', label: 'Active' },
-  { key: 'description', label: 'Description' },
-  { key: 'failcount', label: 'Fail Counter' },
-  { key: 'rollout_state', label: 'Rollout State' },
-  { key: 'username', label: 'User' },
-  { key: 'user_realm', label: 'User Realm' },
-  { key: 'realms', label: 'Token Realm' },
-  { key: 'container_serial', label: 'Container' },
+  { key: "select", label: "" },
+  { key: "serial", label: "Serial" },
+  { key: "tokentype", label: "Type" },
+  { key: "active", label: "Active" },
+  { key: "description", label: "Description" },
+  { key: "failcount", label: "Fail Counter" },
+  { key: "rollout_state", label: "Rollout State" },
+  { key: "username", label: "User" },
+  { key: "user_realm", label: "User Realm" },
+  { key: "realms", label: "Token Realm" },
+  { key: "container_serial", label: "Container" },
 ];
 
 @Component({
-  selector: 'app-token-table',
+  selector: "app-token-table",
   standalone: true,
   imports: [
     MatTableModule,
@@ -67,17 +54,14 @@ const columnKeysMap = [
     MatIconModule,
     ClearableInputComponent,
   ],
-  templateUrl: './token-table.component.html',
-  styleUrl: './token-table.component.scss',
+  templateUrl: "./token-table.component.html",
+  styleUrl: "./token-table.component.scss",
 })
 export class TokenTableComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly tableUtilsService: TableUtilsServiceInterface =
-    inject(TableUtilsService);
-  protected readonly contentService: ContentServiceInterface =
-    inject(ContentService);
-  protected readonly dialogService: DialogServiceInterface =
-    inject(DialogService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = columnKeysMap.map((column) => column.key);
@@ -93,7 +77,7 @@ export class TokenTableComponent {
     const filterMap = this.filterValue();
     return Object.entries(filterMap)
       .map(([key, value]) => `${key}: ${value}`)
-      .join(' ');
+      .join(" ");
   });
 
   pageSize = this.tokenService.pageSize;
@@ -106,22 +90,21 @@ export class TokenTableComponent {
       Array.from({ length: pageSize }, () => {
         const emptyRow: any = {};
         columnKeysMap.forEach((column) => {
-          emptyRow[column.key] = '';
+          emptyRow[column.key] = "";
         });
         return emptyRow;
       }),
   });
 
-  tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> =
-    linkedSignal({
-      source: this.tokenResource.value,
-      computation: (tokenResource, previous) => {
-        if (tokenResource && tokenResource.result?.value) {
-          return new MatTableDataSource(tokenResource.result?.value.tokens);
-        }
-        return previous?.value ?? new MatTableDataSource(this.emptyResource());
-      },
-    });
+  tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
+    source: this.tokenResource.value,
+    computation: (tokenResource, previous) => {
+      if (tokenResource && tokenResource.result?.value) {
+        return new MatTableDataSource(tokenResource.result?.value.tokens);
+      }
+      return previous?.value ?? new MatTableDataSource(this.emptyResource());
+    },
+  });
 
   totalLength: WritableSignal<number> = linkedSignal({
     source: this.tokenResource.value,
@@ -135,7 +118,7 @@ export class TokenTableComponent {
 
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
-  @ViewChild('filterHTMLInputElement', { static: true })
+  @ViewChild("filterHTMLInputElement", { static: true })
   filterInput!: HTMLInputElement;
 
   constructor() {
@@ -144,11 +127,8 @@ export class TokenTableComponent {
       if (this.filterInput) {
         this.filterInput.value = filterValueString;
       }
-      const recordsFromText =
-        this.tableUtilsService.recordsFromText(filterValueString);
-      if (
-        JSON.stringify(this.filterValue()) !== JSON.stringify(recordsFromText)
-      ) {
+      const recordsFromText = this.tableUtilsService.recordsFromText(filterValueString);
+      if (JSON.stringify(this.filterValue()) !== JSON.stringify(recordsFromText)) {
         this.filterValue.set(recordsFromText);
       }
       this.pageIndex.set(0);
@@ -178,13 +158,11 @@ export class TokenTableComponent {
 
   toggleActive(tokenDetails: TokenDetails): void {
     if (!tokenDetails.revoked && !tokenDetails.locked) {
-      this.tokenService
-        .toggleActive(tokenDetails.serial, tokenDetails.active)
-        .subscribe({
-          next: () => {
-            this.tokenResource.reload();
-          },
-        });
+      this.tokenService.toggleActive(tokenDetails.serial, tokenDetails.active).subscribe({
+        next: () => {
+          this.tokenResource.reload();
+        },
+      });
     }
   }
 
@@ -205,8 +183,8 @@ export class TokenTableComponent {
   }
 
   onSortEvent($event: Sort) {
-    if ($event.direction === '') {
-      this.sort.set({ active: 'serial', direction: 'asc' });
+    if ($event.direction === "") {
+      this.sort.set({ active: "serial", direction: "asc" });
       return;
     }
     this.sort.set($event);

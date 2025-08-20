@@ -1,13 +1,13 @@
 import {
   TokenApiPayloadMapper,
   TokenEnrollmentData,
-  TokenEnrollmentPayload,
-} from './_token-api-payload.mapper';
-import { Injectable } from '@angular/core';
+  TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
+import { Injectable } from "@angular/core";
 
 // Interface for Certificate Token-specific enrollment data
 export interface CertificateEnrollmentData extends TokenEnrollmentData {
-  type: 'certificate';
+  type: "certificate";
   caConnector?: string;
   certTemplate?: string;
   pem?: string;
@@ -21,10 +21,9 @@ export interface CertificateEnrollmentPayload extends TokenEnrollmentPayload {
   pem?: string;
 }
 
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: "root" })
 export class CertificateApiPayloadMapper
-  implements TokenApiPayloadMapper<CertificateEnrollmentData>
-{
+  implements TokenApiPayloadMapper<CertificateEnrollmentData> {
   toApiPayload(data: CertificateEnrollmentData): CertificateEnrollmentPayload {
     const payload: CertificateEnrollmentPayload = {
       type: data.type,
@@ -37,7 +36,7 @@ export class CertificateApiPayloadMapper
       genkey: 1, // As per switch statement
       ca: data.caConnector,
       template: data.certTemplate,
-      pem: data.pem,
+      pem: data.pem
     };
 
     if (payload.ca === undefined) delete payload.ca;
