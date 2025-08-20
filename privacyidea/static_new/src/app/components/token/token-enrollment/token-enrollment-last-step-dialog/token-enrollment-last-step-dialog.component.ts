@@ -6,13 +6,13 @@ import {
   MatDialogClose,
   MatDialogContent,
   MatDialogRef,
-  MatDialogTitle,
+  MatDialogTitle
 } from "@angular/material/dialog";
 import {
   MatAccordion,
   MatExpansionPanel,
   MatExpansionPanelHeader,
-  MatExpansionPanelTitle,
+  MatExpansionPanelTitle
 } from "@angular/material/expansion";
 import { MatIcon } from "@angular/material/icon";
 import { EnrollmentResponse } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
@@ -41,10 +41,10 @@ export type TokenEnrollmentLastStepDialogData = {
     MatExpansionPanelHeader,
     MatExpansionPanelTitle,
     MatIcon,
-    MatIconButton,
+    MatIconButton
   ],
   templateUrl: "./token-enrollment-last-step-dialog.component.html",
-  styleUrl: "./token-enrollment-last-step-dialog.component.scss",
+  styleUrl: "./token-enrollment-last-step-dialog.component.scss"
 })
 export class TokenEnrollmentLastStepDialogComponent {
   protected readonly dialogRef: MatDialogRef<TokenEnrollmentLastStepDialogComponent> =

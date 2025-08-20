@@ -68,7 +68,7 @@ export class SelectedUserAssignDialogComponent {
   ngOnInit(): void {
     this.selectedUserRealmControl.valueChanges.subscribe((value) => {
       if (value !== this.userService.selectedUserRealm()) {
-        this.userService.selectedUserRealm.set(value ?? '');
+        this.userService.selectedUserRealm.set(value ?? "");
       }
     });
   }

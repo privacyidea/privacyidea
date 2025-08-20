@@ -165,14 +165,14 @@ export class ContainerCreateComponent {
     this.pollResponse.set(null);
     this.registerResponse.set(null);
     const createData = {
-        container_type:
-        this.containerService.selectedContainerType().containerType,
-        description: this.description(),
-        template: this.selectedTemplate(),
-        user: this.userService.userNameFilter(),
-        realm: ""
-      };
-    if (createData.user || this.onlyAddToRealm()){
+      container_type:
+      this.containerService.selectedContainerType().containerType,
+      description: this.description(),
+      template: this.selectedTemplate(),
+      user: this.userService.userNameFilter(),
+      realm: ""
+    };
+    if (createData.user || this.onlyAddToRealm()) {
       createData.realm = this.userService.selectedUserRealm();
     }
     this.containerService
