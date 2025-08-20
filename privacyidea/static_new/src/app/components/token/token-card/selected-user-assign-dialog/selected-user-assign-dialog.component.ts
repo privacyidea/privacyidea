@@ -54,6 +54,10 @@ export class SelectedUserAssignDialogComponent {
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
+  protected readonly dialogRef: MatDialogRef<
+    SelectedUserAssignDialogComponent,
+    SelectedUserAssignResult | null
+  > = inject(MatDialogRef);
   pin: WritableSignal<string> = signal("");
   pinRepeat: WritableSignal<string> = signal("");
   hidePin: WritableSignal<boolean> = signal(true);
@@ -70,12 +74,13 @@ export class SelectedUserAssignDialogComponent {
     this.tokenService.tokenSelection().some((token) => token.username && token.username !== ""),
   );
 
-  constructor(
-    public dialogRef: MatDialogRef<
-      SelectedUserAssignDialogComponent,
-      SelectedUserAssignResult | null
-    >,
-  ) {}
+  ngOnInit(): void {
+    this.selectedUserRealmControl.valueChanges.subscribe((value) => {
+      if (value !== this.userService.selectedUserRealm()) {
+        this.userService.selectedUserRealm.set(value ?? "");
+      }
+    });
+  }
 
   togglePinVisibility(): void {
     this.hidePin.update((prev) => !prev);
