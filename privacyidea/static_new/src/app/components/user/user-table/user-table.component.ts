@@ -23,7 +23,6 @@ import { ContentService, ContentServiceInterface } from "../../../services/conte
 import { UserData, UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { MatInput } from "@angular/material/input";
 import { NgClass } from "@angular/common";
-import { RouterLink } from "@angular/router";
 
 const columnKeysMap = [
   { key: "username", label: "Username" },
@@ -58,8 +57,7 @@ const columnKeysMap = [
     MatRowDef,
     MatRow,
     MatNoDataRow,
-    MatHeaderCellDef,
-    RouterLink
+    MatHeaderCellDef
   ],
   templateUrl: "./user-table.component.html",
   styleUrl: "./user-table.component.scss"
