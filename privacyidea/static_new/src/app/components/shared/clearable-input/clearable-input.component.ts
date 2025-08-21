@@ -7,7 +7,7 @@ import { MatIconModule } from "@angular/material/icon";
   standalone: true,
   imports: [ReactiveFormsModule, MatIconModule],
   templateUrl: "./clearable-input.component.html",
-  styleUrl: "./clearable-input.component.scss",
+  styleUrl: "./clearable-input.component.scss"
 })
 export class ClearableInputComponent {
   @Output() onClick = new EventEmitter<void>();

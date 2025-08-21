@@ -7,10 +7,7 @@ import { MatPaginator, MatPaginatorModule, PageEvent } from "@angular/material/p
 import { MatSort, MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import {
-  TableUtilsService,
-  TableUtilsServiceInterface
-} from "../../../services/table-utils/table-utils.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import {
   Challenge,
   ChallengesService,

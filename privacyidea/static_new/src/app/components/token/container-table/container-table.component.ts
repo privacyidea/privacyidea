@@ -11,13 +11,10 @@ import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import {
   ContainerDetailData,
   ContainerService,
-  ContainerServiceInterface,
+  ContainerServiceInterface
 } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import {
-  TableUtilsService,
-  TableUtilsServiceInterface,
-} from "../../../services/table-utils/table-utils.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
@@ -31,7 +28,7 @@ const columnsKeyMap = [
   { key: "description", label: "Description" },
   { key: "user_name", label: "User" },
   { key: "user_realm", label: "Realm" },
-  { key: "realms", label: "Container Realms" },
+  { key: "realms", label: "Container Realms" }
 ];
 
 @Component({
@@ -48,7 +45,7 @@ const columnsKeyMap = [
     CopyButtonComponent,
     MatCheckboxModule,
     FormsModule,
-    ClearableInputComponent,
+    ClearableInputComponent
   ],
   templateUrl: "./container-table.component.html",
   styleUrl: "./container-table.component.scss",
@@ -56,9 +53,9 @@ const columnsKeyMap = [
     trigger("detailExpand", [
       state("collapsed", style({ height: "0px", minHeight: "0" })),
       state("expanded", style({ height: "*" })),
-      transition("expanded <=> collapsed", animate("225ms cubic-bezier(0.4, 0.0, 0.2, 1)")),
-    ]),
-  ],
+      transition("expanded <=> collapsed", animate("225ms cubic-bezier(0.4, 0.0, 0.2, 1)"))
+    ])
+  ]
 })
 export class ContainerTableComponent {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
@@ -75,7 +72,7 @@ export class ContainerTableComponent {
   filterValueString: WritableSignal<string> = linkedSignal(() =>
     Object.entries(this.filterValue())
       .map(([key, value]) => `${key}: ${value}`)
-      .join(" "),
+      .join(" ")
   );
   pageSize = this.containerService.pageSize;
   pageIndex = this.containerService.pageIndex;
@@ -98,9 +95,9 @@ export class ContainerTableComponent {
           info: {},
           internal_info_keys: [],
           last_authentication: null,
-          last_synchronization: null,
+          last_synchronization: null
         } as ContainerDetailData;
-      }),
+      })
   });
 
   containerDataSource: WritableSignal<MatTableDataSource<ContainerDetailData>> = linkedSignal({
@@ -111,12 +108,12 @@ export class ContainerTableComponent {
           containerResource.result?.value?.containers.map((item) => ({
             ...item,
             user_name: item.users && item.users.length > 0 ? item.users[0].user_name : "",
-            user_realm: item.users && item.users.length > 0 ? item.users[0].user_realm : "",
+            user_realm: item.users && item.users.length > 0 ? item.users[0].user_realm : ""
           })) ?? [];
         return new MatTableDataSource<ContainerDetailData>(processedData);
       }
       return previous?.value ?? new MatTableDataSource(this.emptyResource());
-    },
+    }
   });
 
   total: WritableSignal<number> = linkedSignal({
@@ -126,7 +123,7 @@ export class ContainerTableComponent {
         return containerResource.result?.value?.count ?? 0;
       }
       return previous?.value ?? 0;
-    },
+    }
   });
 
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
@@ -177,7 +174,7 @@ export class ContainerTableComponent {
       },
       error: (error) => {
         console.error("Failed to toggle active.", error);
-      },
+      }
     });
   }
 

@@ -10,15 +10,8 @@ import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
-import {
-  TableUtilsService,
-  TableUtilsServiceInterface,
-} from "../../../services/table-utils/table-utils.service";
-import {
-  TokenDetails,
-  TokenService,
-  TokenServiceInterface,
-} from "../../../services/token/token.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
+import { TokenDetails, TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";
@@ -34,7 +27,7 @@ const columnKeysMap = [
   { key: "username", label: "User" },
   { key: "user_realm", label: "User Realm" },
   { key: "realms", label: "Token Realm" },
-  { key: "container_serial", label: "Container" },
+  { key: "container_serial", label: "Container" }
 ];
 
 @Component({
@@ -52,10 +45,10 @@ const columnKeysMap = [
     MatCheckboxModule,
     FormsModule,
     MatIconModule,
-    ClearableInputComponent,
+    ClearableInputComponent
   ],
   templateUrl: "./token-table.component.html",
-  styleUrl: "./token-table.component.scss",
+  styleUrl: "./token-table.component.scss"
 })
 export class TokenTableComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -93,7 +86,7 @@ export class TokenTableComponent {
           emptyRow[column.key] = "";
         });
         return emptyRow;
-      }),
+      })
   });
 
   tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
@@ -103,7 +96,7 @@ export class TokenTableComponent {
         return new MatTableDataSource(tokenResource.result?.value.tokens);
       }
       return previous?.value ?? new MatTableDataSource(this.emptyResource());
-    },
+    }
   });
 
   totalLength: WritableSignal<number> = linkedSignal({
@@ -113,7 +106,7 @@ export class TokenTableComponent {
         return tokenResource.result?.value.count;
       }
       return previous?.value ?? 0;
-    },
+    }
   });
 
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
@@ -161,7 +154,7 @@ export class TokenTableComponent {
       this.tokenService.toggleActive(tokenDetails.serial, tokenDetails.active).subscribe({
         next: () => {
           this.tokenResource.reload();
-        },
+        }
       });
     }
   }
@@ -171,7 +164,7 @@ export class TokenTableComponent {
       this.tokenService.resetFailCount(tokenDetails.serial).subscribe({
         next: () => {
           this.tokenResource.reload();
-        },
+        }
       });
     }
   }

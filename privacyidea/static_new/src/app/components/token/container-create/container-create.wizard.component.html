@@ -11,7 +11,8 @@
       @for (type of containerService.containerTypeOptions(); track type) {
         <mat-option
           class="type-option"
-          [value]="type">{{ type.description }}
+          [value]="type"
+          >{{ type.description }}
         </mat-option>
       }
       <div class="width-100 flex just-center">
@@ -26,8 +27,7 @@
     </mat-select>
     <mat-hint class="container-type-hint">
       Supported Token Types:
-      @if (containerService.selectedContainerType().token_types.length >=
-      tokenService.tokenTypeOptions().length) {
+      @if (containerService.selectedContainerType().token_types.length >= tokenService.tokenTypeOptions().length) {
         All
       } @else if (containerService.selectedContainerType().token_types.length > 1) {
         {{ containerService.selectedContainerType().token_types.join(", ") }}
@@ -65,7 +65,7 @@
   </mat-form-field>
 
   <div class="flex-column width-66">
-    <h4 class="enroll-h4"> Use a Template</h4>
+    <h4 class="enroll-h4">Use a Template</h4>
     <mat-form-field class="width-100 input-height">
       <mat-label>Template</mat-label>
       <mat-select [(ngModel)]="selectedTemplate">
@@ -77,7 +77,7 @@
   </div>
 
   @if (containerService.selectedContainerType().containerType === "smartphone") {
-    <h4 class="enroll-h4"> Registration </h4>
+    <h4 class="enroll-h4">Registration</h4>
     <mat-checkbox [(ngModel)]="generateQRCode">
       Generate a QR code to register the container on a smartphone.
     </mat-checkbox>

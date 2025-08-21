@@ -23,10 +23,7 @@ import { RouterLink } from "@angular/router";
 import { AuditData, AuditService, AuditServiceInterface } from "../../services/audit/audit.service";
 import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../../services/content/content.service";
-import {
-  TableUtilsService,
-  TableUtilsServiceInterface
-} from "../../services/table-utils/table-utils.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../services/table-utils/table-utils.service";
 import { ClearableInputComponent } from "../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../shared/copy-button/copy-button.component";
 import { KeywordFilterComponent } from "../shared/keyword-filter/keyword-filter.component";
@@ -119,9 +116,7 @@ export class AuditComponent {
   emptyResource: WritableSignal<AuditData[]> = linkedSignal({
     source: this.auditService.pageSize,
     computation: (pageSize: number) =>
-      Array.from({ length: pageSize }, () =>
-        Object.fromEntries(this.columnKeysMap.map((col) => [col.key, ""]))
-      )
+      Array.from({ length: pageSize }, () => Object.fromEntries(this.columnKeysMap.map((col) => [col.key, ""])))
   });
 
   auditDataSource: WritableSignal<MatTableDataSource<AuditData>> = linkedSignal({

@@ -13,7 +13,7 @@
           #filterInput
           (keyup)="onFilterChange(filterInput.value)"
           matInput
-          placeholder="Example query: 'transaction_id: 00000000000000000001'"/>
+          placeholder="Example query: 'transaction_id: 00000000000000000001'" />
       </app-clearable-input>
     </mat-form-field>
     <mat-paginator
@@ -65,9 +65,9 @@
                 </div>
               }
               @case ("otp_received") {
-                <span [ngClass]="[element[column.key] ? 'highlight-true' : 'highlight-false',]">{{
-                    element[column.key]
-                  }}</span>
+                <span [ngClass]="[element[column.key] ? 'highlight-true' : 'highlight-false']">{{
+                  element[column.key]
+                }}</span>
               }
               @default {
                 <span>{{ element[column.key] }}</span>
@@ -96,4 +96,3 @@
     </tr>
   </table>
 </div>
-

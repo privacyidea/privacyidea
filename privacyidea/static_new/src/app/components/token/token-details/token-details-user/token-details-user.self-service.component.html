@@ -1,6 +1,6 @@
 <div
   [ngClass]="{
-    'pad-0': overflowService.isWidthOverflowing('body', 1310),
+    'pad-0': overflowService.isWidthOverflowing('body', 1310)
   }"
   class="user-container">
   <table
@@ -12,7 +12,8 @@
       <td
         *matCellDef="let element"
         class="details-key-row"
-        mat-cell>{{ element.keyMap.label }}
+        mat-cell>
+        {{ element.keyMap.label }}
       </td>
     </ng-container>
     <ng-container matColumnDef="value">
@@ -25,15 +26,15 @@
             @if (isEditingUser() && userService.selectedUserRealm() !== "") {
               <mat-form-field>
                 <mat-label>Enter User</mat-label>
-                <app-clearable-input (onClick)="userService.userFilter.set('')"
+                <app-clearable-input
+                  (onClick)="userService.userFilter.set('')"
                   [showClearButton]="userService.userFilter() !== ''">
                   <input
                     matInput
                     [(ngModel)]="userService.userFilter"
-                    [matAutocomplete]="userAuto"/>
+                    [matAutocomplete]="userAuto" />
                   <mat-autocomplete #userAuto="matAutocomplete">
-                    @for (option of userService.filteredUsernames();
-                      track option) {
+                    @for (option of userService.filteredUsernames(); track option) {
                       <mat-option [value]="option">{{ option }}</mat-option>
                     }
                   </mat-autocomplete>

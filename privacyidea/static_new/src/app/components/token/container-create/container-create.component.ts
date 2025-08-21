@@ -1,14 +1,5 @@
 import { CommonModule } from "@angular/common";
-import {
-  Component,
-  effect,
-  ElementRef,
-  inject,
-  Renderer2,
-  signal,
-  untracked,
-  ViewChild,
-} from "@angular/core";
+import { Component, effect, ElementRef, inject, Renderer2, signal, untracked, ViewChild } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatButton, MatIconButton } from "@angular/material/button";
@@ -19,7 +10,7 @@ import {
   MatAccordion,
   MatExpansionPanel,
   MatExpansionPanelHeader,
-  MatExpansionPanelTitle,
+  MatExpansionPanelTitle
 } from "@angular/material/expansion";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
@@ -33,20 +24,14 @@ import { ROUTE_PATHS } from "../../../app.routes";
 import {
   ContainerRegisterData,
   ContainerService,
-  ContainerServiceInterface,
+  ContainerServiceInterface
 } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import {
-  NotificationService,
-  NotificationServiceInterface,
-} from "../../../services/notification/notification.service";
+import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
-import {
-  VersioningService,
-  VersioningServiceInterface,
-} from "../../../services/version/version.service";
+import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { TokenComponent } from "../token.component";
 import {
@@ -79,18 +64,17 @@ export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
     MatExpansionPanelHeader,
     MatTooltip,
     ClearableInputComponent,
-    CommonModule,
+    CommonModule
   ],
   templateUrl: "./container-create.component.html",
-  styleUrl: "./container-create.component.scss",
+  styleUrl: "./container-create.component.scss"
 })
 export class ContainerCreateComponent {
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
-  protected readonly notificationService: NotificationServiceInterface =
-    inject(NotificationService);
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly TokenComponent = TokenComponent;
@@ -135,7 +119,7 @@ export class ContainerCreateComponent {
 
     const options = {
       root: this.scrollContainer.nativeElement,
-      threshold: [0, 1],
+      threshold: [0, 1]
     };
 
     this.observer = new IntersectionObserver(([entry]) => {
@@ -171,8 +155,7 @@ export class ContainerCreateComponent {
     this.pollResponse.set(null);
     this.registerResponse.set(null);
     const createData = {
-      container_type:
-      this.containerService.selectedContainerType().containerType,
+      container_type: this.containerService.selectedContainerType().containerType,
       description: this.description(),
       template: this.selectedTemplate(),
       user: this.userService.userNameFilter(),
@@ -181,28 +164,22 @@ export class ContainerCreateComponent {
     if (createData.user || this.onlyAddToRealm()) {
       createData.realm = this.userService.selectedUserRealm();
     }
-    this.containerService
-      .createContainer(createData)
-      .subscribe({
-        next: (response) => {
-          const containerSerial = response.result?.value?.container_serial;
-          if (!containerSerial) {
-            this.notificationService.openSnackBar(
-              "Container creation failed. No container serial returned.",
-            );
-            return;
-          }
-          if (this.generateQRCode()) {
-            this.registerContainer(containerSerial);
-          } else {
-            this.notificationService.openSnackBar(
-              `Container ${containerSerial} enrolled successfully.`,
-            );
-            this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
-            this.containerSerial.set(containerSerial);
-          }
-        },
-      });
+    this.containerService.createContainer(createData).subscribe({
+      next: (response) => {
+        const containerSerial = response.result?.value?.container_serial;
+        if (!containerSerial) {
+          this.notificationService.openSnackBar("Container creation failed. No container serial returned.");
+          return;
+        }
+        if (this.generateQRCode()) {
+          this.registerContainer(containerSerial);
+        } else {
+          this.notificationService.openSnackBar(`Container ${containerSerial} enrolled successfully.`);
+          this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
+          this.containerSerial.set(containerSerial);
+        }
+      }
+    });
   }
 
   registerContainer(serial: string) {
@@ -239,28 +216,16 @@ export class ContainerCreateComponent {
     });
   }
 
-  private pollContainerRolloutState(
-    containerSerial: string,
-    startTime: number
-  ) {
-    return this.containerService
-      .pollContainerRolloutState(containerSerial, startTime)
-      .subscribe({
-        next: (pollResponse) => {
-          this.pollResponse.set(pollResponse);
-          if (
-            pollResponse.result?.value?.containers[0].info
-              .registration_state !== "client_wait"
-          ) {
-            this.registrationDialog.closeAll();
-            this.router.navigateByUrl(
-              ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial
-            );
-            this.notificationService.openSnackBar(
-              `Container ${this.containerSerial()} enrolled successfully.`
-            );
-          }
+  private pollContainerRolloutState(containerSerial: string, startTime: number) {
+    return this.containerService.pollContainerRolloutState(containerSerial, startTime).subscribe({
+      next: (pollResponse) => {
+        this.pollResponse.set(pollResponse);
+        if (pollResponse.result?.value?.containers[0].info.registration_state !== "client_wait") {
+          this.registrationDialog.closeAll();
+          this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
+          this.notificationService.openSnackBar(`Container ${this.containerSerial()} enrolled successfully.`);
         }
-      });
+      }
+    });
   }
 }

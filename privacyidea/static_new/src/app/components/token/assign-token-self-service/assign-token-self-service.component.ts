@@ -10,18 +10,9 @@ import { TokenService, TokenServiceInterface } from "../../../services/token/tok
 
 @Component({
   selector: "app-assign-token-self-service",
-  imports: [
-    MatError,
-    MatFormField,
-    MatFormField,
-    MatLabel,
-    MatInput,
-    FormsModule,
-    MatButton,
-    MatIcon,
-  ],
+  imports: [MatError, MatFormField, MatFormField, MatLabel, MatInput, FormsModule, MatButton, MatIcon],
   templateUrl: "./assign-token-self-service.component.html",
-  styleUrl: "./assign-token-self-service.component.scss",
+  styleUrl: "./assign-token-self-service.component.scss"
 })
 export class AssignTokenSelfServiceComponent {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -37,13 +28,13 @@ export class AssignTokenSelfServiceComponent {
         tokenSerial: this.selectedToken(),
         username: "",
         realm: "",
-        pin: this.setPinValue(),
+        pin: this.setPinValue()
       })
       .subscribe({
         next: () => {
           this.router.navigateByUrl(ROUTE_PATHS.TOKENS_DETAILS + this.selectedToken());
           this.tokenSerial.set(this.selectedToken());
-        },
+        }
       });
   }
 }

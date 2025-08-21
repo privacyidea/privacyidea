@@ -1,7 +1,10 @@
 <div class="input-container">
   <ng-content select="input"></ng-content>
   @if (showClearButton) {
-    <button (click)="clearInput()" class="clear-button" type="button">
+    <button
+      (click)="clearInput()"
+      class="clear-button"
+      type="button">
       <mat-icon>close</mat-icon>
     </button>
   }

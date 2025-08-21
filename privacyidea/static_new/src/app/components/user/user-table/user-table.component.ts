@@ -17,14 +17,11 @@ import {
   MatRow,
   MatRowDef,
   MatTable,
-  MatTableDataSource,
+  MatTableDataSource
 } from "@angular/material/table";
 import { RouterLink } from "@angular/router";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import {
-  TableUtilsService,
-  TableUtilsServiceInterface,
-} from "../../../services/table-utils/table-utils.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { UserData, UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";
@@ -38,7 +35,7 @@ const columnKeysMap = [
   { key: "phone", label: "Phone" },
   { key: "mobile", label: "Mobile" },
   { key: "description", label: "Description" },
-  { key: "resolver", label: "Resolver" },
+  { key: "resolver", label: "Resolver" }
 ];
 
 @Component({
@@ -64,10 +61,10 @@ const columnKeysMap = [
     MatNoDataRow,
     MatHeaderCellDef,
     RouterLink,
-    ClearableInputComponent,
+    ClearableInputComponent
   ],
   templateUrl: "./user-table.component.html",
-  styleUrl: "./user-table.component.scss",
+  styleUrl: "./user-table.component.scss"
 })
 export class UserTableComponent {
   protected readonly columnKeysMap = columnKeysMap;
@@ -81,7 +78,7 @@ export class UserTableComponent {
   filterValueString: WritableSignal<string> = linkedSignal(() =>
     Object.entries(this.userService.filterValue())
       .map(([key, value]) => `${key}: ${value}`)
-      .join(" "),
+      .join(" ")
   );
   totalLength: WritableSignal<number> = linkedSignal({
     source: this.userService.usersResource.value,
@@ -90,14 +87,14 @@ export class UserTableComponent {
         return userResource.result?.value?.length ?? 0;
       }
       return previous?.value ?? 0;
-    },
+    }
   });
   emptyResource: WritableSignal<UserData[]> = linkedSignal({
     source: this.userService.pageSize,
     computation: (pageSize: number) =>
       Array.from({ length: pageSize }, () =>
-        Object.fromEntries(this.columnKeysMap.map((c) => [{ key: c.key, username: "" }])),
-      ),
+        Object.fromEntries(this.columnKeysMap.map((c) => [{ key: c.key, username: "" }]))
+      )
   });
   usersDataSource: WritableSignal<MatTableDataSource<UserData>> = linkedSignal({
     source: this.userService.usersResource.value,
@@ -109,7 +106,7 @@ export class UserTableComponent {
         return dataSource;
       }
       return previous?.value ?? new MatTableDataSource(this.emptyResource());
-    },
+    }
   });
 
   constructor() {

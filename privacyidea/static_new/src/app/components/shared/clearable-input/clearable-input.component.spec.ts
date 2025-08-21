@@ -6,7 +6,7 @@ describe("ClearableInputComponent", () => {
   let fixture: ComponentFixture<ClearableInputComponent>;
 
   TestBed.configureTestingModule({
-    imports: [ClearableInputComponent],
+    imports: [ClearableInputComponent]
   }).compileComponents();
 
   beforeEach(() => {

@@ -44,9 +44,9 @@ import { ContainerDetailsComponent } from "./container-details.component";
     MatDivider,
     MatCheckbox,
     CopyButtonComponent,
-    ClearableInputComponent,
+    ClearableInputComponent
   ],
   templateUrl: "./container-details.self-service.component.html",
-  styleUrls: ["./container-details.component.scss"],
+  styleUrls: ["./container-details.component.scss"]
 })
 export class ContainerDetailsSelfServiceComponent extends ContainerDetailsComponent {}
