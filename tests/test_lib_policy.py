@@ -1577,6 +1577,7 @@ class PolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         g.client_ip = "127.0.0.1"
         g.audit_object = mock.Mock()
+        g.audit_object.audit_data = {}
         g.policy_object = PolicyClass()
         g.logged_in_user = {"username": "delete_admin", "role": ROLE.ADMIN, "realm": ""}
         pols = Match.admin(g, "delete", None).policies()

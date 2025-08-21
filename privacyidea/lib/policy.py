@@ -706,10 +706,10 @@ class PolicyClass(object):
                 [p.get('name') for p in reduced_policies]))
 
         if audit_data is not None:
-            audit_data.setdefault("policies", [])
+            audit_policies = set(audit_data.get("policies", []))
             for p in reduced_policies:
-                if p.get("name") not in audit_data["policies"]:
-                    audit_data["policies"].append(p.get("name"))
+                audit_policies.add(p.get("name"))
+            audit_data["policies"] = list(audit_policies)
 
         return reduced_policies
 
@@ -915,11 +915,11 @@ class PolicyClass(object):
                                                    allow_white_space_in_action=allow_white_space_in_action)
 
         if audit_data is not None:
-            audit_data.setdefault("policies", [])
+            audit_policies = set(audit_data.get("policies", []))
             for action_value, policy_names in policy_values.items():
                 for p_name in policy_names:
-                    if p_name not in audit_data["policies"]:
-                        audit_data["policies"].append(p_name)
+                    audit_policies.add(p_name)
+            audit_data["policies"] = list(audit_policies)
 
         return policy_values
 
@@ -3161,11 +3161,11 @@ class Match(object):
                                                                     allow_white_space_in_action=
                                                                     allow_white_space_in_action)
         if write_to_audit_log:
-            self._g.audit_object.audit_data.setdefault("policies", [])
+            audit_policies = set(self._g.audit_object.audit_data.get("policies", []))
             for action_value, policy_names in action_values.items():
                 for p_name in policy_names:
-                    if p_name not in self._g.audit_object.audit_data["policies"]:
-                        self._g.audit_object.audit_data["policies"].append(p_name)
+                    audit_policies.add(p_name)
+            self._g.audit_object.audit_data["policies"] = list(audit_policies)
         return action_values
 
     def allowed(self, write_to_audit_log=True):
