@@ -7,7 +7,7 @@
   <div
     [formGroup]="questionForm"
     class="margin-top-1 form-group">
-    @for (question of configQuestions(); track question; let i = $index) {
+    @for (question of configQuestions; track question; let i = $index) {
       @if (questionControlNames[i]) {
         <!-- Ensure control name exists -->
         <mat-form-field class="question-input-width input-height">

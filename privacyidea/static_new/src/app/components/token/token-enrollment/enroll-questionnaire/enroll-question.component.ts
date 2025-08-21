@@ -38,16 +38,7 @@ export class EnrollQuestionComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly systemService: SystemServiceInterface =
     inject(SystemService);
-  readonly configQuestions = computed(() => {
-    const cfg =
-      this.systemService.systemConfigResource.value()?.result?.value || {};
-    return Object.entries(cfg)
-      .filter(([k]) => k.startsWith("question.question."))
-      .map(([k, v]) => ({
-        question: k.replace("question.question.", ""),
-        text: v
-      }));
-  });
+
   readonly configMinNumberOfAnswers: Signal<number> = computed(() => {
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
     return cfg && cfg["question.num_answers"]
@@ -63,22 +54,24 @@ export class EnrollQuestionComponent implements OnInit {
   >();
   questionForm = new FormGroup<Record<string, AbstractControl<string>>>({});
   questionControlNames: string[] = [];
+  configQuestions: Array<{ question: string; text: unknown }> = [];
 
   ngOnInit(): void {
-    this.updateFormControls();
+    this.getQuestionConfigAndUpdateFormControls();
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
   onClickEnroll = (
     basicOptions: TokenEnrollmentData
   ): Observable<EnrollmentResponse | null> => {
-    if (this.questionForm.invalid) {
+    const allValid = Object.values(this.questionForm.controls).every(control => control.valid);
+    if (!allValid) {
       this.questionForm.markAllAsTouched();
       return of(null);
     }
 
     const answers: Record<string, string> = {};
-    this.configQuestions().forEach((q) => {
+    this.configQuestions.forEach((q) => {
       const controlName = `answer_${q.question.replace(/\s+/g, "_")}`;
       answers[q.question] = this.questionForm.get(controlName)?.value ?? "";
     });
@@ -100,6 +93,19 @@ export class EnrollQuestionComponent implements OnInit {
     ).length;
   }
 
+  private getQuestionConfigAndUpdateFormControls() {
+    this.systemService.getSystemConfigResource().subscribe(data => {
+      const cfg = data?.result?.value || {};
+      this.configQuestions = Object.entries(cfg)
+        .filter(([k]) => k.startsWith("question.question."))
+        .map(([k, v]) => ({
+          question: k.replace("question.question.", ""),
+          text: v
+        }));
+      this.updateFormControls();
+    });
+  }
+
   private updateFormControls(): void {
     Object.keys(this.questionForm.controls).forEach((key) => {
       this.questionForm.removeControl(key);
@@ -107,7 +113,7 @@ export class EnrollQuestionComponent implements OnInit {
     this.questionControlNames = [];
 
     const newControls: { [key: string]: FormControl<string | null> } = {};
-    this.configQuestions().forEach((q) => {
+    this.configQuestions.forEach((q) => {
       const controlName = `answer_${q.question.replace(/\s+/g, "_")}`;
       this.questionControlNames.push(controlName);
       const control = new FormControl<string | null>("", [Validators.required]);
