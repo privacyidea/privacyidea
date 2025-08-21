@@ -2,10 +2,7 @@ import { computed, effect, inject, Injectable, Signal, signal } from "@angular/c
 import { Router } from "@angular/router";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { LocalService, LocalServiceInterface } from "../local/local.service";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../notification/notification.service";
+import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 
 export interface SessionTimerServiceInterface {
   remainingTime: Signal<number>;

@@ -1,18 +1,10 @@
 import { AsyncPipe } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
 import { Component, inject, WritableSignal } from "@angular/core";
-import {
-  MAT_DIALOG_DATA,
-  MatDialogContent,
-  MatDialogRef,
-  MatDialogTitle
-} from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialogContent, MatDialogRef, MatDialogTitle } from "@angular/material/dialog";
 import { DomSanitizer } from "@angular/platform-browser";
 import { map } from "rxjs";
-import {
-  ContainerService,
-  ContainerServiceInterface
-} from "../../../../services/container/container.service";
+import { ContainerService, ContainerServiceInterface } from "../../../../services/container/container.service";
 import { LostTokenComponent } from "../../token-card/token-tab/lost-token/lost-token.component";
 import { ContainerRegistrationDialogComponent } from "./container-registration-dialog.component";
 

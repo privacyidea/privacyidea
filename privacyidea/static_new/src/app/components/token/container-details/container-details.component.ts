@@ -30,26 +30,13 @@ import {
   ContainerServiceInterface
 } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import {
-  OverflowService,
-  OverflowServiceInterface
-} from "../../../services/overflow/overflow.service";
+import { OverflowService, OverflowServiceInterface } from "../../../services/overflow/overflow.service";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
-import {
-  TableUtilsService,
-  TableUtilsServiceInterface
-} from "../../../services/table-utils/table-utils.service";
-import {
-  TokenDetails,
-  TokenService,
-  TokenServiceInterface
-} from "../../../services/token/token.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
+import { TokenDetails, TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import {
-  EditableElement,
-  EditButtonsComponent
-} from "../../shared/edit-buttons/edit-buttons.component";
+import { EditableElement, EditButtonsComponent } from "../../shared/edit-buttons/edit-buttons.component";
 import { infoDetailsKeyMap } from "../token-details/token-details.component";
 import { ContainerDetailsInfoComponent } from "./container-details-info/container-details-info.component";
 import { ContainerDetailsTokenTableComponent } from "./container-details-token-table/container-details-token-table.component";

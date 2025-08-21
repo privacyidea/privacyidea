@@ -15,6 +15,7 @@ import { MatInput } from "@angular/material/input";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { ContainerCreateComponent } from "./container-create.component";
 import { MatTooltip } from "@angular/material/tooltip";
+import { NgClass } from "@angular/common";
 
 @Component({
   selector: "app-container-create-self-service",
@@ -34,7 +35,8 @@ import { MatTooltip } from "@angular/material/tooltip";
     MatExpansionPanel,
     MatExpansionPanelTitle,
     MatExpansionPanelHeader,
-    MatTooltip
+    MatTooltip,
+    NgClass
   ],
   templateUrl: "./container-create.self-service.component.html",
   styleUrl: "./container-create.component.scss"

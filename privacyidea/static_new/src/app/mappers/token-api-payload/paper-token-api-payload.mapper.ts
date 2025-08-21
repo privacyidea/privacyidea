@@ -1,8 +1,4 @@
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData,
-  TokenEnrollmentPayload
-} from "./_token-api-payload.mapper";
+import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
 import { Injectable } from "@angular/core";
 
 export interface PaperEnrollmentData extends TokenEnrollmentData {
@@ -14,6 +10,7 @@ export interface PaperEnrollmentData extends TokenEnrollmentData {
 export interface PaperEnrollmentPayload extends TokenEnrollmentPayload {
   otplen?: number;
   otpcount?: number;
+  serial?: string | null;
 }
 
 @Injectable({ providedIn: "root" })
@@ -28,10 +25,12 @@ export class PaperApiPayloadMapper implements TokenApiPayloadMapper<PaperEnrollm
       user: data.user,
       pin: data.pin,
       otplen: data.otpLength,
-      otpcount: data.otpCount
+      otpcount: data.otpCount,
+      serial: data.serial ?? null
     };
     if (payload.otplen === undefined) delete payload.otplen;
     if (payload.otpcount === undefined) delete payload.otpcount;
+    if (payload.serial === null) delete payload.serial;
     return payload;
   }
 

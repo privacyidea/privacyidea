@@ -4,10 +4,7 @@ import { MatFabButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatDrawer, MatDrawerContainer, MatSidenavModule } from "@angular/material/sidenav";
 import { ContentService, ContentServiceInterface } from "../../services/content/content.service";
-import {
-  OverflowService,
-  OverflowServiceInterface
-} from "../../services/overflow/overflow.service";
+import { OverflowService, OverflowServiceInterface } from "../../services/overflow/overflow.service";
 import { ContainerDetailsComponent } from "./container-details/container-details.component";
 import { ContainerTableComponent } from "./container-table/container-table.component";
 import { TokenCardComponent } from "./token-card/token-card.component";

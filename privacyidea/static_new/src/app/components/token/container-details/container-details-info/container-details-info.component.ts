@@ -8,14 +8,8 @@ import { MatInput } from "@angular/material/input";
 import { MatList, MatListItem } from "@angular/material/list";
 import { MatCell, MatColumnDef, MatRow, MatTableModule } from "@angular/material/table";
 import { forkJoin, Observable, switchMap } from "rxjs";
-import {
-  ContainerService,
-  ContainerServiceInterface
-} from "../../../../services/container/container.service";
-import {
-  OverflowService,
-  OverflowServiceInterface
-} from "../../../../services/overflow/overflow.service";
+import { ContainerService, ContainerServiceInterface } from "../../../../services/container/container.service";
+import { OverflowService, OverflowServiceInterface } from "../../../../services/overflow/overflow.service";
 import { EditButtonsComponent } from "../../../shared/edit-buttons/edit-buttons.component";
 
 export interface ContainerInfoDetail<T = any> {
