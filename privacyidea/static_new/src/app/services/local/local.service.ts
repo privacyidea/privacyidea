@@ -5,23 +5,17 @@ import { environment } from "../../../environments/environment";
 
 export interface LocalServiceInterface {
   key: string;
-  bearerTokenKey: string;
-
   saveData(key: string, value: string): void;
-
   getData(key: string): string;
-
   removeData(key: string): void;
-
   getHeaders(): HttpHeaders;
 }
 
 @Injectable({
-  providedIn: "root"
+  providedIn: "root",
 })
 export class LocalService {
   key = environment.secretAESKey;
-  bearerTokenKey = "bearer_token";
 
   public saveData(key: string, value: string) {
     localStorage.setItem(key, this.encrypt(value));
@@ -38,7 +32,7 @@ export class LocalService {
 
   public getHeaders(): HttpHeaders {
     return new HttpHeaders({
-      "PI-Authorization": this.getData("bearer_token") || ""
+      "PI-Authorization": this.getData("bearer_token") || "",
     });
   }
 

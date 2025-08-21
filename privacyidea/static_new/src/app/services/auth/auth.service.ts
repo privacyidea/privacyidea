@@ -51,6 +51,16 @@ export interface AuthData {
   };
 }
 
+export interface JwtData {
+  username: string;
+  realm: string;
+  nonce: string;
+  role: AuthRole;
+  authtype: string;
+  exp: number;
+  rights: string[];
+}
+
 export type AuthRole = "admin" | "user" | "";
 
 export interface AuthDetail {
@@ -70,7 +80,7 @@ export interface AuthServiceInterface {
   role: () => AuthRole;
   token: () => string;
   username: () => string;
-  logoutTimeSeconds: () => number | undefined;
+  logoutTimeSeconds: () => number | null;
   auditPageSize: () => number;
   tokenPageSize: () => number;
   userPageSize: () => number;
@@ -121,18 +131,28 @@ export class AuthService implements AuthServiceInterface {
   readonly TOKEN_KEY = "bearer_token";
 
   authData = signal<AuthData | null>(null);
+  jwtData = signal<JwtData | null>(null);
+
   authenticationAccepted = signal<boolean>(false);
 
   isAuthenticated = computed(() => this.authenticationAccepted() && !!this.authData());
 
   logLevel = computed(() => this.authData()?.log_level || 0);
   menus = computed(() => this.authData()?.menus || []);
-  realm = computed(() => this.authData()?.realm || "");
+  realm = computed(() => this.jwtData()?.realm || this.authData()?.realm || "");
   rights = computed(() => this.authData()?.rights || []);
-  role = computed(() => this.authData()?.role || "");
-  token = computed(() => this.localService.getData(this.localService.bearerTokenKey));
-  username = computed(() => this.authData()?.username || "");
-  logoutTimeSeconds = computed(() => this.authData()?.logout_time);
+  role = computed(() => this.jwtData()?.role || this.authData()?.role || "");
+  token = computed(() => this.authData()?.token || "");
+  username = computed(() => this.jwtData()?.username || this.authData()?.username || "");
+  logoutTimeSeconds = computed(() => {
+    const jwtExpDate = this.jwtExpDate()!;
+    if (jwtExpDate) {
+      // Calculate the seconds until the JWT expires
+      const now = new Date();
+      return Math.max(0, Math.floor((jwtExpDate.getTime() - now.getTime()) / 1000));
+    }
+    return this.authData()?.logout_time || null;
+  });
   auditPageSize = computed(() => this.authData()?.audit_page_size || 10);
   tokenPageSize = computed(() => this.authData()?.token_page_size || 10);
   userPageSize = computed(() => this.authData()?.user_page_size || 10);
@@ -162,6 +182,13 @@ export class AuthService implements AuthServiceInterface {
   rssAge = computed(() => this.authData()?.rss_age || 0);
   containerWizard = computed(() => this.authData()?.container_wizard || { enabled: false });
 
+  jwtNonce = computed(() => this.jwtData()?.nonce || "");
+  authtype = computed(() => (this.jwtData()?.authtype || this.jwtData() ? "cookie" : "none"));
+  jwtExpDate = computed(() => {
+    const exp = this.jwtData()?.exp;
+    return exp ? new Date(exp * 1000) : null;
+  });
+
   isSelfServiceUser = computed(() => {
     return this.role() === "user";
   });
@@ -182,6 +209,7 @@ export class AuthService implements AuthServiceInterface {
           if (response?.result?.status && value) {
             this.acceptAuthentication();
             this.authData.set(value);
+            this.jwtData.set(this.decodeJwtPayload(value.token));
             this.localService.saveData(this.TOKEN_KEY, value.token);
           }
         }),
@@ -200,7 +228,24 @@ export class AuthService implements AuthServiceInterface {
 
   deauthenticate(): void {
     this.authData.set(null);
+    this.jwtData.set(null);
     this.localService.removeData(this.TOKEN_KEY);
     this.authenticationAccepted.set(false);
+  }
+
+  decodeJwtPayload(token: string): JwtData | null {
+    try {
+      const parts = token.split(".");
+      if (parts.length !== 3) {
+        throw new Error("Invalid JWT token format");
+      }
+
+      const payloadBase64 = parts[1];
+      const payloadJson = atob(payloadBase64.replace(/-/g, "+").replace(/_/g, "/"));
+      return JSON.parse(payloadJson);
+    } catch (e) {
+      console.error("Failed to decode JWT:", e);
+      return null;
+    }
   }
 }
