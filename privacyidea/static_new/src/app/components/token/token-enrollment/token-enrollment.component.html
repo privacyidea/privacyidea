@@ -13,7 +13,7 @@
       <div class="sticky-controls ali-center">
         <div class="select-token-type-container">
           <mat-form-field
-            class="width-100"
+            class="width-100" 
             subscriptSizing="dynamic">
             <mat-select
               [(ngModel)]="tokenService.selectedTokenType"
@@ -286,7 +286,7 @@
     <h4 class="enroll-h4">Assign Token to a Container</h4>
     <mat-form-field class="width-33 input-height">
       <app-clearable-input
-        (onClick)="selectedContainerControl.setValue('')"
+        (onClick)="selectedContainerControl.setValue(null)"
         [showClearButton]="containerService.selectedContainer() !== ''">
         <input
           [formControl]="selectedContainerControl"
