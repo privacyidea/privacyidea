@@ -1,4 +1,3 @@
-import { CommonModule } from "@angular/common";
 import { Component, effect, ElementRef, inject, Renderer2, signal, untracked, ViewChild } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
@@ -10,13 +9,14 @@ import {
   MatAccordion,
   MatExpansionPanel,
   MatExpansionPanelHeader,
-  MatExpansionPanelTitle
+  MatExpansionPanelTitle,
 } from "@angular/material/expansion";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
 
+import { CommonModule } from "@angular/common";
 import { MatTooltip } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { PiResponse } from "../../../app.component";
@@ -24,7 +24,7 @@ import { ROUTE_PATHS } from "../../../app.routes";
 import {
   ContainerRegisterData,
   ContainerService,
-  ContainerServiceInterface
+  ContainerServiceInterface,
 } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
@@ -36,7 +36,7 @@ import { ClearableInputComponent } from "../../shared/clearable-input/clearable-
 import { TokenComponent } from "../token.component";
 import {
   ContainerCreationDialogData,
-  ContainerRegistrationDialogComponent
+  ContainerRegistrationDialogComponent,
 } from "./container-registration-dialog/container-registration-dialog.component";
 
 export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
@@ -64,10 +64,10 @@ export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
     MatExpansionPanelHeader,
     MatTooltip,
     ClearableInputComponent,
-    CommonModule
+    CommonModule,
   ],
   templateUrl: "./container-create.component.html",
-  styleUrl: "./container-create.component.scss"
+  styleUrl: "./container-create.component.scss",
 })
 export class ContainerCreateComponent {
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
@@ -78,9 +78,9 @@ export class ContainerCreateComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly TokenComponent = TokenComponent;
+  protected readonly renderer: Renderer2 = inject(Renderer2);
   private router = inject(Router);
   private observer!: IntersectionObserver;
-  protected readonly renderer: Renderer2 = inject(Renderer2);
   containerSerial = this.containerService.containerSerial;
   description = signal("");
   selectedTemplate = signal("");
@@ -119,7 +119,7 @@ export class ContainerCreateComponent {
 
     const options = {
       root: this.scrollContainer.nativeElement,
-      threshold: [0, 1]
+      threshold: [0, 1],
     };
 
     this.observer = new IntersectionObserver(([entry]) => {
@@ -159,7 +159,7 @@ export class ContainerCreateComponent {
       description: this.description(),
       template: this.selectedTemplate(),
       user: this.userService.userNameFilter(),
-      realm: ""
+      realm: "",
     };
     if (createData.user || this.onlyAddToRealm()) {
       createData.realm = this.userService.selectedUserRealm();
@@ -178,7 +178,7 @@ export class ContainerCreateComponent {
           this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
           this.containerSerial.set(containerSerial);
         }
-      }
+      },
     });
   }
 
@@ -187,7 +187,7 @@ export class ContainerCreateComponent {
       .registerContainer({
         container_serial: serial,
         passphrase_response: this.passphraseResponse(),
-        passphrase_prompt: this.passphrasePrompt()
+        passphrase_prompt: this.passphrasePrompt(),
       })
       .subscribe((registerResponse) => {
         this.registerResponse.set(registerResponse);
@@ -209,10 +209,10 @@ export class ContainerCreateComponent {
     const dialogData: ContainerCreationDialogData = {
       response: response,
       containerSerial: this.containerSerial,
-      registerContainer: this.registerContainer.bind(this)
+      registerContainer: this.registerContainer.bind(this),
     };
     this.registrationDialog.open(ContainerRegistrationDialogComponent, {
-      data: dialogData
+      data: dialogData,
     });
   }
 
@@ -225,7 +225,7 @@ export class ContainerCreateComponent {
           this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
           this.notificationService.openSnackBar(`Container ${this.containerSerial()} enrolled successfully.`);
         }
-      }
+      },
     });
   }
 }

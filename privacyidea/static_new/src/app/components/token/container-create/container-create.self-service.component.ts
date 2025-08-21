@@ -1,4 +1,4 @@
-import { Component, ElementRef, inject, Renderer2, ViewChild } from "@angular/core";
+import { Component } from "@angular/core";
 import {
   MatAccordion,
   MatExpansionPanel,

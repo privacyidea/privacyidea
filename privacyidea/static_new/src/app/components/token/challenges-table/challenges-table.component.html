@@ -7,7 +7,7 @@
       subscriptSizing="dynamic">
       <mat-label>Enter Filter</mat-label>
       <app-clearable-input
-        (onClick)="filterInput.value = ''"
+        (onClick)="filterInput.value = ''; onFilterChange('')"
         [showClearButton]="filterInput.value.length > 0">
         <input
           #filterInput

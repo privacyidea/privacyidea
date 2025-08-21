@@ -12,7 +12,7 @@ import {
   Renderer2,
   signal,
   ViewChild,
-  WritableSignal
+  WritableSignal,
 } from "@angular/core";
 import {
   AbstractControl,
@@ -22,7 +22,7 @@ import {
   ReactiveFormsModule,
   ValidationErrors,
   ValidatorFn,
-  Validators
+  Validators,
 } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatButton, MatIconButton } from "@angular/material/button";
@@ -31,14 +31,14 @@ import {
   MAT_DATE_FORMATS,
   MatNativeDateModule,
   NativeDateAdapter,
-  provideNativeDateAdapter
+  provideNativeDateAdapter,
 } from "@angular/material/core";
 import { MatDatepickerModule } from "@angular/material/datepicker";
 import {
   MatAccordion,
   MatExpansionPanel,
   MatExpansionPanelHeader,
-  MatExpansionPanelTitle
+  MatExpansionPanelTitle,
 } from "@angular/material/expansion";
 import { MatError, MatFormField, MatHint, MatLabel, MatSuffix } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
@@ -86,7 +86,7 @@ import { ClearableInputComponent } from "../../shared/clearable-input/clearable-
 import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 
 export type ClickEnrollFn = (
-  enrollementOptions: TokenEnrollmentData
+  enrollementOptions: TokenEnrollmentData,
 ) => Promise<EnrollmentResponse | null> | Observable<EnrollmentResponse | null>;
 
 export type ReopenDialogFn =
@@ -98,7 +98,7 @@ export const CUSTOM_TOOLTIP_OPTIONS: MatTooltipDefaultOptions = {
   touchLongPressShowDelay: 500,
   hideDelay: 0,
   touchendHideDelay: 0,
-  disableTooltipInteractivity: true
+  disableTooltipInteractivity: true,
 };
 
 export const CUSTOM_DATE_FORMATS = {
@@ -107,8 +107,8 @@ export const CUSTOM_DATE_FORMATS = {
     dateInput: "YYYY-MM-DD",
     monthYearLabel: "MMM YYYY",
     dateA11yLabel: "LL",
-    monthYearA11yLabel: "MMMM YYYY"
-  }
+    monthYearA11yLabel: "MMMM YYYY",
+  },
 };
 
 export const TIMEZONE_OFFSETS = (() => {
@@ -196,17 +196,17 @@ export class CustomDateAdapter extends NativeDateAdapter {
     MatError,
     EnrollPasskeyComponent,
     MatTooltipModule,
-    ClearableInputComponent
+    ClearableInputComponent,
   ],
   providers: [
     provideNativeDateAdapter(),
     { provide: DateAdapter, useFactory: () => new CustomDateAdapter("+00:00") },
     { provide: MAT_DATE_FORMATS, useValue: CUSTOM_DATE_FORMATS },
-    { provide: MAT_TOOLTIP_DEFAULT_OPTIONS, useValue: CUSTOM_TOOLTIP_OPTIONS }
+    { provide: MAT_TOOLTIP_DEFAULT_OPTIONS, useValue: CUSTOM_TOOLTIP_OPTIONS },
   ],
   templateUrl: "./token-enrollment.component.html",
   styleUrls: ["./token-enrollment.component.scss"],
-  standalone: true
+  standalone: true,
 })
 export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
@@ -217,16 +217,16 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
-  private observer!: IntersectionObserver;
   protected readonly renderer: Renderer2 = inject(Renderer2);
+  private observer!: IntersectionObserver;
   timezoneOptions = TIMEZONE_OFFSETS;
   pollResponse: WritableSignal<any> = linkedSignal({
     source: this.tokenService.selectedTokenType,
-    computation: () => null
+    computation: () => null,
   });
   enrollResponse: WritableSignal<EnrollmentResponse | null> = linkedSignal({
     source: this.tokenService.selectedTokenType,
-    computation: () => null
+    computation: () => null,
   });
   @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
   @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
@@ -234,7 +234,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   clickEnroll?: ClickEnrollFn;
   reopenDialogSignal: WritableSignal<ReopenDialogFn> = linkedSignal({
     source: this.tokenService.selectedTokenType,
-    computation: () => undefined
+    computation: () => undefined,
   });
   additionalFormFields: WritableSignal<{
     [key: string]: FormControl<any>;
@@ -249,40 +249,40 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   });
   descriptionControl = new FormControl<string>("", {
     nonNullable: true,
-    validators: [Validators.maxLength(80)]
+    validators: [Validators.maxLength(80)],
   });
   selectedUserRealmControl = new FormControl<string>(this.userService.selectedUserRealm(), {
-    nonNullable: true
+    nonNullable: true,
   });
   userFilterControl = new FormControl<string | UserData | null>(this.userService.userFilter(), {
-    nonNullable: true
+    nonNullable: true,
   });
   setPinControl = new FormControl<string>("", { nonNullable: true });
   repeatPinControl = new FormControl<string>("", { nonNullable: true });
   selectedContainerControl = new FormControl<string | null>(this.containerService.selectedContainer(), {
-    nonNullable: true
+    nonNullable: true,
   });
   selectedStartDateControl = new FormControl<Date | null>(new Date(), {
-    nonNullable: true
+    nonNullable: true,
   });
   selectedStartTimeControl = new FormControl<string>("00:00", {
-    nonNullable: true
+    nonNullable: true,
   });
   selectedTimezoneOffsetControl = new FormControl<string>("+00:00", {
-    nonNullable: true
+    nonNullable: true,
   });
   selectedEndDateControl = new FormControl<Date | null>(new Date(), {
-    nonNullable: true
+    nonNullable: true,
   });
   selectedEndTimeControl = new FormControl<string>("23:59", {
-    nonNullable: true
+    nonNullable: true,
   });
   _lastTokenEnrollmentLastStepDialogData: WritableSignal<TokenEnrollmentLastStepDialogData | null> = linkedSignal({
     source: this.tokenService.selectedTokenType,
-    computation: () => null
+    computation: () => null,
   });
   canReopenEnrollmentDialog = computed(
-    () => !!this.reopenDialogSignal() || !!this._lastTokenEnrollmentLastStepDialogData()
+    () => !!this.reopenDialogSignal() || !!this._lastTokenEnrollmentLastStepDialogData(),
   );
 
   constructor() {
@@ -326,7 +326,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     this.selectedContainerControl.valueChanges.subscribe((value) =>
-      this.containerService.selectedContainer.set(value ?? "")
+      this.containerService.selectedContainer.set(value ?? ""),
     );
     this.userFilterControl.valueChanges.subscribe((value) => {
       this.userService.userFilter.set(value ?? "");
@@ -352,7 +352,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
 
     const options = {
       root: this.scrollContainer.nativeElement,
-      threshold: [0, 1]
+      threshold: [0, 1],
     };
 
     this.observer = new IntersectionObserver(([entry]) => {
@@ -406,7 +406,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     const lastStepData = this._lastTokenEnrollmentLastStepDialogData();
     if (lastStepData) {
       this.dialogService.openTokenEnrollmentLastStepDialog({
-        data: lastStepData
+        data: lastStepData,
       });
       return;
     }
@@ -426,14 +426,14 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   formGroupSignal: WritableSignal<FormGroup> = linkedSignal({
     source: () => ({
       additionalFormFields: this.additionalFormFields(),
-      selectedUser: this.userService.selectedUser()
+      selectedUser: this.userService.selectedUser(),
     }),
     computation: (source, previous) => {
       const { additionalFormFields, selectedUser } = source;
       this.selectedUserRealmControl.setValidators(this.isUserRequired ? [Validators.required] : []);
 
       this.userFilterControl.setValidators(
-        this.isUserRequired ? [Validators.required, this.userExistsValidator] : [this.userExistsValidator]
+        this.isUserRequired ? [Validators.required, this.userExistsValidator] : [this.userExistsValidator],
       );
 
       if (selectedUser !== this.userFilterControl.value) {
@@ -452,11 +452,11 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
           selectedTimezoneOffset: this.selectedTimezoneOffsetControl,
           selectedEndDate: this.selectedEndDateControl,
           selectedEndTime: this.selectedEndTimeControl,
-          ...additionalFormFields
+          ...additionalFormFields,
         },
-        { validators: TokenEnrollmentComponent.pinMismatchValidator }
+        { validators: TokenEnrollmentComponent.pinMismatchValidator },
       );
-    }
+    },
   });
 
   protected async enrollToken(): Promise<void> {
@@ -497,16 +497,16 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       validityPeriodStart: this.formatDateTimeOffset(
         this.selectedStartDateControl.value ?? new Date(),
         this.selectedStartTimeControl.value ?? "00:00",
-        this.selectedTimezoneOffsetControl.value ?? "+00:00"
+        this.selectedTimezoneOffsetControl.value ?? "+00:00",
       ),
       validityPeriodEnd: this.formatDateTimeOffset(
         this.selectedEndDateControl.value ?? new Date(),
         this.selectedEndTimeControl.value ?? "23:59",
-        this.selectedTimezoneOffsetControl.value ?? "+00:00"
+        this.selectedTimezoneOffsetControl.value ?? "+00:00",
       ),
       user: user?.username ?? "",
       pin: this.setPinControl.value ?? "",
-      serial: serial
+      serial: serial,
     };
 
     const enrollResponse = this.clickEnroll(basicOptions);
@@ -529,7 +529,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     if (enrollmentResponse) {
       this._handleEnrollmentResponse({
         response: enrollmentResponse,
-        user: user
+        user: user,
       });
     }
   }
@@ -546,11 +546,11 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       enrollToken: this.enrollToken.bind(this),
       user: user,
       userRealm: this.userService.selectedUserRealm(),
-      onlyAddToRealm: this.onlyAddToRealm()
+      onlyAddToRealm: this.onlyAddToRealm(),
     };
     this._lastTokenEnrollmentLastStepDialogData.set(dialogData);
     this.dialogService.openTokenEnrollmentLastStepDialog({
-      data: dialogData
+      data: dialogData,
     });
   }
 
