@@ -8,17 +8,17 @@
   class="actions-otp-container"
 >
   <div class="user-pin-container user-pin-container-padding">
-    @if (tokenType() !== "passkey") {
-      <app-set-pin-action [setPinValue]="setPinValue" [repeatPinValue]="repeatPinValue" />
-    }
+    <app-set-pin-action [setPinValue]="setPinValue" [repeatPinValue]="repeatPinValue" />
     <br />
     <mat-divider />
     <br />
   </div>
-  <app-resync-token-action />
-  <br />
-  <mat-divider />
-  <br />
+  @if (tokenType() !== "passkey") {
+    <app-resync-token-action />
+    <br />
+    <mat-divider />
+    <br />
+  }
   @if (tokenType() !== "passkey") {
     <app-test-otp-pin-action />
     @if (tokenType() === "sshkey") {
