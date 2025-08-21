@@ -1,5 +1,5 @@
 import { httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, inject, Injectable, linkedSignal, signal, Signal, WritableSignal } from "@angular/core";
+import { computed, effect, inject, Injectable, linkedSignal, signal, Signal, WritableSignal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
@@ -117,6 +117,12 @@ export class UserService implements UserServiceInterface {
     source: this.selectedUserRealm,
     computation: () => ""
   });
+
+  constructor() {
+    effect(() => {
+      console.log(this.userFilter())
+    });
+  }
   userNameFilter = computed<string>(() => {
     const filter = this.userFilter();
     if (typeof filter === "string") {

@@ -3,7 +3,6 @@ import {
   AfterViewInit,
   Component,
   computed,
-  effect,
   ElementRef,
   inject,
   Injectable,
@@ -224,8 +223,8 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     inject(ContentService);
   protected readonly dialogService: DialogServiceInterface =
     inject(DialogService);
-  private observer!: IntersectionObserver;
   protected readonly renderer: Renderer2 = inject(Renderer2);
+  private observer!: IntersectionObserver;
   timezoneOptions = TIMEZONE_OFFSETS;
   pollResponse: WritableSignal<any> = linkedSignal({
     source: this.tokenService.selectedTokenType,
@@ -241,6 +240,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       return tokenTypes.find((type) => type.key === this.tokenService.selectedTokenType().key)?.text;
     }
   });
+  serial = signal<string | null>(null);
   @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
   @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
   @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
@@ -288,18 +288,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       !!this.reopenDialogSignal() ||
       !!this._lastTokenEnrollmentLastStepDialogData()
   );
-
-  constructor() {
-    effect(() => {
-      const users = this.userService.filteredUsers();
-      if (
-        users.length === 1 &&
-        this.userFilterControl.value === users[0].username
-      ) {
-        this.userFilterControl.setValue(users[0]);
-      }
-    });
-  }
 
   get isUserRequired() {
     return ["tiqr", "webauthn", "passkey", "certificate"].includes(
@@ -457,11 +445,10 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
 
   formGroupSignal: WritableSignal<FormGroup> = linkedSignal({
     source: () => ({
-      additionalFormFields: this.additionalFormFields(),
-      selectedUser: this.userService.selectedUser()
+      additionalFormFields: this.additionalFormFields()
     }),
     computation: (source, previous) => {
-      const { additionalFormFields, selectedUser } = source;
+      const { additionalFormFields } = source;
       this.selectedUserRealmControl.setValidators(
         this.isUserRequired ? [Validators.required] : []
       );
@@ -472,9 +459,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
           : [this.userExistsValidator]
       );
 
-      if (selectedUser !== this.userFilterControl.value) {
-        this.userFilterControl.setValue(selectedUser, { emitEvent: false });
-      }
       return new FormGroup(
         {
           description: this.descriptionControl,
@@ -528,11 +512,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    let serial = null;
-    if (this.enrollResponse()) {
-      serial = this.enrollResponse()?.detail?.serial ?? null;
-    }
-
     let validityPeriodStart = "";
     if (this.selectedStartDateControl.value) {
       validityPeriodStart = this.formatDateTimeOffset(
@@ -560,7 +539,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       realm: this.selectedUserRealmControl.value ?? "",
       onlyAddToRealm: this.onlyAddToRealmControl.value ?? false,
       pin: this.setPinControl.value ?? "",
-      serial: serial
+      serial: this.serial()
     };
 
     const enrollResponse = this.clickEnroll(basicOptions);
@@ -606,6 +585,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
 
     const dialogData: TokenEnrollmentLastStepDialogData = {
       response: response,
+      serial: this.serial,
       enrollToken: this.enrollToken.bind(this),
       user: user,
       userRealm: this.userService.selectedUserRealm(),
