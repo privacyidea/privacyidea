@@ -211,7 +211,7 @@
           <mat-form-field class="width-50 input-height">
             <mat-label>Enter User</mat-label>
             <app-clearable-input
-              (onClick)="userService.userFilter.set('')"
+              (onClick)="userFilterControl.setValue('')"
               [showClearButton]="userService.userFilter() !== ''">
               <input
                 [formControl]="userFilterControl"
