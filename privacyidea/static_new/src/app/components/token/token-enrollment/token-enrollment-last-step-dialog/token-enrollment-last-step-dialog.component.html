@@ -53,7 +53,7 @@
         data.response.detail.motpurl?.value ??
         data.response.detail.otpkey?.value ??
         data.response.detail.tiqrenroll?.value;
-      @if (url && !["spass"].includes(data.tokentype.key)) {
+      @if (url && !["spass", "tiqr"].includes(data.tokentype.key)) {
         <p class="width-36">
           Click
           <a href="{{ url }}">here</a>
@@ -89,6 +89,23 @@
             @if (data.response.detail.otpkey?.value_b32) {
               <p class="otpkey-p">Base32: {{ data.response.detail.otpkey?.value_b32 }}</p>
             }
+          </mat-expansion-panel>
+        </mat-accordion>
+      }
+
+      @if (data.tokentype.key === "tiqr") {
+        <p class="width-36">
+          Click
+          <a href="{{ url }}">here</a>
+          or scan the QR Code, if you want to add the Token to your TiQR app.
+        </p>
+
+        <mat-accordion class="otpkey-expension">
+          <mat-expansion-panel>
+            <mat-expansion-panel-header>
+              <mat-panel-title> Enrollment URL </mat-panel-title>
+            </mat-expansion-panel-header>
+            <p class="otpkey-p">{{ data.response.detail["tiqrenroll"]?.value }}</p>
           </mat-expansion-panel>
         </mat-accordion>
       }

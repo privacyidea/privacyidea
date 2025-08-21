@@ -66,7 +66,7 @@ export class EnrollFoureyesComponent implements OnInit {
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
-  separatorControl = new FormControl<string>(":", [Validators.required]);
+  separatorControl = new FormControl<string>("|", [Validators.required]);
   requiredTokensOfRealmsControl = new FormControl<
     { realm: string; tokens: number }[]
   >([], [Validators.required, Validators.minLength(1)]);
@@ -146,6 +146,7 @@ export class EnrollFoureyesComponent implements OnInit {
   onClickEnroll = (
     basicOptions: TokenEnrollmentData
   ): Observable<EnrollmentResponse | null> => {
+    console.log(this.foureyesForm.invalid);
     if (this.foureyesForm.invalid) {
       this.foureyesForm.markAllAsTouched();
       return of(null);
