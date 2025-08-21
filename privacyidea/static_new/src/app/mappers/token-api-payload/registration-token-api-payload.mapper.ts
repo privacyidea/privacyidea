@@ -7,6 +7,7 @@ export interface RegistrationEnrollmentData extends TokenEnrollmentData {
 }
 
 export interface RegistrationEnrollmentPayload extends TokenEnrollmentPayload {
+  serial?: string | null;
 }
 
 @Injectable({ providedIn: "root" })
@@ -22,13 +23,15 @@ export class RegistrationApiPayloadMapper
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
       realm: data.user ? data.realm : null,
-      pin: data.pin
+      pin: data.pin,
+      serial: data.serial ?? null
     };
 
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
       payload.user = null;
     }
+    if (payload.serial === null) delete payload.serial;
 
     return payload;
   }

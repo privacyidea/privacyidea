@@ -528,6 +528,11 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
+    let serial = null;
+    if (this.enrollResponse()) {
+      serial = this.enrollResponse()?.detail?.serial ?? null;
+    }
+
     let validityPeriodStart = "";
     if (this.selectedStartDateControl.value) {
       validityPeriodStart = this.formatDateTimeOffset(
@@ -554,7 +559,8 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       user: user?.username ?? "",
       realm: this.selectedUserRealmControl.value ?? "",
       onlyAddToRealm: this.onlyAddToRealmControl.value ?? false,
-      pin: this.setPinControl.value ?? ""
+      pin: this.setPinControl.value ?? "",
+      serial: serial
     };
 
     const enrollResponse = this.clickEnroll(basicOptions);

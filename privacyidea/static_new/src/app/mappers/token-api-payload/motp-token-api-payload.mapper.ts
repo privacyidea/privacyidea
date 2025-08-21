@@ -12,6 +12,7 @@ export interface MotpEnrollmentPayload extends TokenEnrollmentPayload {
   otpkey: string | null;
   genkey: 0 | 1;
   motppin?: string;
+  serial?: string | null;
 }
 
 @Injectable({ providedIn: "root" })
@@ -28,16 +29,16 @@ export class MotpApiPayloadMapper implements TokenApiPayloadMapper<MotpEnrollmen
       pin: data.pin,
       otpkey: data.generateOnServer ? null : (data.otpKey ?? null),
       genkey: data.generateOnServer ? 1 : 0,
-      motppin: data.motpPin
+      motppin: data.motpPin,
+      serial: data.serial ?? null
     };
 
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
       payload.user = null;
     }
-    if (payload.motppin === undefined) {
-      delete payload.motppin;
-    }
+    if (payload.motppin === undefined) delete payload.motppin;
+    if (payload.serial === null) delete payload.serial;
     return payload;
   }
 

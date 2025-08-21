@@ -36,6 +36,7 @@ export type TokenEnrollmentData = {
   realm: string;
   onlyAddToRealm?: boolean;
   pin: string;
+  serial: string | null;
   [key: string]: any; // TODO: remove this when all types are defined
 };
 

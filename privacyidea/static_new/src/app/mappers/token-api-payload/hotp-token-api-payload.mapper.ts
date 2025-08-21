@@ -14,6 +14,7 @@ export interface HotpEnrollmentPayload extends TokenEnrollmentPayload {
   genkey: 0 | 1;
   otplen?: number;
   hashlib?: string;
+  serial?: string | null;
 }
 
 @Injectable({ providedIn: "root" })
@@ -31,7 +32,8 @@ export class HotpApiPayloadMapper implements TokenApiPayloadMapper<HotpEnrollmen
       otpkey: data.generateOnServer ? null : (data.otpKey ?? null),
       genkey: data.generateOnServer ? 1 : 0,
       otplen: data.otpLength !== undefined ? Number(data.otpLength) : undefined,
-      hashlib: data.hashAlgorithm
+      hashlib: data.hashAlgorithm,
+      serial: data.serial ?? null
     };
 
     if (data.onlyAddToRealm) {
@@ -40,6 +42,7 @@ export class HotpApiPayloadMapper implements TokenApiPayloadMapper<HotpEnrollmen
     }
     if (payload.otplen === undefined) delete payload.otplen;
     if (payload.hashlib === undefined) delete payload.hashlib;
+    if (payload.serial === null) delete payload.serial;
 
     return payload;
   }
