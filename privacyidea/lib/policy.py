@@ -706,8 +706,10 @@ class PolicyClass(object):
                 [p.get('name') for p in reduced_policies]))
 
         if audit_data is not None:
+            audit_data.setdefault("policies", [])
             for p in reduced_policies:
-                audit_data.setdefault("policies", []).append(p.get("name"))
+                if p.get("name") not in audit_data["policies"]:
+                    audit_data["policies"].append(p.get("name"))
 
         return reduced_policies
 
@@ -913,9 +915,11 @@ class PolicyClass(object):
                                                    allow_white_space_in_action=allow_white_space_in_action)
 
         if audit_data is not None:
+            audit_data.setdefault("policies", [])
             for action_value, policy_names in policy_values.items():
                 for p_name in policy_names:
-                    audit_data.setdefault("policies", []).append(p_name)
+                    if p_name not in audit_data["policies"]:
+                        audit_data["policies"].append(p_name)
 
         return policy_values
 
@@ -3157,9 +3161,11 @@ class Match(object):
                                                                     allow_white_space_in_action=
                                                                     allow_white_space_in_action)
         if write_to_audit_log:
+            self._g.audit_object.audit_data.setdefault("policies", [])
             for action_value, policy_names in action_values.items():
                 for p_name in policy_names:
-                    self._g.audit_object.audit_data.setdefault("policies", []).append(p_name)
+                    if p_name not in self._g.audit_object.audit_data["policies"]:
+                        self._g.audit_object.audit_data["policies"].append(p_name)
         return action_values
 
     def allowed(self, write_to_audit_log=True):
