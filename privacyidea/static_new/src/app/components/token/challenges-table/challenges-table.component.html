@@ -6,7 +6,8 @@
       class="challenges-table-filter"
       subscriptSizing="dynamic">
       <mat-label>Enter Filter</mat-label>
-      <app-clearable-input (onClick)="filterInput.value = ''"
+      <app-clearable-input
+        (onClick)="filterInput.value = ''"
         [showClearButton]="filterInput.value.length > 0">
         <input
           #filterInput

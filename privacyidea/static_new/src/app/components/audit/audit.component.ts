@@ -17,7 +17,7 @@ import {
   MatRow,
   MatRowDef,
   MatTable,
-  MatTableDataSource,
+  MatTableDataSource
 } from "@angular/material/table";
 import { RouterLink } from "@angular/router";
 import { AuditData, AuditService, AuditServiceInterface } from "../../services/audit/audit.service";
@@ -25,7 +25,7 @@ import { AuthService, AuthServiceInterface } from "../../services/auth/auth.serv
 import { ContentService, ContentServiceInterface } from "../../services/content/content.service";
 import {
   TableUtilsService,
-  TableUtilsServiceInterface,
+  TableUtilsServiceInterface
 } from "../../services/table-utils/table-utils.service";
 import { ClearableInputComponent } from "../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../shared/copy-button/copy-button.component";
@@ -58,7 +58,7 @@ const columnKeysMap = [
   { key: "missing_line", label: "Missing Line" },
   { key: "resolver", label: "Resolver" },
   { key: "thread_id", label: "Thread ID" },
-  { key: "container_type", label: "Container Type" },
+  { key: "container_type", label: "Container Type" }
 ];
 
 @Component({
@@ -86,10 +86,10 @@ const columnKeysMap = [
     CopyButtonComponent,
     RouterLink,
     ClearableInputComponent,
-    RouterLink,
+    RouterLink
   ],
   templateUrl: "./audit.component.html",
-  styleUrl: "./audit.component.scss",
+  styleUrl: "./audit.component.scss"
 })
 export class AuditComponent {
   protected readonly auditService: AuditServiceInterface = inject(AuditService);
@@ -103,7 +103,7 @@ export class AuditComponent {
   filterValueString: WritableSignal<string> = linkedSignal(() =>
     Object.entries(this.auditService.filterValue())
       .map(([key, value]) => `${key}: ${value}`)
-      .join(" "),
+      .join(" ")
   );
   totalLength: WritableSignal<number> = linkedSignal({
     source: this.auditService.auditResource.value,
@@ -112,7 +112,7 @@ export class AuditComponent {
         return auditResource.result?.value?.count ?? 0;
       }
       return previous?.value ?? 0;
-    },
+    }
   });
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
@@ -120,8 +120,8 @@ export class AuditComponent {
     source: this.auditService.pageSize,
     computation: (pageSize: number) =>
       Array.from({ length: pageSize }, () =>
-        Object.fromEntries(this.columnKeysMap.map((col) => [col.key, ""])),
-      ),
+        Object.fromEntries(this.columnKeysMap.map((col) => [col.key, ""]))
+      )
   });
 
   auditDataSource: WritableSignal<MatTableDataSource<AuditData>> = linkedSignal({
@@ -131,7 +131,7 @@ export class AuditComponent {
         return new MatTableDataSource(auditResource.result?.value?.auditdata);
       }
       return previous?.value ?? new MatTableDataSource(this.emptyResource());
-    },
+    }
   });
 
   @ViewChild("filterHTMLInputElement", { static: true })

@@ -119,10 +119,8 @@
                   </span>
                 }
                 @case ("policies") {
-                  @for (
-                    policy of element[column.key]?.split(",");
-                    track policy
-                  ) {
+                  @for (policy of element[column.key]?.split(",");
+                    track policy) {
                     <span>
                       {{ policy }}
                     </span>

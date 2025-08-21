@@ -16,7 +16,7 @@ import {
   MatNoDataRow,
   MatRow,
   MatRowDef,
-  MatTable,
+  MatTable
 } from "@angular/material/table";
 import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "../shared/clearable-input/clearable-input.component";
@@ -48,9 +48,10 @@ import { AuditComponent } from "./audit.component";
     MatLabel,
     CopyButtonComponent,
     RouterLink,
-    ClearableInputComponent,
+    ClearableInputComponent
   ],
   templateUrl: "./audit.self-service.component.html",
-  styleUrl: "./audit.component.scss",
+  styleUrl: "./audit.component.scss"
 })
-export class AuditComponentSelfServiceComponent extends AuditComponent {}
+export class AuditComponentSelfServiceComponent extends AuditComponent {
+}

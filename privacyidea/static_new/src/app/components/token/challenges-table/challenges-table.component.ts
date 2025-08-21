@@ -9,12 +9,12 @@ import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import {
   TableUtilsService,
-  TableUtilsServiceInterface,
+  TableUtilsServiceInterface
 } from "../../../services/table-utils/table-utils.service";
 import {
   Challenge,
   ChallengesService,
-  ChallengesServiceInterface,
+  ChallengesServiceInterface
 } from "../../../services/token/challenges/challenges.service";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
@@ -26,7 +26,7 @@ const columnKeysMap = [
   { key: "serial", label: "Serial" },
   { key: "transaction_id", label: "Transaction ID" },
   { key: "expiration", label: "Expiration" },
-  { key: "otp_received", label: "Received" },
+  { key: "otp_received", label: "Received" }
 ];
 
 @Component({
@@ -42,10 +42,10 @@ const columnKeysMap = [
     KeywordFilterComponent,
     NgClass,
     CopyButtonComponent,
-    ClearableInputComponent,
+    ClearableInputComponent
   ],
   templateUrl: "./challenges-table.component.html",
-  styleUrls: ["./challenges-table.component.scss"],
+  styleUrls: ["./challenges-table.component.scss"]
 })
 export class ChallengesTableComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -70,7 +70,7 @@ export class ChallengesTableComponent {
         return res.result?.value?.count;
       }
       return prev?.value ?? 0;
-    },
+    }
   });
   challengesDataSource: WritableSignal<MatTableDataSource<Challenge>> = linkedSignal({
     source: this.challengesService.challengesResource.value,
@@ -79,7 +79,7 @@ export class ChallengesTableComponent {
         return new MatTableDataSource(challengesResource.result?.value?.challenges);
       }
       return previous?.value ?? new MatTableDataSource<Challenge>([]);
-    },
+    }
   });
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;

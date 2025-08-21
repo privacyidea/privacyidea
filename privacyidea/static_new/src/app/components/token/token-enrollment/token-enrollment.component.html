@@ -210,7 +210,8 @@
           </mat-form-field>
           <mat-form-field class="width-50 input-height">
             <mat-label>Enter User</mat-label>
-            <app-clearable-input (onClick)="userService.userFilter.set('')"
+            <app-clearable-input
+              (onClick)="userService.userFilter.set('')"
               [showClearButton]="userService.userFilter() !== ''">
               <input
                 [formControl]="userFilterControl"
@@ -284,11 +285,15 @@
 
     <h4 class="enroll-h4">Assign Token to a Container</h4>
     <mat-form-field class="width-33 input-height">
+      <app-clearable-input
+        (onClick)="selectedContainerControl.setValue('')"
+        [showClearButton]="containerService.selectedContainer() !== ''">
+        <input
+          [formControl]="selectedContainerControl"
+          [matAutocomplete]="containerAuto"
+          matInput/>
+      </app-clearable-input>
       <mat-label>Enter Container</mat-label>
-      <input
-        [formControl]="selectedContainerControl"
-        [matAutocomplete]="containerAuto"
-        matInput/>
       <mat-autocomplete #containerAuto="matAutocomplete">
         @for (option of containerService.filteredContainerOptions();
           track option) {
@@ -298,7 +303,7 @@
     </mat-form-field>
 
     <mat-accordion>
-      <mat-expansion-panel class="expension-panel">
+      <mat-expansion-panel class="expansion-panel">
         <mat-expansion-panel-header>
           <mat-panel-title> Extended Attributes</mat-panel-title>
         </mat-expansion-panel-header>

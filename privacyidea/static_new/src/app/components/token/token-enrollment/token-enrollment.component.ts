@@ -276,7 +276,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   });
   setPinControl = new FormControl<string>("", { nonNullable: true });
   repeatPinControl = new FormControl<string>("", { nonNullable: true });
-  selectedContainerControl = new FormControl(this.containerService.selectedContainer(), {
+  selectedContainerControl = new FormControl<string>(this.containerService.selectedContainer(), {
     nonNullable: true,
   });
   selectedStartDateControl = new FormControl<Date | null>(new Date(), {

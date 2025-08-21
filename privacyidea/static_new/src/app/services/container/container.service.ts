@@ -264,7 +264,7 @@ export class ContainerService implements ContainerServiceInterface {
       routeUrl: this.contentService.routeUrl()
     }),
     computation: (source, previous) =>
-      source.routeUrl === "token_enrollment" ? (previous?.value ?? "") : ""
+      source.routeUrl === ROUTE_PATHS.TOKENS_ENROLLMENT ? (previous?.value ?? "") : ""
   });
 
   sort = signal<Sort>({ active: "serial", direction: "asc" });
