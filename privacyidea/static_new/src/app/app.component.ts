@@ -30,7 +30,7 @@ export interface PiResponse<Value, Detail = unknown> {
   standalone: true,
   imports: [RouterOutlet, FormsModule],
   templateUrl: "./app.component.html",
-  styleUrl: "./app.component.scss",
+  styleUrl: "./app.component.scss"
 })
 export class AppComponent implements OnInit {
   private readonly authService: AuthServiceInterface = inject(AuthService);

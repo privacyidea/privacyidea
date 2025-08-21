@@ -1,5 +1,5 @@
 import { HttpClient, HttpHeaders } from "@angular/common/http";
-import { computed, inject, Injectable, signal } from "@angular/core";
+import { computed, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
 import { Observable, throwError } from "rxjs";
 import { catchError, tap } from "rxjs/operators";
 import { environment } from "../../../environments/environment";
@@ -68,6 +68,13 @@ export interface AuthDetail {
 }
 
 export interface AuthServiceInterface {
+  authUrl: string;
+  TOKEN_KEY: "bearer_token";
+  jwtData: WritableSignal<JwtData | null>;
+  jwtNonce: Signal<string>;
+  authtype: Signal<"cookie" | "none">;
+  jwtExpDate: Signal<Date | null>;
+
   authData: () => AuthData | null;
   authenticationAccepted: () => boolean;
 
@@ -118,7 +125,7 @@ export interface AuthServiceInterface {
 }
 
 @Injectable({
-  providedIn: "root",
+  providedIn: "root"
 })
 export class AuthService implements AuthServiceInterface {
   readonly authUrl = environment.proxyUrl + "/auth";
@@ -146,12 +153,15 @@ export class AuthService implements AuthServiceInterface {
   username = computed(() => this.jwtData()?.username || this.authData()?.username || "");
   logoutTimeSeconds = computed(() => {
     const jwtExpDate = this.jwtExpDate()!;
+    var jwtLogoutTime: number | null = null;
+    const authDataLogoutTime = this.authData()?.logout_time || null;
     if (jwtExpDate) {
-      // Calculate the seconds until the JWT expires
       const now = new Date();
-      return Math.max(0, Math.floor((jwtExpDate.getTime() - now.getTime()) / 1000));
+      jwtLogoutTime = Math.max(0, Math.floor((jwtExpDate.getTime() - now.getTime()) / 1000));
     }
-    return this.authData()?.logout_time || null;
+    if (jwtLogoutTime === null) return authDataLogoutTime;
+    if (authDataLogoutTime === null) return jwtLogoutTime;
+    return Math.min(jwtLogoutTime, authDataLogoutTime);
   });
   auditPageSize = computed(() => this.authData()?.audit_page_size || 10);
   tokenPageSize = computed(() => this.authData()?.token_page_size || 10);
@@ -198,9 +208,9 @@ export class AuthService implements AuthServiceInterface {
       .post<AuthResponse>(this.authUrl, JSON.stringify(params), {
         headers: new HttpHeaders({
           "Content-Type": "application/json",
-          Accept: "application/json",
+          Accept: "application/json"
         }),
-        withCredentials: true,
+        withCredentials: true
       })
       .pipe(
         tap((response) => {
@@ -218,7 +228,7 @@ export class AuthService implements AuthServiceInterface {
           const message = error.error?.result?.error?.message || "";
           this.notificationService.openSnackBar("Login failed. " + message);
           return throwError(() => error);
-        }),
+        })
       );
   }
 

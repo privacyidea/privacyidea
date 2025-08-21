@@ -10,17 +10,7 @@ import { LocalService, LocalServiceInterface } from "../local/local.service";
 import { RealmService, RealmServiceInterface } from "../realm/realm.service";
 import { TokenService, TokenServiceInterface } from "../token/token.service";
 
-const apiFilter = [
-  "description",
-  "email",
-  "givenname",
-  "mobile",
-  "phone",
-  "resolver",
-  "surname",
-  "userid",
-  "username",
-];
+const apiFilter = ["description", "email", "givenname", "mobile", "phone", "resolver", "surname", "userid", "username"];
 const advancedApiFilter: string[] = [];
 
 export interface UserData {
@@ -58,7 +48,7 @@ export interface UserServiceInterface {
 }
 
 @Injectable({
-  providedIn: "root",
+  providedIn: "root"
 })
 export class UserService implements UserServiceInterface {
   private readonly localService: LocalServiceInterface = inject(LocalService);
@@ -81,22 +71,22 @@ export class UserService implements UserServiceInterface {
     return filterPairs.reduce(
       (acc, { key, value }) => ({
         ...acc,
-        [key]: `*${value}*`,
+        [key]: `*${value}*`
       }),
-      {} as Record<string, string>,
+      {} as Record<string, string>
     );
   });
   pageSize = linkedSignal({
     source: this.filterValue,
-    computation: () => 10,
+    computation: () => 10
   });
   pageIndex = linkedSignal({
     source: () => ({
       filterValue: this.filterValue(),
       pageSize: this.pageSize(),
-      routeUrl: this.contentService.routeUrl(),
+      routeUrl: this.contentService.routeUrl()
     }),
-    computation: () => 0,
+    computation: () => 0
   });
   selectedUserRealm = linkedSignal({
     source: () => ({
@@ -104,18 +94,18 @@ export class UserService implements UserServiceInterface {
       defaultRealm: this.realmService.defaultRealm(),
       selectedTokenType: this.tokenService.selectedTokenType(),
       authRole: this.authService.role(),
-      authRealm: this.authService.realm(),
+      authRealm: this.authService.realm()
     }),
     computation: (source) => {
       if (source.authRole === "user") {
         return source.authRealm;
       }
       return source.defaultRealm;
-    },
+    }
   });
   userFilter = linkedSignal<string, UserData | string>({
     source: this.selectedUserRealm,
-    computation: () => "",
+    computation: () => ""
   });
   userNameFilter = computed<string>(() => {
     const filter = this.userFilter();
@@ -131,7 +121,7 @@ export class UserService implements UserServiceInterface {
     return {
       url: this.baseUrl,
       method: "GET",
-      headers: this.localService.getHeaders(),
+      headers: this.localService.getHeaders()
     };
   });
   user: WritableSignal<UserData> = linkedSignal({
@@ -149,10 +139,10 @@ export class UserService implements UserServiceInterface {
           resolver: "",
           surname: "",
           userid: "",
-          username: "",
+          username: ""
         }
       );
-    },
+    }
   });
   usersResource = httpResource<PiResponse<UserData[]>>(() => {
     const selectedUserRealm = this.selectedUserRealm();
@@ -165,7 +155,7 @@ export class UserService implements UserServiceInterface {
           ROUTE_PATHS.TOKENS,
           ROUTE_PATHS.USERS,
           ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
-          ROUTE_PATHS.TOKENS_ENROLLMENT,
+          ROUTE_PATHS.TOKENS_ENROLLMENT
         ].includes(this.contentService.routeUrl()))
     ) {
       return undefined;
@@ -176,14 +166,14 @@ export class UserService implements UserServiceInterface {
       headers: this.localService.getHeaders(),
       params: {
         realm: selectedUserRealm,
-        ...this.filterParams(),
-      },
+        ...this.filterParams()
+      }
     };
   });
   sort = signal({ active: "serial", direction: "asc" } as Sort);
   users: WritableSignal<UserData[]> = linkedSignal({
     source: this.usersResource.value,
-    computation: (source, previous) => source?.result?.value ?? previous?.value ?? [],
+    computation: (source, previous) => source?.result?.value ?? previous?.value ?? []
   });
   selectedUser = computed<UserData | null>(() => {
     var userName = "";

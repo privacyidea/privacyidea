@@ -12,7 +12,7 @@ export interface LocalServiceInterface {
 }
 
 @Injectable({
-  providedIn: "root",
+  providedIn: "root"
 })
 export class LocalService {
   key = environment.secretAESKey;
@@ -32,7 +32,7 @@ export class LocalService {
 
   public getHeaders(): HttpHeaders {
     return new HttpHeaders({
-      "PI-Authorization": this.getData("bearer_token") || "",
+      "PI-Authorization": this.getData("bearer_token") || ""
     });
   }
 

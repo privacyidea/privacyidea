@@ -18,7 +18,7 @@ import { ValidateService, ValidateServiceInterface } from "../../services/valida
   templateUrl: "./login.component.html",
   standalone: true,
   imports: [FormsModule, MatFormField, MatInput, MatLabel, NgOptimizedImage, MatIconModule, MatFabButton],
-  styleUrl: "./login.component.scss",
+  styleUrl: "./login.component.scss"
 })
 export class LoginComponent {
   private readonly authService: AuthServiceInterface = inject(AuthService);
@@ -58,12 +58,12 @@ export class LoginComponent {
           console.error("Login failed. Challenge response required.");
           this.notificationService.openSnackBar("Login failed. Challenge response required.");
         }
-      },
+      }
     });
   }
 
   logout(): void {
-    this.localService.removeData(this.localService.bearerTokenKey);
+    this.localService.removeData(this.authService.TOKEN_KEY);
     this.authService.deauthenticate();
     this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar("Logout successful."));
   }
@@ -77,7 +77,7 @@ export class LoginComponent {
           response.result.value.token &&
           this.authService.isAuthenticated()
         ) {
-          this.localService.saveData(this.localService.bearerTokenKey, response.result?.value.token);
+          this.localService.saveData(this.authService.TOKEN_KEY, response.result?.value.token);
           this.sessionTimerService.startRefreshingRemainingTime();
           this.sessionTimerService.startTimer();
           this.router.navigate(["tokens"]).then();
@@ -89,7 +89,7 @@ export class LoginComponent {
       error: (err: any) => {
         console.error("Error during Passkey login", err);
         this.notificationService.openSnackBar(err?.message || "Error during Passkey login");
-      },
+      }
     });
   }
 }

@@ -16,17 +16,16 @@ class MockNotificationService {
 }
 
 const routerMock = {
-  navigate: jest.fn().mockResolvedValue(true),
+  navigate: jest.fn().mockResolvedValue(true)
 } as unknown as Router;
 
 describe("AuthGuard — CanMatch helpers", () => {
-  const runMatch = (fn: any) =>
-    TestBed.runInInjectionContext(() => fn({} as Route, [] as UrlSegment[])) as boolean;
+  const runMatch = (fn: any) => TestBed.runInInjectionContext(() => fn({} as Route, [] as UrlSegment[])) as boolean;
 
   beforeEach(() => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [{ provide: AuthService, useClass: MockAuthService }],
+      providers: [{ provide: AuthService, useClass: MockAuthService }]
     });
   });
 
@@ -63,8 +62,8 @@ describe("AuthGuard class", () => {
         AuthGuard,
         { provide: AuthService, useClass: MockAuthService },
         { provide: Router, useValue: routerMock },
-        { provide: NotificationService, useClass: MockNotificationService },
-      ],
+        { provide: NotificationService, useClass: MockNotificationService }
+      ]
     });
 
     guard = TestBed.inject(AuthGuard);
@@ -98,8 +97,6 @@ describe("AuthGuard class", () => {
     expect(routerMock.navigate).toHaveBeenCalledWith(["/login"]);
 
     await flushPromises();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-      "Navigation blocked by AuthGuard!",
-    );
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Navigation blocked by AuthGuard!");
   });
 });

@@ -15,7 +15,7 @@ export interface SessionTimerServiceInterface {
 }
 
 @Injectable({
-  providedIn: "root",
+  providedIn: "root"
 })
 export class SessionTimerService implements SessionTimerServiceInterface {
   private readonly router: Router = inject(Router);
