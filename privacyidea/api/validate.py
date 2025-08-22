@@ -507,7 +507,7 @@ def check():
                                         "authentication": AUTH_RESPONSE.REJECT,
                                         "serial": token.get_serial(),
                                         "token_type": details.get("type")})
-                    return send_result(result, rid=2, details={"message": "Token is disabled"})
+                    return send_result(False, rid=2, details={"message": "Token is disabled"})
                 else:
 
             if not token.is_active():
