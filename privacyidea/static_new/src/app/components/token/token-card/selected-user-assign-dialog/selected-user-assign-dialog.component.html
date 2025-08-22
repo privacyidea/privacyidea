@@ -11,6 +11,7 @@
       <mat-label>Select Realm of User</mat-label>
       <mat-select
         [formControl]="selectedUserRealmControl"
+        [value]="selectedUserRealmControl.value"
         required>
         @for (option of realmService.realmOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>

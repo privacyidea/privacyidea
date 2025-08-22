@@ -21,7 +21,8 @@
       [ngClass]="generateOnServerFormControl.value ? 'hint-spacer' : ''"
       class="input-height width-33">
       <mat-label>OTP length</mat-label>
-      <mat-select [formControl]="otpLengthControl">
+      <mat-select [formControl]="otpLengthControl"
+                  [value]="otpLengthControl.value">
         @for (len of otpLengthOptions; track len) {
           <mat-option [value]="len">{{ len }}</mat-option>
         }
@@ -35,7 +36,8 @@
       [ngClass]="generateOnServerFormControl.value ? 'hint-spacer' : ''"
       class="input-height width-33">
       <mat-label>Hash algorithm</mat-label>
-      <mat-select [formControl]="hashAlgorithmControl">
+      <mat-select [formControl]="hashAlgorithmControl"
+                  [value]="hashAlgorithmControl.value">
         @for (alg of hashAlgorithmOptions; track alg.value) {
           <mat-option [value]="alg.value">{{ alg.viewValue }}</mat-option>
         }
@@ -68,7 +70,8 @@
     <mat-form-field class="width-33 input-height">
       <!-- Adjusted width to fit in a 3-column layout -->
       <mat-label>Timestep</mat-label>
-      <mat-select [formControl]="timeStepControl">
+      <mat-select [formControl]="timeStepControl"
+                  [value]="timeStepControl.value">
         @for (step of timeStepOptions; track step) {
           <mat-option [value]="step">{{ step }}</mat-option>
         }
