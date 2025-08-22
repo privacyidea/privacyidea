@@ -7,6 +7,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { Router } from "@angular/router";
 import { catchError, EMPTY, filter, Subscription, switchMap, take, timeout, timer } from "rxjs";
+import { c } from "../../../../node_modules/@angular/cdk/a11y-module.d-9287508d";
 import { challengesTriggered, isAuthenticationSuccessful } from "../../app.component";
 import { ROUTE_PATHS } from "../../app.routes";
 import { AuthResponse, AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
@@ -30,7 +31,8 @@ const PUSH_POLLING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
     MatLabel,
     NgOptimizedImage,
     MatIconModule,
-    MatButtonModule
+    MatButtonModule,
+    c
   ],
   styleUrl: "./login.component.scss"
 })

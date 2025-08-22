@@ -10,7 +10,7 @@
       ngSrc="assets/privacyIDEA1.png"
       ngSrcset="1x"
       sizes="(max-width: 307px) 100vw, 307px"
-      width="307"/>
+      width="307" />
 
     <img
       alt="logo-text"
@@ -20,111 +20,118 @@
       ngSrc="assets/logo-text.png"
       ngSrcset="1x"
       sizes="(max-width: 575px) 100vw, 575px"
-      width="575"/>
+      width="575" />
 
     <form
       (ngSubmit)="onSubmit()"
       aria-label="Login Form"
       class="login-form">
-      <div
-        *ngIf="loginMessage().length > 0"
-        class="login-message">
-        <p *ngFor="let msg of loginMessage()">{{ msg }}</p>
-      </div>
-      <div
-        *ngIf="errorMessage()"
-        class="error-message">
-        <p>{{ errorMessage() }}</p>
-      </div>
+      @if (loginMessage().length > 0) {
+        <div class="login-message">
+          @for (msg of loginMessage(); track msg) {
+            <p class="login-message-header">{{ msg }}</p>
+          }
+        </div>
+      }
+      @if (errorMessage()) {
+        <div class="error-message">
+          <p>{{ errorMessage() }}</p>
+        </div>
+      }
 
-      <mat-form-field
-        appearance="outline"
-        *ngIf="!showOtpField()">
-        <mat-label>Username</mat-label>
+      <mat-form-field appearance="outline">
+        @if (!showOtpField()) {
+          <mat-label>Username</mat-label>
+        }
         <input
           [(ngModel)]="username"
           id="username"
           matInput
           name="username"
           required
-          type="text"/>
+          type="text" />
       </mat-form-field>
 
-      <mat-form-field
-        appearance="outline"
-        *ngIf="!showOtpField()">
-        <mat-label>Password</mat-label>
-        <input
-          [(ngModel)]="password"
-          id="password"
-          matInput
-          name="password"
-          required
-          type="password"/>
-      </mat-form-field>
+      @if (!showOtpField()) {
+        <mat-form-field appearance="outline">
+          <mat-label>Password</mat-label>
+          <input
+            [(ngModel)]="password"
+            id="password"
+            matInput
+            name="password"
+            required
+            type="password" />
+        </mat-form-field>
+      }
 
-      <mat-form-field
-        appearance="outline"
-        *ngIf="showOtpField()">
-        <mat-label>One-Time-Password</mat-label>
-        <input
-          #otpInput
-          [(ngModel)]="otp"
-          id="otp"
-          matInput
-          name="otp"
-          required
-          autocomplete="new-password"
-          type="otp"/>
-      </mat-form-field>
+      @if (showOtpField()) {
+        <mat-form-field appearance="outline">
+          <mat-label>One-Time-Password</mat-label>
+          <input
+            #otpInput
+            [(ngModel)]="otp"
+            id="otp"
+            matInput
+            name="otp"
+            required
+            autocomplete="new-password"
+            type="otp" />
+        </mat-form-field>
+      }
 
-    <div class="login-actions margin-top-1">
+      <div class="login-actions margin-top-1">
         <button
-        [disabled]="isLoginButtonDisabled()"
-        aria-label="Login Button"
-        class="login-btn"
-        extended
-        mat-fab
-        type="submit">Log In
-        <mat-icon iconPositionEnd>login</mat-icon>
-      </button>
+          [disabled]="isLoginButtonDisabled()"
+          aria-label="Login Button"
+          class="login-btn"
+          extended
+          mat-fab
+          type="submit">
+          Log In
+          <mat-icon iconPositionEnd>login</mat-icon>
+        </button>
 
-      <button
-        *ngIf="showOtpField()"
-        (click)="resetLogin()"
-        aria-label="Start Over"
-        class="reset-btn"
-        extended
-        mat-fab
-        type="button">
-        Reset
-        <mat-icon iconPositionEnd>replay</mat-icon>
-      </button>
-    </div>
+        @if (showOtpField()) {
+          <button
+            (click)="resetLogin()"
+            aria-label="Start Over"
+            class="reset-btn"
+            extended
+            mat-fab
+            type="button">
+            Reset
+            <mat-icon iconPositionEnd>replay</mat-icon>
+          </button>
+        }
+      </div>
 
-      <button
-        *ngIf="webAuthnTriggered()"
-        (click)="webAuthnLogin()"
-        aria-label="WebAuthn Button"
-        class="reset-btn margin-top-1"
-        extended
-        mat-fab
-        type="button">
-        WebAuthn
-        <mat-icon iconPositionEnd>key</mat-icon>
-      </button>
+      @if (webAuthnTriggered()) {
+        <button
+          (click)="webAuthnLogin()"
+          aria-label="WebAuthn Button"
+          class="reset-btn margin-top-1"
+          extended
+          mat-fab
+          type="button">
+          WebAuthn
+          <mat-icon iconPositionEnd>key</mat-icon>
+        </button>
+      }
     </form>
-    <div class="passkey-form">
-      <button
-        *ngIf="!showOtpField()"
-        (click)="passkeyLogin()"
-        aria-label="Passkey Button"
-        class="passkey-btn margin-top-1"
-        extended
-        mat-fab
-        type="submit">Log In With Passkey
-        <mat-icon iconPositionEnd>key</mat-icon>
-      </button>
-    </div>
+    @if (!showOtpField()) {
+      <div class="passkey-form">
+        <button
+          (click)="passkeyLogin()"
+          aria-label="Passkey Button"
+          class="passkey-btn margin-top-1"
+          extended
+          mat-fab
+          type="submit">
+          Log In With Passkey
+          <mat-icon iconPositionEnd>key</mat-icon>
+        </button>
+      </div>
+    }
   </div>
 </div>
