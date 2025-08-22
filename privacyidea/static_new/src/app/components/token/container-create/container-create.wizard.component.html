@@ -7,7 +7,8 @@
 
   <h3 class="margin-left-1">Create Container</h3>
   <mat-form-field class="width-100 margin-bottom-1">
-    <mat-select [(ngModel)]="containerService.selectedContainerType">
+    <mat-select [(ngModel)]="containerService.selectedContainerType"
+                [value]="containerService.selectedContainerType()">
       @for (type of containerService.containerTypeOptions(); track type) {
         <mat-option
           class="type-option"
@@ -68,7 +69,8 @@
     <h4 class="enroll-h4">Use a Template</h4>
     <mat-form-field class="width-100 input-height">
       <mat-label>Template</mat-label>
-      <mat-select [(ngModel)]="selectedTemplate">
+      <mat-select [(ngModel)]="selectedTemplate"
+                  [value]="selectedTemplate()">
         @for (option of templateOptions(); track option) {
           <mat-option [value]="option">{{ option.name }}</mat-option>
         }

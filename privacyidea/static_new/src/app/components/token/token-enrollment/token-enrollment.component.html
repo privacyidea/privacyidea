@@ -18,7 +18,8 @@
             <mat-select
               [(ngModel)]="tokenService.selectedTokenType"
               [ngModelOptions]="{ standalone: true }"
-              [panelClass]="'multi-column-panel'">
+              [panelClass]="'multi-column-panel'"
+              [value]="tokenService.selectedTokenType()">
               @for (type of tokenService.tokenTypeOptions(); track type) {
                 <mat-option
                   class="select-option type-option"
@@ -202,7 +203,8 @@
         <div class="assign-user-container">
           <mat-form-field class="width-50 input-height">
             <mat-label>Select Realm of User</mat-label>
-            <mat-select [formControl]="selectedUserRealmControl">
+            <mat-select [formControl]="selectedUserRealmControl"
+                        [value]="userService.selectedUserRealm()">
               @for (option of realmService.realmOptions(); track option) {
                 <mat-option [value]="option">{{ option }}</mat-option>
               }

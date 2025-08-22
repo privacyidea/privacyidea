@@ -46,6 +46,7 @@
                       <mat-label>Select Realms</mat-label>
                       <mat-select
                         [(ngModel)]="selectedRealms"
+                        [value]="selectedRealms()"
                         multiple>
                         @for (option of realmService.realmOptions(); track option) {
                           @if (option === userRealm()) {
@@ -164,9 +165,14 @@
                   @if (isEditingUser()) {
                     <mat-form-field class="width-18rem">
                       <mat-label>Select Realm of User</mat-label>
-                      <mat-select [(ngModel)]="userService.selectedUserRealm">
-                        @for (option of realmService.realmOptions(); track option) {
-                          <mat-option value="{{ option }}">{{ option }} </mat-option>
+                      <mat-select [(ngModel)]="userService.selectedUserRealm"
+                                  [value]="userService.selectedUserRealm()">
+                        @for (option of realmService.realmOptions();
+                          track option) {
+                          <mat-option value="{{ option }}">{{
+                              option
+                            }}
+                          </mat-option>
                         }
                       </mat-select>
                     </mat-form-field>
