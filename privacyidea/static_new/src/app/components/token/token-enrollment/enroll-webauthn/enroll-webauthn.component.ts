@@ -268,7 +268,7 @@ export class EnrollWebauthnComponent implements OnInit {
         })
       );
     } catch (error: any) {
-      const errMsg = `WebAuthn finalization failed: ${error.message || error}`;
+      const errMsg = "WebAuthn finalization failed: ${error.message || error}";
       this.notificationService.openSnackBar(errMsg);
       return null;
     }

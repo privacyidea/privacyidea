@@ -65,7 +65,7 @@ export class SessionTimerService implements SessionTimerServiceInterface {
 
   private handleSessionTimeout(): void {
     this.localService.removeData(this.localService.bearerTokenKey);
-    this.authService.deauthenticate();
+    this.authService.logout();
     this.notificationService.openSnackBar(
       "Session expired. Redirecting to login page."
     );

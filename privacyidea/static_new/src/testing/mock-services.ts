@@ -27,7 +27,11 @@ import { Machines, MachineServiceInterface, TokenApplication } from "../app/serv
 import { NotificationServiceInterface } from "../app/services/notification/notification.service";
 import { OverflowServiceInterface } from "../app/services/overflow/overflow.service";
 import { Realm, Realms, RealmServiceInterface } from "../app/services/realm/realm.service";
-import { FilterPair, TableUtilsService } from "../app/services/table-utils/table-utils.service";
+import {
+  FilterPair,
+  TableUtilsService,
+  TableUtilsServiceInterface
+} from "../app/services/table-utils/table-utils.service";
 import {
   LostTokenResponse,
   TokenDetails,
@@ -237,7 +241,7 @@ export class MockAuthService implements AuthServiceInterface {
     this.realm.set("default");
   });
 
-  deauthenticate = jest.fn().mockImplementation(() => {
+  logout = jest.fn().mockImplementation(() => {
     this.isAuthenticated.set(false);
     this.role.set("");
     this.user.set("");
@@ -246,7 +250,7 @@ export class MockAuthService implements AuthServiceInterface {
 
   isAuthenticatedUser = jest
     .fn()
-    .mockReturnValue(this.isAuthenticated() && this.role() === "user");
+    .mockReturnValue(this.isAuthenticated());
 
   constructor(
     readonly http: HttpClient = new HttpClient({} as any),
@@ -257,6 +261,11 @@ export class MockAuthService implements AuthServiceInterface {
 }
 
 export class MockUserService implements UserServiceInterface {
+  filterValue: WritableSignal<Record<string, string>> = signal({});
+  pageIndex: WritableSignal<number> = signal(0);
+  pageSize: WritableSignal<number> = signal(10);
+  apiFilter: string[] = [];
+  advancedApiFilter: string[] = [];
   userResource: HttpResourceRef<PiResponse<UserData[]> | undefined> =
     new MockHttpResourceRef(MockPiResponse.fromValue([]));
   user: WritableSignal<UserData> = signal({
@@ -338,6 +347,24 @@ export class MockValidateService implements ValidateServiceInterface {
       )
     );
   }
+
+  authenticateWebAuthn(args: {
+    signRequest: any;
+    transaction_id: string;
+    username: string;
+    isTest?: boolean;
+  }): Observable<AuthResponse> {
+    return of(
+      MockPiResponse.fromValue<AuthData, AuthDetail>(
+        new MockAuthData(),
+        new MockAuthDetail()
+      )
+    );
+  }
+
+  pollTransaction(transactionId: string): Observable<boolean> {
+    return of(true);
+  }
 }
 
 export class MockRealmService implements RealmServiceInterface {
@@ -377,6 +404,7 @@ export class MockContentService implements ContentServiceInterface {
 }
 
 export class MockContainerService implements ContainerServiceInterface {
+  containerBelongsToUser = jest.fn().mockReturnValue(true);
   #containerDetailSignal = signal({
     containers: [
       {
@@ -899,7 +927,8 @@ export class MockMachineService implements MachineServiceInterface {
   }
 }
 
-export class MockTableUtilsService implements AuthServiceInterface {
+export class MockTableUtilsService implements AuthServiceInterface, TableUtilsServiceInterface {
+  pageSizeOptions: WritableSignal<number[]> = signal([5, 10, 25, 50]);
   isAuthenticated: () => boolean = jest.fn().mockReturnValue(true);
   user: () => string = jest.fn().mockReturnValue("alice");
   realm: () => string = jest.fn().mockReturnValue("default");
@@ -936,7 +965,7 @@ export class MockTableUtilsService implements AuthServiceInterface {
     this.user = jest.fn().mockReturnValue("alice");
     this.realm = jest.fn().mockReturnValue("default");
   });
-  deauthenticate: () => void = jest.fn().mockImplementation(() => {
+  logout: () => void = jest.fn().mockImplementation(() => {
     this.isAuthenticated = jest.fn().mockReturnValue(false);
     this.role = jest.fn().mockReturnValue("");
     this.user = jest.fn().mockReturnValue("");

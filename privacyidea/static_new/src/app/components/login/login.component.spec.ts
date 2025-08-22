@@ -1,63 +1,73 @@
-import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { ComponentFixture, fakeAsync, TestBed, tick } from "@angular/core/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
-import { of } from "rxjs";
+import { EMPTY, of, Subscription, throwError } from "rxjs";
 import { Router } from "@angular/router";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 
 import { LoginComponent } from "./login.component";
-import { AuthService } from "../../services/auth/auth.service";
-import { LocalService } from "../../services/local/local.service";
-import { NotificationService } from "../../services/notification/notification.service";
-import { SessionTimerService } from "../../services/session-timer/session-timer.service";
+import { AuthData, AuthDetail, AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
+import { LocalService, LocalServiceInterface } from "../../services/local/local.service";
+import { NotificationService, NotificationServiceInterface } from "../../services/notification/notification.service";
+import { SessionTimerService, SessionTimerServiceInterface } from "../../services/session-timer/session-timer.service";
+import {
+  MockAuthDetail,
+  MockAuthService,
+  MockLocalService,
+  MockNotificationService,
+  MockPiResponse,
+  MockValidateService
+} from "../../../testing/mock-services";
+import { ValidateService, ValidateServiceInterface } from "../../services/validate/validate.service";
 
-describe("LoginComponent (Jest)", () => {
+describe("LoginComponent", () => {
   let fixture: ComponentFixture<LoginComponent>;
   let component: LoginComponent;
-
-  const authService = {
-    isAuthenticatedUser: jest.fn().mockReturnValue(false),
-    authenticate: jest.fn().mockReturnValue(of({})),
-    deauthenticate: jest.fn()
-  } as unknown as jest.Mocked<AuthService>;
-
-  const localService = {
-    bearerTokenKey: "bearerTokenKey",
-    saveData: jest.fn(),
-    removeData: jest.fn()
-  } as unknown as jest.Mocked<LocalService>;
-
-  const notificationService = {
-    openSnackBar: jest.fn()
-  } as unknown as jest.Mocked<NotificationService>;
-
-  const sessionTimerService = {
-    startRefreshingRemainingTime: jest.fn(),
-    startTimer: jest.fn()
-  } as unknown as jest.Mocked<SessionTimerService>;
-
-  const router = {
-    navigateByUrl: jest.fn().mockResolvedValue(true),
-    navigate: jest.fn().mockResolvedValue(true)
-  } as unknown as jest.Mocked<Router>;
+  let authService: MockAuthService;
+  let localService: MockLocalService;
+  let notificationService: MockNotificationService;
+  let sessionTimerService: jest.Mocked<SessionTimerServiceInterface>;
+  let validateService: MockValidateService;
+  let router: jest.Mocked<Router>;
 
   beforeEach(async () => {
-    TestBed.resetTestingModule();
+    // Mock for SessionTimerService as it's not in mock-services.ts
+    const sessionTimerServiceMock = {
+      startRefreshingRemainingTime: jest.fn(),
+      startTimer: jest.fn(),
+      resetTimer: jest.fn()
+    };
+
+    const routerMock = {
+      navigateByUrl: jest.fn().mockResolvedValue(true),
+      navigate: jest.fn().mockResolvedValue(true)
+    };
+
     await TestBed.configureTestingModule({
       imports: [LoginComponent, BrowserAnimationsModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: AuthService, useValue: authService },
-        { provide: LocalService, useValue: localService },
-        { provide: NotificationService, useValue: notificationService },
-        { provide: SessionTimerService, useValue: sessionTimerService },
-        { provide: Router, useValue: router }
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: LocalService, useClass: MockLocalService },
+        { provide: NotificationService, useClass: MockNotificationService },
+        { provide: ValidateService, useClass: MockValidateService },
+        { provide: SessionTimerService, useValue: sessionTimerServiceMock },
+        { provide: Router, useValue: routerMock }
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(LoginComponent);
     component = fixture.componentInstance;
+    // Use a double cast to inform TypeScript that we know the injected service is a mock.
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    localService = TestBed.inject(LocalService) as unknown as MockLocalService;
+    notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    sessionTimerService = TestBed.inject(
+      SessionTimerService
+    ) as unknown as jest.Mocked<SessionTimerServiceInterface>;
+    validateService = TestBed.inject(ValidateService) as unknown as MockValidateService;
+    router = TestBed.inject(Router) as jest.Mocked<Router>;
   });
 
   it("should create", () => {
@@ -66,7 +76,7 @@ describe("LoginComponent (Jest)", () => {
   });
 
   it("should warn and open a snack bar if the user is already logged in", () => {
-    authService.isAuthenticatedUser.mockReturnValue(true);
+    authService.acceptAuthentication();
     const warn = jest.spyOn(console, "warn").mockImplementation();
 
     fixture = TestBed.createComponent(LoginComponent);
@@ -88,8 +98,6 @@ describe("LoginComponent (Jest)", () => {
     });
 
     it("should call authService.authenticate with username/password", () => {
-      authService.isAuthenticatedUser.mockReturnValue(true);
-
       component.onSubmit();
 
       expect(authService.authenticate).toHaveBeenCalledWith({
@@ -98,50 +106,171 @@ describe("LoginComponent (Jest)", () => {
       });
     });
 
-    it("should handle successful login", () => {
-      authService.authenticate.mockReturnValue(
-        of({ result: { value: { token: "fake-token" } } } as any)
-      );
-      authService.isAuthenticatedUser.mockReturnValue(true);
+    it("should handle a successful login", () => {
+      const successResponse = MockPiResponse.fromValue<AuthData, AuthDetail>({ token: "fake-token" } as AuthData);
+      authService.authenticate.mockReturnValue(of(successResponse));
 
       component.onSubmit();
 
       expect(localService.saveData).toHaveBeenCalledWith(
-        localService.bearerTokenKey,
+        "mockBearerTokenKey",
         "fake-token"
       );
-      expect(
-        sessionTimerService.startRefreshingRemainingTime
-      ).toHaveBeenCalled();
+      expect(sessionTimerService.startRefreshingRemainingTime).toHaveBeenCalled();
       expect(sessionTimerService.startTimer).toHaveBeenCalled();
       expect(router.navigateByUrl).toHaveBeenCalledWith("/tokens");
     });
 
-    it("should handle missing or invalid token (challenge response)", () => {
-      authService.authenticate.mockReturnValue(of({ result: {} }) as any);
+    it("should handle a challenge response", () => {
+      const challengeResponse = new MockPiResponse<AuthData, AuthDetail>({
+        detail: { messages: ["Please enter OTP"] },
+        result: { authentication: "CHALLENGE", status: true, value: false as any }
+      });
+      authService.authenticate.mockReturnValue(of(challengeResponse));
 
       component.onSubmit();
 
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-        "Login failed. Challenge response required."
-      );
+      expect(component.loginMessage()).toEqual(["Please enter OTP"]);
+      expect(component.showOtpField()).toBe(true);
       expect(localService.saveData).not.toHaveBeenCalled();
-      expect(
-        sessionTimerService.startRefreshingRemainingTime
-      ).not.toHaveBeenCalled();
+      expect(sessionTimerService.startRefreshingRemainingTime).not.toHaveBeenCalled();
       expect(sessionTimerService.startTimer).not.toHaveBeenCalled();
-      expect(router.navigate).not.toHaveBeenCalled();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
+
+    it("should submit otp and transaction_id on challenge response", () => {
+      // GIVEN: The component is in a challenge state
+      component.showOtpField.set(true);
+      component.otp.set("654321");
+      (component as any).transactionId = "tx123";
+
+      // WHEN: The form is submitted
+      component.onSubmit();
+
+      // THEN: The correct parameters are sent
+      expect(authService.authenticate).toHaveBeenCalledWith({
+        username: "test-user",
+        password: "654321",
+        transaction_id: "tx123"
+      });
+    });
+
+    it("should handle a failed login", () => {
+      const errorResponse = {
+        error: {
+          result: {
+            error: { message: "Invalid credentials" }
+          }
+        }
+      };
+      authService.authenticate.mockReturnValue(throwError(() => errorResponse));
+
+      component.onSubmit();
+
+      expect(component.errorMessage()).toBe("Invalid credentials");
+      expect(component.password()).toBe(""); // Password field should be cleared
     });
   });
 
-  describe("logout", () => {
-    it("should remove token, deauthenticate, and navigate to login", async () => {
-      component.logout();
+  describe("passkeyLogin", () => {
+    it("should call validateService.authenticatePasskey and handle success", () => {
+      const successResponse = MockPiResponse.fromValue<AuthData, AuthDetail>({ token: "passkey-token" } as AuthData);
+      jest.spyOn(validateService, "authenticatePasskey").mockReturnValue(of(successResponse));
 
-      expect(localService.removeData).toHaveBeenCalledWith(
-        localService.bearerTokenKey
-      );
-      expect(authService.deauthenticate).toHaveBeenCalled();
+      component.passkeyLogin();
+
+      expect(validateService.authenticatePasskey).toHaveBeenCalled();
+      expect(localService.saveData).toHaveBeenCalledWith("mockBearerTokenKey", "passkey-token");
+      expect(router.navigateByUrl).toHaveBeenCalledWith("/tokens");
+    });
+
+    it("should handle failure", () => {
+      const errorResponse = { error: { result: { error: { message: "Passkey auth failed" } } } };
+      jest.spyOn(validateService, "authenticatePasskey").mockReturnValue(throwError(() => errorResponse));
+
+      component.passkeyLogin();
+
+      expect(component.errorMessage()).toBe("Passkey auth failed");
+    });
+  });
+
+  describe("webAuthnLogin", () => {
+    it("should call validateService.authenticateWebAuthn with correct data", () => {
+      const signRequest = { challenge: "abc" };
+      component.webAuthnTriggered.set(signRequest);
+      component.username.set("test-user");
+      (component as any).transactionId = "tx-webauthn";
+      const mockResponse = new MockPiResponse<AuthData, AuthDetail>({ detail: new MockAuthDetail() });
+      jest.spyOn(validateService, "authenticateWebAuthn").mockReturnValue(of(mockResponse));
+
+      component.webAuthnLogin();
+
+      expect(validateService.authenticateWebAuthn).toHaveBeenCalledWith({
+        signRequest: signRequest,
+        transaction_id: "tx-webauthn",
+        username: "test-user"
+      });
+    });
+
+    it("should do nothing if webAuthn is not triggered", () => {
+      const webAuthnSpy = jest.spyOn(validateService, "authenticateWebAuthn");
+      component.webAuthnTriggered.set(null);
+
+      component.webAuthnLogin();
+
+      expect(webAuthnSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("Push Polling", () => {
+    it("should start polling when a push challenge is received", fakeAsync(() => {
+      const pollSpy = jest.spyOn(validateService, "pollTransaction").mockReturnValue(of(false));
+      const challengeResponse = new MockPiResponse<AuthData, AuthDetail>({
+        detail: {
+          transaction_id: "tx-push",
+          multi_challenge: [{ type: "push" } as any]
+        },
+        result: { authentication: "CHALLENGE", status: true, value: false as any }
+      });
+      authService.authenticate.mockReturnValue(of(challengeResponse));
+
+      component.onSubmit();
+      tick(1000); // Let some polling happen (5 polls at 200ms)
+
+      expect(component.pushTriggered()).toBe(true);
+      expect(pollSpy).toHaveBeenCalledWith("tx-push");
+      expect(pollSpy.mock.calls.length).toBeGreaterThan(1);
+
+      component.ngOnDestroy(); // cleanup
+    }));
+
+    it("should stop polling and log in on successful poll", fakeAsync(() => {
+      jest.spyOn(validateService, "pollTransaction")
+        .mockReturnValueOnce(of(false))
+        .mockReturnValueOnce(of(true)); // Succeed on second poll
+      const successResponse = MockPiResponse.fromValue<AuthData, AuthDetail>({ token: "push-token" } as AuthData);
+      authService.authenticate.mockReturnValue(of(successResponse));
+      (component as any).transactionId = "tx-push-success";
+      component.username.set("test-user");
+
+      (component as any).startPushPolling();
+      tick(500); // 2 polls at 200ms interval + buffer
+
+      expect(authService.authenticate).toHaveBeenCalledWith({
+        username: "test-user",
+        password: "",
+        transaction_id: "tx-push-success"
+      });
+      expect(localService.saveData).toHaveBeenCalledWith("mockBearerTokenKey", "push-token");
+    }));
+  });
+
+  describe("logout", () => {
+    it("should remove token, logout, and navigate to login", async () => {
+      component.logout();
+      await fixture.whenStable(); // Wait for router.navigate promise
+      expect(localService.removeData).toHaveBeenCalledWith("mockBearerTokenKey");
+      expect(authService.logout).toHaveBeenCalled();
       expect(router.navigate).toHaveBeenCalledWith(["login"]);
     });
   });

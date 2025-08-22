@@ -68,6 +68,24 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
+.login-actions {
+  display: flex;
+  gap: 16px; // Sets the space between the buttons
+  width: 100%;
+
+  > .login-btn {
+    // When both buttons are shown, this one takes ~70% of the space.
+    // When only this button is shown, it takes 100% of the space.
+    flex: 7;
+    min-width: 0; // Prevents buttons from overflowing when the container is narrow
+  }
+
+  > .reset-btn {
+    flex: 3; // Takes ~30% of the space when shown.
+    min-width: 0;
+  }
+}
+
 .passkey-btn {
   text-decoration: none;
   color: var(--mat-sys-on-surface-variant);

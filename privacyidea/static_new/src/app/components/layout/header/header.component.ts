@@ -115,7 +115,7 @@ export class HeaderComponent {
 
   logout(): void {
     this.localService.removeData(this.localService.bearerTokenKey);
-    this.authService.deauthenticate();
+    this.authService.logout();
     this.router
       .navigate(["login"])
       .then(() => this.notificationService.openSnackBar("Logout successful."));

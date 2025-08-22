@@ -26,11 +26,20 @@
       (ngSubmit)="onSubmit()"
       aria-label="Login Form"
       class="login-form">
-      <div *ngIf="loginMessage()" class="login-message">
-        <p>{{ loginMessage() }}</p>
+      <div
+        *ngIf="loginMessage().length > 0"
+        class="login-message">
+        <p *ngFor="let msg of loginMessage()">{{ msg }}</p>
+      </div>
+      <div
+        *ngIf="errorMessage()"
+        class="error-message">
+        <p>{{ errorMessage() }}</p>
       </div>
 
-      <mat-form-field appearance="outline" *ngIf="!showOtpField()">
+      <mat-form-field
+        appearance="outline"
+        *ngIf="!showOtpField()">
         <mat-label>Username</mat-label>
         <input
           [(ngModel)]="username"
@@ -41,7 +50,9 @@
           type="text"/>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" *ngIf="!showOtpField()">
+      <mat-form-field
+        appearance="outline"
+        *ngIf="!showOtpField()">
         <mat-label>Password</mat-label>
         <input
           [(ngModel)]="password"
@@ -52,7 +63,9 @@
           type="password"/>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" *ngIf="showOtpField()">
+      <mat-form-field
+        appearance="outline"
+        *ngIf="showOtpField()">
         <mat-label>One-Time-Password</mat-label>
         <input
           #otpInput
@@ -61,10 +74,13 @@
           matInput
           name="otp"
           required
+          autocomplete="new-password"
           type="otp"/>
       </mat-form-field>
 
-      <button
+    <div class="login-actions margin-top-1">
+        <button
+        [disabled]="isLoginButtonDisabled()"
         aria-label="Login Button"
         class="login-btn"
         extended
@@ -77,17 +93,31 @@
         *ngIf="showOtpField()"
         (click)="resetLogin()"
         aria-label="Start Over"
-        class="reset-btn margin-top-1"
+        class="reset-btn"
         extended
         mat-fab
         type="button">
         Reset
         <mat-icon iconPositionEnd>replay</mat-icon>
       </button>
+    </div>
+
+      <button
+        *ngIf="webAuthnTriggered()"
+        (click)="webAuthnLogin()"
+        aria-label="WebAuthn Button"
+        class="reset-btn margin-top-1"
+        extended
+        mat-fab
+        type="button">
+        WebAuthn
+        <mat-icon iconPositionEnd>key</mat-icon>
+      </button>
     </form>
     <div class="passkey-form">
       <button
-        (click)="loginPasskey()"
+        *ngIf="!showOtpField()"
+        (click)="passkeyLogin()"
         aria-label="Passkey Button"
         class="passkey-btn margin-top-1"
         extended

@@ -1,18 +1,22 @@
 import { NgOptimizedImage, CommonModule } from "@angular/common";
-import { Component, effect, ElementRef, inject, signal, ViewChild } from "@angular/core";
+import { Component, computed, effect, ElementRef, inject, OnDestroy, signal, ViewChild } from "@angular/core";
+import { EMPTY, Subscription, catchError, filter, switchMap, take, timeout, timer } from "rxjs";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { Router } from "@angular/router";
-import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
+import { AuthService, AuthResponse, AuthServiceInterface } from "../../services/auth/auth.service";
 import { LocalService, LocalServiceInterface } from "../../services/local/local.service";
 import { NotificationService, NotificationServiceInterface } from "../../services/notification/notification.service";
 import { SessionTimerService, SessionTimerServiceInterface } from "../../services/session-timer/session-timer.service";
 import { ValidateService, ValidateServiceInterface } from "../../services/validate/validate.service";
 import { ROUTE_PATHS } from "../../app.routes";
-import { isAuthenticationSuccessful } from "../../app.component";
+import { challengesTriggered, isAuthenticationSuccessful } from "../../app.component";
+
+const PUSH_POLLING_INTERVAL_MS = 500;
+const PUSH_POLLING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
 @Component({
   selector: "app-login",
@@ -30,7 +34,7 @@ import { isAuthenticationSuccessful } from "../../app.component";
   ],
   styleUrl: "./login.component.scss"
 })
-export class LoginComponent {
+export class LoginComponent implements OnDestroy {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly router: Router = inject(Router);
   private readonly localService: LocalServiceInterface = inject(LocalService);
@@ -40,15 +44,31 @@ export class LoginComponent {
 
   @ViewChild("otpInput") otpInput!: ElementRef<HTMLInputElement>;
 
+  private transactionId = "";
+  private pollingSubscription: Subscription | null = null;
+
   username = signal<string>("");
   password = signal<string>("");
   otp = signal<string>("");
-  loginMessage = signal<string>("");
+  loginMessage = signal<string[]>([]);
+  errorMessage = signal<string>("");
 
   showOtpField = signal<boolean>(false);
+  pushTriggered = signal<boolean>(false);
+  webAuthnTriggered = signal<any | null>(null);
+
+  isLoginButtonDisabled = computed(() => {
+    if (this.showOtpField()) {
+      // Disable if OTP field is shown but empty
+      return !this.otp();
+    }
+    // Disable if username or password fields are empty
+    return !this.username() || !this.password();
+  });
 
   constructor() {
-    if (this.authService.isAuthenticatedUser()) {
+    const isAuthenticated = this.authService.isAuthenticatedUser();
+    if (isAuthenticated) {
       console.warn("User is already logged in.");
       this.notificationService.openSnackBar("User is already logged in.");
     } else {
@@ -65,81 +85,204 @@ export class LoginComponent {
 
   onSubmit() {
     const username = this.username();
-    const password = this.password();
-    this.loginMessage.set("");
+    const isChallengeResponse = this.showOtpField();
+    // Use the OTP value as the password if the OTP field is visible (challenge-response)
+    const password = isChallengeResponse ? this.otp() : this.password();
+
+    const params: any = { username, password };
+
+    if (isChallengeResponse) {
+      this.stopPushPolling();
+      this.loginMessage.set([]);
+      this.errorMessage.set("");
+      params.transaction_id = this.transactionId;
+    } else {
+      this.resetChallengeState();
+    }
 
     this.authService
-      .authenticate({ username, password })
+      .authenticate(params)
       .subscribe({
-        next: (response) => {
-          if (isAuthenticationSuccessful(response)) {
-            // The authService's tap operator has already updated the auth state.
-            // We just need to store the token and navigate.
-            this.localService.saveData(
-              this.localService.bearerTokenKey,
-              response.result.value.token
-            );
-            this.showOtpField.set(false);
-            this.sessionTimerService.startRefreshingRemainingTime();
-            this.sessionTimerService.startTimer();
-            this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
-          } else {
-            this.showOtpField.set(true);
-            // Use the message from the server if available.
-            const message = (response.detail as { message?: string })?.message || "Challenge response required.";
-            this.loginMessage.set(message);
-          }
-        },
-        error: (err) => {
-          console.error("Authentication error caught in component:", err);
-          const message = err.error?.result?.error?.message || "Authentication failed.";
-          this.loginMessage.set(message);
-          this.password.set("");
-        }
+        next: (response) => this.evaluateResponse(response, "password"),
+        error: (err) => this.handleError(err, "password")
       });
   }
 
-  loginPasskey(): void {
-    this.loginMessage.set("");
+  webAuthnLogin(): void {
+    const signRequest = this.webAuthnTriggered();
+    if (!signRequest) {
+      console.error("WebAuthn sign request not available.");
+      return;
+    }
+    this.loginMessage.set([]);
+    this.errorMessage.set("");
+
+    // The validateService handles the WebAuthn ceremony (navigator.credentials.get)
+    // and then posts the result back for verification.
+    this.validateService
+      .authenticateWebAuthn({
+        signRequest: signRequest,
+        transaction_id: this.transactionId,
+        username: this.username()
+      })
+      .subscribe({
+        next: (response: AuthResponse) => this.evaluateResponse(response, "webauthn"),
+        error: (err: any) => this.handleError(err, "webauthn")
+      });
+  }
+
+  passkeyLogin(): void {
+    this.resetChallengeState();
     this.validateService
       .authenticatePasskey()
       .subscribe({
-        next: (response) => {
-          if (isAuthenticationSuccessful(response)) {
-            this.localService.saveData(
-              this.localService.bearerTokenKey,
-              response.result.value.token
-            );
-            this.sessionTimerService.startRefreshingRemainingTime();
-            this.sessionTimerService.startTimer();
-            this.showOtpField.set(false);
-            this.router.navigate(["tokens"]).then();
-          } else {
-            const message = (response.detail as { message?: string })?.message || "Login with passkey failed.";
-            this.loginMessage.set(message);
-          }
-        },
-        error: (err: any) => {
-          console.error("Error during Passkey login", err);
-          const message = err.error?.result?.error?.message || err?.message || "Error during Passkey login";
-          this.loginMessage.set(message);
-        }
+        next: (response) => this.evaluateResponse(response, "passkey"),
+        error: (err: any) => this.handleError(err, "passkey")
       });
   }
 
   logout(): void {
     this.localService.removeData(this.localService.bearerTokenKey);
-    this.authService.deauthenticate();
+    this.authService.logout();
     this.router
       .navigate(["login"])
       .then(() => this.notificationService.openSnackBar("Logout successful."));
   }
 
   resetLogin(): void {
+    this.resetChallengeState();
     this.showOtpField.set(false);
-    this.loginMessage.set("");
     this.otp.set("");
     // For security, it's good practice to clear the password field.
     this.password.set("");
+  }
+
+  ngOnDestroy(): void {
+    this.stopPushPolling();
+  }
+
+  private startPushPolling(): void {
+    this.stopPushPolling(); // Ensure no other polling is running
+
+    const poll$ = timer(0, PUSH_POLLING_INTERVAL_MS).pipe(
+      switchMap(() => this.validateService.pollTransaction(this.transactionId)),
+      filter((success) => success === true),
+      take(1),
+      timeout(PUSH_POLLING_TIMEOUT_MS),
+      catchError((err) => {
+        if (err.name === "TimeoutError") {
+          this.errorMessage.set("Polling for push notification timed out. Please try again.");
+        } else {
+          // The error is already handled by the service, just log it here.
+          console.error("Error during push polling:", err);
+        }
+        return EMPTY; // Stop the stream
+      })
+    );
+
+    this.pollingSubscription = poll$.subscribe({
+      next: (success) => {
+        if (success) {
+          // The user is authenticated on the server, now we need the token.
+          this.authService.authenticate({
+            username: this.username(),
+            password: "",
+            transaction_id: this.transactionId
+          }).subscribe({
+            next: (response) => this.evaluateResponse(response, "password"),
+            error: (err) => this.handleError(err, "password")
+          });
+        }
+      }
+    });
+  }
+
+  private stopPushPolling(): void {
+    if (this.pollingSubscription) {
+      this.pollingSubscription.unsubscribe();
+      this.pollingSubscription = null;
+    }
+  }
+
+  private resetChallengeState(): void {
+    this.stopPushPolling();
+    this.loginMessage.set([]);
+    this.errorMessage.set("");
+    this.pushTriggered.set(false);
+    this.webAuthnTriggered.set(null);
+    this.transactionId = "";
+  }
+
+  private evaluateResponse(response: AuthResponse, context: "password" | "passkey" | "webauthn"): void {
+    if (isAuthenticationSuccessful(response)) {
+      // Successful auth -> log in
+      this.localService.saveData(
+        this.localService.bearerTokenKey,
+        response.result.value.token
+      );
+      this.showOtpField.set(false);
+      this.sessionTimerService.startRefreshingRemainingTime();
+      this.sessionTimerService.startTimer();
+      this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
+    } else if (challengesTriggered(response)) {
+      // Setup depending on what kind of challenges were triggered
+      if (response.detail.multi_challenge?.length) {
+        this.transactionId = response.detail.transaction_id || "";
+        this.pushTriggered.set(response.detail.multi_challenge.some((c) => c.type === "push"));
+        const webAuthnChallenge = response.detail.multi_challenge.find((c) => c.type === "webauthn");
+        if (webAuthnChallenge?.attributes?.webAuthnSignRequest) {
+          this.webAuthnTriggered.set(webAuthnChallenge.attributes.webAuthnSignRequest); // This is now an object
+        }
+        if (this.pushTriggered()) {
+          this.startPushPolling();
+        }
+      }
+      // A password login can result in an OTP challenge, but a passkey login failing just fails.
+      if (context === "password") {
+        this.showOtpField.set(true);
+      }
+      const defaultMessages = {
+        password: "Challenge response required.",
+        passkey: "Login with passkey failed.",
+        webauthn: "Login with WebAuthn failed."
+      };
+      const detail = response.detail as { message?: string; messages?: string[] };
+      if (detail?.messages?.length) {
+        this.loginMessage.set(detail.messages);
+      } else {
+        const message = detail?.message || defaultMessages[context];
+        this.loginMessage.set([message]);
+      }
+    } else {
+      // This is a hard failure (e.g. REJECT or other error within a 200 OK response)
+      const defaultMessages = {
+        password: "Authentication failed.",
+        passkey: "Login with passkey failed.",
+        webauthn: "Login with WebAuthn failed."
+      };
+      const message = response.result?.error?.message || (response.detail as {
+        message?: string
+      })?.message || defaultMessages[context];
+      this.errorMessage.set(message);
+    }
+  }
+
+  private handleError(err: any, context: "password" | "passkey" | "webauthn"): void {
+    const defaultMessages = {
+      password: "Authentication failed.",
+      passkey: "Error during Passkey login",
+      webauthn: "Error during WebAuthn login"
+    };
+    const message = err.error?.result?.error?.message || err?.message || defaultMessages[context];
+    this.errorMessage.set(message);
+
+    if (context === "password") {
+      this.password.set("");
+      if (this.showOtpField()) {
+        // Empty the value and focus again
+        this.otp.set("");
+        setTimeout(() => this.otpInput?.nativeElement.focus(), 0);
+      }
+    }
   }
 }

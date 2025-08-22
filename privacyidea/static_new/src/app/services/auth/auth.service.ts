@@ -59,7 +59,7 @@ export interface MultiChallenge {
   transaction_id: string;
   type: string;
   attributes?: {
-    webAuthnSignRequest?: string;
+    webAuthnSignRequest?: any;
   };
 }
 
@@ -90,7 +90,7 @@ export interface AuthServiceInterface {
   authenticate: (params: any) => Observable<AuthResponse>;
   isAuthenticatedUser: () => boolean;
   acceptAuthentication: () => void;
-  deauthenticate: () => void;
+  logout: () => void;
 }
 
 @Injectable({
@@ -134,9 +134,6 @@ export class AuthService implements AuthServiceInterface {
           }
         }),
         catchError((error) => {
-          console.error("Login failed.", error);
-          const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Login failed. " + message);
           return throwError(() => error);
         })
       );
@@ -150,7 +147,7 @@ export class AuthService implements AuthServiceInterface {
     this.isAuthenticated.set(true);
   }
 
-  deauthenticate(): void {
+  logout(): void {
     this.isAuthenticated.set(false);
   }
 }

@@ -57,6 +57,33 @@ export function isAuthenticationSuccessful<Value, Detail = unknown>(
   return false;
 }
 
+/**
+ * Checks if a PiResponse indicates that a challenge has been triggered.
+ *
+ * A challenge is considered triggered if:
+ * - The `result.authentication` property is "CHALLENGE".
+ * - OR `result.authentication` is not present, AND `detail.multi_challenge` exists and is not empty.
+ *
+ * @param response The `PiResponse` object to check.
+ * @returns `true` if a challenge was triggered, otherwise `false`.
+ */
+export function challengesTriggered<Value, Detail = unknown>(
+  response: PiResponse<Value, Detail>
+): boolean {
+  // Case 1: The response explicitly states a challenge.
+  if (response.result?.authentication === "CHALLENGE") {
+    return true;
+  }
+
+  // Case 2: No explicit authentication status, but a multi_challenge is present.
+  if (response.result?.authentication === undefined) {
+    const detailWithChallenge = response.detail as { multi_challenge?: unknown[] };
+    return !!detailWithChallenge?.multi_challenge?.length;
+  }
+  return false;
+}
+
+
 @Component({
   selector: "app-root",
   standalone: true,
