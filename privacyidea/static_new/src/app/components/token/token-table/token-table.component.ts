@@ -14,6 +14,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "../../../services
 import { TokenDetails, TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";
 
 const columnKeysMap = [
@@ -45,6 +46,7 @@ const columnKeysMap = [
     MatCheckboxModule,
     FormsModule,
     MatIconModule,
+    ScrollToTopDirective,
     ClearableInputComponent
   ],
   templateUrl: "./token-table.component.html",

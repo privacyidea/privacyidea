@@ -10,22 +10,44 @@ import {
   MatAccordion,
   MatExpansionPanel,
   MatExpansionPanelHeader,
-  MatExpansionPanelTitle
-} from "@angular/material/expansion";
-import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
-import { MatIcon } from "@angular/material/icon";
-import { MatInput } from "@angular/material/input";
-import { MatSelect } from "@angular/material/select";
-import { DomSanitizer } from "@angular/platform-browser";
-import { map } from "rxjs";
-import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
-import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
-import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
-import { UserService, UserServiceInterface } from "../../../services/user/user.service";
-import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
-import { ContainerCreateComponent } from "./container-create.component";
+  MatExpansionPanelTitle,
+} from '@angular/material/expansion';
+import { MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
+import { MatIcon } from '@angular/material/icon';
+import { MatInput } from '@angular/material/input';
+import { MatSelect } from '@angular/material/select';
+import { DomSanitizer } from '@angular/platform-browser';
+import { map } from 'rxjs';
+import {
+  ContainerService,
+  ContainerServiceInterface,
+} from '../../../services/container/container.service';
+import {
+  ContentService,
+  ContentServiceInterface,
+} from '../../../services/content/content.service';
+import {
+  NotificationService,
+  NotificationServiceInterface,
+} from '../../../services/notification/notification.service';
+import {
+  RealmService,
+  RealmServiceInterface,
+} from '../../../services/realm/realm.service';
+import {
+  TokenService,
+  TokenServiceInterface,
+} from '../../../services/token/token.service';
+import {
+  UserService,
+  UserServiceInterface,
+} from '../../../services/user/user.service';
+import {
+  VersioningService,
+  VersioningServiceInterface,
+} from '../../../services/version/version.service';
+import { ScrollToTopDirective } from '../../shared/directives/app-scroll-to-top.directive';
+import { ContainerCreateComponent } from './container-create.component';
 
 @Component({
   selector: "app-container-create-wizard",
@@ -45,7 +67,8 @@ import { ContainerCreateComponent } from "./container-create.component";
     MatExpansionPanel,
     MatExpansionPanelTitle,
     MatExpansionPanelHeader,
-    AsyncPipe
+    AsyncPipe,
+    ScrollToTopDirective,
   ],
   templateUrl: "./container-create.wizard.component.html",
   styleUrl: "./container-create.component.scss"

@@ -24,6 +24,7 @@ import { ContentService, ContentServiceInterface } from "../../../services/conte
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { UserData, UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";
 
 const columnKeysMap = [
@@ -61,6 +62,7 @@ const columnKeysMap = [
     MatNoDataRow,
     MatHeaderCellDef,
     RouterLink,
+    ScrollToTopDirective,
     ClearableInputComponent
   ],
   templateUrl: "./user-table.component.html",
