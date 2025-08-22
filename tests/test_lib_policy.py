@@ -7,6 +7,7 @@ import dateutil
 import mock
 from werkzeug.datastructures.headers import Headers, EnvironHeaders
 
+from privacyidea.lib.auditmodules.base import Audit
 from privacyidea.lib.container import init_container, find_container_by_serial
 from privacyidea.lib.containers.container_info import RegistrationState
 from privacyidea.lib.policies.conditions import (PolicyConditionClass, ConditionSection,
@@ -3104,7 +3105,7 @@ class PolicyMatchTestCase(MyTestCase):
     def test_01_action_only(self):
         g = FakeFlaskG()
         g.client_ip = "127.0.0.1"
-        g.audit_object = mock.Mock()
+        g.audit_object = Audit()
         g.policy_object = PolicyClass()
 
         g.audit_object.audit_data = {}
@@ -3124,7 +3125,7 @@ class PolicyMatchTestCase(MyTestCase):
         g.audit_object.audit_data = {}
         self.check_names(Match.action_only(g, SCOPE.AUTHZ, PolicyAction.NODETAILSUCCESS).policies(),
                          {})
-        self.assertEqual(g.audit_object.audit_data, {})
+        self.assertEqual([], g.audit_object.audit_data.get("policies", []))
 
         with self.assertRaises(MatchingError):
             Match.action_only(g, SCOPE.ADMIN, "tokenview")
@@ -3154,6 +3155,7 @@ class PolicyMatchTestCase(MyTestCase):
         g = FakeFlaskG()
         g.client_ip = "127.0.0.1"
         g.audit_object = mock.Mock()
+        g.audit_object.audit_data = {}
         g.policy_object = PolicyClass()
 
         class Foobar(User):
@@ -3184,6 +3186,7 @@ class PolicyMatchTestCase(MyTestCase):
         g = FakeFlaskG()
         g.client_ip = "127.0.0.1"
         g.audit_object = mock.Mock()
+        g.audit_object.audit_data = {}
         g.policy_object = PolicyClass()
         g.logged_in_user = {"username": "superroot", "realm": "", "role": ROLE.ADMIN}
 
@@ -3203,6 +3206,7 @@ class PolicyMatchTestCase(MyTestCase):
         g = FakeFlaskG()
         g.client_ip = "127.0.0.1"
         g.audit_object = mock.Mock()
+        g.audit_object.audit_data = {}
         g.policy_object = PolicyClass()
 
         g.logged_in_user = {"username": "superroot", "realm": "", "role": ROLE.ADMIN}

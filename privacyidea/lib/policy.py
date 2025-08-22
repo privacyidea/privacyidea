@@ -3161,11 +3161,11 @@ class Match(object):
                                                                     allow_white_space_in_action=
                                                                     allow_white_space_in_action)
         if write_to_audit_log:
-            audit_policies = set(self._g.audit_object.audit_data.get("policies", []))
+            audit_policies = set()
             for action_value, policy_names in action_values.items():
                 for p_name in policy_names:
                     audit_policies.add(p_name)
-            self._g.audit_object.audit_data["policies"] = list(audit_policies)
+            self._g.audit_object.add_policy(audit_policies)
         return action_values
 
     def allowed(self, write_to_audit_log=True):
