@@ -4,7 +4,6 @@ import { RouterOutlet } from "@angular/router";
 import { AuthService, AuthServiceInterface } from "./services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "./services/notification/notification.service";
 import { SessionTimerService, SessionTimerServiceInterface } from "./services/session-timer/session-timer.service";
-import { ThemeService } from "./services/theme/theme.service";
 
 export interface PiResponse<Value, Detail = unknown> {
   id: number;
@@ -25,6 +24,39 @@ export interface PiResponse<Value, Detail = unknown> {
   versionnumber: string;
 }
 
+/**
+ * Checks if a PiResponse indicates a successful authentication.
+ *
+ * An authentication is considered successful if:
+ * - The `result.authentication` property is "ACCEPT".
+ * - OR `result.authentication` is not present, AND there is no `detail.multi_challenge`,
+ *   AND `result.status` is true, AND `result.value` exists.
+ *
+ * @param response The `PiResponse` object to check.
+ * @returns `true` if the authentication is successful, otherwise `false`.
+ */
+export function isAuthenticationSuccessful<Value, Detail = unknown>(
+  response: PiResponse<Value, Detail>
+): response is PiResponse<Value, Detail> & { result: { value: Value, status: true } } {
+  if (!response.result) {
+    return false;
+  }
+
+  // Case 1: result.authentication is "ACCEPT"
+  if (response.result.authentication === "ACCEPT") {
+    // If authentication is ACCEPT, we must also ensure status is true and value exists
+    return response.result.status === true && response.result.value !== undefined;
+  }
+
+  // Case 2: result.authentication is not present
+  if (response.result.authentication === undefined) {
+    const detailWithChallenge = response.detail as { multi_challenge?: unknown[] };
+    const isChallengeFree = !detailWithChallenge?.multi_challenge?.length;
+    return isChallengeFree && response.result.status && response.result.value !== undefined;
+  }
+  return false;
+}
+
 @Component({
   selector: "app-root",
   standalone: true,
@@ -38,7 +70,6 @@ export class AppComponent implements OnInit {
     inject(NotificationService);
   private readonly sessionTimerService: SessionTimerServiceInterface =
     inject(SessionTimerService);
-  private readonly themeService: ThemeService = inject(ThemeService);
   title = "privacyidea-webui";
   lastSessionReset = 0;
 

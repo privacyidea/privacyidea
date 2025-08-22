@@ -26,7 +26,11 @@
       (ngSubmit)="onSubmit()"
       aria-label="Login Form"
       class="login-form">
-      <mat-form-field appearance="outline">
+      <div *ngIf="loginMessage()" class="login-message">
+        <p>{{ loginMessage() }}</p>
+      </div>
+
+      <mat-form-field appearance="outline" *ngIf="!showOtpField()">
         <mat-label>Username</mat-label>
         <input
           [(ngModel)]="username"
@@ -37,7 +41,7 @@
           type="text"/>
       </mat-form-field>
 
-      <mat-form-field appearance="outline">
+      <mat-form-field appearance="outline" *ngIf="!showOtpField()">
         <mat-label>Password</mat-label>
         <input
           [(ngModel)]="password"
@@ -48,6 +52,18 @@
           type="password"/>
       </mat-form-field>
 
+      <mat-form-field appearance="outline" *ngIf="showOtpField()">
+        <mat-label>One-Time-Password</mat-label>
+        <input
+          #otpInput
+          [(ngModel)]="otp"
+          id="otp"
+          matInput
+          name="otp"
+          required
+          type="otp"/>
+      </mat-form-field>
+
       <button
         aria-label="Login Button"
         class="login-btn"
@@ -55,6 +71,18 @@
         mat-fab
         type="submit">Log In
         <mat-icon iconPositionEnd>login</mat-icon>
+      </button>
+
+      <button
+        *ngIf="showOtpField()"
+        (click)="resetLogin()"
+        aria-label="Start Over"
+        class="reset-btn margin-top-1"
+        extended
+        mat-fab
+        type="button">
+        Reset
+        <mat-icon iconPositionEnd>replay</mat-icon>
       </button>
     </form>
     <div class="passkey-form">

@@ -90,6 +90,28 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
+.reset-btn {
+   text-decoration: none;
+  color: var(--mat-sys-on-surface-variant);
+  padding: 10px;
+  border-radius: $button-border-radius;
+  background: linear-gradient(
+                  145deg,
+                  var(--mat-sys-surface-container),
+                  var(--mat-sys-surface-container-low)
+  );
+
+  &:hover {
+    box-shadow: var(--box-shadow-inset);
+    background: linear-gradient(
+                    145deg,
+                    var(--mat-sys-surface-container-lowest),
+                    var(--mat-sys-surface-container-low)
+    );
+    transform: translateY(2px);
+  }
+}
+
 .support-btn {
   height: var(--header-height);
   margin: 0;

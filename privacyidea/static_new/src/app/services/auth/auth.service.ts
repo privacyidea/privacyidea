@@ -52,8 +52,32 @@ export interface AuthData {
 
 export type AuthRole = "admin" | "user" | "";
 
+export interface MultiChallenge {
+  client_mode: string;
+  message: string;
+  serial: string;
+  transaction_id: string;
+  type: string;
+  attributes?: {
+    webAuthnSignRequest?: string;
+  };
+}
+
 export interface AuthDetail {
-  username: string;
+  username?: string;
+  attributes?: {
+    hideResponseInput?: boolean;
+  };
+  client_mode?: string;
+  loginmode?: string;
+  message?: string;
+  messages?: string[];
+  multi_challenge?: MultiChallenge[];
+  serial?: string;
+  threadid?: number;
+  transaction_id?: string;
+  transaction_ids?: string[];
+  type?: string;
 }
 
 export interface AuthServiceInterface {
