@@ -205,9 +205,10 @@
         <mat-form-field class="width-50 input-height">
           <mat-label>Enter Container</mat-label>
           <app-clearable-input
-            (onClick)="selectedContainerControl.setValue(null)"
+            (onClick)="containerInput.value = ''; selectedContainerControl.setValue(null)"
             [showClearButton]="containerService.selectedContainer() !== ''">
             <input
+              #containerInput
               [formControl]="selectedContainerControl"
               [matAutocomplete]="containerAuto"
               matInput />

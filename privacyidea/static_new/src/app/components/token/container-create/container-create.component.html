@@ -99,7 +99,6 @@
           <input
             #userInput
             [(ngModel)]="userService.userFilter"
-            [value]="userService.userFilter()"
             [disabled]="onlyAddToRealm()"
             [matAutocomplete]="userAuto"
             matInput />

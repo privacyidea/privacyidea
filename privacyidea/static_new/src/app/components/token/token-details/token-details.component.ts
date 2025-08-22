@@ -280,19 +280,25 @@ export class TokenDetailsComponent {
   }
 
   saveContainer() {
-    this.containerService.assignContainer(this.tokenSerial(), this.containerService.selectedContainer()!).subscribe({
-      next: () => {
-        this.tokenDetailResource.reload();
-      }
-    });
+    const selectedContainer = this.containerService.selectedContainer();
+    if (selectedContainer) {
+      this.containerService.assignContainer(this.tokenSerial(), selectedContainer).subscribe({
+        next: () => {
+          this.tokenDetailResource.reload();
+        }
+      });
+    }
   }
 
   deleteContainer() {
-    this.containerService.unassignContainer(this.tokenSerial(), this.containerService.selectedContainer()!).subscribe({
-      next: () => {
-        this.tokenDetailResource.reload();
-      }
-    });
+    const selectedContainer = this.containerService.selectedContainer();
+    if (selectedContainer) {
+      this.containerService.unassignContainer(this.tokenSerial(), selectedContainer).subscribe({
+        next: () => {
+          this.tokenDetailResource.reload();
+        }
+      });
+    }
   }
 
   isEditableElement(key: string) {
