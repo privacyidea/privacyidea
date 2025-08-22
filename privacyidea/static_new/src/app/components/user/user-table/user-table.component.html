@@ -7,12 +7,16 @@
         class="token-table-filter"
         subscriptSizing="dynamic">
         <mat-label>Enter Filter</mat-label>
-        <input
-          #filterHTMLInputElement
-          [(ngModel)]="filterValueString"
-          aria-label="Filter Input"
-          matInput
-          placeholder="Example query: 'type: hotp userid: 1000'"/>
+        <app-clearable-input
+          (onClick)="filterValueString.set('')"
+          [showClearButton]="filterValueString().length > 0">
+          <input
+            #filterHTMLInputElement
+            [(ngModel)]="filterValueString"
+            aria-label="Filter Input"
+            matInput
+            placeholder="Example query: 'type: hotp userid: 1000'" />
+        </app-clearable-input>
       </mat-form-field>
       <mat-paginator
         [length]="totalLength()"
@@ -47,14 +51,15 @@
               mat-cell
               [ngClass]="{
                 'width-18rem': column.key === 'description',
-                'table-checkbox': column.key === 'select',
+                'table-checkbox': column.key === 'select'
               }">
               <div>
                 @switch (column.key) {
                   @case ("username") {
                     <a
                       attr.aria-label="{{ column.label }} Link"
-                      [routerLink]="['#', element.username]"> {{ element[column.key] }}
+                      [routerLink]="['#', element.username]">
+                      {{ element[column.key] }}
                     </a>
                   }
                   @default {

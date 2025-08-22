@@ -1,10 +1,10 @@
-import { NgClass } from '@angular/common';
-import { Component } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { MatCardModule } from '@angular/material/card';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
-import { MatPaginator } from '@angular/material/paginator';
+import { NgClass } from "@angular/common";
+import { Component } from "@angular/core";
+import { FormsModule } from "@angular/forms";
+import { MatCardModule } from "@angular/material/card";
+import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatInput } from "@angular/material/input";
+import { MatPaginator } from "@angular/material/paginator";
 import {
   MatCell,
   MatCellDef,
@@ -16,13 +16,14 @@ import {
   MatNoDataRow,
   MatRow,
   MatRowDef,
-  MatTable,
-} from '@angular/material/table';
-import { RouterLink } from '@angular/router';
-import { CopyButtonComponent } from '../shared/copy-button/copy-button.component';
-import { ScrollToTopDirective } from '../shared/directives/app-scroll-to-top.directive';
-import { KeywordFilterComponent } from '../shared/keyword-filter/keyword-filter.component';
-import { AuditComponent } from './audit.component';
+  MatTable
+} from "@angular/material/table";
+import { RouterLink } from "@angular/router";
+import { ClearableInputComponent } from "../shared/clearable-input/clearable-input.component";
+import { CopyButtonComponent } from "../shared/copy-button/copy-button.component";
+import { ScrollToTopDirective } from "../shared/directives/app-scroll-to-top.directive";
+import { KeywordFilterComponent } from "../shared/keyword-filter/keyword-filter.component";
+import { AuditComponent } from "./audit.component";
 
 @Component({
   selector: "app-audit-self-service",
@@ -49,9 +50,9 @@ import { AuditComponent } from './audit.component';
     CopyButtonComponent,
     RouterLink,
     ScrollToTopDirective,
+    ClearableInputComponent
   ],
   templateUrl: "./audit.self-service.component.html",
   styleUrl: "./audit.component.scss"
 })
-export class AuditComponentSelfServiceComponent extends AuditComponent {
-}
+export class AuditComponentSelfServiceComponent extends AuditComponent {}

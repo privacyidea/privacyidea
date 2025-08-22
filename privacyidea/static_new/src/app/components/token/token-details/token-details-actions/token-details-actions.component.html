@@ -1,43 +1,34 @@
 @if (overflowService.isWidthOverflowing("body", 1580)) {
-  <br/>
+  <br />
 }
 <div
   [ngClass]="{
-      'ali-center': overflowService.isWidthOverflowing('body', 1580),
-    }"
-  class="actions-otp-container">
+    'ali-center': overflowService.isWidthOverflowing('body', 1580),
+  }"
+  class="actions-otp-container"
+>
   <div class="user-pin-container user-pin-container-padding">
-    @if (tokenType() !== "passkey") {
-      <app-set-pin-action
-        [setPinValue]="setPinValue"
-        [repeatPinValue]="repeatPinValue"/>
-    }
-    <br/>
-    <mat-divider/>
-    <br/>
+    <app-set-pin-action [setPinValue]="setPinValue" [repeatPinValue]="repeatPinValue" />
+    <br />
+    <mat-divider />
+    <br />
   </div>
-  <app-resync-token-action/>
-  <br/>
-  <mat-divider/>
-  <br/>
-  @if (tokenType() !== 'passkey') {
-    <app-test-otp-pin-action/>
-    @if (tokenType() === 'sshkey') {
-      <button
-        (click)="assignSSHMachineDialog()"
-        class="detail-button"
-        extended
-        mat-fab>
+  @if (tokenType() !== "passkey") {
+    <app-resync-token-action />
+    <br />
+    <mat-divider />
+    <br />
+  }
+  @if (tokenType() !== "passkey") {
+    <app-test-otp-pin-action />
+    @if (tokenType() === "sshkey") {
+      <button (click)="assignSSHMachineDialog()" class="detail-button" extended mat-fab>
         <mat-icon class="detail-button-icon">computer</mat-icon>
         Assign SSH Machine
       </button>
     }
   } @else {
-    <button
-      (click)="testPasskey()"
-      class="detail-button"
-      extended
-      mat-fab>
+    <button (click)="testPasskey()" class="detail-button" extended mat-fab>
       <mat-icon class="detail-button-icon">key</mat-icon>
       Test Passkey
     </button>

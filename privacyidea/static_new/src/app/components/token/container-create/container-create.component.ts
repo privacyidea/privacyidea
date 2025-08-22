@@ -16,6 +16,8 @@ import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/for
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
+
+import { CommonModule } from "@angular/common";
 import { MatTooltip } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { PiResponse } from "../../../app.component";
@@ -31,6 +33,7 @@ import { RealmService, RealmServiceInterface } from "../../../services/realm/rea
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
+import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { TokenComponent } from "../token.component";
 import {
@@ -63,7 +66,9 @@ export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
     MatExpansionPanelHeader,
     MatTooltip,
     ScrollToTopDirective,
-    NgClass
+    NgClass,
+    ClearableInputComponent,
+    CommonModule
   ],
   templateUrl: "./container-create.component.html",
   styleUrl: "./container-create.component.scss"

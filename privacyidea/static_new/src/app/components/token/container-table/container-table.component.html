@@ -6,12 +6,16 @@
       class="container-table-filter"
       subscriptSizing="dynamic">
       <mat-label>Enter Filter</mat-label>
-      <input
-        #filterHTMLInputElement
-        [(ngModel)]="filterValueString"
-        aria-label="Filter Input"
-        matInput
-        placeholder="Example query: 'type: generic user: admin'"/>
+      <app-clearable-input
+        (onClick)="filterValueString.set('')"
+        [showClearButton]="filterValueString().length > 0">
+        <input
+          #filterHTMLInputElement
+          [(ngModel)]="filterValueString"
+          aria-label="Filter Input"
+          matInput
+          placeholder="Example query: 'type: generic user: admin'" />
+      </app-clearable-input>
     </mat-form-field>
     <mat-paginator
       (page)="onPageEvent($event)"
@@ -37,7 +41,7 @@
     multiTemplateDataRows>
     @for (column of columnsKeyMap; track column) {
       <ng-container [matColumnDef]="column.key">
-        @if (column.key === 'select') {
+        @if (column.key === "select") {
           <th
             *matHeaderCellDef
             mat-header-cell
@@ -62,12 +66,12 @@
           attr.aria-label="{{ column.label }} Cell"
           mat-cell
           [ngClass]="{
-              'width-18rem': column.key === 'description',
-              'table-checkbox': column.key === 'select'
-            }">
+            'width-18rem': column.key === 'description',
+            'table-checkbox': column.key === 'select'
+          }">
           <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
             @switch (column.key) {
-              @case ('select') {
+              @case ("select") {
                 <mat-checkbox
                   (change)="$event ? toggleRow(row) : null"
                   (click)="$event.stopPropagation()"
@@ -77,9 +81,8 @@
               @case ("serial") {
                 <a
                   attr.aria-label="{{ column.label }} Link"
-                  (click)="contentService.containerSelected(element.serial)"> {{
-                    element[column.key]
-                  }}
+                  (click)="contentService.containerSelected(element.serial)">
+                  {{ element[column.key] }}
                 </a>
                 @if (element.serial !== "") {
                   <app-copy-button [copyText]="element.serial"></app-copy-button>
@@ -90,8 +93,9 @@
                   @for (realm of element[column.key]; track realm; let idx = $index) {
                     <a
                       attr.aria-label="{{ column.label }} Link"
-                      href="#"> {{ realm }}
-                    </a><br style="margin-top: 3px"/>
+                      href="#">
+                      {{ realm }} </a
+                    ><br style="margin-top: 3px" />
                   }
                 </div>
               }
@@ -106,7 +110,8 @@
                 @if (tableUtilsService.isLink(column.key)) {
                   <a
                     attr.aria-label="{{ column.label }} Link"
-                    href="#"> {{ element[column.key] }}
+                    href="#">
+                    {{ element[column.key] }}
                   </a>
                 } @else {
                   {{ element[column.key] }}
@@ -128,17 +133,12 @@
           <div class="expanded-token-list">
             @for (token of element.tokens; track token) {
               <div class="token-item">
-                <a (click)="contentService.tokenSelected(token.serial)"> {{
-                    token.serial
-                  }}
-                </a>
+                <a (click)="contentService.tokenSelected(token.serial)"> {{ token.serial }} </a>
                 [{{ token.tokentype }}]
               </div>
             }
             @if (element.tokens?.length === 0) {
-              <div class="flex ali-center">
-                Container has no tokens.
-              </div>
+              <div class="flex ali-center">Container has no tokens.</div>
             }
           </div>
         </div>
@@ -162,9 +162,7 @@
       mat-row></tr>
 
     <tr *matNoDataRow>
-      <td [attr.colspan]="columnKeys.length">
-        No data matching the filter.
-      </td>
+      <td [attr.colspan]="columnKeys.length">No data matching the filter.</td>
     </tr>
   </table>
 </div>
