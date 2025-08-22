@@ -4,22 +4,22 @@ import { MatFabAnchor, MatFabButton, MatIconButton } from "@angular/material/but
 
 import { MatIconModule } from "@angular/material/icon";
 import { Router, RouterLink } from "@angular/router";
+import { ROUTE_PATHS } from "../../../app.routes";
+import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
+import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { LocalService, LocalServiceInterface } from "../../../services/local/local.service";
+import { MachineService, MachineServiceInterface } from "../../../services/machine/machine.service";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import {
   SessionTimerService,
   SessionTimerServiceInterface
 } from "../../../services/session-timer/session-timer.service";
-import { ThemeSwitcherComponent } from "../../shared/theme-switcher/theme-switcher.component";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
-import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
 import { ChallengesService, ChallengesServiceInterface } from "../../../services/token/challenges/challenges.service";
-import { MachineService, MachineServiceInterface } from "../../../services/machine/machine.service";
+import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
-import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
-import { ROUTE_PATHS } from "../../../app.routes";
+import { ThemeSwitcherComponent } from "../../shared/theme-switcher/theme-switcher.component";
 
 @Component({
   selector: "app-header",
@@ -39,33 +39,21 @@ import { ROUTE_PATHS } from "../../../app.routes";
   styleUrl: "./header.component.scss"
 })
 export class HeaderComponent {
-  protected readonly sessionTimerService: SessionTimerServiceInterface =
-    inject(SessionTimerService);
+  protected readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly localService: LocalServiceInterface = inject(LocalService);
-  protected readonly notificationService: NotificationServiceInterface =
-    inject(NotificationService);
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly router: Router = inject(Router);
   protected readonly AuthService = AuthService;
-  private readonly contentService: ContentServiceInterface =
-    inject(ContentService);
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
-  private readonly containerService: ContainerServiceInterface =
-    inject(ContainerService);
-  private readonly challengeService: ChallengesServiceInterface =
-    inject(ChallengesService);
-  private readonly machineService: MachineServiceInterface =
-    inject(MachineService);
+  private readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  private readonly challengeService: ChallengesServiceInterface = inject(ChallengesService);
+  private readonly machineService: MachineServiceInterface = inject(MachineService);
   private readonly userService: UserServiceInterface = inject(UserService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
-  profileText =
-    this.authService.user() +
-    " @" +
-    this.authService.realm() +
-    " (" +
-    this.authService.role() +
-    ")";
+  profileText = this.authService.username() + " @" + this.authService.realm() + " (" + this.authService.role() + ")";
 
   isActive(link: string) {
     return this.router.url.includes(link);
@@ -76,11 +64,7 @@ export class HeaderComponent {
       this.tokenService.tokenDetailResource.reload();
       this.containerService.containerResource.reload();
     }
-    if (
-      this.contentService
-        .routeUrl()
-        .startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)
-    ) {
+    if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
       this.containerService.containerDetailResource.reload();
       this.tokenService.tokenResource.reload();
     }
@@ -114,10 +98,8 @@ export class HeaderComponent {
   }
 
   logout(): void {
-    this.localService.removeData(this.localService.bearerTokenKey);
+    this.localService.removeData(this.authService.TOKEN_KEY);
     this.authService.deauthenticate();
-    this.router
-      .navigate(["login"])
-      .then(() => this.notificationService.openSnackBar("Logout successful."));
+    this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar("Logout successful."));
   }
 }

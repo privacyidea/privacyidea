@@ -34,10 +34,8 @@ export interface PiResponse<Value, Detail = unknown> {
 })
 export class AppComponent implements OnInit {
   private readonly authService: AuthServiceInterface = inject(AuthService);
-  private readonly notificationService: NotificationServiceInterface =
-    inject(NotificationService);
-  private readonly sessionTimerService: SessionTimerServiceInterface =
-    inject(SessionTimerService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  private readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
   private readonly themeService: ThemeService = inject(ThemeService);
   title = "privacyidea-webui";
   lastSessionReset = 0;
@@ -45,14 +43,13 @@ export class AppComponent implements OnInit {
   constructor() {
     this.sessionTimerService.startTimer();
 
-    if (this.authService.isAuthenticatedUser()) {
+    if (this.authService.isAuthenticated()) {
       console.warn("User is already logged in.");
       this.notificationService.openSnackBar("User is already logged in.");
     }
   }
 
-  ngOnInit(): void {
-  }
+  ngOnInit(): void {}
 
   @HostListener("document:click")
   @HostListener("document:keydown")
