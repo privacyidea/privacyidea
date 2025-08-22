@@ -7,15 +7,9 @@ import { MatDivider } from "@angular/material/divider";
 import { MatDialog } from "@angular/material/dialog";
 import { catchError, concatMap, EMPTY, filter, forkJoin, from, reduce, switchMap } from "rxjs";
 import { tabToggleState } from "../../../../../styles/animations/animations";
-import {
-  ContentService,
-  ContentServiceInterface
-} from "../../../../services/content/content.service";
+import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import {
-  VersioningService,
-  VersioningServiceInterface
-} from "../../../../services/version/version.service";
+import { VersioningService, VersioningServiceInterface } from "../../../../services/version/version.service";
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { LostTokenComponent } from "./lost-token/lost-token.component";
 import { Router, RouterLink } from "@angular/router";

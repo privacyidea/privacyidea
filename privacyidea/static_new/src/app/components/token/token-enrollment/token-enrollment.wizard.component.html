@@ -1,7 +1,7 @@
 <div
   i18n-aria-label
   aria-label="Token Enrollment"
-  class="token-enrollment-container">
+  class="token-enrollment-container" appScrollToTop>
   <div
     [innerHTML]="preTopHtml$ | async"
     class="margin-top-1"></div>
@@ -9,7 +9,8 @@
   <mat-form-field class="width-100">
     <mat-select
       [(ngModel)]="selectedTokenType"
-      [panelClass]="'multi-column-panel'">
+      [panelClass]="'multi-column-panel'"
+      [value]="selectedTokenType()">
       @for (type of tokenService.tokenTypeOptions(); track type) {
         <mat-option
           class="token-type-option type-option"

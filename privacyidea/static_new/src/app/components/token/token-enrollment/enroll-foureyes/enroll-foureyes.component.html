@@ -25,6 +25,8 @@
       <!-- requiredTokensOfRealmsControl is managed by the component's logic, not direct binding here -->
       <mat-select
         [errorStateMatcher]="requiredRealmsErrorStateMatcher"
+        [formControl]="requiredTokensOfRealmsControl"
+        [value]="requiredTokensOfRealmsControl.value"
         multiple
         required>
         @for (realm of realmOptions(); track realm) {

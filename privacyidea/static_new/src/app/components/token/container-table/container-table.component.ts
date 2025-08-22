@@ -14,12 +14,11 @@ import {
   ContainerServiceInterface
 } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import {
-  TableUtilsService,
-  TableUtilsServiceInterface
-} from "../../../services/table-utils/table-utils.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
+import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";
 
 const columnsKeyMap = [
@@ -46,7 +45,9 @@ const columnsKeyMap = [
     KeywordFilterComponent,
     CopyButtonComponent,
     MatCheckboxModule,
-    FormsModule
+    FormsModule,
+    ScrollToTopDirective,
+    ClearableInputComponent
   ],
   templateUrl: "./container-table.component.html",
   styleUrl: "./container-table.component.scss",
@@ -54,21 +55,15 @@ const columnsKeyMap = [
     trigger("detailExpand", [
       state("collapsed", style({ height: "0px", minHeight: "0" })),
       state("expanded", style({ height: "*" })),
-      transition(
-        "expanded <=> collapsed",
-        animate("225ms cubic-bezier(0.4, 0.0, 0.2, 1)")
-      )
+      transition("expanded <=> collapsed", animate("225ms cubic-bezier(0.4, 0.0, 0.2, 1)"))
     ])
   ]
 })
 export class ContainerTableComponent {
-  protected readonly containerService: ContainerServiceInterface =
-    inject(ContainerService);
+  protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly tableUtilsService: TableUtilsServiceInterface =
-    inject(TableUtilsService);
-  protected readonly contentService: ContentServiceInterface =
-    inject(ContentService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
 
   readonly columnsKeyMap = columnsKeyMap;
   readonly columnKeys: string[] = columnsKeyMap.map((column) => column.key);
@@ -107,28 +102,21 @@ export class ContainerTableComponent {
       })
   });
 
-  containerDataSource: WritableSignal<MatTableDataSource<ContainerDetailData>> =
-    linkedSignal({
-      source: this.containerResource.value,
-      computation: (containerResource, previous) => {
-        if (containerResource) {
-          const processedData =
-            containerResource.result?.value?.containers.map((item) => ({
-              ...item,
-              user_name:
-                item.users && item.users.length > 0
-                  ? item.users[0].user_name
-                  : "",
-              user_realm:
-                item.users && item.users.length > 0
-                  ? item.users[0].user_realm
-                  : ""
-            })) ?? [];
-          return new MatTableDataSource<ContainerDetailData>(processedData);
-        }
-        return previous?.value ?? new MatTableDataSource(this.emptyResource());
+  containerDataSource: WritableSignal<MatTableDataSource<ContainerDetailData>> = linkedSignal({
+    source: this.containerResource.value,
+    computation: (containerResource, previous) => {
+      if (containerResource) {
+        const processedData =
+          containerResource.result?.value?.containers.map((item) => ({
+            ...item,
+            user_name: item.users && item.users.length > 0 ? item.users[0].user_name : "",
+            user_realm: item.users && item.users.length > 0 ? item.users[0].user_realm : ""
+          })) ?? [];
+        return new MatTableDataSource<ContainerDetailData>(processedData);
       }
-    });
+      return previous?.value ?? new MatTableDataSource(this.emptyResource());
+    }
+  });
 
   total: WritableSignal<number> = linkedSignal({
     source: this.containerResource.value,
@@ -152,11 +140,8 @@ export class ContainerTableComponent {
       if (this.filterInput) {
         this.filterInput.value = filterValueString;
       }
-      const recordsFromText =
-        this.tableUtilsService.recordsFromText(filterValueString);
-      if (
-        JSON.stringify(this.filterValue()) !== JSON.stringify(recordsFromText)
-      ) {
+      const recordsFromText = this.tableUtilsService.recordsFromText(filterValueString);
+      if (JSON.stringify(this.filterValue()) !== JSON.stringify(recordsFromText)) {
         this.filterValue.set(recordsFromText);
       }
       this.pageIndex.set(0);
@@ -164,10 +149,7 @@ export class ContainerTableComponent {
   }
 
   isAllSelected() {
-    return (
-      this.containerSelection().length ===
-      this.containerDataSource().data.length
-    );
+    return this.containerSelection().length === this.containerDataSource().data.length;
   }
 
   toggleAllRows() {
@@ -188,16 +170,14 @@ export class ContainerTableComponent {
   }
 
   handleStateClick(element: ContainerDetailData) {
-    this.containerService
-      .toggleActive(element.serial, element.states)
-      .subscribe({
-        next: () => {
-          this.containerResource.reload();
-        },
-        error: (error) => {
-          console.error("Failed to toggle active.", error);
-        }
-      });
+    this.containerService.toggleActive(element.serial, element.states).subscribe({
+      next: () => {
+        this.containerResource.reload();
+      },
+      error: (error) => {
+        console.error("Failed to toggle active.", error);
+      }
+    });
   }
 
   onPageEvent(event: PageEvent) {

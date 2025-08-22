@@ -17,6 +17,8 @@ export interface ContentServiceInterface {
 
 @Injectable({ providedIn: "root" })
 export class ContentService {
+  readonly routeUrl = computed(() => this._urlPair()[1]);
+  readonly previousUrl = computed(() => this._urlPair()[0]);
   router = inject(Router);
   private readonly _urlPair = toSignal(
     this.router.events.pipe(
@@ -27,8 +29,6 @@ export class ContentService {
     ),
     { initialValue: [this.router.url, this.router.url] as const }
   );
-  readonly routeUrl = computed(() => this._urlPair()[1]);
-  readonly previousUrl = computed(() => this._urlPair()[0]);
   isProgrammaticTabChange = signal(false);
   tokenSerial = signal("");
   containerSerial = signal("");

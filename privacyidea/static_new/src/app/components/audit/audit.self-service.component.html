@@ -1,21 +1,19 @@
-<div
-  i18n-aria-label
-  aria-label="Audit Layout"
-  class="content-layout">
-  <div class="audit-table-container">
+<div i18n-aria-label aria-label="Audit Layout" class="content-layout">
+  <div class="audit-table-container" appScrollToTop>
     <div class="filter-paginator-container">
-      <mat-form-field
-        class="token-table-filter"
-        subscriptSizing="dynamic">
+      <mat-form-field class="token-table-filter" subscriptSizing="dynamic">
         <mat-label i18n>Enter Filter</mat-label>
-        <input
-          #filterHTMLInputElement
-          [(ngModel)]="filterValueString"
-          i18n-aria-label
-          aria-label="Filter Input"
-          matInput
-          i18n-placeholder
-          placeholder="Example query: 'type: hotp userid: 1000'"/>
+        <app-clearable-input (onClick)="filterValueString.set('')" [showClearButton]="filterValueString().length > 0">
+          <input
+            #filterHTMLInputElement
+            [(ngModel)]="filterValueString"
+            i18n-aria-label
+            aria-label="Filter Input"
+            matInput
+            i18n-placeholder
+            placeholder="Example query: 'type: hotp userid: 1000'"
+          />
+        </app-clearable-input>
       </mat-form-field>
       <mat-paginator
         (page)="onPageEvent($event)"
@@ -23,26 +21,26 @@
         [pageIndex]="auditService.pageIndex()"
         [pageSizeOptions]="pageSizeOptions()"
         [pageSize]="auditService.pageSize()"
-        showFirstLastButtons></mat-paginator>
+        showFirstLastButtons
+      ></mat-paginator>
     </div>
     <app-keyword-filter
       [advancedApiFilter]="auditService.advancedApiFilter"
       [apiFilter]="auditService.apiFilter"
       [filterHTMLInputElement]="filterHTMLInputElement"
-      [filterValue]="auditService.filterValue"></app-keyword-filter>
+      [filterValue]="auditService.filterValue"
+    ></app-keyword-filter>
     <div class="audit-table-overflow">
       <table
         [dataSource]="auditDataSource()"
         i18n-aria-label
         aria-label="Audit Data Table"
         class="token-table"
-        mat-table>
+        mat-table
+      >
         @for (column of columnKeysMap; track column) {
           <ng-container [matColumnDef]="column.key">
-            <th
-              *matHeaderCellDef
-              attr.aria-label="{{ column.label }} Header"
-              mat-header-cell>
+            <th *matHeaderCellDef attr.aria-label="{{ column.label }} Header" mat-header-cell>
               {{ column.label }}
             </th>
             <td
@@ -52,7 +50,8 @@
               [ngClass]="{
                 'width-18rem': column.key === 'description',
                 'table-checkbox': column.key === 'select',
-              }">
+              }"
+            >
               <div>
                 @switch (column.key) {
                   @case ("success") {
@@ -63,7 +62,8 @@
                             key: column.key,
                             value: element[column.key],
                           })
-                        ">
+                        "
+                      >
                         {{ element[column.key] }}
                       </span>
                     </div>
@@ -73,22 +73,17 @@
                       <a
                         attr.aria-label="{{ column.label }} Link"
                         (click)="contentService.tokenSelected(element.serial)"
-                        routerLink="/token"> {{ element[column.key] }}
+                        routerLink="/token"
+                      >
+                        {{ element[column.key] }}
                       </a>
                       @if (element.serial && element.serial !== "") {
                         <app-copy-button [copyText]="element.serial"></app-copy-button>
                       }
                     </div>
                   }
-                  @case (column.key === "sig_check" || column.key === "missing_line"
-                    ? column.key
-                    : "") {
-                    <span
-                      [ngClass]="[
-                        element[column.key] === 'OK'
-                          ? 'highlight-true'
-                          : 'highlight-false',
-                      ]">
+                  @case (column.key === "sig_check" || column.key === "missing_line" ? column.key : "") {
+                    <span [ngClass]="[element[column.key] === 'OK' ? 'highlight-true' : 'highlight-false']">
                       {{ element[column.key] }}
                     </span>
                   }
@@ -96,19 +91,13 @@
                     <div class="flex-row ali-center">
                       <a
                         attr.aria-label="{{ column.label }} Link"
-                        (click)="
-                          contentService.containerSelected(
-                            element.container_serial
-                          )
-                        "
-                        routerLink="/token"> {{ element[column.key] }}
+                        (click)="contentService.containerSelected(element.container_serial)"
+                        routerLink="/token"
+                      >
+                        {{ element[column.key] }}
                       </a>
-                      @if (element.container_serial &&
-                      element.container_serial !== "") {
-                        <app-copy-button
-                          [copyText]="
-                            element.container_serial
-                          "></app-copy-button>
+                      @if (element.container_serial && element.container_serial !== "") {
+                        <app-copy-button [copyText]="element.container_serial"></app-copy-button>
                       }
                     </div>
                   }
@@ -123,8 +112,7 @@
                     </span>
                   }
                   @case ("policies") {
-                    @for (policy of element[column.key]?.split(",");
-                      track policy) {
+                    @for (policy of element[column.key]?.split(","); track policy) {
                       <span>
                         {{ policy }}
                       </span>
@@ -140,25 +128,10 @@
             </td>
           </ng-container>
         }
-        <tr
-          *matHeaderRowDef="columnKeys"
-          i18n-aria-label
-          aria-label="Header Row"
-          mat-header-row></tr>
-        <tr
-          *matRowDef="let row; columns: columnKeys"
-          i18n-aria-label
-          aria-label="Data Row"
-          mat-row></tr>
-        <tr
-          *matNoDataRow
-          i18n-aria-label
-          aria-label="No Data Row">
-          <td
-            [attr.colspan]="columnKeys.length"
-            i18n-aria-label
-            aria-label="No Data Cell"
-            i18n>
+        <tr *matHeaderRowDef="columnKeys" i18n-aria-label aria-label="Header Row" mat-header-row></tr>
+        <tr *matRowDef="let row; columns: columnKeys" i18n-aria-label aria-label="Data Row" mat-row></tr>
+        <tr *matNoDataRow i18n-aria-label aria-label="No Data Row">
+          <td [attr.colspan]="columnKeys.length" i18n-aria-label aria-label="No Data Cell" i18n>
             No data matching the filter.
           </td>
         </tr>

@@ -231,9 +231,9 @@ class ConfigTestCase(MyTestCase):
         # if there is no node in the nodename table, the check fails
         self.assertFalse(check_node_uuid_exists("8e4272a9-9037-40df-8aa3-976e4a04b5a9"))
 
-        db.session.add(NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a9", name="Node1"))
-        db.session.add(NodeName(id="d1d7fde6-330f-4c12-88f3-58a1752594bf", name="Node2"))
-        db.session.commit()
+        node1 = NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a9", name="Node1")
+        node2 = NodeName(id="d1d7fde6-330f-4c12-88f3-58a1752594bf", name="Node2")
+        db.session.add_all([node1, node2])
 
         self.assertTrue(check_node_uuid_exists("8e4272a9-9037-40df-8aa3-976e4a04b5a9"))
 
@@ -242,6 +242,8 @@ class ConfigTestCase(MyTestCase):
         nodes = get_privacyidea_nodes()
         self.assertIn({"uuid": "8e4272a9-9037-40df-8aa3-976e4a04b5a9", "name": "Node1"}, nodes, nodes)
         self.assertIn({"uuid": "d1d7fde6-330f-4c12-88f3-58a1752594bf", "name": "Node2"}, nodes, nodes)
+        db.session.delete(node1)
+        db.session.delete(node2)
 
     def test_08_config_object(self):
         obj1 = get_config_object()

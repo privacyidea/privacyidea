@@ -1,7 +1,7 @@
 <div
   i18n-aria-label
   aria-label="Details"
-  class="details-container">
+  class="details-container" appScrollToTop>
   <div class="details-flex-layout flex-column">
     <div class="details-header">
       <h3 i18n>Details for Token: </h3>
@@ -66,6 +66,7 @@
                       <mat-label i18n>Select Realms</mat-label>
                       <mat-select
                         [(ngModel)]="realmService.selectedRealms"
+                        [value]="realmService.selectedRealms()"
                         multiple>
                         @for (option of realmService.realmOptions();
                           track option) {
@@ -99,6 +100,7 @@
                       <mat-label i18n>Select Token Group</mat-label>
                       <mat-select
                         [(ngModel)]="selectedTokengroup"
+                        [value]="selectedTokengroup()"
                         multiple>
                         @for (option of tokengroupOptions(); track option) {
                           @if (option === userRealm) {

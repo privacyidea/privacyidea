@@ -1,33 +1,33 @@
-<div
-  i18n-aria-label
-  aria-label="User Layout"
-  class="user-layout">
-  <div class="user-table-container">
+<div i18n-aria-label aria-label="User Layout" class="user-layout">
+  <div class="user-table-container" appScrollToTop>
     <div class="filter-paginator-container">
-      <mat-form-field
-        class="token-table-filter"
-        subscriptSizing="dynamic">
+      <mat-form-field class="token-table-filter" subscriptSizing="dynamic">
         <mat-label i18n>Enter Filter</mat-label>
-        <input
-          #filterHTMLInputElement
-          [(ngModel)]="filterValueString"
-          i18n-aria-label
-          aria-label="Filter Input"
-          matInput
-          i18n-placeholder
-          placeholder="Example query: 'type: hotp userid: 1000'"/>
+        <app-clearable-input (onClick)="filterValueString.set('')" [showClearButton]="filterValueString().length > 0">
+          <input
+            #filterHTMLInputElement
+            [(ngModel)]="filterValueString"
+            i18n-aria-label
+            aria-label="Filter Input"
+            matInput
+            i18n-placeholder
+            placeholder="Example query: 'type: hotp userid: 1000'"
+          />
+        </app-clearable-input>
       </mat-form-field>
       <mat-paginator
         [length]="totalLength()"
         [pageSizeOptions]="pageSizeOptions()"
         [pageSize]="userService.pageSize()"
-        showFirstLastButtons></mat-paginator>
+        showFirstLastButtons
+      ></mat-paginator>
     </div>
     <app-keyword-filter
       [advancedApiFilter]="userService.advancedApiFilter"
       [apiFilter]="userService.apiFilter"
       [filterHTMLInputElement]="filterHTMLInputElement"
-      [filterValue]="userService.filterValue"></app-keyword-filter>
+      [filterValue]="userService.filterValue"
+    ></app-keyword-filter>
     <div class="audit-table-overflow">
       <table
         [dataSource]="usersDataSource()"
@@ -35,14 +35,11 @@
         aria-label="User Data Table"
         class="token-table"
         mat-table
-        matSort>
+        matSort
+      >
         @for (column of columnKeysMap; track column) {
           <ng-container [matColumnDef]="column.key">
-            <th
-              *matHeaderCellDef
-              attr.aria-label="{{ column.label }} Header"
-              mat-sort-header
-              mat-header-cell>
+            <th *matHeaderCellDef attr.aria-label="{{ column.label }} Header" mat-sort-header mat-header-cell>
               {{ column.label }}
             </th>
             <td
@@ -52,13 +49,13 @@
               [ngClass]="{
                 'width-18rem': column.key === 'description',
                 'table-checkbox': column.key === 'select',
-              }">
+              }"
+            >
               <div>
                 @switch (column.key) {
                   @case ("username") {
-                    <a
-                      attr.aria-label="{{ column.label }} Link"
-                      [routerLink]="['#', element.username]"> {{ element[column.key] }}
+                    <a attr.aria-label="{{ column.label }} Link" [routerLink]="['#', element.username]">
+                      {{ element[column.key] }}
                     </a>
                   }
                   @default {
@@ -71,25 +68,10 @@
             </td>
           </ng-container>
         }
-        <tr
-          *matHeaderRowDef="columnKeys"
-          i18n-aria-label
-          aria-label="Header Row"
-          mat-header-row></tr>
-        <tr
-          *matRowDef="let row; columns: columnKeys"
-          i18n-aria-label
-          aria-label="Data Row"
-          mat-row></tr>
-        <tr
-          *matNoDataRow
-          i18n-aria-label
-          aria-label="No Data Row">
-          <td
-            [attr.colspan]="columnKeys.length"
-            i18n-aria-label
-            aria-label="No Data Cell"
-            i18n>
+        <tr *matHeaderRowDef="columnKeys" i18n-aria-label aria-label="Header Row" mat-header-row></tr>
+        <tr *matRowDef="let row; columns: columnKeys" i18n-aria-label aria-label="Data Row" mat-row></tr>
+        <tr *matNoDataRow i18n-aria-label aria-label="No Data Row">
+          <td [attr.colspan]="columnKeys.length" i18n-aria-label aria-label="No Data Cell" i18n>
             No data matching the filter.
           </td>
         </tr>
@@ -97,4 +79,3 @@
     </div>
   </div>
 </div>
-
