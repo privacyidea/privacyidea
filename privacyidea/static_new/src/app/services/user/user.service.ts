@@ -1,26 +1,16 @@
 import { httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, inject, Injectable, linkedSignal, signal, Signal, WritableSignal } from "@angular/core";
+import { Sort } from "@angular/material/sort";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
+import { ROUTE_PATHS } from "../../app.routes";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { LocalService, LocalServiceInterface } from "../local/local.service";
 import { RealmService, RealmServiceInterface } from "../realm/realm.service";
 import { TokenService, TokenServiceInterface } from "../token/token.service";
-import { Sort } from "@angular/material/sort";
-import { ROUTE_PATHS } from "../../app.routes";
 
-const apiFilter = [
-  "description",
-  "email",
-  "givenname",
-  "mobile",
-  "phone",
-  "resolver",
-  "surname",
-  "userid",
-  "username"
-];
+const apiFilter = ["description", "email", "givenname", "mobile", "phone", "resolver", "surname", "userid", "username"];
 const advancedApiFilter: string[] = [];
 
 export interface UserData {
@@ -39,7 +29,7 @@ export interface UserData {
 export interface UserServiceInterface {
   selectedUserRealm: WritableSignal<string>;
   selectedUser: Signal<UserData | null>;
-  userFilter: WritableSignal<string | UserData>;
+  userFilter: WritableSignal<string | UserData | null>;
   userNameFilter: Signal<string>;
   userResource: HttpResourceRef<PiResponse<UserData[]> | undefined>;
   user: WritableSignal<UserData>;

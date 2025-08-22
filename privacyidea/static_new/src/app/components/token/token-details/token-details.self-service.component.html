@@ -3,16 +3,12 @@
   class="details-container">
   <div class="details-flex-layout flex-column">
     <div class="details-header">
-      <h3>Details for Token: </h3>
-      <h3 style="color: var(--mat-sys-primary)"> {{ tokenSerial() }} </h3>
+      <h3>Details for Token:</h3>
+      <h3 style="color: var(--mat-sys-primary)">{{ tokenSerial() }}</h3>
       <app-copy-button [copyText]="tokenSerial()"></app-copy-button>
     </div>
     <div
-      [ngClass]="[
-        overflowService.isWidthOverflowing('body', 1310)
-          ? 'flex-column'
-          : 'flex-row',
-      ]"
+      [ngClass]="[overflowService.isWidthOverflowing('body', 1310) ? 'flex-column' : 'flex-row']"
       class="details-flex-layout">
       <div>
         <table
@@ -24,7 +20,8 @@
             <td
               *matCellDef="let element"
               class="details-key-row"
-              mat-cell>{{ element.keyMap.label }}
+              mat-cell>
+              {{ element.keyMap.label }}
             </td>
           </ng-container>
           <ng-container matColumnDef="value">
@@ -37,13 +34,17 @@
                   @if (element.isEditing()) {
                     <mat-form-field class="width-288px container-form-field">
                       <mat-label>Enter Container</mat-label>
-                      <input
-                        matInput
-                        [(ngModel)]="containerService.selectedContainer"
-                        [matAutocomplete]="containerAuto"/>
+                      <app-clearable-input
+                        (onClick)="containerHTMLInputElement.value = ''; containerService.selectedContainer.set(null)"
+                        [showClearButton]="containerService.selectedContainer() !== ''">
+                        <input
+                          #containerHTMLInputElement
+                          matInput
+                          [(ngModel)]="containerService.selectedContainer"
+                          [matAutocomplete]="containerAuto" />
+                      </app-clearable-input>
                       <mat-autocomplete #containerAuto="matAutocomplete">
-                        @for (option of containerService.filteredContainerOptions();
-                          track option) {
+                        @for (option of containerService.filteredContainerOptions(); track option) {
                           <mat-option [value]="option">{{ option }}</mat-option>
                         }
                       </mat-autocomplete>
@@ -72,16 +73,15 @@
                       <mat-select
                         [(ngModel)]="realmService.selectedRealms"
                         multiple>
-                        @for (option of realmService.realmOptions();
-                          track option) {
+                        @for (option of realmService.realmOptions(); track option) {
                           @if (option === userRealm) {
                             <mat-option
                               value="{{ option }}"
-                              disabled>{{ option }}
+                              disabled
+                              >{{ option }}
                             </mat-option>
                           } @else {
-                            <mat-option value="{{ option }}">{{ option }}
-                            </mat-option>
+                            <mat-option value="{{ option }}">{{ option }} </mat-option>
                           }
                         }
                       </mat-select>
@@ -109,11 +109,11 @@
                           @if (option === userRealm) {
                             <mat-option
                               value="{{ option }}"
-                              disabled>{{ option }}
+                              disabled
+                              >{{ option }}
                             </mat-option>
                           } @else {
-                            <mat-option value="{{ option }}">{{ option }}
-                            </mat-option>
+                            <mat-option value="{{ option }}">{{ option }} </mat-option>
                           }
                         }
                       </mat-select>
@@ -122,7 +122,7 @@
                     <div
                       [ngClass]="{
                         'details-scrollable-container': true,
-                        'details-list': element.value.length > 2,
+                        'details-list': element.value.length > 2
                       }">
                       @for (tokengroup of element.value; track tokengroup) {
                         <mat-list-item class="height-auto">
@@ -156,7 +156,7 @@
                       <input
                         type="number"
                         matInput
-                        [(ngModel)]="element.value"/>
+                        [(ngModel)]="element.value" />
                     </mat-form-field>
                   } @else if (element.isEditing()) {
                     <mat-form-field class="width-18rem">
@@ -166,17 +166,14 @@
                         [(ngModel)]="element.value"></textarea>
                     </mat-form-field>
                   } @else {
-                    <div
-                      [ngClass]="[
-                        tableUtilsService.getDivClassForKey(element.keyMap.key),
-                      ]">
+                    <div [ngClass]="[tableUtilsService.getDivClassForKey(element.keyMap.key)]">
                       <span
                         [ngClass]="[
                           tableUtilsService.getSpanClassForKey({
                             key: element.keyMap.key,
                             value: element.value,
-                            maxfail: maxfail,
-                          }),
+                            maxfail: maxfail
+                          })
                         ]">
                         {{
                           tableUtilsService.getDisplayTextForKeyAndRevoked(
@@ -214,9 +211,9 @@
                       <mat-icon> lock_reset</mat-icon>
                     </button>
                   </div>
-                } @else if (element.keyMap.key === "container_serial" &&
-                !isAnyEditingOrRevoked() &&
-                element.value !== '') {
+                } @else if (
+                  element.keyMap.key === "container_serial" && !isAnyEditingOrRevoked() && element.value !== ""
+                ) {
                   <div class="edit-button-container">
                     <button
                       mat-icon-button
@@ -244,12 +241,7 @@
             mat-row></tr>
         </table>
       </div>
-      <div
-        [ngClass]="[
-            overflowService.isWidthOverflowing('.token-layout', 1580)
-              ? 'flex-column'
-              : 'flex-row',
-          ]">
+      <div [ngClass]="[overflowService.isWidthOverflowing('.token-layout', 1580) ? 'flex-column' : 'flex-row']">
         <div class="flex-column">
           <app-token-details-user-self-service
             [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
