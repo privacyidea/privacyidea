@@ -147,13 +147,13 @@ export class AuthService implements AuthServiceInterface {
   logLevel = computed(() => this.authData()?.log_level || 0);
   menus = computed(() => this.authData()?.menus || []);
   realm = computed(() => this.jwtData()?.realm || this.authData()?.realm || "");
-  rights = computed(() => this.authData()?.rights || []);
+  rights = computed(() => this.jwtData()?.rights || this.authData()?.rights || []);
   role = computed(() => this.jwtData()?.role || this.authData()?.role || "");
   token = computed(() => this.authData()?.token || "");
   username = computed(() => this.jwtData()?.username || this.authData()?.username || "");
   logoutTimeSeconds = computed(() => {
     const jwtExpDate = this.jwtExpDate()!;
-    var jwtLogoutTime: number | null = null;
+    let jwtLogoutTime: number | null = null;
     const authDataLogoutTime = this.authData()?.logout_time || null;
     if (jwtExpDate) {
       const now = new Date();
