@@ -21,6 +21,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "../../../services
 import { TokenDetails, TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { EditableElement, EditButtonsComponent } from "../../shared/edit-buttons/edit-buttons.component";
 import { TokenDetailsActionsComponent } from "./token-details-actions/token-details-actions.component";
 import { TokenDetailsInfoComponent } from "./token-details-info/token-details-info.component";
@@ -77,7 +78,8 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
     TokenDetailsActionsComponent,
     EditButtonsComponent,
     CopyButtonComponent,
-    ClearableInputComponent
+    ClearableInputComponent,
+    ScrollToTopDirective
   ],
   templateUrl: "./token-details.component.html",
   styleUrls: ["./token-details.component.scss"]

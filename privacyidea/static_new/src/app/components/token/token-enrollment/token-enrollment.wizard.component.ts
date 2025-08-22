@@ -23,6 +23,7 @@ import { TokenService, TokenServiceInterface } from "../../../services/token/tok
 import { UserData, UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { EnrollApplspecComponent } from "./enroll-asp/enroll-applspec.component";
 import { EnrollCertificateComponent } from "./enroll-certificate/enroll-certificate.component";
 import { EnrollDaypasswordComponent } from "./enroll-daypassword/enroll-daypassword.component";
@@ -99,7 +100,8 @@ import { TokenEnrollmentComponent } from "./token-enrollment.component";
     AsyncPipe,
     MatError,
     MatTooltip,
-    ClearableInputComponent
+    ClearableInputComponent,
+    ScrollToTopDirective
   ],
   templateUrl: "./token-enrollment.wizard.component.html",
   styleUrl: "./token-enrollment.component.scss"
