@@ -41,6 +41,7 @@ export class ScrollToTopDirective {
 
     this.renderer.setStyle(this.button, "position", "sticky");
     this.renderer.setStyle(this.button, "bottom", "0px");
+    this.renderer.setStyle(this.button, "right", "0px");
     this.renderer.setStyle(this.button, "cursor", "pointer");
     this.renderer.setStyle(this.button, "order", "999");
     this.renderer.setStyle(this.button, "width", "4rem");
