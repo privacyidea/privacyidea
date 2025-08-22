@@ -1,3 +1,4 @@
+import { NgClass } from "@angular/common";
 import { Component, inject } from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
@@ -15,9 +16,9 @@ import { OverflowService, OverflowServiceInterface } from "../../../../services/
 import { RealmService, RealmServiceInterface } from "../../../../services/realm/realm.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { UserService, UserServiceInterface } from "../../../../services/user/user.service";
+import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
 import { EditButtonsComponent } from "../../../shared/edit-buttons/edit-buttons.component";
 import { TokenDetailsUserComponent } from "./token-details-user.component";
-import { NgClass } from "@angular/common";
 
 @Component({
   selector: "app-token-details-user-self-service",
@@ -38,7 +39,8 @@ import { NgClass } from "@angular/common";
     MatIconButton,
     MatIcon,
     EditButtonsComponent,
-    NgClass
+    NgClass,
+    ClearableInputComponent
   ],
   templateUrl: "./token-details-user.self-service.component.html",
   styleUrl: "./token-details-user.component.scss"
@@ -47,10 +49,8 @@ export class TokenDetailsUserSelfServiceComponent extends TokenDetailsUserCompon
   protected override tokenService: TokenServiceInterface = inject(TokenService);
   protected override realmService: RealmServiceInterface = inject(RealmService);
   protected override userService: UserServiceInterface = inject(UserService);
-  protected override notificationService: NotificationServiceInterface =
-    inject(NotificationService);
-  protected override overflowService: OverflowServiceInterface =
-    inject(OverflowService);
+  protected override notificationService: NotificationServiceInterface = inject(NotificationService);
+  protected override overflowService: OverflowServiceInterface = inject(OverflowService);
 
   constructor() {
     super();
