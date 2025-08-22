@@ -37,7 +37,7 @@ export interface PiResponse<Value, Detail = unknown> {
  */
 export function isAuthenticationSuccessful<Value, Detail = unknown>(
   response: PiResponse<Value, Detail>
-): response is PiResponse<Value, Detail> & { result: { value: Value, status: true } } {
+): response is PiResponse<Value, Detail> & { result: { value: Value; status: true } } {
   if (!response.result) {
     return false;
   }
@@ -67,9 +67,7 @@ export function isAuthenticationSuccessful<Value, Detail = unknown>(
  * @param response The `PiResponse` object to check.
  * @returns `true` if a challenge was triggered, otherwise `false`.
  */
-export function challengesTriggered<Value, Detail = unknown>(
-  response: PiResponse<Value, Detail>
-): boolean {
+export function challengesTriggered<Value, Detail = unknown>(response: PiResponse<Value, Detail>): boolean {
   // Case 1: The response explicitly states a challenge.
   if (response.result?.authentication === "CHALLENGE") {
     return true;
@@ -83,7 +81,6 @@ export function challengesTriggered<Value, Detail = unknown>(
   return false;
 }
 
-
 @Component({
   selector: "app-root",
   standalone: true,
@@ -93,24 +90,22 @@ export function challengesTriggered<Value, Detail = unknown>(
 })
 export class AppComponent implements OnInit {
   private readonly authService: AuthServiceInterface = inject(AuthService);
-  private readonly notificationService: NotificationServiceInterface =
-    inject(NotificationService);
-  private readonly sessionTimerService: SessionTimerServiceInterface =
-    inject(SessionTimerService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  private readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
+
   title = "privacyidea-webui";
   lastSessionReset = 0;
 
   constructor() {
     this.sessionTimerService.startTimer();
 
-    if (this.authService.isAuthenticatedUser()) {
+    if (this.authService.isAuthenticated()) {
       console.warn("User is already logged in.");
       this.notificationService.openSnackBar("User is already logged in.");
     }
   }
 
-  ngOnInit(): void {
-  }
+  ngOnInit(): void {}
 
   @HostListener("document:click")
   @HostListener("document:keydown")

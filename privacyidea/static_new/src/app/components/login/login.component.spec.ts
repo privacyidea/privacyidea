@@ -1,15 +1,9 @@
-import { ComponentFixture, fakeAsync, TestBed, tick } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
-import { EMPTY, of, Subscription, throwError } from "rxjs";
-import { Router } from "@angular/router";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-
-import { LoginComponent } from "./login.component";
-import { AuthData, AuthDetail, AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
-import { LocalService, LocalServiceInterface } from "../../services/local/local.service";
-import { NotificationService, NotificationServiceInterface } from "../../services/notification/notification.service";
-import { SessionTimerService, SessionTimerServiceInterface } from "../../services/session-timer/session-timer.service";
+import { ComponentFixture, fakeAsync, TestBed, tick } from "@angular/core/testing";
+import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+import { Router } from "@angular/router";
+import { of, throwError } from "rxjs";
 import {
   MockAuthDetail,
   MockAuthService,
@@ -18,7 +12,12 @@ import {
   MockPiResponse,
   MockValidateService
 } from "../../../testing/mock-services";
-import { ValidateService, ValidateServiceInterface } from "../../services/validate/validate.service";
+import { AuthData, AuthDetail, AuthService } from "../../services/auth/auth.service";
+import { LocalService } from "../../services/local/local.service";
+import { NotificationService } from "../../services/notification/notification.service";
+import { SessionTimerService, SessionTimerServiceInterface } from "../../services/session-timer/session-timer.service";
+import { ValidateService } from "../../services/validate/validate.service";
+import { LoginComponent } from "./login.component";
 
 describe("LoginComponent", () => {
   let fixture: ComponentFixture<LoginComponent>;
@@ -63,9 +62,7 @@ describe("LoginComponent", () => {
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     localService = TestBed.inject(LocalService) as unknown as MockLocalService;
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
-    sessionTimerService = TestBed.inject(
-      SessionTimerService
-    ) as unknown as jest.Mocked<SessionTimerServiceInterface>;
+    sessionTimerService = TestBed.inject(SessionTimerService) as unknown as jest.Mocked<SessionTimerServiceInterface>;
     validateService = TestBed.inject(ValidateService) as unknown as MockValidateService;
     router = TestBed.inject(Router) as jest.Mocked<Router>;
   });
@@ -83,9 +80,7 @@ describe("LoginComponent", () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
 
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-      "User is already logged in."
-    );
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith("User is already logged in.");
     expect(warn).toHaveBeenCalledWith("User is already logged in.");
 
     warn.mockRestore();
@@ -112,10 +107,7 @@ describe("LoginComponent", () => {
 
       component.onSubmit();
 
-      expect(localService.saveData).toHaveBeenCalledWith(
-        "mockBearerTokenKey",
-        "fake-token"
-      );
+      expect(localService.saveData).toHaveBeenCalledWith("mockBearerTokenKey", "fake-token");
       expect(sessionTimerService.startRefreshingRemainingTime).toHaveBeenCalled();
       expect(sessionTimerService.startTimer).toHaveBeenCalled();
       expect(router.navigateByUrl).toHaveBeenCalledWith("/tokens");
@@ -245,9 +237,7 @@ describe("LoginComponent", () => {
     }));
 
     it("should stop polling and log in on successful poll", fakeAsync(() => {
-      jest.spyOn(validateService, "pollTransaction")
-        .mockReturnValueOnce(of(false))
-        .mockReturnValueOnce(of(true)); // Succeed on second poll
+      jest.spyOn(validateService, "pollTransaction").mockReturnValueOnce(of(false)).mockReturnValueOnce(of(true)); // Succeed on second poll
       const successResponse = MockPiResponse.fromValue<AuthData, AuthDetail>({ token: "push-token" } as AuthData);
       authService.authenticate.mockReturnValue(of(successResponse));
       (component as any).transactionId = "tx-push-success";

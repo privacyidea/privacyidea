@@ -4,6 +4,8 @@
   @include styles.table-container-styles;
   width: 920px;
   max-height: calc(var(--main-height) - var(--global-padding) * 5);
+  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
+  display: grid;
   overflow: auto;
 }
 

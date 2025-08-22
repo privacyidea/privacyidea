@@ -1,19 +1,19 @@
-import { NgOptimizedImage, CommonModule } from "@angular/common";
+import { CommonModule, NgOptimizedImage } from "@angular/common";
 import { Component, computed, effect, ElementRef, inject, OnDestroy, signal, ViewChild } from "@angular/core";
-import { EMPTY, Subscription, catchError, filter, switchMap, take, timeout, timer } from "rxjs";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { Router } from "@angular/router";
-import { AuthService, AuthResponse, AuthServiceInterface } from "../../services/auth/auth.service";
+import { catchError, EMPTY, filter, Subscription, switchMap, take, timeout, timer } from "rxjs";
+import { challengesTriggered, isAuthenticationSuccessful } from "../../app.component";
+import { ROUTE_PATHS } from "../../app.routes";
+import { AuthResponse, AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
 import { LocalService, LocalServiceInterface } from "../../services/local/local.service";
 import { NotificationService, NotificationServiceInterface } from "../../services/notification/notification.service";
 import { SessionTimerService, SessionTimerServiceInterface } from "../../services/session-timer/session-timer.service";
 import { ValidateService, ValidateServiceInterface } from "../../services/validate/validate.service";
-import { ROUTE_PATHS } from "../../app.routes";
-import { challengesTriggered, isAuthenticationSuccessful } from "../../app.component";
 
 const PUSH_POLLING_INTERVAL_MS = 500;
 const PUSH_POLLING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
@@ -67,8 +67,7 @@ export class LoginComponent implements OnDestroy {
   });
 
   constructor() {
-    const isAuthenticated = this.authService.isAuthenticatedUser();
-    if (isAuthenticated) {
+    if (this.authService.isAuthenticated()) {
       console.warn("User is already logged in.");
       this.notificationService.openSnackBar("User is already logged in.");
     } else {
@@ -85,27 +84,25 @@ export class LoginComponent implements OnDestroy {
 
   onSubmit() {
     const username = this.username();
-    const isChallengeResponse = this.showOtpField();
-    // Use the OTP value as the password if the OTP field is visible (challenge-response)
-    const password = isChallengeResponse ? this.otp() : this.password();
+    const password = this.password();
 
-    const params: any = { username, password };
-
-    if (isChallengeResponse) {
-      this.stopPushPolling();
-      this.loginMessage.set([]);
-      this.errorMessage.set("");
-      params.transaction_id = this.transactionId;
-    } else {
-      this.resetChallengeState();
-    }
-
-    this.authService
-      .authenticate(params)
-      .subscribe({
-        next: (response) => this.evaluateResponse(response, "password"),
-        error: (err) => this.handleError(err, "password")
-      });
+    this.authService.authenticate({ username, password }).subscribe({
+      next: (response) => {
+        if (
+          response.result &&
+          response.result?.value &&
+          response.result?.value.token &&
+          this.authService.isAuthenticated()
+        ) {
+          this.sessionTimerService.startRefreshingRemainingTime();
+          this.sessionTimerService.startTimer();
+          this.router.navigateByUrl(ROUTE_PATHS.TOKENS);
+        } else {
+          console.error("Login failed. Challenge response required.");
+          this.notificationService.openSnackBar("Login failed. Challenge response required.");
+        }
+      }
+    });
   }
 
   webAuthnLogin(): void {
@@ -133,20 +130,15 @@ export class LoginComponent implements OnDestroy {
 
   passkeyLogin(): void {
     this.resetChallengeState();
-    this.validateService
-      .authenticatePasskey()
-      .subscribe({
-        next: (response) => this.evaluateResponse(response, "passkey"),
-        error: (err: any) => this.handleError(err, "passkey")
-      });
+    this.validateService.authenticatePasskey().subscribe({
+      next: (response) => this.evaluateResponse(response, "passkey"),
+      error: (err: any) => this.handleError(err, "passkey")
+    });
   }
 
   logout(): void {
-    this.localService.removeData(this.localService.bearerTokenKey);
     this.authService.logout();
-    this.router
-      .navigate(["login"])
-      .then(() => this.notificationService.openSnackBar("Logout successful."));
+    this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar("Logout successful."));
   }
 
   resetLogin(): void {
@@ -184,14 +176,16 @@ export class LoginComponent implements OnDestroy {
       next: (success) => {
         if (success) {
           // The user is authenticated on the server, now we need the token.
-          this.authService.authenticate({
-            username: this.username(),
-            password: "",
-            transaction_id: this.transactionId
-          }).subscribe({
-            next: (response) => this.evaluateResponse(response, "password"),
-            error: (err) => this.handleError(err, "password")
-          });
+          this.authService
+            .authenticate({
+              username: this.username(),
+              password: "",
+              transaction_id: this.transactionId
+            })
+            .subscribe({
+              next: (response) => this.evaluateResponse(response, "password"),
+              error: (err) => this.handleError(err, "password")
+            });
         }
       }
     });
@@ -216,10 +210,6 @@ export class LoginComponent implements OnDestroy {
   private evaluateResponse(response: AuthResponse, context: "password" | "passkey" | "webauthn"): void {
     if (isAuthenticationSuccessful(response)) {
       // Successful auth -> log in
-      this.localService.saveData(
-        this.localService.bearerTokenKey,
-        response.result.value.token
-      );
       this.showOtpField.set(false);
       this.sessionTimerService.startRefreshingRemainingTime();
       this.sessionTimerService.startTimer();
@@ -259,9 +249,14 @@ export class LoginComponent implements OnDestroy {
         passkey: "Login with passkey failed.",
         webauthn: "Login with WebAuthn failed."
       };
-      const message = response.result?.error?.message || (response.detail as {
-        message?: string
-      })?.message || defaultMessages[context];
+      const message =
+        response.result?.error?.message ||
+        (
+          response.detail as {
+            message?: string;
+          }
+        )?.message ||
+        defaultMessages[context];
       this.errorMessage.set(message);
     }
   }

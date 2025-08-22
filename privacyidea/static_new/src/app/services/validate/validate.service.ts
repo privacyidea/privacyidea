@@ -6,7 +6,6 @@ import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { AuthResponse, AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { Base64Service, Base64ServiceInterface } from "../base64/base64.service";
-import { LocalService, LocalServiceInterface } from "../local/local.service";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 
 export interface ValidateCheckDetail {
@@ -37,11 +36,7 @@ export interface ValidateCheckDetail {
 export type ValidateCheckResponse = PiResponse<boolean, ValidateCheckDetail>;
 
 export interface ValidateServiceInterface {
-  testToken(
-    tokenSerial: string,
-    otpOrPinToTest: string,
-    otponly?: string
-  ): Observable<ValidateCheckResponse>;
+  testToken(tokenSerial: string, otpOrPinToTest: string, otponly?: string): Observable<ValidateCheckResponse>;
 
   authenticatePasskey(args?: { isTest?: boolean }): Observable<AuthResponse>;
 
@@ -60,19 +55,15 @@ export interface ValidateServiceInterface {
 })
 export class ValidateService implements ValidateServiceInterface {
   private readonly http: HttpClient = inject(HttpClient);
-  private readonly localService: LocalServiceInterface = inject(LocalService);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly base64Service: Base64ServiceInterface = inject(Base64Service);
   private readonly authenticationService: AuthServiceInterface = inject(AuthService);
 
   private baseUrl = environment.proxyUrl + "/validate/";
 
-  testToken(
-    tokenSerial: string,
-    otpOrPinToTest: string,
-    otponly?: string
-  ): Observable<ValidateCheckResponse> {
-    const headers = this.localService.getHeaders();
+  testToken(tokenSerial: string, otpOrPinToTest: string, otponly?: string): Observable<ValidateCheckResponse> {
+    const headers = this.authService.getHeaders();
     return this.http
       .post<ValidateCheckResponse>(
         `${this.baseUrl}check`,
@@ -123,15 +114,9 @@ export class ValidateService implements ValidateServiceInterface {
               authenticatorData: this.base64Service.bytesToBase64(
                 new Uint8Array(credential.response.authenticatorData)
               ),
-              clientDataJSON: this.base64Service.bytesToBase64(
-                new Uint8Array(credential.response.clientDataJSON)
-              ),
-              signature: this.base64Service.bytesToBase64(
-                new Uint8Array(credential.response.signature)
-              ),
-              userHandle: this.base64Service.bytesToBase64(
-                new Uint8Array(credential.response.userHandle)
-              )
+              clientDataJSON: this.base64Service.bytesToBase64(new Uint8Array(credential.response.clientDataJSON)),
+              signature: this.base64Service.bytesToBase64(new Uint8Array(credential.response.signature)),
+              userHandle: this.base64Service.bytesToBase64(new Uint8Array(credential.response.userHandle))
             };
             return args?.isTest
               ? this.http.post<AuthResponse>(`${this.baseUrl}check`, params)
@@ -141,8 +126,7 @@ export class ValidateService implements ValidateServiceInterface {
       }),
       catchError((error: any) => {
         console.error("Error during passkey authentication", error);
-        const errorMessage =
-          error.error?.result?.error?.message || error.message || "Error during authentication";
+        const errorMessage = error.error?.result?.error?.message || error.message || "Error during authentication";
         this.notificationService.openSnackBar(errorMessage);
         return throwError(() => new Error(errorMessage));
       })
@@ -163,7 +147,7 @@ export class ValidateService implements ValidateServiceInterface {
     try {
       const signRequest = args.signRequest;
 
-      const publicKey = {
+      const publicKey: any = {
         challenge: this.base64Service.webAuthnBase64DecToArr(signRequest.challenge),
         allowCredentials: signRequest.allowCredentials.map((cred: any) => ({
           ...cred,
@@ -209,7 +193,7 @@ export class ValidateService implements ValidateServiceInterface {
   }
 
   pollTransaction(transactionId: string): Observable<boolean> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http
       .get<PiResponse<boolean, any>>(`${this.baseUrl}polltransaction`, {
         params: {

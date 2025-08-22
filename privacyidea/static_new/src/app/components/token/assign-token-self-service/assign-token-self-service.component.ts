@@ -4,22 +4,13 @@ import { MatButton } from "@angular/material/button";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
-import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "../../../app.routes";
+import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 
 @Component({
   selector: "app-assign-token-self-service",
-  imports: [
-    MatError,
-    MatFormField,
-    MatFormField,
-    MatLabel,
-    MatInput,
-    FormsModule,
-    MatButton,
-    MatIcon
-  ],
+  imports: [MatError, MatFormField, MatFormField, MatLabel, MatInput, FormsModule, MatButton, MatIcon],
   templateUrl: "./assign-token-self-service.component.html",
   styleUrl: "./assign-token-self-service.component.scss"
 })
@@ -41,9 +32,7 @@ export class AssignTokenSelfServiceComponent {
       })
       .subscribe({
         next: () => {
-          this.router.navigateByUrl(
-            ROUTE_PATHS.TOKENS_DETAILS + this.selectedToken()
-          );
+          this.router.navigateByUrl(ROUTE_PATHS.TOKENS_DETAILS + this.selectedToken());
           this.tokenSerial.set(this.selectedToken());
         }
       });

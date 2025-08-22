@@ -1,6 +1,6 @@
 <div
   aria-label="Token Get Serial"
-  class="token-get-serial">
+  class="token-get-serial" appScrollToTop>
   <h3 class="margin-left-1">Get Serial Number</h3>
   <p
     class="margin-left-1"
@@ -39,6 +39,7 @@
     <mat-label>Token Type</mat-label>
     <mat-select
       [(ngModel)]="tokenType"
+      [value]="tokenType()"
       placeholder="Select token type">
       @for (type of tokenTypesWithOTP; track type) {
         <mat-option [value]="type['key']">{{ type["info"] }}</mat-option>
@@ -49,6 +50,7 @@
     <mat-label>Assignment State</mat-label>
     <mat-select
       [(ngModel)]="assignmentState"
+      [value]="assignmentState()"
       placeholder="Specify assignment state">
       @for (assignment of assignmentStates; track assignment) {
         <mat-option
