@@ -68,7 +68,7 @@ export class EnrollDaypasswordComponent implements OnInit {
     Validators.required
   ]);
   generateOnServerControl = new FormControl(true);
-  otpLengthControl = new FormControl<number>(10, [Validators.required]);
+  otpLengthControl = new FormControl<number>(6, [Validators.required]);
   daypasswordForm = new FormGroup({
     otpKey: this.otpKeyControl,
     otpLength: this.otpLengthControl,

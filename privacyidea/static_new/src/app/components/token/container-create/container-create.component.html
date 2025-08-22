@@ -14,6 +14,7 @@
           subscriptSizing="dynamic">
           <mat-select
             [(ngModel)]="containerService.selectedContainerType"
+            [value]="containerService.selectedContainerType()"
             [ngModelOptions]="{ standalone: true }"
             [panelClass]="'single-column-panel'">
             @for (type of containerService.containerTypeOptions(); track type) {
@@ -74,6 +75,7 @@
         <mat-label>Template</mat-label>
         <mat-select
           [(ngModel)]="selectedTemplate"
+          [value]="selectedTemplate()"
           disabled>
           @for (option of templateOptions(); track option) {
             <mat-option [value]="option">{{ option.name }}</mat-option>
@@ -85,7 +87,8 @@
     <div class="flex-row gap-1">
       <mat-form-field class="width-32 input-height">
         <mat-label>Select Realm of User</mat-label>
-        <mat-select [(ngModel)]="userService.selectedUserRealm">
+        <mat-select [(ngModel)]="userService.selectedUserRealm"
+                    [value]="userService.selectedUserRealm()">
           @for (option of realmService.realmOptions(); track option) {
             <mat-option value="{{ option }}">{{ option }}</mat-option>
           }
