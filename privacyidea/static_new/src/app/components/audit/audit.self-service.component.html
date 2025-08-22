@@ -7,12 +7,16 @@
         class="token-table-filter"
         subscriptSizing="dynamic">
         <mat-label>Enter Filter</mat-label>
-        <input
-          #filterHTMLInputElement
-          [(ngModel)]="filterValueString"
-          aria-label="Filter Input"
-          matInput
-          placeholder="Example query: 'type: hotp userid: 1000'"/>
+        <app-clearable-input
+          (onClick)="filterValueString.set('')"
+          [showClearButton]="filterValueString().length > 0">
+          <input
+            #filterHTMLInputElement
+            [(ngModel)]="filterValueString"
+            aria-label="Filter Input"
+            matInput
+            placeholder="Example query: 'type: hotp userid: 1000'" />
+        </app-clearable-input>
       </mat-form-field>
       <mat-paginator
         (page)="onPageEvent($event)"
@@ -47,7 +51,7 @@
               mat-cell
               [ngClass]="{
                 'width-18rem': column.key === 'description',
-                'table-checkbox': column.key === 'select',
+                'table-checkbox': column.key === 'select'
               }">
               <div>
                 @switch (column.key) {
@@ -57,7 +61,7 @@
                         [ngClass]="
                           tableUtilsService.getSpanClassForKey({
                             key: column.key,
-                            value: element[column.key],
+                            value: element[column.key]
                           })
                         ">
                         {{ element[column.key] }}
@@ -69,22 +73,16 @@
                       <a
                         attr.aria-label="{{ column.label }} Link"
                         (click)="contentService.tokenSelected(element.serial)"
-                        routerLink="/token"> {{ element[column.key] }}
+                        routerLink="/token">
+                        {{ element[column.key] }}
                       </a>
                       @if (element.serial && element.serial !== "") {
                         <app-copy-button [copyText]="element.serial"></app-copy-button>
                       }
                     </div>
                   }
-                  @case (column.key === "sig_check" || column.key === "missing_line"
-                    ? column.key
-                    : "") {
-                    <span
-                      [ngClass]="[
-                        element[column.key] === 'OK'
-                          ? 'highlight-true'
-                          : 'highlight-false',
-                      ]">
+                  @case (column.key === "sig_check" || column.key === "missing_line" ? column.key : "") {
+                    <span [ngClass]="[element[column.key] === 'OK' ? 'highlight-true' : 'highlight-false']">
                       {{ element[column.key] }}
                     </span>
                   }
@@ -92,19 +90,12 @@
                     <div class="flex-row ali-center">
                       <a
                         attr.aria-label="{{ column.label }} Link"
-                        (click)="
-                          contentService.containerSelected(
-                            element.container_serial
-                          )
-                        "
-                        routerLink="/token"> {{ element[column.key] }}
+                        (click)="contentService.containerSelected(element.container_serial)"
+                        routerLink="/token">
+                        {{ element[column.key] }}
                       </a>
-                      @if (element.container_serial &&
-                      element.container_serial !== "") {
-                        <app-copy-button
-                          [copyText]="
-                            element.container_serial
-                          "></app-copy-button>
+                      @if (element.container_serial && element.container_serial !== "") {
+                        <app-copy-button [copyText]="element.container_serial"></app-copy-button>
                       }
                     </div>
                   }
@@ -119,8 +110,7 @@
                     </span>
                   }
                   @case ("policies") {
-                    @for (policy of element[column.key]?.split(",");
-                      track policy) {
+                    @for (policy of element[column.key]?.split(","); track policy) {
                       <span>
                         {{ policy }}
                       </span>

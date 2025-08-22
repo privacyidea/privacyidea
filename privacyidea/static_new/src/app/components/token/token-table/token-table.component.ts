@@ -12,6 +12,7 @@ import { ContentService, ContentServiceInterface } from "../../../services/conte
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "../../../services/token/token.service";
+import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";
 
@@ -43,19 +44,17 @@ const columnKeysMap = [
     CopyButtonComponent,
     MatCheckboxModule,
     FormsModule,
-    MatIconModule
+    MatIconModule,
+    ClearableInputComponent
   ],
   templateUrl: "./token-table.component.html",
   styleUrl: "./token-table.component.scss"
 })
 export class TokenTableComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly tableUtilsService: TableUtilsServiceInterface =
-    inject(TableUtilsService);
-  protected readonly contentService: ContentServiceInterface =
-    inject(ContentService);
-  protected readonly dialogService: DialogServiceInterface =
-    inject(DialogService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = columnKeysMap.map((column) => column.key);
@@ -90,16 +89,15 @@ export class TokenTableComponent {
       })
   });
 
-  tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> =
-    linkedSignal({
-      source: this.tokenResource.value,
-      computation: (tokenResource, previous) => {
-        if (tokenResource && tokenResource.result?.value) {
-          return new MatTableDataSource(tokenResource.result?.value.tokens);
-        }
-        return previous?.value ?? new MatTableDataSource(this.emptyResource());
+  tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
+    source: this.tokenResource.value,
+    computation: (tokenResource, previous) => {
+      if (tokenResource && tokenResource.result?.value) {
+        return new MatTableDataSource(tokenResource.result?.value.tokens);
       }
-    });
+      return previous?.value ?? new MatTableDataSource(this.emptyResource());
+    }
+  });
 
   totalLength: WritableSignal<number> = linkedSignal({
     source: this.tokenResource.value,
@@ -122,11 +120,8 @@ export class TokenTableComponent {
       if (this.filterInput) {
         this.filterInput.value = filterValueString;
       }
-      const recordsFromText =
-        this.tableUtilsService.recordsFromText(filterValueString);
-      if (
-        JSON.stringify(this.filterValue()) !== JSON.stringify(recordsFromText)
-      ) {
+      const recordsFromText = this.tableUtilsService.recordsFromText(filterValueString);
+      if (JSON.stringify(this.filterValue()) !== JSON.stringify(recordsFromText)) {
         this.filterValue.set(recordsFromText);
       }
       this.pageIndex.set(0);
@@ -156,13 +151,11 @@ export class TokenTableComponent {
 
   toggleActive(tokenDetails: TokenDetails): void {
     if (!tokenDetails.revoked && !tokenDetails.locked) {
-      this.tokenService
-        .toggleActive(tokenDetails.serial, tokenDetails.active)
-        .subscribe({
-          next: () => {
-            this.tokenResource.reload();
-          }
-        });
+      this.tokenService.toggleActive(tokenDetails.serial, tokenDetails.active).subscribe({
+        next: () => {
+          this.tokenResource.reload();
+        }
+      });
     }
   }
 

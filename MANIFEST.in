@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: (C) 2014 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: CC0-1.0
+#
 graft privacyidea
 graft tests
 graft tools
@@ -7,10 +10,10 @@ graft authmodules
 include requirements.txt pyproject.toml
 
 # We need to exclude files at the end otherwise they get included again
-exclude .git* .codespell* .readthedocs.yaml .dockerignore .pep8speaks.yml \
-  Gruntfile.js coveragerc pi-manage .travis* Procfile
+exclude .codespell* .readthedocs.yaml .dockerignore .pep8speaks.yml \
+  Gruntfile.js pi-manage Procfile
 
-global-exclude *.pyc
+global-exclude *.pyc .git*
 
 prune venv*
 

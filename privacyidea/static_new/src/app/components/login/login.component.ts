@@ -53,7 +53,6 @@ export class LoginComponent {
           this.sessionTimerService.startRefreshingRemainingTime();
           this.sessionTimerService.startTimer();
           this.router.navigateByUrl(ROUTE_PATHS.TOKENS);
-          this.notificationService.openSnackBar("Login successful.");
         } else {
           console.error("Login failed. Challenge response required.");
           this.notificationService.openSnackBar("Login failed. Challenge response required.");

@@ -1,5 +1,5 @@
 import { NgClass } from "@angular/common";
-import { Component, inject, Renderer2 } from "@angular/core";
+import { Component, inject } from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatButton, MatIconButton } from "@angular/material/button";

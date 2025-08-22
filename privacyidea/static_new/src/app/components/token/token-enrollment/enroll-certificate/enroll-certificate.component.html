@@ -18,6 +18,7 @@
       <mat-select
         [errorStateMatcher]="caConnectorErrorStateMatcher"
         [formControl]="caConnectorControl"
+        [value]="caConnectorControl.value"
         required>
         @for (option of caConnectorOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
@@ -28,7 +29,8 @@
 
     <mat-form-field class="width-33">
       <mat-label>Certificate Template</mat-label>
-      <mat-select [formControl]="certTemplateControl">
+      <mat-select [formControl]="certTemplateControl"
+                  [value]="certTemplateControl.value">
         @for (option of certTemplateOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
         }
