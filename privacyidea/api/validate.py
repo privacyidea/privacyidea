@@ -118,7 +118,7 @@ from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import CHALLENGE_SESSION
 from privacyidea.lib.user import get_user_from_param, log_used_user, User
-from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent
+from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.utils import required
 from .lib.utils import send_result, getParam, get_required
@@ -500,7 +500,16 @@ def check():
                     serial=token.get_serial())
                 return send_result(False, rid=2, details=details)
             else:
-                result = verify_fido2_challenge(transaction_id, token, request.all_data) > 0
+                if not token.is_active():
+                    log.debug(f"Authentication attempted with disabled token {token.get_serial()}")
+                    g.audit_object.log({"info": log_used_user(user, "Token is disabled"),
+                                        "success": False,
+                                        "authentication": AUTH_RESPONSE.REJECT,
+                                        "serial": token.get_serial(),
+                                        "token_type": details.get("type")})
+                    return send_result(result, rid=2, details={"message": "Token is disabled"})
+                else:
+                    result = verify_fido2_challenge(transaction_id, token, request.all_data) > 0
         success = result
         if success:
             # If the authentication was successful, return the username of the token owner
