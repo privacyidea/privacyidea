@@ -45,8 +45,8 @@
         appearance="fill"
         class="full-width">
         <mat-label>Service ID</mat-label>
-        <mat-select [formControl]="selectedServiceId"
-                    >
+        <mat-select
+          [formControl]="selectedServiceId">
           @for (serviceId of availableServiceIds(); track serviceId) {
             <mat-option [value]="serviceId">{{ serviceId }}</mat-option>
           }
