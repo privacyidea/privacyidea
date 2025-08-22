@@ -246,11 +246,10 @@ export class LoginComponent implements OnDestroy {
         passkey: "Login with passkey failed.",
         webauthn: "Login with WebAuthn failed."
       };
-      const detail = response.detail as { message?: string; messages?: string[] };
-      if (detail?.messages?.length) {
-        this.loginMessage.set(detail.messages);
+      if (response.detail.multi_challenge?.length) {
+        this.loginMessage.set(response.detail.multi_challenge.map((c) => c.message));
       } else {
-        const message = detail?.message || defaultMessages[context];
+        const message = response.detail.message || defaultMessages[context];
         this.loginMessage.set([message]);
       }
     } else {
