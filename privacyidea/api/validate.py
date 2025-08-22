@@ -509,7 +509,17 @@ def check():
                                         "token_type": details.get("type")})
                     return send_result(result, rid=2, details={"message": "Token is disabled"})
                 else:
-                    result = verify_fido2_challenge(transaction_id, token, request.all_data) > 0
+
+            if not token.is_active():
+                log.debug(f"Authentication attempted with disabled token {token.get_serial()}")
+                g.audit_object.log({"info": log_used_user(user, "Token is disabled"),
+                                    "success": False,
+                                    "authentication": AUTH_RESPONSE.REJECT,
+                                    "serial": token.get_serial(),
+                                    "token_type": details.get("type")})
+                return send_result(result, rid=2, details={"message": "Token is disabled"})
+
+            result = verify_fido2_challenge(transaction_id, token, request.all_data) > 0
         success = result
         if success:
             # If the authentication was successful, return the username of the token owner
