@@ -81,7 +81,7 @@ Usually you will need to upgrade/migrate the database:
 .. note::
     .. versionchanged:: v3.12 The location of the migration directory has changed and it is usually
         automatically detected.
-        Therefore the migration directory argument is not necessary anmore (it can be passed as a
+        Therefore the migration directory argument is not necessary anymore (it can be passed as a
         parameter with ``-d /opt/privacyidea/lib/python3.X/site-packages/privacyidea/migrations``.
         On previous privacyIDEA versions, the call would be
         ``privacyidea-schema-upgrade /opt/privacyidea/lib/privacyidea/migrations``
