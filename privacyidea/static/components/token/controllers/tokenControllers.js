@@ -618,7 +618,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             } else {
                 params.serial = $scope.enrolledToken.serial;
             }
-            TokenFactory.enroll(null, params, $scope.callback);
+            TokenFactory.enroll({}, params, $scope.callback);
         };
 
         $scope.sendClientPart = function () {

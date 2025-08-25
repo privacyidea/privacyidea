@@ -7,18 +7,22 @@
     </div>
   </div>
 </div>
-<div class="application-table-container">
+<div class="application-table-container" appScrollToTop>
   <div class="filter-paginator-container">
     <mat-form-field
       class="application-table-filter"
       subscriptSizing="dynamic">
       <mat-label>Enter Filter</mat-label>
-      <input
-        #filterInput
-        [(ngModel)]="machineService.filterValueString"
-        aria-label="Filter Input"
-        matInput
-        placeholder="Example query: 'service_id: myService'"/>
+      <app-clearable-input
+        (onClick)="machineService.filterValueString.set('')"
+        [showClearButton]="machineService.filterValueString.length > 0">
+        <input
+          #filterInput
+          [(ngModel)]="machineService.filterValueString"
+          aria-label="Filter Input"
+          matInput
+          placeholder="Example query: 'service_id: myService'" />
+      </app-clearable-input>
     </mat-form-field>
     <mat-paginator
       (page)="machineService.onPageEvent($event)"
@@ -60,7 +64,8 @@
               @case ("serial") {
                 <a
                   attr.aria-label="{{ column.label }} Link"
-                  (click)="contentService.tokenSelected(element.serial)"> {{ element[column.key] }}
+                  (click)="contentService.tokenSelected(element.serial)">
+                  {{ element[column.key] }}
                 </a>
                 <app-copy-button [copyText]="element.serial"></app-copy-button>
               }
@@ -68,7 +73,8 @@
                 @if (tableUtilsService.isLink(column.key)) {
                   <a
                     attr.aria-label="{{ column.label }} Link"
-                    href="#"> {{ element[column.key] }}
+                    href="#">
+                    {{ element[column.key] }}
                   </a>
                 } @else {
                   <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">

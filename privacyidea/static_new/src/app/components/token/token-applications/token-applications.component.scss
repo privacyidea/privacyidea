@@ -6,7 +6,9 @@
   border-radius: var(--border-radius);
   @include mat.elevation(5);
   background-color: var(--table-color);
+  max-height: calc(var(--main-height) - var(--global-padding) * 5);
   overflow: auto;
+  display: grid;
 
   h4 {
     margin: 0 0 16px 8px;

@@ -1,20 +1,20 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatTableDataSource } from "@angular/material/table";
 
-import { AuditComponent } from "./audit.component";
+import { provideHttpClient } from "@angular/common/http";
+import { ActivatedRoute } from "@angular/router";
+import { of } from "rxjs";
 import {
   MockAuditService,
   MockAuthService,
   MockContentService,
   MockTableUtilsService
 } from "../../../testing/mock-services";
-import { provideHttpClient } from "@angular/common/http";
-import { ActivatedRoute } from "@angular/router";
-import { of } from "rxjs";
-import { TableUtilsService } from "../../services/table-utils/table-utils.service";
-import { ContentService } from "../../services/content/content.service";
-import { AuthService } from "../../services/auth/auth.service";
 import { AuditService } from "../../services/audit/audit.service";
+import { AuthService } from "../../services/auth/auth.service";
+import { ContentService } from "../../services/content/content.service";
+import { TableUtilsService } from "../../services/table-utils/table-utils.service";
+import { AuditComponent } from "./audit.component";
 
 describe("AuditComponent (unit)", () => {
   let fixture: ComponentFixture<AuditComponent>;
@@ -67,31 +67,28 @@ describe("AuditComponent (unit)", () => {
       ${12} | ${[5, 10, 15, 12]}
       ${10} | ${[5, 10, 15]}
       ${60} | ${[5, 10, 15, 50]}
-    `(
-      "total=$count → pageSizeOptions=$expectedOptions",
-      ({ count, expectedOptions }) => {
-        mockAuditService.auditResource.value.set({
-          detail: undefined,
-          id: 0,
-          jsonrpc: "",
-          signature: "",
-          time: 0,
-          version: "",
-          versionnumber: "",
-          result: {
-            value: {
-              count,
-              auditdata: [],
-              auditcolumns: [],
-              current: 0
-            },
-            status: true
-          }
-        });
-        expect(component.totalLength()).toBe(count);
-        expect(component.pageSizeOptions()).toEqual(expectedOptions);
-      }
-    );
+    `("total=$count → pageSizeOptions=$expectedOptions", ({ count, expectedOptions }) => {
+      mockAuditService.auditResource.value.set({
+        detail: undefined,
+        id: 0,
+        jsonrpc: "",
+        signature: "",
+        time: 0,
+        version: "",
+        versionnumber: "",
+        result: {
+          value: {
+            count,
+            auditdata: [],
+            auditcolumns: [],
+            current: 0
+          },
+          status: true
+        }
+      });
+      expect(component.totalLength()).toBe(count);
+      expect(component.pageSizeOptions()).toEqual(expectedOptions);
+    });
   });
 
   it("emptyResource mirrors pageSize", () => {
@@ -121,9 +118,7 @@ describe("AuditComponent (unit)", () => {
         status: true
       }
     });
-    expect(component.auditDataSource() instanceof MatTableDataSource).toBe(
-      true
-    );
+    expect(component.auditDataSource() instanceof MatTableDataSource).toBe(true);
     expect(component.auditDataSource().data).toEqual(rows);
   });
 
@@ -135,9 +130,7 @@ describe("AuditComponent (unit)", () => {
     await Promise.resolve();
     jest.runOnlyPendingTimers();
 
-    expect(mockTableUtilsService.recordsFromText).toHaveBeenCalledWith(
-      "user: bob success: true"
-    );
+    expect(mockTableUtilsService.recordsFromText).toHaveBeenCalledWith("user: bob success: true");
     expect(mockAuditService.pageIndex()).toBe(0);
   });
 

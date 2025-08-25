@@ -53,6 +53,8 @@ storage.
 
 import logging
 import traceback
+from typing import Union
+
 from privacyidea.lib.log import log_with
 import datetime
 
@@ -195,20 +197,21 @@ class Audit(object):  # pragma: no cover
                     self.audit_data[k] += ","
                 self.audit_data[k] += v
 
-    def add_policy(self, policyname):
+    def add_policy(self, policy_names: Union[set, list, str]):
         """
-        This method adds a triggered policyname to the list of triggered policies.
+        This method adds triggered policy names to the list of triggered policies.
 
-        :param policyname: A string or a list of strings as policynames
+        :param policy_names: A set, list or single policy name(s)
         :return:
         """
-        if "policies" not in self.audit_data:
-            self.audit_data["policies"] = []
-        if isinstance(policyname, list):
-            for p in policyname:
-                self.audit_data["policies"].append(p)
-        else:
-            self.audit_data["policies"].append(policyname)
+        audit_policies = set(self.audit_data.get('policies', []))
+        if isinstance(policy_names, str):
+            audit_policies.add(policy_names)
+        elif isinstance(policy_names, list):
+            policy_names = set(policy_names)
+        if isinstance(policy_names, set):
+            audit_policies.update(policy_names)
+        self.audit_data["policies"] = list(audit_policies)
 
     def finalize_log(self):
         """

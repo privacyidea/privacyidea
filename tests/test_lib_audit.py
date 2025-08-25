@@ -288,18 +288,25 @@ class AuditTestCase(MyTestCase):
 
     def test_08_policies(self):
         self.Audit.log({"action": "validate/check"})
-        self.Audit.add_policy(["rule1", "rule2"])
+        self.Audit.add_policy(["rule1", "rule2", "rule1"])
         self.Audit.add_policy("rule3")
         self.Audit.finalize_log()
         audit_log = self.Audit.search({"policies": "*rule1*"})
         self.assertEqual(audit_log.total, 1)
-        self.assertEqual(audit_log.auditdata[0].get("policies"), "rule1,rule2,rule3")
+        self.assertEqual(len("rule1,rule2,rule3"), len(audit_log.auditdata[0].get("policies")))
+        self.assertIn("rule1", audit_log.auditdata[0].get("policies"))
+        self.assertIn("rule2", audit_log.auditdata[0].get("policies"))
+        self.assertIn("rule3", audit_log.auditdata[0].get("policies"))
 
-        self.Audit.add_policy(["rule4", "rule5"])
+        self.Audit.add_policy({"rule4", "rule5"})
+        self.Audit.add_policy({"rule4", "rule6"})
         self.Audit.finalize_log()
         audit_log = self.Audit.search({"policies": "*rule4*"})
         self.assertEqual(audit_log.total, 1)
-        self.assertEqual(audit_log.auditdata[0].get("policies"), "rule4,rule5")
+        self.assertEqual(len("rule4,rule5,rule6"), len(audit_log.auditdata[0].get("policies")))
+        self.assertIn("rule4", audit_log.auditdata[0].get("policies"))
+        self.assertIn("rule5", audit_log.auditdata[0].get("policies"))
+        self.assertIn("rule6", audit_log.auditdata[0].get("policies"))
 
     def test_09_check_external_audit_db(self):
         self.app.config["PI_AUDIT_SQL_URI"] = AUDIT_DB
@@ -498,7 +505,7 @@ class ContainerAuditTestCase(OverrideConfigTestCase):
                             "PI_AUDIT_SQL_URI": self.app.config['SQLALCHEMY_DATABASE_URI']})
         a.log({"action": "something_test_35"})
         a.add_to_log({'action_detail': 'some detail'})
-        a.add_policy('some policy')
+        a.add_policy({'some policy'})
         a.finalize_log()
         r = a.search({"action": "*something_test_35*"})
         # The search should go to the sql audit

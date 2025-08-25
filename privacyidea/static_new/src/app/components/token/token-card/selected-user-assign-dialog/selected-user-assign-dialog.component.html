@@ -2,7 +2,8 @@
 <mat-dialog-content>
   @if (selectionContainsAssignedToken()) {
     <p class="inline-warning">
-      Some token are already assigned to a user. <br/> Assigning a token to a user will remove the previous assignment.
+      Some token are already assigned to a user. <br />
+      Assigning a token to a user will remove the previous assignment.
     </p>
   }
   <div class="selected-user-assign-container">
@@ -10,6 +11,7 @@
       <mat-label>Select Realm of User</mat-label>
       <mat-select
         [formControl]="selectedUserRealmControl"
+        [value]="selectedUserRealmControl.value"
         required>
         @for (option of realmService.realmOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
@@ -18,18 +20,22 @@
     </mat-form-field>
     <mat-form-field class="width-50 input-height">
       <mat-label>Enter User</mat-label>
-      <input
-        [formControl]="userFilterControl"
-        [matAutocomplete]="userAuto"
-        matInput
-        required/>
-      <mat-autocomplete
-        #userAuto="matAutocomplete"
-        [displayWith]="userService.displayUser">
-        @for (user of userService.filteredUsers(); track user) {
-          <mat-option [value]="user">{{ user.username }}</mat-option>
-        }
-      </mat-autocomplete>
+      <app-clearable-input
+        (onClick)="userService.userFilter.set('')"
+        [showClearButton]="userService.userFilter() !== ''">
+        <input
+          [formControl]="userFilterControl"
+          [matAutocomplete]="userAuto"
+          matInput
+          required />
+        <mat-autocomplete
+          #userAuto="matAutocomplete"
+          [displayWith]="userService.displayUser">
+          @for (user of userService.filteredUsers(); track user) {
+            <mat-option [value]="user">{{ user.username }}</mat-option>
+          }
+        </mat-autocomplete>
+      </app-clearable-input>
       @if (selectedUserRealmControl.hasError("required")) {
         <mat-error>User Realm is <strong>required</strong></mat-error>
       }
@@ -40,9 +46,7 @@
         <mat-error>User must be selected from the list.</mat-error>
       }
       @if (userFilterControl.hasError("userNotInRealm")) {
-        <mat-error>
-          User does not exist in the selected realm.
-        </mat-error>
+        <mat-error> User does not exist in the selected realm. </mat-error>
       }
     </mat-form-field>
   </div>
@@ -53,18 +57,18 @@
       class="pin-field">
       <input
         style="display: none"
-        type="text"/>
+        type="text" />
 
       <input
         style="display: none"
-        type="password"/>
+        type="password" />
       <mat-label>PIN (optional)</mat-label>
       <input
         (ngModelChange)="pin.set($event)"
         [ngModel]="pin()"
         [type]="hidePin() ? 'password' : 'text'"
         autocomplete="new-password"
-        matInput/>
+        matInput />
       <button
         (click)="togglePinVisibility()"
         [attr.aria-label]="'Show PIN'"
@@ -84,7 +88,7 @@
         [ngModel]="pinRepeat()"
         [type]="hidePin() ? 'password' : 'text'"
         autocomplete="new-password"
-        matInput/>
+        matInput />
       <button
         (click)="togglePinVisibility()"
         [attr.aria-label]="'Show PIN Repeat'"
@@ -104,12 +108,14 @@
 <mat-dialog-actions>
   <button
     (click)="onCancel()"
-    mat-button>Cancel
+    mat-button>
+    Cancel
   </button>
   <button
     (click)="onConfirm()"
     [disabled]="!pinsMatch() || selectedUserRealmControl.invalid || userFilterControl.invalid"
     color="primary"
-    mat-button>Assign to Selected Token
+    mat-button>
+    Assign to Selected Token
   </button>
 </mat-dialog-actions>

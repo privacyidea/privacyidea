@@ -222,7 +222,7 @@ def auth_user_has_no_token(wrapped_function, user_object, passw,
             # Now we need to check, if the user really has no token.
             token_count = get_tokens(user=user_object, count=True)
             if token_count == 0:
-                g.audit_object.add_policy([p.get("name") for p in pass_no_token])
+                g.audit_object.add_policy({p.get("name") for p in pass_no_token})
                 return True, {"message": f"user has no token, accepted due to '{pass_no_token[0].get('name')}'"}
 
     # If nothing else returned, we return the wrapped function
@@ -250,7 +250,7 @@ def auth_user_does_not_exist(wrapped_function, user_object, passw, options=None)
                                   user_object=user_object).policies(write_to_audit_log=False)
         if not user_object.exist():
             if pass_no_user:
-                g.audit_object.add_policy([p.get("name") for p in pass_no_user])
+                g.audit_object.add_policy({p.get("name") for p in pass_no_user})
                 return True, {"message": f"user does not exist, accepted due to '{pass_no_user[0].get('name')}'"}
             else:
                 raise UserError(f"User {user_object} does not exist.")
@@ -288,7 +288,7 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
             policy_object.check_for_conflicts(pass_thru, "passthru")
             pass_thru_action = pass_thru[0].get("action").get("passthru")
             policy_name = pass_thru[0].get("name")
-            g.audit_object.add_policy([p.get("name") for p in pass_thru])
+            g.audit_object.add_policy({p.get("name") for p in pass_thru})
             if pass_thru_action in ["userstore", True]:
                 # Now we need to check the userstore password
                 if user_object.check_password(passw):
