@@ -474,47 +474,89 @@
         <source>Username</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
-          <context context-type="linenumber">36</context>
+          <context context-type="linenumber">50,52</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user.self-service.component.html</context>
           <context context-type="linenumber">15,16</context>
         </context-group>
+        <note priority="1" from="description">Login username label</note>
       </trans-unit>
       <trans-unit id="1431416938026210429" datatype="html">
         <source>Password</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
-          <context context-type="linenumber">47</context>
+          <context context-type="linenumber">63,65</context>
         </context-group>
+        <note priority="1" from="description">Login password label</note>
+      </trans-unit>
+      <trans-unit id="348324077381402312" datatype="html">
+        <source>One-Time-Password</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/login/login.component.html</context>
+          <context context-type="linenumber">76,77</context>
+        </context-group>
+        <note priority="1" from="description">Login OTP label</note>
       </trans-unit>
       <trans-unit id="6441574972166776812" datatype="html">
         <source>Login Button</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
-          <context context-type="linenumber">60,61</context>
+          <context context-type="linenumber">93,94</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="1966619274931381681" datatype="html">
-        <source>Log In <x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon iconPositionEnd&gt;"/>login<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/></source>
+      <trans-unit id="8520023152129279437" datatype="html">
+        <source>Log In</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
-          <context context-type="linenumber">65,67</context>
+          <context context-type="linenumber">98,99</context>
         </context-group>
+        <note priority="1" from="description">Login button text</note>
+      </trans-unit>
+      <trans-unit id="2740831890339580810" datatype="html">
+        <source>Start Over</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/login/login.component.html</context>
+          <context context-type="linenumber">106,107</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7808756054397155068" datatype="html">
+        <source>Reset</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/login/login.component.html</context>
+          <context context-type="linenumber">111,112</context>
+        </context-group>
+        <note priority="1" from="description">Reset button text</note>
+      </trans-unit>
+      <trans-unit id="6127422089109094880" datatype="html">
+        <source>WebAuthn Button</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/login/login.component.html</context>
+          <context context-type="linenumber">121,122</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5790685103598081049" datatype="html">
+        <source>WebAuthn</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/login/login.component.html</context>
+          <context context-type="linenumber">126,127</context>
+        </context-group>
+        <note priority="1" from="description">WebAuthn button text</note>
       </trans-unit>
       <trans-unit id="5977040414046639252" datatype="html">
         <source>Passkey Button</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
-          <context context-type="linenumber">73,74</context>
+          <context context-type="linenumber">136,137</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8084705807322234584" datatype="html">
-        <source>Log In With Passkey <x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon iconPositionEnd&gt;"/>key<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/></source>
+      <trans-unit id="7763910745363666950" datatype="html">
+        <source>Log In With Passkey</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
-          <context context-type="linenumber">77,80</context>
+          <context context-type="linenumber">141,142</context>
         </context-group>
+        <note priority="1" from="description">Passkey button text</note>
       </trans-unit>
       <trans-unit id="1089734965587939519" datatype="html">
         <source> Are you sure you want to <x id="INTERPOLATION" equiv-text="{{ data.action }}"/> <x id="START_BLOCK_IF" equiv-text="@if ((data.serial_list?.length ?? 0) &gt; 1 &amp;&amp; data.type === &quot;token&quot;) {"/> all (<x id="INTERPOLATION_1" equiv-text="{{ data.serial_list?.length }}"/>) <x id="INTERPOLATION_2" equiv-text="{{ data.type }}"/>s? <x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/> this <x id="INTERPOLATION_2" equiv-text="{{ data.type }}"/>? <x id="CLOSE_BLOCK_ELSE" equiv-text="}"/></source>
