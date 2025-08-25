@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import getopt
 import os
-import shlex
 from subprocess import call
 import sys
 
@@ -29,8 +28,8 @@ def update(environment):
 
 
 def update_db_schema(environment, skip_stamp=False):
-    mig_path = environment + "/lib/privacyidea/migrations"
-    command = "privacyidea-schema-upgrade {0}".format(shlex.quote(mig_path))
+    # Since v3.12 the migration path is not necessary anymore
+    command = "privacyidea-schema-upgrade"
     if skip_stamp:
         command += " --skipstamp"
     # update the database schema

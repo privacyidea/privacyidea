@@ -8,7 +8,8 @@
     class="server-checkbox">
     Generate the static password on the Server
     @if (generateOnServerControl.value) {
-      <span class="dot">.</span><span>
+      <span class="dot">.</span>
+      <span>
         <br/>
         The server will create the static password.
       </span>
@@ -21,6 +22,7 @@
       <mat-select
         [errorStateMatcher]="applspecErrorStateMatcher"
         [formControl]="serviceIdControl"
+        [value]="serviceIdControl.value"
         required>
         @for (option of serviceIdOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>

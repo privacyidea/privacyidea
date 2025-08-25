@@ -3,10 +3,7 @@ import { TokenTabComponent } from "./token-tab.component";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import {
-  BrowserAnimationsModule,
-  provideNoopAnimations
-} from "@angular/platform-browser/animations";
+import { BrowserAnimationsModule, provideNoopAnimations } from "@angular/platform-browser/animations";
 
 import { signal } from "@angular/core";
 import { of } from "rxjs";

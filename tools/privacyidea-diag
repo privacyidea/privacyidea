@@ -30,6 +30,10 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+#
+# SPDX-FileCopyrightText: (C) 2018 NetKnights GmbH <https://netknights.it>
+#
+# SPDX-License-Identifier: BSD-3-Clause
 
 if [[ $(id -u) != 0 ]]; then
 	echo "Script must be run as root user"
@@ -101,7 +105,7 @@ current_db_revision() {
 	log_pi_config
 	log_pi_config "SECTION: current_db_revision"
 	log_pi_config "============================"
-	call_pi_manage db current -d /opt/privacyidea/lib/privacyidea/migrations/ >> "$pi_config"
+	call_pi_manage db current -v >> "$pi_config"
 }
 
 pi_versions() {

@@ -9,10 +9,7 @@ import {
   MatDialogTitle
 } from "@angular/material/dialog";
 import { EnrollmentResponse } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import {
-  ContentService,
-  ContentServiceInterface
-} from "../../../../services/content/content.service";
+import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
 @Component({

@@ -1,23 +1,15 @@
 import { HttpClient, HttpParams, httpResource } from "@angular/common/http";
-import {
-  computed,
-  effect,
-  inject,
-  Injectable,
-  linkedSignal,
-  signal,
-  WritableSignal
-} from "@angular/core";
+import { computed, effect, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import { environment } from "../../../environments/environment";
-import { LocalService, LocalServiceInterface } from "../local/local.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "../table-utils/table-utils.service";
 
 import { PageEvent } from "@angular/material/paginator";
 import { Observable } from "rxjs";
 import { PiResponse } from "../../app.component";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { ROUTE_PATHS } from "../../app.routes";
+import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
 
 type TokenApplications = TokenApplication[];
 
@@ -96,12 +88,7 @@ export interface MachineServiceInterface {
     any?: string;
   }): Observable<PiResponse<Machines>>;
 
-  deleteToken(
-    serial: string,
-    machineid: string,
-    resolver: string,
-    application: string
-  ): Observable<any>;
+  deleteToken(serial: string, machineid: string, resolver: string, application: string): Observable<any>;
 
   deleteTokenMtid(serial: string, application: string, mtid: string): Observable<any>;
 
@@ -115,7 +102,7 @@ export interface MachineServiceInterface {
 })
 export class MachineService implements MachineServiceInterface {
   private readonly http: HttpClient = inject(HttpClient);
-  protected readonly localService: LocalServiceInterface = inject(LocalService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
 
@@ -137,7 +124,7 @@ export class MachineService implements MachineServiceInterface {
     return {
       url: `${this.baseUrl}`,
       method: "GET",
-      headers: this.localService.getHeaders(),
+      headers: this.authService.getHeaders(),
       params: {
         any: ""
       }
@@ -216,14 +203,13 @@ export class MachineService implements MachineServiceInterface {
     return {
       url: this.baseUrl + "token",
       method: "GET",
-      headers: this.localService.getHeaders(),
+      headers: this.authService.getHeaders(),
       params: params
     };
   });
   tokenApplications: WritableSignal<TokenApplications | undefined> = linkedSignal({
     source: this.tokenApplicationResource.value,
-    computation: (tokenApplicationResource, previous) =>
-      tokenApplicationResource?.result?.value ?? previous?.value
+    computation: (tokenApplicationResource, previous) => tokenApplicationResource?.result?.value ?? previous?.value
   });
 
   constructor() {
@@ -241,7 +227,7 @@ export class MachineService implements MachineServiceInterface {
     machineid: string;
     resolver: string;
   }): Observable<any> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http.post(`${this.baseUrl}token`, args, { headers });
   }
 
@@ -253,7 +239,7 @@ export class MachineService implements MachineServiceInterface {
     application: string,
     mtid: string
   ): Observable<any> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http.post(
       `${this.baseUrl}tokenoption`,
       { hostname, machineid, resolver, serial, application, mtid },
@@ -262,15 +248,12 @@ export class MachineService implements MachineServiceInterface {
   }
 
   getAuthItem(challenge: string, hostname: string, application?: string): Observable<any> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     let params = new HttpParams().set("challenge", challenge).set("hostname", hostname);
-    return this.http.get(
-      application ? `${this.baseUrl}authitem/${application}` : `${this.baseUrl}authitem`,
-      {
-        headers,
-        params
-      }
-    );
+    return this.http.get(application ? `${this.baseUrl}authitem/${application}` : `${this.baseUrl}authitem`, {
+      headers,
+      params
+    });
   }
 
   postToken(
@@ -280,12 +263,8 @@ export class MachineService implements MachineServiceInterface {
     serial: string,
     application: string
   ): Observable<any> {
-    const headers = this.localService.getHeaders();
-    return this.http.post(
-      `${this.baseUrl}token`,
-      { hostname, machineid, resolver, serial, application },
-      { headers }
-    );
+    const headers = this.authService.getHeaders();
+    return this.http.post(`${this.baseUrl}token`, { hostname, machineid, resolver, serial, application }, { headers });
   }
 
   getMachine(args: {
@@ -296,7 +275,7 @@ export class MachineService implements MachineServiceInterface {
     any?: string;
   }): Observable<PiResponse<Machines>> {
     const { hostname, ip, id, resolver, any } = args;
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     let params = new HttpParams();
     if (hostname !== undefined) params = params.set("hostname", hostname);
     if (ip !== undefined) params = params.set("ip", ip);
@@ -309,21 +288,13 @@ export class MachineService implements MachineServiceInterface {
     });
   }
 
-  deleteToken(
-    serial: string,
-    machineid: string,
-    resolver: string,
-    application: string
-  ): Observable<any> {
-    const headers = this.localService.getHeaders();
-    return this.http.delete(
-      `${this.baseUrl}token/${serial}/${machineid}/${resolver}/${application}`,
-      { headers }
-    );
+  deleteToken(serial: string, machineid: string, resolver: string, application: string): Observable<any> {
+    const headers = this.authService.getHeaders();
+    return this.http.delete(`${this.baseUrl}token/${serial}/${machineid}/${resolver}/${application}`, { headers });
   }
 
   deleteTokenMtid(serial: string, application: string, mtid: string): Observable<any> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http.delete(`${this.baseUrl}token/${serial}/${application}/${mtid}`, { headers });
   }
 

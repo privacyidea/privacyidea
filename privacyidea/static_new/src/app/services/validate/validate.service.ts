@@ -1,16 +1,12 @@
 import { HttpClient } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
-import { from, Observable, switchMap, throwError } from "rxjs";
+import { from, map, Observable, switchMap, throwError } from "rxjs";
 import { catchError } from "rxjs/operators";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { AuthResponse, AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { Base64Service, Base64ServiceInterface } from "../base64/base64.service";
-import { LocalService, LocalServiceInterface } from "../local/local.service";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../notification/notification.service";
+import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 
 export interface ValidateCheckDetail {
   attributes?: {
@@ -40,13 +36,18 @@ export interface ValidateCheckDetail {
 export type ValidateCheckResponse = PiResponse<boolean, ValidateCheckDetail>;
 
 export interface ValidateServiceInterface {
-  testToken(
-    tokenSerial: string,
-    otpOrPinToTest: string,
-    otponly?: string
-  ): Observable<ValidateCheckResponse>;
+  testToken(tokenSerial: string, otpOrPinToTest: string, otponly?: string): Observable<ValidateCheckResponse>;
 
   authenticatePasskey(args?: { isTest?: boolean }): Observable<AuthResponse>;
+
+  authenticateWebAuthn(args: {
+    signRequest: any;
+    transaction_id: string;
+    username: string;
+    isTest?: boolean;
+  }): Observable<AuthResponse>;
+
+  pollTransaction(transactionId: string): Observable<boolean>;
 }
 
 @Injectable({
@@ -54,19 +55,15 @@ export interface ValidateServiceInterface {
 })
 export class ValidateService implements ValidateServiceInterface {
   private readonly http: HttpClient = inject(HttpClient);
-  private readonly localService: LocalServiceInterface = inject(LocalService);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly base64Service: Base64ServiceInterface = inject(Base64Service);
   private readonly authenticationService: AuthServiceInterface = inject(AuthService);
 
   private baseUrl = environment.proxyUrl + "/validate/";
 
-  testToken(
-    tokenSerial: string,
-    otpOrPinToTest: string,
-    otponly?: string
-  ): Observable<ValidateCheckResponse> {
-    const headers = this.localService.getHeaders();
+  testToken(tokenSerial: string, otpOrPinToTest: string, otponly?: string): Observable<ValidateCheckResponse> {
+    const headers = this.authService.getHeaders();
     return this.http
       .post<ValidateCheckResponse>(
         `${this.baseUrl}check`,
@@ -117,15 +114,9 @@ export class ValidateService implements ValidateServiceInterface {
               authenticatorData: this.base64Service.bytesToBase64(
                 new Uint8Array(credential.response.authenticatorData)
               ),
-              clientDataJSON: this.base64Service.bytesToBase64(
-                new Uint8Array(credential.response.clientDataJSON)
-              ),
-              signature: this.base64Service.bytesToBase64(
-                new Uint8Array(credential.response.signature)
-              ),
-              userHandle: this.base64Service.bytesToBase64(
-                new Uint8Array(credential.response.userHandle)
-              )
+              clientDataJSON: this.base64Service.bytesToBase64(new Uint8Array(credential.response.clientDataJSON)),
+              signature: this.base64Service.bytesToBase64(new Uint8Array(credential.response.signature)),
+              userHandle: this.base64Service.bytesToBase64(new Uint8Array(credential.response.userHandle))
             };
             return args?.isTest
               ? this.http.post<AuthResponse>(`${this.baseUrl}check`, params)
@@ -135,11 +126,91 @@ export class ValidateService implements ValidateServiceInterface {
       }),
       catchError((error: any) => {
         console.error("Error during passkey authentication", error);
-        const errorMessage =
-          error.error?.result?.error?.message || error.message || "Error during authentication";
+        const errorMessage = error.error?.result?.error?.message || error.message || "Error during authentication";
         this.notificationService.openSnackBar(errorMessage);
         return throwError(() => new Error(errorMessage));
       })
     );
+  }
+
+  authenticateWebAuthn(args: {
+    signRequest: any;
+    transaction_id: string;
+    username: string;
+    isTest?: boolean;
+  }): Observable<AuthResponse> {
+    if (!window.PublicKeyCredential) {
+      this.notificationService.openSnackBar("WebAuthn is not supported by this browser.");
+      return throwError(() => new Error("WebAuthn is not supported by this browser."));
+    }
+
+    try {
+      const signRequest = args.signRequest;
+
+      const publicKey: any = {
+        challenge: this.base64Service.webAuthnBase64DecToArr(signRequest.challenge),
+        allowCredentials: signRequest.allowCredentials.map((cred: any) => ({
+          ...cred,
+          id: this.base64Service.webAuthnBase64DecToArr(cred.id)
+        })),
+        rpId: signRequest.rpId,
+        userVerification: signRequest.userVerification,
+        timeout: signRequest.timeout
+      };
+
+      return from(navigator.credentials.get({ publicKey })).pipe(
+        switchMap((credential: any) => {
+          const finalParams = {
+            transaction_id: args.transaction_id,
+            username: args.username,
+            credential_id: credential.id, // This is already base64url encoded
+            authenticatorData: this.base64Service.webAuthnBase64EncArr(credential.response.authenticatorData),
+            clientDataJSON: this.base64Service.webAuthnBase64EncArr(credential.response.clientDataJSON),
+            signature: this.base64Service.webAuthnBase64EncArr(credential.response.signature),
+            userHandle: credential.response.userHandle
+              ? this.base64Service.utf8ArrToStr(credential.response.userHandle)
+              : null
+          };
+
+          return args?.isTest
+            ? this.http.post<AuthResponse>(`${this.baseUrl}check`, finalParams)
+            : this.authenticationService.authenticate(finalParams);
+        }),
+        catchError((error: any) => {
+          console.error("Error during WebAuthn authentication", error);
+          const errorMessage =
+            error.error?.result?.error?.message || error.message || "Error during WebAuthn authentication";
+          this.notificationService.openSnackBar(errorMessage);
+          return throwError(() => new Error(errorMessage));
+        })
+      );
+    } catch (e) {
+      const message = "Invalid WebAuthn challenge data received from server.";
+      console.error(message, e);
+      this.notificationService.openSnackBar(message);
+      return throwError(() => new Error(message));
+    }
+  }
+
+  pollTransaction(transactionId: string): Observable<boolean> {
+    const headers = this.authService.getHeaders();
+    return this.http
+      .get<PiResponse<boolean, any>>(`${this.baseUrl}polltransaction`, {
+        params: {
+          transaction_id: transactionId
+        },
+        headers
+      })
+      .pipe(
+        map((response) => {
+          return response.result?.authentication === "ACCEPT" && response.result?.value === true;
+        }),
+        catchError((error: any) => {
+          console.error("Failed to poll transaction.", error);
+          const message = error.error?.result?.error?.message || "Polling for transaction failed.";
+          this.notificationService.openSnackBar(message);
+          return throwError(() => error);
+        })
+      );
   }
 }

@@ -7,17 +7,16 @@ import { MatPaginator, MatPaginatorModule, PageEvent } from "@angular/material/p
 import { MatSort, MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import {
-  TableUtilsService,
-  TableUtilsServiceInterface
-} from "../../../services/table-utils/table-utils.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import {
   Challenge,
   ChallengesService,
   ChallengesServiceInterface
 } from "../../../services/token/challenges/challenges.service";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
+import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";
 
 const columnKeysMap = [
@@ -40,19 +39,18 @@ const columnKeysMap = [
     MatIconModule,
     KeywordFilterComponent,
     NgClass,
-    CopyButtonComponent
+    CopyButtonComponent,
+    ScrollToTopDirective,
+    ClearableInputComponent
   ],
   templateUrl: "./challenges-table.component.html",
   styleUrls: ["./challenges-table.component.scss"]
 })
 export class ChallengesTableComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly tableUtilsService: TableUtilsServiceInterface =
-    inject(TableUtilsService);
-  private readonly challengesService: ChallengesServiceInterface =
-    inject(ChallengesService);
-  protected readonly contentService: ContentServiceInterface =
-    inject(ContentService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  private readonly challengesService: ChallengesServiceInterface = inject(ChallengesService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
 
   columnsKeyMap = columnKeysMap;
   displayedColumns = columnKeysMap.map((c) => c.key);
@@ -73,18 +71,15 @@ export class ChallengesTableComponent {
       return prev?.value ?? 0;
     }
   });
-  challengesDataSource: WritableSignal<MatTableDataSource<Challenge>> =
-    linkedSignal({
-      source: this.challengesService.challengesResource.value,
-      computation: (challengesResource, previous) => {
-        if (challengesResource) {
-          return new MatTableDataSource(
-            challengesResource.result?.value?.challenges
-          );
-        }
-        return previous?.value ?? new MatTableDataSource<Challenge>([]);
+  challengesDataSource: WritableSignal<MatTableDataSource<Challenge>> = linkedSignal({
+    source: this.challengesService.challengesResource.value,
+    computation: (challengesResource, previous) => {
+      if (challengesResource) {
+        return new MatTableDataSource(challengesResource.result?.value?.challenges);
       }
-    });
+      return previous?.value ?? new MatTableDataSource<Challenge>([]);
+    }
+  });
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;

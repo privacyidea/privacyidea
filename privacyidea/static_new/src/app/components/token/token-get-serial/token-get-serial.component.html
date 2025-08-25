@@ -1,13 +1,13 @@
 <div
   aria-label="Token Get Serial"
-  class="token-get-serial">
+  class="token-get-serial" appScrollToTop>
   <h3 class="margin-left-1">Get Serial Number</h3>
   <p
     class="margin-left-1"
     translate>
-    By entering an OTP value you can get the serial number of the token. You can also enter
-    additional optional parameters, to narrow down the search for the token. So you can only search
-    within certain token types or in assigned or unassigned tokens. </p>
+    By entering an OTP value you can get the serial number of the token. You can also enter additional optional
+    parameters, to narrow down the search for the token. So you can only search within certain token types or in
+    assigned or unassigned tokens. </p>
   <div class="flex-row gap-1">
     <mat-form-field class="width-66">
       <mat-label>OTP Value</mat-label>
@@ -39,6 +39,7 @@
     <mat-label>Token Type</mat-label>
     <mat-select
       [(ngModel)]="tokenType"
+      [value]="tokenType()"
       placeholder="Select token type">
       @for (type of tokenTypesWithOTP; track type) {
         <mat-option [value]="type['key']">{{ type["info"] }}</mat-option>
@@ -49,6 +50,7 @@
     <mat-label>Assignment State</mat-label>
     <mat-select
       [(ngModel)]="assignmentState"
+      [value]="assignmentState()"
       placeholder="Specify assignment state">
       @for (assignment of assignmentStates; track assignment) {
         <mat-option

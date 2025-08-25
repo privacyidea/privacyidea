@@ -9,15 +9,8 @@ import {
 } from "@angular/forms";
 import { MatOptionModule } from "@angular/material/core";
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
-import {
-  ApplicationService,
-  ApplicationServiceInterface
-} from "../../../../services/application/application.service";
-import {
-  Machine,
-  MachineService,
-  MachineServiceInterface
-} from "../../../../services/machine/machine.service";
+import { ApplicationService, ApplicationServiceInterface } from "../../../../services/application/application.service";
+import { Machine, MachineService, MachineServiceInterface } from "../../../../services/machine/machine.service";
 import { UserService, UserServiceInterface } from "../../../../services/user/user.service";
 
 import { MatAutocompleteModule } from "@angular/material/autocomplete";

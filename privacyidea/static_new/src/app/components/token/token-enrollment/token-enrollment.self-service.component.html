@@ -1,61 +1,54 @@
 <div
   #scrollContainer
   aria-label="Token Enrollment"
-  class="token-enrollment-container">
-  <h3 class="margin-left-1"> Enroll a new Token </h3>
+  class="token-enrollment-container" appScrollToTop>
+  <h3 class="margin-left-1"> Enroll a New Token </h3>
   <form
     (ngSubmit)="enrollToken()"
     [formGroup]="formGroupSignal()">
     <div #stickySentinel></div>
-    <div class="select-token-type-container-self-service">
-      <mat-form-field
-        class="flex-size-1"
-        subscriptSizing="dynamic">
-        <mat-select
-          [(ngModel)]="tokenService.selectedTokenType"
-          [ngModelOptions]="{ standalone: true }"
-          [panelClass]="'multi-column-panel'">
-          @for (type of tokenService.tokenTypeOptions(); track type) {
-            <mat-option
-              class="token-type-option type-option"
-              [value]="type"
-              [matTooltip]="type.info.split(':')[1]">{{ type.info.split(":")[0] }}
-            </mat-option>
-          }
-          <button
-            (click)="versioningService.openDocumentation('tokentypes')"
-            class="card-button width-100"
-            mat-flat-button>
-            <mat-icon>info_outline</mat-icon>
-            Help About Tokentypes
-          </button>
-        </mat-select>
-      </mat-form-field>
-    </div>
     <div
       #stickyHeader
       class="sticky-header">
-      <div class="sticky-controls enroll-button-container">
-        <button
-          [disabled]="formGroupSignal().invalid || !tokenService.selectedTokenType()"
-          [ngClass]="{
-            'card-button-disabled':
-              formGroupSignal().invalid || !tokenService.selectedTokenType(),
-            'card-button': true,
-          }"
-          mat-flat-button
-          type="submit">
-          <mat-icon>add</mat-icon>
-          Enroll Token
-        </button>
-        <button
-          (click)="reopenEnrollmentDialog()"
-          [disabled]="!canReopenEnrollmentDialog()"
-          [matTooltip]="'Reopen enrollment dialog'"
-          mat-icon-button
-          type="button">
-          <mat-icon>open_in_new</mat-icon>
-        </button>
+      <div class="sticky-controls ali-center">
+        <div class="select-token-type-container">
+          <mat-form-field
+            class="width-100"
+            subscriptSizing="dynamic">
+            <mat-select
+              [(ngModel)]="tokenService.selectedTokenType"
+              [ngModelOptions]="{ standalone: true }"
+              [panelClass]="'multi-column-panel'"
+              [value]="tokenService.selectedTokenType()">
+              @for (type of tokenService.tokenTypeOptions(); track type) {
+                <mat-option
+                  class="token-type-option type-option"
+                  [value]="type"
+                  [matTooltip]="type.info.split(':')[1]">{{ type.info.split(":")[0] }}
+                </mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="enroll-button-container">
+          <button
+            [disabled]="formGroupSignal().invalid || !tokenService.selectedTokenType()"
+            [ngClass]="{'card-button-disabled': formGroupSignal().invalid || !tokenService.selectedTokenType(),
+                              'card-button': true}"
+            mat-flat-button
+            type="submit">
+            <mat-icon>add</mat-icon>
+            Enroll
+          </button>
+          <button
+            (click)="reopenEnrollmentDialog()"
+            [matTooltip]="'Reopen enrollment dialog'"
+            [ngClass]="{'hidden': !canReopenEnrollmentDialog()}"
+            mat-icon-button
+            type="button">
+            <mat-icon>open_in_new</mat-icon>
+          </button>
+        </div>
       </div>
     </div>
     @switch (tokenService.selectedTokenType().key) {
@@ -146,7 +139,7 @@
       }
       @case ("push") {
         <app-enroll-push
-          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)"
           (reopenDialogChange)="updateReopenDialog($event)"/>
       }

@@ -2,9 +2,9 @@ import { httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { LocalService, LocalServiceInterface } from "../local/local.service";
 import { ROUTE_PATHS } from "../../app.routes";
+import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
 
 export interface Audit {
   auditcolumns: string[];
@@ -84,7 +84,7 @@ export interface AuditServiceInterface {
   providedIn: "root"
 })
 export class AuditService implements AuditServiceInterface {
-  private readonly localService: LocalServiceInterface = inject(LocalService);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
 
   readonly apiFilter = apiFilter;
@@ -126,7 +126,7 @@ export class AuditService implements AuditServiceInterface {
     return {
       url: this.auditBaseUrl,
       method: "GET",
-      headers: this.localService.getHeaders(),
+      headers: this.authService.getHeaders(),
       params: {
         page_size: this.pageSize(),
         page: this.pageIndex(),

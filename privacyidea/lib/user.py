@@ -305,7 +305,9 @@ class User(object):
         Check if the user object exists in the user store
         :return: True or False
         """
-        return bool(self.uid)
+        # TODO: really check if user exist (ask user store and maybe re-evaluate realm)
+        exist = self.uid and self.realm_id
+        return exist
 
     @property
     def info(self):

@@ -1,10 +1,6 @@
 import { Component, EventEmitter, inject, OnInit, Output, signal } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms";
-import {
-  Tokens,
-  TokenService,
-  TokenServiceInterface
-} from "../../../../services/token/token.service";
+import { Tokens, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
 import { MatDialogRef } from "@angular/material/dialog";
 import { lastValueFrom } from "rxjs";
@@ -42,7 +38,7 @@ export class EnrollPushComponent implements OnInit {
     .tokenTypeOptions()
     .find((type) => type.key === "push")?.text;
 
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -53,7 +49,7 @@ export class EnrollPushComponent implements OnInit {
   pushForm = new FormGroup({});
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({});
+    this.additionalFormFieldsChange.emit({});
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 

@@ -16,7 +16,7 @@ from privacyidea.lib.utils import hexlify_and_unicode, to_unicode
 from privacyidea.lib.error import TokenAdminError
 from privacyidea.models import (Token,
                                 Config,
-                                Challenge)
+                                Challenge, Realm, Resolver)
 from datetime import datetime, timezone, timedelta
 from dateutil.tz import tzlocal
 
@@ -779,14 +779,14 @@ class TokenBaseTestCase(MyTestCase):
         db_token.save()
 
         # delete the realm
-        delete_realm(realm)
+        Realm.query.filter_by(name=realm).delete()
         # token is orphaned
         token_obj = TokenClass(db_token)
         orph = token_obj.is_orphaned()
         self.assertTrue(orph)
 
         # delete the resolver
-        delete_resolver(resolver)
+        Resolver.query.filter_by(name=resolver).delete()
         # token is orphaned
         token_obj = TokenClass(db_token)
         orph = token_obj.is_orphaned()
