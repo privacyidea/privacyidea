@@ -54,7 +54,7 @@ export class EnrollRadiusComponent implements OnInit {
     inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -100,7 +100,7 @@ export class EnrollRadiusComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({
+    this.additionalFormFieldsChange.emit({
       radiusUser: this.radiusUserControl,
       radiusServerConfiguration: this.radiusServerConfigurationControl,
       checkPinLocally: this.checkPinLocallyControl

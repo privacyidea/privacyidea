@@ -58,7 +58,7 @@ export class EnrollCertificateComponent implements OnInit {
     inject(CaConnectorService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -105,7 +105,7 @@ export class EnrollCertificateComponent implements OnInit {
   caConnectorErrorStateMatcher = new CaConnectorErrorStateMatcher();
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({
+    this.additionalFormFieldsChange.emit({
       caConnector: this.caConnectorControl,
       certTemplate: this.certTemplateControl,
       pem: this.pemControl,

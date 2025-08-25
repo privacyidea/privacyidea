@@ -43,7 +43,7 @@ export class EnrollSshkeyComponent {
   @Output() clickEnrollChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
 
@@ -59,7 +59,7 @@ export class EnrollSshkeyComponent {
   }
 
   ngOnInit() {
-    this.aditionalFormFieldsChange.emit({
+    this.additionalFormFieldsChange.emit({
       sshPublicKey: this.sshPublicKeyFormControl
     });
     this.clickEnrollChange.emit(this.onClickEnroll);

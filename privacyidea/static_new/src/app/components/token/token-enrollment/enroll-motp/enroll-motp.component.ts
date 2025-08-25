@@ -46,7 +46,7 @@ export class EnrollMotpComponent implements OnInit {
   protected readonly enrollmentMapper: MotpApiPayloadMapper =
     inject(MotpApiPayloadMapper);
 
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -81,7 +81,7 @@ export class EnrollMotpComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({
+    this.additionalFormFieldsChange.emit({
       generateOnServer: this.generateOnServerControl,
       otpKey: this.otpKeyControl,
       motpPin: this.motpPinControl,

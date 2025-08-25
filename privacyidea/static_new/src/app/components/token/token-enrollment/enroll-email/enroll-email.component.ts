@@ -41,7 +41,7 @@ export class EnrollEmailComponent implements OnInit {
     EmailApiPayloadMapper
   );
 
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -61,7 +61,7 @@ export class EnrollEmailComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({
+    this.additionalFormFieldsChange.emit({
       emailAddress: this.emailAddressControl,
       readEmailDynamically: this.readEmailDynamicallyControl
     });

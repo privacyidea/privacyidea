@@ -1,6 +1,5 @@
 import { Component, computed, EventEmitter, inject, OnInit, Output, Signal } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
-import { MatCheckbox } from "@angular/material/checkbox";
 import { ErrorStateMatcher, MatOption, MatOptionSelectionChange } from "@angular/material/core";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
@@ -53,7 +52,7 @@ export class EnrollFoureyesComponent implements OnInit {
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -87,7 +86,7 @@ export class EnrollFoureyesComponent implements OnInit {
   requiredRealmsErrorStateMatcher = new RequiredRealmsErrorStateMatcher();
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({
+    this.additionalFormFieldsChange.emit({
       separator: this.separatorControl,
       requiredTokensOfRealms: this.requiredTokensOfRealmsControl
     });

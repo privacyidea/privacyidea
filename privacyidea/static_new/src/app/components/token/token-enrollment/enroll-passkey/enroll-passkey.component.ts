@@ -3,7 +3,8 @@ import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from "@angul
 import { MatDialogRef } from "@angular/material/dialog";
 import { lastValueFrom } from "rxjs";
 import {
-  EnrollmentResponse, EnrollmentResponseDetail,
+  EnrollmentResponse,
+  EnrollmentResponseDetail,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import {
@@ -69,7 +70,7 @@ export class EnrollPasskeyComponent implements OnInit {
   protected readonly dialogService: DialogServiceInterface =
     inject(DialogService);
 
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -80,7 +81,7 @@ export class EnrollPasskeyComponent implements OnInit {
   passkeyForm = new FormGroup({});
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({});
+    this.additionalFormFieldsChange.emit({});
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 

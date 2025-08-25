@@ -2,7 +2,8 @@ import { NgClass } from "@angular/common";
 import {
   AfterViewInit,
   Component,
-  computed, effect,
+  computed,
+  effect,
   ElementRef,
   inject,
   Injectable,
@@ -85,6 +86,7 @@ import { ClearableInputComponent } from "../../shared/clearable-input/clearable-
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { MatCheckbox } from "@angular/material/checkbox";
+import { QuestionApiPayloadMapper } from "../../../mappers/token-api-payload/question-token-api-payload.mapper";
 
 export type ClickEnrollFn = (
   enrollementOptions: TokenEnrollmentData
@@ -222,6 +224,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   protected readonly renderer: Renderer2 = inject(Renderer2);
+  protected readonly QuestionApiPayloadMapper = QuestionApiPayloadMapper;
   private observer!: IntersectionObserver;
   timezoneOptions = TIMEZONE_OFFSETS;
   pollResponse: WritableSignal<any> = linkedSignal({
@@ -278,6 +281,18 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   selectedTimezoneOffsetControl = new FormControl<string>("+00:00", {
     nonNullable: true
   });
+  selectedStartDateControl = new FormControl<Date | null>(new Date(), {
+    nonNullable: true
+  });
+  selectedStartTimeControl = new FormControl<string>("00:00", {
+    nonNullable: true
+  });
+  selectedEndDateControl = new FormControl<Date | null>(new Date(), {
+    nonNullable: true
+  });
+  selectedEndTimeControl = new FormControl<string>("23:59", {
+    nonNullable: true
+  });
   _lastTokenEnrollmentLastStepDialogData: WritableSignal<TokenEnrollmentLastStepDialogData | null> = linkedSignal({
     source: this.tokenService.selectedTokenType,
     computation: () => null
@@ -294,6 +309,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       }
     });
   }
+
   get isUserRequired() {
     return ["tiqr", "webauthn", "passkey", "certificate"].includes(this.tokenService.selectedTokenType()?.key ?? "");
   }
@@ -441,8 +457,9 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       additionalFormFields: this.additionalFormFields(),
       selectedUser: this.userService.selectedUser()
     }),
-    computation: (source, previous) => {
-      const { additionalFormFields, selectedUser } = source;
+    computation: (source, _previous) => {
+      const { additionalFormFields } = source;
+
       this.selectedUserRealmControl.setValidators(this.isUserRequired ? [Validators.required] : []);
 
       this.userFilterControl.setValidators(

@@ -54,7 +54,7 @@ export class EnrollRemoteComponent implements OnInit {
     inject(PrivacyideaServerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -85,7 +85,7 @@ export class EnrollRemoteComponent implements OnInit {
   remoteErrorStateMatcher = new RemoteErrorStateMatcher();
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({
+    this.additionalFormFieldsChange.emit({
       checkPinLocally: this.checkPinLocallyControl,
       remoteServer: this.remoteServerControl,
       remoteSerial: this.remoteSerialControl,

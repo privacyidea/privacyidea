@@ -51,7 +51,7 @@ export class EnrollYubicoComponent implements OnInit {
 
   yubicoErrorStatematcher = new YubicoErrorStateMatcher();
 
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -78,7 +78,7 @@ export class EnrollYubicoComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({
+    this.additionalFormFieldsChange.emit({
       yubikeyIdentifier: this.yubikeyIdentifierControl
     });
     this.clickEnrollChange.emit(this.onClickEnroll);

@@ -53,7 +53,7 @@ export class EnrollHotpComponent implements OnInit {
   @Output() clickEnrollChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   generateOnServerFormControl = new FormControl<boolean>(true, [
@@ -66,7 +66,7 @@ export class EnrollHotpComponent implements OnInit {
   ]);
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({
+    this.additionalFormFieldsChange.emit({
       generateOnServer: this.generateOnServerFormControl,
       otpLength: this.otpLengthFormControl,
       otpKey: this.otpKeyFormControl,

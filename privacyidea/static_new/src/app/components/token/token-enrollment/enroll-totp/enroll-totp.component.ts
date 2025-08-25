@@ -53,7 +53,7 @@ export class EnrollTotpComponent implements OnInit {
     { value: "sha512", viewValue: "SHA512" }
   ];
   readonly timeStepOptions = [30, 60];
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -75,7 +75,7 @@ export class EnrollTotpComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({
+    this.additionalFormFieldsChange.emit({
       generateOnServer: this.generateOnServerFormControl,
       otpLength: this.otpLengthControl,
       otpKey: this.otpKeyControl,

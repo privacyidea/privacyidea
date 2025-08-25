@@ -26,7 +26,7 @@ export class EnrollRegistrationComponent implements OnInit {
   );
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -36,7 +36,7 @@ export class EnrollRegistrationComponent implements OnInit {
   registrationForm = new FormGroup({});
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({});
+    this.additionalFormFieldsChange.emit({});
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 

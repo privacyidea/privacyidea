@@ -7,19 +7,14 @@
   <div
     [formGroup]="questionForm"
     class="margin-top-1 form-group">
-    @for (question of configQuestions; track question; let i = $index) {
-      @if (questionControlNames[i]) {
-        <!-- Ensure control name exists -->
-        <mat-form-field class="question-input-width input-height">
-          <mat-label>{{ question.text }}</mat-label>
-          <input
-            type="text"
-            [formControlName]="questionControlNames[i]"
-            matInput
-            required/>
-          <!-- Individual controls are required -->
-        </mat-form-field>
-      }
+    @for (question of configQuestions(); track question; let i = $index) {
+      <mat-form-field class="question-input-width input-height">
+        <mat-label>{{ question.question }}</mat-label>
+        <input
+          type="text"
+          [formControlName]="questionControlNames[i]"
+          matInput>
+      </mat-form-field>
     }
   </div>
   @if (questionForm.hasError("minAnswers") && questionForm.touched) {

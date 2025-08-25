@@ -50,7 +50,7 @@ export class EnrollSmsComponent implements OnInit {
     inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -92,7 +92,7 @@ export class EnrollSmsComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({
+    this.additionalFormFieldsChange.emit({
       smsGateway: this.smsGatewayControl,
       phoneNumber: this.phoneNumberControl,
       readNumberDynamically: this.readNumberDynamicallyControl
