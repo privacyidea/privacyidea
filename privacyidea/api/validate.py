@@ -499,15 +499,14 @@ def check():
                 details["message"] = gettext("Last authentication policy check failed for token {serial}").format(
                     serial=token.get_serial())
                 return send_result(False, rid=2, details=details)
-            else:
-                if not token.is_active():
-                    log.debug(f"Authentication attempted with disabled token {token.get_serial()}")
-                    g.audit_object.log({"info": log_used_user(user, "Token is disabled"),
-                                        "success": False,
-                                        "authentication": AUTH_RESPONSE.REJECT,
-                                        "serial": token.get_serial(),
-                                        "token_type": details.get("type")})
-                    return send_result(False, rid=2, details={"message": "Token is disabled"})
+            elif not token.is_active():
+                log.debug(f"Authentication attempted with disabled token {token.get_serial()}")
+                g.audit_object.log({"info": log_used_user(user, "Token is disabled"),
+                                    "success": False,
+                                    "authentication": AUTH_RESPONSE.REJECT,
+                                    "serial": token.get_serial(),
+                                    "token_type": details.get("type")})
+                return send_result(False, rid=2, details={"message": "Token is disabled"})
 
             result = verify_fido2_challenge(transaction_id, token, request.all_data) > 0
         success = result
