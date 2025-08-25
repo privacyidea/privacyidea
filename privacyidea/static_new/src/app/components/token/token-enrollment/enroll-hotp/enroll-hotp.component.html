@@ -3,10 +3,9 @@
     <p i18n>{{ text }}</p>
   </div>
   <h4
-    i18n
-    class="enroll-h4">
-    Token Configuration
-  </h4>
+    class="enroll-h4"
+    i18n>
+    Token Configuration </h4>
   <mat-checkbox
     [formControl]="generateOnServerFormControl"
     class="server-checkbox"
@@ -15,7 +14,7 @@
     @if (generateOnServerFormControl.value) {
       <span class="dot">.</span>
       <span>
-        <br />
+        <br/>
         The server will create the OTP key and a QR Code will be displayed to you to be scanned.
       </span>
     }
@@ -33,7 +32,7 @@
         }
       </mat-select>
       @if (generateOnServerFormControl.value) {
-        <mat-hint i18n> Some Authenticator Apps only support an OTP length of 6. </mat-hint>
+        <mat-hint i18n> Some Authenticator Apps only support an OTP length of 6.</mat-hint>
       }
     </mat-form-field>
     <mat-form-field
@@ -48,7 +47,7 @@
         }
       </mat-select>
       @if (generateOnServerFormControl.value) {
-        <mat-hint i18n> Some Authenticator Apps only support the SHA1 algorithm. </mat-hint>
+        <mat-hint i18n> Some Authenticator Apps only support the SHA1 algorithm.</mat-hint>
       }
     </mat-form-field>
     @if (!generateOnServerFormControl.value) {
@@ -59,7 +58,7 @@
           [formControl]="otpKeyFormControl"
           i18n-placeholder
           placeholder="Enter OTP key"
-          required />
+          required/>
         @if (otpKeyFormControl.hasError("required")) {
           <mat-error i18n> OTP key is <strong>required</strong></mat-error>
         }

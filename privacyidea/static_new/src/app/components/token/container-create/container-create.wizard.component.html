@@ -1,17 +1,16 @@
 <div
-  i18n-aria-label
+  appScrollToTop
   aria-label="Create Container"
   class="container-create-container"
-  appScrollToTop>
+  i18n-aria-label>
   <div
     [innerHTML]="preTopHtml$ | async"
     class="margin-top-1"></div>
 
   <h3
-    i18n
-    class="margin-left-1">
-    Create Container
-  </h3>
+    class="margin-left-1"
+    i18n>
+    Create Container </h3>
   <mat-form-field class="width-100 margin-bottom-1">
     <mat-select
       [(ngModel)]="containerService.selectedContainerType"
@@ -19,15 +18,14 @@
       @for (type of containerService.containerTypeOptions(); track type) {
         <mat-option
           class="type-option"
-          [value]="type"
-          >{{ type.description }}
+          [value]="type">{{ type.description }}
         </mat-option>
       }
       <div class="width-100 flex just-center">
         <button
-          i18n
           (click)="versioningService.openDocumentation('containertypes')"
           class="card-button"
+          i18n
           mat-flat-button>
           <mat-icon>info_outline</mat-icon>
           Help About Containertypes
@@ -35,8 +33,8 @@
       </div>
     </mat-select>
     <mat-hint
-      i18n
-      class="container-type-hint">
+      class="container-type-hint"
+      i18n>
       Supported Token Types:
       @if (containerService.selectedContainerType().token_types.length >= tokenService.tokenTypeOptions().length) {
         All
@@ -50,18 +48,18 @@
 
   <div class="enroll-button-container">
     <button
-      i18n
       (click)="reopenEnrollmentDialog()"
       [disabled]="registerResponse() === null"
-      mat-icon-button
+      i18n
       i18n-matTooltip
+      mat-icon-button
       matTooltip="Reopen enrollment dialog">
       <mat-icon>open_in_new</mat-icon>
     </button>
     <button
-      i18n
       (click)="createContainer()"
       class="card-button"
+      i18n
       mat-flat-button>
       <mat-icon>add</mat-icon>
       Create Container
@@ -71,21 +69,20 @@
   <mat-form-field class="width-66 margin-top-1">
     <mat-label i18n>Description</mat-label>
     <textarea
-      i18n
       [(ngModel)]="description"
       [maxlength]="80"
-      matInput
+      i18n
       i18n-placeholder
+      matInput
       placeholder="Enter description"
       rows="3"></textarea>
   </mat-form-field>
 
   <div class="flex-column width-66">
     <h4
-      i18n
-      class="enroll-h4">
-      Use a Template
-    </h4>
+      class="enroll-h4"
+      i18n>
+      Use a Template </h4>
     <mat-form-field class="width-100 input-height">
       <mat-label>Template</mat-label>
       <mat-select
@@ -102,8 +99,7 @@
     <h4
       i18n
       class="enroll-h4">
-      Registration
-    </h4>
+      Registration </h4>
     <mat-checkbox [(ngModel)]="generateQRCode">
       Generate a QR code to register the container on a smartphone.
     </mat-checkbox>

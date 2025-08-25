@@ -1,33 +1,32 @@
 <div
-  i18n-aria-label
   aria-label="Content Layout"
-  class="content-layout">
+  class="content-layout"
+  i18n-aria-label>
   <div
-    i18n-aria-label
     aria-label="Token Table"
-    class="token-table-layout">
+    class="token-table-layout"
+    i18n-aria-label>
     <div class="selfservice-paginator-container">
       <h3
-        i18n
-        class="selfservice-paginator-label">
-        Your Tokens
-      </h3>
+        class="selfservice-paginator-label"
+        i18n>
+        Your Tokens </h3>
       <mat-paginator
         (page)="onPageEvent($event)"
         [length]="totalLength()"
         [pageIndex]="pageIndex()"
         [pageSize]="pageSize()"
         hidePageSize
-        showFirstLastButtons />
+        showFirstLastButtons/>
     </div>
     <div class="table-container">
       <table
         (matSortChange)="onSortEvent($event)"
         [dataSource]="tokenDataSource()"
         [matSortDisableClear]="false"
-        i18n-aria-label
         aria-label="Token Data Table"
         class="token-table"
+        i18n-aria-label
         mat-table
         matSort>
         @for (column of columnKeysMapSelfService; track column) {
@@ -56,7 +55,7 @@
                           (click)="contentService.tokenSelected(element.serial)">
                           {{ element[column.key] }}
                         </a>
-                        <app-copy-button [copyText]="element.serial" />
+                        <app-copy-button [copyText]="element.serial"/>
                       </div>
                     }
                     @case ("container_serial") {
@@ -71,7 +70,7 @@
                           {{ element[column.key] }}
                         }
                         @if (element.container_serial !== "") {
-                          <app-copy-button [copyText]="element.container_serial" />
+                          <app-copy-button [copyText]="element.container_serial"/>
                         }
                       </div>
                     }
@@ -130,23 +129,23 @@
         }
         <tr
           *matHeaderRowDef="columnKeysSelfService"
-          i18n-aria-label
           aria-label="Header Row"
+          i18n-aria-label
           mat-header-row></tr>
         <tr
           *matRowDef="let row; columns: columnKeysSelfService"
-          i18n-aria-label
           aria-label="Data Row"
+          i18n-aria-label
           mat-row></tr>
         <tr
           *matNoDataRow
-          i18n-aria-label
-          aria-label="No Data Row">
+          aria-label="No Data Row"
+          i18n-aria-label>
           <td
             [attr.colspan]="columnKeysSelfService.length"
-            i18n-aria-label
             aria-label="No Data Cell"
-            i18n>
+            i18n
+            i18n-aria-label>
             No data matching the filter.
           </td>
         </tr>

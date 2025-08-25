@@ -5,9 +5,9 @@
   class="user-container">
   <table
     [dataSource]="userData()"
-    i18n-aria-label
     aria-label="User Detail Data Table"
     class="user-details-table"
+    i18n-aria-label
     mat-table>
     <ng-container matColumnDef="key">
       <td
@@ -33,7 +33,7 @@
                   <input
                     matInput
                     [(ngModel)]="userService.userFilter"
-                    [matAutocomplete]="userAuto" />
+                    [matAutocomplete]="userAuto"/>
                 </app-clearable-input>
                 <mat-autocomplete #userAuto="matAutocomplete">
                   @for (option of userService.filteredUsernames(); track option) {
@@ -44,9 +44,8 @@
             } @else {
               <a
                 href="#"
-                i18n-aria-label="{{ element.keyMap.label }} Link"
-                >{{ element.value }}</a
-              >
+                i18n-aria-label="{{ element.keyMap.label }} Link">{{ element.value }}
+              </a>
             }
           }
           @case ("user_realm") {
@@ -64,9 +63,8 @@
             } @else {
               <a
                 href="#"
-                i18n-aria-label="{{ element.keyMap.label }} Link"
-                >{{ element.value }}</a
-              >
+                i18n-aria-label="{{ element.keyMap.label }} Link">{{ element.value }}
+              </a>
             }
           }
           @default {

@@ -3,17 +3,16 @@
     <p i18n>{{ text }}</p>
   </div>
   <h4
-    i18n
-    class="enroll-h4">
-    Token Configuration
-  </h4>
+    class="enroll-h4"
+    i18n>
+    Token Configuration </h4>
   <mat-form-field class="width-100">
     <mat-label i18n>VASCO Token blob</mat-label>
     <textarea
       [errorStateMatcher]="vascoErrorStatematcher"
       [formControl]="otpKeyControl"
-      matInput
       i18n-placeholder
+      matInput
       placeholder="Enter blob"
       required
       rows="6">
@@ -37,13 +36,11 @@
       <input
         [disabled]="!useVascoSerialControl.value"
         [formControl]="vascoSerialControl"
-        matInput />
+        matInput/>
     </mat-form-field>
   </div>
   <span
-    i18n
     class="margin-bottom-1"
-    >The VASCO serial is read from the VASCO blob. If you want to use this VASCO serial number within privacyIDEA,
-    activate the checkbox. Otherwise privacyIDEA will create a new unique serial number.</span
-  >
+    i18n>The VASCO serial is read from the VASCO blob. If you want to use this VASCO serial number within privacyIDEA,
+    activate the checkbox. Otherwise privacyIDEA will create a new unique serial number.</span>
 </div>

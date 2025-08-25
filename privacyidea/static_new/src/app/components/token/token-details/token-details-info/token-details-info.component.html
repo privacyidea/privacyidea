@@ -4,15 +4,13 @@
   }"
   class="info-container">
   <span
-    i18n
     class="info-title details-key-row"
-    >Information</span
-  >
+    i18n>Information</span>
   <table
     [dataSource]="infoData()"
-    i18n-aria-label
     aria-label="Token Details Data Table"
     class="info-table"
+    i18n-aria-label
     mat-table>
     <ng-container matColumnDef="value">
       <td
@@ -49,7 +47,7 @@
                   <div class="info-span">
                     <span class="info-span-title"> {{ key }}: </span>
                     <span class="info-span-value">{{ element.value[key] }}</span>
-                    <mat-divider class="info-divider" />
+                    <mat-divider class="info-divider"/>
                   </div>
                 </mat-list-item>
               }
@@ -61,7 +59,7 @@
                     matInput
                     [(ngModel)]="newInfo().key"
                     i18n-placeholder
-                    placeholder="Add new key" />
+                    placeholder="Add new key"/>
                 </mat-form-field>
                 :
                 <mat-form-field style="width: 47%">

@@ -1,7 +1,7 @@
 <div
-  i18n-aria-label
   aria-label="Token Applications Offline"
-  class="token-applications-offline">
+  class="token-applications-offline"
+  i18n-aria-label>
   <div class="details-flex-layout flex-column">
     <div class="application-p-div">
       <p i18n>HOTP tokens can be attached with offline to e.g. notebooks.</p>
@@ -9,8 +9,8 @@
   </div>
 </div>
 <div
-  class="application-table-container"
-  appScrollToTop>
+  appScrollToTop
+  class="application-table-container">
   <div class="filter-paginator-container">
     <mat-form-field
       class="application-table-filter"
@@ -22,11 +22,11 @@
         <input
           #filterInput
           [(ngModel)]="machineService.filterValueString"
-          i18n-aria-label
           aria-label="Filter Input"
-          matInput
+          i18n-aria-label
           i18n-placeholder
-          placeholder="Example query: 'service_id: myService'" />
+          matInput
+          placeholder="Example query: 'service_id: myService'"/>
       </app-clearable-input>
     </mat-form-field>
     <mat-paginator
@@ -46,9 +46,9 @@
     (matSortChange)="machineService.onSortEvent($event)"
     [dataSource]="dataSource()"
     [matSortDisableClear]="false"
-    i18n-aria-label
     aria-label="Token Applications Table"
     class="token-table"
+    i18n-aria-label
     mat-table
     matSort>
     @for (column of columnsKeyMap; track column) {
@@ -95,23 +95,23 @@
     }
     <tr
       *matHeaderRowDef="displayedColumns"
-      i18n-aria-label
       aria-label="Header Row"
+      i18n-aria-label
       mat-header-row></tr>
     <tr
       *matRowDef="let row; columns: displayedColumns"
-      i18n-aria-label
       aria-label="Data Row"
+      i18n-aria-label
       mat-row></tr>
     <tr
       *matNoDataRow
-      i18n-aria-label
-      aria-label="No Data Row">
+      aria-label="No Data Row"
+      i18n-aria-label>
       <td
         [attr.colspan]="displayedColumns.length"
-        i18n-aria-label
         aria-label="No Data Cell"
-        i18n>
+        i18n
+        i18n-aria-label>
         No data matching the filter.
       </td>
     </tr>

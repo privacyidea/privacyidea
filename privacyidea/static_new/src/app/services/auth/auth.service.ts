@@ -173,6 +173,7 @@ export class AuthService implements AuthServiceInterface {
       "PI-Authorization": this.localService.getData(BEARER_TOKEN_STORAGE_KEY) || ""
     });
   }
+
   logLevel = computed(() => this.authData()?.log_level || 0);
   menus = computed(() => this.authData()?.menus || []);
   realm = computed(() => this.jwtData()?.realm || this.authData()?.realm || "");

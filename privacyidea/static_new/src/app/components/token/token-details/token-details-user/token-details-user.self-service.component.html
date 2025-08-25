@@ -2,13 +2,13 @@
   [ngClass]="{
     'pad-0': overflowService.isWidthOverflowing('body', 1310)
   }"
-  class="user-container"
-  appScrollToTop>
+  appScrollToTop
+  class="user-container">
   <table
     [dataSource]="userData()"
-    i18n-aria-label
     aria-label="User Detail Data Table"
     class="user-details-table"
+    i18n-aria-label
     mat-table>
     <ng-container matColumnDef="key">
       <td
@@ -34,7 +34,7 @@
                   <input
                     matInput
                     [(ngModel)]="userService.userFilter"
-                    [matAutocomplete]="userAuto" />
+                    [matAutocomplete]="userAuto"/>
                   <mat-autocomplete #userAuto="matAutocomplete">
                     @for (option of userService.filteredUsernames(); track option) {
                       <mat-option [value]="option">{{ option }}</mat-option>

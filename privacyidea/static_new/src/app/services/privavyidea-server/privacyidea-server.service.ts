@@ -31,5 +31,6 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
       Array.isArray(source?.result?.value) ? source.result?.value : (previous?.value ?? [])
   });
 
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) {
+  }
 }

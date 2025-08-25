@@ -1,13 +1,13 @@
 <div class="tab-list">
   <mat-list>
-    <mat-divider />
-    <br />
+    <mat-divider/>
+    <br/>
     <mat-list-item>
       <button
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS ? 'card-button-active' : 'card-button'"
         [routerLink]="[ROUTE_PATHS.TOKENS]"
-        mat-flat-button
-        i18n>
+        i18n
+        mat-flat-button>
         <mat-icon>policy</mat-icon>
         Overview
       </button>
@@ -50,9 +50,9 @@
             i18n>
             <mat-icon>now_widgets</mat-icon>
             Applications
-          </button> </mat-list-item
-        ><br />
-        <mat-divider /><br />
+          </button>
+        </mat-list-item><br/>
+        <mat-divider/><br/>
         <mat-list-item>
           <button
             [ngClass]="[
@@ -76,8 +76,8 @@
           </button>
         </mat-list-item>
         @if (contentService.routeUrl() === ROUTE_PATHS.TOKENS) {
-          <br />
-          <mat-divider /><br />
+          <br/>
+          <mat-divider/><br/>
           <mat-list-item>
             <button
               [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' : 'card-button-delete']"
@@ -122,9 +122,9 @@
             i18n>
             <mat-icon>manage_search</mat-icon>
             Show in Audit Log
-          </button> </mat-list-item
-        ><br />
-        <mat-divider /><br />
+          </button>
+        </mat-list-item><br/>
+        <mat-divider/><br/>
         <mat-list-item>
           <button
             class="card-button"
@@ -143,9 +143,9 @@
             i18n>
             <mat-icon>info_outline</mat-icon>
             Help
-          </button> </mat-list-item
-        ><br />
-        <mat-divider /><br />
+          </button>
+        </mat-list-item><br/>
+        <mat-divider/><br/>
         <mat-list-item>
           <button
             (click)="toggleActive()"

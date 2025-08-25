@@ -1,8 +1,8 @@
 <div
-  i18n-aria-label
+  appScrollToTop
   aria-label="Details"
   class="details-container"
-  appScrollToTop>
+  i18n-aria-label>
   <div class="details-flex-layout flex-column">
     <div class="container-details-header">
       <h3 i18n>Details for Container:</h3>
@@ -15,9 +15,9 @@
       <div>
         <table
           [dataSource]="containerDetailData()"
-          i18n-aria-label
           aria-label="Container Detail Data Table"
           class="details-table border-bottom-none"
+          i18n-aria-label
           mat-table>
           <ng-container matColumnDef="key">
             <td
@@ -55,11 +55,10 @@
                           @if (option === userRealm()) {
                             <mat-option
                               value="{{ option }}"
-                              disabled
-                              >{{ option }}
+                              disabled>{{ option }}
                             </mat-option>
                           } @else {
-                            <mat-option value="{{ option }}">{{ option }} </mat-option>
+                            <mat-option value="{{ option }}">{{ option }}</mat-option>
                           }
                         }
                       </mat-select>
@@ -124,9 +123,9 @@
         </table>
         <table
           [dataSource]="userData()"
-          i18n-aria-label
           aria-label="User Detail Data Table"
           class="details-table"
+          i18n-aria-label
           mat-table>
           <ng-container matColumnDef="key">
             <td
@@ -152,7 +151,7 @@
                         <input
                           matInput
                           [(ngModel)]="userService.userFilter"
-                          [matAutocomplete]="userAuto" />
+                          [matAutocomplete]="userAuto"/>
                         <mat-autocomplete
                           #userAuto="matAutocomplete"
                           class="user-selection-autocomplete">
@@ -174,7 +173,7 @@
                         [(ngModel)]="userService.selectedUserRealm"
                         [value]="userService.selectedUserRealm()">
                         @for (option of realmService.realmOptions(); track option) {
-                          <mat-option value="{{ option }}">{{ option }} </mat-option>
+                          <mat-option value="{{ option }}">{{ option }}</mat-option>
                         }
                       </mat-select>
                     </mat-form-field>
@@ -227,11 +226,11 @@
             [infoData]="infoData"
             [isAnyEditingOrRevoked]="isAnyEditing"
             [isEditingInfo]="isEditingInfo"
-            [isEditingUser]="isEditingUser" />
+            [isEditingUser]="isEditingUser"/>
         </div>
         @if (overflowService.isWidthOverflowing("body", 1310)) {
-          <br />
-          <mat-divider></mat-divider><br />
+          <br/>
+          <mat-divider></mat-divider><br/>
         }
       </div>
       <div
@@ -244,8 +243,8 @@
               [ngClass]="{ 'pad-top-10': showOnlyTokenNotInContainer() }">
               <span i18n> Only display tokens not in a container </span>
               @if (!showOnlyTokenNotInContainer()) {
-                <br />
-                <span i18n> Note: Adding a token removes it from</span><br />
+                <br/>
+                <span i18n> Note: Adding a token removes it from</span><br/>
                 <span
                   i18n
                   style="margin-left: 39px">
@@ -268,9 +267,9 @@
             #tokenAutoTrigger="matAutocompleteTrigger"
             [(ngModel)]="filterValueString"
             [matAutocomplete]="tokenAuto"
-            matInput
             i18n-placeholder
-            placeholder="Example query: 'type: hotp serial: 123'" />
+            matInput
+            placeholder="Example query: 'type: hotp serial: 123'"/>
           <mat-autocomplete #tokenAuto="matAutocomplete">
             @for (option of tokenDataSource().data; track option) {
               <mat-option
@@ -295,7 +294,7 @@
           </mat-autocomplete>
         </mat-form-field>
         <mat-divider class="width-36"></mat-divider>
-        <app-container-details-token-table [containerTokenData]="containerTokenData" />
+        <app-container-details-token-table [containerTokenData]="containerTokenData"/>
       </div>
     </div>
   </div>

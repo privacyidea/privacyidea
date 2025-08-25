@@ -1,13 +1,12 @@
 <div
-  i18n-aria-label
   aria-label="Container Details Token Table"
-  class="container-details-token-table-layout">
+  class="container-details-token-table-layout"
+  i18n-aria-label>
   <div class="flex-column">
     <h3
-      i18n
-      class="margin-left-1">
-      Token in Container
-    </h3>
+      class="margin-left-1"
+      i18n>
+      Token in Container </h3>
     @if (dataSource.data.length > 1) {
       <mat-form-field
         class="container-details-token-table-filter"
@@ -20,7 +19,7 @@
           aria-label="Filter Input"
           matInput
           i18n-placeholder
-          placeholder="Filter across all columns." />
+          placeholder="Filter across all columns."/>
       </mat-form-field>
     }
     <mat-paginator
@@ -32,9 +31,9 @@
   <div [ngClass]="[overflowService.isWidthOverflowing('body', 1580) ? 'flex-column' : 'flex-row']">
     <table
       [dataSource]="dataSource"
-      i18n-aria-label
       aria-label="Token of Container Data Table"
       class="container-details-token-table"
+      i18n-aria-label
       mat-table
       matSort>
       @for (column of columnsKeyMap; track column) {
@@ -99,16 +98,16 @@
       <ng-container matColumnDef="remove">
         <th
           *matHeaderCellDef
-          i18n-aria-label
           aria-label="Remove Column Header"
-          mat-header-cell
-          i18n>
+          i18n
+          i18n-aria-label
+          mat-header-cell>
           Remove
         </th>
         <td
           *matCellDef="let element"
-          i18n-aria-label
           aria-label="Remove Button Cell"
+          i18n-aria-label
           mat-cell>
           <div class="flex just-center">
             @if (element.username === authService.username()) {
@@ -127,16 +126,16 @@
       <ng-container matColumnDef="delete">
         <th
           *matHeaderCellDef
-          i18n-aria-label
           aria-label="Delete Column Header"
-          mat-header-cell
-          i18n>
+          i18n
+          i18n-aria-label
+          mat-header-cell>
           Delete
         </th>
         <td
           *matCellDef="let element"
-          i18n-aria-label
           aria-label="Delete Button Cell"
+          i18n-aria-label
           mat-cell>
           <div class="flex just-center">
             @if (element.username === authService.username()) {
@@ -153,23 +152,23 @@
       </ng-container>
       <tr
         *matHeaderRowDef="displayedColumns"
-        i18n-aria-label
         aria-label="Header Row"
+        i18n-aria-label
         mat-header-row></tr>
       <tr
         *matRowDef="let row; columns: displayedColumns"
-        i18n-aria-label
         aria-label="Data Row"
+        i18n-aria-label
         mat-row></tr>
       <tr
         *matNoDataRow
-        i18n-aria-label
-        aria-label="No Data Row">
+        aria-label="No Data Row"
+        i18n-aria-label>
         <td
           [attr.colspan]="displayedColumns.length"
-          i18n-aria-label
           aria-label="No Data Cell"
-          i18n>
+          i18n
+          i18n-aria-label>
           No data matching the filter.
         </td>
       </tr>
@@ -184,8 +183,8 @@
         (click)="assignToAllToken()"
         [disabled]="!isAssignableToAllToken()"
         [ngClass]="[isAssignableToAllToken() ? 'card-button' : 'card-button-disabled']"
-        mat-flat-button
-        i18n>
+        i18n
+        mat-flat-button>
         <mat-icon>playlist_add</mat-icon>
         "Assign to All Tokens"
       </button>
@@ -208,7 +207,7 @@
         (click)="toggleAll('deactivate')"
         class="card-button-delete"
         mat-flat-button>
-        <mat-icon class="mdi--list-lock" />
+        <mat-icon class="mdi--list-lock"/>
         <span i18n>Deactivate All Tokens</span>
       </button>
       <button

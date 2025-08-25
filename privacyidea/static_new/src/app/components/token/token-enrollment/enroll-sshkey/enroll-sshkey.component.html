@@ -3,16 +3,15 @@
     <p i18n>{{ text }}</p>
   </div>
   <h4
-    i18n
-    class="enroll-h4">
-    Token Configuration
-  </h4>
+    class="enroll-h4"
+    i18n>
+    Token Configuration </h4>
   <mat-form-field class="sshkey-description-form">
     <mat-label i18n>SSH public key</mat-label>
     <textarea
       [formControl]="sshPublicKeyFormControl"
-      matInput
       i18n-placeholder
+      matInput
       placeholder="Paste the PUBLIC ssh key here"
       required
       rows="5"></textarea>

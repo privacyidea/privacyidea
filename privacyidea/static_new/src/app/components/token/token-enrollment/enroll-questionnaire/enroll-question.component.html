@@ -3,10 +3,9 @@
     <p i18n>{{ text }}</p>
   </div>
   <h4
-    i18n
-    class="enroll-h4">
-    Token Configuration
-  </h4>
+    class="enroll-h4"
+    i18n>
+    Token Configuration </h4>
   <span i18n> Please answer at least {{ configMinNumberOfAnswers() }} of the following questions. </span>
   <div
     [formGroup]="questionForm"
@@ -20,13 +19,13 @@
             type="text"
             [formControlName]="questionControlNames[i]"
             matInput
-            required />
+            required/>
           <!-- Individual controls are required -->
         </mat-form-field>
       }
     }
   </div>
   @if (questionForm.hasError("minAnswers") && questionForm.touched) {
-    <mat-error i18n>At least {{ configMinNumberOfAnswers() }} answers are <strong>required</strong>. </mat-error>
+    <mat-error i18n>At least {{ configMinNumberOfAnswers() }} answers are <strong>required</strong>.</mat-error>
   }
 </div>

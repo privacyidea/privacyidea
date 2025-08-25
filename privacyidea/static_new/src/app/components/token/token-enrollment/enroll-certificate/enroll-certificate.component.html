@@ -3,29 +3,25 @@
     <p i18n>{{ text }}</p>
   </div>
   <h4
-    i18n
-    class="enroll-h4">
-    Token Configuration
-  </h4>
+    class="enroll-h4"
+    i18n>
+    Token Configuration </h4>
   <mat-button-toggle-group
     [formControl]="intentionToggleControl"
     [hideSingleSelectionIndicator]="true"
     class="button-toggle-group">
     <mat-button-toggle
       i18n
-      value="generate"
-      >Generate Request</mat-button-toggle
-    >
+      value="generate">Generate Request
+    </mat-button-toggle>
     <mat-button-toggle
       i18n
-      value="uploadRequest"
-      >Upload Request</mat-button-toggle
-    >
+      value="uploadRequest">Upload Request
+    </mat-button-toggle>
     <mat-button-toggle
       i18n
-      value="uploadCert"
-      >Upload Certificate</mat-button-toggle
-    >
+      value="uploadCert">Upload Certificate
+    </mat-button-toggle>
   </mat-button-toggle-group>
 
   <div class="flex-row gap-1">
@@ -62,9 +58,8 @@
       <span
         i18n
         class="margin-bottom-1">
-        The server will create the private RSA key and store it in the database. <br />
-        You can later download the PKCS#12 file.</span
-      >
+        The server will create the private RSA key and store it in the database. <br/>
+        You can later download the PKCS#12 file.</span>
     }
     @case ("uploadRequest") {
       <mat-form-field class="width-66">

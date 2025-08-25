@@ -17,5 +17,6 @@ export class SystemService implements SystemServiceInterface {
     headers: this.authService.getHeaders()
   }));
 
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) {
+  }
 }

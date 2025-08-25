@@ -1,8 +1,8 @@
 <div
-  i18n-aria-label
+  appScrollToTop
   aria-label="Container Table"
   class="container-table-container"
-  appScrollToTop>
+  i18n-aria-label>
   <div class="filter-paginator-container-selfservice">
     <mat-paginator
       (page)="onPageEvent($event)"
@@ -10,14 +10,14 @@
       [pageIndex]="pageIndex()"
       [pageSizeOptions]="pageSizeOptions()"
       [pageSize]="pageSize()"
-      showFirstLastButtons />
+      showFirstLastButtons/>
   </div>
   <table
     (matSortChange)="onSortEvent($event)"
     [dataSource]="containerDataSource()"
-    i18n-aria-label
     aria-label="Container Data Table"
     class="container-table"
+    i18n-aria-label
     mat-table
     matSort
     multiTemplateDataRows>
@@ -32,7 +32,7 @@
               (change)="$event ? toggleAllRows() : null"
               [checked]="isAllSelected()"
               [indeterminate]="containerSelection().length > 0 && !isAllSelected()"
-              [disabled]="total() === 0" />
+              [disabled]="total() === 0"/>
           </th>
         } @else {
           <th
@@ -58,7 +58,7 @@
                   (change)="$event ? toggleRow(row) : null"
                   (click)="$event.stopPropagation()"
                   [checked]="containerSelection().includes(row)"
-                  [disabled]="total() === 0" />
+                  [disabled]="total() === 0"/>
               }
               @case ("serial") {
                 <a
@@ -67,7 +67,7 @@
                   {{ element[column.key] }}
                 </a>
                 @if (element.serial !== "") {
-                  <app-copy-button [copyText]="element.serial" />
+                  <app-copy-button [copyText]="element.serial"/>
                 }
               }
               @case ("realms") {
@@ -76,8 +76,8 @@
                     <a
                       attr.aria-label="{{ column.label }} Link"
                       href="#">
-                      {{ realm }} </a
-                    ><br style="margin-top: 3px" />
+                      {{ realm }}
+                    </a><br style="margin-top: 3px"/>
                   }
                 </div>
               }
@@ -131,8 +131,8 @@
                   {{ token.serial }}
                 }
                 @if (token.tokentype) {
-                  [<span i18n>{{ token.tokentype }}</span
-                  >]
+                  [
+                  <span i18n>{{ token.tokentype }}</span>]
                 }
               </div>
             }
@@ -166,8 +166,8 @@
 
     <tr *matNoDataRow>
       <td
-        i18n
-        [attr.colspan]="columnKeysSelfService.length">
+        [attr.colspan]="columnKeysSelfService.length"
+        i18n>
         No data matching the filter.
       </td>
     </tr>

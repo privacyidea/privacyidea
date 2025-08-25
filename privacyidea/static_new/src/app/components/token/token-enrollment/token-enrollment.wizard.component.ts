@@ -99,7 +99,7 @@ import { TokenEnrollmentComponent } from "./token-enrollment.component";
     AsyncPipe,
     MatError,
     MatTooltip,
-    ScrollToTopDirective,
+    ScrollToTopDirective
   ],
   templateUrl: "./token-enrollment.wizard.component.html",
   styleUrl: "./token-enrollment.component.scss"

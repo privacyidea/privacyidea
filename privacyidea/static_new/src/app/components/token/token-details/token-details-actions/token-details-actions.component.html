@@ -1,5 +1,5 @@
 @if (overflowService.isWidthOverflowing("body", 1580)) {
-  <br />
+  <br/>
 }
 <div
   [ngClass]="{
@@ -8,20 +8,18 @@
   class="actions-otp-container">
   <div class="user-pin-container user-pin-container-padding">
     <app-set-pin-action
-      [setPinValue]="setPinValue"
-      [repeatPinValue]="repeatPinValue" />
-    <br />
-    <mat-divider />
-    <br />
+      [repeatPinValue]="repeatPinValue"
+      [setPinValue]="setPinValue"/>
+    <br/>
+    <mat-divider/>
+    <br/>
   </div>
   @if (tokenType() !== "passkey") {
-    <app-resync-token-action />
-    <br />
-    <mat-divider />
-    <br />
+    <app-resync-token-action/><br/>
+    <mat-divider/><br/>
   }
   @if (tokenType() !== "passkey") {
-    <app-test-otp-pin-action />
+    <app-test-otp-pin-action/>
     @if (tokenType() === "sshkey") {
       <button
         (click)="assignSSHMachineDialog()"

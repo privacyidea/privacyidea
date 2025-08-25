@@ -1,37 +1,37 @@
 <div
-  i18n-aria-label
   aria-label="Login Container"
-  class="login-container">
+  class="login-container"
+  i18n-aria-label>
   <div class="login-scroll">
     <img
-      i18n-alt
       alt="logo"
-      i18n-aria-label
       aria-label="Logo"
       class="logo"
       height="307"
+      i18n-alt
+      i18n-aria-label
       ngSrc="assets/privacyIDEA1.png"
       ngSrcset="1x"
       sizes="(max-width: 307px) 100vw, 307px"
-      width="307" />
+      width="307"/>
 
     <img
-      i18n-alt
       alt="logo-text"
-      i18n-aria-label
       aria-label="Logo Text"
       class="logo-text"
       height="109"
+      i18n-alt
+      i18n-aria-label
       ngSrc="assets/logo-text.png"
       ngSrcset="1x"
       sizes="(max-width: 575px) 100vw, 575px"
-      width="575" />
+      width="575"/>
 
     <form
       (ngSubmit)="onSubmit()"
-      i18n-aria-label
       aria-label="Login Form"
-      class="login-form">
+      class="login-form"
+      i18n-aria-label>
       @if (loginMessage().length > 0) {
         <div class="login-message">
           @for (msg of loginMessage(); track msg) {
@@ -54,7 +54,7 @@
             matInput
             name="username"
             required
-            type="text" />
+            type="text"/>
         </mat-form-field>
       }
 
@@ -67,7 +67,7 @@
             matInput
             name="password"
             required
-            type="password" />
+            type="password"/>
         </mat-form-field>
       }
 
@@ -82,17 +82,17 @@
             name="otp"
             required
             autocomplete="one-time-code"
-            type="text" />
+            type="text"/>
         </mat-form-field>
       }
 
       <div class="login-actions margin-top-1">
         <button
           [disabled]="isLoginButtonDisabled()"
-          i18n-aria-label
           aria-label="Login Button"
           class="login-btn"
           extended
+          i18n-aria-label
           mat-fab
           type="submit">
           <span i18n="Login button text">Log In</span>

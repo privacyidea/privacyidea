@@ -1,6 +1,7 @@
 <div
+  appScrollToTop
   aria-label="Details"
-  class="details-container" appScrollToTop>
+  class="details-container">
   <div class="details-flex-layout flex-column">
     <div class="container-details-header">
       <h3>Details for Container:</h3>
@@ -52,11 +53,10 @@
                           @if (option === userRealm()) {
                             <mat-option
                               value="{{ option }}"
-                              disabled
-                              >{{ option }}
+                              disabled>{{ option }}
                             </mat-option>
                           } @else {
-                            <mat-option value="{{ option }}">{{ option }} </mat-option>
+                            <mat-option value="{{ option }}">{{ option }}</mat-option>
                           }
                         }
                       </mat-select>
@@ -147,7 +147,7 @@
                         <input
                           matInput
                           [(ngModel)]="userService.userFilter"
-                          [matAutocomplete]="userAuto" />
+                          [matAutocomplete]="userAuto"/>
                         <mat-autocomplete
                           #userAuto="matAutocomplete"
                           class="user-selection-autocomplete">
@@ -165,8 +165,9 @@
                   @if (isEditingUser()) {
                     <mat-form-field class="width-18rem">
                       <mat-label>Select Realm of User</mat-label>
-                      <mat-select [(ngModel)]="userService.selectedUserRealm"
-                                  [value]="userService.selectedUserRealm()">
+                      <mat-select
+                        [(ngModel)]="userService.selectedUserRealm"
+                        [value]="userService.selectedUserRealm()">
                         @for (option of realmService.realmOptions();
                           track option) {
                           <mat-option value="{{ option }}">{{
@@ -224,11 +225,11 @@
             [infoData]="infoData"
             [isAnyEditingOrRevoked]="isAnyEditing"
             [isEditingInfo]="isEditingInfo"
-            [isEditingUser]="isEditingUser" />
+            [isEditingUser]="isEditingUser"/>
         </div>
         @if (overflowService.isWidthOverflowing("body", 1310)) {
-          <br />
-          <mat-divider></mat-divider><br />
+          <br/>
+          <mat-divider></mat-divider><br/>
         }
       </div>
       <div
@@ -241,8 +242,8 @@
               [ngClass]="{ 'pad-top-10': showOnlyTokenNotInContainer() }">
               <span> Only display tokens not in a container </span>
               @if (!showOnlyTokenNotInContainer()) {
-                <br />
-                <span> Note: Adding a token removes it from</span><br />
+                <br/>
+                <span> Note: Adding a token removes it from</span><br/>
                 <span style="margin-left: 39px"> its previous container. </span>
               }
             </mat-checkbox>
@@ -262,7 +263,7 @@
             [(ngModel)]="filterValueString"
             [matAutocomplete]="tokenAuto"
             matInput
-            placeholder="Example query: 'type: hotp serial: 123'" />
+            placeholder="Example query: 'type: hotp serial: 123'"/>
           <mat-autocomplete #tokenAuto="matAutocomplete">
             @for (option of tokenDataSource().data; track option) {
               <mat-option
@@ -284,7 +285,7 @@
           </mat-autocomplete>
         </mat-form-field>
         <mat-divider class="width-36"></mat-divider>
-        <app-container-details-token-table-self-service [containerTokenData]="containerTokenData" />
+        <app-container-details-token-table-self-service [containerTokenData]="containerTokenData"/>
       </div>
     </div>
   </div>

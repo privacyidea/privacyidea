@@ -1,8 +1,8 @@
 <div
-  i18n-aria-label
+  appScrollToTop
   aria-label="Details"
   class="details-container"
-  appScrollToTop>
+  i18n-aria-label>
   <div class="details-flex-layout flex-column">
     <div class="details-header">
       <h3 i18n>Details for Token:</h3>
@@ -15,9 +15,9 @@
       <div>
         <table
           [dataSource]="tokenDetailData()"
-          i18n-aria-label
           aria-label="Token Details Data Table"
           class="details-table"
+          i18n-aria-label
           mat-table>
           <ng-container matColumnDef="key">
             <td
@@ -40,7 +40,7 @@
                       <input
                         matInput
                         [(ngModel)]="containerService.selectedContainer"
-                        [matAutocomplete]="containerAuto" />
+                        [matAutocomplete]="containerAuto"/>
                       <mat-autocomplete #containerAuto="matAutocomplete">
                         @for (option of containerService.filteredContainerOptions(); track option) {
                           <mat-option [value]="option">{{ option }}</mat-option>
@@ -113,7 +113,7 @@
                       <input
                         type="number"
                         matInput
-                        [(ngModel)]="element.value" />
+                        [(ngModel)]="element.value"/>
                     </mat-form-field>
                   } @else if (element.isEditing()) {
                     <mat-form-field class="width-18rem">
@@ -169,9 +169,7 @@
                       <mat-icon> lock_reset</mat-icon>
                     </button>
                   </div>
-                } @else if (
-                  element.keyMap.key === "container_serial" && !isAnyEditingOrRevoked() && element.value !== ""
-                ) {
+                } @else if (element.keyMap.key === "container_serial" && !isAnyEditingOrRevoked() && element.value !== "") {
                   <div class="edit-button-container">
                     <button
                       mat-icon-button

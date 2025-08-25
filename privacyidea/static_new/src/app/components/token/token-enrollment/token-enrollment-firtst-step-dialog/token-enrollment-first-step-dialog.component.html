@@ -1,28 +1,23 @@
 <h2
   i18n
   mat-dialog-title>
-  Take action on your authenticator
-</h2>
+  Take action on your authenticator </h2>
 <mat-dialog-content>
-  @if (
-    data.enrollmentResponse.detail["webAuthnRegisterRequest"] || data.enrollmentResponse.detail.passkey_registration
-  ) {
+  @if (data.enrollmentResponse.detail["webAuthnRegisterRequest"] || data.enrollmentResponse.detail.passkey_registration) {
     <p
       i18n
       class="max-width-600">
       You need to confirm the registration with your authenticator. For an external authenticator, this usually means
       pushing the button on the authenticator, or replugging it (if there is no button on the authenticator). If you
       want to use an authenticator that is integrated into your device, look for a dialog box from your operating
-      system. If you do not see anything, please make sure that your authenticator supports WebAuthn.
-    </p>
+      system. If you do not see anything, please make sure that your authenticator supports WebAuthn. </p>
   }
   @if (data.enrollmentResponse.detail.u2fRegisterRequest) {
     <p
       i18n
       class="max-width-600">
       You need to confirm the registration with your token either by pushing the blinking button or by religging your
-      token. This depends on the actual token model.
-    </p>
+      token. This depends on the actual token model. </p>
   }
   @if (data.enrollmentResponse.detail.pushurl) {
     <div class="flex-row gap-1">
@@ -32,7 +27,7 @@
         class="qr-code"
         height="300px"
         src="{{ data.enrollmentResponse.detail.pushurl.img }}"
-        width="300px" />
+        width="300px"/>
       <p
         i18n
         class="max-width-600">
@@ -48,9 +43,9 @@
 
 <mat-dialog-actions>
   <button
+    i18n
     mat-button
-    mat-dialog-close
-    i18n>
+    mat-dialog-close>
     Close
   </button>
 </mat-dialog-actions>

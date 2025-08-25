@@ -1,17 +1,17 @@
 <ng-template
   #userCard
   let-hasMargin="hasMargin">
-  <app-user-card [ngClass]="hasMargin ? 'margin-right-1' : ''" />
+  <app-user-card [ngClass]="hasMargin ? 'margin-right-1' : ''"/>
 </ng-template>
 
 <div
-  i18n-aria-label
   aria-label="User Layout"
-  class="user-layout">
+  class="user-layout"
+  i18n-aria-label>
   @if (!overflowService.isWidthOverflowing("body", overflowService.getOverflowThreshold())) {
     <ng-container
       [ngTemplateOutlet]="userCard"
-      [ngTemplateOutletContext]="{ hasMargin: true }" />
+      [ngTemplateOutletContext]="{ hasMargin: true }"/>
   }
 
   <mat-drawer-container>
@@ -22,7 +22,7 @@
         (opened)="updateOverflowState()"
         [ngClass]="isUserDrawerOverflowing() ? 'user-drawer-overflow' : 'user-drawer'">
         <div class="drawer">
-          <ng-container [ngTemplateOutlet]="userCard" />
+          <ng-container [ngTemplateOutlet]="userCard"/>
         </div>
       </mat-drawer>
     }

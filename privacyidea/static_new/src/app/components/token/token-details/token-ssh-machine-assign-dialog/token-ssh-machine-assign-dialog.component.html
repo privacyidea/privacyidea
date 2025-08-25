@@ -1,8 +1,7 @@
 <h2
   i18n
   mat-dialog-title>
-  Assign SSH Machine
-</h2>
+  Assign SSH Machine </h2>
 <mat-dialog-content class="full-width">
   <form [formGroup]="formGroup">
     <mat-form-field
@@ -28,12 +27,12 @@
         [formControl]="selectedMachine"
         [matAutocomplete]="machineAuto"
         matInput
-        type="text" />
+        type="text"/>
       <mat-autocomplete
         #machineAuto="matAutocomplete"
         [displayWith]="getFullMachineName">
         @for (machine of filteredMachines(); track machine) {
-          <mat-option [value]="machine">{{ getFullMachineName(machine) }} </mat-option>
+          <mat-option [value]="machine">{{ getFullMachineName(machine) }}</mat-option>
         }
       </mat-autocomplete>
       @if (selectedMachine.touched && selectedMachine.invalid) {
@@ -64,7 +63,7 @@
           matInput
           type="text"
           [matAutocomplete]="userAuto"
-          [formControl]="selectedUser" />
+          [formControl]="selectedUser"/>
         <mat-autocomplete
           #userAuto="matAutocomplete"
           [displayWith]="getFullMachineName">
@@ -85,16 +84,16 @@
     <button
       (click)="onAssign()"
       [disabled]="formGroup.invalid"
+      i18n
       mat-button
-      type="button"
-      i18n>
+      type="button">
       Assign
     </button>
     <button
       (click)="onCancel()"
+      i18n
       mat-button
-      type="button"
-      i18n>
+      type="button">
       Cancel
     </button>
   </div>

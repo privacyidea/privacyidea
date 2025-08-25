@@ -17,18 +17,17 @@
     </ul>
   } @else if (data.action === "search") {
     <p i18n>
-      This search request will check {{ data.numberOfTokens }} tokens in the system for the given OTP value. <br />This
-      could take a lot of time and could even time out.
-    </p>
+      This search request will check {{ data.numberOfTokens }} tokens in the system for the given OTP value. <br/>This
+      could take a lot of time and could even time out. </p>
   }
 </mat-dialog-content>
 
 <mat-dialog-actions>
   <button
     [mat-dialog-close]="false"
+    i18n
     mat-button
-    mat-dialog-close
-    i18n>
+    mat-dialog-close>
     Cancel
   </button>
   <button

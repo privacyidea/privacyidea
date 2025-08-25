@@ -47,7 +47,8 @@ describe("TokenService", () => {
     localService = TestBed.inject(LocalService) as any;
     notificationService = TestBed.inject(NotificationService) as any;
 
-    jest.spyOn(console, "error").mockImplementation(() => {});
+    jest.spyOn(console, "error").mockImplementation(() => {
+    });
   });
 
   afterEach(() => {
@@ -129,7 +130,7 @@ describe("TokenService", () => {
   });
 
   describe("saveTokenDetail()", () => {
-    it('maps "maxfail" to "max_failcount"', () => {
+    it("maps \"maxfail\" to \"max_failcount\"", () => {
       postSpy.mockReturnValue(of({ success: true } as any));
 
       tokenService.saveTokenDetail("serial", "maxfail", 3).subscribe();
@@ -255,7 +256,7 @@ describe("TokenService", () => {
     jest.useRealTimers();
   });
 
-  it('polls until rollout_state !== "clientwait"', async () => {
+  it("polls until rollout_state !== \"clientwait\"", async () => {
     jest.useFakeTimers();
     const first = {
       result: { value: { tokens: [{ rollout_state: "clientwait" }] } }

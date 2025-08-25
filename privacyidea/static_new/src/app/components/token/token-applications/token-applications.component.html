@@ -1,13 +1,12 @@
 <div
-  i18n-aria-label
+  appScrollToTop
   aria-label="Token Applications"
   class="token-applications"
-  appScrollToTop>
+  i18n-aria-label>
   <h3
-    i18n
-    class="margin-left-1">
-    Token Applications
-  </h3>
+    class="margin-left-1"
+    i18n>
+    Token Applications </h3>
   <mat-form-field
     appearance="fill"
     class="application-type-select">
@@ -17,23 +16,21 @@
       [value]="selectedApplicationType()">
       <mat-option
         i18n
-        value="ssh"
-        >SSH: Attaching SSH keys to services</mat-option
-      >
+        value="ssh">SSH: Attaching SSH keys to services
+      </mat-option>
       <mat-option
         i18n
-        value="offline"
-        >Offline: Use HOTP token for offline login to notebooks
+        value="offline">Offline: Use HOTP token for offline login to notebooks
       </mat-option>
     </mat-select>
   </mat-form-field>
 
   @switch (selectedApplicationType()) {
     @case ("ssh") {
-      <app-token-applications-ssh />
+      <app-token-applications-ssh/>
     }
     @case ("offline") {
-      <app-token-applications-offline />
+      <app-token-applications-offline/>
     }
     @default {
       <div>

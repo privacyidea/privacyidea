@@ -3,10 +3,9 @@
     <p i18n>{{ text }}</p>
   </div>
   <h4
-    i18n
-    class="enroll-h4">
-    Token Configuration
-  </h4>
+    class="enroll-h4"
+    i18n>
+    Token Configuration </h4>
   <mat-checkbox
     [formControl]="generateOnServerControl"
     class="server-checkbox"
@@ -15,7 +14,7 @@
     @if (generateOnServerControl.value) {
       <span class="dot">.</span>
       <span>
-        <br />
+        <br/>
         The server will create the static password.
       </span>
     }
@@ -43,7 +42,7 @@
           matInput
           [formControl]="otpKeyControl"
           i18n-placeholder
-          placeholder="Enter static password" />
+          placeholder="Enter static password"/>
       </mat-form-field>
     }
   </div>

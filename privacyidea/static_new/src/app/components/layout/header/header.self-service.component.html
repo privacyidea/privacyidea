@@ -1,16 +1,16 @@
 <div class="header-container">
   <div class="brand">
     <img
-      i18n-alt
       alt="logo"
-      i18n-aria-label
       aria-label="Logo"
       class="logo"
       height="307"
+      i18n-alt
+      i18n-aria-label
       ngSrc="assets/privacyIDEA1.png"
       ngSrcset="1x"
       sizes="(max-width: 307px) 100vw, 307px"
-      width="307" />
+      width="307"/>
   </div>
   <div class="nav-div">
     <nav class="nav-menu">
@@ -32,7 +32,7 @@
         }
       </div>
     </nav>
-    <app-theme-switcher />
+    <app-theme-switcher/>
     <button
       (click)="refreshPage()"
       class="refresh-btn"
@@ -43,15 +43,14 @@
       <h4
         class="preview"
         i18n>
-        Preview
-      </h4>
+        Preview </h4>
       <div class="profile-logout-div flex-row">
         <a
-          i18n-aria-label
           aria-label="Support"
           class="support-btn"
           extended
           href="https://netknights.it/support_link_admin"
+          i18n-aria-label
           mat-fab
           target="_blank">
           <mat-icon>support_agent</mat-icon>
@@ -65,16 +64,16 @@
           extended
           mat-fab>
           <mat-menu #profileMenu="matMenu">
-            <app-user-self-service />
+            <app-user-self-service/>
           </mat-menu>
           <mat-icon>account_box</mat-icon>
           <h4>{{ profileText }}</h4>
         </button>
         <button
           (click)="logout()"
-          i18n-aria-label
           aria-label="Logout"
           class="logout-btn"
+          i18n-aria-label
           mat-icon-button>
           <mat-icon>logout</mat-icon>
         </button>

@@ -13,26 +13,24 @@
         <ng-template mat-tab-label>
           <mat-icon [ngClass]="{ 'tab-active': tokenTabActive() }">shield</mat-icon>
           <h4
-            i18n
-            [ngClass]="{ 'tab-active': tokenTabActive() }">
-            Token
-          </h4>
+            [ngClass]="{ 'tab-active': tokenTabActive() }"
+            i18n>
+            Token </h4>
         </ng-template>
         <ng-template matTabContent>
-          <app-token-tab />
+          <app-token-tab/>
         </ng-template>
       </mat-tab>
       <mat-tab>
         <ng-template mat-tab-label>
           <mat-icon [ngClass]="{ 'tab-active': containerTabActive() }">folder</mat-icon>
           <h4
-            i18n
-            [ngClass]="{ 'tab-active': containerTabActive() }">
-            Container
-          </h4>
+            [ngClass]="{ 'tab-active': containerTabActive() }"
+            i18n>
+            Container </h4>
         </ng-template>
         <ng-template matTabContent>
-          <app-container-tab />
+          <app-container-tab/>
         </ng-template>
       </mat-tab>
     </mat-tab-group>

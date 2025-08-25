@@ -1,8 +1,8 @@
 <div
-  i18n-aria-label
+  appScrollToTop
   aria-label="Container Table"
   class="container-table-container"
-  appScrollToTop>
+  i18n-aria-label>
   <div class="filter-paginator-container">
     <mat-form-field
       class="container-table-filter"
@@ -14,11 +14,11 @@
         <input
           #filterHTMLInputElement
           [(ngModel)]="filterValueString"
-          i18n-aria-label
           aria-label="Filter Input"
-          matInput
+          i18n-aria-label
           i18n-placeholder
-          placeholder="Example query: 'type: generic user: admin'" />
+          matInput
+          placeholder="Example query: 'type: generic user: admin'"/>
       </app-clearable-input>
     </mat-form-field>
     <mat-paginator
@@ -38,9 +38,9 @@
     (matSortChange)="onSortEvent($event)"
     [dataSource]="containerDataSource()"
     [matSortDisableClear]="false"
-    i18n-aria-label
     aria-label="Container Data Table"
     class="container-table"
+    i18n-aria-label
     mat-table
     matSort
     multiTemplateDataRows>
@@ -99,8 +99,8 @@
                     <a
                       attr.aria-label="{{ column.label }} Link"
                       href="#">
-                      {{ realm }} </a
-                    ><br style="margin-top: 3px" />
+                      {{ realm }}
+                    </a><br style="margin-top: 3px"/>
                   }
                 </div>
               }
@@ -138,7 +138,7 @@
           <div class="expanded-token-list">
             @for (token of element.tokens; track token) {
               <div class="token-item">
-                <a (click)="contentService.tokenSelected(token.serial)"> {{ token.serial }} </a>
+                <a (click)="contentService.tokenSelected(token.serial)"> {{ token.serial }}</a>
                 [{{ token.tokentype }}]
               </div>
             }
@@ -172,8 +172,8 @@
 
     <tr *matNoDataRow>
       <td
-        i18n
-        [attr.colspan]="columnKeys.length">
+        [attr.colspan]="columnKeys.length"
+        i18n>
         No data matching the filter.
       </td>
     </tr>
