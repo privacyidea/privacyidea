@@ -51,10 +51,7 @@ export class EnrollDaypasswordComponent implements OnInit {
     { value: "sha256", viewValue: "SHA256" },
     { value: "sha512", viewValue: "SHA512" }
   ];
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "daypassword")?.text;
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -68,7 +65,7 @@ export class EnrollDaypasswordComponent implements OnInit {
     Validators.required
   ]);
   generateOnServerControl = new FormControl(true);
-  otpLengthControl = new FormControl<number>(10, [Validators.required]);
+  otpLengthControl = new FormControl<number>(6, [Validators.required]);
   daypasswordForm = new FormGroup({
     otpKey: this.otpKeyControl,
     otpLength: this.otpLengthControl,
@@ -77,7 +74,7 @@ export class EnrollDaypasswordComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({
+    this.additionalFormFieldsChange.emit({
       otpKey: this.otpKeyControl,
       otpLength: this.otpLengthControl,
       hashAlgorithm: this.hashAlgorithmControl,

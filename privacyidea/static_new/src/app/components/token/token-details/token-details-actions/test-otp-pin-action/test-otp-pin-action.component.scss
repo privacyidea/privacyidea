@@ -1,0 +1,17 @@
+@use "../../../../../../styles";
+
+.actions-otp-pin-input {
+  display: flex;
+  gap: 8px;
+}
+
+.actions-visibility-button {
+  display: flex;
+}
+
+.actions-pin-button {
+  display: flex;
+  margin-top: 8px;
+  gap: 8px;
+  flex-direction: column;
+}

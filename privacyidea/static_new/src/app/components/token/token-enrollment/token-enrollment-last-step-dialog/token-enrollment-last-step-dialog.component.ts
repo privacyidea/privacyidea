@@ -1,4 +1,4 @@
-import { Component, inject } from "@angular/core";
+import { Component, inject, WritableSignal } from "@angular/core";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import {
   MAT_DIALOG_DATA,
@@ -24,6 +24,7 @@ import { TokenType } from "../../../../services/token/token.service";
 export type TokenEnrollmentLastStepDialogData = {
   tokentype: TokenType;
   response: EnrollmentResponse;
+  serial: WritableSignal<string | null>;
   enrollToken: () => void;
   user: UserData | null;
   userRealm: string;
@@ -69,7 +70,9 @@ export class TokenEnrollmentLastStepDialogComponent {
   }
 
   regenerateQRCode() {
+    this.data.serial.set(this.data.response.detail?.serial ?? null);
     this.data.enrollToken();
+    this.data.serial.set(null);
     this.dialogRef.close();
   }
 

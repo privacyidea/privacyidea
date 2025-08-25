@@ -26,11 +26,7 @@ export class EnrollSpassComponent implements OnInit {
   );
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "spass")?.text;
-
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -40,7 +36,7 @@ export class EnrollSpassComponent implements OnInit {
   spassForm = new FormGroup({});
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({});
+    this.additionalFormFieldsChange.emit({});
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 

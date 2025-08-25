@@ -1,4 +1,4 @@
-<div class="challenges-table-container">
+<div class="challenges-table-container" appScrollToTop>
   <h3 class="margin-left-1">Challenges</h3>
   <div class="filter-paginator-container">
     <mat-form-field
@@ -6,11 +6,15 @@
       class="challenges-table-filter"
       subscriptSizing="dynamic">
       <mat-label>Enter Filter</mat-label>
-      <input
-        #filterInput
-        (keyup)="onFilterChange(filterInput.value)"
-        matInput
-        placeholder="Example query: 'transaction_id: 00000000000000000001'"/>
+      <app-clearable-input
+        (onClick)="filterInput.value = ''; onFilterChange('')"
+        [showClearButton]="filterInput.value.length > 0">
+        <input
+          #filterInput
+          (keyup)="onFilterChange(filterInput.value)"
+          matInput
+          placeholder="Example query: 'transaction_id: 00000000000000000001'" />
+      </app-clearable-input>
     </mat-form-field>
     <mat-paginator
       (page)="onPageEvent($event)"
@@ -61,9 +65,9 @@
                 </div>
               }
               @case ("otp_received") {
-                <span [ngClass]="[element[column.key] ? 'highlight-true' : 'highlight-false',]">{{
-                    element[column.key]
-                  }}</span>
+                <span [ngClass]="[element[column.key] ? 'highlight-true' : 'highlight-false']">{{
+                  element[column.key]
+                }}</span>
               }
               @default {
                 <span>{{ element[column.key] }}</span>
@@ -92,4 +96,3 @@
     </tr>
   </table>
 </div>
-

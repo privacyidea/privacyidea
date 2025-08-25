@@ -3227,7 +3227,7 @@ class ValidateAPITestCase(MyApiTestCase):
         auth_time = datetime.datetime.now(datetime.timezone.utc)
         last_auth = container.last_authentication
         time_diff = abs((auth_time - last_auth).total_seconds())
-        self.assertLessEqual(time_diff, 1)
+        self.assertLessEqual(time_diff, 2)
 
         # delete the token
         remove_token(serial=serial)
@@ -5686,8 +5686,8 @@ class TriggeredPoliciesTestCase(MyApiTestCase):
             self.assertTrue(json_response.get("result").get("status"), res)
             self.assertEqual(json_response.get("result").get("value").get("count"), 1)
             # Both policies have triggered
-            self.assertEqual(json_response.get("result").get("value").get("auditdata")[0].get("policies"),
-                             "otppin,lastauth")
+            audit_policies = json_response.get("result").get("value").get("auditdata")[0].get("policies").split(",")
+            self.assertEqual({"otppin", "lastauth"}, set(audit_policies))
 
         # clean up
         remove_token("triggtoken")

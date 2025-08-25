@@ -54,11 +54,7 @@ export class EnrollRadiusComponent implements OnInit {
     inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "radius")?.text;
-
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -104,7 +100,7 @@ export class EnrollRadiusComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({
+    this.additionalFormFieldsChange.emit({
       radiusUser: this.radiusUserControl,
       radiusServerConfiguration: this.radiusServerConfigurationControl,
       checkPinLocally: this.checkPinLocallyControl
@@ -115,7 +111,8 @@ export class EnrollRadiusComponent implements OnInit {
   onClickEnroll = (
     basicOptions: TokenEnrollmentData
   ): Observable<EnrollmentResponse | null> => {
-    if (this.radiusForm.invalid) {
+    if (this.radiusUserControl.invalid || this.radiusServerConfigurationControl.invalid ||
+      this.checkPinLocallyControl.invalid) {
       this.radiusForm.markAllAsTouched();
       return of(null);
     }
