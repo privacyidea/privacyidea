@@ -76,7 +76,15 @@ Usually you will need to upgrade/migrate the database:
 
 .. code-block:: bash
 
-   privacyidea-schema-upgrade /opt/privacyidea/lib/privacyidea/migrations
+   privacyidea-schema-upgrade
+
+.. note::
+    .. versionchanged:: v3.12 The location of the migration directory has changed and it is usually
+        automatically detected.
+        Therefore the migration directory argument is not necessary anymore (it can be passed as a
+        parameter with ``-d /opt/privacyidea/lib/python3.X/site-packages/privacyidea/migrations``.
+        On previous privacyIDEA versions, the call would be
+        ``privacyidea-schema-upgrade /opt/privacyidea/lib/privacyidea/migrations``
 
 Now you need to restart your webserver for the new code to take effect.
 
