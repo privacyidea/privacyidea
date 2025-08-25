@@ -1,7 +1,4 @@
 <div class="flex-column">
-  <div class="token-type-paragraph">
-    <p>{{ text }}</p>
-  </div>
   <h4 class="enroll-h4">Token Configuration</h4>
   @if (!defaultRadiusServerIsSet()) {
     <span class="inline-hint">To ease the enrolling of RADIUS tokens you can set default values in the
@@ -20,6 +17,7 @@
       </mat-hint>
       <mat-select
         [formControl]="radiusServerConfigurationControl"
+        [value]="radiusServerConfigurationControl.value"
         required>
         @for (option of radiusServerConfigurationOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>

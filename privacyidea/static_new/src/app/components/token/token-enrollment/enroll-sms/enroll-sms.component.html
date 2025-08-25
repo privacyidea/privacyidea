@@ -1,7 +1,4 @@
 <div class="flex-column">
-  <div class="token-type-paragraph">
-    <p>{{ text }}</p>
-  </div>
   <h4 class="enroll-h4">Token Configuration</h4>
   @if (!defaultSMSGatewayIsSet()) {
     <span class="inline-hint">For SMS tokens to work properly you need to set the
@@ -28,7 +25,8 @@
       <mat-hint>If this token should not use the system wide SMS gateway but an individual SMS gateway, you can select
                 the gateway here.
       </mat-hint>
-      <mat-select [formControl]="smsGatewayControl">
+      <mat-select [formControl]="smsGatewayControl"
+                  [value]="smsGatewayControl.value">
         @for (option of smsGatewayOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
         }

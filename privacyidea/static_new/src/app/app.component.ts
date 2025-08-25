@@ -4,7 +4,6 @@ import { RouterOutlet } from "@angular/router";
 import { AuthService, AuthServiceInterface } from "./services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "./services/notification/notification.service";
 import { SessionTimerService, SessionTimerServiceInterface } from "./services/session-timer/session-timer.service";
-import { ThemeService } from "./services/theme/theme.service";
 
 export interface PiResponse<Value, Detail = unknown> {
   id: number;
@@ -25,6 +24,63 @@ export interface PiResponse<Value, Detail = unknown> {
   versionnumber: string;
 }
 
+/**
+ * Checks if a PiResponse indicates a successful authentication.
+ *
+ * An authentication is considered successful if:
+ * - The `result.authentication` property is "ACCEPT".
+ * - OR `result.authentication` is not present, AND there is no `detail.multi_challenge`,
+ *   AND `result.status` is true, AND `result.value` exists.
+ *
+ * @param response The `PiResponse` object to check.
+ * @returns `true` if the authentication is successful, otherwise `false`.
+ */
+export function isAuthenticationSuccessful<Value, Detail = unknown>(
+  response: PiResponse<Value, Detail>
+): response is PiResponse<Value, Detail> & { result: { value: Value; status: true } } {
+  if (!response.result) {
+    return false;
+  }
+
+  // Case 1: result.authentication is "ACCEPT"
+  if (response.result.authentication === "ACCEPT") {
+    // If authentication is ACCEPT, we must also ensure status is true and value exists
+    return response.result.status === true && response.result.value !== undefined;
+  }
+
+  // Case 2: result.authentication is not present
+  if (response.result.authentication === undefined) {
+    const detailWithChallenge = response.detail as { multi_challenge?: unknown[] };
+    const isChallengeFree = !detailWithChallenge?.multi_challenge?.length;
+    return isChallengeFree && response.result.status && response.result.value !== undefined;
+  }
+  return false;
+}
+
+/**
+ * Checks if a PiResponse indicates that a challenge has been triggered.
+ *
+ * A challenge is considered triggered if:
+ * - The `result.authentication` property is "CHALLENGE".
+ * - OR `result.authentication` is not present, AND `detail.multi_challenge` exists and is not empty.
+ *
+ * @param response The `PiResponse` object to check.
+ * @returns `true` if a challenge was triggered, otherwise `false`.
+ */
+export function challengesTriggered<Value, Detail = unknown>(response: PiResponse<Value, Detail>): boolean {
+  // Case 1: The response explicitly states a challenge.
+  if (response.result?.authentication === "CHALLENGE") {
+    return true;
+  }
+
+  // Case 2: No explicit authentication status, but a multi_challenge is present.
+  if (response.result?.authentication === undefined) {
+    const detailWithChallenge = response.detail as { multi_challenge?: unknown[] };
+    return !!detailWithChallenge?.multi_challenge?.length;
+  }
+  return false;
+}
+
 @Component({
   selector: "app-root",
   standalone: true,
@@ -34,25 +90,22 @@ export interface PiResponse<Value, Detail = unknown> {
 })
 export class AppComponent implements OnInit {
   private readonly authService: AuthServiceInterface = inject(AuthService);
-  private readonly notificationService: NotificationServiceInterface =
-    inject(NotificationService);
-  private readonly sessionTimerService: SessionTimerServiceInterface =
-    inject(SessionTimerService);
-  private readonly themeService: ThemeService = inject(ThemeService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  private readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
+
   title = "privacyidea-webui";
   lastSessionReset = 0;
 
   constructor() {
     this.sessionTimerService.startTimer();
 
-    if (this.authService.isAuthenticatedUser()) {
+    if (this.authService.isAuthenticated()) {
       console.warn("User is already logged in.");
       this.notificationService.openSnackBar("User is already logged in.");
     }
   }
 
-  ngOnInit(): void {
-  }
+  ngOnInit(): void {}
 
   @HostListener("document:click")
   @HostListener("document:keydown")

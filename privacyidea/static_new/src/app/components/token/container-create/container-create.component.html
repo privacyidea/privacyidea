@@ -1,7 +1,7 @@
 <div
   #scrollContainer
   aria-label="Create Container"
-  class="container-create-container">
+  class="container-create-container" appScrollToTop>
   <h3 class="margin-left-1">Create a New Container</h3>
   <div #stickySentinel></div>
   <div
@@ -14,12 +14,14 @@
           subscriptSizing="dynamic">
           <mat-select
             [(ngModel)]="containerService.selectedContainerType"
+            [value]="containerService.selectedContainerType()"
             [ngModelOptions]="{ standalone: true }"
             [panelClass]="'single-column-panel'">
             @for (type of containerService.containerTypeOptions(); track type) {
               <mat-option
                 class="select-option type-option"
-                [value]="type">{{ type.description }}
+                [value]="type"
+                >{{ type.description }}
               </mat-option>
             }
           </mat-select>
@@ -36,7 +38,7 @@
         <button
           (click)="reopenEnrollmentDialog()"
           [matTooltip]="'Reopen enrollment dialog'"
-          [ngClass]="{'hidden': !registerResponse()}"
+          [ngClass]="{ hidden: !registerResponse() }"
           mat-icon-button
           type="button">
           <mat-icon>open_in_new</mat-icon>
@@ -47,8 +49,7 @@
 
   <div class="container-type-hint">
     Supported Token Types:
-    @if (containerService.selectedContainerType().token_types.length >=
-    tokenService.tokenTypeOptions().length) {
+    @if (containerService.selectedContainerType().token_types.length >= tokenService.tokenTypeOptions().length) {
       All
     } @else if (containerService.selectedContainerType().token_types.length > 1) {
       {{ containerService.selectedContainerType().token_types.join(", ") }}
@@ -69,11 +70,12 @@
 
   <div class="flex-column width-100 gap-1">
     <div class="flex-column width-66">
-      <h4 class="enroll-h4"> Use a Template</h4>
+      <h4 class="enroll-h4">Use a Template</h4>
       <mat-form-field class="width-100 input-height">
         <mat-label>Template</mat-label>
         <mat-select
           [(ngModel)]="selectedTemplate"
+          [value]="selectedTemplate()"
           disabled>
           @for (option of templateOptions(); track option) {
             <mat-option [value]="option">{{ option.name }}</mat-option>
@@ -81,11 +83,12 @@
         </mat-select>
       </mat-form-field>
     </div>
-    <h4 class="enroll-h4"> Assign the Container to a User </h4>
+    <h4 class="enroll-h4">Assign the Container to a User</h4>
     <div class="flex-row gap-1">
       <mat-form-field class="width-32 input-height">
         <mat-label>Select Realm of User</mat-label>
-        <mat-select [(ngModel)]="userService.selectedUserRealm">
+        <mat-select [(ngModel)]="userService.selectedUserRealm"
+                    [value]="userService.selectedUserRealm()">
           @for (option of realmService.realmOptions(); track option) {
             <mat-option value="{{ option }}">{{ option }}</mat-option>
           }
@@ -93,11 +96,15 @@
       </mat-form-field>
       <mat-form-field class="width-32 input-height">
         <mat-label>Enter User</mat-label>
-        <input
-          [(ngModel)]="userService.userFilter"
-          [disabled]="onlyAddToRealm()"
-          [matAutocomplete]="userAuto"
-          matInput/>
+        <app-clearable-input
+          (onClick)="userService.userFilter.set('')"
+          [showClearButton]="userService.userFilter() !== ''">
+          <input
+            [(ngModel)]="userService.userFilter"
+            [disabled]="onlyAddToRealm()"
+            [matAutocomplete]="userAuto"
+            matInput />
+        </app-clearable-input>
         <mat-error>User is <strong>required</strong></mat-error>
         <mat-autocomplete #userAuto="matAutocomplete">
           @for (option of userService.filteredUsernames(); track option) {
@@ -105,19 +112,21 @@
           }
         </mat-autocomplete>
       </mat-form-field>
-      <mat-checkbox [(ngModel)]="onlyAddToRealm">
+      <mat-checkbox
+        [(ngModel)]="onlyAddToRealm"
+        [disabled]="userService.userFilter() !== ''">
         Only add to the realm <br/> (no user assignment)
       </mat-checkbox>
     </div>
   </div>
 
   @if (containerService.selectedContainerType().containerType === "smartphone") {
-    <h4 class="enroll-h4"> Registration </h4>
+    <h4 class="enroll-h4">Registration</h4>
     <mat-checkbox [(ngModel)]="generateQRCode">
       Generate a QR code to register the container on a smartphone.
     </mat-checkbox>
     <mat-accordion>
-      <mat-expansion-panel class="expension-panel">
+      <mat-expansion-panel class="expansion-panel">
         <mat-expansion-panel-header>
           <mat-panel-title> Optional Settings</mat-panel-title>
         </mat-expansion-panel-header>

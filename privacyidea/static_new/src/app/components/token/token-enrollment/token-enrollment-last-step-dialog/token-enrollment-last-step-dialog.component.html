@@ -16,7 +16,7 @@
     </span>
   }
   <div class="flex-row gap-1">
-    @if (!["registration", "paper", "spass"].includes(data.tokentype.key)) {
+    @if (!["registration", "paper", "spass", "email"].includes(data.tokentype.key)) {
       @if (data.response.detail.googleurl?.img) {
         <img
           alt="QR Code"
@@ -69,7 +69,7 @@
           class="card-button"
           mat-flat-button>
           <mat-icon>autorenew</mat-icon>
-          Regenerate QR Code
+          Regenerate {{ !["paper", "tan",].includes(data.tokentype.key) ? "QR Code" : "Values" }}
         </button>
       }
 
@@ -103,7 +103,7 @@
         <mat-accordion class="otpkey-expension">
           <mat-expansion-panel>
             <mat-expansion-panel-header>
-              <mat-panel-title> Enrollment URL </mat-panel-title>
+              <mat-panel-title> Enrollment URL</mat-panel-title>
             </mat-expansion-panel-header>
             <p class="otpkey-p">{{ data.response.detail["tiqrenroll"]?.value }}</p>
           </mat-expansion-panel>
