@@ -5,19 +5,19 @@
     questions.
   </span>
   <div
-    [formGroup]="questionForm"
+    [formGroup]="questionForm()"
     class="margin-top-1 form-group">
     @for (question of configQuestions(); track question; let i = $index) {
       <mat-form-field class="question-input-width input-height">
         <mat-label>{{ question.question }}</mat-label>
         <input
           type="text"
-          [formControlName]="questionControlNames[i]"
+          [formControlName]="questionControlNames()[i]"
           matInput>
       </mat-form-field>
     }
   </div>
-  @if (questionForm.hasError("minAnswers") && questionForm.touched) {
+  @if (questionForm().hasError("minAnswers") && questionForm().touched) {
     <mat-error>At least {{ configMinNumberOfAnswers() }} answers are <strong>required</strong>.
     </mat-error>
   }
