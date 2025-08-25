@@ -7,7 +7,7 @@
     <p
       i18n
       class="inline-warning">
-      Some token are already assigned to a user. <br/> Assigning a token to a user will remove the previous assignment.
+      Some token are already assigned to a user. <br /> Assigning a token to a user will remove the previous assignment.
     </p>
   }
   <div class="selected-user-assign-container">
@@ -31,7 +31,7 @@
           [formControl]="userFilterControl"
           [matAutocomplete]="userAuto"
           matInput
-          required/>
+          required />
         <mat-autocomplete
           #userAuto="matAutocomplete"
           [displayWith]="userService.displayUser">
@@ -60,16 +60,16 @@
       class="pin-field">
       <input
         style="display: none"
-        type="text"/> <input
+        type="text" /> <input
       style="display: none"
-      type="password"/>
+      type="password" />
       <mat-label i18n>PIN (optional)</mat-label>
       <input
         (ngModelChange)="pin.set($event)"
         [ngModel]="pin()"
         [type]="hidePin() ? 'password' : 'text'"
         autocomplete="new-password"
-        matInput/>
+        matInput />
       <button
         (click)="togglePinVisibility()"
         [attr.aria-label]="'Show PIN'"
@@ -90,7 +90,7 @@
         [ngModel]="pinRepeat()"
         [type]="hidePin() ? 'password' : 'text'"
         autocomplete="new-password"
-        matInput/>
+        matInput />
       <button
         (click)="togglePinVisibility()"
         [attr.aria-label]="'Show PIN Repeat'"

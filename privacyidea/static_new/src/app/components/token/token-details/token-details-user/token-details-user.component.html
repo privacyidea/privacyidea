@@ -33,7 +33,7 @@
                   <input
                     matInput
                     [(ngModel)]="userService.userFilter"
-                    [matAutocomplete]="userAuto"/>
+                    [matAutocomplete]="userAuto" />
                 </app-clearable-input>
                 <mat-autocomplete #userAuto="matAutocomplete">
                   @for (option of userService.filteredUsernames(); track option) {

@@ -167,13 +167,6 @@ export class AuthService implements AuthServiceInterface {
   authenticationAccepted = signal<boolean>(false);
 
   isAuthenticated = computed(() => this.authenticationAccepted() && !!this.authData());
-
-  public getHeaders(): HttpHeaders {
-    return new HttpHeaders({
-      "PI-Authorization": this.localService.getData(BEARER_TOKEN_STORAGE_KEY) || ""
-    });
-  }
-
   logLevel = computed(() => this.authData()?.log_level || 0);
   menus = computed(() => this.authData()?.menus || []);
   realm = computed(() => this.jwtData()?.realm || this.authData()?.realm || "");
@@ -181,18 +174,6 @@ export class AuthService implements AuthServiceInterface {
   role = computed(() => this.jwtData()?.role || this.authData()?.role || "");
   token = computed(() => this.authData()?.token || "");
   username = computed(() => this.jwtData()?.username || this.authData()?.username || "");
-  logoutTimeSeconds = computed(() => {
-    const jwtExpDate = this.jwtExpDate()!;
-    let jwtLogoutTime: number | null = null;
-    const authDataLogoutTime = this.authData()?.logout_time || null;
-    if (jwtExpDate) {
-      const now = new Date();
-      jwtLogoutTime = Math.max(0, Math.floor((jwtExpDate.getTime() - now.getTime()) / 1000));
-    }
-    if (jwtLogoutTime === null) return authDataLogoutTime;
-    if (authDataLogoutTime === null) return jwtLogoutTime;
-    return Math.min(jwtLogoutTime, authDataLogoutTime);
-  });
   auditPageSize = computed(() => this.authData()?.audit_page_size || 10);
   tokenPageSize = computed(() => this.authData()?.token_page_size || 10);
   userPageSize = computed(() => this.authData()?.user_page_size || 10);
@@ -221,17 +202,33 @@ export class AuthService implements AuthServiceInterface {
   requireDescription = computed(() => this.authData()?.require_description || []);
   rssAge = computed(() => this.authData()?.rss_age || 0);
   containerWizard = computed(() => this.authData()?.container_wizard || { enabled: false });
-
   jwtNonce = computed(() => this.jwtData()?.nonce || "");
   authtype = computed(() => (this.jwtData()?.authtype || this.jwtData() ? "cookie" : "none"));
   jwtExpDate = computed(() => {
     const exp = this.jwtData()?.exp;
     return exp ? new Date(exp * 1000) : null;
   });
-
+  logoutTimeSeconds = computed(() => {
+    const jwtExpDate = this.jwtExpDate()!;
+    let jwtLogoutTime: number | null = null;
+    const authDataLogoutTime = this.authData()?.logout_time || null;
+    if (jwtExpDate) {
+      const now = new Date();
+      jwtLogoutTime = Math.max(0, Math.floor((jwtExpDate.getTime() - now.getTime()) / 1000));
+    }
+    if (jwtLogoutTime === null) return authDataLogoutTime;
+    if (authDataLogoutTime === null) return jwtLogoutTime;
+    return Math.min(jwtLogoutTime, authDataLogoutTime);
+  });
   isSelfServiceUser = computed(() => {
     return this.role() === "user";
   });
+
+  public getHeaders(): HttpHeaders {
+    return new HttpHeaders({
+      "PI-Authorization": this.localService.getData(BEARER_TOKEN_STORAGE_KEY) || ""
+    });
+  }
 
   authenticate(params: any): Observable<AuthResponse> {
     return this.http

@@ -46,135 +46,6 @@ export class Base64Service implements Base64ServiceInterface {
   }
 
   /**
-   * Convert a UTF-8 encoded base64 character to a base64 digit.
-   * Adapted from Base64 / binary data / UTF-8 strings utilities (#2)
-   * Source: https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding
-   * Author: madmurphy
-   *
-   * @param {number} nChr - A UTF-8 encoded base64 character.
-   * @returns {number} - The base64 digit.
-   */
-  private b64ToUint6(nChr: number): number {
-    return nChr > 64 && nChr < 91
-      ? nChr - 65
-      : nChr > 96 && nChr < 123
-        ? nChr - 71
-        : nChr > 47 && nChr < 58
-          ? nChr + 4
-          : nChr === 43
-            ? 62
-            : nChr === 47
-              ? 63
-              : 0;
-  }
-
-  /**
-   * Convert a base64 digit, to a UTF-8 encoded base64 character.
-   * Adapted from Base64 / binary data / UTF-8 strings utilities (#2)
-   * Source: https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding
-   * Author: madmurphy
-   *
-   * @param {number} nUint6 - A base64 digit.
-   * @returns {number} - The UTF-8 encoded base64 character.
-   */
-  private uint6ToB64(nUint6: number): number {
-    return nUint6 < 26
-      ? nUint6 + 65
-      : nUint6 < 52
-        ? nUint6 + 71
-        : nUint6 < 62
-          ? nUint6 - 4
-          : nUint6 === 62
-            ? 43
-            : nUint6 === 63
-              ? 47
-              : 65;
-  }
-
-  /**
-   * Decode base64 into UTF-8.
-   *
-   * This will take a base64 encoded string and decode it to UTF-8,
-   * optionally NUL-padding it to make its length a multiple of a given
-   * block size.
-   * Adapted from Base64 / binary data / UTF-8 strings utilities (#2)
-   * Source: https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding
-   * Author: madmurphy
-   *
-   * @param {string} sBase64 - Base64 to decode.
-   * @param {number} [nBlockSize=1] - The block-size for the output.
-   *
-   * @returns {Uint8Array} - The decoded string.
-   */
-  private base64DecToArr(sBase64: string, nBlockSize?: number): Uint8Array {
-    const sB64Enc = sBase64.replace(/[^A-Za-z0-9+\/]/g, "");
-    const nInLen = sB64Enc.length;
-    const nOutLen = nBlockSize
-      ? Math.ceil(((nInLen * 3 + 1) >>> 2) / nBlockSize) * nBlockSize
-      : (nInLen * 3 + 1) >>> 2;
-    const aBytes = new Uint8Array(nOutLen);
-
-    let nMod3,
-      nMod4,
-      nUint24 = 0,
-      nOutIdx = 0;
-    for (let nInIdx = 0; nInIdx < nInLen; nInIdx++) {
-      nMod4 = nInIdx & 3;
-      nUint24 |= this.b64ToUint6(sB64Enc.charCodeAt(nInIdx)) << (18 - 6 * nMod4);
-      if (nMod4 === 3 || nInLen - nInIdx === 1) {
-        for (nMod3 = 0; nMod3 < 3 && nOutIdx < nOutLen; nMod3++, nOutIdx++) {
-          aBytes[nOutIdx] = (nUint24 >>> ((16 >>> nMod3) & 24)) & 255;
-        }
-        nUint24 = 0;
-      }
-    }
-
-    return aBytes;
-  }
-
-  /**
-   * Encode a binary into base64.
-   * This will take a binary ArrayBufferLike and encode it into base64.
-   * Adapted from Base64 / binary data / UTF-8 strings utilities (#2)
-   * Source: https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding
-   * Author: madmurphy
-   *
-   * @param {ArrayBufferLike} bytes - Bytes to encode.
-   *
-   * @returns {string} - The encoded base64.
-   */
-  private base64EncArr(bytes: ArrayBufferLike): string {
-    const aBytes = new Uint8Array(bytes);
-    const eqLen = (3 - (aBytes.length % 3)) % 3;
-    let sB64Enc = "";
-
-    let nMod3,
-      nUint24 = 0;
-    const nLen = aBytes.length;
-    for (let nIdx = 0; nIdx < nLen; nIdx++) {
-      nMod3 = nIdx % 3;
-
-      // Split the output in lines 76-characters long
-      if (nIdx > 0 && ((nIdx * 4) / 3) % 76 === 0) {
-        sB64Enc += "\r\n";
-      }
-
-      nUint24 |= aBytes[nIdx] << ((16 >>> nMod3) & 24);
-      if (nMod3 === 2 || aBytes.length - nIdx === 1) {
-        sB64Enc += String.fromCharCode(
-          this.uint6ToB64((nUint24 >>> 18) & 63),
-          this.uint6ToB64((nUint24 >>> 12) & 63),
-          this.uint6ToB64((nUint24 >>> 6) & 63),
-          this.uint6ToB64(nUint24 & 63)
-        );
-        nUint24 = 0;
-      }
-    }
-
-    return eqLen === 0 ? sB64Enc : sB64Enc.substring(0, sB64Enc.length - eqLen) + (eqLen === 1 ? "=" : "==");
-  }
-
-  /**
    * Perform web-safe base64 decoding.
    * This will perform web-safe base64 decoding as specified by WebAuthn.
    *
@@ -328,5 +199,134 @@ export class Base64Service implements Base64ServiceInterface {
     }
 
     return aBytes;
+  }
+
+  /**
+   * Convert a UTF-8 encoded base64 character to a base64 digit.
+   * Adapted from Base64 / binary data / UTF-8 strings utilities (#2)
+   * Source: https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding
+   * Author: madmurphy
+   *
+   * @param {number} nChr - A UTF-8 encoded base64 character.
+   * @returns {number} - The base64 digit.
+   */
+  private b64ToUint6(nChr: number): number {
+    return nChr > 64 && nChr < 91
+      ? nChr - 65
+      : nChr > 96 && nChr < 123
+        ? nChr - 71
+        : nChr > 47 && nChr < 58
+          ? nChr + 4
+          : nChr === 43
+            ? 62
+            : nChr === 47
+              ? 63
+              : 0;
+  }
+
+  /**
+   * Convert a base64 digit, to a UTF-8 encoded base64 character.
+   * Adapted from Base64 / binary data / UTF-8 strings utilities (#2)
+   * Source: https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding
+   * Author: madmurphy
+   *
+   * @param {number} nUint6 - A base64 digit.
+   * @returns {number} - The UTF-8 encoded base64 character.
+   */
+  private uint6ToB64(nUint6: number): number {
+    return nUint6 < 26
+      ? nUint6 + 65
+      : nUint6 < 52
+        ? nUint6 + 71
+        : nUint6 < 62
+          ? nUint6 - 4
+          : nUint6 === 62
+            ? 43
+            : nUint6 === 63
+              ? 47
+              : 65;
+  }
+
+  /**
+   * Decode base64 into UTF-8.
+   *
+   * This will take a base64 encoded string and decode it to UTF-8,
+   * optionally NUL-padding it to make its length a multiple of a given
+   * block size.
+   * Adapted from Base64 / binary data / UTF-8 strings utilities (#2)
+   * Source: https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding
+   * Author: madmurphy
+   *
+   * @param {string} sBase64 - Base64 to decode.
+   * @param {number} [nBlockSize=1] - The block-size for the output.
+   *
+   * @returns {Uint8Array} - The decoded string.
+   */
+  private base64DecToArr(sBase64: string, nBlockSize?: number): Uint8Array {
+    const sB64Enc = sBase64.replace(/[^A-Za-z0-9+\/]/g, "");
+    const nInLen = sB64Enc.length;
+    const nOutLen = nBlockSize
+      ? Math.ceil(((nInLen * 3 + 1) >>> 2) / nBlockSize) * nBlockSize
+      : (nInLen * 3 + 1) >>> 2;
+    const aBytes = new Uint8Array(nOutLen);
+
+    let nMod3,
+      nMod4,
+      nUint24 = 0,
+      nOutIdx = 0;
+    for (let nInIdx = 0; nInIdx < nInLen; nInIdx++) {
+      nMod4 = nInIdx & 3;
+      nUint24 |= this.b64ToUint6(sB64Enc.charCodeAt(nInIdx)) << (18 - 6 * nMod4);
+      if (nMod4 === 3 || nInLen - nInIdx === 1) {
+        for (nMod3 = 0; nMod3 < 3 && nOutIdx < nOutLen; nMod3++, nOutIdx++) {
+          aBytes[nOutIdx] = (nUint24 >>> ((16 >>> nMod3) & 24)) & 255;
+        }
+        nUint24 = 0;
+      }
+    }
+
+    return aBytes;
+  }
+
+  /**
+   * Encode a binary into base64.
+   * This will take a binary ArrayBufferLike and encode it into base64.
+   * Adapted from Base64 / binary data / UTF-8 strings utilities (#2)
+   * Source: https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding
+   * Author: madmurphy
+   *
+   * @param {ArrayBufferLike} bytes - Bytes to encode.
+   *
+   * @returns {string} - The encoded base64.
+   */
+  private base64EncArr(bytes: ArrayBufferLike): string {
+    const aBytes = new Uint8Array(bytes);
+    const eqLen = (3 - (aBytes.length % 3)) % 3;
+    let sB64Enc = "";
+
+    let nMod3,
+      nUint24 = 0;
+    const nLen = aBytes.length;
+    for (let nIdx = 0; nIdx < nLen; nIdx++) {
+      nMod3 = nIdx % 3;
+
+      // Split the output in lines 76-characters long
+      if (nIdx > 0 && ((nIdx * 4) / 3) % 76 === 0) {
+        sB64Enc += "\r\n";
+      }
+
+      nUint24 |= aBytes[nIdx] << ((16 >>> nMod3) & 24);
+      if (nMod3 === 2 || aBytes.length - nIdx === 1) {
+        sB64Enc += String.fromCharCode(
+          this.uint6ToB64((nUint24 >>> 18) & 63),
+          this.uint6ToB64((nUint24 >>> 12) & 63),
+          this.uint6ToB64((nUint24 >>> 6) & 63),
+          this.uint6ToB64(nUint24 & 63)
+        );
+        nUint24 = 0;
+      }
+    }
+
+    return eqLen === 0 ? sB64Enc : sB64Enc.substring(0, sB64Enc.length - eqLen) + (eqLen === 1 ? "=" : "==");
   }
 }

@@ -17,7 +17,7 @@
         [pageIndex]="pageIndex()"
         [pageSize]="pageSize()"
         hidePageSize
-        showFirstLastButtons/>
+        showFirstLastButtons />
     </div>
     <div class="table-container">
       <table
@@ -55,7 +55,7 @@
                           (click)="contentService.tokenSelected(element.serial)">
                           {{ element[column.key] }}
                         </a>
-                        <app-copy-button [copyText]="element.serial"/>
+                        <app-copy-button [copyText]="element.serial" />
                       </div>
                     }
                     @case ("container_serial") {
@@ -70,7 +70,7 @@
                           {{ element[column.key] }}
                         }
                         @if (element.container_serial !== "") {
-                          <app-copy-button [copyText]="element.container_serial"/>
+                          <app-copy-button [copyText]="element.container_serial" />
                         }
                       </div>
                     }
