@@ -574,6 +574,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
 
     const dialogData: TokenEnrollmentLastStepDialogData = {
+      tokentype: this.tokenService.selectedTokenType(),
       response: response,
       serial: this.serial,
       enrollToken: this.enrollToken.bind(this),
