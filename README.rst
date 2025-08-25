@@ -39,10 +39,10 @@ privacyIDEA
 .. image:: https://img.shields.io/twitter/follow/privacyidea.svg?style=social&label=Follow
     :alt: privacyIDEA on twitter
 
-privacyIDEA is an open solution for strong two-factor authentication like
-OTP tokens, SMS, smartphones or SSH keys.
+privacyIDEA is an open solution for strong two-factor authentication like FIDO2 (Passkeys, WebAuthn),
+classic OTP tokens such as HOTP/TOTP, SMS or Email and other types like SSH keys or Questionaire token.
 Using privacyIDEA you can enhance your existing applications like local login
-(PAM, Windows Credential Provider),
+(PAM, Windows Credential Provider), Identity Providers such as Keycloak, AD FS or Shibboleth,
 VPN, remote access, SSH connections, access to web sites or web portals with
 a second factor during authentication. Thus boosting the security of your
 existing applications.
