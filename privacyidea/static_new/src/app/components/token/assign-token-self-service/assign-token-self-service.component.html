@@ -16,7 +16,7 @@
       <input
         [(ngModel)]="selectedToken"
         matInput
-        required/>
+        required />
       <mat-error i18n>Serial is <strong>required</strong></mat-error>
     </mat-form-field>
     <button
@@ -30,11 +30,11 @@
   </div>
   <input
     style="display: none"
-    type="text"/>
+    type="text" />
 
   <input
     style="display: none"
-    type="password"/>
+    type="password" />
   <div class="flex-column user-pin-container">
     <h4
       class="enroll-h4"
@@ -46,14 +46,14 @@
         [type]="'password'"
         class="input"
         i18n-placeholder
-        placeholder="PIN"/>
+        placeholder="PIN" />
 
       <input
         [(ngModel)]="repeatPinValue"
         [type]="'password'"
         class="input"
         i18n-placeholder
-        placeholder="Repeat PIN"/>
+        placeholder="Repeat PIN" />
     </div>
   </div>
 </div>

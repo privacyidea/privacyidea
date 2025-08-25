@@ -13,7 +13,7 @@
         [formControl]="testYubiKeyControl"
         i18n-placeholder
         matInput
-        placeholder="Push Yubikey button here"/>
+        placeholder="Push Yubikey button here" />
     </mat-form-field>
     <mat-form-field class="input-height width-33">
       <mat-label i18n>OTP length</mat-label>
@@ -30,7 +30,7 @@
         i18n-placeholder
         matInput
         placeholder="Enter OTP key"
-        required/>
+        required />
       <mat-error i18n>OTP key is <strong>required</strong></mat-error>
       @if (otpKeyControl.value && otpKeyControl.value.length !== 32) {
         <mat-hint i18n>OTP key must be 32 characters long for yubikey token in AES mode</mat-hint>

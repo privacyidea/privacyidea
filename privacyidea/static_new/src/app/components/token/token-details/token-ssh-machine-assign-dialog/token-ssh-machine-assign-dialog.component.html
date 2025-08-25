@@ -27,7 +27,7 @@
         [formControl]="selectedMachine"
         [matAutocomplete]="machineAuto"
         matInput
-        type="text"/>
+        type="text" />
       <mat-autocomplete
         #machineAuto="matAutocomplete"
         [displayWith]="getFullMachineName">
@@ -63,7 +63,7 @@
           matInput
           type="text"
           [matAutocomplete]="userAuto"
-          [formControl]="selectedUser"/>
+          [formControl]="selectedUser" />
         <mat-autocomplete
           #userAuto="matAutocomplete"
           [displayWith]="getFullMachineName">

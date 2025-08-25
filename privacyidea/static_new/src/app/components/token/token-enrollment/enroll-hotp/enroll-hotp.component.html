@@ -14,7 +14,7 @@
     @if (generateOnServerFormControl.value) {
       <span class="dot">.</span>
       <span>
-        <br/>
+        <br />
         The server will create the OTP key and a QR Code will be displayed to you to be scanned.
       </span>
     }
@@ -58,7 +58,7 @@
           [formControl]="otpKeyFormControl"
           i18n-placeholder
           placeholder="Enter OTP key"
-          required/>
+          required />
         @if (otpKeyFormControl.hasError("required")) {
           <mat-error i18n> OTP key is <strong>required</strong></mat-error>
         }

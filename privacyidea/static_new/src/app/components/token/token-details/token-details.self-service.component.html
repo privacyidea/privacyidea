@@ -40,7 +40,7 @@
                       <input
                         matInput
                         [(ngModel)]="containerService.selectedContainer"
-                        [matAutocomplete]="containerAuto"/>
+                        [matAutocomplete]="containerAuto" />
                       <mat-autocomplete #containerAuto="matAutocomplete">
                         @for (option of containerService.filteredContainerOptions(); track option) {
                           <mat-option [value]="option">{{ option }}</mat-option>
@@ -113,7 +113,7 @@
                       <input
                         type="number"
                         matInput
-                        [(ngModel)]="element.value"/>
+                        [(ngModel)]="element.value" />
                     </mat-form-field>
                   } @else if (element.isEditing()) {
                     <mat-form-field class="width-18rem">

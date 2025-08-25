@@ -1,7 +1,7 @@
 <ng-template
   #tokenCard
   let-hasMargin="hasMargin">
-  <app-token-card [ngClass]="hasMargin ? 'margin-right-1' : ''"/>
+  <app-token-card [ngClass]="hasMargin ? 'margin-right-1' : ''" />
 </ng-template>
 
 <div
@@ -13,7 +13,7 @@
   )) {
     <ng-container
       [ngTemplateOutlet]="tokenCard"
-      [ngTemplateOutletContext]="{ hasMargin: true }"/>
+      [ngTemplateOutletContext]="{ hasMargin: true }" />
   }
   <mat-drawer-container>
     @if (overflowService.isWidthOverflowing(
@@ -28,7 +28,7 @@
           isTokenDrawerOverflowing() ? 'token-drawer-overflow' : 'token-drawer'
         ">
         <div class="drawer">
-          <ng-container [ngTemplateOutlet]="tokenCard"/>
+          <ng-container [ngTemplateOutlet]="tokenCard" />
         </div>
       </mat-drawer>
     }

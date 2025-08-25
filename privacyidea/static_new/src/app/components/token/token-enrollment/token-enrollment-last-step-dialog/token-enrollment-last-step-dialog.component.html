@@ -4,13 +4,13 @@
     <a (click)="tokenSelected(data.response.detail.serial)">
       {{ data.response.detail.serial }} </a>.</span>
   @if (data.response.detail["container_serial"]) {
-    <br/>
+    <br />
     <span>It has been enrolled in the container
       <a (click)="containerSelected(data.response.detail['container_serial'])">
         {{ data.response.detail["container_serial"] }} </a>.</span>
   }
   @if (data.user?.username && data.userRealm != "" && !data.onlyAddToRealm) {
-    <br/>
+    <br />
     <span>The user <a href="#">{{ data.user!.username }}</a> in the realm
       <a href="#">{{ data.userRealm }}</a> was assigned to the token.
     </span>
@@ -22,28 +22,28 @@
         class="qr-code"
         height="300px"
         src="{{ data.response.detail.googleurl?.img }}"
-        width="300px"/>
+        width="300px" />
     } @else if (data.response.detail.motpurl?.img) {
       <img
         alt="QR Code"
         class="qr-code"
         height="300px"
         src="{{ data.response.detail.motpurl?.img }}"
-        width="300px"/>
+        width="300px" />
     } @else if (data.response.detail.otpkey?.img) {
       <img
         alt="QR Code"
         class="qr-code"
         height="300px"
         src="{{ data.response.detail.otpkey?.img }}"
-        width="300px"/>
+        width="300px" />
     } @else if (data.response.detail.tiqrenroll?.img) {
       <img
         alt="QR Code"
         class="qr-code"
         height="300px"
         src="{{ data.response.detail.tiqrenroll?.img }}"
-        width="300px"/>
+        width="300px" />
     }
     <div class="flex-column gap-1">
       @let url =

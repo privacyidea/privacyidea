@@ -4,12 +4,7 @@ import { Component, effect, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
-import {
-  MatError,
-  MatFormField,
-  MatHint,
-  MatLabel
-} from "@angular/material/form-field";
+import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatProgressBarModule } from "@angular/material/progress-bar";
@@ -17,18 +12,9 @@ import { MatOption, MatSelect } from "@angular/material/select";
 import { Router } from "@angular/router";
 import { Subscription } from "rxjs";
 import { ROUTE_PATHS } from "../../../app.routes";
-import {
-  ContentService,
-  ContentServiceInterface
-} from "../../../services/content/content.service";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../../../services/notification/notification.service";
-import {
-  TokenService,
-  TokenServiceInterface
-} from "../../../services/token/token.service";
+import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
+import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { GetSerialResultDialogComponent } from "./get-serial-result-dialog/get-serial-result-dialog.component";

@@ -10,7 +10,7 @@
       [pageIndex]="pageIndex()"
       [pageSizeOptions]="pageSizeOptions()"
       [pageSize]="pageSize()"
-      showFirstLastButtons/>
+      showFirstLastButtons />
   </div>
   <table
     (matSortChange)="onSortEvent($event)"
@@ -32,7 +32,7 @@
               (change)="$event ? toggleAllRows() : null"
               [checked]="isAllSelected()"
               [indeterminate]="containerSelection().length > 0 && !isAllSelected()"
-              [disabled]="total() === 0"/>
+              [disabled]="total() === 0" />
           </th>
         } @else {
           <th
@@ -58,7 +58,7 @@
                   (change)="$event ? toggleRow(row) : null"
                   (click)="$event.stopPropagation()"
                   [checked]="containerSelection().includes(row)"
-                  [disabled]="total() === 0"/>
+                  [disabled]="total() === 0" />
               }
               @case ("serial") {
                 <a
@@ -67,7 +67,7 @@
                   {{ element[column.key] }}
                 </a>
                 @if (element.serial !== "") {
-                  <app-copy-button [copyText]="element.serial"/>
+                  <app-copy-button [copyText]="element.serial" />
                 }
               }
               @case ("realms") {
@@ -77,7 +77,7 @@
                       attr.aria-label="{{ column.label }} Link"
                       href="#">
                       {{ realm }}
-                    </a><br style="margin-top: 3px"/>
+                    </a><br style="margin-top: 3px" />
                   }
                 </div>
               }

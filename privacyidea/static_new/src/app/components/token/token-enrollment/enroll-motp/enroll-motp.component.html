@@ -14,7 +14,7 @@
     @if (generateOnServerControl.value) {
       <span class="dot">.</span>
       <span>
-        <br/>
+        <br />
         The server will create the OTP key and a QR Code will be displayed to you to be scanned.
       </span>
     }
@@ -28,7 +28,7 @@
           [formControl]="otpKeyControl"
           i18n-placeholder
           placeholder="Enter OTP key"
-          required/>
+          required />
         <mat-error i18n>OTP key is <strong>required</strong></mat-error>
       </mat-form-field>
     } @else {
@@ -39,9 +39,9 @@
 <div class="flex-column">
   <input
     style="display: none"
-    type="text"/> <input
+    type="text" /> <input
   style="display: none"
-  type="password"/>
+  type="password" />
   <h4
     class="enroll-h4"
     i18n>
@@ -53,7 +53,7 @@
       <input
         [formControl]="motpPinControl"
         [type]="'password'"
-        matInput/>
+        matInput />
       @if (motpPinControl.hasError("required") && (motpPinControl.touched || motpPinControl.dirty)) {
         <mat-error i18n>Password is <strong>required</strong></mat-error>
       }
@@ -68,7 +68,7 @@
         [type]="'password'"
         i18n-placeholder
         matInput
-        placeholder="Repeat Password"/>
+        placeholder="Repeat Password" />
       @if (repeatMotpPinControl.hasError("motpPinMismatch") && (repeatMotpPinControl.touched || repeatMotpPinControl.dirty)) {
         <mat-error i18n>mOTP PINs do not match.</mat-error>
       }

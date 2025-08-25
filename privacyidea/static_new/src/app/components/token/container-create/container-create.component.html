@@ -119,7 +119,7 @@
             [(ngModel)]="userService.userFilter"
             [disabled]="onlyAddToRealm()"
             [matAutocomplete]="userAuto"
-            matInput/>
+            matInput />
         </app-clearable-input>
         <mat-error i18n>User is <strong>required</strong></mat-error>
         <mat-autocomplete #userAuto="matAutocomplete">
@@ -131,7 +131,7 @@
       <mat-checkbox
         [(ngModel)]="onlyAddToRealm"
         i18n>
-        Only add to the realm <br/> (no user assignment)
+        Only add to the realm <br /> (no user assignment)
       </mat-checkbox>
     </div>
   </div>

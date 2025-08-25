@@ -11,7 +11,7 @@
       [(ngModel)]="pin"
       [type]="hidePin() ? 'password' : 'text'"
       autocomplete="new-password"
-      matInput/>
+      matInput />
     <button
       (click)="togglePinVisibility()"
       [attr.aria-label]="'Show PIN'"
@@ -31,7 +31,7 @@
       [(ngModel)]="pinRepeat"
       [type]="hidePin() ? 'password' : 'text'"
       autocomplete="new-password"
-      matInput/>
+      matInput />
     <button
       (click)="togglePinVisibility()"
       [attr.aria-label]="'Show PIN Repeat'"
