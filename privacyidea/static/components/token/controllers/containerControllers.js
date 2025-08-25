@@ -378,7 +378,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             initParams["serial"] = serial;
             TokenFactory.enroll({}, initParams, function (data) {
                 $scope.tokenInitData[serial] = data.detail;
-                $scope.tokenInitData[serial].initParams = initParams;
+                $scope.tokenInitData[serial].init_params = initParams;
                 $scope.tokenInitData[serial].type = initParams.type;
             });
         };

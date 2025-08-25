@@ -1,3 +1,4 @@
+import { NgClass } from "@angular/common";
 import { Component, effect, ElementRef, inject, Renderer2, signal, untracked, ViewChild } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
@@ -15,7 +16,12 @@ import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/for
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
+
+import { CommonModule } from "@angular/common";
+import { MatTooltip } from "@angular/material/tooltip";
+import { Router } from "@angular/router";
 import { PiResponse } from "../../../app.component";
+import { ROUTE_PATHS } from "../../../app.routes";
 import {
   ContainerRegisterData,
   ContainerService,
@@ -27,12 +33,13 @@ import { RealmService, RealmServiceInterface } from "../../../services/realm/rea
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
+import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { TokenComponent } from "../token.component";
-import { ContainerRegistrationDialogComponent } from "./container-registration-dialog/container-registration-dialog.component";
-import { Router } from "@angular/router";
-import { MatTooltip } from "@angular/material/tooltip";
-import { ROUTE_PATHS } from "../../../app.routes";
-import { NgClass } from "@angular/common";
+import {
+  ContainerCreationDialogData,
+  ContainerRegistrationDialogComponent
+} from "./container-registration-dialog/container-registration-dialog.component";
 
 export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
 
@@ -58,23 +65,22 @@ export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
     MatExpansionPanelTitle,
     MatExpansionPanelHeader,
     MatTooltip,
-    NgClass
+    ScrollToTopDirective,
+    NgClass,
+    ClearableInputComponent,
+    CommonModule
   ],
   templateUrl: "./container-create.component.html",
   styleUrl: "./container-create.component.scss"
 })
 export class ContainerCreateComponent {
-  protected readonly versioningService: VersioningServiceInterface =
-    inject(VersioningService);
+  protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
-  protected readonly containerService: ContainerServiceInterface =
-    inject(ContainerService);
-  protected readonly notificationService: NotificationServiceInterface =
-    inject(NotificationService);
+  protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly contentService: ContentServiceInterface =
-    inject(ContentService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly TokenComponent = TokenComponent;
   protected readonly renderer: Renderer2 = inject(Renderer2);
   private router = inject(Router);
@@ -96,10 +102,7 @@ export class ContainerCreateComponent {
 
   constructor(protected registrationDialog: MatDialog) {
     effect(() => {
-      if (
-        this.containerService.selectedContainerType().containerType ===
-        "smartphone"
-      ) {
+      if (this.containerService.selectedContainerType().containerType === "smartphone") {
         this.generateQRCode.set(true);
       } else {
         this.generateQRCode.set(false);
@@ -156,8 +159,7 @@ export class ContainerCreateComponent {
     this.pollResponse.set(null);
     this.registerResponse.set(null);
     const createData = {
-      container_type:
-      this.containerService.selectedContainerType().containerType,
+      container_type: this.containerService.selectedContainerType().containerType,
       description: this.description(),
       template: this.selectedTemplate(),
       user: this.userService.userNameFilter(),
@@ -166,39 +168,35 @@ export class ContainerCreateComponent {
     if (createData.user || this.onlyAddToRealm()) {
       createData.realm = this.userService.selectedUserRealm();
     }
-    this.containerService
-      .createContainer(createData)
-      .subscribe({
-        next: (response) => {
-          const containerSerial = response.result?.value?.container_serial;
-          if (!containerSerial) {
-            this.notificationService.openSnackBar(
-              "Container creation failed. No container serial returned."
-            );
-            return;
-          }
-          if (this.generateQRCode()) {
-            this.containerService
-              .registerContainer({
-                container_serial: containerSerial,
-                passphrase_response: this.passphraseResponse(),
-                passphrase_prompt: this.passphrasePrompt()
-              })
-              .subscribe((registerResponse) => {
-                this.registerResponse.set(registerResponse);
-                this.openRegistrationDialog(registerResponse);
-                this.pollContainerRolloutState(containerSerial, 5000);
-              });
-          } else {
-            this.notificationService.openSnackBar(
-              `Container ${containerSerial} enrolled successfully.`
-            );
-            this.router.navigateByUrl(
-              ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial
-            );
-            this.containerSerial.set(containerSerial);
-          }
+    this.containerService.createContainer(createData).subscribe({
+      next: (response) => {
+        const containerSerial = response.result?.value?.container_serial;
+        if (!containerSerial) {
+          this.notificationService.openSnackBar("Container creation failed. No container serial returned.");
+          return;
         }
+        if (this.generateQRCode()) {
+          this.registerContainer(containerSerial);
+        } else {
+          this.notificationService.openSnackBar(`Container ${containerSerial} enrolled successfully.`);
+          this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
+          this.containerSerial.set(containerSerial);
+        }
+      }
+    });
+  }
+
+  registerContainer(serial: string) {
+    this.containerService
+      .registerContainer({
+        container_serial: serial,
+        passphrase_response: this.passphraseResponse(),
+        passphrase_prompt: this.passphrasePrompt()
+      })
+      .subscribe((registerResponse) => {
+        this.registerResponse.set(registerResponse);
+        this.openRegistrationDialog(registerResponse);
+        this.pollContainerRolloutState(serial, 5000);
       });
   }
 
@@ -212,36 +210,26 @@ export class ContainerCreateComponent {
   };
 
   private openRegistrationDialog(response: PiResponse<ContainerRegisterData>) {
+    const dialogData: ContainerCreationDialogData = {
+      response: response,
+      containerSerial: this.containerSerial,
+      registerContainer: this.registerContainer.bind(this)
+    };
     this.registrationDialog.open(ContainerRegistrationDialogComponent, {
-      data: {
-        response: response,
-        containerSerial: this.containerSerial
-      }
+      data: dialogData
     });
   }
 
-  private pollContainerRolloutState(
-    containerSerial: string,
-    startTime: number
-  ) {
-    return this.containerService
-      .pollContainerRolloutState(containerSerial, startTime)
-      .subscribe({
-        next: (pollResponse) => {
-          this.pollResponse.set(pollResponse);
-          if (
-            pollResponse.result?.value?.containers[0].info
-              .registration_state !== "client_wait"
-          ) {
-            this.registrationDialog.closeAll();
-            this.router.navigateByUrl(
-              ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial
-            );
-            this.notificationService.openSnackBar(
-              `Container ${this.containerSerial()} enrolled successfully.`
-            );
-          }
+  private pollContainerRolloutState(containerSerial: string, startTime: number) {
+    return this.containerService.pollContainerRolloutState(containerSerial, startTime).subscribe({
+      next: (pollResponse) => {
+        this.pollResponse.set(pollResponse);
+        if (pollResponse.result?.value?.containers[0].info.registration_state !== "client_wait") {
+          this.registrationDialog.closeAll();
+          this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
+          this.notificationService.openSnackBar(`Container ${this.containerSerial()} enrolled successfully.`);
         }
-      });
+      }
+    });
   }
 }

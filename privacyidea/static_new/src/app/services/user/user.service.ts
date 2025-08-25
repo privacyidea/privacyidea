@@ -1,26 +1,16 @@
 import { httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, inject, Injectable, linkedSignal, signal, Signal, WritableSignal } from "@angular/core";
+import { Sort } from "@angular/material/sort";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
+import { ROUTE_PATHS } from "../../app.routes";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { LocalService, LocalServiceInterface } from "../local/local.service";
 import { RealmService, RealmServiceInterface } from "../realm/realm.service";
 import { TokenService, TokenServiceInterface } from "../token/token.service";
-import { Sort } from "@angular/material/sort";
-import { ROUTE_PATHS } from "../../app.routes";
 
-const apiFilter = [
-  "description",
-  "email",
-  "givenname",
-  "mobile",
-  "phone",
-  "resolver",
-  "surname",
-  "userid",
-  "username"
-];
+const apiFilter = ["description", "email", "givenname", "mobile", "phone", "resolver", "surname", "userid", "username"];
 const advancedApiFilter: string[] = [];
 
 export interface UserData {
@@ -188,7 +178,7 @@ export class UserService implements UserServiceInterface {
   selectedUser = computed<UserData | null>(() => {
     var userName = "";
     if (this.authService.role() === "user") {
-      userName = this.authService.user();
+      userName = this.authService.username();
     } else {
       userName = this.userNameFilter();
     }
