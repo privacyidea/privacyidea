@@ -4,6 +4,7 @@ import { Observable, throwError } from "rxjs";
 import { catchError, tap } from "rxjs/operators";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
+import { BEARER_TOKEN_STORAGE_KEY } from "../../core/constants";
 import { LocalService, LocalServiceInterface } from "../local/local.service";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import { VersioningService, VersioningServiceInterface } from "../version/version.service";
@@ -63,13 +64,36 @@ export interface JwtData {
 
 export type AuthRole = "admin" | "user" | "";
 
+export interface MultiChallenge {
+  client_mode: string;
+  message: string;
+  serial: string;
+  transaction_id: string;
+  type: string;
+  attributes?: {
+    webAuthnSignRequest?: any;
+  };
+}
+
 export interface AuthDetail {
-  username: string;
+  username?: string;
+  attributes?: {
+    hideResponseInput?: boolean;
+  };
+  client_mode?: string;
+  loginmode?: string;
+  message?: string;
+  messages?: string[];
+  multi_challenge?: MultiChallenge[];
+  serial?: string;
+  threadid?: number;
+  transaction_id?: string;
+  transaction_ids?: string[];
+  type?: string;
 }
 
 export interface AuthServiceInterface {
   authUrl: string;
-  TOKEN_KEY: "bearer_token";
   jwtData: WritableSignal<JwtData | null>;
   jwtNonce: Signal<string>;
   authtype: Signal<"cookie" | "none">;
@@ -79,6 +103,8 @@ export interface AuthServiceInterface {
   authenticationAccepted: () => boolean;
 
   isAuthenticated: () => boolean;
+
+  getHeaders: () => HttpHeaders;
 
   logLevel: () => number;
   menus: () => string[];
@@ -121,7 +147,7 @@ export interface AuthServiceInterface {
   authenticate: (params: any) => Observable<AuthResponse>;
 
   acceptAuthentication: () => void;
-  deauthenticate: () => void;
+  logout: () => void;
 }
 
 @Injectable({
@@ -135,8 +161,6 @@ export class AuthService implements AuthServiceInterface {
   private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   private readonly localService: LocalServiceInterface = inject(LocalService);
 
-  readonly TOKEN_KEY = "bearer_token";
-
   authData = signal<AuthData | null>(null);
   jwtData = signal<JwtData | null>(null);
 
@@ -144,6 +168,11 @@ export class AuthService implements AuthServiceInterface {
 
   isAuthenticated = computed(() => this.authenticationAccepted() && !!this.authData());
 
+  public getHeaders(): HttpHeaders {
+    return new HttpHeaders({
+      "PI-Authorization": this.localService.getData(BEARER_TOKEN_STORAGE_KEY) || ""
+    });
+  }
   logLevel = computed(() => this.authData()?.log_level || 0);
   menus = computed(() => this.authData()?.menus || []);
   realm = computed(() => this.jwtData()?.realm || this.authData()?.realm || "");
@@ -220,13 +249,10 @@ export class AuthService implements AuthServiceInterface {
             this.acceptAuthentication();
             this.authData.set(value);
             this.jwtData.set(this.decodeJwtPayload(value.token));
-            this.localService.saveData(this.TOKEN_KEY, value.token);
+            this.localService.saveData(BEARER_TOKEN_STORAGE_KEY, value.token);
           }
         }),
         catchError((error) => {
-          console.error("Login failed.", error);
-          const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Login failed. " + message);
           return throwError(() => error);
         })
       );
@@ -236,10 +262,10 @@ export class AuthService implements AuthServiceInterface {
     this.authenticationAccepted.set(true);
   }
 
-  deauthenticate(): void {
+  logout(): void {
     this.authData.set(null);
     this.jwtData.set(null);
-    this.localService.removeData(this.TOKEN_KEY);
+    this.localService.removeData(BEARER_TOKEN_STORAGE_KEY);
     this.authenticationAccepted.set(false);
   }
 
