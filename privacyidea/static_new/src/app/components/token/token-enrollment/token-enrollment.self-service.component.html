@@ -3,7 +3,7 @@
   appScrollToTop
   aria-label="Token Enrollment"
   class="token-enrollment-container">
-  <h3 class="margin-left-1"> Enroll a New Token </h3>
+  <h3 class="margin-left-1">Enroll a New Token</h3>
   <form
     (ngSubmit)="enrollToken()"
     [formGroup]="formGroupSignal()">
@@ -25,7 +25,8 @@
                 <mat-option
                   class="token-type-option type-option"
                   [value]="type"
-                  [matTooltip]="type.info.split(':')[1]">{{ type.info.split(":")[0] }}
+                  [matTooltip]="type.info.split(':')[1]"
+                  >{{ type.info.split(":")[0] }}
                 </mat-option>
               }
             </mat-select>
@@ -34,8 +35,10 @@
         <div class="enroll-button-container">
           <button
             [disabled]="formGroupSignal().invalid || !tokenService.selectedTokenType()"
-            [ngClass]="{'card-button-disabled': formGroupSignal().invalid || !tokenService.selectedTokenType(),
-                              'card-button': true}"
+            [ngClass]="{
+              'card-button-disabled': formGroupSignal().invalid || !tokenService.selectedTokenType(),
+              'card-button': true
+            }"
             mat-flat-button
             type="submit">
             <mat-icon>add</mat-icon>
@@ -44,7 +47,7 @@
           <button
             (click)="reopenEnrollmentDialog()"
             [matTooltip]="'Reopen enrollment dialog'"
-            [ngClass]="{'hidden': !canReopenEnrollmentDialog()}"
+            [ngClass]="{ hidden: !canReopenEnrollmentDialog() }"
             mat-icon-button
             type="button">
             <mat-icon>open_in_new</mat-icon>
@@ -206,8 +209,7 @@
             [matAutocomplete]="containerAuto"
             matInput />
           <mat-autocomplete #containerAuto="matAutocomplete">
-            @for (option of containerService.filteredContainerOptions();
-              track option) {
+            @for (option of containerService.filteredContainerOptions(); track option) {
               <mat-option [value]="option">{{ option }}</mat-option>
             }
           </mat-autocomplete>
@@ -218,9 +220,10 @@
           <h4 class="enroll-h4">Set PIN</h4>
           <input
             style="display: none"
-            type="text" /> <input
-          style="display: none"
-          type="password" />
+            type="text" />
+          <input
+            style="display: none"
+            type="password" />
           <div class="user-pin-input">
             <input
               [formControl]="setPinControl"
@@ -234,9 +237,10 @@
               class="input"
               placeholder="Repeat PIN" />
           </div>
-          @if (formGroupSignal().hasError("pinMismatch") &&
-          (formGroupSignal().get("setPin")?.touched ||
-            formGroupSignal().get("repeatPin")?.touched)) {
+          @if (
+            formGroupSignal().hasError("pinMismatch") &&
+            (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)
+          ) {
             <mat-error class="pin-error">PINs do not match.</mat-error>
           }
         </div>

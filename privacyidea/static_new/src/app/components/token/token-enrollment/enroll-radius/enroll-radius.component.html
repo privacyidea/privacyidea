@@ -5,12 +5,15 @@
   <h4
     class="enroll-h4"
     i18n>
-    Token Configuration </h4>
+    Token Configuration
+  </h4>
   @if (!defaultRadiusServerIsSet()) {
     <span
       i18n
-      class="inline-hint">To ease the enrolling of RADIUS tokens you can set default values in the
-      <a href="#">RADIUS Token Config</a>.</span>
+      class="inline-hint"
+      >To ease the enrolling of RADIUS tokens you can set default values in the
+      <a href="#">RADIUS Token Config</a>.</span
+    >
   }
   <mat-checkbox
     [formControl]="checkPinLocallyControl"

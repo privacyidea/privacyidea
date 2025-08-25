@@ -7,26 +7,18 @@
 <div
   aria-label="Token Layout"
   class="token-layout">
-  @if (!overflowService.isWidthOverflowing(
-    'body',
-    overflowService.getOverflowThreshold()
-  )) {
+  @if (!overflowService.isWidthOverflowing("body", overflowService.getOverflowThreshold())) {
     <ng-container
       [ngTemplateOutlet]="tokenCard"
       [ngTemplateOutletContext]="{ hasMargin: true }" />
   }
   <mat-drawer-container>
-    @if (overflowService.isWidthOverflowing(
-      'body',
-      overflowService.getOverflowThreshold()
-    )) {
+    @if (overflowService.isWidthOverflowing("body", overflowService.getOverflowThreshold())) {
       <mat-drawer
         #drawer
         [mode]="'over'"
         (opened)="updateOverflowState()"
-        [ngClass]="
-          isTokenDrawerOverflowing() ? 'token-drawer-overflow' : 'token-drawer'
-        ">
+        [ngClass]="isTokenDrawerOverflowing() ? 'token-drawer-overflow' : 'token-drawer'">
         <div class="drawer">
           <ng-container [ngTemplateOutlet]="tokenCard" />
         </div>
@@ -34,10 +26,7 @@
     }
     <mat-drawer-content>
       <div class="drawer-content-div">
-        @if (overflowService.isWidthOverflowing(
-          'body',
-          overflowService.getOverflowThreshold()
-        )) {
+        @if (overflowService.isWidthOverflowing("body", overflowService.getOverflowThreshold())) {
           <div class="drawer-button-div">
             <button
               mat-fab
@@ -49,11 +38,8 @@
         }
         <div
           [ngClass]="{
-               'margin-left-64': overflowService.isWidthOverflowing(
-                 'body',
-                 overflowService.getOverflowThreshold()
-               )
-             }"
+            'margin-left-64': overflowService.isWidthOverflowing('body', overflowService.getOverflowThreshold())
+          }"
           class="main-margin overflow padding-32">
           <router-outlet></router-outlet>
         </div>

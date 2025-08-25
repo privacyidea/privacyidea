@@ -1,7 +1,8 @@
 <h2
   i18n
   mat-dialog-title>
-  Search for Token </h2>
+  Search for Token
+</h2>
 <mat-dialog-content>
   @if (data.foundSerial) {
     <div class="alert alert-success">
@@ -11,7 +12,8 @@
           class="link"
           attr.aria-label="{{ data.foundSerial }} Link"
           (click)="data.onClickSerial()">
-          {{ data.foundSerial }}</a>
+          {{ data.foundSerial }}</a
+        >
         .
       </span>
     </div>

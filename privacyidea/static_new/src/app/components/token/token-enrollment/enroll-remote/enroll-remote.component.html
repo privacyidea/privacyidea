@@ -5,7 +5,8 @@
   <h4
     class="enroll-h4"
     i18n>
-    Token Configuration </h4>
+    Token Configuration
+  </h4>
   <mat-checkbox
     [formControl]="checkPinLocallyControl"
     i18n>
@@ -20,8 +21,8 @@
         [value]="remoteServerControl.value"
         required>
         @for (option of remoteServerOptions(); track option) {
-          <mat-option [value]="option">{{ option.url }}
-          </mat-option><!-- Assuming option is the RemoteServer object -->
+          <mat-option [value]="option">{{ option.url }} </mat-option
+          ><!-- Assuming option is the RemoteServer object -->
         }
       </mat-select>
       <mat-error

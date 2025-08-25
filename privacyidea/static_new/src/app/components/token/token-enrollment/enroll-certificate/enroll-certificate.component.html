@@ -5,22 +5,26 @@
   <h4
     class="enroll-h4"
     i18n>
-    Token Configuration </h4>
+    Token Configuration
+  </h4>
   <mat-button-toggle-group
     [formControl]="intentionToggleControl"
     [hideSingleSelectionIndicator]="true"
     class="button-toggle-group">
     <mat-button-toggle
       i18n
-      value="generate">Generate Request
+      value="generate"
+      >Generate Request
     </mat-button-toggle>
     <mat-button-toggle
       i18n
-      value="uploadRequest">Upload Request
+      value="uploadRequest"
+      >Upload Request
     </mat-button-toggle>
     <mat-button-toggle
       i18n
-      value="uploadCert">Upload Certificate
+      value="uploadCert"
+      >Upload Certificate
     </mat-button-toggle>
   </mat-button-toggle-group>
 
@@ -59,7 +63,8 @@
         i18n
         class="margin-bottom-1">
         The server will create the private RSA key and store it in the database. <br />
-        You can later download the PKCS#12 file.</span>
+        You can later download the PKCS#12 file.</span
+      >
     }
     @case ("uploadRequest") {
       <mat-form-field class="width-66">

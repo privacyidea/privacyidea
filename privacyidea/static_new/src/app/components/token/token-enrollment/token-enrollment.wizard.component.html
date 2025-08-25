@@ -9,7 +9,8 @@
   <h3
     class="margin-left-1"
     i18n>
-    Token Enrollment </h3>
+    Token Enrollment
+  </h3>
   <mat-form-field class="width-100">
     <mat-select
       [(ngModel)]="selectedTokenType"
@@ -20,7 +21,8 @@
           class="token-type-option type-option"
           [value]="type"
           i18n-matTooltip
-          matTooltip="{{ type.info.split(':')[1] }}">{{ type.info.split(":")[0] }}
+          matTooltip="{{ type.info.split(':')[1] }}"
+          >{{ type.info.split(":")[0] }}
         </mat-option>
       }
 
@@ -212,13 +214,15 @@
       <div class="flex-column width-100">
         <input
           style="display: none"
-          type="text" /> <input
-        style="display: none"
-        type="password" />
+          type="text" />
+        <input
+          style="display: none"
+          type="password" />
         <h4
           class="enroll-h4"
           i18n>
-          Assign Token to a Container </h4>
+          Assign Token to a Container
+        </h4>
         <mat-form-field class="width-50 input-height">
           <mat-label i18n>Enter Container</mat-label>
           <input
@@ -237,25 +241,30 @@
           <h4
             i18n
             class="enroll-h4">
-            Set PIN </h4>
+            Set PIN
+          </h4>
           <div class="user-pin-input">
             <input
               [formControl]="setPinControl"
               [type]="'password'"
               class="input"
               i18n-placeholder
-              placeholder="PIN" /> <input
-            [formControl]="repeatPinControl"
-            [type]="'password'"
-            class="input"
-            i18n-placeholder
-            placeholder="Repeat PIN" />
+              placeholder="PIN" />
+            <input
+              [formControl]="repeatPinControl"
+              [type]="'password'"
+              class="input"
+              i18n-placeholder
+              placeholder="Repeat PIN" />
           </div>
-          @if (formGroup.hasError("pinMismatch") &&
-          (formGroup.get("setPin")?.touched || formGroup.get("repeatPin")?.touched)) {
+          @if (
+            formGroup.hasError("pinMismatch") &&
+            (formGroup.get("setPin")?.touched || formGroup.get("repeatPin")?.touched)
+          ) {
             <mat-error
               i18n
-              class="pin-error">PINs do not match.
+              class="pin-error"
+              >PINs do not match.
             </mat-error>
           }
         </div>

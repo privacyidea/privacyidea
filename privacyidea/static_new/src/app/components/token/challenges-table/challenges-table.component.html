@@ -4,7 +4,8 @@
   <h3
     class="margin-left-1"
     i18n>
-    Challenges </h3>
+    Challenges
+  </h3>
   <div class="filter-paginator-container">
     <mat-form-field
       appearance="fill"
@@ -73,8 +74,8 @@
               }
               @case ("otp_received") {
                 <span [ngClass]="[element[column.key] ? 'highlight-true' : 'highlight-false']">{{
-                    element[column.key]
-                  }}</span>
+                  element[column.key]
+                }}</span>
               }
               @default {
                 <span>{{ element[column.key] }}</span>
