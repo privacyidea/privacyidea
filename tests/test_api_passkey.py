@@ -1118,6 +1118,47 @@ class PasskeyAPITest(PasskeyAPITestBase):
 
         remove_token(serial)
 
+    def test_20_disabled_passkey_auth(self):
+        """
+        Disabled passkeys should not be usable for authentication
+        """
+        serial = self._enroll_static_passkey()
+        with self.app.test_request_context('/token/disable', method='POST',
+                                           data={"serial": serial},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertIn("result", res.json)
+            self.assertIn("status", res.json["result"])
+
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
+        self.assertIn("user_verification", passkey_challenge)
+        # By default, user_verification is preferred
+        self.assertEqual("preferred", passkey_challenge["user_verification"])
+
+        transaction_id = passkey_challenge["transaction_id"]
+        # Answer the challenge
+        data = self.authentication_response_no_uv
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/auth', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            j = res.json
+            detail = j["detail"]
+            self.assertIn("message", detail)
+            # Failed authentications should not return the username
+            self.assertNotIn("username", detail)
+            # I also do not need to tell you the serial if the token is disabled
+            self.assertNotIn("serial", detail)
+            self.assertNotIn("auth_items", res.json)
+            result = j["result"]
+            self.assertEqual(AUTH_RESPONSE.REJECT, result["authentication"])
+            self.assertFalse(result["value"])
+
+        remove_token(serial)
+
 class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):
     """
     Test if the feature switch for passkey usage with /auth works.
