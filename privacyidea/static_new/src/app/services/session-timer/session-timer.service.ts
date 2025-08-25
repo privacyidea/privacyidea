@@ -26,8 +26,8 @@ export class SessionTimerService implements SessionTimerServiceInterface {
     }
     return;
   });
-  private timer: any;
-  private intervalId: any;
+  private timer: NodeJS.Timeout | undefined;
+  private intervalId: NodeJS.Timeout | undefined;
   private startTime = signal(Date.now());
   private currentTime = signal(Date.now());
   remainingTime = computed(() => {
@@ -56,7 +56,7 @@ export class SessionTimerService implements SessionTimerServiceInterface {
         this.handleSessionTimeout();
       }, this.sessionTimeoutMs());
     } else {
-      this.timer?.clear();
+      clearTimeout(this.timer);
       this.timer = undefined;
       console.warn("Session timeout is not defined. Cannot start session timer.");
     }
