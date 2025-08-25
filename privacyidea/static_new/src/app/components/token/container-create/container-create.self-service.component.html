@@ -1,7 +1,7 @@
 <div
   #scrollContainer
   aria-label="Create Container"
-  class="container-create-container">
+  class="container-create-container" appScrollToTop>
   <h3 class="margin-left-1">Create Container</h3>
 
   <div #stickySentinel></div>
@@ -16,7 +16,8 @@
           <mat-select
             [(ngModel)]="containerService.selectedContainerType"
             [ngModelOptions]="{ standalone: true }"
-            [panelClass]="'single-column-panel'">
+            [panelClass]="'single-column-panel'"
+            [value]="containerService.selectedContainerType()">
             @for (type of containerService.containerTypeOptions(); track type) {
               <mat-option
                 class="select-option type-option"
@@ -74,7 +75,8 @@
       <mat-label>Template</mat-label>
       <mat-select
         [(ngModel)]="selectedTemplate"
-        disabled>
+        disabled
+        [value]="selectedTemplate()">
         @for (option of templateOptions(); track option) {
           <mat-option [value]="option">{{ option.name }}</mat-option>
         }

@@ -17,6 +17,7 @@
       </mat-hint>
       <mat-select
         [formControl]="radiusServerConfigurationControl"
+        [value]="radiusServerConfigurationControl.value"
         required>
         @for (option of radiusServerConfigurationOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>

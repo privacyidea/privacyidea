@@ -5686,8 +5686,8 @@ class TriggeredPoliciesTestCase(MyApiTestCase):
             self.assertTrue(json_response.get("result").get("status"), res)
             self.assertEqual(json_response.get("result").get("value").get("count"), 1)
             # Both policies have triggered
-            self.assertEqual(json_response.get("result").get("value").get("auditdata")[0].get("policies"),
-                             "otppin,lastauth")
+            audit_policies = json_response.get("result").get("value").get("auditdata")[0].get("policies").split(",")
+            self.assertEqual({"otppin", "lastauth"}, set(audit_policies))
 
         # clean up
         remove_token("triggtoken")

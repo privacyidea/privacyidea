@@ -18,6 +18,7 @@ import { RealmService, RealmServiceInterface } from "../../../services/realm/rea
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { EnrollApplspecComponent } from "./enroll-asp/enroll-applspec.component";
 import { EnrollCertificateComponent } from "./enroll-certificate/enroll-certificate.component";
 import { EnrollDaypasswordComponent } from "./enroll-daypassword/enroll-daypassword.component";
@@ -96,7 +97,8 @@ import {
     EnrollWebauthnComponent,
     EnrollPasskeyComponent,
     MatError,
-    MatTooltip
+    MatTooltip,
+    ScrollToTopDirective
   ],
   templateUrl: "./token-enrollment.self-service.component.html",
   styleUrl: "./token-enrollment.component.scss",
@@ -108,19 +110,14 @@ import {
   ]
 })
 export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponent {
-  protected override containerService: ContainerServiceInterface =
-    inject(ContainerService);
+  protected override containerService: ContainerServiceInterface = inject(ContainerService);
   protected override realmService: RealmServiceInterface = inject(RealmService);
-  protected override notificationService: NotificationServiceInterface =
-    inject(NotificationService);
+  protected override notificationService: NotificationServiceInterface = inject(NotificationService);
   protected override userService: UserServiceInterface = inject(UserService);
   protected override tokenService: TokenServiceInterface = inject(TokenService);
-  protected override versioningService: VersioningServiceInterface =
-    inject(VersioningService);
-  protected override contentService: ContentServiceInterface =
-    inject(ContentService);
-  protected override dialogService: DialogServiceInterface =
-    inject(DialogService);
+  protected override versioningService: VersioningServiceInterface = inject(VersioningService);
+  protected override contentService: ContentServiceInterface = inject(ContentService);
+  protected override dialogService: DialogServiceInterface = inject(DialogService);
 
   constructor() {
     super();

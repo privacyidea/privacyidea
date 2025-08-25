@@ -1,3 +1,4 @@
+import { NgClass } from "@angular/common";
 import { Component, effect, ElementRef, inject, Renderer2, signal, untracked, ViewChild } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
@@ -9,7 +10,7 @@ import {
   MatAccordion,
   MatExpansionPanel,
   MatExpansionPanelHeader,
-  MatExpansionPanelTitle,
+  MatExpansionPanelTitle
 } from "@angular/material/expansion";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
@@ -24,7 +25,7 @@ import { ROUTE_PATHS } from "../../../app.routes";
 import {
   ContainerRegisterData,
   ContainerService,
-  ContainerServiceInterface,
+  ContainerServiceInterface
 } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
@@ -33,10 +34,11 @@ import { TokenService, TokenServiceInterface } from "../../../services/token/tok
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { TokenComponent } from "../token.component";
 import {
   ContainerCreationDialogData,
-  ContainerRegistrationDialogComponent,
+  ContainerRegistrationDialogComponent
 } from "./container-registration-dialog/container-registration-dialog.component";
 
 export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
@@ -63,11 +65,13 @@ export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
     MatExpansionPanelTitle,
     MatExpansionPanelHeader,
     MatTooltip,
+    ScrollToTopDirective,
+    NgClass,
     ClearableInputComponent,
-    CommonModule,
+    CommonModule
   ],
   templateUrl: "./container-create.component.html",
-  styleUrl: "./container-create.component.scss",
+  styleUrl: "./container-create.component.scss"
 })
 export class ContainerCreateComponent {
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
@@ -119,7 +123,7 @@ export class ContainerCreateComponent {
 
     const options = {
       root: this.scrollContainer.nativeElement,
-      threshold: [0, 1],
+      threshold: [0, 1]
     };
 
     this.observer = new IntersectionObserver(([entry]) => {
@@ -159,7 +163,7 @@ export class ContainerCreateComponent {
       description: this.description(),
       template: this.selectedTemplate(),
       user: this.userService.userNameFilter(),
-      realm: "",
+      realm: ""
     };
     if (createData.user || this.onlyAddToRealm()) {
       createData.realm = this.userService.selectedUserRealm();
@@ -178,7 +182,7 @@ export class ContainerCreateComponent {
           this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
           this.containerSerial.set(containerSerial);
         }
-      },
+      }
     });
   }
 
@@ -187,7 +191,7 @@ export class ContainerCreateComponent {
       .registerContainer({
         container_serial: serial,
         passphrase_response: this.passphraseResponse(),
-        passphrase_prompt: this.passphrasePrompt(),
+        passphrase_prompt: this.passphrasePrompt()
       })
       .subscribe((registerResponse) => {
         this.registerResponse.set(registerResponse);
@@ -209,10 +213,10 @@ export class ContainerCreateComponent {
     const dialogData: ContainerCreationDialogData = {
       response: response,
       containerSerial: this.containerSerial,
-      registerContainer: this.registerContainer.bind(this),
+      registerContainer: this.registerContainer.bind(this)
     };
     this.registrationDialog.open(ContainerRegistrationDialogComponent, {
-      data: dialogData,
+      data: dialogData
     });
   }
 
@@ -225,7 +229,7 @@ export class ContainerCreateComponent {
           this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
           this.notificationService.openSnackBar(`Container ${this.containerSerial()} enrolled successfully.`);
         }
-      },
+      }
     });
   }
 }

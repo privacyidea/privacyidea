@@ -32,7 +32,7 @@ export class LoginComponent {
   password = signal<string>("");
 
   constructor() {
-    if (this.authService.isAuthenticatedUser()) {
+    if (this.authService.isAuthenticated()) {
       console.warn("User is already logged in.");
       this.notificationService.openSnackBar("User is already logged in.");
     }
@@ -48,9 +48,8 @@ export class LoginComponent {
           response.result &&
           response.result?.value &&
           response.result?.value.token &&
-          this.authService.isAuthenticatedUser()
+          this.authService.isAuthenticated()
         ) {
-          this.localService.saveData(this.localService.bearerTokenKey, response.result?.value.token);
           this.sessionTimerService.startRefreshingRemainingTime();
           this.sessionTimerService.startTimer();
           this.router.navigateByUrl(ROUTE_PATHS.TOKENS);
@@ -63,7 +62,7 @@ export class LoginComponent {
   }
 
   logout(): void {
-    this.localService.removeData(this.localService.bearerTokenKey);
+    this.localService.removeData(this.authService.TOKEN_KEY);
     this.authService.deauthenticate();
     this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar("Logout successful."));
   }
@@ -75,9 +74,9 @@ export class LoginComponent {
           response.result &&
           response.result.value &&
           response.result.value.token &&
-          this.authService.isAuthenticatedUser()
+          this.authService.isAuthenticated()
         ) {
-          this.localService.saveData(this.localService.bearerTokenKey, response.result?.value.token);
+          this.localService.saveData(this.authService.TOKEN_KEY, response.result?.value.token);
           this.sessionTimerService.startRefreshingRemainingTime();
           this.sessionTimerService.startTimer();
           this.router.navigate(["tokens"]).then();
