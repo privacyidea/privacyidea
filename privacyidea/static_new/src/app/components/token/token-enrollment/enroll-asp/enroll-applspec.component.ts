@@ -54,11 +54,7 @@ export class EnrollApplspecComponent implements OnInit {
     inject(ServiceIdService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "applspec")?.text;
-
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -82,7 +78,7 @@ export class EnrollApplspecComponent implements OnInit {
   applspecErrorStateMatcher = new ApplspecErrorStateMatcher();
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({
+    this.additionalFormFieldsChange.emit({
       serviceId: this.serviceIdControl,
       generateOnServer: this.generateOnServerControl,
       otpKey: this.otpKeyControl
@@ -102,10 +98,13 @@ export class EnrollApplspecComponent implements OnInit {
   onClickEnroll = (
     basicOptions: TokenEnrollmentData
   ): Observable<EnrollmentResponse | null> => {
-    if (this.applspecForm.invalid) {
+    if ((!this.generateOnServerControl.value && this.otpKeyControl.invalid) ||
+      this.generateOnServerControl.invalid ||
+      this.serviceIdControl.invalid) {
       this.applspecForm.markAllAsTouched();
       return of(null);
     }
+
     const enrollmentData: ApplspecEnrollmentOptions = {
       ...basicOptions,
       type: "applspec",

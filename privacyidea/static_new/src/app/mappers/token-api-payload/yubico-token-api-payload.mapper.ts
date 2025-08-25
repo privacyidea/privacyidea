@@ -20,10 +20,15 @@ export class YubicoApiPayloadMapper implements TokenApiPayloadMapper<YubicoEnrol
       validity_period_start: data.validityPeriodStart,
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
+      realm: data.user ? data.realm : null,
       pin: data.pin,
       "yubico.tokenid": data.yubicoIdentifier
     };
 
+    if (data.onlyAddToRealm) {
+      payload.realm = data.realm;
+      payload.user = null;
+    }
     if (payload["yubico.tokenid"] === undefined) {
       delete payload["yubico.tokenid"];
     }

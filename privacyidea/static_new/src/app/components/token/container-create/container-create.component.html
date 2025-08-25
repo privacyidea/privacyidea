@@ -112,9 +112,10 @@
           }
         </mat-autocomplete>
       </mat-form-field>
-      <mat-checkbox [(ngModel)]="onlyAddToRealm">
-        Only add to the realm <br />
-        (no user assignment)
+      <mat-checkbox
+        [(ngModel)]="onlyAddToRealm"
+        [disabled]="userService.userFilter() !== ''">
+        Only add to the realm <br/> (no user assignment)
       </mat-checkbox>
     </div>
   </div>

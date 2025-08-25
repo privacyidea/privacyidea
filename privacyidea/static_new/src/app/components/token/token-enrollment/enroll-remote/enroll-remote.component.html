@@ -1,7 +1,4 @@
 <div class="flex-column">
-  <div class="token-type-paragraph">
-    <p>{{ text }}</p>
-  </div>
   <h4 class="enroll-h4">Token Configuration</h4>
   <mat-checkbox [formControl]="checkPinLocallyControl">
     Check the PIN locally
@@ -15,7 +12,7 @@
         [value]="remoteServerControl.value"
         required>
         @for (option of remoteServerOptions(); track option) {
-          <mat-option [value]="option">{{ option.url }}</mat-option><!-- Assuming option is the RemoteServer object -->
+          <mat-option [value]="option">{{ option.name }}</mat-option><!-- Assuming option is the RemoteServer object -->
         }
       </mat-select>
       <mat-error class="red">
@@ -26,8 +23,7 @@
       <mat-label>Remote Serial</mat-label>
       <input
         [formControl]="remoteSerialControl"
-        matInput
-        required/>
+        matInput/>
       <mat-error>Remote Serial is <strong>required</strong></mat-error>
     </mat-form-field>
   </div>
@@ -36,7 +32,7 @@
       <mat-label>Remote User</mat-label>
       <input
         [formControl]="remoteUserControl"
-        matInput/>
+        matInput>
       <!-- Assuming optional based on TS -->
       <mat-error>Remote User is <strong>required</strong></mat-error>
     </mat-form-field>
@@ -50,8 +46,7 @@
       <mat-label>Remote Resolver</mat-label>
       <input
         [formControl]="remoteResolverControl"
-        matInput
-        required/>
+        matInput/>
       <mat-error>Remote Resolver is <strong>required</strong></mat-error>
     </mat-form-field>
   </div>

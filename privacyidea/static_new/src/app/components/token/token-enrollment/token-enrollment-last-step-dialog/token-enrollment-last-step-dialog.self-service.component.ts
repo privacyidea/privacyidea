@@ -1,4 +1,4 @@
-import { Component, inject } from "@angular/core";
+import { Component, inject, WritableSignal } from "@angular/core";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import {
   MAT_DIALOG_DATA,
@@ -23,6 +23,7 @@ import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-
 
 export type TokenEnrollmentLastStepDialogData = {
   response: EnrollmentResponse;
+  serial: WritableSignal<string | null>;
   enrollToken: () => void;
   user: UserData | null;
   userRealm: string;

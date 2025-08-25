@@ -151,7 +151,7 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
         enrollToken: this.enrollToken.bind(this),
         user: user,
         userRealm: this.userService.selectedUserRealm(),
-        onlyAddToRealm: this.onlyAddToRealm()
+        onlyAddToRealm: this.onlyAddToRealmControl.value
       }
     });
   }
