@@ -5,7 +5,7 @@ import { MatList, MatListItem } from "@angular/material/list";
 import { MatButton } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
 import { MatDialog } from "@angular/material/dialog";
-import { catchError, concatMap, EMPTY, filter, forkJoin, from, reduce, switchMap } from "rxjs";
+import { catchError, concatMap, EMPTY, filter, from, reduce, switchMap } from "rxjs";
 import { tabToggleState } from "../../../../../styles/animations/animations";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
@@ -69,7 +69,7 @@ export class TokenTabComponent {
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: [this.tokenSerial()],
+          serialList: [this.tokenSerial()],
           title: "Revoke Token",
           type: "token",
           action: "revoke",
@@ -101,7 +101,7 @@ export class TokenTabComponent {
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: [this.tokenSerial()],
+          serialList: [this.tokenSerial()],
           title: "Delete Token",
           type: "token",
           action: "delete",
@@ -128,7 +128,7 @@ export class TokenTabComponent {
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: selectedTokens.map((token) => token.serial),
+          serialList: selectedTokens.map((token) => token.serial),
           title: "Delete All Tokens",
           type: "token",
           action: "delete",
@@ -139,11 +139,7 @@ export class TokenTabComponent {
       .subscribe({
         next: (result) => {
           if (result) {
-            forkJoin(
-              selectedTokens.map((token) =>
-                this.tokenService.deleteToken(token.serial)
-              )
-            ).subscribe({
+            this.tokenService.batchDeleteTokens(selectedTokens).subscribe({
               next: () => {
                 this.tokenService.tokenResource.reload();
               },
@@ -185,10 +181,7 @@ export class TokenTabComponent {
                   .pipe(switchMap(() => assign$))
                 : assign$;
             }),
-            reduce(() => null, null),
-            switchMap(() =>
-              this.tokenService.getTokenDetails(this.tokenSerial())
-            )
+            reduce(() => null, null)
           )
         ),
         tap(() => this.tokenService.tokenResource.reload()),
@@ -198,5 +191,34 @@ export class TokenTabComponent {
         })
       )
       .subscribe();
+  }
+
+  unassignSelectedTokens() {
+    const selectedTokens = this.tokenSelection();
+    this.dialog
+      .open(ConfirmationDialogComponent, {
+        data: {
+          serialList: selectedTokens.map((token) => token.serial),
+          title: "Unassign Tokens",
+          type: "token",
+          action: "unassign",
+          numberOfTokens: selectedTokens.length
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            this.tokenService.batchUnassignTokens(selectedTokens).subscribe({
+              next: () => {
+                this.tokenService.tokenResource.reload();
+              },
+              error: (err) => {
+                console.error("Error unassigning tokens:", err);
+              }
+            });
+          }
+        }
+      });
   }
 }
