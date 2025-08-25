@@ -4,9 +4,13 @@ import { MatDialogRef } from "@angular/material/dialog";
 import { lastValueFrom } from "rxjs";
 import {
   EnrollmentResponse,
+  EnrollmentResponseDetail,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { PasskeyApiPayloadMapper } from "../../../../mappers/token-api-payload/passkey-token-api-payload.mapper";
+import {
+  PasskeyApiPayloadMapper,
+  PasskeyFinalizeApiPayloadMapper
+} from "../../../../mappers/token-api-payload/passkey-token-api-payload.mapper";
 import { Base64Service, Base64ServiceInterface } from "../../../../services/base64/base64.service";
 import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 import {
@@ -55,6 +59,9 @@ export class EnrollPasskeyComponent implements OnInit {
   protected readonly enrollmentMapper: PasskeyApiPayloadMapper = inject(
     PasskeyApiPayloadMapper
   );
+  protected readonly finalizeMapper: PasskeyFinalizeApiPayloadMapper = inject(
+    PasskeyFinalizeApiPayloadMapper
+  );
   protected readonly notificationService: NotificationServiceInterface =
     inject(NotificationService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -63,11 +70,7 @@ export class EnrollPasskeyComponent implements OnInit {
   protected readonly dialogService: DialogServiceInterface =
     inject(DialogService);
 
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "passkey")?.text;
-
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -78,7 +81,7 @@ export class EnrollPasskeyComponent implements OnInit {
   passkeyForm = new FormGroup({});
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({});
+    this.additionalFormFieldsChange.emit({});
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
@@ -185,9 +188,7 @@ export class EnrollPasskeyComponent implements OnInit {
         name: passkeyRegOptions.user.name,
         displayName: passkeyRegOptions.user.displayName
       },
-      challenge: this.base64Service.base64URLToBytes(
-        passkeyRegOptions.challenge
-      ),
+      challenge: new Uint8Array(new TextEncoder().encode(passkeyRegOptions.challenge)),
       pubKeyCredParams: passkeyRegOptions.pubKeyCredParams,
       excludeCredentials: excludedCredentials,
       authenticatorSelection: passkeyRegOptions.authenticatorSelection,
@@ -240,7 +241,7 @@ export class EnrollPasskeyComponent implements OnInit {
     return lastValueFrom(
       this.tokenService.enrollToken({
         data: passkeyFinalizeData,
-        mapper: this.enrollmentMapper
+        mapper: this.finalizeMapper
       })
     )
       .catch(async (errorStep3) => {
@@ -262,6 +263,11 @@ export class EnrollPasskeyComponent implements OnInit {
       })
       .then((finalResponse) => {
         this.reopenDialogChange.emit(undefined);
+        if (finalResponse.detail) {
+          finalResponse.detail.serial = detail.serial;
+        } else {
+          finalResponse.detail = { "serial": detail.serial } as EnrollmentResponseDetail;
+        }
         return finalResponse;
       });
   }

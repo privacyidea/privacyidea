@@ -134,7 +134,7 @@
       </mat-form-field>
       <mat-checkbox
         [(ngModel)]="onlyAddToRealm"
-        i18n>
+        [disabled]="userService.userFilter() !== ''">
         Only add to the realm <br />
         (no user assignment)
       </mat-checkbox>

@@ -15,19 +15,26 @@ export interface YubikeyEnrollmentPayload extends TokenEnrollmentPayload {
 @Injectable({ providedIn: "root" })
 export class YubikeyApiPayloadMapper implements TokenApiPayloadMapper<YubikeyEnrollmentData> {
   toApiPayload(data: YubikeyEnrollmentData): YubikeyEnrollmentPayload {
-    return {
+    const payload: YubikeyEnrollmentPayload = {
       type: data.type,
       description: data.description,
       container_serial: data.containerSerial,
       validity_period_start: data.validityPeriodStart,
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
+      realm: data.user ? data.realm : null,
       pin: data.pin,
       // otpLength from component is number | null. Payload otplen is number | null.
       otplen: data.otpLength,
       // otpKey from component is string | null. Payload otpkey is string | null.
       otpkey: data.otpKey
     };
+
+    if (data.onlyAddToRealm) {
+      payload.realm = data.realm;
+      payload.user = null;
+    }
+    return payload;
   }
 
   fromApiPayload(payload: any): YubikeyEnrollmentData {

@@ -1,12 +1,5 @@
 <div class="flex-column">
-  <div class="token-type-paragraph">
-    <p i18n>{{ text }}</p>
-  </div>
-  <h4
-    class="enroll-h4"
-    i18n>
-    Token Configuration
-  </h4>
+  <h4 class="enroll-h4">Token Configuration</h4>
   <mat-checkbox
     [formControl]="generateOnServerControl"
     class="server-checkbox"
@@ -32,8 +25,6 @@
           required />
         <mat-error i18n>OTP key is <strong>required</strong></mat-error>
       </mat-form-field>
-    } @else {
-      <span class="input-height width-33"></span>
     }
   </div>
 </div>
