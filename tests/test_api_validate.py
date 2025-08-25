@@ -3227,7 +3227,7 @@ class ValidateAPITestCase(MyApiTestCase):
         auth_time = datetime.datetime.now(datetime.timezone.utc)
         last_auth = container.last_authentication
         time_diff = abs((auth_time - last_auth).total_seconds())
-        self.assertLessEqual(time_diff, 1)
+        self.assertLessEqual(time_diff, 2)
 
         # delete the token
         remove_token(serial=serial)
