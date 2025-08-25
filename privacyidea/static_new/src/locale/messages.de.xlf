@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
-  <file source-language="en-US" datatype="plaintext" original="ng2.template">
+  <file source-language="en" datatype="plaintext" original="ng2.template">
     <body>
       <trans-unit id="809951388512606676" datatype="html">
         <source>Content Layout</source>
@@ -1877,14 +1877,16 @@
         </context-group>
       </trans-unit>
       <trans-unit id="8707651709744595760" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/><x id="INTERPOLATION" equiv-text="{{ states().includes(&quot;active&quot;) ? &quot;lock&quot; : &quot;play_circle&quot; }}"/> <x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> <x id="INTERPOLATION_1" equiv-text="{{ states().includes(&quot;active&quot;) ? &quot;Deaktivieren&quot; : &quot;Aktivieren&quot; }}"/> </target>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/><x id="INTERPOLATION" equiv-text="{{ states().includes(&quot;active&quot;) ? &quot;lock&quot; : &quot;play_circle&quot; }}"/> <x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> <x id="INTERPOLATION_1" equiv-text="{{ states().includes(&quot;active&quot;) ? &quot;Deactivate&quot; : &quot;Activate&quot; }}"/> </source>
+        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/><x id="INTERPOLATION" equiv-text="{{ states().includes(&quot;active&quot;) ? &quot;lock&quot; : &quot;play_circle&quot; }}"/> <x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> <x id="INTERPOLATION_1" equiv-text="{{ states().includes(&quot;active&quot;) ? &quot;Deaktivieren&quot; : &quot;Aktivieren&quot; }}"/> </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/container-tab/container-tab.component.html</context>
           <context context-type="linenumber">211,214</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2172831471327393523" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/> delete<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Löschen </target>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/> delete<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Delete </source>
+        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/> delete<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Löschen </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/container-tab/container-tab.component.html</context>
           <context context-type="linenumber">222,224</context>

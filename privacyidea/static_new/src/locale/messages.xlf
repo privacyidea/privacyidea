@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
-  <file source-language="en-US" datatype="plaintext" original="ng2.template">
+  <file source-language="en" datatype="plaintext" original="ng2.template">
     <body>
       <trans-unit id="809951388512606676" datatype="html">
         <source>Content Layout</source>
@@ -342,7 +342,7 @@
         <source>Tokens</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.component.html</context>
-          <context context-type="linenumber">24,26</context>
+          <context context-type="linenumber">24,25</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-foureyes/enroll-foureyes.component.html</context>
@@ -353,21 +353,21 @@
         <source>Machines</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.component.html</context>
-          <context context-type="linenumber">40,42</context>
+          <context context-type="linenumber">40,41</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3008420115644088420" datatype="html">
         <source>Configuration</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.component.html</context>
-          <context context-type="linenumber">48,50</context>
+          <context context-type="linenumber">48,49</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3309973566259313398" datatype="html">
         <source>Audit</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.component.html</context>
-          <context context-type="linenumber">56,58</context>
+          <context context-type="linenumber">56,57</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1831139682192909712" datatype="html">
@@ -377,26 +377,22 @@
           <context context-type="linenumber">64,65</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3482067797996829475" datatype="html">
-        <source> Preview</source>
+      <trans-unit id="5740206434555920246" datatype="html">
+        <source> Preview </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.component.html</context>
-          <context context-type="linenumber">73,74</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/layout/header/header.self-service.component.html</context>
-          <context context-type="linenumber">44,45</context>
+          <context context-type="linenumber">77,78</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2288513108450439427" datatype="html">
         <source>Support</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.component.html</context>
-          <context context-type="linenumber">98</context>
+          <context context-type="linenumber">102</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.component.html</context>
-          <context context-type="linenumber">104,105</context>
+          <context context-type="linenumber">108,109</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.self-service.component.html</context>
@@ -411,11 +407,18 @@
         <source>Logout</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.component.html</context>
-          <context context-type="linenumber">119</context>
+          <context context-type="linenumber">123</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.self-service.component.html</context>
           <context context-type="linenumber">74</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3482067797996829475" datatype="html">
+        <source> Preview</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/layout/header/header.self-service.component.html</context>
+          <context context-type="linenumber">44,45</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5474901734608805094" datatype="html">

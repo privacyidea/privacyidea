@@ -5,7 +5,7 @@
   "projects": {
     "privacyidea-webui": {
       "i18n": {
-        "sourceLocale": "en-US",
+        "sourceLocale": "en",
         "locales": {
           "de": {
             "translation": "src/locale/messages.de.xlf"
@@ -25,7 +25,7 @@
           "builder": "@angular-devkit/build-angular:application",
           "options": {
             "localize": [
-              "en-US"
+              "de"
             ],
             "allowedCommonJsDependencies": [
               "crypto-js"
