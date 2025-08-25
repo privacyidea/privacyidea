@@ -7,6 +7,8 @@ import {
   NotificationServiceInterface
 } from "../../../../../services/notification/notification.service";
 import { TokenService, TokenServiceInterface } from "../../../../../services/token/token.service";
+import { SimpleDialogComponent, SimpleDialogData } from "../../../../shared/simple-dialog/simple-dialog.component";
+import { MatDialog } from "@angular/material/dialog";
 
 @Component({
   selector: "app-set-pin-action",
@@ -18,6 +20,7 @@ export class SetPinActionComponent {
   private readonly notificationService: NotificationServiceInterface =
     inject(NotificationService);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
+  private readonly dialog: MatDialog = inject(MatDialog);
   @Input() setPinValue!: WritableSignal<string>;
   @Input() repeatPinValue!: WritableSignal<string>;
 
@@ -32,14 +35,20 @@ export class SetPinActionComponent {
       .subscribe({
         next: () => {
           this.notificationService.openSnackBar("PIN set successfully.");
+          this.setPinValue.set("");
+          this.repeatPinValue.set("");
         }
       });
   }
 
   setRandomPin() {
     this.tokenService.setRandomPin(this.tokenService.tokenSerial()).subscribe({
-      next: () => {
-        this.notificationService.openSnackBar("PIN set successfully.");
+      next: (result) => {
+        const dialogData: SimpleDialogData = {
+          header: "PIN Set Successfully",
+          text: "Randomly generated PIN:",
+          data: result.detail.pin}
+        this.dialog.open(SimpleDialogComponent, {data: dialogData});
       }
     });
   }
