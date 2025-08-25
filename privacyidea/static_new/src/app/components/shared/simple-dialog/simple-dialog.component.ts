@@ -22,7 +22,8 @@ export type SimpleDialogData = {
     MatDialogClose,
     MatDialogTitle
   ],
-  templateUrl: "./simple-dialog.component.html"
+  templateUrl: "./simple-dialog.component.html",
+  styleUrl: "./simple-dialog.component.scss"
 })
 export class SimpleDialogComponent {
   public readonly data = inject(MAT_DIALOG_DATA);
