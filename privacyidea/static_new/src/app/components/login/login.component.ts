@@ -132,6 +132,7 @@ export class LoginComponent implements OnDestroy {
 
   logout(): void {
     this.authService.logout();
+    this.localService.removeData("bearer_token");
     this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar("Logout successful."));
   }
 
@@ -202,6 +203,7 @@ export class LoginComponent implements OnDestroy {
   private evaluateResponse(response: AuthResponse, context: "password" | "passkey" | "webauthn"): void {
     if (isAuthenticationSuccessful(response)) {
       // Successful auth -> log in
+      this.localService.saveData("bearer_token", response.result.value.token);
       this.showOtpField.set(false);
       this.sessionTimerService.startRefreshingRemainingTime();
       this.sessionTimerService.startTimer();

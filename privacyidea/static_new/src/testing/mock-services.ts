@@ -263,7 +263,7 @@ export class MockAuthService implements AuthServiceInterface {
 
   authData = signal(MockAuthService.MOCK_AUTH_DATA);
 
-  isAuthenticated: WritableSignal<boolean> = signal(true);
+  isAuthenticated: WritableSignal<boolean> = signal(false);
 
   public getHeaders(): HttpHeaders {
     return new HttpHeaders({
@@ -328,7 +328,7 @@ export class MockAuthService implements AuthServiceInterface {
 
   constructor(
     readonly http: HttpClient = new HttpClient({} as any),
-    readonly authService: AuthServiceInterface = new MockLocalService(),
+    readonly localService: LocalServiceInterface = new MockLocalService(),
     readonly notificationService: NotificationServiceInterface = new MockNotificationService(),
     readonly versioningService: VersioningService = new VersioningService()
   ) {}
@@ -953,8 +953,8 @@ export class MockMachineService implements MachineServiceInterface {
 
   constructor(
     public http: HttpClient = new HttpClient({} as any),
-    public authService: AuthService = new LocalService(),
-    public tableUtilsService: TableUtilsService = new MockTableUtilsService()
+    public authService: AuthServiceInterface = new MockAuthService(),
+    public tableUtilsService: TableUtilsServiceInterface = new MockTableUtilsService()
   ) {}
 
   postAssignMachineToToken(args: {
@@ -969,34 +969,8 @@ export class MockMachineService implements MachineServiceInterface {
   }
 }
 
-export class MockTableUtilsService implements AuthServiceInterface, TableUtilsServiceInterface {
+export class MockTableUtilsService implements TableUtilsServiceInterface {
   pageSizeOptions: WritableSignal<number[]> = signal([5, 10, 25, 50]);
-  isAuthenticated: () => boolean = jest.fn().mockReturnValue(true);
-  username: () => string = jest.fn().mockReturnValue("alice");
-  realm: () => string = jest.fn().mockReturnValue("default");
-  role: () => AuthRole = jest.fn().mockReturnValue("admin");
-  menus: () => string[] = jest
-    .fn()
-    .mockReturnValue(["token_overview", "token_self-service_menu", "container_overview"]);
-  isSelfServiceUser: () => boolean = jest
-    .fn()
-    .mockReturnValue(this.role() === "user" && this.menus().includes("token_self-service_menu"));
-  authenticate: (params: any) => Observable<AuthResponse> = jest
-    .fn()
-    .mockReturnValue(of(MockPiResponse.fromValue<AuthData, AuthDetail>(new MockAuthData(), new MockAuthDetail())));
-  isAuthenticatedUser: () => boolean = jest.fn().mockReturnValue(this.isAuthenticated() && this.role() === "user");
-  acceptAuthentication: () => void = jest.fn().mockImplementation(() => {
-    this.isAuthenticated = jest.fn().mockReturnValue(true);
-    this.role = jest.fn().mockReturnValue("admin");
-    this.username = jest.fn().mockReturnValue("alice");
-    this.realm = jest.fn().mockReturnValue("default");
-  });
-  logout: () => void = jest.fn().mockImplementation(() => {
-    this.isAuthenticated = jest.fn().mockReturnValue(false);
-    this.role = jest.fn().mockReturnValue("");
-    this.username = jest.fn().mockReturnValue("");
-    this.realm = jest.fn().mockReturnValue("");
-  });
   handleColumnClick = jest.fn();
   getClassForColumnKey = jest.fn();
   isLink = jest.fn().mockReturnValue(false);

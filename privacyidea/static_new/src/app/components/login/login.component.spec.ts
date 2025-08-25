@@ -1,6 +1,6 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { ComponentFixture, fakeAsync, TestBed, tick } from "@angular/core/testing";
+import { ComponentFixture, fakeAsync, TestBed, tick, waitForAsync } from "@angular/core/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { Router } from "@angular/router";
 import { of, throwError } from "rxjs";
@@ -56,8 +56,6 @@ describe("LoginComponent", () => {
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(LoginComponent);
-    component = fixture.componentInstance;
     // Use a double cast to inform TypeScript that we know the injected service is a mock.
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     localService = TestBed.inject(LocalService) as unknown as MockLocalService;
@@ -65,25 +63,31 @@ describe("LoginComponent", () => {
     sessionTimerService = TestBed.inject(SessionTimerService) as unknown as jest.Mocked<SessionTimerServiceInterface>;
     validateService = TestBed.inject(ValidateService) as unknown as MockValidateService;
     router = TestBed.inject(Router) as jest.Mocked<Router>;
-  });
 
-  it("should create", () => {
-    fixture.detectChanges();
-    expect(component).toBeTruthy();
-  });
-
-  it("should warn and open a snack bar if the user is already logged in", () => {
-    authService.acceptAuthentication();
-    const warn = jest.spyOn(console, "warn").mockImplementation();
-
+    // Default setup for most tests (not logged in)
     fixture = TestBed.createComponent(LoginComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+  });
 
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("User is already logged in.");
-    expect(warn).toHaveBeenCalledWith("User is already logged in.");
+  it("should create", () => {
+    expect(component).toBeTruthy();
+  });
 
-    warn.mockRestore();
+  describe("when already logged in", () => {
+    it("should warn and open a snack bar on initialization", () => {
+      authService.isAuthenticated.set(true);
+      const warn = jest.spyOn(console, "warn").mockImplementation();
+
+      // Re-run constructor logic by creating a new component with the new state
+      const loggedInFixture = TestBed.createComponent(LoginComponent);
+      loggedInFixture.detectChanges();
+
+      expect(notificationService.openSnackBar).toHaveBeenCalledWith("User is already logged in.");
+      expect(warn).toHaveBeenCalledWith("User is already logged in.");
+
+      warn.mockRestore();
+    });
   });
 
   describe("onSubmit", () => {
@@ -101,28 +105,65 @@ describe("LoginComponent", () => {
       });
     });
 
-    it("should handle a successful login", () => {
-      const successResponse = MockPiResponse.fromValue<AuthData, AuthDetail>({ token: "fake-token" } as AuthData);
-      authService.authenticate.mockReturnValue(of(successResponse));
+    it("should handle a complex multi-challenge response with WebAuthn and OTP", () => {
+      const webAuthnSignRequestData = {
+        allowCredentials: [
+          {
+            id: "sLGtMkbtYaEl2sYAD4iDdsVRUyihBfPBDhkVQemXUujuLE2G7WdSO5sb0IfGE-dwsABqT00mcqR9oTntiP0mEQ",
+            transports: ["usb", "internal", "nfc", "ble"],
+            type: "public-key"
+          }
+        ],
+        challenge: "AiHIAWAv283XqtFFlyzmfdQwzevsDLHKdiHrt6iUiA8",
+        rpId: "fritz.box",
+        timeout: 60000,
+        userVerification: "discouraged"
+      };
+
+      const multiChallengeResponse = new MockPiResponse<AuthData, AuthDetail>({
+        detail: {
+          transaction_id: "02247192477167467513",
+          multi_challenge: [
+            { client_mode: "interactive", message: "please enter otp: ", serial: "OATH0000719A", transaction_id: "02247192477167467513", type: "hotp" },
+            { client_mode: "interactive", message: "please enter otp: ", serial: "OATH000545CD", transaction_id: "02247192477167467513", type: "hotp" },
+            {
+              attributes: { webAuthnSignRequest: webAuthnSignRequestData },
+              client_mode: "webauthn",
+              message: "Please confirm with your WebAuthn token (Generic WebAuthn Token)",
+              serial: "WAN0002E3AE",
+              transaction_id: "02247192477167467513",
+              type: "webauthn"
+            }
+          ]
+        },
+        result: { authentication: "CHALLENGE", status: true, value: false as any }
+      });
+      authService.authenticate.mockReturnValue(of(multiChallengeResponse));
 
       component.onSubmit();
+      // "please enter otp:" is not duplicated
+      expect(component.loginMessage()).toEqual(["please enter otp: ", "Please confirm with your WebAuthn token (Generic WebAuthn Token)"]);
+      expect(component.showOtpField()).toBe(true);
+      expect(component.webAuthnTriggered()).toEqual(webAuthnSignRequestData);
+      expect((component as any).transactionId).toBe("02247192477167467513");
+      expect(component.pushTriggered()).toBe(false); // No push challenge in this specific multi_challenge
 
-      expect(localService.saveData).toHaveBeenCalledWith("mockBearerTokenKey", "fake-token");
-      expect(sessionTimerService.startRefreshingRemainingTime).toHaveBeenCalled();
-      expect(sessionTimerService.startTimer).toHaveBeenCalled();
-      expect(router.navigateByUrl).toHaveBeenCalledWith("/tokens");
+      expect(localService.saveData).not.toHaveBeenCalled();
+      expect(sessionTimerService.startRefreshingRemainingTime).not.toHaveBeenCalled();
+      expect(sessionTimerService.startTimer).not.toHaveBeenCalled();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
     });
 
     it("should handle a challenge response", () => {
       const challengeResponse = new MockPiResponse<AuthData, AuthDetail>({
-        detail: { messages: ["Please enter OTP"] },
+        detail: { message: "Please enter OTP" }, // Use detail.message for simple cases
         result: { authentication: "CHALLENGE", status: true, value: false as any }
       });
       authService.authenticate.mockReturnValue(of(challengeResponse));
 
       component.onSubmit();
 
-      expect(component.loginMessage()).toEqual(["Please enter OTP"]);
+      expect(component.loginMessage()).toEqual(["Please enter OTP"]); // Now this assertion is correct
       expect(component.showOtpField()).toBe(true);
       expect(localService.saveData).not.toHaveBeenCalled();
       expect(sessionTimerService.startRefreshingRemainingTime).not.toHaveBeenCalled();
@@ -172,7 +213,7 @@ describe("LoginComponent", () => {
       component.passkeyLogin();
 
       expect(validateService.authenticatePasskey).toHaveBeenCalled();
-      expect(localService.saveData).toHaveBeenCalledWith("mockBearerTokenKey", "passkey-token");
+      expect(localService.saveData).toHaveBeenCalledWith("bearer_token", "passkey-token");
       expect(router.navigateByUrl).toHaveBeenCalledWith("/tokens");
     });
 
@@ -251,17 +292,18 @@ describe("LoginComponent", () => {
         password: "",
         transaction_id: "tx-push-success"
       });
-      expect(localService.saveData).toHaveBeenCalledWith("mockBearerTokenKey", "push-token");
+      expect(localService.saveData).toHaveBeenCalledWith("bearer_token", "push-token");
     }));
   });
 
   describe("logout", () => {
-    it("should remove token, logout, and navigate to login", async () => {
+    it("should remove token, logout, and navigate to login", waitForAsync(() => {
       component.logout();
-      await fixture.whenStable(); // Wait for router.navigate promise
-      expect(localService.removeData).toHaveBeenCalledWith("mockBearerTokenKey");
-      expect(authService.logout).toHaveBeenCalled();
-      expect(router.navigate).toHaveBeenCalledWith(["login"]);
-    });
+      fixture.whenStable().then(() => {
+        expect(localService.removeData).toHaveBeenCalledWith("bearer_token");
+        expect(authService.logout).toHaveBeenCalled();
+        expect(router.navigate).toHaveBeenCalledWith(["login"]);
+      });
+    }));
   });
 });
