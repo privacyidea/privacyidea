@@ -89,7 +89,7 @@ import { MatCheckbox } from "@angular/material/checkbox";
 import { QuestionApiPayloadMapper } from "../../../mappers/token-api-payload/question-token-api-payload.mapper";
 
 export type ClickEnrollFn = (
-  enrollementOptions: TokenEnrollmentData
+  enrollmentOptions: TokenEnrollmentData
 ) => Promise<EnrollmentResponse | null> | Observable<EnrollmentResponse | null>;
 
 export type ReopenDialogFn =
@@ -549,12 +549,8 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     let enrollPromise: Promise<EnrollmentResponse | null>;
     if (enrollResponse instanceof Promise) {
       enrollPromise = enrollResponse;
-    } else if (enrollResponse instanceof Observable) {
-      enrollPromise = lastValueFrom(enrollResponse);
     } else {
-      this.notificationService.openSnackBar("Failed to enroll token. No response returned.");
-      console.error("Failed to enroll token. No response returned.");
-      return;
+      enrollPromise = lastValueFrom(enrollResponse);
     }
     enrollPromise.catch((error) => {
       const message = error.error?.result?.error?.message || "";

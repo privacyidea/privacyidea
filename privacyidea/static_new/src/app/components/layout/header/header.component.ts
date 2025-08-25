@@ -98,8 +98,7 @@ export class HeaderComponent {
   }
 
   logout(): void {
-    this.localService.removeData(this.authService.TOKEN_KEY);
-    this.authService.deauthenticate();
+    this.authService.logout();
     this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar("Logout successful."));
   }
 }

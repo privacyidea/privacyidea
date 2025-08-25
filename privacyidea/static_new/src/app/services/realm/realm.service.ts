@@ -2,11 +2,10 @@ import { HttpErrorResponse, httpResource, HttpResourceRef } from "@angular/commo
 import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { LocalService, LocalServiceInterface } from "../local/local.service";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { ROUTE_PATHS } from "../../app.routes";
+import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 
 export type Realms = Map<string, Realm>;
 
@@ -38,9 +37,8 @@ export interface RealmServiceInterface {
   providedIn: "root"
 })
 export class RealmService implements RealmServiceInterface {
-  private readonly localService: LocalServiceInterface = inject(LocalService);
-  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   selectedRealms = signal<string[]>([]);
 
@@ -61,7 +59,7 @@ export class RealmService implements RealmServiceInterface {
     return {
       url: environment.proxyUrl + "/realm/",
       method: "GET",
-      headers: this.localService.getHeaders()
+      headers: this.authService.getHeaders()
     };
   });
   realmOptions = computed(() => {
@@ -86,7 +84,7 @@ export class RealmService implements RealmServiceInterface {
     return {
       url: environment.proxyUrl + "/defaultrealm",
       method: "GET",
-      headers: this.localService.getHeaders()
+      headers: this.authService.getHeaders()
     };
   });
   defaultRealm = computed<string>(() => {
@@ -111,8 +109,7 @@ export class RealmService implements RealmServiceInterface {
       if (this.defaultRealmResource.error()) {
         const defaultRealmError = this.defaultRealmResource.error() as HttpErrorResponse;
         console.error("Failed to get default realm.", defaultRealmError.message);
-        const message =
-          defaultRealmError.error?.result?.error?.message || defaultRealmError.message;
+        const message = defaultRealmError.error?.result?.error?.message || defaultRealmError.message;
         this.notificationService.openSnackBar("Failed to get default realm. " + message);
       }
     });
