@@ -28,7 +28,7 @@ from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
                                     delete_privacyidea_config, SYSCONF)
 from privacyidea.lib.container import (init_container, add_token_to_container,
                                        find_container_by_serial)
-from privacyidea.lib.error import PolicyError
+from privacyidea.lib.error import PolicyError, UserError
 from privacyidea.lib.error import (TokenAdminError, ParameterError,
                                    privacyIDEAError, ResourceNotFoundError)
 from privacyidea.lib.framework import get_app_config
