@@ -2,11 +2,17 @@ import { Injectable } from "@angular/core";
 
 export interface Base64ServiceInterface {
   base64URLToBytes(base64URL: string): Uint8Array;
+
   bytesToBase64(buffer: Uint8Array): string;
+
   bufferToBase64Url(buffer: Uint8Array): string;
+
   webAuthnBase64DecToArr(sBase64: string): Uint8Array;
+
   webAuthnBase64EncArr(bytes: ArrayBufferLike): string;
+
   utf8ArrToStr(aBytes: Uint8Array): string;
+
   strToUtf8Arr(sDOMStr: string): Uint8Array;
 }
 
@@ -37,6 +43,162 @@ export class Base64Service implements Base64ServiceInterface {
   bufferToBase64Url(buffer: Uint8Array): string {
     const base64 = this.bytesToBase64(buffer);
     return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+
+  /**
+   * Perform web-safe base64 decoding.
+   * This will perform web-safe base64 decoding as specified by WebAuthn.
+   *
+   * @param {string} sBase64 - Base64 to decode.
+   * @returns {Uint8Array} - The decoded binary.
+   */
+  public webAuthnBase64DecToArr(sBase64: string): Uint8Array {
+    return this.base64DecToArr(sBase64.replace(/-/g, "+").replace(/_/g, "/").padEnd((sBase64.length | 3) + 1, "="));
+  }
+
+  /**
+   * Perform web-safe base64 encoding.
+   * This will perform web-safe base64 encoding as specified by WebAuthn.
+   *
+   * @param {ArrayBufferLike} bytes - Bytes to encode.
+   * @returns {string} - The encoded base64.
+   */
+  public webAuthnBase64EncArr(bytes: ArrayBufferLike): string {
+    return this.base64EncArr(bytes).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+  }
+
+  /**
+   * Decode a UTF-8-string.
+   * This will accept a UTF-8 string and decode it into the native string
+   * representation of the JavaScript engine (read: UTF-16). This function
+   * currently implements no sanity checks whatsoever. If the input is not
+   * valid UTF-8, the result of this function is not well-defined!
+   *
+   * @param {Uint8Array} aBytes - A UTF-8 encoded string.
+   * @returns {string} The decoded string.
+   */
+  public utf8ArrToStr(aBytes: Uint8Array): string {
+    let sView = "";
+
+    let nPart;
+    const nLen = aBytes.length;
+    for (let nIdx = 0; nIdx < nLen; nIdx++) {
+      nPart = aBytes[nIdx];
+      sView += String.fromCharCode(
+        nPart > 251 && nPart < 254 && nIdx + 5 < nLen
+          ? /* six bytes */
+          (nPart - 252) * 1073741824 /* << 30 */ +
+          ((aBytes[++nIdx] - 128) << 24) +
+          ((aBytes[++nIdx] - 128) << 18) +
+          ((aBytes[++nIdx] - 128) << 12) +
+          ((aBytes[++nIdx] - 128) << 6) +
+          aBytes[++nIdx] -
+          128
+          : nPart > 247 && nPart < 252 && nIdx + 4 < nLen
+            ? /* five bytes */
+            ((nPart - 248) << 24) +
+            ((aBytes[++nIdx] - 128) << 18) +
+            ((aBytes[++nIdx] - 128) << 12) +
+            ((aBytes[++nIdx] - 128) << 6) +
+            aBytes[++nIdx] -
+            128
+            : nPart > 239 && nPart < 248 && nIdx + 3 < nLen
+              ? /* four bytes */
+              ((nPart - 240) << 18) +
+              ((aBytes[++nIdx] - 128) << 12) +
+              ((aBytes[++nIdx] - 128) << 6) +
+              aBytes[++nIdx] -
+              128
+              : nPart > 223 && nPart < 240 && nIdx + 2 < nLen
+                ? /* three bytes */
+                ((nPart - 224) << 12) + ((aBytes[++nIdx] - 128) << 6) + aBytes[++nIdx] - 128
+                : nPart > 191 && nPart < 224 && nIdx + 1 < nLen
+                  ? /* two bytes */
+                  ((nPart - 192) << 6) + aBytes[++nIdx] - 128
+                  : /* one byte */
+                  nPart
+      );
+    }
+
+    return sView;
+  }
+
+  /**
+   * Encode a string to UTF-8.
+   * This will accept a string in the native representation of the JavaScript
+   * engine (read: UTF-16), and encode it as UTF-8.
+   *
+   * @param {string} sDOMStr - A string to encode.
+   * @returns {Uint8Array} - The encoded string.
+   */
+  public strToUtf8Arr(sDOMStr: string): Uint8Array {
+    let aBytes: Uint8Array;
+    let nChr: number;
+    const nStrLen = sDOMStr.length;
+    let nArrLen = 0;
+
+    /*
+     * Determine the byte-length of the string when encoded as UTF-8.
+     */
+
+    for (let nMapIdx = 0; nMapIdx < nStrLen; nMapIdx++) {
+      nChr = sDOMStr.charCodeAt(nMapIdx);
+      nArrLen +=
+        nChr < 0x80
+          ? 1
+          : nChr < 0x800
+            ? 2
+            : nChr < 0x10000
+              ? 3
+              : nChr < 0x200000
+                ? 4
+                : nChr < 0x4000000
+                  ? 5
+                  : 6;
+    }
+
+    aBytes = new Uint8Array(nArrLen);
+
+    let nIdx = 0;
+    for (let nChrIdx = 0; nChrIdx < nStrLen; nChrIdx++) {
+      nChr = sDOMStr.charCodeAt(nChrIdx);
+      if (nChr < 128) {
+        /* one byte */
+        aBytes[nIdx++] = nChr;
+      } else if (nChr < 0x800) {
+        /* two bytes */
+        aBytes[nIdx++] = 192 + (nChr >>> 6);
+        aBytes[nIdx++] = 128 + (nChr & 63);
+      } else if (nChr < 0x10000) {
+        /* three bytes */
+        aBytes[nIdx++] = 224 + (nChr >>> 12);
+        aBytes[nIdx++] = 128 + ((nChr >>> 6) & 63);
+        aBytes[nIdx++] = 128 + (nChr & 63);
+      } else if (nChr < 0x200000) {
+        /* four bytes */
+        aBytes[nIdx++] = 240 + (nChr >>> 18);
+        aBytes[nIdx++] = 128 + ((nChr >>> 12) & 63);
+        aBytes[nIdx++] = 128 + ((nChr >>> 6) & 63);
+        aBytes[nIdx++] = 128 + (nChr & 63);
+      } else if (nChr < 0x4000000) {
+        /* five bytes */
+        aBytes[nIdx++] = 248 + (nChr >>> 24);
+        aBytes[nIdx++] = 128 + ((nChr >>> 18) & 63);
+        aBytes[nIdx++] = 128 + ((nChr >>> 12) & 63);
+        aBytes[nIdx++] = 128 + ((nChr >>> 6) & 63);
+        aBytes[nIdx++] = 128 + (nChr & 63);
+      } else {
+        /* six bytes */
+        aBytes[nIdx++] = 252 + (nChr >>> 30);
+        aBytes[nIdx++] = 128 + ((nChr >>> 24) & 63);
+        aBytes[nIdx++] = 128 + ((nChr >>> 18) & 63);
+        aBytes[nIdx++] = 128 + ((nChr >>> 12) & 63);
+        aBytes[nIdx++] = 128 + ((nChr >>> 6) & 63);
+        aBytes[nIdx++] = 128 + (nChr & 63);
+      }
+    }
+
+    return aBytes;
   }
 
   /**
@@ -166,161 +328,5 @@ export class Base64Service implements Base64ServiceInterface {
     }
 
     return eqLen === 0 ? sB64Enc : sB64Enc.substring(0, sB64Enc.length - eqLen) + (eqLen === 1 ? "=" : "==");
-  }
-
-  /**
-   * Perform web-safe base64 decoding.
-   * This will perform web-safe base64 decoding as specified by WebAuthn.
-   *
-   * @param {string} sBase64 - Base64 to decode.
-   * @returns {Uint8Array} - The decoded binary.
-   */
-  public webAuthnBase64DecToArr(sBase64: string): Uint8Array {
-    return this.base64DecToArr(sBase64.replace(/-/g, "+").replace(/_/g, "/").padEnd((sBase64.length | 3) + 1, "="));
-  }
-
-  /**
-   * Perform web-safe base64 encoding.
-   * This will perform web-safe base64 encoding as specified by WebAuthn.
-   *
-   * @param {ArrayBufferLike} bytes - Bytes to encode.
-   * @returns {string} - The encoded base64.
-   */
-  public webAuthnBase64EncArr(bytes: ArrayBufferLike): string {
-    return this.base64EncArr(bytes).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-  }
-
-  /**
-   * Decode a UTF-8-string.
-   * This will accept a UTF-8 string and decode it into the native string
-   * representation of the JavaScript engine (read: UTF-16). This function
-   * currently implements no sanity checks whatsoever. If the input is not
-   * valid UTF-8, the result of this function is not well-defined!
-   *
-   * @param {Uint8Array} aBytes - A UTF-8 encoded string.
-   * @returns {string} The decoded string.
-   */
-  public utf8ArrToStr(aBytes: Uint8Array): string {
-    let sView = "";
-
-    let nPart;
-    const nLen = aBytes.length;
-    for (let nIdx = 0; nIdx < nLen; nIdx++) {
-      nPart = aBytes[nIdx];
-      sView += String.fromCharCode(
-        nPart > 251 && nPart < 254 && nIdx + 5 < nLen
-          ? /* six bytes */
-            (nPart - 252) * 1073741824 /* << 30 */ +
-            ((aBytes[++nIdx] - 128) << 24) +
-            ((aBytes[++nIdx] - 128) << 18) +
-            ((aBytes[++nIdx] - 128) << 12) +
-            ((aBytes[++nIdx] - 128) << 6) +
-            aBytes[++nIdx] -
-            128
-          : nPart > 247 && nPart < 252 && nIdx + 4 < nLen
-            ? /* five bytes */
-              ((nPart - 248) << 24) +
-              ((aBytes[++nIdx] - 128) << 18) +
-              ((aBytes[++nIdx] - 128) << 12) +
-              ((aBytes[++nIdx] - 128) << 6) +
-              aBytes[++nIdx] -
-              128
-            : nPart > 239 && nPart < 248 && nIdx + 3 < nLen
-              ? /* four bytes */
-                ((nPart - 240) << 18) +
-                ((aBytes[++nIdx] - 128) << 12) +
-                ((aBytes[++nIdx] - 128) << 6) +
-                aBytes[++nIdx] -
-                128
-              : nPart > 223 && nPart < 240 && nIdx + 2 < nLen
-                ? /* three bytes */
-                  ((nPart - 224) << 12) + ((aBytes[++nIdx] - 128) << 6) + aBytes[++nIdx] - 128
-                : nPart > 191 && nPart < 224 && nIdx + 1 < nLen
-                  ? /* two bytes */
-                    ((nPart - 192) << 6) + aBytes[++nIdx] - 128
-                  : /* one byte */
-                    nPart
-      );
-    }
-
-    return sView;
-  }
-
-  /**
-   * Encode a string to UTF-8.
-   * This will accept a string in the native representation of the JavaScript
-   * engine (read: UTF-16), and encode it as UTF-8.
-   *
-   * @param {string} sDOMStr - A string to encode.
-   * @returns {Uint8Array} - The encoded string.
-   */
-  public strToUtf8Arr(sDOMStr: string): Uint8Array {
-    let aBytes: Uint8Array;
-    let nChr: number;
-    const nStrLen = sDOMStr.length;
-    let nArrLen = 0;
-
-    /*
-     * Determine the byte-length of the string when encoded as UTF-8.
-     */
-
-    for (let nMapIdx = 0; nMapIdx < nStrLen; nMapIdx++) {
-      nChr = sDOMStr.charCodeAt(nMapIdx);
-      nArrLen +=
-        nChr < 0x80
-          ? 1
-          : nChr < 0x800
-            ? 2
-            : nChr < 0x10000
-              ? 3
-              : nChr < 0x200000
-                ? 4
-                : nChr < 0x4000000
-                  ? 5
-                  : 6;
-    }
-
-    aBytes = new Uint8Array(nArrLen);
-
-    let nIdx = 0;
-    for (let nChrIdx = 0; nChrIdx < nStrLen; nChrIdx++) {
-      nChr = sDOMStr.charCodeAt(nChrIdx);
-      if (nChr < 128) {
-        /* one byte */
-        aBytes[nIdx++] = nChr;
-      } else if (nChr < 0x800) {
-        /* two bytes */
-        aBytes[nIdx++] = 192 + (nChr >>> 6);
-        aBytes[nIdx++] = 128 + (nChr & 63);
-      } else if (nChr < 0x10000) {
-        /* three bytes */
-        aBytes[nIdx++] = 224 + (nChr >>> 12);
-        aBytes[nIdx++] = 128 + ((nChr >>> 6) & 63);
-        aBytes[nIdx++] = 128 + (nChr & 63);
-      } else if (nChr < 0x200000) {
-        /* four bytes */
-        aBytes[nIdx++] = 240 + (nChr >>> 18);
-        aBytes[nIdx++] = 128 + ((nChr >>> 12) & 63);
-        aBytes[nIdx++] = 128 + ((nChr >>> 6) & 63);
-        aBytes[nIdx++] = 128 + (nChr & 63);
-      } else if (nChr < 0x4000000) {
-        /* five bytes */
-        aBytes[nIdx++] = 248 + (nChr >>> 24);
-        aBytes[nIdx++] = 128 + ((nChr >>> 18) & 63);
-        aBytes[nIdx++] = 128 + ((nChr >>> 12) & 63);
-        aBytes[nIdx++] = 128 + ((nChr >>> 6) & 63);
-        aBytes[nIdx++] = 128 + (nChr & 63);
-      } else {
-        /* six bytes */
-        aBytes[nIdx++] = 252 + (nChr >>> 30);
-        aBytes[nIdx++] = 128 + ((nChr >>> 24) & 63);
-        aBytes[nIdx++] = 128 + ((nChr >>> 18) & 63);
-        aBytes[nIdx++] = 128 + ((nChr >>> 12) & 63);
-        aBytes[nIdx++] = 128 + ((nChr >>> 6) & 63);
-        aBytes[nIdx++] = 128 + (nChr & 63);
-      }
-    }
-
-    return aBytes;
   }
 }

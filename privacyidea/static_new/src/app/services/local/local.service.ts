@@ -4,8 +4,11 @@ import { environment } from "../../../environments/environment";
 
 export interface LocalServiceInterface {
   key: string;
+
   saveData(key: string, value: string): void;
+
   getData(key: string): string;
+
   removeData(key: string): void;
 }
 

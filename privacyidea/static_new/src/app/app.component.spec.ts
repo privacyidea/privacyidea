@@ -46,7 +46,8 @@ describe("AppComponent", () => {
       ]
     }).compileComponents();
 
-    jest.spyOn(console, "warn").mockImplementation(() => {});
+    jest.spyOn(console, "warn").mockImplementation(() => {
+    });
   });
 
   it("creates the app", () => {
@@ -54,7 +55,7 @@ describe("AppComponent", () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('has title "privacyidea-webui"', () => {
+  it("has title \"privacyidea-webui\"", () => {
     const fixture = TestBed.createComponent(AppComponent);
     expect(fixture.componentInstance.title).toBe("privacyidea-webui");
   });

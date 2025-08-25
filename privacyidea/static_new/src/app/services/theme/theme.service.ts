@@ -1,6 +1,6 @@
 // src/app/services/theme/theme.service.ts
 import { DOCUMENT } from "@angular/common";
-import { Injectable, Renderer2, RendererFactory2, inject, signal } from "@angular/core";
+import { inject, Injectable, Renderer2, RendererFactory2, signal } from "@angular/core";
 import { APP_THEME_STORAGE_KEY } from "../../core/constants";
 
 export type ThemeMode = "light" | "dark" | "system";
@@ -9,11 +9,11 @@ export type ThemeMode = "light" | "dark" | "system";
   providedIn: "root"
 })
 export class ThemeService {
+  public readonly currentTheme = signal<ThemeMode>("system");
+  private readonly visualTheme = signal<"light" | "dark">("light");
   private renderer: Renderer2;
   private htmlElement: HTMLHtmlElement;
   private mediaQueryListener?: (event: MediaQueryListEvent) => void;
-  public readonly currentTheme = signal<ThemeMode>("system");
-  private readonly visualTheme = signal<"light" | "dark">("light");
 
   constructor(private rendererFactory: RendererFactory2) {
     this.renderer = this.rendererFactory.createRenderer(null, null);

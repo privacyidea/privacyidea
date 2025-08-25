@@ -43,4 +43,5 @@ import { ContainerCreateComponent } from "./container-create.component";
   templateUrl: "./container-create.self-service.component.html",
   styleUrl: "./container-create.component.scss"
 })
-export class ContainerCreateSelfServiceComponent extends ContainerCreateComponent {}
+export class ContainerCreateSelfServiceComponent extends ContainerCreateComponent {
+}

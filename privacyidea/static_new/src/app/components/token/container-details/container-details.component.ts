@@ -8,7 +8,7 @@ import {
   linkedSignal,
   signal,
   ViewChild,
-  WritableSignal,
+  WritableSignal
 } from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
@@ -29,30 +29,17 @@ import {
   ContainerDetailData,
   ContainerDetailToken,
   ContainerService,
-  ContainerServiceInterface,
+  ContainerServiceInterface
 } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import {
-  OverflowService,
-  OverflowServiceInterface,
-} from "../../../services/overflow/overflow.service";
+import { OverflowService, OverflowServiceInterface } from "../../../services/overflow/overflow.service";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
-import {
-  TableUtilsService,
-  TableUtilsServiceInterface,
-} from "../../../services/table-utils/table-utils.service";
-import {
-  TokenDetails,
-  TokenService,
-  TokenServiceInterface,
-} from "../../../services/token/token.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
+import { TokenDetails, TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import {
-  EditableElement,
-  EditButtonsComponent,
-} from "../../shared/edit-buttons/edit-buttons.component";
+import { EditableElement, EditButtonsComponent } from "../../shared/edit-buttons/edit-buttons.component";
 import { infoDetailsKeyMap } from "../token-details/token-details.component";
 import { ContainerDetailsInfoComponent } from "./container-details-info/container-details-info.component";
 import { ContainerDetailsTokenTableComponent } from "./container-details-token-table/container-details-token-table.component";
@@ -61,20 +48,20 @@ export const containerDetailsKeyMap = [
   { key: "type", label: "Type" },
   { key: "states", label: "Status" },
   { key: "description", label: "Description" },
-  { key: "realms", label: "Realms" },
+  { key: "realms", label: "Realms" }
 ];
 
 const containerUserDetailsKeyMap = [
   { key: "user_realm", label: "User Realm" },
   { key: "user_name", label: "User" },
   { key: "user_resolver", label: "Resolver" },
-  { key: "user_id", label: "User ID" },
+  { key: "user_id", label: "User ID" }
 ];
 
 const allowedTokenTypesMap = new Map<string, string | string[]>([
   ["yubikey", ["certificate", "hotp", "passkey", "webauthn", "yubico", "yubikey"]],
   ["smartphone", ["daypassword", "hotp", "push", "sms", "totp"]],
-  ["generic", "all"],
+  ["generic", "all"]
 ]);
 
 interface TokenOption {
@@ -109,10 +96,10 @@ interface TokenOption {
     MatDivider,
     MatCheckbox,
     CopyButtonComponent,
-    ClearableInputComponent,
+    ClearableInputComponent
   ],
   templateUrl: "./container-details.component.html",
-  styleUrls: ["./container-details.component.scss"],
+  styleUrls: ["./container-details.component.scss"]
 })
 export class ContainerDetailsComponent {
   protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
@@ -152,7 +139,7 @@ export class ContainerDetailsComponent {
         return new MatTableDataSource(tokenResource.result?.value.tokens);
       }
       return previous?.value ?? new MatTableDataSource();
-    },
+    }
   });
   total: WritableSignal<number> = linkedSignal({
     source: this.tokenResource.value,
@@ -161,7 +148,7 @@ export class ContainerDetailsComponent {
         return tokenResource.result?.value.count;
       }
       return previous?.value ?? 0;
-    },
+    }
   });
 
   containerDetailResource = this.containerService.containerDetailResource;
@@ -185,14 +172,14 @@ export class ContainerDetailsComponent {
             user_realm: "",
             user_name: "",
             user_resolver: "",
-            user_id: "",
-          },
+            user_id: ""
+          }
         ],
         user_realm: "",
-        realms: [],
+        realms: []
       };
       return emptyContainerDetails;
-    },
+    }
   });
   containerDetailData = linkedSignal({
     source: this.containerDetails,
@@ -201,17 +188,17 @@ export class ContainerDetailsComponent {
         return containerDetailsKeyMap.map((detail) => ({
           keyMap: detail,
           value: "",
-          isEditing: signal(false),
+          isEditing: signal(false)
         }));
       }
       return containerDetailsKeyMap
         .map((detail) => ({
           keyMap: detail,
           value: (containerDetails as any)[detail.key],
-          isEditing: signal(false),
+          isEditing: signal(false)
         }))
         .filter((detail) => detail.value !== undefined);
-    },
+    }
   });
   infoData = linkedSignal({
     source: this.containerDetails,
@@ -220,17 +207,17 @@ export class ContainerDetailsComponent {
         return infoDetailsKeyMap.map((detail) => ({
           keyMap: detail,
           value: "",
-          isEditing: signal(false),
+          isEditing: signal(false)
         }));
       }
       return infoDetailsKeyMap
         .map((detail) => ({
           keyMap: detail,
           value: (containerDetails as any)[detail.key],
-          isEditing: signal(false),
+          isEditing: signal(false)
         }))
         .filter((detail) => detail.value !== undefined);
-    },
+    }
   });
   containerTokenData: WritableSignal<MatTableDataSource<ContainerDetailToken, MatPaginator>> =
     linkedSignal({
@@ -240,13 +227,13 @@ export class ContainerDetailsComponent {
           return previous?.value ?? new MatTableDataSource<ContainerDetailToken, MatPaginator>([]);
         }
         return new MatTableDataSource<ContainerDetailToken, MatPaginator>(
-          containerDetails.tokens ?? [],
+          containerDetails.tokens ?? []
         );
-      },
+      }
     });
   selectedRealms = linkedSignal({
     source: this.containerDetails,
-    computation: (containerDetails) => containerDetails?.realms || [],
+    computation: (containerDetails) => containerDetails?.realms || []
   });
   rawUserData = linkedSignal({
     source: this.containerDetails,
@@ -260,11 +247,11 @@ export class ContainerDetailsComponent {
           user_realm: "",
           user_name: "",
           user_resolver: "",
-          user_id: "",
+          user_id: ""
         };
       }
       return containerDetails.users[0];
-    },
+    }
   });
   userData = linkedSignal({
     source: this.rawUserData,
@@ -273,14 +260,14 @@ export class ContainerDetailsComponent {
         .map((detail) => ({
           keyMap: detail,
           value: user[detail.key as keyof typeof user],
-          isEditing: signal(false),
+          isEditing: signal(false)
         }))
         .filter((detail) => detail.value !== undefined);
-    },
+    }
   });
   userRealm = linkedSignal({
     source: this.rawUserData,
-    computation: (user) => user.user_realm || "",
+    computation: (user) => user.user_realm || ""
   });
 
   isAnyEditing = computed(() => {
@@ -409,7 +396,7 @@ export class ContainerDetailsComponent {
       .assignUser({
         containerSerial: this.containerSerial(),
         username: this.userService.userNameFilter(),
-        userRealm: this.userService.selectedUserRealm(),
+        userRealm: this.userService.selectedUserRealm()
       })
       .subscribe({
         next: () => {
@@ -417,7 +404,7 @@ export class ContainerDetailsComponent {
           this.userService.selectedUserRealm.set("");
           this.isEditingUser.update((b) => !b);
           this.containerDetailResource.reload();
-        },
+        }
       });
   }
 
@@ -429,7 +416,7 @@ export class ContainerDetailsComponent {
       .subscribe({
         next: () => {
           this.containerDetailResource.reload();
-        },
+        }
       });
   }
 
@@ -447,7 +434,7 @@ export class ContainerDetailsComponent {
       next: () => {
         this.containerDetailResource.reload();
         this.tokenService.tokenResource.reload();
-      },
+      }
     });
   }
 
@@ -457,18 +444,18 @@ export class ContainerDetailsComponent {
       .subscribe({
         next: () => {
           this.containerDetailResource.reload();
-        },
+        }
       });
   }
 
   saveDescription() {
     const description = this.containerDetailData().find(
-      (detail) => detail.keyMap.key === "description",
+      (detail) => detail.keyMap.key === "description"
     )?.value;
     this.containerService.setContainerDescription(this.containerSerial(), description).subscribe({
       next: () => {
         this.containerDetailResource.reload();
-      },
+      }
     });
   }
 }

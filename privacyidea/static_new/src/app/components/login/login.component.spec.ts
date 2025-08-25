@@ -124,8 +124,20 @@ describe("LoginComponent", () => {
         detail: {
           transaction_id: "02247192477167467513",
           multi_challenge: [
-            { client_mode: "interactive", message: "please enter otp: ", serial: "OATH0000719A", transaction_id: "02247192477167467513", type: "hotp" },
-            { client_mode: "interactive", message: "please enter otp: ", serial: "OATH000545CD", transaction_id: "02247192477167467513", type: "hotp" },
+            {
+              client_mode: "interactive",
+              message: "please enter otp: ",
+              serial: "OATH0000719A",
+              transaction_id: "02247192477167467513",
+              type: "hotp"
+            },
+            {
+              client_mode: "interactive",
+              message: "please enter otp: ",
+              serial: "OATH000545CD",
+              transaction_id: "02247192477167467513",
+              type: "hotp"
+            },
             {
               attributes: { webAuthnSignRequest: webAuthnSignRequestData },
               client_mode: "webauthn",

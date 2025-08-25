@@ -1,40 +1,67 @@
 <div
   aria-label="User Layout"
-  class="user-layout">
+  class="user-layout"
+  i18n-aria-label>
   <mat-card
     appearance="outlined"
     class="user-self-service-card">
     <mat-card-header>
-      <mat-card-title>Your Details</mat-card-title>
+      <mat-card-title i18n>Your Details</mat-card-title>
     </mat-card-header>
     <mat-card-content>
       <div class="user-details-grid">
-
         <div class="user-details-column">
-          <div class="label">Username</div>
+          <div
+            class="label"
+            i18n>
+            Username
+          </div>
           <div class="value">{{ userData().username || "-" }}</div>
 
-          <div class="label">Given name</div>
+          <div
+            class="label"
+            i18n>
+            Given name
+          </div>
           <div class="value">{{ userData().givenname || "-" }}</div>
 
-          <div class="label">Surname</div>
+          <div
+            class="label"
+            i18n>
+            Surname
+          </div>
           <div class="value">{{ userData().surname || "-" }}</div>
 
-          <div class="label">Description</div>
+          <div
+            class="label"
+            i18n>
+            Description
+          </div>
           <div class="value">{{ userData().description || "-" }}</div>
         </div>
 
         <div class="user-details-column">
-          <div class="label">Email</div>
+          <div
+            class="label"
+            i18n>
+            Email
+          </div>
           <div class="value">{{ userData().email || "-" }}</div>
 
-          <div class="label">Phone</div>
+          <div
+            class="label"
+            i18n>
+            Phone
+          </div>
           <div class="value">{{ userData().phone || "-" }}</div>
 
-          <div class="label">Mobile</div>
+          <div
+            class="label"
+            i18n>
+            Mobile
+          </div>
           <div class="value">{{ userData().mobile || "-" }}</div>
         </div>
-
       </div>
     </mat-card-content>
   </mat-card>

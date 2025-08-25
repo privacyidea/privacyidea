@@ -1,6 +1,7 @@
 <div
+  appScrollToTop
   aria-label="Details"
-  class="details-container" appScrollToTop>
+  class="details-container">
   <div class="details-flex-layout flex-column">
     <div class="container-details-header">
       <h3>Details for Container:</h3>
@@ -56,7 +57,7 @@
                               >{{ option }}
                             </mat-option>
                           } @else {
-                            <mat-option value="{{ option }}">{{ option }} </mat-option>
+                            <mat-option value="{{ option }}">{{ option }}</mat-option>
                           }
                         }
                       </mat-select>
@@ -165,14 +166,11 @@
                   @if (isEditingUser()) {
                     <mat-form-field class="width-18rem">
                       <mat-label>Select Realm of User</mat-label>
-                      <mat-select [(ngModel)]="userService.selectedUserRealm"
-                                  [value]="userService.selectedUserRealm()">
-                        @for (option of realmService.realmOptions();
-                          track option) {
-                          <mat-option value="{{ option }}">{{
-                              option
-                            }}
-                          </mat-option>
+                      <mat-select
+                        [(ngModel)]="userService.selectedUserRealm"
+                        [value]="userService.selectedUserRealm()">
+                        @for (option of realmService.realmOptions(); track option) {
+                          <mat-option value="{{ option }}">{{ option }} </mat-option>
                         }
                       </mat-select>
                     </mat-form-field>

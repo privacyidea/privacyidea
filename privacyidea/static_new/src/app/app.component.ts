@@ -105,7 +105,8 @@ export class AppComponent implements OnInit {
     }
   }
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+  }
 
   @HostListener("document:click")
   @HostListener("document:keydown")

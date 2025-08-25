@@ -5,10 +5,9 @@ import { Directive, ElementRef, HostListener, Renderer2 } from "@angular/core";
   standalone: true
 })
 export class ScrollToTopDirective {
+  private readonly SCROLL_THRESHOLD = 200;
   private button!: HTMLElement;
   private isButtonVisible = false;
-
-  private readonly SCROLL_THRESHOLD = 200;
 
   constructor(
     private el: ElementRef,

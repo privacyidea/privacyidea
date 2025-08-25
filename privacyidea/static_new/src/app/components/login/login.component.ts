@@ -41,12 +41,9 @@ export class LoginComponent implements OnDestroy {
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
   private readonly validateService: ValidateServiceInterface = inject(ValidateService);
-
-  @ViewChild("otpInput") otpInput!: ElementRef<HTMLInputElement>;
-
   private transactionId = "";
   private pollingSubscription: Subscription | null = null;
-
+  @ViewChild("otpInput") otpInput!: ElementRef<HTMLInputElement>;
   username = signal<string>("");
   password = signal<string>("");
   otp = signal<string>("");

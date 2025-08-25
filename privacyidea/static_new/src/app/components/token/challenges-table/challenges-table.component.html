@@ -1,17 +1,24 @@
-<div class="challenges-table-container" appScrollToTop>
-  <h3 class="margin-left-1">Challenges</h3>
+<div
+  appScrollToTop
+  class="challenges-table-container">
+  <h3
+    class="margin-left-1"
+    i18n>
+    Challenges
+  </h3>
   <div class="filter-paginator-container">
     <mat-form-field
       appearance="fill"
       class="challenges-table-filter"
       subscriptSizing="dynamic">
-      <mat-label>Enter Filter</mat-label>
+      <mat-label i18n>Enter Filter</mat-label>
       <app-clearable-input
         (onClick)="filterInput.value = ''; onFilterChange('')"
         [showClearButton]="filterInput.value.length > 0">
         <input
           #filterInput
           (keyup)="onFilterChange(filterInput.value)"
+          i18n-placeholder
           matInput
           placeholder="Example query: 'transaction_id: 00000000000000000001'" />
       </app-clearable-input>
@@ -35,6 +42,7 @@
     [matSortDisableClear]="false"
     aria-label="Token Challenges Table"
     class="challenges-table"
+    i18n-aria-label
     mat-table
     matSort>
     @for (column of columnsKeyMap; track column) {
@@ -80,17 +88,22 @@
     <tr
       *matHeaderRowDef="displayedColumns"
       aria-label="Header Row"
+      i18n-aria-label
       mat-header-row></tr>
     <tr
       *matRowDef="let row; columns: displayedColumns"
       aria-label="Data Row"
+      i18n-aria-label
       mat-row></tr>
     <tr
       *matNoDataRow
-      aria-label="No Data Row">
+      aria-label="No Data Row"
+      i18n-aria-label>
       <td
         [attr.colspan]="displayedColumns.length"
-        aria-label="No Data Cell">
+        aria-label="No Data Cell"
+        i18n
+        i18n-aria-label>
         No data matching the filter.
       </td>
     </tr>

@@ -29,7 +29,7 @@ describe("AuthGuard — CanMatch helpers", () => {
     });
   });
 
-  it('adminMatch returns true only for role "admin"', () => {
+  it("adminMatch returns true only for role \"admin\"", () => {
     const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
 
     auth.role.mockReturnValue("admin");
@@ -39,7 +39,7 @@ describe("AuthGuard — CanMatch helpers", () => {
     expect(runMatch(adminMatch)).toBe(false);
   });
 
-  it('selfServiceMatch returns true only for role "user"', () => {
+  it("selfServiceMatch returns true only for role \"user\"", () => {
     const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
 
     auth.role.mockReturnValue("user");
@@ -70,7 +70,8 @@ describe("AuthGuard class", () => {
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
-    jest.spyOn(console, "warn").mockImplementation(() => {});
+    jest.spyOn(console, "warn").mockImplementation(() => {
+    });
     (routerMock.navigate as jest.Mock).mockClear();
   });
 

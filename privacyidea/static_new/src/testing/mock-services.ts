@@ -126,7 +126,8 @@ export class MockHttpResourceRef<T> implements HttpResourceRef<T> {
     return this.value() !== undefined;
   }
 
-  destroy(): void {}
+  destroy(): void {
+  }
 
   set(value: T): void {
     this.value.set(value);
@@ -327,7 +328,9 @@ export class MockAuthService implements AuthServiceInterface {
     readonly localService: LocalServiceInterface = new MockLocalService(),
     readonly notificationService: NotificationServiceInterface = new MockNotificationService(),
     readonly versioningService: VersioningService = new VersioningService()
-  ) {}
+  ) {
+  }
+
   jwtData: WritableSignal<JwtData | null> = signal({
     username: "",
     realm: "",
@@ -482,7 +485,8 @@ export class MockContentService implements ContentServiceInterface {
   });
   isProgrammaticTabChange = signal(false);
 
-  constructor(public authService: MockAuthService = new MockAuthService()) {}
+  constructor(public authService: MockAuthService = new MockAuthService()) {
+  }
 }
 
 export class MockContainerService implements ContainerServiceInterface {
@@ -951,7 +955,8 @@ export class MockMachineService implements MachineServiceInterface {
     public http: HttpClient = new HttpClient({} as any),
     public authService: AuthServiceInterface = new MockAuthService(),
     public tableUtilsService: TableUtilsServiceInterface = new MockTableUtilsService()
-  ) {}
+  ) {
+  }
 
   postAssignMachineToToken(args: {
     service_id: string;
