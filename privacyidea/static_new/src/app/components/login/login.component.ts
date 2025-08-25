@@ -84,24 +84,23 @@ export class LoginComponent implements OnDestroy {
 
   onSubmit() {
     const username = this.username();
-    const password = this.password();
+    const isChallengeResponse = this.showOtpField();
+    const password = isChallengeResponse ? this.otp() : this.password();
 
-    this.authService.authenticate({ username, password }).subscribe({
-      next: (response) => {
-        if (
-          response.result &&
-          response.result?.value &&
-          response.result?.value.token &&
-          this.authService.isAuthenticated()
-        ) {
-          this.sessionTimerService.startRefreshingRemainingTime();
-          this.sessionTimerService.startTimer();
-          this.router.navigateByUrl(ROUTE_PATHS.TOKENS);
-        } else {
-          console.error("Login failed. Challenge response required.");
-          this.notificationService.openSnackBar("Login failed. Challenge response required.");
-        }
-      }
+    const params: any = { username, password };
+
+    if (isChallengeResponse) {
+      this.stopPushPolling();
+      this.loginMessage.set([]);
+      this.errorMessage.set("");
+      params.transaction_id = this.transactionId;
+    } else {
+      this.resetChallengeState();
+    }
+
+    this.authService.authenticate(params).subscribe({
+      next: (response) => this.evaluateResponse(response, "password"),
+      error: (err) => this.handleError(err, "password")
     });
   }
 
@@ -111,11 +110,7 @@ export class LoginComponent implements OnDestroy {
       console.error("WebAuthn sign request not available.");
       return;
     }
-    this.loginMessage.set([]);
-    this.errorMessage.set("");
 
-    // The validateService handles the WebAuthn ceremony (navigator.credentials.get)
-    // and then posts the result back for verification.
     this.validateService
       .authenticateWebAuthn({
         signRequest: signRequest,
@@ -129,7 +124,6 @@ export class LoginComponent implements OnDestroy {
   }
 
   passkeyLogin(): void {
-    this.resetChallengeState();
     this.validateService.authenticatePasskey().subscribe({
       next: (response) => this.evaluateResponse(response, "passkey"),
       error: (err: any) => this.handleError(err, "passkey")
@@ -145,7 +139,6 @@ export class LoginComponent implements OnDestroy {
     this.resetChallengeState();
     this.showOtpField.set(false);
     this.otp.set("");
-    // For security, it's good practice to clear the password field.
     this.password.set("");
   }
 
@@ -154,7 +147,7 @@ export class LoginComponent implements OnDestroy {
   }
 
   private startPushPolling(): void {
-    this.stopPushPolling(); // Ensure no other polling is running
+    this.stopPushPolling();
 
     const poll$ = timer(0, PUSH_POLLING_INTERVAL_MS).pipe(
       switchMap(() => this.validateService.pollTransaction(this.transactionId)),
@@ -175,7 +168,6 @@ export class LoginComponent implements OnDestroy {
     this.pollingSubscription = poll$.subscribe({
       next: (success) => {
         if (success) {
-          // The user is authenticated on the server, now we need the token.
           this.authService
             .authenticate({
               username: this.username(),
@@ -237,13 +229,13 @@ export class LoginComponent implements OnDestroy {
         webauthn: "Login with WebAuthn failed."
       };
       if (response.detail.multi_challenge?.length) {
-        this.loginMessage.set(response.detail.multi_challenge.map((c) => c.message));
+        this.loginMessage.set([...new Set(response.detail.multi_challenge.map((c) => c.message))]);
       } else {
         const message = response.detail.message || defaultMessages[context];
         this.loginMessage.set([message]);
       }
     } else {
-      // This is a hard failure (e.g. REJECT or other error within a 200 OK response)
+      // fail
       const defaultMessages = {
         password: "Authentication failed.",
         passkey: "Login with passkey failed.",

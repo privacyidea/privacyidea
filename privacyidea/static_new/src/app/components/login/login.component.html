@@ -10,7 +10,7 @@
       ngSrc="assets/privacyIDEA1.png"
       ngSrcset="1x"
       sizes="(max-width: 307px) 100vw, 307px"
-      width="307" />
+      width="307"/>
 
     <img
       alt="logo-text"
@@ -20,7 +20,7 @@
       ngSrc="assets/logo-text.png"
       ngSrcset="1x"
       sizes="(max-width: 575px) 100vw, 575px"
-      width="575" />
+      width="575"/>
 
     <form
       (ngSubmit)="onSubmit()"
@@ -39,18 +39,18 @@
         </div>
       }
 
-      <mat-form-field appearance="outline">
-        @if (!showOtpField()) {
+      @if (!showOtpField()) {
+        <mat-form-field appearance="outline">
           <mat-label>Username</mat-label>
-        }
-        <input
-          [(ngModel)]="username"
-          id="username"
-          matInput
-          name="username"
-          required
-          type="text" />
-      </mat-form-field>
+          <input
+            [(ngModel)]="username"
+            id="username"
+            matInput
+            name="username"
+            required
+            type="text"/>
+        </mat-form-field>
+      }
 
       @if (!showOtpField()) {
         <mat-form-field appearance="outline">
@@ -61,7 +61,7 @@
             matInput
             name="password"
             required
-            type="password" />
+            type="password"/>
         </mat-form-field>
       }
 
@@ -76,7 +76,7 @@
             name="otp"
             required
             autocomplete="new-password"
-            type="otp" />
+            type="text"/>
         </mat-form-field>
       }
 
