@@ -99,7 +99,7 @@ class VascoTokenClass(TokenClass):
                'title': 'VASCO Token',
                'description': _('VASCO Token: Authentication using VASCO tokens'),
                # If this was set, the user could enroll a Vasco token via the API
-               #'user': ["enroll"],
+               # 'user': ["enroll"],
                # only administrators can enroll the token in the UI
                'ui_enroll': ["admin"],
                'policy': {
@@ -175,11 +175,13 @@ class VascoTokenClass(TokenClass):
                 # wrong OTP value, no log message
                 pass
             elif result == 201:
-                log.warning("VASCO token failed to authenticate, code replay attempt, previous OTP value was used again!")
+                log.warning(
+                    "VASCO token failed to authenticate, code replay attempt, previous OTP value was used again!")
             elif result == 202:
                 log.warning("Token-internal fail counter reached its maximum!")
             elif result == -202:
-                log.warning("VASCO token failed to authenticate, response too small, user did not type his complete OTP!")
+                log.warning(
+                    "VASCO token failed to authenticate, response too small, user did not type his complete OTP!")
             elif result == -205:
                 log.warning("VASCO token failed to authenticate, response not decimal!")
             else:
@@ -196,4 +198,5 @@ class VascoTokenClass(TokenClass):
         """
         Import for this token is not supported.
         """
+        self.token.delete()
         raise NotImplementedError("Import for VASCO token is not supported.")

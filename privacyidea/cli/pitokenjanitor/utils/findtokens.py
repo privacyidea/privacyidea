@@ -550,8 +550,10 @@ def list_cmd(ctx, user_attributes, token_attributes, sum_tokens):
 @click.option('--file', required=False, type=click.File('w'), default=sys.stdout,
               show_default="<stdout>",
               help='The file to export the tokens to.')
+@click.option('--user/--no-user', default=True,
+              help='Include user information.')
 @click.pass_context
-def export(ctx, export_format, b32, file):
+def export(ctx, export_format, b32, file, user):
     """
     Export found tokens.
     """
@@ -573,7 +575,7 @@ def export(ctx, export_format, b32, file):
                 if tokenobj.type.lower() not in ["totp", "hotp"]:
                     continue
                 token_dict = tokenobj._to_dict(b32=b32)
-                owner = f"{tokenobj.user.login}@{tokenobj.user.realm}" if tokenobj.user else "n/a"
+                owner = f"{tokenobj.user.login}@{tokenobj.user.realm}" if (tokenobj.user and user) else "n/a"
                 export_string = (f"{owner}, {token_dict.get('serial')}, {token_dict.get('otpkey')}, "
                                  f"{token_dict.get('type')}, {token_dict.get('otplen')}")
                 if tokenobj.type.lower() == "totp":
@@ -588,7 +590,7 @@ def export(ctx, export_format, b32, file):
             for tokenobj in tlist:
                 try:
                     token_dict = tokenobj._to_dict(b32=b32)
-                    token_dict["owner"] = f"{tokenobj.user.login}@{tokenobj.user.realm}" if tokenobj.user else "n/a"
+                    token_dict["owner"] = f"{tokenobj.user.login}@{tokenobj.user.realm}" if (tokenobj.user and user) else "n/a"
                     token_list.append(token_dict)
                 except Exception as e:
                     sys.stderr.write(f"\nFailed to export token {tokenobj.get_serial()} ({e}).\n")
@@ -598,7 +600,7 @@ def export(ctx, export_format, b32, file):
         key = Fernet.generate_key().decode()
         exported_tokens_chunks = []
         for tlist in ctx.obj['tokens']:
-            exported_tokens_chunks.extend(export_tokens(tlist))
+            exported_tokens_chunks.extend(export_tokens(tlist, export_user=user))
         list_of_exported_tokens = json.dumps(exported_tokens_chunks, default=repr, indent=2)
         f = Fernet(key)
         file.write(f.encrypt(list_of_exported_tokens.encode()).decode())

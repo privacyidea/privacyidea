@@ -5,10 +5,11 @@ This depends on lib.tokenclass
 import logging
 
 from testfixtures import LogCapture
-from .base import MyTestCase
-from privacyidea.lib.tokens.tantoken import TanTokenClass
+
 from privacyidea.lib.token import init_token, import_token, remove_token, import_tokens, get_tokens
+from privacyidea.lib.tokens.tantoken import TanTokenClass
 from privacyidea.models import Token
+from .base import MyTestCase
 
 OTPKEY = "3132333435363738393031323334353637383930"
 
@@ -155,15 +156,15 @@ class TanTokenTestCase(MyTestCase):
         self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
 
         expected_tokeninfo_keys = ["hashlib", "tokenkind"]
-        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["info_list"].keys()))
 
         # Test that the exported values match the token's data
         self.assertEqual(exported_data["serial"], "PITN0000B9CE")
         self.assertEqual(exported_data["type"], "tan")
         self.assertEqual(exported_data["description"], "this is a tan token export test")
-        self.assertEqual(exported_data["tokeninfo"]["hashlib"], "sha256")
+        self.assertEqual(exported_data["info_list"]["hashlib"], "sha256")
         self.assertEqual(exported_data["otpkey"], token.token.get_otpkey().getKey().decode("utf-8"))
-        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
+        self.assertEqual(exported_data["info_list"]["tokenkind"], "software")
         self.assertEqual(exported_data["issuer"], "privacyIDEA")
 
         # Clean up
@@ -176,7 +177,7 @@ class TanTokenTestCase(MyTestCase):
             "type": "paper",
             "description": "this is a paper token import test",
             "otpkey": OTPKEY,
-            "tokeninfo": {'hashlib': 'sha256',
+            "info_list": {'hashlib': 'sha256',
                           'tan.tan0': '3224ea1f:1f234536a59c4998c43d3d18247e210be9a42e38e43c71ab5de8e8879068dde0',
                           'tan.tan1': '2de3b273:417b3ca840815c976b0d78b540011fc738081772bf60940a70d2f09111165896',
                           'tan.tan10': '2d61bc1a:5310cfda92e6dc5e33be36e55bc204084e61068e97c869343ab0c77b06aa9c58',
@@ -197,8 +198,8 @@ class TanTokenTestCase(MyTestCase):
         self.assertEqual(token.type, token_data[0]["type"])
         self.assertEqual(token.token.description, token_data[0]["description"])
         self.assertEqual(token.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
-        self.assertEqual(token.get_tokeninfo("hashlib"), token_data[0]["tokeninfo"]["hashlib"])
-        self.assertEqual(token.get_tokeninfo("tokenkind"), token_data[0]["tokeninfo"]["tokenkind"])
+        self.assertEqual(token.get_tokeninfo("hashlib"), token_data[0]["info_list"]["hashlib"])
+        self.assertEqual(token.get_tokeninfo("tokenkind"), token_data[0]["info_list"]["tokenkind"])
 
         # Check that the token works
         r = token.check_otp('875740')

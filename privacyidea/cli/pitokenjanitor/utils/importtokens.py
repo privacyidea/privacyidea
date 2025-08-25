@@ -104,8 +104,9 @@ def pskc(pskc_file, preshared_key, validate_mac):
 @click.argument('file', nargs=1, type=click.File())
 @click.option('--key', required=True, type=str,
               help='The encryption key given by PrivacyIDEA during token export.')
+@click.option('--user/--no-user', default=False)
 @click.pass_context
-def import_token_from_privacyidea(ctx, file, key):
+def import_token_from_privacyidea(ctx, file, key, user):
     """
     Import tokens from a PrivacyIDEA token file.
 
@@ -143,7 +144,7 @@ def import_token_from_privacyidea(ctx, file, key):
         ctx.exit(1)
 
     try:
-        ret = import_tokens(token_list)
+        ret = import_tokens(token_list, assign_to_user=user)
         click.echo(f"{len(ret.successful_tokens)} tokens imported successfully.\n"
                    f"{len(ret.failed_tokens)} tokens failed to import.\n"
                    f"{len(ret.updated_tokens)} tokens updated.\n")

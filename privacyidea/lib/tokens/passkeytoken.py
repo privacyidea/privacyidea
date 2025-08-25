@@ -47,8 +47,8 @@ from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
 from privacyidea.lib.fido2.util import hash_credential_id, save_credential_id_hash
 from privacyidea.lib.log import log_with
-from privacyidea.lib.policy import SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import SCOPE
 from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE, CLIENTMODE, AUTHENTICATIONMODE
 from privacyidea.models import Challenge
 
@@ -470,3 +470,12 @@ class PasskeyTokenClass(TokenClass):
             return False, -1, None
         otp_match = self.check_otp(None, 0, None, options)
         return pin_match, otp_match, None
+
+    def import_token(self, token_information: dict):
+        """
+        Import a hotp token.
+        """
+        TokenClass.import_token(self, token_information)
+        if self.user:
+            self.user.set_attribute(FIDO2TokenInfo.USER_ID,
+                                    self.token.get_tokeninfo(FIDO2TokenInfo.USER_ID, default=""))

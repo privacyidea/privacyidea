@@ -4,18 +4,19 @@ This test file tests the lib.tokens.daypasswordtoken.py
 import binascii
 import logging
 import time
-from testfixtures import LogCapture
 from unittest import mock
 
-from privacyidea.lib.token import init_token, remove_token, import_tokens, get_tokens
-from .base import MyTestCase, FakeAudit, FakeFlaskG
-from privacyidea.lib.resolver import (save_resolver)
-from privacyidea.lib.realm import (set_realm)
-from privacyidea.lib.user import (User)
-from privacyidea.lib.policy import (PolicyClass, set_policy, delete_policy, SCOPE)
-from privacyidea.models import (Token, Config, Challenge)
+from testfixtures import LogCapture
+
 from privacyidea.lib.config import set_prepend_pin
+from privacyidea.lib.policy import (PolicyClass, set_policy, delete_policy, SCOPE)
+from privacyidea.lib.realm import (set_realm)
+from privacyidea.lib.resolver import (save_resolver)
+from privacyidea.lib.token import init_token, remove_token, import_tokens, get_tokens
 from privacyidea.lib.tokens.daypasswordtoken import DayPasswordTokenClass
+from privacyidea.lib.user import (User)
+from privacyidea.models import (Token, Config, Challenge)
+from .base import MyTestCase, FakeAudit, FakeFlaskG
 
 PWFILE = "tests/testdata/passwords"
 
@@ -683,15 +684,15 @@ class DayPasswordTokenTestCase(MyTestCase):
         self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
 
         expected_tokeninfo_keys = ["hashlib", "tokenkind"]
-        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["info_list"].keys()))
 
         # Test that the exported values match the token's data
         self.assertEqual(exported_data["serial"], "DAYPASS12345678")
         self.assertEqual(exported_data["type"], "daypassword")
         self.assertEqual(exported_data["description"], "this is a day password token export test")
-        self.assertEqual(exported_data["tokeninfo"]["hashlib"], "sha256")
+        self.assertEqual(exported_data["info_list"]["hashlib"], "sha256")
         self.assertEqual(exported_data["otpkey"], '12345')
-        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
+        self.assertEqual(exported_data["info_list"]["tokenkind"], "software")
         self.assertEqual(exported_data["issuer"], "privacyIDEA")
 
         # Clean up
@@ -706,7 +707,7 @@ class DayPasswordTokenTestCase(MyTestCase):
             "otpkey": self.otpkey,
             "issuer": "privacyIDEA",
             "count": 470184,
-            "tokeninfo": {"hashlib": "sha1", "timeShift": 0, "timeStep": 3600, "timeWindow": 180,
+            "info_list": {"hashlib": "sha1", "timeShift": 0, "timeStep": 3600, "timeWindow": 180,
                           "tokenkind": "software"}
         }]
 
@@ -721,8 +722,8 @@ class DayPasswordTokenTestCase(MyTestCase):
         self.assertEqual(daypasswordtoken.type, token_data[0]["type"])
         self.assertEqual(daypasswordtoken.token.description, token_data[0]["description"])
         self.assertEqual(daypasswordtoken.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
-        self.assertEqual(daypasswordtoken.get_tokeninfo("hashlib"), token_data[0]["tokeninfo"]["hashlib"])
-        self.assertEqual(daypasswordtoken.get_tokeninfo("tokenkind"), token_data[0]["tokeninfo"]["tokenkind"])
+        self.assertEqual(daypasswordtoken.get_tokeninfo("hashlib"), token_data[0]["info_list"]["hashlib"])
+        self.assertEqual(daypasswordtoken.get_tokeninfo("tokenkind"), token_data[0]["info_list"]["tokenkind"])
         self.assertEqual(daypasswordtoken.token.count, token_data[0]["count"])
 
         with mock.patch('time.time') as MockTime:

@@ -3,31 +3,31 @@ This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
-import warnings
-from testfixtures import log_capture
-
-from privacyidea.lib.token import import_tokens, get_tokens, init_token, remove_token
-from .base import MyTestCase, FakeFlaskG, FakeAudit
-from privacyidea.lib.error import ParameterError
-from privacyidea.lib.resolver import (save_resolver)
-from privacyidea.lib.realm import (set_realm)
-from privacyidea.lib.user import (User)
-from privacyidea.lib.tokenclass import DATE_FORMAT
-from privacyidea.lib.utils import b32encode_and_unicode
-from privacyidea.lib.tokens.hotptoken import HotpTokenClass
-from privacyidea.models import (Token,
-                                Config,
-                                Challenge)
-from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
-from privacyidea.lib.policy import (PolicyClass, SCOPE, set_policy,
-                                    delete_policy)
 import binascii
 import datetime
 import hashlib
+import warnings
+
 import mock
 from dateutil.tz import tzlocal
-
 from passlib.crypto.digest import pbkdf2_hmac
+from testfixtures import log_capture
+
+from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
+from privacyidea.lib.error import ParameterError
+from privacyidea.lib.policy import (PolicyClass, SCOPE, set_policy,
+                                    delete_policy)
+from privacyidea.lib.realm import (set_realm)
+from privacyidea.lib.resolver import (save_resolver)
+from privacyidea.lib.token import import_tokens, get_tokens, init_token, remove_token
+from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.tokens.hotptoken import HotpTokenClass
+from privacyidea.lib.user import (User)
+from privacyidea.lib.utils import b32encode_and_unicode
+from privacyidea.models import (Token,
+                                Config,
+                                Challenge)
+from .base import MyTestCase, FakeFlaskG, FakeAudit
 
 PWFILE = "tests/testdata/passwords"
 
@@ -414,7 +414,7 @@ class HOTPTokenTestCase(MyTestCase):
         token = HotpTokenClass(db_token)
         # Wrong genkey is replaced with genkey=True
         token.update({"description": "new desc",
-                           "genkey": "17"})
+                      "genkey": "17"})
         self.assertEqual("new desc", token.token.description)
         # genkey and otpkey used at the same time
         token.update({"otpkey": self.otpkey,
@@ -870,17 +870,17 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
 
         expected_tokeninfo_keys = ["hashlib", "tokenkind"]
-        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["info_list"].keys()))
 
         # Test that the exported values match the token's data
         exported_data = hotptoken.export_token()
         self.assertEqual(exported_data["serial"], "OATH12345678")
         self.assertEqual(exported_data["type"], "hotp")
         self.assertEqual(exported_data["description"], "this is a hotp token export test")
-        self.assertEqual(exported_data["tokeninfo"]["hashlib"], "sha256")
+        self.assertEqual(exported_data["info_list"]["hashlib"], "sha256")
         self.assertEqual(exported_data["otplen"], 6)
         self.assertEqual(exported_data["otpkey"], '12345')
-        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
+        self.assertEqual(exported_data["info_list"]["tokenkind"], "software")
         self.assertEqual(exported_data["issuer"], "privacyIDEA")
         self.assertEqual(exported_data["count"], 0)
 
@@ -897,7 +897,7 @@ class HOTPTokenTestCase(MyTestCase):
             "otplen": 8,
             "issuer": "privacyIDEA",
             "count": 7,
-            "tokeninfo": {"hashlib": "sha256", "tokenkind": "software"}
+            "info_list": {"hashlib": "sha256", "tokenkind": "software"}
         }]
 
         # Import the token
@@ -911,8 +911,8 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertEqual(hotptoken.type, token_data[0]["type"])
         self.assertEqual(hotptoken.token.description, token_data[0]["description"])
         self.assertEqual(hotptoken.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
-        self.assertEqual(hotptoken.get_tokeninfo("hashlib"), token_data[0]["tokeninfo"]["hashlib"])
-        self.assertEqual(hotptoken.get_tokeninfo("tokenkind"), token_data[0]["tokeninfo"]["tokenkind"])
+        self.assertEqual(hotptoken.get_tokeninfo("hashlib"), token_data[0]["info_list"]["hashlib"])
+        self.assertEqual(hotptoken.get_tokeninfo("tokenkind"), token_data[0]["info_list"]["tokenkind"])
         self.assertEqual(hotptoken.export_token()["otplen"], token_data[0]["otplen"])
         self.assertEqual(hotptoken.token.count, token_data[0]["count"])
 
