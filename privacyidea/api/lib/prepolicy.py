@@ -71,7 +71,7 @@ from privacyidea.lib import _
 from privacyidea.lib.container import find_container_by_serial, get_container_realms
 from privacyidea.lib.containers.container_info import CHALLENGE_TTL, REGISTRATION_TTL, SERVER_URL
 from privacyidea.lib.error import (PolicyError, RegistrationError,
-                                   TokenAdminError, ResourceNotFoundError, AuthError)
+                                   TokenAdminError, ResourceNotFoundError, AuthError, ParameterError)
 from flask import g, current_app, Request
 
 from privacyidea.lib.policies.helper import check_max_auth_fail, check_max_auth_success, DEFAULT_JWT_VALIDITY
@@ -990,7 +990,8 @@ def required_email(request=None, action=None):
     """
     email = getParam(request.all_data, "email")
     email_found = False
-    email_pols = Match.action_only(g, scope=SCOPE.REGISTER, action=PolicyAction.REQUIREDEMAIL).action_values(unique=False)
+    email_pols = Match.action_only(g, scope=SCOPE.REGISTER, action=PolicyAction.REQUIREDEMAIL).action_values(
+        unique=False)
     if email and email_pols:
         for email_pol in email_pols:
             # The policy is only "/regularexpr/".
@@ -1310,52 +1311,58 @@ def check_token_action(request: Request = None, action: str = None):
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
     user_attributes = UserAttributes(role, username, realm, resolver, adminuser, adminrealm)
     user_attributes.user = user if user else None
-    serial_or_csv = params.get("serial")
-    serial_list = params.get("serials")
 
-    # Old API calls might provide the serials as a comma-separated list in the serial parameter
-    if serial_or_csv and ',' in serial_or_csv:
-        serial_list = serial_or_csv.split(',')
-        serial_or_csv = None
+    # Unify serial collection from 'serial' (single or CSV) and 'serials' (list/str) parameters.
+    all_serials = set()
+    serials = params.get("serials") or []
+    if isinstance(serials, str):
+        serials = serials.replace("[", "").replace("]", "").split(",")
+        for s in serials:
+            stripped = s.strip()
+            all_serials.add(stripped)
+    elif isinstance(serials, list):
+        for s in serials:
+            all_serials.add(s)
 
-    if serial_list:
-        if serial_or_csv and serial_or_csv not in serial_list:
-            serial_list.append(serial_or_csv)
+    serial_param = params.get("serial")
+    if serial_param:
+        for s in serial_param.split(','):
+            stripped = s.strip()
+            if stripped:
+                all_serials.add(stripped)
 
-        new_serials = []
-        not_authorized_serials = []
-        for serial in serial_list:
-            try:
-                allowed = check_token_action_allowed(g, action, serial, replace(user_attributes))
-            except ResourceNotFoundError:
-                allowed = False
-                log.info(f"Token {serial} not found. It is removed from the token list and will "
-                         f"not be further processed.")
-            except Exception as ex:
-                allowed = False
-                log.error(f"Error while checking action '{action}' on token {serial}: {ex}")
+    if not all_serials:
+        raise ParameterError("No serials provided")
 
-            if allowed:
-                new_serials.append(serial)
-            elif len(serial_list) == 1:
-                raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed!")
-            else:
-                not_authorized_serials.append(serial)
-                log.info(f"User {g.logged_in_user} is not allowed to manage token {serial}. "
-                         f"It is removed from the token list and will not further be processed in"
-                         f" the request.")
+    # Process the collected serials
+    authorized_serials = []
+    not_authorized_serials = []
+    for serial in all_serials:
+        try:
+            allowed = check_token_action_allowed(g, action, serial, replace(user_attributes))
+        except Exception as ex:  # pragma: no cover
+            allowed = False
+            log.error(f"Error while checking action '{action}' on token {serial}: {ex}")
 
-        request.all_data["serials"] = new_serials
-        # Add authorized serials to serial parameter too (Old API behavior)
-        request.all_data["serial"] = ",".join(new_serials)
-        request.all_data["not_authorized_serials"] = not_authorized_serials
-        return True
+        if allowed:
+            authorized_serials.append(serial)
+        else:
+            not_authorized_serials.append(serial)
 
-    action_allowed = check_token_action_allowed(g, action, serial_or_csv, user_attributes)
-    if serial_or_csv:
-        request.all_data["serials"] = [serial_or_csv]
-    if not action_allowed:
+    # If any serial was not authorized, and it was the only one provided, raise an error.
+    # This preserves the behavior of failing hard on single-token operations.
+    if not_authorized_serials and len(all_serials) == 1:
         raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed!")
+
+    # For multi-token operations, log the ones that were skipped.
+    for serial in not_authorized_serials:
+        log.info(f"User {g.logged_in_user} is not allowed to manage token {serial}. "
+                 f"It is removed from the token list and will not be further processed in the request.")
+
+    # Update the request with the list of serials the user is authorized to act on.
+    request.all_data["serials"] = authorized_serials
+    request.all_data["serial"] = ",".join(authorized_serials)
+    request.all_data["not_authorized_serials"] = not_authorized_serials
     return True
 
 
@@ -2572,11 +2579,12 @@ def require_description(request=None, action=None):
         serial = get_optional(params, "serial")
         if serial:
             token = (get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.VERIFYPENDING, silent_fail=True)
-                   or get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.CLIENTWAIT, silent_fail=True))
+                     or get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.CLIENTWAIT, silent_fail=True))
         # only if no token exists, yet, we need to check the description
         if not token and not request.all_data.get("description"):
             log.error(f"Missing description for {type_value} token.")
             raise PolicyError(_(f"Description required for {type_value} token."))
+
 
 def require_description_on_edit(request=None, action=None):
     """

@@ -569,7 +569,7 @@ def unassign_api():
     :jsonparam serials: A list of serial numbers of multiple tokens.
     authorized to manage.
 
-    :return: In case of success it returns 1 if only one serial is given, or a dictionary with the serials as keys and
+    :return: In case of success, it returns 1 if only one serial is given, or a dictionary with the serials as keys and
      the success status of the deletion as values.
     :rtype: JSON object
     """
