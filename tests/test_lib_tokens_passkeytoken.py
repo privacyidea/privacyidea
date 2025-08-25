@@ -27,14 +27,14 @@ from webauthn.helpers.structs import AttestationConveyancePreference
 
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.error import EnrollmentError, ParameterError, ResourceNotFoundError
-from privacyidea.lib.policy import SCOPE
-from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.token import (init_token, remove_token, unassign_token, import_tokens, get_tokens)
-from privacyidea.lib.fido2.util import get_credential_ids_for_user, get_fido2_token_by_credential_id, hash_credential_id
 from privacyidea.lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
+from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
+from privacyidea.lib.fido2.util import get_credential_ids_for_user, get_fido2_token_by_credential_id, hash_credential_id
+from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import SCOPE
+from privacyidea.lib.token import (init_token, remove_token, unassign_token, import_tokens, get_tokens)
 from privacyidea.lib.tokenclass import ROLLOUTSTATE, TokenClass
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
-from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.user import User
 from privacyidea.models import TokenCredentialIdHash
 from tests.base import MyTestCase
@@ -351,7 +351,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
 
         expected_tokeninfo_keys = ["public_key", "attestation_certificate"]
-        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["info_list"].keys()))
 
         # Test that the exported values match the token's data
         exported_data = token.export_token()
@@ -385,7 +385,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
             "description": 'Yubico U2F EE Serial 2109467376',
             "otpkey": 'T9TJpDbUuq0TIdIpErltERuboEdR1GBa7pVtdYMQYTQZ582wmBwp5TWuZ_sE_Ag4',
             "issuer": "privacyIDEA",
-            "tokeninfo": {
+            "info_list": {
                 'aaguid': '2fc0579f-8113-47ea-b116-bb5a8db9202a',
                 'attestation_certificate': attestation_certificate,
                 'backed_up': 'False',

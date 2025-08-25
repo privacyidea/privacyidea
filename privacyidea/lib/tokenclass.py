@@ -89,7 +89,6 @@ from flask_babel import lazy_gettext
 from privacyidea.lib import _
 from privacyidea.lib.crypto import (decryptPassword,
                                     generate_otpkey)
-from .policies.actions import PolicyAction
 from privacyidea.lib.utils import (is_true, decode_base32check,
                                    to_unicode, create_img, parse_timedelta,
                                    parse_legacy_time, split_pin_pass)
@@ -99,6 +98,7 @@ from .decorators import check_token_locked
 from .error import (TokenAdminError,
                     ParameterError)
 from .log import log_with
+from .policies.actions import PolicyAction
 from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .user import (User)
 from ..api.lib.utils import getParam
@@ -221,7 +221,7 @@ class TokenClass(object):
         return self.token.tokentype
 
     @check_token_locked
-    def add_user(self, user, report=None):
+    def add_user(self, user, report=None, override=False):
         """
         Set the user attributes (uid, resolvername, resolvertype) of a token.
 
@@ -233,9 +233,13 @@ class TokenClass(object):
         # prevent to init update a token changing the token owner
         # FIXME: We need to remove this, if we one day want to assign several users to one token
         if self.user and self.user != user:
-            log.info("The token with serial {0!s} is already assigned "
-                     "to user {1!s}. Can not assign to {2!s}.".format(self.token.serial, self.user, user))
-            raise TokenAdminError("This token is already assigned to another user.")
+            if override:
+                # We remove the old user
+                self.remove_user()
+            else:
+                log.info("The token with serial {0!s} is already assigned "
+                         "to user {1!s}. Can not assign to {2!s}.".format(self.token.serial, self.user, user))
+                raise TokenAdminError("This token is already assigned to another user.")
 
         if not self.user:
             # If the tokenowner is not set yet, set it / avoid setting the same tokenowner multiple times
@@ -2016,16 +2020,8 @@ class TokenClass(object):
         """
         Create a dictionary with the token information that can be exported.
         """
-        token_dict = {
-            "type": self.type.lower(),
-            "issuer": "privacyIDEA",
-            "description": self.token.description,
-            "serial": self.token.serial,
-            "otpkey": self.token.get_otpkey().getKey().decode("utf-8"),
-            "otplen": self.token.otplen,
-            "hashed_pin": self.token.pin_hash,
-            "tokeninfo": self.get_tokeninfo(decrypted=True)
-        }
+        token_dict = self._to_dict()
+        token_dict['issuer'] = 'privacyIDEA'
         if export_user and self.token.first_owner:
             token_dict["user"] = self.user.user_export_dict()
 
@@ -2039,22 +2035,6 @@ class TokenClass(object):
         self.token.otplen = int(token_information.setdefault("otplen", 6))
         self.token.description = token_information.setdefault("description", '')
         self.token.pin_hash = token_information.setdefault("_hashed_pin", None)
-        self.add_tokeninfo_dict(token_information.setdefault("tokeninfo", {}))
+        self.add_tokeninfo_dict(token_information.setdefault("info_list", {}))
         self.add_tokeninfo("import_date", datetime.now(timezone.utc).isoformat(timespec="seconds"))
         self.save()
-
-    def assign_user_during_token_import(self, user: dict):
-        """
-        Assign a user to the token during import.
-        This is called from the import_token method.
-        """
-        if self.user is not None:
-            self.remove_user()
-        owner = User(login=user.get("login"),
-                     resolver=user.get("resolver"),
-                     realm=user.get("realm"),
-                     uid=user.get("uid"))
-        self.add_user(owner)
-
-        for key, value in user.get("custom_attributes", {}).items():
-            owner.set_attribute(attrkey=key, attrvalue=value)

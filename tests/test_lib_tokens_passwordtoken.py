@@ -3,12 +3,14 @@ This test file tests the lib.tokens.passwordtoken
 This depends on lib.tokenclass
 """
 import logging
+
 from testfixtures import log_capture
-from .base import MyTestCase
+
+from privacyidea.lib.token import init_token, remove_token, import_tokens, get_tokens
 from privacyidea.lib.tokens.passwordtoken import PasswordTokenClass
 from privacyidea.lib.tokens.passwordtoken import log as pwt_log
-from privacyidea.lib.token import init_token, remove_token, import_tokens, get_tokens
 from privacyidea.models import Token
+from .base import MyTestCase
 
 
 class PasswordTokenTestCase(MyTestCase):
@@ -75,15 +77,15 @@ class PasswordTokenTestCase(MyTestCase):
         self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
 
         expected_tokeninfo_keys = ["hashlib", "tokenkind"]
-        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["info_list"].keys()))
 
         # Test that the exported values match the token's data
         self.assertEqual(exported_data["serial"], "PASS12345678")
         self.assertEqual(exported_data["type"], "pw")
         self.assertEqual(exported_data["description"], "this is a password token export test")
-        self.assertEqual(exported_data["tokeninfo"]["hashlib"], "sha256")
+        self.assertEqual(exported_data["info_list"]["hashlib"], "sha256")
         self.assertEqual(exported_data["otpkey"], '12345')
-        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
+        self.assertEqual(exported_data["info_list"]["tokenkind"], "software")
         self.assertEqual(exported_data["issuer"], "privacyIDEA")
 
         # Clean up
@@ -96,7 +98,7 @@ class PasswordTokenTestCase(MyTestCase):
             "type": "pw",
             "description": "this is a password token import test",
             "otpkey": "topsecret",
-            "tokeninfo": {"hashlib": "sha256", "tokenkind": "software"},
+            "info_list": {"hashlib": "sha256", "tokenkind": "software"},
             "issuer": "privacyIDEA"
         }]
 
@@ -111,8 +113,8 @@ class PasswordTokenTestCase(MyTestCase):
         self.assertEqual(passwordtoken.type, token_data[0]["type"])
         self.assertEqual(passwordtoken.token.description, token_data[0]["description"])
         self.assertEqual(passwordtoken.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
-        self.assertEqual(passwordtoken.get_tokeninfo("hashlib"), token_data[0]["tokeninfo"]["hashlib"])
-        self.assertEqual(passwordtoken.get_tokeninfo("tokenkind"), token_data[0]["tokeninfo"]["tokenkind"])
+        self.assertEqual(passwordtoken.get_tokeninfo("hashlib"), token_data[0]["info_list"]["hashlib"])
+        self.assertEqual(passwordtoken.get_tokeninfo("tokenkind"), token_data[0]["info_list"]["tokenkind"])
 
         # check that the token works
         r = passwordtoken.check_otp(self.password)

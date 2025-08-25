@@ -39,21 +39,24 @@ Authentication requests are forwarded to the Yubico Cloud service YubiCloud.
 
 The code is tested in tests/test_lib_tokens_yubico
 """
+
 import logging
-from privacyidea.lib.decorators import check_token_locked
 import traceback
+from urllib.parse import urlencode
+
 import requests
+
 from privacyidea.api.lib.utils import getParam
-from privacyidea.lib.crypto import geturandom
+from privacyidea.lib import _
 from privacyidea.lib.config import get_from_config
+from privacyidea.lib.crypto import geturandom
+from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.log import log_with
+from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import SCOPE, GROUP
 from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
 from privacyidea.lib.tokens.yubikeytoken import (yubico_check_api_signature,
                                                  yubico_api_signature)
-from urllib.parse import urlencode
-from privacyidea.lib import _
-from privacyidea.lib.policy import SCOPE, GROUP
-from privacyidea.lib.policies.actions import PolicyAction
 
 YUBICO_LEN_ID = 12
 YUBICO_LEN_OTP = 44
@@ -101,7 +104,7 @@ class YubicoTokenClass(TokenClass):
                'title': 'Yubico Token',
                'description': _('Yubikey Cloud mode: Forward authentication '
                                 'request to YubiCloud.'),
-               'user':  ['enroll'],
+               'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
                'policy': {
@@ -235,4 +238,5 @@ class YubicoTokenClass(TokenClass):
         """
         Import for this token is not supported.
         """
+        self.token.delete()
         raise NotImplementedError("Import for Yubico token is not supported.")
