@@ -8,12 +8,15 @@
     routerLinkActive="selected">
     <div class="tile-button-content">
       <div class="top-content">
-        <mat-icon [ngClass]="((matIconSize ?? 'tile-icon-medium') + ' ') + (matIconClass ?? '')">
+        <mat-icon [ngClass]="(matIconSize ?? 'tile-icon-medium') + ' ' + (matIconClass ?? '')">
           {{ matIconName }}
         </mat-icon>
       </div>
-      <div i18n class="bottom-content">{{ title }}</div>
+      <div
+        i18n
+        class="bottom-content">
+        {{ title }}
+      </div>
     </div>
   </a>
 </div>
-

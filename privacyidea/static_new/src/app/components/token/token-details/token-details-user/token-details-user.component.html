@@ -1,23 +1,27 @@
 <div
   [ngClass]="{
-    'pad-0': overflowService.isWidthOverflowing('body', 1310),
+    'pad-0': overflowService.isWidthOverflowing('body', 1310)
   }"
-  class="user-container"
->
+  class="user-container">
   <table
     [dataSource]="userData()"
     i18n-aria-label
     aria-label="User Detail Data Table"
     class="user-details-table"
-    mat-table
-  >
+    mat-table>
     <ng-container matColumnDef="key">
-      <td *matCellDef="let element" class="details-key-row" mat-cell>
+      <td
+        *matCellDef="let element"
+        class="details-key-row"
+        mat-cell>
         {{ element.keyMap.label }}
       </td>
     </ng-container>
     <ng-container matColumnDef="value">
-      <td *matCellDef="let element" class="user-editable-row height-52 fix-width-20-padr-0" mat-cell>
+      <td
+        *matCellDef="let element"
+        class="user-editable-row height-52 fix-width-20-padr-0"
+        mat-cell>
         @switch (element.keyMap.key) {
           @case ("username") {
             @if (isEditingUser() && userService.selectedUserRealm() !== "") {
@@ -25,9 +29,11 @@
                 <mat-label i18n>Enter User</mat-label>
                 <app-clearable-input
                   (onClick)="userService.userFilter.set('')"
-                  [showClearButton]="userService.userFilter() !== ''"
-                >
-                  <input matInput [(ngModel)]="userService.userFilter" [matAutocomplete]="userAuto" />
+                  [showClearButton]="userService.userFilter() !== ''">
+                  <input
+                    matInput
+                    [(ngModel)]="userService.userFilter"
+                    [matAutocomplete]="userAuto" />
                 </app-clearable-input>
                 <mat-autocomplete #userAuto="matAutocomplete">
                   @for (option of userService.filteredUsernames(); track option) {
@@ -36,21 +42,31 @@
                 </mat-autocomplete>
               </mat-form-field>
             } @else {
-              <a href="#" i18n-aria-label="{{ element.keyMap.label }} Link">{{ element.value }}</a>
+              <a
+                href="#"
+                i18n-aria-label="{{ element.keyMap.label }} Link"
+                >{{ element.value }}</a
+              >
             }
           }
           @case ("user_realm") {
             @if (isEditingUser()) {
               <mat-form-field>
                 <mat-label i18n>Select Realm of User</mat-label>
-                <mat-select [(ngModel)]="userService.selectedUserRealm" [value]="userService.selectedUserRealm()">
+                <mat-select
+                  [(ngModel)]="userService.selectedUserRealm"
+                  [value]="userService.selectedUserRealm()">
                   @for (option of realmService.realmOptions(); track option) {
                     <mat-option value="{{ option }}">{{ option }}</mat-option>
                   }
                 </mat-select>
               </mat-form-field>
             } @else {
-              <a href="#" i18n-aria-label="{{ element.keyMap.label }} Link">{{ element.value }}</a>
+              <a
+                href="#"
+                i18n-aria-label="{{ element.keyMap.label }} Link"
+                >{{ element.value }}</a
+              >
             }
           }
           @default {
@@ -60,13 +76,20 @@
       </td>
     </ng-container>
     <ng-container matColumnDef="edit">
-      <td *matCellDef="let element" class="edit-column-cell" mat-cell>
+      <td
+        *matCellDef="let element"
+        class="edit-column-cell"
+        mat-cell>
         @switch (element.keyMap.key) {
           @case ("username") {
             @if (!(isAnyEditingOrRevoked() && !isEditingUser())) {
               @if (element.value) {
                 <div class="edit-button-container">
-                  <button mat-icon-button class="yellow" (click)="unassignUser()" i18n-aria-label="Unassign User">
+                  <button
+                    mat-icon-button
+                    class="yellow"
+                    (click)="unassignUser()"
+                    i18n-aria-label="Unassign User">
                     <mat-icon>person_remove</mat-icon>
                   </button>
                 </div>
@@ -78,14 +101,15 @@
                   [shouldHideEdit]="isAnyEditingOrRevoked"
                   [isEditingUser]="isEditingUser"
                   [isEditingInfo]="isEditingInfo"
-                  [element]="element"
-                ></app-edit-buttons>
+                  [element]="element"></app-edit-buttons>
               }
             }
           }
         }
       </td>
     </ng-container>
-    <tr *matRowDef="let row; columns: ['key', 'value', 'edit']" mat-row></tr>
+    <tr
+      *matRowDef="let row; columns: ['key', 'value', 'edit']"
+      mat-row></tr>
   </table>
 </div>

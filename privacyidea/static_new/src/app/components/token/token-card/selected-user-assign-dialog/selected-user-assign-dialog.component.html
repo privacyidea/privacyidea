@@ -1,7 +1,13 @@
-<h1 i18n mat-dialog-title>Assign Selected Token to User</h1>
+<h1
+  i18n
+  mat-dialog-title>
+  Assign Selected Token to User
+</h1>
 <mat-dialog-content>
   @if (selectionContainsAssignedToken()) {
-    <p i18n class="inline-warning">
+    <p
+      i18n
+      class="inline-warning">
       Some token are already assigned to a user. <br />
       Assigning a token to a user will remove the previous assignment.
     </p>
@@ -9,7 +15,10 @@
   <div class="selected-user-assign-container">
     <mat-form-field class="width-50 input-height">
       <mat-label i18n>Select Realm of User</mat-label>
-      <mat-select [formControl]="selectedUserRealmControl" [value]="selectedUserRealmControl.value" required>
+      <mat-select
+        [formControl]="selectedUserRealmControl"
+        [value]="selectedUserRealmControl.value"
+        required>
         @for (option of realmService.realmOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
         }
@@ -19,10 +28,15 @@
       <mat-label i18n>Enter User</mat-label>
       <app-clearable-input
         (onClick)="userService.userFilter.set('')"
-        [showClearButton]="userService.userFilter() !== ''"
-      >
-        <input [formControl]="userFilterControl" [matAutocomplete]="userAuto" matInput required />
-        <mat-autocomplete #userAuto="matAutocomplete" [displayWith]="userService.displayUser">
+        [showClearButton]="userService.userFilter() !== ''">
+        <input
+          [formControl]="userFilterControl"
+          [matAutocomplete]="userAuto"
+          matInput
+          required />
+        <mat-autocomplete
+          #userAuto="matAutocomplete"
+          [displayWith]="userService.displayUser">
           @for (user of userService.filteredUsers(); track user) {
             <mat-option [value]="user">{{ user.username }}</mat-option>
           }
@@ -43,45 +57,50 @@
     </mat-form-field>
   </div>
   <div class="selected-user-assign-container">
-    <mat-form-field appearance="fill" class="pin-field">
-      <input style="display: none" type="text" /> <input style="display: none" type="password" />
+    <mat-form-field
+      appearance="fill"
+      class="pin-field">
+      <input
+        style="display: none"
+        type="text" />
+      <input
+        style="display: none"
+        type="password" />
       <mat-label i18n>PIN (optional)</mat-label>
       <input
         (ngModelChange)="pin.set($event)"
         [ngModel]="pin()"
         [type]="hidePin() ? 'password' : 'text'"
         autocomplete="new-password"
-        matInput
-      />
+        matInput />
       <button
         (click)="togglePinVisibility()"
         [attr.aria-label]="'Show PIN'"
         [attr.aria-pressed]="!hidePin()"
         mat-icon-button
         matSuffix
-        type="button"
-      >
+        type="button">
         <mat-icon>{{ hidePin() ? "visibility_off" : "visibility" }}</mat-icon>
         Show PIN
       </button>
     </mat-form-field>
-    <mat-form-field appearance="fill" class="pin-field">
+    <mat-form-field
+      appearance="fill"
+      class="pin-field">
       <mat-label i18n>PIN (repeat)</mat-label>
       <input
         (ngModelChange)="pinRepeat.set($event)"
         [ngModel]="pinRepeat()"
         [type]="hidePin() ? 'password' : 'text'"
         autocomplete="new-password"
-        matInput
-      />
+        matInput />
       <button
         (click)="togglePinVisibility()"
         [attr.aria-label]="'Show PIN Repeat'"
         [attr.aria-pressed]="!hidePin()"
         mat-icon-button
         matSuffix
-        type="button"
-      >
+        type="button">
         <mat-icon>{{ hidePin() ? "visibility_off" : "visibility" }}</mat-icon>
         Show PIN Repeat
       </button>
@@ -91,14 +110,18 @@
     </mat-form-field>
   </div> </mat-dialog-content
 ><mat-dialog-actions>
-  <button (click)="onCancel()" mat-button i18n>Cancel</button>
+  <button
+    (click)="onCancel()"
+    mat-button
+    i18n>
+    Cancel
+  </button>
   <button
     (click)="onConfirm()"
     [disabled]="!pinsMatch() || selectedUserRealmControl.invalid || userFilterControl.invalid"
     color="primary"
     mat-button
-    i18n
-  >
+    i18n>
     Assign to Selected Token
   </button>
 </mat-dialog-actions>

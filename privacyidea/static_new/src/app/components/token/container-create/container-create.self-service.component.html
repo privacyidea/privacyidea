@@ -1,25 +1,44 @@
-<div #scrollContainer i18n-aria-label aria-label="Create Container" class="container-create-container" appScrollToTop>
-  <h3 i18n class="margin-left-1">Create Container</h3>
+<div
+  #scrollContainer
+  i18n-aria-label
+  aria-label="Create Container"
+  class="container-create-container"
+  appScrollToTop>
+  <h3
+    i18n
+    class="margin-left-1">
+    Create Container
+  </h3>
 
   <div #stickySentinel></div>
-  <div #stickyHeader class="sticky-header">
+  <div
+    #stickyHeader
+    class="sticky-header">
     <div class="sticky-controls ali-center">
       <div class="select-container-type">
-        <mat-form-field class="width-100" subscriptSizing="dynamic">
+        <mat-form-field
+          class="width-100"
+          subscriptSizing="dynamic">
           <mat-select
             [(ngModel)]="containerService.selectedContainerType"
             [ngModelOptions]="{ standalone: true }"
             [panelClass]="'single-column-panel'"
-            [value]="containerService.selectedContainerType()"
-          >
+            [value]="containerService.selectedContainerType()">
             @for (type of containerService.containerTypeOptions(); track type) {
-              <mat-option class="select-option type-option" [value]="type">{{ type.description }} </mat-option>
+              <mat-option
+                class="select-option type-option"
+                [value]="type"
+                >{{ type.description }}
+              </mat-option>
             }
           </mat-select>
         </mat-form-field>
       </div>
       <div class="enroll-button-container">
-        <button (click)="createContainer()" class="card-button" mat-flat-button>
+        <button
+          (click)="createContainer()"
+          class="card-button"
+          mat-flat-button>
           <mat-icon>add</mat-icon>
           Create
         </button>
@@ -28,15 +47,16 @@
           [matTooltip]="'Reopen enrollment dialog'"
           [ngClass]="{ hidden: !registerResponse() }"
           mat-icon-button
-          type="button"
-        >
+          type="button">
           <mat-icon>open_in_new</mat-icon>
         </button>
       </div>
     </div>
   </div>
 
-  <div i18n class="container-type-hint">
+  <div
+    i18n
+    class="container-type-hint">
     Supported Token Types:
     @if (containerService.selectedContainerType().token_types.length >= tokenService.tokenTypeOptions().length) {
       All
@@ -56,15 +76,21 @@
       matInput
       i18n-placeholder
       placeholder="Enter description"
-      rows="3"
-    ></textarea>
+      rows="3"></textarea>
   </mat-form-field>
 
   <div class="flex-column width-66">
-    <h4 i18n class="enroll-h4">Use a Template</h4>
+    <h4
+      i18n
+      class="enroll-h4">
+      Use a Template
+    </h4>
     <mat-form-field class="width-100 input-height">
       <mat-label i18n>Template</mat-label>
-      <mat-select [(ngModel)]="selectedTemplate" disabled [value]="selectedTemplate()">
+      <mat-select
+        [(ngModel)]="selectedTemplate"
+        disabled
+        [value]="selectedTemplate()">
         @for (option of templateOptions(); track option) {
           <mat-option [value]="option">{{ option.name }}</mat-option>
         }
@@ -73,8 +99,14 @@
   </div>
 
   @if (containerService.selectedContainerType().containerType === "smartphone") {
-    <h4 i18n class="enroll-h4">Registration</h4>
-    <mat-checkbox i18n [(ngModel)]="generateQRCode">
+    <h4
+      i18n
+      class="enroll-h4">
+      Registration
+    </h4>
+    <mat-checkbox
+      i18n
+      [(ngModel)]="generateQRCode">
       Generate a QR code to register the container on a smartphone.
     </mat-checkbox>
     <mat-accordion>
@@ -89,9 +121,10 @@
             matInput
             i18n-placeholder
             placeholder="This prompt will be displayed to the user."
-            rows="2"
-          ></textarea>
-          <mat-hint i18n class="font-14">
+            rows="2"></textarea>
+          <mat-hint
+            i18n
+            class="font-14">
             Enter a passphrase prompt that will be displayed to the user. This should indicate which passphrase the user
             should enter.
           </mat-hint>
@@ -103,9 +136,10 @@
             matInput
             i18n-placeholder
             placeholder="Passphrase the use has to enter to successfully register the container."
-            rows="2"
-          ></textarea>
-          <mat-hint i18n class="font-14">
+            rows="2"></textarea>
+          <mat-hint
+            i18n
+            class="font-14">
             This is the correct answer to the passphrase prompt the user has to enter to successfully register the
             container.
           </mat-hint>

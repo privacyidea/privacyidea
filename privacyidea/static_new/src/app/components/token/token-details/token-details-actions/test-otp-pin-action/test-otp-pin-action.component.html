@@ -1,27 +1,44 @@
 <div class="actions-otp-pin-input">
-  <input style="display: none" type="text" />
-  <input style="display: none" type="password" />
+  <input
+    style="display: none"
+    type="text" />
+  <input
+    style="display: none"
+    type="password" />
   <mat-form-field class="width-100">
     <mat-label i18n>OTP or Pin</mat-label>
-    <input [(ngModel)]="otpOrPinToTest" [type]="hide ? 'password' : 'text'" autocomplete="one-time-code" matInput />
+    <input
+      [(ngModel)]="otpOrPinToTest"
+      [type]="hide ? 'password' : 'text'"
+      autocomplete="one-time-code"
+      matInput />
     <button
       (click)="hide = !hide"
       i18n-attr.aria-label
       [attr.aria-label]="hide ? 'Show value' : 'Hide value'"
       mat-icon-button
       matSuffix
-      type="button"
-    >
+      type="button">
       <mat-icon>{{ hide ? "visibility_off" : "visibility" }}</mat-icon>
     </button>
   </mat-form-field>
 </div>
 <div class="actions-pin-button">
-  <button (click)="testToken()" class="detail-button" extended mat-fab i18n>
+  <button
+    (click)="testToken()"
+    class="detail-button"
+    extended
+    mat-fab
+    i18n>
     <mat-icon class="detail-button-icon">help_outline</mat-icon>
     Test Token
   </button>
-  <button (click)="verifyOTPValue()" class="detail-button" extended mat-fab i18n>
+  <button
+    (click)="verifyOTPValue()"
+    class="detail-button"
+    extended
+    mat-fab
+    i18n>
     <mat-icon class="detail-button-icon">help_outline</mat-icon>
     Verify OTP Value
   </button>

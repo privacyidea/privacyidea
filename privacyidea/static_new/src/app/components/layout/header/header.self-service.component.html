@@ -10,7 +10,7 @@
       ngSrc="assets/privacyIDEA1.png"
       ngSrcset="1x"
       sizes="(max-width: 307px) 100vw, 307px"
-      width="307"/>
+      width="307" />
   </div>
   <div class="nav-div">
     <nav class="nav-menu">
@@ -20,20 +20,19 @@
             ? 'red-light'
             : sessionTimerService.remainingTime()! < 60000
               ? 'yellow-light'
-              : 'surface-highest',
+              : 'surface-highest'
         ]"
         class="session-timer-selfservice">
         @if (sessionTimerService.remainingTime()! < 60000) {
           {{ sessionTimerService.remainingTime() | date: "mm:ss" }}
-        } @else if (sessionTimerService.remainingTime()! >= 60000 &&
-        sessionTimerService.remainingTime()! < 600000) {
+        } @else if (sessionTimerService.remainingTime()! >= 60000 && sessionTimerService.remainingTime()! < 600000) {
           {{ sessionTimerService.remainingTime() | date: "m" }}min
         } @else {
           {{ sessionTimerService.remainingTime() | date: "mm" }}min
         }
       </div>
     </nav>
-    <app-theme-switcher/>
+    <app-theme-switcher />
     <button
       (click)="refreshPage()"
       class="refresh-btn"
@@ -41,7 +40,11 @@
       <mat-icon>refresh</mat-icon>
     </button>
     <div class="profile-div">
-      <h4 class="preview" i18n> Preview</h4>
+      <h4
+        class="preview"
+        i18n>
+        Preview
+      </h4>
       <div class="profile-logout-div flex-row">
         <a
           i18n-aria-label
@@ -62,7 +65,7 @@
           extended
           mat-fab>
           <mat-menu #profileMenu="matMenu">
-            <app-user-self-service/>
+            <app-user-self-service />
           </mat-menu>
           <mat-icon>account_box</mat-icon>
           <h4>{{ profileText }}</h4>

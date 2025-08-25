@@ -1,46 +1,35 @@
 <ng-template
   #userCard
   let-hasMargin="hasMargin">
-  <app-user-card [ngClass]="hasMargin ? 'margin-right-1' : ''"/>
+  <app-user-card [ngClass]="hasMargin ? 'margin-right-1' : ''" />
 </ng-template>
 
 <div
   i18n-aria-label
   aria-label="User Layout"
   class="user-layout">
-  @if (!overflowService.isWidthOverflowing(
-    'body',
-    overflowService.getOverflowThreshold()
-  )) {
+  @if (!overflowService.isWidthOverflowing("body", overflowService.getOverflowThreshold())) {
     <ng-container
       [ngTemplateOutlet]="userCard"
-      [ngTemplateOutletContext]="{ hasMargin: true }"/>
+      [ngTemplateOutletContext]="{ hasMargin: true }" />
   }
 
   <mat-drawer-container>
-    @if (overflowService.isWidthOverflowing(
-      'body',
-      overflowService.getOverflowThreshold()
-    )) {
+    @if (overflowService.isWidthOverflowing("body", overflowService.getOverflowThreshold())) {
       <mat-drawer
         #drawer
         mode="over"
         (opened)="updateOverflowState()"
-        [ngClass]="
-          isUserDrawerOverflowing() ? 'user-drawer-overflow' : 'user-drawer'
-        ">
+        [ngClass]="isUserDrawerOverflowing() ? 'user-drawer-overflow' : 'user-drawer'">
         <div class="drawer">
-          <ng-container [ngTemplateOutlet]="userCard"/>
+          <ng-container [ngTemplateOutlet]="userCard" />
         </div>
       </mat-drawer>
     }
 
     <mat-drawer-content>
       <div class="drawer-content-div">
-        @if (overflowService.isWidthOverflowing(
-          'body',
-          overflowService.getOverflowThreshold()
-        )) {
+        @if (overflowService.isWidthOverflowing("body", overflowService.getOverflowThreshold())) {
           <div class="drawer-button-div">
             <button
               mat-fab
@@ -55,11 +44,8 @@
 
         <div
           [ngClass]="{
-               'margin-left-64': overflowService.isWidthOverflowing(
-                 'body',
-                 overflowService.getOverflowThreshold()
-               )
-             }"
+            'margin-left-64': overflowService.isWidthOverflowing('body', overflowService.getOverflowThreshold())
+          }"
           class="main-margin overflow padding-32">
           <router-outlet></router-outlet>
         </div>
@@ -67,4 +53,3 @@
     </mat-drawer-content>
   </mat-drawer-container>
 </div>
-

@@ -2,8 +2,14 @@
   <div class="token-type-paragraph">
     <p i18n>{{ text }}</p>
   </div>
-  <h4 i18n class="enroll-h4">Token Configuration</h4>
-  <mat-checkbox i18n [formControl]="checkPinLocallyControl">
+  <h4
+    i18n
+    class="enroll-h4">
+    Token Configuration
+  </h4>
+  <mat-checkbox
+    i18n
+    [formControl]="checkPinLocallyControl">
     Check the PIN locally
   </mat-checkbox>
   <div class="flex-row gap-1">
@@ -15,10 +21,13 @@
         [value]="remoteServerControl.value"
         required>
         @for (option of remoteServerOptions(); track option) {
-          <mat-option [value]="option">{{ option.url }}</mat-option><!-- Assuming option is the RemoteServer object -->
+          <mat-option [value]="option">{{ option.url }}</mat-option
+          ><!-- Assuming option is the RemoteServer object -->
         }
       </mat-select>
-      <mat-error i18n class="red">
+      <mat-error
+        i18n
+        class="red">
         Remote Server is <strong>required</strong>
       </mat-error>
     </mat-form-field>
@@ -27,7 +36,7 @@
       <input
         [formControl]="remoteSerialControl"
         matInput
-        required/>
+        required />
       <mat-error i18n>Remote Serial is <strong>required</strong></mat-error>
     </mat-form-field>
   </div>
@@ -36,7 +45,7 @@
       <mat-label i18n>Remote User</mat-label>
       <input
         [formControl]="remoteUserControl"
-        matInput/>
+        matInput />
       <!-- Assuming optional based on TS -->
       <mat-error i18n>Remote User is <strong>required</strong></mat-error>
     </mat-form-field>
@@ -44,16 +53,15 @@
       <mat-label i18n>Remote Realm</mat-label>
       <input
         [formControl]="remoteRealmControl"
-        matInput/>
+        matInput />
     </mat-form-field>
     <mat-form-field class="input-height width-33">
       <mat-label i18n>Remote Resolver</mat-label>
       <input
         [formControl]="remoteResolverControl"
         matInput
-        required/>
+        required />
       <mat-error i18n>Remote Resolver is <strong>required</strong></mat-error>
     </mat-form-field>
   </div>
 </div>
-

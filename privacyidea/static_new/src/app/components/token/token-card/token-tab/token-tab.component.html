@@ -1,11 +1,10 @@
 <div class="tab-list">
   <mat-list>
-    <mat-divider/>
-    <br/>
+    <mat-divider />
+    <br />
     <mat-list-item>
       <button
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS ? 'card-button-active' :
-              'card-button'"
+        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS ? 'card-button-active' : 'card-button'"
         [routerLink]="[ROUTE_PATHS.TOKENS]"
         mat-flat-button
         i18n>
@@ -19,8 +18,9 @@
         <mat-list-item>
           <button
             [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
-            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT ?
-                  'card-button-active' : 'card-button'"
+            [ngClass]="
+              contentService.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT ? 'card-button-active' : 'card-button'
+            "
             mat-flat-button
             i18n>
             <mat-icon>add_moderator</mat-icon>
@@ -30,8 +30,9 @@
         <mat-list-item>
           <button
             [routerLink]="[ROUTE_PATHS.TOKENS_CHALLENGES]"
-            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_CHALLENGES
-                  ? 'card-button-active' : 'card-button'"
+            [ngClass]="
+              contentService.routeUrl() === ROUTE_PATHS.TOKENS_CHALLENGES ? 'card-button-active' : 'card-button'
+            "
             mat-flat-button
             i18n>
             <mat-icon>cached</mat-icon>
@@ -42,21 +43,21 @@
         <mat-list-item>
           <button
             [routerLink]="[ROUTE_PATHS.TOKENS_APPLICATIONS]"
-            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_APPLICATIONS
-                  ? 'card-button-active' : 'card-button'"
+            [ngClass]="
+              contentService.routeUrl() === ROUTE_PATHS.TOKENS_APPLICATIONS ? 'card-button-active' : 'card-button'
+            "
             mat-flat-button
             i18n>
             <mat-icon>now_widgets</mat-icon>
             Applications
-          </button>
-        </mat-list-item><br/>
-        <mat-divider/><br/>
+          </button> </mat-list-item
+        ><br />
+        <mat-divider /><br />
         <mat-list-item>
           <button
             [ngClass]="[
-              contentService.routeUrl() === ROUTE_PATHS.TOKENS_GET_SERIAL
-                ? 'card-button-active'
-                : 'card-button',]"
+              contentService.routeUrl() === ROUTE_PATHS.TOKENS_GET_SERIAL ? 'card-button-active' : 'card-button'
+            ]"
             mat-flat-button
             [routerLink]="[ROUTE_PATHS.TOKENS_GET_SERIAL]"
             i18n>
@@ -75,12 +76,11 @@
           </button>
         </mat-list-item>
         @if (contentService.routeUrl() === ROUTE_PATHS.TOKENS) {
-          <br/>
-          <mat-divider/><br/>
+          <br />
+          <mat-divider /><br />
           <mat-list-item>
             <button
-              [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' :
-            'card-button-delete']"
+              [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' : 'card-button-delete']"
               (click)="deleteSelectedTokens()"
               [disabled]="tokenSelection().length === 0"
               mat-flat-button
@@ -91,8 +91,7 @@
           </mat-list-item>
           <mat-list-item>
             <button
-              [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' :
-            'card-button']"
+              [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' : 'card-button']"
               (click)="assignSelectedTokens()"
               [disabled]="tokenSelection().length === 0"
               mat-flat-button
@@ -105,8 +104,9 @@
       } @else {
         <mat-list-item>
           <button
-            [ngClass]="contentService.routeUrl()
-                  .startsWith(ROUTE_PATHS.TOKENS_DETAILS) ? 'card-button-active' : 'card-button'"
+            [ngClass]="
+              contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS) ? 'card-button-active' : 'card-button'
+            "
             mat-flat-button
             i18n>
             <mat-icon>health_and_safety</mat-icon>
@@ -118,13 +118,13 @@
             class="card-button"
             mat-flat-button
             [routerLink]="[ROUTE_PATHS.AUDIT]"
-            (click)="auditService.filterValue.set({'serial': tokenSerial()})"
+            (click)="auditService.filterValue.set({ serial: tokenSerial() })"
             i18n>
             <mat-icon>manage_search</mat-icon>
             Show in Audit Log
-          </button>
-        </mat-list-item><br/>
-        <mat-divider/><br/>
+          </button> </mat-list-item
+        ><br />
+        <mat-divider /><br />
         <mat-list-item>
           <button
             class="card-button"
@@ -143,16 +143,21 @@
             i18n>
             <mat-icon>info_outline</mat-icon>
             Help
-          </button>
-        </mat-list-item><br/>
-        <mat-divider/><br/>
+          </button> </mat-list-item
+        ><br />
+        <mat-divider /><br />
         <mat-list-item>
           <button
             (click)="toggleActive()"
             [disabled]="tokenIsRevoked()"
             mat-flat-button
-            [ngClass]="[tokenIsRevoked() ? 'card-button-disabled' :
-                   tokenIsActive() ? 'card-button-delete':  'card-button-activate']"
+            [ngClass]="[
+              tokenIsRevoked()
+                ? 'card-button-disabled'
+                : tokenIsActive()
+                  ? 'card-button-delete'
+                  : 'card-button-activate'
+            ]"
             i18n>
             <mat-icon>{{ tokenIsActive() ? "lock" : "play_circle" }}</mat-icon>
             {{ tokenIsActive() ? "Deactivate" : "Activate" }}
@@ -172,7 +177,7 @@
           <button
             (click)="revokeToken()"
             [disabled]="tokenIsRevoked()"
-            [ngClass]="[tokenIsRevoked() ? 'card-button-disabled': 'card-button-delete']"
+            [ngClass]="[tokenIsRevoked() ? 'card-button-disabled' : 'card-button-delete']"
             mat-flat-button
             i18n>
             <mat-icon>undo</mat-icon>
@@ -183,4 +188,3 @@
     </div>
   </mat-list>
 </div>
-

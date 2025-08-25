@@ -1,6 +1,16 @@
-<div i18n-aria-label aria-label="Token Get Serial" class="token-get-serial" appScrollToTop>
-  <h3 i18n class="margin-left-1">Get Serial Number</h3>
-  <p class="margin-left-1" i18n>
+<div
+  i18n-aria-label
+  aria-label="Token Get Serial"
+  class="token-get-serial"
+  appScrollToTop>
+  <h3
+    i18n
+    class="margin-left-1">
+    Get Serial Number
+  </h3>
+  <p
+    class="margin-left-1"
+    i18n>
     By entering an OTP value you can get the serial number of the token. You can also enter additional optional
     parameters, to narrow down the search for the token. So you can only search within certain token types or in
     assigned or unassigned tokens.
@@ -17,8 +27,7 @@
         name="otpValue"
         i18n-placeholder
         placeholder="Enter some OTP value"
-        required
-      />
+        required />
       <mat-error i18n>OTP value is <strong>required</strong></mat-error>
     </mat-form-field>
     <button
@@ -27,16 +36,23 @@
       [ngClass]="{ 'card-button-disabled': otpValue() === '' }"
       class="card-button"
       mat-flat-button
-      i18n
-    >
+      i18n>
       <mat-icon>{{ currentStep() !== "searching" ? "play_arrow" : "stop" }}</mat-icon>
       {{ currentStep() !== "searching" ? "Run" : "Stop" }} <span>Search</span>
     </button>
   </div>
-  <h4 class="enroll-h4" i18n>Search Configuration</h4>
+  <h4
+    class="enroll-h4"
+    i18n>
+    Search Configuration
+  </h4>
   <mat-form-field class="width-66">
     <mat-label i18n>Token Type</mat-label>
-    <mat-select [(ngModel)]="tokenType" i18n-placeholder [value]="tokenType()" placeholder="Select token type">
+    <mat-select
+      [(ngModel)]="tokenType"
+      i18n-placeholder
+      [value]="tokenType()"
+      placeholder="Select token type">
       @for (type of tokenTypesWithOTP; track type) {
         <mat-option [value]="type['key']">{{ type["info"] }}</mat-option>
       }
@@ -48,10 +64,13 @@
       [(ngModel)]="assignmentState"
       i18n-placeholder
       [value]="assignmentState()"
-      placeholder="Specify assignment state"
-    >
+      placeholder="Specify assignment state">
       @for (assignment of assignmentStates; track assignment) {
-        <mat-option [value]="assignment.key" i18n>{{ assignment.info }} </mat-option>
+        <mat-option
+          [value]="assignment.key"
+          i18n
+          >{{ assignment.info }}
+        </mat-option>
       }
     </mat-select>
   </mat-form-field>
@@ -65,8 +84,7 @@
           matInput
           name="serialSubstring"
           i18n-placeholder
-          placeholder="Enter optional serial substring"
-        />
+          placeholder="Enter optional serial substring" />
       </mat-form-field>
     </div>
     <div class="flex-column width-32 margin-bottom-1">
@@ -79,8 +97,7 @@
           name="countWindow"
           i18n-placeholder
           placeholder="Lookahead OTP values"
-          type="number"
-        />
+          type="number" />
         <mat-hint i18n>Set number of lookahead OTP values (default 10).</mat-hint>
       </mat-form-field>
     </div>

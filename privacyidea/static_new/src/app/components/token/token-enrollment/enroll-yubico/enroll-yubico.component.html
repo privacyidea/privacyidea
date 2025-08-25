@@ -2,10 +2,17 @@
   <div class="token-type-paragraph">
     <p i18n>{{ text }}</p>
   </div>
-  <h4 i18n class="enroll-h4">Token Configuration</h4>
+  <h4
+    i18n
+    class="enroll-h4">
+    Token Configuration
+  </h4>
   @if (!yubicoIsConfigured()) {
-    <span i18n class="inline-warning">For Yubico tokens to work properly you need to set the
-      <a href="#">Yubico Token Config</a>!</span><!-- TODO: Link -->
+    <span
+      i18n
+      class="inline-warning"
+      >For Yubico tokens to work properly you need to set the <a href="#">Yubico Token Config</a>!</span
+    ><!-- TODO: Link -->
   }
   <div class="flex-row gap-1">
     <mat-form-field class="input-height width-33">
@@ -16,9 +23,8 @@
         matInput
         i18n-placeholder
         placeholder="Enter the 12 digit identifier"
-        required/>
+        required />
       <mat-error i18n>Yubikey identifier with 12 digits is <strong>required</strong></mat-error>
     </mat-form-field>
   </div>
 </div>
-

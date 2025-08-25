@@ -1,4 +1,8 @@
-<div i18n-aria-label aria-label="Details" class="details-container" appScrollToTop>
+<div
+  i18n-aria-label
+  aria-label="Details"
+  class="details-container"
+  appScrollToTop>
   <div class="details-flex-layout flex-column">
     <div class="details-header">
       <h3 i18n>Details for Token:</h3>
@@ -7,21 +11,27 @@
     </div>
     <div
       [ngClass]="[overflowService.isWidthOverflowing('body', 1310) ? 'flex-column' : 'flex-row']"
-      class="details-flex-layout"
-    >
+      class="details-flex-layout">
       <div>
         <table
           [dataSource]="tokenDetailData()"
           i18n-aria-label
           aria-label="Token Details Data Table"
           class="details-table"
-          mat-table
-        >
+          mat-table>
           <ng-container matColumnDef="key">
-            <td *matCellDef="let element" class="details-key-row" mat-cell>{{ element.keyMap.label }}</td>
+            <td
+              *matCellDef="let element"
+              class="details-key-row"
+              mat-cell>
+              {{ element.keyMap.label }}
+            </td>
           </ng-container>
           <ng-container matColumnDef="value">
-            <td *matCellDef="let element" [ngClass]="tableUtilsService.getTdClassForKey(element.keyMap.key)" mat-cell>
+            <td
+              *matCellDef="let element"
+              [ngClass]="tableUtilsService.getTdClassForKey(element.keyMap.key)"
+              mat-cell>
               @switch (element.keyMap.key) {
                 @case ("container_serial") {
                   @if (element.isEditing()) {
@@ -30,8 +40,7 @@
                       <input
                         matInput
                         [(ngModel)]="containerService.selectedContainer"
-                        [matAutocomplete]="containerAuto"
-                      />
+                        [matAutocomplete]="containerAuto" />
                       <mat-autocomplete #containerAuto="matAutocomplete">
                         @for (option of containerService.filteredContainerOptions(); track option) {
                           <mat-option [value]="option">{{ option }}</mat-option>
@@ -43,8 +52,7 @@
                       @if (containerService.containerBelongsToUser(element.value)) {
                         <a
                           attr.aria-label="{{ element.keyMap.label }} Link"
-                          (click)="contentService.containerSelected(element.value)"
-                        >
+                          (click)="contentService.containerSelected(element.value)">
                           {{ element.value }}
                         </a>
                       } @else {
@@ -57,7 +65,9 @@
                   }
                 }
                 @case ("realms") {
-                  <div class="details-scrollable-container" [ngClass]="{ 'details-list': element.value.length > 2 }">
+                  <div
+                    class="details-scrollable-container"
+                    [ngClass]="{ 'details-list': element.value.length > 2 }">
                     @for (realm of element.value; track realm) {
                       <mat-list-item class="height-auto">
                         <span class="font-14">• {{ realm }}</span>
@@ -69,9 +79,8 @@
                   <div
                     [ngClass]="{
                       'details-scrollable-container': true,
-                      'details-list': element.value.length > 2,
-                    }"
-                  >
+                      'details-list': element.value.length > 2
+                    }">
                     @for (tokengroup of element.value; track tokengroup) {
                       <mat-list-item class="height-auto">
                         <span class="font-14">• {{ tokengroup }}</span>
@@ -88,8 +97,7 @@
                         [maxlength]="80"
                         [(ngModel)]="element.value"
                         i18n-placeholder
-                        placeholder="Enter description"
-                      ></textarea>
+                        placeholder="Enter description"></textarea>
                     </mat-form-field>
                   } @else {
                     <div class="details-description-div">
@@ -102,11 +110,17 @@
                 @default {
                   @if (element.isEditing() && isNumberElement(element.keyMap.key)) {
                     <mat-form-field class="width-18rem">
-                      <input type="number" matInput [(ngModel)]="element.value" />
+                      <input
+                        type="number"
+                        matInput
+                        [(ngModel)]="element.value" />
                     </mat-form-field>
                   } @else if (element.isEditing()) {
                     <mat-form-field class="width-18rem">
-                      <textarea matInput rows="1" [(ngModel)]="element.value"></textarea>
+                      <textarea
+                        matInput
+                        rows="1"
+                        [(ngModel)]="element.value"></textarea>
                     </mat-form-field>
                   } @else {
                     <div [ngClass]="[tableUtilsService.getDivClassForKey(element.keyMap.key)]">
@@ -115,10 +129,9 @@
                           tableUtilsService.getSpanClassForKey({
                             key: element.keyMap.key,
                             value: element.value,
-                            maxfail: maxfail,
-                          }),
-                        ]"
-                      >
+                            maxfail: maxfail
+                          })
+                        ]">
                         {{
                           tableUtilsService.getDisplayTextForKeyAndRevoked(
                             element.keyMap.key,
@@ -134,21 +147,25 @@
             </td>
           </ng-container>
           <ng-container matColumnDef="edit">
-            <td *matCellDef="let element" class="edit-column-cell" mat-cell>
+            <td
+              *matCellDef="let element"
+              class="edit-column-cell"
+              mat-cell>
               <div class="ali-center">
                 @if (element.keyMap.key === "active" && !isAnyEditingOrRevoked()) {
                   <div class="edit-button-container">
                     <button
                       mat-icon-button
                       (click)="toggleActive(element.value)"
-                      i18n-aria-label="Toggle Token Active State"
-                    >
+                      i18n-aria-label="Toggle Token Active State">
                       <mat-icon>{{ tokenIsActive() ? "lock" : "play_circle" }}</mat-icon>
                     </button>
                   </div>
                 } @else if (element.keyMap.key === "failcount" && !isAnyEditingOrRevoked()) {
                   <div class="edit-button-container">
-                    <button mat-icon-button (click)="resetFailCount()">
+                    <button
+                      mat-icon-button
+                      (click)="resetFailCount()">
                       <mat-icon> lock_reset</mat-icon>
                     </button>
                   </div>
@@ -156,7 +173,10 @@
                   element.keyMap.key === "container_serial" && !isAnyEditingOrRevoked() && element.value !== ""
                 ) {
                   <div class="edit-button-container">
-                    <button mat-icon-button class="red" (click)="deleteContainer()">
+                    <button
+                      mat-icon-button
+                      class="red"
+                      (click)="deleteContainer()">
                       <mat-icon>folder_delete</mat-icon>
                     </button>
                   </div>
@@ -168,13 +188,15 @@
                     [shouldHideEdit]="isAnyEditingOrRevoked"
                     [isEditingUser]="isEditingUser"
                     [isEditingInfo]="isEditingInfo"
-                    [element]="element"
-                  ></app-edit-buttons>
+                    [element]="element"></app-edit-buttons>
                 }
               </div>
             </td>
           </ng-container>
-          <tr *matRowDef="let row; columns: ['key', 'value', 'edit']" class="height-52" mat-row></tr>
+          <tr
+            *matRowDef="let row; columns: ['key', 'value', 'edit']"
+            class="height-52"
+            mat-row></tr>
         </table>
       </div>
       <div [ngClass]="[overflowService.isWidthOverflowing('.token-layout', 1580) ? 'flex-column' : 'flex-row']">
@@ -185,21 +207,18 @@
             [isEditingUser]="isEditingUser"
             [tokenSerial]="tokenSerial"
             [userData]="userData"
-            class="flex"
-          ></app-token-details-user-self-service>
+            class="flex"></app-token-details-user-self-service>
           <app-token-details-info
             [detailData]="tokenDetailData"
             [infoData]="infoData"
             [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
             [isEditingInfo]="isEditingInfo"
-            [isEditingUser]="isEditingUser"
-          ></app-token-details-info>
+            [isEditingUser]="isEditingUser"></app-token-details-info>
         </div>
         <app-token-details-actions
           [repeatPinValue]="repeatPinValue"
           [setPinValue]="setPinValue"
-          [tokenType]="tokenType"
-        ></app-token-details-actions>
+          [tokenType]="tokenType"></app-token-details-actions>
       </div>
     </div>
   </div>

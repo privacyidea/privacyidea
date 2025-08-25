@@ -1,4 +1,8 @@
-<h1 i18n mat-dialog-title>User Assignment</h1>
+<h1
+  i18n
+  mat-dialog-title>
+  User Assignment
+</h1>
 <mat-dialog-content>
   <mat-form-field
     appearance="fill"
@@ -8,7 +12,7 @@
       [(ngModel)]="pin"
       [type]="hidePin() ? 'password' : 'text'"
       autocomplete="new-password"
-      matInput/>
+      matInput />
     <button
       (click)="togglePinVisibility()"
       [attr.aria-label]="'Show PIN'"
@@ -28,7 +32,7 @@
       [(ngModel)]="pinRepeat"
       [type]="hidePin() ? 'password' : 'text'"
       autocomplete="new-password"
-      matInput/>
+      matInput />
     <button
       (click)="togglePinVisibility()"
       [attr.aria-label]="'Show PIN Repeat'"
@@ -48,14 +52,15 @@
   <button
     (click)="onCancel()"
     mat-button
-    i18n>Cancel
+    i18n>
+    Cancel
   </button>
   <button
     (click)="onConfirm()"
     [disabled]="!pinsMatch()"
     color="primary"
     mat-button
-    i18n>Assign to all Tokens
+    i18n>
+    Assign to all Tokens
   </button>
 </mat-dialog-actions>
-

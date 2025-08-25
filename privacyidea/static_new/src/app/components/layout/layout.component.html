@@ -2,24 +2,28 @@
   [ngClass]="!this.authService.isSelfServiceUser() ? 'layout' : 'layout-self-service'"
   i18n-aria-label
   aria-label="Layout">
-  <header i18n-aria-label aria-label="Header">
+  <header
+    i18n-aria-label
+    aria-label="Header">
     @if (!this.authService.isSelfServiceUser()) {
       <app-header></app-header>
     } @else {
       <app-header-self-service></app-header-self-service>
     }
   </header>
-  <main i18n-aria-label aria-label="Main Router Outlet">
+  <main
+    i18n-aria-label
+    aria-label="Main Router Outlet">
     <router-outlet></router-outlet>
     @if (showProgressBar()) {
       <div class="loading-urls-container">
         @for (l of loadingUrls(); track l.key) {
-          <span class="loading-url"> {{ l.url.slice(1) }} </span><br/>
+          <span class="loading-url"> {{ l.url.slice(1) }} </span><br />
         }
       </div>
       <mat-progress-bar
         class="progress-bar"
-        mode="indeterminate"/>
+        mode="indeterminate" />
     }
   </main>
 </div>

@@ -3,7 +3,11 @@
   aria-label="Container Details Token Table"
   class="container-details-token-table-layout">
   <div class="flex-column">
-    <h3 i18n class="margin-left-1">Token in Container</h3>
+    <h3
+      i18n
+      class="margin-left-1">
+      Token in Container
+    </h3>
     @if (dataSource.data.length > 1) {
       <mat-form-field
         class="container-details-token-table-filter"
@@ -16,7 +20,7 @@
           aria-label="Filter Input"
           matInput
           i18n-placeholder
-          placeholder="Filter across all columns."/>
+          placeholder="Filter across all columns." />
       </mat-form-field>
     }
     <mat-paginator
@@ -25,12 +29,7 @@
       class="flex-just-start"
       showFirstLastButtons></mat-paginator>
   </div>
-  <div
-    [ngClass]="[
-      overflowService.isWidthOverflowing('body', 1580)
-        ? 'flex-column'
-        : 'flex-row',
-    ]">
+  <div [ngClass]="[overflowService.isWidthOverflowing('body', 1580) ? 'flex-column' : 'flex-row']">
     <table
       [dataSource]="dataSource"
       i18n-aria-label
@@ -56,11 +55,11 @@
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("serial") {
-                    @if (element.username === authService.username() ||
-                    authService.role() === "admin") {
+                    @if (element.username === authService.username() || authService.role() === "admin") {
                       <a
                         attr.aria-label="{{ column.label }} Link"
-                        (click)="contentService.tokenSelected(element.serial)"> {{ element[column.key] }}
+                        (click)="contentService.tokenSelected(element.serial)">
+                        {{ element[column.key] }}
                       </a>
                     } @else {
                       <span> {{ element[column.key] }} </span>
@@ -70,25 +69,17 @@
                   @case ("active") {
                     <span
                       (click)="toggleActive(element)"
-                      [matTooltip]="
-                        tableUtilsService.getTooltipForColumn(
-                          column.key,
-                          element
-                        )
-                      "
-                      [ngClass]="
-                        tableUtilsService.getClassForColumn(column.key, element)
-                      ">
-                      {{
-                        tableUtilsService.getDisplayText(column.key, element)
-                      }}
+                      [matTooltip]="tableUtilsService.getTooltipForColumn(column.key, element)"
+                      [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
+                      {{ tableUtilsService.getDisplayText(column.key, element) }}
                     </span>
                   }
                   @default {
                     @if (tableUtilsService.isLink(column.key)) {
                       <a
                         attr.aria-label="{{ column.label }} Link"
-                        href="#"> {{ element[column.key] }}
+                        href="#">
+                        {{ element[column.key] }}
                       </a>
                     } @else {
                       <span> {{ element[column.key] }} </span>
@@ -177,14 +168,12 @@
       [ngClass]="[
         overflowService.isWidthOverflowing('body', 1580)
           ? 'container-details-action-column'
-          : 'container-details-action-row',
+          : 'container-details-action-row'
       ]">
       <button
         (click)="assignToAllToken()"
         [disabled]="!isAssignableToAllToken()"
-        [ngClass]="[
-          isAssignableToAllToken() ? 'card-button' : 'card-button-disabled',
-        ]"
+        [ngClass]="[isAssignableToAllToken() ? 'card-button' : 'card-button-disabled']"
         mat-flat-button
         i18n>
         <mat-icon>playlist_add</mat-icon>
@@ -193,9 +182,7 @@
       <button
         (click)="unassignFromAllToken()"
         [disabled]="!isUnassignableFromAllToken()"
-        [ngClass]="[
-          isUnassignableFromAllToken() ? 'card-button' : 'card-button-disabled',
-        ]"
+        [ngClass]="[isUnassignableFromAllToken() ? 'card-button' : 'card-button-disabled']"
         mat-flat-button
         i18n>
         <mat-icon>playlist_remove</mat-icon>
@@ -214,7 +201,7 @@
         class="card-button-delete"
         mat-flat-button
         i18n>
-        <mat-icon class="mdi--list-lock"/>
+        <mat-icon class="mdi--list-lock" />
         {{ "Deactivate All Tokens" }}
       </button>
       <button
@@ -236,4 +223,3 @@
     </div>
   </div>
 </div>
-

@@ -1,8 +1,16 @@
-<div i18n-aria-label aria-label="Token Table" class="token-table-layout" appScrollToTop>
+<div
+  i18n-aria-label
+  aria-label="Token Table"
+  class="token-table-layout"
+  appScrollToTop>
   <div class="filter-paginator-container">
-    <mat-form-field class="token-table-filter" subscriptSizing="dynamic">
+    <mat-form-field
+      class="token-table-filter"
+      subscriptSizing="dynamic">
       <mat-label i18n>Enter Filter</mat-label>
-      <app-clearable-input (onClick)="filterValueString.set('')" [showClearButton]="filterValueString().length > 0">
+      <app-clearable-input
+        (onClick)="filterValueString.set('')"
+        [showClearButton]="filterValueString().length > 0">
         <input
           #filterHTMLInputElement
           [(ngModel)]="filterValueString"
@@ -10,8 +18,7 @@
           aria-label="Filter Input"
           matInput
           i18n-placeholder
-          placeholder="Example query: 'type: hotp userid: 1000'"
-        />
+          placeholder="Example query: 'type: hotp userid: 1000'" />
       </app-clearable-input>
     </mat-form-field>
     <mat-paginator
@@ -20,16 +27,14 @@
       [pageIndex]="pageIndex()"
       [pageSizeOptions]="pageSizeOptions()"
       [pageSize]="pageSize()"
-      showFirstLastButtons
-    />
+      showFirstLastButtons />
   </div>
   <div class="table-keyword-filter-row">
     <app-keyword-filter
       [advancedApiFilter]="advancedApiFilter"
       [apiFilter]="apiFilter"
       [filterHTMLInputElement]="filterHTMLInputElement"
-      [filterValue]="filterValue"
-    />
+      [filterValue]="filterValue" />
   </div>
   <table
     (matSortChange)="onSortEvent($event)"
@@ -38,21 +43,26 @@
     aria-label="Token Data Table"
     class="token-table"
     mat-table
-    matSort
-  >
+    matSort>
     @for (column of columnKeysMap; track column) {
       <ng-container [matColumnDef]="column.key">
         @if (column.key === "select") {
-          <th *matHeaderCellDef mat-header-cell class="table-checkbox">
+          <th
+            *matHeaderCellDef
+            mat-header-cell
+            class="table-checkbox">
             <mat-checkbox
               (change)="$event ? toggleAllRows() : null"
               [checked]="isAllSelected()"
               [indeterminate]="tokenSelection().length > 0 && !isAllSelected()"
-              [disabled]="totalLength() === 0"
-            />
+              [disabled]="totalLength() === 0" />
           </th>
         } @else {
-          <th *matHeaderCellDef attr.aria-label="{{ column.label }} Header" mat-header-cell mat-sort-header>
+          <th
+            *matHeaderCellDef
+            attr.aria-label="{{ column.label }} Header"
+            mat-header-cell
+            mat-sort-header>
             {{ column.label }}
           </th>
         }
@@ -62,9 +72,8 @@
           mat-cell
           [ngClass]="{
             'width-18rem': column.key === 'description',
-            'table-checkbox': column.key === 'select',
-          }"
-        >
+            'table-checkbox': column.key === 'select'
+          }">
           <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
             @switch (column.key) {
               @case ("select") {
@@ -72,16 +81,14 @@
                   (change)="$event ? toggleRow(tokenDetails) : null"
                   (click)="$event.stopPropagation()"
                   [checked]="tokenSelection().includes(tokenDetails)"
-                  [disabled]="totalLength() === 0"
-                />
+                  [disabled]="totalLength() === 0" />
               }
               @case ("serial") {
                 <div class="flex-row">
                   <a
                     class="flex ali-center"
                     attr.aria-label="{{ column.label }} Link"
-                    (click)="contentService.tokenSelected(tokenDetails.serial)"
-                  >
+                    (click)="contentService.tokenSelected(tokenDetails.serial)">
                     {{ tokenDetails[column.key] }}
                   </a>
                   <app-copy-button [copyText]="tokenDetails.serial" />
@@ -90,23 +97,24 @@
               @case ("active") {
                 <span
                   [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)"
-                  (click)="toggleActive(tokenDetails)"
-                >
+                  (click)="toggleActive(tokenDetails)">
                   {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
                 </span>
               }
               @case ("failcount") {
                 <span
                   [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)"
-                  (click)="resetFailCount(tokenDetails)"
-                >
+                  (click)="resetFailCount(tokenDetails)">
                   {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
                 </span>
               }
               @case ("realms") {
                 <div [ngClass]="(tokenDetails[column.key]?.length || 0) > 1 ? 'realm-list' : 'realm'">
                   @for (realm of tokenDetails[column.key]; track realm; let idx = $index) {
-                    <span attr.aria-label="{{ column.label }} Link" href="#"> {{ realm }} </span
+                    <span
+                      attr.aria-label="{{ column.label }} Link"
+                      href="#">
+                      {{ realm }} </span
                     ><br style="margin-top: 3px" />
                   }
                 </div>
@@ -114,8 +122,7 @@
               @case ("container_serial") {
                 <a
                   attr.aria-label="{{ column.label }} Link"
-                  (click)="contentService.containerSelected(tokenDetails.container_serial)"
-                >
+                  (click)="contentService.containerSelected(tokenDetails.container_serial)">
                   {{ tokenDetails[column.key] }}
                 </a>
                 @if (tokenDetails.container_serial !== "") {
@@ -124,7 +131,9 @@
               }
               @default {
                 @if (tableUtilsService.isLink(column.key)) {
-                  <a attr.aria-label="{{ column.label }} Link" href="#">
+                  <a
+                    attr.aria-label="{{ column.label }} Link"
+                    href="#">
                     {{ tokenDetails[column.key] }}
                   </a>
                 } @else {
@@ -138,12 +147,27 @@
         </td>
       </ng-container>
     }
-    <tr *matHeaderRowDef="columnKeys" i18n-aria-label aria-label="Header Row" mat-header-row></tr>
+    <tr
+      *matHeaderRowDef="columnKeys"
+      i18n-aria-label
+      aria-label="Header Row"
+      mat-header-row></tr>
 
-    <tr *matRowDef="let row; columns: columnKeys" i18n-aria-label aria-label="Data Row" mat-row></tr>
+    <tr
+      *matRowDef="let row; columns: columnKeys"
+      i18n-aria-label
+      aria-label="Data Row"
+      mat-row></tr>
 
-    <tr *matNoDataRow i18n-aria-label aria-label="No Data Row">
-      <td [attr.colspan]="columnKeys.length" i18n-aria-label aria-label="No Data Cell" i18n>
+    <tr
+      *matNoDataRow
+      i18n-aria-label
+      aria-label="No Data Row">
+      <td
+        [attr.colspan]="columnKeys.length"
+        i18n-aria-label
+        aria-label="No Data Cell"
+        i18n>
         No data matching the filter.
       </td>
     </tr>
