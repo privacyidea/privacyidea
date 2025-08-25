@@ -4,6 +4,7 @@ import { Observable, throwError } from "rxjs";
 import { catchError, tap } from "rxjs/operators";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
+import { BEARER_TOKEN_STORAGE_KEY } from "../../core/constants";
 import { LocalService, LocalServiceInterface } from "../local/local.service";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import { VersioningService, VersioningServiceInterface } from "../version/version.service";
@@ -93,7 +94,6 @@ export interface AuthDetail {
 
 export interface AuthServiceInterface {
   authUrl: string;
-  TOKEN_KEY: "bearer_token";
   jwtData: WritableSignal<JwtData | null>;
   jwtNonce: Signal<string>;
   authtype: Signal<"cookie" | "none">;
@@ -161,8 +161,6 @@ export class AuthService implements AuthServiceInterface {
   private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   private readonly localService: LocalServiceInterface = inject(LocalService);
 
-  readonly TOKEN_KEY = "bearer_token";
-
   authData = signal<AuthData | null>(null);
   jwtData = signal<JwtData | null>(null);
 
@@ -172,7 +170,7 @@ export class AuthService implements AuthServiceInterface {
 
   public getHeaders(): HttpHeaders {
     return new HttpHeaders({
-      "PI-Authorization": this.localService.getData(this.TOKEN_KEY) || ""
+      "PI-Authorization": this.localService.getData(BEARER_TOKEN_STORAGE_KEY) || ""
     });
   }
   logLevel = computed(() => this.authData()?.log_level || 0);
@@ -251,7 +249,7 @@ export class AuthService implements AuthServiceInterface {
             this.acceptAuthentication();
             this.authData.set(value);
             this.jwtData.set(this.decodeJwtPayload(value.token));
-            this.localService.saveData(this.TOKEN_KEY, value.token);
+            this.localService.saveData(BEARER_TOKEN_STORAGE_KEY, value.token);
           }
         }),
         catchError((error) => {
@@ -267,7 +265,7 @@ export class AuthService implements AuthServiceInterface {
   logout(): void {
     this.authData.set(null);
     this.jwtData.set(null);
-    this.localService.removeData(this.TOKEN_KEY);
+    this.localService.removeData(BEARER_TOKEN_STORAGE_KEY);
     this.authenticationAccepted.set(false);
   }
 

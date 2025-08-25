@@ -12,7 +12,7 @@ export interface LocalServiceInterface {
 @Injectable({
   providedIn: "root"
 })
-export class LocalService {
+export class LocalService implements LocalServiceInterface {
   key = environment.secretAESKey;
 
   public saveData(key: string, value: string) {

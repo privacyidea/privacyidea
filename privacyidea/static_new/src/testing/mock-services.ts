@@ -5,6 +5,7 @@ import { MatTableDataSource } from "@angular/material/table";
 import { Router } from "@angular/router";
 import { Observable, of, Subject, Subscription } from "rxjs";
 import { PiResponse } from "../app/app.component";
+import { BEARER_TOKEN_STORAGE_KEY } from "../app/core/constants";
 import {
   EnrollmentResponse,
   TokenApiPayloadMapper,
@@ -29,16 +30,12 @@ import {
   ContainerTypes
 } from "../app/services/container/container.service";
 import { ContentServiceInterface } from "../app/services/content/content.service";
-import { LocalService, LocalServiceInterface } from "../app/services/local/local.service";
+import { LocalServiceInterface } from "../app/services/local/local.service";
 import { Machines, MachineServiceInterface, TokenApplication } from "../app/services/machine/machine.service";
 import { NotificationServiceInterface } from "../app/services/notification/notification.service";
 import { OverflowServiceInterface } from "../app/services/overflow/overflow.service";
 import { Realm, Realms, RealmServiceInterface } from "../app/services/realm/realm.service";
-import {
-  FilterPair,
-  TableUtilsService,
-  TableUtilsServiceInterface
-} from "../app/services/table-utils/table-utils.service";
+import { FilterPair, TableUtilsServiceInterface } from "../app/services/table-utils/table-utils.service";
 import {
   LostTokenResponse,
   TokenDetails,
@@ -217,7 +214,6 @@ export class MockPiResponse<Value, Detail = unknown> implements PiResponse<Value
 
 export class MockAuthService implements AuthServiceInterface {
   readonly authUrl = "environmentMock.proxyUrl + '/auth'";
-  readonly TOKEN_KEY = "bearer_token";
   authtype: Signal<"cookie" | "none"> = signal("cookie");
 
   static MOCK_AUTH_DATA: AuthData = {
@@ -267,7 +263,7 @@ export class MockAuthService implements AuthServiceInterface {
 
   public getHeaders(): HttpHeaders {
     return new HttpHeaders({
-      "PI-Authorization": this.localService.getData(this.TOKEN_KEY) || ""
+      "PI-Authorization": this.localService.getData(BEARER_TOKEN_STORAGE_KEY) || ""
     });
   }
 
