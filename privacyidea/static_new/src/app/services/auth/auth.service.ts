@@ -1,9 +1,10 @@
 import { HttpClient, HttpHeaders } from "@angular/common/http";
-import { computed, inject, Injectable, signal } from "@angular/core";
+import { computed, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
 import { Observable, throwError } from "rxjs";
 import { catchError, tap } from "rxjs/operators";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
+import { LocalService, LocalServiceInterface } from "../local/local.service";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import { VersioningService, VersioningServiceInterface } from "../version/version.service";
 
@@ -50,6 +51,16 @@ export interface AuthData {
   };
 }
 
+export interface JwtData {
+  username: string;
+  realm: string;
+  nonce: string;
+  role: AuthRole;
+  authtype: string;
+  exp: number;
+  rights: string[];
+}
+
 export type AuthRole = "admin" | "user" | "";
 
 export interface AuthDetail {
@@ -57,14 +68,58 @@ export interface AuthDetail {
 }
 
 export interface AuthServiceInterface {
+  authUrl: string;
+  TOKEN_KEY: "bearer_token";
+  jwtData: WritableSignal<JwtData | null>;
+  jwtNonce: Signal<string>;
+  authtype: Signal<"cookie" | "none">;
+  jwtExpDate: Signal<Date | null>;
+
+  authData: () => AuthData | null;
+  authenticationAccepted: () => boolean;
+
   isAuthenticated: () => boolean;
-  user: () => string;
-  realm: () => string;
-  role: () => AuthRole;
+
+  logLevel: () => number;
   menus: () => string[];
+  realm: () => string;
+  rights: () => string[];
+  role: () => AuthRole;
+  token: () => string;
+  username: () => string;
+  logoutTimeSeconds: () => number | null;
+  auditPageSize: () => number;
+  tokenPageSize: () => number;
+  userPageSize: () => number;
+  policyTemplateUrl: () => string;
+  defaultTokentype: () => string;
+  defaultContainerType: () => string;
+  userDetails: () => boolean;
+  tokenWizard: () => boolean;
+  tokenWizard2nd: () => boolean;
+  adminDashboard: () => boolean;
+  dialogNoToken: () => boolean;
+  searchOnEnter: () => boolean;
+  timeoutAction: () => string;
+  tokenRollover: () => any;
+  hideWelcome: () => boolean;
+  hideButtons: () => boolean;
+  deletionConfirmation: () => boolean;
+  showSeed: () => boolean;
+  showNode: () => string;
+  subscriptionStatus: () => number;
+  subscriptionStatusPush: () => number;
+  qrImageAndroid: () => string | null;
+  qrImageIOS: () => string | null;
+  qrImageCustom: () => string | null;
+  logoutRedirectUrl: () => string;
+  requireDescription: () => string[];
+  rssAge: () => number;
+  containerWizard: () => { enabled: boolean };
+
   isSelfServiceUser: () => boolean;
   authenticate: (params: any) => Observable<AuthResponse>;
-  isAuthenticatedUser: () => boolean;
+
   acceptAuthentication: () => void;
   deauthenticate: () => void;
 }
@@ -73,16 +128,76 @@ export interface AuthServiceInterface {
   providedIn: "root"
 })
 export class AuthService implements AuthServiceInterface {
+  readonly authUrl = environment.proxyUrl + "/auth";
+
   private readonly http: HttpClient = inject(HttpClient);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
+  private readonly localService: LocalServiceInterface = inject(LocalService);
 
-  readonly authUrl = environment.proxyUrl + "/auth";
-  isAuthenticated = signal(false);
-  user = signal("");
-  realm = signal("");
-  role = signal<AuthRole>("");
-  menus = signal<string[]>([]);
+  readonly TOKEN_KEY = "bearer_token";
+
+  authData = signal<AuthData | null>(null);
+  jwtData = signal<JwtData | null>(null);
+
+  authenticationAccepted = signal<boolean>(false);
+
+  isAuthenticated = computed(() => this.authenticationAccepted() && !!this.authData());
+
+  logLevel = computed(() => this.authData()?.log_level || 0);
+  menus = computed(() => this.authData()?.menus || []);
+  realm = computed(() => this.jwtData()?.realm || this.authData()?.realm || "");
+  rights = computed(() => this.jwtData()?.rights || this.authData()?.rights || []);
+  role = computed(() => this.jwtData()?.role || this.authData()?.role || "");
+  token = computed(() => this.authData()?.token || "");
+  username = computed(() => this.jwtData()?.username || this.authData()?.username || "");
+  logoutTimeSeconds = computed(() => {
+    const jwtExpDate = this.jwtExpDate()!;
+    let jwtLogoutTime: number | null = null;
+    const authDataLogoutTime = this.authData()?.logout_time || null;
+    if (jwtExpDate) {
+      const now = new Date();
+      jwtLogoutTime = Math.max(0, Math.floor((jwtExpDate.getTime() - now.getTime()) / 1000));
+    }
+    if (jwtLogoutTime === null) return authDataLogoutTime;
+    if (authDataLogoutTime === null) return jwtLogoutTime;
+    return Math.min(jwtLogoutTime, authDataLogoutTime);
+  });
+  auditPageSize = computed(() => this.authData()?.audit_page_size || 10);
+  tokenPageSize = computed(() => this.authData()?.token_page_size || 10);
+  userPageSize = computed(() => this.authData()?.user_page_size || 10);
+  policyTemplateUrl = computed(() => this.authData()?.policy_template_url || "");
+  defaultTokentype = computed(() => this.authData()?.default_tokentype || "");
+  defaultContainerType = computed(() => this.authData()?.default_container_type || "");
+  userDetails = computed(() => this.authData()?.user_details || false);
+  tokenWizard = computed(() => this.authData()?.token_wizard || false);
+  tokenWizard2nd = computed(() => this.authData()?.token_wizard_2nd || false);
+  adminDashboard = computed(() => this.authData()?.admin_dashboard || false);
+  dialogNoToken = computed(() => this.authData()?.dialog_no_token || false);
+  searchOnEnter = computed(() => this.authData()?.search_on_enter || false);
+  timeoutAction = computed(() => this.authData()?.timeout_action || "logout");
+  tokenRollover = computed(() => this.authData()?.token_rollover || {});
+  hideWelcome = computed(() => this.authData()?.hide_welcome || false);
+  hideButtons = computed(() => this.authData()?.hide_buttons || false);
+  deletionConfirmation = computed(() => this.authData()?.deletion_confirmation || false);
+  showSeed = computed(() => this.authData()?.show_seed || false);
+  showNode = computed(() => this.authData()?.show_node || "");
+  subscriptionStatus = computed(() => this.authData()?.subscription_status || 0);
+  subscriptionStatusPush = computed(() => this.authData()?.subscription_status_push || 0);
+  qrImageAndroid = computed(() => this.authData()?.qr_image_android || null);
+  qrImageIOS = computed(() => this.authData()?.qr_image_ios || null);
+  qrImageCustom = computed(() => this.authData()?.qr_image_custom || null);
+  logoutRedirectUrl = computed(() => this.authData()?.logout_redirect_url || "");
+  requireDescription = computed(() => this.authData()?.require_description || []);
+  rssAge = computed(() => this.authData()?.rss_age || 0);
+  containerWizard = computed(() => this.authData()?.container_wizard || { enabled: false });
+
+  jwtNonce = computed(() => this.jwtData()?.nonce || "");
+  authtype = computed(() => (this.jwtData()?.authtype || this.jwtData() ? "cookie" : "none"));
+  jwtExpDate = computed(() => {
+    const exp = this.jwtData()?.exp;
+    return exp ? new Date(exp * 1000) : null;
+  });
 
   isSelfServiceUser = computed(() => {
     return this.role() === "user";
@@ -103,10 +218,9 @@ export class AuthService implements AuthServiceInterface {
           const value = response.result?.value;
           if (response?.result?.status && value) {
             this.acceptAuthentication();
-            this.user.set(value.username);
-            this.realm.set(value.realm);
-            this.role.set(value.role);
-            this.menus.set(value.menus);
+            this.authData.set(value);
+            this.jwtData.set(this.decodeJwtPayload(value.token));
+            this.localService.saveData(this.TOKEN_KEY, value.token);
           }
         }),
         catchError((error) => {
@@ -118,15 +232,30 @@ export class AuthService implements AuthServiceInterface {
       );
   }
 
-  isAuthenticatedUser(): boolean {
-    return this.isAuthenticated();
-  }
-
   acceptAuthentication(): void {
-    this.isAuthenticated.set(true);
+    this.authenticationAccepted.set(true);
   }
 
   deauthenticate(): void {
-    this.isAuthenticated.set(false);
+    this.authData.set(null);
+    this.jwtData.set(null);
+    this.localService.removeData(this.TOKEN_KEY);
+    this.authenticationAccepted.set(false);
+  }
+
+  decodeJwtPayload(token: string): JwtData | null {
+    try {
+      const parts = token.split(".");
+      if (parts.length !== 3) {
+        throw new Error("Invalid JWT token format");
+      }
+
+      const payloadBase64 = parts[1];
+      const payloadJson = atob(payloadBase64.replace(/-/g, "+").replace(/_/g, "/"));
+      return JSON.parse(payloadJson);
+    } catch (e) {
+      console.error("Failed to decode JWT:", e);
+      return null;
+    }
   }
 }

@@ -1,8 +1,8 @@
 import { TestBed } from "@angular/core/testing";
 import { Route, Router, UrlSegment } from "@angular/router";
-import { adminMatch, AuthGuard, selfServiceMatch } from "./auth.guard";
 import { AuthService } from "../services/auth/auth.service";
 import { NotificationService } from "../services/notification/notification.service";
+import { adminMatch, AuthGuard, selfServiceMatch } from "./auth.guard";
 
 const flushPromises = () => new Promise((r) => setTimeout(r, 0));
 
@@ -20,8 +20,7 @@ const routerMock = {
 } as unknown as Router;
 
 describe("AuthGuard — CanMatch helpers", () => {
-  const runMatch = (fn: any) =>
-    TestBed.runInInjectionContext(() => fn({} as Route, [] as UrlSegment[])) as boolean;
+  const runMatch = (fn: any) => TestBed.runInInjectionContext(() => fn({} as Route, [] as UrlSegment[])) as boolean;
 
   beforeEach(() => {
     TestBed.resetTestingModule();
@@ -30,7 +29,7 @@ describe("AuthGuard — CanMatch helpers", () => {
     });
   });
 
-  it("adminMatch returns true only for role \"admin\"", () => {
+  it('adminMatch returns true only for role "admin"', () => {
     const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
 
     auth.role.mockReturnValue("admin");
@@ -40,7 +39,7 @@ describe("AuthGuard — CanMatch helpers", () => {
     expect(runMatch(adminMatch)).toBe(false);
   });
 
-  it("selfServiceMatch returns true only for role \"user\"", () => {
+  it('selfServiceMatch returns true only for role "user"', () => {
     const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
 
     auth.role.mockReturnValue("user");
@@ -71,8 +70,7 @@ describe("AuthGuard class", () => {
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
-    jest.spyOn(console, "warn").mockImplementation(() => {
-    });
+    jest.spyOn(console, "warn").mockImplementation(() => {});
     (routerMock.navigate as jest.Mock).mockClear();
   });
 
@@ -81,26 +79,24 @@ describe("AuthGuard class", () => {
   });
 
   it("allows activation when user is authenticated", () => {
-    authService.isAuthenticatedUser.mockReturnValue(true);
+    authService.isAuthenticated.mockReturnValue(true);
 
     expect(guard.canActivate()).toBe(true);
     expect(guard.canActivateChild()).toBe(true);
-    expect(authService.isAuthenticatedUser).toHaveBeenCalledTimes(2);
+    expect(authService.isAuthenticated).toHaveBeenCalledTimes(2);
     expect(routerMock.navigate).not.toHaveBeenCalled();
   });
 
   it("blocks activation and redirects to /login when not authenticated", async () => {
-    authService.isAuthenticatedUser.mockReturnValue(false);
+    authService.isAuthenticated.mockReturnValue(false);
 
     expect(guard.canActivate()).toBe(false);
     expect(guard.canActivateChild()).toBe(false);
 
-    expect(authService.isAuthenticatedUser).toHaveBeenCalledTimes(2);
+    expect(authService.isAuthenticated).toHaveBeenCalledTimes(2);
     expect(routerMock.navigate).toHaveBeenCalledWith(["/login"]);
 
     await flushPromises();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-      "Navigation blocked by AuthGuard!"
-    );
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Navigation blocked by AuthGuard!");
   });
 });

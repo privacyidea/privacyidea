@@ -56,7 +56,7 @@
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("serial") {
-                    @if (element.username === authService.user() ||
+                    @if (element.username === authService.username() ||
                     authService.role() === "admin") {
                       <a
                         attr.aria-label="{{ column.label }} Link"

@@ -16,17 +16,17 @@
     <nav class="nav-menu">
       <div
         [ngClass]="[
-          sessionTimerService.remainingTime() < 31000
+          sessionTimerService.remainingTime()! < 31000
             ? 'red-light'
-            : sessionTimerService.remainingTime() < 60000
+            : sessionTimerService.remainingTime()! < 60000
               ? 'yellow-light'
               : 'surface-highest',
         ]"
         class="session-timer-selfservice">
-        @if (sessionTimerService.remainingTime() < 60000) {
+        @if (sessionTimerService.remainingTime()! < 60000) {
           {{ sessionTimerService.remainingTime() | date: "mm:ss" }}
-        } @else if (sessionTimerService.remainingTime() >= 60000 &&
-        sessionTimerService.remainingTime() < 600000) {
+        } @else if (sessionTimerService.remainingTime()! >= 60000 &&
+        sessionTimerService.remainingTime()! < 600000) {
           {{ sessionTimerService.remainingTime() | date: "m" }}min
         } @else {
           {{ sessionTimerService.remainingTime() | date: "mm" }}min
