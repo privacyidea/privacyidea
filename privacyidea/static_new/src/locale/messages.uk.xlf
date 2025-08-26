@@ -54,8 +54,9 @@
           <context context-type="linenumber">5</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2031608336292822758" datatype="html">
+      <trans-unit id="2031608336292822758" datatype="html" xml:space="preserve">
         <source>Filter Input</source>
+        <target state="translated">Вхідний фільтр</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.html</context>
           <context context-type="linenumber">11,12</context>
@@ -89,8 +90,9 @@
           <context context-type="linenumber">11,12</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4021416118056639248" datatype="html">
+      <trans-unit id="4021416118056639248" datatype="html" xml:space="preserve">
         <source>Example query: 'type: hotp userid: 1000'</source>
+        <target state="translated">Приклад запиту: 'type: hotp userid: 1000'</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.html</context>
           <context context-type="linenumber">14,15</context>
@@ -104,8 +106,9 @@
           <context context-type="linenumber">14,15</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2201237987005516275" datatype="html">
+      <trans-unit id="2201237987005516275" datatype="html" xml:space="preserve">
         <source>Audit Data Table</source>
+        <target state="translated">Таблиця даних аудиту</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.html</context>
           <context context-type="linenumber">33</context>
