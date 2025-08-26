@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
-import { KeywordFilterComponent } from '../shared/keyword-filter/keyword-filter.component';
 import {
   MatCell,
   MatCellDef,
@@ -19,20 +18,12 @@ import { FormsModule } from '@angular/forms';
 import { MatInput } from '@angular/material/input';
 import { NgClass } from '@angular/common';
 import { MatPaginator } from '@angular/material/paginator';
-import { CopyButtonComponent } from '../shared/copy-button/copy-button.component';
-import { RouterLink } from '@angular/router';
-import { AuditComponent } from './audit.component';
 import { MatDrawer, MatDrawerContainer, MatDrawerContent } from '@angular/material/sidenav';
 import { MatIcon } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import {
   NavigationSelfServiceComponent
 } from '../token/navigation-self-service/navigation-self-service.component';
-
-MatTable;
-}
-from;
-'@angular/material/table';
 import { RouterLink } from '@angular/router';
 import { ClearableInputComponent } from '../shared/clearable-input/clearable-input.component';
 import { CopyButtonComponent } from '../shared/copy-button/copy-button.component';
