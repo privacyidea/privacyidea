@@ -25,6 +25,7 @@ import { RealmService, RealmServiceInterface } from "../../../services/realm/rea
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { ContainerCreateComponent } from "./container-create.component";
 
 @Component({
@@ -45,7 +46,8 @@ import { ContainerCreateComponent } from "./container-create.component";
     MatExpansionPanel,
     MatExpansionPanelTitle,
     MatExpansionPanelHeader,
-    AsyncPipe
+    AsyncPipe,
+    ScrollToTopDirective
   ],
   templateUrl: "./container-create.wizard.component.html",
   styleUrl: "./container-create.component.scss"

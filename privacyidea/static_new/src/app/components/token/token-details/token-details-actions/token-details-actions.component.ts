@@ -1,9 +1,8 @@
 import { Component, inject, Input, WritableSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { MatFabButton, MatIconButton } from "@angular/material/button";
+import { MatFabButton } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { MatDivider } from "@angular/material/divider";
-import { MatFormField, MatLabel, MatSuffix } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import {
   NotificationService,
@@ -14,7 +13,9 @@ import { TokenService, TokenServiceInterface } from "../../../../services/token/
 import { ValidateService, ValidateServiceInterface } from "../../../../services/validate/validate.service";
 import { TokenSshMachineAssignDialogComponent } from "../token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog";
 import { NgClass } from "@angular/common";
-import { MatInput } from "@angular/material/input";
+import { SetPinActionComponent } from "./set-pin-action/set-pin-action.component";
+import { ResyncTokenActionComponent } from "./resync-token-action/resync-token-action.component";
+import { TestOtpPinActionComponent } from "./test-otp-pin-action/test-otp-pin-action.component";
 
 @Component({
   selector: "app-token-details-actions",
@@ -24,12 +25,10 @@ import { MatInput } from "@angular/material/input";
     MatIcon,
     MatFabButton,
     MatDivider,
-    MatIconButton,
-    MatSuffix,
     NgClass,
-    MatFormField,
-    MatLabel,
-    MatInput
+    SetPinActionComponent,
+    ResyncTokenActionComponent,
+    TestOtpPinActionComponent
   ],
   templateUrl: "./token-details-actions.component.html",
   styleUrl: "./token-details-actions.component.scss"
@@ -47,53 +46,6 @@ export class TokenDetailsActionsComponent {
   @Input() repeatPinValue!: WritableSignal<string>;
   @Input() tokenType!: WritableSignal<string>;
   tokenSerial = this.tokenService.tokenSerial;
-  fristOTPValue: string = "";
-  secondOTPValue: string = "";
-  otpOrPinToTest: string = "";
-  hide: boolean = true;
-
-  resyncOTPToken() {
-    this.tokenService
-      .resyncOTPToken(
-        this.tokenSerial(),
-        this.fristOTPValue,
-        this.secondOTPValue
-      )
-      .subscribe({
-        next: () => {
-          this.tokenService.tokenDetailResource.reload();
-        }
-      });
-  }
-
-  testToken() {
-    this.validateService
-      .testToken(this.tokenSerial(), this.otpOrPinToTest)
-      .subscribe({
-        next: (response) => {
-          if (response.result?.authentication === "ACCEPT") {
-            this.notificationService.openSnackBar(
-              "OTP or Pin tested with token was accepted."
-            );
-          } else {
-            this.notificationService.openSnackBar(
-              "OTP or Pin tested with token was rejected."
-            );
-          }
-          this.tokenService.tokenDetailResource.reload();
-        }
-      });
-  }
-
-  verifyOTPValue() {
-    this.validateService
-      .testToken(this.tokenSerial(), this.otpOrPinToTest, "1")
-      .subscribe({
-        next: () => {
-          this.tokenService.tokenDetailResource.reload();
-        }
-      });
-  }
 
   testPasskey() {
     this.validateService.authenticatePasskey({ isTest: true }).subscribe({
@@ -121,31 +73,5 @@ export class TokenDetailsActionsComponent {
       autoFocus: false,
       restoreFocus: false
     });
-  }
-
-  setPin() {
-    if (this.setPinValue() !== this.repeatPinValue()) {
-      console.error("PINs do not match.");
-      this.notificationService.openSnackBar("PINs do not match.");
-      return;
-    }
-    this.tokenService.setPin(this.tokenSerial(), this.setPinValue()).subscribe({
-      next: () => {
-        this.notificationService.openSnackBar("PIN set successfully.");
-      }
-    });
-  }
-
-  setRandomPin() {
-    this.tokenService.setRandomPin(this.tokenSerial()).subscribe({
-      next: () => {
-        this.notificationService.openSnackBar("PIN set successfully.");
-      }
-    });
-  }
-
-  canSetRandomPin() {
-    console.warn("canSetRandomPin Method not implemented.");
-    return true;
   }
 }

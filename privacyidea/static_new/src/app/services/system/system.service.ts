@@ -1,7 +1,8 @@
-import { httpResource, HttpResourceRef } from "@angular/common/http";
-import { Injectable } from "@angular/core";
+import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { HttpResourceRef, httpResource } from "@angular/common/http";
+import { Injectable, inject } from "@angular/core";
+
 import { environment } from "../../../environments/environment";
-import { LocalService } from "../local/local.service";
 
 export interface SystemServiceInterface {
   systemConfigResource: HttpResourceRef<any>;
@@ -11,12 +12,10 @@ export interface SystemServiceInterface {
   providedIn: "root"
 })
 export class SystemService implements SystemServiceInterface {
+  private readonly authService: AuthServiceInterface = inject(AuthService);
   systemConfigResource = httpResource<any>(() => ({
     url: environment.proxyUrl + "/system/",
     method: "GET",
-    headers: this.localService.getHeaders()
+    headers: this.authService.getHeaders()
   }));
-
-  constructor(private localService: LocalService) {
-  }
 }

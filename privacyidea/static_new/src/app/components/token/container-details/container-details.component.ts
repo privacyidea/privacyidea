@@ -22,6 +22,8 @@ import { MatListItem } from "@angular/material/list";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
 import { MatSelectModule } from "@angular/material/select";
 import { MatCell, MatColumnDef, MatTableDataSource, MatTableModule } from "@angular/material/table";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "../../../app.routes";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import {
   ContainerDetailData,
@@ -35,13 +37,12 @@ import { RealmService, RealmServiceInterface } from "../../../services/realm/rea
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
+import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { EditableElement, EditButtonsComponent } from "../../shared/edit-buttons/edit-buttons.component";
 import { infoDetailsKeyMap } from "../token-details/token-details.component";
 import { ContainerDetailsInfoComponent } from "./container-details-info/container-details-info.component";
 import { ContainerDetailsTokenTableComponent } from "./container-details-token-table/container-details-token-table.component";
-import { Router } from "@angular/router";
-import { ROUTE_PATHS } from "../../../app.routes";
 
 export const containerDetailsKeyMap = [
   { key: "type", label: "Type" },
@@ -58,10 +59,7 @@ const containerUserDetailsKeyMap = [
 ];
 
 const allowedTokenTypesMap = new Map<string, string | string[]>([
-  [
-    "yubikey",
-    ["certificate", "hotp", "passkey", "webauthn", "yubico", "yubikey"]
-  ],
+  ["yubikey", ["certificate", "hotp", "passkey", "webauthn", "yubico", "yubikey"]],
   ["smartphone", ["daypassword", "hotp", "push", "sms", "totp"]],
   ["generic", "all"]
 ]);
@@ -97,24 +95,21 @@ interface TokenOption {
     MatPaginator,
     MatDivider,
     MatCheckbox,
-    CopyButtonComponent
+    CopyButtonComponent,
+    ClearableInputComponent
   ],
   templateUrl: "./container-details.component.html",
   styleUrls: ["./container-details.component.scss"]
 })
 export class ContainerDetailsComponent {
-  protected readonly overflowService: OverflowServiceInterface =
-    inject(OverflowService);
-  protected readonly containerService: ContainerServiceInterface =
-    inject(ContainerService);
-  protected readonly tableUtilsService: TableUtilsServiceInterface =
-    inject(TableUtilsService);
+  protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
+  protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  protected readonly contentService: ContentServiceInterface =
-    inject(ContentService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private router = inject(Router);
   states = this.containerService.states;
   isEditingUser = signal(false);
@@ -131,24 +126,21 @@ export class ContainerDetailsComponent {
       return "";
     }
     const filterEntries = Object.entries(_filterValue);
-    return filterEntries
-      .map(([key, value]: [string, string]) => `${key}: ${value}`)
-      .join(" ");
+    return filterEntries.map(([key, value]: [string, string]) => `${key}: ${value}`).join(" ");
   });
 
   tokenResource = this.tokenService.tokenResource;
   pageIndex = this.tokenService.pageIndex;
   pageSize = this.tokenService.pageSize;
-  tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> =
-    linkedSignal({
-      source: this.tokenResource.value,
-      computation: (tokenResource, previous) => {
-        if (tokenResource && tokenResource.result?.value) {
-          return new MatTableDataSource(tokenResource.result?.value.tokens);
-        }
-        return previous?.value ?? new MatTableDataSource();
+  tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
+    source: this.tokenResource.value,
+    computation: (tokenResource, previous) => {
+      if (tokenResource && tokenResource.result?.value) {
+        return new MatTableDataSource(tokenResource.result?.value.tokens);
       }
-    });
+      return previous?.value ?? new MatTableDataSource();
+    }
+  });
   total: WritableSignal<number> = linkedSignal({
     source: this.tokenResource.value,
     computation: (tokenResource, previous) => {
@@ -227,22 +219,18 @@ export class ContainerDetailsComponent {
         .filter((detail) => detail.value !== undefined);
     }
   });
-  containerTokenData: WritableSignal<
-    MatTableDataSource<ContainerDetailToken, MatPaginator>
-  > = linkedSignal({
-    source: this.containerDetails,
-    computation: (containerDetails, previous) => {
-      if (!containerDetails) {
-        return (
-          previous?.value ??
-          new MatTableDataSource<ContainerDetailToken, MatPaginator>([])
+  containerTokenData: WritableSignal<MatTableDataSource<ContainerDetailToken, MatPaginator>> =
+    linkedSignal({
+      source: this.containerDetails,
+      computation: (containerDetails, previous) => {
+        if (!containerDetails) {
+          return previous?.value ?? new MatTableDataSource<ContainerDetailToken, MatPaginator>([]);
+        }
+        return new MatTableDataSource<ContainerDetailToken, MatPaginator>(
+          containerDetails.tokens ?? []
         );
       }
-      return new MatTableDataSource<ContainerDetailToken, MatPaginator>(
-        containerDetails.tokens ?? []
-      );
-    }
-  });
+    });
   selectedRealms = linkedSignal({
     source: this.containerDetails,
     computation: (containerDetails) => containerDetails?.realms || []
@@ -313,9 +301,7 @@ export class ContainerDetailsComponent {
     effect(() => {
       const currentFilter = this.filterValue();
 
-      let recordsFromText = this.tableUtilsService.recordsFromText(
-        this.filterValueString()
-      );
+      let recordsFromText = this.tableUtilsService.recordsFromText(this.filterValueString());
       if (this.showOnlyTokenNotInContainer()) {
         recordsFromText["container_serial"] = "";
       }
@@ -330,9 +316,7 @@ export class ContainerDetailsComponent {
     });
   }
 
-  _addTypeListToFilter(
-    currentFilter: Record<string, string>
-  ): Record<string, string> {
+  _addTypeListToFilter(currentFilter: Record<string, string>): Record<string, string> {
     const containerDetails = this.containerDetails();
     const containerType = containerDetails?.type;
     const allowedTokenTypes = allowedTokenTypesMap.get(containerType);
@@ -425,12 +409,8 @@ export class ContainerDetailsComponent {
   }
 
   unassignUser() {
-    const userName = this.userData().find(
-      (d) => d.keyMap.key === "user_name"
-    )?.value;
-    const userRealm = this.userData().find(
-      (d) => d.keyMap.key === "user_realm"
-    )?.value;
+    const userName = this.userData().find((d) => d.keyMap.key === "user_name")?.value;
+    const userRealm = this.userData().find((d) => d.keyMap.key === "user_realm")?.value;
     this.containerService
       .unassignUser(this.containerSerial(), userName ?? "", userRealm ?? "")
       .subscribe({
@@ -450,14 +430,12 @@ export class ContainerDetailsComponent {
   }
 
   addTokenToContainer(option: TokenOption) {
-    this.containerService
-      .addTokenToContainer(this.containerSerial(), option["serial"])
-      .subscribe({
-        next: () => {
-          this.containerDetailResource.reload();
-          this.tokenService.tokenResource.reload();
-        }
-      });
+    this.containerService.addTokenToContainer(this.containerSerial(), option["serial"]).subscribe({
+      next: () => {
+        this.containerDetailResource.reload();
+        this.tokenService.tokenResource.reload();
+      }
+    });
   }
 
   saveRealms() {
@@ -474,12 +452,10 @@ export class ContainerDetailsComponent {
     const description = this.containerDetailData().find(
       (detail) => detail.keyMap.key === "description"
     )?.value;
-    this.containerService
-      .setContainerDescription(this.containerSerial(), description)
-      .subscribe({
-        next: () => {
-          this.containerDetailResource.reload();
-        }
-      });
+    this.containerService.setContainerDescription(this.containerSerial(), description).subscribe({
+      next: () => {
+        this.containerDetailResource.reload();
+      }
+    });
   }
 }

@@ -2,7 +2,7 @@ import { httpResource, HttpResourceRef } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import { LocalService } from "../local/local.service";
+import { AuthService } from "../auth/auth.service";
 
 type SmsGateways = SmsGateway[];
 
@@ -26,9 +26,9 @@ export class SmsGatewayService {
   smsGatewayResource = httpResource<PiResponse<SmsGateways>>(() => ({
     url: environment.proxyUrl + "/smsgateway/",
     method: "GET",
-    headers: this.localService.getHeaders()
+    headers: this.authService.getHeaders()
   }));
 
-  constructor(private localService: LocalService) {
+  constructor(private authService: AuthService) {
   }
 }

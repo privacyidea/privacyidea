@@ -8,7 +8,7 @@ import {
 import {
   WebAuthnApiPayloadMapper,
   WebAuthnEnrollmentData,
-  WebauthnEnrollmentResponse,
+  WebauthnEnrollmentResponse, WebAuthnFinalizeApiPayloadMapper,
   WebauthnFinalizeData
 } from "../../../../mappers/token-api-payload/webauthn-token-api-payload.mapper";
 import { Base64Service, Base64ServiceInterface } from "../../../../services/base64/base64.service";
@@ -31,6 +31,9 @@ export class EnrollWebauthnComponent implements OnInit {
   protected readonly enrollmentMapper: WebAuthnApiPayloadMapper = inject(
     WebAuthnApiPayloadMapper
   );
+  protected readonly finalizeMapper: WebAuthnFinalizeApiPayloadMapper = inject(
+    WebAuthnFinalizeApiPayloadMapper
+  );
   protected readonly notificationService: NotificationServiceInterface =
     inject(NotificationService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -39,11 +42,7 @@ export class EnrollWebauthnComponent implements OnInit {
   protected readonly dialogService: DialogServiceInterface =
     inject(DialogService);
 
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "webauthn")?.text;
-
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -54,7 +53,7 @@ export class EnrollWebauthnComponent implements OnInit {
   webauthnForm = new FormGroup({});
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({});
+    this.additionalFormFieldsChange.emit({});
     this.clickEnrollChange.emit((data) => from(this.onClickEnroll(data)));
   }
 
@@ -261,12 +260,14 @@ export class EnrollWebauthnComponent implements OnInit {
     }
 
     try {
-      return await firstValueFrom(
+      const response: EnrollmentResponse = await firstValueFrom(
         this.tokenService.enrollToken({
           data: params,
-          mapper: this.enrollmentMapper
+          mapper: this.finalizeMapper
         })
       );
+      response.detail.serial = detail.serial;
+      return response;
     } catch (error: any) {
       const errMsg = `WebAuthn finalization failed: ${error.message || error}`;
       this.notificationService.openSnackBar(errMsg);

@@ -10,6 +10,8 @@ import { MatInput } from "@angular/material/input";
 import { MatListItem } from "@angular/material/list";
 import { MatSelectModule } from "@angular/material/select";
 import { MatCell, MatColumnDef, MatRow, MatTable, MatTableModule } from "@angular/material/table";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "../../../app.routes";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
@@ -18,13 +20,12 @@ import { RealmService, RealmServiceInterface } from "../../../services/realm/rea
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { EditableElement, EditButtonsComponent } from "../../shared/edit-buttons/edit-buttons.component";
 import { TokenDetailsActionsComponent } from "./token-details-actions/token-details-actions.component";
 import { TokenDetailsInfoComponent } from "./token-details-info/token-details-info.component";
 import { TokenDetailsUserComponent } from "./token-details-user/token-details-user.component";
 import { TokenSshMachineAssignDialogComponent } from "./token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog";
-import { Router } from "@angular/router";
-import { ROUTE_PATHS } from "../../../app.routes";
 
 export const tokenDetailsKeyMap = [
   { key: "tokentype", label: "Type" },
@@ -75,7 +76,8 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
     TokenDetailsInfoComponent,
     TokenDetailsActionsComponent,
     EditButtonsComponent,
-    CopyButtonComponent
+    CopyButtonComponent,
+    ScrollToTopDirective
   ],
   templateUrl: "./token-details.component.html",
   styleUrls: ["./token-details.component.scss"]

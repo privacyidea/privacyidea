@@ -1,22 +1,30 @@
 <div
+  appScrollToTop
   aria-label="Assign Token Self-Service"
-  class="assign-token-self-service-container">
-  <h3 class="margin-left-1">Assign Token</h3>
-  <p>
+  class="assign-token-self-service-container"
+  i18n-aria-label>
+  <h3
+    class="margin-left-1"
+    i18n>
+    Assign Token
+  </h3>
+  <p i18n>
     If you were handed a token device, you may connect this device to your account. Turn over the token, you may find a
-    serial number printed on the token. Please enter this serial number and make up a token pin. </p>
+    serial number printed on the token. Please enter this serial number and make up a token pin.
+  </p>
   <div class="flex-row gap-1">
     <mat-form-field class="input-height width-50">
-      <mat-label>Enter Serial</mat-label>
+      <mat-label i18n>Enter Serial</mat-label>
       <input
         [(ngModel)]="selectedToken"
         matInput
-        required/>
-      <mat-error>Serial is <strong>required</strong></mat-error>
+        required />
+      <mat-error i18n>Serial is <strong>required</strong></mat-error>
     </mat-form-field>
     <button
       (click)="assignUserToToken()"
       class="card-button"
+      i18n
       mat-flat-button>
       <mat-icon>person_add</mat-icon>
       Assign Token
@@ -24,25 +32,31 @@
   </div>
   <input
     style="display: none"
-    type="text"/>
+    type="text" />
 
   <input
     style="display: none"
-    type="password"/>
+    type="password" />
   <div class="flex-column user-pin-container">
-    <h4 class="enroll-h4">Set PIN</h4>
+    <h4
+      class="enroll-h4"
+      i18n>
+      Set PIN
+    </h4>
     <div class="user-pin-input">
       <input
         [(ngModel)]="setPinValue"
         [type]="'password'"
         class="input"
-        placeholder="PIN"/>
+        i18n-placeholder
+        placeholder="PIN" />
 
       <input
         [(ngModel)]="repeatPinValue"
         [type]="'password'"
         class="input"
-        placeholder="Repeat PIN"/>
+        i18n-placeholder
+        placeholder="Repeat PIN" />
     </div>
   </div>
 </div>

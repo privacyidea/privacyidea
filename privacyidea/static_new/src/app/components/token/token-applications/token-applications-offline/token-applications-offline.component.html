@@ -1,24 +1,33 @@
 <div
   aria-label="Token Applications Offline"
-  class="token-applications-offline">
+  class="token-applications-offline"
+  i18n-aria-label>
   <div class="details-flex-layout flex-column">
     <div class="application-p-div">
-      <p>HOTP tokens can be attached with offline to e.g. notebooks.</p>
+      <p i18n>HOTP tokens can be attached with offline to e.g. notebooks.</p>
     </div>
   </div>
 </div>
-<div class="application-table-container">
+<div
+  appScrollToTop
+  class="application-table-container">
   <div class="filter-paginator-container">
     <mat-form-field
       class="application-table-filter"
       subscriptSizing="dynamic">
-      <mat-label>Enter Filter</mat-label>
-      <input
-        #filterInput
-        [(ngModel)]="machineService.filterValueString"
-        aria-label="Filter Input"
-        matInput
-        placeholder="Example query: 'service_id: myService'"/>
+      <mat-label i18n>Enter Filter</mat-label>
+      <app-clearable-input
+        (onClick)="machineService.filterValueString.set('')"
+        [showClearButton]="machineService.filterValueString.length > 0">
+        <input
+          #filterInput
+          [(ngModel)]="machineService.filterValueString"
+          aria-label="Filter Input"
+          i18n-aria-label
+          i18n-placeholder
+          matInput
+          placeholder="Example query: 'service_id: myService'" />
+      </app-clearable-input>
     </mat-form-field>
     <mat-paginator
       (page)="machineService.onPageEvent($event)"
@@ -39,6 +48,7 @@
     [matSortDisableClear]="false"
     aria-label="Token Applications Table"
     class="token-table"
+    i18n-aria-label
     mat-table
     matSort>
     @for (column of columnsKeyMap; track column) {
@@ -60,7 +70,8 @@
               @case ("serial") {
                 <a
                   attr.aria-label="{{ column.label }} Link"
-                  (click)="contentService.tokenSelected(element.serial)"> {{ element[column.key] }}
+                  (click)="contentService.tokenSelected(element.serial)">
+                  {{ element[column.key] }}
                 </a>
                 <app-copy-button [copyText]="element.serial"></app-copy-button>
               }
@@ -68,7 +79,8 @@
                 @if (tableUtilsService.isLink(column.key)) {
                   <a
                     attr.aria-label="{{ column.label }} Link"
-                    href="#"> {{ element[column.key] }}
+                    href="#">
+                    {{ element[column.key] }}
                   </a>
                 } @else {
                   <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
@@ -84,17 +96,22 @@
     <tr
       *matHeaderRowDef="displayedColumns"
       aria-label="Header Row"
+      i18n-aria-label
       mat-header-row></tr>
     <tr
       *matRowDef="let row; columns: displayedColumns"
       aria-label="Data Row"
+      i18n-aria-label
       mat-row></tr>
     <tr
       *matNoDataRow
-      aria-label="No Data Row">
+      aria-label="No Data Row"
+      i18n-aria-label>
       <td
         [attr.colspan]="displayedColumns.length"
-        aria-label="No Data Cell">
+        aria-label="No Data Cell"
+        i18n
+        i18n-aria-label>
         No data matching the filter.
       </td>
     </tr>

@@ -1,12 +1,12 @@
-import { TestBed } from "@angular/core/testing";
 import { HttpClient, HttpErrorResponse, provideHttpClient } from "@angular/common/http";
-import { lastValueFrom, of, throwError } from "rxjs";
 import { signal } from "@angular/core";
-import { TokenService } from "./token.service";
+import { TestBed } from "@angular/core/testing";
+import { lastValueFrom, of, throwError } from "rxjs";
+import { PiResponse } from "../../app.component";
+import { ContentService } from "../content/content.service";
 import { LocalService } from "../local/local.service";
 import { NotificationService } from "../notification/notification.service";
-import { ContentService } from "../content/content.service";
-import { PiResponse } from "../../app.component";
+import { TokenService } from "./token.service";
 
 class MockLocalService {
   getHeaders = jest.fn().mockReturnValue({ Authorization: "Bearer FAKE_TOKEN" });
@@ -70,7 +70,7 @@ describe("TokenService", () => {
       expect(postSpy).toHaveBeenCalledWith(
         `${tokenService.tokenBaseUrl}disable`,
         { serial: "HOTP1" },
-        { headers: localService.getHeaders() }
+        { headers: authService.getHeaders() }
       );
       expect(result).toEqual(backend);
     });
@@ -83,7 +83,7 @@ describe("TokenService", () => {
       expect(postSpy).toHaveBeenCalledWith(
         `${tokenService.tokenBaseUrl}enable`,
         { serial: "HOTP1" },
-        { headers: localService.getHeaders() }
+        { headers: authService.getHeaders() }
       );
     });
 
@@ -100,9 +100,7 @@ describe("TokenService", () => {
         },
         error: (err) => {
           expect(err).toBe(error);
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-            "Failed to toggle active. boom"
-          );
+          expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to toggle active. boom");
           done();
         }
       });
@@ -117,7 +115,7 @@ describe("TokenService", () => {
     expect(postSpy).toHaveBeenCalledWith(
       `${tokenService.tokenBaseUrl}reset`,
       { serial: "HOTP2" },
-      { headers: localService.getHeaders() }
+      { headers: authService.getHeaders() }
     );
   });
 
@@ -127,7 +125,7 @@ describe("TokenService", () => {
     tokenService.deleteToken("DEL1").subscribe();
 
     expect(deleteSpy).toHaveBeenCalledWith(`${tokenService.tokenBaseUrl}DEL1`, {
-      headers: localService.getHeaders()
+      headers: authService.getHeaders()
     });
   });
 
@@ -140,7 +138,7 @@ describe("TokenService", () => {
       expect(postSpy).toHaveBeenCalledWith(
         `${tokenService.tokenBaseUrl}set`,
         { serial: "serial", max_failcount: 3 },
-        { headers: localService.getHeaders() }
+        { headers: authService.getHeaders() }
       );
     });
 
@@ -152,7 +150,7 @@ describe("TokenService", () => {
       expect(postSpy).toHaveBeenCalledWith(
         `${tokenService.tokenBaseUrl}set`,
         { serial: "serial", description: "A token" },
-        { headers: localService.getHeaders() }
+        { headers: authService.getHeaders() }
       );
     });
   });
@@ -170,13 +168,13 @@ describe("TokenService", () => {
         1,
         `${tokenService.tokenBaseUrl}set`,
         { serial: "serial", hashlib: "sha1" },
-        { headers: localService.getHeaders() }
+        { headers: authService.getHeaders() }
       );
       expect(postSpy).toHaveBeenNthCalledWith(
         2,
         `${tokenService.tokenBaseUrl}info/serial/custom`,
         { value: "foo" },
-        { headers: localService.getHeaders() }
+        { headers: authService.getHeaders() }
       );
     });
   });
@@ -197,7 +195,7 @@ describe("TokenService", () => {
       expect(postSpy).toHaveBeenCalledWith(
         `${tokenService.tokenBaseUrl}assign`,
         { serial: "serial", user: null, realm: null, pin: "123" },
-        { headers: localService.getHeaders() }
+        { headers: authService.getHeaders() }
       );
     });
   });
@@ -219,7 +217,7 @@ describe("TokenService", () => {
       expect(postSpy).toHaveBeenCalledWith(
         `${tokenService.tokenBaseUrl}group/serial`,
         { groups: ["group1"] },
-        { headers: localService.getHeaders() }
+        { headers: authService.getHeaders() }
       );
     });
 
@@ -230,7 +228,7 @@ describe("TokenService", () => {
       expect(postSpy).toHaveBeenCalledWith(
         `${tokenService.tokenBaseUrl}group/serial`,
         { groups: ["g1", "g2"] },
-        { headers: localService.getHeaders() }
+        { headers: authService.getHeaders() }
       );
     });
   });
@@ -253,9 +251,7 @@ describe("TokenService", () => {
       await Promise.resolve();
 
       expect(errors[0]).toBe(boom);
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-        "Failed to poll token state. poll-error"
-      );
+      expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to poll token state. poll-error");
     });
     jest.useRealTimers();
   });
@@ -279,9 +275,7 @@ describe("TokenService", () => {
       .mockReturnValueOnce(of(done as any));
 
     const emissions: any[] = [];
-    tokenService
-      .pollTokenRolloutState({ tokenSerial: "HOTP3", initDelay: 0 })
-      .subscribe((r) => emissions.push(r));
+    tokenService.pollTokenRolloutState({ tokenSerial: "HOTP3", initDelay: 0 }).subscribe((r) => emissions.push(r));
 
     // wait four ticks but getTokenDetails should be called three times
     jest.runOnlyPendingTimers();
@@ -328,9 +322,7 @@ describe("TokenService", () => {
 
   describe("deleteTokens()", () => {
     it("calls deleteToken for each serial and aggregates", (done) => {
-      const delMock = jest
-        .spyOn(tokenService, "deleteToken")
-        .mockReturnValue(of({ ok: true } as any));
+      const delMock = jest.spyOn(tokenService, "deleteToken").mockReturnValue(of({ ok: true } as any));
 
       tokenService.deleteTokens(["A", "B"]).subscribe((arr) => {
         expect(delMock).toHaveBeenCalledTimes(2);
@@ -348,7 +340,7 @@ describe("TokenService", () => {
         expect(postSpy).toHaveBeenCalledWith(
           `${tokenService.tokenBaseUrl}revoke`,
           { serial: "serial" },
-          { headers: localService.getHeaders() }
+          { headers: authService.getHeaders() }
         );
         expect(r).toEqual({ success: true });
         done();
@@ -365,9 +357,7 @@ describe("TokenService", () => {
       tokenService.revokeToken("serial").subscribe({
         error: (e) => {
           expect(e).toBe(boom);
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-            "Failed to revoke token. rvk"
-          );
+          expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to revoke token. rvk");
           done();
         }
       });
@@ -381,7 +371,7 @@ describe("TokenService", () => {
       expect(postSpy).toHaveBeenCalledWith(
         `${tokenService.tokenBaseUrl}setpin`,
         { serial: "serial", otppin: "9876" },
-        { headers: localService.getHeaders() }
+        { headers: authService.getHeaders() }
       );
     });
 
@@ -391,7 +381,7 @@ describe("TokenService", () => {
       expect(postSpy).toHaveBeenCalledWith(
         `${tokenService.tokenBaseUrl}setrandompin`,
         { serial: "serial" },
-        { headers: localService.getHeaders() }
+        { headers: authService.getHeaders() }
       );
     });
 
@@ -401,7 +391,7 @@ describe("TokenService", () => {
       expect(postSpy).toHaveBeenCalledWith(
         `${tokenService.tokenBaseUrl}resync`,
         { serial: "S", otp1: "111", otp2: "222" },
-        { headers: localService.getHeaders() }
+        { headers: authService.getHeaders() }
       );
     });
   });
@@ -413,7 +403,7 @@ describe("TokenService", () => {
       expect(postSpy).toHaveBeenCalledWith(
         `${tokenService.tokenBaseUrl}realm/serial`,
         { realms: ["r1", "r2"] },
-        { headers: localService.getHeaders() }
+        { headers: authService.getHeaders() }
       );
     });
 
@@ -423,7 +413,7 @@ describe("TokenService", () => {
       expect(postSpy).toHaveBeenCalledWith(
         `${tokenService.tokenBaseUrl}lost/serial`,
         {},
-        { headers: localService.getHeaders() }
+        { headers: authService.getHeaders() }
       );
     });
   });
@@ -469,16 +459,8 @@ describe("TokenService", () => {
     it.each([
       ["setPin", () => tokenService.setPin("X", "1"), "Failed to set PIN. boom"],
       ["setRandomPin", () => tokenService.setRandomPin("X"), "Failed to set random PIN. boom"],
-      [
-        "resyncOTPToken",
-        () => tokenService.resyncOTPToken("X", "111", "222"),
-        "Failed to resync OTP token. boom"
-      ],
-      [
-        "setTokenRealm",
-        () => tokenService.setTokenRealm("X", ["r"]),
-        "Failed to set token realm. boom"
-      ],
+      ["resyncOTPToken", () => tokenService.resyncOTPToken("X", "111", "222"), "Failed to resync OTP token. boom"],
+      ["setTokenRealm", () => tokenService.setTokenRealm("X", ["r"]), "Failed to set token realm. boom"],
       ["lostToken", () => tokenService.lostToken("X"), "Failed to mark token as lost. boom"]
     ])("%s() notifies on error", async (_label, call, expected) => {
       postSpy.mockReturnValue(throwError(() => makeErr("boom")));
@@ -506,9 +488,7 @@ describe("TokenService", () => {
           next: () => fail("should error"),
           error: (e) => {
             expect(e.error.result.error.message).toBe("first");
-            expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-              "Failed to assign user to all tokens. first"
-            );
+            expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to assign user to all tokens. first");
             done();
           }
         });

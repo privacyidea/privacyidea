@@ -2,7 +2,7 @@ import { httpResource, HttpResourceRef } from "@angular/common/http";
 import { Injectable, linkedSignal, WritableSignal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import { LocalService } from "../local/local.service";
+import { AuthService } from "../auth/auth.service";
 
 type ServiceIds = {
   [key: string]: _ServiceId;
@@ -31,7 +31,7 @@ export class ServiceIdService implements ServiceIdServiceInterface {
   serviceIdResource = httpResource<PiResponse<ServiceIds>>(() => ({
     url: environment.proxyUrl + "/serviceid/",
     method: "GET",
-    headers: this.localService.getHeaders()
+    headers: this.authService.getHeaders()
   }));
   serviceIds: WritableSignal<ServiceId[]> = linkedSignal({
     source: this.serviceIdResource.value,
@@ -40,17 +40,15 @@ export class ServiceIdService implements ServiceIdServiceInterface {
       if (!value) {
         return previous?.value ?? [];
       }
-      const array = Object.entries(value).map(
-        ([name, { description, id }]) => ({
-          name,
-          description,
-          id
-        })
-      );
+      const array = Object.entries(value).map(([name, { description, id }]) => ({
+        name,
+        description,
+        id
+      }));
       return array;
     }
   });
 
-  constructor(private localService: LocalService) {
+  constructor(private authService: AuthService) {
   }
 }

@@ -38,7 +38,7 @@ export class EnrollPushComponent implements OnInit {
     .tokenTypeOptions()
     .find((type) => type.key === "push")?.text;
 
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -49,7 +49,7 @@ export class EnrollPushComponent implements OnInit {
   pushForm = new FormGroup({});
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({});
+    this.additionalFormFieldsChange.emit({});
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 

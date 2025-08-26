@@ -1,10 +1,6 @@
 <mat-card
   [ngClass]="{
-    'card-margin-pad':
-      !overflowService.isWidthOverflowing(
-        'body',
-        overflowService.getOverflowThreshold()
-      )
+    'card-margin-pad': !overflowService.isWidthOverflowing('body', overflowService.getOverflowThreshold())
   }"
   appearance="outlined">
   <mat-card-content>
@@ -12,11 +8,8 @@
       <mat-list class="padding-18">
         <mat-list-item>
           <button
-            [ngClass]="
-              contentService.routeUrl() === ROUTE_PATHS.USERS
-                ? 'card-button-active'
-                : 'card-button'"
-            [routerLink]=ROUTE_PATHS.USERS
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS ? 'card-button-active' : 'card-button'"
+            [routerLink]="ROUTE_PATHS.USERS"
             mat-flat-button>
             <mat-icon>person</mat-icon>
             Overview
@@ -25,10 +18,7 @@
 
         <mat-list-item>
           <button
-            [ngClass]="
-              contentService.routeUrl() === '#'
-                ? 'card-button-active'
-                : 'card-button-disabled'"
+            [ngClass]="contentService.routeUrl() === '#' ? 'card-button-active' : 'card-button-disabled'"
             [routerLink]="['#']"
             disabled
             mat-flat-button>
@@ -39,10 +29,7 @@
 
         <mat-list-item>
           <button
-            [ngClass]="
-              contentService.routeUrl() === '#'
-                ? 'card-button-active'
-                : 'card-button-disabled'"
+            [ngClass]="contentService.routeUrl() === '#' ? 'card-button-active' : 'card-button-disabled'"
             [routerLink]="['#']"
             disabled
             mat-flat-button>
@@ -51,9 +38,9 @@
           </button>
         </mat-list-item>
 
-        <br/>
-        <mat-divider/>
-        <br/>
+        <br />
+        <mat-divider />
+        <br />
 
         <mat-list-item>
           <button
@@ -65,21 +52,22 @@
           </button>
         </mat-list-item>
 
-        <br/>
-        <mat-divider/>
-        <br/>
+        <br />
+        <mat-divider />
+        <br />
 
         <mat-list-item class="height-auto">
           <mat-form-field class="width-100">
             <mat-label>Select Realm of User</mat-label>
-            <mat-select [(ngModel)]="userService.selectedUserRealm">
+            <mat-select
+              [(ngModel)]="userService.selectedUserRealm"
+              [value]="userService.selectedUserRealm()">
               @for (option of realmService.realmOptions(); track option) {
                 <mat-option [value]="option">{{ option }}</mat-option>
               }
             </mat-select>
           </mat-form-field>
         </mat-list-item>
-
       </mat-list>
     </div>
   </mat-card-content>

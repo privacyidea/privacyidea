@@ -16,6 +16,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "../../../services
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { ContainerTableComponent } from "./container-table.component";
 
 @Component({
@@ -32,7 +33,8 @@ import { ContainerTableComponent } from "./container-table.component";
     MatCheckboxModule,
     FormsModule,
     MatIcon,
-    MatIconButton
+    MatIconButton,
+    ScrollToTopDirective
   ],
   templateUrl: "./container-table.self-service.component.html",
   styleUrl: "./container-table.component.scss"
