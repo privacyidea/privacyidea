@@ -1,32 +1,20 @@
 <div class="flex-column">
-  <div class="token-type-paragraph">
-    <p>{{ text }}</p>
-  </div>
   <h4 class="enroll-h4">Token Configuration</h4>
-  <span>
-    Please answer at least {{ configMinNumberOfAnswers() }} of the following
-    questions.
-  </span>
+  <span> Please answer at least {{ configMinNumberOfAnswers() }} of the following questions. </span>
   <div
-    [formGroup]="questionForm"
+    [formGroup]="questionForm()"
     class="margin-top-1 form-group">
     @for (question of configQuestions(); track question; let i = $index) {
-      @if (questionControlNames[i]) {
-        <!-- Ensure control name exists -->
-        <mat-form-field class="question-input-width input-height">
-          <mat-label>{{ question.text }}</mat-label>
-          <input
-            type="text"
-            [formControlName]="questionControlNames[i]"
-            matInput
-            required/>
-          <!-- Individual controls are required -->
-        </mat-form-field>
-      }
+      <mat-form-field class="question-input-width input-height">
+        <mat-label>{{ question.question }}</mat-label>
+        <input
+          type="text"
+          [formControlName]="questionControlNames()[i]"
+          matInput />
+      </mat-form-field>
     }
   </div>
-  @if (questionForm.hasError("minAnswers") && questionForm.touched) {
-    <mat-error>At least {{ configMinNumberOfAnswers() }} answers are <strong>required</strong>.
-    </mat-error>
+  @if (questionForm().hasError("minAnswers") && questionForm().touched) {
+    <mat-error>At least {{ configMinNumberOfAnswers() }} answers are <strong>required</strong>. </mat-error>
   }
 </div>

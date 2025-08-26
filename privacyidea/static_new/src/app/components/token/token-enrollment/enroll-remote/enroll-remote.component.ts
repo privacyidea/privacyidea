@@ -54,11 +54,7 @@ export class EnrollRemoteComponent implements OnInit {
     inject(PrivacyideaServerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "remote")?.text;
-
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -71,10 +67,10 @@ export class EnrollRemoteComponent implements OnInit {
   remoteServerControl = new FormControl<RemoteServer | null>(null, [
     Validators.required
   ]);
-  remoteSerialControl = new FormControl<string>("", [Validators.required]);
+  remoteSerialControl = new FormControl<string>("");
   remoteUserControl = new FormControl<string>("");
   remoteRealmControl = new FormControl<string>("");
-  remoteResolverControl = new FormControl<string>("", [Validators.required]);
+  remoteResolverControl = new FormControl<string>("");
 
   remoteForm = new FormGroup({
     checkPinLocally: this.checkPinLocallyControl,
@@ -89,7 +85,7 @@ export class EnrollRemoteComponent implements OnInit {
   remoteErrorStateMatcher = new RemoteErrorStateMatcher();
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({
+    this.additionalFormFieldsChange.emit({
       checkPinLocally: this.checkPinLocallyControl,
       remoteServer: this.remoteServerControl,
       remoteSerial: this.remoteSerialControl,
@@ -103,7 +99,12 @@ export class EnrollRemoteComponent implements OnInit {
   onClickEnroll = (
     basicOptions: TokenEnrollmentData
   ): Observable<EnrollmentResponse | null> => {
-    if (this.remoteForm.invalid) {
+    if (this.remoteServerControl.invalid ||
+      this.remoteSerialControl.invalid ||
+      this.remoteUserControl.invalid ||
+      this.remoteRealmControl.invalid ||
+      this.remoteResolverControl.invalid ||
+      this.checkPinLocallyControl.invalid) {
       this.remoteForm.markAllAsTouched();
       return of(null);
     }

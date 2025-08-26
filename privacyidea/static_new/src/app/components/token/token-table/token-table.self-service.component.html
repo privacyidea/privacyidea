@@ -1,18 +1,24 @@
 <div
   aria-label="Content Layout"
-  class="content-layout">
+  class="content-layout"
+  i18n-aria-label>
   <div
     aria-label="Token Table"
-    class="token-table-layout">
+    class="token-table-layout"
+    i18n-aria-label>
     <div class="selfservice-paginator-container">
-      <h3 class="selfservice-paginator-label"> Your Tokens </h3>
+      <h3
+        class="selfservice-paginator-label"
+        i18n>
+        Your Tokens
+      </h3>
       <mat-paginator
         (page)="onPageEvent($event)"
         [length]="totalLength()"
         [pageIndex]="pageIndex()"
         [pageSize]="pageSize()"
         hidePageSize
-        showFirstLastButtons/>
+        showFirstLastButtons />
     </div>
     <div class="table-container">
       <table
@@ -21,6 +27,7 @@
         [matSortDisableClear]="false"
         aria-label="Token Data Table"
         class="token-table"
+        i18n-aria-label
         mat-table
         matSort>
         @for (column of columnKeysMapSelfService; track column) {
@@ -36,7 +43,7 @@
               *matCellDef="let element; let row"
               attr.aria-label="{{ column.label }} Cell"
               mat-cell
-              [ngClass]="{'width-18rem': column.key === 'description'}">
+              [ngClass]="{ 'width-18rem': column.key === 'description' }">
               <div
                 [ngClass]="tableUtilsService.getClassForColumnKey(column.key)"
                 appScrollAdjuster>
@@ -49,7 +56,7 @@
                           (click)="contentService.tokenSelected(element.serial)">
                           {{ element[column.key] }}
                         </a>
-                        <app-copy-button [copyText]="element.serial"/>
+                        <app-copy-button [copyText]="element.serial" />
                       </div>
                     }
                     @case ("container_serial") {
@@ -64,13 +71,13 @@
                           {{ element[column.key] }}
                         }
                         @if (element.container_serial !== "") {
-                          <app-copy-button [copyText]="element.container_serial"/>
+                          <app-copy-button [copyText]="element.container_serial" />
                         }
                       </div>
                     }
                     @case ("active") {
                       <span
-                        [ngClass]="tableUtilsService.getClassForColumn(column.key,element)"
+                        [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
                         (click)="toggleActive(element)">
                         {{ tableUtilsService.getDisplayText(column.key, element) }}
                       </span>
@@ -86,7 +93,9 @@
                       @if (!element.revoked) {
                         <button
                           (click)="revokeToken(element.serial)"
-                          mat-icon-button>
+                          mat-icon-button
+                          i18n-matTooltip
+                          matTooltip="Revoke Token">
                           <mat-icon> undo</mat-icon>
                         </button>
                       }
@@ -94,7 +103,9 @@
                     @case ("delete") {
                       <button
                         (click)="deleteToken(element.serial)"
-                        mat-icon-button>
+                        mat-icon-button
+                        i18n-matTooltip
+                        matTooltip="Delete Token">
                         <mat-icon> delete</mat-icon>
                       </button>
                     }
@@ -102,7 +113,8 @@
                       @if (tableUtilsService.isLink(column.key)) {
                         <a
                           attr.aria-label="{{ column.label }} Link"
-                          href="#"> {{ element[column.key] }}
+                          href="#">
+                          {{ element[column.key] }}
                         </a>
                       } @else {
                         <span>
@@ -119,17 +131,22 @@
         <tr
           *matHeaderRowDef="columnKeysSelfService"
           aria-label="Header Row"
+          i18n-aria-label
           mat-header-row></tr>
         <tr
           *matRowDef="let row; columns: columnKeysSelfService"
           aria-label="Data Row"
+          i18n-aria-label
           mat-row></tr>
         <tr
           *matNoDataRow
-          aria-label="No Data Row">
+          aria-label="No Data Row"
+          i18n-aria-label>
           <td
             [attr.colspan]="columnKeysSelfService.length"
-            aria-label="No Data Cell">
+            aria-label="No Data Cell"
+            i18n
+            i18n-aria-label>
             No data matching the filter.
           </td>
         </tr>

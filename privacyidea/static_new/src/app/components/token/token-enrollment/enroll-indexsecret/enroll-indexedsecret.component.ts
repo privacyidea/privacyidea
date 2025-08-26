@@ -36,11 +36,7 @@ export class EnrollIndexedsecretComponent implements OnInit {
     IndexedSecretApiPayloadMapper
   );
 
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "indexedsecret")?.text;
-
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -57,7 +53,7 @@ export class EnrollIndexedsecretComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({
+    this.additionalFormFieldsChange.emit({
       otpKey: this.otpKeyControl
     });
     this.clickEnrollChange.emit(this.onClickEnroll);
@@ -66,7 +62,7 @@ export class EnrollIndexedsecretComponent implements OnInit {
   onClickEnroll = (
     basicOptions: TokenEnrollmentData
   ): Observable<EnrollmentResponse | null> => {
-    if (this.indexedSecretForm.invalid) {
+    if (this.otpKeyControl.invalid) {
       this.indexedSecretForm.markAllAsTouched();
       return of(null);
     }

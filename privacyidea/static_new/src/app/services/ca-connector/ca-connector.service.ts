@@ -31,5 +31,6 @@ export class CaConnectorService {
     computation: (source, previous) => source?.result?.value ?? previous?.value ?? []
   });
 
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) {
+  }
 }
