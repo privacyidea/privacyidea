@@ -1,5 +1,5 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
   <file source-language="en" datatype="plaintext" original="ng2.template">
     <body>
       <trans-unit id="809951388512606676" datatype="html">
@@ -91,7 +91,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="4021416118056639248" datatype="html">
-        <source>Example query: &apos;type: hotp userid: 1000&apos;</source>
+        <source>Example query: 'type: hotp userid: 1000'</source>
         <target>Beispielabfrage: 'type: hotp userid: 1000'</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.html</context>
@@ -275,7 +275,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="60339518069223848" datatype="html">
-        <source> No data matching the filter. </source>
+        <source>No data matching the filter.</source>
         <target> Keine Daten entsprechen dem Filter. </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.html</context>
@@ -395,7 +395,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="3482067797996829475" datatype="html">
-        <source> Preview</source>
+        <source>Preview</source>
         <target> Vorschau</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.component.html</context>
@@ -523,8 +523,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="1966619274931381681" datatype="html">
-        <source>Log In <x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon iconPositionEnd&gt;"/>login<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/></source>
-        <target>Anmelden <x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon iconPositionEnd&gt;"/>login<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/></target>
+        <source>Log In <x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon iconPositionEnd&gt;"></x>login<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x></source>
+        <target>Anmelden <x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon iconPositionEnd&gt;"></x>login<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">65,67</context>
@@ -539,23 +539,23 @@
         </context-group>
       </trans-unit>
       <trans-unit id="8084705807322234584" datatype="html">
-        <source>Log In With Passkey <x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon iconPositionEnd&gt;"/>key<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/></source>
-        <target>Anmelden mit Passkey <x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon iconPositionEnd&gt;"/>key<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/></target>
+        <source>Log In With Passkey <x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon iconPositionEnd&gt;"></x>key<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x></source>
+        <target>Anmelden mit Passkey <x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon iconPositionEnd&gt;"></x>key<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">77,80</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1089734965587939519" datatype="html">
-        <source> Are you sure you want to <x id="INTERPOLATION" equiv-text="{{ data.action }}"/> <x id="START_BLOCK_IF" equiv-text="@if ((data.serial_list?.length ?? 0) &gt; 1 &amp;&amp; data.type === &quot;token&quot;) {"/> all (<x id="INTERPOLATION_1" equiv-text="{{ data.serial_list?.length }}"/>) <x id="INTERPOLATION_2" equiv-text="{{ data.type }}"/>s? <x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/> this <x id="INTERPOLATION_2" equiv-text="{{ data.type }}"/>? <x id="CLOSE_BLOCK_ELSE" equiv-text="}"/></source>
+        <source>Are you sure you want to <x id="INTERPOLATION" equiv-text="{{ data.action }}"></x> <x id="START_BLOCK_IF" equiv-text="@if ((data.serial_list?.length ?? 0) &gt; 1 &amp;&amp; data.type === &quot;token&quot;) {"></x> all (<x id="INTERPOLATION_1" equiv-text="{{ data.serial_list?.length }}"></x>) <x id="INTERPOLATION_2" equiv-text="{{ data.type }}"></x>s? <x id="CLOSE_BLOCK_IF" equiv-text="}"></x><x id="START_BLOCK_ELSE" equiv-text="@else {"></x> this <x id="INTERPOLATION_2" equiv-text="{{ data.type }}"></x>? <x id="CLOSE_BLOCK_ELSE" equiv-text="}"></x></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/confirmation-dialog/confirmation-dialog.component.html</context>
           <context context-type="linenumber">6,14</context>
         </context-group>
       </trans-unit>
       <trans-unit id="6173918664588341725" datatype="html">
-        <source> This search request will check <x id="INTERPOLATION" equiv-text="{{ data.numberOfTokens }}"/> tokens in the system for the given OTP value. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/>This could take a lot of time and could even time out. </source>
-        <target>Diese Suchanfrage überprüft <x id="INTERPOLATION" equiv-text="{{ data.numberOfTokens }}"/> Token im System auf den angegebenen OTP-Wert. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/>Dies kann viel Zeit in Anspruch nehmen und sogar zu einer Zeitüberschreitung führen.</target>
+        <source>This search request will check <x id="INTERPOLATION" equiv-text="{{ data.numberOfTokens }}"></x> tokens in the system for the given OTP value. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"></x>This could take a lot of time and could even time out. </source>
+        <target>Diese Suchanfrage überprüft <x id="INTERPOLATION" equiv-text="{{ data.numberOfTokens }}"></x> Token im System auf den angegebenen OTP-Wert. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"></x>Dies kann viel Zeit in Anspruch nehmen und sogar zu einer Zeitüberschreitung führen.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/confirmation-dialog/confirmation-dialog.component.html</context>
           <context context-type="linenumber">20,22</context>
@@ -578,7 +578,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="6097289123418131155" datatype="html">
-        <source>Filter by: </source>
+        <source>Filter by:</source>
         <target>Filtern nach: </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/keyword-filter/keyword-filter.component.html</context>
@@ -606,7 +606,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="9009627132386793643" datatype="html">
-        <source> If you were handed a token device, you may connect this device to your account. Turn over the token, you may find a serial number printed on the token. Please enter this serial number and make up a token pin. </source>
+        <source>If you were handed a token device, you may connect this device to your account. Turn over the token, you may find a serial number printed on the token. Please enter this serial number and make up a token pin.</source>
         <target>Wenn Ihnen ein Token-Gerät ausgehändigt wurde, können Sie dieses Gerät mit Ihrem Konto verbinden. Drehen Sie den Token um, möglicherweise finden Sie eine aufgedruckte Seriennummer. Bitte geben Sie diese Seriennummer ein und legen Sie eine Token-PIN fest.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/assign-token-self-service/assign-token-self-service.component.html</context>
@@ -622,16 +622,16 @@
         </context-group>
       </trans-unit>
       <trans-unit id="2841006058202716029" datatype="html">
-        <source>Serial is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
-        <target>Seriennummer ist <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>erforderlich<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
+        <source>Serial is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
+        <target>Seriennummer ist <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>erforderlich<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/assign-token-self-service/assign-token-self-service.component.html</context>
           <context context-type="linenumber">11,12</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3111139149453166188" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>person_add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Assign Token </source>
-        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>person_add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Token zuweisen</target>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>person_add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Assign Token </source>
+        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>person_add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Token zuweisen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/assign-token-self-service/assign-token-self-service.component.html</context>
           <context context-type="linenumber">14,17</context>
@@ -674,7 +674,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="8749959208899788820" datatype="html">
-        <source>Example query: &apos;transaction_id: 00000000000000000001&apos;</source>
+        <source>Example query: 'transaction_id: 00000000000000000001'</source>
         <target>Beispielabfrage: 'transaction_id: 00000000000000000001'</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/challenges-table/challenges-table.component.html</context>
@@ -718,16 +718,16 @@
         </context-group>
       </trans-unit>
       <trans-unit id="3343249112057889089" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Create </source>
-        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Erstellen</target>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Create </source>
+        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Erstellen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-create.component.html</context>
           <context context-type="linenumber">22,24</context>
         </context-group>
       </trans-unit>
       <trans-unit id="510952130578378200" datatype="html">
-        <source> Supported Token Types: <x id="START_BLOCK_IF" equiv-text="@if (containerService.selectedContainerType().token_types.length &gt;= tokenService.tokenTypeOptions().length) {"/> All <x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE_IF" equiv-text="@else if (containerService.selectedContainerType().token_types.length &gt; 1) {"/> <x id="INTERPOLATION" equiv-text="{{ containerService.selectedContainerType().token_types.join(&quot;, &quot;) }}"/> <x id="CLOSE_BLOCK_ELSE_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/> <x id="INTERPOLATION_1" equiv-text="{{ containerService.selectedContainerType().token_types[0] }}"/> <x id="CLOSE_BLOCK_ELSE" equiv-text="}"/></source>
-        <target>Unterstützte Token-Typen: <x id="START_BLOCK_IF" equiv-text="@if (containerService.selectedContainerType().token_types.length &gt;= tokenService.tokenTypeOptions().length) {"/> Alle <x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE_IF" equiv-text="@else if (containerService.selectedContainerType().token_types.length &gt; 1) {"/> <x id="INTERPOLATION" equiv-text="{{ containerService.selectedContainerType().token_types.join(&quot;, &quot;) }}"/> <x id="CLOSE_BLOCK_ELSE_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/> <x id="INTERPOLATION_1" equiv-text="{{ containerService.selectedContainerType().token_types[0] }}"/> <x id="CLOSE_BLOCK_ELSE" equiv-text="}"/></target>
+        <source>Supported Token Types: <x id="START_BLOCK_IF" equiv-text="@if (containerService.selectedContainerType().token_types.length &gt;= tokenService.tokenTypeOptions().length) {"></x> All <x id="CLOSE_BLOCK_IF" equiv-text="}"></x><x id="START_BLOCK_ELSE_IF" equiv-text="@else if (containerService.selectedContainerType().token_types.length &gt; 1) {"></x> <x id="INTERPOLATION" equiv-text="{{ containerService.selectedContainerType().token_types.join(&quot;, &quot;) }}"></x> <x id="CLOSE_BLOCK_ELSE_IF" equiv-text="}"></x><x id="START_BLOCK_ELSE" equiv-text="@else {"></x> <x id="INTERPOLATION_1" equiv-text="{{ containerService.selectedContainerType().token_types[0] }}"></x> <x id="CLOSE_BLOCK_ELSE" equiv-text="}"></x></source>
+        <target>Unterstützte Token-Typen: <x id="START_BLOCK_IF" equiv-text="@if (containerService.selectedContainerType().token_types.length &gt;= tokenService.tokenTypeOptions().length) {"></x> Alle <x id="CLOSE_BLOCK_IF" equiv-text="}"></x><x id="START_BLOCK_ELSE_IF" equiv-text="@else if (containerService.selectedContainerType().token_types.length &gt; 1) {"></x> <x id="INTERPOLATION" equiv-text="{{ containerService.selectedContainerType().token_types.join(&quot;, &quot;) }}"></x> <x id="CLOSE_BLOCK_ELSE_IF" equiv-text="}"></x><x id="START_BLOCK_ELSE" equiv-text="@else {"></x> <x id="INTERPOLATION_1" equiv-text="{{ containerService.selectedContainerType().token_types[0] }}"></x> <x id="CLOSE_BLOCK_ELSE" equiv-text="}"></x></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-create.component.html</context>
           <context context-type="linenumber">39,49</context>
@@ -854,8 +854,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="4347420552626362384" datatype="html">
-        <source>User is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
-        <target>Benutzer ist <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>erforderlich<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
+        <source>User is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
+        <target>Benutzer ist <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>erforderlich<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-create.component.html</context>
           <context context-type="linenumber">97,98</context>
@@ -866,8 +866,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="392115384482872921" datatype="html">
-        <source> Only add to the realm <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> (no user assignment) </source>
-        <target>Nur zum Realm hinzufügen <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> (keine Benutzerzuweisung)</target>
+        <source>Only add to the realm <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"></x> (no user assignment) </source>
+        <target>Nur zum Realm hinzufügen <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"></x> (keine Benutzerzuweisung)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-create.component.html</context>
           <context context-type="linenumber">105,107</context>
@@ -886,7 +886,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="1249664452256234518" datatype="html">
-        <source> Optional Settings</source>
+        <source>Optional Settings</source>
         <target> Optionale Einstellungen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-create.component.html</context>
@@ -922,7 +922,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="9032400784735627407" datatype="html">
-        <source> Enter a passphrase prompt that will be displayed to the user. This should indicate which passphrase the user should enter. </source>
+        <source>Enter a passphrase prompt that will be displayed to the user. This should indicate which passphrase the user should enter.</source>
         <target>Geben Sie eine Passworteingabeaufforderung ein, die dem Benutzer angezeigt wird. Dies sollte angeben, welche Passphrase der Benutzer eingeben soll.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-create.component.html</context>
@@ -934,7 +934,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="7098000111823412546" datatype="html">
-        <source> Passphrase Response</source>
+        <source>Passphrase Response</source>
         <target> Passworteingabe</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-create.component.html</context>
@@ -958,7 +958,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="4494279282822239977" datatype="html">
-        <source> This is the correct answer to the passphrase prompt the user has to enter to successfully register the container. </source>
+        <source>This is the correct answer to the passphrase prompt the user has to enter to successfully register the container.</source>
         <target>Dies ist die richtige Antwort auf die Passworteingabeaufforderung, die der Benutzer eingeben muss, um den Container erfolgreich zu registrieren.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-create.component.html</context>
@@ -970,7 +970,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="8809573063492791214" datatype="html">
-        <source> Generate a QR code to register the container on a smartphone. </source>
+        <source>Generate a QR code to register the container on a smartphone.</source>
         <target>Generieren Sie einen QR-Code, um den Container auf einem Smartphone zu registrieren.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-create.self-service.component.html</context>
@@ -986,8 +986,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="5118998797401417244" datatype="html">
-        <source>The container was successfully created with serial number <x id="START_LINK" ctype="x-a" equiv-text="&lt;a (click)=&quot;containerSelected(data.containerSerial())&quot;&gt;"/> <x id="INTERPOLATION" equiv-text="{{ data.containerSerial() }}"/> <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>.</source>
-        <target>Der Container mit der Seriennummer <x id="START_LINK" ctype="x-a" equiv-text="&lt;a (click)=&quot;containerSelected(data.containerSerial())&quot;&gt;"/> <x id="INTERPOLATION" equiv-text="{{ data.containerSerial() }}"/> <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> wurde erfolgreich erstellt.</target>
+        <source>The container was successfully created with serial number <x id="START_LINK" ctype="x-a" equiv-text="&lt;a (click)=&quot;containerSelected(data.containerSerial())&quot;&gt;"></x> <x id="INTERPOLATION" equiv-text="{{ data.containerSerial() }}"></x> <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"></x>.</source>
+        <target>Der Container mit der Seriennummer <x id="START_LINK" ctype="x-a" equiv-text="&lt;a (click)=&quot;containerSelected(data.containerSerial())&quot;&gt;"></x> <x id="INTERPOLATION" equiv-text="{{ data.containerSerial() }}"></x> <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"></x> wurde erfolgreich erstellt.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-registration-dialog/container-registration-dialog.component.html</context>
           <context context-type="linenumber">4,7</context>
@@ -1006,8 +1006,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="9054316909030086320" datatype="html">
-        <source><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p class=&quot;width-36&quot;&gt;"/> Please scan the QR code with the privacyIDEA Authenticator App or click this <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;{{ data.response.result?.value?.container_url?.value }}&quot;&gt;"/>link<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> on your smartphone to register your container. It will send the missing registration data to the configured endpoint. <x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_TAG_BUTTON" ctype="x-button" equiv-text="&lt;button (click)=&quot;regenerateQRCode()&quot; class=&quot;card-button&quot; mat-flat-button&gt;"/><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>autorenew<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Regenerate QR Code <x id="CLOSE_TAG_BUTTON" ctype="x-button" equiv-text="&lt;/button&gt;"/></source>
-        <target><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p class=&quot;width-36&quot;&gt;"/> Bitte scannen Sie den QR-Code mit der privacyIDEA Authenticator App oder klicken Sie auf diesen <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;{{ data.response.result?.value?.container_url?.value }}&quot;&gt;"/>Link<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> auf Ihrem Smartphone, um Ihren Container zu registrieren. Es werden die fehlenden Registrierungsdaten an den konfigurierten Endpunkt gesendet. <x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_TAG_BUTTON" ctype="x-button" equiv-text="&lt;button (click)=&quot;regenerateQRCode()&quot; class=&quot;card-button&quot; mat-flat-button&gt;"/><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>autorenew<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> QR-Code neu generieren <x id="CLOSE_TAG_BUTTON" ctype="x-button" equiv-text="&lt;/button&gt;"/></target>
+        <source><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p class=&quot;width-36&quot;&gt;"></x> Please scan the QR code with the privacyIDEA Authenticator App or click this <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;{{ data.response.result?.value?.container_url?.value }}&quot;&gt;"></x>link<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"></x> on your smartphone to register your container. It will send the missing registration data to the configured endpoint. <x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"></x><x id="START_TAG_BUTTON" ctype="x-button" equiv-text="&lt;button (click)=&quot;regenerateQRCode()&quot; class=&quot;card-button&quot; mat-flat-button&gt;"></x><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>autorenew<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Regenerate QR Code <x id="CLOSE_TAG_BUTTON" ctype="x-button" equiv-text="&lt;/button&gt;"></x></source>
+        <target><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p class=&quot;width-36&quot;&gt;"></x> Bitte scannen Sie den QR-Code mit der privacyIDEA Authenticator App oder klicken Sie auf diesen <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;{{ data.response.result?.value?.container_url?.value }}&quot;&gt;"></x>Link<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"></x> auf Ihrem Smartphone, um Ihren Container zu registrieren. Es werden die fehlenden Registrierungsdaten an den konfigurierten Endpunkt gesendet. <x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"></x><x id="START_TAG_BUTTON" ctype="x-button" equiv-text="&lt;button (click)=&quot;regenerateQRCode()&quot; class=&quot;card-button&quot; mat-flat-button&gt;"></x><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>autorenew<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> QR-Code neu generieren <x id="CLOSE_TAG_BUTTON" ctype="x-button" equiv-text="&lt;/button&gt;"></x></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-registration-dialog/container-registration-dialog.component.html</context>
           <context context-type="linenumber">19,30</context>
@@ -1118,7 +1118,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="8212177249756365917" datatype="html">
-        <source> Remove </source>
+        <source>Remove</source>
         <target> Entfernen </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details-token-table/container-details-token-table.component.html</context>
@@ -1166,7 +1166,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="6660925946511264619" datatype="html">
-        <source> Delete </source>
+        <source>Delete</source>
         <target> Löschen </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details-token-table/container-details-token-table.component.html</context>
@@ -1206,56 +1206,56 @@
         </context-group>
       </trans-unit>
       <trans-unit id="1581610983422443358" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>playlist_add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> <x id="INTERPOLATION" equiv-text="{{ &quot;Assign to All Tokens&quot; }}"/> </source>
-        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>playlist_add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> <x id="INTERPOLATION" equiv-text="{{ &quot;Allen Token zuweisen&quot; }}"/> </target>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>playlist_add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> <x id="INTERPOLATION" equiv-text="{{ &quot;Assign to All Tokens&quot; }}"></x> </source>
+        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>playlist_add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> <x id="INTERPOLATION" equiv-text="{{ &quot;Allen Token zuweisen&quot; }}"></x> </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details-token-table/container-details-token-table.component.html</context>
           <context context-type="linenumber">190,193</context>
         </context-group>
       </trans-unit>
       <trans-unit id="8938029399234248860" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>playlist_remove<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> <x id="INTERPOLATION" equiv-text="{{ &quot;Unassign from All Tokens&quot; }}"/> </source>
-        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>playlist_remove<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> <x id="INTERPOLATION" equiv-text="{{ &quot;Von allen Token abmelden&quot; }}"/> </target>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>playlist_remove<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> <x id="INTERPOLATION" equiv-text="{{ &quot;Unassign from All Tokens&quot; }}"></x> </source>
+        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>playlist_remove<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> <x id="INTERPOLATION" equiv-text="{{ &quot;Von allen Token abmelden&quot; }}"></x> </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details-token-table/container-details-token-table.component.html</context>
           <context context-type="linenumber">201,204</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1772073448568951484" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>playlist_play<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> <x id="INTERPOLATION" equiv-text="{{ &quot;Activate All Tokens&quot; }}"/> </source>
-        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>playlist_play<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> <x id="INTERPOLATION" equiv-text="{{ &quot;Alle Token aktivieren&quot; }}"/> </target>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>playlist_play<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> <x id="INTERPOLATION" equiv-text="{{ &quot;Activate All Tokens&quot; }}"></x> </source>
+        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>playlist_play<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> <x id="INTERPOLATION" equiv-text="{{ &quot;Alle Token aktivieren&quot; }}"></x> </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details-token-table/container-details-token-table.component.html</context>
           <context context-type="linenumber">209,212</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5501182211372431272" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;mdi--list-lock&quot;/&gt;"/><x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;mdi--list-lock&quot;/&gt;"/> <x id="INTERPOLATION" equiv-text="{{ &quot;Deactivate All Tokens&quot; }}"/> </source>
-        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;mdi--list-lock&quot;/&gt;"/><x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;mdi--list-lock&quot;/&gt;"/> <x id="INTERPOLATION" equiv-text="{{ &quot;Alle Token deaktivieren&quot; }}"/> </target>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;mdi--list-lock&quot;/&gt;"></x><x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;mdi--list-lock&quot;/&gt;"></x> <x id="INTERPOLATION" equiv-text="{{ &quot;Deactivate All Tokens&quot; }}"></x> </source>
+        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;mdi--list-lock&quot;/&gt;"></x><x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;mdi--list-lock&quot;/&gt;"></x> <x id="INTERPOLATION" equiv-text="{{ &quot;Alle Token deaktivieren&quot; }}"></x> </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details-token-table/container-details-token-table.component.html</context>
           <context context-type="linenumber">217,220</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1871409347384160597" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/> playlist_remove<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> <x id="INTERPOLATION" equiv-text="{{ &quot;Remove All Tokens&quot; }}"/> </source>
-        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/> playlist_remove<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> <x id="INTERPOLATION" equiv-text="{{ &quot;Alle Token entfernen&quot; }}"/> </target>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x> playlist_remove<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> <x id="INTERPOLATION" equiv-text="{{ &quot;Remove All Tokens&quot; }}"></x> </source>
+        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x> playlist_remove<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> <x id="INTERPOLATION" equiv-text="{{ &quot;Alle Token entfernen&quot; }}"></x> </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details-token-table/container-details-token-table.component.html</context>
           <context context-type="linenumber">225,228</context>
         </context-group>
       </trans-unit>
       <trans-unit id="6039011639822542278" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/> delete_sweep<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> <x id="INTERPOLATION" equiv-text="{{ &quot;Delete All Tokens&quot; }}"/> </source>
-        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/> delete_sweep<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> <x id="INTERPOLATION" equiv-text="{{ &quot;Alle Token löschen&quot; }}"/> </target>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x> delete_sweep<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> <x id="INTERPOLATION" equiv-text="{{ &quot;Delete All Tokens&quot; }}"></x> </source>
+        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x> delete_sweep<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> <x id="INTERPOLATION" equiv-text="{{ &quot;Alle Token löschen&quot; }}"></x> </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details-token-table/container-details-token-table.component.html</context>
           <context context-type="linenumber">233,236</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1752216868847360432" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>playlist_add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> &quot;Assign to All Tokens&quot; </source>
-        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>playlist_add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> &quot;Allen Token zuweisen&quot; </target>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>playlist_add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> "Assign to All Tokens" </source>
+        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>playlist_add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> "Allen Token zuweisen" </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details-token-table/container-details-token-table.self-service.component.html</context>
           <context context-type="linenumber">192,194</context>
@@ -1366,7 +1366,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="3362260817395046291" datatype="html">
-        <source> Only display tokens not in a container </source>
+        <source>Only display tokens not in a container</source>
         <target> Nur Token anzeigen, die sich nicht in einem Container befinden </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details.component.html</context>
@@ -1374,7 +1374,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="6335091494770979110" datatype="html">
-        <source> Note: Adding a token removes it from</source>
+        <source>Note: Adding a token removes it from</source>
         <target> Hinweis: Das Hinzufügen eines Tokens entfernt es aus</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details.component.html</context>
@@ -1382,7 +1382,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="4287163919479418385" datatype="html">
-        <source> its previous container. </source>
+        <source>its previous container.</source>
         <target> seinem vorherigen Container. </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details.component.html</context>
@@ -1398,7 +1398,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="3690037898550437512" datatype="html">
-        <source>Example query: &apos;type: hotp serial: 123&apos;</source>
+        <source>Example query: 'type: hotp serial: 123'</source>
         <target>Beispielabfrage: 'typ: hotp seriennummer: 123'</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details.component.html</context>
@@ -1406,8 +1406,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="7708270344948043036" datatype="html">
-        <source> <x id="INTERPOLATION" equiv-text="{{ option[&quot;active&quot;] ? &quot;active&quot; : &quot;deactivated&quot; }}"/> </source>
-        <target> <x id="INTERPOLATION" equiv-text="{{ option[&quot;active&quot;] ? &quot;aktiv&quot; : &quot;deaktiviert&quot; }}"/> </target>
+        <source><x id="INTERPOLATION" equiv-text="{{ option[&quot;active&quot;] ? &quot;active&quot; : &quot;deactivated&quot; }}"></x> </source>
+        <target> <x id="INTERPOLATION" equiv-text="{{ option[&quot;active&quot;] ? &quot;aktiv&quot; : &quot;deaktiviert&quot; }}"></x> </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details.component.html</context>
           <context context-type="linenumber">246,247</context>
@@ -1458,7 +1458,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="7453395888030210040" datatype="html">
-        <source>Cancel </source>
+        <source>Cancel</source>
         <target>Abbrechen </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/user-assignment-dialog/user-assignment-dialog.component.html</context>
@@ -1466,7 +1466,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="5866534371580750514" datatype="html">
-        <source>Assign to all Tokens </source>
+        <source>Assign to all Tokens</source>
         <target>Allen Token zuweisen </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/user-assignment-dialog/user-assignment-dialog.component.html</context>
@@ -1486,7 +1486,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="1260766453700574219" datatype="html">
-        <source>Example query: &apos;type: generic user: admin&apos;</source>
+        <source>Example query: 'type: generic user: admin'</source>
         <target>Beispielabfrage: 'typ: generisch benutzer: admin'</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-table/container-table.component.html</context>
@@ -1522,7 +1522,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="187187500641108332" datatype="html">
-        <source><x id="INTERPOLATION" equiv-text="{{ token.tokentype }}"/></source>
+        <source><x id="INTERPOLATION" equiv-text="{{ token.tokentype }}"></x></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-table/container-table.self-service.component.html</context>
           <context context-type="linenumber">132,133</context>
@@ -1633,7 +1633,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="6095926835494383051" datatype="html">
-        <source> Container has no tokens. </source>
+        <source>Container has no tokens.</source>
         <target> Container hat keine Token. </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-table/container-table.self-service.component.html</context>
@@ -1689,7 +1689,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="2807988638196683725" datatype="html">
-        <source>Example query: &apos;service_id: myService&apos;</source>
+        <source>Example query: 'service_id: myService'</source>
         <target>Beispielabfrage: 'service_id: myService'</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-applications/token-applications-offline/token-applications-offline.component.html</context>
@@ -1721,7 +1721,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="99196740216196976" datatype="html">
-        <source> SSH Tokens can be attached to a service ID with a user. The user is the user on the SSH server and may differ from the token owner. To attach the token to a service ID go to the token details. </source>
+        <source>SSH Tokens can be attached to a service ID with a user. The user is the user on the SSH server and may differ from the token owner. To attach the token to a service ID go to the token details.</source>
         <target>SSH-Token können mit einem Benutzer an eine Dienst-ID angehängt werden. Der Benutzer ist der Benutzer auf dem SSH-Server und kann vom Token-Besitzer abweichen. Um den Token an eine Dienst-ID anzuhängen, gehen Sie zu den Token-Details.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-applications/token-applications-ssh/token-applications-ssh.component.html</context>
@@ -1729,8 +1729,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="4168225352677422858" datatype="html">
-        <source> To define service IDs go to <x id="START_LINK" ctype="x-a" equiv-text="&lt;a ui-sref=&quot;config.serviceid&quot;&gt;"/>Service ID config<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> . </source>
-        <target>Um Dienst-IDs zu definieren, gehen Sie zu <x id="START_LINK" ctype="x-a" equiv-text="&lt;a ui-sref=&quot;config.serviceid&quot;&gt;"/>Dienst-ID-Konfiguration<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> .</target>
+        <source>To define service IDs go to <x id="START_LINK" ctype="x-a" equiv-text="&lt;a ui-sref=&quot;config.serviceid&quot;&gt;"></x>Service ID config<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"></x> . </source>
+        <target>Um Dienst-IDs zu definieren, gehen Sie zu <x id="START_LINK" ctype="x-a" equiv-text="&lt;a ui-sref=&quot;config.serviceid&quot;&gt;"></x>Dienst-ID-Konfiguration<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"></x> .</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-applications/token-applications-ssh/token-applications-ssh.component.html</context>
           <context context-type="linenumber">9,12</context>
@@ -1765,7 +1765,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="9198404650092881537" datatype="html">
-        <source>Offline: Use HOTP token for offline login to notebooks </source>
+        <source>Offline: Use HOTP token for offline login to notebooks</source>
         <target>Offline: HOTP-Token für Offline-Anmeldung an Notebooks verwenden </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-applications/token-applications.component.html</context>
@@ -1781,40 +1781,40 @@
         </context-group>
       </trans-unit>
       <trans-unit id="2723424695124082252" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;mdi--folder-search&quot;&gt;"/><x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Overview </source>
-        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;mdi--folder-search&quot;&gt;"/><x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Übersicht </target>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;mdi--folder-search&quot;&gt;"></x><x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Overview </source>
+        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;mdi--folder-search&quot;&gt;"></x><x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Übersicht </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/container-tab/container-tab.component.html</context>
           <context context-type="linenumber">80,82</context>
         </context-group>
       </trans-unit>
       <trans-unit id="6526431243253333795" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>create_new_folder<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Create </source>
-        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>create_new_folder<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Erstellen </target>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>create_new_folder<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Create </source>
+        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>create_new_folder<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Erstellen </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/container-tab/container-tab.component.html</context>
           <context context-type="linenumber">95,97</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4763678456009299862" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>plagiarism<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Templates </source>
-        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>plagiarism<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Vorlagen </target>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>plagiarism<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Templates </source>
+        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>plagiarism<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Vorlagen </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/container-tab/container-tab.component.html</context>
           <context context-type="linenumber">106,108</context>
         </context-group>
       </trans-unit>
       <trans-unit id="617720141055692905" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>note_add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Create Template </source>
-        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>note_add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Vorlage erstellen </target>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>note_add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Create Template </source>
+        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>note_add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Vorlage erstellen </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/container-tab/container-tab.component.html</context>
           <context context-type="linenumber">116,118</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3646961671015351592" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>info_outline<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Help </source>
-        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>info_outline<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Hilfe </target>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>info_outline<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Help </source>
+        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>info_outline<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Hilfe </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/container-tab/container-tab.component.html</context>
           <context context-type="linenumber">127,129</context>
@@ -1833,8 +1833,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="2619296568714352272" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/> delete_sweep<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Delete Selected </source>
-        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/> delete_sweep<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Auswahl löschen </target>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x> delete_sweep<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Delete Selected </source>
+        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x> delete_sweep<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Auswahl löschen </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/container-tab/container-tab.component.html</context>
           <context context-type="linenumber">142,144</context>
@@ -1845,48 +1845,48 @@
         </context-group>
       </trans-unit>
       <trans-unit id="5985810158347863038" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>health_and_safety<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Container Details </source>
-        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>health_and_safety<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Container-Details </target>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>health_and_safety<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Container Details </source>
+        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>health_and_safety<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Container-Details </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/container-tab/container-tab.component.html</context>
           <context context-type="linenumber">154,156</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3701782776627563786" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>add_moderator<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Enroll Token </source>
-        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>add_moderator<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Token registrieren </target>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>add_moderator<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Enroll Token </source>
+        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>add_moderator<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Token registrieren </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/container-tab/container-tab.component.html</context>
           <context context-type="linenumber">164,166</context>
         </context-group>
       </trans-unit>
       <trans-unit id="595084681226444835" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>remove_red_eye<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Lost Container </source>
-        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>remove_red_eye<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Verlorener Container </target>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>remove_red_eye<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Lost Container </source>
+        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>remove_red_eye<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Verlorener Container </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/container-tab/container-tab.component.html</context>
           <context context-type="linenumber">176,178</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2734542674067583369" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>broken_image<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Damaged Container </source>
-        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>broken_image<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Beschädigter Container </target>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>broken_image<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Damaged Container </source>
+        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>broken_image<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Beschädigter Container </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/container-tab/container-tab.component.html</context>
           <context context-type="linenumber">187,189</context>
         </context-group>
       </trans-unit>
       <trans-unit id="8707651709744595760" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/><x id="INTERPOLATION" equiv-text="{{ states().includes(&quot;active&quot;) ? &quot;lock&quot; : &quot;play_circle&quot; }}"/> <x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> <x id="INTERPOLATION_1" equiv-text="{{ states().includes(&quot;active&quot;) ? &quot;Deactivate&quot; : &quot;Activate&quot; }}"/> </source>
-        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/><x id="INTERPOLATION" equiv-text="{{ states().includes(&quot;active&quot;) ? &quot;lock&quot; : &quot;play_circle&quot; }}"/> <x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> <x id="INTERPOLATION_1" equiv-text="{{ states().includes(&quot;active&quot;) ? &quot;Deaktivieren&quot; : &quot;Aktivieren&quot; }}"/> </target>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x><x id="INTERPOLATION" equiv-text="{{ states().includes(&quot;active&quot;) ? &quot;lock&quot; : &quot;play_circle&quot; }}"></x> <x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> <x id="INTERPOLATION_1" equiv-text="{{ states().includes(&quot;active&quot;) ? &quot;Deactivate&quot; : &quot;Activate&quot; }}"></x> </source>
+        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x><x id="INTERPOLATION" equiv-text="{{ states().includes(&quot;active&quot;) ? &quot;lock&quot; : &quot;play_circle&quot; }}"></x> <x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> <x id="INTERPOLATION_1" equiv-text="{{ states().includes(&quot;active&quot;) ? &quot;Deaktivieren&quot; : &quot;Aktivieren&quot; }}"></x> </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/container-tab/container-tab.component.html</context>
           <context context-type="linenumber">211,214</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2172831471327393523" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/> delete<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Delete </source>
-        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/> delete<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Löschen </target>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x> delete<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Delete </source>
+        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x> delete<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Löschen </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/container-tab/container-tab.component.html</context>
           <context context-type="linenumber">222,224</context>
@@ -1905,16 +1905,16 @@
         </context-group>
       </trans-unit>
       <trans-unit id="3391450224522742153" datatype="html">
-        <source> Some token are already assigned to a user. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> Assigning a token to a user will remove the previous assignment. </source>
-        <target>Einige Token sind bereits einem Benutzer zugewiesen. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> Das Zuweisen eines Tokens zu einem Benutzer entfernt die vorherige Zuweisung.</target>
+        <source>Some token are already assigned to a user. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"></x> Assigning a token to a user will remove the previous assignment. </source>
+        <target>Einige Token sind bereits einem Benutzer zugewiesen. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"></x> Das Zuweisen eines Tokens zu einem Benutzer entfernt die vorherige Zuweisung.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
           <context context-type="linenumber">5,7</context>
         </context-group>
       </trans-unit>
       <trans-unit id="7333239510105550281" datatype="html">
-        <source>User Realm is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
-        <target>Benutzer-Realm ist <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>erforderlich<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <source>User Realm is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
+        <target>Benutzer-Realm ist <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>erforderlich<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
           <context context-type="linenumber">32,33</context>
@@ -1929,7 +1929,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="6531442622039246049" datatype="html">
-        <source> User does not exist in the selected realm. </source>
+        <source>User does not exist in the selected realm.</source>
         <target> Benutzer existiert nicht im ausgewählten Realm. </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
@@ -1937,7 +1937,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="3185679834587557134" datatype="html">
-        <source> Assign to Selected Token </source>
+        <source>Assign to Selected Token</source>
         <target> Ausgewähltem Token zuweisen </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
@@ -1961,15 +1961,15 @@
         </context-group>
       </trans-unit>
       <trans-unit id="5562411145607892836" datatype="html">
-        <source>Token <x id="INTERPOLATION" equiv-text="{{ data.tokenSerial() }}"/> is lost?</source>
-        <target>Token <x id="INTERPOLATION" equiv-text="{{ data.tokenSerial() }}"/> ist verloren?</target>
+        <source>Token <x id="INTERPOLATION" equiv-text="{{ data.tokenSerial() }}"></x> is lost?</source>
+        <target>Token <x id="INTERPOLATION" equiv-text="{{ data.tokenSerial() }}"></x> ist verloren?</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/lost-token/lost-token.component.html</context>
           <context context-type="linenumber">1,2</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1133744955335614801" datatype="html">
-        <source> If the token is lost, you can enroll a temporary password based token and give the password to the user. The OTP PIN of the old token is still the same. </source>
+        <source>If the token is lost, you can enroll a temporary password based token and give the password to the user. The OTP PIN of the old token is still the same.</source>
         <target>Wenn der Token verloren geht, können Sie einen temporären passwortbasierten Token registrieren und dem Benutzer das Passwort geben. Die OTP-PIN des alten Tokens bleibt gleich.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/lost-token/lost-token.component.html</context>
@@ -1985,16 +1985,16 @@
         </context-group>
       </trans-unit>
       <trans-unit id="6416775991690380367" datatype="html">
-        <source>The old token <x id="INTERPOLATION" equiv-text="{{ data.tokenSerial() }}"/> will be disabled and can be deleted or enabled later.</source>
-        <target>Der alte Token <x id="INTERPOLATION" equiv-text="{{ data.tokenSerial() }}"/> wird deaktiviert und kann später gelöscht oder aktiviert werden.</target>
+        <source>The old token <x id="INTERPOLATION" equiv-text="{{ data.tokenSerial() }}"></x> will be disabled and can be deleted or enabled later.</source>
+        <target>Der alte Token <x id="INTERPOLATION" equiv-text="{{ data.tokenSerial() }}"></x> wird deaktiviert und kann später gelöscht oder aktiviert werden.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/lost-token/lost-token.component.html</context>
           <context context-type="linenumber">8,9</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1839347343820573248" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;question-icon&quot;&gt;"/>question_mark<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Token als verloren markieren </source>
-        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;question-icon&quot;&gt;"/>question_mark<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Token als verloren markieren </target>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;question-icon&quot;&gt;"></x>question_mark<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Token als verloren markieren </source>
+        <target><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;question-icon&quot;&gt;"></x>question_mark<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Token als verloren markieren </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/lost-token/lost-token.component.html</context>
           <context context-type="linenumber">12,14</context>
@@ -2017,7 +2017,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="4318870659585740547" datatype="html">
-        <source>Token was marked as lost successfully. </source>
+        <source>Token was marked as lost successfully.</source>
         <target>Token wurde erfolgreich als verloren markiert. </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/lost-token/lost-token.component.html</context>
@@ -2025,119 +2025,122 @@
         </context-group>
       </trans-unit>
       <trans-unit id="674438606532897003" datatype="html">
-        <source> The serial of the new token is <x id="START_LINK" ctype="x-a" equiv-text="&lt;a (click)=&quot;tokenSelected(lostTokenData?.serial)&quot;&gt;"/> <x id="INTERPOLATION" equiv-text="{{ lostTokenData?.serial ?? &quot;&quot; }}"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/><x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> The password that needs to be combined with the OTP PIN: </source>
+        <source>The serial of the new token is <x id="START_LINK" ctype="x-a" equiv-text="&lt;a (click)=&quot;tokenSelected(lostTokenData?.serial)&quot;&gt;"></x> <x id="INTERPOLATION" equiv-text="{{ lostTokenData?.serial ?? &quot;&quot; }}"></x><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"></x><x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"></x> The password that needs to be combined with the OTP PIN: </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/lost-token/lost-token.component.html</context>
           <context context-type="linenumber">23,27</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="6888510625057124827" datatype="html">
+      <trans-unit id="6888510625057124827" datatype="html" xml:space="preserve">
         <source>The password can not be shown again later!</source>
+        <target state="translated">Das Passwort kann später nicht erneut angezeigt werden!</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/lost-token/lost-token.component.html</context>
           <context context-type="linenumber">33,35</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2311963022491291139" datatype="html">
-        <source> The token is valid until <x id="INTERPOLATION" equiv-text="{{ lostTokenData?.end_date | date: &quot;longDate&quot; }}"/> at <x id="INTERPOLATION_1" equiv-text="{{ lostTokenData?.end_date | date: &quot;shortTime&quot; }}"/>. </source>
+        <source>The token is valid until <x id="INTERPOLATION" equiv-text="{{ lostTokenData?.end_date | date: &quot;longDate&quot; }}"></x> at <x id="INTERPOLATION_1" equiv-text="{{ lostTokenData?.end_date | date: &quot;shortTime&quot; }}"></x>. </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/lost-token/lost-token.component.html</context>
           <context context-type="linenumber">36,40</context>
         </context-group>
       </trans-unit>
       <trans-unit id="6645343925165807505" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>policy<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Overview </source>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>policy<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Overview </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/token-tab.component.html</context>
           <context context-type="linenumber">12,14</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3702446644125012203" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>add_moderator<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Enrollment </source>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>add_moderator<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Enrollment </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/token-tab.component.html</context>
           <context context-type="linenumber">26,28</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3784734041703644529" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>cached<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Show Challenges </source>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>cached<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Show Challenges </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/token-tab.component.html</context>
           <context context-type="linenumber">37,39</context>
         </context-group>
       </trans-unit>
       <trans-unit id="911780984757175935" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>now_widgets<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Applications </source>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>now_widgets<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Applications </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/token-tab.component.html</context>
           <context context-type="linenumber">49,51</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4752401538398358209" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>help_outline<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Get Serial Number </source>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>help_outline<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Get Serial Number </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/token-tab.component.html</context>
           <context context-type="linenumber">63,65</context>
         </context-group>
       </trans-unit>
       <trans-unit id="7142234886859751756" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/> person_add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Assign Selected </source>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x> person_add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Assign Selected </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/token-tab.component.html</context>
           <context context-type="linenumber">100,102</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5681245043274745123" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>health_and_safety<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Token Details </source>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>health_and_safety<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Token Details </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/token-tab.component.html</context>
           <context context-type="linenumber">112,114</context>
         </context-group>
       </trans-unit>
       <trans-unit id="6426747262386589325" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>manage_search<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Show in Audit Log </source>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>manage_search<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Show in Audit Log </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/token-tab.component.html</context>
           <context context-type="linenumber">123,125</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2927917677031196086" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>remove_red_eye<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Lost Token </source>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>remove_red_eye<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Lost Token </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/token-tab.component.html</context>
           <context context-type="linenumber">134,136</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4071377376054753380" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/><x id="INTERPOLATION" equiv-text="{{ tokenIsActive() ? &quot;lock&quot; : &quot;play_circle&quot; }}"/><x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> <x id="INTERPOLATION_1" equiv-text="{{ tokenIsActive() ? &quot;Deactivate&quot; : &quot;Activate&quot; }}"/> </source>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x><x id="INTERPOLATION" equiv-text="{{ tokenIsActive() ? &quot;lock&quot; : &quot;play_circle&quot; }}"></x><x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> <x id="INTERPOLATION_1" equiv-text="{{ tokenIsActive() ? &quot;Deactivate&quot; : &quot;Activate&quot; }}"></x> </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/token-tab.component.html</context>
           <context context-type="linenumber">157,159</context>
         </context-group>
       </trans-unit>
       <trans-unit id="7082517667331881763" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>undo<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Revoke </source>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>undo<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Revoke </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/token-tab.component.html</context>
           <context context-type="linenumber">178,180</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="305600215334405883" datatype="html">
+      <trans-unit id="305600215334405883" datatype="html" xml:space="preserve">
         <source>First OTP</source>
+        <target state="translated">Erster OTP-Wert</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/resync-token-action/resync-token-action.component.html</context>
           <context context-type="linenumber">2,3</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="81685331481886770" datatype="html">
+      <trans-unit id="81685331481886770" datatype="html" xml:space="preserve">
         <source>Second OTP</source>
+        <target state="translated">Zweiter OTP-Wert</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/resync-token-action/resync-token-action.component.html</context>
           <context context-type="linenumber">3,4</context>
         </context-group>
       </trans-unit>
       <trans-unit id="409280130760559345" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;detail-button-icon&quot;&gt;"/>sync<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Resync Token </source>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;detail-button-icon&quot;&gt;"></x>sync<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Resync Token </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/resync-token-action/resync-token-action.component.html</context>
           <context context-type="linenumber">7,10</context>
@@ -2151,14 +2154,14 @@
         </context-group>
       </trans-unit>
       <trans-unit id="5089069083331724122" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;detail-button-icon&quot;&gt;"/>password<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Set PIN </source>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;detail-button-icon&quot;&gt;"></x>password<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Set PIN </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/set-pin-action/set-pin-action.component.html</context>
           <context context-type="linenumber">9,12</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1305659226730521106" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;detail-button-icon&quot;&gt;"/>casino<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Random PIN </source>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;detail-button-icon&quot;&gt;"></x>casino<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Random PIN </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/set-pin-action/set-pin-action.component.html</context>
           <context context-type="linenumber">14,17</context>
@@ -2172,28 +2175,28 @@
         </context-group>
       </trans-unit>
       <trans-unit id="3680194310459289797" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;detail-button-icon&quot;&gt;"/>help_outline<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Test Token </source>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;detail-button-icon&quot;&gt;"></x>help_outline<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Test Token </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/test-otp-pin-action/test-otp-pin-action.component.html</context>
           <context context-type="linenumber">21,24</context>
         </context-group>
       </trans-unit>
       <trans-unit id="7851122111198854253" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;detail-button-icon&quot;&gt;"/>help_outline<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Verify OTP Value </source>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;detail-button-icon&quot;&gt;"></x>help_outline<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Verify OTP Value </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/test-otp-pin-action/test-otp-pin-action.component.html</context>
           <context context-type="linenumber">25,28</context>
         </context-group>
       </trans-unit>
       <trans-unit id="6383682289461425812" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;detail-button-icon&quot;&gt;"/>computer<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Assign SSH Machine </source>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;detail-button-icon&quot;&gt;"></x>computer<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Assign SSH Machine </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/token-details-actions.component.html</context>
           <context context-type="linenumber">26,28</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2819182917765561151" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;detail-button-icon&quot;&gt;"/>key<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Test Passkey </source>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;detail-button-icon&quot;&gt;"></x>key<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Test Passkey </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/token-details-actions.component.html</context>
           <context context-type="linenumber">32,35</context>
@@ -2215,7 +2218,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="9022967674048183421" datatype="html">
-        <source>Details for Token: </source>
+        <source>Details for Token:</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.html</context>
           <context context-type="linenumber">7,8</context>
@@ -2261,7 +2264,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="71645768467290546" datatype="html">
-        <source> Application is required.</source>
+        <source>Application is required.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog.component.html</context>
           <context context-type="linenumber">12</context>
@@ -2275,7 +2278,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="1723648290832093758" datatype="html">
-        <source> Machine is required.</source>
+        <source>Machine is required.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog.component.html</context>
           <context context-type="linenumber">26</context>
@@ -2293,7 +2296,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="4368953418142732639" datatype="html">
-        <source> Service ID is required.</source>
+        <source>Service ID is required.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog.component.html</context>
           <context context-type="linenumber">39</context>
@@ -2307,7 +2310,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="4572028267157383474" datatype="html">
-        <source> User is required.</source>
+        <source>User is required.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog.component.html</context>
           <context context-type="linenumber">52</context>
@@ -2420,14 +2423,14 @@
         </context-group>
       </trans-unit>
       <trans-unit id="3310547187047960707" datatype="html">
-        <source> Generate the static password on the Server <x id="START_BLOCK_IF" equiv-text="@if (generateOnServerControl.value) {"/><x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span class=&quot;dot&quot;&gt;"/>.<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/><x id="START_TAG_SPAN_1" ctype="x-span_1" equiv-text="&lt;span&gt;"/><x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br/&gt;"/> The server will create the static password. <x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/><x id="CLOSE_BLOCK_IF" equiv-text="}"/></source>
+        <source>Generate the static password on the Server <x id="START_BLOCK_IF" equiv-text="@if (generateOnServerControl.value) {"></x><x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span class=&quot;dot&quot;&gt;"></x>.<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"></x><x id="START_TAG_SPAN_1" ctype="x-span_1" equiv-text="&lt;span&gt;"></x><x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br/&gt;"></x> The server will create the static password. <x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"></x><x id="CLOSE_BLOCK_IF" equiv-text="}"></x></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-asp/enroll-applspec.component.html</context>
           <context context-type="linenumber">10,18</context>
         </context-group>
       </trans-unit>
       <trans-unit id="938247594016488127" datatype="html">
-        <source>Service ID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Service ID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-asp/enroll-applspec.component.html</context>
           <context context-type="linenumber">32,33</context>
@@ -2476,7 +2479,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="4897529474530277655" datatype="html">
-        <source>CA Connector is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>CA Connector is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-certificate/enroll-certificate.component.html</context>
           <context context-type="linenumber">29,30</context>
@@ -2490,14 +2493,14 @@
         </context-group>
       </trans-unit>
       <trans-unit id="713213140721220586" datatype="html">
-        <source> The server will create the private RSA key and store it in the database. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> You can later download the PKCS#12 file.</source>
+        <source>The server will create the private RSA key and store it in the database. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"></x> You can later download the PKCS#12 file.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-certificate/enroll-certificate.component.html</context>
           <context context-type="linenumber">47,48</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2246655165872956895" datatype="html">
-        <source> Certificate Signing Request (PEM)</source>
+        <source>Certificate Signing Request (PEM)</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-certificate/enroll-certificate.component.html</context>
           <context context-type="linenumber">53</context>
@@ -2511,7 +2514,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="2049043702695636550" datatype="html">
-        <source> Certificate (PEM)</source>
+        <source>Certificate (PEM)</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-certificate/enroll-certificate.component.html</context>
           <context context-type="linenumber">65</context>
@@ -2525,7 +2528,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="7319277500297718885" datatype="html">
-        <source> Generate OTP key on the server <x id="START_BLOCK_IF" equiv-text="@if (generateOnServerControl.value) {"/><x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span class=&quot;dot&quot;&gt;"/>.<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/><x id="START_TAG_SPAN_1" ctype="x-span_1" equiv-text="&lt;span&gt;"/><x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> The server will create the OTP key and a QR Code will be displayed to you to be scanned. <x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/><x id="CLOSE_BLOCK_IF" equiv-text="}"/></source>
+        <source>Generate OTP key on the server <x id="START_BLOCK_IF" equiv-text="@if (generateOnServerControl.value) {"></x><x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span class=&quot;dot&quot;&gt;"></x>.<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"></x><x id="START_TAG_SPAN_1" ctype="x-span_1" equiv-text="&lt;span&gt;"></x><x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"></x> The server will create the OTP key and a QR Code will be displayed to you to be scanned. <x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"></x><x id="CLOSE_BLOCK_IF" equiv-text="}"></x></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component.html</context>
           <context context-type="linenumber">7,15</context>
@@ -2555,7 +2558,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="2897805957704289668" datatype="html">
-        <source>Some Authenticator Apps only support an OTP length of 6. </source>
+        <source>Some Authenticator Apps only support an OTP length of 6.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component.html</context>
           <context context-type="linenumber">24</context>
@@ -2573,7 +2576,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="7722066390367397207" datatype="html">
-        <source>Some Authenticator Apps only support the SHA1 algorithm. </source>
+        <source>Some Authenticator Apps only support the SHA1 algorithm.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component.html</context>
           <context context-type="linenumber">33</context>
@@ -2618,7 +2621,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="7237555509066603135" datatype="html">
-        <source>OTP key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> (min 16 chars) </source>
+        <source>OTP key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x> (min 16 chars) </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component.html</context>
           <context context-type="linenumber">39,40</context>
@@ -2632,35 +2635,35 @@
         </context-group>
       </trans-unit>
       <trans-unit id="2447154008791647488" datatype="html">
-        <source>For example &apos;1d&apos; or &apos;12h&apos;</source>
+        <source>For example '1d' or '12h'</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component.html</context>
           <context context-type="linenumber">53,54</context>
         </context-group>
       </trans-unit>
       <trans-unit id="7710369287070226298" datatype="html">
-        <source>Timestep is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Timestep is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component.html</context>
           <context context-type="linenumber">56,57</context>
         </context-group>
       </trans-unit>
       <trans-unit id="9055623791613366141" datatype="html">
-        <source>The time in which the password can be used. For example &apos;1d&apos; or &apos;12h&apos;. </source>
+        <source>The time in which the password can be used. For example '1d' or '12h'.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component.html</context>
           <context context-type="linenumber">57</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5248593074407214115" datatype="html">
-        <source>For Email tokens to work properly you need to set the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;#&quot;&gt;"/>Email Token Config<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>!</source>
+        <source>For Email tokens to work properly you need to set the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;#&quot;&gt;"></x>Email Token Config<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"></x>!</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-email/enroll-email.component.html</context>
           <context context-type="linenumber">7,8</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2977563191848980931" datatype="html">
-        <source> Read number dynamically from user source on each request </source>
+        <source>Read number dynamically from user source on each request</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-email/enroll-email.component.html</context>
           <context context-type="linenumber">11,12</context>
@@ -2674,7 +2677,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="8959382721861584260" datatype="html">
-        <source>Email Address is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Email Address is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-email/enroll-email.component.html</context>
           <context context-type="linenumber">21,22</context>
@@ -2716,35 +2719,35 @@
         </context-group>
       </trans-unit>
       <trans-unit id="304502981070626271" datatype="html">
-        <source>At least one realm is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>At least one realm is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-foureyes/enroll-foureyes.component.html</context>
           <context context-type="linenumber">53,54</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1222275569663050091" datatype="html">
-        <source> Only add to the realm (no user assignment) </source>
+        <source>Only add to the realm (no user assignment)</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-foureyes/enroll-foureyes.component.html</context>
           <context context-type="linenumber">57,58</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4360918834557681646" datatype="html">
-        <source> Some Authenticator Apps only support an OTP length of 6. </source>
+        <source>Some Authenticator Apps only support an OTP length of 6.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-hotp/enroll-hotp.component.html</context>
           <context context-type="linenumber">25</context>
         </context-group>
       </trans-unit>
       <trans-unit id="7423954781879691851" datatype="html">
-        <source> Some Authenticator Apps only support the SHA1 algorithm. </source>
+        <source>Some Authenticator Apps only support the SHA1 algorithm.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-hotp/enroll-hotp.component.html</context>
           <context context-type="linenumber">36</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5053050183011279766" datatype="html">
-        <source> OTP key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>OTP key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-hotp/enroll-hotp.component.html</context>
           <context context-type="linenumber">44,45</context>
@@ -2772,14 +2775,14 @@
         </context-group>
       </trans-unit>
       <trans-unit id="3363898281636977323" datatype="html">
-        <source>Secret is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> (min 16 chars)</source>
+        <source>Secret is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x> (min 16 chars)</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-indexsecret/enroll-indexedsecret.component.html</context>
           <context context-type="linenumber">15,16</context>
         </context-group>
       </trans-unit>
       <trans-unit id="8542316028362646328" datatype="html">
-        <source>OTP key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>OTP key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-motp/enroll-motp.component.html</context>
           <context context-type="linenumber">30,31</context>
@@ -2811,7 +2814,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="2323435677844786277" datatype="html">
-        <source>Password is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Password is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-motp/enroll-motp.component.html</context>
           <context context-type="linenumber">55,56</context>
@@ -2843,28 +2846,28 @@
         </context-group>
       </trans-unit>
       <trans-unit id="5528550488469757123" datatype="html">
-        <source> Please answer at least <x id="INTERPOLATION" equiv-text="{{ configMinNumberOfAnswers() }}"/> of the following questions. </source>
+        <source>Please answer at least <x id="INTERPOLATION" equiv-text="{{ configMinNumberOfAnswers() }}"></x> of the following questions. </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-questionnaire/enroll-question.component.html</context>
           <context context-type="linenumber">7,10</context>
         </context-group>
       </trans-unit>
       <trans-unit id="8569075671093664555" datatype="html">
-        <source>At least <x id="INTERPOLATION" equiv-text="{{ configMinNumberOfAnswers() }}"/> answers are <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. </source>
+        <source>At least <x id="INTERPOLATION" equiv-text="{{ configMinNumberOfAnswers() }}"></x> answers are <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x>. </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-questionnaire/enroll-question.component.html</context>
           <context context-type="linenumber">29,31</context>
         </context-group>
       </trans-unit>
       <trans-unit id="6993879258578989825" datatype="html">
-        <source>To ease the enrolling of RADIUS tokens you can set default values in the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;#&quot;&gt;"/>RADIUS Token Config<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>.</source>
+        <source>To ease the enrolling of RADIUS tokens you can set default values in the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;#&quot;&gt;"></x>RADIUS Token Config<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"></x>.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-radius/enroll-radius.component.html</context>
           <context context-type="linenumber">7,10</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4591340750100779695" datatype="html">
-        <source> Check the PIN locally </source>
+        <source>Check the PIN locally</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-radius/enroll-radius.component.html</context>
           <context context-type="linenumber">11,12</context>
@@ -2882,14 +2885,14 @@
         </context-group>
       </trans-unit>
       <trans-unit id="529101522778435094" datatype="html">
-        <source> Select a predefined <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;#&quot;&gt;"/>RADIUS server configuration<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> . The RADIUS request will be forwarded to this RADIUS server. </source>
+        <source>Select a predefined <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;#&quot;&gt;"></x>RADIUS server configuration<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"></x> . The RADIUS request will be forwarded to this RADIUS server. </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-radius/enroll-radius.component.html</context>
           <context context-type="linenumber">17,20</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4457633062065575608" datatype="html">
-        <source>RADIUS Server is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>RADIUS Server is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-radius/enroll-radius.component.html</context>
           <context context-type="linenumber">29,30</context>
@@ -2903,7 +2906,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="5751812222870698373" datatype="html">
-        <source>RADIUS User is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>RADIUS User is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-radius/enroll-radius.component.html</context>
           <context context-type="linenumber">36,37</context>
@@ -2917,7 +2920,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="3814339674388872571" datatype="html">
-        <source> Remote Server is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Remote Server is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-remote/enroll-remote.component.html</context>
           <context context-type="linenumber">22,24</context>
@@ -2931,7 +2934,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="7489204757800941538" datatype="html">
-        <source>Remote Serial is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Remote Serial is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-remote/enroll-remote.component.html</context>
           <context context-type="linenumber">31,32</context>
@@ -2945,7 +2948,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="3744932931265614096" datatype="html">
-        <source>Remote User is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Remote User is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-remote/enroll-remote.component.html</context>
           <context context-type="linenumber">41,42</context>
@@ -2966,21 +2969,21 @@
         </context-group>
       </trans-unit>
       <trans-unit id="5291422166509421005" datatype="html">
-        <source>Remote Resolver is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Remote Resolver is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-remote/enroll-remote.component.html</context>
           <context context-type="linenumber">55,56</context>
         </context-group>
       </trans-unit>
       <trans-unit id="7385083651048518684" datatype="html">
-        <source>For SMS tokens to work properly you need to set the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;#&quot;&gt;"/>SMS Token Config<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>!</source>
+        <source>For SMS tokens to work properly you need to set the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;#&quot;&gt;"></x>SMS Token Config<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"></x>!</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-sms/enroll-sms.component.html</context>
           <context context-type="linenumber">8,9</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2474986850058814844" datatype="html">
-        <source> Read number dynamically from user source on each request. </source>
+        <source>Read number dynamically from user source on each request.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-sms/enroll-sms.component.html</context>
           <context context-type="linenumber">12,13</context>
@@ -2994,21 +2997,21 @@
         </context-group>
       </trans-unit>
       <trans-unit id="6752764347343034796" datatype="html">
-        <source>Phone number is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Phone number is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-sms/enroll-sms.component.html</context>
           <context context-type="linenumber">19,20</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1386949147623156083" datatype="html">
-        <source> A token specific SMS gateway</source>
+        <source>A token specific SMS gateway</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-sms/enroll-sms.component.html</context>
           <context context-type="linenumber">25</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2915125867251670406" datatype="html">
-        <source>If this token should not use the system wide SMS gateway but an individual SMS gateway, you can select the gateway here. </source>
+        <source>If this token should not use the system wide SMS gateway but an individual SMS gateway, you can select the gateway here.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-sms/enroll-sms.component.html</context>
           <context context-type="linenumber">27,29</context>
@@ -3029,14 +3032,14 @@
         </context-group>
       </trans-unit>
       <trans-unit id="9122120727984393074" datatype="html">
-        <source>SSH public key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>SSH public key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-sshkey/enroll-sshkey.component.html</context>
           <context context-type="linenumber">15,16</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3193497364587361061" datatype="html">
-        <source>For TiQR tokens to work properly you need to set the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;#&quot;&gt;"/>TiQR Token Config<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>!</source>
+        <source>For TiQR tokens to work properly you need to set the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;#&quot;&gt;"></x>TiQR Token Config<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"></x>!</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-tiqr/enroll-tiqr.component.html</context>
           <context context-type="linenumber">7,10</context>
@@ -3057,21 +3060,21 @@
         </context-group>
       </trans-unit>
       <trans-unit id="5837940329643002489" datatype="html">
-        <source>Expected VASCO Token blob as <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>496-character hex string<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Expected VASCO Token blob as <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>496-character hex string<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-vasco/enroll-vasco.component.html</context>
           <context context-type="linenumber">18,20</context>
         </context-group>
       </trans-unit>
       <trans-unit id="200057635824722119" datatype="html">
-        <source>VASCO Token blob is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>VASCO Token blob is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-vasco/enroll-vasco.component.html</context>
           <context context-type="linenumber">21,23</context>
         </context-group>
       </trans-unit>
       <trans-unit id="8920773932554073270" datatype="html">
-        <source> use VASCO Serial </source>
+        <source>use VASCO Serial</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-vasco/enroll-vasco.component.html</context>
           <context context-type="linenumber">29,30</context>
@@ -3092,7 +3095,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="8125733582874667046" datatype="html">
-        <source>For Yubico tokens to work properly you need to set the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;#&quot;&gt;"/>Yubico Token Config<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>!</source>
+        <source>For Yubico tokens to work properly you need to set the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;#&quot;&gt;"></x>Yubico Token Config<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"></x>!</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-yubico/enroll-yubico.component.html</context>
           <context context-type="linenumber">7,8</context>
@@ -3113,7 +3116,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="7214946253226397805" datatype="html">
-        <source>Yubikey identifier with 12 digits is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Yubikey identifier with 12 digits is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-yubico/enroll-yubico.component.html</context>
           <context context-type="linenumber">20,21</context>
@@ -3134,7 +3137,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="3236157819119789316" datatype="html">
-        <source>OTP key must be 32 characters long for yubikey token in AES mode </source>
+        <source>OTP key must be 32 characters long for yubikey token in AES mode</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-yubikey/enroll-yubikey.component.html</context>
           <context context-type="linenumber">22</context>
@@ -3148,21 +3151,21 @@
         </context-group>
       </trans-unit>
       <trans-unit id="2685694000118057355" datatype="html">
-        <source> You need to confirm the registration with your authenticator. For an external authenticator, this usually means pushing the button on the authenticator, or replugging it (if there is no button on the authenticator). If you want to use an authenticator that is integrated into your device, look for a dialog box from your operating system. If you do not see anything, please make sure that your authenticator supports WebAuthn. </source>
+        <source>You need to confirm the registration with your authenticator. For an external authenticator, this usually means pushing the button on the authenticator, or replugging it (if there is no button on the authenticator). If you want to use an authenticator that is integrated into your device, look for a dialog box from your operating system. If you do not see anything, please make sure that your authenticator supports WebAuthn.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component.html</context>
           <context context-type="linenumber">7,10</context>
         </context-group>
       </trans-unit>
       <trans-unit id="7217843811854430121" datatype="html">
-        <source> You need to confirm the registration with your token either by pushing the blinking button or by religging your token. This depends on the actual token model. </source>
+        <source>You need to confirm the registration with your token either by pushing the blinking button or by religging your token. This depends on the actual token model.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component.html</context>
           <context context-type="linenumber">15,16</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5586487850897855698" datatype="html">
-        <source> Your token with serial number<x id="INTERPOLATION" equiv-text="{{ data.enrollmentResponse.detail.serial }}"/> is not completely enrolled, yet. Please scan the QR code with the privacyIDEA Authenticator App or click <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;{{ data.enrollmentResponse.detail.pushurl.value }}&quot;&gt;"/>this link<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> on your smartphone. It will send the missing registration data to the configured endpoint. Please note, that your smartphone needs internet access during the authentication process. </source>
+        <source>Your token with serial number<x id="INTERPOLATION" equiv-text="{{ data.enrollmentResponse.detail.serial }}"></x> is not completely enrolled, yet. Please scan the QR code with the privacyIDEA Authenticator App or click <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;{{ data.enrollmentResponse.detail.pushurl.value }}&quot;&gt;"></x>this link<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"></x> on your smartphone. It will send the missing registration data to the configured endpoint. Please note, that your smartphone needs internet access during the authentication process. </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component.html</context>
           <context context-type="linenumber">30,34</context>
@@ -3176,24 +3179,21 @@
         </context-group>
       </trans-unit>
       <trans-unit id="3012117831936869463" datatype="html">
-        <source> The Serial number for the OTP value <x id="INTERPOLATION" equiv-text="{{ data.otpValue }}"/> is <x id="START_LINK" ctype="x-a" equiv-text="&lt;a
-          class=&quot;link&quot;
-          attr.aria-label=&quot;{{ data.foundSerial }} Link&quot;
-          (click)=&quot;data.onClickSerial()&quot;&gt;"/> <x id="INTERPOLATION_1" equiv-text="{{ data.foundSerial }}"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> . </source>
+        <source>The Serial number for the OTP value <x id="INTERPOLATION" equiv-text="{{ data.otpValue }}"></x> is <x id="START_LINK" ctype="x-a" equiv-text="&lt;a           class=&quot;link&quot;           attr.aria-label=&quot;{{ data.foundSerial }} Link&quot;           (click)=&quot;data.onClickSerial()&quot;&gt;"></x> <x id="INTERPOLATION_1" equiv-text="{{ data.foundSerial }}"></x><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"></x> . </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-get-serial/get-serial-result-dialog/get-serial-result-dialog.component.html</context>
           <context context-type="linenumber">6,13</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1670223394439165444" datatype="html">
-        <source> No Serial number could be found for OTP value <x id="INTERPOLATION" equiv-text="{{ data.otpValue }}"/>. </source>
+        <source>No Serial number could be found for OTP value <x id="INTERPOLATION" equiv-text="{{ data.otpValue }}"></x>. </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-get-serial/get-serial-result-dialog/get-serial-result-dialog.component.html</context>
           <context context-type="linenumber">18,20</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5184373289520493569" datatype="html">
-        <source> OK </source>
+        <source>OK</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-get-serial/get-serial-result-dialog/get-serial-result-dialog.component.html</context>
           <context context-type="linenumber">33</context>
@@ -3214,7 +3214,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="2166204747375209188" datatype="html">
-        <source> By entering an OTP value you can get the serial number of the token. You can also enter additional optional parameters, to narrow down the search for the token. So you can only search within certain token types or in assigned or unassigned tokens. </source>
+        <source>By entering an OTP value you can get the serial number of the token. You can also enter additional optional parameters, to narrow down the search for the token. So you can only search within certain token types or in assigned or unassigned tokens.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
           <context context-type="linenumber">4,6</context>
@@ -3235,14 +3235,14 @@
         </context-group>
       </trans-unit>
       <trans-unit id="8076273911076258796" datatype="html">
-        <source>OTP value is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>OTP value is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
           <context context-type="linenumber">22,23</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5927398364887792350" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/><x id="INTERPOLATION" equiv-text="{{ currentStep() !== &quot;searching&quot; ? &quot;play_arrow&quot; : &quot;stop&quot; }}"/><x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> <x id="INTERPOLATION_1" equiv-text="{{ currentStep() !== &quot;searching&quot; ? &quot;Run&quot; : &quot;Stop&quot; }}"/> <x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"/>Search<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/></source>
+        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x><x id="INTERPOLATION" equiv-text="{{ currentStep() !== &quot;searching&quot; ? &quot;play_arrow&quot; : &quot;stop&quot; }}"></x><x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> <x id="INTERPOLATION_1" equiv-text="{{ currentStep() !== &quot;searching&quot; ? &quot;Run&quot; : &quot;Stop&quot; }}"></x> <x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"></x>Search<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"></x></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
           <context context-type="linenumber">32,35</context>
@@ -3284,7 +3284,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="8323422358213440128" datatype="html">
-        <source><x id="INTERPOLATION" equiv-text="{{ assignment.info }}"/> </source>
+        <source><x id="INTERPOLATION" equiv-text="{{ assignment.info }}"></x> </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
           <context context-type="linenumber">54,55</context>
@@ -3348,7 +3348,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="585350281116283767" datatype="html">
-        <source> Your Tokens </source>
+        <source>Your Tokens</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table.self-service.component.html</context>
           <context context-type="linenumber">10,11</context>
