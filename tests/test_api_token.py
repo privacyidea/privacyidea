@@ -3575,7 +3575,7 @@ class API00TokenPerformance(MyApiTestCase):
             # Of course there is no exact token "perf*", it does not match perf001
             self.assertFalse(result["status"])
 
-        # Now we unassign the token anyways
+        # Now we unassign the token anyway
         unassign_token("perf001")
 
         # run POST revoke with a wildcard

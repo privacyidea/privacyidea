@@ -1332,7 +1332,7 @@ def check_token_action(request: Request = None, action: str = None):
                 all_serials.add(stripped)
 
     if not all_serials:
-        raise ParameterError("No serials provided")
+        raise ParameterError("Missing parameter: 'serial' or 'serials'")
 
     # Process the collected serials
     authorized_serials = []
@@ -1357,6 +1357,15 @@ def check_token_action(request: Request = None, action: str = None):
     # This preserves the behavior of failing hard on single-token operations.
     if not_authorized_serials and len(all_serials) == 1 and len(not_found_serials) == 0:
         raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed!")
+
+    # All serials were unauthorized
+    if not authorized_serials and not not_found_serials and not_authorized_serials:
+        raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed for any "
+                          f"of the serials provided!")
+
+    # None of the serials was found
+    if not authorized_serials and not not_authorized_serials and not_found_serials:
+        raise ResourceNotFoundError(f"No token found for serials: {','.join(not_found_serials)}")
 
     # For multi-token operations, log the ones that were skipped.
     for serial in not_authorized_serials:

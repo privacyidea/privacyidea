@@ -3100,7 +3100,7 @@ class APIContainer(APIContainerTest):
                                            {}, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(905, error["code"])
-        self.assertEqual("ERR905: Missing parameter: 'serial'", error["message"])
+        self.assertEqual("ERR905: Missing parameter: 'serial' or 'serials'", error["message"])
 
         # Add token without container serial
         self.request_assert_405('/container/add', {"serial": hotp_01_serial}, self.at, 'POST')
@@ -3119,7 +3119,7 @@ class APIContainer(APIContainerTest):
                                            {}, self.at, 'POST')
         error = result["result"]["error"]
         self.assertEqual(905, error["code"])
-        self.assertEqual("ERR905: Missing parameter: 'serial'", error["message"])
+        self.assertEqual("ERR905: Missing parameter: 'serial' or 'serials'", error["message"])
 
         # Remove token without container serial
         self.request_assert_405('/container/remove', {"serial": hotp_01_serial}, self.at, 'POST')
