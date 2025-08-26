@@ -1,13 +1,13 @@
-import { NgClass } from "@angular/common";
-import { Component, computed, effect, inject, Input, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import { Component, Input, ViewChild, WritableSignal, computed, effect, inject, linkedSignal } from "@angular/core";
+import {
+  ContainerDetailToken,
+  ContainerService,
+  ContainerServiceInterface
+} from "../../../../services/container/container.service";
+import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
-import { MatDialog } from "@angular/material/dialog";
-import { MatFormField, MatLabel } from "@angular/material/form-field";
-import { MatIcon } from "@angular/material/icon";
-import { MatInput } from "@angular/material/input";
-import { MatPaginator } from "@angular/material/paginator";
-import { MatSort, MatSortHeader, MatSortModule } from "@angular/material/sort";
 import {
   MatCell,
   MatHeaderCell,
@@ -17,19 +17,20 @@ import {
   MatTableDataSource,
   MatTableModule
 } from "@angular/material/table";
-import { MatTooltip } from "@angular/material/tooltip";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import {
-  ContainerDetailToken,
-  ContainerService,
-  ContainerServiceInterface
-} from "../../../../services/container/container.service";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
+import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatSort, MatSortHeader, MatSortModule } from "@angular/material/sort";
 import { OverflowService, OverflowServiceInterface } from "../../../../services/overflow/overflow.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
+import { MatDialog } from "@angular/material/dialog";
+import { MatIcon } from "@angular/material/icon";
+import { MatInput } from "@angular/material/input";
+import { MatPaginator } from "@angular/material/paginator";
+import { MatTooltip } from "@angular/material/tooltip";
+import { NgClass } from "@angular/common";
 import { UserAssignmentDialogComponent } from "../user-assignment-dialog/user-assignment-dialog.component";
 
 const columnsKeyMap = [
@@ -69,29 +70,19 @@ const columnsKeyMap = [
 })
 export class ContainerDetailsTokenTableComponent {
   protected readonly dialog: MatDialog = inject(MatDialog);
-  protected readonly containerService: ContainerServiceInterface =
-    inject(ContainerService);
+  protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly tableUtilsService: TableUtilsServiceInterface =
-    inject(TableUtilsService);
-  protected readonly overflowService: OverflowServiceInterface =
-    inject(OverflowService);
-  protected readonly contentService: ContentServiceInterface =
-    inject(ContentService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   protected readonly columnsKeyMap = columnsKeyMap;
-  displayedColumns: string[] = [
-    ...columnsKeyMap.map((column) => column.key),
-    "remove",
-    "delete"
-  ];
+  displayedColumns: string[] = [...columnsKeyMap.map((column) => column.key), "remove", "delete"];
   pageSize = 10;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   filterValue = "";
-  @Input() containerTokenData!: WritableSignal<
-    MatTableDataSource<ContainerDetailToken, MatPaginator>
-  >;
+  @Input() containerTokenData!: WritableSignal<MatTableDataSource<ContainerDetailToken, MatPaginator>>;
   dataSource = new MatTableDataSource<ContainerDetailToken>([]);
   containerSerial = this.containerService.containerSerial;
   assignedUser: WritableSignal<{
@@ -152,7 +143,6 @@ export class ContainerDetailsTokenTableComponent {
   handleFilterInput(event: Event): void {
     this.filterValue = (event.target as HTMLInputElement).value.trim();
     const normalised = this.filterValue.toLowerCase();
-
     this.dataSource.filter = normalised;
     if (this.containerTokenData) {
       this.containerTokenData().filter = normalised;
@@ -174,13 +164,11 @@ export class ContainerDetailsTokenTableComponent {
       .subscribe({
         next: (result) => {
           if (result) {
-            this.containerService
-              .removeTokenFromContainer(containerSerial, tokenSerial)
-              .subscribe({
-                next: () => {
-                  this.containerService.containerDetailResource.reload();
-                }
-              });
+            this.containerService.removeTokenFromContainer(containerSerial, tokenSerial).subscribe({
+              next: () => {
+                this.containerService.containerDetailResource.reload();
+              }
+            });
           }
         }
       });
@@ -193,9 +181,7 @@ export class ContainerDetailsTokenTableComponent {
   }
 
   unassignFromAllToken() {
-    const tokenToUnassign = this.containerTokenData().data.filter(
-      (token) => token.username !== ""
-    );
+    const tokenToUnassign = this.containerTokenData().data.filter((token) => token.username !== "");
     if (tokenToUnassign.length === 0) {
       return;
     }
@@ -246,44 +232,36 @@ export class ContainerDetailsTokenTableComponent {
     if (tokensToAssign.length === 0) {
       return;
     }
-    var tokensAssignedToOtherUser = tokensToAssign.filter(
-      (token) => token.username !== ""
-    );
+    var tokensAssignedToOtherUser = tokensToAssign.filter((token) => token.username !== "");
 
     this.dialog
       .open(UserAssignmentDialogComponent)
       .afterClosed()
       .subscribe((pin: string) => {
-        const tokenSerialsAssignedToOtherUser = tokensAssignedToOtherUser.map(
-          (token) => token.serial
-        );
-        this.tokenService
-          .unassignUserFromAll(tokenSerialsAssignedToOtherUser)
-          .subscribe({
-            next: () => {
-              const tokenSerialsToAssign = tokensToAssign.map(
-                (token) => token.serial
-              );
-              this.tokenService
-                .assignUserToAll({
-                  tokenSerials: tokenSerialsToAssign,
-                  username: username,
-                  realm: realm,
-                  pin: pin
-                })
-                .subscribe({
-                  next: () => {
-                    this.containerService.containerDetailResource.reload();
-                  },
-                  error: (error) => {
-                    console.error("Error assigning user to all tokens:", error);
-                  }
-                });
-            },
-            error: (error) => {
-              console.error("Error unassigning user from all tokens:", error);
-            }
-          });
+        const tokenSerialsAssignedToOtherUser = tokensAssignedToOtherUser.map((token) => token.serial);
+        this.tokenService.unassignUserFromAll(tokenSerialsAssignedToOtherUser).subscribe({
+          next: () => {
+            const tokenSerialsToAssign = tokensToAssign.map((token) => token.serial);
+            this.tokenService
+              .assignUserToAll({
+                tokenSerials: tokenSerialsToAssign,
+                username: username,
+                realm: realm,
+                pin: pin
+              })
+              .subscribe({
+                next: () => {
+                  this.containerService.containerDetailResource.reload();
+                },
+                error: (error) => {
+                  console.error("Error assigning user to all tokens:", error);
+                }
+              });
+          },
+          error: (error) => {
+            console.error("Error unassigning user from all tokens:", error);
+          }
+        });
       });
   }
 

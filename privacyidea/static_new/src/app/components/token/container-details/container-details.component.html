@@ -266,7 +266,8 @@
           <input
             #filterHTMLInputElement
             #tokenAutoTrigger="matAutocompleteTrigger"
-            [(ngModel)]="filterValueString"
+            (input)="tokenService.handleFilterInput($event)"
+            [value]="tokenService.tokenFilter().filterString"
             [matAutocomplete]="tokenAuto"
             i18n-placeholder
             matInput

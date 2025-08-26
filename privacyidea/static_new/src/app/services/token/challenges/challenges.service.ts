@@ -1,11 +1,13 @@
-import { httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
-import { Sort } from "@angular/material/sort";
-import { PiResponse } from "../../../app.component";
-import { ROUTE_PATHS } from "../../../app.routes";
 import { AuthService, AuthServiceInterface } from "../../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../../content/content.service";
+import { HttpResourceRef, httpResource } from "@angular/common/http";
+import { Injectable, WritableSignal, computed, inject, linkedSignal, signal } from "@angular/core";
 import { TokenService, TokenServiceInterface } from "../token.service";
+
+import { FilterValue } from "../../../core/models/filter_value";
+import { PiResponse } from "../../../app.component";
+import { ROUTE_PATHS } from "../../../app.routes";
+import { Sort } from "@angular/material/sort";
 
 const apiFilter = ["serial", "transaction_id"];
 const advancedApiFilter: string[] = [];
@@ -32,9 +34,10 @@ export interface Challenge {
 }
 
 export interface ChallengesServiceInterface {
+  handleFilterInput(newFilter: string): void;
   apiFilter: string[];
   advancedApiFilter: string[];
-  filterValue: WritableSignal<Record<string, string>>;
+  filterValue: WritableSignal<FilterValue>;
   pageSize: WritableSignal<number>;
   pageIndex: WritableSignal<number>;
   sort: WritableSignal<Sort>;
@@ -45,6 +48,9 @@ export interface ChallengesServiceInterface {
   providedIn: "root"
 })
 export class ChallengesService implements ChallengesServiceInterface {
+  handleFilterInput(newFilter: string): void {
+    this.filterValue.set(new FilterValue({ value: newFilter }));
+  }
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -54,7 +60,7 @@ export class ChallengesService implements ChallengesServiceInterface {
   tokenBaseUrl = this.tokenService.tokenBaseUrl;
   filterValue = linkedSignal({
     source: this.contentService.routeUrl,
-    computation: () => ({}) as Record<string, string>
+    computation: () => new FilterValue()
   });
   private filterParams = computed(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];

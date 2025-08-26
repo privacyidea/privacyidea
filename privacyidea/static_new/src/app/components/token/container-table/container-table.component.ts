@@ -1,25 +1,26 @@
-import { animate, state, style, transition, trigger } from "@angular/animations";
-import { NgClass } from "@angular/common";
-import { Component, effect, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
-import { MatCheckboxModule } from "@angular/material/checkbox";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatInputModule } from "@angular/material/input";
-import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
-import { MatSortModule, Sort } from "@angular/material/sort";
-import { MatTableDataSource, MatTableModule } from "@angular/material/table";
+import { Component, ViewChild, WritableSignal, inject, linkedSignal } from "@angular/core";
 import {
   ContainerDetailData,
   ContainerService,
   ContainerServiceInterface
 } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
+import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
+import { MatSortModule, Sort } from "@angular/material/sort";
+import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
+import { animate, state, style, transition, trigger } from "@angular/animations";
+
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
+import { FormsModule } from "@angular/forms";
 import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";
+import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatInputModule } from "@angular/material/input";
+import { NgClass } from "@angular/common";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 
 const columnsKeyMap = [
   { key: "select", label: "" },
@@ -70,12 +71,7 @@ export class ContainerTableComponent {
   readonly apiFilter = this.containerService.apiFilter;
   readonly advancedApiFilter = this.containerService.advancedApiFilter;
   containerSelection = this.containerService.containerSelection;
-  filterValue = this.containerService.filterValue;
-  filterValueString: WritableSignal<string> = linkedSignal(() =>
-    Object.entries(this.filterValue())
-      .map(([key, value]) => `${key}: ${value}`)
-      .join(" ")
-  );
+
   pageSize = this.containerService.pageSize;
   pageIndex = this.containerService.pageIndex;
   sort = this.containerService.sort;
@@ -133,20 +129,6 @@ export class ContainerTableComponent {
   @ViewChild("filterHTMLInputElement", { static: true })
   filterInput!: HTMLInputElement;
   expandedElement: ContainerDetailData | null = null;
-
-  constructor() {
-    effect(() => {
-      const filterValueString = this.filterValueString();
-      if (this.filterInput) {
-        this.filterInput.value = filterValueString;
-      }
-      const recordsFromText = this.tableUtilsService.recordsFromText(filterValueString);
-      if (JSON.stringify(this.filterValue()) !== JSON.stringify(recordsFromText)) {
-        this.filterValue.set(recordsFromText);
-      }
-      this.pageIndex.set(0);
-    });
-  }
 
   isAllSelected() {
     return this.containerSelection().length === this.containerDataSource().data.length;

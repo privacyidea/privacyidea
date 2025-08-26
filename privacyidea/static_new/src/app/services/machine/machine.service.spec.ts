@@ -1,14 +1,13 @@
-import { TestBed } from "@angular/core/testing";
 import { HttpClient, HttpParams } from "@angular/common/http";
+import { MockContentService, MockLocalService, MockTableUtilsService } from "../../../testing/mock-services";
 import { lastValueFrom, of } from "rxjs";
 
-import { MachineService } from "./machine.service";
-
-import { LocalService } from "../local/local.service";
-import { TableUtilsService } from "../table-utils/table-utils.service";
 import { ContentService } from "../content/content.service";
+import { LocalService } from "../local/local.service";
+import { MachineService } from "./machine.service";
+import { TableUtilsService } from "../table-utils/table-utils.service";
+import { TestBed } from "@angular/core/testing";
 import { environment } from "../../../environments/environment";
-import { MockContentService, MockLocalService, MockTableUtilsService } from "../../../testing/mock-services";
 
 environment.proxyUrl = "/api";
 
@@ -56,9 +55,7 @@ describe("MachineService (with mock classes)", () => {
 
   it("postTokenOption builds correct request body", async () => {
     httpStub.post.mockReturnValue(of({}));
-    await lastValueFrom(
-      machineService.postTokenOption("host", "mid", "res", "serial", "ssh", "mtid")
-    );
+    await lastValueFrom(machineService.postTokenOption("host", "mid", "res", "serial", "ssh", "mtid"));
     expect(httpStub.post).toHaveBeenCalledWith(
       "/api/machine/tokenoption",
       {
@@ -139,7 +136,7 @@ describe("MachineService (with mock classes)", () => {
   });
 
   it("filterParams produces expected object for ssh", () => {
-    machineService.filterValue.set({ serial: "abc", hostname: "host" });
+    machineService.machineFilter.set({ serial: "abc", hostname: "host" });
     expect(machineService.filterParams()).toEqual({
       serial: "*abc*",
       hostname: "host"
@@ -148,7 +145,7 @@ describe("MachineService (with mock classes)", () => {
 
   it("filterParams handles offline application type", () => {
     machineService.selectedApplicationType.set("offline");
-    machineService.filterValue.set({
+    machineService.machineFilter.set({
       serial: "xyz",
       hostname: "h",
       count: "5",

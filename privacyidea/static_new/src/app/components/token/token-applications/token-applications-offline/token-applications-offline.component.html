@@ -17,11 +17,12 @@
       subscriptSizing="dynamic">
       <mat-label i18n>Enter Filter</mat-label>
       <app-clearable-input
-        (onClick)="machineService.filterValueString.set('')"
-        [showClearButton]="machineService.filterValueString.length > 0">
+        (onClick)="machineService.clearFilter()"
+        [showClearButton]="machineService.machineFilter().isNotEmpty">
         <input
           #filterInput
-          [(ngModel)]="machineService.filterValueString"
+          (input)="machineService.handleFilterInput($event)"
+          [value]="machineService.machineFilter().filterString"
           aria-label="Filter Input"
           i18n-aria-label
           i18n-placeholder
@@ -41,7 +42,7 @@
     [advancedApiFilter]="machineService.offlineAdvancedApiFilter"
     [apiFilter]="machineService.offlineApiFilter"
     [filterHTMLInputElement]="filterInput"
-    [filterValue]="machineService.filterValue"></app-keyword-filter>
+    [filterValue]="machineService.machineFilter"></app-keyword-filter>
   <table
     (matSortChange)="machineService.onSortEvent($event)"
     [dataSource]="dataSource()"

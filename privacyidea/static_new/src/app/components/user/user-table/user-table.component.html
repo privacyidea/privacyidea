@@ -39,7 +39,6 @@
         [dataSource]="usersDataSource()"
         aria-label="User Data Table"
         class="token-table"
-        i18n-aria-label
         mat-table
         matSort>
         @for (column of columnKeysMap; track column) {
@@ -81,22 +80,17 @@
         <tr
           *matHeaderRowDef="columnKeys"
           aria-label="Header Row"
-          i18n-aria-label
           mat-header-row></tr>
         <tr
           *matRowDef="let row; columns: columnKeys"
           aria-label="Data Row"
-          i18n-aria-label
           mat-row></tr>
         <tr
           *matNoDataRow
-          aria-label="No Data Row"
-          i18n-aria-label>
+          aria-label="No Data Row">
           <td
             [attr.colspan]="columnKeys.length"
-            aria-label="No Data Cell"
-            i18n
-            i18n-aria-label>
+            aria-label="No Data Cell">
             No data matching the filter.
           </td>
         </tr>

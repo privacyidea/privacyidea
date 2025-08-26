@@ -1,13 +1,15 @@
-import { httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, inject, Injectable, linkedSignal, signal, Signal, WritableSignal } from "@angular/core";
-import { Sort } from "@angular/material/sort";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { ROUTE_PATHS } from "../../app.routes";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { HttpResourceRef, httpResource } from "@angular/common/http";
+import { Injectable, Signal, WritableSignal, computed, inject, linkedSignal, signal } from "@angular/core";
 import { RealmService, RealmServiceInterface } from "../realm/realm.service";
 import { TokenService, TokenServiceInterface } from "../token/token.service";
+
+import { FilterValue } from "../../core/models/filter_value";
+import { PiResponse } from "../../app.component";
+import { ROUTE_PATHS } from "../../app.routes";
+import { Sort } from "@angular/material/sort";
+import { environment } from "../../../environments/environment";
 
 const apiFilter = ["description", "email", "givenname", "mobile", "phone", "resolver", "surname", "userid", "username"];
 const advancedApiFilter: string[] = [];
@@ -37,7 +39,7 @@ export interface UserServiceInterface {
   allUsernames: Signal<string[]>;
   filteredUsernames: Signal<string[]>;
   filteredUsers: Signal<UserData[]>;
-  filterValue: WritableSignal<Record<string, string>>;
+  filterValue: WritableSignal<FilterValue>;
   pageIndex: WritableSignal<number>;
   pageSize: WritableSignal<number>;
   apiFilter: string[];
@@ -57,7 +59,7 @@ export class UserService implements UserServiceInterface {
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
   private baseUrl = environment.proxyUrl + "/user/";
-  filterValue = signal({} as Record<string, string>);
+  filterValue = signal(new FilterValue());
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
     const filterPairs = Object.entries(this.filterValue())

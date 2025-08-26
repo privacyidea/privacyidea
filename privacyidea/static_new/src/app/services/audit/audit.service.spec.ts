@@ -1,11 +1,10 @@
-import { TestBed } from "@angular/core/testing";
-import { signal } from "@angular/core";
-
 import { AuditService } from "./audit.service";
-import { LocalService } from "../local/local.service";
 import { ContentService } from "../content/content.service";
+import { LocalService } from "../local/local.service";
+import { TestBed } from "@angular/core/testing";
 import { environment } from "../../../environments/environment";
 import { provideHttpClient } from "@angular/common/http";
+import { signal } from "@angular/core";
 
 environment.proxyUrl = "/api";
 
@@ -38,7 +37,7 @@ describe("AuditService (signals & helpers)", () => {
   it("filterParams ignores unknown keys and wildcard‑wraps allowed ones", () => {
     expect(auditService.filterParams()).toEqual({});
 
-    auditService.filterValue.set({
+    auditService.auditFilter.set({
       action: "LOGIN",
       foo: "bar",
       user: "alice"
@@ -60,7 +59,7 @@ describe("AuditService (signals & helpers)", () => {
 
   it("auditResource becomes active and derived params update", () => {
     content.routeUrl.set("/audit");
-    auditService.filterValue.set({ serial: "otp123" });
+    auditService.auditFilter.set({ serial: "otp123" });
 
     auditService.auditResource.reload();
 

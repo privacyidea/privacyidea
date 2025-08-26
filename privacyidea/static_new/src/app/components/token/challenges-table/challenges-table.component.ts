@@ -1,23 +1,24 @@
-import { NgClass } from "@angular/common";
-import { Component, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatIconModule } from "@angular/material/icon";
-import { MatInputModule } from "@angular/material/input";
-import { MatPaginator, MatPaginatorModule, PageEvent } from "@angular/material/paginator";
-import { MatSort, MatSortModule, Sort } from "@angular/material/sort";
-import { MatTableDataSource, MatTableModule } from "@angular/material/table";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import {
   Challenge,
   ChallengesService,
   ChallengesServiceInterface
 } from "../../../services/token/challenges/challenges.service";
+import { Component, ViewChild, WritableSignal, inject, linkedSignal } from "@angular/core";
+import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
+import { MatPaginator, MatPaginatorModule, PageEvent } from "@angular/material/paginator";
+import { MatSort, MatSortModule, Sort } from "@angular/material/sort";
+import { MatTableDataSource, MatTableModule } from "@angular/material/table";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
+
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
+import { MatInputModule } from "@angular/material/input";
+import { NgClass } from "@angular/common";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 
 const columnKeysMap = [
   { key: "timestamp", label: "Timestamp" },
@@ -86,9 +87,7 @@ export class ChallengesTableComponent {
   @ViewChild("filterInput", { static: true }) filterInput!: HTMLInputElement;
 
   onFilterChange(newFilter: string) {
-    const recordsFromText = this.tableUtilsService.recordsFromText(newFilter);
-    this.filterValue.set(recordsFromText);
-    this.pageIndex.set(0);
+    this.challengesService.handleFilterInput(newFilter);
   }
 
   onPageEvent(event: PageEvent) {

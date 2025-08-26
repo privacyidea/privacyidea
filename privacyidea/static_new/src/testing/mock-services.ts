@@ -1,16 +1,3 @@
-import { HttpClient, HttpHeaders, HttpParams, HttpProgressEvent, HttpResourceRef } from "@angular/common/http";
-import { computed, linkedSignal, Resource, ResourceStatus, Signal, signal, WritableSignal } from "@angular/core";
-import { Sort } from "@angular/material/sort";
-import { MatTableDataSource } from "@angular/material/table";
-import { Router } from "@angular/router";
-import { Observable, of, Subject, Subscription } from "rxjs";
-import { PiResponse } from "../app/app.component";
-import { BEARER_TOKEN_STORAGE_KEY } from "../app/core/constants";
-import {
-  EnrollmentResponse,
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../app/mappers/token-api-payload/_token-api-payload.mapper";
 import { Audit, AuditServiceInterface } from "../app/services/audit/audit.service";
 import {
   AuthData,
@@ -29,23 +16,38 @@ import {
   ContainerType,
   ContainerTypes
 } from "../app/services/container/container.service";
-import { ContentServiceInterface } from "../app/services/content/content.service";
-import { LocalServiceInterface } from "../app/services/local/local.service";
-import { Machines, MachineServiceInterface, TokenApplication } from "../app/services/machine/machine.service";
-import { NotificationServiceInterface } from "../app/services/notification/notification.service";
-import { OverflowServiceInterface } from "../app/services/overflow/overflow.service";
-import { Realm, Realms, RealmServiceInterface } from "../app/services/realm/realm.service";
-import { FilterPair, TableUtilsServiceInterface } from "../app/services/table-utils/table-utils.service";
+import {
+  EnrollmentResponse,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData
+} from "../app/mappers/token-api-payload/_token-api-payload.mapper";
+import { HttpClient, HttpHeaders, HttpParams, HttpProgressEvent, HttpResourceRef } from "@angular/common/http";
 import {
   LostTokenResponse,
   TokenDetails,
   TokenGroups,
-  Tokens,
   TokenServiceInterface,
-  TokenType
+  TokenType,
+  Tokens
 } from "../app/services/token/token.service";
+import { MachineServiceInterface, Machines, TokenApplication } from "../app/services/machine/machine.service";
+import { Observable, Subject, Subscription, of } from "rxjs";
+import { Realm, RealmServiceInterface, Realms } from "../app/services/realm/realm.service";
+import { Resource, ResourceStatus, Signal, WritableSignal, computed, linkedSignal, signal } from "@angular/core";
 import { UserData, UserServiceInterface } from "../app/services/user/user.service";
 import { ValidateCheckResponse, ValidateServiceInterface } from "../app/services/validate/validate.service";
+
+import { BEARER_TOKEN_STORAGE_KEY } from "../app/core/constants";
+import { ContentServiceInterface } from "../app/services/content/content.service";
+import { FilterValue } from "../app/core/models/filter_value";
+import { LocalServiceInterface } from "../app/services/local/local.service";
+import { MatTableDataSource } from "@angular/material/table";
+import { NotificationServiceInterface } from "../app/services/notification/notification.service";
+import { OverflowServiceInterface } from "../app/services/overflow/overflow.service";
+import { PiResponse } from "../app/app.component";
+import { Router } from "@angular/router";
+import { Sort } from "@angular/material/sort";
+import { TableUtilsServiceInterface } from "../app/services/table-utils/table-utils.service";
 import { VersioningService } from "../app/services/version/version.service";
 
 export function makeResource<T>(initial: T) {
@@ -126,8 +128,7 @@ export class MockHttpResourceRef<T> implements HttpResourceRef<T> {
     return this.value() !== undefined;
   }
 
-  destroy(): void {
-  }
+  destroy(): void {}
 
   set(value: T): void {
     this.value.set(value);
@@ -328,9 +329,7 @@ export class MockAuthService implements AuthServiceInterface {
     readonly localService: LocalServiceInterface = new MockLocalService(),
     readonly notificationService: NotificationServiceInterface = new MockNotificationService(),
     readonly versioningService: VersioningService = new VersioningService()
-  ) {
-  }
-
+  ) {}
   jwtData: WritableSignal<JwtData | null> = signal({
     username: "",
     realm: "",
@@ -364,7 +363,7 @@ export class MockAuthService implements AuthServiceInterface {
 }
 
 export class MockUserService implements UserServiceInterface {
-  filterValue: WritableSignal<Record<string, string>> = signal({});
+  userFilter: WritableSignal<Record<string, string>> = signal({});
   pageIndex: WritableSignal<number> = signal(0);
   pageSize: WritableSignal<number> = signal(10);
   apiFilter: string[] = [];
@@ -485,8 +484,7 @@ export class MockContentService implements ContentServiceInterface {
   });
   isProgrammaticTabChange = signal(false);
 
-  constructor(public authService: MockAuthService = new MockAuthService()) {
-  }
+  constructor(public authService: MockAuthService = new MockAuthService()) {}
 }
 
 export class MockContainerService implements ContainerServiceInterface {
@@ -519,10 +517,12 @@ export class MockContainerService implements ContainerServiceInterface {
   containerBaseUrl: string = "mockEnvironment.proxyUrl + '/container'";
   eventPageSize: number = 10;
   sort: WritableSignal<Sort> = signal({ active: "serial", direction: "asc" });
-  filterValue: WritableSignal<Record<string, string>> = signal({});
+  containerFilter: WritableSignal<Record<string, string>> = signal({});
   filterParams: Signal<Record<string, string>> = computed(() =>
     Object.fromEntries(
-      Object.entries(this.filterValue()).filter(([key]) => [...this.apiFilter, ...this.advancedApiFilter].includes(key))
+      Object.entries(this.containerFilter()).filter(([key]) =>
+        [...this.apiFilter, ...this.advancedApiFilter].includes(key)
+      )
     )
   );
   pageSize: WritableSignal<number> = signal(10);
@@ -537,7 +537,7 @@ export class MockContainerService implements ContainerServiceInterface {
   containerOptions: WritableSignal<string[]> = signal([]);
   filteredContainerOptions: Signal<string[]> = computed(() => {
     const options = this.containerOptions();
-    const filter = this.filterValue();
+    const filter = this.containerFilter();
     return options.filter((option) => {
       return Object.keys(filter).every((key) => {
         return option.includes(filter[key]);
@@ -698,6 +698,12 @@ export class MockOverflowService implements OverflowServiceInterface {
 }
 
 export class MockTokenService implements TokenServiceInterface {
+  clearFilter(): void {
+    throw new Error("Method not implemented."); /// TODO: Implement!
+  }
+  handleFilterInput($event: Event): void {
+    throw new Error("Method not implemented."); /// TODO: Implement!
+  }
   apiFilter: string[] = [];
   advancedApiFilter: string[] = [];
   hiddenApiFilter: string[] = [];
@@ -747,7 +753,7 @@ export class MockTokenService implements TokenServiceInterface {
     })
   );
   tokenSerial = signal("");
-  filterValue = signal<Record<string, string>>({});
+  tokenFilter = signal<FilterValue>(new FilterValue());
   pageIndex = signal(0);
   pageSize = signal(10);
   tokenTypeOptions: WritableSignal<TokenType[]> = signal<TokenType[]>([
@@ -879,7 +885,7 @@ export class MockMachineService implements MachineServiceInterface {
   offlineAdvancedApiFilter: string[] = [];
   machinesResource = new MockHttpResourceRef(MockPiResponse.fromValue<Machines>([]));
   machines: WritableSignal<Machines> = signal<Machines>([]);
-  filterValue: WritableSignal<Record<string, string>> = signal({});
+  machineFilter: WritableSignal<FilterValue> = signal(new FilterValue());
   filterValueString: WritableSignal<string> = signal("");
   sort: WritableSignal<Sort> = signal({ active: "", direction: "" });
   tokenApplications: WritableSignal<TokenApplication[]> = signal([]);
@@ -925,7 +931,7 @@ export class MockMachineService implements MachineServiceInterface {
         ? [...this.sshApiFilter, ...this.sshAdvancedApiFilter]
         : [...this.offlineApiFilter, ...this.offlineAdvancedApiFilter];
 
-    const filterPairs = Object.entries(this.filterValue())
+    const filterPairs = Object.entries(this.machineFilter())
       .map(([key, value]) => ({ key, value }))
       .filter(({ key }) => allowedKeywords.includes(key));
     if (filterPairs.length === 0) {
@@ -955,7 +961,12 @@ export class MockMachineService implements MachineServiceInterface {
     public http: HttpClient = new HttpClient({} as any),
     public authService: AuthServiceInterface = new MockAuthService(),
     public tableUtilsService: TableUtilsServiceInterface = new MockTableUtilsService()
-  ) {
+  ) {}
+  handleFilterInput($event: Event): void {
+    throw new Error("Method not implemented.");
+  }
+  clearFilter(): void {
+    throw new Error("Method not implemented.");
   }
 
   postAssignMachineToToken(args: {
@@ -993,13 +1004,6 @@ export class MockTableUtilsService implements TableUtilsServiceInterface {
     (dataSource as any).isEmpty = true;
     return dataSource;
   });
-
-  parseFilterString(
-    filterValue: string,
-    apiFilter: string[]
-  ): { filterPairs: FilterPair[]; remainingFilterText: string } {
-    throw new Error("Mock method not implemented.");
-  }
 
   toggleKeywordInFilter(currentValue: string, keyword: string): string {
     throw new Error("Mock method not implemented.");
@@ -1052,16 +1056,16 @@ export class MockAuditService implements AuditServiceInterface {
   apiFilter = ["user", "success"];
   advancedApiFilter = ["machineid", "resolver"];
 
-  filterValue = signal<Record<string, string>>({});
+  auditFilter = signal<Record<string, string>>({});
 
   pageSize = linkedSignal({
-    source: this.filterValue,
+    source: this.auditFilter,
     computation: () => 10
   });
 
   pageIndex = linkedSignal({
     source: () => ({
-      filterValue: this.filterValue(),
+      filterValue: this.auditFilter(),
       pageSize: this.pageSize()
     }),
     computation: () => 0

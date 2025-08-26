@@ -257,7 +257,8 @@
           <input
             #filterHTMLInputElement
             #tokenAutoTrigger="matAutocompleteTrigger"
-            [(ngModel)]="filterValueString"
+            (input)="tokenService.handleFilterInput($event)"
+            [value]="tokenService.tokenFilter().filterString"
             [matAutocomplete]="tokenAuto"
             matInput
             placeholder="Example query: 'type: hotp serial: 123'" />

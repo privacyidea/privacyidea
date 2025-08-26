@@ -1,20 +1,22 @@
-import { HttpClient, HttpErrorResponse, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
-import { Sort } from "@angular/material/sort";
-import { forkJoin, Observable, Subject, switchMap, throwError, timer } from "rxjs";
-import { catchError, shareReplay, takeUntil, takeWhile } from "rxjs/operators";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { ROUTE_PATHS } from "../../app.routes";
-import { TokenComponent, TokenTypeOption as TokenTypeKey } from "../../components/token/token.component";
+import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
 import {
   EnrollmentResponse,
   TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../mappers/token-api-payload/_token-api-payload.mapper";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { HttpClient, HttpErrorResponse, HttpParams, HttpResourceRef, httpResource } from "@angular/common/http";
+import { Injectable, Signal, WritableSignal, computed, effect, inject, linkedSignal, signal } from "@angular/core";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { Observable, Subject, forkJoin, switchMap, throwError, timer } from "rxjs";
+import { TokenComponent, TokenTypeOption as TokenTypeKey } from "../../components/token/token.component";
+import { catchError, shareReplay, takeUntil, takeWhile } from "rxjs/operators";
+
+import { FilterValue } from "../../core/models/filter_value";
+import { PiResponse } from "../../app.component";
+import { ROUTE_PATHS } from "../../app.routes";
+import { Sort } from "@angular/material/sort";
+import { environment } from "../../../environments/environment";
 
 const apiFilter = [
   "serial",
@@ -119,7 +121,9 @@ export interface TokenServiceInterface {
   tokenSerial: WritableSignal<string>;
   selectedTokenType: Signal<TokenType>;
   showOnlyTokenNotInContainer: WritableSignal<boolean>;
-  filterValue: WritableSignal<Record<string, string>>;
+  tokenFilter: WritableSignal<FilterValue>;
+  clearFilter(): void;
+  handleFilterInput($event: Event): void;
   tokenDetailResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   tokenTypesResource: HttpResourceRef<PiResponse<{}> | undefined>;
   tokenTypeOptions: Signal<TokenType[]>;
@@ -132,7 +136,6 @@ export interface TokenServiceInterface {
 
   sort: WritableSignal<Sort>;
   pageIndex: WritableSignal<number>;
-  filterParams: Signal<Record<string, string>>;
   tokenResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   tokenSelection: WritableSignal<TokenDetails[]>;
 
@@ -227,29 +230,41 @@ export class TokenService implements TokenServiceInterface {
       return routeUrl.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS);
     }
   });
-  filterValue: WritableSignal<Record<string, string>> = linkedSignal({
+  tokenFilter: WritableSignal<FilterValue> = linkedSignal({
     source: () => ({
       showOnlyTokenNotInContainer: this.showOnlyTokenNotInContainer(),
       routeUrl: this.contentService.routeUrl()
     }),
     computation: (source, previous) => {
-      if (source.routeUrl.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
-        if (!previous || source.routeUrl !== previous.source.routeUrl) {
-          return { container_serial: "" };
-        } else {
-          const current = { ...previous.value };
-          if (source.showOnlyTokenNotInContainer) {
-            current["container_serial"] = "";
-          } else {
-            delete current["container_serial"];
-          }
-          return current;
-        }
-      } else {
-        return {};
+      if (!source.routeUrl.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
+        console.log("Resetting filter because we are not in container details view.");
+        return new FilterValue();
       }
+      if (!previous || source.routeUrl !== previous.source.routeUrl) {
+        console.log("Resetting filter because routeUrl changed.");
+        return new FilterValue({ hiddenValue: source.showOnlyTokenNotInContainer ? "container_serial: " : "" });
+      }
+      const filterValue = previous.value;
+      if (source.showOnlyTokenNotInContainer) {
+        console.log("Adding container_serial to filter.");
+        filterValue.addHiddenKey("container_serial");
+      } else {
+        console.log("Removing container_serial from filter.");
+        filterValue.removeHiddenKey("container_serial");
+      }
+      return filterValue;
     }
   });
+
+  clearFilter(): void {
+    this.tokenFilter.set(new FilterValue());
+  }
+
+  handleFilterInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.tokenFilter.set(new FilterValue({ value: input.value.trim() }));
+  }
+
   tokenDetailResource = httpResource<PiResponse<Tokens>>(() => {
     if (!this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_DETAILS, 0)) {
       return undefined;
@@ -290,8 +305,8 @@ export class TokenService implements TokenServiceInterface {
       source.tokenTypeOptions[0] ||
       ({ key: "hotp", info: "", text: "" } as TokenType)
   });
-  pageSize = linkedSignal<Record<string, string>, number>({
-    source: this.filterValue,
+  pageSize = linkedSignal<FilterValue, number>({
+    source: this.tokenFilter,
     computation: (_, previous) => {
       const previousValue = previous?.value ?? 10;
 
@@ -309,20 +324,24 @@ export class TokenService implements TokenServiceInterface {
   sort = signal({ active: "serial", direction: "asc" } as Sort);
   pageIndex = linkedSignal({
     source: () => ({
-      filterValue: this.filterValue(),
+      filterValue: this.tokenFilter(),
       pageSize: this.pageSize(),
       routeUrl: this.contentService.routeUrl(),
       sort: this.sort()
     }),
     computation: () => 0
   });
+
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter];
-    const filterPairs = Object.entries(this.filterValue())
+    let filterPairs = [...this.tokenFilter().filterMap, ...this.tokenFilter().hiddenFilterMap];
+    let filterPairsMap = filterPairs
       .filter(([key]) => allowedFilters.includes(key))
       .map(([key, value]) => ({ key, value }));
 
-    return filterPairs.reduce(
+    console.log(filterPairsMap);
+
+    return filterPairsMap.reduce(
       (acc, { key, value }) => ({
         ...acc,
         [key]: ["user", "infokey", "infovalue", "active", "assigned", "container_serial"].includes(key)

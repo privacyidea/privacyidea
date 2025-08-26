@@ -1,35 +1,15 @@
-import { Injectable, signal, WritableSignal } from "@angular/core";
-import { MatTableDataSource } from "@angular/material/table";
+import { Injectable, WritableSignal, signal } from "@angular/core";
 
-export interface FilterPair {
-  key: string;
-  value: string;
-}
+import { MatTableDataSource } from "@angular/material/table";
 
 export interface TableUtilsServiceInterface {
   pageSizeOptions: WritableSignal<number[]>;
 
-  emptyDataSource<T>(
-    pageSize: number,
-    columnsKeyMap: { key: string; label: string }[]
-  ): MatTableDataSource<T>;
-
-  parseFilterString(
-    filterValue: string,
-    apiFilter: string[]
-  ): {
-    filterPairs: FilterPair[];
-    remainingFilterText: string;
-  };
+  emptyDataSource<T>(pageSize: number, columnsKeyMap: { key: string; label: string }[]): MatTableDataSource<T>;
 
   toggleKeywordInFilter(currentValue: string, keyword: string): string;
 
-  toggleBooleanInFilter(args: {
-    keyword: string;
-    currentValue: string;
-  }): string;
-
-  recordsFromText(textValue: string): Record<string, string>;
+  toggleBooleanInFilter(args: { keyword: string; currentValue: string }): string;
 
   isLink(columnKey: string): boolean;
 
@@ -47,11 +27,7 @@ export interface TableUtilsServiceInterface {
 
   getChildClassForColumnKey(columnKey: string): string;
 
-  getDisplayTextForKeyAndRevoked(
-    key: string,
-    value: any,
-    revoked: boolean
-  ): string;
+  getDisplayTextForKeyAndRevoked(key: string, value: any, revoked: boolean): string;
 
   getTdClassForKey(key: string): string[];
 
@@ -66,10 +42,7 @@ export interface TableUtilsServiceInterface {
 export class TableUtilsService implements TableUtilsServiceInterface {
   pageSizeOptions = signal([5, 10, 25, 50]);
 
-  emptyDataSource<T>(
-    pageSize: number,
-    columnsKeyMap: { key: string; label: string }[]
-  ): MatTableDataSource<T> {
+  emptyDataSource<T>(pageSize: number, columnsKeyMap: { key: string; label: string }[]): MatTableDataSource<T> {
     return new MatTableDataSource(
       Array.from({ length: pageSize }, () => {
         const emptyRow: any = {};
@@ -81,95 +54,6 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     );
   }
 
-  parseFilterString(
-    filterValue: string,
-    apiFilter: string[]
-  ): {
-    filterPairs: FilterPair[];
-    remainingFilterText: string;
-  } {
-    const lowerFilterValue = filterValue.trim().toLowerCase();
-    const filterLabels = apiFilter.flatMap((column) => {
-      if (column === "infokey & infovalue") {
-        return ["infokey:", "infovalue:"];
-      }
-      if (column === "machineid & resolver") {
-        return ["machineid:", "resolver:"];
-      }
-      return column.toLowerCase() + ":";
-    });
-    const filterValueSplit = lowerFilterValue.split(" ");
-    const filterPairs: FilterPair[] = [];
-
-    let currentLabel = "";
-    let currentValue = "";
-    let remainingFilterText = "";
-
-    const findMatchingLabel = (parts: string[]): string | null => {
-      for (let i = 1; i <= parts.length; i++) {
-        const possibleLabel = parts.slice(0, i).join(" ");
-        if (filterLabels.includes(possibleLabel)) {
-          return possibleLabel;
-        }
-      }
-      return null;
-    };
-
-    let i = 0;
-    while (i < filterValueSplit.length) {
-      const parts = filterValueSplit.slice(i);
-      let matchingLabel = findMatchingLabel(parts);
-
-      if (!matchingLabel) {
-        const token = parts[0];
-        for (const label of filterLabels) {
-          if (token.startsWith(label)) {
-            matchingLabel = label;
-            if (currentLabel && currentValue) {
-              filterPairs.push({
-                key: currentLabel.slice(0, -1),
-                value: currentValue.trim()
-              });
-            }
-            currentLabel = matchingLabel;
-            currentValue = token.slice(label.length) + " ";
-            i += 1;
-            break;
-          }
-        }
-        if (matchingLabel === currentLabel) {
-          continue;
-        }
-      }
-
-      if (matchingLabel) {
-        if (currentLabel && currentValue) {
-          filterPairs.push({
-            key: currentLabel.slice(0, -1),
-            value: currentValue.trim()
-          });
-        }
-        currentLabel = matchingLabel;
-        currentValue = "";
-        i += matchingLabel.split(" ").length;
-      } else if (currentLabel) {
-        currentValue += filterValueSplit[i] + " ";
-        i++;
-      } else {
-        remainingFilterText += filterValueSplit[i] + " ";
-        i++;
-      }
-    }
-    if (currentLabel) {
-      filterPairs.push({
-        key: currentLabel.slice(0, -1),
-        value: currentValue.trim()
-      });
-    }
-
-    return { filterPairs, remainingFilterText: remainingFilterText.trim() };
-  }
-
   toggleKeywordInFilter(currentValue: string, keyword: string): string {
     if (keyword.includes("&")) {
       const keywords = keyword.split("&").map((k) => k.trim());
@@ -179,10 +63,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
       }
       return newValue;
     }
-    const keywordPattern = new RegExp(
-      `\\b${keyword}:.*?(?=(\\s+\\w+:|$))`,
-      "i"
-    );
+    const keywordPattern = new RegExp(`\\b${keyword}:.*?(?=(\\s+\\w+:|$))`, "i");
     if (keywordPattern.test(currentValue)) {
       return currentValue
         .replace(keywordPattern, " ")
@@ -197,15 +78,9 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     }
   }
 
-  public toggleBooleanInFilter(args: {
-    keyword: string;
-    currentValue: string;
-  }): string {
+  public toggleBooleanInFilter(args: { keyword: string; currentValue: string }): string {
     const { keyword, currentValue } = args;
-    const regex = new RegExp(
-      `\\b${keyword}:\\s?([\\w\\d]*)(?![\\w\\d]*:)`,
-      "i"
-    );
+    const regex = new RegExp(`\\b${keyword}:\\s?([\\w\\d]*)(?![\\w\\d]*:)`, "i");
     const match = currentValue.match(regex);
 
     if (!match) {
@@ -296,11 +171,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     return element[columnKey];
   }
 
-  getSpanClassForKey(args: {
-    key: string;
-    value?: any;
-    maxfail?: any;
-  }): string {
+  getSpanClassForKey(args: { key: string; value?: any; maxfail?: any }): string {
     const { key, value, maxfail } = args;
     if (key === "success") {
       if (value === "" || value === null || value === undefined) {
@@ -335,11 +206,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   getDivClassForKey(key: string) {
     if (key === "description") {
       return "details-scrollable-container";
-    } else if (
-      key === "maxfail" ||
-      key === "count_window" ||
-      key === "sync_window"
-    ) {
+    } else if (key === "maxfail" || key === "count_window" || key === "sync_window") {
       return "details-value";
     }
 
@@ -362,19 +229,13 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   }
 
   getChildClassForColumnKey(columnKey: string): string {
-    if (
-      this.getClassForColumnKey(columnKey).includes("table-scroll-container")
-    ) {
+    if (this.getClassForColumnKey(columnKey).includes("table-scroll-container")) {
       return "scroll-item";
     }
     return "";
   }
 
-  getDisplayTextForKeyAndRevoked(
-    key: string,
-    value: any,
-    revoked: boolean
-  ): string {
+  getDisplayTextForKeyAndRevoked(key: string, value: any, revoked: boolean): string {
     if (value === "") {
       return "";
     }

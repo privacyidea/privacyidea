@@ -118,7 +118,7 @@
             class="card-button"
             mat-flat-button
             [routerLink]="[ROUTE_PATHS.AUDIT]"
-            (click)="auditService.filterValue.set({ serial: tokenSerial() })"
+            (click)="onClickManageSearch()"
             i18n>
             <mat-icon>manage_search</mat-icon>
             Show in Audit Log
