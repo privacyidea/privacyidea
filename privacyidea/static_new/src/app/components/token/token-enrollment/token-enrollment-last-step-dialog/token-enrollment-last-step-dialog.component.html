@@ -16,7 +16,7 @@
     </span>
   }
   <div class="flex-row gap-1">
-    @if (!["registration", "paper", "spass", "email", "yubico", "yubikey"].includes(data.tokentype.key)
+    @if (!["registration", "paper", "spass", "email", "yubico"].includes(data.tokentype.key)
     && data.response.detail.googleurl?.img) {
       <img
         alt="QR Code"

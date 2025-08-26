@@ -4,6 +4,7 @@
     <mat-form-field class="input-height width-33">
       <mat-label>Test Yubikey</mat-label>
       <input
+        [formControl]="testYubiKeyControl"
         matInput
         placeholder="Push Yubikey button here"/>
     </mat-form-field>
@@ -12,6 +13,7 @@
       <input
         [formControl]="otpLengthControl"
         matInput
+        min="32"
         type="number"/>
     </mat-form-field>
     <mat-form-field class="input-height width-33">

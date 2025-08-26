@@ -5,7 +5,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 
 import { MatOptionModule } from "@angular/material/core";
-import { Observable, of } from "rxjs";
+import { distinctUntilChanged, map, Observable, of } from "rxjs";
 import {
   EnrollmentResponse,
   TokenEnrollmentData
@@ -48,7 +48,7 @@ export class EnrollYubikeyComponent implements OnInit {
     Validators.minLength(32),
     Validators.maxLength(32)
   ]);
-  otpLengthControl = new FormControl<number | null>(44, [Validators.required]);
+  otpLengthControl = new FormControl<number | null>(44, [Validators.required, Validators.min(32)]);
 
   yubikeyForm = new FormGroup({
     otpKey: this.otpKeyControl,
@@ -61,6 +61,14 @@ export class EnrollYubikeyComponent implements OnInit {
       otpLength: this.otpLengthControl
     });
     this.clickEnrollChange.emit(this.onClickEnroll);
+
+    this.testYubiKeyControl.valueChanges
+      .pipe(map(v => Math.max(32, (v ?? "").length)), distinctUntilChanged())
+      .subscribe(len => {
+        if (this.otpLengthControl.value !== len) {
+          this.otpLengthControl.setValue(len, { emitEvent: false });
+        }
+      });
   }
 
   onClickEnroll = (
@@ -68,8 +76,6 @@ export class EnrollYubikeyComponent implements OnInit {
   ): Observable<EnrollmentResponse | null> => {
     this.yubikeyForm.updateValueAndValidity();
     if (this.yubikeyForm.invalid) {
-      console.log(this.otpKeyControl.value);
-      console.log(this.yubikeyForm.value);
       this.yubikeyForm.markAllAsTouched();
       return of(null);
     }
