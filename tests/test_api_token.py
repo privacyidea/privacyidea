@@ -1175,12 +1175,15 @@ class APITokenTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertTrue(result.get("value").get("Token1"))
-            self.assertTrue(result.get("value").get("Token2"))
+            value = result.get("value")
+            self.assertEqual(2, value.get("count_deleted"))
+            self.assertFalse(value.get("failed"))
+            self.assertFalse(value.get("unauthorized"))
         self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, "Token1", None)
         self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, "Token2", None)
 
-        # Try to remove token, that does not exist fails silently
+        # Try to remove token that does not exist with other token that exist, will return a result
+        # with the non-existing serial as failed
         self._create_temp_token("Token1")
         self._create_temp_token("Token2")
         serial_list = ["Token1", "Token1234", "Token2"]
@@ -1190,10 +1193,10 @@ class APITokenTestCase(MyApiTestCase):
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            self.assertTrue(result.get("value").get("Token1"))
-            self.assertFalse(result.get("value").get("Token1234"))
-            self.assertTrue(result.get("value").get("Token2"))
+            value = res.json.get("result").get("value")
+            self.assertEqual(2, value.get("count_deleted"))
+            self.assertIn("Token1234", value.get("failed"))
+            self.assertFalse(value.get("unauthorized"))
         self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, "Token1", None)
         self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, "Token2", None)
 
@@ -3475,9 +3478,14 @@ class APITokenTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
-            self.assertTrue(res.json.get("result").get("value")[token1.get_serial()])
-            self.assertFalse(res.json.get("result").get("value")[token2.get_serial()])
-            self.assertFalse(res.json.get("result").get("value")["INVALID_SERIAL"])
+            value = res.json.get("result").get("value")
+            self.assertEqual(1, value.get("count_unassigned"))
+            failed = value.get("failed")
+            self.assertEqual(1, len(failed))
+            self.assertIn("INVALID_SERIAL", failed)
+            unauthorized = value.get("unauthorized")
+            self.assertEqual(1, len(unauthorized))
+            self.assertIn(token2.get_serial(), unauthorized)
         self.assertIsNone(token1.user)
         self.assertIsNone(token2.user)
 

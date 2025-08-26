@@ -1331,6 +1331,12 @@ def check_token_action(request: Request = None, action: str = None):
             if stripped:
                 all_serials.add(stripped)
 
+    # Check if a user is given in the params, which would mean that the operation should be done on all the users token
+    if not all_serials and user:
+        tokens = get_tokens(user=user)
+        for token in tokens:
+            all_serials.add(token.token.serial)
+
     if not all_serials:
         raise ParameterError("Missing parameter: 'serial' or 'serials'")
 
