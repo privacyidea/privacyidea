@@ -29,5 +29,6 @@ export class SmsGatewayService {
     headers: this.authService.getHeaders()
   }));
 
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) {
+  }
 }

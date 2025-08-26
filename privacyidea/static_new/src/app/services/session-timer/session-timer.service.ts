@@ -5,8 +5,11 @@ import { NotificationService, NotificationServiceInterface } from "../notificati
 
 export interface SessionTimerServiceInterface {
   remainingTime: Signal<number | undefined>;
+
   startTimer(): void;
+
   resetTimer(): void;
+
   startRefreshingRemainingTime(): void;
 }
 

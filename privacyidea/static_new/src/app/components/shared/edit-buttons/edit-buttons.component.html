@@ -1,9 +1,7 @@
 <div class="edit-button-container">
   @let elementIsEditing =
     element.isEditing() ||
-    (isEditingUser() &&
-      (element.keyMap.key === "username" ||
-        element.keyMap.key === "user_name")) ||
+    (isEditingUser() && (element.keyMap.key === "username" || element.keyMap.key === "user_name")) ||
     (isEditingInfo() && element.keyMap.key === "info");
   @if (!shouldHideEdit()) {
     <button

@@ -3,32 +3,41 @@
 }
 <div
   [ngClass]="{
-    'ali-center': overflowService.isWidthOverflowing('body', 1580),
+    'ali-center': overflowService.isWidthOverflowing('body', 1580)
   }"
-  class="actions-otp-container"
->
+  class="actions-otp-container">
   <div class="user-pin-container user-pin-container-padding">
-    <app-set-pin-action [setPinValue]="setPinValue" [repeatPinValue]="repeatPinValue" />
+    <app-set-pin-action
+      [repeatPinValue]="repeatPinValue"
+      [setPinValue]="setPinValue" />
     <br />
     <mat-divider />
     <br />
   </div>
   @if (tokenType() !== "passkey") {
-    <app-resync-token-action />
-    <br />
-    <mat-divider />
-    <br />
+    <app-resync-token-action /><br />
+    <mat-divider /><br />
   }
   @if (tokenType() !== "passkey") {
     <app-test-otp-pin-action />
     @if (tokenType() === "sshkey") {
-      <button (click)="assignSSHMachineDialog()" class="detail-button" extended mat-fab>
+      <button
+        (click)="assignSSHMachineDialog()"
+        class="detail-button"
+        extended
+        mat-fab
+        i18n>
         <mat-icon class="detail-button-icon">computer</mat-icon>
         Assign SSH Machine
       </button>
     }
   } @else {
-    <button (click)="testPasskey()" class="detail-button" extended mat-fab>
+    <button
+      (click)="testPasskey()"
+      class="detail-button"
+      extended
+      mat-fab
+      i18n>
       <mat-icon class="detail-button-icon">key</mat-icon>
       Test Passkey
     </button>

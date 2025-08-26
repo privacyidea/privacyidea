@@ -72,10 +72,10 @@ $description-width: 18rem;
   }
   ::ng-deep {
     .mdc-checkbox
-      .mdc-checkbox__native-control:not(.mdc-checkbox--selected):not(
+    .mdc-checkbox__native-control:not(.mdc-checkbox--selected):not(
         [aria-checked="mixed"]
       )
-      ~ .mdc-checkbox__background {
+    ~ .mdc-checkbox__background {
       border: 2px solid #999;
     }
 
