@@ -4,16 +4,15 @@
     <mat-form-field class="input-height width-33">
       <mat-label>Test Yubikey</mat-label>
       <input
-        [formControl]="testYubiKeyControl"
         matInput
         placeholder="Push Yubikey button here"/>
     </mat-form-field>
     <mat-form-field class="input-height width-33">
       <mat-label>OTP length</mat-label>
-      <mat-select [formControl]="otpLengthControl"
-                  [value]="otpLengthControl.value">
-        <mat-option [value]="44">44</mat-option>
-      </mat-select>
+      <input
+        [formControl]="otpLengthControl"
+        matInput
+        type="number"/>
     </mat-form-field>
     <mat-form-field class="input-height width-33">
       <mat-label>OTP Key</mat-label>
@@ -22,11 +21,7 @@
         matInput
         placeholder="Enter OTP key"
         required/>
-      <mat-error>OTP key is <strong>required</strong></mat-error>
-      @if (otpKeyControl.value && otpKeyControl.value.length !== 32) {
-        <mat-hint>OTP key must be 32 characters long for yubikey token in AES mode
-        </mat-hint>
-      }
+      <mat-error>OTP key is <strong>required</strong> and must be 32 characters long</mat-error>
     </mat-form-field>
   </div>
 </div>

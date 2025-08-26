@@ -16,36 +16,35 @@
     </span>
   }
   <div class="flex-row gap-1">
-    @if (!["registration", "paper", "spass", "email"].includes(data.tokentype.key)) {
-      @if (data.response.detail.googleurl?.img) {
-        <img
-          alt="QR Code"
-          class="qr-code"
-          height="300px"
-          src="{{ data.response.detail.googleurl?.img }}"
-          width="300px"/>
-      } @else if (data.response.detail.motpurl?.img) {
-        <img
-          alt="QR Code"
-          class="qr-code"
-          height="300px"
-          src="{{ data.response.detail.motpurl?.img }}"
-          width="300px"/>
-      } @else if (data.response.detail.otpkey?.img) {
-        <img
-          alt="QR Code"
-          class="qr-code"
-          height="300px"
-          src="{{ data.response.detail.otpkey?.img }}"
-          width="300px"/>
-      } @else if (data.response.detail.tiqrenroll?.img) {
-        <img
-          alt="QR Code"
-          class="qr-code"
-          height="300px"
-          src="{{ data.response.detail.tiqrenroll?.img }}"
-          width="300px"/>
-      }
+    @if (!["registration", "paper", "spass", "email", "yubico", "yubikey"].includes(data.tokentype.key)
+    && data.response.detail.googleurl?.img) {
+      <img
+        alt="QR Code"
+        class="qr-code"
+        height="300px"
+        src="{{ data.response.detail.googleurl?.img }}"
+        width="300px"/>
+    } @else if (data.response.detail.motpurl?.img) {
+      <img
+        alt="QR Code"
+        class="qr-code"
+        height="300px"
+        src="{{ data.response.detail.motpurl?.img }}"
+        width="300px"/>
+    } @else if (data.response.detail.otpkey?.img) {
+      <img
+        alt="QR Code"
+        class="qr-code"
+        height="300px"
+        src="{{ data.response.detail.otpkey?.img }}"
+        width="300px"/>
+    } @else if (data.response.detail.tiqrenroll?.img) {
+      <img
+        alt="QR Code"
+        class="qr-code"
+        height="300px"
+        src="{{ data.response.detail.tiqrenroll?.img }}"
+        width="300px"/>
     }
     <div class="flex-column gap-1">
       @let url =
