@@ -29,3 +29,8 @@
   flex-direction: row;
   gap: 20px;
 }
+
+.selfservice-drawer {
+  width: unset;
+  border: solid 2px var(--mat-sys-surface-container-highest);
+}
